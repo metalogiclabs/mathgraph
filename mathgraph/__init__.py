@@ -2552,4 +2552,14 @@ from mathgraph.policy_engine import ConstructorPolicy, build_policy_routes, buil
 from mathgraph.proof_congruence import ExplainTrace, ProofCongruenceClosure, ProofStep, explain_bounded_congruence
 from mathgraph.true_proof_templates import TrueProofTemplate, build_true_proof_template_inventory, classify_true_pair
 from mathgraph.lean_artifacts import generate_false_countermodel_lean_skeleton, generate_true_congruence_lean_skeleton, write_lean_artifacts
+from mathgraph.autonomous_finite_recovery import (
+    FiniteRecoveryConfig,
+    FiniteRecoveryResult,
+    build_finite_recovery_core,
+    evaluate_false_pairs as evaluate_autonomous_false_pairs,
+    greedy_route as autonomous_greedy_route,
+    pair_recovery_matrix as autonomous_pair_recovery_matrix,
+    residual_marginal_repair as autonomous_residual_marginal_repair,
+    route_metrics as autonomous_route_metrics,
+)
 from mathgraph.version import __version__, get_version_info

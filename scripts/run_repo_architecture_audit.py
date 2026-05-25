@@ -36,6 +36,8 @@ CANONICAL_MODULES = (
     "mathgraph/semantic_validation.py",
     "mathgraph/finite_magma_world.py",
     "mathgraph/compounding_engine.py",
+    "mathgraph/autonomous_compounding_engine.py",
+    "mathgraph/autonomous_finite_recovery.py",
     "mathgraph/recursive_residual_compounding.py",
     "mathgraph/etp_terms.py",
     "mathgraph/quotient_state.py",

@@ -52,7 +52,7 @@ Canonical modules:
 | semantic boundary | `mathgraph/semantic_validation.py`, `mathgraph/invariants.py` |
 | routing memory | `mathgraph/reason_atlas.py`, `mathgraph/reason_atlas_store.py` |
 | H-Tilt / scheduling pressure | `mathgraph/spectral_htilt.py`, `mathgraph/reason_atlas_htilt.py`, `mathgraph/viability_operators.py` |
-| verification loops | `mathgraph/verification_loop.py`, `mathgraph/compounding_engine.py` |
+| verification loops | `mathgraph/verification_loop.py`, `mathgraph/compounding_engine.py`, `mathgraph/autonomous_compounding_engine.py` |
 | finite checker | `mathgraph/finite_magma_world.py` |
 | SAIR / ETP adapters | `mathgraph/sair_task_loader.py`, `mathgraph/sair_constructor_bank.py` |
 
@@ -171,6 +171,47 @@ python scripts/run_mathgraph_compounding_engine.py \
 ```
 
 See [docs/compounding_engine.md](docs/compounding_engine.md).
+
+## Autonomous Compounding Engine
+
+The autonomous engine has a compatibility `facade` mode and an explicit
+`native_v2` mode. Native v2 is the finite recovery path that builds a
+constructor bank, evaluates a SAT cache, repairs residuals, names PQ-IR
+obstructions, records advisory Lawbook reuse, and audits the terminal-form
+boundary. It remains a finite-core recovery loop, not a TRUE oracle: failed
+finite search is residual evidence and every PQ-IR, route, obstruction, and
+Lawbook reuse signal is advisory unless a checker/verifier accepts a terminal
+artifact.
+
+```bash
+python scripts/run_autonomous_compounding_engine.py \
+  --out-dir /tmp/mathgraph_autonomous_v2_tiny \
+  --tiny-demo \
+  --finite-core-mode native_v2 \
+  --episodes 3 \
+  --sample-pairs 80 \
+  --repair-budget 20 \
+  --max-n 3 \
+  --seed 20260524 \
+  --write-report
+```
+
+Real ETP/SAIR example:
+
+```bash
+python scripts/run_autonomous_compounding_engine.py \
+  --equations /content/equations.txt \
+  --matrix /content/etp_matrix_full_best_bool.npy \
+  --out-dir /content/drive/MyDrive/SAIR_MathGraph/autonomous_v2_real \
+  --finite-core-mode native_v2 \
+  --episodes 4 \
+  --sample-pairs 4000 \
+  --repair-budget 40 \
+  --max-n 4 \
+  --constructor-limit 500 \
+  --seed 20260524 \
+  --write-report
+```
 
 ## TRUE-Side Proof Inventory
 
