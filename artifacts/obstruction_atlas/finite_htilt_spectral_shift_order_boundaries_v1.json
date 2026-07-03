@@ -1,0 +1,22 @@
+{
+  "artifact_id": "finite_htilt_spectral_shift_order_v1",
+  "closed_obstructions": [
+    {
+      "name": "shifted_modulus_identity",
+      "resolution": "Proved the exact real polynomial expansion for squared shifted-modulus difference."
+    },
+    {
+      "name": "single_pair_shifted_dominance_condition",
+      "resolution": "Proved a sufficient bound implying strict shifted squared-modulus dominance for one competing pair."
+    }
+  ],
+  "open_obstructions": [
+    "finite spectrum maximum over all competitors",
+    "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+    "derivation that a strict-abscissa eigenvalue of a real matrix is real",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer from K/offdiag graph to A",
+    "Perron-Frobenius invocation on shifted A",
+    "convergence or empirical claims"
+  ]
+}

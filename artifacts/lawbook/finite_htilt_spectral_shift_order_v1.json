@@ -1,0 +1,35 @@
+{
+  "artifact_id": "finite_htilt_spectral_shift_order_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_spectral_shift_order.lean",
+  "namespace": "HTiltSpectralShiftOrder",
+  "verified_declarations": [
+    "HTiltSpectralShiftOrder.shiftedSqMod",
+    "HTiltSpectralShiftOrder.shiftedSqMod_sub_eq",
+    "HTiltSpectralShiftOrder.shiftedSqMod_gt_of_bound"
+  ],
+  "claim": {
+    "summary": "For real c,a,b,u,v, the squared shifted modulus difference expands as 2*c*(a-u)+((a^2+b^2)-(u^2+v^2)). If |(u^2+v^2)-(a^2+b^2)| < 2*c*(a-u), then shiftedSqMod c u v < shiftedSqMod c a b.",
+    "identity": "shiftedSqMod c a b - shiftedSqMod c u v = 2*c*(a-u)+((a^2+b^2)-(u^2+v^2))",
+    "dominance_condition": "|(u^2+v^2)-(a^2+b^2)| < 2*c*(a-u)",
+    "dominance_conclusion": "shiftedSqMod c u v < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "pure real shifted squared-modulus identity",
+      "sufficient real inequality for shifted modulus dominance"
+    ],
+    "does_not_prove": [
+      "finite matrix spectral theorem",
+      "that a chosen eigenvalue has strict spectral abscissa",
+      "that the eigenvalue is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

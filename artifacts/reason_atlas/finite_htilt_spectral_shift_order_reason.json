@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_spectral_shift_order_v1",
+  "reason": "The squared shifted-modulus comparison decomposes into a linear-in-c real-part gap term plus an unshifted squared-modulus residual. If the linear shift term dominates the absolute residual, the shifted squared modulus of the target mode is larger.",
+  "portal": "reduce complex shifted-modulus comparison to real polynomial algebra over coordinates",
+  "certificate": "Lean proof using ring and linarith"
+}
