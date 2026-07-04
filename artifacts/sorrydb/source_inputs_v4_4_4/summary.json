@@ -1,0 +1,33 @@
+{
+  "blocked_source_missing_count": 4,
+  "bounded_claim": "classifies missing-source backfill rows into controlled source-input statuses and emits snippet/hash evidence",
+  "category_counts": {
+    "SOURCE_CHECKOUT_AVAILABLE": 0,
+    "SOURCE_CHECKOUT_NOT_CHECKED_IN_BY_POLICY": 0,
+    "SOURCE_CHECKOUT_PATH_UNSTABLE": 4,
+    "SOURCE_CHECKOUT_UNAVAILABLE": 0,
+    "SOURCE_INPUT_INSUFFICIENT": 0,
+    "SOURCE_INPUT_UNCLASSIFIED": 0,
+    "SOURCE_SNIPPET_ONLY_AVAILABLE": 0
+  },
+  "does_not_claim": [
+    "new proof discovery",
+    "Lean replay success",
+    "source hydration",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "next_frontier": "v4.4.5 source hydration plan, a controlled small source fixture package, or manual source checkout registration",
+  "row_ids": [
+    "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+  ],
+  "source_checkout_available_count": 0,
+  "source_input_insufficient_count": 0,
+  "source_snippet_only_count": 0,
+  "status": "CONTROLLED_SOURCE_INPUTS_PROFILED",
+  "version": "v4.4.4"
+}

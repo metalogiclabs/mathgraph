@@ -1,0 +1,10 @@
+{
+  "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+  "file_path": "MetaExamples/Fiddle.lean",
+  "patch_snippet": "  · extract_goal using eg₁\n    exact Nat.le_add_right n 1",
+  "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+  "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+  "source_snippet": "  · extract_goal using eg₁\n    sorry",
+  "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+  "status": "SOURCE_CHECKOUT_PATH_UNSTABLE"
+}
