@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_gap_envelope_from_witness_v1",
+  "reason": "The reusable core now exposes raw-evidence APIs. This artifact gives a named downstream witness interface that future StrCC or spectral-candidate producers can target directly.",
+  "portal": "strict real-part gap witness to PositiveGapEnvelope and core raw-evidence dominance",
+  "certificate": "Lean proof importing HTilt.CoordinateChecklist and reusing core raw-evidence declarations"
+}

@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_coordinate_gap_envelope_from_witness_v1",
+  "closed_obstructions": [
+    {
+      "name": "gap_witness_to_checklist_interface",
+      "resolution": "Verified that a strict real-part gap witness builds PositiveGapEnvelope."
+    },
+    {
+      "name": "raw_witnesses_to_core_api",
+      "resolution": "Verified that raw residual and gap witnesses feed the core checklist and dominance APIs."
+    }
+  ],
+  "open_obstructions": [
+    "prove that coordinates are eigenvalues",
+    "prove that a coordinate list is a matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "Perron-root alignment",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
