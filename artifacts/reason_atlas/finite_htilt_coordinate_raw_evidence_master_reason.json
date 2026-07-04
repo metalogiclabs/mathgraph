@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_master_v1",
+  "reason": "The prior adapters converted raw residual evidence and raw strict-gap evidence into checklist envelopes separately. This artifact compresses both adapters into one external-evidence master theorem that future spectral or finite-coordinate producers can target directly.",
+  "portal": "convert raw external finite-coordinate evidence into checklist evidence and shifted dominance",
+  "certificate": "Lean proof importing HTilt.CoordinateChecklist, unfolding residual evidence, converting strict-gap inequalities with linarith, and applying the imported master theorem"
+}

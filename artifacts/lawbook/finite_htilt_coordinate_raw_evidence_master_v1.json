@@ -1,0 +1,57 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_master_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_raw_evidence_master.lean",
+  "imports": [
+    "HTilt.CoordinateChecklist"
+  ],
+  "namespace": "HTiltCoordinateRawEvidenceMaster",
+  "verified_declarations": [
+    "HTiltCoordinateRawEvidenceMaster.raw_modsq_residual_builds_residual_envelope",
+    "HTiltCoordinateRawEvidenceMaster.raw_strict_gap_builds_positive_gap_envelope",
+    "HTiltCoordinateRawEvidenceMaster.finite_coordinate_shifted_dominance_from_raw_evidence",
+    "HTiltCoordinateRawEvidenceMaster.coordinate_envelope_checklist_from_raw_evidence"
+  ],
+  "claim": {
+    "summary": "Raw external finite-coordinate evidence, consisting of raw modulus-square residual evidence and raw strict real-part gap evidence, feeds the reusable coordinate checklist core and implies shifted squared-modulus dominance over every coordinate in the finite list.",
+    "raw_residual_input": "forall p in coords, |(p.1^2 + p.2^2) - (a^2 + b^2)| <= B",
+    "raw_gap_input": "forall p in coords, p.1 <= a - \u03b4",
+    "scalar_side_conditions": [
+      "0 < \u03b4",
+      "0 <= c",
+      "B / (2 * \u03b4) < c"
+    ],
+    "built_envelopes": [
+      "ResidualEnvelope a b B coords",
+      "PositiveGapEnvelope a \u03b4 coords"
+    ],
+    "built_checklist": "CoordinateEnvelopeChecklist c a b B \u03b4 coords",
+    "dominance_result": "forall p in coords, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "raw modulus-square residual evidence builds ResidualEnvelope a b B coords",
+      "raw strict real-part gap evidence builds PositiveGapEnvelope a \u03b4 coords",
+      "raw external finite-coordinate evidence builds CoordinateEnvelopeChecklist c a b B \u03b4 coords",
+      "raw external finite-coordinate evidence feeds the imported finite coordinate dominance master theorem",
+      "finite-coordinate shifted dominance follows from raw residual evidence, raw strict-gap evidence, and scalar side conditions"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_master_v1",
+  "closed_obstructions": [
+    {
+      "name": "external_evidence_shape_to_checklist_boundary",
+      "resolution": "Raw residual and raw strict-gap evidence now build the checklist-native envelopes."
+    },
+    {
+      "name": "raw_evidence_to_dominance_composition",
+      "resolution": "Verified the direct composition from raw external finite-coordinate evidence to shifted dominance."
+    },
+    {
+      "name": "raw_evidence_to_bundled_checklist",
+      "resolution": "Verified that raw external finite-coordinate evidence builds the bundled CoordinateEnvelopeChecklist."
+    }
+  ],
+  "open_obstructions": [
+    "prove that coordinates are eigenvalues",
+    "prove that a coordinate list is a matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
