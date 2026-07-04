@@ -425,4 +425,39 @@ theorem finite_coordinate_shifted_dominance_from_raw_evidence
     (raw_strict_gap_builds_positive_gap_envelope a δ coords hgap)
     delta_pos c_nonneg c_bound
 
+
+/-- A reusable certificate bundling raw finite-coordinate dominance evidence. -/
+structure RawCoordinateDominanceCertificate where
+  c : ℝ
+  a : ℝ
+  b : ℝ
+  B : ℝ
+  δ : ℝ
+  coords : List Coord
+  rawResidual :
+    ∀ p ∈ coords,
+      |(p.1^2 + p.2^2) - (a^2 + b^2)| ≤ B
+  rawGap :
+    ∀ p ∈ coords, p.1 ≤ a - δ
+  delta_pos : 0 < δ
+  c_nonneg : 0 ≤ c
+  c_bound : B / (2 * δ) < c
+
+/-- A raw coordinate dominance certificate builds the checklist. -/
+theorem RawCoordinateDominanceCertificate.to_checklist
+    (cert : RawCoordinateDominanceCertificate) :
+    CoordinateEnvelopeChecklist cert.c cert.a cert.b cert.B cert.δ cert.coords := by
+  exact coordinate_envelope_checklist_from_raw_evidence
+    cert.c cert.a cert.b cert.B cert.δ cert.coords
+    cert.rawResidual cert.rawGap cert.delta_pos cert.c_nonneg cert.c_bound
+
+/-- A raw certificate implies shifted dominance over its finite list. -/
+theorem RawCoordinateDominanceCertificate.shifted_dominance
+    (cert : RawCoordinateDominanceCertificate) :
+    ∀ p ∈ cert.coords,
+      shiftedSqMod cert.c p.1 p.2 < shiftedSqMod cert.c cert.a cert.b := by
+  exact finite_coordinate_shifted_dominance_from_raw_evidence
+    cert.c cert.a cert.b cert.B cert.δ cert.coords
+    cert.rawResidual cert.rawGap cert.delta_pos cert.c_nonneg cert.c_bound
+
 end HTilt.CoordinateChecklist

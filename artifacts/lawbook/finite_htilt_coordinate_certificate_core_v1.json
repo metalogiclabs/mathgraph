@@ -1,0 +1,46 @@
+{
+  "artifact_id": "finite_htilt_coordinate_certificate_core_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "reusable_core_certificate_structure",
+  "core_file": "experiments/continuation_claim_audit_lab/lean_project/HTilt/CoordinateChecklist.lean",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_certificate_core_smoke.lean",
+  "imports": [
+    "HTilt.CoordinateChecklist"
+  ],
+  "namespace": "HTilt.CoordinateChecklist",
+  "verified_declarations": [
+    "HTilt.CoordinateChecklist.RawCoordinateDominanceCertificate",
+    "HTilt.CoordinateChecklist.RawCoordinateDominanceCertificate.to_checklist",
+    "HTilt.CoordinateChecklist.RawCoordinateDominanceCertificate.shifted_dominance",
+    "HTiltCoordinateCertificateCoreSmoke.singletonCert",
+    "HTiltCoordinateCertificateCoreSmoke.singleton_certificate_builds_checklist",
+    "HTiltCoordinateCertificateCoreSmoke.singleton_certificate_shifted_dominance"
+  ],
+  "claim": {
+    "summary": "The reusable core now exports a raw finite-coordinate dominance certificate object whose methods build CoordinateEnvelopeChecklist and prove shifted dominance."
+  },
+  "boundary": {
+    "proves": [
+      "core exports RawCoordinateDominanceCertificate",
+      "certificate builds CoordinateEnvelopeChecklist",
+      "certificate implies shifted squared-modulus dominance over all finite competitor coordinates",
+      "downstream fixture can instantiate and use the core certificate object"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

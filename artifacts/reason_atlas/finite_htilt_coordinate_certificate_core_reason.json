@@ -1,0 +1,5 @@
+{
+  "artifact_id": "finite_htilt_coordinate_certificate_core_v1",
+  "reason": "PR #38 introduced the certificate structure as a fixture. This artifact promotes it into the reusable core so future StrCC, SorryDB, and TheoremGraph layers can target a stable certificate object.",
+  "certificate": "Core build plus concrete downstream import smoke."
+}

@@ -1,0 +1,18 @@
+{
+  "artifact_id": "finite_htilt_coordinate_certificate_core_v1",
+  "closed_obstructions": [
+    "certificate object not available from core",
+    "downstream fixtures could not import the certificate directly from HTilt.CoordinateChecklist",
+    "raw evidence remained less reusable than a named certificate object"
+  ],
+  "open_obstructions": [
+    "matrix-spectrum bridge",
+    "eigenvalue coordinate extraction",
+    "spectral gap construction",
+    "Perron-root alignment",
+    "real strict-abscissa eigenvalue bridge",
+    "empirical and convergence claims",
+    "external proof-hole repair integration",
+    "TheoremGraph and SorryDB candidate production for certificate fields"
+  ]
+}
