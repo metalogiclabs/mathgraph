@@ -1,0 +1,39 @@
+{
+  "bounded_claim": "identifies which evidence rows are mineable and which are blocked by named obstruction categories",
+  "candidate_ids": [
+    "v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+    "v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2"
+  ],
+  "category_counts": {
+    "CERTIFICATE_NOT_ACCEPTED": 0,
+    "FILE_PATH_MISMATCH": 0,
+    "MANIFEST_CERTIFICATE_ID_MISMATCH": 0,
+    "MANIFEST_NOT_ACCEPTED": 0,
+    "MINED_CANDIDATE": 2,
+    "MISSING_CERTIFICATE": 0,
+    "MISSING_MANIFEST": 4,
+    "MULTIPLE_SORRIES_IN_SOURCE_SNIPPET": 0,
+    "NO_SORRY_IN_SOURCE_SNIPPET": 0,
+    "PATCH_SNIPPET_MISMATCH": 0,
+    "SORRY_OUTSIDE_KNOWN_SPAN": 0,
+    "SOURCE_FILE_MISSING": 0,
+    "SOURCE_SNIPPET_AMBIGUOUS": 0,
+    "SOURCE_SNIPPET_MISMATCH": 0,
+    "SOURCE_SNIPPET_NOT_FOUND": 0,
+    "UNCLASSIFIED_OBSTRUCTION": 0
+  },
+  "does_not_claim": [
+    "new proof discovery",
+    "Lean replay success",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "mined_candidate_count": 2,
+  "next_frontier": "broader evidence ingestion or a 10–20 row queue generated from profiled candidates",
+  "obstruction_count": 4,
+  "scanned_certificate_count": 10,
+  "scanned_manifest_count": 6,
+  "status": "MINER_COVERAGE_PROFILED",
+  "version": "v4.4.2"
+}

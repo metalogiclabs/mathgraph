@@ -1,0 +1,149 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "category": "MINED_CANDIDATE",
+      "certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "certificate_paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json"
+      ],
+      "classification_basis": "checked-in v4.4.0 mined queue",
+      "evidence_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "manifest_certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "manifest_paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json"
+      ]
+    },
+    {
+      "candidate_id": "v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "category": "MINED_CANDIDATE",
+      "certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "certificate_paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json"
+      ],
+      "classification_basis": "checked-in v4.4.0 mined queue",
+      "evidence_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "manifest_certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "manifest_paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json"
+      ]
+    }
+  ],
+  "duplicate_groups": [
+    {
+      "count": 3,
+      "evidence_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "kind": "manifest",
+      "paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json"
+      ]
+    },
+    {
+      "count": 3,
+      "evidence_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "kind": "manifest",
+      "paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json"
+      ]
+    },
+    {
+      "count": 3,
+      "evidence_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "kind": "certificate",
+      "paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json"
+      ]
+    },
+    {
+      "count": 3,
+      "evidence_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "kind": "certificate",
+      "paths": [
+        "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+        "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+        "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json"
+      ]
+    }
+  ],
+  "missing_input_dirs": [],
+  "obstructions": [
+    {
+      "category": "MISSING_MANIFEST",
+      "certificate_paths": [
+        "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json"
+      ],
+      "evidence_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "manifest_paths": [],
+      "terminal_form": "NAMED_OBSTRUCTION"
+    },
+    {
+      "category": "MISSING_MANIFEST",
+      "certificate_paths": [
+        "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json"
+      ],
+      "evidence_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "manifest_paths": [],
+      "terminal_form": "NAMED_OBSTRUCTION"
+    },
+    {
+      "category": "MISSING_MANIFEST",
+      "certificate_paths": [
+        "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json"
+      ],
+      "evidence_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "manifest_paths": [],
+      "terminal_form": "NAMED_OBSTRUCTION"
+    },
+    {
+      "category": "MISSING_MANIFEST",
+      "certificate_paths": [
+        "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json"
+      ],
+      "evidence_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "manifest_paths": [],
+      "terminal_form": "NAMED_OBSTRUCTION"
+    }
+  ],
+  "scanned_paths": [
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/summary.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/summary.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/runner_summaries/partial_queue_run_summary_1.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/runner_summaries/queue_run_summary.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/summary.json",
+    "artifacts/sorrydb/mined_queues/sorrydb_v4_4_0_exact_source_candidates.json",
+    "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/runner_summaries/partial_queue_run_summary_1.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/runner_summaries/queue_run_summary.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/summary.json"
+  ],
+  "version": "v4.4.2"
+}
