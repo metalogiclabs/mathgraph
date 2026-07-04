@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_coordinate_strict_gap_builder_v1",
+  "closed_obstructions": [
+    {
+      "name": "gap_input_shape_mismatch",
+      "resolution": "Verified that p.1 <= a - \u03b4 implies \u03b4 <= a - p.1 for every coordinate."
+    },
+    {
+      "name": "strict_gap_to_master_theorem_adapter",
+      "resolution": "Verified direct use of the imported master theorem from strict-gap style evidence."
+    }
+  ],
+  "open_obstructions": [
+    "prove that coordinates are eigenvalues",
+    "prove that a coordinate list is a matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "Perron-root alignment",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
