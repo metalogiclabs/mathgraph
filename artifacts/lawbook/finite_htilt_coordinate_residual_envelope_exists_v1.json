@@ -1,0 +1,24 @@
+{
+  "artifact_id": "finite_htilt_coordinate_residual_envelope_exists_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_residual_envelope_exists.lean",
+  "verified_declarations": [
+    "HTiltCoordinateResidualEnvelopeExists.residual_envelope_exists"
+  ],
+  "claim": "For every finite coordinate list and target real pair (a,b), there exists a real B satisfying ResidualEnvelope a b B coords.",
+  "boundary": {
+    "proves": [
+      "existence of some residual envelope bound over every finite list"
+    ],
+    "does_not_prove": [
+      "no tight or canonical bound B",
+      "no choice of shift c or dominance theorem",
+      "no coordinate is proved to be an eigenvalue",
+      "no coordinate list is proved to be a matrix spectrum",
+      "no Perron-root alignment",
+      "no Perron-Frobenius invocation",
+      "no convergence or empirical claim"
+    ]
+  }
+}

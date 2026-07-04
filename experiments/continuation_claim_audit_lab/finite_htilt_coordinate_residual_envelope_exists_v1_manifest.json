@@ -1,0 +1,7 @@
+{
+  "artifact_id": "finite_htilt_coordinate_residual_envelope_exists_v1",
+  "status": "VERIFIED_PROOF",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_residual_envelope_exists.lean",
+  "tests": "pending",
+  "scope": "existence of some residual envelope over a finite list"
+}

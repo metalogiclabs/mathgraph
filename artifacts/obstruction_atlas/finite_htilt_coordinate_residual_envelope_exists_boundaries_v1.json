@@ -1,0 +1,15 @@
+{
+  "artifact_id": "finite_htilt_coordinate_residual_envelope_exists_v1",
+  "closed_obstructions": [
+    "existence of some residual envelope over a finite coordinate list"
+  ],
+  "open_obstructions": [
+    "no tight or canonical bound B",
+    "no choice of shift c or dominance theorem",
+    "no coordinate is proved to be an eigenvalue",
+    "no coordinate list is proved to be a matrix spectrum",
+    "no Perron-root alignment",
+    "no Perron-Frobenius invocation",
+    "no convergence or empirical claim"
+  ]
+}

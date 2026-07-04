@@ -1,0 +1,5 @@
+{
+  "artifact_id": "finite_htilt_coordinate_residual_envelope_exists_v1",
+  "reason": "A finite list can be bounded inductively: use zero for nil and the maximum of the head residual and a tail bound for cons.",
+  "certificate": "Lean list induction and max upper bounds."
+}
