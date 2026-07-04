@@ -1,0 +1,28 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "metaexamples-fiddle-line97-eg1",
+      "certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "certificate_version": "v4.3.5",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "patch_snippet": "  · extract_goal using eg₁\n    exact Nat.le_add_right n 1",
+      "project": "siddhartha-gadgil/MetaExamples",
+      "project_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "restore_check": "line 97 restored to sorry after replay",
+      "source_snippet": "  · extract_goal using eg₁\n    sorry"
+    },
+    {
+      "candidate_id": "metaexamples-fiddle-line99-eg2",
+      "certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "certificate_version": "v4.3.5",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "patch_snippet": "  · extract_goal using eg₂\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "project": "siddhartha-gadgil/MetaExamples",
+      "project_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "restore_check": "line 99 restored to sorry after replay",
+      "source_snippet": "  · extract_goal using eg₂\n    sorry"
+    }
+  ]
+}
