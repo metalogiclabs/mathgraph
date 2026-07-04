@@ -1,0 +1,38 @@
+{
+  "blocked_count": 0,
+  "bounded_claim": "the pinned source checkout was hydrated and the expected source snippets were verified against checked-in hashes",
+  "category_counts": {
+    "SOURCE_HYDRATED_COMMIT_MISMATCH": 0,
+    "SOURCE_HYDRATED_FILE_MISSING": 0,
+    "SOURCE_HYDRATED_SNIPPET_AMBIGUOUS": 0,
+    "SOURCE_HYDRATED_SNIPPET_HASH_MISMATCH": 0,
+    "SOURCE_HYDRATED_SNIPPET_NOT_FOUND": 0,
+    "SOURCE_HYDRATED_VERIFIED": 4,
+    "SOURCE_HYDRATION_BLOCKED_REPO_IDENTITY": 0,
+    "SOURCE_HYDRATION_FAILED": 0,
+    "SOURCE_HYDRATION_UNCLASSIFIED": 0
+  },
+  "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "controlled_cache_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "does_not_claim": [
+    "Lean replay success",
+    "dependency hydration",
+    "proof checking",
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "hydrated_row_count": 4,
+  "next_frontier": "v4.4.7 rerun missing-manifest backfill planning against the controlled hydrated source cache",
+  "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples",
+  "row_ids": [
+    "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+  ],
+  "source_hydrated_verified_count": 4,
+  "status": "CONTROLLED_SOURCE_HYDRATION_LEDGERED",
+  "version": "v4.4.6"
+}

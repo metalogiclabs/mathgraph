@@ -1,0 +1,42 @@
+[
+  {
+    "file_path": "MetaExamples/Fiddle.lean",
+    "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+    "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "source_snippet_line_end": 97,
+    "source_snippet_line_start": 96,
+    "source_snippet_occurrence_count": 1,
+    "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+    "status": "SOURCE_HYDRATED_VERIFIED"
+  },
+  {
+    "file_path": "MetaExamples/Fiddle.lean",
+    "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+    "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "source_snippet_line_end": 99,
+    "source_snippet_line_start": 98,
+    "source_snippet_occurrence_count": 1,
+    "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+    "status": "SOURCE_HYDRATED_VERIFIED"
+  },
+  {
+    "file_path": "MetaExamples/Fiddle.lean",
+    "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+    "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "source_snippet_line_end": 97,
+    "source_snippet_line_start": 96,
+    "source_snippet_occurrence_count": 1,
+    "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+    "status": "SOURCE_HYDRATED_VERIFIED"
+  },
+  {
+    "file_path": "MetaExamples/Fiddle.lean",
+    "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+    "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+    "source_snippet_line_end": 99,
+    "source_snippet_line_start": 98,
+    "source_snippet_occurrence_count": 1,
+    "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+    "status": "SOURCE_HYDRATED_VERIFIED"
+  }
+]

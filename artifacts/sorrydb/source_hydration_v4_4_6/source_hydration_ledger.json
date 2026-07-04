@@ -1,0 +1,132 @@
+{
+  "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "category_counts": {
+    "SOURCE_HYDRATED_COMMIT_MISMATCH": 0,
+    "SOURCE_HYDRATED_FILE_MISSING": 0,
+    "SOURCE_HYDRATED_SNIPPET_AMBIGUOUS": 0,
+    "SOURCE_HYDRATED_SNIPPET_HASH_MISMATCH": 0,
+    "SOURCE_HYDRATED_SNIPPET_NOT_FOUND": 0,
+    "SOURCE_HYDRATED_VERIFIED": 4,
+    "SOURCE_HYDRATION_BLOCKED_REPO_IDENTITY": 0,
+    "SOURCE_HYDRATION_FAILED": 0,
+    "SOURCE_HYDRATION_UNCLASSIFIED": 0
+  },
+  "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "controlled_cache_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "hydration_command_summary": [
+    {
+      "command": [
+        "git",
+        "init"
+      ],
+      "cwd": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": "Initialized empty Git repository in /Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.git/\n"
+    },
+    {
+      "command": [
+        "git",
+        "remote",
+        "add",
+        "origin",
+        "https://github.com/siddhartha-gadgil/MetaExamples"
+      ],
+      "cwd": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": ""
+    },
+    {
+      "command": [
+        "git",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "edbb75e784db19846a1c19841e182b797afc18bb"
+      ],
+      "cwd": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "returncode": 0,
+      "stderr_tail": "From https://github.com/siddhartha-gadgil/MetaExamples\n * branch            edbb75e784db19846a1c19841e182b797afc18bb -> FETCH_HEAD\n",
+      "stdout_tail": ""
+    },
+    {
+      "command": [
+        "git",
+        "checkout",
+        "--detach",
+        "edbb75e784db19846a1c19841e182b797afc18bb"
+      ],
+      "cwd": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "returncode": 0,
+      "stderr_tail": "HEAD is now at edbb75e boolean case, defeq weaker here\n",
+      "stdout_tail": ""
+    },
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "returncode": 0,
+      "stderr_tail": "",
+      "stdout_tail": "edbb75e784db19846a1c19841e182b797afc18bb\n"
+    }
+  ],
+  "notes": [
+    "only the exact allowlisted repo URL and commit were fetched",
+    "no Lean, Lake, build, dependency hydration, replay, or proof checking was run",
+    "the full source checkout remains ignored and is not committed"
+  ],
+  "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples",
+  "rows": [
+    {
+      "absolute_cached_file_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "reason": "pinned file and exact source/patch snippet hashes verified",
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "status": "SOURCE_HYDRATED_VERIFIED"
+    },
+    {
+      "absolute_cached_file_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "reason": "pinned file and exact source/patch snippet hashes verified",
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "status": "SOURCE_HYDRATED_VERIFIED"
+    },
+    {
+      "absolute_cached_file_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "reason": "pinned file and exact source/patch snippet hashes verified",
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "status": "SOURCE_HYDRATED_VERIFIED"
+    },
+    {
+      "absolute_cached_file_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "reason": "pinned file and exact source/patch snippet hashes verified",
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "status": "SOURCE_HYDRATED_VERIFIED"
+    }
+  ],
+  "scanned_paths": [
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/source_registration_v4_4_5/fixture_plan.json",
+    "artifacts/sorrydb/source_registration_v4_4_5/registration_plan.json",
+    "artifacts/sorrydb/source_registration_v4_4_5/summary.json"
+  ],
+  "version": "v4.4.6"
+}
