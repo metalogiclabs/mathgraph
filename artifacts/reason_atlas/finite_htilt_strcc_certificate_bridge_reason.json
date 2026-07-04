@@ -1,0 +1,5 @@
+{
+  "artifact_id": "finite_htilt_strcc_certificate_bridge_v1",
+  "reason": "PR #39 promoted RawCoordinateDominanceCertificate into core. This artifact gives StrCC and MathGraph bridge vocabulary so future candidate generators can produce the certificate or its fields. It is the smallest verified continuation-certificate atom.",
+  "certificate": "Downstream aliases, survivor/checklist extraction theorems, and a concrete singleton bridge smoke."
+}

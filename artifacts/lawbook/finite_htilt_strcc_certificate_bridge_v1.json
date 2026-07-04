@@ -1,0 +1,57 @@
+{
+  "artifact_id": "finite_htilt_strcc_certificate_bridge_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "strcc_bridge_interpretation_for_finite_coordinate_certificate",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_strcc_certificate_bridge.lean",
+  "imports": [
+    "HTilt.CoordinateChecklist"
+  ],
+  "namespace": "HTiltStrCCCertificateBridge",
+  "verified_declarations": [
+    "HTiltStrCCCertificateBridge.FiniteCoordinateContinuationCertificate",
+    "HTiltStrCCCertificateBridge.CertifiedFiniteSurvivor",
+    "HTiltStrCCCertificateBridge.finite_coordinate_certificate_yields_survivor",
+    "HTiltStrCCCertificateBridge.finite_coordinate_certificate_yields_checklist",
+    "HTiltStrCCCertificateBridge.singletonBridgeCert",
+    "HTiltStrCCCertificateBridge.singleton_bridge_yields_survivor",
+    "HTiltStrCCCertificateBridge.singleton_bridge_yields_checklist"
+  ],
+  "claim": {
+    "summary": "A RawCoordinateDominanceCertificate can be consumed as a StrCC-style finite-coordinate continuation certificate. It certifies that a target coordinate shifted-dominates every coordinate in a finite competitor list under explicit raw residual, raw strict-gap, and scalar side-condition evidence."
+  },
+  "bridge_interpretation": [
+    "finite candidate continuation set = cert.coords",
+    "target continuation coordinate = (cert.a, cert.b)",
+    "residual pressure bound = cert.B",
+    "strict gap witness = cert.\u03b4 and cert.rawGap",
+    "shift / continuation pressure = cert.c",
+    "verified survivor property = CertifiedFiniteSurvivor cert"
+  ],
+  "boundary": {
+    "proves": [
+      "RawCoordinateDominanceCertificate can be consumed as a finite-coordinate continuation certificate",
+      "every such certificate yields CertifiedFiniteSurvivor",
+      "every such certificate yields CoordinateEnvelopeChecklist",
+      "downstream bridge fixture can instantiate and use the core certificate object"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims",
+      "general StrCC completeness",
+      "proof-hole repair",
+      "TheoremGraph retrieval correctness"
+    ]
+  }
+}

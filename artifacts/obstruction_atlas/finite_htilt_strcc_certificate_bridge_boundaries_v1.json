@@ -1,0 +1,20 @@
+{
+  "artifact_id": "finite_htilt_strcc_certificate_bridge_v1",
+  "closed_obstructions": [
+    "no named StrCC bridge for RawCoordinateDominanceCertificate",
+    "no downstream alias for finite-coordinate continuation certificate",
+    "no named certified survivor property",
+    "no bridge fixture proving downstream consumption of core certificate"
+  ],
+  "open_obstructions": [
+    "matrix-spectrum bridge",
+    "eigenvalue coordinate extraction",
+    "spectral gap construction",
+    "Perron-root alignment",
+    "real strict-abscissa eigenvalue bridge",
+    "empirical and convergence claims",
+    "external proof-hole repair integration",
+    "TheoremGraph and SorryDB candidate production for certificate fields",
+    "general StrCC completeness"
+  ]
+}
