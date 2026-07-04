@@ -1,22 +1,4 @@
 {
-  "artifact_id": "sorrydb_v4_2_declaration_retrieval_patcher",
-  "status": "VERIFIED_HARNESS",
-  "claim_type": "external_lean_proof_hole_repair_harness",
-  "script": "experiments/sorrydb/sorrydb_v4_2_declaration_retrieval_patcher.py",
-  "verifies": [
-    "declaration retrieval over local target context",
-    "theorem-aware patch generation",
-    "exact-line replay discipline",
-    "Lawbook admission rules for accepted patches"
-  ],
-  "does_not_claim": [
-    "general proof repair",
-    "LeanLangur success without accepted exact-line replay",
-    "TheoremGraph retrieval correctness",
-    "semantic completeness",
-    "no false negatives",
-    "no false positives outside exact-line replay"
-  ],
   "admission_contract": [
     "baseline file compiles with the original sorry",
     "patched file compiles without that exact sorry",
@@ -26,5 +8,42 @@
     "patch is small and attributable",
     "repository, file, line, and proof replacement are recorded"
   ],
-  "default_verdict": "VERIFIED_HARNESS"
+  "artifact_id": "sorrydb_v4_2_declaration_retrieval_patcher",
+  "claim_type": "external_lean_proof_hole_repair_harness",
+  "default_verdict": "VERIFIED_HARNESS",
+  "does_not_claim": [
+    "LeanLangur success without accepted exact-line replay",
+    "TheoremGraph retrieval correctness",
+    "external Lean replay completion",
+    "general proof repair",
+    "no false negatives",
+    "no false positives outside exact-line replay",
+    "proof repair improvement",
+    "semantic completeness"
+  ],
+  "script": "experiments/sorrydb/sorrydb_v4_2_declaration_retrieval_patcher.py",
+  "status": "VERIFIED_HARNESS",
+  "verifies": [
+    "declaration retrieval over local target context",
+    "theorem-aware patch generation",
+    "exact-line replay discipline",
+    "Lawbook admission rules for accepted patches"
+  ],
+  "versions": [
+    {
+      "claim": "cache-safe replay preflight and native SorryDB schema adapter",
+      "does_not_claim": [
+        "LeanLangur success without accepted exact-line replay",
+        "proof repair improvement",
+        "external Lean replay completion"
+      ],
+      "new_obstructions": [
+        "OBSTRUCTED_DISK_PRESSURE",
+        "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+        "OBSTRUCTED_BASELINE_TIMEOUT",
+        "INTERRUPTED_PARTIAL_RUN"
+      ],
+      "version": "v4.2.1"
+    }
+  ]
 }

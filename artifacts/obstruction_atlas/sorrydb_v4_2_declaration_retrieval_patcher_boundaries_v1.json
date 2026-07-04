@@ -1,11 +1,11 @@
 {
-  "artifact_id": "sorrydb_v4_2_declaration_retrieval_patcher",
   "addressed": [
     "generic tactic-only patching",
     "lack of declaration candidate extraction",
     "no theorem-aware patch templates",
     "insufficient replay-failure classification"
   ],
+  "artifact_id": "sorrydb_v4_2_declaration_retrieval_patcher",
   "open": [
     "no guarantee a LeanLangur accepted patch exists in the selected slice",
     "external repositories may be missing",
@@ -15,5 +15,10 @@
     "LLM premise selection is not implemented",
     "exact proof-state parsing remains shallow",
     "cross-repository generalization is unproven"
-  ]
+  ],
+  "v4_2_1_cache_safe_replay_preflight": {
+    "claim": "Replay must be bounded by disk, cache, process-timeout, and historical-toolchain safety before proof repair attempts are meaningful.",
+    "does_not_claim": "Accepted LeanLangur patch or proof repair improvement.",
+    "obstruction": "DISK_PRESSURE_AND_DEPENDENCY_HYDRATION_BOUNDARY"
+  }
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SorryDB v4.2 declaration-retrieval and exact-line replay harness."""
+"""SorryDB v4.2.1 cache-safe declaration-retrieval replay harness."""
 
 from __future__ import annotations
 
@@ -9,19 +9,27 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import shutil
 import subprocess
 import tempfile
 import time
 from typing import Any, Iterable
 
-BANNER = "MATHGRAPH x SORRYDB v4.2 — DECLARATION-RETRIEVAL PATCHER"
+BANNER = "MATHGRAPH x SORRYDB v4.2.1 — CACHE-SAFE DECLARATION-RETRIEVAL PATCHER"
 ACCEPTED_EXACT_LINE = "ACCEPTED_EXACT_LINE"
 ACCEPTED_BUT_ALIGNMENT_AMBIGUOUS = "ACCEPTED_BUT_ALIGNMENT_AMBIGUOUS"
 OBSTRUCTED_NO_INPUT_RECORDS = "OBSTRUCTED_NO_INPUT_RECORDS"
 OBSTRUCTED_NO_REPLAYABLE_TARGETS = "OBSTRUCTED_NO_REPLAYABLE_TARGETS"
+OBSTRUCTED_DISK_PRESSURE = "OBSTRUCTED_DISK_PRESSURE"
+OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY = "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY"
+OBSTRUCTED_BASELINE_TIMEOUT = "OBSTRUCTED_BASELINE_TIMEOUT"
+OBSTRUCTED_BASELINE_COMPILE_FAILURE = "OBSTRUCTED_BASELINE_COMPILE_FAILURE"
+OBSTRUCTED_UNSAFE_REPLAY_COMMAND = "OBSTRUCTED_UNSAFE_REPLAY_COMMAND"
+INTERRUPTED_PARTIAL_RUN = "INTERRUPTED_PARTIAL_RUN"
 LAWBOOK_ACCEPTED_PATCH_EXISTS = "LAWBOOK_ACCEPTED_PATCH_EXISTS"
 OBSTRUCTED_NO_EXACT_LINE_PATCH = "OBSTRUCTED_NO_EXACT_LINE_PATCH"
+GIB = 1024**3
 FORBIDDEN_RE = re.compile(r"\b(sorry|admit|axiom|unsafe)\b")
 DECL_RE = re.compile(
     r"^\s*(theorem|lemma|def|abbrev|example|structure|inductive)\s+"
@@ -36,6 +44,8 @@ class SorryTarget:
     repo: str
     file_path: str
     line: int
+    commit: str = ""
+    lean_version: str = ""
     statement: str = ""
     context: str = ""
     source_path: str = ""
@@ -69,6 +79,24 @@ class PatchAttempt:
     aligned_line: int | None = None
     stdout: str = ""
     stderr: str = ""
+    timeout_reason: str = ""
+
+
+@dataclass
+class ProcessResult:
+    return_code: int | None
+    stdout: str
+    stderr: str
+    elapsed_seconds: float
+    timed_out: bool = False
+    timeout_reason: str = ""
+
+
+@dataclass
+class BaselineResult:
+    classification: str
+    process: ProcessResult
+    command: list[str] = field(default_factory=list)
 
 
 # dataclass RunSummary
@@ -84,6 +112,13 @@ class RunSummary:
     rejected_counts_by_reason: dict[str, int] = field(default_factory=dict)
     obstructions_by_reason: dict[str, int] = field(default_factory=dict)
     best_examples: list[dict[str, Any]] = field(default_factory=list)
+    free_gb: dict[str, float] = field(default_factory=dict)
+    required_gb: float = 15.0
+    checked_paths: list[str] = field(default_factory=list)
+    completed_targets: int = 0
+    completed_attempts: int = 0
+    repo_copy_strategy: str = "one_copy_per_replayable_target_after_preflight_and_baseline"
+    cache_get_allowed: bool = False
     verdict: str = OBSTRUCTED_NO_INPUT_RECORDS
 
 
@@ -101,16 +136,34 @@ def first_value(record: dict[str, Any], keys: Iterable[str], default: Any = "") 
 
 
 def defensive_target(record: dict[str, Any]) -> SorryTarget:
-    line_raw = first_value(record, ["line", "line_number", "target_line", "location.line"], 0)
+    line_raw = first_value(
+        record,
+        ["line", "line_number", "target_line", "location.start_line", "location.line"],
+        0,
+    )
     try:
         line = int(line_raw)
     except (TypeError, ValueError):
         line = 0
     return SorryTarget(
-        repo=str(first_value(record, ["repo", "repository", "repo_name", "project"], "")),
-        file_path=str(first_value(record, ["file", "file_path", "path", "location.file"], "")),
+        repo=str(
+            first_value(
+                record,
+                ["repo.remote", "repository.remote", "repo_url", "repository", "repo_name", "project", "repo"],
+                "",
+            )
+        ),
+        file_path=str(first_value(record, ["file", "file_path", "path", "location.path", "location.file"], "")),
         line=line,
-        statement=str(first_value(record, ["statement", "theorem", "declaration", "goal", "target"], "")),
+        commit=str(first_value(record, ["repo.commit", "repository.commit", "commit", "revision"], "")),
+        lean_version=str(first_value(record, ["repo.lean_version", "repository.lean_version", "lean_version"], "")),
+        statement=str(
+            first_value(
+                record,
+                ["statement", "theorem", "declaration", "goal", "debug_info.goal", "target"],
+                "",
+            )
+        ),
         context=str(first_value(record, ["context", "local_context", "prefix", "source_context"], "")),
         source_path=str(first_value(record, ["source_path", "absolute_path", "local_file"], "")),
         local_repo_path=str(first_value(record, ["local_repo_path", "repo_path", "checkout", "root"], "")),
@@ -130,7 +183,7 @@ def load_records(path: Path) -> list[dict[str, Any]]:
         if isinstance(value, list):
             return [x for x in value if isinstance(x, dict)]
         if isinstance(value, dict):
-            for key in ("records", "items", "targets"):
+            for key in ("sorries", "records", "items", "targets"):
                 if isinstance(value.get(key), list):
                     return [x for x in value[key] if isinstance(x, dict)]
             return [value]
@@ -145,6 +198,56 @@ def load_records(path: Path) -> list[dict[str, Any]]:
                 records.append(value)
         return records
     return []
+
+
+def repo_focus_matches(repo: str, focus_value: str) -> bool:
+    repo_folded = repo.strip().rstrip("/").removesuffix(".git").casefold()
+    focus_folded = focus_value.strip().rstrip("/").removesuffix(".git").casefold()
+    if not focus_folded:
+        return True
+    repo_name = repo_folded.rsplit("/", 1)[-1]
+    focus_name = focus_folded.rsplit("/", 1)[-1]
+    return (
+        focus_folded in repo_folded
+        or repo_folded in focus_folded
+        or focus_name == repo_name
+    )
+
+
+def target_matches_focus(target: SorryTarget, focus: list[str]) -> bool:
+    return not focus or any(repo_focus_matches(target.repo, value) for value in focus)
+
+
+def focus_rank(target: SorryTarget, focus: list[str]) -> int:
+    for index, value in enumerate(focus):
+        if repo_focus_matches(target.repo, value):
+            return index
+    return len(focus)
+
+
+def nearest_existing_path(path: Path) -> Path:
+    candidate = path.expanduser()
+    while not candidate.exists() and candidate != candidate.parent:
+        candidate = candidate.parent
+    return candidate
+
+
+def disk_preflight(paths: Iterable[Path], required_gb: float) -> tuple[bool, dict[str, float], list[str]]:
+    free_gb: dict[str, float] = {}
+    checked_paths: list[str] = []
+    safe = True
+    for raw_path in paths:
+        display = str(raw_path.expanduser())
+        checked_paths.append(display)
+        check_path = nearest_existing_path(raw_path)
+        try:
+            free = shutil.disk_usage(check_path).free / GIB
+        except OSError:
+            free = 0.0
+        free_gb[display] = round(free, 3)
+        if free < required_gb:
+            safe = False
+    return safe, free_gb, checked_paths
 
 
 def symbolic_tokens(text: str) -> set[str]:
@@ -283,15 +386,77 @@ def choose_command(target: SorryTarget, repo_root: Path, file_path: Path) -> lis
     return None
 
 
-def run_command(command: list[str], cwd: Path, timeout: int) -> tuple[int | None, str, str, float, bool]:
+def command_safety_obstruction(command: list[str], allow_cache_get: bool) -> str | None:
+    rendered = " ".join(command).casefold()
+    if re.search(r"\blake\s+update\b", rendered):
+        return OBSTRUCTED_UNSAFE_REPLAY_COMMAND
+    if re.search(r"\blake\s+exe\s+cache\s+get\b", rendered) and not allow_cache_get:
+        return OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY
+    return None
+
+
+def _text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def kill_process_group(process: subprocess.Popen[str]) -> None:
+    if process.poll() is not None:
+        return
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        process.kill()
+
+
+def run_command(command: list[str], cwd: Path, timeout: int) -> ProcessResult:
     started = time.monotonic()
     try:
-        result = subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=timeout, check=False)
-        return result.returncode, result.stdout, result.stderr, time.monotonic() - started, False
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+            return ProcessResult(
+                process.returncode,
+                _text(stdout),
+                _text(stderr),
+                time.monotonic() - started,
+            )
+        except subprocess.TimeoutExpired as exc:
+            kill_process_group(process)
+            stdout, stderr = process.communicate()
+            return ProcessResult(
+                None,
+                _text(exc.stdout) + _text(stdout),
+                _text(exc.stderr) + _text(stderr),
+                time.monotonic() - started,
+                True,
+                f"process group exceeded {timeout}s and was killed",
+            )
+        except KeyboardInterrupt:
+            kill_process_group(process)
+            process.communicate()
+            raise
     except subprocess.TimeoutExpired as exc:
-        return None, exc.stdout or "", exc.stderr or "", time.monotonic() - started, True
+        return ProcessResult(
+            None,
+            _text(exc.stdout),
+            _text(exc.stderr),
+            time.monotonic() - started,
+            True,
+            f"process group exceeded {timeout}s and was killed",
+        )
     except OSError as exc:
-        return None, "", str(exc), time.monotonic() - started, False
+        return ProcessResult(None, "", str(exc), time.monotonic() - started)
 
 
 def classify_result(return_code: int | None, stdout: str, stderr: str, timed_out: bool = False) -> str:
@@ -311,40 +476,81 @@ def classify_result(return_code: int | None, stdout: str, stderr: str, timed_out
     return "REJECTED_OTHER"
 
 
-def replay_patch(target: SorryTarget, patch: str, candidate_name: str, timeout: int) -> PatchAttempt:
-    source, repo_root = resolve_paths(target)
-    if source is None or not source.exists():
-        return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, "OBSTRUCTED_MISSING_FILE", None, 0.0)
-    if repo_root is None or not repo_root.exists():
-        return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, "OBSTRUCTED_NO_BUILD_COMMAND", None, 0.0)
-    original = source.read_text(encoding="utf-8")
+def check_baseline(
+    target: SorryTarget,
+    source: Path,
+    repo_root: Path,
+    timeout: int,
+    allow_cache_get: bool,
+) -> BaselineResult:
+    command = choose_command(target, repo_root, source)
+    if command is None:
+        return BaselineResult(
+            "OBSTRUCTED_NO_BUILD_COMMAND",
+            ProcessResult(None, "", "No safe baseline build command was resolved.", 0.0),
+        )
+    safety = command_safety_obstruction(command, allow_cache_get)
+    if safety:
+        return BaselineResult(
+            safety,
+            ProcessResult(None, "", "Replay command rejected by v4.2.1 safety policy.", 0.0),
+            command,
+        )
+    process = run_command(command, repo_root, timeout)
+    if process.timed_out:
+        classification = OBSTRUCTED_BASELINE_TIMEOUT
+    elif process.return_code != 0 and not allow_cache_get:
+        classification = OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY
+    elif process.return_code != 0:
+        classification = OBSTRUCTED_BASELINE_COMPILE_FAILURE
+    else:
+        classification = "BASELINE_PASSED"
+    return BaselineResult(classification, process, command)
+
+
+def replay_patch_in_workspace(
+    target: SorryTarget,
+    original: str,
+    copied_root: Path,
+    copied_file: Path,
+    command: list[str],
+    patch: str,
+    candidate_name: str,
+    timeout: int,
+) -> PatchAttempt:
     patched, aligned_line, aligned = replace_sorry_at_line(original, target.line, patch)
     if patched is None:
         return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, "ACCEPTED_BUT_ALIGNMENT_AMBIGUOUS", None, 0.0)
     before_count = len(FORBIDDEN_RE.findall(original))
     after_count = len(FORBIDDEN_RE.findall(patched))
-    with tempfile.TemporaryDirectory(prefix="sorrydb_v42_") as tmp:
-        copied_root = Path(tmp) / "repo"
-        shutil.copytree(repo_root, copied_root, ignore=shutil.ignore_patterns(".git", ".lake", "build"))
-        try:
-            relative = source.relative_to(repo_root)
-        except ValueError:
-            return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, "OBSTRUCTED_MISSING_FILE", None, 0.0)
-        copied_file = copied_root / relative
-        command = choose_command(target, copied_root, copied_file)
-        if command is None:
-            return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, "OBSTRUCTED_NO_BUILD_COMMAND", None, 0.0, aligned_line)
-        baseline_rc, baseline_out, baseline_err, baseline_elapsed, baseline_timeout = run_command(command, copied_root, timeout)
-        if baseline_timeout or baseline_rc != 0:
-            classification = "REJECTED_TIMEOUT" if baseline_timeout else "REJECTED_IMPORT_OR_BUILD_BOUNDARY"
-            return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, classification, baseline_rc, baseline_elapsed, aligned_line, baseline_out[-4000:], baseline_err[-4000:])
+    try:
         copied_file.write_text(patched, encoding="utf-8")
-        rc, out, err, elapsed, timed_out = run_command(command, copied_root, timeout)
-    classification = classify_result(rc, out, err, timed_out)
+        result = run_command(command, copied_root, timeout)
+    finally:
+        copied_file.write_text(original, encoding="utf-8")
+    classification = classify_result(
+        result.return_code,
+        result.stdout,
+        result.stderr,
+        result.timed_out,
+    )
     if classification == ACCEPTED_EXACT_LINE:
         if not aligned or after_count != before_count - 1:
             classification = ACCEPTED_BUT_ALIGNMENT_AMBIGUOUS
-    return PatchAttempt(target.repo, target.file_path, target.line, patch, candidate_name, classification, rc, elapsed, aligned_line, out[-4000:], err[-4000:])
+    return PatchAttempt(
+        target.repo,
+        target.file_path,
+        target.line,
+        patch,
+        candidate_name,
+        classification,
+        result.return_code,
+        result.elapsed_seconds,
+        aligned_line,
+        result.stdout[-4000:],
+        result.stderr[-4000:],
+        result.timeout_reason,
+    )
 
 
 def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
@@ -365,23 +571,79 @@ def write_reports(output: Path, summary: RunSummary, attempts: list[PatchAttempt
     (output / "obstruction_summary.json").write_text(json.dumps(obstructions, indent=2) + "\n")
     write_jsonl(output / "lawbook_candidates.jsonl", accepted)
     (output / "README.md").write_text(
-        "# SorryDB v4.2 run\n\n"
+        "# SorryDB v4.2.1 cache-safe replay run\n\n"
         f"Verdict: `{summary.verdict}`\n\n"
-        "Only `ACCEPTED_EXACT_LINE` attempts are Lawbook candidates.\n"
+        "Only `ACCEPTED_EXACT_LINE` attempts are Lawbook candidates. Historical replay "
+        "must preserve the recorded commit, manifest, and Lean toolchain. `lake update` "
+        "is forbidden because it changes the replay environment.\n"
     )
+
+
+def finalize_interrupted_run(
+    output: Path,
+    summary: RunSummary,
+    attempts: list[PatchAttempt],
+) -> None:
+    summary.verdict = INTERRUPTED_PARTIAL_RUN
+    summary.completed_attempts = summary.patch_attempts
+    increment(summary.obstructions_by_reason, INTERRUPTED_PARTIAL_RUN)
+    write_reports(output, summary, attempts)
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().casefold() in {"1", "true", "yes", "on"}
 
 
 def main() -> int:
     print(BANNER)
-    work_root = Path(os.getenv("SORRYDB_V42_WORK_ROOT", "/tmp/mathgraph_sorrydb_v4_2"))
-    records_path = Path(os.getenv("SORRYDB_V42_RECORDS_PATH", str(work_root / "sorrydb_records.jsonl")))
-    max_records = int(os.getenv("SORRYDB_V42_MAX_RECORDS", "40"))
-    focus = [x.strip() for x in os.getenv("SORRYDB_V42_FOCUS_REPOS", "LeanLangur,LeanLion,MetaExamples").split(",") if x.strip()]
-    timeout = int(os.getenv("SORRYDB_V42_TIMEOUT_SECONDS", "90"))
+    work_root = Path(
+        os.getenv(
+            "SORRYDB_V421_WORK_ROOT",
+            os.getenv("SORRYDB_V42_WORK_ROOT", "/tmp/mathgraph_sorrydb_v4_2_1"),
+        )
+    )
+    records_path = Path(
+        os.getenv(
+            "SORRYDB_V421_RECORDS_PATH",
+            os.getenv("SORRYDB_V42_RECORDS_PATH", str(work_root / "sorrydb_records.jsonl")),
+        )
+    )
+    max_records = int(
+        os.getenv("SORRYDB_V421_MAX_RECORDS", os.getenv("SORRYDB_V42_MAX_RECORDS", "40"))
+    )
+    focus = [
+        x.strip()
+        for x in os.getenv(
+            "SORRYDB_V421_FOCUS_REPOS",
+            os.getenv("SORRYDB_V42_FOCUS_REPOS", "LeanLangur,LeanLion,MetaExamples"),
+        ).split(",")
+        if x.strip()
+    ]
+    timeout = int(
+        os.getenv(
+            "SORRYDB_V421_TIMEOUT_SECONDS",
+            os.getenv("SORRYDB_V42_TIMEOUT_SECONDS", "90"),
+        )
+    )
+    required_gb = float(os.getenv("SORRYDB_V421_MIN_FREE_GB", "15"))
+    allow_cache_get = env_flag("SORRYDB_V421_ALLOW_CACHE_GET")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    output = work_root / "artifacts" / "runs" / "sorrydb_v4_2_declaration_retrieval_patcher" / timestamp
+    output = (
+        work_root
+        / "artifacts"
+        / "runs"
+        / "sorrydb_v4_2_1_cache_safe_replay_preflight"
+        / timestamp
+    )
     records = load_records(records_path)
-    summary = RunSummary(total_records_loaded=len(records))
+    summary = RunSummary(
+        total_records_loaded=len(records),
+        required_gb=required_gb,
+        cache_get_allowed=allow_cache_get,
+    )
     attempts: list[PatchAttempt] = []
     if not records:
         summary.verdict = OBSTRUCTED_NO_INPUT_RECORDS
@@ -389,37 +651,130 @@ def main() -> int:
         write_reports(output, summary, attempts)
         print(json.dumps(asdict(summary), indent=2))
         return 0
+
+    cache_path = Path(os.getenv("XDG_CACHE_HOME", str(Path.home() / ".cache")))
+    safe_disk, free_gb, checked_paths = disk_preflight(
+        [work_root, Path.home(), cache_path],
+        required_gb,
+    )
+    summary.free_gb = free_gb
+    summary.checked_paths = checked_paths
+    if not safe_disk:
+        summary.verdict = OBSTRUCTED_DISK_PRESSURE
+        increment(summary.obstructions_by_reason, OBSTRUCTED_DISK_PRESSURE)
+        write_reports(output, summary, attempts)
+        print(json.dumps(asdict(summary), indent=2))
+        return 0
+
     targets = [defensive_target(record) for record in records]
-    order = {repo: index for index, repo in enumerate(focus)}
-    targets.sort(key=lambda target: (order.get(target.repo, len(order)), target.repo, target.file_path, target.line))
-    targets = [target for target in targets if not focus or target.repo in focus][:max_records]
+    targets.sort(
+        key=lambda target: (
+            focus_rank(target, focus),
+            target.repo,
+            target.file_path,
+            target.line,
+        )
+    )
+    targets = [target for target in targets if target_matches_focus(target, focus)][:max_records]
     summary.targets_selected = len(targets)
-    for target in targets:
-        increment(summary.focus_repo_counts, target.repo or "UNKNOWN")
-        source, _ = resolve_paths(target)
-        if source is None:
-            increment(summary.obstructions_by_reason, "OBSTRUCTED_MISSING_FILE")
-            continue
-        text = source.read_text(encoding="utf-8")
-        candidates = retrieve_declarations(target, text)
-        summary.declaration_candidates_extracted += len(candidates)
-        for candidate in candidates:
-            for patch in generate_patch_templates(candidate, text):
-                attempt = replay_patch(target, patch, candidate.name, timeout)
-                attempts.append(attempt)
-                summary.patch_attempts += 1
-                if attempt.classification == ACCEPTED_EXACT_LINE:
-                    summary.accepted_exact_line_patches += 1
-                    summary.best_examples.append(asdict(attempt))
-                    break
-                if attempt.classification == ACCEPTED_BUT_ALIGNMENT_AMBIGUOUS:
-                    summary.accepted_ambiguous_patches += 1
-                elif attempt.classification.startswith("OBSTRUCTED_"):
-                    increment(summary.obstructions_by_reason, attempt.classification)
-                else:
-                    increment(summary.rejected_counts_by_reason, attempt.classification)
-            if summary.accepted_exact_line_patches:
-                break
+    baseline_cache: dict[tuple[str, str, str], BaselineResult] = {}
+    try:
+        for target in targets:
+            increment(summary.focus_repo_counts, target.repo or "UNKNOWN")
+            source, repo_root = resolve_paths(target)
+            if source is None or not source.exists():
+                increment(summary.obstructions_by_reason, "OBSTRUCTED_MISSING_FILE")
+                summary.completed_targets += 1
+                continue
+            if repo_root is None or not repo_root.exists():
+                increment(summary.obstructions_by_reason, "OBSTRUCTED_NO_BUILD_COMMAND")
+                summary.completed_targets += 1
+                continue
+
+            cache_key = (
+                str(repo_root.resolve()),
+                str(source.resolve()),
+                target.build_command,
+            )
+            baseline = baseline_cache.get(cache_key)
+            if baseline is None:
+                baseline = check_baseline(
+                    target,
+                    source,
+                    repo_root,
+                    timeout,
+                    allow_cache_get,
+                )
+                baseline_cache[cache_key] = baseline
+            if baseline.classification != "BASELINE_PASSED":
+                increment(summary.obstructions_by_reason, baseline.classification)
+                summary.completed_targets += 1
+                continue
+
+            text = source.read_text(encoding="utf-8")
+            candidates = retrieve_declarations(target, text)
+            summary.declaration_candidates_extracted += len(candidates)
+            try:
+                relative = source.relative_to(repo_root)
+            except ValueError:
+                increment(summary.obstructions_by_reason, "OBSTRUCTED_MISSING_FILE")
+                summary.completed_targets += 1
+                continue
+
+            accepted_for_target = False
+            with tempfile.TemporaryDirectory(prefix="sorrydb_v421_") as tmp:
+                copied_root = Path(tmp) / "repo"
+                shutil.copytree(
+                    repo_root,
+                    copied_root,
+                    ignore=shutil.ignore_patterns(".git", ".lake", "build"),
+                )
+                copied_file = copied_root / relative
+                copied_command = choose_command(target, copied_root, copied_file)
+                if copied_command is None:
+                    increment(summary.obstructions_by_reason, "OBSTRUCTED_NO_BUILD_COMMAND")
+                    summary.completed_targets += 1
+                    continue
+                safety = command_safety_obstruction(copied_command, allow_cache_get)
+                if safety:
+                    increment(summary.obstructions_by_reason, safety)
+                    summary.completed_targets += 1
+                    continue
+
+                for candidate in candidates:
+                    for patch in generate_patch_templates(candidate, text):
+                        attempt = replay_patch_in_workspace(
+                            target,
+                            text,
+                            copied_root,
+                            copied_file,
+                            copied_command,
+                            patch,
+                            candidate.name,
+                            timeout,
+                        )
+                        attempts.append(attempt)
+                        summary.patch_attempts += 1
+                        summary.completed_attempts = summary.patch_attempts
+                        if attempt.classification == ACCEPTED_EXACT_LINE:
+                            summary.accepted_exact_line_patches += 1
+                            summary.best_examples.append(asdict(attempt))
+                            accepted_for_target = True
+                            break
+                        if attempt.classification == ACCEPTED_BUT_ALIGNMENT_AMBIGUOUS:
+                            summary.accepted_ambiguous_patches += 1
+                        elif attempt.classification.startswith("OBSTRUCTED_"):
+                            increment(summary.obstructions_by_reason, attempt.classification)
+                        else:
+                            increment(summary.rejected_counts_by_reason, attempt.classification)
+                    if accepted_for_target:
+                        break
+            summary.completed_targets += 1
+    except KeyboardInterrupt:
+        finalize_interrupted_run(output, summary, attempts)
+        print(json.dumps(asdict(summary), indent=2))
+        return 130
+
     if summary.accepted_exact_line_patches:
         summary.verdict = LAWBOOK_ACCEPTED_PATCH_EXISTS
     elif summary.patch_attempts:
