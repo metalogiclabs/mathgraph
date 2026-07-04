@@ -1,0 +1,43 @@
+{
+  "artifact_id": "finite_htilt_coordinate_modsq_residual_builder_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_modsq_residual_builder.lean",
+  "imports": [
+    "HTilt.CoordinateChecklist"
+  ],
+  "namespace": "HTiltCoordinateModSqResidualBuilder",
+  "verified_declarations": [
+    "HTiltCoordinateModSqResidualBuilder.modsq_residual_bound_builds_residual_envelope",
+    "HTiltCoordinateModSqResidualBuilder.finite_coordinate_shifted_dominance_from_modsq_residual"
+  ],
+  "claim": {
+    "summary": "A raw pointwise modulus-square residual bound over a finite coordinate list builds the ResidualEnvelope required by the coordinate checklist core, and therefore feeds the imported master theorem.",
+    "input_residual_shape": "forall p in coords, |(p.1^2 + p.2^2) - (a^2 + b^2)| <= B",
+    "built_envelope": "ResidualEnvelope a b B coords",
+    "dominance_result": "forall p in coords, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "raw pointwise modulus-square residual evidence builds ResidualEnvelope a b B coords",
+      "raw residual evidence can feed the imported finite coordinate dominance master theorem",
+      "finite-coordinate shifted dominance follows from raw residual evidence, positive-gap evidence, and scalar side conditions"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

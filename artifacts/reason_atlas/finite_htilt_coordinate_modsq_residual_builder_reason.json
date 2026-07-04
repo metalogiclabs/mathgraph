@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_modsq_residual_builder_v1",
+  "reason": "The core checklist consumes ResidualEnvelope, but external coordinate or future spectral data will naturally provide raw modulus-square residual inequalities. This artifact verifies the adapter from raw residual evidence into the checklist envelope.",
+  "portal": "convert raw modulus-square residual evidence into ResidualEnvelope evidence",
+  "certificate": "Lean proof importing HTilt.CoordinateChecklist and unfolding residual"
+}

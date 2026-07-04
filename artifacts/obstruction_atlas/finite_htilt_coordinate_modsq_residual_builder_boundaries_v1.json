@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_coordinate_modsq_residual_builder_v1",
+  "closed_obstructions": [
+    {
+      "name": "residual_input_shape_mismatch",
+      "resolution": "Verified that raw modulus-square residual evidence is exactly the ResidualEnvelope condition after unfolding residual."
+    },
+    {
+      "name": "raw_residual_to_master_theorem_adapter",
+      "resolution": "Verified direct use of the imported master theorem from raw residual evidence."
+    }
+  ],
+  "open_obstructions": [
+    "prove that coordinates are eigenvalues",
+    "prove that a coordinate list is a matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "Perron-root alignment",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
