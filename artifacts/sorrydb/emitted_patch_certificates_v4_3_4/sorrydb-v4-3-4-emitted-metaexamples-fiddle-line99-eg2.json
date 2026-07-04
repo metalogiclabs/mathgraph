@@ -1,0 +1,41 @@
+{
+  "baseline_command": [
+    "lake",
+    "env",
+    "lean",
+    "MetaExamples/Fiddle.lean"
+  ],
+  "baseline_verdict": "BASELINE_PASSED",
+  "bounded_claim": [
+    "one explicit source snippet was replaced",
+    "Lean accepted the patched file",
+    "original source was restored after replay"
+  ],
+  "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+  "certificate_version": "v4.3.4",
+  "does_not_claim": [
+    "general proof repair",
+    "declaration retrieval success",
+    "multi-file patching",
+    "repository-wide sorry elimination",
+    "upstream submission"
+  ],
+  "file_path": "MetaExamples/Fiddle.lean",
+  "final_verdict": "PATCH_ACCEPTED",
+  "lean_returncode": 0,
+  "patch_apply_verdict": "PATCH_APPLIED",
+  "patch_command": [
+    "lake",
+    "env",
+    "lean",
+    "MetaExamples/Fiddle.lean"
+  ],
+  "patch_snippet": "  · extract_goal using eg₂\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+  "patch_verdict": "PATCH_ACCEPTED",
+  "project": "siddhartha-gadgil/MetaExamples",
+  "project_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "restore_check": "line 99 restored to sorry after replay",
+  "source_snippet": "  · extract_goal using eg₂\n    sorry",
+  "status": "PATCH_ACCEPTED",
+  "trust_boundary": "exact source file snippet plus Lean replay"
+}

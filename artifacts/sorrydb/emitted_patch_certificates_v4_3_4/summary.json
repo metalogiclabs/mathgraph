@@ -1,0 +1,61 @@
+{
+  "bounded_claim": [
+    "automatic certificate emitter produced certificates for two known accepted patch replays",
+    "each emitted certificate was valid JSON",
+    "each emitted certificate recorded PATCH_ACCEPTED and lean_returncode 0",
+    "source file was restored after replay"
+  ],
+  "certificates": [
+    {
+      "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "final_verdict": "PATCH_ACCEPTED",
+      "lean_returncode": 0,
+      "path": "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+      "restore_check": "line 97 restored to sorry after replay",
+      "status": "PATCH_ACCEPTED"
+    },
+    {
+      "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "final_verdict": "PATCH_ACCEPTED",
+      "lean_returncode": 0,
+      "path": "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+      "restore_check": "line 99 restored to sorry after replay",
+      "status": "PATCH_ACCEPTED"
+    }
+  ],
+  "does_not_claim": [
+    "general proof repair",
+    "declaration retrieval success",
+    "multi-file patching",
+    "repository-wide sorry elimination",
+    "upstream submission"
+  ],
+  "emitted_certificate_count": 2,
+  "manifest_count": 2,
+  "manifests": [
+    {
+      "baseline_verdict": "BASELINE_PASSED",
+      "patch_apply_verdict": "PATCH_APPLIED",
+      "patch_certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "patch_certificate_path": "/tmp/mathgraph_sorrydb_v434_emitter_reality/eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T062044Z/patch_certificates/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+      "patch_verdict": "PATCH_ACCEPTED",
+      "path": "/tmp/mathgraph_sorrydb_v434_emitter_reality/eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T062044Z/patch_replay_manifest.json",
+      "verdict": "PATCH_ACCEPTED"
+    },
+    {
+      "baseline_verdict": "BASELINE_PASSED",
+      "patch_apply_verdict": "PATCH_APPLIED",
+      "patch_certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "patch_certificate_path": "/tmp/mathgraph_sorrydb_v434_emitter_reality/eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T062235Z/patch_certificates/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+      "patch_verdict": "PATCH_ACCEPTED",
+      "path": "/tmp/mathgraph_sorrydb_v434_emitter_reality/eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T062235Z/patch_replay_manifest.json",
+      "verdict": "PATCH_ACCEPTED"
+    }
+  ],
+  "restore_check": {
+    "line_97": "sorry restored",
+    "line_99": "sorry restored"
+  },
+  "status": "EMITTER_REALITY_RUN_PASSED",
+  "version": "v4.3.4"
+}
