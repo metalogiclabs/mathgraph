@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_nil_checklist_v1",
+  "reason": "Cons construction gives the finite-list extension step. This artifact adds the true base case: the empty coordinate list satisfies residual and gap envelopes vacuously, so scalar side conditions construct the checklist.",
+  "portal": "turn empty-list vacuity into the base certificate for finite coordinate-list checklist construction",
+  "certificate": "Lean proof using empty-list membership contradiction and checklist reconstruction"
+}

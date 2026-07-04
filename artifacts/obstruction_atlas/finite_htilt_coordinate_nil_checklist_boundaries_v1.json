@@ -1,0 +1,29 @@
+{
+  "artifact_id": "finite_htilt_coordinate_nil_checklist_v1",
+  "closed_obstructions": [
+    {
+      "name": "empty_list_base_case",
+      "resolution": "Residual and positive-gap envelopes are verified as vacuous over []."
+    },
+    {
+      "name": "nil_checklist_constructor",
+      "resolution": "Scalar side conditions construct CoordinateEnvelopeChecklist c a b B \u03b4 []."
+    },
+    {
+      "name": "nil_constructor_to_dominance",
+      "resolution": "Verified vacuous shifted dominance over the empty coordinate list."
+    }
+  ],
+  "open_obstructions": [
+    "prove that any coordinate is an eigenvalue",
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
