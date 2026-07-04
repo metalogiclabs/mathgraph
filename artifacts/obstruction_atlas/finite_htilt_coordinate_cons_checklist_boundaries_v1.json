@@ -1,0 +1,29 @@
+{
+  "artifact_id": "finite_htilt_coordinate_cons_checklist_v1",
+  "closed_obstructions": [
+    {
+      "name": "finite_list_extension",
+      "resolution": "A checklist for coords can now be extended to p :: coords using pointwise evidence for p."
+    },
+    {
+      "name": "induction_style_certificate_builder",
+      "resolution": "Singleton plus cons now gives a safe finite-list checklist construction pattern."
+    },
+    {
+      "name": "cons_constructor_to_dominance",
+      "resolution": "Verified shifted dominance for every coordinate in p :: coords via the constructed cons checklist."
+    }
+  ],
+  "open_obstructions": [
+    "prove that any coordinate is an eigenvalue",
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

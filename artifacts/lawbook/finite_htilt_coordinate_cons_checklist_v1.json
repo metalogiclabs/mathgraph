@@ -1,0 +1,58 @@
+{
+  "artifact_id": "finite_htilt_coordinate_cons_checklist_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_cons_checklist.lean",
+  "namespace": "HTiltCoordinateConsChecklist",
+  "verified_declarations": [
+    "HTiltCoordinateConsChecklist.Coord",
+    "HTiltCoordinateConsChecklist.shiftedSqMod",
+    "HTiltCoordinateConsChecklist.residual",
+    "HTiltCoordinateConsChecklist.ResidualEnvelope",
+    "HTiltCoordinateConsChecklist.PositiveGapEnvelope",
+    "HTiltCoordinateConsChecklist.CoordinateEnvelopeChecklist",
+    "HTiltCoordinateConsChecklist.cons_residual_envelope",
+    "HTiltCoordinateConsChecklist.cons_positive_gap_envelope",
+    "HTiltCoordinateConsChecklist.cons_coordinate_envelope_checklist",
+    "HTiltCoordinateConsChecklist.shiftedSqMod_sub_eq",
+    "HTiltCoordinateConsChecklist.shiftedSqMod_gt_of_bound",
+    "HTiltCoordinateConsChecklist.shiftedSqMod_gt_for_all_coords_of_envelopes",
+    "HTiltCoordinateConsChecklist.shiftedSqMod_gt_for_all_coords_of_explicit_c_envelopes",
+    "HTiltCoordinateConsChecklist.shiftedSqMod_gt_for_all_coords_of_checklist",
+    "HTiltCoordinateConsChecklist.shiftedSqMod_gt_for_all_coords_of_cons_checklist_evidence"
+  ],
+  "claim": {
+    "summary": "If a tail coordinate list already has a bundled coordinate-envelope checklist and a new head coordinate satisfies the same pointwise residual and positive-gap bounds, then the cons-extended list has a checklist and shifted dominance for every coordinate.",
+    "tail_certificate": "CoordinateEnvelopeChecklist c a b B \u03b4 coords",
+    "head_inputs": [
+      "residual a b p <= B",
+      "\u03b4 <= a - p.1"
+    ],
+    "constructed_certificate": "CoordinateEnvelopeChecklist c a b B \u03b4 (p :: coords)",
+    "conclusion": "forall q in p :: coords, shiftedSqMod c q.1 q.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "cons residual envelope constructor",
+      "cons positive-gap envelope constructor",
+      "cons coordinate-envelope checklist constructor",
+      "cons checklist evidence implies shifted dominance for the extended finite list"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

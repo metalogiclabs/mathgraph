@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_cons_checklist_v1",
+  "reason": "Singleton construction builds the base case. This artifact adds the finite-list extension step: a checklist for a tail list can be extended by a head coordinate satisfying the same pointwise bounds.",
+  "portal": "turn finite-coordinate checklist construction into an induction-style cons constructor",
+  "certificate": "Lean proof using List cons membership and conjunction reconstruction"
+}
