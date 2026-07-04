@@ -1,0 +1,60 @@
+{
+  "artifact_id": "finite_htilt_coordinate_singleton_checklist_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_singleton_checklist.lean",
+  "namespace": "HTiltCoordinateSingletonChecklist",
+  "verified_declarations": [
+    "HTiltCoordinateSingletonChecklist.Coord",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod",
+    "HTiltCoordinateSingletonChecklist.residual",
+    "HTiltCoordinateSingletonChecklist.ResidualEnvelope",
+    "HTiltCoordinateSingletonChecklist.PositiveGapEnvelope",
+    "HTiltCoordinateSingletonChecklist.CoordinateEnvelopeChecklist",
+    "HTiltCoordinateSingletonChecklist.singleton_residual_envelope",
+    "HTiltCoordinateSingletonChecklist.singleton_positive_gap_envelope",
+    "HTiltCoordinateSingletonChecklist.singleton_coordinate_envelope_checklist",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod_sub_eq",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod_gt_of_bound",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod_gt_for_all_coords_of_envelopes",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod_gt_for_all_coords_of_explicit_c_envelopes",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod_gt_for_all_coords_of_checklist",
+    "HTiltCoordinateSingletonChecklist.shiftedSqMod_gt_of_singleton_checklist_evidence"
+  ],
+  "claim": {
+    "summary": "Pointwise evidence for a singleton coordinate constructs the bundled coordinate-envelope checklist for [p], and therefore proves shifted squared-modulus dominance for p.",
+    "singleton_inputs": [
+      "residual a b p <= B",
+      "\u03b4 <= a - p.1",
+      "0 < \u03b4",
+      "0 <= c",
+      "B/(2*\u03b4) < c"
+    ],
+    "constructed_certificate": "CoordinateEnvelopeChecklist c a b B \u03b4 [p]",
+    "conclusion": "shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "singleton residual envelope constructor",
+      "singleton positive-gap envelope constructor",
+      "singleton coordinate-envelope checklist constructor",
+      "singleton checklist evidence implies shifted dominance"
+    ],
+    "does_not_prove": [
+      "that the singleton coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

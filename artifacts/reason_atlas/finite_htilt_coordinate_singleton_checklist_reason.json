@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_singleton_checklist_v1",
+  "reason": "The checklist was previously only consumed. This artifact adds the first constructor: a singleton coordinate checklist can be built from pointwise residual and gap inequalities plus scalar side conditions.",
+  "portal": "turn pointwise singleton coordinate evidence into a reusable checklist certificate",
+  "certificate": "Lean proof using List singleton membership and the existing checklist-to-dominance route"
+}

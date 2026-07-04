@@ -1,0 +1,7 @@
+{
+  "artifact_id": "finite_htilt_coordinate_singleton_checklist_v1",
+  "lean_compile_command": "cd experiments/continuation_claim_audit_lab/lean_project && lake env lean ../../../../examples/verifier_fixtures/lean/htilt_coordinate_singleton_checklist.lean",
+  "placeholder_scan": "grep -RInE '\\\\b(sorry|admit|axiom|unsafe)\\\\b' examples/verifier_fixtures/lean/htilt_coordinate_singleton_checklist.lean || true",
+  "status": "VERIFIED_PROOF",
+  "scope": "pure real/list algebraic singleton checklist constructor and dominance theorem"
+}
