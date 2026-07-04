@@ -1,0 +1,62 @@
+{
+  "allow_patch": true,
+  "baseline_command": [
+    "lake",
+    "env",
+    "lean",
+    "MetaExamples/Fiddle.lean"
+  ],
+  "baseline_result": {
+    "cmd": [
+      "lake",
+      "env",
+      "lean",
+      "MetaExamples/Fiddle.lean"
+    ],
+    "cwd": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+    "returncode": 0,
+    "stderr_tail": "",
+    "stdout_tail": "[(?m.3072 : ℕ), (?m.3073 : ℕ)]\nNat.add (?m.3072 : ℕ) (?m.3073 : ℕ) : ℕ\n[?m.3090]\nNat.add 1 ?m.3090 : ℕ\n[]\nNat.add 1 2 : ℕ\n[?x]\nNat.add 1 ?x : ℕ\n[?m.3135, ?x, ?y]\nNat.add ?m.3135 ?x + ?y : ℕ\nLean.Meta.openAbstractMVarsResult (a : AbstractMVarsResult) : MetaM (Array Expr × Array BinderInfo × Expr)\nLean.Meta.lambdaMetaTelescope (e : Expr) (maxMVars? : Option ℕ := none) : MetaM (Array Expr × Array BinderInfo × Expr)\nLean.Meta.lambdaTelescope.{u_1} {n : Type → Type u_1} [MonadControlT MetaM n] [Monad n] {α : Type} (e : Expr)\n  (k : Array Expr → Expr → n α) (cleanupAnnotations : Bool := false) : n α\nHoles: 1\nHole type: Type ?u.8057\nfun (x_0 : Type _abstMVar.0) => List x_0 : Type _abstMVar.0 → Type _abstMVar.0\nHoles: 0\nList ℕ : Type\nHoles: 2\nHole type: Type ?u.8065\nHole type: ℕ\nfun (x_0 : Type _abstMVar.0) (x_1 : ℕ) => Vector x_0 x_1 : Type _abstMVar.0 → ℕ → Type _abstMVar.0\nHoles: 2\nHole type: Type ?u.8076\nHole type: Type ?u.8075\nfun (x_0 : Type _abstMVar.0) (x_1 : Type _abstMVar.1) =>\n  x_0 × x_1 : Type _abstMVar.0 → Type _abstMVar.1 → Type (max _abstMVar.0 _abstMVar.1)\nHoles: 0\nList (List ℕ) : Type\nHoles: 1\nHole type: Type ?u.8090\nfun (x_0 : Type _abstMVar.0) => List (List x_0) : Type _abstMVar.0 → Type _abstMVar.0\nHoles: 3\nHole type: ℕ → Type ?u.8099\nHole type: (x : ℕ) → CommMonoidWithZero (?m.8172 x)\nHole type: (x : ℕ) → ?m.8172 x\nfun (x_0 : ℕ → Type _abstMVar.0) (x_1 : (x : ℕ) → CommMonoidWithZero (x_0 x)) (x_2 : (x : ℕ) → x_0 x) =>\n  ∀ (x : ℕ),\n    Prime (x_2 x) : (x_0 : ℕ → Type _abstMVar.0) → ((x : ℕ) → CommMonoidWithZero (x_0 x)) → ((x : ℕ) → x_0 x) → Prop\nHoles: 0\n∀ (x : ℕ), Prime x : Prop\nHoles: 1\nHole type: ℕ\nfun (x : ℕ) => Prime x : ℕ → Prop\nHoles: 1\nHole type: ℕ\nfun (x_0 : ℕ) => Prime x_0 : ℕ → Prop\nHoles: 1\nHole type: ℕ\nfun (a : ℕ) => a = a : ℕ → Prop\nLean.Elab.Term.collectUnassignedMVars (type : Expr) (init : Array Expr := #[])\n  (except : MVarId → Bool := fun (x : MVarId) => false) : TermElabM (Array Expr)\nLean.LocalContext.foldlM.{u_1, u_2} {m : Type u_1 → Type u_2} {β : Type u_1} [Monad m] (lctx : LocalContext)\n  (f : β → LocalDecl → m β) (init : β) (start : ℕ := 0) : m β\ntheorem zero_eg : 0 + 2 ≤ 0 + 4 := sorry\ntheorem step_eg (n : ℕ) (a : n + 2 ≤ n + 4) : n + 1 + 2 ≤ n + 1 + 4 := sorry\nMetaExamples/Fiddle.lean:76:0: warning: declaration uses 'sorry'\nMetaExamples/Fiddle.lean:83:8: warning: declaration uses 'sorry'\nMetaExamples/Fiddle.lean:85:8: warning: declaration uses 'sorry'\nTry this: exact rfl\ntheorem eg₁ (n : ℕ) : n ≤ n + 1 := sorry\ntheorem eg₂ (n : ℕ) : n + 1 ≤ n + 2 := sorry\nMetaExamples/Fiddle.lean:94:0: warning: declaration uses 'sorry'\n∀ (n : ℕ), n ≤ n + 1\nNat.rec.{u} {motive : ℕ → Sort u} (zero : motive Nat.zero) (succ : (n : ℕ) → motive n → motive n.succ) (t : ℕ) :\n  motive t\nLean.MVarId.apply (mvarId : MVarId) (e : Expr) (cfg : ApplyConfig := { }) (term? : Option MessageData := none) :\n  MetaM (List MVarId)\nEq.rec.{u, u_1} {α : Sort u_1} {a✝ : α} {motive : (a : α) → a✝ = a → Sort u} (refl : motive a✝ ⋯) {a✝¹ : α}\n  (t : a✝ = a✝¹) : motive a✝¹ t\nEq.ndrec.{u1, u2} {α : Sort u2} {a : α} {motive : α → Sort u1} (m : motive a) {b : α} (h : a = b) : motive b\nLean.Expr.getAppFnArgs (e : Expr) : Name × Array Expr\nLean.Meta.mkAppM (constName : Name) (xs : Array Expr) : MetaM Expr\nLean.Expr.eqOrIff? (p : Expr) : Option (Expr × Expr)\nExpr.const `_inhabitedExprDummy []\ntheorem Nat.succ.injEq : ∀ (u v : ℕ), (u.succ = v.succ) = (u = v) :=\nfun (u v : ℕ) => Eq.propIntro Nat.succ.inj (congrArg Nat.succ)\nEq.casesOn.{u, u_1} {α : Sort u_1} {a✝ : α} {motive : (a : α) → a✝ = a → Sort u} {a✝¹ : α} (t : a✝ = a✝¹)\n  (refl : motive a✝ ⋯) : motive a✝¹ t\nEq.propIntro {a b : Prop} (h₁ : a → b) (h₂ : b → a) : a = b\n@[reducible] def Eq.casesOn.{u, u_1} : {α : Sort u_1} →\n  {a : α} → {motive : (a_1 : α) → a = a_1 → Sort u} → {a_1 : α} → (t : a = a_1) → motive a ⋯ → motive a_1 t :=\nfun {α : Sort u_1} {a : α} {motive : (a_1 : α) → a = a_1 → Sort u} {a_1 : α} (t : a = a_1) (refl : motive a ⋯) =>\n  t ▸ refl\nLE.mk.{u} {α : Type u} (le : α → α → Prop) : LE α\nExists.rec.{u} {α : Sort u} {p : α → Prop} {motive : Exists p → Prop} (intro : ∀ (w : α) (h : p w), motive ⋯)\n  (t : Exists p) : motive t\nLean.Parser.Term.letIdBinder : Parser\n((`a, 1), (`b, 2), `x, \"hello\") : (Name × ℕ) × (Name × ℕ) × Name × String\nStd.HashMap.ofList.{u, v} {α : Type u} {β : Type v} [BEq α] [Hashable α] (l : List (α × β)) : Std.HashMap α β\nLean.Meta.mkFreshLevelMVar : MetaM Level\nStd.Internal.IO.Async.background {m t : Type → Type} {α : Type} [Monad m] [MonadAsync t m]\n  (prio : Task.Priority := Task.Priority.default) : m α → m Unit\n1 : ℕ\nLean.CodeAction.CommandCodeAction : Type\n",
+    "timed_out": false
+  },
+  "baseline_verdict": "BASELINE_PASSED",
+  "file_path": "MetaExamples/Fiddle.lean",
+  "free_gb": {
+    "/Users/heath": 20.435,
+    "/Users/heath/.cache": 20.435,
+    "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db": 20.435,
+    "/tmp/mathgraph_sorrydb_v441_mined_queue_reality/candidates/v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2": 20.435
+  },
+  "patch_apply_verdict": "PATCH_APPLIED",
+  "patch_certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+  "patch_certificate_path": "/tmp/mathgraph_sorrydb_v441_mined_queue_reality/candidates/v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T072653Z/patch_certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+  "patch_command": [
+    "lake",
+    "env",
+    "lean",
+    "MetaExamples/Fiddle.lean"
+  ],
+  "patch_result": {
+    "cmd": [
+      "lake",
+      "env",
+      "lean",
+      "MetaExamples/Fiddle.lean"
+    ],
+    "cwd": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+    "returncode": 0,
+    "stderr_tail": "",
+    "stdout_tail": "[(?m.3072 : ℕ), (?m.3073 : ℕ)]\nNat.add (?m.3072 : ℕ) (?m.3073 : ℕ) : ℕ\n[?m.3090]\nNat.add 1 ?m.3090 : ℕ\n[]\nNat.add 1 2 : ℕ\n[?x]\nNat.add 1 ?x : ℕ\n[?m.3135, ?x, ?y]\nNat.add ?m.3135 ?x + ?y : ℕ\nLean.Meta.openAbstractMVarsResult (a : AbstractMVarsResult) : MetaM (Array Expr × Array BinderInfo × Expr)\nLean.Meta.lambdaMetaTelescope (e : Expr) (maxMVars? : Option ℕ := none) : MetaM (Array Expr × Array BinderInfo × Expr)\nLean.Meta.lambdaTelescope.{u_1} {n : Type → Type u_1} [MonadControlT MetaM n] [Monad n] {α : Type} (e : Expr)\n  (k : Array Expr → Expr → n α) (cleanupAnnotations : Bool := false) : n α\nHoles: 1\nHole type: Type ?u.8057\nfun (x_0 : Type _abstMVar.0) => List x_0 : Type _abstMVar.0 → Type _abstMVar.0\nHoles: 0\nList ℕ : Type\nHoles: 2\nHole type: Type ?u.8065\nHole type: ℕ\nfun (x_0 : Type _abstMVar.0) (x_1 : ℕ) => Vector x_0 x_1 : Type _abstMVar.0 → ℕ → Type _abstMVar.0\nHoles: 2\nHole type: Type ?u.8076\nHole type: Type ?u.8075\nfun (x_0 : Type _abstMVar.0) (x_1 : Type _abstMVar.1) =>\n  x_0 × x_1 : Type _abstMVar.0 → Type _abstMVar.1 → Type (max _abstMVar.0 _abstMVar.1)\nHoles: 0\nList (List ℕ) : Type\nHoles: 1\nHole type: Type ?u.8090\nfun (x_0 : Type _abstMVar.0) => List (List x_0) : Type _abstMVar.0 → Type _abstMVar.0\nHoles: 3\nHole type: ℕ → Type ?u.8099\nHole type: (x : ℕ) → CommMonoidWithZero (?m.8172 x)\nHole type: (x : ℕ) → ?m.8172 x\nfun (x_0 : ℕ → Type _abstMVar.0) (x_1 : (x : ℕ) → CommMonoidWithZero (x_0 x)) (x_2 : (x : ℕ) → x_0 x) =>\n  ∀ (x : ℕ),\n    Prime (x_2 x) : (x_0 : ℕ → Type _abstMVar.0) → ((x : ℕ) → CommMonoidWithZero (x_0 x)) → ((x : ℕ) → x_0 x) → Prop\nHoles: 0\n∀ (x : ℕ), Prime x : Prop\nHoles: 1\nHole type: ℕ\nfun (x : ℕ) => Prime x : ℕ → Prop\nHoles: 1\nHole type: ℕ\nfun (x_0 : ℕ) => Prime x_0 : ℕ → Prop\nHoles: 1\nHole type: ℕ\nfun (a : ℕ) => a = a : ℕ → Prop\nLean.Elab.Term.collectUnassignedMVars (type : Expr) (init : Array Expr := #[])\n  (except : MVarId → Bool := fun (x : MVarId) => false) : TermElabM (Array Expr)\nLean.LocalContext.foldlM.{u_1, u_2} {m : Type u_1 → Type u_2} {β : Type u_1} [Monad m] (lctx : LocalContext)\n  (f : β → LocalDecl → m β) (init : β) (start : ℕ := 0) : m β\ntheorem zero_eg : 0 + 2 ≤ 0 + 4 := sorry\ntheorem step_eg (n : ℕ) (a : n + 2 ≤ n + 4) : n + 1 + 2 ≤ n + 1 + 4 := sorry\nMetaExamples/Fiddle.lean:76:0: warning: declaration uses 'sorry'\nMetaExamples/Fiddle.lean:83:8: warning: declaration uses 'sorry'\nMetaExamples/Fiddle.lean:85:8: warning: declaration uses 'sorry'\nTry this: exact rfl\ntheorem eg₁ (n : ℕ) : n ≤ n + 1 := sorry\ntheorem eg₂ (n : ℕ) : n + 1 ≤ n + 2 := sorry\nMetaExamples/Fiddle.lean:94:0: warning: declaration uses 'sorry'\n∀ (n : ℕ), n ≤ n + 1\nNat.rec.{u} {motive : ℕ → Sort u} (zero : motive Nat.zero) (succ : (n : ℕ) → motive n → motive n.succ) (t : ℕ) :\n  motive t\nLean.MVarId.apply (mvarId : MVarId) (e : Expr) (cfg : ApplyConfig := { }) (term? : Option MessageData := none) :\n  MetaM (List MVarId)\nEq.rec.{u, u_1} {α : Sort u_1} {a✝ : α} {motive : (a : α) → a✝ = a → Sort u} (refl : motive a✝ ⋯) {a✝¹ : α}\n  (t : a✝ = a✝¹) : motive a✝¹ t\nEq.ndrec.{u1, u2} {α : Sort u2} {a : α} {motive : α → Sort u1} (m : motive a) {b : α} (h : a = b) : motive b\nLean.Expr.getAppFnArgs (e : Expr) : Name × Array Expr\nLean.Meta.mkAppM (constName : Name) (xs : Array Expr) : MetaM Expr\nLean.Expr.eqOrIff? (p : Expr) : Option (Expr × Expr)\nExpr.const `_inhabitedExprDummy []\ntheorem Nat.succ.injEq : ∀ (u v : ℕ), (u.succ = v.succ) = (u = v) :=\nfun (u v : ℕ) => Eq.propIntro Nat.succ.inj (congrArg Nat.succ)\nEq.casesOn.{u, u_1} {α : Sort u_1} {a✝ : α} {motive : (a : α) → a✝ = a → Sort u} {a✝¹ : α} (t : a✝ = a✝¹)\n  (refl : motive a✝ ⋯) : motive a✝¹ t\nEq.propIntro {a b : Prop} (h₁ : a → b) (h₂ : b → a) : a = b\n@[reducible] def Eq.casesOn.{u, u_1} : {α : Sort u_1} →\n  {a : α} → {motive : (a_1 : α) → a = a_1 → Sort u} → {a_1 : α} → (t : a = a_1) → motive a ⋯ → motive a_1 t :=\nfun {α : Sort u_1} {a : α} {motive : (a_1 : α) → a = a_1 → Sort u} {a_1 : α} (t : a = a_1) (refl : motive a ⋯) =>\n  t ▸ refl\nLE.mk.{u} {α : Type u} (le : α → α → Prop) : LE α\nExists.rec.{u} {α : Sort u} {p : α → Prop} {motive : Exists p → Prop} (intro : ∀ (w : α) (h : p w), motive ⋯)\n  (t : Exists p) : motive t\nLean.Parser.Term.letIdBinder : Parser\n((`a, 1), (`b, 2), `x, \"hello\") : (Name × ℕ) × (Name × ℕ) × Name × String\nStd.HashMap.ofList.{u, v} {α : Type u} {β : Type v} [BEq α] [Hashable α] (l : List (α × β)) : Std.HashMap α β\nLean.Meta.mkFreshLevelMVar : MetaM Level\nStd.Internal.IO.Async.background {m t : Type → Type} {α : Type} [Monad m] [MonadAsync t m]\n  (prio : Task.Priority := Task.Priority.default) : m α → m Unit\n1 : ℕ\nLean.CodeAction.CommandCodeAction : Type\n",
+    "timed_out": false
+  },
+  "patch_snippet": "  · extract_goal using eg₂\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+  "patch_verdict": "PATCH_ACCEPTED",
+  "repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "required_gb": 5.0,
+  "run_baseline_first": true,
+  "source": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+  "source_snippet": "  · extract_goal using eg₂\n    sorry",
+  "timeout_seconds": 240,
+  "verdict": "PATCH_ACCEPTED",
+  "work_root": "/tmp/mathgraph_sorrydb_v441_mined_queue_reality/candidates/v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2"
+}
