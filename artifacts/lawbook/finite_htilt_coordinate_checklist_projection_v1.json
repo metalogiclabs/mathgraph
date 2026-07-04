@@ -1,0 +1,55 @@
+{
+  "artifact_id": "finite_htilt_coordinate_checklist_projection_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_checklist_projection.lean",
+  "namespace": "HTiltCoordinateChecklistProjection",
+  "verified_declarations": [
+    "HTiltCoordinateChecklistProjection.Coord",
+    "HTiltCoordinateChecklistProjection.shiftedSqMod",
+    "HTiltCoordinateChecklistProjection.residual",
+    "HTiltCoordinateChecklistProjection.ResidualEnvelope",
+    "HTiltCoordinateChecklistProjection.PositiveGapEnvelope",
+    "HTiltCoordinateChecklistProjection.CoordinateEnvelopeChecklist",
+    "HTiltCoordinateChecklistProjection.checklist_residual_envelope",
+    "HTiltCoordinateChecklistProjection.checklist_positive_gap_envelope",
+    "HTiltCoordinateChecklistProjection.checklist_delta_pos",
+    "HTiltCoordinateChecklistProjection.checklist_c_nonneg",
+    "HTiltCoordinateChecklistProjection.checklist_explicit_c_bound"
+  ],
+  "claim": {
+    "summary": "The bundled coordinate-envelope checklist exposes verified projection lemmas for each component: residual envelope, positive-gap envelope, \u03b4 positivity, c nonnegativity, and the explicit scalar shift bound.",
+    "checklist": "CoordinateEnvelopeChecklist c a b B \u03b4 coords",
+    "projections": [
+      "ResidualEnvelope a b B coords",
+      "PositiveGapEnvelope a \u03b4 coords",
+      "0 < \u03b4",
+      "0 <= c",
+      "B/(2*\u03b4) < c"
+    ]
+  },
+  "boundary": {
+    "proves": [
+      "projection from checklist to residual envelope",
+      "projection from checklist to positive-gap envelope",
+      "projection from checklist to \u03b4 positivity",
+      "projection from checklist to c nonnegativity",
+      "projection from checklist to explicit scalar shift bound"
+    ],
+    "does_not_prove": [
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

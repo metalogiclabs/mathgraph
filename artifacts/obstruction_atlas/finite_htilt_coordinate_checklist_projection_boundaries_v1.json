@@ -1,0 +1,24 @@
+{
+  "artifact_id": "finite_htilt_coordinate_checklist_projection_v1",
+  "closed_obstructions": [
+    {
+      "name": "checklist_component_access",
+      "resolution": "Added verified projection lemmas for every checklist component."
+    },
+    {
+      "name": "certificate_reuse_boundary",
+      "resolution": "The checklist can now be treated as a reusable certificate object in later finite-coordinate proofs."
+    }
+  ],
+  "open_obstructions": [
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

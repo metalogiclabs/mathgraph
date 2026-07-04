@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_checklist_projection_v1",
+  "reason": "The checklist is a bundled conjunction. Projection lemmas make it usable as a certificate object by exposing each component without manually destructuring the conjunction at every use site.",
+  "portal": "turn bundled checklist into reusable component accessors",
+  "certificate": "Lean proof by conjunction projection"
+}
