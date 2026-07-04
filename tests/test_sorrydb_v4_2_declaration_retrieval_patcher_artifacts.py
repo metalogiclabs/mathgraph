@@ -1,0 +1,9 @@
+import json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+def test_stable_lawbook_schema():
+ d=json.loads((ROOT/"artifacts/lawbook/sorrydb_v4_2_declaration_retrieval_patcher.json").read_text()); assert d["artifact_id"]=="sorrydb_v4_2_declaration_retrieval_patcher"; assert d["status"] in {"VERIFIED_HARNESS","LAWBOOK_ACCEPTED_PATCH_EXISTS","OBSTRUCTED_NO_EXACT_LINE_PATCH","OBSTRUCTED_NO_INPUT_RECORDS","OBSTRUCTED_NO_REPLAYABLE_TARGETS"}; assert d["claim_type"]=="external_lean_proof_hole_repair_harness"; assert (ROOT/d["script"]).exists(); v=" ".join(d["verifies"]).lower(); [(_ for _ in ()).throw(AssertionError(x)) if x not in v else None for x in ("declaration retrieval","patch generation","exact-line replay","lawbook admission")]; n=set(d["does_not_claim"]); assert "LeanLangur success without accepted exact-line replay" in n and "TheoremGraph retrieval correctness" in n; assert len(d["admission_contract"])>=7
+def test_script_static_sanity():
+ t=(ROOT/"experiments/sorrydb/sorrydb_v4_2_declaration_retrieval_patcher.py").read_text(); [(_ for _ in ()).throw(AssertionError(x)) if x not in t else None for x in ("class SorryTarget","class DeclarationCandidate","class PatchAttempt","def classify_result","def extract_declarations","def generate_patch_templates","ACCEPTED_EXACT_LINE","OBSTRUCTED_NO_INPUT_RECORDS","LAWBOOK_ACCEPTED_PATCH_EXISTS")]
+def test_docs_reason_obstruction_phrases():
+ paths=[ROOT/"docs/sorrydb_v4_2_declaration_retrieval_patcher.md",ROOT/"artifacts/reason_atlas/sorrydb_v4_2_declaration_retrieval_patcher_reason.json",ROOT/"artifacts/obstruction_atlas/sorrydb_v4_2_declaration_retrieval_patcher_boundaries_v1.json"]; text=" ".join(p.read_text() for p in paths).lower(); [(_ for _ in ()).throw(AssertionError(x)) if x not in text else None for x in ("declaration-retrieval patcher","exact-line","lawbook","theoremgraph","leanlangur")]

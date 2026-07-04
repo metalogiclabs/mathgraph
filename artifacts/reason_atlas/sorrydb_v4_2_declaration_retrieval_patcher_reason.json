@@ -1,0 +1,6 @@
+{
+  "artifact_id": "sorrydb_v4_2_declaration_retrieval_patcher",
+  "reason": "v4.1 established replay, alignment, and Lawbook discipline, but generic tactics mainly solved MetaExamples. LeanLangur and LeanLion remained obstructed by missing theorem/declaration retrieval. v4.2 extracts nearby declarations and scores local name, signature, context, and type-shape overlap before exact-line replay.",
+  "goal": "Produce exact-line replayable patches or named obstructions without claiming LeanLangur success absent accepted traces.",
+  "theoremgraph_relation": "Local declaration retrieval is a bounded TheoremGraph pattern, not a proof of global TheoremGraph correctness."
+}

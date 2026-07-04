@@ -1,0 +1,10 @@
+{
+  "artifact_id": "sorrydb_v4_2_declaration_retrieval_patcher",
+  "status": "VERIFIED_HARNESS",
+  "script": "experiments/sorrydb/sorrydb_v4_2_declaration_retrieval_patcher.py",
+  "tests": "3 passed",
+  "smoke": "OBSTRUCTED_NO_INPUT_RECORDS",
+  "scope": "declaration-aware exact-line external Lean proof-hole repair harness",
+  "py_compile": "passed",
+  "grep": "intentional SorryDB and admission-contract text only"
+}
