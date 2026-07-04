@@ -1,0 +1,29 @@
+{
+  "artifact_id": "finite_htilt_coordinate_list_checklist_builder_v1",
+  "closed_obstructions": [
+    {
+      "name": "finite_list_pointwise_to_envelope",
+      "resolution": "Pointwise residual and gap predicates over coords are verified as envelope predicates."
+    },
+    {
+      "name": "finite_list_checklist_builder",
+      "resolution": "Pointwise finite-list evidence plus scalar side conditions construct the bundled checklist."
+    },
+    {
+      "name": "finite_list_builder_to_dominance",
+      "resolution": "Verified shifted dominance for every coordinate in coords via the constructed checklist."
+    }
+  ],
+  "open_obstructions": [
+    "prove that any coordinate is an eigenvalue",
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

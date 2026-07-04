@@ -1,0 +1,60 @@
+{
+  "artifact_id": "finite_htilt_coordinate_list_checklist_builder_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_list_checklist_builder.lean",
+  "namespace": "HTiltCoordinateListChecklistBuilder",
+  "verified_declarations": [
+    "HTiltCoordinateListChecklistBuilder.Coord",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod",
+    "HTiltCoordinateListChecklistBuilder.residual",
+    "HTiltCoordinateListChecklistBuilder.ResidualEnvelope",
+    "HTiltCoordinateListChecklistBuilder.PositiveGapEnvelope",
+    "HTiltCoordinateListChecklistBuilder.CoordinateEnvelopeChecklist",
+    "HTiltCoordinateListChecklistBuilder.pointwise_residual_envelope",
+    "HTiltCoordinateListChecklistBuilder.pointwise_positive_gap_envelope",
+    "HTiltCoordinateListChecklistBuilder.list_coordinate_envelope_checklist",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod_sub_eq",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod_gt_of_bound",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod_gt_for_all_coords_of_envelopes",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod_gt_for_all_coords_of_explicit_c_envelopes",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod_gt_for_all_coords_of_checklist",
+    "HTiltCoordinateListChecklistBuilder.shiftedSqMod_gt_for_all_coords_of_list_checklist_evidence"
+  ],
+  "claim": {
+    "summary": "Pointwise residual and positive-gap evidence over a finite coordinate list, plus scalar side conditions, construct the bundled coordinate-envelope checklist and imply shifted dominance for every coordinate in the list.",
+    "list_inputs": [
+      "forall p in coords, residual a b p <= B",
+      "forall p in coords, \u03b4 <= a - p.1",
+      "0 < \u03b4",
+      "0 <= c",
+      "B/(2*\u03b4) < c"
+    ],
+    "constructed_certificate": "CoordinateEnvelopeChecklist c a b B \u03b4 coords",
+    "conclusion": "forall p in coords, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "pointwise residual evidence builds a residual envelope",
+      "pointwise positive-gap evidence builds a positive-gap envelope",
+      "finite-list coordinate-envelope checklist builder",
+      "finite-list checklist evidence implies shifted dominance for every coordinate"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}
