@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_numeric_smoke_v1",
+  "closed_obstructions": [
+    {
+      "name": "abstract_only_api_boundary",
+      "resolution": "Added a concrete singleton example through the raw-evidence core theorem."
+    },
+    {
+      "name": "numeric_side_condition_smoke",
+      "resolution": "Verified residual, gap, and scalar bound checks with norm_num."
+    }
+  ],
+  "open_obstructions": [
+    "prove that coordinates are eigenvalues",
+    "prove that a coordinate list is a matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "Perron-root alignment",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

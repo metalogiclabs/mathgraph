@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_numeric_smoke_v1",
+  "reason": "After adding the core raw-evidence API and witness wrappers, the tower needs a concrete arithmetic smoke example with no abstract assumptions.",
+  "portal": "concrete singleton coordinates to reusable raw-evidence dominance theorem",
+  "certificate": "Lean proof using finite_coordinate_shifted_dominance_from_raw_evidence and norm_num"
+}
