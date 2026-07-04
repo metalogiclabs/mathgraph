@@ -1,0 +1,73 @@
+{
+  "accepted_count": 0,
+  "bounded_claim": [
+    "the hydrated v4.4.7 four-row backfill queue was run through the streaming queue runner",
+    "all four candidates reached controlled replay",
+    "all four candidates stopped at the same cache/build boundary before patch application",
+    "no accepted patch certificate was emitted"
+  ],
+  "candidate_count": 4,
+  "candidates": [
+    {
+      "candidate_id": "v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "manifest_path": "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T221736Z/patch_replay_manifest.json",
+      "manifest_verdict": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+      "patch_certificate_id": "",
+      "returncode": 0,
+      "timed_out": false
+    },
+    {
+      "candidate_id": "v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "manifest_path": "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T221836Z/patch_replay_manifest.json",
+      "manifest_verdict": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+      "patch_certificate_id": "",
+      "returncode": 0,
+      "timed_out": false
+    },
+    {
+      "candidate_id": "v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "manifest_path": "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality/candidates/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T221841Z/patch_replay_manifest.json",
+      "manifest_verdict": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+      "patch_certificate_id": "",
+      "returncode": 0,
+      "timed_out": false
+    },
+    {
+      "candidate_id": "v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "manifest_path": "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality/candidates/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T221845Z/patch_replay_manifest.json",
+      "manifest_verdict": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+      "patch_certificate_id": "",
+      "returncode": 0,
+      "timed_out": false
+    }
+  ],
+  "certificate_count": 0,
+  "completed_count": 4,
+  "copied_manifests": [
+    "artifacts/sorrydb/hydrated_backfill_reality_v4_4_8/manifests/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/hydrated_backfill_reality_v4_4_8/manifests/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/hydrated_backfill_reality_v4_4_8/manifests/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/hydrated_backfill_reality_v4_4_8/manifests/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.manifest.json"
+  ],
+  "does_not_claim": [
+    "Lean replay success",
+    "proof checking success",
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "failed_count": 4,
+  "manifest_count": 4,
+  "next_frontier": "v4.4.9 controlled cache/dependency hydration planner for the pinned hydrated source checkout",
+  "obstruction_counts": {
+    "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY": 4
+  },
+  "partial_summary_count": 1,
+  "primary_obstruction": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+  "primary_obstruction_detail": "baseline Lean contact failed before patch application because Mathlib.olean was unavailable in the hydrated source cache search path",
+  "queue_verdict": "QUEUE_RUN_COMPLETED_WITH_FAILURES",
+  "source_run_root": "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality",
+  "status": "HYDRATED_BACKFILL_REALITY_LEDGERED",
+  "version": "v4.4.8"
+}

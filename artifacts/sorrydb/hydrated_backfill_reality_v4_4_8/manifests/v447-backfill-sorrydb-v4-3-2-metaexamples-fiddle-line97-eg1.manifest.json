@@ -1,0 +1,48 @@
+{
+  "allow_patch": true,
+  "baseline_command": [
+    "lake",
+    "env",
+    "lean",
+    "MetaExamples/Fiddle.lean"
+  ],
+  "baseline_result": {
+    "cmd": [
+      "lake",
+      "env",
+      "lean",
+      "MetaExamples/Fiddle.lean"
+    ],
+    "cwd": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+    "returncode": 1,
+    "stderr_tail": "info: leanaidecore: cloning https://github.com/siddhartha-gadgil/LeanAide.git\ninfo: leanaidecore: checking out revision 'aa1df7de634afbbcf73e281c52aae77f187c6fd1'\ninfo: mathlib: cloning https://github.com/leanprover-community/mathlib4\ninfo: mathlib: checking out revision '79e94a093aff4a60fb1b1f92d9681e407124c2ca'\ninfo: plausible: cloning https://github.com/leanprover-community/plausible\ninfo: plausible: checking out revision 'b100ad4c5d74a464f497aaa8e7c74d86bf39a56f'\ninfo: LeanSearchClient: cloning https://github.com/leanprover-community/LeanSearchClient\ninfo: LeanSearchClient: checking out revision '99657ad92e23804e279f77ea6dbdeebaa1317b98'\ninfo: importGraph: cloning https://github.com/leanprover-community/import-graph\ninfo: importGraph: checking out revision 'eb164a46de87078f27640ee71e6c3841defc2484'\ninfo: proofwidgets: cloning https://github.com/leanprover-community/ProofWidgets4\ninfo: proofwidgets: checking out revision '1253a071e6939b0faf5c09d2b30b0bfc79dae407'\ninfo: aesop: cloning https://github.com/leanprover-community/aesop\ninfo: aesop: checking out revision '1256a18522728c2eeed6109b02dd2b8f207a2a3c'\ninfo: Qq: cloning https://github.com/leanprover-community/quote4\ninfo: Qq: checking out revision '917bfa5064b812b7fbd7112d018ea0b4def25ab3'\ninfo: batteries: cloning https://github.com/leanprover-community/batteries\ninfo: batteries: checking out revision '240676e9568c254a69be94801889d4b13f3b249f'\ninfo: Cli: cloning https://github.com/leanprover/lean4-cli\ninfo: Cli: checking out revision 'c682c91d2d4dd59a7187e2ab977ac25bd1f87329'\n",
+    "stdout_tail": "MetaExamples/Fiddle.lean:1:0: error: unknown module prefix 'Mathlib'\n\nNo directory 'Mathlib' or file 'Mathlib.olean' in the search path entries:\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/Cli/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/batteries/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/Qq/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/aesop/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/proofwidgets/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/importGraph/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/plausible/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/mathlib/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/LeanAideCore/.lake/build/lib/lean\n/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/build/lib/lean\n/Users/heath/.elan/toolchains/leanprover--lean4---v4.22.0/lib/lean\n/Users/heath/.elan/toolchains/leanprover--lean4---v4.22.0/lib/lean\n",
+    "timed_out": false
+  },
+  "baseline_verdict": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+  "file_path": "MetaExamples/Fiddle.lean",
+  "free_gb": {
+    "/Users/heath": 21.714,
+    "/Users/heath/.cache": 21.714,
+    "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db": 21.714,
+    "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1": 21.714
+  },
+  "patch_apply_verdict": "",
+  "patch_command": [
+    "lake",
+    "env",
+    "lean",
+    "MetaExamples/Fiddle.lean"
+  ],
+  "patch_result": {},
+  "patch_snippet": "  · extract_goal using eg₁\n    exact Nat.le_add_right n 1",
+  "patch_verdict": "",
+  "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "required_gb": 5.0,
+  "run_baseline_first": true,
+  "source": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+  "source_snippet": "  · extract_goal using eg₁\n    sorry",
+  "timeout_seconds": 240,
+  "verdict": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+  "work_root": "/tmp/mathgraph_sorrydb_v448_hydrated_backfill_reality/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1"
+}
