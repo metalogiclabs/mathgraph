@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_finite_spectral_shift_bound_v1",
+  "reason": "Once single-pair shifted dominance is verified, the finite-list version follows by universal quantification over list membership. A shared scalar envelope B converts many pairwise residual checks into one reusable finite-bound interface.",
+  "portal": "lift single-pair real algebra to finite-list competitor algebra",
+  "certificate": "Lean proof using the prior real-algebra pattern plus list membership quantification"
+}

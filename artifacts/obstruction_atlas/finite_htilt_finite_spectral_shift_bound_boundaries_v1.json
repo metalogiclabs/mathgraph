@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_finite_spectral_shift_bound_v1",
+  "closed_obstructions": [
+    {
+      "name": "single_pair_to_finite_list_lift",
+      "resolution": "Proved that pairwise shifted dominance conditions imply dominance for every competitor in a finite list."
+    },
+    {
+      "name": "shared_residual_envelope_interface",
+      "resolution": "Proved that a scalar B bounding every residual and below every shift gap suffices for finite-list shifted dominance."
+    }
+  ],
+  "open_obstructions": [
+    "actual matrix spectrum extraction",
+    "construction of B from a finite spectrum",
+    "strict spectral-abscissa hypothesis",
+    "realness of strict-abscissa eigenvalue for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

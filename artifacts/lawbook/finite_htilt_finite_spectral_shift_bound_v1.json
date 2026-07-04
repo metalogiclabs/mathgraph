@@ -1,0 +1,42 @@
+{
+  "artifact_id": "finite_htilt_finite_spectral_shift_bound_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_finite_spectral_shift_bound.lean",
+  "namespace": "HTiltFiniteSpectralShiftBound",
+  "verified_declarations": [
+    "HTiltFiniteSpectralShiftBound.shiftedSqMod",
+    "HTiltFiniteSpectralShiftBound.shiftedSqMod_sub_eq",
+    "HTiltFiniteSpectralShiftBound.shiftedSqMod_gt_of_bound",
+    "HTiltFiniteSpectralShiftBound.shiftedSqMod_gt_for_all_competitors",
+    "HTiltFiniteSpectralShiftBound.shiftedSqMod_gt_for_all_competitors_of_shared_bound"
+  ],
+  "claim": {
+    "summary": "The single-pair shifted squared-modulus dominance theorem lifts to a finite list of real-coordinate competitors. If each competitor satisfies the pairwise residual bound, or if a shared scalar B bounds every residual and lies below every shift gap, then every listed competitor has strictly smaller shifted squared modulus.",
+    "single_pair_identity": "shiftedSqMod c a b - shiftedSqMod c u v = 2*c*(a-u)+((a^2+b^2)-(u^2+v^2))",
+    "finite_list_condition": "forall p in competitors, |(p.1^2+p.2^2)-(a^2+b^2)| < 2*c*(a-p.1)",
+    "finite_list_conclusion": "forall p in competitors, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b",
+    "shared_bound_condition": "forall p in competitors, residual(p) <= B and B < 2*c*(a-p.1)",
+    "shared_bound_conclusion": "forall p in competitors, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "pure real shifted squared-modulus identity",
+      "single-pair sufficient dominance condition",
+      "finite-list lift of pairwise dominance",
+      "finite-list lift from a shared residual envelope B"
+    ],
+    "does_not_prove": [
+      "actual spectrum extraction from a matrix",
+      "existence of a maximum over a matrix spectrum",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}
