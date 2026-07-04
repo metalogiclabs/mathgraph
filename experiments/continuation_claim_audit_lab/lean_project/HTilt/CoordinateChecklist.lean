@@ -365,4 +365,64 @@ theorem finite_coordinate_shifted_dominance_from_checklist
   exact finite_coordinate_shifted_dominance_master
     c a b B δ coords hres hgap delta_pos c_nonneg c_bound
 
+
+/-- Raw modulus-square residual evidence builds the residual envelope. -/
+theorem raw_modsq_residual_builds_residual_envelope
+    (a b B : ℝ)
+    (coords : List Coord)
+    (hres :
+      ∀ p ∈ coords,
+        |(p.1^2 + p.2^2) - (a^2 + b^2)| ≤ B) :
+    ResidualEnvelope a b B coords := by
+  intro p hp
+  unfold residual
+  exact hres p hp
+
+/-- Raw strict real-part gap evidence builds the positive-gap envelope. -/
+theorem raw_strict_gap_builds_positive_gap_envelope
+    (a δ : ℝ)
+    (coords : List Coord)
+    (hgap : ∀ p ∈ coords, p.1 ≤ a - δ) :
+    PositiveGapEnvelope a δ coords := by
+  intro p hp
+  have h := hgap p hp
+  linarith
+
+/-- Raw external evidence builds the bundled coordinate checklist. -/
+theorem coordinate_envelope_checklist_from_raw_evidence
+    (c a b B δ : ℝ)
+    (coords : List Coord)
+    (hres :
+      ∀ p ∈ coords,
+        |(p.1^2 + p.2^2) - (a^2 + b^2)| ≤ B)
+    (hgap : ∀ p ∈ coords, p.1 ≤ a - δ)
+    (delta_pos : 0 < δ)
+    (c_nonneg : 0 ≤ c)
+    (c_bound : B / (2 * δ) < c) :
+    CoordinateEnvelopeChecklist c a b B δ coords := by
+  exact list_coordinate_envelope_checklist
+    c a b B δ coords
+    (raw_modsq_residual_builds_residual_envelope a b B coords hres)
+    (raw_strict_gap_builds_positive_gap_envelope a δ coords hgap)
+    delta_pos c_nonneg c_bound
+
+/-- Raw external finite-coordinate evidence implies shifted dominance. -/
+theorem finite_coordinate_shifted_dominance_from_raw_evidence
+    (c a b B δ : ℝ)
+    (coords : List Coord)
+    (hres :
+      ∀ p ∈ coords,
+        |(p.1^2 + p.2^2) - (a^2 + b^2)| ≤ B)
+    (hgap : ∀ p ∈ coords, p.1 ≤ a - δ)
+    (delta_pos : 0 < δ)
+    (c_nonneg : 0 ≤ c)
+    (c_bound : B / (2 * δ) < c) :
+    ∀ p ∈ coords,
+      shiftedSqMod c p.1 p.2 < shiftedSqMod c a b := by
+  exact finite_coordinate_shifted_dominance_master
+    c a b B δ coords
+    (raw_modsq_residual_builds_residual_envelope a b B coords hres)
+    (raw_strict_gap_builds_positive_gap_envelope a δ coords hgap)
+    delta_pos c_nonneg c_bound
+
 end HTilt.CoordinateChecklist

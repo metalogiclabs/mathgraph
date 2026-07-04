@@ -1,0 +1,9 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_core_v1",
+  "status": "VERIFIED_PROOF",
+  "core_file": "experiments/continuation_claim_audit_lab/lean_project/HTilt/CoordinateChecklist.lean",
+  "smoke_fixture": "examples/verifier_fixtures/lean/htilt_coordinate_raw_evidence_core_smoke.lean",
+  "tests": "2 passed",
+  "scope": "reusable pre-spectral raw-evidence coordinate API",
+  "lean": "core build and smoke compile passed"
+}

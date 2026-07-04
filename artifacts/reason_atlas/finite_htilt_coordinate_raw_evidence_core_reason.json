@@ -1,0 +1,5 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_core_v1",
+  "reason": "Promoting the raw adapters into the core gives downstream producers one stable pre-spectral API instead of fixture-local duplication.",
+  "certificate": "Core build plus standalone import smoke fixture."
+}

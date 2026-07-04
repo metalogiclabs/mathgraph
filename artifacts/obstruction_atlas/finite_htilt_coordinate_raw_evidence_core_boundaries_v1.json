@@ -1,0 +1,16 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_core_v1",
+  "closed_obstructions": [
+    "raw evidence API was fixture-local"
+  ],
+  "open_obstructions": [
+    "no coordinate is proved to be an eigenvalue",
+    "no coordinate list is proved to be a matrix spectrum",
+    "no spectrum extraction or eigenvalue existence",
+    "no construction of B or \u03b4 from spectral data",
+    "no strict spectral-abscissa theorem or dominant-mode realness",
+    "no Perron-root alignment or irreducibility transfer",
+    "no Perron-Frobenius invocation or convergence theorem",
+    "no empirical h-band, consciousness, scheduler, or interpretive claim"
+  ]
+}

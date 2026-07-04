@@ -1,0 +1,31 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_evidence_core_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "core_file": "experiments/continuation_claim_audit_lab/lean_project/HTilt/CoordinateChecklist.lean",
+  "smoke_fixture": "examples/verifier_fixtures/lean/htilt_coordinate_raw_evidence_core_smoke.lean",
+  "verified_declarations": [
+    "HTilt.CoordinateChecklist.raw_modsq_residual_builds_residual_envelope",
+    "HTilt.CoordinateChecklist.raw_strict_gap_builds_positive_gap_envelope",
+    "HTilt.CoordinateChecklist.coordinate_envelope_checklist_from_raw_evidence",
+    "HTilt.CoordinateChecklist.finite_coordinate_shifted_dominance_from_raw_evidence",
+    "HTiltCoordinateRawEvidenceCoreSmoke.smoke_raw_evidence_dominance_from_core",
+    "HTiltCoordinateRawEvidenceCoreSmoke.smoke_raw_evidence_checklist_from_core"
+  ],
+  "claim": "Raw residual and strict-gap evidence is now a reusable core API that builds checklist envelopes and proves shifted finite-coordinate dominance.",
+  "boundary": {
+    "proves": [
+      "raw evidence adapters and dominance are reusable from HTilt.CoordinateChecklist"
+    ],
+    "does_not_prove": [
+      "no coordinate is proved to be an eigenvalue",
+      "no coordinate list is proved to be a matrix spectrum",
+      "no spectrum extraction or eigenvalue existence",
+      "no construction of B or \u03b4 from spectral data",
+      "no strict spectral-abscissa theorem or dominant-mode realness",
+      "no Perron-root alignment or irreducibility transfer",
+      "no Perron-Frobenius invocation or convergence theorem",
+      "no empirical h-band, consciousness, scheduler, or interpretive claim"
+    ]
+  }
+}
