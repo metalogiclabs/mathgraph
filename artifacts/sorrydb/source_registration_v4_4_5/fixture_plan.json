@@ -1,0 +1,60 @@
+{
+  "fixture_blockers": [],
+  "fixture_candidates": [
+    {
+      "boundary": "exact snippet context only; not a full source checkout or accepted replay",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "fixture_id": "v445-fixture-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "fixture_status": "CONTROLLED_SNIPPET_FIXTURE_PLANNED",
+      "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+      "replay_ready": false,
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "snippet_record": "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+      "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9"
+    },
+    {
+      "boundary": "exact snippet context only; not a full source checkout or accepted replay",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "fixture_id": "v445-fixture-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "fixture_status": "CONTROLLED_SNIPPET_FIXTURE_PLANNED",
+      "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+      "replay_ready": false,
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "snippet_record": "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+      "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52"
+    },
+    {
+      "boundary": "exact snippet context only; not a full source checkout or accepted replay",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "fixture_id": "v445-fixture-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "fixture_status": "CONTROLLED_SNIPPET_FIXTURE_PLANNED",
+      "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+      "replay_ready": false,
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "snippet_record": "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+      "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9"
+    },
+    {
+      "boundary": "exact snippet context only; not a full source checkout or accepted replay",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "fixture_id": "v445-fixture-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "fixture_status": "CONTROLLED_SNIPPET_FIXTURE_PLANNED",
+      "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+      "replay_ready": false,
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "snippet_record": "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+      "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52"
+    }
+  ],
+  "fixture_policy": {
+    "actual_fixtures_created": false,
+    "boundary": "small exact-context fixture plans are controlled evidence, not full source checkouts or accepted claims",
+    "full_checkout_replacement": false,
+    "replay_ready": false
+  },
+  "notes": [
+    "fixture candidates preserve exact snippet and patch hashes",
+    "a separate experiment must define and verify any fixture replay semantics"
+  ],
+  "version": "v4.4.5"
+}

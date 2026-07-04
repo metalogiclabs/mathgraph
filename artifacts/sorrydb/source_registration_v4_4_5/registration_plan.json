@@ -1,0 +1,172 @@
+{
+  "category_counts": {
+    "REGISTRATION_BLOCKED_INSUFFICIENT_FILE_IDENTITY": 0,
+    "REGISTRATION_BLOCKED_INSUFFICIENT_REPO_IDENTITY": 0,
+    "REGISTRATION_BLOCKED_MISSING_SNIPPET_HASH": 0,
+    "REGISTRATION_BLOCKED_POLICY_FULL_CHECKOUT": 0,
+    "REGISTRATION_BLOCKED_UNCLASSIFIED": 0,
+    "REGISTRATION_NEEDS_MANUAL_CHECKOUT": 0,
+    "REGISTRATION_NEEDS_NETWORK_HYDRATION": 4,
+    "REGISTRATION_READY_FROM_CONTROLLED_SNIPPET_FIXTURE": 0,
+    "REGISTRATION_READY_FROM_EXISTING_CHECKOUT": 0
+  },
+  "notes": [
+    "registration plans do not hydrate source or establish replay success",
+    "historical temporary checkout paths are provenance only"
+  ],
+  "required_hydration_inputs": [
+    {
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1"
+    },
+    {
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2"
+    },
+    {
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1"
+    },
+    {
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+    }
+  ],
+  "required_manual_inputs": [],
+  "rows": [
+    {
+      "certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "historical_repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "historical_repo_root_is_stable": false,
+      "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+      "reason": "repository URL and commit are sufficient for a future controlled hydration; none was performed",
+      "registration_status": "REGISTRATION_NEEDS_NETWORK_HYDRATION",
+      "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples",
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "source_input_status": "SOURCE_CHECKOUT_PATH_UNSTABLE",
+      "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9"
+    },
+    {
+      "certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "historical_repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "historical_repo_root_is_stable": false,
+      "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+      "reason": "repository URL and commit are sufficient for a future controlled hydration; none was performed",
+      "registration_status": "REGISTRATION_NEEDS_NETWORK_HYDRATION",
+      "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples",
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "source_input_status": "SOURCE_CHECKOUT_PATH_UNSTABLE",
+      "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52"
+    },
+    {
+      "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "historical_repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "historical_repo_root_is_stable": false,
+      "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+      "reason": "repository URL and commit are sufficient for a future controlled hydration; none was performed",
+      "registration_status": "REGISTRATION_NEEDS_NETWORK_HYDRATION",
+      "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples",
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "source_input_status": "SOURCE_CHECKOUT_PATH_UNSTABLE",
+      "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9"
+    },
+    {
+      "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "historical_repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "historical_repo_root_is_stable": false,
+      "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+      "reason": "repository URL and commit are sufficient for a future controlled hydration; none was performed",
+      "registration_status": "REGISTRATION_NEEDS_NETWORK_HYDRATION",
+      "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples",
+      "required_input": {
+        "commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "expected_source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+        "file_path": "MetaExamples/Fiddle.lean",
+        "repo_url": "https://github.com/siddhartha-gadgil/MetaExamples"
+      },
+      "row_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "source_input_status": "SOURCE_CHECKOUT_PATH_UNSTABLE",
+      "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52"
+    }
+  ],
+  "scanned_paths": [
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/summary.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/summary.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/runner_summaries/partial_queue_run_summary_1.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/runner_summaries/queue_run_summary.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/summary.json",
+    "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_input_ledger.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/source_snippets/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/source_inputs_v4_4_4/summary.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/runner_summaries/partial_queue_run_summary_1.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/runner_summaries/queue_run_summary.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/summary.json"
+  ],
+  "source_input_ledger": "artifacts/sorrydb/source_inputs_v4_4_4/source_input_ledger.json",
+  "version": "v4.4.5"
+}

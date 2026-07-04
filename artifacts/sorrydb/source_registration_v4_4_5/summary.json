@@ -1,0 +1,36 @@
+{
+  "blocked_count": 0,
+  "bounded_claim": "classifies unstable source rows into controlled source registration statuses and emits registration/fixture plans",
+  "category_counts": {
+    "REGISTRATION_BLOCKED_INSUFFICIENT_FILE_IDENTITY": 0,
+    "REGISTRATION_BLOCKED_INSUFFICIENT_REPO_IDENTITY": 0,
+    "REGISTRATION_BLOCKED_MISSING_SNIPPET_HASH": 0,
+    "REGISTRATION_BLOCKED_POLICY_FULL_CHECKOUT": 0,
+    "REGISTRATION_BLOCKED_UNCLASSIFIED": 0,
+    "REGISTRATION_NEEDS_MANUAL_CHECKOUT": 0,
+    "REGISTRATION_NEEDS_NETWORK_HYDRATION": 4,
+    "REGISTRATION_READY_FROM_CONTROLLED_SNIPPET_FIXTURE": 0,
+    "REGISTRATION_READY_FROM_EXISTING_CHECKOUT": 0
+  },
+  "does_not_claim": [
+    "source hydration",
+    "Lean replay success",
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "manual_checkout_needed_count": 0,
+  "network_hydration_needed_count": 4,
+  "next_frontier": "v4.4.6 controlled source hydration/registration or a controlled snippet fixture experiment",
+  "registration_ready_count": 0,
+  "row_ids": [
+    "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+  ],
+  "status": "CONTROLLED_SOURCE_REGISTRATION_PLANNED",
+  "unstable_source_row_count": 4,
+  "version": "v4.4.5"
+}
