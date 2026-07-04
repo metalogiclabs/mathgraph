@@ -51,3 +51,54 @@ def test_default_patch_targets_eg1():
     mod = load_module()
     assert "eg₁" in mod.DEFAULT_SOURCE_SNIPPET
     assert "Nat.le_succ" in mod.DEFAULT_PATCH_SNIPPET
+
+
+def test_patch_certificate_builder_for_accepted_summary(monkeypatch, tmp_path):
+    mod = load_module()
+    monkeypatch.setenv("SORRYDB_V430_PROJECT", "siddhartha-gadgil/MetaExamples")
+    monkeypatch.setenv("SORRYDB_V430_PROJECT_COMMIT", "edbb75e784db19846a1c19841e182b797afc18bb")
+    monkeypatch.setenv("SORRYDB_V430_CERTIFICATE_ID", "test-cert")
+    summary = {
+        "verdict": mod.PATCH_ACCEPTED,
+        "file_path": "MetaExamples/Fiddle.lean",
+        "source_snippet": "  · extract_goal using eg₁\n    sorry",
+        "patch_snippet": "  · extract_goal using eg₁\n    exact Nat.le_add_right n 1",
+        "baseline_command": ["lake", "env", "lean", "MetaExamples/Fiddle.lean"],
+        "patch_command": ["lake", "env", "lean", "MetaExamples/Fiddle.lean"],
+        "baseline_verdict": mod.BASELINE_PASSED,
+        "patch_apply_verdict": mod.PATCH_APPLIED,
+        "patch_verdict": mod.PATCH_ACCEPTED,
+        "patch_result": {"returncode": 0},
+    }
+    cert = mod.build_patch_certificate(summary)
+    assert cert["certificate_id"] == "test-cert"
+    assert cert["project"] == "siddhartha-gadgil/MetaExamples"
+    assert cert["status"] == mod.PATCH_ACCEPTED
+    assert cert["final_verdict"] == mod.PATCH_ACCEPTED
+    assert cert["lean_returncode"] == 0
+    assert "general proof repair" in "\n".join(cert["does_not_claim"])
+
+
+def test_maybe_write_patch_certificate_only_for_patch_accepted(monkeypatch, tmp_path):
+    mod = load_module()
+    monkeypatch.setenv("SORRYDB_V430_CERTIFICATE_ID", "accepted-cert")
+    summary = {
+        "verdict": mod.PATCH_ACCEPTED,
+        "file_path": "MetaExamples/Fiddle.lean",
+        "source_snippet": "old",
+        "patch_snippet": "new",
+        "baseline_command": ["lake", "env", "lean", "MetaExamples/Fiddle.lean"],
+        "patch_command": ["lake", "env", "lean", "MetaExamples/Fiddle.lean"],
+        "baseline_verdict": mod.BASELINE_PASSED,
+        "patch_apply_verdict": mod.PATCH_APPLIED,
+        "patch_verdict": mod.PATCH_ACCEPTED,
+        "patch_result": {"returncode": 0},
+    }
+    mod.maybe_write_patch_certificate(summary, tmp_path)
+    cert_path = tmp_path / "patch_certificates" / "accepted-cert.json"
+    assert cert_path.exists()
+    assert summary["patch_certificate_id"] == "accepted-cert"
+
+    rejected = {"verdict": mod.PATCH_REJECTED}
+    mod.maybe_write_patch_certificate(rejected, tmp_path)
+    assert "patch_certificate_id" not in rejected

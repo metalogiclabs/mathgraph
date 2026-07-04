@@ -148,6 +148,83 @@ def apply_single_replacement(source_text: str, old: str, new: str) -> tuple[str,
     return source_text.replace(old, new, 1), PATCH_APPLIED
 
 
+def slugify(text: str) -> str:
+    keep = []
+    for ch in text.casefold():
+        if ch.isalnum():
+            keep.append(ch)
+        elif ch in {"/", "_", "-", ".", " "}:
+            keep.append("-")
+    slug = "".join(keep)
+    while "--" in slug:
+        slug = slug.replace("--", "-")
+    return slug.strip("-") or "patch"
+
+
+def build_patch_certificate(summary: dict[str, Any]) -> dict[str, Any]:
+    project = env("SORRYDB_V430_PROJECT", "unknown-project")
+    project_commit = env("SORRYDB_V430_PROJECT_COMMIT", "unknown-commit")
+    certificate_version = env("SORRYDB_V430_CERTIFICATE_VERSION", "v4.3.3")
+    certificate_id = env("SORRYDB_V430_CERTIFICATE_ID")
+
+    if not certificate_id:
+        stem = "|".join([
+            certificate_version,
+            project,
+            project_commit,
+            str(summary.get("file_path", "")),
+            str(summary.get("source_snippet", "")),
+            str(summary.get("patch_snippet", "")),
+        ])
+        certificate_id = f"{certificate_version}-{slugify(project)}-{slugify(str(summary.get('file_path', 'file')))}-{abs(hash(stem))}"
+
+    patch_result = summary.get("patch_result") or {}
+
+    return {
+        "certificate_id": certificate_id,
+        "certificate_version": certificate_version,
+        "status": summary.get("verdict"),
+        "project": project,
+        "project_commit": project_commit,
+        "file_path": summary.get("file_path"),
+        "source_snippet": summary.get("source_snippet"),
+        "patch_snippet": summary.get("patch_snippet"),
+        "baseline_command": summary.get("baseline_command"),
+        "patch_command": summary.get("patch_command"),
+        "baseline_verdict": summary.get("baseline_verdict"),
+        "patch_apply_verdict": summary.get("patch_apply_verdict"),
+        "patch_verdict": summary.get("patch_verdict"),
+        "final_verdict": summary.get("verdict"),
+        "lean_returncode": patch_result.get("returncode"),
+        "restore_check": env("SORRYDB_V430_RESTORE_CHECK", "original source restored after replay"),
+        "trust_boundary": "exact source file snippet plus Lean replay",
+        "bounded_claim": [
+            "one explicit source snippet was replaced",
+            "Lean accepted the patched file",
+            "original source was restored after replay",
+        ],
+        "does_not_claim": [
+            "general proof repair",
+            "declaration retrieval success",
+            "multi-file patching",
+            "repository-wide sorry elimination",
+            "upstream submission",
+        ],
+    }
+
+
+def maybe_write_patch_certificate(summary: dict[str, Any], out: Path) -> None:
+    if summary.get("verdict") != PATCH_ACCEPTED:
+        return
+    cert = build_patch_certificate(summary)
+    cert_dir = out / "patch_certificates"
+    cert_dir.mkdir(parents=True, exist_ok=True)
+    cert_path = cert_dir / f"{cert['certificate_id']}.json"
+    cert_path.write_text(json.dumps(cert, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    summary["patch_certificate_path"] = str(cert_path)
+    summary["patch_certificate_id"] = cert["certificate_id"]
+
+
 def main() -> int:
     print(BANNER)
 
@@ -255,8 +332,9 @@ def main() -> int:
                 finally:
                     source.write_text(original, encoding="utf-8")
 
-    (out / "patch_replay_manifest.json").write_text(json.dumps(summary, indent=2, sort_keys=True))
-    print(json.dumps(summary, indent=2, sort_keys=True))
+    maybe_write_patch_certificate(summary, out)
+    (out / "patch_replay_manifest.json").write_text(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
 
 
