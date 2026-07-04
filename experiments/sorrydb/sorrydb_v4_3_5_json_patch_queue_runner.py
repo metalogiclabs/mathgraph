@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,8 @@ from typing import Any
 QUEUE_RUN_DISABLED = "QUEUE_RUN_DISABLED"
 QUEUE_RUN_COMPLETED = "QUEUE_RUN_COMPLETED"
 QUEUE_RUN_COMPLETED_WITH_FAILURES = "QUEUE_RUN_COMPLETED_WITH_FAILURES"
+QUEUE_RUN_IN_PROGRESS = "QUEUE_RUN_IN_PROGRESS"
+QUEUE_RUN_INTERRUPTED = "QUEUE_RUN_INTERRUPTED"
 OBSTRUCTED_QUEUE_MISSING = "OBSTRUCTED_QUEUE_MISSING"
 OBSTRUCTED_QUEUE_INVALID_JSON = "OBSTRUCTED_QUEUE_INVALID_JSON"
 OBSTRUCTED_QUEUE_INVALID_ENTRY = "OBSTRUCTED_QUEUE_INVALID_ENTRY"
@@ -119,18 +122,89 @@ def latest_manifest(candidate_root: Path) -> str:
     return str(hits[-1])
 
 
-def run_candidate(entry: dict[str, Any], work_root: Path, replay_script: Path) -> dict[str, Any]:
+class BoundedTail:
+    def __init__(self, limit: int = 4000):
+        self.limit = limit
+        self.value = ""
+
+    def append(self, text: str) -> None:
+        self.value = (self.value + text)[-self.limit :]
+
+
+def _consume_pipe(
+    pipe: Any,
+    tail: BoundedTail,
+    candidate_id: str,
+    stream_name: str,
+    stream_output: bool,
+) -> None:
+    try:
+        for line in iter(pipe.readline, ""):
+            tail.append(line)
+            if stream_output:
+                print(f"[{candidate_id} {stream_name}] {line.rstrip()}", flush=True)
+    finally:
+        pipe.close()
+
+
+def _stop_process(proc: subprocess.Popen[str]) -> None:
+    if proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+
+
+def run_candidate(
+    entry: dict[str, Any],
+    work_root: Path,
+    replay_script: Path,
+    stream_child_output: bool = False,
+) -> dict[str, Any]:
     candidate_root = work_root / "candidates" / entry["candidate_id"]
     candidate_root.mkdir(parents=True, exist_ok=True)
 
-    proc = subprocess.run(
+    proc = subprocess.Popen(
         [sys.executable, str(replay_script)],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=build_replay_env(entry, work_root),
-        timeout=int(entry.get("queue_timeout_seconds", 240)),
     )
+    assert proc.stdout is not None
+    assert proc.stderr is not None
+    stdout_tail = BoundedTail()
+    stderr_tail = BoundedTail()
+    readers = [
+        threading.Thread(
+            target=_consume_pipe,
+            args=(proc.stdout, stdout_tail, entry["candidate_id"], "stdout", stream_child_output),
+            daemon=True,
+        ),
+        threading.Thread(
+            target=_consume_pipe,
+            args=(proc.stderr, stderr_tail, entry["candidate_id"], "stderr", stream_child_output),
+            daemon=True,
+        ),
+    ]
+    for reader in readers:
+        reader.start()
+
+    timed_out = False
+    try:
+        proc.wait(timeout=int(entry.get("queue_timeout_seconds", 240)))
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        _stop_process(proc)
+    except KeyboardInterrupt:
+        _stop_process(proc)
+        raise
+    finally:
+        for reader in readers:
+            reader.join(timeout=5)
 
     manifest_path = latest_manifest(candidate_root)
     manifest_verdict = ""
@@ -149,8 +223,9 @@ def run_candidate(entry: dict[str, Any], work_root: Path, replay_script: Path) -
     return {
         "candidate_id": entry["candidate_id"],
         "returncode": proc.returncode,
-        "stdout_tail": proc.stdout[-4000:],
-        "stderr_tail": proc.stderr[-4000:],
+        "timed_out": timed_out,
+        "stdout_tail": stdout_tail.value,
+        "stderr_tail": stderr_tail.value,
         "manifest_path": manifest_path,
         "manifest_verdict": manifest_verdict,
         "patch_certificate_id": patch_certificate_id,
@@ -158,14 +233,49 @@ def run_candidate(entry: dict[str, Any], work_root: Path, replay_script: Path) -
     }
 
 
+def progress_counts(results: list[dict[str, Any]]) -> tuple[int, int]:
+    accepted = sum(1 for result in results if result.get("manifest_verdict") == "PATCH_ACCEPTED")
+    return accepted, len(results) - accepted
+
+
+def write_partial_summary(
+    path: Path,
+    summary: dict[str, Any],
+    results: list[dict[str, Any]],
+    verdict: str = QUEUE_RUN_IN_PROGRESS,
+) -> dict[str, Any]:
+    accepted, failed = progress_counts(results)
+    partial = {
+        "queue_path": summary["queue_path"],
+        "work_root": summary["work_root"],
+        "allow_run": summary["allow_run"],
+        "replay_script": summary["replay_script"],
+        "candidate_count": summary["candidate_count"],
+        "completed_count": len(results),
+        "accepted_count": accepted,
+        "failed_count": failed,
+        "results": results,
+        "verdict": verdict,
+    }
+    path.write_text(json.dumps(partial, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    return partial
+
+
+def write_summary(path: Path, summary: dict[str, Any]) -> None:
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     queue_path = Path(env("SORRYDB_V435_QUEUE_PATH"))
     work_root = Path(env("SORRYDB_V435_WORK_ROOT", "/tmp/mathgraph_sorrydb_v435_queue_runner"))
     allow_run = env_flag("SORRYDB_V435_ALLOW_RUN", False)
+    stream_child_output = env_flag("SORRYDB_V435_STREAM_CHILD_OUTPUT", False)
     replay_script = Path(env("SORRYDB_V435_REPLAY_SCRIPT", "experiments/sorrydb/sorrydb_v4_3_0_controlled_patch_replay.py"))
 
     out = work_root / "artifacts" / "runs" / "sorrydb_v4_3_5_json_patch_queue_runner" / utc_stamp()
     out.mkdir(parents=True, exist_ok=True)
+    partial_path = out / "partial_queue_run_summary.json"
+    summary_path = out / "queue_run_summary.json"
 
     summary: dict[str, Any] = {
         "queue_path": str(queue_path),
@@ -187,17 +297,56 @@ def main() -> int:
     elif not allow_run:
         summary["verdict"] = QUEUE_RUN_DISABLED
     else:
-        results = []
-        for entry in candidates:
-            results.append(run_candidate(entry, work_root, replay_script))
+        results: list[dict[str, Any]] = []
+        try:
+            for index, entry in enumerate(candidates, start=1):
+                candidate_id = entry["candidate_id"]
+                print(
+                    f"QUEUE_CANDIDATE_START candidate_id={candidate_id} index={index}/{len(candidates)}",
+                    flush=True,
+                )
+                result = run_candidate(
+                    entry,
+                    work_root,
+                    replay_script,
+                    stream_child_output=stream_child_output,
+                )
+                results.append(result)
+                print(
+                    "QUEUE_CANDIDATE_DONE "
+                    f"candidate_id={candidate_id} "
+                    f"manifest_verdict={result['manifest_verdict']} "
+                    f"returncode={result['returncode']}",
+                    flush=True,
+                )
+                print(
+                    "QUEUE_CANDIDATE_CERT "
+                    f"candidate_id={candidate_id} "
+                    f"patch_certificate_id={result['patch_certificate_id']}",
+                    flush=True,
+                )
+                write_partial_summary(partial_path, summary, results)
+        except KeyboardInterrupt:
+            print("QUEUE_RUN_INTERRUPTED: preserving partial queue results", flush=True)
+            accepted, failed = progress_counts(results)
+            summary["results"] = results
+            summary["completed_count"] = len(results)
+            summary["accepted_count"] = accepted
+            summary["failed_count"] = failed
+            summary["verdict"] = QUEUE_RUN_INTERRUPTED
+            write_partial_summary(partial_path, summary, results, QUEUE_RUN_INTERRUPTED)
+            write_summary(summary_path, summary)
+            print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
+            return 130
+
         summary["results"] = results
-        accepted = sum(1 for r in results if r.get("manifest_verdict") == "PATCH_ACCEPTED")
+        accepted, failed = progress_counts(results)
+        summary["completed_count"] = len(results)
         summary["accepted_count"] = accepted
-        summary["failed_count"] = len(results) - accepted
+        summary["failed_count"] = failed
         summary["verdict"] = QUEUE_RUN_COMPLETED if accepted == len(results) else QUEUE_RUN_COMPLETED_WITH_FAILURES
 
-    path = out / "queue_run_summary.json"
-    path.write_text(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+    write_summary(summary_path, summary)
     print(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
 
