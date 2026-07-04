@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_shift_bound_explicit_c_v1",
+  "reason": "The explicit inequality c > B/(2\u03b4), together with \u03b4 > 0, implies B < 2*c*\u03b4. This discharges the scalar shift condition required by the positive-gap theorem.",
+  "portal": "convert the abstract shift condition B < 2*c*\u03b4 into the computable lower bound c > B/(2\u03b4)",
+  "certificate": "Lean proof using div_lt_iff\u2080, positivity of 2\u03b4, and nlinarith"
+}

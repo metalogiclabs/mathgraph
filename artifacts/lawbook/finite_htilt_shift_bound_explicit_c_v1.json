@@ -1,0 +1,43 @@
+{
+  "artifact_id": "finite_htilt_shift_bound_explicit_c_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_shift_bound_explicit_c.lean",
+  "namespace": "HTiltShiftBoundExplicitC",
+  "verified_declarations": [
+    "HTiltShiftBoundExplicitC.shiftedSqMod",
+    "HTiltShiftBoundExplicitC.shiftedSqMod_sub_eq",
+    "HTiltShiftBoundExplicitC.shiftedSqMod_gt_of_bound",
+    "HTiltShiftBoundExplicitC.shiftedSqMod_gt_for_all_competitors_of_shared_bound",
+    "HTiltShiftBoundExplicitC.shiftedSqMod_gt_for_all_competitors_of_positive_gap",
+    "HTiltShiftBoundExplicitC.shiftedSqMod_gt_for_all_competitors_of_explicit_c_bound"
+  ],
+  "claim": {
+    "summary": "If \u03b4 is positive, c is nonnegative, c is strictly larger than B/(2\u03b4), every residual is bounded by B, and every competitor has real-part gap at least \u03b4, then every listed competitor has strictly smaller shifted squared modulus after the shift.",
+    "delta_condition": "0 < \u03b4",
+    "explicit_c_condition": "B / (2*\u03b4) < c",
+    "residual_bound_condition": "forall p in competitors, |(p.1^2+p.2^2)-(a^2+b^2)| <= B",
+    "gap_bound_condition": "forall p in competitors, \u03b4 <= a - p.1",
+    "conclusion": "forall p in competitors, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "pure real shifted squared-modulus identity",
+      "positive-gap finite-list shift bound",
+      "explicit scalar lower bound c > B/(2\u03b4) implies shifted dominance under residual and gap assumptions"
+    ],
+    "does_not_prove": [
+      "actual spectrum extraction from a matrix",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

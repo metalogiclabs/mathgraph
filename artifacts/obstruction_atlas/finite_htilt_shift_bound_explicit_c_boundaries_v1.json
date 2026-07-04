@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_shift_bound_explicit_c_v1",
+  "closed_obstructions": [
+    {
+      "name": "abstract_shift_bound_to_explicit_c",
+      "resolution": "Proved that \u03b4 > 0 and B/(2\u03b4) < c imply B < 2*c*\u03b4."
+    },
+    {
+      "name": "computable_scalar_shift_rule",
+      "resolution": "Proved that choosing c above B/(2\u03b4) suffices for finite-list shifted dominance under residual and gap assumptions."
+    }
+  ],
+  "open_obstructions": [
+    "extract actual finite spectrum from a matrix",
+    "construct residual envelope B from spectrum coordinates",
+    "construct positive real-part gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
