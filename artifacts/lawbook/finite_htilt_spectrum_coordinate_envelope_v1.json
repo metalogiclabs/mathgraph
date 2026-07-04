@@ -1,0 +1,49 @@
+{
+  "artifact_id": "finite_htilt_spectrum_coordinate_envelope_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_spectrum_coordinate_envelope.lean",
+  "namespace": "HTiltSpectrumCoordinateEnvelope",
+  "verified_declarations": [
+    "HTiltSpectrumCoordinateEnvelope.Coord",
+    "HTiltSpectrumCoordinateEnvelope.shiftedSqMod",
+    "HTiltSpectrumCoordinateEnvelope.residual",
+    "HTiltSpectrumCoordinateEnvelope.ResidualEnvelope",
+    "HTiltSpectrumCoordinateEnvelope.PositiveGapEnvelope",
+    "HTiltSpectrumCoordinateEnvelope.shiftedSqMod_sub_eq",
+    "HTiltSpectrumCoordinateEnvelope.shiftedSqMod_gt_of_bound",
+    "HTiltSpectrumCoordinateEnvelope.shiftedSqMod_gt_for_all_coords_of_envelopes",
+    "HTiltSpectrumCoordinateEnvelope.shiftedSqMod_gt_for_all_coords_of_explicit_c_envelopes"
+  ],
+  "claim": {
+    "summary": "For a finite list of real coordinate pairs, if B bounds every residual against a target coordinate, \u03b4 bounds every real-part gap below, \u03b4 is positive, c is nonnegative, and c > B/(2\u03b4), then every coordinate in the list has strictly smaller shifted squared modulus after the shift.",
+    "coordinate_model": "Coord := \u211d \u00d7 \u211d",
+    "residual_envelope": "forall p in coords, residual a b p <= B",
+    "positive_gap_envelope": "forall p in coords, \u03b4 <= a - p.1",
+    "explicit_c_condition": "0 < \u03b4 and 0 <= c and B/(2*\u03b4) < c",
+    "conclusion": "forall p in coords, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "finite coordinate-pair residual predicate",
+      "finite coordinate-pair positive-gap predicate",
+      "coordinate-envelope dominance from B < 2*c*\u03b4",
+      "coordinate-envelope dominance from explicit scalar lower bound c > B/(2\u03b4)"
+    ],
+    "does_not_prove": [
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

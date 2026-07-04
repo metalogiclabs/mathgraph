@@ -1,0 +1,24 @@
+{
+  "artifact_id": "finite_htilt_spectrum_coordinate_envelope_v1",
+  "closed_obstructions": [
+    {
+      "name": "unnamed_competitor_list_to_coordinate_envelope",
+      "resolution": "Introduced Coord, residual, ResidualEnvelope, and PositiveGapEnvelope predicates."
+    },
+    {
+      "name": "pre_spectral_dominance_interface",
+      "resolution": "Verified shifted dominance for all finite coordinates under residual and gap envelopes plus explicit c bound."
+    }
+  ],
+  "open_obstructions": [
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

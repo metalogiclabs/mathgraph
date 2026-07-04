@@ -1,0 +1,7 @@
+{
+  "artifact_id": "finite_htilt_spectrum_coordinate_envelope_v1",
+  "lean_compile_command": "cd experiments/continuation_claim_audit_lab/lean_project && lake env lean ../../../../examples/verifier_fixtures/lean/htilt_spectrum_coordinate_envelope.lean",
+  "placeholder_scan": "grep -RInE '\\\\b(sorry|admit|axiom|unsafe)\\\\b' examples/verifier_fixtures/lean/htilt_spectrum_coordinate_envelope.lean || true",
+  "status": "VERIFIED_PROOF",
+  "scope": "pure real/list algebraic coordinate-envelope dominance"
+}

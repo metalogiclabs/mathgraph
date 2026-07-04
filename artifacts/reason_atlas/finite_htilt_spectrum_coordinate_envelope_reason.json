@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_spectrum_coordinate_envelope_v1",
+  "reason": "The previous explicit-c theorem is repackaged around named coordinate-envelope predicates. This creates a pre-spectral interface: a finite coordinate list can be certified for shifted dominance once residual and positive-gap envelopes are supplied.",
+  "portal": "rename arbitrary finite competitors into a spectral-coordinate interface without claiming matrix spectral provenance",
+  "certificate": "Lean proof using coordinate predicates, explicit-c inequality, and real/list algebra"
+}
