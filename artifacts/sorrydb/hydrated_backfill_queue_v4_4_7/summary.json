@@ -1,0 +1,36 @@
+{
+  "backfill_ready_count": 4,
+  "blocked_count": 0,
+  "bounded_claim": "verified hydrated source rows can be converted into replay-ready queue candidates",
+  "category_counts": {
+    "HYDRATED_BACKFILL_BLOCKED_FILE_MISSING": 0,
+    "HYDRATED_BACKFILL_BLOCKED_MISSING_PATCH": 0,
+    "HYDRATED_BACKFILL_BLOCKED_MULTIPLE_SORRIES": 0,
+    "HYDRATED_BACKFILL_BLOCKED_NOT_VERIFIED": 0,
+    "HYDRATED_BACKFILL_BLOCKED_NO_SORRY": 0,
+    "HYDRATED_BACKFILL_BLOCKED_PATCH_CONTAINS_SORRY": 0,
+    "HYDRATED_BACKFILL_BLOCKED_PATCH_HASH_MISMATCH": 0,
+    "HYDRATED_BACKFILL_BLOCKED_SNIPPET_AMBIGUOUS": 0,
+    "HYDRATED_BACKFILL_BLOCKED_SNIPPET_HASH_MISMATCH": 0,
+    "HYDRATED_BACKFILL_BLOCKED_UNCLASSIFIED": 0,
+    "HYDRATED_BACKFILL_READY": 4
+  },
+  "does_not_claim": [
+    "Lean replay success",
+    "proof checking",
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "hydrated_row_count": 4,
+  "next_frontier": "v4.4.8 run the hydrated backfill queue through streaming Lean replay and ledger outcomes",
+  "ready_candidate_ids": [
+    "v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+  ],
+  "status": "HYDRATED_BACKFILL_QUEUE_PLANNED",
+  "version": "v4.4.7"
+}
