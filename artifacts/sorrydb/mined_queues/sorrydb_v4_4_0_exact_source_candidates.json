@@ -1,0 +1,84 @@
+{
+  "bounded_claim": "generates valid queue entries from exact source, patch, and certificate rows",
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "candidate_id": "v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "certificate_version": "v4.3.5",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "min_free_gb": 5.0,
+      "mined_from": {
+        "certificate_path": "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+        "manifest_path": "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+        "source_file": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+      },
+      "patch_snippet": "  · extract_goal using eg₁\n    exact Nat.le_add_right n 1",
+      "project": "siddhartha-gadgil/MetaExamples",
+      "project_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "restore_check": "line 97 restored to sorry after replay",
+      "run_baseline_first": 1,
+      "sorry_span": {
+        "end_line": 97,
+        "start_line": 97
+      },
+      "source_snippet": "  · extract_goal using eg₁\n    sorry",
+      "source_span": {
+        "end_line": 97,
+        "start_line": 96
+      },
+      "timeout_seconds": 240
+    },
+    {
+      "candidate_id": "v440-sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "certificate_version": "v4.3.5",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "min_free_gb": 5.0,
+      "mined_from": {
+        "certificate_path": "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+        "manifest_path": "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+        "source_file": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+      },
+      "patch_snippet": "  · extract_goal using eg₂\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "project": "siddhartha-gadgil/MetaExamples",
+      "project_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "repo_root": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "restore_check": "line 99 restored to sorry after replay",
+      "run_baseline_first": 1,
+      "sorry_span": {
+        "end_line": 99,
+        "start_line": 99
+      },
+      "source_snippet": "  · extract_goal using eg₂\n    sorry",
+      "source_span": {
+        "end_line": 99,
+        "start_line": 98
+      },
+      "timeout_seconds": 240
+    }
+  ],
+  "certificate_count": 2,
+  "does_not_claim": [
+    "new proof discovery",
+    "general SorryDB mining",
+    "upstream automation"
+  ],
+  "known_sorry_spans": [
+    {
+      "end_line": 97,
+      "start_line": 97
+    },
+    {
+      "end_line": 99,
+      "start_line": 99
+    }
+  ],
+  "manifest_count": 2,
+  "obstruction_count": 0,
+  "obstructions": [],
+  "source_file": "/tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+  "status": "MINED_CANDIDATE_QUEUE",
+  "version": "v4.4.0"
+}
