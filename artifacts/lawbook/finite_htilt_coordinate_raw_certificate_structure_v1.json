@@ -1,0 +1,41 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_certificate_structure_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra_certificate_structure",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_coordinate_raw_certificate_structure.lean",
+  "imports": [
+    "HTilt.CoordinateChecklist"
+  ],
+  "namespace": "HTiltCoordinateRawCertificateStructure",
+  "verified_declarations": [
+    "HTiltCoordinateRawCertificateStructure.RawCoordinateDominanceCertificate",
+    "HTiltCoordinateRawCertificateStructure.RawCoordinateDominanceCertificate.shifted_dominance",
+    "HTiltCoordinateRawCertificateStructure.RawCoordinateDominanceCertificate.to_checklist"
+  ],
+  "claim": {
+    "summary": "A bundled raw coordinate dominance certificate implies shifted dominance and builds CoordinateEnvelopeChecklist through the reusable core API."
+  },
+  "boundary": {
+    "proves": [
+      "bundles raw finite-coordinate evidence into a certificate structure",
+      "certificate implies shifted squared-modulus dominance over all coordinates in the finite list",
+      "certificate builds CoordinateEnvelopeChecklist"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

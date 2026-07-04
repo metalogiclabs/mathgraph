@@ -1,0 +1,10 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_certificate_structure_v1",
+  "lean_compile_command": "cd experiments/continuation_claim_audit_lab/lean_project && lake env lean /Users/heath/Documents/mathgraph-lean-work/examples/verifier_fixtures/lean/htilt_coordinate_raw_certificate_structure.lean",
+  "core_build_command": "cd experiments/continuation_claim_audit_lab/lean_project && lake build HTilt.CoordinateChecklist",
+  "placeholder_scan": "grep -RInE '\\b(sorry|admit|axiom|unsafe)\\b' examples/verifier_fixtures/lean/htilt_coordinate_raw_certificate_structure.lean || true",
+  "status": "VERIFIED_PROOF",
+  "scope": "certificate-object compaction layer for finite-coordinate raw evidence",
+  "tests": "2 passed",
+  "lean": "core build and certificate fixture compile passed"
+}

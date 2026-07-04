@@ -1,0 +1,5 @@
+{
+  "artifact_id": "finite_htilt_coordinate_raw_certificate_structure_v1",
+  "reason": "Previous artifacts exposed raw-evidence APIs, existence of residual envelopes, gap-witness wrappers, and a numeric smoke theorem. This artifact compresses those raw fields into one StrCC-compatible certificate object that future continuation and search layers can carry.",
+  "certificate": "Lean structure plus methods delegating checklist construction and shifted dominance to HTilt.CoordinateChecklist."
+}
