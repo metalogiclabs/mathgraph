@@ -1,0 +1,8 @@
+{
+  "artifact_id": "finite_htilt_coordinate_core_module_v1",
+  "core_build_command": "cd experiments/continuation_claim_audit_lab/lean_project && lake build HTilt.CoordinateChecklist",
+  "smoke_compile_command": "cd experiments/continuation_claim_audit_lab/lean_project && lake env lean ../../../../examples/verifier_fixtures/lean/htilt_coordinate_core_import_smoke.lean",
+  "placeholder_scan": "grep -RInE '\\\\b(sorry|admit|axiom|unsafe)\\\\b' experiments/continuation_claim_audit_lab/lean_project/HTilt/CoordinateChecklist.lean examples/verifier_fixtures/lean/htilt_coordinate_core_import_smoke.lean || true",
+  "status": "VERIFIED_PROOF",
+  "scope": "Reusable Lean core module and import smoke for finite H-Tilt coordinate checklist theorem family"
+}

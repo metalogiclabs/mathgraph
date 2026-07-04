@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_core_module_v1",
+  "reason": "The previous tower existed as duplicated standalone fixtures. This artifact factors the reusable coordinate checklist theorem family into an importable Lean library module.",
+  "portal": "turn verified fixture proofs into reusable module API",
+  "certificate": "Lake build of HTilt.CoordinateChecklist plus downstream import smoke fixture"
+}

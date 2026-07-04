@@ -1,6 +1,9 @@
 name = "htilt-survivor-law"
 version = "0.1.0"
 
+[[lean_lib]]
+name = "HTilt"
+
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"

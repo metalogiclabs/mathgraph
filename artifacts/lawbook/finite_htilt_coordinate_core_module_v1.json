@@ -1,0 +1,65 @@
+{
+  "artifact_id": "finite_htilt_coordinate_core_module_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "lean_core_module_refactor",
+  "lean_core_module": "experiments/continuation_claim_audit_lab/lean_project/HTilt/CoordinateChecklist.lean",
+  "import_smoke_fixture": "examples/verifier_fixtures/lean/htilt_coordinate_core_import_smoke.lean",
+  "lakefile": "experiments/continuation_claim_audit_lab/lean_project/lakefile.toml",
+  "import_path": "HTilt.CoordinateChecklist",
+  "namespace": "HTilt.CoordinateChecklist",
+  "verified_declarations": [
+    "HTilt.CoordinateChecklist.Coord",
+    "HTilt.CoordinateChecklist.shiftedSqMod",
+    "HTilt.CoordinateChecklist.residual",
+    "HTilt.CoordinateChecklist.ResidualEnvelope",
+    "HTilt.CoordinateChecklist.PositiveGapEnvelope",
+    "HTilt.CoordinateChecklist.CoordinateEnvelopeChecklist",
+    "HTilt.CoordinateChecklist.shiftedSqMod_sub_eq",
+    "HTilt.CoordinateChecklist.shiftedSqMod_gt_of_bound",
+    "HTilt.CoordinateChecklist.shiftedSqMod_gt_for_all_coords_of_envelopes",
+    "HTilt.CoordinateChecklist.shiftedSqMod_gt_for_all_coords_of_explicit_c_envelopes",
+    "HTilt.CoordinateChecklist.shiftedSqMod_gt_for_all_coords_of_checklist",
+    "HTilt.CoordinateChecklist.checklist_residual_envelope",
+    "HTilt.CoordinateChecklist.checklist_positive_gap_envelope",
+    "HTilt.CoordinateChecklist.checklist_delta_pos",
+    "HTilt.CoordinateChecklist.checklist_c_nonneg",
+    "HTilt.CoordinateChecklist.checklist_explicit_c_bound",
+    "HTilt.CoordinateChecklist.nil_coordinate_envelope_checklist",
+    "HTilt.CoordinateChecklist.singleton_coordinate_envelope_checklist",
+    "HTilt.CoordinateChecklist.cons_coordinate_envelope_checklist",
+    "HTilt.CoordinateChecklist.list_coordinate_envelope_checklist",
+    "HTilt.CoordinateChecklist.finite_coordinate_shifted_dominance_master",
+    "HTilt.CoordinateChecklist.finite_coordinate_shifted_dominance_from_checklist"
+  ],
+  "claim": {
+    "summary": "The finite H-Tilt coordinate checklist tower has been factored into a reusable Lake library module importable as HTilt.CoordinateChecklist.",
+    "module_target": "HTilt",
+    "core_module": "HTilt/CoordinateChecklist.lean",
+    "smoke_claim": "A downstream fixture imports HTilt.CoordinateChecklist and reuses the master theorem and checklist theorem."
+  },
+  "boundary": {
+    "proves": [
+      "reusable HTilt Lean library target exists",
+      "HTilt.CoordinateChecklist core module compiles",
+      "downstream fixture can import HTilt.CoordinateChecklist",
+      "downstream fixture can reuse finite_coordinate_shifted_dominance_master",
+      "downstream fixture can reuse finite_coordinate_shifted_dominance_from_checklist"
+    ],
+    "does_not_prove": [
+      "that any coordinate is an eigenvalue",
+      "that the coordinate list is a matrix spectrum",
+      "actual spectrum extraction from a matrix",
+      "eigenvalue existence",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}
