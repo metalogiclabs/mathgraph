@@ -26,6 +26,8 @@ OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY = "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY"
 OBSTRUCTED_BASELINE_TIMEOUT = "OBSTRUCTED_BASELINE_TIMEOUT"
 OBSTRUCTED_BASELINE_COMPILE_FAILURE = "OBSTRUCTED_BASELINE_COMPILE_FAILURE"
 OBSTRUCTED_UNSAFE_REPLAY_COMMAND = "OBSTRUCTED_UNSAFE_REPLAY_COMMAND"
+OBSTRUCTED_REPO_NOT_CACHED = "OBSTRUCTED_REPO_NOT_CACHED"
+REPLAY_MANIFEST_WRITTEN = "REPLAY_MANIFEST_WRITTEN"
 INTERRUPTED_PARTIAL_RUN = "INTERRUPTED_PARTIAL_RUN"
 LAWBOOK_ACCEPTED_PATCH_EXISTS = "LAWBOOK_ACCEPTED_PATCH_EXISTS"
 OBSTRUCTED_NO_EXACT_LINE_PATCH = "OBSTRUCTED_NO_EXACT_LINE_PATCH"
@@ -119,6 +121,13 @@ class RunSummary:
     completed_attempts: int = 0
     repo_copy_strategy: str = "one_copy_per_replayable_target_after_preflight_and_baseline"
     cache_get_allowed: bool = False
+    replay_manifest_rows: int = 0
+    repo_cache_root: str = ""
+    dry_run_manifest_enabled: bool = False
+    repo_cache_hits: int = 0
+    repo_cache_misses: int = 0
+    source_hits: int = 0
+    source_misses: int = 0
     verdict: str = OBSTRUCTED_NO_INPUT_RECORDS
 
 
@@ -248,6 +257,55 @@ def disk_preflight(paths: Iterable[Path], required_gb: float) -> tuple[bool, dic
         if free < required_gb:
             safe = False
     return safe, free_gb, checked_paths
+
+
+def safe_repo_cache_key(repo: str, commit: str) -> str:
+    cleaned = repo.strip().rstrip("/").removesuffix(".git")
+    parts = cleaned.split("/")
+    if len(parts) >= 2:
+        owner_repo = "__".join(parts[-2:])
+    else:
+        owner_repo = cleaned or "unknown_repo"
+    owner_repo = re.sub(r"[^A-Za-z0-9_.-]+", "_", owner_repo)
+    commit_part = re.sub(r"[^A-Za-z0-9_.-]+", "_", (commit or "unknown_commit"))[:12]
+    return f"{owner_repo}__{commit_part}"
+
+
+def expected_repo_cache_path(repo_cache_root: Path, target: SorryTarget) -> Path:
+    return repo_cache_root.expanduser() / safe_repo_cache_key(target.repo, target.commit)
+
+
+def build_manifest_row(target: SorryTarget, repo_cache_root: Path) -> dict[str, Any]:
+    repo_path = expected_repo_cache_path(repo_cache_root, target)
+    source_path = repo_path / target.file_path if target.file_path else repo_path
+    repo_cached = repo_path.exists()
+    source_exists = source_path.exists()
+    if not repo_cached:
+        obstruction = OBSTRUCTED_REPO_NOT_CACHED
+    elif not source_exists:
+        obstruction = "OBSTRUCTED_MISSING_FILE"
+    else:
+        obstruction = "NONE"
+    return {
+        "repo": target.repo,
+        "commit": target.commit,
+        "lean_version": target.lean_version,
+        "file_path": target.file_path,
+        "line": target.line,
+        "statement": target.statement,
+        "expected_repo_cache_path": str(repo_path),
+        "expected_source_path": str(source_path),
+        "repo_cached": repo_cached,
+        "source_exists": source_exists,
+        "obstruction": obstruction,
+    }
+
+
+def write_replay_manifest(output: Path, rows: list[dict[str, Any]]) -> None:
+    output.mkdir(parents=True, exist_ok=True)
+    with (output / "replay_manifest.jsonl").open("w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, sort_keys=True) + "\n")
 
 
 def symbolic_tokens(text: str) -> set[str]:
@@ -630,6 +688,8 @@ def main() -> int:
     )
     required_gb = float(os.getenv("SORRYDB_V421_MIN_FREE_GB", "15"))
     allow_cache_get = env_flag("SORRYDB_V421_ALLOW_CACHE_GET")
+    dry_run_manifest = env_flag("SORRYDB_V422_DRY_RUN_MANIFEST")
+    repo_cache_root = Path(os.getenv("SORRYDB_V422_REPO_CACHE_ROOT", str(work_root / "repo_cache")))
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = (
         work_root
@@ -643,6 +703,8 @@ def main() -> int:
         total_records_loaded=len(records),
         required_gb=required_gb,
         cache_get_allowed=allow_cache_get,
+        dry_run_manifest_enabled=dry_run_manifest,
+        repo_cache_root=str(repo_cache_root),
     )
     attempts: list[PatchAttempt] = []
     if not records:
@@ -677,6 +739,36 @@ def main() -> int:
     )
     targets = [target for target in targets if target_matches_focus(target, focus)][:max_records]
     summary.targets_selected = len(targets)
+    if not targets:
+        summary.verdict = OBSTRUCTED_NO_REPLAYABLE_TARGETS
+        write_reports(output, summary, attempts)
+        print(json.dumps(asdict(summary), indent=2))
+        return 0
+
+    if dry_run_manifest:
+        manifest_rows = []
+        for target in targets:
+            increment(summary.focus_repo_counts, target.repo or "UNKNOWN")
+            row = build_manifest_row(target, repo_cache_root)
+            manifest_rows.append(row)
+            if row["repo_cached"]:
+                summary.repo_cache_hits += 1
+            else:
+                summary.repo_cache_misses += 1
+            if row["source_exists"]:
+                summary.source_hits += 1
+            else:
+                summary.source_misses += 1
+            if row["obstruction"] != "NONE":
+                increment(summary.obstructions_by_reason, row["obstruction"])
+            summary.completed_targets += 1
+        summary.replay_manifest_rows = len(manifest_rows)
+        summary.verdict = REPLAY_MANIFEST_WRITTEN if manifest_rows else OBSTRUCTED_NO_REPLAYABLE_TARGETS
+        write_replay_manifest(output, manifest_rows)
+        write_reports(output, summary, attempts)
+        print(json.dumps(asdict(summary), indent=2))
+        return 0
+
     baseline_cache: dict[tuple[str, str, str], BaselineResult] = {}
     try:
         for target in targets:
