@@ -1,0 +1,24 @@
+{
+  "artifact_id": "finite_htilt_coordinate_envelope_checklist_v1",
+  "closed_obstructions": [
+    {
+      "name": "multi_assumption_coordinate_interface",
+      "resolution": "Bundled residual envelope, gap envelope, \u03b4 positivity, c nonnegativity, and explicit c bound into CoordinateEnvelopeChecklist."
+    },
+    {
+      "name": "checklist_to_dominance",
+      "resolution": "Verified that the checklist implies shifted dominance for all coordinates in the finite list."
+    }
+  ],
+  "open_obstructions": [
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

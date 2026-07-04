@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_coordinate_envelope_checklist_v1",
+  "reason": "The coordinate-envelope assumptions are bundled into a single checklist predicate. The proof destructures the checklist and applies the explicit coordinate-envelope dominance theorem.",
+  "portal": "turn multiple coordinate-envelope assumptions into one reusable certificate/checklist predicate",
+  "certificate": "Lean proof by unpacking the checklist and applying the explicit-c coordinate-envelope theorem"
+}
