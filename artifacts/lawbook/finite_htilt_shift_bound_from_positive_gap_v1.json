@@ -1,0 +1,42 @@
+{
+  "artifact_id": "finite_htilt_shift_bound_from_positive_gap_v1",
+  "status": "VERIFIED_PROOF",
+  "claim_type": "pure_real_list_algebra",
+  "lean_file": "examples/verifier_fixtures/lean/htilt_shift_bound_from_positive_gap.lean",
+  "namespace": "HTiltShiftBoundFromPositiveGap",
+  "verified_declarations": [
+    "HTiltShiftBoundFromPositiveGap.shiftedSqMod",
+    "HTiltShiftBoundFromPositiveGap.shiftedSqMod_sub_eq",
+    "HTiltShiftBoundFromPositiveGap.shiftedSqMod_gt_of_bound",
+    "HTiltShiftBoundFromPositiveGap.shiftedSqMod_gt_for_all_competitors_of_shared_bound",
+    "HTiltShiftBoundFromPositiveGap.shiftedSqMod_gt_for_all_competitors_of_positive_gap"
+  ],
+  "claim": {
+    "summary": "If every finite competitor has real-part gap at least \u03b4, every residual is bounded by B, c is nonnegative, and B < 2*c*\u03b4, then every listed competitor has strictly smaller shifted squared modulus after the shift.",
+    "positive_gap_condition": "forall p in competitors, \u03b4 <= a - p.1",
+    "residual_bound_condition": "forall p in competitors, |(p.1^2+p.2^2)-(a^2+b^2)| <= B",
+    "shift_bound_condition": "0 <= c and B < 2*c*\u03b4",
+    "conclusion": "forall p in competitors, shiftedSqMod c p.1 p.2 < shiftedSqMod c a b"
+  },
+  "boundary": {
+    "proves": [
+      "pure real shifted squared-modulus identity",
+      "shared residual-envelope finite-list dominance",
+      "positive-gap finite-list shift bound",
+      "single computable scalar inequality B < 2*c*\u03b4 implies dominance under gap and residual assumptions"
+    ],
+    "does_not_prove": [
+      "actual spectrum extraction from a matrix",
+      "construction of B from a matrix spectrum",
+      "construction of \u03b4 from a matrix spectral gap",
+      "strict spectral-abscissa hypothesis for a matrix eigenvalue",
+      "that a strict-abscissa eigenvalue of a real matrix is real",
+      "Perron-root alignment",
+      "irreducibility transfer",
+      "Perron-Frobenius invocation",
+      "Markov convergence",
+      "empirical h-band",
+      "consciousness or scheduler claims"
+    ]
+  }
+}

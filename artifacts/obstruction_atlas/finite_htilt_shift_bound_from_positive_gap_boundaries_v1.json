@@ -1,0 +1,23 @@
+{
+  "artifact_id": "finite_htilt_shift_bound_from_positive_gap_v1",
+  "closed_obstructions": [
+    {
+      "name": "per_competitor_shift_gap_to_uniform_gap",
+      "resolution": "Proved that c >= 0 and \u03b4 <= a-u imply 2*c*\u03b4 <= 2*c*(a-u)."
+    },
+    {
+      "name": "single_scalar_shift_bound",
+      "resolution": "Proved that B < 2*c*\u03b4 suffices for all finite competitors under residual and gap assumptions."
+    }
+  ],
+  "open_obstructions": [
+    "extract actual finite spectrum from a matrix",
+    "construct residual envelope B from spectrum coordinates",
+    "construct positive real-part gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}

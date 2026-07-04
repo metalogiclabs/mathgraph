@@ -1,0 +1,6 @@
+{
+  "artifact_id": "finite_htilt_shift_bound_from_positive_gap_v1",
+  "reason": "A uniform lower bound \u03b4 on all real-part gaps converts the per-competitor shift gap 2*c*(a-u) into the shared lower bound 2*c*\u03b4. If B bounds all residuals and B < 2*c*\u03b4, then B is below every per-competitor shift gap, so the shared-envelope finite-list theorem applies.",
+  "portal": "replace many per-competitor shift inequalities with one scalar positive-gap inequality",
+  "certificate": "Lean proof using finite-list shared-bound theorem plus nlinarith"
+}
