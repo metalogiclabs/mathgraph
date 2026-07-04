@@ -1,0 +1,30 @@
+{
+  "backfill_ready_count": 0,
+  "blocked_count": 4,
+  "bounded_claim": "classifies missing-manifest evidence rows into replay-ready candidates or named backfill obstructions",
+  "category_counts": {
+    "BACKFILL_BLOCKED_FILE_PATH_MISSING": 0,
+    "BACKFILL_BLOCKED_INSUFFICIENT_CERTIFICATE": 0,
+    "BACKFILL_BLOCKED_MULTIPLE_SORRIES_IN_SOURCE_SNIPPET": 0,
+    "BACKFILL_BLOCKED_NO_SORRY_IN_SOURCE_SNIPPET": 0,
+    "BACKFILL_BLOCKED_PATCH_SNIPPET_MISSING": 0,
+    "BACKFILL_BLOCKED_SOURCE_MISSING": 4,
+    "BACKFILL_BLOCKED_SOURCE_SNIPPET_AMBIGUOUS": 0,
+    "BACKFILL_BLOCKED_SOURCE_SNIPPET_MISSING": 0,
+    "BACKFILL_BLOCKED_SOURCE_SNIPPET_NOT_FOUND": 0,
+    "BACKFILL_BLOCKED_UNCLASSIFIED": 0,
+    "BACKFILL_REPLAY_READY": 0
+  },
+  "does_not_claim": [
+    "new proof discovery",
+    "Lean replay success",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "missing_manifest_count": 4,
+  "next_frontier": "v4.4.4: run any BACKFILL_REPLAY_READY queue through streaming Lean replay",
+  "ready_candidate_ids": [],
+  "status": "MISSING_MANIFEST_BACKFILL_PROFILED",
+  "version": "v4.4.3"
+}

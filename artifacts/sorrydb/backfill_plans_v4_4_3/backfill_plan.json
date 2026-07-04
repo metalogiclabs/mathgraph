@@ -1,0 +1,120 @@
+{
+  "blocked_rows": [
+    {
+      "category": "BACKFILL_BLOCKED_SOURCE_MISSING",
+      "certificate_path": "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+      "certificate_resolution": "profile certificate path",
+      "detail": "source is unavailable as a checked-in input: /tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "evidence_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "source_profile_row": {
+        "category": "MISSING_MANIFEST",
+        "certificate_paths": [
+          "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json"
+        ],
+        "evidence_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+        "manifest_paths": [],
+        "terminal_form": "NAMED_OBSTRUCTION"
+      },
+      "terminal_form": "NAMED_OBSTRUCTION"
+    },
+    {
+      "category": "BACKFILL_BLOCKED_SOURCE_MISSING",
+      "certificate_path": "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+      "certificate_resolution": "profile certificate path",
+      "detail": "source is unavailable as a checked-in input: /tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "evidence_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "source_profile_row": {
+        "category": "MISSING_MANIFEST",
+        "certificate_paths": [
+          "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json"
+        ],
+        "evidence_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+        "manifest_paths": [],
+        "terminal_form": "NAMED_OBSTRUCTION"
+      },
+      "terminal_form": "NAMED_OBSTRUCTION"
+    },
+    {
+      "category": "BACKFILL_BLOCKED_SOURCE_MISSING",
+      "certificate_path": "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+      "certificate_resolution": "profile certificate path",
+      "detail": "source is unavailable as a checked-in input: /tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "evidence_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+      "source_profile_row": {
+        "category": "MISSING_MANIFEST",
+        "certificate_paths": [
+          "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json"
+        ],
+        "evidence_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+        "manifest_paths": [],
+        "terminal_form": "NAMED_OBSTRUCTION"
+      },
+      "terminal_form": "NAMED_OBSTRUCTION"
+    },
+    {
+      "category": "BACKFILL_BLOCKED_SOURCE_MISSING",
+      "certificate_path": "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+      "certificate_resolution": "profile certificate path",
+      "detail": "source is unavailable as a checked-in input: /tmp/mathgraph_sorrydb_v427_disposable/repo_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean",
+      "evidence_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+      "source_profile_row": {
+        "category": "MISSING_MANIFEST",
+        "certificate_paths": [
+          "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json"
+        ],
+        "evidence_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+        "manifest_paths": [],
+        "terminal_form": "NAMED_OBSTRUCTION"
+      },
+      "terminal_form": "NAMED_OBSTRUCTION"
+    }
+  ],
+  "category_counts": {
+    "BACKFILL_BLOCKED_FILE_PATH_MISSING": 0,
+    "BACKFILL_BLOCKED_INSUFFICIENT_CERTIFICATE": 0,
+    "BACKFILL_BLOCKED_MULTIPLE_SORRIES_IN_SOURCE_SNIPPET": 0,
+    "BACKFILL_BLOCKED_NO_SORRY_IN_SOURCE_SNIPPET": 0,
+    "BACKFILL_BLOCKED_PATCH_SNIPPET_MISSING": 0,
+    "BACKFILL_BLOCKED_SOURCE_MISSING": 4,
+    "BACKFILL_BLOCKED_SOURCE_SNIPPET_AMBIGUOUS": 0,
+    "BACKFILL_BLOCKED_SOURCE_SNIPPET_MISSING": 0,
+    "BACKFILL_BLOCKED_SOURCE_SNIPPET_NOT_FOUND": 0,
+    "BACKFILL_BLOCKED_UNCLASSIFIED": 0,
+    "BACKFILL_REPLAY_READY": 0
+  },
+  "notes": [
+    "ready candidates are replay plans, not accepted claims",
+    "blocked rows remain NAMED_OBSTRUCTION records"
+  ],
+  "ready_candidates": [],
+  "scanned_paths": [
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/emitted_patch_certificates_v4_3_4/summary.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/enabled_queue_reality_v4_3_6/summary.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/runner_summaries/partial_queue_run_summary_1.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/runner_summaries/queue_run_summary.json",
+    "artifacts/sorrydb/mined_queue_reality_v4_4_1/summary.json",
+    "artifacts/sorrydb/miner_coverage_v4_4_2/profile.json",
+    "artifacts/sorrydb/miner_coverage_v4_4_2/summary.json",
+    "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.manifest.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/manifests/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.manifest.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/runner_summaries/partial_queue_run_summary_1.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/runner_summaries/queue_run_summary.json",
+    "artifacts/sorrydb/streaming_reality_v4_3_8/summary.json"
+  ],
+  "source_profile": "artifacts/sorrydb/miner_coverage_v4_4_2/profile.json",
+  "version": "v4.4.3"
+}
