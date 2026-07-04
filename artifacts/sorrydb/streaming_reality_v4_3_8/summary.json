@@ -1,0 +1,51 @@
+{
+  "accepted_count": 2,
+  "bounded_claim": [
+    "streaming-enabled queue runner executed two exact-source patch candidates under real Lean contact",
+    "candidate-level progress was visible during the run",
+    "partial queue summary was emitted",
+    "both candidates produced PATCH_ACCEPTED manifests",
+    "both candidates emitted certificate JSON files",
+    "source file was restored after replay"
+  ],
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "candidate_id": "metaexamples-fiddle-line97-eg1",
+      "manifest_verdict": "PATCH_ACCEPTED",
+      "patch_certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1",
+      "patch_certificate_path": "/tmp/mathgraph_sorrydb_v438_streaming_reality/candidates/metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T070143Z/patch_certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line97-eg1.json",
+      "returncode": 0,
+      "timed_out": false
+    },
+    {
+      "candidate_id": "metaexamples-fiddle-line99-eg2",
+      "manifest_verdict": "PATCH_ACCEPTED",
+      "patch_certificate_id": "sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2",
+      "patch_certificate_path": "/tmp/mathgraph_sorrydb_v438_streaming_reality/candidates/metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260704T070339Z/patch_certificates/sorrydb-v4-3-5-queue-metaexamples-fiddle-line99-eg2.json",
+      "returncode": 0,
+      "timed_out": false
+    }
+  ],
+  "certificate_count": 2,
+  "does_not_claim": [
+    "general proof repair",
+    "arbitrary SorryDB automation",
+    "declaration retrieval success",
+    "multi-file patching",
+    "upstream submission"
+  ],
+  "failed_count": 0,
+  "manifest_count": 2,
+  "partial_summary_count": 1,
+  "queue_summary_source": "/tmp/mathgraph_sorrydb_v438_streaming_reality/artifacts/runs/sorrydb_v4_3_5_json_patch_queue_runner/20260704T070143Z/queue_run_summary.json",
+  "queue_verdict": "QUEUE_RUN_COMPLETED",
+  "restore_check": {
+    "line_97": "sorry restored",
+    "line_99": "sorry restored"
+  },
+  "source_run_root": "/tmp/mathgraph_sorrydb_v438_streaming_reality",
+  "status": "STREAMING_REALITY_PASSED",
+  "stream_child_output_enabled": true,
+  "version": "v4.3.8"
+}
