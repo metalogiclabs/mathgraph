@@ -1,0 +1,29 @@
+{
+  "artifact_id": "finite_htilt_coordinate_checklist_master_v1",
+  "closed_obstructions": [
+    {
+      "name": "pre_spectral_tower_fragmentation",
+      "resolution": "Compressed the coordinate checklist tower into one canonical master theorem."
+    },
+    {
+      "name": "direct_pointwise_to_dominance_route",
+      "resolution": "Pointwise residual and gap evidence now imply shifted dominance directly under scalar side conditions."
+    },
+    {
+      "name": "checklist_to_headline_theorem",
+      "resolution": "A bundled CoordinateEnvelopeChecklist now has a canonical dominance theorem."
+    }
+  ],
+  "open_obstructions": [
+    "prove that any coordinate is an eigenvalue",
+    "prove that a coordinate list corresponds to an actual matrix spectrum",
+    "extract eigenvalue coordinates from a matrix",
+    "construct residual envelope B from finite spectral data",
+    "construct positive gap \u03b4 from strict spectral abscissa",
+    "prove strict-abscissa mode realness for real matrices",
+    "Perron-root alignment for A=cI+K",
+    "irreducibility transfer",
+    "Perron-Frobenius invocation",
+    "convergence or empirical claims"
+  ]
+}
