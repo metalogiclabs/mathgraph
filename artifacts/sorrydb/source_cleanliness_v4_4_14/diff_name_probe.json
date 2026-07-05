@@ -1,0 +1,13 @@
+{
+  "cmd": [
+    "git",
+    "diff",
+    "--name-only"
+  ],
+  "cwd": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "returncode": 0,
+  "stderr": "",
+  "stderr_tail": "",
+  "stdout": "",
+  "stdout_tail": ""
+}

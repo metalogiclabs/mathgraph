@@ -1,0 +1,37 @@
+{
+  "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "bounded_claim": [
+    "after v4.4.11 replay and v4.4.13 seed packaging, the hydrated source checkout remains at the expected pinned commit",
+    "the target source file has no git diff",
+    "the source checkout has no tracked file modifications",
+    "untracked cache/build artifacts may remain after cache hydration and are recorded rather than hidden"
+  ],
+  "commit_matches": true,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission",
+    "that source cleanliness proves semantic portability"
+  ],
+  "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "full_diff_clean": true,
+  "git_status_clean": false,
+  "next_frontier": "v4.4.15 package the minimal end-to-end SorryDB microflywheel report",
+  "restoration_invariant_passed": true,
+  "source_has_untracked_paths": true,
+  "source_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "source_tracked_changes_clean": true,
+  "source_tracked_dirty_paths": [],
+  "source_untracked_path_count": 1,
+  "source_untracked_paths": [
+    "MetaExamples/Fiddle.lean.v430_backup"
+  ],
+  "status": "SOURCE_CLEANLINESS_REPLAY_RESTORATION_LEDGERED",
+  "target_diff_clean": true,
+  "target_exists": true,
+  "target_file": "MetaExamples/Fiddle.lean",
+  "version": "v4.4.14"
+}
