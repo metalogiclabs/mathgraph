@@ -1,0 +1,459 @@
+{
+  "constraints": {
+    "must_inspect_exact_source_before_replay": true,
+    "no_clone": true,
+    "no_heavy_build": true,
+    "no_lean_replay": true,
+    "no_upstream_contact": true
+  },
+  "query_count": 5,
+  "raw_result_count": 100,
+  "scout_type": "ATTEMPT002_SOURCE_SCOUT",
+  "selected_candidate_count": 20,
+  "selected_candidates": [
+    {
+      "api_url": "https://api.github.com/repositories/160983035/contents/src/examples/vector.lean?ref=04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b",
+      "candidate_id": "attempt002-candidate-007",
+      "html_url": "https://github.com/EdAyers/lean-subtask/blob/04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b/src/examples/vector.lean",
+      "name": "vector.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "src/examples/vector.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "EdAyers/lean-subtask",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/209141835/contents/src/2020/logic/SAT_example.lean?ref=8cc4a60897dabdd5bc0d116144776f3286fde70c",
+      "candidate_id": "attempt002-candidate-001",
+      "html_url": "https://github.com/ImperialCollegeLondon/M40001_lean/blob/8cc4a60897dabdd5bc0d116144776f3286fde70c/src/2020/logic/SAT_example.lean",
+      "name": "SAT_example.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "src/2020/logic/SAT_example.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "ImperialCollegeLondon/M40001_lean",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/209141835/contents/src/2020/tactic_hints/examples.lean?ref=8cc4a60897dabdd5bc0d116144776f3286fde70c",
+      "candidate_id": "attempt002-candidate-011",
+      "html_url": "https://github.com/ImperialCollegeLondon/M40001_lean/blob/8cc4a60897dabdd5bc0d116144776f3286fde70c/src/2020/tactic_hints/examples.lean",
+      "name": "examples.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "src/2020/tactic_hints/examples.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "ImperialCollegeLondon/M40001_lean",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/104375287/contents/Examples/nf.lean?ref=268b3bab45ba8fbed09b45cbbdc80a3813f73b5e",
+      "candidate_id": "attempt002-candidate-085",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Examples/nf.lean",
+      "name": "nf.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "Examples/nf.lean",
+      "query_source": "sorry language:Lean extension:lean \"simp\"",
+      "repo": "kbuzzard/xena",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/104375287/contents/Examples/termle.lean?ref=268b3bab45ba8fbed09b45cbbdc80a3813f73b5e",
+      "candidate_id": "attempt002-candidate-019",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Examples/termle.lean",
+      "name": "termle.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "Examples/termle.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "kbuzzard/xena",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/104375287/contents/M1F/partitions_example.lean?ref=268b3bab45ba8fbed09b45cbbdc80a3813f73b5e",
+      "candidate_id": "attempt002-candidate-004",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/M1F/partitions_example.lean",
+      "name": "partitions_example.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "M1F/partitions_example.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "kbuzzard/xena",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/529900532/contents/BatteriesTest/simpa.lean?ref=9c6e03c0a86237b199ebe6b1fbac18078a767ade",
+      "candidate_id": "attempt002-candidate-002",
+      "html_url": "https://github.com/leanprover-community/batteries/blob/9c6e03c0a86237b199ebe6b1fbac18078a767ade/BatteriesTest/simpa.lean",
+      "name": "simpa.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "BatteriesTest/simpa.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "leanprover-community/batteries",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/706080672/contents/leaven/example.lean?ref=2aa44608f117a4df3d0d0e97b98b18981414ab29",
+      "candidate_id": "attempt002-candidate-005",
+      "html_url": "https://github.com/xinhjBrant/leaven/blob/2aa44608f117a4df3d0d0e97b98b18981414ab29/leaven/example.lean",
+      "name": "example.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "leaven/example.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "xinhjBrant/leaven",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LD0301_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-035",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LD0301_specs.lean",
+      "name": "LD0301_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LD0301_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"theorem\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LD0775_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-069",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LD0775_specs.lean",
+      "name": "LD0775_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LD0775_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"Nat\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF0282_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-045",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF0282_specs.lean",
+      "name": "LF0282_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF0282_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF0358_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-058",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF0358_specs.lean",
+      "name": "LF0358_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF0358_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF0656_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-056",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF0656_specs.lean",
+      "name": "LF0656_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF0656_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF0813_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-039",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF0813_specs.lean",
+      "name": "LF0813_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF0813_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"theorem\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF0821_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-050",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF0821_specs.lean",
+      "name": "LF0821_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF0821_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF0963_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-033",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF0963_specs.lean",
+      "name": "LF0963_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF0963_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"theorem\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF1501_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-055",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF1501_specs.lean",
+      "name": "LF1501_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF1501_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF1739_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-032",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF1739_specs.lean",
+      "name": "LF1739_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF1739_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"theorem\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF1955_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-040",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF1955_specs.lean",
+      "name": "LF1955_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF1955_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"theorem\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LF1974_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "attempt002-candidate-038",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LF1974_specs.lean",
+      "name": "LF1974_specs.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "specs/LF1974_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"theorem\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "score": 9,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    }
+  ],
+  "source_mode": "CACHED_RAW_SEARCH_REUSED",
+  "top_candidate_count": 5,
+  "top_candidates": [
+    {
+      "api_url": "https://api.github.com/repositories/160983035/contents/src/examples/vector.lean?ref=04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b",
+      "candidate_id": "attempt002-candidate-007",
+      "html_url": "https://github.com/EdAyers/lean-subtask/blob/04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b/src/examples/vector.lean",
+      "name": "vector.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "src/examples/vector.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "EdAyers/lean-subtask",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/209141835/contents/src/2020/logic/SAT_example.lean?ref=8cc4a60897dabdd5bc0d116144776f3286fde70c",
+      "candidate_id": "attempt002-candidate-001",
+      "html_url": "https://github.com/ImperialCollegeLondon/M40001_lean/blob/8cc4a60897dabdd5bc0d116144776f3286fde70c/src/2020/logic/SAT_example.lean",
+      "name": "SAT_example.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "src/2020/logic/SAT_example.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "ImperialCollegeLondon/M40001_lean",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/209141835/contents/src/2020/tactic_hints/examples.lean?ref=8cc4a60897dabdd5bc0d116144776f3286fde70c",
+      "candidate_id": "attempt002-candidate-011",
+      "html_url": "https://github.com/ImperialCollegeLondon/M40001_lean/blob/8cc4a60897dabdd5bc0d116144776f3286fde70c/src/2020/tactic_hints/examples.lean",
+      "name": "examples.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "src/2020/tactic_hints/examples.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "ImperialCollegeLondon/M40001_lean",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/104375287/contents/Examples/nf.lean?ref=268b3bab45ba8fbed09b45cbbdc80a3813f73b5e",
+      "candidate_id": "attempt002-candidate-085",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Examples/nf.lean",
+      "name": "nf.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "Examples/nf.lean",
+      "query_source": "sorry language:Lean extension:lean \"simp\"",
+      "repo": "kbuzzard/xena",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    },
+    {
+      "api_url": "https://api.github.com/repositories/104375287/contents/Examples/termle.lean?ref=268b3bab45ba8fbed09b45cbbdc80a3813f73b5e",
+      "candidate_id": "attempt002-candidate-019",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Examples/termle.lean",
+      "name": "termle.lean",
+      "next_action": "inspect exact source snippet before any clone or replay",
+      "path": "Examples/termle.lean",
+      "query_source": "sorry language:Lean extension:lean \"example\"",
+      "repo": "kbuzzard/xena",
+      "score": 13,
+      "score_reasons": [
+        "not excluded repo",
+        "lean file",
+        "educational/test/example path",
+        "lean filename"
+      ],
+      "status": "SCOUTED_NOT_CLONED_NOT_REPLAYED"
+    }
+  ],
+  "unique_candidate_count": 88,
+  "version": "v4.4.27"
+}
