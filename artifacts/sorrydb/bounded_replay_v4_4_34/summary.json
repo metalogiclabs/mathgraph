@@ -1,0 +1,35 @@
+{
+  "bounded_claim": [
+    "v4.4.34 runs a bounded local Lean replay for the selected v4.4.33 source-only patch",
+    "it applies only the selected patch to the pinned target file",
+    "it records acceptance, rejection, or timeout without contacting upstream"
+  ],
+  "build_attempted": false,
+  "checkout_attempted": true,
+  "clone_attempted": true,
+  "commit": "b1cc1756202d7f44e07bd4069b5df16901a36938",
+  "decision": "REPLAY_REJECTED_OR_TIMED_OUT_NO_UPSTREAM_CONTACT",
+  "does_not_claim": [
+    "upstream acceptance",
+    "automated external contact",
+    "full repository build",
+    "general proof discovery",
+    "portability beyond the pinned checkout"
+  ],
+  "input_version": "v4.4.33",
+  "next_frontier": "if accepted, package an upstream patch note; if rejected or timed out, record obstruction and choose the next active candidate",
+  "patch_attempted": true,
+  "replay_attempted": true,
+  "replay_reasons": [
+    "import/module failure",
+    "Lean reported error"
+  ],
+  "replay_status": "REJECTED_BY_LOCAL_REPLAY",
+  "repo": "teorth/equational_theories",
+  "selected_patch_id": "patch-001-exact-constructor-four-fields",
+  "status": "BOUNDED_REPLAY_LEDGERED",
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "timeout_seconds": 360,
+  "upstream_contact_performed": false,
+  "version": "v4.4.34"
+}
