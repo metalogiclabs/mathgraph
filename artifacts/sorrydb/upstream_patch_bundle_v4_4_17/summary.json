@@ -1,0 +1,28 @@
+{
+  "accepted_replay_certificate_count": 4,
+  "bounded_claim": [
+    "v4.4.17 packages the two deduplicated accepted repair seeds into an upstream-facing exact-source patch evidence bundle",
+    "each patch candidate includes source snippet, replacement snippet, target repo, pinned commit, file path, certificate ids, and accepted replay evidence",
+    "the bundle is evidence for review and replay, not an upstream acceptance claim"
+  ],
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches beyond v4.4.11 evidence",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream acceptance",
+    "semantic portability beyond exact-source replay or verified adapters",
+    "authority to modify the upstream repository"
+  ],
+  "lawbook_seed_count": 2,
+  "next_frontier": "v4.4.18 generate a reviewer-facing patch note and exact replay checklist",
+  "patch_count": 2,
+  "selected_path_id": "upstream_patch_package",
+  "status": "UPSTREAM_PATCH_EVIDENCE_BUNDLE_LEDGERED",
+  "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "target_file": "MetaExamples/Fiddle.lean",
+  "target_repo": "siddhartha-gadgil/MetaExamples",
+  "unique_repair_class_count": 2,
+  "version": "v4.4.17"
+}

@@ -1,0 +1,141 @@
+{
+  "bundle_type": "UPSTREAM_EXACT_SOURCE_PATCH_EVIDENCE_BUNDLE",
+  "evidence_chain": [
+    {
+      "baseline_contact_passed": true,
+      "mathlib_olean_exists": true,
+      "role": "cache_hydration_reality",
+      "status": "CACHE_HYDRATION_REALITY_LEDGERED",
+      "version": "v4.4.10"
+    },
+    {
+      "accepted_count": 4,
+      "failed_count": 0,
+      "role": "accepted_replay",
+      "status": "HYDRATED_BACKFILL_AFTER_CACHE_ACCEPTED_LEDGERED",
+      "version": "v4.4.11"
+    },
+    {
+      "class_count": 2,
+      "role": "deduplication",
+      "version": "v4.4.12"
+    },
+    {
+      "role": "lawbook_seed_packaging",
+      "seed_count": 2,
+      "version": "v4.4.13"
+    },
+    {
+      "headline": {
+        "accepted_after_cache": 4,
+        "lawbook_seed_count": 2,
+        "restoration_invariant_passed": true,
+        "unique_repair_classes": 2
+      },
+      "role": "microflywheel_report",
+      "version": "v4.4.15"
+    },
+    {
+      "role": "scale_path_selection",
+      "selected_path_id": "upstream_patch_package",
+      "version": "v4.4.16"
+    }
+  ],
+  "patch_count": 2,
+  "patches": [
+    {
+      "accepted_replay_evidence": {
+        "baseline_verdict": "BASELINE_PASSED",
+        "patch_apply_verdict": "PATCH_APPLIED",
+        "patch_verdict": "PATCH_ACCEPTED",
+        "verdict": "PATCH_ACCEPTED"
+      },
+      "certificate_ids": [
+        "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+        "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1"
+      ],
+      "human_summary": "Replace the eg\u2081 sorry with exact Nat.le_add_right n 1.",
+      "manifest_paths": [
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.manifest.json"
+      ],
+      "patch_id": "upstream-patch-001",
+      "repair_name": "eg1_line97_nat_le_add_right",
+      "replacement_snippet": "  \u00b7 extract_goal using eg\u2081\n    exact Nat.le_add_right n 1",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "reuse_contract": {
+        "portable_without_replay": false,
+        "requires_exact_source_or_verified_adapter": true,
+        "requires_lean_replay_before_promotion": true
+      },
+      "source_class_id": "repair-class-001",
+      "source_seed_id": "lawbook-seed-001",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2081\n    sorry",
+      "target": {
+        "file_path": "MetaExamples/Fiddle.lean",
+        "line_span": "",
+        "repo": "siddhartha-gadgil/MetaExamples",
+        "repo_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db"
+      },
+      "upstream_claim": {
+        "claim_type": "exact_source_patch_candidate",
+        "portable_without_replay": false,
+        "requires_fresh_replay_in_recipient_checkout": true,
+        "requires_upstream_review": true
+      }
+    },
+    {
+      "accepted_replay_evidence": {
+        "baseline_verdict": "BASELINE_PASSED",
+        "patch_apply_verdict": "PATCH_APPLIED",
+        "patch_verdict": "PATCH_ACCEPTED",
+        "verdict": "PATCH_ACCEPTED"
+      },
+      "certificate_ids": [
+        "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+        "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+      ],
+      "human_summary": "Replace the eg\u2081 sorry with exact Nat.le_add_right n 1.",
+      "manifest_paths": [
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.manifest.json"
+      ],
+      "patch_id": "upstream-patch-002",
+      "repair_name": "eg1_line97_nat_le_add_right",
+      "replacement_snippet": "  \u00b7 extract_goal using eg\u2082\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "reuse_contract": {
+        "portable_without_replay": false,
+        "requires_exact_source_or_verified_adapter": true,
+        "requires_lean_replay_before_promotion": true
+      },
+      "source_class_id": "repair-class-002",
+      "source_seed_id": "lawbook-seed-002",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2082\n    sorry",
+      "target": {
+        "file_path": "MetaExamples/Fiddle.lean",
+        "line_span": "",
+        "repo": "siddhartha-gadgil/MetaExamples",
+        "repo_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+        "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db"
+      },
+      "upstream_claim": {
+        "claim_type": "exact_source_patch_candidate",
+        "portable_without_replay": false,
+        "requires_fresh_replay_in_recipient_checkout": true,
+        "requires_upstream_review": true
+      }
+    }
+  ],
+  "recipient_instructions": [
+    "checkout the target repository at the pinned commit",
+    "apply each replacement only to the exact matching source snippet",
+    "run Lean in the recipient checkout before accepting the patch",
+    "treat the bundle as evidence, not authority"
+  ],
+  "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "target_file": "MetaExamples/Fiddle.lean",
+  "target_repo": "siddhartha-gadgil/MetaExamples",
+  "version": "v4.4.17"
+}
