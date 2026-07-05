@@ -1,0 +1,91 @@
+{
+  "artifact_links": [
+    {
+      "label": "reviewer_patch_note",
+      "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/reviewer_patch_note.md",
+      "role": "human-readable exact replay note"
+    },
+    {
+      "label": "replay_checklist",
+      "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/replay_checklist.json",
+      "role": "machine-readable replay checklist"
+    },
+    {
+      "label": "upstream_patch_bundle",
+      "path": "artifacts/sorrydb/upstream_patch_bundle_v4_4_17/upstream_patch_bundle.json",
+      "role": "patch evidence bundle"
+    },
+    {
+      "label": "microflywheel_report",
+      "path": "artifacts/sorrydb/microflywheel_report_v4_4_15/report.md",
+      "role": "end-to-end obstruction-to-certificate report"
+    }
+  ],
+  "blocked_paths": [
+    "automated_external_contact",
+    "broad_source_world_mining"
+  ],
+  "decision_type": "POST_OUTBOUND_NEXT_STEP_PLAN",
+  "options": [
+    {
+      "description": "Stop automation and have a human review or rewrite the outbound upstream message before any external contact.",
+      "done_definition": [
+        "human reads outbound_message.md",
+        "human either sends, rewrites, or parks it",
+        "decision is recorded before further external action"
+      ],
+      "path_id": "manual_outbound_review",
+      "priority": 1,
+      "why": [
+        "v4.4.19 explicitly requires human approval",
+        "external contact should not be automated",
+        "this preserves the trust boundary"
+      ]
+    },
+    {
+      "description": "After manual outbound review is parked or completed, run a tiny fresh-source replay pilot to test whether the two Lawbook seeds transfer under exact-source or verified-adapter constraints.",
+      "done_definition": [
+        "choose at most five candidate fresh targets",
+        "require exact source snippet match or named adapter",
+        "record accepted, failed, and obstructed outcomes separately"
+      ],
+      "path_id": "fresh_source_replay_pilot",
+      "priority": 2,
+      "why": [
+        "tests the next real scaling question",
+        "keeps batch size tiny",
+        "preserves exact-source and obstruction-ledger discipline"
+      ]
+    },
+    {
+      "description": "Expand SorryDB source-world mining only after the outbound package and fresh-source pilot produce a clear next constraint.",
+      "done_definition": [
+        "only run after manual review and pilot decision",
+        "small bounded source-world batch",
+        "no heavy lake build unless explicitly approved"
+      ],
+      "path_id": "more_source_world_mining",
+      "priority": 3,
+      "why": [
+        "larger mining is premature while the first upstream-facing package is unsent or unreviewed",
+        "disk is limited",
+        "the next bottleneck is transfer/reviewer contact, not breadth"
+      ]
+    }
+  ],
+  "pilot_constraints": {
+    "allowed_terminal_states": [
+      "ACCEPTED_REPLAY",
+      "FAILED_REPLAY",
+      "OBSTRUCTED_EXACT_SOURCE_MISMATCH",
+      "OBSTRUCTED_ENVIRONMENT"
+    ],
+    "disk_note": "root filesystem has low free space; avoid broad clone/build runs",
+    "max_candidate_targets": 5,
+    "requires_exact_source_match_or_named_adapter": true,
+    "requires_no_heavy_lake_build_without_approval": true
+  },
+  "selected_followup_path": "fresh_source_replay_pilot",
+  "selected_immediate_path": "manual_outbound_review",
+  "version": "v4.4.20"
+}

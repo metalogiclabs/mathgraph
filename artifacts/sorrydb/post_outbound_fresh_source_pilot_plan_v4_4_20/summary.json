@@ -1,0 +1,28 @@
+{
+  "accepted_replay_certificate_count": 4,
+  "bounded_claim": [
+    "v4.4.20 records that the immediate next step after v4.4.19 is manual human review of the outbound upstream message",
+    "v4.4.20 selects a tiny fresh-source replay pilot as the next technical follow-up after the human-review boundary",
+    "the pilot is constrained to at most five targets and exact-source match or named adapter outcomes"
+  ],
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches beyond v4.4.11 evidence",
+    "automated external contact",
+    "upstream acceptance",
+    "general SorryDB mining",
+    "semantic portability beyond exact-source replay or verified adapters",
+    "permission to run broad clone/build jobs on low disk"
+  ],
+  "human_approval_required": true,
+  "input_version": "v4.4.19",
+  "microflywheel_status": "MICROFLYWHEEL_REPORT_LEDGERED",
+  "next_frontier": "v4.4.21 create the bounded fresh-source replay pilot candidate queue",
+  "outbound_subject": "Two exact-source Lean repairs for MetaExamples/Fiddle.lean with replay evidence",
+  "patch_count": 2,
+  "selected_followup_path": "fresh_source_replay_pilot",
+  "selected_immediate_path": "manual_outbound_review",
+  "status": "POST_OUTBOUND_FRESH_SOURCE_PILOT_PLAN_LEDGERED",
+  "version": "v4.4.20"
+}
