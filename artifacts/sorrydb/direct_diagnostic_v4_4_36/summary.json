@@ -1,0 +1,28 @@
+{
+  "bounded_claim": [
+    "v4.4.36 records the direct dependency-aware diagnostic run",
+    "it identifies the failure as local project olean/module setup, not proof rejection",
+    "it keeps the selected patch alive until a target build/replay reaches proof checking"
+  ],
+  "cache_get_ok": true,
+  "does_not_claim": [
+    "patch acceptance",
+    "proof rejection",
+    "upstream acceptance",
+    "automated external contact",
+    "full repository build success"
+  ],
+  "input_version": "v4.4.35",
+  "next_action": "run targeted lake build for equational_theories.Definability.Law43 or its local library before replay",
+  "obstruction_class": "LOCAL_PROJECT_OLEAN_NOT_BUILT",
+  "proof_patch_dead": false,
+  "repo": "teorth/equational_theories",
+  "selected_patch_id": "patch-001-exact-constructor-four-fields",
+  "status": "DIRECT_DIAGNOSTIC_LEDGERED",
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "target_replay_ok": false,
+  "target_replay_returncode": 1,
+  "target_replay_seconds": 4.08,
+  "upstream_contact_performed": false,
+  "version": "v4.4.36"
+}
