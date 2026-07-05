@@ -1,0 +1,224 @@
+{
+  "build_attempted": false,
+  "clone_attempted": true,
+  "commit": "b1cc1756202d7f44e07bd4069b5df16901a36938",
+  "decision": "SOURCE_ONLY_PATCHES_READY_FOR_BOUNDED_REPLAY_SELECTION",
+  "definability_basic_exists": true,
+  "experiment_type": "SOURCE_ONLY_PATCH_EXPERIMENT_BEFORE_REPLAY",
+  "input_version": "v4.4.32",
+  "law43_windows": [
+    {
+      "line": "    : Law43.TermDefinableFrom L := by",
+      "line_number": 14,
+      "snippet": "6: open Law\n7: open Law.MagmaLaw\n8: \n9: --TODO: the commutative law is definable from anything of the form f(x,y) \u2243 f(y,x).\n10: theorem Equation43_termDefinableFrom_swapped_args {L : NatMagmaLaw}\n11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   sorry\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: \n21: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4343 `x \u25c7 (y \u25c7 y) = y \u25c7 (x \u25c7 x)`. -/\n22: theorem Equation43_termDefinableFrom_Equation4343 : Law43.TermDefinableFrom Law4343 :="
+    },
+    {
+      "line": "theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=",
+      "line_number": 18,
+      "snippet": "10: theorem Equation43_termDefinableFrom_swapped_args {L : NatMagmaLaw}\n11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   sorry\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: \n21: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4343 `x \u25c7 (y \u25c7 y) = y \u25c7 (x \u25c7 x)`. -/\n22: theorem Equation43_termDefinableFrom_Equation4343 : Law43.TermDefinableFrom Law4343 :=\n23:   Equation43_termDefinableFrom_swapped_args\n24: \n25: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4293 `x \u25c7 (x \u25c7 y) = y \u25c7 (y \u25c7 x)`. -/\n26: theorem Equation43_termDefinableFrom_Equation4293 : Law43.TermDefinableFrom Law4293 :="
+    },
+    {
+      "line": "theorem Equation43_termDefinableFrom_Equation4343 : Law43.TermDefinableFrom Law4343 :=",
+      "line_number": 22,
+      "snippet": "14:     : Law43.TermDefinableFrom L := by\n15:   sorry\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: \n21: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4343 `x \u25c7 (y \u25c7 y) = y \u25c7 (x \u25c7 x)`. -/\n22: theorem Equation43_termDefinableFrom_Equation4343 : Law43.TermDefinableFrom Law4343 :=\n23:   Equation43_termDefinableFrom_swapped_args\n24: \n25: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4293 `x \u25c7 (x \u25c7 y) = y \u25c7 (y \u25c7 x)`. -/\n26: theorem Equation43_termDefinableFrom_Equation4293 : Law43.TermDefinableFrom Law4293 :=\n27:   Equation43_termDefinableFrom_swapped_args\n28: \n29: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4321 `x \u25c7 (y \u25c7 x) = y \u25c7 (x \u25c7 y)`. -/\n30: theorem Equation43_termDefinableFrom_Equation4321 : Law43.TermDefinableFrom Law4321 :="
+    },
+    {
+      "line": "theorem Equation43_termDefinableFrom_Equation4293 : Law43.TermDefinableFrom Law4293 :=",
+      "line_number": 26,
+      "snippet": "18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: \n21: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4343 `x \u25c7 (y \u25c7 y) = y \u25c7 (x \u25c7 x)`. -/\n22: theorem Equation43_termDefinableFrom_Equation4343 : Law43.TermDefinableFrom Law4343 :=\n23:   Equation43_termDefinableFrom_swapped_args\n24: \n25: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4293 `x \u25c7 (x \u25c7 y) = y \u25c7 (y \u25c7 x)`. -/\n26: theorem Equation43_termDefinableFrom_Equation4293 : Law43.TermDefinableFrom Law4293 :=\n27:   Equation43_termDefinableFrom_swapped_args\n28: \n29: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4321 `x \u25c7 (y \u25c7 x) = y \u25c7 (x \u25c7 y)`. -/\n30: theorem Equation43_termDefinableFrom_Equation4321 : Law43.TermDefinableFrom Law4321 :=\n31:   Equation43_termDefinableFrom_swapped_args"
+    },
+    {
+      "line": "theorem Equation43_termDefinableFrom_Equation4321 : Law43.TermDefinableFrom Law4321 :=",
+      "line_number": 30,
+      "snippet": "22: theorem Equation43_termDefinableFrom_Equation4343 : Law43.TermDefinableFrom Law4343 :=\n23:   Equation43_termDefinableFrom_swapped_args\n24: \n25: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4293 `x \u25c7 (x \u25c7 y) = y \u25c7 (y \u25c7 x)`. -/\n26: theorem Equation43_termDefinableFrom_Equation4293 : Law43.TermDefinableFrom Law4293 :=\n27:   Equation43_termDefinableFrom_swapped_args\n28: \n29: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 4321 `x \u25c7 (y \u25c7 x) = y \u25c7 (x \u25c7 y)`. -/\n30: theorem Equation43_termDefinableFrom_Equation4321 : Law43.TermDefinableFrom Law4321 :=\n31:   Equation43_termDefinableFrom_swapped_args"
+    }
+  ],
+  "patch_candidate_count": 5,
+  "patches": [
+    {
+      "body": "exact \u27e8fun x \u21a6 Lf (Equiv.swap 0 1 x), hL2args, hR2args, hSymm\u27e9",
+      "contains_sorry_after_patch": false,
+      "patch_id": "patch-001-exact-constructor-four-fields",
+      "patched_file": "artifacts/sorrydb/source_only_patch_experiment_v4_4_33/patches/patch-001-exact-constructor-four-fields.lean",
+      "patched_window": "11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   exact \u27e8fun x \u21a6 Lf (Equiv.swap 0 1 x), hL2args, hR2args, hSymm\u27e9\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: ",
+      "plausibility_reasons": [
+        "removes active sorry",
+        "uses exact",
+        "uses hSymm",
+        "uses arity hypotheses",
+        "uses swap witness",
+        "rough delimiter balance ok"
+      ],
+      "plausibility_score": 48,
+      "rationale": "try direct constructor witness: swapped variable map plus arity hypotheses plus symmetry equation",
+      "status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED"
+    },
+    {
+      "body": "refine \u27e8fun x \u21a6 Lf (Equiv.swap 0 1 x), ?_, ?_, ?_\u27e9\n\u00b7 exact hL2args\n\u00b7 exact hR2args\n\u00b7 exact hSymm",
+      "contains_sorry_after_patch": false,
+      "patch_id": "patch-002-refine-constructor-four-fields",
+      "patched_file": "artifacts/sorrydb/source_only_patch_experiment_v4_4_33/patches/patch-002-refine-constructor-four-fields.lean",
+      "patched_window": "11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   refine \u27e8fun x \u21a6 Lf (Equiv.swap 0 1 x), ?_, ?_, ?_\u27e9\n16:   \u00b7 exact hL2args\n17:   \u00b7 exact hR2args\n18:   \u00b7 exact hSymm\n19: \n20: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n21: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n22:   Equation43_termDefinableFrom_swapped_args\n23: ",
+      "plausibility_reasons": [
+        "removes active sorry",
+        "uses exact",
+        "uses refine",
+        "uses hSymm",
+        "uses arity hypotheses",
+        "uses swap witness",
+        "contains metavariable placeholder",
+        "rough delimiter balance ok"
+      ],
+      "plausibility_score": 46,
+      "rationale": "same as patch 001 but exposes constructor subgoals separately",
+      "status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED"
+    },
+    {
+      "body": "exact \u27e8hL2args, hR2args, hSymm\u27e9",
+      "contains_sorry_after_patch": false,
+      "patch_id": "patch-003-exact-constructor-three-fields",
+      "patched_file": "artifacts/sorrydb/source_only_patch_experiment_v4_4_33/patches/patch-003-exact-constructor-three-fields.lean",
+      "patched_window": "11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   exact \u27e8hL2args, hR2args, hSymm\u27e9\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: ",
+      "plausibility_reasons": [
+        "removes active sorry",
+        "uses exact",
+        "uses hSymm",
+        "uses arity hypotheses",
+        "rough delimiter balance ok"
+      ],
+      "plausibility_score": 44,
+      "rationale": "try if TermDefinableFrom already fixes witness through Law43 context",
+      "status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED"
+    },
+    {
+      "body": "simpa using hSymm",
+      "contains_sorry_after_patch": false,
+      "patch_id": "patch-004-simpa-using-symmetry",
+      "patched_file": "artifacts/sorrydb/source_only_patch_experiment_v4_4_33/patches/patch-004-simpa-using-symmetry.lean",
+      "patched_window": "11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   simpa using hSymm\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: ",
+      "plausibility_reasons": [
+        "removes active sorry",
+        "uses simp/simpa",
+        "uses hSymm",
+        "rough delimiter balance ok"
+      ],
+      "plausibility_score": 34,
+      "rationale": "try if target reduces directly to the supplied symmetry equality",
+      "status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED"
+    },
+    {
+      "body": "simpa [Law43.TermDefinableFrom] using hSymm",
+      "contains_sorry_after_patch": false,
+      "patch_id": "patch-005-simpa-definability-using-symmetry",
+      "patched_file": "artifacts/sorrydb/source_only_patch_experiment_v4_4_33/patches/patch-005-simpa-definability-using-symmetry.lean",
+      "patched_window": "11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   simpa [Law43.TermDefinableFrom] using hSymm\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: ",
+      "plausibility_reasons": [
+        "removes active sorry",
+        "uses simp/simpa",
+        "uses hSymm",
+        "rough delimiter balance ok"
+      ],
+      "plausibility_score": 34,
+      "rationale": "try unfolding the target definability predicate at Law43",
+      "status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED"
+    }
+  ],
+  "replay_attempted": false,
+  "repo": "teorth/equational_theories",
+  "selected_patch": {
+    "body": "exact \u27e8fun x \u21a6 Lf (Equiv.swap 0 1 x), hL2args, hR2args, hSymm\u27e9",
+    "contains_sorry_after_patch": false,
+    "patch_id": "patch-001-exact-constructor-four-fields",
+    "patched_file": "artifacts/sorrydb/source_only_patch_experiment_v4_4_33/patches/patch-001-exact-constructor-four-fields.lean",
+    "patched_window": "11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   exact \u27e8fun x \u21a6 Lf (Equiv.swap 0 1 x), hL2args, hR2args, hSymm\u27e9\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: ",
+    "plausibility_reasons": [
+      "removes active sorry",
+      "uses exact",
+      "uses hSymm",
+      "uses arity hypotheses",
+      "uses swap witness",
+      "rough delimiter balance ok"
+    ],
+    "plausibility_score": 48,
+    "rationale": "try direct constructor witness: swapped variable map plus arity hypotheses plus symmetry equation",
+    "status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED"
+  },
+  "steps": [
+    {
+      "cmd": [
+        "git",
+        "clone",
+        "--filter=blob:none",
+        "--depth",
+        "1",
+        "https://github.com/teorth/equational_theories.git",
+        "repo"
+      ],
+      "cwd": ".tmp_sorrydb_v4_4_33_source_only_patch",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "Cloning into 'repo'...\nUpdating files:   0% (2/2448)\nUpdating files:   1% (25/2448)\nUpdating files:   2% (49/2448)\nUpdating files:   3% (74/2448)\nUpdating files:   4% (98/2448)\nUpdating files:   5% (123/2448)\nUpdating files:   6% (147/2448)\nUpdating files:   7% (172/2448)\nUpdating files:   8% (196/2448)\nUpdating files:   9% (221/2448)\nUpdating files:  10% (245/2448)\nUpdating files:  11% (270/2448)\nUpdating files:  12% (294/2448)\nUpdating files:  13% (319/2448)\nUpdating files:  14% (343/2448)\nUpdating files:  15% (368/2448)\nUpdating files:  16% (392/2448)\nUpdating files:  17% (417/2448)\nUpdating files:  18% (441/2448)\nUpdating files:  19% (466/2448)\nUpdating files:  20% (490/2448)\nUpdating files:  21% (515/2448)\nUpdating files:  22% (539/2448)\nUpdating files:  23% (564/2448)\nUpdating files:  24% (588/2448)\nUpdating files:  25% (612/2448)\nUpdating files:  26% (637/2448)\nUpdating files:  27% (661/2448)\nUpdating files:  28% (686/2448)\nUpdating files:  29% (710/2448)\nUpdating files:  30% (735/2448)\nUpdating files:  31% (759/2448)\nUpdating files:  32% (784/2448)\nUpdating files:  33% (808/2448)\nUpdating files:  33% (830/2448)\nUpdating files:  34% (833/2448)\nUpdating files:  35% (857/2448)\nUpdating files:  36% (882/2448)\nUpdating files:  37% (906/2448)\nUpdating files:  38% (931/2448)\nUpdating files:  39% (955/2448)\nUpdating files:  40% (980/2448)\nUpdating files:  41% (1004/2448)\nUpdating files:  42% (1029/2448)\nUpdating files:  43% (1053/2448)\nUpdating files:  44% (1078/2448)\nUpdating files:  45% (1102/2448)\nUpdating files:  46% (1127/2448)\nUpdating files:  47% (1151/2448)\nUpdating files:  48% (1176/2448)\nUpdating files:  49% (1200/2448)\nUpdating files:  50% (1224/2448)\nUpdating files:  51% (1249/2448)\nUpdating files:  52% (1273/2448)\nUpdating files:  53% (1298/2448)\nUpdating files:  54% (1322/2448)\nUpdating files:  55% (1347/2448)\nUpdating files:  56% (1371/2448)\nUpdating files:  57% (1396/2448)\nUpdating files:  58% (1420/2448)\nUpdating files:  59% (1445/2448)\nUpdating files:  60% (1469/2448)\nUpdating files:  61% (1494/2448)\nUpdating files:  62% (1518/2448)\nUpdating files:  63% (1543/2448)\nUpdating files:  64% (1567/2448)\nUpdating files:  65% (1592/2448)\nUpdating files:  66% (1616/2448)\nUpdating files:  67% (1641/2448)\nUpdating files:  68% (1665/2448)\nUpdating files:  69% (1690/2448)\nUpdating files:  70% (1714/2448)\nUpdating files:  71% (1739/2448)\nUpdating files:  72% (1763/2448)\nUpdating files:  73% (1788/2448)\nUpdating files:  74% (1812/2448)\nUpdating files:  75% (1836/2448)\nUpdating files:  76% (1861/2448)\nUpdating files:  77% (1885/2448)\nUpdating files:  78% (1910/2448)\nUpdating files:  79% (1934/2448)\nUpdating files:  80% (1959/2448)\nUpdating files:  81% (1983/2448)\nUpdating files:  82% (2008/2448)\nUpdating files:  83% (2032/2448)\nUpdating files:  84% (2057/2448)\nUpdating files:  85% (2081/2448)\nUpdating files:  86% (2106/2448)\nUpdating files:  87% (2130/2448)\nUpdating files:  88% (2155/2448)\nUpdating files:  89% (2179/2448)\nUpdating files:  90% (2204/2448)\nUpdating files:  91% (2228/2448)\nUpdating files:  92% (2253/2448)\nUpdating files:  93% (2277/2448)\nUpdating files:  94% (2302/2448)\nUpdating files:  95% (2326/2448)\nUpdating files:  96% (2351/2448)\nUpdating files:  97% (2375/2448)\nUpdating files:  98% (2400/2448)\nUpdating files:  99% (2424/2448)\nUpdating files: 100% (2448/2448)\nUpdating files: 100% (2448/2448), done.\n",
+      "stdout": ""
+    },
+    {
+      "cmd": [
+        "git",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "b1cc1756202d7f44e07bd4069b5df16901a36938"
+      ],
+      "cwd": ".tmp_sorrydb_v4_4_33_source_only_patch/repo",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "From https://github.com/teorth/equational_theories\n * branch            b1cc1756202d7f44e07bd4069b5df16901a36938 -> FETCH_HEAD\n",
+      "stdout": ""
+    },
+    {
+      "cmd": [
+        "git",
+        "checkout",
+        "b1cc1756202d7f44e07bd4069b5df16901a36938"
+      ],
+      "cwd": ".tmp_sorrydb_v4_4_33_source_only_patch/repo",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "Note: switching to 'b1cc1756202d7f44e07bd4069b5df16901a36938'.\n\nYou are in 'detached HEAD' state. You can look around, make experimental\nchanges and commit them, and you can discard any commits you make in this\nstate without impacting any branches by switching back to a branch.\n\nIf you want to create a new branch to retain commits you create, you may\ndo so (now or later) by using -c with the switch command. Example:\n\n  git switch -c <new-branch-name>\n\nOr undo this operation with:\n\n  git switch -\n\nTurn off this advice by setting config variable advice.detachedHead to false\n\nHEAD is now at b1cc175 blueprint: fix operator symbol in equation-ordering example (#1460)\n",
+      "stdout": ""
+    }
+  ],
+  "target_exists": true,
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "target_sorry_line": 15,
+  "termdef_window_count": 7,
+  "termdef_windows": [
+    {
+      "line": "def TermDefinableFrom (L L' : Law.MagmaLaw \u03b2) : Prop :=",
+      "line_number": 130,
+      "snippet": "120: -/\n121: def TermDefinableOnMagma (L : Law.MagmaLaw \u03b2) (M : Magma G) : Prop :=\n122:   --If there exists a magma M',\n123:   \u2203 M' : Magma G,\n124:     -- satisfying the law L,\n125:     @satisfies _ G M' L \u2227\n126:     -- with a graph equal to some formula in M.\n127:     (@Set.TermDefinable _ \u2205 MagmaLanguage M.FOStructure _ M'.FinArityOp)\n128: \n129: /-- A MagmaLaw L is term-definable from another law L' if L is DefinableOn every magma satisfying L'. -/\n130: def TermDefinableFrom (L L' : Law.MagmaLaw \u03b2) : Prop :=\n131:   \u2200 {G : Type} (M : Magma G), satisfies G L' \u2192 TermDefinableOnMagma L M\n132: \n133: /-- A MagmaLaw L is structural on a given Magma \u27e8M,\u25c7\u27e9 there is a Magma \u27e8M,\u25a1\u27e9 satisfying L, so that \u25c7\n134: and \u25a1 are first-order definable in terms of each other. This doesn't necessarily imply that \u25a1 is\n135: uniquely determined, but it means that \u25a1 can hold all of the information of the magma. -/\n136: def StructuralOnMagma (L : Law.MagmaLaw \u03b2) (M : Magma G) : Prop :=\n137:   --If there exists a magma M',\n138:   \u2203 M' : Magma G,\n139:     -- satisfying the law L,\n140:     @satisfies _ G M' L \u2227"
+    },
+    {
+      "line": "theorem termDefinable_of_termStructural (h : L'.TermStructuralFrom L) : L'.TermDefinableFrom L := by",
+      "line_number": 199,
+      "snippet": "189: /-- If law L' is term-structural from L, then L' is structural from L. -/\n190: theorem structural_of_termStructural (h : L'.TermStructuralFrom L) : L'.StructuralFrom L := by\n191:   intro G M hGL\n192:   obtain \u27e8M',h2,h3,h4\u27e9 := h M hGL\n193:   use M', h2\n194:   constructor\n195:   \u00b7 let _ := M.FOStructure; exact h3.definable_tupleGraph\n196:   \u00b7 let _ := M'.FOStructure; exact h4.definable_tupleGraph\n197: \n198: /-- If law L' is term-structural from L, then L' is term-definable from L. -/\n199: theorem termDefinable_of_termStructural (h : L'.TermStructuralFrom L) : L'.TermDefinableFrom L := by\n200:   intro G M hGL\n201:   obtain \u27e8M',h2,h3,_\u27e9 := h M hGL\n202:   use M', h2\n203: \n204: /-- If law L' is structural from L, then L' is definable from L. -/\n205: theorem definable_of_structural (h : L'.StructuralFrom L) : L'.DefinableFrom L := by\n206:   intro G M hGL\n207:   obtain \u27e8M',h2,h3,_\u27e9 := h M hGL\n208:   use M', h2\n209: "
+    },
+    {
+      "line": "theorem definable_of_termDefinable (h : L'.TermDefinableFrom L) : L'.DefinableFrom L := by",
+      "line_number": 211,
+      "snippet": "201:   obtain \u27e8M',h2,h3,_\u27e9 := h M hGL\n202:   use M', h2\n203: \n204: /-- If law L' is structural from L, then L' is definable from L. -/\n205: theorem definable_of_structural (h : L'.StructuralFrom L) : L'.DefinableFrom L := by\n206:   intro G M hGL\n207:   obtain \u27e8M',h2,h3,_\u27e9 := h M hGL\n208:   use M', h2\n209: \n210: /-- If law L' is term-definable from L, then L' is definable from L. -/\n211: theorem definable_of_termDefinable (h : L'.TermDefinableFrom L) : L'.DefinableFrom L := by\n212:   intro G M hGL\n213:   obtain \u27e8M', h2, h3\u27e9 := h M hGL\n214:   exact \u27e8M', h2, let _ := M.FOStructure; h3.definable_tupleGraph\u27e9\n215: \n216: end hierarchy\n217: \n218: section preorder\n219: --Each of these five relations yield a preorder on `MagmaLaw`s. The one for `implies` is the one given\n220: --in Preorder.lean. Here we give the other four by showing reflexivity and transitivity.\n221: "
+    },
+    {
+      "line": "theorem TermDefinable.trans (h\u2081\u2082 : L\u2082.TermDefinableFrom L\u2081) (h\u2082\u2083 : L\u2083.TermDefinableFrom L\u2082) :",
+      "line_number": 246,
+      "snippet": "236:   \u00b7 subst hn\u2082\n237:     simp only [withConstants, Language.sum, MagmaLanguage, constantsOn_Functions, constantsOnFunc,\n238:       constantsOn_Relations, OfNat.zero_ne_ofNat, \u2193reduceIte] at f\n239:     exact (isEmptyElim f)\n240:   \u00b7 exact isEmptyElim (show _ by\n241:       simp only [withConstants, Language.sum, MagmaLanguage, constantsOn_Functions, constantsOnFunc,\n242:         constantsOn_Relations, hn, \u2193reduceIte] at f\n243:       exact f.elim id fun h \u21a6 (Equiv.equivEmpty _) ((Nat.succ_pred_eq_of_ne_zero hn\u2082) \u25b8 h)\n244:     )\n245: \n246: theorem TermDefinable.trans (h\u2081\u2082 : L\u2082.TermDefinableFrom L\u2081) (h\u2082\u2083 : L\u2083.TermDefinableFrom L\u2082) :\n247:     L\u2083.TermDefinableFrom L\u2081 := by\n248:   intro G M hGL\u2081\n249:   obtain \u27e8M\u2082,hGL\u2082,hA\u27e9 := h\u2081\u2082 M hGL\u2081\n250:   obtain \u27e8M\u2083,hGL\u2083,hB\u27e9 := h\u2082\u2083 M\u2082 hGL\u2082\n251:   exact \u27e8M\u2083, hGL\u2083, trans_aux hA hB\u27e9\n252: \n253: theorem TermStructural.trans (h\u2081\u2082 : L\u2082.TermStructuralFrom L\u2081) (h\u2082\u2083 : L\u2083.TermStructuralFrom L\u2082) :\n254:     L\u2083.TermStructuralFrom L\u2081 := by\n255:   intro G M hGL\u2081\n256:   obtain \u27e8M\u2082,hGL\u2082,hA1,hA2\u27e9 := h\u2081\u2082 M hGL\u2081"
+    },
+    {
+      "line": "    L\u2083.TermDefinableFrom L\u2081 := by",
+      "line_number": 247,
+      "snippet": "237:     simp only [withConstants, Language.sum, MagmaLanguage, constantsOn_Functions, constantsOnFunc,\n238:       constantsOn_Relations, OfNat.zero_ne_ofNat, \u2193reduceIte] at f\n239:     exact (isEmptyElim f)\n240:   \u00b7 exact isEmptyElim (show _ by\n241:       simp only [withConstants, Language.sum, MagmaLanguage, constantsOn_Functions, constantsOnFunc,\n242:         constantsOn_Relations, hn, \u2193reduceIte] at f\n243:       exact f.elim id fun h \u21a6 (Equiv.equivEmpty _) ((Nat.succ_pred_eq_of_ne_zero hn\u2082) \u25b8 h)\n244:     )\n245: \n246: theorem TermDefinable.trans (h\u2081\u2082 : L\u2082.TermDefinableFrom L\u2081) (h\u2082\u2083 : L\u2083.TermDefinableFrom L\u2082) :\n247:     L\u2083.TermDefinableFrom L\u2081 := by\n248:   intro G M hGL\u2081\n249:   obtain \u27e8M\u2082,hGL\u2082,hA\u27e9 := h\u2081\u2082 M hGL\u2081\n250:   obtain \u27e8M\u2083,hGL\u2083,hB\u27e9 := h\u2082\u2083 M\u2082 hGL\u2082\n251:   exact \u27e8M\u2083, hGL\u2083, trans_aux hA hB\u27e9\n252: \n253: theorem TermStructural.trans (h\u2081\u2082 : L\u2082.TermStructuralFrom L\u2081) (h\u2082\u2083 : L\u2083.TermStructuralFrom L\u2082) :\n254:     L\u2083.TermStructuralFrom L\u2081 := by\n255:   intro G M hGL\u2081\n256:   obtain \u27e8M\u2082,hGL\u2082,hA1,hA2\u27e9 := h\u2081\u2082 M hGL\u2081\n257:   obtain \u27e8M\u2083,hGL\u2083,hB1,hB2\u27e9 := h\u2082\u2083 M\u2082 hGL\u2082"
+    }
+  ],
+  "upstream_contact_performed": false,
+  "version": "v4.4.33"
+}

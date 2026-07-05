@@ -1,0 +1,33 @@
+{
+  "bounded_claim": [
+    "v4.4.33 creates source-only candidate patches for the selected active-sorry target",
+    "it records definability context windows and ranks candidate patches by syntactic plausibility",
+    "it does not build, replay Lean, modify upstream, or contact maintainers"
+  ],
+  "build_attempted": false,
+  "clone_attempted": true,
+  "commit": "b1cc1756202d7f44e07bd4069b5df16901a36938",
+  "decision": "SOURCE_ONLY_PATCHES_READY_FOR_BOUNDED_REPLAY_SELECTION",
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "that any patch typechecks",
+    "that any patch is mathematically valid",
+    "that the repo builds locally",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "input_version": "v4.4.32",
+  "next_frontier": "v4.4.34 run bounded Lean replay for the selected source-only patch only, with strict timeout and no upstream contact",
+  "patch_candidate_count": 5,
+  "replay_attempted": false,
+  "repo": "teorth/equational_theories",
+  "selected_patch_id": "patch-001-exact-constructor-four-fields",
+  "selected_patch_score": 48,
+  "selected_patch_status": "SOURCE_ONLY_PATCH_CANDIDATE_NOT_REPLAYED",
+  "status": "SOURCE_ONLY_PATCH_EXPERIMENT_LEDGERED",
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "target_sorry_line": 15,
+  "upstream_contact_performed": false,
+  "version": "v4.4.33"
+}

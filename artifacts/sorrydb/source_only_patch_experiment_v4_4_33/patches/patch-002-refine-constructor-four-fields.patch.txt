@@ -1,0 +1,13 @@
+11:     (hL2args : ∀ e ∈ L.lhs.elems.1, e ∈ [0,1] := by decide +kernel)
+12:     (hR2args : ∀ e ∈ L.rhs.elems.1, e ∈ [0,1] := by decide +kernel)
+13:     (hSymm : L.lhs ⬝ (fun x ↦ Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)
+14:     : Law43.TermDefinableFrom L := by
+15:   refine ⟨fun x ↦ Lf (Equiv.swap 0 1 x), ?_, ?_, ?_⟩
+16:   · exact hL2args
+17:   · exact hR2args
+18:   · exact hSymm
+19: 
+20: /-- The commutative law 43 `x ◇ y = y ◇ x` is TermDefinable from 40 `x ◇ x = y ◇ y`. -/
+21: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=
+22:   Equation43_termDefinableFrom_swapped_args
+23: 
