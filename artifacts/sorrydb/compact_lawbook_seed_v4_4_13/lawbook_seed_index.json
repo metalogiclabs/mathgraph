@@ -1,0 +1,72 @@
+{
+  "seed_count": 2,
+  "seeds": [
+    {
+      "certificate_ids": [
+        "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+        "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1"
+      ],
+      "file_path": "MetaExamples/Fiddle.lean",
+      "line_span": "",
+      "manifest_paths": [
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.manifest.json"
+      ],
+      "patch_snippet": "  \u00b7 extract_goal using eg\u2081\n    exact Nat.le_add_right n 1",
+      "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+      "replay_evidence": {
+        "baseline_verdict": "BASELINE_PASSED",
+        "patch_apply_verdict": "PATCH_APPLIED",
+        "patch_verdict": "PATCH_ACCEPTED",
+        "verdict": "PATCH_ACCEPTED"
+      },
+      "repo_commit": "",
+      "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "reuse_contract": {
+        "portable_without_replay": false,
+        "requires_exact_source_or_verified_adapter": true,
+        "requires_lean_replay_before_promotion": true
+      },
+      "seed_id": "lawbook-seed-001",
+      "source_class_id": "repair-class-001",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2081\n    sorry",
+      "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9",
+      "status": "LAWBOOK_SEED_READY"
+    },
+    {
+      "certificate_ids": [
+        "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+        "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+      ],
+      "file_path": "MetaExamples/Fiddle.lean",
+      "line_span": "",
+      "manifest_paths": [
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.manifest.json"
+      ],
+      "patch_snippet": "  \u00b7 extract_goal using eg\u2082\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+      "replay_evidence": {
+        "baseline_verdict": "BASELINE_PASSED",
+        "patch_apply_verdict": "PATCH_APPLIED",
+        "patch_verdict": "PATCH_ACCEPTED",
+        "verdict": "PATCH_ACCEPTED"
+      },
+      "repo_commit": "",
+      "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "reuse_contract": {
+        "portable_without_replay": false,
+        "requires_exact_source_or_verified_adapter": true,
+        "requires_lean_replay_before_promotion": true
+      },
+      "seed_id": "lawbook-seed-002",
+      "source_class_id": "repair-class-002",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2082\n    sorry",
+      "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52",
+      "status": "LAWBOOK_SEED_READY"
+    }
+  ],
+  "version": "v4.4.13"
+}

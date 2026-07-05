@@ -1,0 +1,25 @@
+{
+  "accepted_certificate_count": 4,
+  "bounded_claim": [
+    "v4.4.13 promotes the two v4.4.12 deduplicated accepted repair classes into compact Lawbook seed entries",
+    "each seed preserves accepted replay evidence and an explicit reuse contract",
+    "the bundle is a replay seed bundle, not a new proof or portable theorem claim"
+  ],
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission",
+    "that seeds are portable without exact-source replay or verified adapters"
+  ],
+  "duplicate_certificate_count": 2,
+  "input_version": "v4.4.12",
+  "lawbook_seed_count": 2,
+  "mapped_certificate_count": 4,
+  "next_frontier": "v4.4.14 run source-cleanliness and replay-restoration invariants against the hydrated checkout",
+  "status": "COMPACT_LAWBOOK_SEED_BUNDLE_LEDGERED",
+  "unique_repair_class_count": 2,
+  "version": "v4.4.13"
+}

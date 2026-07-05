@@ -1,0 +1,31 @@
+{
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "candidate_id": "lawbook-seed-001",
+      "expected_replay_verdict": "PATCH_ACCEPTED",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "patch_snippet": "  \u00b7 extract_goal using eg\u2081\n    exact Nat.le_add_right n 1",
+      "repo_commit": "",
+      "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "requires_replay": true,
+      "source_class_id": "repair-class-001",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2081\n    sorry"
+    },
+    {
+      "candidate_id": "lawbook-seed-002",
+      "expected_replay_verdict": "PATCH_ACCEPTED",
+      "file_path": "MetaExamples/Fiddle.lean",
+      "patch_snippet": "  \u00b7 extract_goal using eg\u2082\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "repo_commit": "",
+      "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "requires_replay": true,
+      "source_class_id": "repair-class-002",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2082\n    sorry"
+    }
+  ],
+  "queue_type": "DEDUPED_ACCEPTED_REPAIR_SEED_QUEUE",
+  "version": "v4.4.13"
+}
