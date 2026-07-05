@@ -1,0 +1,38 @@
+{
+  "bounded_claim": [
+    "v4.4.35 classifies the v4.4.34 replay failure without rerunning Lean",
+    "it separates dependency/bootstrap obstruction from proof/type obstruction",
+    "it prevents incorrectly marking the selected patch dead from setup-only evidence"
+  ],
+  "classifier_type": "REPLAY_OBSTRUCTION_CLASSIFIER",
+  "commit": "b1cc1756202d7f44e07bd4069b5df16901a36938",
+  "does_not_claim": [
+    "new Lean replay",
+    "patch acceptance",
+    "proof rejection",
+    "full repository build",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "input_version": "v4.4.34",
+  "next_action": "RUN_CACHE_OR_BUILD_DIAGNOSTIC_BEFORE_PATCH_JUDGMENT",
+  "obstruction_class": "DEPENDENCY_BOOTSTRAP_INCOMPLETE_NOT_PROOF_REJECTION",
+  "obstruction_reasons": [
+    "Lean toolchain installation occurred during replay",
+    "mathlib dependency clone occurred during replay",
+    "module/olean availability obstruction",
+    "Lean error marker present"
+  ],
+  "prior_replay_reasons": [
+    "import/module failure",
+    "Lean reported error"
+  ],
+  "prior_replay_status": "REJECTED_BY_LOCAL_REPLAY",
+  "proof_patch_dead": false,
+  "repo": "teorth/equational_theories",
+  "rerun_performed": false,
+  "selected_patch_id": "patch-001-exact-constructor-four-fields",
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "upstream_contact_performed": false,
+  "version": "v4.4.35"
+}
