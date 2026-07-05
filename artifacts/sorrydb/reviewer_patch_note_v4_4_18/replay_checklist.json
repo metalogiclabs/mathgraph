@@ -1,0 +1,29 @@
+{
+  "acceptance_criteria": [
+    "target repository checks out at the pinned commit",
+    "baseline Lean run succeeds before patching",
+    "each source snippet matches exactly before replacement",
+    "patched Lean run succeeds after replacement",
+    "reviewer accepts the patch on its own merits"
+  ],
+  "checklist_type": "REVIEWER_EXACT_SOURCE_REPLAY_CHECKLIST",
+  "commands": [
+    "git clone https://github.com/siddhartha-gadgil/MetaExamples.git MetaExamples-sorrydb-v4418-review",
+    "cd MetaExamples-sorrydb-v4418-review",
+    "git checkout edbb75e784db19846a1c19841e182b797afc18bb",
+    "lake exe cache get",
+    "lake env lean MetaExamples/Fiddle.lean",
+    "apply the two exact-source replacements from the patch note",
+    "lake env lean MetaExamples/Fiddle.lean"
+  ],
+  "rejection_criteria": [
+    "source snippet does not match exactly",
+    "baseline Lean run fails in reviewer checkout",
+    "patched Lean run fails in reviewer checkout",
+    "reviewer rejects the repair"
+  ],
+  "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "target_file": "MetaExamples/Fiddle.lean",
+  "target_repo": "siddhartha-gadgil/MetaExamples",
+  "version": "v4.4.18"
+}

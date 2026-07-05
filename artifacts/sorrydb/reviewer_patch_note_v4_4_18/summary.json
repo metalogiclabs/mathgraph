@@ -1,0 +1,28 @@
+{
+  "accepted_replay_certificate_count": 4,
+  "bounded_claim": [
+    "v4.4.18 turns the v4.4.17 upstream patch evidence bundle into a reviewer-facing patch note and exact replay checklist",
+    "the note contains two exact-source patch candidates backed by four accepted replay certificates from v4.4.11",
+    "the checklist describes how a reviewer can independently replay the candidate patches"
+  ],
+  "checklist_command_count": 7,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches beyond v4.4.11 evidence",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream acceptance",
+    "semantic portability beyond exact-source replay or verified adapters",
+    "authority to modify the upstream repository"
+  ],
+  "input_version": "v4.4.17",
+  "next_frontier": "v4.4.19 create a minimal outbound upstream PR/message package with links to the evidence bundle and reviewer checklist",
+  "patch_count": 2,
+  "status": "REVIEWER_PATCH_NOTE_REPLAY_CHECKLIST_LEDGERED",
+  "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "target_file": "MetaExamples/Fiddle.lean",
+  "target_repo": "siddhartha-gadgil/MetaExamples",
+  "unique_repair_class_count": 2,
+  "version": "v4.4.18"
+}
