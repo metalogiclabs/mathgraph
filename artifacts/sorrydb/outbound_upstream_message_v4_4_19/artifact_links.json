@@ -1,0 +1,25 @@
+{
+  "links": [
+    {
+      "label": "reviewer_patch_note",
+      "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/reviewer_patch_note.md",
+      "role": "human-readable exact replay note"
+    },
+    {
+      "label": "replay_checklist",
+      "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/replay_checklist.json",
+      "role": "machine-readable replay checklist"
+    },
+    {
+      "label": "upstream_patch_bundle",
+      "path": "artifacts/sorrydb/upstream_patch_bundle_v4_4_17/upstream_patch_bundle.json",
+      "role": "patch evidence bundle"
+    },
+    {
+      "label": "microflywheel_report",
+      "path": "artifacts/sorrydb/microflywheel_report_v4_4_15/report.md",
+      "role": "end-to-end obstruction-to-certificate report"
+    }
+  ],
+  "version": "v4.4.19"
+}

@@ -1,0 +1,15 @@
+{
+  "accepted_replay_certificate_count": 4,
+  "artifact_links_path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/artifact_links.json",
+  "human_approval_required": true,
+  "message_path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/outbound_message.md",
+  "package_type": "OUTBOUND_UPSTREAM_MESSAGE_PACKAGE",
+  "patch_count": 2,
+  "pr_body_path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/upstream_pr_body.md",
+  "subject": "Two exact-source Lean repairs for MetaExamples/Fiddle.lean with replay evidence",
+  "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "target_file": "MetaExamples/Fiddle.lean",
+  "target_repo": "siddhartha-gadgil/MetaExamples",
+  "unique_repair_class_count": 2,
+  "version": "v4.4.19"
+}
