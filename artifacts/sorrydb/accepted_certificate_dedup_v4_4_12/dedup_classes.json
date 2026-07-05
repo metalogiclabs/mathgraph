@@ -1,0 +1,81 @@
+{
+  "classes": [
+    {
+      "certificate_ids": [
+        "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+        "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1"
+      ],
+      "class_id": "repair-class-001",
+      "dedup_key": {
+        "file_path": "MetaExamples/Fiddle.lean",
+        "line_span": "",
+        "patch_snippet_sha256": "4e47bee9c608d1576839fb9bc37a8f131e187150c77652d7b0433529de38813d",
+        "repo_commit": "",
+        "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+        "source_snippet_sha256": "3adfbbe72eab7654b2c8bb68ab57a1187f4275b026a0dc8ef1017bb2257aa2c9"
+      },
+      "manifest_paths": [
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.manifest.json",
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.manifest.json"
+      ],
+      "patch_snippet": "  \u00b7 extract_goal using eg\u2081\n    exact Nat.le_add_right n 1",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2081\n    sorry",
+      "verdicts": [
+        {
+          "baseline_verdict": "BASELINE_PASSED",
+          "certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+          "patch_apply_verdict": "PATCH_APPLIED",
+          "patch_verdict": "PATCH_ACCEPTED",
+          "verdict": "PATCH_ACCEPTED"
+        },
+        {
+          "baseline_verdict": "BASELINE_PASSED",
+          "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+          "patch_apply_verdict": "PATCH_APPLIED",
+          "patch_verdict": "PATCH_ACCEPTED",
+          "verdict": "PATCH_ACCEPTED"
+        }
+      ]
+    },
+    {
+      "certificate_ids": [
+        "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+        "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2"
+      ],
+      "class_id": "repair-class-002",
+      "dedup_key": {
+        "file_path": "MetaExamples/Fiddle.lean",
+        "line_span": "",
+        "patch_snippet_sha256": "4d167a02c3457e093d8097925c3eb9b63f314c7302582dbc0b0f9e7c42f8d4d0",
+        "repo_commit": "",
+        "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+        "source_snippet_sha256": "e6369b8a2eeb52c412e5e1e31ae2cfaeb150fe9083bf2b9268bf6e6999260b52"
+      },
+      "manifest_paths": [
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.manifest.json",
+        "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.manifest.json"
+      ],
+      "patch_snippet": "  \u00b7 extract_goal using eg\u2082\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "representative_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2082\n    sorry",
+      "verdicts": [
+        {
+          "baseline_verdict": "BASELINE_PASSED",
+          "certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+          "patch_apply_verdict": "PATCH_APPLIED",
+          "patch_verdict": "PATCH_ACCEPTED",
+          "verdict": "PATCH_ACCEPTED"
+        },
+        {
+          "baseline_verdict": "BASELINE_PASSED",
+          "certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+          "patch_apply_verdict": "PATCH_APPLIED",
+          "patch_verdict": "PATCH_ACCEPTED",
+          "verdict": "PATCH_ACCEPTED"
+        }
+      ]
+    }
+  ],
+  "version": "v4.4.12"
+}

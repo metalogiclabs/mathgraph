@@ -1,0 +1,9 @@
+{
+  "certificate_to_class": {
+    "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1": "repair-class-001",
+    "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2": "repair-class-002",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1": "repair-class-001",
+    "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2": "repair-class-002"
+  },
+  "version": "v4.4.12"
+}

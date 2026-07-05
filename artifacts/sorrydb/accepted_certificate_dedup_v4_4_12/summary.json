@@ -1,0 +1,24 @@
+{
+  "accepted_certificate_count": 4,
+  "all_patch_accepted": true,
+  "bounded_claim": [
+    "v4.4.11 produced four accepted replay certificates",
+    "v4.4.12 deduplicates accepted certificates into semantic repair classes using source snippet, patch snippet, file, repo identity, commit, and line span when available",
+    "the current evidence contains two unique repair classes and two duplicate certificate identities"
+  ],
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission",
+    "that duplicate certificate identities are semantically distinct proofs"
+  ],
+  "duplicate_certificate_count": 2,
+  "input_manifest_count": 4,
+  "next_frontier": "v4.4.13 promote deduplicated accepted repairs into a compact lawbook/replay seed bundle",
+  "status": "ACCEPTED_CERTIFICATE_DEDUP_LEDGERED",
+  "unique_repair_class_count": 2,
+  "version": "v4.4.12"
+}
