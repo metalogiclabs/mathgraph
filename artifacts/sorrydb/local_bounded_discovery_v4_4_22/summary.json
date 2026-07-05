@@ -1,0 +1,34 @@
+{
+  "bounded_claim": [
+    "v4.4.22 runs local bounded discovery over existing artifacts and source-cache only",
+    "the run searches the five-candidate v4.4.21 pilot queue without cloning, networking, Lean replay, or heavy builds",
+    "outcomes are recorded as control located, exact-source match found, selector hit requiring adapter, or named obstruction"
+  ],
+  "candidate_count": 5,
+  "control_targets_located": 1,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches beyond v4.4.11 evidence",
+    "that selector hits are valid replay targets",
+    "that any fresh target verifies",
+    "automated external contact",
+    "upstream acceptance",
+    "general SorryDB mining",
+    "semantic portability beyond exact-source replay or verified adapters",
+    "permission to run heavy lake builds on low disk"
+  ],
+  "exact_source_matches_found": 2,
+  "input_version": "v4.4.21",
+  "next_frontier": "v4.4.23 convert any local exact-source matches into a replay-or-obstruction queue; if none, park the fresh-source pilot and return to manual outbound review",
+  "replay_attempted": false,
+  "searched_file_count": 9318,
+  "selector_hits_found": 2,
+  "status": "LOCAL_BOUNDED_DISCOVERY_LEDGERED",
+  "status_counts": {
+    "CONTROL_TARGET_LOCATED": 1,
+    "LOCAL_EXACT_SOURCE_MATCH_FOUND_REPLAY_NOT_ATTEMPTED": 2,
+    "LOCAL_SELECTOR_HITS_FOUND_NAMED_ADAPTER_REQUIRED": 2
+  },
+  "version": "v4.4.22"
+}

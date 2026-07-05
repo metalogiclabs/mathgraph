@@ -1,0 +1,143 @@
+{
+  "candidate_count": 5,
+  "constraints": {
+    "existing_artifacts_and_source_cache_only": true,
+    "no_clone": true,
+    "no_heavy_lake_build": true,
+    "no_lean_replay": true,
+    "no_network": true
+  },
+  "discovery_type": "LOCAL_BOUNDED_DISCOVERY_OVER_EXISTING_ARTIFACTS_AND_SOURCE_CACHE",
+  "observations": [
+    {
+      "candidate_id": "fresh-pilot-001",
+      "candidate_kind": "known_pinned_control",
+      "matches": [
+        {
+          "kind": "PINNED_CONTROL_TARGET",
+          "path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+        }
+      ],
+      "replay_attempted": false,
+      "requires_replay": true,
+      "role": "control_exact_source_replay",
+      "terminal_status": "CONTROL_TARGET_LOCATED"
+    },
+    {
+      "candidate_id": "fresh-pilot-002",
+      "candidate_kind": "fresh_target_discovery_query",
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/reviewer_patch_note_snapshot.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/reviewer_patch_note.md"
+        }
+      ],
+      "replay_attempted": false,
+      "requires_replay": true,
+      "role": "exact_source_snippet_search_eg1",
+      "terminal_status": "LOCAL_EXACT_SOURCE_MATCH_FOUND_REPLAY_NOT_ATTEMPTED"
+    },
+    {
+      "candidate_id": "fresh-pilot-003",
+      "candidate_kind": "fresh_target_discovery_query",
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/reviewer_patch_note_snapshot.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/reviewer_patch_note.md"
+        }
+      ],
+      "replay_attempted": false,
+      "requires_replay": true,
+      "role": "exact_source_snippet_search_eg2",
+      "terminal_status": "LOCAL_EXACT_SOURCE_MATCH_FOUND_REPLAY_NOT_ATTEMPTED"
+    },
+    {
+      "candidate_id": "fresh-pilot-004",
+      "candidate_kind": "fresh_target_discovery_query",
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/ClientTest/ClientTest/SmallCodes.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/LeanAideTest/SmallCodes.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/README.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/Scratch/LintFiddle.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/mathlib/Mathlib/Algebra/Polynomial/PartialFractions.lean"
+        }
+      ],
+      "replay_attempted": false,
+      "requires_replay": false,
+      "role": "same_theorem_name_nearby_source_query",
+      "terminal_status": "LOCAL_SELECTOR_HITS_FOUND_NAMED_ADAPTER_REQUIRED"
+    },
+    {
+      "candidate_id": "fresh-pilot-005",
+      "candidate_kind": "fresh_target_discovery_query",
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/LeanSearchClient/LoogleSyntax.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/LeanSearchClientTest/LoogleExamples.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/README.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/batteries/Batteries/Data/List/Perm.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/batteries/Batteries/Data/RBMap/Depth.lean"
+        }
+      ],
+      "replay_attempted": false,
+      "requires_replay": false,
+      "role": "same_successor_bound_shape_query",
+      "terminal_status": "LOCAL_SELECTOR_HITS_FOUND_NAMED_ADAPTER_REQUIRED"
+    }
+  ],
+  "search_roots": [
+    "artifacts",
+    "docs",
+    ".mathgraph_source_cache"
+  ],
+  "searched_file_count": 9318,
+  "status_counts": {
+    "CONTROL_TARGET_LOCATED": 1,
+    "LOCAL_EXACT_SOURCE_MATCH_FOUND_REPLAY_NOT_ATTEMPTED": 2,
+    "LOCAL_SELECTOR_HITS_FOUND_NAMED_ADAPTER_REQUIRED": 2
+  },
+  "version": "v4.4.22"
+}
