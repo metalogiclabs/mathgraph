@@ -1,0 +1,80 @@
+{
+  "loop": [
+    "hydrated source candidates",
+    "controlled replay obstruction",
+    "cache hydration plan",
+    "authorized cache hydration reality",
+    "accepted replay",
+    "deduplication",
+    "compact Lawbook seed packaging",
+    "source restoration invariant"
+  ],
+  "name": "SorryDB minimal end-to-end microflywheel",
+  "stages": [
+    {
+      "claim_type": "planner",
+      "input_path": "artifacts/sorrydb/hydrated_backfill_queue_v4_4_7/backfill_queue.json",
+      "stage": "hydrated_source_backfill_queue_planned",
+      "terminal_observation": "four hydrated source rows became queue-compatible candidates",
+      "version": "v4.4.7"
+    },
+    {
+      "accepted_count": 0,
+      "claim_type": "obstruction",
+      "failed_count": 4,
+      "stage": "hydrated_backfill_reality_before_cache",
+      "terminal_observation": "HYDRATED_BACKFILL_REALITY_LEDGERED",
+      "version": "v4.4.8"
+    },
+    {
+      "claim_type": "planner",
+      "recommended_command": "cd /Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db && lake exe cache get",
+      "stage": "cache_dependency_hydration_planned",
+      "terminal_observation": "CACHE_HYDRATION_READY",
+      "version": "v4.4.9"
+    },
+    {
+      "baseline_contact_passed": true,
+      "claim_type": "environment_contact",
+      "mathlib_olean_exists": true,
+      "stage": "cache_hydration_reality",
+      "terminal_observation": "CACHE_HYDRATION_REALITY_LEDGERED",
+      "version": "v4.4.10"
+    },
+    {
+      "accepted_count": 4,
+      "candidate_count": 4,
+      "claim_type": "accepted_replay",
+      "failed_count": 0,
+      "stage": "hydrated_backfill_after_cache_accepted",
+      "terminal_observation": "HYDRATED_BACKFILL_AFTER_CACHE_ACCEPTED_LEDGERED",
+      "version": "v4.4.11"
+    },
+    {
+      "accepted_certificate_count": 4,
+      "claim_type": "deduplication",
+      "duplicate_certificate_count": 2,
+      "stage": "accepted_certificate_dedup",
+      "terminal_observation": "ACCEPTED_CERTIFICATE_DEDUP_LEDGERED",
+      "unique_repair_class_count": 2,
+      "version": "v4.4.12"
+    },
+    {
+      "claim_type": "seed_packaging",
+      "lawbook_seed_count": 2,
+      "stage": "compact_lawbook_seed_bundle",
+      "terminal_observation": "COMPACT_LAWBOOK_SEED_BUNDLE_LEDGERED",
+      "version": "v4.4.13"
+    },
+    {
+      "claim_type": "restoration_invariant",
+      "restoration_invariant_passed": true,
+      "source_has_untracked_paths": true,
+      "source_tracked_changes_clean": true,
+      "stage": "source_cleanliness_replay_restoration",
+      "terminal_observation": "SOURCE_CLEANLINESS_REPLAY_RESTORATION_LEDGERED",
+      "version": "v4.4.14"
+    }
+  ],
+  "version": "v4.4.15"
+}

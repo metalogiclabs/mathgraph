@@ -1,0 +1,23 @@
+{
+  "after_cache": {
+    "accepted_count": 4,
+    "candidate_count": 4,
+    "failed_count": 0
+  },
+  "before_cache": {
+    "accepted_count": 0,
+    "failed_count": 4
+  },
+  "deduplicated": {
+    "accepted_certificate_count": 4,
+    "duplicate_certificate_count": 2,
+    "lawbook_seed_count": 2,
+    "unique_repair_class_count": 2
+  },
+  "restoration": {
+    "restoration_invariant_passed": true,
+    "source_tracked_changes_clean": true,
+    "target_diff_clean": true
+  },
+  "version": "v4.4.15"
+}

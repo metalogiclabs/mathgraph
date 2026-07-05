@@ -1,0 +1,26 @@
+{
+  "bounded_claim": [
+    "v4.4.15 packages the minimal end-to-end SorryDB microflywheel from v4.4.7 through v4.4.14",
+    "the report shows one obstruction-to-certificate chain crossing cache/build failure into accepted replay",
+    "the final compact artifact contains two deduplicated Lawbook replay seeds backed by four accepted replay certificates"
+  ],
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission",
+    "production readiness",
+    "semantic portability beyond exact-source replay or verified adapters"
+  ],
+  "headline": {
+    "accepted_after_cache": 4,
+    "lawbook_seed_count": 2,
+    "restoration_invariant_passed": true,
+    "unique_repair_classes": 2
+  },
+  "next_frontier": "v4.4.16 choose one scale path: more SorryDB source worlds, upstream patch package, or replay-seed reuse on fresh targets",
+  "status": "MICROFLYWHEEL_REPORT_LEDGERED",
+  "version": "v4.4.15"
+}
