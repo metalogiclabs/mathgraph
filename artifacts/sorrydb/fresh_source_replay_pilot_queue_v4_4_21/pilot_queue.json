@@ -1,0 +1,129 @@
+{
+  "candidate_count": 5,
+  "candidates": [
+    {
+      "allowed_terminal_states": [
+        "ACCEPTED_REPLAY",
+        "FAILED_REPLAY",
+        "OBSTRUCTED_ENVIRONMENT"
+      ],
+      "candidate_id": "fresh-pilot-001",
+      "candidate_kind": "known_pinned_control",
+      "freshness_status": "CONTROL_NOT_FRESH",
+      "requires_heavy_build": false,
+      "role": "control_exact_source_replay",
+      "seed_patch_ids": [
+        "upstream-patch-001",
+        "upstream-patch-002"
+      ],
+      "selection_rule": "Use the already pinned MetaExamples/Fiddle.lean target as a control replay before testing fresh targets.",
+      "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "target_file": "MetaExamples/Fiddle.lean",
+      "target_repo": "siddhartha-gadgil/MetaExamples"
+    },
+    {
+      "allowed_terminal_states": [
+        "ACCEPTED_REPLAY",
+        "FAILED_REPLAY",
+        "OBSTRUCTED_EXACT_SOURCE_MISMATCH",
+        "OBSTRUCTED_ENVIRONMENT"
+      ],
+      "candidate_id": "fresh-pilot-002",
+      "candidate_kind": "fresh_target_discovery_query",
+      "freshness_status": "UNRESOLVED_UNTIL_EXACT_MATCH_FOUND",
+      "replacement_snippet": "  \u00b7 extract_goal using eg\u2081\n    exact Nat.le_add_right n 1",
+      "requires_exact_source_match_or_named_adapter": true,
+      "requires_heavy_build": false,
+      "role": "exact_source_snippet_search_eg1",
+      "selection_rule": "Search bounded local/source registries for an exact match to the eg1 source snippet before attempting replay.",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2081\n    sorry"
+    },
+    {
+      "allowed_terminal_states": [
+        "ACCEPTED_REPLAY",
+        "FAILED_REPLAY",
+        "OBSTRUCTED_EXACT_SOURCE_MISMATCH",
+        "OBSTRUCTED_ENVIRONMENT"
+      ],
+      "candidate_id": "fresh-pilot-003",
+      "candidate_kind": "fresh_target_discovery_query",
+      "freshness_status": "UNRESOLVED_UNTIL_EXACT_MATCH_FOUND",
+      "replacement_snippet": "  \u00b7 extract_goal using eg\u2082\n    exact Nat.succ_le_succ (Nat.le_add_right n 1)",
+      "requires_exact_source_match_or_named_adapter": true,
+      "requires_heavy_build": false,
+      "role": "exact_source_snippet_search_eg2",
+      "selection_rule": "Search bounded local/source registries for an exact match to the eg2 source snippet before attempting replay.",
+      "source_snippet": "  \u00b7 extract_goal using eg\u2082\n    sorry"
+    },
+    {
+      "allowed_terminal_states": [
+        "ACCEPTED_REPLAY",
+        "FAILED_REPLAY",
+        "OBSTRUCTED_EXACT_SOURCE_MISMATCH",
+        "OBSTRUCTED_NAMED_ADAPTER_REQUIRED",
+        "OBSTRUCTED_ENVIRONMENT"
+      ],
+      "candidate_id": "fresh-pilot-004",
+      "candidate_kind": "fresh_target_discovery_query",
+      "freshness_status": "UNRESOLVED_UNTIL_MATCH_OR_ADAPTER_FOUND",
+      "requires_exact_source_match_or_named_adapter": true,
+      "requires_heavy_build": false,
+      "role": "same_theorem_name_nearby_source_query",
+      "selection_rule": "Find at most one nearby source target with the same theorem/proof-shape vocabulary; require a named adapter before replay if the snippet is not exact.",
+      "selector": {
+        "max_hits": 1,
+        "query_terms": [
+          "eg\u2081",
+          "Nat.le_add_right",
+          "extract_goal",
+          "sorry"
+        ]
+      }
+    },
+    {
+      "allowed_terminal_states": [
+        "ACCEPTED_REPLAY",
+        "FAILED_REPLAY",
+        "OBSTRUCTED_EXACT_SOURCE_MISMATCH",
+        "OBSTRUCTED_NAMED_ADAPTER_REQUIRED",
+        "OBSTRUCTED_ENVIRONMENT"
+      ],
+      "candidate_id": "fresh-pilot-005",
+      "candidate_kind": "fresh_target_discovery_query",
+      "freshness_status": "UNRESOLVED_UNTIL_MATCH_OR_ADAPTER_FOUND",
+      "requires_exact_source_match_or_named_adapter": true,
+      "requires_heavy_build": false,
+      "role": "same_successor_bound_shape_query",
+      "selection_rule": "Find at most one fresh target with the same successor-bound repair shape; require exact source match or a named adapter before replay.",
+      "selector": {
+        "max_hits": 1,
+        "query_terms": [
+          "Nat.succ_le_succ",
+          "Nat.le_add_right",
+          "n + 1",
+          "n + 2"
+        ]
+      }
+    }
+  ],
+  "global_constraints": {
+    "no_broad_source_world_mining": true,
+    "no_external_contact": true,
+    "no_heavy_lake_build_without_approval": true,
+    "requires_exact_source_match_or_named_adapter": true,
+    "terminal_states": [
+      "ACCEPTED_REPLAY",
+      "FAILED_REPLAY",
+      "OBSTRUCTED_EXACT_SOURCE_MISMATCH",
+      "OBSTRUCTED_ENVIRONMENT"
+    ]
+  },
+  "max_candidate_targets": 5,
+  "queue_type": "BOUNDED_FRESH_SOURCE_REPLAY_PILOT_QUEUE",
+  "seed_basis": {
+    "lawbook_seed_count": 2,
+    "patch_count": 2,
+    "reviewer_checklist_command_count": 7
+  },
+  "version": "v4.4.21"
+}

@@ -1,0 +1,29 @@
+{
+  "bounded_claim": [
+    "v4.4.21 creates a bounded fresh-source replay pilot candidate queue from the v4.4.20 plan",
+    "the queue contains at most five candidates, including one pinned control and four fresh-target discovery queries",
+    "each fresh candidate requires exact source match or a named adapter before replay"
+  ],
+  "candidate_count": 5,
+  "control_candidate_count": 1,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches beyond v4.4.11 evidence",
+    "that any fresh target currently exists",
+    "automated external contact",
+    "upstream acceptance",
+    "general SorryDB mining",
+    "semantic portability beyond exact-source replay or verified adapters",
+    "permission to run heavy lake builds on low disk"
+  ],
+  "fresh_discovery_candidate_count": 4,
+  "input_version": "v4.4.20",
+  "max_candidate_targets": 5,
+  "next_frontier": "v4.4.22 run only local bounded discovery over existing artifacts/source-cache for the five-candidate pilot queue",
+  "no_heavy_lake_build_without_approval": true,
+  "requires_exact_source_match_or_named_adapter": true,
+  "selected_followup_path": "fresh_source_replay_pilot",
+  "status": "FRESH_SOURCE_REPLAY_PILOT_QUEUE_LEDGERED",
+  "version": "v4.4.21"
+}
