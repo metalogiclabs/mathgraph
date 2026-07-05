@@ -1,0 +1,117 @@
+{
+  "active_sorry_count": 1,
+  "active_sorry_windows": [
+    {
+      "comment_only": false,
+      "line": "  sorry",
+      "line_number": 15,
+      "snippet": "10: theorem Equation43_termDefinableFrom_swapped_args {L : NatMagmaLaw}\n11:     (hL2args : \u2200 e \u2208 L.lhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   sorry\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :=\n19:   Equation43_termDefinableFrom_swapped_args\n20: "
+    }
+  ],
+  "build_attempted": false,
+  "checkout_attempted": true,
+  "clone_attempted": true,
+  "clone_url": "https://github.com/teorth/equational_theories.git",
+  "commented_sorry_count": 0,
+  "commit": "b1cc1756202d7f44e07bd4069b5df16901a36938",
+  "decision": "READY_FOR_BOUNDED_SOURCE_ONLY_PATCH_EXPERIMENT_NO_UPSTREAM_CONTACT",
+  "imports": [
+    "import Batteries.Data.List.Basic",
+    "import equational_theories.Definability.Basic",
+    "import equational_theories.Equations.All"
+  ],
+  "input_version": "v4.4.31",
+  "lean4_likely": true,
+  "lean_toolchain": "leanprover/lean4:v4.29.1",
+  "local_imports": [
+    "import equational_theories.Definability.Basic",
+    "import equational_theories.Equations.All"
+  ],
+  "manifest_files": {
+    "README.md": {
+      "exists": true,
+      "head": "# Equational theories project\n\n[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-lightblue.svg)](https://opensource.org/licenses/Apache-2.0)\n[![Code Style: Black](https://img.shields.io/badge/Code%20Style-Black-000000.svg)](https://github.com/psf/black)\n[![Website](https://img.shields.io/badge/Website-Ready-green)](https://teorth.github.io/equational_theories/)\n[![Documentation](https://img.shields.io/badge/Documentation-Passing-green)](https://teorth.github.io/equational_theories/docs/)\n[![Blueprint](https://img.shields.io/badge/Blueprint-WIP-blue)](https://teorth.github.io/equational_theories/blueprint/)\n[![Progress](https://teorth.github.io/equational_theories/dashboard/progress_badge.svg)](https://teorth.github.io/equational_theories/dashboard/)\n[![Paper](https://img.shields.io/badge/Paper-WIP-blue)](https://teorth.github.io/equational_theories/paper.pdf)\n[![Zulip Channel](https://img.shields.io/badge/Zulip_Channel-Join-blue)](https://leanprover.zulipchat.com/#narrow/stream/458659-Equational)\n\n![Hasse diagram of selected equations](https://github.com/teorth/equational_theories/blob/main/images/subgraph.png?raw=true)\n\nThe purpose of this project, launched on Sep 25, 2024, is to explore the space of equational theories of [magmas](https://en.wikipedia.org/wiki/Magma_(algebra)), ordered by implication. To begin with we shall focus only on theories of a single equation, and specifically on the 4694 equational laws\ninvolving at most four magma operations, up to symmetry and relabeling (here is the list [in Lean](https://github.com/teorth/equational_theories/tree/main/equational_theories/Equations/All.lean) and in [plain text](https://github.com/teorth/equational_theories/tree/main/data/equations.txt)).  This creates 4694*(4694-1) = 22,028,942 implications that need to be proven or disproven, creating both \"implications\" and \"anti-implications\".\n\nWe will accumulate both \"proven\" and \"conjectured\" implications and anti-implications: proven assertions will be verified in the proof assistant language [Lean](https://www.lean-lang.org/), and \"conjectured\" assertions represent all claims (either human-generated or computer-generated) that have not yet been verified in Lean.  The current status of the project can be found on the [dashboard](https://teorth.github.io/equational_theories/dashboard/).\n\nSome selected equations of interest are listed [here](https://github.com/teorth/equational_theories/tree/main/equational_theories/Equations/Basic.lean) (in Lean form) and [here](https://teorth.github.io/equational_theories/blueprint/subgraph-eq.html) (in a human readable blueprint).  Examples include\n- [Equation 1](https://teorth.github.io/equational_theories/implications/?1): `x = x`.  The trivial law.\n- [Equation 2](https://teorth.github.io/equational_theories/implications/?2): `x = y`.  The singleton law.\n- [Equation 43](https://teorth.github.io/equational_theories/implications/?43): `x \u25c7 y = y \u25c7 x`.  The commutative law.\n- [Equation 46](https://teorth.github.io/equational_theories/implications/?46): `x \u25c7 y = z \u25c7 w`.  The constant law.\n- [Equation 4512](https://teorth.github.io/equational_theories/implications/?4512): `x \u25c7 (y \u25c7 z) = (x \u25c7 y) \u25c7 z`.  The associative law.\n\n[Here is a tour](https://github.com/teorth/equational_theories/wiki/Tour-of-selected-equations) of several selected equations, including the ones above.\n\nCurrent statistics and data files, updated automatically:\n- [dashboard](https://teorth.github.io/equational_theories/dashboard/)\n\nCurrent visualizations, updated automatically:\n- [Equation Explorer](https://teorth.github.io/equational_theories/implications) is a tool for exploring the graph of equation implications.\n- [Finite Magma Explorer](https://teorth.github.io/equational_theories/fme) is a tool for exploring finite magmas and the equations they satisfy.\n- [Graphiti](https://teorth.github.io/equational_theories/graphiti) is a tool for visualizing the implication graph.\n\nFor guidelines on how to contribute, see the [CONTRIBUTING.md](https://github.com/teorth/equational_theories/tree/main/CONTRIBUTING.md) file.  Participants are requested to abide by [our code of conduct](https://github.com/teorth/equational_theories/tree/main/CODE_OF_CONDUCT.md).\n\n## Building the project\n\nTo build this project after [installing Lean](https://www.lean-lang.org/lean-get-started) and cloning this repository, follow these steps:\n\n```\n% cd equational_theories/\n% lake exe cache get\n% lake build\n```\n\n## Links\n\n- [Main web page](https://teorth.github.io/equational_theories/)\n    - [Blueprint](https://teorth.github.io/equational_theories/blueprint/)\n    - [Documentation](https://teorth.github.io/equational_theories/docs/)\n    - [The Lean Zulip stream for the project](https://leanprover.zulipchat.com/#narrow/stream/458659-Equational/)\n    - [Instructions on how to contribute](https://github.com/teorth/equational_theories/tree/main/CONTRIBUTING.md)\n    - [Code of conduct](https://github.com/teorth/equational_theories/tree/main/CODE_OF_CONDUCT.md)\n    - [Wiki](https://github.com/teorth/equational_theories/wiki)\n    - [Older progress](https://github.com/teorth/equational_theories/tree/main/docs/OLD_PROGRESS.md)\n- [A blog post describing the project.](https://terrytao.wordpress.com/2024/09/25/a-pilot-project-in-universal-algebra-to-explore-new-ways-to-collaborate-and-use-machine-assistance/), Sep 25, 2024.\n    - [The equational theories project: a brief tour](https://terrytao.wordpress.com/2024/10/12/the-equational-theories-project-a-brief-tour/), Oct 12, 2024 - a followup to the previous post.\n- [Initial discussion on Zulip](https://leanprover.zulipchat.com/#narrow/stream/113488-general/topic/Proposing.20a.20universal.20algebra.20exploration.20using.20Lean/near/472914164), Sep 26, 2024.\n- [Initial discussion on Mastodon](https://mathstodon.xyz/@tao/110736805384878353), Jul 18, 2023.\n    - [Followup discussion on Mastodon](https://mathstodon.xyz/deck/@tao/113201989529992957), Sep 25, 2024.\n- [The MathOverflow post that inspired the project](https://mathoverflow.net/questions/450930/is-there-an-identity-between-the-associative-identity-and-the-constant-identity), Jul 17, 2023.\n    - [A related MathOverflow post](https://mathoverflow.net/questions/450890/is-there-an-identity-between-the-commutative-identity-and-the-constant-identity), Jul 16, 2023.\n- [Data](https://github.com/teorth/equational_theories/tree/main/data)\n    - [Text list of equations](https://github.com/teorth/equational_theories/tree/main/data/equations.txt).  [Larger list with equations of up to five operations](https://github.com/teorth/equational_theories/blob/main/data/eq_size5.txt)\n    - [List of duals of equations](https://github.com/teorth/equational_theories/tree/main/data/dual_equations.md) ([JSON](https://github.com/teorth/equational_theories/blob/main/data/duals.json))\n    - [The smallest magma satisfying a given equation (up to N=5)](https://github.com/teorth/equational_theories/blob/main/data/smallest_magma.txt), if it exists (and [the magmas themselves](https://github.com/teorth/equational_theories/blob/main/data/smallest_magma_examples.txt))\n    - To download the current state of the implication graph, see [this thread](https://leanprover.zulipchat.com/#narrow/stream/458659-Equational/topic/Database.20of.20implications/near/476969963).\n- [Scripts](https://github.com/teorth/equational_theories/tree/main/scripts)\n    - Shell\n        - [`run_before_push`](https://github.com/teorth/equational_theories/tree/main/scripts/run_before_push.sh) \u2013 performs some of the CI checks, suitable for running just before pushing a new PR\n    - Lean\n        - [`extract_implications`](https://github.com/teorth/equational_theories/tree/main/scripts/extract_implications.lean) \u2013 extracts implications from one or more Lean files. This outputs the \"ground truth\" of implication data, for use by other scripts\n    - Python\n        - [`explore_magma`](https://github.com/teorth/equational_theories/tree/main/scripts/explore_magma.py) \u2013 test a given magma table against all or a subset of the equations in [`Equations/All.lean`](https://github.com/teorth/equational_theories/tree/main/equational_theories/Equations/All.lean)\n        - [`find_dual`](https://github.com/teorth/equational_theories/tree/main/scripts/find_dual.py) \u2013 finds the dual of an equation\n        - [`find_equation_id`](https://github.com/teorth/equational_theories/tree/main/scripts/find_equation_id.py) \u2013 finds the equation number of an equation string\n        - [`find_powerful_theorems.py`](https://github.com/teorth/equational_theories/tree/main/scripts/find_powerful_theorems.py) \u2013 finds theorems that, if proved, would imply many others\n        - [`generate_eqs_list`](https://github.com/teorth/equational_theories/tree/main/scripts/generate_eqs_list.py) \u2013 generates a list of equations"
+    },
+    "lake-manifest.json": {
+      "exists": true,
+      "head": "{\"version\": \"1.1.0\",\n \"packagesDir\": \".lake/packages\",\n \"packages\":\n [{\"url\": \"https://github.com/PatrickMassot/checkdecls.git\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"\",\n   \"rev\": \"3d425859e73fcfbef85b9638c2a91708ef4a22d4\",\n   \"name\": \"checkdecls\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": null,\n   \"inherited\": false,\n   \"configFile\": \"lakefile.lean\"},\n  {\"url\": \"https://github.com/leanprover-community/mathlib4.git\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"\",\n   \"rev\": \"5e932f97dd25535344f80f9dd8da3aab83df0fe6\",\n   \"name\": \"mathlib\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": \"v4.29.1\",\n   \"inherited\": false,\n   \"configFile\": \"lakefile.lean\"},\n  {\"url\": \"https://github.com/leanprover-community/plausible\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"leanprover-community\",\n   \"rev\": \"83e90935a17ca19ebe4b7893c7f7066e266f50d3\",\n   \"name\": \"plausible\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": \"main\",\n   \"inherited\": true,\n   \"configFile\": \"lakefile.toml\"},\n  {\"url\": \"https://github.com/leanprover-community/LeanSearchClient\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"leanprover-community\",\n   \"rev\": \"c5d5b8fe6e5158def25cd28eb94e4141ad97c843\",\n   \"name\": \"LeanSearchClient\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": \"main\",\n   \"inherited\": true,\n   \"configFile\": \"lakefile.toml\"},\n  {\"url\": \"https://github.com/leanprover-community/import-graph\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"leanprover-community\",\n   \"rev\": \"48d5698bc464786347c1b0d859b18f938420f060\",\n   \"name\": \"importGraph\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": \"main\",\n   \"inherited\": true,\n   \"configFile\": \"lakefile.toml\"},\n  {\"url\": \"https://github.com/leanprover-community/ProofWidgets4\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"leanprover-community\",\n   \"rev\": \"4dd0959c44d1af0462bd604d0f87c5781307d709\",\n   \"name\": \"proofwidgets\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": \"v0.0.95+lean-v4.29.1\",\n   \"inherited\": true,\n   \"configFile\": \"lakefile.lean\"},\n  {\"url\": \"https://github.com/leanprover-community/aesop\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"leanprover-community\",\n   \"rev\": \"7152850e7b216a0d409701617721b6e469d34bf6\",\n   \"name\": \"aesop\",\n   \"manifestFile\": \"lake-manifest.json\",\n   \"inputRev\": \"master\",\n   \"inherited\": true,\n   \"configFile\": \"lakefile.toml\"},\n  {\"url\": \"https://github.com/leanprover-community/quote4\",\n   \"type\": \"git\",\n   \"subDir\": null,\n   \"scope\": \"leanprover-community\",\n   \"rev\": \"707efb56d0696634e9e965523a1bbe9ac6ce141d\",\n   \"name\": \"Qq\",\n   \"manifestFile\": \"lake-manifest.json\","
+    },
+    "lakefile.lean": {
+      "exists": false,
+      "head": ""
+    },
+    "lakefile.toml": {
+      "exists": true,
+      "head": "name = \"equational_theories\"\ndefaultTargets = [\"equational_theories\"]\n\n[leanOptions]\npp.unicode.fun = true\nautoImplicit = false\nrelaxedAutoImplicit = false\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"\nrev = \"v4.29.1\"\n\n[[require]]\nname = \"checkdecls\"\ngit = \"https://github.com/PatrickMassot/checkdecls.git\"\n\n[[lean_lib]]\nname = \"equational_theories\"\nmoreLeanArgs = [\"--tstack=262144\"]\n\n[[lean_exe]]\nname = \"extract_implications\"\nroot = \"scripts.extract_implications\"\nsupportInterpreter = true\n\n[[lean_exe]]\nname = \"export_equations\"\nroot = \"scripts.export_equations\"\nsupportInterpreter = true\n\n[[lean_exe]]\nname = \"generate_lifting_magma_family_counterexamples\"\nroot = \"equational_theories.LiftingMagmaFamiliesCounterexamples\"\nsupportInterpreter = true"
+    },
+    "lean-toolchain": {
+      "exists": true,
+      "head": "leanprover/lean4:v4.29.1"
+    }
+  },
+  "patch_attempted": false,
+  "recon_type": "ACTIVE_TARGET_RECON_BEFORE_REPLAY",
+  "replay_attempted": false,
+  "replay_risk": "MEDIUM_HIGH_BUT_REAL_LEAN4_TARGET",
+  "repo": "teorth/equational_theories",
+  "risk_reasons": [
+    "Lean4/lake repo detected",
+    "target file exists at selected commit",
+    "single active sorry remains in target file",
+    "target depends on local equational_theories imports",
+    "definability theorem likely depends on project-specific infrastructure",
+    "uses decide +kernel syntax nearby",
+    "rfl witness nearby"
+  ],
+  "sorry_count": 1,
+  "steps": [
+    {
+      "cmd": [
+        "git",
+        "clone",
+        "--filter=blob:none",
+        "--depth",
+        "1",
+        "https://github.com/teorth/equational_theories.git",
+        "repo"
+      ],
+      "cwd": ".tmp_sorrydb_v4_4_32_active_target_recon",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "Cloning into 'repo'...\nUpdating files:   0% (2/2448)\nUpdating files:   1% (25/2448)\nUpdating files:   2% (49/2448)\nUpdating files:   3% (74/2448)\nUpdating files:   4% (98/2448)\nUpdating files:   5% (123/2448)\nUpdating files:   6% (147/2448)\nUpdating files:   7% (172/2448)\nUpdating files:   8% (196/2448)\nUpdating files:   9% (221/2448)\nUpdating files:  10% (245/2448)\nUpdating files:  11% (270/2448)\nUpdating files:  12% (294/2448)\nUpdating files:  13% (319/2448)\nUpdating files:  14% (343/2448)\nUpdating files:  15% (368/2448)\nUpdating files:  16% (392/2448)\nUpdating files:  17% (417/2448)\nUpdating files:  18% (441/2448)\nUpdating files:  19% (466/2448)\nUpdating files:  20% (490/2448)\nUpdating files:  21% (515/2448)\nUpdating files:  22% (539/2448)\nUpdating files:  23% (564/2448)\nUpdating files:  24% (588/2448)\nUpdating files:  25% (612/2448)\nUpdating files:  26% (637/2448)\nUpdating files:  27% (661/2448)\nUpdating files:  28% (686/2448)\nUpdating files:  29% (710/2448)\nUpdating files:  30% (735/2448)\nUpdating files:  31% (759/2448)\nUpdating files:  32% (784/2448)\nUpdating files:  33% (808/2448)\nUpdating files:  33% (832/2448)\nUpdating files:  34% (833/2448)\nUpdating files:  35% (857/2448)\nUpdating files:  36% (882/2448)\nUpdating files:  37% (906/2448)\nUpdating files:  38% (931/2448)\nUpdating files:  39% (955/2448)\nUpdating files:  40% (980/2448)\nUpdating files:  41% (1004/2448)\nUpdating files:  42% (1029/2448)\nUpdating files:  43% (1053/2448)\nUpdating files:  44% (1078/2448)\nUpdating files:  45% (1102/2448)\nUpdating files:  46% (1127/2448)\nUpdating files:  47% (1151/2448)\nUpdating files:  48% (1176/2448)\nUpdating files:  49% (1200/2448)\nUpdating files:  50% (1224/2448)\nUpdating files:  51% (1249/2448)\nUpdating files:  52% (1273/2448)\nUpdating files:  53% (1298/2448)\nUpdating files:  54% (1322/2448)\nUpdating files:  55% (1347/2448)\nUpdating files:  56% (1371/2448)\nUpdating files:  57% (1396/2448)\nUpdating files:  58% (1420/2448)\nUpdating files:  59% (1445/2448)\nUpdating files:  60% (1469/2448)\nUpdating files:  61% (1494/2448)\nUpdating files:  62% (1518/2448)\nUpdating files:  63% (1543/2448)\nUpdating files:  64% (1567/2448)\nUpdating files:  65% (1592/2448)\nUpdating files:  66% (1616/2448)\nUpdating files:  67% (1641/2448)\nUpdating files:  68% (1665/2448)\nUpdating files:  69% (1690/2448)\nUpdating files:  70% (1714/2448)\nUpdating files:  71% (1739/2448)\nUpdating files:  72% (1763/2448)\nUpdating files:  73% (1788/2448)\nUpdating files:  74% (1812/2448)\nUpdating files:  75% (1836/2448)\nUpdating files:  76% (1861/2448)\nUpdating files:  77% (1885/2448)\nUpdating files:  78% (1910/2448)\nUpdating files:  79% (1934/2448)\nUpdating files:  80% (1959/2448)\nUpdating files:  81% (1983/2448)\nUpdating files:  82% (2008/2448)\nUpdating files:  83% (2032/2448)\nUpdating files:  84% (2057/2448)\nUpdating files:  85% (2081/2448)\nUpdating files:  86% (2106/2448)\nUpdating files:  87% (2130/2448)\nUpdating files:  88% (2155/2448)\nUpdating files:  89% (2179/2448)\nUpdating files:  90% (2204/2448)\nUpdating files:  91% (2228/2448)\nUpdating files:  92% (2253/2448)\nUpdating files:  93% (2277/2448)\nUpdating files:  94% (2302/2448)\nUpdating files:  95% (2326/2448)\nUpdating files:  96% (2351/2448)\nUpdating files:  97% (2375/2448)\nUpdating files:  98% (2400/2448)\nUpdating files:  99% (2424/2448)\nUpdating files: 100% (2448/2448)\nUpdating files: 100% (2448/2448), done.\n",
+      "stdout": ""
+    },
+    {
+      "cmd": [
+        "git",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "b1cc1756202d7f44e07bd4069b5df16901a36938"
+      ],
+      "cwd": ".tmp_sorrydb_v4_4_32_active_target_recon/repo",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "From https://github.com/teorth/equational_theories\n * branch            b1cc1756202d7f44e07bd4069b5df16901a36938 -> FETCH_HEAD\n",
+      "stdout": ""
+    },
+    {
+      "cmd": [
+        "git",
+        "checkout",
+        "b1cc1756202d7f44e07bd4069b5df16901a36938"
+      ],
+      "cwd": ".tmp_sorrydb_v4_4_32_active_target_recon/repo",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "Note: switching to 'b1cc1756202d7f44e07bd4069b5df16901a36938'.\n\nYou are in 'detached HEAD' state. You can look around, make experimental\nchanges and commit them, and you can discard any commits you make in this\nstate without impacting any branches by switching back to a branch.\n\nIf you want to create a new branch to retain commits you create, you may\ndo so (now or later) by using -c with the switch command. Example:\n\n  git switch -c <new-branch-name>\n\nOr undo this operation with:\n\n  git switch -\n\nTurn off this advice by setting config variable advice.detachedHead to false\n\nHEAD is now at b1cc175 blueprint: fix operator symbol in equation-ordering example (#1460)\n",
+      "stdout": ""
+    }
+  ],
+  "target_exists": true,
+  "target_line_count": 31,
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "upstream_contact_performed": false,
+  "version": "v4.4.32"
+}

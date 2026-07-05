@@ -1,0 +1,35 @@
+{
+  "active_sorry_count": 1,
+  "bounded_claim": [
+    "v4.4.32 clones the selected active-sorry target into a bounded temporary directory for reconnaissance",
+    "it records manifest files, Lean toolchain, target exactness, imports, and active-sorry count",
+    "it does not build, replay Lean, patch the target, modify upstream, or contact maintainers"
+  ],
+  "build_attempted": false,
+  "checkout_attempted": true,
+  "clone_attempted": true,
+  "commit": "b1cc1756202d7f44e07bd4069b5df16901a36938",
+  "decision": "READY_FOR_BOUNDED_SOURCE_ONLY_PATCH_EXPERIMENT_NO_UPSTREAM_CONTACT",
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "candidate repairability",
+    "that the repo builds locally",
+    "that a patch exists",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "input_version": "v4.4.31",
+  "lean4_likely": true,
+  "lean_toolchain": "leanprover/lean4:v4.29.1",
+  "next_frontier": "v4.4.33 run a bounded source-only patch experiment on the exact target file, then replay only if the patch is syntactically plausible",
+  "patch_attempted": false,
+  "replay_attempted": false,
+  "replay_risk": "MEDIUM_HIGH_BUT_REAL_LEAN4_TARGET",
+  "repo": "teorth/equational_theories",
+  "status": "ACTIVE_TARGET_RECON_LEDGERED",
+  "target_exists": true,
+  "target_path": "equational_theories/Definability/Law43.lean",
+  "upstream_contact_performed": false,
+  "version": "v4.4.32"
+}
