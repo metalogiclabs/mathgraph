@@ -1,0 +1,42 @@
+{
+  "bounded_claim": [
+    "v4.4.16 selects the next scale path after the completed v4.4.7 through v4.4.15 microflywheel",
+    "selection is based on external value, local testability, artifact readiness, feedback speed, risk reduction, and execution risk",
+    "the selected next path is an upstream-facing exact-source patch evidence bundle"
+  ],
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "new accepted patches",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream acceptance",
+    "semantic portability beyond exact-source replay or verified adapters"
+  ],
+  "evidence_inputs": {
+    "dedup_summary": "artifacts/sorrydb/accepted_certificate_dedup_v4_4_12/summary.json",
+    "lawbook_seed_index": "artifacts/sorrydb/compact_lawbook_seed_v4_4_13/lawbook_seed_index.json",
+    "microflywheel": "artifacts/sorrydb/microflywheel_report_v4_4_15/summary.json",
+    "replay_seed_queue": "artifacts/sorrydb/compact_lawbook_seed_v4_4_13/replay_seed_queue.json"
+  },
+  "lawbook_seed_count": 2,
+  "lawbook_seed_index_type": "dict",
+  "microflywheel_headline": {
+    "accepted_after_cache": 4,
+    "lawbook_seed_count": 2,
+    "restoration_invariant_passed": true,
+    "unique_repair_classes": 2
+  },
+  "next_frontier": "v4.4.17 build the upstream-facing exact-source patch evidence bundle",
+  "ranked_path_ids": [
+    "upstream_patch_package",
+    "replay_seed_reuse_on_fresh_targets",
+    "more_sorrydb_source_worlds"
+  ],
+  "replay_seed_queue_type": "dict",
+  "selected_path_id": "upstream_patch_package",
+  "selected_score": 23,
+  "status": "SCALE_PATH_SELECTED",
+  "unique_repair_classes": 2,
+  "version": "v4.4.16"
+}

@@ -1,0 +1,95 @@
+{
+  "decision_rule": {
+    "score": "external_value + local_testability + artifact_readiness + feedback_speed + risk_reduction - execution_risk",
+    "tie_break": "lexicographic path_id after score"
+  },
+  "ranked_options": [
+    {
+      "artifact_readiness": 5,
+      "description": "Package the two deduplicated accepted MetaExamples/Fiddle repairs into a minimal upstream-facing patch evidence bundle.",
+      "done_definition": [
+        "produce upstream_patch_bundle.json",
+        "include exact source file, line spans, source snippets, patch snippets, accepted replay evidence, and replay command",
+        "include no portability claim beyond exact-source replay"
+      ],
+      "execution_risk": 1,
+      "external_value": 5,
+      "feedback_speed": 4,
+      "local_testability": 5,
+      "path_id": "upstream_patch_package",
+      "risk_reduction": 5,
+      "score": 23,
+      "why": [
+        "already has four accepted replay certificates",
+        "deduplicated to two repair classes",
+        "best proof of external usefulness without claiming generality",
+        "smallest next artifact with a real reviewer/judge boundary"
+      ]
+    },
+    {
+      "artifact_readiness": 3,
+      "description": "Try the two Lawbook replay seeds against fresh SorryDB targets or nearby source files.",
+      "done_definition": [
+        "choose a bounded fresh target set",
+        "attempt exact-source or adapter-backed replay",
+        "ledger accepted, failed, and obstructed outcomes separately"
+      ],
+      "execution_risk": 3,
+      "external_value": 4,
+      "feedback_speed": 3,
+      "local_testability": 4,
+      "path_id": "replay_seed_reuse_on_fresh_targets",
+      "risk_reduction": 4,
+      "score": 15,
+      "why": [
+        "tests whether seeds are useful beyond the exact cached source",
+        "creates real adapter pressure",
+        "higher upside but more ways to fail unclearly"
+      ]
+    },
+    {
+      "artifact_readiness": 3,
+      "description": "Hydrate and replay more SorryDB source worlds using the same obstruction-to-certificate microflywheel.",
+      "done_definition": [
+        "select a small source-world batch",
+        "run hydration, cache contact, replay, dedup, and seed packaging",
+        "compare yield against v4.4.7 to v4.4.15"
+      ],
+      "execution_risk": 4,
+      "external_value": 4,
+      "feedback_speed": 3,
+      "local_testability": 3,
+      "path_id": "more_sorrydb_source_worlds",
+      "risk_reduction": 5,
+      "score": 14,
+      "why": [
+        "scales the engine",
+        "improves coverage",
+        "but risks returning to broad mining before packaging the win"
+      ]
+    }
+  ],
+  "selected": {
+    "artifact_readiness": 5,
+    "description": "Package the two deduplicated accepted MetaExamples/Fiddle repairs into a minimal upstream-facing patch evidence bundle.",
+    "done_definition": [
+      "produce upstream_patch_bundle.json",
+      "include exact source file, line spans, source snippets, patch snippets, accepted replay evidence, and replay command",
+      "include no portability claim beyond exact-source replay"
+    ],
+    "execution_risk": 1,
+    "external_value": 5,
+    "feedback_speed": 4,
+    "local_testability": 5,
+    "path_id": "upstream_patch_package",
+    "risk_reduction": 5,
+    "score": 23,
+    "why": [
+      "already has four accepted replay certificates",
+      "deduplicated to two repair classes",
+      "best proof of external usefulness without claiming generality",
+      "smallest next artifact with a real reviewer/judge boundary"
+    ]
+  },
+  "version": "v4.4.16"
+}
