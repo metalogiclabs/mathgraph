@@ -1,0 +1,36 @@
+{
+  "bounded_claim": [
+    "v4.4.30 parks the medium-high-risk Lean3/equate attempt002 candidate",
+    "it scouts lower-risk Lean4/Nat/simp candidates using GitHub API inspection only",
+    "it selects one candidate for future bounded clone/recon without running Lean"
+  ],
+  "build_attempted": false,
+  "clone_attempted": false,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "candidate repairability",
+    "that the selected repo builds locally",
+    "that the selected source still matches after clone",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "input_version": "v4.4.29",
+  "inspected_candidate_count": 30,
+  "lean4_likely_count": 15,
+  "next_frontier": "v4.4.31 clone only the selected low-risk Lean4 candidate into a bounded temp directory and run manifest/source reconnaissance before replay",
+  "parked_reason": "DO_NOT_REPLAY_YET_REQUIRES_LEAN3_ENV_AND_EQUATE_CONTEXT",
+  "parked_repo": "EdAyers/lean-subtask",
+  "parked_target_path": "src/examples/vector.lean",
+  "query_count": 5,
+  "raw_result_count": 150,
+  "replay_attempted": false,
+  "selected_candidate_id": "lowrisk-lean4-030",
+  "selected_path": "Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean",
+  "selected_repo": "FormalizedFormalLogic/Foundation",
+  "selected_score": 42,
+  "status": "LOWRISK_LEAN4_SCOUT_LEDGERED",
+  "unique_candidate_count": 126,
+  "upstream_contact_performed": false,
+  "version": "v4.4.30"
+}

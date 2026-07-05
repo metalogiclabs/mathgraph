@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/strata-org/Strata/git/blobs/d53b1b667377234458c287687454dd07dc0494f0",
+    "html": "https://github.com/strata-org/Strata/blob/main/lakefile.toml",
+    "self": "https://api.github.com/repos/strata-org/Strata/contents/lakefile.toml?ref=main"
+  },
+  "content": "bmFtZSA9ICJTdHJhdGEiCnZlcnNpb24gPSAiMC4xLjAiCmRlZmF1bHRUYXJn\nZXRzID0gWyJTdHJhdGEiLCAiU3RyYXRhVG9DQk1DIiwgIlN0cmF0YUNvcmVU\nb0dvdG8iXQp0ZXN0RHJpdmVyID0gIlN0cmF0YVRlc3RNYWluIgpsaW50RHJp\ndmVyID0gIkNoZWNrSW1wb3J0cyIKCltbcmVxdWlyZV1dCm5hbWUgPSAiU3Ry\nYXRhRERNIgpnaXQgPSAiaHR0cHM6Ly9naXRodWIuY29tL3N0cmF0YS1vcmcv\nU3RyYXRhLURETSIKcmV2ID0gIm1haW4iCgpbW3JlcXVpcmVdXQpuYW1lID0g\nInBsYXVzaWJsZSIKZ2l0ID0gImh0dHBzOi8vZ2l0aHViLmNvbS9sZWFucHJv\ndmVyLWNvbW11bml0eS9wbGF1c2libGUuZ2l0IgpyZXYgPSAiYnVtcF90b192\nNC4yOS4wLXJjOCIKCltbbGVhbl9saWJdXQpuYW1lID0gIlN0cmF0YSIKCltb\nbGVhbl9saWJdXQpuYW1lID0gIlN0cmF0YUV4YW1wbGVzIgpnbG9icyA9IFsi\nRXhhbXBsZXMuTGVhbi4rIl0KCltbbGVhbl9saWJdXQpuYW1lID0gIlN0cmF0\nYVRlc3QiCmdsb2JzID0gWyJTdHJhdGFUZXN0LisiXQoKW1tsZWFuX2V4ZV1d\nCm5hbWUgPSAiU3RyYXRhVGVzdE1haW4iCnJvb3QgPSAiU2NyaXB0cy5TdHJh\ndGFUZXN0TWFpbiIKIyBgU3RyYXRhYCBpcyBsaXN0ZWQgZXhwbGljaXRseSBi\nZWNhdXNlIHRoZSBkcml2ZXIgc3Bhd25zIGBsZWFuYCBvbiBmaWxlcwojIHVu\nZGVyIGBTdHJhdGFUZXN0RXh0cmEvYCAod2hpY2ggaXMgbm90IGEgYGxlYW5f\nbGliYCkuIFRob3NlIGZpbGVzIGltcG9ydAojIG1vZHVsZXMgZnJvbSB0aGUg\nYFN0cmF0YWAgbGlicmFyeSB0aGF0IGFyZSBub3QgaW4gYFN0cmF0YVRlc3Rg\nJ3MgdHJhbnNpdGl2ZQojIGNsb3N1cmUgKGUuZy4sIGBTdHJhdGEuRERNLklu\ndGVncmF0aW9uLkphdmFgKSwgc28gd2l0aG91dCB0aGlzIHRoZSBvbGVhbnMK\nIyB3b3VsZCBiZSBtaXNzaW5nIHdoZW4gcnVubmluZyBgbGFrZSB0ZXN0YCBm\ncm9tIGEgY2xlYW4gYC5sYWtlYC4KbmVlZHMgPSBbIlN0cmF0YSIsICJTdHJh\ndGFUZXN0Il0KCltbbGVhbl9leGVdXQpuYW1lID0gIlN0cmF0YVRvQ0JNQyIK\nCltbbGVhbl9leGVdXQpuYW1lID0gIlN0cmF0YUNvcmVUb0dvdG8iCgpbW2xl\nYW5fZXhlXV0KbmFtZSA9ICJDaGVja0ltcG9ydHMiCnJvb3QgPSAiU2NyaXB0\ncy5DaGVja0ltcG9ydHMiCgpbW2xlYW5fZXhlXV0KbmFtZSA9ICJJbXBvcnRT\ndGF0cyIKcm9vdCA9ICJTY3JpcHRzLkltcG9ydFN0YXRzIgoK\n",
+  "download_url": "https://raw.githubusercontent.com/strata-org/Strata/main/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/strata-org/Strata/git/blobs/d53b1b667377234458c287687454dd07dc0494f0",
+  "html_url": "https://github.com/strata-org/Strata/blob/main/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "d53b1b667377234458c287687454dd07dc0494f0",
+  "size": 1206,
+  "type": "file",
+  "url": "https://api.github.com/repos/strata-org/Strata/contents/lakefile.toml?ref=main"
+}

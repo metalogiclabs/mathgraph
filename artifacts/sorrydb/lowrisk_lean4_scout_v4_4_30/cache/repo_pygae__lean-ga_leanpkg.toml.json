@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/pygae/lean-ga/git/blobs/8881bce15f67aafae5e8f9ac1013e94ddda087d8",
+    "html": "https://github.com/pygae/lean-ga/blob/master/leanpkg.toml",
+    "self": "https://api.github.com/repos/pygae/lean-ga/contents/leanpkg.toml?ref=master"
+  },
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAibGVhbi1nYSIKdmVyc2lvbiA9ICIwLjEiCmxl\nYW5fdmVyc2lvbiA9ICJsZWFucHJvdmVyLWNvbW11bml0eS9sZWFuOjMuNTEu\nMSIKcGF0aCA9ICJzcmMiCgpbZGVwZW5kZW5jaWVzXQptYXRobGliID0ge2dp\ndCA9ICJodHRwczovL2dpdGh1Yi5jb20vbGVhbnByb3Zlci1jb21tdW5pdHkv\nbWF0aGxpYiIsIHJldiA9ICJiZjI0MjhjOTQ4NmM0MDdjYTM4YjViM2ZiMTBi\nODdkYWQwYmM5OWZhIn0K\n",
+  "download_url": "https://raw.githubusercontent.com/pygae/lean-ga/master/leanpkg.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/pygae/lean-ga/git/blobs/8881bce15f67aafae5e8f9ac1013e94ddda087d8",
+  "html_url": "https://github.com/pygae/lean-ga/blob/master/leanpkg.toml",
+  "name": "leanpkg.toml",
+  "path": "leanpkg.toml",
+  "sha": "8881bce15f67aafae5e8f9ac1013e94ddda087d8",
+  "size": 240,
+  "type": "file",
+  "url": "https://api.github.com/repos/pygae/lean-ga/contents/leanpkg.toml?ref=master"
+}

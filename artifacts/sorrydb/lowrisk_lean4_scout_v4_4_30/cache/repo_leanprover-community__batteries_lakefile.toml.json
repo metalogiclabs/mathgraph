@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/leanprover-community/batteries/git/blobs/18abb8a007ca335e88775a0ea996f324ef8f9940",
+    "html": "https://github.com/leanprover-community/batteries/blob/main/lakefile.toml",
+    "self": "https://api.github.com/repos/leanprover-community/batteries/contents/lakefile.toml?ref=main"
+  },
+  "content": "bmFtZSA9ICJiYXR0ZXJpZXMiCnRlc3REcml2ZXIgPSAiQmF0dGVyaWVzVGVz\ndCIKbGludERyaXZlciA9ICJydW5MaW50ZXIiCmRlZmF1bHRUYXJnZXRzID0g\nWyJCYXR0ZXJpZXMiLCAicnVuTGludGVyIl0KCltsZWFuT3B0aW9uc10KbGlu\ndGVyLm1pc3NpbmdEb2NzID0gdHJ1ZQoKW1tsZWFuX2xpYl1dCm5hbWUgPSAi\nQmF0dGVyaWVzIgoKW1tsZWFuX2xpYl1dCm5hbWUgPSAiQmF0dGVyaWVzVGVz\ndCIKZ2xvYnMgPSBbIkJhdHRlcmllc1Rlc3QuKyJdCmxlYW5PcHRpb25zID0g\ne2xpbnRlci5taXNzaW5nRG9jcyA9IGZhbHNlfQoKW1tsZWFuX2V4ZV1dCm5h\nbWUgPSAicnVuTGludGVyIgpzcmNEaXIgPSAic2NyaXB0cyIKc3VwcG9ydElu\ndGVycHJldGVyID0gdHJ1ZQoKW1tsZWFuX2V4ZV1dCm5hbWUgPSAidGVzdCIK\nc3JjRGlyID0gInNjcmlwdHMiCg==\n",
+  "download_url": "https://raw.githubusercontent.com/leanprover-community/batteries/main/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/leanprover-community/batteries/git/blobs/18abb8a007ca335e88775a0ea996f324ef8f9940",
+  "html_url": "https://github.com/leanprover-community/batteries/blob/main/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "18abb8a007ca335e88775a0ea996f324ef8f9940",
+  "size": 424,
+  "type": "file",
+  "url": "https://api.github.com/repos/leanprover-community/batteries/contents/lakefile.toml?ref=main"
+}

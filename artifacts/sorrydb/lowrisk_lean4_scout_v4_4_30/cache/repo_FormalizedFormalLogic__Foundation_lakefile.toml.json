@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/FormalizedFormalLogic/Foundation/git/blobs/39df8ae44402024df92a4462be20a6c60909a7d1",
+    "html": "https://github.com/FormalizedFormalLogic/Foundation/blob/master/lakefile.toml",
+    "self": "https://api.github.com/repos/FormalizedFormalLogic/Foundation/contents/lakefile.toml?ref=master"
+  },
+  "content": "bmFtZSA9ICJGb3VuZGF0aW9uIgpkZWZhdWx0VGFyZ2V0cyA9IFsiRm91bmRh\ndGlvbiJdCgpbbGVhbk9wdGlvbnNdCnBwLnVuaWNvZGUuZnVuID0gdHJ1ZQp3\nZWFrLmxpbnRlci5mbGV4aWJsZSA9IHRydWUKd2Vhay5saW50ZXIucmVmaW5l\nID0gdHJ1ZQp3ZWFrLmxpbnRlci5vbGRPYnRhaW4gPSB0cnVlCndlYWsubGlu\ndGVyLnN0eWxlLm11bHRpR29hbCA9IHRydWUKCltbbGVhbl9saWJdXQpuYW1l\nID0gIkZvdW5kYXRpb24iCgpbW3JlcXVpcmVdXQpzY29wZSA9ICJsZWFucHJv\ndmVyIgpuYW1lID0gImRvYy1nZW40IgpyZXYgPSAidjQuMzEuMCIKCltbcmVx\ndWlyZV1dCnNjb3BlID0gImxlYW5wcm92ZXItY29tbXVuaXR5IgpuYW1lID0g\nIm1hdGhsaWIiCnJldiA9ICJ2NC4zMS4wIgo=\n",
+  "download_url": "https://raw.githubusercontent.com/FormalizedFormalLogic/Foundation/master/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/FormalizedFormalLogic/Foundation/git/blobs/39df8ae44402024df92a4462be20a6c60909a7d1",
+  "html_url": "https://github.com/FormalizedFormalLogic/Foundation/blob/master/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "39df8ae44402024df92a4462be20a6c60909a7d1",
+  "size": 386,
+  "type": "file",
+  "url": "https://api.github.com/repos/FormalizedFormalLogic/Foundation/contents/lakefile.toml?ref=master"
+}

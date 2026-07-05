@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/thefundamentaltheor3m/Sphere-Packing-Lean/git/blobs/2cd2ece9418fd77d30509ceec431714af6fae6aa",
+    "html": "https://github.com/thefundamentaltheor3m/Sphere-Packing-Lean/blob/main/lakefile.toml",
+    "self": "https://api.github.com/repos/thefundamentaltheor3m/Sphere-Packing-Lean/contents/lakefile.toml?ref=main"
+  },
+  "content": "bmFtZSA9ICJTcGhlcmVQYWNraW5nIgpkZWZhdWx0VGFyZ2V0cyA9IFsiU3Bo\nZXJlUGFja2luZyJdCgpbbGVhbk9wdGlvbnNdCnBwLnVuaWNvZGUuZnVuID0g\ndHJ1ZQphdXRvSW1wbGljaXQgPSBmYWxzZQpyZWxheGVkQXV0b0ltcGxpY2l0\nID0gZmFsc2UKd2Vhay5saW50ZXIubWF0aGxpYlN0YW5kYXJkU2V0ID0gdHJ1\nZQpsaW50ZXIuZmxleGlibGUgPSBmYWxzZQoKW1tyZXF1aXJlXV0KbmFtZSA9\nICJtYXRobGliIgpnaXQgPSAiaHR0cHM6Ly9naXRodWIuY29tL2xlYW5wcm92\nZXItY29tbXVuaXR5L21hdGhsaWI0LmdpdCIKcmV2ID0gInY0LjMwLjAiCgpb\nW3JlcXVpcmVdXQpuYW1lID0gImNoZWNrZGVjbHMiCmdpdCA9ICJodHRwczov\nL2dpdGh1Yi5jb20vUGF0cmlja01hc3NvdC9jaGVja2RlY2xzLmdpdCIKCltb\nbGVhbl9saWJdXQpuYW1lID0gIlNwaGVyZVBhY2tpbmciCg==\n",
+  "download_url": "https://raw.githubusercontent.com/thefundamentaltheor3m/Sphere-Packing-Lean/main/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/thefundamentaltheor3m/Sphere-Packing-Lean/git/blobs/2cd2ece9418fd77d30509ceec431714af6fae6aa",
+  "html_url": "https://github.com/thefundamentaltheor3m/Sphere-Packing-Lean/blob/main/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "2cd2ece9418fd77d30509ceec431714af6fae6aa",
+  "size": 439,
+  "type": "file",
+  "url": "https://api.github.com/repos/thefundamentaltheor3m/Sphere-Packing-Lean/contents/lakefile.toml?ref=main"
+}

@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/formalabstracts/formalabstracts/git/blobs/ba292c74423e5722e07c0dc8dc8a2bc60bfa7030",
+    "html": "https://github.com/formalabstracts/formalabstracts/blob/master/leanpkg.toml",
+    "self": "https://api.github.com/repos/formalabstracts/formalabstracts/contents/leanpkg.toml?ref=master"
+  },
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAiZm9ybWFsYWJzdHJhY3RzIgp2ZXJzaW9uID0g\nIjAuMiIKbGVhbl92ZXJzaW9uID0gIjMuNC4yIgpwYXRoID0gInNyYyIKCltk\nZXBlbmRlbmNpZXNdCm1hdGhsaWIgPSB7Z2l0ID0gImh0dHBzOi8vZ2l0aHVi\nLmNvbS9sZWFucHJvdmVyLWNvbW11bml0eS9tYXRobGliIiwgcmV2ID0gIjMw\nMjJjYWZkMTBjM2Y5OGM5OTZmMmUwYzdhNjM2Y2ZkMzhkMzg0NDMifQo=\n",
+  "download_url": "https://raw.githubusercontent.com/formalabstracts/formalabstracts/master/leanpkg.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/formalabstracts/formalabstracts/git/blobs/ba292c74423e5722e07c0dc8dc8a2bc60bfa7030",
+  "html_url": "https://github.com/formalabstracts/formalabstracts/blob/master/leanpkg.toml",
+  "name": "leanpkg.toml",
+  "path": "leanpkg.toml",
+  "sha": "ba292c74423e5722e07c0dc8dc8a2bc60bfa7030",
+  "size": 221,
+  "type": "file",
+  "url": "https://api.github.com/repos/formalabstracts/formalabstracts/contents/leanpkg.toml?ref=master"
+}

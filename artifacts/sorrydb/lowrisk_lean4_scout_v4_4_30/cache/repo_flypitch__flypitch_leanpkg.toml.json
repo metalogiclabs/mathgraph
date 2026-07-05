@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/flypitch/flypitch/git/blobs/f3029595f6971354faf75e84586f7f3e31dfe2d4",
+    "html": "https://github.com/flypitch/flypitch/blob/master/leanpkg.toml",
+    "self": "https://api.github.com/repos/flypitch/flypitch/contents/leanpkg.toml?ref=master"
+  },
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAiZmx5cGl0Y2giCnZlcnNpb24gPSAiMi4yIgps\nZWFuX3ZlcnNpb24gPSAibGVhbnByb3Zlci9sZWFuMzozLjQuMiIKcGF0aCA9\nICJzcmMiCgpbZGVwZW5kZW5jaWVzXQptYXRobGliID0ge2dpdCA9ICJodHRw\nczovL2dpdGh1Yi5jb20vbGVhbnByb3Zlci1jb21tdW5pdHkvbWF0aGxpYiIs\nIHJldiA9ICI4ODNkOTc0YjYwODg0NWJhZDMwYWUxOWUyN2UzM2MyODUyMDBi\nZjg0In0K\n",
+  "download_url": "https://raw.githubusercontent.com/flypitch/flypitch/master/leanpkg.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/flypitch/flypitch/git/blobs/f3029595f6971354faf75e84586f7f3e31dfe2d4",
+  "html_url": "https://github.com/flypitch/flypitch/blob/master/leanpkg.toml",
+  "name": "leanpkg.toml",
+  "path": "leanpkg.toml",
+  "sha": "f3029595f6971354faf75e84586f7f3e31dfe2d4",
+  "size": 231,
+  "type": "file",
+  "url": "https://api.github.com/repos/flypitch/flypitch/contents/leanpkg.toml?ref=master"
+}

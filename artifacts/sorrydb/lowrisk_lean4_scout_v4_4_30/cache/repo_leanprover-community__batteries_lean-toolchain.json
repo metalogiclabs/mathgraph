@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/leanprover-community/batteries/git/blobs/2694eb767c1d5dc7ed415291f32eb95968bd1340",
+    "html": "https://github.com/leanprover-community/batteries/blob/main/lean-toolchain",
+    "self": "https://api.github.com/repos/leanprover-community/batteries/contents/lean-toolchain?ref=main"
+  },
+  "content": "bGVhbnByb3Zlci9sZWFuNDp2NC4zMi4wLXJjMQo=\n",
+  "download_url": "https://raw.githubusercontent.com/leanprover-community/batteries/main/lean-toolchain",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/leanprover-community/batteries/git/blobs/2694eb767c1d5dc7ed415291f32eb95968bd1340",
+  "html_url": "https://github.com/leanprover-community/batteries/blob/main/lean-toolchain",
+  "name": "lean-toolchain",
+  "path": "lean-toolchain",
+  "sha": "2694eb767c1d5dc7ed415291f32eb95968bd1340",
+  "size": 29,
+  "type": "file",
+  "url": "https://api.github.com/repos/leanprover-community/batteries/contents/lean-toolchain?ref=main"
+}

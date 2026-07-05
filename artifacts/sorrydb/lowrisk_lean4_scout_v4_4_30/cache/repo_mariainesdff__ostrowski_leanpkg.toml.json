@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/mariainesdff/ostrowski/git/blobs/17a9d20931eaea0ac2d13ccd002a91ce60f762c0",
+    "html": "https://github.com/mariainesdff/ostrowski/blob/master/leanpkg.toml",
+    "self": "https://api.github.com/repos/mariainesdff/ostrowski/contents/leanpkg.toml?ref=master"
+  },
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAib3N0cm93c2tpIgp2ZXJzaW9uID0gIjAuMSIK\nbGVhbl92ZXJzaW9uID0gImxlYW5wcm92ZXItY29tbXVuaXR5L2xlYW46My40\nOC4wIgpwYXRoID0gInNyYyIKCltkZXBlbmRlbmNpZXNdCm1hdGhsaWIgPSB7\nZ2l0ID0gImh0dHBzOi8vZ2l0aHViLmNvbS9sZWFucHJvdmVyLWNvbW11bml0\neS9tYXRobGliIiwgcmV2ID0gIjM5Y2JlOGRiYmUxNjMzYTM1YjNhZTBlMDIx\nOTg5NGM2ZjhiYmJiYTAifQo=\n",
+  "download_url": "https://raw.githubusercontent.com/mariainesdff/ostrowski/master/leanpkg.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/mariainesdff/ostrowski/git/blobs/17a9d20931eaea0ac2d13ccd002a91ce60f762c0",
+  "html_url": "https://github.com/mariainesdff/ostrowski/blob/master/leanpkg.toml",
+  "name": "leanpkg.toml",
+  "path": "leanpkg.toml",
+  "sha": "17a9d20931eaea0ac2d13ccd002a91ce60f762c0",
+  "size": 242,
+  "type": "file",
+  "url": "https://api.github.com/repos/mariainesdff/ostrowski/contents/leanpkg.toml?ref=master"
+}

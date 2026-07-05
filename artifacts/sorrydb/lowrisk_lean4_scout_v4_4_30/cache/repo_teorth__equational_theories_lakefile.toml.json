@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/teorth/equational_theories/git/blobs/621f5a52ff3836670db3a0bfa86e6a065b22e4f8",
+    "html": "https://github.com/teorth/equational_theories/blob/main/lakefile.toml",
+    "self": "https://api.github.com/repos/teorth/equational_theories/contents/lakefile.toml?ref=main"
+  },
+  "content": "bmFtZSA9ICJlcXVhdGlvbmFsX3RoZW9yaWVzIgpkZWZhdWx0VGFyZ2V0cyA9\nIFsiZXF1YXRpb25hbF90aGVvcmllcyJdCgpbbGVhbk9wdGlvbnNdCnBwLnVu\naWNvZGUuZnVuID0gdHJ1ZQphdXRvSW1wbGljaXQgPSBmYWxzZQpyZWxheGVk\nQXV0b0ltcGxpY2l0ID0gZmFsc2UKCltbcmVxdWlyZV1dCm5hbWUgPSAibWF0\naGxpYiIKZ2l0ID0gImh0dHBzOi8vZ2l0aHViLmNvbS9sZWFucHJvdmVyLWNv\nbW11bml0eS9tYXRobGliNC5naXQiCnJldiA9ICJ2NC4yOS4xIgoKW1tyZXF1\naXJlXV0KbmFtZSA9ICJjaGVja2RlY2xzIgpnaXQgPSAiaHR0cHM6Ly9naXRo\ndWIuY29tL1BhdHJpY2tNYXNzb3QvY2hlY2tkZWNscy5naXQiCgpbW2xlYW5f\nbGliXV0KbmFtZSA9ICJlcXVhdGlvbmFsX3RoZW9yaWVzIgptb3JlTGVhbkFy\nZ3MgPSBbIi0tdHN0YWNrPTI2MjE0NCJdCgpbW2xlYW5fZXhlXV0KbmFtZSA9\nICJleHRyYWN0X2ltcGxpY2F0aW9ucyIKcm9vdCA9ICJzY3JpcHRzLmV4dHJh\nY3RfaW1wbGljYXRpb25zIgpzdXBwb3J0SW50ZXJwcmV0ZXIgPSB0cnVlCgpb\nW2xlYW5fZXhlXV0KbmFtZSA9ICJleHBvcnRfZXF1YXRpb25zIgpyb290ID0g\nInNjcmlwdHMuZXhwb3J0X2VxdWF0aW9ucyIKc3VwcG9ydEludGVycHJldGVy\nID0gdHJ1ZQoKW1tsZWFuX2V4ZV1dCm5hbWUgPSAiZ2VuZXJhdGVfbGlmdGlu\nZ19tYWdtYV9mYW1pbHlfY291bnRlcmV4YW1wbGVzIgpyb290ID0gImVxdWF0\naW9uYWxfdGhlb3JpZXMuTGlmdGluZ01hZ21hRmFtaWxpZXNDb3VudGVyZXhh\nbXBsZXMiCnN1cHBvcnRJbnRlcnByZXRlciA9IHRydWUK\n",
+  "download_url": "https://raw.githubusercontent.com/teorth/equational_theories/main/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/teorth/equational_theories/git/blobs/621f5a52ff3836670db3a0bfa86e6a065b22e4f8",
+  "html_url": "https://github.com/teorth/equational_theories/blob/main/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "621f5a52ff3836670db3a0bfa86e6a065b22e4f8",
+  "size": 798,
+  "type": "file",
+  "url": "https://api.github.com/repos/teorth/equational_theories/contents/lakefile.toml?ref=main"
+}

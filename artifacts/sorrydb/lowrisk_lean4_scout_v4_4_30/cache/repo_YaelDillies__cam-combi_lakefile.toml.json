@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/YaelDillies/cam-combi/git/blobs/023de4a0440f7dfc1cdae4d1105295de75b1a89c",
+    "html": "https://github.com/YaelDillies/cam-combi/blob/master/lakefile.toml",
+    "self": "https://api.github.com/repos/YaelDillies/cam-combi/contents/lakefile.toml?ref=master"
+  },
+  "content": "bmFtZSA9ICJMZWFuQ2FtQ29tYmkiCmtleXdvcmRzID0gWyJtYXRoIiwgImNv\nbWJpbmF0b3JpY3MiLCAiYWRkaXRpdmUtY29tYmluYXRvcmljcyIsICJwcm9i\nYWJpbGl0aXN0aWMtY29tYmluYXRvcmljcyIsICJleHRyZW1hbC1jb21iaW5h\ndG9yaWNzIiwgInNldC1mYW1pbHkiLCAiZ3JhcGgtdGhlb3J5IiwgIm1vZGVs\nLXRoZW9yeSJdCmRlZmF1bHRUYXJnZXRzID0gWyJMZWFuQ2FtQ29tYmkiXQoK\nW2xlYW5PcHRpb25zXQojIFByZXR0eS1wcmludHMgYGZ1biBhIOKGpiBiYApw\ncC51bmljb2RlLmZ1biA9IHRydWUKIyBEb24ndCBhc3N1bWUgYSB0eXBvIGlz\nIGEgbmV3IHZhcmlhYmxlCmF1dG9JbXBsaWNpdCA9IGZhbHNlCnJlbGF4ZWRB\ndXRvSW1wbGljaXQgPSBmYWxzZQojIEVuYWJsZSBhbGwgbWF0aGxpYiBsaW50\nZXJzOiBhdXRvbWF0aWNhbGx5IG1hdGNoZXMgd2hhdCBtYXRobGliIHVzZXMu\nLi4Kd2Vhay5saW50ZXIubWF0aGxpYlN0YW5kYXJkU2V0ID0gdHJ1ZQojIC4u\nLmV4Y2VwdCB0aGUgaGVhZGVyIGxpbnRlcgp3ZWFrLmxpbnRlci5zdHlsZS5o\nZWFkZXIgPSBmYWxzZQojIFN3aXRjaCBvZmYgd2FybmluZ3MgZ2VuZXJhdGVk\nIGJ5IGBzb3JyeWAKd2Fybi5zb3JyeSA9IGZhbHNlCgpbW3JlcXVpcmVdXQpu\nYW1lID0gIm1hdGhsaWIiCmdpdCA9ICJodHRwczovL2dpdGh1Yi5jb20vbGVh\nbnByb3Zlci1jb21tdW5pdHkvbWF0aGxpYjQuZ2l0IgpyZXYgPSAidjQuMzEu\nMCIKCltbbGVhbl9saWJdXQpuYW1lID0gIkxlYW5DYW1Db21iaSIK\n",
+  "download_url": "https://raw.githubusercontent.com/YaelDillies/cam-combi/master/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/YaelDillies/cam-combi/git/blobs/023de4a0440f7dfc1cdae4d1105295de75b1a89c",
+  "html_url": "https://github.com/YaelDillies/cam-combi/blob/master/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "023de4a0440f7dfc1cdae4d1105295de75b1a89c",
+  "size": 759,
+  "type": "file",
+  "url": "https://api.github.com/repos/YaelDillies/cam-combi/contents/lakefile.toml?ref=master"
+}

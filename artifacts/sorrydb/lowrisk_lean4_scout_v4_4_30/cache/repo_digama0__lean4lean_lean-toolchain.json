@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/digama0/lean4lean/git/blobs/14791d727f9a9455fb1e828c6ce6c07fae007990",
+    "html": "https://github.com/digama0/lean4lean/blob/master/lean-toolchain",
+    "self": "https://api.github.com/repos/digama0/lean4lean/contents/lean-toolchain?ref=master"
+  },
+  "content": "bGVhbnByb3Zlci9sZWFuNDp2NC4yOS4wCg==\n",
+  "download_url": "https://raw.githubusercontent.com/digama0/lean4lean/master/lean-toolchain",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/digama0/lean4lean/git/blobs/14791d727f9a9455fb1e828c6ce6c07fae007990",
+  "html_url": "https://github.com/digama0/lean4lean/blob/master/lean-toolchain",
+  "name": "lean-toolchain",
+  "path": "lean-toolchain",
+  "sha": "14791d727f9a9455fb1e828c6ce6c07fae007990",
+  "size": 25,
+  "type": "file",
+  "url": "https://api.github.com/repos/digama0/lean4lean/contents/lean-toolchain?ref=master"
+}

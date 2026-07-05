@@ -1,0 +1,1449 @@
+{
+  "constraints": {
+    "github_api_only": true,
+    "no_build": true,
+    "no_clone": true,
+    "no_lean_replay": true,
+    "no_upstream_contact": true
+  },
+  "input_version": "v4.4.29",
+  "inspected_candidate_count": 30,
+  "inspected_candidates": [
+    {
+      "api_url": "https://api.github.com/repositories/600521950/contents/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean?ref=a1733b5c3bc1d34b84d31f31313398f8e53ba300",
+      "candidate_id": "lowrisk-lean4-030",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/FormalizedFormalLogic/Foundation/blob/a1733b5c3bc1d34b84d31f31313398f8e53ba300/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean",
+      "line_count": 162,
+      "path": "Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean",
+      "query_source": "sorry language:Lean extension:lean \"by rfl\"",
+      "repo": "FormalizedFormalLogic/Foundation",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.31.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"Foundation\"\ndefaultTargets = [\"Foundation\"]\n\n[leanOptions]\npp.unicode.fun = true\nweak.linter.flexible = true\nweak.linter.refine = true\nweak.linter.oldObtain = true\nweak.linter.style.multiGoal = true\n\n[[lean_lib]]\nname = \"Foundation\"\n\n[[require]]\nscope = \"leanprover\"\nname = \"doc-gen4\"\nrev = \"v4.31.0\"\n\n[[require]]\nscope = \"leanprover-community\"",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.31.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 42,
+      "score_reasons": [
+        "lean4 likely",
+        "single sorry",
+        "medium file",
+        "simp visible",
+        "rfl visible",
+        "nat visible",
+        "omega visible"
+      ],
+      "sorry_count": 1,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "-- @[simp] lemma coe_mul (a b : \u2115) : \u2191(a * b) = ((\u2191a * \u2191b) : OmegaAddOne) := sorry",
+          "line_number": 54,
+          "snippet": "51: \n52: @[simp] lemma coe_add (a b : \u2115) : \u2191(a + b) = ((\u2191a + \u2191b) : OmegaAddOne) := rfl\n53: \n54: -- @[simp] lemma coe_mul (a b : \u2115) : \u2191(a * b) = ((\u2191a * \u2191b) : OmegaAddOne) := sorry\n55: \n56: @[simp] lemma lt_coe_iff (n m : \u2115) : (n : OmegaAddOne) < (m : OmegaAddOne) \u2194 n < m := by rfl\n57: "
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/863611788/contents/equational_theories/Definability/Law43.lean?ref=b1cc1756202d7f44e07bd4069b5df16901a36938",
+      "candidate_id": "lowrisk-lean4-029",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/teorth/equational_theories/blob/b1cc1756202d7f44e07bd4069b5df16901a36938/equational_theories/Definability/Law43.lean",
+      "line_count": 31,
+      "path": "equational_theories/Definability/Law43.lean",
+      "query_source": "sorry language:Lean extension:lean \"by rfl\"",
+      "repo": "teorth/equational_theories",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.29.1",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"equational_theories\"\ndefaultTargets = [\"equational_theories\"]\n\n[leanOptions]\npp.unicode.fun = true\nautoImplicit = false\nrelaxedAutoImplicit = false\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"\nrev = \"v4.29.1\"\n\n[[require]]\nname = \"checkdecls\"\ngit = \"https://github.com/PatrickMassot/checkdecls.git\"\n\n[[lean_lib]]\nname = \"equational_theories\"\nmoreLeanArgs = [\"--tstack=262144\"]",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.29.1",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 36,
+      "score_reasons": [
+        "lean4 likely",
+        "single sorry",
+        "small file",
+        "rfl visible",
+        "nat visible"
+      ],
+      "sorry_count": 1,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  sorry",
+          "line_number": 15,
+          "snippet": "12:     (hR2args : \u2200 e \u2208 L.rhs.elems.1, e \u2208 [0,1] := by decide +kernel)\n13:     (hSymm : L.lhs \u2b1d (fun x \u21a6 Lf $ Equiv.swap 0 1 x) = L.rhs := by rfl)\n14:     : Law43.TermDefinableFrom L := by\n15:   sorry\n16: \n17: /-- The commutative law 43 `x \u25c7 y = y \u25c7 x` is TermDefinable from 40 `x \u25c7 x = y \u25c7 y`. -/\n18: theorem Equation43_termDefinableFrom_Equation40 : Law43.TermDefinableFrom Law40 :="
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/529900532/contents/BatteriesTest/simpa.lean?ref=9c6e03c0a86237b199ebe6b1fbac18078a767ade",
+      "candidate_id": "lowrisk-lean4-023",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/leanprover-community/batteries/blob/9c6e03c0a86237b199ebe6b1fbac18078a767ade/BatteriesTest/simpa.lean",
+      "line_count": 109,
+      "path": "BatteriesTest/simpa.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "leanprover-community/batteries",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.32.0-rc1",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"batteries\"\ntestDriver = \"BatteriesTest\"\nlintDriver = \"runLinter\"\ndefaultTargets = [\"Batteries\", \"runLinter\"]\n\n[leanOptions]\nlinter.missingDocs = true\n\n[[lean_lib]]\nname = \"Batteries\"\n\n[[lean_lib]]\nname = \"BatteriesTest\"\nglobs = [\"BatteriesTest.+\"]\nleanOptions = {linter.missingDocs = false}\n\n[[lean_exe]]\nname = \"runLinter\"\nsrcDir = \"scripts\"\nsupportInterpreter = true",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.32.0-rc1",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 34,
+      "score_reasons": [
+        "lean4 likely",
+        "few sorries",
+        "small file",
+        "simp visible",
+        "nat visible",
+        "example context"
+      ],
+      "sorry_count": 2,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "theorem thm : (a : Int) \u2264 b - c \u2194 a + b \u2264 c := sorry",
+          "line_number": 82,
+          "snippet": "79:   simpa using! @h\n80: \n81: #guard_msgs (drop warning) in\n82: theorem thm : (a : Int) \u2264 b - c \u2194 a + b \u2264 c := sorry\n83: \n84: #guard_msgs (drop warning) in\n85: theorem thm2 : (b : Int) - c \u2264 (a - b) - (a - c) := sorry"
+        },
+        {
+          "line": "theorem thm2 : (b : Int) - c \u2264 (a - b) - (a - c) := sorry",
+          "line_number": 85,
+          "snippet": "82: theorem thm : (a : Int) \u2264 b - c \u2194 a + b \u2264 c := sorry\n83: \n84: #guard_msgs (drop warning) in\n85: theorem thm2 : (b : Int) - c \u2264 (a - b) - (a - c) := sorry\n86: \n87: example : (b - c : Int) + (a - b) + a \u2264 c := by\n88:   simpa only [thm] using! thm2"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/567778665/contents/LeanCamCombi/StableCombi/Rel.lean?ref=1c8502fd40113ba0141652c23d542e04c1aa872d",
+      "candidate_id": "lowrisk-lean4-013",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/YaelDillies/cam-combi/blob/1c8502fd40113ba0141652c23d542e04c1aa872d/LeanCamCombi/StableCombi/Rel.lean",
+      "line_count": 45,
+      "path": "LeanCamCombi/StableCombi/Rel.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "YaelDillies/cam-combi",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.31.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"LeanCamCombi\"\nkeywords = [\"math\", \"combinatorics\", \"additive-combinatorics\", \"probabilitistic-combinatorics\", \"extremal-combinatorics\", \"set-family\", \"graph-theory\", \"model-theory\"]\ndefaultTargets = [\"LeanCamCombi\"]\n\n[leanOptions]\n# Pretty-prints `fun a \u21a6 b`\npp.unicode.fun = true\n# Don't assume a typo is a new variable\nautoImplicit = false\nrelaxedAutoImplicit = false\n# Enable all mathlib linters: automatically matches what mathlib uses...\nweak.linter.mathlibStandardSet = true\n# ...except the header linter\nweak.linter.style.header = false\n# Switch off warnings generated by `sorry`\nwarn.sorry = false\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.31.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 32,
+      "score_reasons": [
+        "lean4 likely",
+        "few sorries",
+        "small file",
+        "simp visible",
+        "nat visible"
+      ],
+      "sorry_count": 2,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "    IsTreeBoundedRelWith (2 ^ n + 1) r := sorry",
+          "line_number": 42,
+          "snippet": "39: @[simp] lemma not_isOrderPropRel : \u00ac IsOrderPropRel r \u2194 IsStableRel r := by simp [\u2190 not_isStableRel]\n40: \n41: lemma IsStableRelWith.isTreeBoundedRelWith (hr : IsStableRelWith n r) :\n42:     IsTreeBoundedRelWith (2 ^ n + 1) r := sorry\n43: \n44: lemma IsTreeBoundedRelWith.isStableRelWith (hr : IsTreeBoundedRelWith n r) :\n45:     IsStableRelWith (2 ^ n) r := sorry"
+        },
+        {
+          "line": "    IsStableRelWith (2 ^ n) r := sorry",
+          "line_number": 45,
+          "snippet": "42:     IsTreeBoundedRelWith (2 ^ n + 1) r := sorry\n43: \n44: lemma IsTreeBoundedRelWith.isStableRelWith (hr : IsTreeBoundedRelWith n r) :\n45:     IsStableRelWith (2 ^ n) r := sorry"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/824688519/contents/BrauerGroup/Morita/ChangeOfRings.lean?ref=7d97ca8f89527ca33f9b50a4eabf903d44087876",
+      "candidate_id": "lowrisk-lean4-028",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/Whysoserioushah/BrauerGroup/blob/7d97ca8f89527ca33f9b50a4eabf903d44087876/BrauerGroup/Morita/ChangeOfRings.lean",
+      "line_count": 358,
+      "path": "BrauerGroup/Morita/ChangeOfRings.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "Whysoserioushah/BrauerGroup",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.31.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"BrauerGroup\"\nkeywords = [\"math\", \"algebra\", \"ring-theory\", \"algebraic-number-theory\"]\ndefaultTargets = [\"BrauerGroup\"]\n\n[leanOptions]\n# Pretty-prints `fun a \u21a6 b`\npp.unicode.fun = true\n# Don't assume a typo is a new variable\nautoImplicit = false\nrelaxedAutoImplicit = false\n# Enable all mathlib linters: automatically matches what mathlib uses...\nweak.linter.mathlibStandardSet = true\n# ... except the header linter\nweak.linter.style.header = false\n# Switch off warnings generated by `sorry`\nwarn.sorry = false\n\n[[require]]\nname = \"checkdecls\"\ngit = \"https://github.com/PatrickMassot/checkdecls.git\"",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.31.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 27,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "large file",
+        "simp visible",
+        "rfl visible",
+        "nat visible",
+        "omega visible",
+        "example context"
+      ],
+      "sorry_count": 6,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "-- instance (N : ModuleCat A) : SMulCommClass A R N := sorry",
+          "line_number": 94,
+          "snippet": "91: \n92: -- instance (N : ModuleCat A) : Module R N := Module.compHom N (algebraMap R A)\n93: \n94: -- instance (N : ModuleCat A) : SMulCommClass A R N := sorry\n95: \n96: set_option backward.isDefEq.respectTransparency false in\n97: instance (n : \u2115) [NeZero n] : Functor.Linear R (moritaEquivalentToMatrix A (Fin n)).functor where"
+        },
+        {
+          "line": "--   algebraMap := sorry",
+          "line_number": 284,
+          "snippet": "281: --     map_add' _ _ := by simp\n282: --     map_smul' _ _ := by simp\n283: --   },\n284: --   algebraMap := sorry\n285: --   commutes' := sorry\n286: --   smul_def' := fun r f => sorry\n287: -- }"
+        },
+        {
+          "line": "--   commutes' := sorry",
+          "line_number": 285,
+          "snippet": "282: --     map_smul' _ _ := by simp\n283: --   },\n284: --   algebraMap := sorry\n285: --   commutes' := sorry\n286: --   smul_def' := fun r f => sorry\n287: -- }\n288: "
+        },
+        {
+          "line": "--   smul_def' := fun r f => sorry",
+          "line_number": 286,
+          "snippet": "283: --   },\n284: --   algebraMap := sorry\n285: --   commutes' := sorry\n286: --   smul_def' := fun r f => sorry\n287: -- }\n288: \n289: -- def myaux1 : Module.End A A \u2243\u2090[R] Module.End B (e.eqv.functor.obj (ModuleCat.of A A)) := sorry"
+        },
+        {
+          "line": "-- def myaux1 : Module.End A A \u2243\u2090[R] Module.End B (e.eqv.functor.obj (ModuleCat.of A A)) := sorry",
+          "line_number": 289,
+          "snippet": "286: --   smul_def' := fun r f => sorry\n287: -- }\n288: \n289: -- def myaux1 : Module.End A A \u2243\u2090[R] Module.End B (e.eqv.functor.obj (ModuleCat.of A A)) := sorry\n290: \n291: -- variable [Algebra K S]\n292: "
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1147774807/contents/lean4/standalone/SORRY_REPLACEMENT_MINIMAL.lean?ref=d5c7a1f6e3da3068ddafbb2b48424ee13beac5d6",
+      "candidate_id": "lowrisk-lean4-007",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/Skyelabz210/qmnf-lean-coq-security-proofs/blob/d5c7a1f6e3da3068ddafbb2b48424ee13beac5d6/lean4/standalone/SORRY_REPLACEMENT_MINIMAL.lean",
+      "line_count": 33,
+      "path": "lean4/standalone/SORRY_REPLACEMENT_MINIMAL.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "Skyelabz210/qmnf-lean-coq-security-proofs",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": false,
+        "lean_toolchain": "",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 25,
+      "score_reasons": [
+        "single sorry",
+        "small file",
+        "simp visible",
+        "nat visible",
+        "omega visible"
+      ],
+      "sorry_count": 1,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "-- Replace the word `sorry` at line 232 with everything below:",
+          "line_number": 1,
+          "snippet": "1: -- Replace the word `sorry` at line 232 with everything below:\n2: \n3:     simp only\n4:     have hAne : NeZero cfg.A := \u27e8Nat.pos_iff_ne_zero.mp cfg.A_pos\u27e9"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/827854114/contents/PlainItSorry.lean?ref=faaf215013bf2b9591d6247ecebb54bd7671d26e",
+      "candidate_id": "lowrisk-lean4-012",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/alize2e/subset-generation/blob/faaf215013bf2b9591d6247ecebb54bd7671d26e/PlainItSorry.lean",
+      "line_count": 52,
+      "path": "PlainItSorry.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "alize2e/subset-generation",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": false,
+        "lean_toolchain": "",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 24,
+      "score_reasons": [
+        "few sorries",
+        "small file",
+        "simp visible",
+        "rfl visible",
+        "nat visible",
+        "example context"
+      ],
+      "sorry_count": 3,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "-- usable with sorry for d2",
+          "line_number": 1,
+          "snippet": "1: -- usable with sorry for d2\n2: \n3: import \u00abSubsets\u00bb.BinVal\n4: "
+        },
+        {
+          "line": "            -- have : xs.binValOne 1 < soFar[0].binValOne 1 := sorry",
+          "line_number": 35,
+          "snippet": "32:                 _ = xsl.card + (Subset.cons true xsr').card := by rw [append_card]\n33:                 _ = n := by rw [sum_l_r_n]\n34:             have sum_l'_r'_n :  Subset.nil.card + xs.card = n := by simp_arith [xs_len_eq_n]\n35:             -- have : xs.binValOne 1 < soFar[0].binValOne 1 := sorry\n36:             have d2 : (Subset.cast (by simp[xs_len_eq_n]) xs : Subset n).binValOne 1 < soFar[0].binValOne 1 := sorry\n37:             help Subset.nil (xs) ((Subset.cast (by simp [xs_len_eq_n]) xs) :: soFar) sum_l'_r'_n rfl (by simp [nel])\n38:       termination_by (soFar[0].binValOne 1, binVal xsl xsr 0)"
+        },
+        {
+          "line": "            have d2 : (Subset.cast (by simp[xs_len_eq_n]) xs : Subset n).binValOne 1 < soFar[0].binValOne 1 := sorry",
+          "line_number": 36,
+          "snippet": "33:                 _ = n := by rw [sum_l_r_n]\n34:             have sum_l'_r'_n :  Subset.nil.card + xs.card = n := by simp_arith [xs_len_eq_n]\n35:             -- have : xs.binValOne 1 < soFar[0].binValOne 1 := sorry\n36:             have d2 : (Subset.cast (by simp[xs_len_eq_n]) xs : Subset n).binValOne 1 < soFar[0].binValOne 1 := sorry\n37:             help Subset.nil (xs) ((Subset.cast (by simp [xs_len_eq_n]) xs) :: soFar) sum_l'_r'_n rfl (by simp [nel])\n38:       termination_by (soFar[0].binValOne 1, binVal xsl xsr 0)\n39:       -- xsl'++xsr' = incr xsl++xsn (where lsb is left)"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/720818377/contents/FLT/GlobalLanglandsConjectures/GLzero.lean?ref=c9ee54dffd92883165f60d39a0c780d087ec6ef7",
+      "candidate_id": "lowrisk-lean4-003",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/ImperialCollegeLondon/FLT/blob/c9ee54dffd92883165f60d39a0c780d087ec6ef7/FLT/GlobalLanglandsConjectures/GLzero.lean",
+      "line_count": 142,
+      "path": "FLT/GlobalLanglandsConjectures/GLzero.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "ImperialCollegeLondon/FLT",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.32.0-rc1",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"FLT\"\ndefaultTargets = [\"FLT\"]\nlintDriver = \"batteries/runLinter\"\ntestDriver = \"FLTTest\"\n\n[leanOptions]\npp.unicode.fun = true # pretty-prints `fun a \u21a6 b`\nautoImplicit = false # no \"assume a typo is a new variable\"\nrelaxedAutoImplicit = false # no \"assume a typo is a new variable\"\nmaxSynthPendingDepth = 3 # same as mathlib, changes behaviour of typeclass inference\nweak.linter.flexible = true # no rigid tactic (e.g. `exact`) after a flexible tactic (e.g. `simp`)\n# Enable all mathlib linters: automatically matches what mathlib uses.\nweak.linter.mathlibStandardSet = true\n# Switch off warnings generated by `sorry`\nwarn.sorry = false\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"\nrev = \"4e984885102e80244f4a6e48b7da1350f1d4343f\"",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.32.0-rc1",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 23,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "medium file",
+        "simp visible",
+        "nat visible",
+        "example context"
+      ],
+      "sorry_count": 12,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "def GLn.Weight.IsTrivial {n : \u2115} (\u03c1 : Weight n) : Prop := sorry -- (\u03c1 = trivial 1d rep)",
+          "line_number": 52,
+          "snippet": "49: namespace AutomorphicForm\n50: \n51: /-- A `GL\u2099`-weight `\u03c1` is trivial if it is the one-dimensional trivial representation. -/\n52: def GLn.Weight.IsTrivial {n : \u2115} (\u03c1 : Weight n) : Prop := sorry -- (\u03c1 = trivial 1d rep)\n53: \n54: open GLn\n55: "
+        },
+        {
+          "line": "        sorry",
+          "line_number": 67,
+          "snippet": "64:       continuous := by continuity\n65:       loc_cst := by\n66:         rw [IsLocallyConstant]\n67:         sorry\n68:         -- aesop -- used to work\n69:       smooth := by simp [contMDiff_const]\n70:     }"
+        },
+        {
+          "line": "    --   sorry",
+          "line_number": 75,
+          "snippet": "72:     is_slowly_increasing x := \u27e8\u2016c\u2016, 0, by simp\u27e9\n73:     -- is_finite_cod := by\n74:     --   intros x\n75:     --   sorry\n76:     has_finite_level := by\n77:       let U : Subgroup (GL (Fin 0) (IsDedekindDomain.FiniteAdeleRing \u2124 \u211a)) := {\n78:         carrier := {1},"
+        },
+        {
+          "line": "          is_open := by sorry -- used to be simp but there's a timeout",
+          "line_number": 85,
+          "snippet": "82:       }\n83:       apply Exists.intro U\n84:       exact {\n85:           is_open := by sorry -- used to be simp but there's a timeout\n86:           is_compact := by aesop\n87:           finite_level := by simp\n88:       }"
+        },
+        {
+          "line": "      is_smooth := sorry",
+          "line_number": 122,
+          "snippet": "119: def ofComplex (z : \u2102) {n : \u2115} (\u03c1 : Weight n) (h\u03c1 : \u03c1.IsTrivial) :\n120:     AutomorphicFormForGLnOverQ n \u03c1 where\n121:       toFun _ := z\n122:       is_smooth := sorry\n123:       is_periodic := sorry\n124:       is_slowly_increasing := sorry\n125:       -- is_finite_cod := sorry -- needs a better name"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/704323189/contents/Lean4Lean/Experimental/Thierry.lean?ref=97addd51fac964f45c595ec2c21b1b60ff0a2cc8",
+      "candidate_id": "lowrisk-lean4-020",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/digama0/lean4lean/blob/97addd51fac964f45c595ec2c21b1b60ff0a2cc8/Lean4Lean/Experimental/Thierry.lean",
+      "line_count": 363,
+      "path": "Lean4Lean/Experimental/Thierry.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "digama0/lean4lean",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.29.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"lean4lean\"\ndefaultTargets = [\"Lean4Lean\", \"lean4lean\", \"Lean4Lean.Theory\", \"Lean4Lean.Verify\"]\n\n[[require]]\nname = \"batteries\"\ngit = \"https://github.com/leanprover-community/batteries\"\nrev = \"v4.29.0\"\n\n[[lean_lib]]\nname = \"Lean4Lean\"\n\n[[lean_lib]]\nname = \"Lean4Lean.Theory\"\nglobs = [\"Lean4Lean.Theory.*\"]\n\n[[lean_lib]]\nname = \"Lean4Lean.Verify\"\nglobs = [\"Lean4Lean.Verify.*\"]\n\n[[lean_lib]]",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.29.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 22,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "large file",
+        "simp visible",
+        "rfl visible",
+        "nat visible"
+      ],
+      "sorry_count": 14,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "@[simp] theorem FinMut.LE.rfl {x : FinMut b} : x \u2264 x := sorry",
+          "line_number": 93,
+          "snippet": "90:   \u00b7 show (_:D) \u2264 _; simp [FinElem.embed_bot, D.LE.bot]\n91:   \u00b7 show (_:DF) \u2264 _; simp [FinFun.embed_bot, DF.LE.bot]\n92: \n93: @[simp] theorem FinMut.LE.rfl {x : FinMut b} : x \u2264 x := sorry\n94: @[simp] theorem FinMut.LE.lam {x y : FinFun} : x.lam \u2264 y.lam \u2194 x \u2264 y := sorry\n95: @[simp] theorem FinMut.LE.pi {x y : FinElem} : x.pi f \u2264 y.pi g \u2194 x \u2264 y \u2227 f \u2264 g := sorry\n96: axiom FinMut.LE.cons : FinMut.cons u v f \u2264 g \u2194 v \u2264 g u \u2227 f \u2264 g"
+        },
+        {
+          "line": "@[simp] theorem FinMut.LE.lam {x y : FinFun} : x.lam \u2264 y.lam \u2194 x \u2264 y := sorry",
+          "line_number": 94,
+          "snippet": "91:   \u00b7 show (_:DF) \u2264 _; simp [FinFun.embed_bot, DF.LE.bot]\n92: \n93: @[simp] theorem FinMut.LE.rfl {x : FinMut b} : x \u2264 x := sorry\n94: @[simp] theorem FinMut.LE.lam {x y : FinFun} : x.lam \u2264 y.lam \u2194 x \u2264 y := sorry\n95: @[simp] theorem FinMut.LE.pi {x y : FinElem} : x.pi f \u2264 y.pi g \u2194 x \u2264 y \u2227 f \u2264 g := sorry\n96: axiom FinMut.LE.cons : FinMut.cons u v f \u2264 g \u2194 v \u2264 g u \u2227 f \u2264 g\n97: axiom eval_cons : FinMut.cons u v f x \u2264 y \u2194 (u \u2264 x \u2192 v \u2264 y) \u2227 f x \u2264 y"
+        },
+        {
+          "line": "@[simp] theorem FinMut.LE.pi {x y : FinElem} : x.pi f \u2264 y.pi g \u2194 x \u2264 y \u2227 f \u2264 g := sorry",
+          "line_number": 95,
+          "snippet": "92: \n93: @[simp] theorem FinMut.LE.rfl {x : FinMut b} : x \u2264 x := sorry\n94: @[simp] theorem FinMut.LE.lam {x y : FinFun} : x.lam \u2264 y.lam \u2194 x \u2264 y := sorry\n95: @[simp] theorem FinMut.LE.pi {x y : FinElem} : x.pi f \u2264 y.pi g \u2194 x \u2264 y \u2227 f \u2264 g := sorry\n96: axiom FinMut.LE.cons : FinMut.cons u v f \u2264 g \u2194 v \u2264 g u \u2227 f \u2264 g\n97: axiom eval_cons : FinMut.cons u v f x \u2264 y \u2194 (u \u2264 x \u2192 v \u2264 y) \u2227 f x \u2264 y\n98: @[simp] axiom eval_embed : ((f : FinFun) x : D) = (f : DF) x"
+        },
+        {
+          "line": "theorem FinHasType.mono : u :\u1da0 a \u2192 a \u2264 b \u2192 u :\u1da0 b := sorry",
+          "line_number": 118,
+          "snippet": "115:   | lam_cons : u :\u1da0 a \u2192 v :\u1da0 g u \u2192\n116:     FinHasType f (.lam a g) \u2192 FinHasType (.cons u v f) (.lam a g)\n117: \n118: theorem FinHasType.mono : u :\u1da0 a \u2192 a \u2264 b \u2192 u :\u1da0 b := sorry\n119: \n120: theorem FinHasType.join (H : Join u v w) : u :\u1da0 a \u2192 v :\u1da0 b \u2192 w :\u1da0 b := sorry\n121: "
+        },
+        {
+          "line": "theorem FinHasType.join (H : Join u v w) : u :\u1da0 a \u2192 v :\u1da0 b \u2192 w :\u1da0 b := sorry",
+          "line_number": 120,
+          "snippet": "117: \n118: theorem FinHasType.mono : u :\u1da0 a \u2192 a \u2264 b \u2192 u :\u1da0 b := sorry\n119: \n120: theorem FinHasType.join (H : Join u v w) : u :\u1da0 a \u2192 v :\u1da0 b \u2192 w :\u1da0 b := sorry\n121: \n122: theorem FinHasType.pi_eval : FinHasType f (.pi a) \u2192 u :\u1da0 a \u2192 f u :\u1da0 .U := sorry\n123: theorem FinHasType.lam_eval : FinHasType f (.lam a g) \u2192 u :\u1da0 a \u2192 f u :\u1da0 g u := sorry"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/692180151/contents/LeanByExample/Declarative/Attribute.lean?ref=1ad126ab5f4b61d9f07e5e68c87a9786144ec287",
+      "candidate_id": "lowrisk-lean4-014",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/lean-ja/lean-by-example/blob/1ad126ab5f4b61d9f07e5e68c87a9786144ec287/LeanByExample/Declarative/Attribute.lean",
+      "line_count": 100,
+      "path": "LeanByExample/Declarative/Attribute.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "lean-ja/lean-by-example",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.32.0-rc1",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": true,
+            "head": "import Lake\nimport Std\n\nopen Lake DSL\n\npackage \u00abLean by Example\u00bb where\n  keywords := #[\"manual\", \"reference\", \"japanese\"]\n  description := \"\u30d7\u30ed\u30b0\u30e9\u30df\u30f3\u30b0\u8a00\u8a9e\u3067\u3042\u308b\u3068\u3068\u3082\u306b\u5b9a\u7406\u8a3c\u660e\u652f\u63f4\u7cfb\u3067\u3082\u3042\u308b Lean \u8a00\u8a9e\u3068\u3001\u305d\u306e\u4e3b\u8981\u306a\u30e9\u30a4\u30d6\u30e9\u30ea\u306e\u4f7f\u3044\u65b9\u3092\u8c4a\u5bcc\u306a\u30b3\u30fc\u30c9\u4f8b\u3068\u3068\u3082\u306b\u89e3\u8aac\u3057\u305f\u8cc7\u6599\u3067\u3059\u3002\"\n  leanOptions := #[]\n\nrequire mdgen from git\n  \"https://github.com/Seasawher/mdgen\" @ \"main\"\n\nrequire mathlib from git\n  \"https://github.com/leanprover-community/mathlib4.git\" @ \"master\"\n\n@[default_target]\nlean_lib LeanByExample where\n  -- `lake build` \u306e\u5b9f\u884c\u6642\u306b\u30d3\u30eb\u30c9\u3055\u308c\u308b\u30d5\u30a1\u30a4\u30eb\u306e\u8a2d\u5b9a\n  -- `.submodules` \u3068\u6307\u5b9a\u3059\u308b\u3068\u3001\u305d\u306e\u30c7\u30a3\u30ec\u30af\u30c8\u30ea\u4ee5\u4e0b\u306e\u5168\u3066\u306e Lean \u30d5\u30a1\u30a4\u30eb\u304c\u30d3\u30eb\u30c9\u3055\u308c\u308b",
+            "mode": "CACHE_REUSED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.32.0-rc1",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 22,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "small file",
+        "simp visible",
+        "example context"
+      ],
+      "sorry_count": 5,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "set_option warn.sorry false --#",
+          "line_number": 8,
+          "snippet": "5: \n6: \u6b21\u306e\u4f8b\u3067\u306f\u3001\u547d\u984c\u306b `[simp]` \u5c5e\u6027\u3092\u4ed8\u4e0e\u3057\u3066\u3044\u307e\u3059\u3002\u3053\u308c\u306f `simp` \u30bf\u30af\u30c6\u30a3\u30af\u3067\u5229\u7528\u3055\u308c\u308b\u547d\u984c\u3092\u5897\u3084\u3059\u3053\u3068\u3092\u610f\u5473\u3057\u307e\u3059\u3002\n7: -/\n8: set_option warn.sorry false --#\n9: \n10: theorem foo {P Q : Prop} : (P \u2192 Q) \u2227 P \u2194 Q \u2227 P := by\n11:   constructor <;> intro h"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 21,
+          "snippet": "18:   fail_if_success solve\n19:   | simp\n20: \n21:   sorry\n22: \n23: -- `attribute` \u3067\u5c5e\u6027\u3092\u4ed8\u4e0e\n24: attribute [simp] foo"
+        },
+        {
+          "line": "    sorry",
+          "line_number": 41,
+          "snippet": "38:     fail_if_success solve\n39:     | simp\n40: \n41:     sorry\n42: end\n43: \n44: -- `simp` \u3067\u793a\u305b\u308b\u3088\u3046\u306b\u306a\u3063\u305f"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 76,
+          "snippet": "73:   fail_if_success solve\n74:   | simp\n75: \n76:   sorry\n77: \n78: section\n79:   -- \u88dc\u984c"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 100,
+          "snippet": "97:   fail_if_success solve\n98:   | simp\n99: \n100:   sorry"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/600521950/contents/Foundation/Modal/Maximal/Makinson.lean?ref=a1733b5c3bc1d34b84d31f31313398f8e53ba300",
+      "candidate_id": "lowrisk-lean4-005",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/FormalizedFormalLogic/Foundation/blob/a1733b5c3bc1d34b84d31f31313398f8e53ba300/Foundation/Modal/Maximal/Makinson.lean",
+      "line_count": 193,
+      "path": "Foundation/Modal/Maximal/Makinson.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "FormalizedFormalLogic/Foundation",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.31.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"Foundation\"\ndefaultTargets = [\"Foundation\"]\n\n[leanOptions]\npp.unicode.fun = true\nweak.linter.flexible = true\nweak.linter.refine = true\nweak.linter.oldObtain = true\nweak.linter.style.multiGoal = true\n\n[[lean_lib]]\nname = \"Foundation\"\n\n[[require]]\nscope = \"leanprover\"\nname = \"doc-gen4\"\nrev = \"v4.31.0\"\n\n[[require]]\nscope = \"leanprover-community\"",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.31.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 21,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "medium file",
+        "simp visible",
+        "nat visible"
+      ],
+      "sorry_count": 6,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  have h\u03b3L : \u03b3 \u2208 L := by sorry;",
+          "line_number": 34,
+          "snippet": "31: \n32:   have : L \u22a2 \u03c6.toNNFormula.toFormula \ud83e\udc58 \u03b3 := WeakerThan.pbl h;\n33: \n34:   have h\u03b3L : \u03b3 \u2208 L := by sorry;\n35:   have h\u03b3V : \u03b3 \u2209 Modal.Ver := by sorry;\n36: \n37:   obtain \u27e8\u27e8_, \u27e8\u0394, rfl\u27e9\u27e9, h\u03b4\u0393, h\u03b4L, h\u03b4V\u27e9 : \u2203 \u03b4, \u03b4 \u2208 \u0393 \u2227 \u03b4.1.toFormula \u2208 L \u2227 \u03b4.1.toFormula \u2209 Modal.Ver := by"
+        },
+        {
+          "line": "  have h\u03b3V : \u03b3 \u2209 Modal.Ver := by sorry;",
+          "line_number": 35,
+          "snippet": "32:   have : L \u22a2 \u03c6.toNNFormula.toFormula \ud83e\udc58 \u03b3 := WeakerThan.pbl h;\n33: \n34:   have h\u03b3L : \u03b3 \u2208 L := by sorry;\n35:   have h\u03b3V : \u03b3 \u2209 Modal.Ver := by sorry;\n36: \n37:   obtain \u27e8\u27e8_, \u27e8\u0394, rfl\u27e9\u27e9, h\u03b4\u0393, h\u03b4L, h\u03b4V\u27e9 : \u2203 \u03b4, \u03b4 \u2208 \u0393 \u2227 \u03b4.1.toFormula \u2208 L \u2227 \u03b4.1.toFormula \u2209 Modal.Ver := by\n38:     sorry;"
+        },
+        {
+          "line": "    sorry;",
+          "line_number": 38,
+          "snippet": "35:   have h\u03b3V : \u03b3 \u2209 Modal.Ver := by sorry;\n36: \n37:   obtain \u27e8\u27e8_, \u27e8\u0394, rfl\u27e9\u27e9, h\u03b4\u0393, h\u03b4L, h\u03b4V\u27e9 : \u2203 \u03b4, \u03b4 \u2208 \u0393 \u2227 \u03b4.1.toFormula \u2208 L \u2227 \u03b4.1.toFormula \u2209 Modal.Ver := by\n38:     sorry;\n39:   have h\u0394\u2081 : \u2200 \u03c8 \u2208 \u0394, \u00ac\u03c8.1.isPrebox := by\n40:     rintro \u27e8\u03c8, _\u27e9 h\u03c8\u2081 h\u03c8\u2082;\n41:     obtain \u27e8\u03be, rfl\u27e9 := NNFormula.exists_isPrebox h\u03c8\u2082;"
+        },
+        {
+          "line": "    sorry;",
+          "line_number": 43,
+          "snippet": "40:     rintro \u27e8\u03c8, _\u27e9 h\u03c8\u2081 h\u03c8\u2082;\n41:     obtain \u27e8\u03be, rfl\u27e9 := NNFormula.exists_isPrebox h\u03c8\u2082;\n42:     have : Modal.Ver \u22a2 \u25a1\u03be.toFormula := by simp;\n43:     sorry;\n44: \n45:   have : \u2203 \u0393: List (Formula \u2115), L \u22a2 \u03c6 \ud83e\udc58 \u22c0\u0393 := by sorry;\n46:   sorry;"
+        },
+        {
+          "line": "  have : \u2203 \u0393: List (Formula \u2115), L \u22a2 \u03c6 \ud83e\udc58 \u22c0\u0393 := by sorry;",
+          "line_number": 45,
+          "snippet": "42:     have : Modal.Ver \u22a2 \u25a1\u03be.toFormula := by simp;\n43:     sorry;\n44: \n45:   have : \u2203 \u0393: List (Formula \u2115), L \u22a2 \u03c6 \ud83e\udc58 \u22c0\u0393 := by sorry;\n46:   sorry;\n47: \n48: lemma KD_subset_of_not_subset_Ver (hV : \u00acL \u2aaf Modal.Ver) : Modal.KD \u2aaf L := by"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/787574978/contents/QuantumInfo/Capacity/Capacity.lean?ref=2e21835a8fd5304fbf62f4d68ae4385272292e00",
+      "candidate_id": "lowrisk-lean4-025",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/leanprover-community/physlib/blob/2e21835a8fd5304fbf62f4d68ae4385272292e00/QuantumInfo/Capacity/Capacity.lean",
+      "line_count": 228,
+      "path": "QuantumInfo/Capacity/Capacity.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "leanprover-community/physlib",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.31.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"Physlib\"\ndefaultTargets = [\"Physlib\", \"QuantumInfo\"]\n\n[[require]]\nname = \"\u00abdoc-gen4\u00bb\"\ngit = \"https://github.com/leanprover/doc-gen4\"\nrev = \"v4.31.0\"\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"\nrev = \"v4.31.0\"\n\n[[lean_lib]]\nname = \"Physlib\"\nmoreLeanArgs = [\"-Dwarn.sorry=false\", \"-Dweak.says.verify=true\"]\n\n[[lean_lib]]\nname = \"PhyslibAlpha\"\nmoreLeanArgs = [\"-Dwarn.sorry=false\", \"-Dweak.says.verify=true\"]",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.31.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 21,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "medium file",
+        "simp visible",
+        "nat visible"
+      ],
+      "sorry_count": 10,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "@[sorryful]",
+          "line_number": 155,
+          "snippet": "152:   \u00b7 exact \u03b5Approximates_monotone (\u03b5Approximates_self id) h\u03b5.le\n153: \n154: /-- A channel cannot achieve a rate greater than log2(D), where D is the input dimension. -/\n155: @[sorryful]\n156: theorem not_achievesRate_gt_log_dim_in (\u039b : CPTPMap d\u2081 d\u2082) {R : \u211d} (hR : Real.logb 2 (Fintype.card d\u2081) < R) :\n157:     \u00ac\u039b.AchievesRate R := by\n158:   sorry"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 158,
+          "snippet": "155: @[sorryful]\n156: theorem not_achievesRate_gt_log_dim_in (\u039b : CPTPMap d\u2081 d\u2082) {R : \u211d} (hR : Real.logb 2 (Fintype.card d\u2081) < R) :\n157:     \u00ac\u039b.AchievesRate R := by\n158:   sorry\n159: \n160: noncomputable section AristotleLemmas\n161: "
+        },
+        {
+          "line": "@[sorryful]",
+          "line_number": 165,
+          "snippet": "162: end AristotleLemmas\n163: \n164: /-- A channel cannot achieve a rate greater than log2(D), where D is the output dimension. -/\n165: @[sorryful]\n166: theorem not_achievesRate_gt_log_dim_out (\u039b : CPTPMap d\u2081 d\u2082) {R : \u211d} (hR : Real.logb 2 (Fintype.card d\u2082) < R): \u00ac\u039b.AchievesRate R := by\n167:   intro h;\n168:   -- We show that the identity channel on the output space `d\u2082` emulates `\u039b`. Since capacity is monotonic under emulation, `Q(\u039b) \u2264 Q(id_{d\u2082})`."
+        },
+        {
+          "line": "@[sorryful]",
+          "line_number": 185,
+          "snippet": "182:   exact not_lt_of_ge ( le_of_not_gt fun h' => not_achievesRate_gt_log_dim_in _ h' h_id_achieves ) h\n183: \n184: /-- The achievable rates are a bounded set. -/\n185: @[sorryful]\n186: theorem bddAbove_achievesRate (\u039b : CPTPMap d\u2081 d\u2082) : BddAbove {R | \u039b.AchievesRate R} := by\n187:   use Real.logb 2 (Fintype.card d\u2081)\n188:   intro R h"
+        },
+        {
+          "line": "@[sorryful]",
+          "line_number": 197,
+          "snippet": "194: section capacity\n195: \n196: /-- Quantum channel capacity is nonnegative for channels out of a nonempty space. -/\n197: @[sorryful]\n198: theorem zero_le_quantumCapacity (\u039b : CPTPMap d\u2081 d\u2082) [Nonempty d\u2081] :\n199:     0 \u2264 \u039b.quantumCapacity :=\n200:   le_csSup (bddAbove_achievesRate \u039b) (achievesRate_0 \u039b)"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/704323189/contents/Lean4Lean/Experimental/Thierry2.lean?ref=97addd51fac964f45c595ec2c21b1b60ff0a2cc8",
+      "candidate_id": "lowrisk-lean4-021",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/digama0/lean4lean/blob/97addd51fac964f45c595ec2c21b1b60ff0a2cc8/Lean4Lean/Experimental/Thierry2.lean",
+      "line_count": 831,
+      "path": "Lean4Lean/Experimental/Thierry2.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "digama0/lean4lean",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.29.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"lean4lean\"\ndefaultTargets = [\"Lean4Lean\", \"lean4lean\", \"Lean4Lean.Theory\", \"Lean4Lean.Verify\"]\n\n[[require]]\nname = \"batteries\"\ngit = \"https://github.com/leanprover-community/batteries\"\nrev = \"v4.29.0\"\n\n[[lean_lib]]\nname = \"Lean4Lean\"\n\n[[lean_lib]]\nname = \"Lean4Lean.Theory\"\nglobs = [\"Lean4Lean.Theory.*\"]\n\n[[lean_lib]]\nname = \"Lean4Lean.Verify\"\nglobs = [\"Lean4Lean.Verify.*\"]\n\n[[lean_lib]]",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.29.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 20,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "large file",
+        "simp visible",
+        "nat visible",
+        "omega visible"
+      ],
+      "sorry_count": 26,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "theorem ShapeFun.LE.bot : .bot \u2264\u2264 f := sorry",
+          "line_number": 97,
+          "snippet": "94: theorem Shape.le_bot {s : Shape n} : s \u2264 .bot \u2194 s = .bot :=\n95:   \u27e8(by cases n <;> cases s <;> first | rfl | cases \u00b7), (\u00b7 \u25b8 LE.rfl)\u27e9\n96: \n97: theorem ShapeFun.LE.bot : .bot \u2264\u2264 f := sorry\n98: \n99: theorem Shape.le_U {s : Shape n} : s \u2264 .U \u2194 s = .bot \u2228 s = .U := by\n100:   cases n <;> simp [U, bot, (\u00b7 \u2264 \u00b7), Shape.LE] <;> cases s <;> simp [ble]"
+        },
+        {
+          "line": "theorem Shape.Compat.def {x y : Shape n} : x.Compat y \u2194 \u2203 z, x \u2264 z \u2227 y \u2264 z := sorry",
+          "line_number": 132,
+          "snippet": "129: theorem Shape.Join.le (H : Join x y z) : x \u2264 z \u2227 y \u2264 z := (H _).1 .rfl\n130: theorem ShapeFun.Join.le (H : Join x y z) : x \u2264\u2264 z \u2227 y \u2264\u2264 z := (H _).1 .rfl\n131: \n132: theorem Shape.Compat.def {x y : Shape n} : x.Compat y \u2194 \u2203 z, x \u2264 z \u2227 y \u2264 z := sorry\n133: \n134: theorem Shape.Join.compat (H : Join x y z) : x.Compat y := Compat.def.2 \u27e8_, (H _).1 .rfl\u27e9\n135: "
+        },
+        {
+          "line": "theorem Shape.Join.mk (H : x.Compat y) : Join x y (x.join y) := sorry",
+          "line_number": 156,
+          "snippet": "153: theorem Shape.join.bot_r {x : Shape n} : x.join Shape.bot = x := by\n154:   cases n <;> cases x <;> rfl\n155: \n156: theorem Shape.Join.mk (H : x.Compat y) : Join x y (x.join y) := sorry\n157: \n158: theorem ShapeFun.Join.mk (H : Compat Shape.Compat x y) : Join x y (join Shape.join x y) := sorry\n159: "
+        },
+        {
+          "line": "theorem ShapeFun.Join.mk (H : Compat Shape.Compat x y) : Join x y (join Shape.join x y) := sorry",
+          "line_number": 158,
+          "snippet": "155: \n156: theorem Shape.Join.mk (H : x.Compat y) : Join x y (x.join y) := sorry\n157: \n158: theorem ShapeFun.Join.mk (H : Compat Shape.Compat x y) : Join x y (join Shape.join x y) := sorry\n159: \n160: def ShapeFun.maxBelow (s : ShapeFun n) : Shape n \u00d7 Shape n :=\n161:   (s.find? fun (x, _) => s.all fun (x', _) => x' \u2264 x).getD (.bot, .bot)"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 167,
+          "snippet": "164:   maxBelow (s.filter (\u00b7.1 \u2264 a)) |>.2\n165: \n166: theorem ShapeFun.app_mono_l {f f' : ShapeFun n} : f.LE f' \u2192 \u2200 a, f.app a \u2264 f'.app a :=\n167:   sorry\n168: \n169: theorem ShapeFun.app_mono_r {f : ShapeFun n} : a \u2264 a' \u2192 f.app a \u2264 f.app a' :=\n170:   sorry"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/764529766/contents/SpherePacking/CohnElkies/Prereqs.lean?ref=e60e82d6a541ce7f7e6dfa01b0d0a6796637989d",
+      "candidate_id": "lowrisk-lean4-018",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/thefundamentaltheor3m/Sphere-Packing-Lean/blob/e60e82d6a541ce7f7e6dfa01b0d0a6796637989d/SpherePacking/CohnElkies/Prereqs.lean",
+      "line_count": 293,
+      "path": "SpherePacking/CohnElkies/Prereqs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "thefundamentaltheor3m/Sphere-Packing-Lean",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.30.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"SpherePacking\"\ndefaultTargets = [\"SpherePacking\"]\n\n[leanOptions]\npp.unicode.fun = true\nautoImplicit = false\nrelaxedAutoImplicit = false\nweak.linter.mathlibStandardSet = true\nlinter.flexible = false\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"\nrev = \"v4.30.0\"\n\n[[require]]\nname = \"checkdecls\"\ngit = \"https://github.com/PatrickMassot/checkdecls.git\"\n\n[[lean_lib]]",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.30.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 19,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "medium file",
+        "simp visible",
+        "example context"
+      ],
+      "sorry_count": 7,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "-- mul_inv_rev := sorry",
+          "line_number": 72,
+          "snippet": "69: \n70: -- noncomputable instance : DivisionCommMonoid ENNReal where\n71: -- inv_inv := inv_inv\n72: -- mul_inv_rev := sorry\n73: -- inv_eq_of_mul := sorry\n74: -- mul_comm := sorry\n75: "
+        },
+        {
+          "line": "-- inv_eq_of_mul := sorry",
+          "line_number": 73,
+          "snippet": "70: -- noncomputable instance : DivisionCommMonoid ENNReal where\n71: -- inv_inv := inv_inv\n72: -- mul_inv_rev := sorry\n73: -- inv_eq_of_mul := sorry\n74: -- mul_comm := sorry\n75: \n76: "
+        },
+        {
+          "line": "-- mul_comm := sorry",
+          "line_number": 74,
+          "snippet": "71: -- inv_inv := inv_inv\n72: -- mul_inv_rev := sorry\n73: -- inv_eq_of_mul := sorry\n74: -- mul_comm := sorry\n75: \n76: \n77: end Euclidean_Space"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 104,
+          "snippet": "101:     `Mathlib.Analysis.Distribution.FourierSchwartz` to conclude various things about the function.\n102:   -/\n103:   Summable f \u2227\n104:   sorry\n105: \n106: theorem PSF_L {f : EuclideanSpace \u211d (Fin d) \u2192 \u2102} (hf : PSF_Conditions f)\n107:   (v : EuclideanSpace \u211d (Fin d)) :"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 111,
+          "snippet": "108:   \u2211' \u2113 : \u039b, f (v + \u2113) = (1 / ZLattice.covolume \u039b) *\n109:     \u2211' m : LinearMap.BilinForm.dualSubmodule (inner\u2097 _) \u039b,\n110:   (\ud835\udcd5 f m) * exp (2 * \u03c0 * I * \u27eav, m\u27eb_[\u211d]) :=\n111:   sorry\n112: \n113: -- The version below is on the blueprint. I'm pretty sure it can be removed.\n114: theorem PSF_L' {f : EuclideanSpace \u211d (Fin d) \u2192 \u2102} (hf : PSF_Conditions f) :"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/842037/contents/lib/system/yrc_proof.lean?ref=0bfb59f6d4da38382375fbb6387510f50cb063ca",
+      "candidate_id": "lowrisk-lean4-001",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/nim-lang/Nim/blob/0bfb59f6d4da38382375fbb6387510f50cb063ca/lib/system/yrc_proof.lean",
+      "line_count": 353,
+      "path": "lib/system/yrc_proof.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "nim-lang/Nim",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": false,
+        "lean_toolchain": "",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 18,
+      "score_reasons": [
+        "single sorry",
+        "large file",
+        "simp visible",
+        "nat visible",
+        "omega visible"
+      ],
+      "sorry_count": 1,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "/-! ### Summary of verified properties (all QED, no sorry)",
+          "line_number": 299,
+          "snippet": "296:   subst h_wait1; subst h_wait2\n297:   omega\n298: \n299: /-! ### Summary of verified properties (all QED, no sorry)\n300: \n301:   1. `reachable_is_anchored`: Every reachable object is anchored\n302:      (has a path from an externally-referenced object via heap edges)."
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/770205373/contents/ToMathlib/Control/Monad/Dijkstra.lean?ref=8f5dc4f2923cc47e39bc6ce21f71563cf7d19193",
+      "candidate_id": "lowrisk-lean4-008",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/Verified-zkEVM/VCV-io/blob/8f5dc4f2923cc47e39bc6ce21f71563cf7d19193/ToMathlib/Control/Monad/Dijkstra.lean",
+      "line_count": 204,
+      "path": "ToMathlib/Control/Monad/Dijkstra.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "Verified-zkEVM/VCV-io",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.30.0",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": true,
+            "head": "import Lake\nopen Lake DSL\n\npackage VCVio where\n  -- Settings applied to both builds and interactive editing\n  leanOptions := #[\n    \u27e8`pp.unicode.fun, true\u27e9, -- pretty-prints `fun a \u21a6 b`\n    \u27e8`pp.proofs.withType, false\u27e9,\n    \u27e8`autoImplicit, false\u27e9,\n    \u27e8`relaxedAutoImplicit, false\u27e9,\n    \u27e8`weak.linter.mathlibStandardSet, true\u27e9,\n    \u27e8`weak.linter.modulesUpperCamelCase, true\u27e9,\n    \u27e8`weak.linter.style.whitespace, true\u27e9,\n    -- Disable the unicode allowlist linter: VCVio docstrings legitimately use\n    -- FIPS-204 math notation (combining tilde `c\u0303`) and cited author names with\n    -- diacritics (e.g. `C\u0103t\u0103lin Hri\u0163cu`).\n    \u27e8`weak.linter.unicodeLinter, false\u27e9\n  ]\n\n/-",
+            "mode": "CACHE_REUSED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.30.0",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 17,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "medium file",
+        "simp visible"
+      ],
+      "sorry_count": 7,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "--   dPure_dBind x f := by sorry",
+          "line_number": 126,
+          "snippet": "123: -- instance [Monad m] [Monad n] [LawfulMonad m] [LawfulMonad n] [MonadRelation m n]\n124: --     [LawfulMonadRelation m n] :\n125: --     LawfulDijkstraMonad n (fun na => { ma : m _ // monadRel ma na}) where\n126: --   dPure_dBind x f := by sorry\n127: --   dBind_dPure x := by sorry\n128: --   dBind_assoc x f g := by sorry\n129: "
+        },
+        {
+          "line": "--   dBind_dPure x := by sorry",
+          "line_number": 127,
+          "snippet": "124: --     [LawfulMonadRelation m n] :\n125: --     LawfulDijkstraMonad n (fun na => { ma : m _ // monadRel ma na}) where\n126: --   dPure_dBind x f := by sorry\n127: --   dBind_dPure x := by sorry\n128: --   dBind_assoc x f g := by sorry\n129: \n130: /-- A Dijkstra monad `d` on a monad `w` can be seen as a monad on the dependent pair `(w, d)`. -/"
+        },
+        {
+          "line": "--   dBind_assoc x f g := by sorry",
+          "line_number": 128,
+          "snippet": "125: --     LawfulDijkstraMonad n (fun na => { ma : m _ // monadRel ma na}) where\n126: --   dPure_dBind x f := by sorry\n127: --   dBind_dPure x := by sorry\n128: --   dBind_assoc x f g := by sorry\n129: \n130: /-- A Dijkstra monad `d` on a monad `w` can be seen as a monad on the dependent pair `(w, d)`. -/\n131: instance instMonadSigma {w d} [Monad w] [DijkstraMonad w d] :"
+        },
+        {
+          "line": "--       intro \u03b1 \u27e8x, y\u27e9; simp [instMonadSigma]; sorry)",
+          "line_number": 142,
+          "snippet": "139: --     LawfulMonad (fun \u03b1 => (w : w \u03b1) \u00d7 d w) :=\n140: --   LawfulMonad.mk' _\n141: --     (by\n142: --       intro \u03b1 \u27e8x, y\u27e9; simp [instMonadSigma]; sorry)\n143: --       -- constructor\n144: --       -- \u00b7 show x >>= (fun a => pure a) = x; simp only [bind_pure]\n145: --       -- \u00b7 rw (occs := .pos [2]) [\u2190 dBind_dPure y]"
+        },
+        {
+          "line": "--     {\u03b1 : Type u} \u2192 n \u03b1 \u2192 Type _ := sorry",
+          "line_number": 170,
+          "snippet": "167: \n168: -- def quotientDijkstraMonadOfOrderedMonadRelation {m n} [Monad m] [OrderedMonad n]\n169: --     [MonadRelation m n] [LawfulMonad m] [LawfulMonad n] [MonadRelation.IsUpperClosed m n] :\n170: --     {\u03b1 : Type u} \u2192 n \u03b1 \u2192 Type _ := sorry\n171: \n172: -- instance [Monad m] [OrderedMonad n] [MonadRelation m n]\n173: --     [LawfulMonad m] [LawfulMonad n] [LawfulMonadRelation m n] :"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/838429026/contents/expdb/basic_fourier_estimates.lean?ref=34a88333c6a1acc45e09f6beca51294943bb15f4",
+      "candidate_id": "lowrisk-lean4-024",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/teorth/expdb/blob/34a88333c6a1acc45e09f6beca51294943bb15f4/expdb/basic_fourier_estimates.lean",
+      "line_count": 797,
+      "path": "expdb/basic_fourier_estimates.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "teorth/expdb",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.27.0-rc1",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"expdb\"\ndefaultTargets = [\"expdb\"]\n\n[leanOptions]\npp.unicode.fun = true\nautoImplicit = false\nrelaxedAutoImplicit = false\n\n[[require]]\nname = \"mathlib\"\ngit = \"https://github.com/leanprover-community/mathlib4.git\"\n\n[[require]]\nname = \"checkdecls\"\ngit = \"https://github.com/PatrickMassot/checkdecls.git\"\n\n[[lean_lib]]\nname = \"expdb\"",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.27.0-rc1",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 17,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "large file",
+        "simp visible",
+        "nat visible"
+      ],
+      "sorry_count": 5,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "                \u00b7 sorry; \u00b7 sorry",
+          "line_number": 519,
+          "snippet": "516:                     congr 1; ext u\n517:                     congr 2; exact abs_of_nonneg (le_trans hd (Set.mem_Ici.mp \u2039_\u203a))]\n518:                   linarith [integral_nonneg (fun u => by positivity)]\n519:                 \u00b7 sorry; \u00b7 sorry\n520:             _ = 2 * (1/11) * (1+d)^(-(11:\u211d)) := by rw [hcalc]; ring\n521:             _ \u2264 8 * (1+d)^(-(10:\u211d)) := by\n522:                 have h1d : 1 + d \u2265 1 := by linarith"
+        },
+        {
+          "line": "    rw [\u2190 integral_add_compl measurableSet_Icc (by sorry)]",
+          "line_number": 542,
+          "snippet": "539:       \u00b7 apply div_nonneg <;> linarith [htI.1]\n540:     -- \u222b_{I_t} = \u222b_\u211d - \u222b_{\u211d\\I_t} = 1 - \u222b_{\u211d\\I_t}\n541:     rw [psiHat_l2 B |>.symm]\n542:     rw [\u2190 integral_add_compl measurableSet_Icc (by sorry)]\n543:     simp only [add_sub_cancel_left]\n544:     rw [abs_neg]\n545:     calc |\u222b u in (Set.Icc _ _)\u1d9c, \u2016psiHat B.\u03c8 u\u2016^2|"
+        },
+        {
+          "line": "          \u00b7 sorry; \u00b7 sorry",
+          "line_number": 638,
+          "snippet": "635:         \u2264 \u222b t : \u211d, expSumSq a \u03be t * |kernelE B N a\u2080 b\u2080 t| := by\n636:           apply (abs_integral_le_integral_abs _).trans\n637:           apply integral_mono_ae\n638:           \u00b7 sorry; \u00b7 sorry\n639:           \u00b7 apply ae_of_all; intro t\n640:             exact mul_le_mul_of_nonneg_left (le_abs_self _)\n641:               (by simp [expSumSq]; positivity)"
+        },
+        {
+          "line": "          \u00b7 sorry",
+          "line_number": 652,
+          "snippet": "649:             exact le_trans (hG5 t) (by\n650:               apply mul_le_mul_of_nonneg_left _ hC\u2085.le\n651:               simp [Real.rpow_neg_nonpos])\n652:           \u00b7 sorry\n653:       _ = C\u2085 * \u222b t in Set.Icc a\u2080 (a\u2080 + N), expSumSq a \u03be t := by\n654:           rw [\u2190 integral_const_mul]; congr 1; ext t; ring\n655:       _ \u2264 C\u2085 * (C\u2083 * N) := mul_le_mul_of_nonneg_left (hG3 a\u2080) hC\u2085.le"
+        },
+        {
+          "line": "          sorry -- partition \u211d into layers",
+          "line_number": 682,
+          "snippet": "679:             \u2211 k in Finset.range (2^(\u2113+1)),\n680:             |\u222b t in Set.Icc (b\u2080 + k * N) (b\u2080 + (k+1) * N),\n681:               expSumSq a \u03be t * kernelE B N a\u2080 b\u2080 t| := by\n682:           sorry -- partition \u211d into layers\n683:       _ \u2264 \u2211 \u2113 in Finset.range (L + 1), (2^(\u2113+1) : \u211d) * (C\u2083 * N) *\n684:             (C\u2085 * (2^\u2113)^(-(10:\u211d))) +\n685:           \u2211 \u2113 in Finset.range (L + 1), (2^(\u2113+1) : \u211d) * (C\u2083 * N) *"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1064838963/contents/specs/LA0220_specs.lean?ref=387cd69996792d452ead7b0460f36ee4c5cdd148",
+      "candidate_id": "lowrisk-lean4-015",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/Beneficial-AI-Foundation/vericoding-benchmark/blob/387cd69996792d452ead7b0460f36ee4c5cdd148/specs/LA0220_specs.lean",
+      "line_count": 57,
+      "path": "specs/LA0220_specs.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "Beneficial-AI-Foundation/vericoding-benchmark",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": false,
+        "lean_toolchain": "",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 13,
+      "score_reasons": [
+        "few sorries",
+        "small file",
+        "simp visible"
+      ],
+      "sorry_count": 3,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  decreasing_by simp_wf; sorry",
+          "line_number": 24,
+          "snippet": "21:     let count := CountOccurrences (h :: t) h\n22:     let remaining := RemoveAllOccurrences (h :: t) h\n23:     (if count = 2 then 1 else 0) + CountPairsHelper remaining\n24:   decreasing_by simp_wf; sorry\n25: \n26: def CountPairs (s : List Int) : Int :=\n27:   let positive_sessions := FilterPositive s"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 43,
+          "snippet": "40: \n41: -- <vc-definitions>\n42: def solve (n : Int) (sessions : List Int) (h_precond : solve_precond n sessions) : Int :=\n43:   sorry\n44: -- </vc-definitions>\n45: \n46: -- <vc-theorems>"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 56,
+          "snippet": "53: \n54: theorem solve_spec_satisfied (n : Int) (sessions : List Int) (h_precond : solve_precond n sessions) :\n55:     solve_postcond n sessions (solve n sessions h_precond) h_precond := by\n56:   sorry\n57: -- </vc-theorems>"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/1025097945/contents/Strata/Languages/Core/StatementWF.lean?ref=e912c9bba0ad82244185e9c75b9535a6aedbd0f3",
+      "candidate_id": "lowrisk-lean4-022",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/strata-org/Strata/blob/e912c9bba0ad82244185e9c75b9535a6aedbd0f3/Strata/Languages/Core/StatementWF.lean",
+      "line_count": 312,
+      "path": "Strata/Languages/Core/StatementWF.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "strata-org/Strata",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": true,
+        "lean_toolchain": "leanprover/lean4:v4.29.1",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": true,
+            "head": "name = \"Strata\"\nversion = \"0.1.0\"\ndefaultTargets = [\"Strata\", \"StrataToCBMC\", \"StrataCoreToGoto\"]\ntestDriver = \"StrataTestMain\"\nlintDriver = \"CheckImports\"\n\n[[require]]\nname = \"StrataDDM\"\ngit = \"https://github.com/strata-org/Strata-DDM\"\nrev = \"main\"\n\n[[require]]\nname = \"plausible\"\ngit = \"https://github.com/leanprover-community/plausible.git\"\nrev = \"bump_to_v4.29.0-rc8\"\n\n[[lean_lib]]\nname = \"Strata\"\n\n[[lean_lib]]",
+            "mode": "CACHE_REUSED"
+          },
+          "lean-toolchain": {
+            "exists": true,
+            "head": "leanprover/lean4:v4.29.1",
+            "mode": "CACHE_REUSED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 13,
+      "score_reasons": [
+        "lean4 likely",
+        "many/no sorries",
+        "large file",
+        "simp visible"
+      ],
+      "sorry_count": 7,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  sorry",
+          "line_number": 53,
+          "snippet": "50:   repeat (first | (split at H' <;> try contradiction) | constructor)\n51:   any_goals repeat (split at H <;> try contradiction)\n52:   any_goals simp_all\n53:   sorry\n54:   sorry\n55:   sorry\n56: "
+        },
+        {
+          "line": "  sorry",
+          "line_number": 54,
+          "snippet": "51:   any_goals repeat (split at H <;> try contradiction)\n52:   any_goals simp_all\n53:   sorry\n54:   sorry\n55:   sorry\n56: \n57: private theorem Statement.typeCheckAux_elim_acc: Statement.typeCheckAux.go P op C T ss (acc1 ++ acc2) labels = Except.ok (pp, T', C') \u2194"
+        },
+        {
+          "line": "  sorry",
+          "line_number": 55,
+          "snippet": "52:   any_goals simp_all\n53:   sorry\n54:   sorry\n55:   sorry\n56: \n57: private theorem Statement.typeCheckAux_elim_acc: Statement.typeCheckAux.go P op C T ss (acc1 ++ acc2) labels = Except.ok (pp, T', C') \u2194\n58:   (List.IsPrefix acc2.reverse pp \u2227 Statement.typeCheckAux.go P op C T ss acc1 labels = Except.ok (pp.drop acc2.length, T', C'))"
+        },
+        {
+          "line": "          sorry",
+          "line_number": 251,
+          "snippet": "248:         split at Hcall <;> try simp_all\n249:         constructor <;> simp_all\n250:         . -- 13. The `lhs` of a call statement is disjoint from `modifies`, `outputs`, and `inputs` of the procedure\n251:           sorry\n252:         . -- 7. The `lhs` of a call statement contain no duplicates and are `CoreIdent.locl`.\n253:           sorry\n254:         . refine List.Forall_mem_iff.mpr ?_"
+        },
+        {
+          "line": "          sorry",
+          "line_number": 253,
+          "snippet": "250:         . -- 13. The `lhs` of a call statement is disjoint from `modifies`, `outputs`, and `inputs` of the procedure\n251:           sorry\n252:         . -- 7. The `lhs` of a call statement contain no duplicates and are `CoreIdent.locl`.\n253:           sorry\n254:         . refine List.Forall_mem_iff.mpr ?_\n255:           intros arg Hin\n256:           constructor"
+        }
+      ]
+    },
+    {
+      "api_url": "https://api.github.com/repositories/104375287/contents/Mathematics_In_Lean_ideas/complex_solns.lean?ref=268b3bab45ba8fbed09b45cbbdc80a3813f73b5e",
+      "candidate_id": "lowrisk-lean4-006",
+      "fetch_ok": true,
+      "file_mode": "CACHE_REUSED",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Mathematics_In_Lean_ideas/complex_solns.lean",
+      "line_count": 490,
+      "path": "Mathematics_In_Lean_ideas/complex_solns.lean",
+      "query_source": "sorry language:Lean extension:lean \"by simp\"",
+      "repo": "kbuzzard/xena",
+      "repo_class": {
+        "lean3_likely": false,
+        "lean4_likely": false,
+        "lean_toolchain": "",
+        "manifest_files": {
+          "lakefile.lean": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lakefile.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "lean-toolchain": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          },
+          "leanpkg.toml": {
+            "exists": false,
+            "head": "",
+            "mode": "GH_API_FAILED"
+          }
+        }
+      },
+      "score": 7,
+      "score_reasons": [
+        "few sorries",
+        "large file",
+        "simp visible",
+        "nat visible",
+        "example context",
+        "lean3 tactic-block risk"
+      ],
+      "sorry_count": 3,
+      "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "-- TODO: leave definition, sorry all proofs.",
+          "line_number": 369,
+          "snippet": "366: \n367: /-! # I -/\n368: \n369: -- TODO: leave definition, sorry all proofs.\n370: \n371: /-- complex.I is the square root of -1 above the imaginary axis -/\n372: def I : \u2102 := \u27e80, 1\u27e9"
+        },
+        {
+          "line": "-- TODO: leave definition, sorry all proofs.",
+          "line_number": 389,
+          "snippet": "386: \n387: /-! # Complex conjugation -/\n388: \n389: -- TODO: leave definition, sorry all proofs.\n390: \n391: def conj (z : \u2102) : \u2102 := \u27e8z.re, -z.im\u27e9\n392: "
+        },
+        {
+          "line": "-- TODO: leave definition, sorry all proofs.",
+          "line_number": 445,
+          "snippet": "442: \n443: /-! # Norms -/\n444: \n445: -- TODO: leave definition, sorry all proofs.\n446: \n447: def norm_sq (z : \u2102) : \u211d := z.re * z.re + z.im * z.im\n448: "
+        }
+      ]
+    }
+  ],
+  "lean4_likely_count": 15,
+  "parked_previous_candidate": {
+    "reason": "DO_NOT_REPLAY_YET_REQUIRES_LEAN3_ENV_AND_EQUATE_CONTEXT",
+    "replay_risk": "MEDIUM_HIGH",
+    "repo": "EdAyers/lean-subtask",
+    "target_path": "src/examples/vector.lean"
+  },
+  "query_count": 5,
+  "raw_result_count": 150,
+  "scout_type": "LOWRISK_LEAN4_ATTEMPT002_REPLACEMENT_SCOUT",
+  "selected_candidate": {
+    "api_url": "https://api.github.com/repositories/600521950/contents/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean?ref=a1733b5c3bc1d34b84d31f31313398f8e53ba300",
+    "candidate_id": "lowrisk-lean4-030",
+    "fetch_ok": true,
+    "file_mode": "CACHE_REUSED",
+    "html_url": "https://github.com/FormalizedFormalLogic/Foundation/blob/a1733b5c3bc1d34b84d31f31313398f8e53ba300/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean",
+    "line_count": 162,
+    "path": "Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean",
+    "query_source": "sorry language:Lean extension:lean \"by rfl\"",
+    "repo": "FormalizedFormalLogic/Foundation",
+    "repo_class": {
+      "lean3_likely": false,
+      "lean4_likely": true,
+      "lean_toolchain": "leanprover/lean4:v4.31.0",
+      "manifest_files": {
+        "lakefile.lean": {
+          "exists": false,
+          "head": "",
+          "mode": "GH_API_FAILED"
+        },
+        "lakefile.toml": {
+          "exists": true,
+          "head": "name = \"Foundation\"\ndefaultTargets = [\"Foundation\"]\n\n[leanOptions]\npp.unicode.fun = true\nweak.linter.flexible = true\nweak.linter.refine = true\nweak.linter.oldObtain = true\nweak.linter.style.multiGoal = true\n\n[[lean_lib]]\nname = \"Foundation\"\n\n[[require]]\nscope = \"leanprover\"\nname = \"doc-gen4\"\nrev = \"v4.31.0\"\n\n[[require]]\nscope = \"leanprover-community\"",
+          "mode": "CACHE_REUSED"
+        },
+        "lean-toolchain": {
+          "exists": true,
+          "head": "leanprover/lean4:v4.31.0",
+          "mode": "CACHE_REUSED"
+        },
+        "leanpkg.toml": {
+          "exists": false,
+          "head": "",
+          "mode": "GH_API_FAILED"
+        }
+      }
+    },
+    "score": 42,
+    "score_reasons": [
+      "lean4 likely",
+      "single sorry",
+      "medium file",
+      "simp visible",
+      "rfl visible",
+      "nat visible",
+      "omega visible"
+    ],
+    "sorry_count": 1,
+    "status": "LOWRISK_LEAN4_CANDIDATE_INSPECTED_NOT_REPLAYED",
+    "windows": [
+      {
+        "line": "-- @[simp] lemma coe_mul (a b : \u2115) : \u2191(a * b) = ((\u2191a * \u2191b) : OmegaAddOne) := sorry",
+        "line_number": 54,
+        "snippet": "51: \n52: @[simp] lemma coe_add (a b : \u2115) : \u2191(a + b) = ((\u2191a + \u2191b) : OmegaAddOne) := rfl\n53: \n54: -- @[simp] lemma coe_mul (a b : \u2115) : \u2191(a * b) = ((\u2191a * \u2191b) : OmegaAddOne) := sorry\n55: \n56: @[simp] lemma lt_coe_iff (n m : \u2115) : (n : OmegaAddOne) < (m : OmegaAddOne) \u2194 n < m := by rfl\n57: "
+      }
+    ]
+  },
+  "unique_candidate_count": 126,
+  "version": "v4.4.30"
+}

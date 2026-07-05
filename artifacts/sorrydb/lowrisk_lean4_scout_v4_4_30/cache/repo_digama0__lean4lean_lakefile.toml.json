@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/digama0/lean4lean/git/blobs/531391e0ca37949ae82c298b57ea659eddcd6ab2",
+    "html": "https://github.com/digama0/lean4lean/blob/master/lakefile.toml",
+    "self": "https://api.github.com/repos/digama0/lean4lean/contents/lakefile.toml?ref=master"
+  },
+  "content": "bmFtZSA9ICJsZWFuNGxlYW4iCmRlZmF1bHRUYXJnZXRzID0gWyJMZWFuNExl\nYW4iLCAibGVhbjRsZWFuIiwgIkxlYW40TGVhbi5UaGVvcnkiLCAiTGVhbjRM\nZWFuLlZlcmlmeSJdCgpbW3JlcXVpcmVdXQpuYW1lID0gImJhdHRlcmllcyIK\nZ2l0ID0gImh0dHBzOi8vZ2l0aHViLmNvbS9sZWFucHJvdmVyLWNvbW11bml0\neS9iYXR0ZXJpZXMiCnJldiA9ICJ2NC4yOS4wIgoKW1tsZWFuX2xpYl1dCm5h\nbWUgPSAiTGVhbjRMZWFuIgoKW1tsZWFuX2xpYl1dCm5hbWUgPSAiTGVhbjRM\nZWFuLlRoZW9yeSIKZ2xvYnMgPSBbIkxlYW40TGVhbi5UaGVvcnkuKiJdCgpb\nW2xlYW5fbGliXV0KbmFtZSA9ICJMZWFuNExlYW4uVmVyaWZ5IgpnbG9icyA9\nIFsiTGVhbjRMZWFuLlZlcmlmeS4qIl0KCltbbGVhbl9saWJdXQpuYW1lID0g\nIkxlYW40TGVhbi5FeHBlcmltZW50YWwiCmdsb2JzID0gWyJMZWFuNExlYW4u\nRXhwZXJpbWVudGFsLisiXQoKW1tsZWFuX2V4ZV1dCm5hbWUgPSAibGVhbjRs\nZWFuIgpyb290ID0gIk1haW4iCnN1cHBvcnRJbnRlcnByZXRlciA9IHRydWUK\n",
+  "download_url": "https://raw.githubusercontent.com/digama0/lean4lean/master/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/digama0/lean4lean/git/blobs/531391e0ca37949ae82c298b57ea659eddcd6ab2",
+  "html_url": "https://github.com/digama0/lean4lean/blob/master/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "531391e0ca37949ae82c298b57ea659eddcd6ab2",
+  "size": 540,
+  "type": "file",
+  "url": "https://api.github.com/repos/digama0/lean4lean/contents/lakefile.toml?ref=master"
+}

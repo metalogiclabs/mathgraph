@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/teorth/expdb/git/blobs/56e5245b593cf030290e6fb908ec9bf846fd2694",
+    "html": "https://github.com/teorth/expdb/blob/main/lakefile.toml",
+    "self": "https://api.github.com/repos/teorth/expdb/contents/lakefile.toml?ref=main"
+  },
+  "content": "bmFtZSA9ICJleHBkYiIKZGVmYXVsdFRhcmdldHMgPSBbImV4cGRiIl0KClts\nZWFuT3B0aW9uc10KcHAudW5pY29kZS5mdW4gPSB0cnVlCmF1dG9JbXBsaWNp\ndCA9IGZhbHNlCnJlbGF4ZWRBdXRvSW1wbGljaXQgPSBmYWxzZQoKW1tyZXF1\naXJlXV0KbmFtZSA9ICJtYXRobGliIgpnaXQgPSAiaHR0cHM6Ly9naXRodWIu\nY29tL2xlYW5wcm92ZXItY29tbXVuaXR5L21hdGhsaWI0LmdpdCIKCltbcmVx\ndWlyZV1dCm5hbWUgPSAiY2hlY2tkZWNscyIKZ2l0ID0gImh0dHBzOi8vZ2l0\naHViLmNvbS9QYXRyaWNrTWFzc290L2NoZWNrZGVjbHMuZ2l0IgoKW1tsZWFu\nX2xpYl1dCm5hbWUgPSAiZXhwZGIiCg==\n",
+  "download_url": "https://raw.githubusercontent.com/teorth/expdb/main/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/teorth/expdb/git/blobs/56e5245b593cf030290e6fb908ec9bf846fd2694",
+  "html_url": "https://github.com/teorth/expdb/blob/main/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "56e5245b593cf030290e6fb908ec9bf846fd2694",
+  "size": 337,
+  "type": "file",
+  "url": "https://api.github.com/repos/teorth/expdb/contents/lakefile.toml?ref=main"
+}

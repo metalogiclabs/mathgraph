@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/pygae/lean-ga/git/blobs/b85e421c506a46e54357ed59cb64f993d32cad2b",
+    "html": "https://github.com/pygae/lean-ga/blob/0947a6d21cf5a724732c29dabbc7f543edb66d4e/src/geometric_algebra/nursery/instances.lean",
+    "self": "https://api.github.com/repos/pygae/lean-ga/contents/src/geometric_algebra/nursery/instances.lean?ref=0947a6d21cf5a724732c29dabbc7f543edb66d4e"
+  },
+  "content": "aW1wb3J0IGdlb21ldHJpY19hbGdlYnJhLm51cnNlcnkuY2hpc29sbQppbXBv\ncnQgZGF0YS5jb21wbGV4Lm1vZHVsZQoKaW5zdGFuY2UgZmllbGRfZ2EgKEsg\nOiBUeXBlKikgW2ZpZWxkIEtdIDogZ2VvbWV0cmljX2FsZ2VicmEgSyBLIEsg\nOj0gewogIGbigoEgOj0gewogICAgdG9fZnVuIDo9IGlkLAogICAgbWFwX3pl\ncm8nIDo9IHJmbCwKICAgIG1hcF9hZGQnIDo9IGJlZ2luCiAgICAgIHNpbXAg\nb25seSBbZm9yYWxsX2NvbnN0LCBpZC5kZWYsIGVxX3NlbGZfaWZmX3RydWVd\nCiAgICBlbmQKICB9LAogIHZlY19zcV9zY2FsYXIgOj0gYmVnaW4KICAgIGlu\ndHJvIHYsCiAgICB1c2UgdiAqIHYsCiAgICBzaW1wIG9ubHkgW2FsZ2VicmEu\naWQubWFwX2VxX3NlbGYsIGFkZF9tb25vaWRfaG9tLmNvZV9taywgaWQuZGVm\nXSwKICBlbmQKfQoKaW5zdGFuY2UgcnJjX2dhIDogZ2VvbWV0cmljX2FsZ2Vi\ncmEg4oSdIOKEnSDihIIgOj0gewogIGbigoEgOj0gewogICAgdG9fZnVuIDo9\nIM67eCwgeCwKICAgIG1hcF96ZXJvJyA6PSByZmwsCiAgICBtYXBfYWRkJyA6\nPSBiZWdpbgogICAgICBpbnRyb3MgeCB5LAogICAgICBub3JtX2Nhc3QsCiAg\nICBlbmQKICB9LAogIHZlY19zcV9zY2FsYXIgOj0gYmVnaW4KICAgIGludHJv\nIHYsCiAgICB1c2UgdiAqIHYsCiAgICBzaW1wIG9ubHkgW2FkZF9tb25vaWRf\naG9tLmNvZV9taywgcmluZ19ob20ubWFwX211bF0sCiAgICByZWZsLAogIGVu\nZAp9CgotLSBub25jb21wdXRhYmxlIGluc3RhbmNlIHJjY19nYSA6IGdlb21l\ndHJpY19hbGdlYnJhIOKEnSDihIIg4oSCIDo9IHsKLS0gICBm4oKBIDo9IHsK\nLS0gICAgIHRvX2Z1biA6PSBpZCwKLS0gICAgIG1hcF96ZXJvJyA6PSByZmws\nCi0tICAgICBtYXBfYWRkJyA6PSBieSBzaW1wLAotLSAgIH0sCi0tICAgdmVj\nX3NxX3NjYWxhciA6PSBzb3JyeSAvLSBtYXRoZW1hdGljYWxseSBmYWxzZSBk\ndWUgdG8gdGhlIHdyb25nIG11bCBlcXVpcGVkIHdpdGgg4oSCIC0vCi0tIH0=\n",
+  "download_url": "https://raw.githubusercontent.com/pygae/lean-ga/0947a6d21cf5a724732c29dabbc7f543edb66d4e/src/geometric_algebra/nursery/instances.lean",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/pygae/lean-ga/git/blobs/b85e421c506a46e54357ed59cb64f993d32cad2b",
+  "html_url": "https://github.com/pygae/lean-ga/blob/0947a6d21cf5a724732c29dabbc7f543edb66d4e/src/geometric_algebra/nursery/instances.lean",
+  "name": "instances.lean",
+  "path": "src/geometric_algebra/nursery/instances.lean",
+  "sha": "b85e421c506a46e54357ed59cb64f993d32cad2b",
+  "size": 989,
+  "type": "file",
+  "url": "https://api.github.com/repos/pygae/lean-ga/contents/src/geometric_algebra/nursery/instances.lean?ref=0947a6d21cf5a724732c29dabbc7f543edb66d4e"
+}

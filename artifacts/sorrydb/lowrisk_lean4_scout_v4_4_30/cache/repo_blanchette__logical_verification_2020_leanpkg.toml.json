@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/blanchette/logical_verification_2020/git/blobs/16e47cbbcdd08a3db53809baf4329a054fcbad54",
+    "html": "https://github.com/blanchette/logical_verification_2020/blob/master/leanpkg.toml",
+    "self": "https://api.github.com/repos/blanchette/logical_verification_2020/contents/leanpkg.toml?ref=master"
+  },
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAibG9naWNhbC12ZXJpZmljYXRpb24iCnZlcnNp\nb24gPSAiMS4wIgpsZWFuX3ZlcnNpb24gPSAibGVhbnByb3Zlci1jb21tdW5p\ndHkvbGVhbjozLjIwLjAiCnBhdGggPSAiLiIKCltkZXBlbmRlbmNpZXNdCm1h\ndGhsaWIgPSB7Z2l0ID0gImh0dHBzOi8vZ2l0aHViLmNvbS9sZWFucHJvdmVy\nLWNvbW11bml0eS9tYXRobGliIiwgcmV2ID0gImQzMzM0MWM5MGMxOGVmNzdk\nOWRmMjFiMTM5NTFmNGQwYjJhMDc2NGEifQo=\n",
+  "download_url": "https://raw.githubusercontent.com/blanchette/logical_verification_2020/master/leanpkg.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/blanchette/logical_verification_2020/git/blobs/16e47cbbcdd08a3db53809baf4329a054fcbad54",
+  "html_url": "https://github.com/blanchette/logical_verification_2020/blob/master/leanpkg.toml",
+  "name": "leanpkg.toml",
+  "path": "leanpkg.toml",
+  "sha": "16e47cbbcdd08a3db53809baf4329a054fcbad54",
+  "size": 251,
+  "type": "file",
+  "url": "https://api.github.com/repos/blanchette/logical_verification_2020/contents/leanpkg.toml?ref=master"
+}

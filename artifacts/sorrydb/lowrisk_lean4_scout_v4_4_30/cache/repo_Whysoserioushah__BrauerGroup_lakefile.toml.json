@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/Whysoserioushah/BrauerGroup/git/blobs/f45c543677733b2a8b1f65cdfc0613f3c8831269",
+    "html": "https://github.com/Whysoserioushah/BrauerGroup/blob/main/lakefile.toml",
+    "self": "https://api.github.com/repos/Whysoserioushah/BrauerGroup/contents/lakefile.toml?ref=main"
+  },
+  "content": "bmFtZSA9ICJCcmF1ZXJHcm91cCIKa2V5d29yZHMgPSBbIm1hdGgiLCAiYWxn\nZWJyYSIsICJyaW5nLXRoZW9yeSIsICJhbGdlYnJhaWMtbnVtYmVyLXRoZW9y\neSJdCmRlZmF1bHRUYXJnZXRzID0gWyJCcmF1ZXJHcm91cCJdCgpbbGVhbk9w\ndGlvbnNdCiMgUHJldHR5LXByaW50cyBgZnVuIGEg4oamIGJgCnBwLnVuaWNv\nZGUuZnVuID0gdHJ1ZQojIERvbid0IGFzc3VtZSBhIHR5cG8gaXMgYSBuZXcg\ndmFyaWFibGUKYXV0b0ltcGxpY2l0ID0gZmFsc2UKcmVsYXhlZEF1dG9JbXBs\naWNpdCA9IGZhbHNlCiMgRW5hYmxlIGFsbCBtYXRobGliIGxpbnRlcnM6IGF1\ndG9tYXRpY2FsbHkgbWF0Y2hlcyB3aGF0IG1hdGhsaWIgdXNlcy4uLgp3ZWFr\nLmxpbnRlci5tYXRobGliU3RhbmRhcmRTZXQgPSB0cnVlCiMgLi4uIGV4Y2Vw\ndCB0aGUgaGVhZGVyIGxpbnRlcgp3ZWFrLmxpbnRlci5zdHlsZS5oZWFkZXIg\nPSBmYWxzZQojIFN3aXRjaCBvZmYgd2FybmluZ3MgZ2VuZXJhdGVkIGJ5IGBz\nb3JyeWAKd2Fybi5zb3JyeSA9IGZhbHNlCgpbW3JlcXVpcmVdXQpuYW1lID0g\nImNoZWNrZGVjbHMiCmdpdCA9ICJodHRwczovL2dpdGh1Yi5jb20vUGF0cmlj\na01hc3NvdC9jaGVja2RlY2xzLmdpdCIKCltbcmVxdWlyZV1dCm5hbWUgPSAi\nbWF0aGxpYiIKZ2l0ID0gImh0dHBzOi8vZ2l0aHViLmNvbS9sZWFucHJvdmVy\nLWNvbW11bml0eS9tYXRobGliNCIKcmV2ID0gImUxZDFkZTNiYmI1NzVjZWI5\nNjhhODk1YTM0NjJkNWE5Y2E0YjIyYzkiCgpbW2xlYW5fbGliXV0KbmFtZSA9\nICJCcmF1ZXJHcm91cCIK\n",
+  "download_url": "https://raw.githubusercontent.com/Whysoserioushah/BrauerGroup/main/lakefile.toml",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/Whysoserioushah/BrauerGroup/git/blobs/f45c543677733b2a8b1f65cdfc0613f3c8831269",
+  "html_url": "https://github.com/Whysoserioushah/BrauerGroup/blob/main/lakefile.toml",
+  "name": "lakefile.toml",
+  "path": "lakefile.toml",
+  "sha": "f45c543677733b2a8b1f65cdfc0613f3c8831269",
+  "size": 780,
+  "type": "file",
+  "url": "https://api.github.com/repos/Whysoserioushah/BrauerGroup/contents/lakefile.toml?ref=main"
+}

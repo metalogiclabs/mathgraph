@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/ImperialCollegeLondon/FLT/git/blobs/63f51eaf595c21bee083dc146f580be7dead26df",
+    "html": "https://github.com/ImperialCollegeLondon/FLT/blob/main/lean-toolchain",
+    "self": "https://api.github.com/repos/ImperialCollegeLondon/FLT/contents/lean-toolchain?ref=main"
+  },
+  "content": "bGVhbnByb3Zlci9sZWFuNDp2NC4zMi4wLXJjMQ==\n",
+  "download_url": "https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/main/lean-toolchain",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/ImperialCollegeLondon/FLT/git/blobs/63f51eaf595c21bee083dc146f580be7dead26df",
+  "html_url": "https://github.com/ImperialCollegeLondon/FLT/blob/main/lean-toolchain",
+  "name": "lean-toolchain",
+  "path": "lean-toolchain",
+  "sha": "63f51eaf595c21bee083dc146f580be7dead26df",
+  "size": 28,
+  "type": "file",
+  "url": "https://api.github.com/repos/ImperialCollegeLondon/FLT/contents/lean-toolchain?ref=main"
+}

@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "git": "https://api.github.com/repos/leanprover-community/physlib/git/blobs/133a3f7d63769e53f3f4b43ee3eddcd6e2d3b238",
+    "html": "https://github.com/leanprover-community/physlib/blob/master/lean-toolchain",
+    "self": "https://api.github.com/repos/leanprover-community/physlib/contents/lean-toolchain?ref=master"
+  },
+  "content": "bGVhbnByb3Zlci9sZWFuNDp2NC4zMS4w\n",
+  "download_url": "https://raw.githubusercontent.com/leanprover-community/physlib/master/lean-toolchain",
+  "encoding": "base64",
+  "git_url": "https://api.github.com/repos/leanprover-community/physlib/git/blobs/133a3f7d63769e53f3f4b43ee3eddcd6e2d3b238",
+  "html_url": "https://github.com/leanprover-community/physlib/blob/master/lean-toolchain",
+  "name": "lean-toolchain",
+  "path": "lean-toolchain",
+  "sha": "133a3f7d63769e53f3f4b43ee3eddcd6e2d3b238",
+  "size": 24,
+  "type": "file",
+  "url": "https://api.github.com/repos/leanprover-community/physlib/contents/lean-toolchain?ref=master"
+}
