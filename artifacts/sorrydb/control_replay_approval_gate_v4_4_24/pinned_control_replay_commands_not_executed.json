@@ -1,0 +1,19 @@
+{
+  "approval_token_required": "APPROVE_PINNED_CONTROL_REPLAY_V4_4_24",
+  "command_bundle_type": "PINNED_CONTROL_REPLAY_COMMANDS_NOT_EXECUTED",
+  "commands": [
+    "git clone https://github.com/siddhartha-gadgil/MetaExamples.git MetaExamples-sorrydb-v4418-review",
+    "cd MetaExamples-sorrydb-v4418-review",
+    "git checkout edbb75e784db19846a1c19841e182b797afc18bb",
+    "lake exe cache get",
+    "lake env lean MetaExamples/Fiddle.lean",
+    "apply the two exact-source replacements from the patch note",
+    "lake env lean MetaExamples/Fiddle.lean"
+  ],
+  "notes": [
+    "These commands are copied from the reviewer replay checklist.",
+    "They are not executed by v4.4.24.",
+    "Run only after explicit approval and after confirming disk budget."
+  ],
+  "version": "v4.4.24"
+}
