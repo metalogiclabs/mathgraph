@@ -1,0 +1,174 @@
+{
+  "global_constraints": {
+    "human_approval_required_before_replay": true,
+    "no_heavy_lake_build_without_approval": true,
+    "no_replay_executed": true,
+    "selector_hits_are_not_replay_targets_without_adapter": true
+  },
+  "input_version": "v4.4.22",
+  "item_count": 5,
+  "items": [
+    {
+      "candidate_id": "fresh-pilot-001",
+      "discovery_terminal_status": "CONTROL_TARGET_LOCATED",
+      "match_classes": [
+        "PINNED_SOURCE_CACHE"
+      ],
+      "match_count": 1,
+      "matches": [
+        {
+          "kind": "PINNED_CONTROL_TARGET",
+          "path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+        }
+      ],
+      "queue_status": "READY_FOR_CONTROL_REPLAY_IF_APPROVED",
+      "reason": "Pinned source-cache control target exists; replay can be rerun only if approved.",
+      "replay_allowed_now": true,
+      "requires_heavy_build": false,
+      "requires_human_approval": true,
+      "source_role": "control_exact_source_replay"
+    },
+    {
+      "candidate_id": "fresh-pilot-002",
+      "discovery_terminal_status": "LOCAL_EXACT_SOURCE_MATCH_FOUND_REPLAY_NOT_ATTEMPTED",
+      "match_classes": [
+        "INTERNAL_ARTIFACT",
+        "PINNED_SOURCE_CACHE"
+      ],
+      "match_count": 3,
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/reviewer_patch_note_snapshot.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/reviewer_patch_note.md"
+        }
+      ],
+      "queue_status": "READY_FOR_EXACT_SOURCE_REPLAY_IF_APPROVED",
+      "reason": "Exact source match appears in pinned source cache; replay requires approval and source classification.",
+      "replay_allowed_now": true,
+      "requires_heavy_build": false,
+      "requires_human_approval": true,
+      "source_role": "exact_source_snippet_search_eg1"
+    },
+    {
+      "candidate_id": "fresh-pilot-003",
+      "discovery_terminal_status": "LOCAL_EXACT_SOURCE_MATCH_FOUND_REPLAY_NOT_ATTEMPTED",
+      "match_classes": [
+        "INTERNAL_ARTIFACT",
+        "PINNED_SOURCE_CACHE"
+      ],
+      "match_count": 3,
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/MetaExamples/Fiddle.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/outbound_upstream_message_v4_4_19/reviewer_patch_note_snapshot.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": "artifacts/sorrydb/reviewer_patch_note_v4_4_18/reviewer_patch_note.md"
+        }
+      ],
+      "queue_status": "READY_FOR_EXACT_SOURCE_REPLAY_IF_APPROVED",
+      "reason": "Exact source match appears in pinned source cache; replay requires approval and source classification.",
+      "replay_allowed_now": true,
+      "requires_heavy_build": false,
+      "requires_human_approval": true,
+      "source_role": "exact_source_snippet_search_eg2"
+    },
+    {
+      "candidate_id": "fresh-pilot-004",
+      "discovery_terminal_status": "LOCAL_SELECTOR_HITS_FOUND_NAMED_ADAPTER_REQUIRED",
+      "match_classes": [
+        "PINNED_SOURCE_CACHE"
+      ],
+      "match_count": 5,
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/ClientTest/ClientTest/SmallCodes.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/LeanAideTest/SmallCodes.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/README.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/leanaidecore/Scratch/LintFiddle.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/mathlib/Mathlib/Algebra/Polynomial/PartialFractions.lean"
+        }
+      ],
+      "queue_status": "OBSTRUCTED_NAMED_ADAPTER_REQUIRED",
+      "reason": "Selector hits are not exact-source replay targets; a named adapter is required before replay.",
+      "replay_allowed_now": false,
+      "requires_heavy_build": false,
+      "requires_human_approval": true,
+      "source_role": "same_theorem_name_nearby_source_query"
+    },
+    {
+      "candidate_id": "fresh-pilot-005",
+      "discovery_terminal_status": "LOCAL_SELECTOR_HITS_FOUND_NAMED_ADAPTER_REQUIRED",
+      "match_classes": [
+        "PINNED_SOURCE_CACHE"
+      ],
+      "match_count": 5,
+      "matches": [
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/LeanSearchClient/LoogleSyntax.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/LeanSearchClientTest/LoogleExamples.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/LeanSearchClient/README.md"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/batteries/Batteries/Data/List/Perm.lean"
+        },
+        {
+          "kind": "TEXT_MATCH",
+          "path": ".mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/batteries/Batteries/Data/RBMap/Depth.lean"
+        }
+      ],
+      "queue_status": "OBSTRUCTED_NAMED_ADAPTER_REQUIRED",
+      "reason": "Selector hits are not exact-source replay targets; a named adapter is required before replay.",
+      "replay_allowed_now": false,
+      "requires_heavy_build": false,
+      "requires_human_approval": true,
+      "source_role": "same_successor_bound_shape_query"
+    }
+  ],
+  "obstruction_count": 2,
+  "queue_type": "REPLAY_OR_OBSTRUCTION_QUEUE_FROM_LOCAL_BOUNDED_DISCOVERY",
+  "ready_count": 3,
+  "status_counts": {
+    "OBSTRUCTED_NAMED_ADAPTER_REQUIRED": 2,
+    "READY_FOR_CONTROL_REPLAY_IF_APPROVED": 1,
+    "READY_FOR_EXACT_SOURCE_REPLAY_IF_APPROVED": 2
+  },
+  "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "target_file": "MetaExamples/Fiddle.lean",
+  "target_repo": "siddhartha-gadgil/MetaExamples",
+  "version": "v4.4.23"
+}
