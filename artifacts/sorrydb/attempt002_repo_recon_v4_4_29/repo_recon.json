@@ -1,0 +1,105 @@
+{
+  "build_attempted": false,
+  "checkout_attempted": true,
+  "clone_attempted": true,
+  "clone_url": "https://github.com/EdAyers/lean-subtask.git",
+  "commit": "04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b",
+  "decision": "DO_NOT_REPLAY_YET_REQUIRES_LEAN3_ENV_AND_EQUATE_CONTEXT",
+  "exact_source_window": "62: example (il : is_linear A) :\n63:     \u27ea A\u2020 ( u + v ) + w , x \u27eb = \u27ea A\u2020 u + w + A\u2020 v , x \u27eb\n64: := by equate\n65: \n66: /- Can it find a better solution to the problem if we add in the proof that A\u2020 is linear? -/\n67: @[equate] lemma adj_linear_2 (il : is_linear A) : A\u2020(x + y) = A\u2020x + A\u2020y := sorry\n68: \n69: example (il : is_linear A) :\n70:     \u27ea A\u2020 ( u + v ) + w , x \u27eb = \u27ea A\u2020 u + w + A\u2020 v , x \u27eb\n71: := by equate",
+  "input_version": "v4.4.28",
+  "lean_version_guess": "LEAN3_LEANPKG",
+  "manifest_files": {
+    "README.md": {
+      "exists": true,
+      "head": "# Human-oriented Term Rewriting.\n\nA prototype implementation of the subtasks algorithm in Lean for solving simple equalities.\n\n## Build & Run\n\nThis code uses Lean 3.4.2 but should still work on newer versions of Lean 3.\n\n1. Install [Lean](https://github.com/leanprover/lean). This best way is probably to install [elan](https://github.com/khoek/elan/) by running the script\n    ``` sh\n    curl https://raw.githubusercontent.com/Kha/elan/master/elan-init.sh -sSf | sh\n    ```\n2. It is recommended that you view the examples files within the supported editors:\n      + [VSCode](https://code.visualstudio.com/)\n            with the [Lean extension](https://marketplace.visualstudio.com/items?itemName=jroesch.lean).\n      + [Emacs](https://www.gnu.org/software/emacs/) with [lean-mode](https://github.com/leanprover/lean-mode).\n3. In the terminal, `cd` to the root directory for `lean-subtask` and run `leanpkg build`. This will pull and verify mathlib and will take about 20 mins on the first run, but after that the proofs for mathlib are saved.\n4. Open any file from the examples folder and inspect Lean Messages to see the `equate` tactic in action\n"
+    },
+    "lake-manifest.json": {
+      "exists": false,
+      "head": ""
+    },
+    "lakefile.lean": {
+      "exists": false,
+      "head": ""
+    },
+    "lakefile.toml": {
+      "exists": false,
+      "head": ""
+    },
+    "lean-toolchain": {
+      "exists": false,
+      "head": ""
+    },
+    "leanpkg.toml": {
+      "exists": true,
+      "head": "[package]\nname = \"subtask\"\nversion = \"0.1\"\nlean_version = \"3.4.2\"\npath = \"src\"\n\n[dependencies]\nmathlib = {git = \"https://github.com/leanprover/mathlib\", rev = \"4aacae313ef096c33ed52a996dddd9bb9756b413\"}"
+    }
+  },
+  "recon_type": "ATTEMPT002_REPO_RECON_BEFORE_REPLAY",
+  "replay_attempted": false,
+  "replay_risk": "MEDIUM_HIGH",
+  "repo": "EdAyers/lean-subtask",
+  "risk_reasons": [
+    "repo appears Lean 3 / leanpkg",
+    "target depends on custom equate tactic",
+    "target uses adjoint/custom notation",
+    "single sorry target",
+    "small target file"
+  ],
+  "sorry_count": 1,
+  "sorry_lines": [
+    {
+      "line": "@[equate] lemma adj_linear_2 (il : is_linear A) : A\u2020(x + y) = A\u2020x + A\u2020y := sorry",
+      "line_number": 67
+    }
+  ],
+  "steps": [
+    {
+      "cmd": [
+        "git",
+        "clone",
+        "--filter=blob:none",
+        "--depth",
+        "1",
+        "https://github.com/EdAyers/lean-subtask.git",
+        "repo"
+      ],
+      "cwd": ".tmp_sorrydb_attempt002_recon",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "Cloning into 'repo'...\n",
+      "stdout": ""
+    },
+    {
+      "cmd": [
+        "git",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b"
+      ],
+      "cwd": ".tmp_sorrydb_attempt002_recon/repo",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "From https://github.com/EdAyers/lean-subtask\n * branch            04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b -> FETCH_HEAD\n",
+      "stdout": ""
+    },
+    {
+      "cmd": [
+        "git",
+        "checkout",
+        "04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b"
+      ],
+      "cwd": ".tmp_sorrydb_attempt002_recon/repo",
+      "ok": true,
+      "returncode": 0,
+      "stderr": "Note: switching to '04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b'.\n\nYou are in 'detached HEAD' state. You can look around, make experimental\nchanges and commit them, and you can discard any commits you make in this\nstate without impacting any branches by switching back to a branch.\n\nIf you want to create a new branch to retain commits you create, you may\ndo so (now or later) by using -c with the switch command. Example:\n\n  git switch -c <new-branch-name>\n\nOr undo this operation with:\n\n  git switch -\n\nTurn off this advice by setting config variable advice.detachedHead to false\n\nHEAD is now at 04ac5a6 Garden examples.\n",
+      "stdout": ""
+    }
+  ],
+  "target_exists": true,
+  "target_line_count": 71,
+  "target_path": "src/examples/vector.lean",
+  "upstream_contact_performed": false,
+  "version": "v4.4.29"
+}

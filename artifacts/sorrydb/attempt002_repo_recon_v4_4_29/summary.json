@@ -1,0 +1,33 @@
+{
+  "bounded_claim": [
+    "v4.4.29 clones the selected attempt002 repo into a bounded temporary directory for reconnaissance",
+    "it records manifest files, target-file presence, sorry count, and Lean-version risk before replay",
+    "it does not run Lean, build the repo, modify upstream, or contact maintainers"
+  ],
+  "build_attempted": false,
+  "checkout_attempted": true,
+  "clone_attempted": true,
+  "commit": "04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b",
+  "decision": "DO_NOT_REPLAY_YET_REQUIRES_LEAN3_ENV_AND_EQUATE_CONTEXT",
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "candidate repairability",
+    "that the repo builds locally",
+    "that the selected sorry has a repair",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "input_version": "v4.4.28",
+  "lean_version_guess": "LEAN3_LEANPKG",
+  "next_frontier": "v4.4.30 either install/locate a safe Lean3 replay path for this candidate or park it and choose a lower-risk Lean4/Nat/simp target",
+  "replay_attempted": false,
+  "replay_risk": "MEDIUM_HIGH",
+  "repo": "EdAyers/lean-subtask",
+  "sorry_count": 1,
+  "status": "ATTEMPT002_REPO_RECON_LEDGERED",
+  "target_exists": true,
+  "target_path": "src/examples/vector.lean",
+  "upstream_contact_performed": false,
+  "version": "v4.4.29"
+}
