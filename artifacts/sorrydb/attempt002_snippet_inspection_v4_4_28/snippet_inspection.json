@@ -1,0 +1,237 @@
+{
+  "candidate_with_sorry_count": 5,
+  "constraints": {
+    "exact_source_inspection_only": true,
+    "no_clone": true,
+    "no_heavy_build": true,
+    "no_lean_replay": true,
+    "no_upstream_contact": true
+  },
+  "fetch_ok_count": 5,
+  "input_version": "v4.4.27",
+  "inspected_candidate_count": 5,
+  "inspection_type": "ATTEMPT002_TOP_CANDIDATE_SNIPPET_INSPECTION",
+  "inspections": [
+    {
+      "candidate_id": "attempt002-candidate-007",
+      "fetch_ok": true,
+      "fetch_status": "CACHED_FILE_REUSED",
+      "html_url": "https://github.com/EdAyers/lean-subtask/blob/04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b/src/examples/vector.lean",
+      "line_count": 71,
+      "path": "src/examples/vector.lean",
+      "replay_selection_score": 19,
+      "repo": "EdAyers/lean-subtask",
+      "score_reasons": [
+        "single sorry",
+        "small file",
+        "example context"
+      ],
+      "sorry_count": 1,
+      "status": "EXACT_SOURCE_SNIPPETS_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "@[equate] lemma adj_linear_2 (il : is_linear A) : A\u2020(x + y) = A\u2020x + A\u2020y := sorry",
+          "line_number": 67,
+          "snippet": "63:     \u27ea A\u2020 ( u + v ) + w , x \u27eb = \u27ea A\u2020 u + w + A\u2020 v , x \u27eb\n64: := by equate\n65: \n66: /- Can it find a better solution to the problem if we add in the proof that A\u2020 is linear? -/\n67: @[equate] lemma adj_linear_2 (il : is_linear A) : A\u2020(x + y) = A\u2020x + A\u2020y := sorry\n68: \n69: example (il : is_linear A) :\n70:     \u27ea A\u2020 ( u + v ) + w , x \u27eb = \u27ea A\u2020 u + w + A\u2020 v , x \u27eb\n71: := by equate",
+          "window_end": 71,
+          "window_start": 63
+        }
+      ]
+    },
+    {
+      "candidate_id": "attempt002-candidate-019",
+      "fetch_ok": true,
+      "fetch_status": "CACHED_FILE_REUSED",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Examples/termle.lean",
+      "line_count": 6,
+      "path": "Examples/termle.lean",
+      "replay_selection_score": 17,
+      "repo": "kbuzzard/xena",
+      "score_reasons": [
+        "single sorry",
+        "small file",
+        "example context",
+        "lean3 tactic block likely"
+      ],
+      "sorry_count": 1,
+      "status": "EXACT_SOURCE_SNIPPETS_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  sorry",
+          "line_number": 5,
+          "snippet": "1: import data.option.basic\n2: \n3: example (\u03b1 : Type*) (a : \u03b1) [subsingleton \u03b1] : option.choice \u03b1 = some a :=\n4: begin\n5:   sorry\n6: end",
+          "window_end": 6,
+          "window_start": 1
+        }
+      ]
+    },
+    {
+      "candidate_id": "attempt002-candidate-001",
+      "fetch_ok": true,
+      "fetch_status": "CACHED_FILE_REUSED",
+      "html_url": "https://github.com/ImperialCollegeLondon/M40001_lean/blob/8cc4a60897dabdd5bc0d116144776f3286fde70c/src/2020/logic/SAT_example.lean",
+      "line_count": 89,
+      "path": "src/2020/logic/SAT_example.lean",
+      "replay_selection_score": 16,
+      "repo": "ImperialCollegeLondon/M40001_lean",
+      "score_reasons": [
+        "few sorries",
+        "small file",
+        "example context",
+        "theorem context",
+        "simp visible",
+        "lean3 tactic block likely"
+      ],
+      "sorry_count": 2,
+      "status": "EXACT_SOURCE_SNIPPETS_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  sorry",
+          "line_number": 20,
+          "snippet": "16: (\u00acU \u2228 R \u2228 \u00acP) \u2227 (\u00acU \u2228 P \u2228 \u00acQ) \u2227 (\u00acR \u2228 \u00acP \u2228 S) \u2227 (R \u2228 S \u2228 \u00acU) \u2227\n17: (P \u2228 \u00acU \u2228 Q) \u2227 (\u00acS \u2228 R \u2228 P) \u2227 (\u00acP \u2228 \u00acQ \u2228 \u00acR) \u2227 (\u00acP \u2228 R \u2228 \u00acS) :=\n18: begin\n19:   -- unprovable according to bool calc\n20:   sorry\n21: end\n22: \n23: theorem trick {Q : Prop} (hQ : Q) : Q \u2194 true :=\n24: iff_of_true hQ trivial",
+          "window_end": 24,
+          "window_start": 16
+        },
+        {
+          "line": "  sorry",
+          "line_number": 64,
+          "snippet": "60: begin\n61:   simp,\n62:   -- \u22a2 false\n63:   -- oops\n64:   sorry\n65: end\n66: \n67: example : \u2200 P Q R S U : bool,\n68: (Q || P || U) && (U || !Q || S) && (U || Q || !R) && (P || R || !S) &&",
+          "window_end": 68,
+          "window_start": 60
+        }
+      ]
+    },
+    {
+      "candidate_id": "attempt002-candidate-085",
+      "fetch_ok": true,
+      "fetch_status": "CACHED_FILE_REUSED",
+      "html_url": "https://github.com/kbuzzard/xena/blob/268b3bab45ba8fbed09b45cbbdc80a3813f73b5e/Examples/nf.lean",
+      "line_count": 193,
+      "path": "Examples/nf.lean",
+      "replay_selection_score": 14,
+      "repo": "kbuzzard/xena",
+      "score_reasons": [
+        "single sorry",
+        "medium file",
+        "nat context",
+        "simp visible",
+        "lean3 tactic block likely"
+      ],
+      "sorry_count": 1,
+      "status": "EXACT_SOURCE_SNIPPETS_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "              sorry,",
+          "line_number": 175,
+          "snippet": "171:             begin\n172:               unfold_coes,\n173:               unfold adjoin_root.of,\n174:               apply rat.eq_cast,\n175:               sorry,\n176:             end,\n177:             rw this,\n178:             refl,\n179:           end,",
+          "window_end": 179,
+          "window_start": 171
+        }
+      ]
+    },
+    {
+      "candidate_id": "attempt002-candidate-011",
+      "fetch_ok": true,
+      "fetch_status": "CACHED_FILE_REUSED",
+      "html_url": "https://github.com/ImperialCollegeLondon/M40001_lean/blob/8cc4a60897dabdd5bc0d116144776f3286fde70c/src/2020/tactic_hints/examples.lean",
+      "line_count": 239,
+      "path": "src/2020/tactic_hints/examples.lean",
+      "replay_selection_score": -1,
+      "repo": "ImperialCollegeLondon/M40001_lean",
+      "score_reasons": [
+        "many sorries",
+        "medium file",
+        "example context",
+        "nat context",
+        "lean3 tactic block likely"
+      ],
+      "sorry_count": 8,
+      "status": "EXACT_SOURCE_SNIPPETS_INSPECTED_NOT_REPLAYED",
+      "windows": [
+        {
+          "line": "  sorry",
+          "line_number": 47,
+          "snippet": "43:   -- h: \u2203 (n : \u2115), n ^ 2 = 2\n44:   cases h with n hn,\n45:   -- n: \u2115\n46:   -- hn: n ^ 2 = 2\n47:   sorry\n48: end\n49: \n50: example (P Q : Prop) (h : P \u2227 Q) : P :=\n51: begin",
+          "window_end": 51,
+          "window_start": 43
+        },
+        {
+          "line": "  sorry",
+          "line_number": 124,
+          "snippet": "120:     apply add_assoc,\n121:   },\n122:   -- ha: a + 1 + 1 = a + 2\n123:   -- \u22a2 a ^ n + b ^ n = c ^ n \u2192 a * b = 0\n124:   sorry\n125: end\n126: \n127: /-!\n128: ",
+          "window_end": 128,
+          "window_start": 120
+        },
+        {
+          "line": "  sorry",
+          "line_number": 172,
+          "snippet": "168:   -- hX: 37 \u2208 X\n169:   -- \u22a2 37 \u2208 Y\n170:   convert hX,\n171:   -- \u22a2 Y = X\n172:   sorry\n173: end\n174: \n175: /-\n176: ",
+          "window_end": 176,
+          "window_start": 168
+        },
+        {
+          "line": "  sorry",
+          "line_number": 190,
+          "snippet": "186:   -- \u22a2 P \u2192 Q\n187:   intro hP,\n188:   -- hP: P\n189:   -- \u22a2 Q\n190:   sorry\n191: end\n192: \n193: -- `rintro` is to `intro` what `rcases` is to `cases`. It enables\n194: -- you to assume something and simultaneously take it apart.",
+          "window_end": 194,
+          "window_start": 186
+        },
+        {
+          "line": "  sorry,",
+          "line_number": 203,
+          "snippet": "199:   rintro \u27e8n, hn\u27e9,\n200:   --  n: \u2115\n201:   -- hn: f n > 37\n202:   -- \u22a2 P\n203:   sorry,\n204: end\n205: \n206: /-! ## 4b) ext -/\n207: ",
+          "window_end": 207,
+          "window_start": 199
+        },
+        {
+          "line": "  sorry",
+          "line_number": 220,
+          "snippet": "216:   -- \u22a2 A = B\n217:   ext x,\n218:   --  x : \u2115\n219:   -- \u22a2 x \u2208 A \u2194 x \u2208 B\n220:   sorry\n221: end\n222: \n223: example (X Y : Type) (f g : X \u2192 Y) : f = g :=\n224: begin",
+          "window_end": 224,
+          "window_start": 216
+        },
+        {
+          "line": "  sorry",
+          "line_number": 229,
+          "snippet": "225:   -- \u22a2 f = g\n226:   ext x,\n227:   --  x : X\n228:   -- \u22a2 f x = g x\n229:   sorry\n230: end\n231: \n232: example (\u03b1 : Type) (R S : \u03b1 \u2192 \u03b1 \u2192 Prop) : R = S :=\n233: begin",
+          "window_end": 233,
+          "window_start": 225
+        },
+        {
+          "line": "  sorry",
+          "line_number": 238,
+          "snippet": "234:   -- \u22a2 R = S\n235:   ext a b,\n236:   -- a b : \u03b1\n237:   -- \u22a2 R a b \u2194 S a b\n238:   sorry\n239: end",
+          "window_end": 239,
+          "window_start": 234
+        }
+      ]
+    }
+  ],
+  "selected_candidate": {
+    "candidate_id": "attempt002-candidate-007",
+    "fetch_ok": true,
+    "fetch_status": "CACHED_FILE_REUSED",
+    "html_url": "https://github.com/EdAyers/lean-subtask/blob/04ac5a6c3bc3bfd190af4d6dcce444ddc8914e4b/src/examples/vector.lean",
+    "line_count": 71,
+    "path": "src/examples/vector.lean",
+    "replay_selection_score": 19,
+    "repo": "EdAyers/lean-subtask",
+    "score_reasons": [
+      "single sorry",
+      "small file",
+      "example context"
+    ],
+    "sorry_count": 1,
+    "status": "EXACT_SOURCE_SNIPPETS_INSPECTED_NOT_REPLAYED",
+    "windows": [
+      {
+        "line": "@[equate] lemma adj_linear_2 (il : is_linear A) : A\u2020(x + y) = A\u2020x + A\u2020y := sorry",
+        "line_number": 67,
+        "snippet": "63:     \u27ea A\u2020 ( u + v ) + w , x \u27eb = \u27ea A\u2020 u + w + A\u2020 v , x \u27eb\n64: := by equate\n65: \n66: /- Can it find a better solution to the problem if we add in the proof that A\u2020 is linear? -/\n67: @[equate] lemma adj_linear_2 (il : is_linear A) : A\u2020(x + y) = A\u2020x + A\u2020y := sorry\n68: \n69: example (il : is_linear A) :\n70:     \u27ea A\u2020 ( u + v ) + w , x \u27eb = \u27ea A\u2020 u + w + A\u2020 v , x \u27eb\n71: := by equate",
+        "window_end": 71,
+        "window_start": 63
+      }
+    ]
+  },
+  "version": "v4.4.28"
+}

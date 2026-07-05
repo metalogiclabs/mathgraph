@@ -1,0 +1,31 @@
+{
+  "bounded_claim": [
+    "v4.4.28 inspects exact source snippets from the v4.4.27 top candidates",
+    "it selects one candidate for possible future replay based on simple source-shape heuristics",
+    "it does not clone, replay Lean, modify upstream, or contact maintainers"
+  ],
+  "candidate_with_sorry_count": 5,
+  "clone_attempted": false,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "candidate repairability",
+    "that selected source will replay locally",
+    "that the selected repo is active",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "fetch_ok_count": 5,
+  "input_version": "v4.4.27",
+  "inspected_candidate_count": 5,
+  "next_frontier": "v4.4.29 clone only the selected attempt002 candidate repo into a bounded temp directory and run source/Lean-version reconnaissance before replay",
+  "replay_attempted": false,
+  "selected_candidate_id": "attempt002-candidate-007",
+  "selected_path": "src/examples/vector.lean",
+  "selected_replay_selection_score": 19,
+  "selected_repo": "EdAyers/lean-subtask",
+  "selected_sorry_count": 1,
+  "status": "ATTEMPT002_SNIPPET_INSPECTION_LEDGERED",
+  "upstream_contact_performed": false,
+  "version": "v4.4.28"
+}
