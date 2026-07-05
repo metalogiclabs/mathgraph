@@ -1,0 +1,11 @@
+{
+  "cmd": [
+    "git",
+    "rev-parse",
+    "HEAD"
+  ],
+  "cwd": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "returncode": 0,
+  "stderr_tail": "",
+  "stdout_tail": "edbb75e784db19846a1c19841e182b797afc18bb\n"
+}

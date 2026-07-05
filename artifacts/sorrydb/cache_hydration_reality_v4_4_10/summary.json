@@ -1,0 +1,28 @@
+{
+  "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "baseline_command": "lake env lean MetaExamples/Fiddle.lean",
+  "baseline_contact_passed": true,
+  "baseline_returncode": 0,
+  "bounded_claim": [
+    "the pinned hydrated source checkout has cache hydration sufficient for Mathlib.olean to exist",
+    "baseline Lean contact for MetaExamples/Fiddle.lean now returns success"
+  ],
+  "cache_hydration_command": "lake exe cache get",
+  "cache_hydration_observed_result": "Completed successfully",
+  "does_not_claim": [
+    "patch replay success",
+    "proof repair accepted",
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "free_gb_after": 15.391,
+  "mathlib_olean_exists": true,
+  "mathlib_olean_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/mathlib/.lake/build/lib/lean/Mathlib.olean",
+  "next_frontier": "v4.4.11 rerun the hydrated four-row backfill queue through streaming controlled replay",
+  "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "status": "CACHE_HYDRATION_REALITY_LEDGERED",
+  "version": "v4.4.10"
+}
