@@ -1,0 +1,34 @@
+{
+  "accepted_count": 4,
+  "all_patch_accepted": true,
+  "baseline_verdicts": [
+    "BASELINE_PASSED"
+  ],
+  "bounded_claim": [
+    "the hydrated v4.4.7 four-row backfill queue was rerun after cache hydration",
+    "all four candidates reached controlled Lean replay and were PATCH_ACCEPTED",
+    "four replay manifests and four patch certificates were regenerated"
+  ],
+  "candidate_count": 4,
+  "certificate_count": 4,
+  "completed_count": 4,
+  "does_not_claim": [
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission",
+    "the duplicated certificate identities are semantically distinct proofs"
+  ],
+  "failed_count": 0,
+  "manifest_count": 4,
+  "next_frontier": "v4.4.12 deduplicate accepted replay certificates by source snippet, patch snippet, file, repo commit, and line span",
+  "patch_apply_verdicts": [
+    "PATCH_APPLIED"
+  ],
+  "patch_verdicts": [
+    "PATCH_ACCEPTED"
+  ],
+  "queue_verdict": "QUEUE_RUN_COMPLETED",
+  "status": "HYDRATED_BACKFILL_AFTER_CACHE_ACCEPTED_LEDGERED",
+  "version": "v4.4.11"
+}

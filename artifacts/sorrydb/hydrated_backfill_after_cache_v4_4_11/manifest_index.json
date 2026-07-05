@@ -1,0 +1,42 @@
+[
+  {
+    "baseline_verdict": "BASELINE_PASSED",
+    "candidate_id": null,
+    "copied_manifest": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.manifest.json",
+    "patch_apply_verdict": "PATCH_APPLIED",
+    "patch_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "patch_verdict": "PATCH_ACCEPTED",
+    "source_manifest": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T013229Z/patch_replay_manifest.json",
+    "verdict": "PATCH_ACCEPTED"
+  },
+  {
+    "baseline_verdict": "BASELINE_PASSED",
+    "candidate_id": null,
+    "copied_manifest": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.manifest.json",
+    "patch_apply_verdict": "PATCH_APPLIED",
+    "patch_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "patch_verdict": "PATCH_ACCEPTED",
+    "source_manifest": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T013529Z/patch_replay_manifest.json",
+    "verdict": "PATCH_ACCEPTED"
+  },
+  {
+    "baseline_verdict": "BASELINE_PASSED",
+    "candidate_id": null,
+    "copied_manifest": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.manifest.json",
+    "patch_apply_verdict": "PATCH_APPLIED",
+    "patch_certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "patch_verdict": "PATCH_ACCEPTED",
+    "source_manifest": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T013826Z/patch_replay_manifest.json",
+    "verdict": "PATCH_ACCEPTED"
+  },
+  {
+    "baseline_verdict": "BASELINE_PASSED",
+    "candidate_id": null,
+    "copied_manifest": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/manifests/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.manifest.json",
+    "patch_apply_verdict": "PATCH_APPLIED",
+    "patch_certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+    "patch_verdict": "PATCH_ACCEPTED",
+    "source_manifest": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T014052Z/patch_replay_manifest.json",
+    "verdict": "PATCH_ACCEPTED"
+  }
+]

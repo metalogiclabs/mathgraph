@@ -1,0 +1,26 @@
+[
+  {
+    "copied_certificate": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "patch_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1",
+    "source_certificate": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T013229Z/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line97-eg1.json",
+    "status": "PATCH_ACCEPTED"
+  },
+  {
+    "copied_certificate": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "patch_certificate_id": "sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2",
+    "source_certificate": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T013529Z/patch_certificates/sorrydb-v4-3-2-metaexamples-fiddle-line99-eg2.json",
+    "status": "PATCH_ACCEPTED"
+  },
+  {
+    "copied_certificate": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/patch_certificates/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "patch_certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1",
+    "source_certificate": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T013826Z/patch_certificates/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line97-eg1.json",
+    "status": "PATCH_ACCEPTED"
+  },
+  {
+    "copied_certificate": "artifacts/sorrydb/hydrated_backfill_after_cache_v4_4_11/patch_certificates/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "patch_certificate_id": "sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2",
+    "source_certificate": "/tmp/mathgraph_sorrydb_v4411_hydrated_backfill_after_cache/candidates/v447-backfill-sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2/artifacts/runs/sorrydb_v4_3_0_controlled_patch_replay/20260705T014052Z/patch_certificates/sorrydb-v4-3-4-emitted-metaexamples-fiddle-line99-eg2.json",
+    "status": "PATCH_ACCEPTED"
+  }
+]
