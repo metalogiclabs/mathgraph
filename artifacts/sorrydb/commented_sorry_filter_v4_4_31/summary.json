@@ -1,0 +1,35 @@
+{
+  "active_candidate_count": 14,
+  "bounded_claim": [
+    "v4.4.31 detects that the v4.4.30 selected sorry is commented out and parks it",
+    "it re-ranks cached low-risk candidates by active non-comment sorry lines only",
+    "it selects the next active-sorry candidate without cloning, building, replaying, or contacting upstream"
+  ],
+  "build_attempted": false,
+  "clone_attempted": false,
+  "does_not_claim": [
+    "new proof discovery",
+    "new Lean replay",
+    "candidate repairability",
+    "that the selected repo builds locally",
+    "that selected source still matches after clone",
+    "upstream acceptance",
+    "automated external contact"
+  ],
+  "evaluated_candidate_count": 20,
+  "input_version": "v4.4.30",
+  "next_frontier": "v4.4.32 clone only the selected active-sorry candidate into a bounded temp directory and run manifest/source reconnaissance before replay",
+  "parked_comment_only_count": 6,
+  "previous_selected_candidate_id": "lowrisk-lean4-030",
+  "previous_selected_path": "Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean",
+  "previous_selected_repo": "FormalizedFormalLogic/Foundation",
+  "previous_selected_status": "PARKED_COMMENTED_SORRY_ONLY",
+  "replay_attempted": false,
+  "selected_active_replay_score": 66,
+  "selected_candidate_id": "lowrisk-lean4-029",
+  "selected_path": "equational_theories/Definability/Law43.lean",
+  "selected_repo": "teorth/equational_theories",
+  "status": "COMMENTED_SORRY_FILTER_LEDGERED",
+  "upstream_contact_performed": false,
+  "version": "v4.4.31"
+}
