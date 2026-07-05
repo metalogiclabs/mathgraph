@@ -1,0 +1,49 @@
+{
+  "actual_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "expected_postconditions": [
+    "Mathlib.olean exists in the hydrated source cache search path",
+    "baseline Lean contact can be retried under controlled replay"
+  ],
+  "forbidden_commands_in_this_step": [
+    "lake exe cache get",
+    "lake build",
+    "lake update",
+    "lake env lean MetaExamples/Fiddle.lean",
+    "lean MetaExamples/Fiddle.lean",
+    "git fetch",
+    "git pull",
+    "network dependency download commands"
+  ],
+  "free_gb": 20.291,
+  "lake_manifest_exists": true,
+  "lakefile": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/lakefile.toml",
+  "lakefile_exists": true,
+  "lakefile_lean_exists": false,
+  "lakefile_toml_exists": true,
+  "mathlib_olean_exists": false,
+  "mathlib_olean_path": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/.lake/packages/mathlib/.lake/build/lib/lean/Mathlib.olean",
+  "mathlib_package_exists": true,
+  "notes": [
+    "This planner does not hydrate cache.",
+    "This planner does not run Lean, Lake build, replay, proof checking, or network downloads."
+  ],
+  "optional_followup_baseline_command_not_part_of_v4_4_9": "cd /Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db && lake env lean MetaExamples/Fiddle.lean",
+  "recommended_commands": [
+    "cd /Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+    "lake exe cache get"
+  ],
+  "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "required_gb": 8.0,
+  "source_obstruction_from_v4_4_8": {
+    "candidate_count": 4,
+    "failed_count": 4,
+    "primary_obstruction": "OBSTRUCTED_CACHE_OR_BUILD_BOUNDARY",
+    "primary_obstruction_detail": "baseline Lean contact failed before patch application because Mathlib.olean was unavailable in the hydrated source cache search path",
+    "queue_verdict": "QUEUE_RUN_COMPLETED_WITH_FAILURES"
+  },
+  "status": "CACHE_HYDRATION_READY",
+  "toolchain_exists": true,
+  "toolchain_file": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/lean-toolchain",
+  "version": "v4.4.9"
+}

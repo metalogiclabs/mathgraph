@@ -1,0 +1,26 @@
+{
+  "bounded_claim": [
+    "identifies whether the pinned hydrated source checkout is ready for controlled cache hydration",
+    "records the exact next command and expected postcondition when ready"
+  ],
+  "cache_hydration_status": "CACHE_HYDRATION_READY",
+  "does_not_claim": [
+    "cache hydration performed",
+    "Lean replay success",
+    "proof checking",
+    "new proof discovery",
+    "general SorryDB mining",
+    "arbitrary proof repair",
+    "upstream submission"
+  ],
+  "expected_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "free_gb": 20.291,
+  "mathlib_olean_exists": false,
+  "next_frontier": "v4.4.10 authorized controlled cache hydration reality, then rerun baseline contact",
+  "postcondition": "Mathlib.olean exists and baseline Lean contact can be retried",
+  "recommended_command": "cd /Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db && lake exe cache get",
+  "repo_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+  "repo_root": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+  "status": "CACHE_DEPENDENCY_HYDRATION_PLANNED",
+  "version": "v4.4.9"
+}

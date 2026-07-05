@@ -1,0 +1,81 @@
+{
+  "command_probe_results": {
+    "forbidden_commands_executed": [],
+    "readonly_only": true
+  },
+  "disk_probe": {
+    "repo_root_free_gb": 20.291,
+    "required_gb": 8.0
+  },
+  "elan_lean_path": {
+    "cmd": [
+      "elan",
+      "which",
+      "lean"
+    ],
+    "cwd": null,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "/Users/heath/.elan/toolchains/leanprover--lean4---v4.28.0/bin/lean"
+  },
+  "lake_version": {
+    "cmd": [
+      "lake",
+      "--version"
+    ],
+    "cwd": null,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Lake version 5.0.0-src+7e01a1b (Lean version 4.28.0)"
+  },
+  "lean_version": {
+    "cmd": [
+      "lean",
+      "--version"
+    ],
+    "cwd": null,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "Lean (version 4.28.0, arm64-apple-darwin24.6.0, commit 7e01a1bf5c70fc6167d49c345d3bf80596e9a79b, Release)"
+  },
+  "path_probe": {
+    "lake_build_size": null,
+    "lake_manifest_exists": true,
+    "lakefile": "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db/lakefile.toml",
+    "lakefile_exists": true,
+    "lakefile_lean_exists": false,
+    "lakefile_toml_exists": true,
+    "lean_toolchain_exists": true,
+    "mathlib_olean_exists": false,
+    "mathlib_package_exists": true,
+    "mathlib_package_size": "561M",
+    "repo_root_exists": true
+  },
+  "repo_git_commit": {
+    "cmd": [
+      "git",
+      "-C",
+      "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": null,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "edbb75e784db19846a1c19841e182b797afc18bb"
+  },
+  "repo_git_status": {
+    "cmd": [
+      "git",
+      "-C",
+      "/Users/heath/Documents/mathgraph-lean-work/.mathgraph_source_cache/siddhartha-gadgil__MetaExamples__edbb75e784db",
+      "status",
+      "--short"
+    ],
+    "cwd": null,
+    "returncode": 0,
+    "stderr": "",
+    "stdout": ""
+  },
+  "version": "v4.4.9"
+}
