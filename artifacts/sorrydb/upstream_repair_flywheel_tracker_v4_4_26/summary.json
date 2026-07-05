@@ -1,0 +1,56 @@
+{
+  "accepted_count": 0,
+  "attempt_count": 1,
+  "attempts": [
+    {
+      "accepted_replay_certificate_count": 4,
+      "attempt_id": "sorry-pr-001",
+      "external_outcome": "PENDING",
+      "lawbook_seed_if_accepted": "",
+      "local_replay_status": "ACCEPTED_IN_PINNED_CHECKOUT",
+      "maintainer_feedback": "",
+      "next_action": "wait for upstream response",
+      "obstruction_if_rejected": "",
+      "outbound_message_artifact": "artifacts/sorrydb/corrected_outbound_message_v4_4_25/corrected_outbound_message.md",
+      "patch_count": 2,
+      "target_commit": "edbb75e784db19846a1c19841e182b797afc18bb",
+      "target_file": "MetaExamples/Fiddle.lean",
+      "target_repo": "siddhartha-gadgil/MetaExamples",
+      "unique_repair_class_count": 2,
+      "upstream_contact_status": "SENT_AWAITING_RESPONSE",
+      "upstream_contact_url": "https://github.com/siddhartha-gadgil/MetaExamples/issues/1",
+      "version": "v4.4.26"
+    }
+  ],
+  "bounded_claim": [
+    "v4.4.26 starts the Sorry-to-PR flywheel tracker with the MetaExamples exact-source repair attempt",
+    "it records whether the corrected outbound message has been sent manually",
+    "it defines the external outcome fields needed to score accepted, rejected, ignored, or obstructed repairs"
+  ],
+  "does_not_claim": [
+    "upstream acceptance",
+    "new proof discovery",
+    "new Lean replay",
+    "automated external contact",
+    "that the maintainer has responded",
+    "that local replay implies portability"
+  ],
+  "goal": "10 upstream-visible Lean repair attempts; at least 1 accepted upstream repair",
+  "next_frontier": [
+    "record upstream response when it arrives",
+    "find 9 more small exact-source Lean sorry repair attempts",
+    "prefer boring accepted micro-repairs over hard theorem attempts"
+  ],
+  "not_sent_count": 0,
+  "pending_count": 1,
+  "rejected_count": 0,
+  "score": {
+    "external_impact": 5,
+    "internal_evidence_chain": 9,
+    "overall": 8.0,
+    "trust_boundary_discipline": 9
+  },
+  "sent_count": 1,
+  "tracker_type": "SORRY_TO_PR_FLYWHEEL",
+  "version": "v4.4.26"
+}
