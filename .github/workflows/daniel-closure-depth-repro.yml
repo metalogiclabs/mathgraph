@@ -50,6 +50,9 @@ jobs:
           if [ -f reproductions/daniel_target_independent_regime_growth_v2/reproduce.py ]; then
             python -m py_compile reproductions/daniel_target_independent_regime_growth_v2/reproduce.py
           fi
+          if [ -f reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py ]; then
+            python -m py_compile reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py
+          fi
 
       - name: Reproduce closure-depth certificate
         run: python reproductions/daniel_closure_depth_v1/reproduce.py
@@ -61,6 +64,10 @@ jobs:
       - name: Reproduce target-independent exhaustive regime benchmark
         if: ${{ hashFiles('reproductions/daniel_target_independent_regime_growth_v2/reproduce.py') != '' }}
         run: python reproductions/daniel_target_independent_regime_growth_v2/reproduce.py
+
+      - name: Reproduce repaired target-independent controls
+        if: ${{ hashFiles('reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py') != '' }}
+        run: python reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py
 
       - name: Verify checkout remains clean
         run: git diff --exit-code
