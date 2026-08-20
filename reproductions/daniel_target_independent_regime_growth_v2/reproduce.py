@@ -5,29 +5,26 @@ Daniel Target-Independent Regime Growth V2
 Exhaustive finite benchmark eliminating hand-picked-target staging:
   * world W = X x Y x A with all coordinates Boolean;
   * M0 observes only A;
-  * the frozen developmental meta-operation is the single symmetric schema
+  * the frozen developmental meta-operation is one symmetric schema
         Expose(S), S subseteq {x,y};
   * ALL 256 Boolean targets W -> Bool are evaluated;
-  * ALL 65,280 distinct ordered two-episode target pairs are evaluated.
-
-The selector computes the target's essential hidden-coordinate set from verified
-fiber conflicts. No target is selected by the experimenter.
+  * ALL 65,280 distinct ordered two-episode target pairs are evaluated;
+  * executable counts are cross-checked against closed-form combinatorics;
+  * x<->y equivariance is checked for all targets.
 
 Claim boundary: this establishes target-independent selection of minimal
 coordinate-exposure extensions and strict object-language formability changes in
 this finite calculus. It does NOT establish autonomous invention of the generic
-Expose schema or mathematical novelty beyond finite dependency/partition
-refinement.
+Expose schema or novelty beyond finite dependency/partition refinement.
 """
 from __future__ import annotations
 
 from collections import Counter
-from itertools import combinations, product
+from itertools import product
 import json
 
 X = Y = A = (0, 1)
 W = tuple(product(X, Y, A))
-HIDDEN = ("x", "y")
 MASKS = (frozenset(), frozenset({"x"}), frozenset({"y"}), frozenset({"x", "y"}))
 ALL_TARGETS = tuple(product((False, True), repeat=len(W)))
 ALL_A_PREDICATES = tuple(product((False, True), repeat=len(A)))
@@ -56,7 +53,7 @@ def factors_through(target: tuple[bool, ...], mask: frozenset[str]) -> bool:
 
 
 def synthesize_table(target: tuple[bool, ...], mask: frozenset[str]):
-    """Canonical full-language synthesis: return observation-cell truth table iff formable."""
+    """Canonical full-language synthesis: observation-cell truth table iff formable."""
     if not factors_through(target, mask):
         return None
     table: dict[tuple[int, ...], bool] = {}
@@ -76,15 +73,14 @@ def fiber_conflicts(target: tuple[bool, ...], mask: frozenset[str]):
 
 
 def essential_hidden_coordinates(target: tuple[bool, ...]) -> frozenset[str]:
-    """Coordinates whose variation changes the target while all other coordinates are fixed."""
+    """Hidden coordinates whose flip can change target with all else fixed."""
     required = set()
     for coord, idx in (("x", 0), ("y", 1)):
         for p in W:
             q = list(p)
             q[idx] = 1 - q[idx]
             q = tuple(q)
-            i, j = W.index(p), W.index(q)
-            if target[i] != target[j]:
+            if target[W.index(p)] != target[W.index(q)]:
                 required.add(coord)
                 break
     return frozenset(required)
@@ -93,9 +89,7 @@ def essential_hidden_coordinates(target: tuple[bool, ...]) -> frozenset[str]:
 def select_extension_from_obstruction(target: tuple[bool, ...]) -> frozenset[str]:
     """Generic target-independent selector for the frozen Expose(S) schema."""
     required = essential_hidden_coordinates(target)
-    # Verified consequence: target must factor through A + required coordinates.
     assert factors_through(target, required)
-    # Minimality: removing any required coordinate restores a certified fiber conflict.
     for c in required:
         smaller = frozenset(required - {c})
         assert not factors_through(target, smaller)
@@ -111,50 +105,75 @@ def unary_sham_preserves_base_partition(bits: tuple[bool, ...]) -> bool:
     """Adding q:A->Bool cannot separate states already equal on A."""
     for p in W:
         for q in W:
-            if p[2] == q[2]:
-                if bits[p[2]] != bits[q[2]]:
-                    return False
+            if p[2] == q[2] and bits[p[2]] != bits[q[2]]:
+                return False
     return True
+
+
+def swap_xy_target(target: tuple[bool, ...]) -> tuple[bool, ...]:
+    """Pull target back along the symmetry (x,y,a) -> (y,x,a)."""
+    vals = []
+    for x, y, a in W:
+        vals.append(target[W.index((y, x, a))])
+    return tuple(vals)
+
+
+def swap_mask(mask: frozenset[str]) -> frozenset[str]:
+    return frozenset("y" if c == "x" else "x" for c in mask)
 
 
 # ---------------------------------------------------------------------------
 # Exhaustive one-episode audit over the entire target universe.
 # ---------------------------------------------------------------------------
 classification = Counter()
-one_episode_failures = []
 for target in ALL_TARGETS:
     selected = select_extension_from_obstruction(target)
     classification[mask_name(selected)] += 1
 
-    # Exact minimality against every smaller mask.
+    # Exact minimality against every proper submask.
     assert factors_through(target, selected)
     for candidate in MASKS:
         if candidate < selected:
-            if factors_through(target, candidate):
-                one_episode_failures.append((target, selected, candidate))
+            assert not factors_through(target, candidate)
 
-assert not one_episode_failures
+    # Full x<->y equivariance: swapping world coordinates swaps selected regime.
+    swapped = swap_xy_target(target)
+    assert select_extension_from_obstruction(swapped) == swap_mask(selected)
+
 assert sum(classification.values()) == 256
+assert all(classification[name] > 0 for name in ("BASE", "Expose(x)", "Expose(y)", "Expose(x,y)"))
 
-# The selector must genuinely discriminate among different extensions.
-assert classification["BASE"] > 0
-assert classification["Expose(x)"] > 0
-assert classification["Expose(y)"] > 0
-assert classification["Expose(x,y)"] > 0
-
-# Exhaust the entire A-only sham family. None changes the base observation fibers.
+# Exhaust the complete A-only predicate family.
 assert len(ALL_A_PREDICATES) == 4
 assert all(unary_sham_preserves_base_partition(bits) for bits in ALL_A_PREDICATES)
 
+# Closed-form one-episode counts, derived independently from enumeration.
+# Functions of A only: 2^(2)=4.
+closed_base = 2 ** len(A)
+# Functions of (x,a) that genuinely depend on x: 2^(2*2)-closed_base = 12.
+closed_x = 2 ** (len(X) * len(A)) - closed_base
+closed_y = 2 ** (len(Y) * len(A)) - closed_base
+# Inclusion-exclusion: functions depending on both hidden coordinates.
+closed_xy = 2 ** len(W) - (2 ** (len(Y) * len(A))) - (2 ** (len(X) * len(A))) + closed_base
+CLOSED_CLASSIFICATION = {
+    "BASE": closed_base,
+    "Expose(x)": closed_x,
+    "Expose(y)": closed_y,
+    "Expose(x,y)": closed_xy,
+}
+assert dict(classification) == CLOSED_CLASSIFICATION == {
+    "BASE": 4,
+    "Expose(x)": 12,
+    "Expose(y)": 12,
+    "Expose(x,y)": 228,
+}
+
 # ---------------------------------------------------------------------------
 # Exhaustive two-episode audit over every DISTINCT ordered pair.
-# Episode 1 chooses an extension from its obstruction. Episode 2 is never
-# hand-picked: every possible distinct second target is tested.
 # ---------------------------------------------------------------------------
 pair_total = 0
 strict_growth_pairs = 0
 strict_growth_by_extension = Counter()
-pair_failures = []
 
 for i, p1 in enumerate(ALL_TARGETS):
     ext = select_extension_from_obstruction(p1)
@@ -170,41 +189,36 @@ for i, p1 in enumerate(ALL_TARGETS):
             strict_growth_pairs += 1
             strict_growth_by_extension[mask_name(ext)] += 1
 
-            # Ancestor ablation returns exactly to M0 and must remove formability.
-            if synthesize_table(p2, frozenset()) is not None:
-                pair_failures.append((i, j, "ancestor_ablation"))
+            # Ancestor ablation returns exactly to M0 and restores non-formability.
+            assert synthesize_table(p2, frozenset()) is None
 
-            # Every A-only sham is semantically no stronger than M0 for hidden dependence.
-            for bits in ALL_A_PREDICATES:
-                if not unary_sham_preserves_base_partition(bits):
-                    pair_failures.append((i, j, "bad_sham_model"))
+            # Every A-only sham preserves the base partition.
+            assert all(unary_sham_preserves_base_partition(bits) for bits in ALL_A_PREDICATES)
 
-            # At least one hidden coordinate exposed by episode 1 is genuinely needed
-            # for this episode-2 target relative to M0.
             needed2 = essential_hidden_coordinates(p2)
-            if not needed2.issubset(ext) or not needed2:
-                pair_failures.append((i, j, "dependency_mismatch"))
+            assert needed2 and needed2.issubset(ext)
 
-assert pair_total == 256 * 255
-assert not pair_failures
+assert pair_total == 256 * 255 == 65280
 
-# Independently expected closed-form counts for this finite world.
-EXPECTED_CLASSIFICATION = {
-    "BASE": 4,
-    "Expose(x)": 12,
-    "Expose(y)": 12,
-    "Expose(x,y)": 228,
+# Closed-form pair counts. For an exact-x P1 there are 11 other exact-x P2s;
+# for an exact-xy P1, every non-base target except itself is formable warm.
+closed_pair_x = closed_x * (closed_x - 1)
+closed_pair_y = closed_y * (closed_y - 1)
+closed_pair_xy = closed_xy * ((256 - closed_base) - 1)
+CLOSED_PAIR_COUNTS = {
+    "Expose(x)": closed_pair_x,
+    "Expose(y)": closed_pair_y,
+    "Expose(x,y)": closed_pair_xy,
 }
-EXPECTED_PAIR_COUNTS = {
+assert {k: strict_growth_by_extension[k] for k in CLOSED_PAIR_COUNTS} == CLOSED_PAIR_COUNTS
+assert CLOSED_PAIR_COUNTS == {
     "Expose(x)": 132,
     "Expose(y)": 132,
     "Expose(x,y)": 57228,
 }
-assert dict(classification) == EXPECTED_CLASSIFICATION
-assert {k: strict_growth_by_extension[k] for k in EXPECTED_PAIR_COUNTS} == EXPECTED_PAIR_COUNTS
-assert strict_growth_pairs == sum(EXPECTED_PAIR_COUNTS.values()) == 57492
+assert strict_growth_pairs == sum(CLOSED_PAIR_COUNTS.values()) == 57492
 
-# A tiny theorem-level sanity check: base formability is exactly A-invariance.
+# Base formability is exactly A-fiber invariance for every target.
 for target in ALL_TARGETS:
     assert (synthesize_table(target, frozenset()) is not None) == factors_through(target, frozenset())
 
@@ -224,28 +238,30 @@ result = {
     },
     "one_episode": {
         "classification": dict(classification),
+        "closed_form_classification": CLOSED_CLASSIFICATION,
         "all_256_targets_have_exact_minimal_extension": True,
-        "selector_uses_coordinate_essentiality_from_fiber_conflicts": True,
+        "x_y_equivariance_checked": "256/256",
         "different_targets_select_different_extensions": True,
     },
     "two_episode": {
         "all_distinct_pairs_tested": pair_total,
         "strict_formability_growth_pairs": strict_growth_pairs,
         "strict_growth_by_episode1_extension": dict(strict_growth_by_extension),
+        "closed_form_pair_counts": CLOSED_PAIR_COUNTS,
         "ancestor_ablation_passes_for_all_growth_pairs": True,
         "no_handpicked_P1_or_P2": True,
     },
     "claim": (
-        "Across the complete finite target universe, a single frozen symmetric Expose(S) schema maps "
-        "verified fiber conflicts to the exact minimal hidden-coordinate extension for all 256 targets. "
-        "Across all 65,280 distinct ordered two-episode pairs, 57,492 pairs exhibit strict downstream "
-        "object-language formability growth: P2 is unformable in M0 but formable after the extension "
-        "selected by P1, with ancestor ablation restoring non-formability."
+        "Across the complete finite target universe, one frozen symmetric Expose(S) schema maps verified "
+        "fiber conflicts to the exact minimal hidden-coordinate extension for all 256 targets, equivariantly "
+        "under x<->y. Across all 65,280 distinct ordered episode pairs, 57,492 exhibit strict downstream "
+        "object-language formability growth, with ancestor ablation restoring non-formability. Exhaustive "
+        "counts agree with independent closed-form combinatorics."
     ),
     "boundary": (
-        "This removes hand-picked-target and single-prebuilt-extension staging from the finite witness, "
-        "but it remains a standard finite dependency/partition-refinement problem under a supplied generic "
-        "Expose schema. It does not establish autonomous invention of that schema or novelty over prior art."
+        "This eliminates hand-picked-target and one-target-shaped-extension staging in the finite witness. "
+        "It remains standard finite dependency/partition refinement under a supplied generic Expose schema; "
+        "it does not establish autonomous invention of that schema or novelty over prior art."
     ),
 }
 
