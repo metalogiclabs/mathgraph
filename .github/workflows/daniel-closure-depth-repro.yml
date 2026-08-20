@@ -11,6 +11,7 @@ on:
       - "reproductions/daniel_coordinate_free_refinement_v3/**"
       - "reproductions/daniel_relational_law_synthesis_v4/**"
       - "reproductions/daniel_law_identity_v5/**"
+      - "reproductions/daniel_second_generation_budget_v6/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
   pull_request:
     paths:
@@ -21,6 +22,7 @@ on:
       - "reproductions/daniel_coordinate_free_refinement_v3/**"
       - "reproductions/daniel_relational_law_synthesis_v4/**"
       - "reproductions/daniel_law_identity_v5/**"
+      - "reproductions/daniel_second_generation_budget_v6/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
 
 permissions:
@@ -56,7 +58,8 @@ jobs:
             reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py \
             reproductions/daniel_coordinate_free_refinement_v3/reproduce.py \
             reproductions/daniel_relational_law_synthesis_v4/reproduce.py \
-            reproductions/daniel_law_identity_v5/reproduce.py; do
+            reproductions/daniel_law_identity_v5/reproduce.py \
+            reproductions/daniel_second_generation_budget_v6/reproduce.py; do
             if [ -f "$f" ]; then python -m py_compile "$f"; fi
           done
 
@@ -86,6 +89,10 @@ jobs:
       - name: Reproduce cross-DSL behavioral law identity
         if: ${{ hashFiles('reproductions/daniel_law_identity_v5/reproduce.py') != '' }}
         run: python reproductions/daniel_law_identity_v5/reproduce.py
+
+      - name: Reproduce resource-indexed second-generation constructibility
+        if: ${{ hashFiles('reproductions/daniel_second_generation_budget_v6/reproduce.py') != '' }}
+        run: python reproductions/daniel_second_generation_budget_v6/reproduce.py
 
       - name: Verify checkout remains clean
         run: git diff --exit-code
