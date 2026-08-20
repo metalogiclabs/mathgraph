@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """DEVELOPMENTAL_CAPABILITY_GROWTH_V1
 
-A dependency-free finite experiment for the core MathGraph developmental claim:
+Dependency-free finite experiment for a bounded MathGraph developmental claim:
 
-    verified obstruction -> representation refinement -> new capability
-    -> ablation loss -> held-out/source-distinct reuse
+    verified closure failure -> obstruction certificate
+    -> constrained representation refinement -> new capability
+    -> sham failure -> causal ablation -> source-distinct reuse
 
-This is deliberately a bounded exact world.  It does *not* claim a universal
-procedure for inventing representations.  Instead, it tests whether a verified
-failure can constrain a finite refinement family strongly enough that the
-minimal capability-changing distinction is mathematically identifiable.
+The experiment is intentionally small enough that every closure can be
+exhaustively enumerated. It does *not* claim a universal procedure for
+inventing representations. Minimality is relative to a refinement family
+frozen in this source file before evaluation.
 """
 
 from __future__ import annotations
@@ -17,13 +18,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import product
 import json
-from typing import Callable, Iterable
+from typing import Callable
 
 
 State = tuple[int, int, int]
 LabelFn = Callable[[State], int]
 FeatureFn = Callable[[State], object]
-
 
 WORLD: tuple[State, ...] = tuple(product((0, 1), repeat=3))
 
@@ -52,16 +52,17 @@ def constant_zero(_: State) -> int:
     return 0
 
 
-# Discovery task: the current quotient retains parity but forgets which side of
-# the first-coordinate split a state occupies.
+# Discovery target. Crucially, this is NOT any candidate refinement feature.
+# It requires combining the already-visible parity distinction with a missing
+# first-coordinate distinction.
 def target_discovery(x: State) -> int:
-    return x[0]
+    return bit0(x) & parity(x)
 
 
-# Source-distinct reuse task.  It is not the discovery target, but it requires
-# the same newly exposed distinction in combination with already-visible parity.
+# Source-distinct reuse target. It differs from the discovery target but needs
+# the same first-coordinate distinction together with parity.
 def target_transfer(x: State) -> int:
-    return int(x[0] == parity(x))
+    return bit0(x) | parity(x)
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,10 @@ class Representation:
             features=self.features + ((name, fn),),
         )
 
+    def drop(self, name: str) -> "Representation":
+        kept = tuple((n, fn) for n, fn in self.features if n != name)
+        return Representation(name=f"{self.name}-{name}", features=kept)
+
 
 def cells(rep: Representation) -> dict[tuple[object, ...], list[State]]:
     out: dict[tuple[object, ...], list[State]] = {}
@@ -86,13 +91,19 @@ def cells(rep: Representation) -> dict[tuple[object, ...], list[State]]:
     return out
 
 
+def partition_signature(rep: Representation) -> tuple[tuple[State, ...], ...]:
+    """Representation partition, independent of the spelling/order of keys."""
+    groups = [tuple(sorted(xs)) for xs in cells(rep).values()]
+    return tuple(sorted(groups))
+
+
 def closure_size(rep: Representation) -> int:
-    """Number of Boolean functions representable by a policy on rep's cells."""
+    """Number of Boolean functions constant on rep's representation cells."""
     return 2 ** len(cells(rep))
 
 
 def conflict_certificate(rep: Representation, target: LabelFn) -> list[dict[str, object]]:
-    """Exact obstruction: same representation cell, incompatible target labels."""
+    """Exact obstruction: one representation cell requires incompatible labels."""
     cert: list[dict[str, object]] = []
     for key, xs in sorted(cells(rep).items(), key=lambda kv: repr(kv[0])):
         by_label: dict[int, list[State]] = {}
@@ -103,18 +114,22 @@ def conflict_certificate(rep: Representation, target: LabelFn) -> list[dict[str,
                 {
                     "representation_key": list(key),
                     "states": [list(x) for x in xs],
-                    "labels": {str(k): [list(x) for x in v] for k, v in sorted(by_label.items())},
+                    "labels": {
+                        str(k): [list(x) for x in v]
+                        for k, v in sorted(by_label.items())
+                    },
                 }
             )
     return cert
 
 
 def target_in_closure(rep: Representation, target: LabelFn) -> bool:
+    """Analytic closure test using cell consistency."""
     return not conflict_certificate(rep, target)
 
 
 def best_exact_accuracy(rep: Representation, target: LabelFn) -> float:
-    """Best possible deterministic policy accuracy under this representation."""
+    """Best deterministic policy accuracy possible under this representation."""
     correct = 0
     for xs in cells(rep).values():
         counts = {0: 0, 1: 0}
@@ -124,18 +139,22 @@ def best_exact_accuracy(rep: Representation, target: LabelFn) -> float:
     return correct / len(WORLD)
 
 
-def truth_vector(target: LabelFn) -> list[int]:
-    return [target(x) for x in WORLD]
+def truth_vector(fn: Callable[[State], object]) -> tuple[object, ...]:
+    return tuple(fn(x) for x in WORLD)
 
 
 def represented_truth_vectors(rep: Representation) -> set[tuple[int, ...]]:
-    """Exhaustively enumerate the finite generative closure of Boolean policies."""
+    """Exhaustively enumerate the complete finite Boolean policy closure."""
     ordered_cells = sorted(cells(rep), key=repr)
     vectors: set[tuple[int, ...]] = set()
     for outputs in product((0, 1), repeat=len(ordered_cells)):
         policy = dict(zip(ordered_cells, outputs))
         vectors.add(tuple(policy[rep.key(x)] for x in WORLD))
     return vectors
+
+
+def exhaustive_target_in_closure(rep: Representation, target: LabelFn) -> bool:
+    return truth_vector(target) in represented_truth_vectors(rep)
 
 
 def evaluate_candidate(
@@ -145,23 +164,28 @@ def evaluate_candidate(
     target: LabelFn,
 ) -> dict[str, object]:
     rep = baseline.extend(feature_name, feature)
-    cert = conflict_certificate(rep, target)
+    analytic = target_in_closure(rep, target)
+    exhaustive = exhaustive_target_in_closure(rep, target)
+    vectors = represented_truth_vectors(rep)
     return {
         "feature": feature_name,
         "representation": rep.name,
         "cell_count": len(cells(rep)),
-        "closure_size": closure_size(rep),
-        "target_in_closure": not cert,
+        "closure_size_formula": closure_size(rep),
+        "closure_size_enumerated": len(vectors),
+        "target_in_closure_analytic": analytic,
+        "target_in_closure_exhaustive": exhaustive,
+        "methods_agree": analytic == exhaustive,
         "best_accuracy": best_exact_accuracy(rep, target),
-        "remaining_conflicts": len(cert),
+        "remaining_conflicts": len(conflict_certificate(rep, target)),
     }
 
 
 def main() -> None:
     baseline = Representation("PARITY_QUOTIENT", (("parity", parity),))
 
-    # Frozen one-step refinement family.  The controller is allowed to search
-    # this family; it is not allowed to alter the target or evaluation world.
+    # PRECOMMITTED/FROZEN one-step refinement family. The experiment may search
+    # this family but may not alter it after seeing target outcomes.
     candidates: tuple[tuple[str, FeatureFn], ...] = (
         ("bit0", bit0),
         ("bit1", bit1),
@@ -170,55 +194,91 @@ def main() -> None:
         ("constant_zero", constant_zero),
     )
 
+    discovery_vector = truth_vector(target_discovery)
+    transfer_vector = truth_vector(target_transfer)
     baseline_vectors = represented_truth_vectors(baseline)
-    discovery_vector = tuple(truth_vector(target_discovery))
     baseline_obstruction = conflict_certificate(baseline, target_discovery)
 
     candidate_results = [
         evaluate_candidate(baseline, name, fn, target_discovery)
         for name, fn in candidates
     ]
-    successful = [r for r in candidate_results if r["target_in_closure"]]
+    successful_names = [
+        str(r["feature"])
+        for r in candidate_results
+        if r["target_in_closure_analytic"] and r["target_in_closure_exhaustive"]
+    ]
 
-    # Minimality here is relative to the frozen single-feature refinement family.
-    # All candidates have equal extension arity, so an exact singleton is a
-    # uniquely identified minimal refinement in this bounded protocol.
-    successful_names = [str(r["feature"]) for r in successful]
     selected_name = successful_names[0] if len(successful_names) == 1 else None
     selected_fn = dict(candidates).get(selected_name) if selected_name else None
     repaired = baseline.extend(selected_name, selected_fn) if selected_fn else None
 
     sham = baseline.extend("bit1", bit1)
+    ablated = repaired.drop("bit0") if repaired else None
 
     transfer_baseline = target_in_closure(baseline, target_transfer)
     transfer_repaired = target_in_closure(repaired, target_transfer) if repaired else False
     transfer_sham = target_in_closure(sham, target_transfer)
 
+    # Independent sanity checks make accidental implementation agreement harder:
+    # formula closure size vs exhaustive enumeration, and conflict criterion vs
+    # literal truth-vector membership.
+    reps_to_crosscheck = [baseline, sham] + ([repaired, ablated] if repaired and ablated else [])
+    closure_crosschecks = {
+        rep.name: {
+            "formula_size": closure_size(rep),
+            "enumerated_size": len(represented_truth_vectors(rep)),
+            "discovery_analytic": target_in_closure(rep, target_discovery),
+            "discovery_exhaustive": exhaustive_target_in_closure(rep, target_discovery),
+        }
+        for rep in reps_to_crosscheck
+    }
+
+    selected_is_not_target = (
+        selected_fn is not None
+        and truth_vector(selected_fn) != discovery_vector
+        and truth_vector(selected_fn) != transfer_vector
+    )
+
     gates = {
-        # G0: target really is outside the old finite generative closure.
         "G0_verified_old_closure_failure": (
             discovery_vector not in baseline_vectors
             and bool(baseline_obstruction)
             and not target_in_closure(baseline, target_discovery)
+            and not exhaustive_target_in_closure(baseline, target_discovery)
         ),
-        # G1: the frozen refinement family identifies exactly one successful
-        # one-feature distinction rather than permitting a post-hoc story.
-        "G1_unique_minimal_refinement_in_frozen_family": successful_names == ["bit0"],
-        # G2: the selected distinction actually expands capability to include target.
+        "G1_unique_minimal_refinement_in_frozen_family": (
+            successful_names == ["bit0"]
+            and not target_in_closure(baseline, target_discovery)
+        ),
+        "G1b_refinement_is_not_the_target_label": selected_is_not_target,
         "G2_target_enters_extended_closure": bool(
-            repaired and target_in_closure(repaired, target_discovery)
+            repaired
+            and target_in_closure(repaired, target_discovery)
+            and exhaustive_target_in_closure(repaired, target_discovery)
         ),
-        # G3: same-shape sham distinction does not explain the gain.
-        "G3_sham_refinement_fails": not target_in_closure(sham, target_discovery),
-        # G4: ablation of the new distinction restores the old impossibility.
-        "G4_ablation_restores_obstruction": not target_in_closure(
-            baseline, target_discovery
+        "G3_same_shape_sham_refinement_fails": (
+            not target_in_closure(sham, target_discovery)
+            and not exhaustive_target_in_closure(sham, target_discovery)
         ),
-        # G5: the distinction supports a second, source-distinct target that is
-        # impossible in the old quotient and is not rescued by the sham feature.
+        "G4_real_ablation_restores_original_partition_and_obstruction": bool(
+            ablated
+            and partition_signature(ablated) == partition_signature(baseline)
+            and not target_in_closure(ablated, target_discovery)
+            and not exhaustive_target_in_closure(ablated, target_discovery)
+        ),
         "G5_source_distinct_reuse": (
-            not transfer_baseline and transfer_repaired and not transfer_sham
+            discovery_vector != transfer_vector
+            and not transfer_baseline
+            and transfer_repaired
+            and not transfer_sham
         ),
+        "G6_independent_closure_checks_agree": all(
+            v["formula_size"] == v["enumerated_size"]
+            and v["discovery_analytic"] == v["discovery_exhaustive"]
+            for v in closure_crosschecks.values()
+        )
+        and all(bool(r["methods_agree"]) for r in candidate_results),
     }
 
     verdict = "PASS_BOUNDED_DEVELOPMENTAL_EVENT" if all(gates.values()) else "FAIL"
@@ -238,9 +298,11 @@ def main() -> None:
             "best_accuracy": best_exact_accuracy(baseline, target_discovery),
             "obstruction_certificate": baseline_obstruction,
         },
+        "discovery_target": "bit0 AND parity",
         "discovery_target_truth_vector": list(discovery_vector),
         "candidate_refinements": candidate_results,
         "selected_refinement": selected_name,
+        "selected_refinement_is_not_target_label": selected_is_not_target,
         "repaired": {
             "representation": repaired.name if repaired else None,
             "cell_count": len(cells(repaired)) if repaired else None,
@@ -253,17 +315,40 @@ def main() -> None:
             "target_in_closure": target_in_closure(sham, target_discovery),
             "best_accuracy": best_exact_accuracy(sham, target_discovery),
         },
+        "ablation": {
+            "representation": ablated.name if ablated else None,
+            "partition_matches_baseline": bool(
+                ablated and partition_signature(ablated) == partition_signature(baseline)
+            ),
+            "target_in_closure": target_in_closure(ablated, target_discovery) if ablated else False,
+        },
         "transfer": {
-            "target": "bit0 == parity",
+            "target": "bit0 OR parity",
+            "source_distinct_from_discovery": discovery_vector != transfer_vector,
             "baseline_in_closure": transfer_baseline,
             "repaired_in_closure": transfer_repaired,
             "sham_in_closure": transfer_sham,
         },
+        "closure_crosschecks": closure_crosschecks,
         "gates": gates,
         "verdict": verdict,
     }
 
+    # Human-readable preface first; full machine certificate follows as JSON.
+    print("DEVELOPMENTAL CAPABILITY GROWTH V1")
+    print("----------------------------------")
+    print(f"Old representation: {baseline.name}")
+    print(f"Discovery target:   bit0 AND parity")
+    print(f"Old closure:        {closure_size(baseline)} Boolean policies; target OUTSIDE")
+    print(f"Unique refinement:  {selected_name}")
+    print(f"Repaired closure:   {closure_size(repaired) if repaired else 'n/a'} Boolean policies; target INSIDE")
+    print(f"Sham bit1:          {'FAILS as required' if not target_in_closure(sham, target_discovery) else 'unexpectedly succeeds'}")
+    print(f"Ablation:           {'restores old obstruction' if gates['G4_real_ablation_restores_original_partition_and_obstruction'] else 'FAILED'}")
+    print(f"Reuse target:       bit0 OR parity -> {'PASS' if gates['G5_source_distinct_reuse'] else 'FAIL'}")
+    print(f"VERDICT:            {verdict}")
+    print("\nFULL CERTIFICATE")
     print(json.dumps(report, indent=2, sort_keys=True))
+
     if verdict != "PASS_BOUNDED_DEVELOPMENTAL_EVENT":
         raise SystemExit(1)
 
