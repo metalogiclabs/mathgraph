@@ -5,6 +5,7 @@ from collections import Counter
 from dataclasses import dataclass
 from itertools import product
 import json
+from pathlib import Path
 
 TOKENS = ("LT", "LE", "AND", "OR", "A", "B", "C", "D")
 
@@ -77,21 +78,18 @@ def class_survivors(case: Case, grammar: str) -> set[CapClass]:
     return {canonical_class(op) for op in survivors(case, grammar)}
 
 
-def transport_apply(
-    cap: CapClass,
-    xs: tuple[str, ...],
-    target: tuple[str, ...],
-) -> tuple[str, ...] | None:
-    """Choose the unique transported representative that makes target-safe progress."""
-    candidates: list[tuple[str, ...]] = []
-    for pos, value in enumerate(xs):
-        if value != cap.src:
-            continue
-        y = RewriteAt(pos, cap.src, cap.dst).apply(xs)
-        if all(y[i] == target[i] or xs[i] != target[i] for i in range(len(xs))):
-            candidates.append(y)
-    unique = sorted(set(candidates))
-    return unique[0] if len(unique) == 1 else None
+def transport_apply(cap: CapClass, xs: tuple[str, ...]) -> tuple[str, ...] | None:
+    """Apply a retained capability using current state only.
+
+    The constructor/verifier target is intentionally unavailable here. Transport
+    is admitted only when the current state contains exactly one occurrence of
+    the capability's source token, so the application site is determined without
+    target leakage.
+    """
+    positions = [i for i, value in enumerate(xs) if value == cap.src]
+    if len(positions) != 1:
+        return None
+    return RewriteAt(positions[0], cap.src, cap.dst).apply(xs)
 
 
 def black_box_discover(
@@ -99,7 +97,7 @@ def black_box_discover(
     grammar: str,
     start: tuple[str, ...] | None = None,
 ) -> tuple[list[RewriteAt], list[tuple[RewriteAt, bool]]]:
-    """Constructor receives candidates plus only verifier pass/fail feedback."""
+    """Constructor gets candidate syntax; verifier returns only pass/fail."""
     xs = case.broken if start is None else start
     wins: list[RewriteAt] = []
     trace: list[tuple[RewriteAt, bool]] = []
@@ -152,7 +150,7 @@ heldout_literal_identity_pass = any(
     op.apply(H1.broken) == H1.target for op in literal_intersection
 )
 heldout_quotient_state = (
-    transport_apply(O1, H1.broken, H1.target)
+    transport_apply(O1, H1.broken)
     if O1 and scope_fn(H1.context)
     else None
 )
@@ -172,7 +170,7 @@ D2 = Case(
 
 cold_wins, cold_trace = black_box_discover(D2, "direct")
 mid = (
-    transport_apply(O1, D2.broken, D2.target)
+    transport_apply(O1, D2.broken)
     if O1 and scope_fn(D2.context)
     else None
 )
@@ -218,12 +216,12 @@ def O2_outside_G1() -> bool:
 
 
 # Final causal execution and targeted ablations.
-state = transport_apply(O1, D2.broken, D2.target) if O1 else None
+state = transport_apply(O1, D2.broken) if O1 else None
 if state is not None and O2:
-    state = transport_apply(O2, state, D2.target)
+    state = transport_apply(O2, state)
 final_pass = state == D2.target
-only_O1 = transport_apply(O1, D2.broken, D2.target) if O1 else None
-only_O2 = transport_apply(O2, D2.broken, D2.target) if O2 else None
+only_O1 = transport_apply(O1, D2.broken) if O1 else None
+only_O2 = transport_apply(O2, D2.broken) if O2 else None
 ablate_O2_pass = only_O1 == D2.target
 ablate_O1_pass = only_O2 == D2.target
 
@@ -381,6 +379,8 @@ report = {
     ),
 }
 
+out = Path(__file__).with_name("RESULT.json")
+out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
 print(json.dumps(report, indent=2, sort_keys=True))
 if core_verdict == "FAIL_CORE":
     raise SystemExit(1)
