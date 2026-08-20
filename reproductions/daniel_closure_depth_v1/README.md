@@ -4,6 +4,10 @@ This is the minimal standalone reproduction of one bounded developmental phenome
 
 It is deliberately small enough to inspect line by line. It requires only Python 3.10+: no API keys, model calls, network calls after cloning, hidden datasets, or third-party packages.
 
+**For the mathematical object first, read [`MATHEMATICAL_NOTE.md`](MATHEMATICAL_NOTE.md).** The Python is intended as an executable certificate of that finite model, not as a substitute for the mathematics.
+
+`LINEAGE.md` then locates the toy inside the real Triskelion/Specimen evidence: V54 two-generation discoverability, V132 one-generation real constructibility expansion, V133 changed residual, and the frozen V134 next discriminator.
+
 ## Run
 
 ```bash
@@ -18,6 +22,7 @@ A successful run ends with:
 === REPRODUCTION VERIFIED ===
 independent oracle: MATCH
 14/14 core gates: PASS
+independent constructor grammars: SAME CAPABILITY CLASS
 O1: [LT -> LE]
 cold O2 survivors: 0/28
 after O1, O2: [AND -> OR]
@@ -39,7 +44,16 @@ The experiment asks two different questions:
 1. Does retaining `O1` change what later capability can be *verifiedly discovered* under the same bounded search protocol?
 2. Does retaining `O1` change what later capability can even be *formed by the raw constructor meta-language*?
 
-The answer here is **yes to (1), no to (2)**. Keeping those claims separate is part of the experiment.
+The answer here is **yes to (1), no to (2)**. Keeping those claims separate is part of the result.
+
+The mathematical note makes the distinction more formally as
+
+```text
+internal computation:  x -> y  inside C_t
+developmental change:  C_t -> C_(t+1)
+```
+
+with closure-relative capability identity defined in the finite witness as an orbit under transformations already available in the old system.
 
 ## Verifier / constructor boundary
 
@@ -68,7 +82,16 @@ O1 = [LT -> LE]_(G0)
 
 A third held-out position is solved by transporting the class, while literal-identity reuse fails. Targeted ablation restores failure.
 
-The same class is also recovered under an alternate constructor presentation and under all 24 bijective renamings of the four semantic role tokens, mapped back to the original presentation.
+### Independent constructor-grammar separator
+
+The main experiment is supplemented by `alternate_grammar_audit.py`, which does **not import the experiment runner** and reconstructs O1 using two genuinely different constructor syntaxes:
+
+- direct position-indexed rewrites `r[i, a -> b]`;
+- fixed-slot rewrites conjugated by the old cyclic action, `rho^(-k) ; r[0, a -> b] ; rho^k`.
+
+Their literal constructor terms differ, but both source cases recover the same unique closure-relative class `[LT -> LE]`. This is stronger than relabelling the same code path as another “grammar”.
+
+All 24 bijective renamings of the four semantic role tokens are also checked and mapped back to the original presentation.
 
 A frozen context grammar independently selects `context == if` as the unique minimal non-global applicability scope.
 
@@ -120,7 +143,8 @@ The wrapper checks, in this order:
 2. the experiment regenerates `RESULT.json` from `run.py`;
 3. regenerated output agrees with the independently frozen oracle;
 4. all 14 headline predicates and the strict-constructibility falsification are rechecked explicitly;
-5. the original committed result bytes are restored so a fresh checkout remains clean.
+5. the separately implemented alternate constructor grammar audit passes;
+6. the original committed result bytes are restored so a fresh checkout remains clean.
 
 The original capstone result commit is:
 
@@ -137,7 +161,8 @@ It supports, inside this frozen world:
 - exact old-closure obstruction;
 - closure-relative rather than literal capability identity;
 - held-out positional transport and causal ablation;
-- presentation/constructor-description robustness;
+- robustness to a genuinely different constructor syntax;
+- 24/24 semantic-token presentation renamings;
 - independently scoped applicability and later revocation;
 - two-generation verifier-dependent discoverability;
 - exact semantic closure obstruction for `O2` relative to `G1`;
