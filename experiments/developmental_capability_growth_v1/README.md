@@ -5,7 +5,7 @@ This is a deliberately tiny, exact experiment for a bounded form of the MathGrap
 ```text
 verified closure failure
   -> machine-checkable obstruction
-  -> search a frozen refinement family
+  -> search a protocol-fixed refinement family
   -> a new representational distinction removes the obstruction
   -> the target becomes constructible
   -> a same-shape sham does not
@@ -47,9 +47,9 @@ The discovery target is:
 T1(x) = bit0(x) AND parity(x)
 ```
 
-This choice is intentional. `T1` is **not itself one of the candidate refinement features**. That avoids the trivial experiment in which the target label is simply handed to the representation.
+This choice is intentional. `T1` is **not itself one of the named candidate refinement features**. That avoids the trivial experiment in which the target label is simply handed to the representation.
 
-`T1` is outside the old closure. The obstruction is exact: within at least one parity cell there are states that the old representation treats as identical but for which `T1` requires different outputs. No deterministic function of parity alone can therefore implement `T1`.
+`T1` is outside the old closure. The obstruction is exact: inside the odd-parity cell, states that `R0` treats as identical require different outputs. No deterministic function of parity alone can therefore implement `T1`.
 
 The script checks this in two independent ways:
 
@@ -58,9 +58,9 @@ The script checks this in two independent ways:
 
 The two methods must agree.
 
-## Frozen refinement family
+## Named refinement family
 
-Before evaluating the target, the source code fixes this one-step refinement family:
+The executable protocol fixes this one-step named refinement family:
 
 ```text
 bit0
@@ -70,30 +70,70 @@ weight
 constant_zero
 ```
 
-Each candidate is appended as one observable coordinate. The world, target, and evaluation procedure stay fixed.
+Each candidate is appended as one observable coordinate. The world, target, and evaluation procedure stay fixed during a run.
 
-The result required by the protocol is that exactly one member of this frozen one-feature family makes `T1` representable:
+Exactly one member of this named family makes `T1` representable:
 
 ```text
 bit0
 ```
 
-This is a **relative minimality** claim. The baseline uses zero extra features and fails; among the precommitted one-feature candidates, exactly one succeeds. Nothing here claims that `bit0` is the unique possible mathematical extension over all conceivable languages.
+This is only a **family-relative** statement. It is not a claim that `bit0` is the unique extension over all possible languages.
 
 The test also verifies that the selected feature's truth vector is not equal to either evaluation target, so the refinement is a distinction used to construct the capability rather than the answer label itself.
 
+## Global audit: all 256 Boolean one-bit refinements
+
+To remove the main possible objection to the small named family, the companion audit:
+
+```bash
+python experiments/developmental_capability_growth_v1/audit_all_boolean_refinements.py
+```
+
+enumerates **every Boolean one-bit feature on the eight-state world**:
+
+```text
+2^8 = 256 possible feature truth vectors
+```
+
+The exact result is:
+
+```text
+256 tested
+ 32 repair T1
+224 fail
+  8 distinct successful induced partition classes
+```
+
+Among the 32 successful features, 4 induce a 3-cell refinement and 28 induce a 4-cell refinement.
+
+Most importantly, the audit proves a complete necessary-and-sufficient criterion in this finite setting:
+
+> A Boolean one-bit refinement makes `T1` representable **if and only if** it separates every pair of states that the old representation identifies but the obstruction certificate says require different target labels.
+
+So the obstruction does **not** magically determine one literal feature. It determines a **class of admissible refinements** exactly. That is closer to the real research claim: verified failure can constrain what a successful representational extension must distinguish.
+
+This also makes explicit why the experiment should not be sold as a universal invention theorem. Multiple syntactically different features can induce equivalent or adequate refinements.
+
 ## Controls and causal gates
 
-The run passes only if all of these hold:
+The main run passes only if all of these hold:
 
 1. **Old-closure failure:** `T1` is absent from the complete old closure and has a non-empty conflict certificate.
-2. **Unique bounded refinement:** exactly one member of the frozen one-feature family succeeds.
+2. **Unique named-family repair:** exactly one member of the protocol-fixed named family succeeds.
 3. **Non-tautological refinement:** the selected feature is not itself the discovery or reuse target label.
 4. **Capability gain:** after adding `bit0`, `T1` enters the complete refined closure.
 5. **Same-shape sham:** adding `bit1` instead does not make `T1` representable.
 6. **Real ablation:** remove `bit0` from the repaired representation; its induced partition must become exactly the original parity partition and the obstruction must return.
 7. **Source-distinct reuse:** a second target must fail under the old representation, succeed under the repaired representation, and fail under the sham.
 8. **Cross-check consistency:** analytic cell reasoning and brute-force closure enumeration must agree, and formula closure sizes must match enumerated closure sizes.
+
+The global audit additionally requires:
+
+1. all 256 Boolean one-bit features are enumerated;
+2. analytic and literal closure tests agree on all 256;
+3. successful refinement is exactly equivalent to separating every certified conflict;
+4. the success class is non-empty but does not include all refinements.
 
 ## Reuse target
 
@@ -142,22 +182,31 @@ The change in possible continuations is a consequence of the representational re
 
 A useful question for a categorical/proof-theoretic treatment is therefore:
 
-> What compositional object changes when a verified obstruction justifies a refinement of representation and the exact generative closure expands?
+> What compositional object changes when a verified obstruction constrains the admissible refinement class and a chosen refinement expands exact generative closure?
 
 ## Run
 
 No third-party dependencies are needed.
 
+Main causal witness:
+
 ```bash
 python experiments/developmental_capability_growth_v1/run.py
 ```
 
-The program first prints a short human-readable summary, then a full JSON certificate. It exits with status 1 if any gate fails.
+Global refinement-class audit:
 
-Expected final line in the summary:
+```bash
+python experiments/developmental_capability_growth_v1/audit_all_boolean_refinements.py
+```
+
+Both programs print a short human-readable summary followed by a full JSON certificate and exit non-zero on failure.
+
+Expected verdicts:
 
 ```text
-VERDICT:            PASS_BOUNDED_DEVELOPMENTAL_EVENT
+PASS_BOUNDED_DEVELOPMENTAL_EVENT
+PASS_GLOBAL_REFINEMENT_CLASS_AUDIT
 ```
 
 ## Claim boundary
@@ -166,7 +215,8 @@ This experiment establishes only a bounded finite result:
 
 - eight states;
 - exact finite policy closures;
-- a fixed finite one-feature refinement family;
+- a fixed finite named refinement family for the causal witness;
+- exhaustive coverage of all 256 Boolean one-bit refinements in the global audit;
 - exact obstruction certificates;
 - exact sham and ablation tests;
 - one source-distinct reuse task.
@@ -175,8 +225,8 @@ It does **not** establish:
 
 - a universal method for inventing missing representations;
 - that every obstruction admits a consistent extension;
-- that the selected refinement is globally unique outside the frozen family;
+- that any literal refinement feature is globally unique;
 - autonomous open-ended developmental intelligence;
 - that category theory, RL, optics, or any particular formalism is the correct explanation.
 
-Those are research questions. This experiment is the minimal exact object they must explain without overclaiming.
+The protocol was constructed as a minimal exact witness; it is not presented as a historically pre-registered prospective experiment. Its value is that the mathematical claims are exhaustively checkable and the overclaim boundaries are explicit.
