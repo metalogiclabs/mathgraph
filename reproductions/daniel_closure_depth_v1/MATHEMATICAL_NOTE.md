@@ -1,485 +1,465 @@
 # Closure-relative capability growth
 
-## An exact finite witness, its categorical reading, and the remaining open claim
+## Exact finite witness and categorical question
 
-This note states the mathematical object behind the executable reproduction in this directory. The Python program is intended as a finite certificate of the statements below; it is not the definition of the phenomenon.
+This note states the mathematical object behind the executable reproduction. The Python program is a finite certificate of the statements below; it is not the definition of the phenomenon.
 
-The purpose is to keep three notions separate:
+The experiment deliberately separates:
 
-1. **reachability in a currently installed generative system**;
-2. **identity of a capability relative to transformations already available in that system**;
-3. **development of the generative system itself**.
+1. **reachability** in a fixed generative regime;
+2. **capability identity** modulo transformations already present in the old regime;
+3. **developmental change** of the regime itself;
+4. the stronger question of whether development changes what the constructor language can *form at all*.
 
-A fourth, stronger notion — whether one acquired capability makes a later capability *formable* in a constructor language in which it was previously unformable — is tested separately and is **not** established by this finite example.
+The first three are witnessed here in a bounded setting. The fourth is explicitly **not** established.
 
 ---
 
-## 1. Finite state space and old generative system
+## 1. Old regime
 
 Let
 
 \[
-\Sigma = \{\mathrm{LT},\mathrm{LE},\mathrm{AND},\mathrm{OR},A,B,C,D\}
+\Sigma=\{\mathrm{LT},\mathrm{LE},\mathrm{AND},\mathrm{OR},A,B,C,D\},
+\qquad X=\Sigma^4.
 \]
 
-and let
-
-\[
-X = \Sigma^4.
-\]
-
-Let the cyclic group
+Let
 
 \[
 G=C_4=\langle \rho\mid \rho^4=e\rangle
 \]
 
-act on \(X\) by cyclic permutation of coordinates. The **old generative system** is the action of \(G\) alone.
+act on \(X\) by cyclic coordinate permutation.
 
-For \(x\in X\), define its old closure by
+For \(x\in X\), the old closure is
 
 \[
 \operatorname{Cl}_0(x)=G\cdot x.
 \]
 
-Every element of \(G\) preserves the multiset of tokens. Hence the token multiset is an invariant of \(\operatorname{Cl}_0\).
+Every old transformation preserves the token multiset.
 
 ### Proposition 1 — exact old-closure obstruction
 
 For
 
 \[
-x_1=(\mathrm{LT},A,B,C),\qquad
- t_1=(\mathrm{LE},A,B,C),
+x_1=(\mathrm{LT},A,B,C),\quad
+ t_1=(\mathrm{LE},A,B,C)
 \]
 
 and
 
 \[
-x_2=(A,B,\mathrm{LT},C),\qquad
+x_2=(A,B,\mathrm{LT},C),\quad
  t_2=(A,B,\mathrm{LE},C),
 \]
 
 we have
 
 \[
-t_1\notin \operatorname{Cl}_0(x_1),\qquad
- t_2\notin \operatorname{Cl}_0(x_2).
+t_1\notin\operatorname{Cl}_0(x_1),
+\qquad
+t_2\notin\operatorname{Cl}_0(x_2).
 \]
 
-**Proof.** Every state in the old closure has exactly the same token multiset as its source. Each target replaces one occurrence of \(\mathrm{LT}\) by \(\mathrm{LE}\), so its multiset differs. ∎
+**Proof.** The old action preserves token multiset, while each target replaces one \(\mathrm{LT}\) with \(\mathrm{LE}\). ∎
 
-This is a structural obstruction, not a search timeout.
+This is an obstruction theorem in the finite world, not a failure of search.
 
 ---
 
-## 2. Construction language and literal repairs
+## 2. Constructor language
 
-For a position \(i\in\{0,1,2,3\}\) and distinct tokens \(a,b\in\Sigma\), let
+For coordinate \(i\in\{0,1,2,3\}\) and distinct tokens \(a,b\in\Sigma\), let
 
 \[
 r_{i,a\to b}:X\rightharpoonup X
 \]
 
-be the partial map that replaces \(a\) by \(b\) at coordinate \(i\), defined only when coordinate \(i\) contains \(a\).
+be the partial map replacing \(a\) by \(b\) at coordinate \(i\), defined when that coordinate contains \(a\).
 
-The finite constructor meta-language contains all such one-site rewrites.
+The frozen one-step constructor language contains all such maps.
 
-A verifier for a source/target pair \((x,t)\) is the Boolean relation
+For a source/target pair \((x,t)\), the external verifier returns
 
 \[
-V_{x,t}(r)=1 \iff r(x)=t.
+V_{x,t}(r)=1\iff r(x)=t.
 \]
 
-For the two source cases above, the unique literal verifier-surviving repairs are
+For the two source cases above, the unique literal survivors are respectively
 
 \[
 r_{0,\mathrm{LT}\to\mathrm{LE}}
+\quad\text{and}\quad
+r_{2,\mathrm{LT}\to\mathrm{LE}}.
 \]
 
-and
-
-\[
-r_{2,\mathrm{LT}\to\mathrm{LE}},
-\]
-
-respectively. Their literal intersection is therefore empty.
+Their literal-program intersection is empty.
 
 ---
 
-## 3. Closure-relative capability identity
+## 3. Capability identity relative to old symmetry
 
-Literal program identity is not the identity of interest because the old system already knows how to transport coordinates.
+Literal identity is too fine because the old regime already knows how to transport coordinates.
 
-Define an equivalence relation on one-site rewrites by the old symmetry action:
+Let \(G\) act on one-site partial rewrites by conjugation:
 
 \[
-r\sim_0 r'
-\quad\Longleftrightarrow\quad
-\exists g\in G\;\;r'=g\,r\,g^{-1}
+g\cdot r = g\,r\,g^{-1}.
 \]
 
-where equality is equality of partial maps on \(X\).
-
-A **closure-relative capability** is an orbit
+Define
 
 \[
-[r]_0 = G\cdot r.
+r\sim_G r'
+\iff
+\exists g\in G\; r'=g\,r\,g^{-1}.
 \]
 
-Since coordinate transport is exactly the \(G\)-action,
+A **closure-relative capability class** in this witness is an orbit
 
 \[
-[r_{0,a\to b}]_0=[r_{i,a\to b}]_0
+[r]_G.
+\]
+
+Because coordinate position is transportable by \(G\),
+
+\[
+[r_{0,a\to b}]_G=[r_{i,a\to b}]_G
 \]
 
 for every coordinate \(i\).
 
-### Proposition 2 — quotient identity across source-distinct cases
+### Proposition 2 — quotient identity
 
-Although the two source cases have no common literal repair, their verifier-surviving repairs determine the same unique closure-relative capability
+The two source cases determine the same unique class
 
 \[
-O_1=[\mathrm{LT}\to\mathrm{LE}]_0.
+O_1=[\mathrm{LT}\to\mathrm{LE}]_G.
 \]
 
-**Proof.** The two literal repairs differ only by conjugation with a cyclic coordinate permutation. ∎
+**Proof.** Their two literal survivors are conjugate under a cyclic coordinate permutation. ∎
 
-This is the finite analogue of the claim that capability identity should be relative to the transformations already admitted by the current system, rather than to implementation syntax.
+An independently implemented constructor grammar checks the same point in a genuinely different syntax: instead of arbitrary-position rewrites, it permits only a rewrite at slot \(0\) conjugated by old cyclic transport,
+
+\[
+\rho^{-k};r_{0,a\to b};\rho^k.
+\]
+
+Both grammars recover the same unique orbit class \(O_1\) across both source cases.
 
 ---
 
-## 4. Source-distinct transport and ablation
+## 4. Held-out transport and ablation
 
-Consider the held-out case
-
-\[
-h=(A,\mathrm{LT},B,C),\qquad
-h'=(A,\mathrm{LE},B,C).
-\]
-
-Neither literal acquisition repair is identical to the required held-out literal repair at coordinate \(1\). Hence literal-identity transfer fails.
-
-But the retained orbit \(O_1\) contains the transported representative
+For
 
 \[
-r_{1,\mathrm{LT}\to\mathrm{LE}},
+h=(A,\mathrm{LT},B,C),
+\qquad
+h'=(A,\mathrm{LE},B,C),
 \]
 
-so quotient transport succeeds.
+neither acquisition literal is the required coordinate-1 program, so literal identity does not transfer.
 
-Removing \(O_1\) removes that capability and restores failure.
+But
 
-Thus the retained object is not a memorised source-position implementation.
+\[
+r_{1,\mathrm{LT}\to\mathrm{LE}}\in O_1,
+\]
+
+so orbit transport succeeds. Removing \(O_1\) removes the capability and restores failure.
+
+The retained object is therefore not the literal source implementation.
 
 ---
 
-## 5. Scope as a separate object
+## 5. Scope is separate from capability
 
-Let the observable context set be
-
-\[
-C=\{\mathtt{if},\mathtt{json},\mathtt{loop},\mathtt{return}\}.
-\]
-
-The frozen scope grammar is
+Let the observable context base be
 
 \[
-\mathcal S=
-\{\top\}\cup\{[c=c_0]\mid c_0\in C\}.
+C=\{\mathtt{if},\mathtt{json},\mathtt{loop},\mathtt{return}\}
 \]
 
-Positive evidence requires the capability in context `if`; protected evidence forbids it in context `json`.
+with frozen scope grammar
 
-Within \(\mathcal S\), the unique minimal admissible scope is
+\[
+\mathcal S=\{\top\}\cup\{[c=c_0]\mid c_0\in C\}.
+\]
+
+Positive evidence requires \(O_1\) under `if`; protected evidence forbids it under `json`. The unique minimal surviving predicate is
 
 \[
 s_1(c)=[c=\mathtt{if}].
 \]
 
-This deliberately separates the capability \(O_1\) from its applicability predicate \(s_1\).
+Later counterevidence occurs inside `if`. Under the frozen grammar, no scope remains satisfying all help/harm constraints, so the lifecycle verdict is **REVOKE**.
 
-Later counterevidence is introduced inside the `if` scope. Under the frozen grammar \(\mathcal S\), no refinement remains that contains all positive cases while excluding all harmful cases. The lifecycle verdict is therefore **revoke**, rather than silently weakening the evidence standard.
-
----
-
-## 6. Second generation: developmental discoverability
-
-Now consider
-
-\[
-d=(A,\mathrm{LT},B,\mathrm{AND})
-\]
-
-with target
-
-\[
-d'=(A,\mathrm{LE},B,\mathrm{OR}).
-\]
-
-The target contains two independent defects relative to \(d\).
-
-### Proposition 3 — no cold one-rewrite solution
-
-There is no one-site rewrite \(r\) in the frozen constructor language such that
-
-\[
-r(d)=d'.
-\]
-
-**Proof.** A one-site rewrite changes at most one coordinate, while \(d\) and \(d'\) differ at two coordinates. ∎
-
-The executable audit enumerates all 28 one-site candidates available from \(d\) and finds zero verifier survivors.
-
-Apply the already admitted \(O_1\) first. Since its source token occurs uniquely, its application site is determined from the current state alone; the target is not consulted. We obtain
-
-\[
-d_1=(A,\mathrm{LE},B,\mathrm{AND}).
-\]
-
-Now exactly one one-site capability class survives the verifier:
-
-\[
-O_2=[\mathrm{AND}\to\mathrm{OR}]_1.
-\]
-
-Here the subscript reminds us that the identity is being considered relative to the currently installed system.
+Thus acquisition of \(O_1\) and validity of its applicability predicate are distinct claims.
 
 ---
 
-## 7. Exact closure expansion at generation 2
+## 6. Reachability categories
 
-Let \(\mathcal C_0\) be the transition category generated by the old cyclic transports, viewed as partial endomorphisms of \(X\).
+To keep state transitions and operator syntax type-distinct, define a thin transition category from a family of partial state transformations.
 
-Let
+### Definition
 
-\[
-\mathcal C_1=\langle \mathcal C_0,O_1\rangle
-\]
-
-be the subcategory of \(\mathbf{Par}(X)\) generated by the old transports and all transported representatives of \(O_1\).
-
-Then
-
-\[
-d'\notin \operatorname{Reach}_{\mathcal C_1}(d).
-\]
-
-One simple invariant is that morphisms in \(\mathcal C_1\) can permute coordinates and can replace \(\mathrm{LT}\) by \(\mathrm{LE}\), but cannot replace \(\mathrm{AND}\) by \(\mathrm{OR}\). Thus the required \(\mathrm{OR}\) token cannot be created.
-
-Adjoining \(O_2\) gives
-
-\[
-\mathcal C_2=\langle \mathcal C_1,O_2\rangle
-\]
-
-and now
-
-\[
-d'\in \operatorname{Reach}_{\mathcal C_2}(d).
-\]
-
-Targeted ablations establish both dependencies:
-
-\[
-d'\notin \operatorname{Reach}_{\langle\mathcal C_0,O_1\rangle}(d)
-\]
-
-and
-
-\[
-d'\notin \operatorname{Reach}_{\langle\mathcal C_0,O_2\rangle}(d).
-\]
-
-So the final capability is causally dependent on both admitted classes.
-
----
-
-## 8. Search compression is a consequence, not the definition
-
-Cold exhaustive reconstruction with two literal rewrites considers
-
-\[
-28\times 28=784
-\]
-
-ordered candidate pairs in this finite world.
-
-After retaining \(O_1\), the second-generation audit considers only 28 one-site candidates, giving
-
-\[
-\frac{784}{28}=28
-\]
-
-fold search compression.
-
-This is useful operationally, but the mathematical claim is the change in the installed generative structure, not the speedup itself.
-
----
-
-## 9. The stronger claim is falsified here
-
-There are two different notions of “O2 was unavailable before O1”:
-
-### Verifier-relative discoverability
-
-Under the frozen budget of one newly admitted capability,
-
-\[
-\operatorname{Survive}_1(d,d')=\varnothing,
-\]
-
-whereas after applying \(O_1\),
-
-\[
-\operatorname{Survive}_1(d_1,d')=\{O_2\}.
-\]
-
-This **does** hold.
-
-### Raw constructor-language formability
-
-However, the constructor meta-language already contains the syntactic primitive
-
-\[
-r_{i,\mathrm{AND}\to\mathrm{OR}}
-\]
-
-before \(O_1\) is acquired.
-
-Therefore
-
-\[
-O_2\in \operatorname{Form}(M_0)
-\]
-
-already, where \(M_0\) is the frozen raw constructor meta-language.
-
-Hence the stronger statement
-
-\[
-O_2\notin \operatorname{Form}(M_0)
-\quad\text{but}\quad
-O_2\in \operatorname{Form}(M_1)
-\]
-
-is **false in this experiment**.
-
-This is why the executable verdict is deliberately
-
-`PARTIAL_STRICT_CONSTRUCTIBILITY_NOT_ESTABLISHED`.
-
-The distinction is central: the finite witness demonstrates development of **admissible/reachable capability structure**, not growth of raw syntax.
-
----
-
-## 10. A categorical formulation of the question
-
-The old system supplies two mathematically different levels.
-
-### Internal computation
-
-Inside a fixed regime \(\mathcal C_t\), a computation is a morphism
+For a set \(F\) of partial endomaps on \(X\), let \(\mathcal C(F)\) be the preorder-category whose objects are states \(x\in X\), with a unique arrow
 
 \[
 x\longrightarrow y
 \]
 
-or a composable path of such morphisms.
+iff some finite composable word in transformations from \(F\) is defined at \(x\) and sends \(x\) to \(y\).
 
-An ordinary policy/search mechanism chooses among such continuations.
-
-### Developmental change
-
-A developmental event changes the regime itself:
+Let
 
 \[
-\mathcal C_t\longrightarrow \mathcal C_{t+1}.
+F_0=G
 \]
 
-In the finite witness,
+(where elements of \(G\) are viewed as total state transformations), and let
 
 \[
-\mathcal C_0
-\hookrightarrow
-\mathcal C_1=\langle\mathcal C_0,O_1\rangle
-\hookrightarrow
-\mathcal C_2=\langle\mathcal C_1,O_2\rangle.
+F_1=F_0\cup O_1
 \]
 
-So a natural higher-level object would have **regimes/continuation categories as objects** and verified admissions, restrictions or revocations as morphisms between regimes. This is only a proposed reading, not a claimed final formalism.
-
-The point is that
+where \(O_1\) denotes all transported literal representatives in its orbit. Write
 
 \[
-x\to y\text{ in }\mathcal C_t
+\mathcal C_0=\mathcal C(F_0),
+\qquad
+\mathcal C_1=\mathcal C(F_1).
 \]
 
-and
-
-\[
-\mathcal C_t\to\mathcal C_{t+1}
-\]
-
-should not be conflated: state evolution and change of continuation structure have different mathematical types.
-
-### Capability identity as an orbit / quotient
-
-For the finite group action, literal repairs are identified under conjugation by already admitted symmetries. One may view this through the action groupoid
-
-\[
-G\ltimes X
-\]
-
-or as an orbit quotient of partial endomorphisms under \(G\).
-
-The experiment uses the simplest exact orbit construction. A more general theory may need a coequalizer, localization, bicategorical quotient, profunctorial semantics, or another notion of observational equivalence. The experiment does not choose among these.
-
-### Scope
-
-Applicability is indexed by observable context. This suggests an indexed/fibred treatment may be more natural than attaching one global Boolean flag to a capability: a capability can be valid over one part of a context base and invalid over another, and counterevidence can shrink that admissible region or force revocation.
-
-Again, this is a mathematical question raised by the experiment, not a theorem of the toy model.
+This category forgets path multiplicity and retains exactly the reachability relation needed by the finite experiment. A richer theory could preserve proof/program paths instead.
 
 ---
 
-## 11. The real stronger target
+## 7. Second generation
 
-The finite witness does **not** establish strict second-order constructibility.
-
-The stronger developmental statement would require constructor regimes \(M_t\) as well as execution regimes \(\mathcal C_t\), with a witnessed transition
+Consider
 
 \[
-M_0 \longrightarrow M_1
+d=(A,\mathrm{LT},B,\mathrm{AND}),
+\qquad
+d'=(A,\mathrm{LE},B,\mathrm{OR}).
 \]
 
-caused by an admitted capability \(O_1\), and a later capability \(O_2\) such that
+### Proposition 3 — cold one-step obstruction
+
+There is no one-site rewrite \(r\) satisfying
+
+\[
+r(d)=d'.
+\]
+
+**Proof.** A one-site rewrite changes at most one coordinate, while \(d\) and \(d'\) differ at two. ∎
+
+The executable audit enumerates all 28 one-site candidates available from \(d\) and finds zero verifier survivors.
+
+Now reuse \(O_1\). Its source token occurs uniquely, so the application location is determined from the current state alone; the target is unavailable to the capability application mechanism. This yields
+
+\[
+d_1=(A,\mathrm{LE},B,\mathrm{AND}).
+\]
+
+From \(d_1\), the same 28-way one-step audit has one surviving orbit class:
+
+\[
+O_2=[\mathrm{AND}\to\mathrm{OR}]_G.
+\]
+
+The quotient still uses the fixed old symmetry group \(G\); what is relative to generation 1 is the **closure/reachability test**, not a newly asserted equivalence relation.
+
+Let
+
+\[
+F_2=F_1\cup O_2,
+\qquad
+\mathcal C_2=\mathcal C(F_2).
+\]
+
+### Theorem 4 — exact generation-2 closure expansion
+
+\[
+d\not\longrightarrow d'
+\quad\text{in }\mathcal C_1,
+\]
+
+while
+
+\[
+d\longrightarrow d'
+\quad\text{in }\mathcal C_2.
+\]
+
+Furthermore the final reachability disappears if either \(O_1\) or \(O_2\) is removed.
+
+**Proof.** Transformations in \(F_1\) can cyclically permute tokens and replace \(\mathrm{LT}\) by \(\mathrm{LE}\), but cannot create an \(\mathrm{OR}\) token from \(\mathrm{AND}\). Hence \(d'\) is unreachable in \(\mathcal C_1\). Adding \(O_2\) supplies the missing second change. Either single ablation leaves one required token change unavailable. ∎
+
+This is the exact sense in which \(O_2\) is closure-expanding **relative to generation 1**.
+
+---
+
+## 8. Search compression
+
+Cold exhaustive reconstruction with two literal rewrites considers
+
+\[
+28^2=784
+\]
+
+ordered candidate pairs.
+
+After retaining \(O_1\), the complete one-step audit considers 28 candidates:
+
+\[
+784/28=28.
+\]
+
+The resulting 28× compression is an operational consequence of retained structure, not the definition of capability growth.
+
+---
+
+## 9. The stronger claim is falsified
+
+Two claims must be separated.
+
+### Developmental discoverability
+
+Under the frozen one-new-capability budget,
+
+\[
+\operatorname{Survive}_1(d,d')=\varnothing,
+\]
+
+but after reusing \(O_1\),
+
+\[
+\operatorname{Survive}_1(d_1,d')=\{O_2\}.
+\]
+
+This **holds**.
+
+### Raw constructor formability
+
+Let \(M_0\) be the original one-site rewrite meta-language. It already contains terms of the form
+
+\[
+r_{i,\mathrm{AND}\to\mathrm{OR}}.
+\]
+
+Therefore
+
+\[
+O_2\in\operatorname{Form}(M_0)
+\]
+
+before \(O_1\) is acquired.
+
+So the stronger claim
 
 \[
 O_2\notin\operatorname{Form}(M_0)
+\quad\text{but}\quad
+O_2\in\operatorname{Form}(M_1)
 \]
 
-but
+is **false in this witness**.
 
-\[
-O_2\in\operatorname{Form}(M_1).
-\]
-
-The hard part is to establish this without baking the conclusion into the constructor definition (for example, by simply defining an `O2` constructor that takes `O1` as an argument).
-
-The real Specimen/Lean lineage is relevant because it already contains a one-generation causal constructibility expansion followed by a qualitatively changed residual. The next question is whether that changed residual can induce a second constructor capability whose *formation itself* depends on the first acquired representation.
+That falsification is deliberately part of the result. The toy demonstrates development of verified reachability/admissibility, not growth of raw syntax.
 
 ---
 
-## 12. Questions this leaves open
+## 10. The categorical question
 
-The experiment is intended to make the following questions precise enough to disagree about:
+The finite model now exposes two different kinds of arrow without conflating their types.
 
-1. Is the orbit quotient under already admitted symmetries the right finite prototype of **capability identity**, or should identity be defined through a more semantic universal construction?
-2. What categorical structure best separates morphisms **inside** a continuation regime from verified morphisms **between** continuation regimes?
-3. Should applicability/scope be represented by an indexed category, fibration, subobject structure, modality, or something else?
-4. What is the right compositional notion of revocation? Is it deletion of a generator, restriction of a domain, movement to another object in a category of regimes, or a different construction?
-5. What should count as genuine second-order development: changed reachability, changed admissibility, changed constructor formability, or some hierarchy of these notions?
-6. Can a categorical RL/state framework model the internal dynamics while a higher-level categorical object models changes of the continuation category itself?
+### State evolution inside a fixed regime
 
-The executable reproduction fixes a tiny world in which the first layer can be answered exactly, while deliberately exposing the boundary at which the stronger question begins.
+For fixed \(t\), computation is represented by arrows
+
+\[
+x\to y
+\quad\text{in }\mathcal C_t.
+\]
+
+A search or policy selects continuations internal to that regime.
+
+### Development of the regime
+
+The evidence also induces a sequence of different reachability categories
+
+\[
+\mathcal C_0,
+\mathcal C_1,
+\mathcal C_2.
+\]
+
+The developmental question concerns whatever higher-level structure should represent transitions such as
+
+\[
+\mathcal C_t\rightsquigarrow\mathcal C_{t+1},
+\]
+
+including admission, restriction and revocation. The symbol \(\rightsquigarrow\) is intentionally neutral: the experiment does not assume these regime changes are ordinary functors, inclusions, optics, profunctors, 2-cells, or something else.
+
+This is precisely where a categorical formulation becomes substantive rather than decorative.
+
+---
+
+## 11. Capability identity beyond the toy
+
+The finite witness uses a literal group action, so orbit identity is exact:
+
+\[
+[r]_G.
+\]
+
+A general developmental system will not usually have such a simple symmetry group. The corresponding identity question could require a universal or observational construction: for example an action groupoid, coequalizer, localization, bicategorical quotient, profunctorial equivalence, or another notion entirely.
+
+The experiment leaves that choice open.
+
+Likewise, applicability is indexed by context. That raises a separate question of whether scope is naturally represented by a fibration/indexed category, subobject structure, modality, or some other construction in which counterevidence restricts or destroys the admissible region.
+
+---
+
+## 12. Stronger second-order development
+
+The open target needs constructor regimes \(M_t\) as well as execution regimes \(\mathcal C_t\).
+
+A strict second-order result would require an admitted \(O_1\) that causally changes the constructor regime
+
+\[
+M_0\rightsquigarrow M_1
+\]
+
+and a later capability \(O_2\) satisfying
+
+\[
+O_2\notin\operatorname{Form}(M_0),
+\qquad
+O_2\in\operatorname{Form}(M_1).
+\]
+
+The hard part is to establish this without making it tautological by defining an `O2` constructor that simply takes `O1` as a hard-coded argument.
+
+The real Specimen/Lean lineage is relevant because it already shows one causal constructibility expansion followed by a qualitatively changed residual. The remaining question is whether the next constructor capability can be made genuinely unformable before the first representation change and formable after it.
+
+---
+
+## 13. Questions for the formalism
+
+1. Is the old-symmetry orbit the right prototype of closure-relative capability identity, or is a more semantic universal construction preferable?
+2. What categorical object should have continuation regimes \(\mathcal C_t\) as its states while keeping internal arrows \(x\to y\) distinct from developmental transitions between regimes?
+3. Is applicability naturally fibred/indexed over context?
+4. What is the compositional meaning of revocation?
+5. Should “development” form a hierarchy: changed reachability, changed admissibility, changed representation, changed constructor formability?
+6. Can categorical RL model the internal agent/environment dynamics while another categorical layer models verified changes of the continuation regime itself?
+
+The executable reproduction fixes a tiny world in which the lower layer is exact and the boundary to the stronger problem is explicit.
