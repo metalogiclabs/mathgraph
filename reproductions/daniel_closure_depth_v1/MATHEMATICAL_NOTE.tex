@@ -10,9 +10,7 @@
 \newtheorem{question}[definition]{Question}
 
 \newcommand{\Cl}{\operatorname{Cl}}
-\newcommand{\Reach}{\operatorname{Reach}}
 \newcommand{\Form}{\operatorname{Form}}
-\newcommand{\Par}{\mathbf{Par}}
 
 \title{Closure-Relative Capability Growth:\\An Exact Finite Witness and an Open Categorical Question}
 \author{Metalogic Labs}
@@ -22,17 +20,17 @@
 \maketitle
 
 \begin{abstract}
-We give a finite deterministic model separating (i) reachability in a fixed generative system,
-(ii) capability identity modulo transformations already present in that system, and
-(iii) verified changes of the generative system itself. The model exhibits two-generation
-verifier-dependent discoverability, exact closure obstruction, quotient transport, causal
+We give a finite deterministic model separating (i) reachability in a fixed generative regime,
+(ii) capability identity modulo transformations already present in that regime, and
+(iii) verified changes of the regime itself. The model exhibits two-generation
+verifier-dependent discoverability, exact closure obstruction, orbit transport, causal
 ablation, scoped applicability and revocation. It also falsifies a stronger statement:
 the second capability is already syntactically formable in the raw constructor meta-language
-before the first capability is acquired. Thus the example establishes developmental
-admissibility/reachability, not strict second-order growth of constructor syntax.
+before the first capability is acquired. Thus the example establishes development of
+verified reachability/admissibility, not strict second-order growth of constructor syntax.
 \end{abstract}
 
-\section{Old system}
+\section{Old regime}
 
 Let
 \[
@@ -76,7 +74,7 @@ r_{i,a\to b}:X\rightharpoonup X
 be the partial map replacing $a$ by $b$ at coordinate $i$, defined when the $i$th coordinate is $a$.
 The frozen one-step constructor language contains all such maps.
 
-For a source/target pair $(x,t)$ define the verifier
+For a source/target pair $(x,t)$ define the external verifier
 \[
 V_{x,t}(r)=1\iff r(x)=t.
 \]
@@ -89,20 +87,23 @@ r_{2,\mathrm{LT}\to\mathrm{LE}}.
 Their literal intersection is empty.
 
 \begin{definition}[Closure-relative capability identity]
-For one-site rewrites define
+Let $G$ act on one-site partial rewrites by conjugation,
 \[
-r\sim_0 r'
-\iff
-\exists g\in G\; r'=g r g^{-1},
+g\cdot r = g r g^{-1}.
 \]
-where equality is equality of partial maps on $X$. A closure-relative capability is an orbit
-$[r]_0$ under this action.
+Define
+\[
+r\sim_G r'
+\iff
+\exists g\in G\; r'=g r g^{-1}.
+\]
+A closure-relative capability class in this witness is the orbit $[r]_G$.
 \end{definition}
 
 \begin{proposition}[Quotient identity]
 The two source cases determine the same unique capability class
 \[
-O_1=[\mathrm{LT}\to\mathrm{LE}]_0.
+O_1=[\mathrm{LT}\to\mathrm{LE}]_G.
 \]
 \end{proposition}
 
@@ -110,9 +111,12 @@ O_1=[\mathrm{LT}\to\mathrm{LE}]_0.
 The two literal survivors differ only by cyclic conjugation of the application coordinate.
 \end{proof}
 
-This quotient is also recovered by an independently implemented constructor grammar in which
-one rewrites only slot $0$ and obtains other positions by conjugation with the old $C_4$ action.
-Hence the two syntactic constructor presentations recover the same orbit class.
+This orbit is also recovered by an independently implemented constructor grammar in which
+one rewrites only slot $0$ and obtains other positions by conjugation with the old $C_4$ action,
+\[
+\rho^{-k};r_{0,a\to b};\rho^k.
+\]
+Thus two genuinely different constructor syntaxes recover the same capability class.
 
 \section{Transport, scope, and revocation}
 
@@ -139,6 +143,39 @@ s_1(c)=[c=\mathtt{if}].
 Later counterevidence appears inside this scope. No member of $\mathcal S$ then contains all
 positive cases while excluding all harmful cases, so the lifecycle decision is revocation.
 
+\section{Reachability categories}
+
+To keep state transitions and operator syntax type-distinct, define a thin transition category
+from a family of partial state transformations.
+
+\begin{definition}
+For a set $F$ of partial endomaps on $X$, let $\mathcal C(F)$ be the preorder-category whose
+objects are states $x\in X$, with a unique arrow
+\[
+x\longrightarrow y
+\]
+iff some finite composable word in transformations from $F$ is defined at $x$ and sends $x$ to $y$.
+\end{definition}
+
+Let
+\[
+F_0=G,
+\qquad
+\mathcal C_0=\mathcal C(F_0),
+\]
+where elements of $G$ are regarded as total transformations of $X$. Let
+\[
+F_1=F_0\cup O_1,
+\qquad
+\mathcal C_1=\mathcal C(F_1),
+\]
+where $O_1$ denotes all literal representatives in its $G$-orbit.
+
+\begin{remark}
+The thin category forgets multiplicity of derivation/program paths and retains exactly the
+reachability relation needed by the finite experiment. A richer semantics could retain those paths.
+\end{remark}
+
 \section{Second generation}
 
 Let
@@ -155,48 +192,38 @@ No one-site rewrite $r$ satisfies $r(d)=d'$.
 $d$ and $d'$ differ in two coordinates, whereas a one-site rewrite changes at most one.
 \end{proof}
 
-The exhaustive constructor audit therefore has $0$ verifier survivors among the $28$ available
+The exhaustive constructor audit therefore has zero verifier survivors among the $28$ available
 one-site candidates.
 
 Applying the retained $O_1$ uses only the current state and the capability class; the target is
-not available to the application procedure. In this case the source token occurs uniquely, so
-one obtains
+not available to the application procedure. Since the source token occurs uniquely, one obtains
 \[
 d_1=(A,\mathrm{LE},B,\mathrm{AND}).
 \]
-The same one-step constructor audit now has one surviving capability class
+The same one-step constructor audit now has one surviving orbit class
 \[
-O_2=[\mathrm{AND}\to\mathrm{OR}]_1.
+O_2=[\mathrm{AND}\to\mathrm{OR}]_G.
 \]
+The quotient still uses the fixed old symmetry group $G$; what is relative to generation $1$ is
+the closure/reachability test, not a newly asserted equivalence relation.
 
-\section{Transition categories}
-
-Let $\mathcal C_0$ be the subcategory of $\Par(X)$ generated by the total cyclic transports.
 Let
 \[
-\mathcal C_1=\langle\mathcal C_0,O_1\rangle
+F_2=F_1\cup O_2,
+\qquad
+\mathcal C_2=\mathcal C(F_2).
 \]
-be generated by the old transports and the transported representatives of $O_1$.
 
 \begin{theorem}[Exact second-generation closure expansion]
-\[
-d'\notin\Reach_{\mathcal C_1}(d).
-\]
-After adjoining $O_2$,
-\[
-\mathcal C_2=\langle\mathcal C_1,O_2\rangle,
-\qquad
-d'\in\Reach_{\mathcal C_2}(d).
-\]
-Moreover, ablating either $O_1$ or $O_2$ restores failure.
+There is no arrow $d\to d'$ in $\mathcal C_1$, whereas there is an arrow
+$d\to d'$ in $\mathcal C_2$. Moreover, ablating either $O_1$ or $O_2$ restores failure.
 \end{theorem}
 
 \begin{proof}
-Morphisms generated by $\mathcal C_0$ and $O_1$ can permute coordinates and replace
-$\mathrm{LT}$ by $\mathrm{LE}$, but cannot create an $\mathrm{OR}$ token from $\mathrm{AND}$.
-Thus $d'$ is outside the complete $\mathcal C_1$ reachability closure. Adjoining $O_2$ supplies
-exactly the missing second transformation. Each single ablation leaves one of the two coordinate
-differences unresolved.
+Transformations in $F_1$ can cyclically permute coordinates and replace $\mathrm{LT}$ by
+$\mathrm{LE}$, but cannot create an $\mathrm{OR}$ token from $\mathrm{AND}$. Thus $d'$ is
+unreachable in $\mathcal C_1$. Adding $O_2$ supplies the missing second change. Either single
+ablation leaves one required token change unavailable.
 \end{proof}
 
 Cold exhaustive reconstruction by two literal rewrites considers $28^2=784$ ordered pairs;
@@ -230,51 +257,64 @@ not enlarge the raw formation grammar.
 
 \section{Categorical question}
 
-The experiment suggests two levels that should not be identified:
+The experiment exposes two different levels.
 
-\begin{enumerate}
-\item \emph{internal computation}: morphisms $x\to y$ inside a fixed continuation regime
-$\mathcal C_t$;
-\item \emph{developmental change}: a transformation of regimes
+\subsection*{Internal computation}
+For fixed $t$, computation is represented by arrows
 \[
-\mathcal C_t\longrightarrow\mathcal C_{t+1}.
+x\to y\quad\text{in }\mathcal C_t.
 \]
-\end{enumerate}
+A search or policy selects continuations internal to that regime.
 
-In the finite witness one has
+\subsection*{Developmental change}
+The evidence also induces a sequence of different reachability categories
 \[
-\mathcal C_0\hookrightarrow\mathcal C_1\hookrightarrow\mathcal C_2.
+\mathcal C_0,\qquad \mathcal C_1,\qquad \mathcal C_2.
 \]
-A natural higher-level object would therefore have continuation regimes as objects and
-verified admissions, restrictions or revocations as arrows. We do not claim that ordinary
-categories are the final structure: the appropriate object may require action groupoids,
-indexed/fibred categories, bicategories, profunctors/optics, or another construction.
+The developmental question concerns whatever higher-level structure should represent transitions
+\[
+\mathcal C_t\rightsquigarrow\mathcal C_{t+1}
+\]
+including admission, restriction and revocation. The symbol $\rightsquigarrow$ is deliberately
+neutral: the experiment does not assume these regime changes are ordinary functors, inclusions,
+optics, profunctors, $2$-cells, or something else.
 
 \begin{question}
 What is the natural categorical identity of a capability when literal implementations are
 quotiented by transformations already internal to the current regime? Is the orbit quotient in
 this finite model the correct prototype, or should identity be given by a universal/observational
-construction such as a coequalizer, localization or bicategorical quotient?
+construction such as an action groupoid, coequalizer, localization or bicategorical quotient?
 \end{question}
 
 \begin{question}
-What structure best separates state evolution $x\to y$ inside $\mathcal C_t$ from verified
-changes $\mathcal C_t\to\mathcal C_{t+1}$ of the continuation space itself?
+What categorical object should keep arrows $x\to y$ inside a fixed $\mathcal C_t$ distinct from
+verified transitions $\mathcal C_t\rightsquigarrow\mathcal C_{t+1}$ of the continuation regime itself?
 \end{question}
 
 \begin{question}
-Should applicability be indexed over a context base, so that counterevidence restricts the
-region over which a capability exists, and revocation corresponds to loss of every admissible
-section/scope?
+Should applicability be indexed or fibred over a context base, so that counterevidence restricts
+the region over which a capability is admissible and revocation occurs when no admissible region remains?
 \end{question}
 
-\begin{question}[Strict second-order development]
-What is the right compositional criterion for a transition of constructor regimes
-$M_0\to M_1$ for which a later capability satisfies
+\section{Strict second-order development}
+
+The stronger target requires constructor regimes $M_t$ as well as execution/reachability regimes
+$\mathcal C_t$. A strict result would require an admitted $O_1$ that causally changes
 \[
-O_2\notin\Form(M_0),\qquad O_2\in\Form(M_1),
+M_0\rightsquigarrow M_1
 \]
-without making the result tautological by hard-coding $O_1$ into the formation rule for $O_2$?
+and a later capability satisfying
+\[
+O_2\notin\Form(M_0),
+\qquad
+O_2\in\Form(M_1).
+\]
+The hard part is to establish this without making it tautological by defining the $O_2$
+constructor to take $O_1$ as a hard-coded argument.
+
+\begin{question}
+What is the right compositional notion of second-order development that distinguishes changed
+reachability, changed admissibility, changed representation, and changed constructor formability?
 \end{question}
 
 \section{Executable certificate}
@@ -284,7 +324,7 @@ The exact finite claims are reproduced by
 python reproductions/daniel_closure_depth_v1/reproduce.py
 \end{verbatim}
 with no third-party dependencies. The reproduction uses an independently frozen expected
-certificate, regenerates the experiment result, independently rechecks headline gates, and runs
-a separate constructor-grammar implementation.
+certificate, regenerates the experiment result, explicitly rechecks the headline gates, and runs
+an independently implemented alternate-constructor-grammar audit.
 
 \end{document}
