@@ -1,12 +1,81 @@
-# Daniel Reproduction — Closure-Relative Developmental Depth V1
+# Daniel package — verified continuation regimes and a minimal finite witness
 
-This is the minimal standalone reproduction of one bounded developmental phenomenon from the MathGraph / Triskelion research line.
+This folder contains two different things and they should not be conflated:
 
-It is deliberately small enough to inspect line by line. It requires only Python 3.10+: no API keys, model calls, network calls after cloning, hidden datasets, or third-party packages.
+1. a **tiny exact synthetic reproduction** of closure-relative identity and bounded developmental discoverability;
+2. a **real Lean/Specimen experimental lineage** in which generalized constructor/representation capabilities were admitted, transferred, protected, ablated, and sometimes rejected by negative controls.
 
-**For the mathematical object first, read [`MATHEMATICAL_NOTE.md`](MATHEMATICAL_NOTE.md).** The Python is intended as an executable certificate of that finite model, not as a substitute for the mathematics.
+The synthetic Python model is useful because it can be inspected exhaustively. It is **not** the primary evidence for Developmental Intelligence.
 
-`LINEAGE.md` then locates the toy inside the real Triskelion/Specimen evidence: V54 two-generation discoverability, V132 one-generation real constructibility expansion, V133 changed residual, and the frozen V134 next discriminator.
+## Read in this order
+
+For the current mathematical question:
+
+1. [`REGIME_MATHEMATICS.md`](REGIME_MATHEMATICS.md) — the proposed extension from fixed-signature Structured Continuation Calculus to verified transformations between effective continuation regimes;
+2. [`LINEAGE.md`](LINEAGE.md) — the actual Triskelion / Specimen evidence, including positive, negative, and null results;
+3. [`MATHEMATICAL_NOTE.md`](MATHEMATICAL_NOTE.md) — the exact finite toy;
+4. `reproduce.py` — executable certificate for that toy.
+
+The key open distinction is now:
+
+```text
+successive admitted capabilities
+        !=
+causal developmental dependence between capability generations
+```
+
+The public evidence establishes the former. The latter remains open and is now targeted explicitly by the frozen V177 discriminator in `heathsanchez/specimen`.
+
+## Real evidence snapshot
+
+The strongest relevant public results currently include:
+
+- **V132 / K5:** a real causal constructibility expansion in the Specimen Lean metaprogramming substrate;
+- **V158 / K6:** `PASS_V158_SCOPE_VALID_PLACEMENT_ADMITTED_SCOPED`, with G1–G14, source-distinct controls, full build/test, and ablation;
+- **V159:** `NULL_V159_NO_REACHABILITY_MOVEMENT` — the planned later-frontier target already passed without K6, so K6 was not credited with moving that frontier;
+- **V164B:** a proposed upstream issue #9 frontier was rejected because untouched upstream failed earlier on a semantic/typeclass prerequisite;
+- **V169B / K7S:** `PASS_V169B_K7S_ADMITTED_BOUNDED_NATURAL_CONSTRUCTOR_DEVELOPMENT`, with natural and pre-frozen held-out rescue, safety control, protected build/test, and independent ablation.
+
+The V169B GitHub Actions run is `31953793565` and completed successfully. The recorded result commit is:
+
+```text
+024350f75090b0c0068355ea131d0b77bad6ae6a
+```
+
+This supports successive verifier-governed capability development on a real substrate. It does **not** prove that K6 was causally necessary for K7S.
+
+## Frozen next discriminator
+
+A new prospective test is frozen in `heathsanchez/specimen`:
+
+```text
+protocols/V177_K6_K7S_DEPENDENCY.md
+.github/workflows/v177-k6-k7s-dependency.yml
+```
+
+The four arms are:
+
+```text
+A = K2 + K5
+B = K2 + K5 + K7S          # K6 ablated
+C = K2 + K5 + K6           # K7S absent
+D = K2 + K5 + K6 + K7S
+```
+
+Its purpose is deliberately narrow: determine whether K7S's verified natural/held-out effect actually requires the K6-extended regime.
+
+- If B and D both pass while A and C fail, the K6→K7S dependency hypothesis is **killed**.
+- If only D passes under the frozen gates, that establishes an execution-level K6 dependency worth investigating further.
+
+Even a positive result would not establish raw host-language unformability.
+
+**Execution status:** frozen, not yet executed through GitHub Actions from this environment. API-authored commits do not trigger the repository's push workflows here, and the available connector does not expose fresh `workflow_dispatch`. No result is claimed.
+
+---
+
+# Minimal finite reproduction
+
+The toy is deliberately small enough to inspect line by line. It requires only Python 3.10+: no API keys, model calls, network calls after cloning, hidden datasets, or third-party packages.
 
 ## Run
 
@@ -16,13 +85,10 @@ cd mathgraph
 python reproductions/daniel_closure_depth_v1/reproduce.py
 ```
 
-A successful run ends with:
+A successful run ends with the frozen finite-model certificate, including:
 
 ```text
-=== REPRODUCTION VERIFIED ===
-independent oracle: MATCH
 14/14 core gates: PASS
-independent constructor grammars: SAME CAPABILITY CLASS
 O1: [LT -> LE]
 cold O2 survivors: 0/28
 after O1, O2: [AND -> OR]
@@ -32,158 +98,64 @@ presentation invariance: 24/24
 search compression: 784 -> 28 (28x)
 later counterevidence: REVOKE
 core verdict: PASS_DISCOVERABILITY_DEPTH
-strict raw constructibility: NOT ESTABLISHED (intended falsification)
+strict raw constructibility: NOT ESTABLISHED
 ```
 
-## Public verification status
+## What the toy actually shows
 
-The reproduction is present on `main` at this path and is exercised by `.github/workflows/daniel-closure-depth-repro.yml`.
+Let `G0` be the old cyclic-transport regime. The target requires a token replacement unavailable in that closure. Two positional literal repairs differ, while quotienting position by the old `C4` action identifies them as one orbit/class. Retaining that class changes what a later bounded one-rewrite verifier search can find.
 
-The CI matrix checks fresh checkouts on Python 3.10, 3.11, 3.12, and 3.13 and separately compiles the LaTeX mathematical note. PR #96, `Finalize Daniel closure-depth reproduction CI`, was merged at commit:
+The toy establishes an exact finite fact of the form:
+
+```text
+retained verified transformation class
+        -> changed later bounded search reachability
+```
+
+It does **not** establish open-ended representation invention, general AI development, or strict second-generation constructor growth.
+
+## Important audit corrections
+
+### The alternate grammar check is only a sanity check
+
+`alternate_grammar_audit.py` is independently implemented, but the two constructor presentations are algebraically related by the old cyclic action: fixed-slot rewrite plus conjugation computes the corresponding position-indexed rewrite.
+
+Therefore agreement between those presentations is **not** an independent risk-bearing invariance result. It is a useful implementation / coordinate sanity check of the quotient, and should be described as such.
+
+### `EXPECTED.json` is a frozen regression certificate, not an epistemically independent oracle
+
+`reproduce.py` genuinely reruns `run.py`, regenerates `RESULT.json`, and separately rechecks the headline predicates. `EXPECTED.json` is stored separately so drift is caught.
+
+However, `EXPECTED.json` is not derived by a separate mathematical implementation. Its independence is structural/regression-test independence, not an independent source of scientific truth. The authoritative evidence remains the executable finite computation plus direct inspection of the mathematics.
+
+### The 24/24 renaming result is modest
+
+The 24 token renamings verify that the finite result is insensitive to the literal names assigned to the four semantic role tokens. They do not establish broad representation invariance.
+
+## Public verification status of the toy
+
+The reproduction is present on `main` and exercised by `.github/workflows/daniel-closure-depth-repro.yml`.
+
+PR #96 was merged at:
 
 ```text
 07974629b3cae6de22f9f78628e1c51693c89eae
 ```
 
-The merge-triggered workflow is **run #19**. Run #18 was the preceding successful PR-branch validation run; it should not be described as the final merged run.
+The final merge-triggered CI validation was **run #19**. It tested fresh checkouts on Python 3.10, 3.11, 3.12 and 3.13 and separately compiled the LaTeX mathematical note.
 
-The numerical claims below are not inferred merely from a green CI badge. They are frozen in `EXPECTED.json`, regenerated by the experiment, and explicitly rechecked by `reproduce.py`.
-
-## The mathematical question
-
-Let `G0` be a frozen generative system. A verified failure may show that a target is outside `Cl(G0)`. After admitting a new closure-relative capability class `O1`, the effective system becomes `G1`.
-
-The experiment asks two different questions:
-
-1. Does retaining `O1` change what later capability can be *verifiedly discovered* under the same bounded search protocol?
-2. Does retaining `O1` change what later capability can even be *formed by the raw constructor meta-language*?
-
-The answer here is **yes to (1), no to (2)**. Keeping those claims separate is part of the result.
-
-The mathematical note makes the distinction more formally as
+The later documentation correction commit is:
 
 ```text
-internal computation:  x -> y  inside C_t
-developmental change:  C_t -> C_(t+1)
+e11d431588ee1e60efb0e4c98085814dee8c9e22
 ```
 
-with closure-relative capability identity defined in the finite witness as an orbit under transformations already available in the old system.
+It did not itself produce a new Actions run through the API-authored commit path, so no run #20 is claimed.
 
-## Verifier / constructor boundary
+## Finite-model claim boundary
 
-The constructor can enumerate one-token rewrites. The verifier alone decides whether a candidate exactly reaches the target.
+The toy's strongest safe statement is:
 
-Once a capability class has been admitted, applying it does **not** receive the target. `transport_apply` sees only the retained class and the current state. In the frozen cases the capability source token occurs exactly once, so its application site is determined without target access. If that uniqueness condition fails, transport returns no application.
+> In this finite model, retaining a verified equivalence class of transformations causally changes what a fixed bounded verifier-guided search can discover next; the stronger claim that the later transformation became newly formable in the raw meta-language is false.
 
-This is intentional: target knowledge must not leak from the verifier into capability application.
-
-## Generation 1 — capability identity relative to closure
-
-The old language can only cyclically transport token positions. It preserves token multiset exactly.
-
-Two acquisition cases require the same semantic change at different positions:
-
-```text
-S1: LT A B C  ->  LE A B C
-S2: A B LT C  ->  A B LE C
-```
-
-Their literal repairs are different positional programs, so literal identity has empty intersection. Quotienting by transformations already available in `G0` removes position as an identity distinction and yields the same unique class:
-
-```text
-O1 = [LT -> LE]_(G0)
-```
-
-A third held-out position is solved by transporting the class, while literal-identity reuse fails. Targeted ablation restores failure.
-
-### Independent constructor-grammar separator
-
-The main experiment is supplemented by `alternate_grammar_audit.py`, which does **not import the experiment runner** and reconstructs O1 using two genuinely different constructor syntaxes:
-
-- direct position-indexed rewrites `r[i, a -> b]`;
-- fixed-slot rewrites conjugated by the old cyclic action, `rho^(-k) ; r[0, a -> b] ; rho^k`.
-
-Their literal constructor terms differ, but both source cases recover the same unique closure-relative class `[LT -> LE]`. This is stronger than relabelling the same code path as another “grammar”.
-
-All 24 bijective renamings of the four semantic role tokens are also checked and mapped back to the original presentation.
-
-A frozen context grammar independently selects `context == if` as the unique minimal non-global applicability scope.
-
-## Generation 2 — developmental discoverability
-
-The second target has two independent defects:
-
-```text
-A LT B AND  ->  A LE B OR
-```
-
-With the same one-new-capability budget, cold search tests 28 rewrites and has **0 verifier-surviving candidates**.
-
-Retained `O1` is then applied without target access:
-
-```text
-A LT B AND  ->  A LE B AND
-```
-
-The same 28-way one-rewrite search now exposes one unique surviving class:
-
-```text
-O2 = [AND -> OR]_(G1)
-```
-
-The script exhaustively computes the semantic closure of old transport plus `O1` and verifies that the final target is still outside `Cl(G1)`. `O2` is therefore genuinely closure-expanding relative to `G1`, rather than merely a cheaper route already in that closure.
-
-Final success requires both classes: ablate either `O1` or `O2` and the final target fails.
-
-For this finite world, exhaustive cold two-rewrite reconstruction considers 784 literal pairs; after retaining `O1`, the complete one-rewrite audit considers 28 candidates: 28x search compression.
-
-## Lifecycle / revocation
-
-A later counterexample appears inside the learned `if` scope. Under the frozen context-only scope grammar there is then no surviving scope refinement, so the decision is:
-
-```text
-REVOKE
-```
-
-not “retain the useful capability somehow”.
-
-## Independent reproduction oracle
-
-`EXPECTED.json` is a frozen reproduction oracle separate from the generated experiment output path.
-
-The wrapper checks, in this order:
-
-1. committed `RESULT.json` agrees with `EXPECTED.json` before execution;
-2. the experiment regenerates `RESULT.json` from `run.py`;
-3. regenerated output agrees with the independently frozen oracle;
-4. all 14 headline predicates and the strict-constructibility falsification are rechecked explicitly;
-5. the separately implemented alternate constructor grammar audit passes;
-6. the original committed result bytes are restored so a fresh checkout remains clean.
-
-The original capstone result commit is:
-
-```text
-df795a6446ec884b40d4760e230d7776a3032e39
-```
-
-## Claim boundary
-
-This is an exact **synthetic finite witness**, not the natural-code evidence and not a claim of open-ended self-improvement.
-
-It supports, inside this frozen world:
-
-- exact old-closure obstruction;
-- closure-relative rather than literal capability identity;
-- held-out positional transport and causal ablation;
-- robustness to a genuinely different constructor syntax;
-- 24/24 semantic-token presentation renamings;
-- independently scoped applicability and later revocation;
-- two-generation verifier-dependent discoverability;
-- exact semantic closure obstruction for `O2` relative to `G1`;
-- measurable search compression.
-
-It deliberately **does not** claim that `O2` was impossible to spell in the original generic rewrite meta-language. It was already syntactically available. `O1` changes what becomes verifier-surviving under the bounded developmental protocol, not the raw syntax of that meta-language.
-
-The stronger unresolved target is **strict second-generation constructibility** on a real constructor substrate: an acquired capability must causally enable formation/typechecking/generation of a later capability that the previous constructor substrate genuinely could not construct.
-
-That stronger question is why this reproduction should be read together with the real Specimen/Triskelion lineage, not as a replacement for it.
+That falsification is intentional. The real research question is now expressed at the level of **effective verified continuation regimes**, not raw host-language syntax. See [`REGIME_MATHEMATICS.md`](REGIME_MATHEMATICS.md).
