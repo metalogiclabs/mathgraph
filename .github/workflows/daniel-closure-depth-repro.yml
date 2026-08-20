@@ -12,6 +12,7 @@ on:
       - "reproductions/daniel_relational_law_synthesis_v4/**"
       - "reproductions/daniel_law_identity_v5/**"
       - "reproductions/daniel_second_generation_budget_v6/**"
+      - "reproductions/daniel_obstruction_version_space_v8/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
   pull_request:
     paths:
@@ -23,6 +24,7 @@ on:
       - "reproductions/daniel_relational_law_synthesis_v4/**"
       - "reproductions/daniel_law_identity_v5/**"
       - "reproductions/daniel_second_generation_budget_v6/**"
+      - "reproductions/daniel_obstruction_version_space_v8/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
 
 permissions:
@@ -40,60 +42,41 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
+        with: {python-version: "${{ matrix.python-version }}"}
       - name: Compile Python sources
         run: |
-          python -m py_compile \
-            experiments/closure_relative_developmental_depth_v1/run.py \
-            reproductions/daniel_closure_depth_v1/reproduce.py \
-            reproductions/daniel_closure_depth_v1/alternate_grammar_audit.py
-          for f in \
-            reproductions/daniel_typed_regime_growth_v1/reproduce.py \
-            reproductions/daniel_target_independent_regime_growth_v2/reproduce.py \
-            reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py \
-            reproductions/daniel_coordinate_free_refinement_v3/reproduce.py \
-            reproductions/daniel_relational_law_synthesis_v4/reproduce.py \
-            reproductions/daniel_law_identity_v5/reproduce.py \
-            reproductions/daniel_second_generation_budget_v6/reproduce.py; do
+          python -m py_compile experiments/closure_relative_developmental_depth_v1/run.py reproductions/daniel_closure_depth_v1/reproduce.py reproductions/daniel_closure_depth_v1/alternate_grammar_audit.py
+          for f in reproductions/daniel_typed_regime_growth_v1/reproduce.py reproductions/daniel_target_independent_regime_growth_v2/reproduce.py reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py reproductions/daniel_coordinate_free_refinement_v3/reproduce.py reproductions/daniel_relational_law_synthesis_v4/reproduce.py reproductions/daniel_law_identity_v5/reproduce.py reproductions/daniel_second_generation_budget_v6/reproduce.py reproductions/daniel_obstruction_version_space_v8/reproduce.py; do
             if [ -f "$f" ]; then python -m py_compile "$f"; fi
           done
-
       - name: Reproduce closure-depth certificate
         run: python reproductions/daniel_closure_depth_v1/reproduce.py
-
       - name: Reproduce typed regime-growth certificate
         if: ${{ hashFiles('reproductions/daniel_typed_regime_growth_v1/reproduce.py') != '' }}
         run: python reproductions/daniel_typed_regime_growth_v1/reproduce.py
-
       - name: Reproduce target-independent exhaustive regime benchmark
         if: ${{ hashFiles('reproductions/daniel_target_independent_regime_growth_v2/reproduce.py') != '' }}
         run: python reproductions/daniel_target_independent_regime_growth_v2/reproduce.py
-
       - name: Reproduce repaired target-independent controls
         if: ${{ hashFiles('reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py') != '' }}
         run: python reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py
-
       - name: Reproduce coordinate-free refinement benchmark
         if: ${{ hashFiles('reproductions/daniel_coordinate_free_refinement_v3/reproduce.py') != '' }}
         run: python reproductions/daniel_coordinate_free_refinement_v3/reproduce.py
-
       - name: Reproduce generic relational law synthesis
         if: ${{ hashFiles('reproductions/daniel_relational_law_synthesis_v4/reproduce.py') != '' }}
         run: python reproductions/daniel_relational_law_synthesis_v4/reproduce.py
-
       - name: Reproduce cross-DSL behavioral law identity
         if: ${{ hashFiles('reproductions/daniel_law_identity_v5/reproduce.py') != '' }}
         run: python reproductions/daniel_law_identity_v5/reproduce.py
-
       - name: Reproduce resource-indexed second-generation constructibility
         if: ${{ hashFiles('reproductions/daniel_second_generation_budget_v6/reproduce.py') != '' }}
         run: python reproductions/daniel_second_generation_budget_v6/reproduce.py
-
+      - name: Reproduce sparse-obstruction version-space audit
+        if: ${{ hashFiles('reproductions/daniel_obstruction_version_space_v8/reproduce.py') != '' }}
+        run: python reproductions/daniel_obstruction_version_space_v8/reproduce.py
       - name: Verify checkout remains clean
         run: git diff --exit-code
 
@@ -101,19 +84,15 @@ jobs:
     name: Compile mathematical note
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Install minimal LaTeX
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended
-
       - name: Compile closure-depth TeX twice
         working-directory: reproductions/daniel_closure_depth_v1
         run: |
           pdflatex -interaction=nonstopmode -halt-on-error MATHEMATICAL_NOTE.tex
           pdflatex -interaction=nonstopmode -halt-on-error MATHEMATICAL_NOTE.tex
-
       - name: Verify PDF produced
         run: test -s reproductions/daniel_closure_depth_v1/MATHEMATICAL_NOTE.pdf
