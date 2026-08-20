@@ -2,11 +2,15 @@
 """
 Typed Regime Growth V1
 
-Exact finite witness of strict constructor-language growth:
-  episode 1 admits ExposeDependency from P1 alone;
-  P2 is literally unformable before that extension because its result sort is absent;
-  the same synthesis procedure constructs O2 after the extension;
-  ablation and every unary-only sham extension restore non-formability.
+Exact finite witness of strict object-level constructor-language growth under a
+supplied developmental extension family.
+
+Scientific boundary:
+  * M0/M1 are the frozen object-level languages available to the controller.
+  * ExposeDependency is supplied by the developmental meta-language; this
+    experiment does NOT claim autonomous invention of that schema.
+  * P2 is committed before episode-1 selection and is not read by the selector;
+    this establishes online target blindness, not independent authorship.
 
 Standard library only. Deterministic.
 """
@@ -20,11 +24,10 @@ import json
 X = (0, 1)
 A = (0, 1, 2)
 XA = tuple(product(X, A))
+U = "U"  # A -> Bool
+D = "D"  # X x A -> Bool
 
-U = "U"  # predicates A -> Bool
-D = "D"  # predicates X x A -> Bool
-
-# P2 is fixed before episode-1 selection and is not read by select_episode1_extension.
+# Fixed before episode-1 selection. select_episode1_extension() never reads it.
 P2_BITS = tuple((x == 0) == (a == 0) for x, a in XA)
 P2_COMMITMENT = sha256(bytes(int(b) for b in P2_BITS)).hexdigest()
 
@@ -143,7 +146,7 @@ def synthesize_dep(regime: Regime, target: tuple[bool, ...]) -> Term | None:
 
 
 def obstruction_pairs(target: tuple[bool, ...]):
-    """Pairs merged by projection (x,a)->a but requiring different target outputs."""
+    """Pairs merged by projection (x,a)->a but requiring different outputs."""
     pairs = []
     for i, p in enumerate(XA):
         for j, q in enumerate(XA):
@@ -155,28 +158,27 @@ def obstruction_pairs(target: tuple[bool, ...]):
 M0 = Regime("M0", dep_sort=False, unary_primitives=("a=0",))
 M1 = Regime("M1=M0+ExposeDependency", dep_sort=True, unary_primitives=("a=0",))
 ALL_UNARY_BITS = tuple(product((False, True), repeat=len(A)))
-
-# Episode 1. This target does not factor through the old projection (x,a)->a.
 P1 = tuple((x == 0) or (a == 0) for x, a in XA)
 
 
 def select_episode1_extension() -> str:
-    # Important: P2 is not referenced here.
+    """Select within the supplied extension family using P1 only."""
     if not obstruction_pairs(P1):
         raise AssertionError("P1 must expose a projection obstruction")
-    # Exhaust every possible new unary primitive on A. None can distinguish x.
+    # Exhaust the complete unary-only subfamily. None can distinguish x.
     for bits in ALL_UNARY_BITS:
         lifted = tuple(bits[A.index(a)] for x, a in XA)
         if lifted == P1:
             raise AssertionError("A unary-only extension unexpectedly represented P1")
+    # ExposeDependency is a supplied meta-language candidate, not synthesized here.
     if synthesize_dep(M1, P1) is None:
-        raise AssertionError("ExposeDependency failed to represent P1")
+        raise AssertionError("Supplied ExposeDependency candidate failed to represent P1")
     return "ExposeDependency"
 
 
 O1 = select_episode1_extension()
 
-# Only now open the already-fixed second target.
+# Only now use the already-committed second target.
 assert sha256(bytes(int(b) for b in P2_BITS)).hexdigest() == P2_COMMITMENT
 O2 = synthesize_dep(M1, P2_BITS)
 
@@ -189,19 +191,20 @@ all_unary_shams_fail_p2 = all(
 )
 
 gates = {
-    "G1_P1_has_verified_projection_obstruction": len(obstruction_pairs(P1)) > 0,
-    "G2_all_unary_only_extensions_preserve_P1_impossibility":
+    "G1_P1_has_projection_obstruction": len(obstruction_pairs(P1)) > 0,
+    "G2_complete_unary_only_subfamily_preserves_P1_impossibility":
         all(tuple(bits[A.index(a)] for x, a in XA) != P1 for bits in ALL_UNARY_BITS),
-    "G3_O1_selected_without_reading_P2": O1 == "ExposeDependency",
+    "G3_supplied_ExposeDependency_admitted_using_P1_only": O1 == "ExposeDependency",
     "G4_M0_has_no_D_terms": enumerate_dep(M0) == {},
-    "G5_P2_semantically_outside_all_unary_only_extensions": all_unary_shams_fail_p2,
+    "G5_P2_outside_complete_unary_only_subfamily": all_unary_shams_fail_p2,
     "G6_M1_strictly_adds_D_formability": len(m1_d) > 0,
     "G7_O2_constructed_in_M1": O2 is not None and sem_d(O2) == P2_BITS,
     "G8_ancestor_ablation_restores_nonformability": synthesize_dep(M0, P2_BITS) is None,
-    "G9_sham_extension_restores_nonformability": all_unary_shams_fail_p2,
-    "G10_conservative_on_old_unary_fragment": set(m0_u) == set(m1_u),
-    "G11_O2_not_primitive": O2 is not None and O2.op not in {"x=0", "lift"},
-    "G12_same_synthesizer_cold_vs_warm": synthesize_dep(M0, P2_BITS) is None and synthesize_dep(M1, P2_BITS) == O2,
+    "G9_unary_shams_preserve_nonformability": all_unary_shams_fail_p2,
+    "G10_old_U_semantic_fragment_preserved": set(m0_u) == set(m1_u),
+    "G11_O2_is_composed_not_primitive": O2 is not None and O2.op not in {"x=0", "lift"},
+    "G12_identical_second_generation_synthesizer_cold_vs_warm":
+        synthesize_dep(M0, P2_BITS) is None and synthesize_dep(M1, P2_BITS) == O2,
 }
 assert all(gates.values()), {k: v for k, v in gates.items() if not v}
 
@@ -211,13 +214,16 @@ result = {
     "episode1": {
         "target_bits": list(P1),
         "projection_obstruction_pairs": [[list(p), list(q)] for p, q in obstruction_pairs(P1)],
+        "extension_family_boundary": "all 8 unary truth-table primitives plus supplied ExposeDependency schema",
         "selected_extension": O1,
-        "m0_unary_semantics": len(m0_u),
+        "M0_U_semantic_classes": len(m0_u),
         "all_possible_unary_shams_tested": len(ALL_UNARY_BITS),
     },
     "episode2": {
         "target_commitment_sha256": P2_COMMITMENT,
         "target_bits": list(P2_BITS),
+        "online_target_blindness_only": True,
+        "independent_authorship_claimed": False,
         "cold_D_form_count": 0,
         "warm_D_semantic_classes": len(m1_d),
         "O2": O2.pretty() if O2 else None,
@@ -227,22 +233,24 @@ result = {
         "ablated_constructible": synthesize_dep(M0, P2_BITS) is not None,
         "all_unary_shams_constructible": not all_unary_shams_fail_p2,
     },
-    "conservativity": {
-        "M0_unary_classes": len(m0_u),
-        "M1_unary_classes": len(m1_u),
+    "old_fragment": {
+        "meaning_of_conservative": "equality of denotable U-semantics in this finite model",
+        "M0_U_classes": len(m0_u),
+        "M1_U_classes": len(m1_u),
         "same_old_fragment": set(m0_u) == set(m1_u),
+        "general_proof_theoretic_conservativity_claimed": False,
     },
     "gates": gates,
     "claim": (
-        "Within this frozen finite typed calculus, O2 is not in Form(M0) because sort D is absent; "
-        "episode-1 obstruction admits ExposeDependency, producing M1 with new D-typed terms; "
-        "the unchanged episode-2 synthesizer then constructs O2; ancestor ablation and every "
-        "unary-only sham preserve non-formability; the old unary fragment is conservative."
+        "Within the frozen finite object-level calculus, Form_D(M0) is empty; after admission of the "
+        "supplied ExposeDependency extension schema, M1 has D-typed terms and the unchanged episode-2 "
+        "synthesizer constructs O2. Removing that extension restores non-formability; the complete "
+        "unary-only sham family fails; and the old U semantic fragment is preserved."
     ),
     "boundary": (
-        "This is a constructed finite witness of strict object-language formability growth. "
-        "It does not show that a host language such as Python or Lean could not encode O2, "
-        "nor that open-ended systems can invent arbitrary new type formers."
+        "This is strict object-language formability growth under a supplied developmental extension family. "
+        "ExposeDependency is not autonomously invented, P2 commitment establishes online target blindness "
+        "rather than independent authorship, and no host-language or general proof-theoretic growth is claimed."
     ),
 }
 print(json.dumps(result, indent=2, sort_keys=True))
