@@ -10,7 +10,7 @@
 \newtheorem{question}[definition]{Question}
 
 \newcommand{\Cl}{\operatorname{Cl}}
-\newcommand{\Form}{\operatorname{Form}}
+\newcommand{\CapForm}{\operatorname{Form}}
 
 \title{Closure-Relative Capability Growth:\\An Exact Finite Witness and an Open Categorical Question}
 \author{Metalogic Labs}
@@ -236,13 +236,13 @@ Let $M_0$ be the raw frozen constructor meta-language containing all one-site re
 Although $O_2$ has no cold verifier-surviving one-step use on $(d,d')$, the syntax
 $r_{i,\mathrm{AND}\to\mathrm{OR}}$ is already present in $M_0$. Hence
 \[
-O_2\in\Form(M_0).
+O_2\in\CapForm(M_0).
 \]
 Therefore the stronger second-order claim
 \[
-O_2\notin\Form(M_0)
+O_2\notin\CapForm(M_0)
 \quad\text{and}\quad
-O_2\in\Form(M_1)
+O_2\in\CapForm(M_1)
 \]
 is false in this model.
 
@@ -305,9 +305,9 @@ M_0\rightsquigarrow M_1
 \]
 and a later capability satisfying
 \[
-O_2\notin\Form(M_0),
+O_2\notin\CapForm(M_0),
 \qquad
-O_2\in\Form(M_1).
+O_2\in\CapForm(M_1).
 \]
 The hard part is to establish this without making it tautological by defining the $O_2$
 constructor to take $O_1$ as a hard-coded argument.

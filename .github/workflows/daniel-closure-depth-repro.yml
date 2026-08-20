@@ -34,8 +34,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Compile Python sources
+        run: |
+          python -m py_compile \
+            experiments/closure_relative_developmental_depth_v1/run.py \
+            reproductions/daniel_closure_depth_v1/reproduce.py \
+            reproductions/daniel_closure_depth_v1/alternate_grammar_audit.py
+
       - name: Reproduce exact certificate
         run: python reproductions/daniel_closure_depth_v1/reproduce.py
 
       - name: Verify checkout remains clean
         run: git diff --exit-code
+
+  mathematical-note:
+    name: Compile mathematical note
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install minimal LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended
+
+      - name: Compile TeX twice
+        working-directory: reproductions/daniel_closure_depth_v1
+        run: |
+          pdflatex -interaction=nonstopmode -halt-on-error MATHEMATICAL_NOTE.tex
+          pdflatex -interaction=nonstopmode -halt-on-error MATHEMATICAL_NOTE.tex
+
+      - name: Verify PDF produced
+        run: test -s reproductions/daniel_closure_depth_v1/MATHEMATICAL_NOTE.pdf
