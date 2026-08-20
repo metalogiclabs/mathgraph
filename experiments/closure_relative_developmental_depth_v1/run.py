@@ -34,6 +34,23 @@ class RewriteAt:
 
 
 @dataclass(frozen=True)
+class ConjugatedFixedSlot:
+    """Alternate syntax: rewrite slot 0 after transport, then transport back."""
+
+    shift: int
+    src: str
+    dst: str
+
+    def apply(self, xs: tuple[str, ...]) -> tuple[str, ...] | None:
+        y = rotate(xs, self.shift)
+        if y[0] != self.src:
+            return None
+        z = list(y)
+        z[0] = self.dst
+        return rotate(tuple(z), -self.shift)
+
+
+@dataclass(frozen=True)
 class CapClass:
     src: str
     dst: str
@@ -56,8 +73,8 @@ def multiset_obstruction(case: Case) -> bool:
     return Counter(case.broken) != Counter(case.target)
 
 
-def canonical_class(op: RewriteAt) -> CapClass:
-    # Literal position is quotiented by the old cyclic transport action.
+def canonical_class(op: RewriteAt | ConjugatedFixedSlot) -> CapClass:
+    # Literal position/transport term is quotiented by the old cyclic action.
     return CapClass(op.src, op.dst)
 
 
@@ -70,12 +87,30 @@ def all_literals(xs: tuple[str, ...], grammar: str = "direct") -> list[RewriteAt
     return out
 
 
+def all_conjugated_literals() -> list[ConjugatedFixedSlot]:
+    return [
+        ConjugatedFixedSlot(shift, src, dst)
+        for shift in range(4)
+        for src in TOKENS
+        for dst in TOKENS
+        if src != dst
+    ]
+
+
 def survivors(case: Case, grammar: str) -> list[RewriteAt]:
     return [op for op in all_literals(case.broken, grammar) if op.apply(case.broken) == case.target]
 
 
 def class_survivors(case: Case, grammar: str) -> set[CapClass]:
     return {canonical_class(op) for op in survivors(case, grammar)}
+
+
+def conjugated_class_survivors(case: Case) -> set[CapClass]:
+    return {
+        canonical_class(op)
+        for op in all_conjugated_literals()
+        if op.apply(case.broken) == case.target
+    }
 
 
 def transport_apply(cap: CapClass, xs: tuple[str, ...]) -> tuple[str, ...] | None:
@@ -121,7 +156,7 @@ s1_direct = survivors(S1, "direct")
 s2_direct = survivors(S2, "direct")
 literal_intersection = set(s1_direct) & set(s2_direct)
 class_intersection = class_survivors(S1, "direct") & class_survivors(S2, "direct")
-class_intersection_alt = class_survivors(S1, "transport") & class_survivors(S2, "transport")
+class_intersection_alt = conjugated_class_survivors(S1) & conjugated_class_survivors(S2)
 O1 = next(iter(class_intersection)) if len(class_intersection) == 1 else None
 
 # Frozen generic scope grammar over the only observable context field.
@@ -373,7 +408,7 @@ report = {
         "Exact finite model. It establishes closure-relative capability identity, "
         "source-distinct transport, two-generation verifier-dependent discoverability, "
         "semantic closure obstruction for O2, causal ablation, grammar/presentation "
-        "robustness, search compression, and revocation. It does not establish that O2 "
+        "robustness, search compression, and revocation. It DOES NOT establish that O2 "
         "was syntactically unconstructible in the raw generic meta-language before O1; "
         "the strict constructibility audit is reported separately."
     ),
