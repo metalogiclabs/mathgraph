@@ -29,51 +29,19 @@ Historical fix commit:
 2dd5f41b6c7cec1004b8deaee4f976dd2a9ed21c
 ```
 
-V54 contains the strongest early operator-level compounding pattern:
+V54 supports **developmental discoverability** under a frozen one-new-rewrite budget: retained `O1` changes the residual, a unique `O2` then becomes discoverable, the final target requires both, and ablating `O1` restores failure. It does not establish that the raw token-emission meta-language could not spell `O2` before `O1`.
 
-- a first capability `O1` is outside the old permutation/reordering closure;
-- the later target has two defects;
-- under the frozen one-new-rewrite budget there are zero cold verifier-surviving repairs;
-- reusing `O1` changes the residual;
-- a unique second capability `O2` then becomes discoverable;
-- `O1` alone is insufficient;
-- `O1 + O2` succeeds;
-- ablating `O1` while retaining `O2` restores failure.
+## 3. Quotient identity and lifecycle
 
-V54 therefore supports **developmental discoverability**: retained verified capability changes what later repair can be found under the same bounded search protocol.
+Subsequent Triskelion experiments separated literal implementation from closure-relative capability identity and separated capability acquisition from applicability. Different literals can collapse under transformations already available in the old language; later counterevidence can invalidate a retained scope and force `REVOKE`.
 
-It does not establish that the raw token-emission meta-language was unable to *spell* `O2` before `O1`.
+The finite reproduction in this folder makes those ideas inspectable in a tiny exact world, but it is not the primary empirical evidence.
 
-## 3. Quotient identity: literal operator is not the right unit
-
-Subsequent Triskelion experiments tested whether a constructed capability should be identified with a literal implementation.
-
-The emerging result was that different literals can collapse under transformations already expressible in the old language. Capability identity is therefore more naturally indexed to the current closure:
-
-```text
-[Delta]_(G_t)
-```
-
-rather than to one source-code spelling of `Delta`.
-
-The finite reproduction makes this exact in a tiny world: two different positional rewrites have empty literal intersection but the same class once position is quotiented by the old transport action.
-
-## 4. Scope, counterevidence, and revocation
-
-The Triskelion natural-code line separately showed that capability acquisition and applicability are not the same claim.
-
-A capability can be causally useful and transferable while its learned activation condition is too broad. Later counterevidence can invalidate every admissible refinement in the frozen scope grammar, forcing `REVOKE` instead of permanently retaining a locally successful repair.
-
-The finite reproduction includes a minimal exact version of that lifecycle, but the natural-code experiments are the stronger evidence for the acquisition/applicability separation.
-
-## 5. Specimen V132: real one-generation constructibility expansion
+## 4. Specimen V132: real one-generation constructibility expansion
 
 Repositories: `heathsanchez/triskelion` and the executable Lean substrate `heathsanchez/specimen`.
 
-The admitted `K5` mechanism preserves a proper function application during conclusion linearization only when:
-
-1. every free-variable dependency occurs in relation-input positions; and
-2. that exact application occurs in the inferred dependent type/family of an output-position argument.
+The admitted `K5` mechanism preserves a proper function application during conclusion linearization only when every free-variable dependency occurs in relation-input positions and the exact application occurs in the inferred dependent type/family of an output-position argument.
 
 The frozen causal pattern was:
 
@@ -87,120 +55,123 @@ K2 FAIL
 
 This supports a **causal expansion of constructibility** in a pinned real Lean metaprogramming system.
 
-## 6. Specimen V133–V134: K5 exposes a different residual
+## 5. V133–V158: changed residual, then scoped K6 admission
 
-Exact admitted `K2 + K5` was replayed unchanged on the harder Strata target. It did not solve the target; instead the dominant failure moved beyond the earlier hidden computed-family obstruction toward symbolic-family / instance-synthesis behavior.
+Exact admitted `K2 + K5` progressed farther on the harder Strata line and exposed a different residual around symbolic family parameters and instance synthesis. The public `specimen` history then contains a long discriminator/refinement sequence through V134–V158.
 
-A later controlled V134 family was then built specifically to discriminate whether a target-fixed family parameter remained unnecessarily symbolic at instance synthesis. The live `specimen` history shows that this work did not stop at the V134 precommit: V134 was implemented and followed by K6 branches. Earlier versions of this note incorrectly said no later V134 execution existed; that statement is now withdrawn.
-
-## 7. K6 lineage: from specialization residual to admitted requirement machinery
-
-The public `specimen` branch history continues through a long K6 sequence rather than ending at V134. Relevant branch/workflow names include:
+The conclusive K6 admission is:
 
 ```text
-v135-k6-specialize-before-instance-synthesis
-v136-k6-preserve-fixed-root-specialization
-v148-k6-requirement-threading
-v150-k6-inner-requirement-propagation
-v153-k6-inner-dependent-requirement
-v156-requirement-provenance-separator
-v157-missing-only-requirement-promotion
-v158-scope-valid-prerequisite-placement
-v159-k6-later-frontier-causal
-v162-upstream-issue9-k6-causal
+commit 0c093c1380f095cc374acac338e6ae13eca72989
+PASS_V158_SCOPE_VALID_PLACEMENT_ADMITTED_SCOPED
+K6_SCOPE_DEPENDENT_REQUIREMENT_PROMOTION
 ```
 
-The important scientific point is not the version count. It is that K6 became an explicit admitted prior-stack capability used in later frozen experiments rather than remaining a one-off V134 hypothesis.
+The V158 report records all G1–G14 passing: the baseline reproduced `SYMBOLIC_INSTANCE`; primary and source-distinct held-out discriminators passed under K6; additional multi-requirement, instance-parameter, mutual-recursion, DependentArgs, STLC, Strata, and ScheduleQualityRegression controls passed; full `lake build` and `lake test` returned 0; ablation restored the symbolic failure. The production rule is scoped to unconstrained prerequisites whose syntax depends on an actual generated producer input, with no fixture/domain-specific condition.
 
-For example, the frozen V162 causal workflow compares:
+This is a real admitted capability. **However, V158 itself explicitly did not claim constructor development.**
+
+## 6. The attempted K6 developmental-dependence tests were negative/null
+
+This distinction matters.
+
+V159 prospectively tested whether admitted K6 moved a later natural reachability frontier. The recorded hard-evidence result was:
 
 ```text
-A = K2 + K5
-B = K2 + K5 + admitted K6 stack
-C = independent K6 ablation back to K2 + K5
+NULL_V159_NO_REACHABILITY_MOVEMENT
 ```
 
-on an upstream issue fixture, while separately checking protected build/test behavior. Its precommitted causal verdict requires `A` fail, `B` pass, `C` fail, and the protected suite pass.
+because the selected Strata target already passed under K2+K5 before K6. Therefore K6 cannot be credited with causing that later capability frontier.
 
-## 8. V166–V169B: a later natural residual produces K7S
+A subsequent upstream issue #9 route also does not rescue the claim. The conclusive V164B reproduction found that the untouched upstream fixture failed earlier on a missing `DecOpt`/decidability prerequisite even with no K2/K5/K6 intervention. It was therefore classified as an upstream semantic prerequisite failure, not a clean K6-caused frontier.
 
-After the admitted K6 stack, an independently authored natural issue #12 exposed a new residual around generated exhaustive matches and `redundantMatchAlt` behavior.
+So the public evidence supports **K6 acquisition**, but not a demonstrated theorem of the form “K6 caused the next constructor capability to become possible.”
 
-The V166 experiment froze three cases before intervention:
+## 7. V166–V169B: a later natural residual produces K7S
+
+After the admitted prior stack (including K6), an independently authored natural issue #12 exposed a new residual around generated exhaustive matches and `redundantMatchAlt` behavior.
+
+V166 froze three cases before intervention:
 
 - untouched natural issue #12;
 - a source-distinct held-out single-constructor case;
 - a multi-constructor wildcard-safety control.
 
-The prior admitted stack included K2, K5, and the K6 requirement machinery. A new K7 intervention was then tested in A/B/C form. The naive mechanism was subsequently refined after a protected counterexample, producing `K7S_CERTIFIED_CONSTRUCTOR_IRREFUTABILITY`.
+A K7 intervention was tested in A/B/C form. A protected counterexample then forced refinement from a naive outer-constructor criterion to recursively certified complete-pattern irrefutability, yielding `K7S_CERTIFIED_CONSTRUCTOR_IRREFUTABILITY`.
 
-The final recorded V169B admission is commit:
-
-```text
-024350f75090b0c0068355ea131d0b77bad6ae6a
-```
-
-with canonical verdict:
+The final recorded admission is:
 
 ```text
+commit 024350f75090b0c0068355ea131d0b77bad6ae6a
+workflow run 31953793565
 PASS_V169B_K7S_ADMITTED_BOUNDED_NATURAL_CONSTRUCTOR_DEVELOPMENT
 ```
 
-The recorded gates include:
+The GitHub Actions run completed successfully. Its frozen classification recorded all gates true: full build, full test, import requalification, natural target, pre-frozen held-out target, safety target, exact K7S identity, and maintenance scope. The causal evidence inherited from the pre-frozen V168 A/B/C experiment was prior-stack failure on natural+held-out, success with K7S, and restoration of those failures under independent K7S ablation while safety remained passing.
 
-- full protected `lake build`: pass;
-- full protected `lake test`: pass;
-- untouched natural issue #12: pass under K7S;
-- pre-frozen source-distinct single-constructor held-out: pass under K7S;
-- pre-frozen multi-constructor safety fixture: pass;
-- independent clean ablation restores the natural and held-out failures;
-- the K7S production mechanism contains no issue-, fixture-, relation-, domain-, or protected-test-specific condition.
+This is strong evidence for **one bounded natural constructor-development transition** on a real Lean metaprogramming substrate after a stack of previously admitted capabilities.
 
-The admitted mechanism removes a synthetic wildcard-failure arm only when the complete generated pattern is structurally certified irrefutable. The protected counterexample was causally important: it forced refinement from naive outer-constructor cardinality to recursively certified pattern irrefutability.
+It is not, by itself, evidence that K6 caused K7S to become constructible.
 
-This is therefore stronger than the finite toy and stronger than V54-style search compounding. It is evidence for **multiple successive bounded natural constructor-development transitions on a real Lean metaprogramming substrate**.
+## 8. What the real lineage currently establishes
 
-## 9. What this still does not prove
+The public sequence establishes several different facts that must not be collapsed:
 
-The later K7/K7S source code is, in a raw programming-language sense, manually formable without first installing K6. The historical evidence therefore does **not** establish the strongest possible statement:
+1. **V132 / K5:** causal one-generation constructibility expansion.
+2. **V158 / K6:** a new scoped capability is independently admitted with broad controls and ablation.
+3. **V159:** the planned causal test that K6 moved a later frontier is NULL.
+4. **V164B:** a proposed upstream natural frontier is disqualified by an earlier prerequisite failure.
+5. **V169B / K7S:** a later independently authored natural residual drives another generalized, transferable, protected, causally necessary capability admission.
+
+Thus the strongest conservative description is:
+
+> The system has undergone multiple successive verifier-governed capability admissions, including at least two real causal constructor/representation changes on the Lean Specimen substrate, while the stronger causal dependency between generations remains unestablished.
+
+That is stronger than a single one-off repair and weaker than recursive self-extension.
+
+## 9. The still-open strong claim
+
+The evidence does **not** yet prove either of these stronger statements:
 
 ```text
 K7S not in Form(M_before_K6)
 K7S in Form(M_after_K6)
 ```
 
-What it establishes is operationally different:
+or even the weaker causal statement:
 
-- an admitted capability changes the effective solver/constructor regime;
-- a new independently authored residual remains after that admitted stack;
-- the residual motivates and constrains a new generalized mechanism;
-- the new mechanism is independently tested, refined by counterevidence, transferred, protected, and causally ablated;
-- the resulting capability is retained into the next regime.
+```text
+without K6, the K7S developmental transition would not have occurred;
+with K6, it became available.
+```
 
-Thus the strongest public evidence currently supports **multi-generation verifier-governed capability development**, not literal growth of the host programming language's raw syntactic formability.
+The host programming language can of course spell the later patch manually, so raw host-language syntax may also be the wrong level at which to define developmental availability.
+
+The sharper open problem is to define an **effective constructor regime**: installed capabilities, admissible construction operations, available verified evidence, representation contracts, and the frozen promotion protocol. Then ask whether an admitted capability causally changes the set of later capability classes reachable under that regime.
 
 ## 10. Relationship to Structured Continuation Calculus
 
-Structured Continuation Calculus already formalizes lawful continuations relative to a fixed `KnowledgeSystemSignature`: objects, primitive generators, admissibility, claims, evidence, verification, quotienting, semantic descent, dependent evidence, memory, and obstructions.
+Structured Continuation Calculus already formalizes lawful continuation relative to a fixed `KnowledgeSystemSignature`: objects, primitive generators, admissibility, claims, evidence, verification, quotienting, semantic descent, dependent evidence, memory, and obstructions.
 
-The experimental lineage above points to the missing layer one level higher:
+The experiments point to the missing layer one level higher:
 
 ```text
 S_t  --->  S_(t+1)
 ```
 
-where the effective continuation regime itself changes as verified capabilities are admitted or revoked.
+where `S_t` is an effective verified continuation/constructor regime and admission or revocation changes that regime.
 
-The central mathematical question is therefore no longer simply how to model continuation *inside* one fixed regime. It is how to formalize verified transformations between continuation regimes, including an extensional notion of when two regimes have the same verified future behavior.
+The mathematical task is to define:
+
+- what data and laws constitute such a regime;
+- when two regimes are extensionally identical by verified future behavior;
+- what counts as a lawful developmental morphism between regimes;
+- and what causal evidence establishes that a later developmental morphism was unavailable before an earlier one.
+
+This is the point at which a category of regimes, indexed/fibered structure, double category, equipment, or another higher categorical construction may become useful. The experiments should decide which structure is earned rather than imposing one in advance.
 
 ## 11. Why the finite reproduction still exists
 
-The token-world reproduction remains useful as a tiny exact microscope. It:
+The token-world reproduction remains useful as a tiny exact microscope. It makes closure-relative identity inspectable and cleanly separates discoverability from raw formability. It should not be presented as the primary empirical evidence for Developmental Intelligence.
 
-1. makes closure-relative identity inspectable;
-2. cleanly separates discoverability from raw formability;
-3. demonstrates why a stronger interpretation must not be inferred from sequential repair alone.
-
-But it should not be presented as the primary empirical evidence for Developmental Intelligence. The real Lean/Specimen lineage, especially V132 and V169B, is the stronger evidence base.
-
-The still-open strongest target is **strict second-generation constructibility**: not merely that a later capability becomes motivated, discoverable, or causally useful after an earlier one, but that an earlier admitted capability changes the effective constructor formalism so that a later capability class becomes constructible that was genuinely unavailable under the prior regime.
+The real Lean/Specimen lineage is the stronger evidence base, and its negative/null results are part of that evidence rather than defects to smooth over.
