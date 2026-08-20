@@ -10,6 +10,7 @@ on:
       - "reproductions/daniel_target_independent_regime_growth_v2/**"
       - "reproductions/daniel_coordinate_free_refinement_v3/**"
       - "reproductions/daniel_relational_law_synthesis_v4/**"
+      - "reproductions/daniel_law_identity_v5/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
   pull_request:
     paths:
@@ -19,6 +20,7 @@ on:
       - "reproductions/daniel_target_independent_regime_growth_v2/**"
       - "reproductions/daniel_coordinate_free_refinement_v3/**"
       - "reproductions/daniel_relational_law_synthesis_v4/**"
+      - "reproductions/daniel_law_identity_v5/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
 
 permissions:
@@ -48,21 +50,15 @@ jobs:
             experiments/closure_relative_developmental_depth_v1/run.py \
             reproductions/daniel_closure_depth_v1/reproduce.py \
             reproductions/daniel_closure_depth_v1/alternate_grammar_audit.py
-          if [ -f reproductions/daniel_typed_regime_growth_v1/reproduce.py ]; then
-            python -m py_compile reproductions/daniel_typed_regime_growth_v1/reproduce.py
-          fi
-          if [ -f reproductions/daniel_target_independent_regime_growth_v2/reproduce.py ]; then
-            python -m py_compile reproductions/daniel_target_independent_regime_growth_v2/reproduce.py
-          fi
-          if [ -f reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py ]; then
-            python -m py_compile reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py
-          fi
-          if [ -f reproductions/daniel_coordinate_free_refinement_v3/reproduce.py ]; then
-            python -m py_compile reproductions/daniel_coordinate_free_refinement_v3/reproduce.py
-          fi
-          if [ -f reproductions/daniel_relational_law_synthesis_v4/reproduce.py ]; then
-            python -m py_compile reproductions/daniel_relational_law_synthesis_v4/reproduce.py
-          fi
+          for f in \
+            reproductions/daniel_typed_regime_growth_v1/reproduce.py \
+            reproductions/daniel_target_independent_regime_growth_v2/reproduce.py \
+            reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py \
+            reproductions/daniel_coordinate_free_refinement_v3/reproduce.py \
+            reproductions/daniel_relational_law_synthesis_v4/reproduce.py \
+            reproductions/daniel_law_identity_v5/reproduce.py; do
+            if [ -f "$f" ]; then python -m py_compile "$f"; fi
+          done
 
       - name: Reproduce closure-depth certificate
         run: python reproductions/daniel_closure_depth_v1/reproduce.py
@@ -86,6 +82,10 @@ jobs:
       - name: Reproduce generic relational law synthesis
         if: ${{ hashFiles('reproductions/daniel_relational_law_synthesis_v4/reproduce.py') != '' }}
         run: python reproductions/daniel_relational_law_synthesis_v4/reproduce.py
+
+      - name: Reproduce cross-DSL behavioral law identity
+        if: ${{ hashFiles('reproductions/daniel_law_identity_v5/reproduce.py') != '' }}
+        run: python reproductions/daniel_law_identity_v5/reproduce.py
 
       - name: Verify checkout remains clean
         run: git diff --exit-code
