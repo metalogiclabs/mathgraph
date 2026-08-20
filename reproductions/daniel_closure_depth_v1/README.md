@@ -1,30 +1,10 @@
 # Daniel Reproduction — Closure-Relative Developmental Depth V1
 
-This is the minimal reproducible package for the developmental-depth capstone.
+This is the minimal standalone reproduction of one bounded developmental phenomenon from the MathGraph / Triskelion research line.
 
-It is intentionally self-contained at the repository level: no API keys, no network calls, no third-party Python packages, no model calls, and no hidden data files are required.
+It is deliberately small enough to inspect line by line. It requires only Python 3.10+: no API keys, model calls, network calls after cloning, hidden datasets, or third-party packages.
 
-## What it reproduces
-
-The experiment separates two claims:
-
-1. **Developmental discoverability:** after verified acquisition/reuse of `O1`, a new closure-expanding capability `O2` becomes verifier-discoverable under the same one-new-capability budget.
-2. **Strict raw constructibility:** whether `O2` was literally impossible to form in the frozen generic meta-language before `O1`.
-
-The first claim passes. The second does not.
-
-Expected verdicts:
-
-```text
-core_verdict = PASS_DISCOVERABILITY_DEPTH
-overall verdict = PARTIAL_STRICT_CONSTRUCTIBILITY_NOT_ESTABLISHED
-```
-
-That distinction is deliberate and is part of the result.
-
-## Fresh-clone reproduction
-
-Requires Python 3.10+.
+## Run
 
 ```bash
 git clone https://github.com/metalogiclabs/mathgraph.git
@@ -32,12 +12,11 @@ cd mathgraph
 python reproductions/daniel_closure_depth_v1/reproduce.py
 ```
 
-No installation step is needed.
-
 A successful run ends with:
 
 ```text
 === REPRODUCTION VERIFIED ===
+independent oracle: MATCH
 14/14 core gates: PASS
 O1: [LT -> LE]
 cold O2 survivors: 0/28
@@ -51,51 +30,121 @@ core verdict: PASS_DISCOVERABILITY_DEPTH
 strict raw constructibility: NOT ESTABLISHED (intended falsification)
 ```
 
-The wrapper independently checks the headline predicates and also requires the regenerated JSON certificate to match the committed certificate exactly after canonical JSON normalization.
+## The mathematical question
 
-## Frozen source/result lineage
+Let `G0` be a frozen generative system. A verified failure may show that a target is outside `Cl(G0)`. After admitting a new closure-relative capability class `O1`, the effective system becomes `G1`.
 
-The experiment result was first committed at:
+The experiment asks two different questions:
+
+1. Does retaining `O1` change what later capability can be *verifiedly discovered* under the same bounded search protocol?
+2. Does retaining `O1` change what later capability can even be *formed by the raw constructor meta-language*?
+
+The answer here is **yes to (1), no to (2)**. Keeping those claims separate is part of the experiment.
+
+## Verifier / constructor boundary
+
+The constructor can enumerate one-token rewrites. The verifier alone decides whether a candidate exactly reaches the target.
+
+Once a capability class has been admitted, applying it does **not** receive the target. `transport_apply` sees only the retained class and the current state. In the frozen cases the capability source token occurs exactly once, so its application site is determined without target access. If that uniqueness condition fails, transport returns no application.
+
+This is intentional: target knowledge must not leak from the verifier into capability application.
+
+## Generation 1 — capability identity relative to closure
+
+The old language can only cyclically transport token positions. It preserves token multiset exactly.
+
+Two acquisition cases require the same semantic change at different positions:
+
+```text
+S1: LT A B C  ->  LE A B C
+S2: A B LT C  ->  A B LE C
+```
+
+Their literal repairs are different positional programs, so literal identity has empty intersection. Quotienting by transformations already available in `G0` removes position as an identity distinction and yields the same unique class:
+
+```text
+O1 = [LT -> LE]_(G0)
+```
+
+A third held-out position is solved by transporting the class, while literal-identity reuse fails. Targeted ablation restores failure.
+
+The same class is also recovered under an alternate constructor presentation and under all 24 bijective renamings of the four semantic role tokens, mapped back to the original presentation.
+
+A frozen context grammar independently selects `context == if` as the unique minimal non-global applicability scope.
+
+## Generation 2 — developmental discoverability
+
+The second target has two independent defects:
+
+```text
+A LT B AND  ->  A LE B OR
+```
+
+With the same one-new-capability budget, cold search tests 28 rewrites and has **0 verifier-surviving candidates**.
+
+Retained `O1` is then applied without target access:
+
+```text
+A LT B AND  ->  A LE B AND
+```
+
+The same 28-way one-rewrite search now exposes one unique surviving class:
+
+```text
+O2 = [AND -> OR]_(G1)
+```
+
+The script exhaustively computes the semantic closure of old transport plus `O1` and verifies that the final target is still outside `Cl(G1)`. `O2` is therefore genuinely closure-expanding relative to `G1`, rather than merely a cheaper route already in that closure.
+
+Final success requires both classes: ablate either `O1` or `O2` and the final target fails.
+
+For this finite world, exhaustive cold two-rewrite reconstruction considers 784 literal pairs; after retaining `O1`, the complete one-rewrite audit considers 28 candidates: 28x search compression.
+
+## Lifecycle / revocation
+
+A later counterexample appears inside the learned `if` scope. Under the frozen context-only scope grammar there is then no surviving scope refinement, so the decision is:
+
+```text
+REVOKE
+```
+
+not “retain the useful capability somehow”.
+
+## Independent reproduction oracle
+
+`EXPECTED.json` is a frozen reproduction oracle separate from the generated experiment output path.
+
+The wrapper checks, in this order:
+
+1. committed `RESULT.json` agrees with `EXPECTED.json` before execution;
+2. the experiment regenerates `RESULT.json` from `run.py`;
+3. regenerated output agrees with the independently frozen oracle;
+4. all 14 headline predicates and the strict-constructibility falsification are rechecked explicitly;
+5. the original committed result bytes are restored so a fresh checkout remains clean.
+
+The original capstone result commit is:
 
 ```text
 df795a6446ec884b40d4760e230d7776a3032e39
 ```
 
-Relevant files:
-
-```text
-experiments/closure_relative_developmental_depth_v1/run.py
-experiments/closure_relative_developmental_depth_v1/RESULT.json
-experiments/closure_relative_developmental_depth_v1/README.md
-reproductions/daniel_closure_depth_v1/reproduce.py
-```
-
-The reproduction script prints SHA-256 hashes for the runner and expected certificate at runtime so the exact local inputs are visible in the transcript.
-
-## What the 14 core gates establish
-
-The finite protocol checks all of the following in one deterministic run:
-
-- both source repairs are outside the old cyclic-transport closure by an exact multiset invariant;
-- literal repair identity fails across source positions;
-- quotienting by old transport recovers one unique capability class `O1 = [LT -> LE]`;
-- an alternate constructor presentation recovers the same class;
-- all 24 bijective semantic-token renamings recover the same class after decoding;
-- the frozen scope grammar finds the unique minimal non-global scope;
-- the quotient capability transfers to a held-out position and ablation removes that transfer;
-- the generation-2 cold one-new-capability search has 0/28 verifier-surviving candidates;
-- after O1 is reused, the same search exposes unique `O2 = [AND -> OR]`;
-- the final target is outside the complete semantic closure generated by the old language plus O1;
-- final success requires both O1 and O2 by targeted ablation;
-- the warm search reduces the exhaustive two-rewrite reconstruction from 784 candidates to 28;
-- later counterevidence leaves no valid scope in the frozen scope grammar, forcing revocation.
-
 ## Claim boundary
 
-This is an **exact finite model**, not a claim of open-ended self-improvement.
+This is an exact **synthetic finite witness**, not the natural-code evidence and not a claim of open-ended self-improvement.
 
-It supports closure-relative capability identity, source-distinct transport, verifier-dependent two-generation discoverability, exact semantic closure obstruction, causal ablation, presentation robustness, search compression, and revocation.
+It supports, inside this frozen world:
 
-It does **not** show that the raw constructor meta-language could not already spell `AND -> OR` before O1. In fact the audit explicitly finds that it could. O1 changes which continuation is verifier-surviving/admissible under the frozen developmental protocol, not the raw syntax of the meta-language.
+- exact old-closure obstruction;
+- closure-relative rather than literal capability identity;
+- held-out positional transport and causal ablation;
+- presentation/constructor-description robustness;
+- independently scoped applicability and later revocation;
+- two-generation verifier-dependent discoverability;
+- exact semantic closure obstruction for `O2` relative to `G1`;
+- measurable search compression.
 
-The remaining stronger target is strict second-generation constructibility on a real constructor substrate: an acquired capability must causally enable formation/typechecking/generation of a later capability that the previous constructor substrate genuinely could not construct.
+It deliberately **does not** claim that `O2` was impossible to spell in the original generic rewrite meta-language. It was already syntactically available. `O1` changes what becomes verifier-surviving under the bounded developmental protocol, not the raw syntax of that meta-language.
+
+The stronger unresolved target is **strict second-generation constructibility** on a real constructor substrate: an acquired capability must causally enable formation/typechecking/generation of a later capability that the previous constructor substrate genuinely could not construct.
+
+That stronger question is why this reproduction should be read together with the real Specimen/Triskelion lineage, not as a replacement for it.
