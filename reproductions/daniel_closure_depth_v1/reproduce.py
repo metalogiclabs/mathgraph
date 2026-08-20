@@ -3,7 +3,8 @@
 
 No third-party dependencies. The experiment regenerates RESULT.json, while an
 independently frozen EXPECTED.json acts as the reproduction oracle. The wrapper
-checks the committed result, regenerated result, and headline claim boundary.
+also runs a separately implemented alternate-constructor-grammar audit and
+checks the headline claim boundary explicitly.
 """
 from __future__ import annotations
 
@@ -14,10 +15,12 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
+HERE = Path(__file__).resolve().parent
 EXP = ROOT / "experiments" / "closure_relative_developmental_depth_v1"
 RUN = EXP / "run.py"
 RESULT = EXP / "RESULT.json"
-EXPECTED = Path(__file__).resolve().with_name("EXPECTED.json")
+EXPECTED = HERE / "EXPECTED.json"
+ALT_AUDIT = HERE / "alternate_grammar_audit.py"
 SOURCE_RESULT_COMMIT = "df795a6446ec884b40d4760e230d7776a3032e39"
 
 
@@ -34,10 +37,22 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def run_python(path: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(path)],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+
 def main() -> int:
     require(RUN.is_file(), f"missing experiment runner: {RUN}")
     require(RESULT.is_file(), f"missing committed certificate: {RESULT}")
     require(EXPECTED.is_file(), f"missing independent reproduction oracle: {EXPECTED}")
+    require(ALT_AUDIT.is_file(), f"missing alternate grammar audit: {ALT_AUDIT}")
 
     original_result_bytes = RESULT.read_bytes()
     committed = json.loads(original_result_bytes)
@@ -46,8 +61,8 @@ def main() -> int:
     expected_norm = canonical(expected)
 
     # Before executing anything, require the published certificate and the
-    # reproduction oracle to agree. This prevents the runner from silently
-    # redefining what counts as success.
+    # independent reproduction oracle to agree. The runner cannot redefine the
+    # expected answer by overwriting its own output file.
     require(
         canonical(committed) == expected_norm,
         "committed RESULT.json differs from independently frozen EXPECTED.json",
@@ -57,19 +72,13 @@ def main() -> int:
     print(f"python={sys.version.split()[0]}")
     print(f"source_result_commit={SOURCE_RESULT_COMMIT}")
     print(f"run_py_sha256={sha256(RUN)}")
+    print(f"alternate_grammar_audit_sha256={sha256(ALT_AUDIT)}")
     print(f"expected_oracle_sha256={hashlib.sha256(expected_bytes).hexdigest()}")
     print(f"committed_result_sha256={hashlib.sha256(original_result_bytes).hexdigest()}")
     print()
 
     try:
-        proc = subprocess.run(
-            [sys.executable, str(RUN)],
-            cwd=ROOT,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
+        proc = run_python(RUN)
         print(proc.stdout.rstrip())
         require(proc.returncode == 0, f"experiment exited {proc.returncode}")
         require(RESULT.is_file(), "experiment did not emit RESULT.json")
@@ -77,8 +86,8 @@ def main() -> int:
         actual = json.loads(RESULT.read_text())
         actual_norm = canonical(actual)
 
-        # The independently frozen oracle, not the generated output path,
-        # determines the expected certificate.
+        # The independent oracle, not the generated output path, determines the
+        # expected certificate.
         require(
             actual_norm == expected_norm,
             "regenerated certificate differs from independently frozen EXPECTED.json",
@@ -129,9 +138,23 @@ def main() -> int:
             "strict constructibility falsification changed",
         )
 
+        print("\n=== INDEPENDENT ALTERNATE GRAMMAR AUDIT ===")
+        alt = run_python(ALT_AUDIT)
+        print(alt.stdout.rstrip())
+        require(alt.returncode == 0, "independent alternate constructor grammar audit failed")
+        alt_report = json.loads(alt.stdout)
+        require(alt_report["verdict"] == "PASS", "alternate grammar verdict changed")
+        require(all(alt_report["gates"].values()), "alternate grammar gate failed")
+        require(
+            alt_report["direct_intersection"] == [["LT", "LE"]]
+            and alt_report["conjugated_intersection"] == [["LT", "LE"]],
+            "constructor grammars no longer recover the same capability class",
+        )
+
         print("\n=== REPRODUCTION VERIFIED ===")
         print("independent oracle: MATCH")
         print("14/14 core gates: PASS")
+        print("independent constructor grammars: SAME CAPABILITY CLASS")
         print("O1: [LT -> LE]")
         print("cold O2 survivors: 0/28")
         print("after O1, O2: [AND -> OR]")
