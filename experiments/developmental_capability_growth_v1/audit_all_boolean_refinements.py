@@ -13,12 +13,14 @@ from itertools import combinations, product
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("developmental_capability_growth_v1", HERE / "run.py")
 assert SPEC and SPEC.loader
 m = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = m
 SPEC.loader.exec_module(m)
 
 
