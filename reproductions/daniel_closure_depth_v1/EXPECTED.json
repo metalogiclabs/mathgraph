@@ -1,0 +1,105 @@
+{
+  "claim_audit": {
+    "developmental_discoverability_depends_on_O1": true,
+    "strict_O2_raw_meta_language_constructibility_depends_on_O1": false
+  },
+  "claim_boundary": "Exact finite model. It establishes closure-relative capability identity, source-distinct transport, two-generation verifier-dependent discoverability, semantic closure obstruction for O2, causal ablation, grammar/presentation robustness, search compression, and revocation. It DOES NOT establish that O2 was syntactically unconstructible in the raw generic meta-language before O1; the strict constructibility audit is reported separately.",
+  "core_verdict": "PASS_DISCOVERABILITY_DEPTH",
+  "economics": {
+    "cold_exhaustive_two_rewrite_candidates": 784,
+    "compression_ratio": 28.0,
+    "warm_full_one_rewrite_audit_calls": 28
+  },
+  "gates": {
+    "G0_old_closure_obstruction_source1": true,
+    "G10_O2_is_outside_G1_semantic_closure": true,
+    "G11_final_requires_both_classes": true,
+    "G12_warm_search_compresses_cold_two_rewrite_reconstruction": true,
+    "G13_later_counterevidence_forces_revocation_under_frozen_scope_grammar": true,
+    "G1_old_closure_obstruction_source2": true,
+    "G2_literal_identity_does_not_transfer_across_source_positions": true,
+    "G3_quotient_class_unique_across_sources": true,
+    "G4_alternate_constructor_grammar_recovers_same_class": true,
+    "G5_24_of_24_token_presentations_recover_same_class": true,
+    "G6_scope_is_unique_minimal_and_not_global": true,
+    "G7_source_distinct_quotient_transport_and_ablation": true,
+    "G8_generation2_cold_one_new_class_has_zero_survivors": true,
+    "G9_generation2_after_O1_exposes_unique_O2_class": true
+  },
+  "generation1": {
+    "heldout_literal_identity_pass": false,
+    "heldout_quotient_transport_pass": true,
+    "literal_intersection": 0,
+    "quotient_class_intersection": [
+      {
+        "dst": "LE",
+        "src": "LT"
+      }
+    ],
+    "scope": "context==if",
+    "selected_class": {
+      "dst": "LE",
+      "src": "LT"
+    },
+    "source1_literal_survivors": [
+      {
+        "dst": "LE",
+        "grammar": "direct",
+        "pos": 0,
+        "src": "LT"
+      }
+    ],
+    "source2_literal_survivors": [
+      {
+        "dst": "LE",
+        "grammar": "direct",
+        "pos": 2,
+        "src": "LT"
+      }
+    ]
+  },
+  "generation2": {
+    "O1_ablated_O2_present_pass": false,
+    "O2_ablated_O1_present_pass": false,
+    "O2_class": {
+      "dst": "OR",
+      "src": "AND"
+    },
+    "O2_outside_G1_closure": true,
+    "cold_one_new_literal_candidates_tested": 28,
+    "cold_survivors": 0,
+    "final_pass": true,
+    "state_after_O1": [
+      "A",
+      "LE",
+      "B",
+      "AND"
+    ],
+    "warm_one_new_literal_candidates_tested": 28,
+    "warm_survivors": [
+      {
+        "dst": "OR",
+        "grammar": "direct",
+        "pos": 3,
+        "src": "AND"
+      }
+    ]
+  },
+  "invariance": {
+    "alternate_grammar": true,
+    "token_renamings_passed": 24,
+    "token_renamings_total": 24
+  },
+  "lifecycle": {
+    "post_counterevidence_valid_scopes": [],
+    "revoked": true
+  },
+  "old_language": {
+    "generators": [
+      "cyclic_position_transport"
+    ],
+    "invariant": "token multiset"
+  },
+  "protocol": "CLOSURE_RELATIVE_DEVELOPMENTAL_DEPTH_V1",
+  "verdict": "PARTIAL_STRICT_CONSTRUCTIBILITY_NOT_ESTABLISHED"
+}
