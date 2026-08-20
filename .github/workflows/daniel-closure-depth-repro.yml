@@ -9,6 +9,7 @@ on:
       - "reproductions/daniel_typed_regime_growth_v1/**"
       - "reproductions/daniel_target_independent_regime_growth_v2/**"
       - "reproductions/daniel_coordinate_free_refinement_v3/**"
+      - "reproductions/daniel_relational_law_synthesis_v4/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - "reproductions/daniel_typed_regime_growth_v1/**"
       - "reproductions/daniel_target_independent_regime_growth_v2/**"
       - "reproductions/daniel_coordinate_free_refinement_v3/**"
+      - "reproductions/daniel_relational_law_synthesis_v4/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
 
 permissions:
@@ -58,6 +60,9 @@ jobs:
           if [ -f reproductions/daniel_coordinate_free_refinement_v3/reproduce.py ]; then
             python -m py_compile reproductions/daniel_coordinate_free_refinement_v3/reproduce.py
           fi
+          if [ -f reproductions/daniel_relational_law_synthesis_v4/reproduce.py ]; then
+            python -m py_compile reproductions/daniel_relational_law_synthesis_v4/reproduce.py
+          fi
 
       - name: Reproduce closure-depth certificate
         run: python reproductions/daniel_closure_depth_v1/reproduce.py
@@ -77,6 +82,10 @@ jobs:
       - name: Reproduce coordinate-free refinement benchmark
         if: ${{ hashFiles('reproductions/daniel_coordinate_free_refinement_v3/reproduce.py') != '' }}
         run: python reproductions/daniel_coordinate_free_refinement_v3/reproduce.py
+
+      - name: Reproduce generic relational law synthesis
+        if: ${{ hashFiles('reproductions/daniel_relational_law_synthesis_v4/reproduce.py') != '' }}
+        run: python reproductions/daniel_relational_law_synthesis_v4/reproduce.py
 
       - name: Verify checkout remains clean
         run: git diff --exit-code
