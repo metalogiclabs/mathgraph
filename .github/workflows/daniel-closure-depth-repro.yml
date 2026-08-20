@@ -1,4 +1,4 @@
-name: Daniel Closure Depth Reproduction
+name: Daniel Reproductions
 
 on:
   workflow_dispatch:
@@ -6,11 +6,13 @@ on:
     paths:
       - "experiments/closure_relative_developmental_depth_v1/**"
       - "reproductions/daniel_closure_depth_v1/**"
+      - "reproductions/daniel_typed_regime_growth_v1/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
   pull_request:
     paths:
       - "experiments/closure_relative_developmental_depth_v1/**"
       - "reproductions/daniel_closure_depth_v1/**"
+      - "reproductions/daniel_typed_regime_growth_v1/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
 
 permissions:
@@ -40,9 +42,16 @@ jobs:
             experiments/closure_relative_developmental_depth_v1/run.py \
             reproductions/daniel_closure_depth_v1/reproduce.py \
             reproductions/daniel_closure_depth_v1/alternate_grammar_audit.py
+          if [ -f reproductions/daniel_typed_regime_growth_v1/reproduce.py ]; then
+            python -m py_compile reproductions/daniel_typed_regime_growth_v1/reproduce.py
+          fi
 
-      - name: Reproduce exact certificate
+      - name: Reproduce closure-depth certificate
         run: python reproductions/daniel_closure_depth_v1/reproduce.py
+
+      - name: Reproduce typed regime-growth certificate
+        if: ${{ hashFiles('reproductions/daniel_typed_regime_growth_v1/reproduce.py') != '' }}
+        run: python reproductions/daniel_typed_regime_growth_v1/reproduce.py
 
       - name: Verify checkout remains clean
         run: git diff --exit-code
@@ -59,7 +68,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended
 
-      - name: Compile TeX twice
+      - name: Compile closure-depth TeX twice
         working-directory: reproductions/daniel_closure_depth_v1
         run: |
           pdflatex -interaction=nonstopmode -halt-on-error MATHEMATICAL_NOTE.tex
