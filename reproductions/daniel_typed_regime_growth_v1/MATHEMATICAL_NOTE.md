@@ -1,12 +1,12 @@
 # A finite typed witness of continuation-language growth
 
-This note isolates one question from the larger MathGraph / Structured Continuation Calculus programme:
+This note isolates one precise question:
 
-> Can a verified episode change not merely which existing continuation is selected, but which continuation terms are well-formed at all?
+> Can a verified episode change not merely which existing continuation is selected, but which object-level continuation terms are well-formed at all?
 
-The construction below is deliberately finite and elementary. Its purpose is not to claim open-ended invention. Its purpose is to make the distinction mathematically exact.
+The construction is deliberately finite. It does **not** claim open-ended ontology invention. It isolates the distinction between state/search change inside a fixed constructor language and a checked extension of that language.
 
-## 1. The old constructor regime
+## 1. Old regime and exact formability boundary
 
 Let
 
@@ -14,29 +14,25 @@ Let
 X=\{0,1\},\qquad A=\{0,1,2\},\qquad \mathbf 2=\{0,1\}.
 \]
 
-The old language \(M_0\) has one predicate sort
+The old object language \(M_0\) has one predicate sort
 
 \[
-U := A\to\mathbf 2
+U:=A\to\mathbf2
 \]
 
-with constants \(\bot,\top\), the atom \([a=0]\), and Boolean operations \(\neg,\wedge,\vee\).
+with \(\bot,\top,[a=0]\) and Boolean operations \(\neg,\wedge,\vee\).
 
-When an old term is observed on \(X\times A\), it is interpreted through the projection
+Observed on \(X\times A\), every old term is interpreted through
 
 \[
 \pi:X\times A\to A,\qquad \pi(x,a)=a.
 \]
 
-Thus every old denotation factors through \(\pi\):
-
-\[
-\llbracket t\rrbracket(x,a)=\widehat t(a).
-\]
+Hence every old denotation factors through \(\pi\).
 
 ### Lemma 1 — projection invariant
 
-For every \(t\in\operatorname{Form}(M_0)\),
+For every old term \(t\),
 
 \[
 \pi(x,a)=\pi(x',a')
@@ -44,16 +40,30 @@ For every \(t\in\operatorname{Form}(M_0)\),
 \llbracket t\rrbracket(x,a)=\llbracket t\rrbracket(x',a').
 \]
 
-In particular, no old term can distinguish two states with the same \(a\)-coordinate and different \(x\)-coordinates.
+Thus no \(M_0\)-term can distinguish states with equal \(a\) and different \(x\).
 
-The executable enumerator independently confirms that the old Boolean closure has exactly four unary semantic classes.
+The executable finite closure has exactly four distinct \(U\)-semantics.
 
-## 2. Episode 1: a certified factorization obstruction
-
-Freeze the first target
+Crucially, \(M_0\) contains no sort
 
 \[
-P_1(x,a) := [x=0]\vee[a=0].
+D:=X\times A\to\mathbf2.
+\]
+
+Therefore
+
+\[
+\operatorname{Form}_D(M_0)=\varnothing.
+\]
+
+This is a syntactic/type-theoretic statement about the frozen object language, not a bounded-search observation.
+
+## 2. Episode 1 — factorization obstruction
+
+Freeze
+
+\[
+P_1(x,a):=[x=0]\vee[a=0].
 \]
 
 For example,
@@ -62,49 +72,30 @@ For example,
 P_1(0,1)=1,\qquad P_1(1,1)=0,
 \]
 
-although
+although both points have projection \(a=1\). Therefore \(P_1\) does not factor through \(\pi\).
+
+The program records all such conflicting pairs directly.
+
+### Frozen developmental extension family
+
+The developmental meta-language is **not unrestricted**. The experiment supplies a finite family consisting of:
+
+1. every possible additional unary primitive \(q:A\to\mathbf2\); and
+2. one dependency-exposing extension schema `ExposeDependency`.
+
+There are exactly \(2^{|A|}=8\) unary truth tables. Every unary-only extension still factors through \(\pi\), so the complete unary-only subfamily is ruled out structurally and exhaustively.
+
+This does **not** mean the obstruction uniquely derives `ExposeDependency` from first principles. `ExposeDependency` is a supplied candidate in the frozen developmental extension family.
+
+The protocol admits that candidate only after the unary-only alternatives are ruled out and the candidate represents \(P_1\).
+
+`ExposeDependency` adds the sort
 
 \[
-\pi(0,1)=\pi(1,1)=1.
+D:=X\times A\to\mathbf2,
 \]
 
-Likewise \((0,2)\) and \((1,2)\) are merged by \(\pi\) but require different outputs.
-
-Therefore \(P_1\) does not factor through the old representation.
-
-The experiment does not infer this from failed search. It records the conflicting pairs explicitly.
-
-### Frozen alternative-extension family
-
-Before admitting a dependency-sensitive representation, the experiment exhausts every possible new unary primitive
-
-\[
-q:A\to\mathbf 2.
-\]
-
-There are exactly
-
-\[
-2^{|A|}=8
-\]
-
-such truth tables.
-
-Adding any of them may enrich the unary language, but every resulting term still factors through \(\pi\). Therefore none can represent \(P_1\).
-
-The surviving extension is
-
-\[
-O_1:=\operatorname{ExposeDependency}.
-\]
-
-It introduces a new sort
-
-\[
-D := X\times A\to\mathbf 2,
-\]
-
-a primitive \([x=0]:D\), and a lifting operation
+the primitive \([x=0]:D\), lifting
 
 \[
 \operatorname{lift}:U\to D,
@@ -112,39 +103,43 @@ a primitive \([x=0]:D\), and a lifting operation
 \operatorname{lift}(u)(x,a)=u(a),
 \]
 
-with the same Boolean connectives on \(D\).
+and Boolean operations on \(D\).
 
 Write
 
 \[
-M_1=M_0+O_1.
+M_1=M_0+\operatorname{ExposeDependency}.
 \]
 
-The first target is now representable, for example by
+Then \(P_1\) is representable, for example as
 
 \[
 [x=0]\vee\operatorname{lift}([a=0]).
 \]
 
-## 3. Conservativity
+## 3. Conservativity — exact finite meaning
 
-The extension does not alter the old unary fragment.
+Here **conservative** has a deliberately narrow semantic meaning. We do not claim a general proof-theoretic conservativity theorem.
 
-### Proposition 2 — conservative old fragment
-
-For every old \(U\)-term \(t\), its syntax and denotation are unchanged in \(M_1\). Conversely the extension adds no new constructor of sort \(U\).
-
-Hence
+Let
 
 \[
-\operatorname{Form}_U(M_0)=\operatorname{Form}_U(M_1)
+\operatorname{Sem}_U(M)
 \]
 
-extensionally in this finite model.
+denote the set of \(U\)-valued Boolean functions denoted by terms of regime \(M\) on the finite domain \(A\).
 
-The executable check obtains four unary semantic classes on each side and verifies equality of the two sets.
+### Proposition 2 — old-fragment semantic conservativity
 
-The strict growth occurs in a new sort:
+The extension adds no constructor returning sort \(U\), and the old constructors retain their denotations. Hence
+
+\[
+\operatorname{Sem}_U(M_0)=\operatorname{Sem}_U(M_1).
+\]
+
+The executable closure independently obtains four semantic classes on both sides and checks equality of the sets.
+
+At the same time,
 
 \[
 \operatorname{Form}_D(M_0)=\varnothing,
@@ -152,43 +147,43 @@ The strict growth occurs in a new sort:
 \operatorname{Form}_D(M_1)\neq\varnothing.
 \]
 
-This is the key distinction from the earlier token-rewrite toy.
+Thus the old semantic fragment is preserved while the typed object language strictly grows.
 
-## 4. Episode 2: a term that was not well-formed before development
+## 4. Episode 2 — protected against online target leakage
 
-The protected second target is fixed by SHA-256 commitment before episode-1 extension selection. The episode-1 selector never reads it.
+The second target is represented by a fixed truth vector whose SHA-256 commitment is declared in the program before episode-1 extension selection. The function `select_episode1_extension()` does not reference the second target.
 
-After \(O_1\) has been selected, reveal
+This establishes **online target blindness of the episode-1 selector**. It does not establish independent authorship: the experimenter designed the finite witness, the extension family, and the two episodes.
+
+After episode 1, reveal
 
 \[
 P_2(x,a):=([x=0]\leftrightarrow[a=0]).
 \]
 
-Its committed truth-vector hash is
+with committed truth-vector hash
 
 ```text
 71ca9703af0fda42b802aa93ef5ff20cc9d02353e1b2d514acae2ec02f2c7278
 ```
 
-Let the second-generation synthesis operator be the same deterministic size-ordered enumerator in every arm.
+The same deterministic size-ordered second-generation synthesizer is used in every arm.
 
 ### Cold arm
 
-Under \(M_0\), the result sort \(D\) is absent. Therefore
+Since sort \(D\) is absent,
 
 \[
-\boxed{P_2\notin\operatorname{Form}_D(M_0)}
+\boxed{P_2\notin\operatorname{Form}_D(M_0)}.
 \]
 
-for a syntactic reason: there are no \(D\)-typed terms.
+No amount of search over well-formed \(M_0\)-terms changes this statement.
 
-There is also a semantic obstruction. Even if one grants **any** additional unary primitive \(q:A\to\mathbf2\), every such expression remains invariant in \(x\), whereas \(P_2\) is not.
-
-Thus every one of the eight possible unary-only sham extensions fails as well.
+Moreover, granting any one of the eight possible unary primitives still cannot represent \(P_2\), because every unary-only expression remains invariant in \(x\).
 
 ### Developed arm
 
-Under \(M_1\), the same synthesizer enumerates \(D\)-terms and finds
+Under \(M_1\), the unchanged synthesizer finds the composed term
 
 \[
 O_2=
@@ -197,90 +192,82 @@ O_2=
 \neg([x=0]\vee\operatorname{lift}([a=0])).
 \]
 
-This is extensionally \(P_2\).
+It is extensionally equal to \(P_2\). It is not supplied as a primitive constructor.
 
-It is not a primitive constructor supplied by the experiment; it is a composed term discovered by the unchanged enumerator after the new sort and lifting structure exist.
+The finite \(D\)-closure contains all 16 Boolean semantic classes over the effective atoms \([x=0]\) and \([a=0]\).
 
-The finite closure contains all 16 Boolean semantic classes over the two effective atoms \([x=0]\) and \([a=0]\).
-
-## 5. Strict developmental formability theorem
-
-Within this frozen constructor calculus:
+## 5. Strict typed regime-growth theorem
 
 ### Theorem 3
 
+Within this frozen finite object-level calculus and supplied developmental extension family,
+
 \[
 P_2\notin\operatorname{Form}_D(M_0),
-\]
-
-but
-
-\[
+\qquad
 P_2\in\operatorname{Form}_D(M_1).
 \]
 
-Moreover:
+Furthermore:
 
-1. removing \(O_1\) restores \(\operatorname{Form}_D=\varnothing\);
+1. removing `ExposeDependency` restores \(\operatorname{Form}_D=\varnothing\);
 2. every unary-only sham extension preserves non-formability of \(P_2\);
-3. the old \(U\)-fragment is conservative;
-4. the identical synthesis procedure returns no term cold and returns \(O_2\) warm.
+3. \(\operatorname{Sem}_U(M_0)=\operatorname{Sem}_U(M_1)\);
+4. the identical second-generation synthesizer returns no term cold and returns \(O_2\) warm.
 
-So the causal change is not merely
+Thus this witness is not explained as
 
 \[
-\text{same grammar}+\text{better search state}.
+\text{same object grammar}+\text{better search state}.
 \]
 
-It is, inside this finite object language,
+Inside the stated scientific boundary, the transition is
 
 \[
 \boxed{M_0\hookrightarrow M_1}
 \]
 
-with a strictly larger typed space of possible continuation terms.
+with preservation of the old semantic fragment and strict enlargement of the typed space of formable continuation terms.
 
-## 6. What is and is not established
+## 6. Exact claim boundary
 
-Established exactly in this witness:
+### Established in this finite witness
 
-- a verifier-visible factorization obstruction in episode 1;
-- exhaustion of all unary-only sham extensions;
-- acquisition of a dependency-exposing language extension;
-- conservativity on the old fragment;
-- strict growth of the typed constructor language;
-- a protected second-generation term that is unformable before the extension and constructible afterward;
+- an explicit factorization obstruction in episode 1;
+- structural and exhaustive rejection of the complete unary-only extension subfamily;
+- admission of a supplied dependency-exposing extension schema;
+- preservation of the old \(U\)-semantic fragment;
+- strict addition of a previously absent result sort;
+- online target blindness of episode-1 extension selection;
+- a second composed term that is ill-typed/unformable before the extension and constructible afterward;
 - ancestor ablation restoring non-formability;
-- the same second-generation synthesis algorithm in cold and developed arms.
+- identical second-generation synthesis code in cold and developed arms.
 
-Not established:
+### Not established
 
-- that Python or Lean could not encode \(O_2\) before the experiment;
-- that the host programming language grew;
-- that an unrestricted agent can invent arbitrary new type formers;
-- that \(\operatorname{ExposeDependency}\) is a universally derivable response to arbitrary obstruction;
-- that this finite witness by itself establishes the broader natural-system Developmental Intelligence thesis.
+- that Python or Lean lacked the ability to encode either regime;
+- host-language growth;
+- autonomous invention of `ExposeDependency`;
+- unrestricted invention of new type formers;
+- unique derivability or minimality of `ExposeDependency` among every conceivable representation change;
+- independent authorship of episode 2;
+- general proof-theoretic conservativity;
+- the broader natural-system Developmental Intelligence thesis.
 
-The scientific boundary is the frozen **object-level constructor calculus available to the developmental controller**, not the expressive power of the implementation language.
+The scientific boundary is the frozen **object-level constructor calculus available to the developmental controller**. The developmental meta-language remains richer and already contains `ExposeDependency` as an admissible extension schema.
 
-## 7. The mathematical question for regime change
+The next stronger experiment should move this boundary downward: remove `ExposeDependency` as a named candidate and test whether an obstruction-defined structural requirement can cause synthesis of a dependency-sensitive extension class from a weaker generic meta-language.
 
-Structured Continuation Calculus already describes lawful continuations relative to a fixed signature. This example asks what structure should model a conservative change of signature itself.
+## 7. Mathematical question
 
-Internally one has ordinary continuations in a regime,
-
-\[
-x\longrightarrow y.
-\]
-
-Development here changes the language in which such continuations can be formed:
+Structured Continuation Calculus studies lawful continuations relative to a fixed signature. This witness isolates a transition between two typed continuation regimes:
 
 \[
 M_0\hookrightarrow M_1.
 \]
 
-The natural question is therefore:
+The question is not which categorical formalism sounds most sophisticated, but which one captures additional invariants and compositional laws of such checked regime extensions.
 
-> What mathematical structure should represent verified conservative transitions between continuation regimes when the transition changes which typed morphisms/continuations can exist afterward?
+> What is the natural mathematical object for a verified transition between continuation regimes that preserves the old semantic fragment while changing which typed continuations can be formed afterward?
 
-The example intentionally does not choose the answer in advance. A category of theories, indexed/fibered structure, double category, equipment, or something simpler should be judged by what additional invariants and compositional laws it explains beyond this finite witness.
+Possible answers might involve categories of theories/signatures, indexed or fibered categories, double categories, equipments, or something simpler. The witness deliberately does not choose among them in advance.
