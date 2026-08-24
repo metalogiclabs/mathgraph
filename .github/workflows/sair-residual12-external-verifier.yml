@@ -45,11 +45,6 @@ jobs:
             tests/test_mathgraph_cleanroom_generalization.py \
             tests/test_mathgraph_cleanroom_finite_search.py \
             tests/test_mathgraph_final_portfolio.py
-      - name: Run Solo and Marathon platform harnesses
-        working-directory: stage2
-        run: |
-          python scripts/run_harness.py
-          python scripts/run_marathon_harness.py
       - name: Cache Lean and Lake packages
         uses: actions/cache@v4
         with:
@@ -62,6 +57,14 @@ jobs:
         env:
           SKIP_DOCKER: "1"
         run: bash scripts/setup.sh
+      - name: Run Solo and Marathon platform harnesses
+        working-directory: stage2
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .env.judge
+          python scripts/run_harness.py
+          python scripts/run_marathon_harness.py
       - name: Verify promoted Solo OSS entry on both marginal gains
         working-directory: stage2
         shell: bash
