@@ -29,7 +29,11 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/actions/runners/registration-token" \
             > token.json
           TOKEN="$(jq -er '.token' token.json)"
-          CIPHER="$(printf '%s' "$TOKEN" | openssl pkeyutl -encrypt -pubin -inkey runner-public.pem | base64 -w0)"
-          echo "::add-mask::$CIPHER"
+          printf '%s' "$TOKEN" | openssl pkeyutl -encrypt -pubin -inkey runner-public.pem | base64 -w0 > runner-token.cipher.b64
           echo "Encrypted runner token created."
-          echo "RUNNER_TOKEN_CIPHERTEXT=$CIPHER"
+      - name: Upload encrypted token
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-runner-token-${{ github.run_id }}
+          path: runner-token.cipher.b64
+          retention-days: 1
