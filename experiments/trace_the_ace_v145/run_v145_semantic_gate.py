@@ -142,7 +142,7 @@ def infer_semantics(prompts: list[str], model: str, cache_path: Path, batch: int
     from transformers import AutoTokenizer
     from vllm import LLM, SamplingParams
     tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
-    llm = LLM(model=model, trust_remote_code=True, dtype="auto", max_model_len=2048,
+    llm = LLM(model=model, trust_remote_code=True, dtype="auto", max_model_len=int(os.environ.get("V145_MAX_MODEL_LEN", "4096")),
               gpu_memory_utilization=float(os.environ.get("V145_GPU_MEMORY", ".90")))
     sampling = SamplingParams(temperature=0.0, max_tokens=48, stop=["\n\n"])
     cache_path.parent.mkdir(parents=True, exist_ok=True)
