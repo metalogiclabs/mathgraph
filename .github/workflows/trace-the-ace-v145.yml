@@ -55,6 +55,7 @@ jobs:
     env:
       HF_HOME: /root/hf-cache
       V145_GPU_MEMORY: "0.90"\n      PIP_NO_CACHE_DIR: "1"
+      V145_MAX_MODEL_LEN: "4096"
     steps:
       - uses: actions/checkout@v4
       - name: Verify GPU and inspect data headers
@@ -83,6 +84,11 @@ jobs:
           source /root/venvs/trace-ace-v145/bin/activate
           python -m pip install -q --upgrade pip
           python -m pip install -q "vllm>=0.8" "transformers>=4.51" pandas scipy scikit-learn
+          FD_EXCHANGE=/root/venvs/trace-ace-v145/lib/python3.11/site-packages/flashinfer/comm/fd_exchange.py
+          if ! head -1 "$FD_EXCHANGE" | grep -q "from __future__ import annotations"; then
+            sed -i "1i from __future__ import annotations" "$FD_EXCHANGE"
+          fi
+          python -c "import flashinfer.comm.fd_exchange"
       - name: Run preregistered V145 gate
         shell: bash
         run: |
