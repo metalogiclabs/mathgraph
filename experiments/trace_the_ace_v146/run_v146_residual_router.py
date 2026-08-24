@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, math, sys
+import argparse, json, sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -13,18 +13,8 @@ from sklearn.preprocessing import StandardScaler
 HERE = Path(__file__).resolve().parent
 V145 = HERE.parent / "trace_the_ace_v145"
 sys.path.insert(0, str(V145))
-from run_v145_semantic_gate import FIELDS, build_v75, choose_subset, compile_rows, grouped_bootstrap_improvement, resolve_transcripts
-from v75_canonical_trajectory import SEED, load_training
-
-
-def load_scores(path: Path) -> np.ndarray:
-    rows=[]
-    for line in path.read_text().splitlines():
-        r=json.loads(line)
-        rows.append([float(r[k]) for k in FIELDS])
-    a=np.asarray(rows, dtype=float)
-    if not np.isfinite(a).all(): raise ValueError(f"non-finite semantic scores in {path}")
-    return a
+from run_v145_semantic_gate import FIELDS, build_v75, grouped_bootstrap_improvement
+from v75_canonical_trajectory import SEED
 
 
 def safe_logit(p):
@@ -54,7 +44,6 @@ def inner_oof_base(X, y, groups, n_splits=4):
 
 
 def choose_router(p_inner, y, Z_inner):
-    # Newton-style logit residual target from strictly inner-OOF base predictions.
     target=np.clip((y-p_inner)/(p_inner*(1-p_inner)+1e-3), -4, 4)
     best=None
     for alpha in (1.0,10.0,100.0):
@@ -96,6 +85,17 @@ def evaluate(name, X, S, y, groups):
             "folds":folds,"router_params":params}
 
 
+def load_bundle(path: Path):
+    b=np.load(path,allow_pickle=False)
+    frame=pd.DataFrame({"learning_objective":b["objective"].astype(str)})
+    views=[]
+    n=len(frame)
+    for i in range(n):
+        views.append({k:b[f"view_{k}"][i].item() if hasattr(b[f"view_{k}"][i],"item") else str(b[f"view_{k}"][i]) for k in ("raw","student","local","canonical","terminal")})
+    X=build_v75(frame,views,b["numeric"])
+    return X,b["semantic"].astype(float),b["y"].astype(int),b["session_id"].astype(str),b["objective_group"].astype(str),b["control_index"].astype(int),b["objective_swap"].astype(float),b["evidence_empty"].astype(float)
+
+
 def self_test():
     rng=np.random.default_rng(3); n=120
     S=rng.normal(size=(n,7)); p=np.clip(rng.uniform(.05,.95,n),1e-5,1-1e-5)
@@ -106,30 +106,20 @@ def self_test():
 
 def main(a):
     if a.self_test: self_test(); return
-    work=a.v145_work.resolve(); out=a.out.resolve(); out.parent.mkdir(parents=True,exist_ok=True)
-    frame=choose_subset(load_training(a.features,a.labels),a.limit)
-    transcripts=resolve_transcripts(a.transcripts.resolve(), out.parent/"compile_work")
-    views,numeric,_=compile_rows(frame,transcripts)
-    X=build_v75(frame,views,numeric); y=frame.target.to_numpy(int)
-    S=load_scores(work/"semantic_scores.jsonl")
-    if len(S)!=len(frame): raise ValueError(f"semantic row mismatch: {len(S)} vs {len(frame)}")
-    objective_groups=frame.learning_objective_id if "learning_objective_id" in frame else frame.learning_objective
+    out=a.out.resolve(); out.parent.mkdir(parents=True,exist_ok=True)
+    X,S,y,session_groups,objective_groups,ci,Sswap,Sempty=load_bundle(a.bundle.resolve())
     rng=np.random.default_rng(SEED)
     shuffled=S[rng.permutation(len(S))]
-    results={"protocol":"V146_CROSSFITTED_SEMANTIC_RESIDUAL_ROUTER","rows":len(frame),"fields":FIELDS,
-             "session":evaluate("session",X,S,y,frame.session_id),
+    results={"protocol":"V146_CROSSFITTED_SEMANTIC_RESIDUAL_ROUTER","rows":len(y),"fields":FIELDS,
+             "session":evaluate("session",X,S,y,session_groups),
              "objective":evaluate("objective",X,S,y,objective_groups),
-             "shuffled":{"session":evaluate("session_shuffled",X,shuffled,y,frame.session_id),
+             "shuffled":{"session":evaluate("session_shuffled",X,shuffled,y,session_groups),
                          "objective":evaluate("objective_shuffled",X,shuffled,y,objective_groups)}}
-    # Reproduce V145's fixed 2,500-row counterfactual subset and run the identical residual router on it.
-    ci=np.sort(rng.choice(len(frame),size=min(a.control_limit,len(frame)),replace=False))
     ctr={}
-    for label,fn in (("objective_swap","objective_swap_scores.jsonl"),("evidence_empty","evidence_empty_scores.jsonl")):
-        Sc=load_scores(work/fn)
-        if len(Sc)!=len(ci): raise ValueError(f"control row mismatch {label}: {len(Sc)} vs {len(ci)}")
+    for label,Sc in (("objective_swap",Sswap),("evidence_empty",Sempty)):
         ctr[label]={
-          "session":evaluate(label+"_session",X[ci],Sc,y[ci],np.asarray(frame.session_id)[ci]),
-          "objective":evaluate(label+"_objective",X[ci],Sc,y[ci],np.asarray(objective_groups)[ci])}
+          "session":evaluate(label+"_session",X[ci],Sc,y[ci],session_groups[ci]),
+          "objective":evaluate(label+"_objective",X[ci],Sc,y[ci],objective_groups[ci])}
     results["counterfactual_controls"]=ctr
     s,o=results["session"],results["objective"]
     ss,so=results["shuffled"]["session"],results["shuffled"]["objective"]
@@ -144,8 +134,6 @@ def main(a):
     out.write_text(json.dumps(results,indent=2)); print(json.dumps(results,indent=2))
 
 if __name__=="__main__":
-    p=argparse.ArgumentParser(); p.add_argument("--features",type=Path); p.add_argument("--labels",type=Path); p.add_argument("--transcripts",type=Path)
-    p.add_argument("--v145-work",type=Path); p.add_argument("--out",type=Path,default=Path("v146_results.json")); p.add_argument("--limit",type=int,default=8000)
-    p.add_argument("--control-limit",type=int,default=2500); p.add_argument("--self-test",action="store_true"); a=p.parse_args()
-    if not a.self_test and not all((a.features,a.labels,a.transcripts,a.v145_work)): p.error("features, labels, transcripts and v145-work are required")
+    p=argparse.ArgumentParser(); p.add_argument("--bundle",type=Path); p.add_argument("--out",type=Path,default=Path("v146_results.json")); p.add_argument("--self-test",action="store_true"); a=p.parse_args()
+    if not a.self_test and not a.bundle: p.error("--bundle is required")
     main(a)
