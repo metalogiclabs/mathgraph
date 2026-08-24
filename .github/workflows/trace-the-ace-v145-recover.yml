@@ -39,26 +39,41 @@ jobs:
       PIP_NO_CACHE_DIR: "1"
     steps:
       - uses: actions/checkout@v4
-      - name: Verify source data
+      - name: Verify source data and GPU
         shell: bash
         run: |
           set -euo pipefail
+          nvidia-smi
           test -s "${{ inputs.data_root }}/train_features_TMQTWsB.csv"
           test -s "${{ inputs.data_root }}/train_labels_44ujmj2.csv"
           test -s "${{ inputs.data_root }}/trace_the_ace_transcripts_v123_single_run_fresh.zip"
-      - name: Prepare environment
+      - name: Prepare CUDA 12.8 compatible environment
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m venv /root/venvs/trace-ace-v145 --system-site-packages || true
-          source /root/venvs/trace-ace-v145/bin/activate
+          rm -rf /root/venvs/trace-ace-v145-recovery-cu128
+          python3 -m venv /root/venvs/trace-ace-v145-recovery-cu128 --system-site-packages
+          source /root/venvs/trace-ace-v145-recovery-cu128/bin/activate
           python -m pip install -q --upgrade pip
-          python -m pip install -q "vllm>=0.8" "transformers>=4.51" numpy pandas scipy scikit-learn
+          python -m pip install -q \
+            "vllm==0.10.2" \
+            "transformers>=4.51" \
+            numpy pandas scipy scikit-learn \
+            --extra-index-url https://download.pytorch.org/whl/cu128
+          python - <<'PY'
+          import torch, vllm
+          print('torch', torch.__version__)
+          print('torch CUDA', torch.version.cuda)
+          print('vllm', vllm.__version__)
+          print('cuda available', torch.cuda.is_available())
+          assert torch.cuda.is_available(), 'CUDA unavailable after pinned install'
+          assert str(torch.version.cuda).startswith('12.8'), f'unexpected torch CUDA build: {torch.version.cuda}'
+          PY
       - name: Rebuild V145 cache
         shell: bash
         run: |
           set -euo pipefail
-          source /root/venvs/trace-ace-v145/bin/activate
+          source /root/venvs/trace-ace-v145-recovery-cu128/bin/activate
           ROOT=/root/trace-ace-results/v145-recovery-${{ github.run_id }}
           mkdir -p "$ROOT/work"
           python experiments/trace_the_ace_v145/run_v145_semantic_gate.py \
