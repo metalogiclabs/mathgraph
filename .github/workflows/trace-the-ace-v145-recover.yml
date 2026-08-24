@@ -33,7 +33,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 720
     env:
-      HF_HOME: /root/hf-cache
+      HF_HOME: /workspace/hf-cache
       V145_GPU_MEMORY: "0.90"
       V145_MAX_MODEL_LEN: "4096"
       PIP_NO_CACHE_DIR: "1"
@@ -47,13 +47,16 @@ jobs:
           test -s "${{ inputs.data_root }}/train_features_TMQTWsB.csv"
           test -s "${{ inputs.data_root }}/train_labels_44ujmj2.csv"
           test -s "${{ inputs.data_root }}/trace_the_ace_transcripts_v123_single_run_fresh.zip"
+          df -h / /workspace
       - name: Prepare CUDA 12.8 compatible environment
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /root/venvs/trace-ace-v145-recovery-cu128
-          python3 -m venv /root/venvs/trace-ace-v145-recovery-cu128 --system-site-packages
-          source /root/venvs/trace-ace-v145-recovery-cu128/bin/activate
+          ENV=/workspace/venvs/trace-ace-v145-recovery-cu128
+          mkdir -p /workspace/venvs /workspace/hf-cache
+          rm -rf "$ENV"
+          python3 -m venv "$ENV" --system-site-packages
+          source "$ENV/bin/activate"
           python -m pip install -q --upgrade pip
           python -m pip install -q \
             "vllm==0.10.2" \
@@ -69,12 +72,14 @@ jobs:
           assert torch.cuda.is_available(), 'CUDA unavailable after pinned install'
           assert str(torch.version.cuda).startswith('12.8'), f'unexpected torch CUDA build: {torch.version.cuda}'
           PY
+          df -h / /workspace
       - name: Rebuild V145 cache
         shell: bash
         run: |
           set -euo pipefail
-          source /root/venvs/trace-ace-v145-recovery-cu128/bin/activate
-          ROOT=/root/trace-ace-results/v145-recovery-${{ github.run_id }}
+          source /workspace/venvs/trace-ace-v145-recovery-cu128/bin/activate
+          ROOT=/workspace/trace-ace-results/v145-recovery-${{ github.run_id }}
+          rm -rf "$ROOT"
           mkdir -p "$ROOT/work"
           python experiments/trace_the_ace_v145/run_v145_semantic_gate.py \
             --features "${{ inputs.data_root }}/train_features_TMQTWsB.csv" \
@@ -98,10 +103,10 @@ jobs:
         with:
           name: trace-ace-v145-portable-${{ github.run_id }}
           path: |
-            /root/trace-ace-results/v145-recovery-${{ github.run_id }}/v145_results.json
-            /root/trace-ace-results/v145-recovery-${{ github.run_id }}/v146_bundle.npz
-            /root/trace-ace-results/v145-recovery-${{ github.run_id }}/work/semantic_scores.jsonl
-            /root/trace-ace-results/v145-recovery-${{ github.run_id }}/work/objective_swap_scores.jsonl
-            /root/trace-ace-results/v145-recovery-${{ github.run_id }}/work/evidence_empty_scores.jsonl
+            /workspace/trace-ace-results/v145-recovery-${{ github.run_id }}/v145_results.json
+            /workspace/trace-ace-results/v145-recovery-${{ github.run_id }}/v146_bundle.npz
+            /workspace/trace-ace-results/v145-recovery-${{ github.run_id }}/work/semantic_scores.jsonl
+            /workspace/trace-ace-results/v145-recovery-${{ github.run_id }}/work/objective_swap_scores.jsonl
+            /workspace/trace-ace-results/v145-recovery-${{ github.run_id }}/work/evidence_empty_scores.jsonl
           if-no-files-found: error
           retention-days: 90
