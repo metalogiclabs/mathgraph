@@ -2,7 +2,7 @@ name: Trace the Ace V146 Residual Router
 
 on:
   push:
-    branches: [trace-ace-v146-residual-routing]
+    branches: [main]
     paths:
       - "experiments/trace_the_ace_v146/**"
       - ".github/workflows/trace-the-ace-v146.yml"
