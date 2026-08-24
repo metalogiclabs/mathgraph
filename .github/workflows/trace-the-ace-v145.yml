@@ -17,7 +17,7 @@ on:
       data_root:
         description: "Persistent RunPod directory containing the three data files"
         required: true
-        default: /workspace/trace_the_ace
+        default: /root/trace_the_ace
         type: string
       model:
         description: "Frozen semantic judge"
@@ -53,8 +53,8 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 720
     env:
-      HF_HOME: /workspace/hf-cache
-      V145_GPU_MEMORY: "0.90"
+      HF_HOME: /root/hf-cache
+      V145_GPU_MEMORY: "0.90"\n      PIP_NO_CACHE_DIR: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Verify GPU and inspect data headers
@@ -77,33 +77,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -x /workspace/venvs/trace-ace-v145/bin/python ]; then
-            python3 -m venv /workspace/venvs/trace-ace-v145 --system-site-packages
+          if [ ! -x /root/venvs/trace-ace-v145/bin/python ]; then
+            python3 -m venv /root/venvs/trace-ace-v145 --system-site-packages
           fi
-          source /workspace/venvs/trace-ace-v145/bin/activate
+          source /root/venvs/trace-ace-v145/bin/activate
           python -m pip install -q --upgrade pip
           python -m pip install -q "vllm>=0.8" "transformers>=4.51" pandas scipy scikit-learn
       - name: Run preregistered V145 gate
         shell: bash
         run: |
           set -euo pipefail
-          source /workspace/venvs/trace-ace-v145/bin/activate
+          source /root/venvs/trace-ace-v145/bin/activate
           LIMIT=8000
           if [ "${{ inputs.mode }}" = "full" ]; then LIMIT=0; fi
-          mkdir -p /workspace/trace-ace-results/v145-${{ github.run_id }}
+          mkdir -p /root/trace-ace-results/v145-${{ github.run_id }}
           python experiments/trace_the_ace_v145/run_v145_semantic_gate.py \
             --features "${{ inputs.data_root }}/train_features_TMQTWsB.csv" \
             --labels "${{ inputs.data_root }}/train_labels_44ujmj2.csv" \
             --transcripts "${{ inputs.data_root }}/trace_the_ace_transcripts_v123_single_run_fresh.zip" \
             --model "${{ inputs.model }}" \
             --limit "$LIMIT" \
-            --work "/workspace/trace-ace-results/v145-${{ github.run_id }}/work" \
-            --out "/workspace/trace-ace-results/v145-${{ github.run_id }}/v145_results.json"
+            --work "/root/trace-ace-results/v145-${{ github.run_id }}/work" \
+            --out "/root/trace-ace-results/v145-${{ github.run_id }}/v145_results.json"
       - name: Publish decision summary
         if: always()
         shell: bash
         run: |
-          RESULT="/workspace/trace-ace-results/v145-${{ github.run_id }}/v145_results.json"
+          RESULT="/root/trace-ace-results/v145-${{ github.run_id }}/v145_results.json"
           if [ -s "$RESULT" ]; then
             python3 - "$RESULT" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json, sys
@@ -123,7 +123,7 @@ jobs:
         with:
           name: trace-ace-v145-${{ inputs.mode }}-${{ github.run_id }}
           path: |
-            /workspace/trace-ace-results/v145-${{ github.run_id }}/v145_results.json
-            /workspace/trace-ace-results/v145-${{ github.run_id }}/work/*.jsonl
+            /root/trace-ace-results/v145-${{ github.run_id }}/v145_results.json
+            /root/trace-ace-results/v145-${{ github.run_id }}/work/*.jsonl
           if-no-files-found: warn
           retention-days: 30
