@@ -1,0 +1,85 @@
+name: Trace the Ace V146 Residual Router
+
+on:
+  push:
+    branches: [trace-ace-v146-residual-routing]
+    paths:
+      - "experiments/trace_the_ace_v146/**"
+      - ".github/workflows/trace-the-ace-v146.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trace-ace-v146-residual-routing
+  cancel-in-progress: false
+
+jobs:
+  v146:
+    name: Cross-fitted residual router
+    runs-on: trace-ace-gpu
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify cached V145 evidence and data
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s /root/trace_the_ace/train_features_TMQTWsB.csv
+          test -s /root/trace_the_ace/train_labels_44ujmj2.csv
+          test -s /root/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip
+          test -s /root/trace-ace-results/v145-sniff/work/semantic_scores.jsonl
+          test -s /root/trace-ace-results/v145-sniff/work/objective_swap_scores.jsonl
+          test -s /root/trace-ace-results/v145-sniff/work/evidence_empty_scores.jsonl
+          wc -l /root/trace-ace-results/v145-sniff/work/*scores.jsonl
+      - name: Prepare CPU environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x /root/venvs/trace-ace-v146/bin/python ]; then
+            python3 -m venv /root/venvs/trace-ace-v146 --system-site-packages
+          fi
+          source /root/venvs/trace-ace-v146/bin/activate
+          python -m pip install -q numpy pandas scipy scikit-learn
+          python experiments/trace_the_ace_v146/run_v146_residual_router.py --self-test
+      - name: Run preregistered V146 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /root/venvs/trace-ace-v146/bin/activate
+          mkdir -p /root/trace-ace-results/v146-${{ github.run_id }}
+          python experiments/trace_the_ace_v146/run_v146_residual_router.py \
+            --features /root/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /root/trace_the_ace/train_labels_44ujmj2.csv \
+            --transcripts /root/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip \
+            --v145-work /root/trace-ace-results/v145-sniff/work \
+            --limit 8000 \
+            --control-limit 2500 \
+            --out /root/trace-ace-results/v146-${{ github.run_id }}/v146_results.json
+      - name: Publish decision
+        if: always()
+        shell: bash
+        run: |
+          R=/root/trace-ace-results/v146-${{ github.run_id }}/v146_results.json
+          if [ -s "$R" ]; then
+            python3 - "$R" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          print("# Trace the Ace V146")
+          print(f"\n**Decision: `{r['decision']}`**\n")
+          print("| Split | Base | Routed | Improvement | Fold wins | Coverage | Bootstrap 95% |")
+          print("|---|---:|---:|---:|---:|---:|---:|")
+          for k in ("session","objective"):
+              x=r[k]
+              print(f"| {k} | {x['base_logloss']:.6f} | {x['routed_logloss']:.6f} | {x['improvement']:.6f} | {x['fold_wins']}/5 | {x['mean_coverage']:.3f} | {x['bootstrap_improvement_95']} |")
+          PY
+          fi
+      - name: Upload V146 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v146-${{ github.run_id }}
+          path: /root/trace-ace-results/v146-${{ github.run_id }}/v146_results.json
+          if-no-files-found: warn
+          retention-days: 30
