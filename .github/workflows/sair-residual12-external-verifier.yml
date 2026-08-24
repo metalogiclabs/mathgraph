@@ -1,0 +1,101 @@
+name: SAIR Residual-12 External Verifier
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/sair-residual12-external-verifier
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-hit-attack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out frozen Stage-2 verifier
+        uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/equational-theories-lean-stage2
+          ref: 2ca276f808c2713aa666bb367d4dac738a7a1886
+          path: stage2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify frozen inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd stage2
+          test "$(cat lean-toolchain)" = "leanprover/lean4:v4.32.2"
+          grep -q 905b95818eb32af7874a58b427f50c1711a5e96c lake-manifest.json
+          test "$(sha256sum submissions/mathgraph_cleanroom/solver.py | cut -d' ' -f1)" = "a92eae8cce4fdf7c787c3218fa4f7eb1158c92a6b57f2920199ddbe6e7726a08"
+          python experiments/mathgraph/residual12/validate_development_graph.py
+      - name: Cache Lean and Lake packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan
+            stage2/.lake/packages
+          key: sair-residual12-lean-${{ runner.os }}-${{ hashFiles('stage2/lean-toolchain', 'stage2/lake-manifest.json') }}
+      - name: Build official Lean judge
+        working-directory: stage2
+        env:
+          SKIP_DOCKER: "1"
+        run: bash scripts/setup.sh
+      - name: Run preregistered hit attack
+        working-directory: stage2
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .env.judge
+          PYTHONDONTWRITEBYTECODE=1 python \
+            experiments/mathgraph/residual12/run_closure_hit_attack.py \
+            --output experiments/mathgraph/residual12/closure_hit_attack_results.json
+      - name: Enforce frozen interpretation
+        working-directory: stage2
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path(
+              "experiments/mathgraph/residual12/closure_hit_attack_results.json"
+          ).read_text())
+          failures = []
+          for row in data["rows"]:
+              for budget, attempts in row["original"].items():
+                  for index, attempt in enumerate(attempts):
+                      if attempt["found"] and attempt["judge_status"] != "accepted":
+                          failures.append(
+                              f"{row['id']} original {budget}s #{index}: "
+                              f"{attempt['judge_status']}"
+                          )
+              for name, attempt in row["transformed"].items():
+                  if not (
+                      attempt["found"]
+                      and attempt["root_matches"]
+                      and attempt["replayed"]
+                      and attempt["judge_status"] == "accepted"
+                  ):
+                      failures.append(
+                          f"{row['id']} {name}: {attempt['judge_status']}"
+                      )
+          if failures:
+              raise SystemExit("\n".join(failures))
+          print(json.dumps({
+              "rows": len(data["rows"]),
+              "metamorphic_checks": sum(
+                  len(row["transformed"]) for row in data["rows"]
+              ),
+              "failures": failures,
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sair-residual12-hit-attack
+          path: stage2/experiments/mathgraph/residual12/closure_hit_attack_results.json
+          if-no-files-found: warn
+          retention-days: 30
