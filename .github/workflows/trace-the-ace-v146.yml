@@ -1,15 +1,13 @@
 name: Trace the Ace V146 Residual Router
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "experiments/trace_the_ace_v146/**"
-      - ".github/workflows/trace-the-ace-v146.yml"
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Trace the Ace V145 Cache Recovery"]
+    types: [completed]
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: trace-ace-v146-residual-routing
@@ -18,50 +16,45 @@ concurrency:
 jobs:
   v146:
     name: Cross-fitted residual router
-    runs-on: trace-ace-gpu
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-      - name: Verify cached V145 evidence and data
+      - name: Download portable V145 evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Verify bundle
         shell: bash
         run: |
           set -euo pipefail
-          test -s /root/trace_the_ace/train_features_TMQTWsB.csv
-          test -s /root/trace_the_ace/train_labels_44ujmj2.csv
-          test -s /root/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip
-          test -s /root/trace-ace-results/v145-sniff/work/semantic_scores.jsonl
-          test -s /root/trace-ace-results/v145-sniff/work/objective_swap_scores.jsonl
-          test -s /root/trace-ace-results/v145-sniff/work/evidence_empty_scores.jsonl
-          wc -l /root/trace-ace-results/v145-sniff/work/*scores.jsonl
+          find v145-portable -maxdepth 2 -type f -print
+          test -s v145-portable/v146_bundle.npz
+          test -s v145-portable/v145_results.json
       - name: Prepare CPU environment
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -x /root/venvs/trace-ace-v146/bin/python ]; then
-            python3 -m venv /root/venvs/trace-ace-v146 --system-site-packages
-          fi
-          source /root/venvs/trace-ace-v146/bin/activate
           python -m pip install -q numpy pandas scipy scikit-learn
           python experiments/trace_the_ace_v146/run_v146_residual_router.py --self-test
       - name: Run preregistered V146 gate
         shell: bash
         run: |
           set -euo pipefail
-          source /root/venvs/trace-ace-v146/bin/activate
-          mkdir -p /root/trace-ace-results/v146-${{ github.run_id }}
+          mkdir -p v146-results
           python experiments/trace_the_ace_v146/run_v146_residual_router.py \
-            --features /root/trace_the_ace/train_features_TMQTWsB.csv \
-            --labels /root/trace_the_ace/train_labels_44ujmj2.csv \
-            --transcripts /root/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip \
-            --v145-work /root/trace-ace-results/v145-sniff/work \
-            --limit 8000 \
-            --control-limit 2500 \
-            --out /root/trace-ace-results/v146-${{ github.run_id }}/v146_results.json
+            --bundle v145-portable/v146_bundle.npz \
+            --out v146-results/v146_results.json
       - name: Publish decision
         if: always()
         shell: bash
         run: |
-          R=/root/trace-ace-results/v146-${{ github.run_id }}/v146_results.json
+          R=v146-results/v146_results.json
           if [ -s "$R" ]; then
             python3 - "$R" >> "$GITHUB_STEP_SUMMARY" <<'PY'
           import json,sys
@@ -80,6 +73,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: trace-ace-v146-${{ github.run_id }}
-          path: /root/trace-ace-results/v146-${{ github.run_id }}/v146_results.json
+          path: v146-results/v146_results.json
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 90
