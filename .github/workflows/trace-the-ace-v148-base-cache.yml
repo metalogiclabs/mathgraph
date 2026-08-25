@@ -1,0 +1,111 @@
+name: Trace the Ace V148 Durable V75 Crossfit Cache
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful V145 recovery run containing v146_bundle.npz
+        required: true
+        default: "32792841883"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: trace-ace-v148-v75-crossfit-cache
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.split }} cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        split: [full_session, full_objective, control_session, control_objective]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download portable V145 evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.source_run_id }}
+          repository: metalogiclabs/mathgraph
+
+      - name: Verify source bundle
+        shell: bash
+        run: test -s v145-portable/v146_bundle.npz
+
+      - name: Prepare CPU environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q numpy pandas scipy scikit-learn
+          python experiments/trace_the_ace_v148/build_v75_crossfit_cache.py --self-test
+
+      - name: Build frozen cross-fit shard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p crossfit-shard
+          python experiments/trace_the_ace_v148/build_v75_crossfit_cache.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --split "${{ matrix.split }}" \
+            --out "crossfit-shard/${{ matrix.split }}.npz" \
+            --meta "crossfit-shard/${{ matrix.split }}.json"
+          test -s "crossfit-shard/${{ matrix.split }}.npz"
+          test -s "crossfit-shard/${{ matrix.split }}.json"
+
+      - name: Upload shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v148-crossfit-shard-${{ matrix.split }}-${{ github.run_id }}
+          path: crossfit-shard/
+          retention-days: 90
+
+  persist:
+    name: Persist durable V75 cross-fit cache
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v148-crossfit-shard-*-${{ github.run_id }}
+          path: durable-v75-crossfit
+          merge-multiple: true
+
+      - name: Verify complete cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          for s in full_session full_objective control_session control_objective; do
+            test -s "durable-v75-crossfit/${s}.npz"
+            test -s "durable-v75-crossfit/${s}.json"
+          done
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path('durable-v75-crossfit')
+          parts=[json.loads((root/f'{s}.json').read_text()) for s in ('full_session','full_objective','control_session','control_objective')]
+          manifest={
+            'protocol':'V148_DURABLE_V75_CROSSFIT_CACHE',
+            'source_v145_run': '${{ inputs.source_run_id }}',
+            'source_commit':'${{ github.sha }}',
+            'splits': parts,
+          }
+          (root/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          print(json.dumps(manifest,indent=2))
+          PY
+
+      - name: Upload durable cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v148-durable-v75-crossfit-${{ github.run_id }}
+          path: durable-v75-crossfit/
+          retention-days: 90
