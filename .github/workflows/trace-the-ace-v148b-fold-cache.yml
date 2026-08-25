@@ -1,0 +1,102 @@
+name: Trace the Ace V148b Fold-Parallel V75 Cache
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful V145 recovery run containing v146_bundle.npz
+        required: true
+        default: "32792841883"
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trace-the-ace-v148b-fold-cache.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: trace-ace-v148b-fold-parallel
+  cancel-in-progress: false
+
+jobs:
+  fold:
+    name: ${{ matrix.split }} fold ${{ matrix.fold }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        split: [full_session, full_objective, control_session, control_objective]
+        fold: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve source run
+        id: src
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "run=${{ inputs.source_run_id }}" >> "$GITHUB_OUTPUT"; else echo "run=32792841883" >> "$GITHUB_OUTPUT"; fi
+      - name: Download V145 bundle
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.src.outputs.run }}
+          repository: metalogiclabs/mathgraph
+      - name: Prepare CPU
+        run: python -m pip install -q numpy pandas scipy scikit-learn
+      - name: Build one frozen fold
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p fold-cache
+          python experiments/trace_the_ace_v148/build_v75_crossfit_fold.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --split '${{ matrix.split }}' --fold '${{ matrix.fold }}' \
+            --out 'fold-cache/${{ matrix.split }}-fold${{ matrix.fold }}.npz'
+      - name: Upload fold
+        uses: actions/upload-artifact@v4
+        with:
+          name: v148b-${{ matrix.split }}-fold${{ matrix.fold }}-${{ github.run_id }}
+          path: fold-cache/*.npz
+          retention-days: 90
+
+  persist:
+    name: Persist V148b durable cache
+    needs: fold
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all folds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: v148b-*-${{ github.run_id }}
+          path: fold-parts
+          merge-multiple: true
+      - name: Assemble V149-compatible cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p durable-cache
+          python - <<'PY'
+          import numpy as np, pathlib, json
+          root=pathlib.Path('fold-parts'); out=pathlib.Path('durable-cache')
+          for s in ('full_session','full_objective','control_session','control_objective'):
+              parts=[np.load(root/f'{s}-fold{k}.npz',allow_pickle=True) for k in range(1,6)]
+              p={'protocol':np.asarray('V148B_FOLD_PARALLEL_V75_CROSSFIT_CACHE'),'split':np.asarray(s),
+                 'source_index':parts[0]['source_index'],'y':parts[0]['y'],'groups':parts[0]['groups']}
+              for k,b in enumerate(parts,1):
+                  p[f'fold{k}_tr']=b['tr']; p[f'fold{k}_va']=b['va']; p[f'fold{k}_p_inner']=b['p_inner']; p[f'fold{k}_p_heldout']=b['p_heldout']
+              np.savez_compressed(out/f'{s}.npz',**p)
+          (out/'manifest.json').write_text(json.dumps({'protocol':'V148B_FOLD_PARALLEL_V75_CROSSFIT_CACHE','source_v145_run':'32792841883','splits':['full_session','full_objective','control_session','control_objective']},indent=2))
+          PY
+          ls -lh durable-cache
+      - name: Upload durable cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v148b-durable-v75-crossfit-${{ github.run_id }}
+          path: durable-cache/
+          retention-days: 90
