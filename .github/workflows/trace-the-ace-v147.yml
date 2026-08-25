@@ -1,0 +1,81 @@
+name: Trace the Ace V147 Comparative Router
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Successful V145 recovery run containing portable artifact"
+        required: true
+        default: "32792841883"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: trace-ace-v147-comparative
+  cancel-in-progress: false
+
+jobs:
+  v147:
+    name: Comparative DOWN KEEP UP router
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download portable V145 evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.source_run_id }}
+          repository: metalogiclabs/mathgraph
+      - name: Verify bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s v145-portable/v146_bundle.npz
+          test -s v145-portable/v145_results.json
+      - name: Prepare CPU environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q numpy pandas scipy scikit-learn
+          python experiments/trace_the_ace_v147/run_v147_comparative_router.py --self-test
+      - name: Run comparative router
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p v147-results
+          python experiments/trace_the_ace_v147/run_v147_comparative_router.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --out v147-results/v147_results.json
+      - name: Publish decision
+        if: always()
+        shell: bash
+        run: |
+          R=v147-results/v147_results.json
+          if [ -s "$R" ]; then
+            python3 - "$R" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          print("# Trace the Ace V147 Comparative Router")
+          print(f"\n**Decision: `{r['decision']}`**\n")
+          print("| Split | Base | Comparative | Improvement | Fold wins | Actions |")
+          print("|---|---:|---:|---:|---:|---:|")
+          for k in ("session","objective"):
+              x=r[k]; a=x['actions']
+              print(f"| {k} | {x['base_logloss']:.6f} | {x['comparative_logloss']:.6f} | {x['improvement']:.6f} | {x['fold_wins']}/5 | {a} |")
+          PY
+          fi
+      - name: Upload V147 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v147-${{ github.run_id }}
+          path: v147-results/v147_results.json
+          if-no-files-found: warn
+          retention-days: 90
