@@ -86,7 +86,10 @@ def evaluate(name, X, S, y, groups):
 
 
 def load_bundle(path: Path):
-    b=np.load(path,allow_pickle=False)
+    # The portable bundle intentionally stores some string/object arrays. It is a
+    # trusted artifact produced by our own V145 exporter, so allow_pickle=True is
+    # required for NumPy to materialize those arrays on GitHub-hosted runners.
+    b=np.load(path,allow_pickle=True)
     frame=pd.DataFrame({"learning_objective":b["objective"].astype(str)})
     views=[]
     n=len(frame)
