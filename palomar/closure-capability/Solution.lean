@@ -20,12 +20,15 @@ private theorem noOR_ltle {s : State} (p : Pos) (h : NoOR s) :
 
 private theorem reach1_preserves_noOR {x y : State} (hxy : Reach1 x y) (hx : NoOR x) : NoOR y := by
   induction hxy with
-  | refl _ => exact hx
-  | tail hreach hstep ih =>
-      have hy := ih hx
+  | refl =>
+      exact hx
+  | @tail x y z hreach hstep ih =>
+      have hy : NoOR y := ih hx
       cases hstep with
-      | rot s => exact noOR_rotate hy
-      | ltle s p => exact noOR_ltle p hy
+      | rot =>
+          exact noOR_rotate hy
+      | ltle _ p =>
+          exact noOR_ltle p hy
 
 theorem orbit_identity : OrbitEq r0LTLE r2LTLE := by
   refine ⟨2, by decide, ?_, rfl, rfl⟩
