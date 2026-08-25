@@ -1,0 +1,59 @@
+name: Trace the Ace V153 Objective Prior
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: V145 durable bundle run
+        required: true
+        default: '32792841883'
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v153/**'
+      - '.github/workflows/trace-the-ace-v153-objective-prior.yml'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  v153:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve source run
+        id: src
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=${{ inputs.source_run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=32792841883" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download V145 bundle
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.src.outputs.run }}
+          repository: metalogiclabs/mathgraph
+      - name: Verify bundle
+        run: test -s v145-portable/v146_bundle.npz
+      - name: Prepare CPU
+        run: python -m pip install -q numpy scipy scikit-learn
+      - name: Run objective-prior separator
+        run: |
+          mkdir -p v153-results
+          python experiments/trace_the_ace_v153/run_v153_objective_prior_separator.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --out v153-results/v153_results.json
+      - name: Publish result
+        if: always()
+        run: test ! -s v153-results/v153_results.json || cat v153-results/v153_results.json
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v153-objective-prior-${{ github.run_id }}
+          path: v153-results/v153_results.json
+          retention-days: 30
