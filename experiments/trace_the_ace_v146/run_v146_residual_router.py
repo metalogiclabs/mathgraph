@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, sys, time
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -62,20 +62,43 @@ def choose_router(p_inner, y, Z_inner):
     return model,{"alpha":alpha,"lambda":lam,"quantile":q,"threshold":thr,"inner_coverage":cov}
 
 
-def evaluate(name, X, S, y, groups):
+def prepare_base_cache(name, X, y, groups):
+    """Compute the expensive base cross-fits once for a frozen split.
+
+    This is a pure computational refactor of the original V146 protocol: the
+    GroupKFold partitions, base estimator, inner OOF predictions and held-out
+    base predictions are identical. Semantic/control views reuse these frozen
+    quantities rather than refitting the same base models repeatedly.
+    """
+    t0=time.time()
     groups=np.asarray(pd.Series(groups).astype(str))
     splits=list(GroupKFold(5).split(np.zeros(len(y)),y,groups))
-    p0=np.zeros(len(y)); p1=np.zeros(len(y)); folds=[]; cover=[]; params=[]
+    folds=[]
     for k,(tr,va) in enumerate(splits,1):
-        scaler=StandardScaler().fit(S[tr]); Str=scaler.transform(S[tr]); Sva=scaler.transform(S[va])
         p_inner=inner_oof_base(X[tr],y[tr],groups[tr])
+        base=fit_base(X[tr],y[tr])
+        pb=np.clip(base.predict_proba(X[va])[:,1],1e-5,1-1e-5)
+        folds.append({"fold":k,"tr":tr,"va":va,"p_inner":p_inner,"pb":pb})
+        print(f"BASE_CACHE {name} fold {k}/5", flush=True)
+    print(f"BASE_CACHE_DONE {name} seconds={time.time()-t0:.1f}", flush=True)
+    return {"groups":groups,"folds":folds}
+
+
+def evaluate_cached(name, S, y, cache):
+    groups=cache["groups"]
+    p0=np.zeros(len(y)); p1=np.zeros(len(y)); folds=[]; cover=[]; params=[]
+    for item in cache["folds"]:
+        k,tr,va=item["fold"],item["tr"],item["va"]
+        scaler=StandardScaler().fit(S[tr]); Str=scaler.transform(S[tr]); Sva=scaler.transform(S[va])
+        p_inner=item["p_inner"]
         Zin=diagnostics(p_inner,Str)
         router,par=choose_router(p_inner,y[tr],Zin)
-        base=fit_base(X[tr],y[tr]); pb=base.predict_proba(X[va])[:,1]
+        pb=item["pb"]
         d=router.predict(diagnostics(pb,Sva)); gate=np.abs(d)>=par["threshold"]
         pr=expit(safe_logit(pb)+par["lambda"]*d*gate)
         p0[va]=pb; p1[va]=pr; cover.append(float(gate.mean())); params.append(par)
         folds.append({"fold":k,"rows":len(va),"base":float(log_loss(y[va],pb)),"routed":float(log_loss(y[va],pr)),"coverage":float(gate.mean())})
+        print(f"ROUTER {name} fold {k}/5", flush=True)
     p0=np.clip(p0,1e-5,1-1e-5); p1=np.clip(p1,1e-5,1-1e-5)
     ll0=float(log_loss(y,p0)); ll1=float(log_loss(y,p1))
     return {"base_logloss":ll0,"routed_logloss":ll1,"improvement":ll0-ll1,
@@ -86,9 +109,6 @@ def evaluate(name, X, S, y, groups):
 
 
 def load_bundle(path: Path):
-    # The portable bundle intentionally stores some string/object arrays. It is a
-    # trusted artifact produced by our own V145 exporter, so allow_pickle=True is
-    # required for NumPy to materialize those arrays on GitHub-hosted runners.
     b=np.load(path,allow_pickle=True)
     frame=pd.DataFrame({"learning_objective":b["objective"].astype(str)})
     views=[]
@@ -113,16 +133,27 @@ def main(a):
     X,S,y,session_groups,objective_groups,ci,Sswap,Sempty=load_bundle(a.bundle.resolve())
     rng=np.random.default_rng(SEED)
     shuffled=S[rng.permutation(len(S))]
-    results={"protocol":"V146_CROSSFITTED_SEMANTIC_RESIDUAL_ROUTER","rows":len(y),"fields":FIELDS,
-             "session":evaluate("session",X,S,y,session_groups),
-             "objective":evaluate("objective",X,S,y,objective_groups),
-             "shuffled":{"session":evaluate("session_shuffled",X,shuffled,y,session_groups),
-                         "objective":evaluate("objective_shuffled",X,shuffled,y,objective_groups)}}
+
+    # Full-data caches are shared by main and shuffled semantic views.
+    full_session=prepare_base_cache("full_session",X,y,session_groups)
+    full_objective=prepare_base_cache("full_objective",X,y,objective_groups)
+    results={"protocol":"V146_CROSSFITTED_SEMANTIC_RESIDUAL_ROUTER","implementation":"CACHED_BASE_CROSSFITS_EQUIVALENT",
+             "rows":len(y),"fields":FIELDS,
+             "session":evaluate_cached("session",S,y,full_session),
+             "objective":evaluate_cached("objective",S,y,full_objective),
+             "shuffled":{"session":evaluate_cached("session_shuffled",shuffled,y,full_session),
+                         "objective":evaluate_cached("objective_shuffled",shuffled,y,full_objective)}}
+
+    # Both counterfactual semantic views use the same 2,500-row base subset, so
+    # cache those base cross-fits once as well.
+    Xc,yc=X[ci],y[ci]
+    c_session=prepare_base_cache("control_session",Xc,yc,session_groups[ci])
+    c_objective=prepare_base_cache("control_objective",Xc,yc,objective_groups[ci])
     ctr={}
     for label,Sc in (("objective_swap",Sswap),("evidence_empty",Sempty)):
         ctr[label]={
-          "session":evaluate(label+"_session",X[ci],Sc,y[ci],session_groups[ci]),
-          "objective":evaluate(label+"_objective",X[ci],Sc,y[ci],objective_groups[ci])}
+          "session":evaluate_cached(label+"_session",Sc,yc,c_session),
+          "objective":evaluate_cached(label+"_objective",Sc,yc,c_objective)}
     results["counterfactual_controls"]=ctr
     s,o=results["session"],results["objective"]
     ss,so=results["shuffled"]["session"],results["shuffled"]["objective"]
