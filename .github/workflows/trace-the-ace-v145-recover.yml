@@ -54,23 +54,29 @@ jobs:
           set -euo pipefail
           ENV=/workspace/venvs/trace-ace-v145-recovery-cu128
           mkdir -p /workspace/venvs /workspace/hf-cache
-          rm -rf "$ENV"
-          python3 -m venv "$ENV" --system-site-packages
+          if [ ! -x "$ENV/bin/python" ]; then
+            python3 -m venv "$ENV" --system-site-packages
+          fi
           source "$ENV/bin/activate"
           python -m pip install -q --upgrade pip
           python -m pip install -q \
             "vllm==0.10.2" \
-            "transformers>=4.51" \
+            "transformers==4.56.1" \
             numpy pandas scipy scikit-learn \
             --extra-index-url https://download.pytorch.org/whl/cu128
           python - <<'PY'
-          import torch, vllm
+          import torch, vllm, transformers
+          from transformers import AutoTokenizer
           print('torch', torch.__version__)
           print('torch CUDA', torch.version.cuda)
           print('vllm', vllm.__version__)
+          print('transformers', transformers.__version__)
           print('cuda available', torch.cuda.is_available())
           assert torch.cuda.is_available(), 'CUDA unavailable after pinned install'
           assert str(torch.version.cuda).startswith('12.8'), f'unexpected torch CUDA build: {torch.version.cuda}'
+          tok = AutoTokenizer.from_pretrained('Qwen/Qwen3-8B-AWQ', trust_remote_code=True)
+          assert hasattr(tok, 'all_special_tokens_extended'), type(tok)
+          print('tokenizer compatibility OK', type(tok).__name__)
           PY
           df -h / /workspace
       - name: Rebuild V145 cache
