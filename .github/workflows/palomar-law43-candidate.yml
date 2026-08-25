@@ -37,3 +37,17 @@ jobs:
             echo 'Solution contains an admitted proof.'
             exit 1
           fi
+      - name: Install Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+      - name: Run Palomar Comparator and NanoDa
+        run: |
+          mkdir -p scripts
+          curl -sSfL https://raw.githubusercontent.com/PalomarRegistry/PalomarTemplate/main/scripts/verify-comparator.sh -o scripts/verify-comparator.sh
+          curl -sSfL https://raw.githubusercontent.com/PalomarRegistry/PalomarTemplate/main/scripts/landrun-wrapper.sh -o scripts/landrun-wrapper.sh
+          # This standalone package has no mathlib dependency/cache executable.
+          # Keep Palomar's pinned checker stack unchanged and skip only its optional mathlib cache fetch.
+          sed -i '/^lake exe cache get$/d' scripts/verify-comparator.sh
+          chmod +x scripts/*.sh
+          bash scripts/verify-comparator.sh
