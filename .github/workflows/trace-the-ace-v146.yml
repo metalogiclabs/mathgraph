@@ -4,6 +4,13 @@ on:
   workflow_run:
     workflows: ["Trace the Ace V145 Cache Recovery"]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Successful V145 recovery run containing the portable artifact"
+        required: true
+        default: "32792841883"
+        type: string
 
 permissions:
   contents: read
@@ -16,11 +23,21 @@ concurrency:
 jobs:
   v146:
     name: Cross-fitted residual router
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve V145 source run
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run_id=${{ inputs.source_run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Download portable V145 evidence
         uses: actions/download-artifact@v4
         with:
@@ -28,7 +45,7 @@ jobs:
           path: v145-portable
           merge-multiple: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.source.outputs.run_id }}
       - name: Verify bundle
         shell: bash
         run: |
