@@ -1,8 +1,8 @@
 name: LeanEval baseline
 
 on:
-  push:
-    branches: [lean-eval-baseline]
+  pull_request:
+    branches: [main]
     paths:
       - 'competitions/lean_eval/**'
       - '.github/workflows/lean-eval-baseline.yml'
