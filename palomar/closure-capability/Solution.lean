@@ -22,7 +22,7 @@ private theorem step1_preserves_noOR {x y : State} (hxy : Step1 x y) (hx : NoOR 
   cases hxy with
   | rot =>
       exact noOR_rotate hx
-  | ltle _ p =>
+  | ltle p =>
       exact noOR_ltle p hx
 
 private theorem reach1_preserves_noOR {x y : State} (hxy : Reach1 x y) : NoOR x → NoOR y := by
