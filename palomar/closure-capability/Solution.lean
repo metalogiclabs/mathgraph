@@ -18,17 +18,21 @@ private theorem noOR_ltle {s : State} (p : Pos) (h : NoOR s) :
     · simp [replaceAt, hs, h p]
   · simp [replaceAt, hqp, h q]
 
-private theorem reach1_preserves_noOR {x y : State} (hxy : Reach1 x y) (hx : NoOR x) : NoOR y := by
+private theorem step1_preserves_noOR {x y : State} (hxy : Step1 x y) (hx : NoOR x) : NoOR y := by
+  cases hxy with
+  | rot =>
+      exact noOR_rotate hx
+  | ltle _ p =>
+      exact noOR_ltle p hx
+
+private theorem reach1_preserves_noOR {x y : State} (hxy : Reach1 x y) : NoOR x → NoOR y := by
   induction hxy with
   | refl =>
+      intro hx
       exact hx
-  | @tail x y z hreach hstep ih =>
-      have hy : NoOR y := ih hx
-      cases hstep with
-      | rot =>
-          exact noOR_rotate hy
-      | ltle _ p =>
-          exact noOR_ltle p hy
+  | tail hreach hstep ih =>
+      intro hx
+      exact step1_preserves_noOR hstep (ih hx)
 
 theorem orbit_identity : OrbitEq r0LTLE r2LTLE := by
   refine ⟨2, by decide, ?_, rfl, rfl⟩
