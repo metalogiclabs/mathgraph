@@ -1,0 +1,28 @@
+title: "Closure-relative capability identity and strict reachability growth"
+short_title: "Closure-relative capability growth"
+authors:
+  - name: "Heath Sanchez"
+    affiliation: "Metalogic Labs"
+project:
+  name: "MathGraph"
+  url: "https://github.com/metalogiclabs/mathgraph"
+formalization:
+  language: "Lean 4"
+  repository: "https://github.com/metalogiclabs/mathgraph"
+  path: "palomar/closure-capability"
+provenance:
+  source_programme: "MathGraph bounded experiments on closure obstruction, quotient transport, capability identity, and verified representation repair"
+  source_note: "Capability Identity and Future-Relative Quotients under Verified Search"
+  statement_context: "This package isolates a finite exact theorem beneath the broader experimental programme. It distinguishes literal implementation identity, closure-relative capability identity, verified reachability growth, and raw constructor formability."
+  novelty_claim: "Candidate mathematical formalization; no representation-independent invention or recursive self-extension claim is made."
+  ai_assistance: "AI tools were used during experimental development, theorem packaging, and Lean formalization; the final declarations are checked by Lean and independently replayed through the Palomar checker stack."
+summary: >-
+  A four-coordinate finite system has an old cyclic presentation symmetry and
+  one-site rewrite capabilities. Two literally distinct LT-to-LE rewrites are
+  identified by the old symmetry. Retaining that capability does not make a
+  target containing OR reachable; adjoining an AND-to-OR capability strictly
+  expands reachability and makes the target reachable. At the same time, the
+  AND-to-OR rewrite was already formable in the raw one-site constructor
+  language. The formalization therefore separates closure-relative capability
+  identity and verified reachability growth from growth of raw syntax.
+status: "candidate-preparation"
