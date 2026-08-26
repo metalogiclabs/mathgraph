@@ -47,18 +47,14 @@ private theorem depressed_quartic_root_solvable
     simp [coeff_X_pow, hN.ne']
   have hrescoeff : resolvent.coeff 3 ≠ 0 := by
     dsimp [resolvent]
-    simp
+    norm_num
   have hresdeg : resolvent.natDegree = 3 :=
     natDegree_eq_of_le_of_coeff_ne_zero hresdeg_le hrescoeff
-  have hres0 : resolvent ≠ 0 := by
-    intro hzero
-    rw [hzero] at hresdeg
-    simp at hresdeg
   have hmap0 : resolvent.map (algebraMap ℚ ℂ) ≠ 0 := by
     intro hzero
-    have hz : resolvent = 0 :=
-      (map_injective (RingHom.injective (algebraMap ℚ ℂ))) hzero
-    exact hres0 hz
+    have hc := congrArg (fun f : ℂ[X] => f.coeff 3) hzero
+    dsimp [resolvent] at hc
+    norm_num at hc
   obtain ⟨z, hzroot⟩ :=
     (IsAlgClosed.splits (resolvent.map (algebraMap ℚ ℂ))).exists_eval_eq_zero hmap0
   have hzroot' : aeval z resolvent = 0 := by
@@ -81,11 +77,10 @@ private theorem depressed_quartic_root_solvable
         rw [← hs2, hs0]
         norm_num
       exact sub_eq_zero.mp this
-    have hQ0c : (Q : ℂ) = 0 := by
+    have hq2 : (Q : ℂ) ^ 2 = 0 := by
       rw [hzP] at hres
-      ring_nf at hres
-      have hq2 : (Q : ℂ) ^ 2 = 0 := by simpa using hres
-      exact (sq_eq_zero_iff).mp hq2
+      linear_combination -hres
+    have hQ0c : (Q : ℂ) = 0 := (sq_eq_zero_iff).mp hq2
     have hQ0 : Q = 0 := by exact_mod_cast hQ0c
     subst Q
     have ht : y ^ 2 ∈ solvableByRad ℚ ℂ := by
@@ -101,25 +96,22 @@ private theorem depressed_quartic_root_solvable
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
       field_simp [hs0]
-      have hs2' : s ^ 2 = z - (P : ℂ) := hs2
-      linear_combination
-        4 * (z - (P : ℂ)) * hy +
-        (z ^ 2 - 4 * (R : ℂ)) * (hs2' - hs2') +
-        (hQsq - hQsq)
+      rw [hs2]
+      linear_combination 4 * (z - (P : ℂ)) * hy + hQsq
     rcases mul_eq_zero.mp hfac with hplus | hminus
     · apply quadratic_expr_solvable s (z / 2 - (Q : ℂ) / (2 * s)) y hs_mem
       · exact (solvableByRad ℚ ℂ).sub_mem
           ((solvableByRad ℚ ℂ).div_mem hzmem (base_mem4 2))
           ((solvableByRad ℚ ℂ).div_mem (base_mem4 Q)
             ((solvableByRad ℚ ℂ).mul_mem (base_mem4 2) hs_mem))
-      · simpa only [sub_eq_add_neg, add_assoc] using hplus
+      · convert hplus using 1 <;> ring
     · apply quadratic_expr_solvable (-s) (z / 2 + (Q : ℂ) / (2 * s)) y
       · exact (solvableByRad ℚ ℂ).neg_mem hs_mem
       · exact (solvableByRad ℚ ℂ).add_mem
           ((solvableByRad ℚ ℂ).div_mem hzmem (base_mem4 2))
           ((solvableByRad ℚ ℂ).div_mem (base_mem4 Q)
             ((solvableByRad ℚ ℂ).mul_mem (base_mem4 2) hs_mem))
-      · simpa only [neg_mul, sub_eq_add_neg, add_assoc] using hminus
+      · convert hminus using 1 <;> ring
 
 theorem degree_four_solvable
     (p : ℚ[X]) (hp : p.natDegree = 4) (x : ℂ) (hx : aeval x p = 0) :
