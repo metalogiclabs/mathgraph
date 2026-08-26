@@ -1,0 +1,29 @@
+name: Trace the Ace V171 Crossfit Prior Parity
+on:
+  push:
+    paths:
+      - '.github/workflows/trace-ace-v171-crossfit-prior-parity.yml'
+      - 'experiments/trace_the_ace_v171/**'
+  workflow_dispatch:
+jobs:
+  v171:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check private inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+      - name: Run V171 separator
+        run: |
+          mkdir -p /workspace/trace-ace-results/v171
+          python3 experiments/trace_the_ace_v171/run_v171_crossfit_prior_parity.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --out /workspace/trace-ace-results/v171/v171_results.json
+      - run: cat /workspace/trace-ace-results/v171/v171_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v171-results
+          path: /workspace/trace-ace-results/v171/v171_results.json
