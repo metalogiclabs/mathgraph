@@ -42,10 +42,54 @@ jobs:
           from pathlib import Path
           p = Path('QuarticUniversal.lean')
           s = p.read_text()
-          s = s.replace(', hn1\', hN0\', ← C_pow]', ', hN1\', hN0\']')
-          s = s.replace('[resolvent, coeff_X_pow, coeff_C_mul_X, ← C_pow]', '[resolvent, coeff_X_pow, coeff_C_mul_X]')
-          s = s.replace('''      field_simp [hs0]\n      rw [hs4]\n      rw [hQsq]\n      ring''', '''      field_simp [hs0]\n      ring_nf\n      rw [hs4]\n      ring_nf\n      rw [hQsq]\n      ring''')
-          s = s.replace('''      simp [q, coeff_X_pow, coeff_C_mul_X, hn4, hn3, hn2, hn1, hn0, hn1\', hn0\']''', '''      simp [q, coeff_X_pow, coeff_X, coeff_C, hn4, hn3, hn2, hn1, hn0, hn1\', hn0\']''')
+
+          old = '''  have hresdeg_le : resolvent.natDegree ≤ 3 := by
+    rw [natDegree_le_iff_coeff_eq_zero]
+    intro N hN
+    have hN3 : N ≠ 3 := by omega
+    have hN2 : N ≠ 2 := by omega
+    have hN1 : N ≠ 1 := by omega
+    have hN0 : N ≠ 0 := by omega
+    have hN1' : 1 ≠ N := by omega
+    have hN0' : 0 ≠ N := by omega
+    simp [resolvent, coeff_X_pow, coeff_C_mul_X, hN3, hN2, hN1, hN0, hN1', hN0', ← C_pow]
+  have hrescoeff : resolvent.coeff 3 = 1 := by
+    simp [resolvent, coeff_X_pow, coeff_C_mul_X, ← C_pow]
+'''
+          new = '''  have hresdeg_le : resolvent.natDegree ≤ 3 := by
+    rw [natDegree_le_iff_coeff_eq_zero]
+    intro N hN
+    have hN3 : N ≠ 3 := by omega
+    have hN2 : N ≠ 2 := by omega
+    have hN1 : N ≠ 1 := by omega
+    have hN0 : N ≠ 0 := by omega
+    simp only [resolvent, coeff_add, coeff_sub, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
+    simp [hN3, hN2, hN1, hN0]
+  have hrescoeff : resolvent.coeff 3 = 1 := by
+    simp only [resolvent, coeff_add, coeff_sub, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
+    norm_num
+'''
+          assert old in s
+          s = s.replace(old, new)
+
+          old = '''      field_simp [hs0]
+      rw [hs4]
+      rw [hQsq]
+      ring'''
+          new = '''      field_simp [hs0]
+      rw [hs2]
+      ring_nf
+      rw [hQsq]
+      ring'''
+          assert old in s
+          s = s.replace(old, new)
+
+          old = '''      simp [q, coeff_X_pow, coeff_C_mul_X, hn4, hn3, hn2, hn1, hn0, hn1', hn0']'''
+          new = '''      simp only [q, coeff_add, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
+      simp [hn4, hn3, hn2, hn1, hn0]'''
+          assert old in s
+          s = s.replace(old, new)
+
           p.write_text(s)
           PY
           mkdir -p .lake/build/lib/lean
