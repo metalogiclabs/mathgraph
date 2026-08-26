@@ -3,10 +3,6 @@ name: LeanEval quartic universal
 
 on:
   pull_request:
-    paths:
-      - '.github/workflows/lean-eval-quartic-universal.yml'
-      - 'competitions/lean_eval/CubicUniversal.lean'
-      - 'competitions/lean_eval/QuarticUniversal.lean'
   workflow_dispatch:
 
 permissions:
