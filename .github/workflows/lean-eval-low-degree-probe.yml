@@ -79,7 +79,7 @@ jobs:
           set -o pipefail
           lake env lean DegreeOne.lean 2>&1 | tee /tmp/degree-one.log
 
-      - name: Probe degree two by strongest existing automation
+      - name: Construct degree-two radical capability
         working-directory: /tmp/abel_ruffini
         if: always()
         run: |
@@ -88,16 +88,69 @@ jobs:
 
           open Polynomial
 
-          theorem degree_two_solvable_probe
+          theorem degree_two_solvable
               (p : ℚ[X]) (hp : p.natDegree = 2) (x : ℂ) (hx : aeval x p = 0) :
               x ∈ solvableByRad ℚ ℂ := by
-            aesop
+            have hdeg : p.degree = (2 : WithBot ℕ) :=
+              (degree_eq_iff_natDegree_eq_of_pos (by omega)).2 hp
+            have hlead : p.coeff 2 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
+            let a : ℚ := p.coeff 2
+            let b : ℚ := p.coeff 1
+            let c : ℚ := p.coeff 0
+            have hpform : p = C a * X ^ 2 + C b * X + C c := by
+              ext n
+              by_cases hn : n ≤ 2
+              · interval_cases n <;> simp [a, b, c]
+              · have hlt : p.natDegree < n := by omega
+                have hpzero : p.coeff n = 0 := coeff_eq_zero_of_natDegree_lt hlt
+                have hn0 : n ≠ 0 := by omega
+                have hn1 : n ≠ 1 := by omega
+                have hn2 : n ≠ 2 := by omega
+                rw [hpzero]
+                simp [a, b, c, coeff_X_pow, hn0, hn1, hn2]
+            rw [hpform] at hx
+            simp [aeval_def] at hx
+            let y : ℂ := 2 * (a : ℂ) * x + (b : ℂ)
+            let d : ℚ := b ^ 2 - 4 * a * c
+            have hy_sq : y ^ 2 = (d : ℂ) := by
+              dsimp [y, d]
+              push_cast
+              linear_combination 4 * hx
+            have hd_mem : (d : ℂ) ∈ solvableByRad ℚ ℂ := by
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem d
+              simpa [algebraMap.coe_ratCast] using h
+            have hy_pow_mem : y ^ 2 ∈ solvableByRad ℚ ℂ := by
+              rw [hy_sq]
+              exact hd_mem
+            have hy_mem : y ∈ solvableByRad ℚ ℂ :=
+              solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0) hy_pow_mem
+            have hb_mem : (b : ℂ) ∈ solvableByRad ℚ ℂ := by
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem b
+              simpa [algebraMap.coe_ratCast] using h
+            have hden_mem : (2 * (a : ℂ)) ∈ solvableByRad ℚ ℂ := by
+              have htwo : (2 : ℂ) ∈ solvableByRad ℚ ℂ := by
+                have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
+                norm_num at h ⊢
+                exact h
+              have ha_mem : (a : ℂ) ∈ solvableByRad ℚ ℂ := by
+                have h := (solvableByRad ℚ ℂ).algebraMap_mem a
+                simpa [algebraMap.coe_ratCast] using h
+              exact (solvableByRad ℚ ℂ).mul_mem htwo ha_mem
+            have haC : (a : ℂ) ≠ 0 := by
+              exact_mod_cast hlead
+            have hxform : x = (y - (b : ℂ)) / (2 * (a : ℂ)) := by
+              dsimp [y]
+              field_simp
+              ring
+            rw [hxform]
+            exact (solvableByRad ℚ ℂ).div_mem
+              ((solvableByRad ℚ ℂ).sub_mem hy_mem hb_mem) hden_mem
           EOF
           set +e
           lake env lean DegreeTwo.lean > /tmp/degree-two.log 2>&1
           code=$?
           echo "degree_two_exit=$code" | tee /tmp/low-degree-summary.txt
-          tail -n 30 /tmp/degree-two.log
+          tail -n 60 /tmp/degree-two.log
           exit 0
 
       - name: Upload low-degree residual
