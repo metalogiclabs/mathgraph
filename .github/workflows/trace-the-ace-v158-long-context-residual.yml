@@ -16,7 +16,7 @@ on:
       data_root:
         description: "Persistent RunPod data directory"
         required: true
-        default: /root/trace_the_ace
+        default: /workspace/trace_the_ace
         type: string
       model:
         description: "Long-context encoder"
@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           nvidia-smi
-          DATA_ROOT="${{ github.event_name == 'workflow_dispatch' && inputs.data_root || '/root/trace_the_ace' }}"
+          DATA_ROOT="${{ github.event_name == 'workflow_dispatch' && inputs.data_root || '/workspace/trace_the_ace' }}"
           test -s "$DATA_ROOT/train_features_TMQTWsB.csv"
           test -s "$DATA_ROOT/train_labels_44ujmj2.csv"
           test -s "$DATA_ROOT/trace_the_ace_transcripts_v123_single_run_fresh.zip"
@@ -105,7 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           source /root/venvs/trace-ace-v158/bin/activate
-          DATA_ROOT="${{ github.event_name == 'workflow_dispatch' && inputs.data_root || '/root/trace_the_ace' }}"
+          DATA_ROOT="${{ github.event_name == 'workflow_dispatch' && inputs.data_root || '/workspace/trace_the_ace' }}"
           LIMIT="${{ github.event_name == 'workflow_dispatch' && inputs.limit || '8000' }}"
           MODEL="${{ github.event_name == 'workflow_dispatch' && inputs.model || 'answerdotai/ModernBERT-base' }}"
           RUN_ROOT="/root/trace-ace-results/v158-${{ github.run_id }}"
