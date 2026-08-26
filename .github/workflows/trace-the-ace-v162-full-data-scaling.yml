@@ -1,0 +1,55 @@
+name: Trace the Ace V162 Full Data Scaling Separator
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v162/**'
+      - '.github/workflows/trace-the-ace-v162-full-data-scaling.yml'
+
+jobs:
+  separator:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -s /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          echo "transcripts=$(find /workspace/trace_the_ace/transcripts_extracted -type f -name '*.csv' | wc -l)"
+      - name: Prepare CPU environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x /root/venvs/trace-ace-v162/bin/python ]; then
+            python3 -m venv /root/venvs/trace-ace-v162 --system-site-packages
+          fi
+          source /root/venvs/trace-ace-v162/bin/activate
+          python -m pip install -q --upgrade pip
+          python -m pip install -q numpy pandas scipy scikit-learn
+      - name: Run full-data separator
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /root/venvs/trace-ace-v162/bin/activate
+          mkdir -p /workspace/trace-ace-results/v162-${{ github.run_id }}
+          python experiments/trace_the_ace_v162/run_v162_full_data_scaling_separator.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --transcripts /workspace/trace_the_ace/transcripts_extracted \
+            --small-train 8000 \
+            --out /workspace/trace-ace-results/v162-${{ github.run_id }}/v162_results.json
+      - name: Publish result
+        if: always()
+        shell: bash
+        run: cat /workspace/trace-ace-results/v162-${{ github.run_id }}/v162_results.json 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-ace-v162-${{ github.run_id }}
+          path: /workspace/trace-ace-results/v162-${{ github.run_id }}/v162_results.json
+          retention-days: 30
