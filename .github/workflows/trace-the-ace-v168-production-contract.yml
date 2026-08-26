@@ -1,0 +1,29 @@
+name: Trace the Ace V168 Production Contract Reconstruction
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v168/**'
+      - '.github/workflows/trace-the-ace-v168-production-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  v168:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct scored production contract
+        run: |
+          mkdir -p /workspace/trace-ace-results/v168
+          python3 experiments/trace_the_ace_v168/run_v168_reconstruct_production_contract.py \
+            --workspace /workspace \
+            --repo "$GITHUB_WORKSPACE" \
+            --out /workspace/trace-ace-results/v168/v168_results.json
+      - name: Show verdict
+        run: cat /workspace/trace-ace-results/v168/v168_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v168-results
+          path: /workspace/trace-ace-results/v168/v168_results.json
