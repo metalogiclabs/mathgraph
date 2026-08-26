@@ -197,6 +197,35 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
+      - name: Compile universal quartic
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
+          cp "$GITHUB_WORKSPACE/competitions/lean_eval/QuarticUniversal.lean" QuarticUniversal.lean
+          mkdir -p .lake/build/lib/lean
+          set +e
+          lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
+          dep=$?
+          echo "cubic_dependency_exit=$dep"
+          if [ "$dep" -ne 0 ]; then
+            printf 'cubic_dependency\t%s\n' "$dep" >> /tmp/ladder.tsv
+            tail -n 160 /tmp/cubic-dependency.log
+            exit 0
+          fi
+          lake env lean QuarticUniversal.lean > /tmp/quartic-universal.log 2>&1
+          code=$?
+          echo "quartic_universal_exit=$code"
+          printf 'quartic_universal\t%s\n' "$code" >> /tmp/ladder.tsv
+          tail -n 240 /tmp/quartic-universal.log
+          {
+            echo '## Universal quartic'
+            echo '```text'
+            echo "cubic_dependency_exit=$dep"
+            echo "quartic_universal_exit=$code"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
       - name: Upload all residuals
         if: always()
         uses: actions/upload-artifact@v4
@@ -209,3 +238,5 @@ jobs:
             /tmp/quartic-zero.log
             /tmp/translate-back.log
             /tmp/degree-five.log
+            /tmp/cubic-dependency.log
+            /tmp/quartic-universal.log
