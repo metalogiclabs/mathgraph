@@ -98,17 +98,19 @@ jobs:
             let b : ℚ := p.coeff 1
             let c : ℚ := p.coeff 0
             have hpform : p = C a * X ^ 2 + C b * X + C c := by
+              let q : ℚ[X] := C a * X ^ 2 + C b * X + C c
+              have hqdeg : q.degree ≤ (2 : WithBot ℕ) := by
+                dsimp [q]
+                exact degree_quadratic_le
               ext n
               by_cases hn : n ≤ 2
-              · interval_cases n <;> simp [a, b, c]
-              · have hlt : p.natDegree < n := by omega
-                have hpzero : p.coeff n = 0 := coeff_eq_zero_of_natDegree_lt hlt
-                have hn0 : n ≠ 0 := by omega
-                have hn1 : n ≠ 1 := by omega
-                have hn2 : n ≠ 2 := by omega
-                rw [hpzero]
-                rw [coeff_add, coeff_add, coeff_mul, coeff_mul]
-                simp [coeff_X, coeff_X_pow, hn0, hn1, hn2]
+              · interval_cases n <;> simp [q, a, b, c]
+              · have hp_lt : p.degree < n := by
+                  rw [hdeg]
+                  exact_mod_cast (Nat.lt_of_not_ge hn)
+                have hq_lt : q.degree < n :=
+                  lt_of_le_of_lt hqdeg (by exact_mod_cast (Nat.lt_of_not_ge hn))
+                rw [coeff_eq_zero_of_degree_lt hp_lt, coeff_eq_zero_of_degree_lt hq_lt]
             rw [hpform] at hx
             simp [aeval_def] at hx
             let y : ℂ := 2 * (a : ℂ) * x + (b : ℂ)
@@ -141,6 +143,7 @@ jobs:
             have hxform : x = (y - (b : ℂ)) / (2 * (a : ℂ)) := by
               dsimp [y]
               field_simp [haC]
+              ring
             rw [hxform]
             exact (solvableByRad ℚ ℂ).div_mem
               ((solvableByRad ℚ ℂ).sub_mem hy_mem hb_mem) hden_mem
