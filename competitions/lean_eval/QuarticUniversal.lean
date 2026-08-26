@@ -47,11 +47,12 @@ private theorem depressed_quartic_root_solvable
     have hN2 : N ≠ 2 := by omega
     have hN1 : N ≠ 1 := by omega
     have hN0 : N ≠ 0 := by omega
-    simp [resolvent, coeff_X_pow, hN3, hN2, hN1, hN0]
-  have hrescoeff : resolvent.coeff 3 ≠ 0 := by
-    simp [resolvent, coeff_X_pow]
-  have hresdeg : resolvent.natDegree = 3 :=
-    natDegree_eq_of_le_of_coeff_ne_zero hresdeg_le hrescoeff
+    simp [resolvent, coeff_X_pow, coeff_X, hN3, hN2, hN1, hN0]
+  have hrescoeff : resolvent.coeff 3 = 1 := by
+    simp [resolvent, coeff_X_pow, coeff_X]
+  have hresdeg : resolvent.natDegree = 3 := by
+    apply natDegree_eq_of_le_of_coeff_ne_zero hresdeg_le
+    simpa [hrescoeff]
   have hresDegree : resolvent.degree = (3 : WithBot ℕ) :=
     (degree_eq_iff_natDegree_eq_of_pos (by norm_num : 0 < 3)).2 hresdeg
   obtain ⟨z, hzroot'⟩ :=
@@ -96,8 +97,11 @@ private theorem depressed_quartic_root_solvable
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) =
         y ^ 4 + (P : ℂ) * y ^ 2 + (Q : ℂ) * y + (R : ℂ) := by
       field_simp [hs0]
-      rw [hs2, hQsq]
-      ring
+      ring_nf
+      rw [hs2]
+      ring_nf
+      rw [hQsq]
+      ring_nf
     have hfac:
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
@@ -143,7 +147,7 @@ theorem degree_four_solvable
       have hn2 : n ≠ 2 := by omega
       have hn1 : n ≠ 1 := by omega
       have hn0 : n ≠ 0 := by omega
-      simp [q, coeff_X_pow, hn4, hn3, hn2, hn1, hn0]
+      simp [q, coeff_X_pow, coeff_X, hn4, hn3, hn2, hn1, hn0]
   rw [hpform] at hx
   simp [aeval_def] at hx
   let y : ℂ := 4 * (a : ℂ) * x + (b : ℂ)
