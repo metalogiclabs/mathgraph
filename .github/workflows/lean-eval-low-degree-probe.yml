@@ -47,7 +47,7 @@ jobs:
               (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
               ∃ q : ℚ, x = algebraMap ℚ ℂ q := by
             have hdeg : p.degree = (1 : WithBot ℕ) :=
-              (degree_eq_iff_natDegree_eq_of_pos (by omega)).2 hp
+              (degree_eq_iff_natDegree_eq_of_pos Nat.zero_lt_one).2 hp
             have hlead : p.coeff 1 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
             let a : ℚ := p.coeff 1
             let b : ℚ := p.coeff 0
@@ -57,12 +57,15 @@ jobs:
               · interval_cases n <;> simp [a, b]
               · have hlt : p.natDegree < n := by omega
                 have hpzero : p.coeff n = 0 := coeff_eq_zero_of_natDegree_lt hlt
-                simp [a, b, hpzero]
+                have hn0 : n ≠ 0 := by omega
+                have hn1 : n ≠ 1 := by omega
+                simp [a, b, hpzero, hn0, hn1]
             rw [hpform] at hx
             simp [aeval_def] at hx
             refine ⟨-b / a, ?_⟩
-            have haC : (algebraMap ℚ ℂ a) ≠ 0 := map_ne_zero (algebraMap ℚ ℂ) hlead
-            rw [map_div, map_neg]
+            have haC : (algebraMap ℚ ℂ a) ≠ 0 := by
+              exact (map_ne_zero_iff (algebraMap ℚ ℂ)).2 hlead
+            change x = -(algebraMap ℚ ℂ b) / (algebraMap ℚ ℂ a)
             apply (eq_div_iff haC).2
             linear_combination hx
 
