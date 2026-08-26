@@ -1,0 +1,30 @@
+name: Trace the Ace V173 Production Train Harness
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v173/**'
+      - '.github/workflows/trace-ace-v173-production-train-harness.yml'
+  workflow_dispatch:
+jobs:
+  v173:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check inputs
+        run: |
+          test -f /workspace/V157_RECOVERED_SUBMISSION.zip
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run V173 exact production harness
+        run: |
+          python3 experiments/trace_the_ace_v173/run_v173_production_train_harness.py
+      - name: Show result
+        run: cat /workspace/trace-ace-results/v173/v173_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v173-results
+          path: |
+            /workspace/trace-ace-results/v173/v173_results.json
+            /workspace/trace-ace-results/v173/v173_production_predictions.csv
