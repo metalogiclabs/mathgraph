@@ -1,0 +1,34 @@
+name: Trace the Ace V169 Runtime Identifiability Audit
+
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v169/**'
+      - '.github/workflows/trace-the-ace-v169-runtime-identifiability.yml'
+  workflow_dispatch:
+
+jobs:
+  v169:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify inputs
+        run: |
+          set -euo pipefail
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+      - name: Run V169 audit
+        run: |
+          set -euo pipefail
+          mkdir -p /workspace/trace-ace-results/v169
+          python3 experiments/trace_the_ace_v169/run_v169_runtime_identifiability_audit.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --out /workspace/trace-ace-results/v169/v169_results.json
+      - name: Show result
+        run: cat /workspace/trace-ace-results/v169/v169_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v169-results
+          path: /workspace/trace-ace-results/v169/v169_results.json
