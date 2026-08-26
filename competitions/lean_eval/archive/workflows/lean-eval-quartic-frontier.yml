@@ -50,7 +50,7 @@ jobs:
               (P Q R y z s : ℂ)
               (hP : P ∈ solvableByRad ℚ ℂ)
               (hQ : Q ∈ solvableByRad ℚ ℂ)
-              (hR : R ∈ solvableByRad ℚ ℂ)
+              (_hR : R ∈ solvableByRad ℚ ℂ)
               (hz : z ∈ solvableByRad ℚ ℂ)
               (hs : s^2 = z)
               (hs0 : s ≠ 0)
@@ -60,17 +60,18 @@ jobs:
             have hhalf : ((2 : ℚ) : ℂ) ∈ solvableByRad ℚ ℂ := by
               have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
               simpa [algebraMap.coe_ratCast] using h
-            have hsden : (2*s) ∈ solvableByRad ℚ ℂ := mul_mem hhalf hs_mem
-            have hsden0 : (2*s : ℂ) ≠ 0 := by exact mul_ne_zero (by norm_num) hs0
+            have hsden : (2*s) ∈ solvableByRad ℚ ℂ := (solvableByRad ℚ ℂ).mul_mem hhalf hs_mem
             have hc : ((z + P)/2 - Q/(2*s)) ∈ solvableByRad ℚ ℂ := by
-              apply sub_mem
-              · exact div_mem (add_mem hz hP) hhalf
-              · exact div_mem hQ hsden
+              exact (solvableByRad ℚ ℂ).sub_mem
+                ((solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).add_mem hz hP) hhalf)
+                ((solvableByRad ℚ ℂ).div_mem hQ hsden)
             have hfour : (4 : ℂ) ∈ solvableByRad ℚ ℂ := by
               have h := (solvableByRad ℚ ℂ).algebraMap_mem (4 : ℚ)
               norm_num at h ⊢
             have hdisc : (s^2 - 4 * ((z + P)/2 - Q/(2*s))) ∈ solvableByRad ℚ ℂ := by
-              exact sub_mem (pow_mem hs_mem 2) (mul_mem hfour hc)
+              exact (solvableByRad ℚ ℂ).sub_mem
+                ((solvableByRad ℚ ℂ).pow_mem hs_mem 2)
+                ((solvableByRad ℚ ℂ).mul_mem hfour hc)
             let t : ℂ := 2*y + s
             have ht2 : t^2 = s^2 - 4 * ((z + P)/2 - Q/(2*s)) := by
               dsimp [t]
@@ -86,11 +87,11 @@ jobs:
               dsimp [t]
               ring
             rw [this]
-            exact div_mem (sub_mem ht hs_mem) htwo
+            exact (solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).sub_mem ht hs_mem) htwo
 
           theorem quartic_factor_from_resolvent
               (P Q R z : ℂ)
-              (hzrel : z^3 - P*z^2 - 4*R*z + (4*P*R - Q^2) = 0) :
+              (_hzrel : z^3 - P*z^2 - 4*R*z + (4*P*R - Q^2) = 0) :
               ∀ y : ℂ,
                 y^4 + P*y^2 + Q*y + R = 0 →
                 (y^2 + z/2)^2 = (z - P) * y^2 - Q*y + (z^2/4 - R) := by
