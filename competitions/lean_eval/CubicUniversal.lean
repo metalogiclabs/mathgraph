@@ -12,11 +12,10 @@ private theorem cubic_factor_identity (Y U V W : ℂ)
         (Y - (U * W + V * W ^ 2)) *
         (Y - (U * W ^ 2 + V * W)) =
       Y ^ 3 - 3 * (U * V) * Y - (U ^ 3 + V ^ 3) := by
-  have hW2 : W ^ 2 = -W - 1 := by linear_combination hW
-  rw [hW2]
-  ring_nf at hW ⊢
   linear_combination
-    (U ^ 2 * V + U * V ^ 2 + U ^ 2 * V * W + U * V ^ 2 * W) * hW
+    (-(U + V - Y) *
+      (U ^ 2 * W - U ^ 2 + U * V * W ^ 2 - U * V * W + U * V -
+       U * Y + V ^ 2 * W - V ^ 2 - V * Y)) * hW
 
 private theorem depressed_cubic_root_solvable
     (P Q : ℚ) (y : ℂ)
@@ -99,11 +98,14 @@ private theorem depressed_cubic_root_solvable
           ((solvableByRad ℚ ℂ).neg_mem (by simpa using base_mem (1 : ℚ))) hr_mem)
         (base_mem 2)
     have hw : 1 + w + w ^ 2 = 0 := by
+      have hnum : ((-1 + r : ℂ) ^ 2 + 2 * (-1 + r) + 4) = 0 := by
+        calc
+          ((-1 + r : ℂ) ^ 2 + 2 * (-1 + r) + 4) = r ^ 2 + 3 := by ring
+          _ = 0 := by rw [hr2]; norm_num
       dsimp [w]
       field_simp
-      calc
-        (-1 + r) * (-1 + r + 2) + 2 ^ 2 = r ^ 2 + 3 := by ring
-        _ = 0 := by rw [hr2]; ring
+      ring_nf at hnum ⊢
+      exact hnum
     have hw3 : w ^ 3 = 1 := by
       have hw' : w ^ 2 + w + 1 = 0 := by linear_combination hw
       have hzero : w ^ 3 - 1 = 0 := by
