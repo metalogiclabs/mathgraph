@@ -48,8 +48,9 @@ private theorem depressed_quartic_root_solvable
     have hN2 : N ≠ 2 := by omega
     have hN1 : N ≠ 1 := by omega
     have hN0 : N ≠ 0 := by omega
+    have hN1' : 1 ≠ N := by omega
     simp only [resolvent, coeff_add, coeff_sub, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
-    simp [hN3, hN2, hN1, hN0]
+    simp [hN3, hN2, hN1, hN0, hN1']
   have hrescoeff : resolvent.coeff 3 = 1 := by
     simp only [resolvent, coeff_add, coeff_sub, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
     norm_num
@@ -100,10 +101,14 @@ private theorem depressed_quartic_root_solvable
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) =
         y ^ 4 + (P : ℂ) * y ^ 2 + (Q : ℂ) * y + (R : ℂ) := by
       field_simp [hs0]
-      rw [hs2]
-      ring_nf
-      rw [hQsq]
-      ring
+      have hs2' : s ^ 2 + (P : ℂ) = z := by
+        linear_combination hs2
+      have hQsq' : (Q : ℂ) ^ 2 = s ^ 2 * (z ^ 2 - 4 * (R : ℂ)) := by
+        rw [hQsq, ← hs2]
+      rw [hQsq']
+      ring_nf at hs2' ⊢
+      linear_combination
+        4 * y ^ 2 * hs2' + z * hs2' + 4 * y ^ 4 * hs2'
     have hfac:
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
@@ -149,8 +154,9 @@ theorem degree_four_solvable
       have hn2 : n ≠ 2 := by omega
       have hn1 : n ≠ 1 := by omega
       have hn0 : n ≠ 0 := by omega
+      have hn1' : 1 ≠ n := by omega
       simp only [q, coeff_add, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
-      simp [hn4, hn3, hn2, hn1, hn0]
+      simp [hn4, hn3, hn2, hn1, hn0, hn1']
   rw [hpform] at hx
   simp [aeval_def] at hx
   let y : ℂ := 4 * (a : ℂ) * x + (b : ℂ)
