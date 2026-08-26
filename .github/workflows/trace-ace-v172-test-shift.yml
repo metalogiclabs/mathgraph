@@ -1,0 +1,22 @@
+name: Trace the Ace V172 Test Shift Audit
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v172/**'
+      - '.github/workflows/trace-ace-v172-test-shift.yml'
+  workflow_dispatch:
+jobs:
+  v172:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V172
+        run: |
+          mkdir -p /workspace/trace-ace-results/v172
+          python3 experiments/trace_the_ace_v172/run_v172_test_shift_audit.py
+      - run: cat /workspace/trace-ace-results/v172/v172_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v172-results
+          path: /workspace/trace-ace-results/v172/v172_results.json
