@@ -105,8 +105,10 @@ private theorem depressed_quartic_root_solvable
         linear_combination hs2
       have hQsq' : (Q : ℂ) ^ 2 = s ^ 2 * (z ^ 2 - 4 * (R : ℂ)) := by
         rw [hQsq, ← hs2]
-      ring_nf at hs2' hQsq' ⊢
-      nlinarith [hs2', hQsq']
+      ring_nf at hQsq' ⊢
+      rw [hQsq']
+      linear_combination
+        (4 * (P : ℂ) * y ^ 2 + 4 * (Q : ℂ) * y - 4 * s ^ 2 * y ^ 2 + 4 * y ^ 4 + z ^ 2) * hs2'
     have hfac:
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
