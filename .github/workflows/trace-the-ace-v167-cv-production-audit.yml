@@ -1,0 +1,41 @@
+name: Trace the Ace V167 CV Production Alignment Audit
+
+on:
+  push:
+    paths:
+      - '.github/workflows/trace-the-ace-v167-cv-production-audit.yml'
+      - 'experiments/trace_the_ace_v167/**'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify inputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -s /workspace/trace_the_ace/train_labels_44ujmj2.csv
+      - name: Install dependencies
+        run: python3 -m pip install -q pandas numpy
+      - name: Run V167 audit
+        run: |
+          mkdir -p /workspace/trace-ace-results/v167
+          python3 experiments/trace_the_ace_v167/run_v167_cv_production_alignment_audit.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --results /workspace/trace-ace-results \
+            --workspace /workspace \
+            --out /workspace/trace-ace-results/v167/v167_results.json
+      - name: Show verdict
+        if: always()
+        run: cat /workspace/trace-ace-results/v167/v167_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v167-results
+          path: /workspace/trace-ace-results/v167/v167_results.json
+          if-no-files-found: warn
