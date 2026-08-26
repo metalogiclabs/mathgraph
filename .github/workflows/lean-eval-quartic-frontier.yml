@@ -31,47 +31,13 @@ jobs:
           lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
           cd /tmp/abel_ruffini
           lake update
-      - name: Verify stable quartic frontier pieces
+      - name: Verify quartic composition frontier
         working-directory: /tmp/abel_ruffini
         run: |
           cat > DegreeFour.lean <<'EOF'
           import Mathlib
 
           open Polynomial
-
-          theorem quartic_eval_from_sparse_form
-              (a b c d e : ℚ) (x : ℂ)
-              (hx : aeval x (C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e) = 0) :
-              (a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ) = 0 := by
-            simpa [aeval_def] using hx
-
-          theorem quartic_depress_identity
-              (a b c d e : ℚ) (x : ℂ)
-              (ha : (a : ℂ) ≠ 0)
-              (hx : (a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ) = 0) :
-              let y : ℂ := x + (b : ℂ) / (4 * (a : ℂ))
-              ∃ P Q R : ℚ,
-                y^4 + (P : ℂ) * y^2 + (Q : ℂ) * y + (R : ℂ) = 0 := by
-            let P : ℚ := (8*a*c - 3*b^2) / (8*a^2)
-            let Q : ℚ := (b^3 - 4*a*b*c + 8*a^2*d) / (8*a^3)
-            let R : ℚ := (-3*b^4 + 16*a*b^2*c - 64*a^2*b*d + 256*a^3*e) / (256*a^4)
-            refine ⟨P, Q, R, ?_⟩
-            dsimp [P, Q, R]
-            push_cast
-            have hident :
-                (x + (b : ℂ) / (4 * (a : ℂ)))^4 +
-                    ((8*(a : ℂ)*(c : ℂ) - 3*(b : ℂ)^2) / (8*(a : ℂ)^2)) *
-                      (x + (b : ℂ) / (4 * (a : ℂ)))^2 +
-                    (((b : ℂ)^3 - 4*(a : ℂ)*(b : ℂ)*(c : ℂ) + 8*(a : ℂ)^2*(d : ℂ)) /
-                      (8*(a : ℂ)^3)) * (x + (b : ℂ) / (4 * (a : ℂ))) +
-                    ((-3*(b : ℂ)^4 + 16*(a : ℂ)*(b : ℂ)^2*(c : ℂ) -
-                      64*(a : ℂ)^2*(b : ℂ)*(d : ℂ) + 256*(a : ℂ)^3*(e : ℂ)) /
-                      (256*(a : ℂ)^4)) =
-                  ((a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ)) /
-                    (a : ℂ) := by
-              field_simp [ha]
-              ring
-            rw [hident, hx, zero_div]
 
           theorem quartic_square_radical
               (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
@@ -80,17 +46,57 @@ jobs:
             rw [hs]
             exact hz
 
-          theorem quartic_resolvent_transfer
-              (r : ℂ) (hr : r ∈ solvableByRad ℚ ℂ)
-              (s : ℂ) (hs : s^2 = r) :
-              s ∈ solvableByRad ℚ ℂ :=
-            quartic_square_radical r hr s hs
+          theorem quartic_final_reconstruct
+              (P Q R y z s : ℂ)
+              (hP : P ∈ solvableByRad ℚ ℂ)
+              (hQ : Q ∈ solvableByRad ℚ ℂ)
+              (hR : R ∈ solvableByRad ℚ ℂ)
+              (hz : z ∈ solvableByRad ℚ ℂ)
+              (hs : s^2 = z)
+              (hs0 : s ≠ 0)
+              (hy : y^2 + s*y + (z + P)/2 - Q/(2*s) = 0) :
+              y ∈ solvableByRad ℚ ℂ := by
+            have hs_mem : s ∈ solvableByRad ℚ ℂ := quartic_square_radical z hz s hs
+            have hhalf : ((2 : ℚ) : ℂ) ∈ solvableByRad ℚ ℂ := by
+              exact (solvableByRad.base_mem ℚ ℂ (2 : ℚ))
+            have hsden : (2*s) ∈ solvableByRad ℚ ℂ := mul_mem hhalf hs_mem
+            have hsden0 : (2*s : ℂ) ≠ 0 := by exact mul_ne_zero (by norm_num) hs0
+            have hc : ((z + P)/2 - Q/(2*s)) ∈ solvableByRad ℚ ℂ := by
+              apply sub_mem
+              · exact div_mem (add_mem hz hP) hhalf
+              · exact div_mem hQ hsden
+            have hdisc : (s^2 - 4 * ((z + P)/2 - Q/(2*s))) ∈ solvableByRad ℚ ℂ := by
+              exact sub_mem (pow_mem hs_mem 2) (mul_mem (solvableByRad.base_mem ℚ ℂ (4 : ℚ)) hc)
+            let t : ℂ := 2*y + s
+            have ht2 : t^2 = s^2 - 4 * ((z + P)/2 - Q/(2*s)) := by
+              dsimp [t]
+              linear_combination 4 * hy
+            have ht : t ∈ solvableByRad ℚ ℂ := by
+              apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
+              rw [ht2]
+              exact hdisc
+            have htwo : ((2 : ℚ) : ℂ) ∈ solvableByRad ℚ ℂ := solvableByRad.base_mem ℚ ℂ (2 : ℚ)
+            have : y = (t - s) / 2 := by
+              dsimp [t]
+              ring
+            rw [this]
+            exact div_mem (sub_mem ht hs_mem) htwo
+
+          theorem quartic_factor_from_resolvent
+              (P Q R z : ℂ)
+              (hzrel : z^3 - P*z^2 - 4*R*z + (4*P*R - Q^2) = 0) :
+              ∀ y : ℂ,
+                y^4 + P*y^2 + Q*y + R = 0 →
+                (y^2 + z/2)^2 = (z - P) * y^2 - Q*y + (z^2/4 - R) := by
+            intro y hy
+            linear_combination hy
+
           EOF
           set +e
           lake env lean DegreeFour.lean > /tmp/degree-four.log 2>&1
           code=$?
-          echo "degree_four_frontier_exit=$code" | tee /tmp/quartic-summary.txt
-          tail -n 100 /tmp/degree-four.log
+          echo "degree_four_composition_exit=$code" | tee /tmp/quartic-summary.txt
+          tail -n 120 /tmp/degree-four.log
           exit 0
       - name: Upload quartic residual
         if: always()
