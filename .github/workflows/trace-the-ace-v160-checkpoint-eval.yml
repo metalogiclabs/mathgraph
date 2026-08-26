@@ -1,0 +1,79 @@
+name: Trace the Ace V160 Checkpoint Eval
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v160/**'
+      - '.github/workflows/trace-the-ace-v160-checkpoint-eval.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trace-ace-v160-checkpoint-eval
+  cancel-in-progress: false
+
+jobs:
+  eval:
+    runs-on: trace-ace-gpu
+    timeout-minutes: 180
+    env:
+      HF_HOME: /root/hf-cache
+      TRANSFORMERS_CACHE: /root/hf-cache
+      TOKENIZERS_PARALLELISM: 'true'
+      PIP_NO_CACHE_DIR: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify rescued state
+        shell: bash
+        run: |
+          set -euo pipefail
+          nvidia-smi
+          test -s /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -s /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          test "$(find /workspace/trace_the_ace/transcripts_extracted -type f -name '*.csv' | wc -l)" -eq 22821
+          test -s /workspace/trace-ace-checkpoints/v159/870d20d4a6cff5a93e98/model.safetensors
+          test -f /workspace/trace-ace-checkpoints/v159/870d20d4a6cff5a93e98/.complete
+      - name: Prepare environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x /root/venvs/trace-ace-v158/bin/python ]; then
+            python3 -m venv /root/venvs/trace-ace-v158 --system-site-packages
+          fi
+          source /root/venvs/trace-ace-v158/bin/activate
+          python -m pip install -q --upgrade pip
+          python -m pip install -q 'transformers>=4.51,<5' accelerate pandas scipy scikit-learn
+      - name: Evaluate rescued V159 fold
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /root/venvs/trace-ace-v158/bin/activate
+          mkdir -p /workspace/trace-ace-work/v160 /workspace/trace-ace-results/v160-${{ github.run_id }}
+          python experiments/trace_the_ace_v160/run_v160_checkpoint_eval.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --transcripts /workspace/trace_the_ace/transcripts_extracted \
+            --checkpoint-root /workspace/trace-ace-checkpoints/v159 \
+            --limit 8000 \
+            --folds 3 \
+            --fold 1 \
+            --max-len 8192 \
+            --char-cap 30000 \
+            --eval-batch 2 \
+            --work /workspace/trace-ace-work/v160 \
+            --out /workspace/trace-ace-results/v160-${{ github.run_id }}/v160_results.json
+      - name: Publish result
+        if: always()
+        run: |
+          RESULT=/workspace/trace-ace-results/v160-${{ github.run_id }}/v160_results.json
+          if [ -s "$RESULT" ]; then cat "$RESULT"; else echo 'No V160 result yet'; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-ace-v160-${{ github.run_id }}
+          path: /workspace/trace-ace-results/v160-${{ github.run_id }}/v160_results.json
+          if-no-files-found: warn
+          retention-days: 30
