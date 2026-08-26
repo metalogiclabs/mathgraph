@@ -1,77 +1,13 @@
-name: LeanEval comparator gate
+name: LeanEval comparator gate (archived)
 
 on:
-  push:
-    branches: [lean-eval-baseline]
-    paths:
-      - '.github/workflows/lean-eval-comparator.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/lean-eval-comparator.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  comparator:
+  archived:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install system toolchains
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y golang cargo
-          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
-      - name: Clone frozen LeanEval
-        run: |
-          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
-          cd /tmp/lean-eval
-          git checkout "$LEAN_EVAL_SHA"
-          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
-          lake exe cache get
-          lake build
-
-      - name: Install pinned landrun
-        run: |
-          go install github.com/zouuup/landrun/cmd/landrun@5ed4a3db3a4ad930d577215c6b9abaa19df7f99f
-
-      - name: Build pinned lean4export
-        run: |
-          git clone https://github.com/leanprover/lean4export.git /tmp/lean4export
-          cd /tmp/lean4export
-          git checkout 4e7915201d3f9f04470d9eae002fa695f7cdc589
-          cp /tmp/lean-eval/lean-toolchain lean-toolchain
-          lake build lean4export
-          echo "/tmp/lean4export/.lake/build/bin" >> "$GITHUB_PATH"
-
-      - name: Build pinned comparator
-        run: |
-          git clone https://github.com/leanprover/comparator.git /tmp/comparator
-          cd /tmp/comparator
-          git checkout 71b52ec29e06d4b7d882726553b1ceb99a2499e0
-          lake build comparator
-          echo "/tmp/comparator/.lake/build/bin" >> "$GITHUB_PATH"
-
-      - name: Build pinned nanoda
-        run: |
-          git clone https://github.com/robsimmons/nanoda_lib.git /tmp/nanoda_lib
-          cd /tmp/nanoda_lib
-          git checkout 68d5ca9db226849b41a6fff59d796ff19d0a8840
-          cargo build --release
-          echo "/tmp/nanoda_lib/target/release" >> "$GITHUB_PATH"
-
-      - name: Check full comparator installation
-        working-directory: /tmp/lean-eval
-        run: |
-          lake exe lean-eval check-comparator-installation
-          echo '## Gate 1: COMPARATOR_CHAIN_VERIFIED' >> "$GITHUB_STEP_SUMMARY"
-          echo 'landrun -> lean4export -> comparator -> nanoda accepted the official starter end-to-end.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'No nontrivial benchmark solve is claimed by this gate.' >> "$GITHUB_STEP_SUMMARY"
+      - run: echo 'Archived exact workflow: competitions/lean_eval/archive/workflows/lean-eval-comparator.yml'
