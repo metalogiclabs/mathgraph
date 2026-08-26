@@ -1,0 +1,27 @@
+name: Trace Ace V170 inference parity
+on:
+  workflow_dispatch:
+jobs:
+  v170:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run V170 separator
+        run: |
+          mkdir -p /workspace/trace-ace-results/v170
+          python3 experiments/trace_the_ace_v170/run_v170_inference_parity.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --transcripts /workspace/trace_the_ace/transcripts_extracted \
+            --out /workspace/trace-ace-results/v170/v170_results.json
+      - run: cat /workspace/trace-ace-results/v170/v170_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v170-results
+          path: /workspace/trace-ace-results/v170/v170_results.json
