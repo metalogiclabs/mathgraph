@@ -50,23 +50,21 @@ jobs:
               ¬ (∀ p : ℚ[X], p.natDegree = n → ∀ x : ℂ, aeval x p = 0 →
                   x ∈ solvableByRad ℚ ℂ) := by
             intro hall
-            obtain ⟨x, hxalg, hxnot⟩ := AbelRuffini.exists_not_solvable_by_rad
-            rcases hxalg with ⟨q, hq0, hqx⟩
             let bad : ℚ[X] := AbelRuffini.Φ ℚ 4 2
-            have hbadroot : aeval x bad = 0 := by
-              exact Classical.choose_spec (show ∃ y : ℂ, aeval y bad = 0 ∧ y ∉ solvableByRad ℚ ℂ by
-                obtain ⟨y, hy⟩ := (IsAlgClosed.splits (bad.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
-                  simp [bad, AbelRuffini.degree_Phi])
-                rw [← AbelRuffini.map_Phi 4 2 (algebraMap ℚ ℂ), eval_map] at hy
-                exact ⟨y, hy, AbelRuffini.not_solvable_by_rad' y hy⟩)
-            obtain ⟨y, hyroot, hynot⟩ : ∃ y : ℂ, aeval y bad = 0 ∧ y ∉ solvableByRad ℚ ℂ := by
-              obtain ⟨y, hy⟩ := (IsAlgClosed.splits (bad.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
-                simp [bad, AbelRuffini.degree_Phi])
-              rw [← AbelRuffini.map_Phi 4 2 (algebraMap ℚ ℂ), eval_map] at hy
-              exact ⟨y, hy, AbelRuffini.not_solvable_by_rad' y hy⟩
+            obtain ⟨y, hy⟩ := (IsAlgClosed.splits (bad.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
+              simp [bad, AbelRuffini.degree_Phi])
+            have hyroot : aeval y bad = 0 := by
+              simpa [aeval_def] using hy
+            have hynot : y ∉ solvableByRad ℚ ℂ := by
+              apply AbelRuffini.not_solvable_by_rad' y
+              simpa [bad, aeval_def] using hyroot
             let p : ℚ[X] := bad * X ^ (n - 5)
+            have hbad0 : bad ≠ 0 := by
+              exact (AbelRuffini.monic_Phi 4 2).ne_zero
             have hdeg : p.natDegree = n := by
-              simp [p, bad, AbelRuffini.natDegree_Phi, hn]
+              rw [show p = bad * X ^ (n - 5) by rfl, natDegree_mul hbad0 (pow_ne_zero _ X_ne_zero)]
+              simp [bad, AbelRuffini.natDegree_Phi]
+              omega
             have hroot : aeval y p = 0 := by
               simp [p, hyroot]
             exact hynot (hall p hdeg y hroot)
@@ -88,12 +86,15 @@ jobs:
       - name: Build split proof and expose residual
         working-directory: /tmp/abel_ruffini
         run: |
+          set -o pipefail
           lake build 2>&1 | tee /tmp/abel-high-degree.log
           echo '## Abel-Ruffini high-degree bridge' >> "$GITHUB_STEP_SUMMARY"
           echo 'High-degree direction compiled; low-degree constructive direction intentionally remains the only sorry.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload bridge evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lean-eval-abel-high-degree
           path: /tmp/abel-high-degree.log
+          if-no-files-found: warn
