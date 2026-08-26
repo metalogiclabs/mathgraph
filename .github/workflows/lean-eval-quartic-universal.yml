@@ -38,8 +38,9 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/QuarticUniversal.lean" QuarticUniversal.lean
+          mkdir -p .lake/build/lib/lean
           set +e
-          lake env lean -o CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
+          lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
           dep=$?
           echo "cubic_dependency_exit=$dep"
           if [ "$dep" -ne 0 ]; then tail -n 120 /tmp/cubic-dependency.log; exit 0; fi
