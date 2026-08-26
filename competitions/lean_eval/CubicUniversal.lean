@@ -73,7 +73,6 @@ private theorem depressed_cubic_root_solvable
     have huv : u * v = -(P : ℂ) / 3 := by
       dsimp [v]
       field_simp [hu0]
-      ring
     have hv3 : v ^ 3 = B := by
       have hl : A * v ^ 3 = -((P : ℂ) ^ 3) / 27 := by
         rw [← hu3, ← mul_pow, huv]
