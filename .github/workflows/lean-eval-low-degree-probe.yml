@@ -39,7 +39,6 @@ jobs:
         run: |
           cat > DegreeOne.lean <<'EOF'
           import Mathlib
-          import Submission.Helpers
 
           open Polynomial
 
@@ -47,16 +46,21 @@ jobs:
               (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
               ∃ q : ℚ, x = algebraMap ℚ ℂ q := by
             have hlead : p.coeff 1 ≠ 0 := by
-              simpa [natDegree_eq_iff_degree_eq_iff, hp] using p.leadingCoeff_ne_zero
+              simpa [hp] using p.leadingCoeff_ne_zero
             let a : ℚ := p.coeff 1
             let b : ℚ := p.coeff 0
             have hpform : p = C b + C a * X := by
               ext n
-              interval_cases n <;> simp [a, b, hp, coeff_eq_zero_of_natDegree_lt]
+              by_cases hn : n ≤ 1
+              · interval_cases n <;> simp [a, b]
+              · have hlt : p.natDegree < n := by omega
+                simp [a, b, coeff_eq_zero_of_natDegree_lt hlt]
             rw [hpform] at hx
             simp [aeval_def] at hx
             refine ⟨-b / a, ?_⟩
-            apply (mul_left_cancel₀ (show (algebraMap ℚ ℂ a) ≠ 0 by exact map_ne_zero_of_injective (algebraMap ℚ ℂ).injective hlead))
+            have haC : (algebraMap ℚ ℂ a) ≠ 0 := by
+              exact map_ne_zero_of_injective (algebraMap ℚ ℂ).injective hlead
+            apply (mul_left_cancel₀ haC)
             field_simp [a, hlead] at hx ⊢
             linarith
 
@@ -71,10 +75,10 @@ jobs:
 
       - name: Probe degree two by strongest existing automation
         working-directory: /tmp/abel_ruffini
+        if: always()
         run: |
           cat > DegreeTwo.lean <<'EOF'
           import Mathlib
-          import Submission.Helpers
 
           open Polynomial
 
@@ -91,6 +95,7 @@ jobs:
           exit 0
 
       - name: Upload low-degree residual
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lean-eval-low-degree-probe
