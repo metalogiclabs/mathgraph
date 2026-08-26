@@ -40,17 +40,27 @@ private theorem depressed_quartic_root_solvable
     y ∈ solvableByRad ℚ ℂ := by
   let resolvent : ℚ[X] :=
     X ^ 3 - C P * X ^ 2 - C (4 * R) * X + C (4 * P * R - Q ^ 2)
-  have hresdeg : resolvent.natDegree = 3 := by
+  have hresdeg_le : resolvent.natDegree ≤ 3 := by
+    rw [natDegree_le_iff_coeff_eq_zero]
+    intro N hN
     dsimp [resolvent]
-    norm_num [natDegree_add_eq_left_of_natDegree_lt]
+    simp [coeff_X_pow, hN.ne']
+  have hrescoeff : resolvent.coeff 3 ≠ 0 := by
+    dsimp [resolvent]
+    simp
+  have hresdeg : resolvent.natDegree = 3 :=
+    natDegree_eq_of_le_of_coeff_ne_zero hresdeg_le hrescoeff
+  have hres0 : resolvent ≠ 0 := by
+    intro hzero
+    rw [hzero] at hresdeg
+    simp at hresdeg
+  have hmap0 : resolvent.map (algebraMap ℚ ℂ) ≠ 0 := by
+    intro hzero
+    have hz : resolvent = 0 :=
+      (map_injective (RingHom.injective (algebraMap ℚ ℂ))) hzero
+    exact hres0 hz
   obtain ⟨z, hzroot⟩ :=
-    (IsAlgClosed.splits (resolvent.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
-      intro hzero
-      have : resolvent = 0 := by
-        apply map_injective (algebraMap ℚ ℂ)
-        simpa using hzero
-      rw [this] at hresdeg
-      simp at hresdeg)
+    (IsAlgClosed.splits (resolvent.map (algebraMap ℚ ℂ))).exists_eval_eq_zero hmap0
   have hzroot' : aeval z resolvent = 0 := by
     simpa [aeval_def] using hzroot
   have hzmem : z ∈ solvableByRad ℚ ℂ :=
@@ -73,7 +83,8 @@ private theorem depressed_quartic_root_solvable
       exact sub_eq_zero.mp this
     have hQ0c : (Q : ℂ) = 0 := by
       rw [hzP] at hres
-      have hq2 : (Q : ℂ) ^ 2 = 0 := by linear_combination hres
+      ring_nf at hres
+      have hq2 : (Q : ℂ) ^ 2 = 0 := by simpa using hres
       exact (sq_eq_zero_iff).mp hq2
     have hQ0 : Q = 0 := by exact_mod_cast hQ0c
     subst Q
@@ -86,28 +97,29 @@ private theorem depressed_quartic_root_solvable
     exact ht
   · have hQsq : (Q : ℂ) ^ 2 = (z - (P : ℂ)) * (z ^ 2 - 4 * (R : ℂ)) := by
       linear_combination -hres
-    have hfac :
+    have hfac:
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
-      have hs2' : s ^ 2 = z - (P : ℂ) := hs2
       field_simp [hs0]
-      rw [show s ^ 2 = z - (P : ℂ) from hs2']
-      rw [hQsq]
-      linear_combination 4 * (z - (P : ℂ)) * hy
+      have hs2' : s ^ 2 = z - (P : ℂ) := hs2
+      linear_combination
+        4 * (z - (P : ℂ)) * hy +
+        (z ^ 2 - 4 * (R : ℂ)) * (hs2' - hs2') +
+        (hQsq - hQsq)
     rcases mul_eq_zero.mp hfac with hplus | hminus
     · apply quadratic_expr_solvable s (z / 2 - (Q : ℂ) / (2 * s)) y hs_mem
       · exact (solvableByRad ℚ ℂ).sub_mem
           ((solvableByRad ℚ ℂ).div_mem hzmem (base_mem4 2))
           ((solvableByRad ℚ ℂ).div_mem (base_mem4 Q)
             ((solvableByRad ℚ ℂ).mul_mem (base_mem4 2) hs_mem))
-      · exact hplus
+      · simpa only [sub_eq_add_neg, add_assoc] using hplus
     · apply quadratic_expr_solvable (-s) (z / 2 + (Q : ℂ) / (2 * s)) y
       · exact (solvableByRad ℚ ℂ).neg_mem hs_mem
       · exact (solvableByRad ℚ ℂ).add_mem
           ((solvableByRad ℚ ℂ).div_mem hzmem (base_mem4 2))
           ((solvableByRad ℚ ℂ).div_mem (base_mem4 Q)
             ((solvableByRad ℚ ℂ).mul_mem (base_mem4 2) hs_mem))
-      · simpa [neg_mul] using hminus
+      · simpa only [neg_mul, sub_eq_add_neg, add_assoc] using hminus
 
 theorem degree_four_solvable
     (p : ℚ[X]) (hp : p.natDegree = 4) (x : ℂ) (hx : aeval x p = 0) :
@@ -123,18 +135,16 @@ theorem degree_four_solvable
   have hpform :
       p = C a * X ^ 4 + C b * X ^ 3 + C c * X ^ 2 + C d * X + C e := by
     let q : ℚ[X] := C a * X ^ 4 + C b * X ^ 3 + C c * X ^ 2 + C d * X + C e
-    have hqdeg : q.degree ≤ (4 : WithBot ℕ) := by
-      dsimp [q]
-      exact degree_quartic_le
     ext n
     by_cases hn : n ≤ 4
     · interval_cases n <;> simp [q, a, b, c, d, e]
     · have hp_lt : p.degree < n := by
         rw [hdeg]
         exact_mod_cast Nat.lt_of_not_ge hn
-      have hq_lt : q.degree < n :=
-        lt_of_le_of_lt hqdeg (by exact_mod_cast Nat.lt_of_not_ge hn)
-      rw [coeff_eq_zero_of_degree_lt hp_lt, coeff_eq_zero_of_degree_lt hq_lt]
+      rw [coeff_eq_zero_of_degree_lt hp_lt]
+      have hn4 : 4 < n := Nat.lt_of_not_ge hn
+      simp [q, coeff_X_pow, hn4.ne, hn4.ne', Nat.ne_of_lt hn4,
+        show n ≠ 3 by omega, show n ≠ 2 by omega, show n ≠ 1 by omega, show n ≠ 0 by omega]
   rw [hpform] at hx
   simp [aeval_def] at hx
   let y : ℂ := 4 * (a : ℂ) * x + (b : ℂ)
