@@ -6,6 +6,18 @@ private theorem base_mem (q : ℚ) : (q : ℂ) ∈ solvableByRad ℚ ℂ := by
   have h := (solvableByRad ℚ ℂ).algebraMap_mem q
   simpa [algebraMap.coe_ratCast] using h
 
+private theorem cubic_factor_identity (Y U V W : ℂ)
+    (hW : 1 + W + W ^ 2 = 0) :
+    (Y - (U + V)) *
+        (Y - (U * W + V * W ^ 2)) *
+        (Y - (U * W ^ 2 + V * W)) =
+      Y ^ 3 - 3 * (U * V) * Y - (U ^ 3 + V ^ 3) := by
+  have hW2 : W ^ 2 = -W - 1 := by linear_combination hW
+  rw [hW2]
+  ring_nf at hW ⊢
+  linear_combination
+    (U ^ 2 * V + U * V ^ 2 + U ^ 2 * V * W + U * V ^ 2 * W) * hW
+
 private theorem depressed_cubic_root_solvable
     (P Q : ℚ) (y : ℂ)
     (hy : y ^ 3 + (P : ℂ) * y + (Q : ℂ) = 0) :
@@ -32,8 +44,10 @@ private theorem depressed_cubic_root_solvable
     have hAB : A * B = -((P : ℂ) ^ 3) / 27 := by
       dsimp [A, B]
       field_simp
-      rw [hs2']
-      ring
+      calc
+        (-((Q : ℂ)) + s) * (-((Q : ℂ)) - s) * 27 =
+            (((Q : ℂ) ^ 2 - s ^ 2) * 27) := by ring
+        _ = -(2 ^ 2 * (P : ℂ) ^ 3) := by rw [hs2']; ring
     have hA_mem : A ∈ solvableByRad ℚ ℂ := by
       exact (solvableByRad ℚ ℂ).div_mem
         ((solvableByRad ℚ ℂ).add_mem
@@ -84,37 +98,28 @@ private theorem depressed_cubic_root_solvable
         ((solvableByRad ℚ ℂ).add_mem
           ((solvableByRad ℚ ℂ).neg_mem (by simpa using base_mem (1 : ℚ))) hr_mem)
         (base_mem 2)
-    have hw : w ^ 2 + w + 1 = 0 := by
+    have hw : 1 + w + w ^ 2 = 0 := by
       dsimp [w]
       field_simp
-      rw [hr2]
-      ring
+      calc
+        (-1 + r) * (-1 + r + 2) + 2 ^ 2 = r ^ 2 + 3 := by ring
+        _ = 0 := by rw [hr2]; ring
     have hw3 : w ^ 3 = 1 := by
+      have hw' : w ^ 2 + w + 1 = 0 := by linear_combination hw
       have hzero : w ^ 3 - 1 = 0 := by
         calc
           w ^ 3 - 1 = (w - 1) * (w ^ 2 + w + 1) := by ring
-          _ = 0 := by rw [hw]; ring
+          _ = 0 := by rw [hw']; ring
       exact sub_eq_zero.mp hzero
     have hsum : u ^ 3 + v ^ 3 = -(Q : ℂ) := by
       rw [hu3, hv3]
       dsimp [A, B]
       ring
-    have hw2 : w ^ 2 = -w - 1 := by
-      linear_combination hw
     have hfactor :
         (y - (u + v)) *
           (y - (u * w + v * w ^ 2)) *
           (y - (u * w ^ 2 + v * w)) = 0 := by
-      have hpoly :
-          (y - (u + v)) *
-            (y - (u * w + v * w ^ 2)) *
-            (y - (u * w ^ 2 + v * w)) =
-            y ^ 3 - 3 * (u * v) * y - (u ^ 3 + v ^ 3) := by
-        rw [hw2]
-        ring_nf at hw ⊢
-        linear_combination
-          (u ^ 2 * v + u * v ^ 2 + u ^ 2 * v * w + u * v ^ 2 * w) * hw
-      rw [hpoly, huv, hsum]
+      rw [cubic_factor_identity y u v w hw, huv, hsum]
       linear_combination hy
     rcases mul_eq_zero.mp hfactor with h12 | h3
     · rcases mul_eq_zero.mp h12 with h1 | h2
