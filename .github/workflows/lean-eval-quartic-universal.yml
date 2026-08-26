@@ -1,3 +1,4 @@
+# Force quartic-universal verification after narrowed residual fix
 name: LeanEval quartic universal
 
 on:
