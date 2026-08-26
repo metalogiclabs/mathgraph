@@ -31,7 +31,7 @@ jobs:
           lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
           cd /tmp/abel_ruffini
           lake update
-      - name: Verify quartic structural frontier
+      - name: Verify cheap quartic frontier pieces
         working-directory: /tmp/abel_ruffini
         run: |
           cat > DegreeFour.lean <<'EOF'
@@ -39,46 +39,27 @@ jobs:
 
           open Polynomial
 
-          theorem quartic_root_normal_form
-              (p : ℚ[X]) (hp : p.natDegree = 4) (x : ℂ) (hx : aeval x p = 0) :
-              let a : ℚ := p.coeff 4
-              let b : ℚ := p.coeff 3
-              let c : ℚ := p.coeff 2
-              let d : ℚ := p.coeff 1
-              let e : ℚ := p.coeff 0
+          theorem quartic_eval_from_sparse_form
+              (a b c d e : ℚ) (x : ℂ)
+              (hx : aeval x (C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e) = 0) :
               (a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ) = 0 := by
-            have hdeg : p.degree = (4 : WithBot ℕ) :=
-              (degree_eq_iff_natDegree_eq_of_pos (by norm_num : 0 < 4)).2 hp
-            let a : ℚ := p.coeff 4
-            let b : ℚ := p.coeff 3
-            let c : ℚ := p.coeff 2
-            let d : ℚ := p.coeff 1
-            let e : ℚ := p.coeff 0
-            have hpform : p = C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e := by
-              let q : ℚ[X] := C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e
-              have hqdeg : q.degree ≤ (4 : WithBot ℕ) := by
-                dsimp [q]
-                calc
-                  degree (C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e)
-                      ≤ max (degree (C a * X^4)) (degree (C b * X^3 + C c * X^2 + C d * X + C e)) := degree_add_le _ _
-                  _ ≤ 4 := by
-                    apply max_le
-                    · exact (degree_C_mul_X_pow_le 4 a)
-                    · calc
-                        degree (C b * X^3 + C c * X^2 + C d * X + C e) ≤ 3 := degree_cubic_le
-                        _ ≤ 4 := by norm_num
-              ext n
-              by_cases hn : n ≤ 4
-              · interval_cases n <;> simp [q, a, b, c, d, e]
-              · have hp_lt : p.degree < n := by
-                  rw [hdeg]
-                  exact_mod_cast (Nat.lt_of_not_ge hn)
-                have hq_lt : q.degree < n :=
-                  lt_of_le_of_lt hqdeg (by exact_mod_cast (Nat.lt_of_not_ge hn))
-                rw [coeff_eq_zero_of_degree_lt hp_lt, coeff_eq_zero_of_degree_lt hq_lt]
-            rw [hpform] at hx
-            simp [aeval_def] at hx
-            simpa using hx
+            simpa [aeval_def] using hx
+
+          theorem quartic_depress_identity
+              (a b c d e : ℚ) (x : ℂ)
+              (ha : (a : ℂ) ≠ 0)
+              (hx : (a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ) = 0) :
+              let y : ℂ := x + (b : ℂ) / (4 * (a : ℂ))
+              ∃ P Q R : ℚ,
+                y^4 + (P : ℂ) * y^2 + (Q : ℂ) * y + (R : ℂ) = 0 := by
+            let P : ℚ := (8*a*c - 3*b^2) / (8*a^2)
+            let Q : ℚ := (b^3 - 4*a*b*c + 8*a^2*d) / (8*a^3)
+            let R : ℚ := (-3*b^4 + 16*a*b^2*c - 64*a^2*b*d + 256*a^3*e) / (256*a^4)
+            refine ⟨P, Q, R, ?_⟩
+            dsimp [P, Q, R]
+            push_cast
+            field_simp [ha]
+            linear_combination 256 * (a : ℂ)^3 * hx
 
           theorem quartic_square_radical
               (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
