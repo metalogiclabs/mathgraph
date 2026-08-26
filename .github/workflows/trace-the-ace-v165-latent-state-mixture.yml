@@ -1,0 +1,41 @@
+name: Trace the Ace V165 Latent State Mixture
+
+on:
+  push:
+    paths:
+      - '.github/workflows/trace-the-ace-v165-latent-state-mixture.yml'
+      - 'experiments/trace_the_ace_v165/**'
+  workflow_dispatch:
+
+jobs:
+  v165:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify private inputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -s /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -s /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test "$(find /workspace/trace_the_ace/transcripts_extracted -type f -name '*.csv' | wc -l)" -ge 22000
+      - name: Install dependencies
+        run: python3 -m pip install -q pandas numpy scipy scikit-learn
+      - name: Run V165 separator
+        run: |
+          mkdir -p /workspace/trace-ace-results/v165
+          python3 experiments/trace_the_ace_v165/run_v165_latent_state_mixture.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --transcripts /workspace/trace_the_ace/transcripts_extracted \
+            --out /workspace/trace-ace-results/v165/v165_results.json
+      - name: Show verdict
+        if: always()
+        run: cat /workspace/trace-ace-results/v165/v165_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v165-results
+          path: /workspace/trace-ace-results/v165/v165_results.json
+          if-no-files-found: warn
