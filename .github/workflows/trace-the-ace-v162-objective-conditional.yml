@@ -1,0 +1,58 @@
+name: Trace the Ace V162 Objective Conditional Calibration
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: V145 portable source run
+        required: false
+        default: '32792841883'
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v162/**'
+      - '.github/workflows/trace-the-ace-v162-objective-conditional.yml'
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve source run
+        id: src
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=${{ inputs.source_run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=32792841883" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download V145 bundle
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.src.outputs.run }}
+          repository: metalogiclabs/mathgraph
+      - name: Verify bundle
+        run: test -s v145-portable/v146_bundle.npz
+      - name: Prepare CPU
+        run: python -m pip install -q numpy scipy scikit-learn pandas
+      - name: Run V162 separator
+        run: |
+          mkdir -p v162-results
+          python experiments/trace_the_ace_v162/run_v162_objective_conditional_calibration.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --out v162-results/v162_results.json
+      - name: Publish result
+        if: always()
+        run: cat v162-results/v162_results.json 2>/dev/null || true
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v162-${{ github.run_id }}
+          path: v162-results/v162_results.json
+          retention-days: 30
