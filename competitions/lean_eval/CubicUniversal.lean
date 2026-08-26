@@ -70,13 +70,12 @@ private theorem depressed_cubic_root_solvable
     exact (solvableByRad ℚ ℂ).neg_mem (base_mem Q)
   · let disc : ℚ := Q ^ 2 + 4 * (P ^ 3 / 27)
     let f : ℚ[X] := X ^ 2 - C disc
-    have hfdeg : f.natDegree = 2 := by
-      simp [f, disc]
+    have hfdeg : f.natDegree = 2 := by simp [f, disc]
     obtain ⟨s, hsroot⟩ :=
-      (IsAlgClosed.splits (f.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
-        simp [f])
+      (IsAlgClosed.splits (f.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by simp [f])
     have hs2 : s ^ 2 = (disc : ℂ) := by
-      simpa [f, aeval_def] using hsroot
+      have h : s ^ 2 - (disc : ℂ) = 0 := by simpa [f, aeval_def] using hsroot
+      exact sub_eq_zero.mp h
     have hs_mem : s ∈ solvableByRad ℚ ℂ := by
       apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
       rw [hs2]
@@ -94,17 +93,19 @@ private theorem depressed_cubic_root_solvable
         (base_mem 2)
     let g : ℂ[X] := X ^ 3 - C A
     obtain ⟨u, huroot⟩ := (IsAlgClosed.splits g).exists_eval_eq_zero (by simp [g])
-    have hu3 : u ^ 3 = A := by simpa [g, aeval_def] using huroot
+    have hu3 : u ^ 3 = A := by
+      have h : u ^ 3 - A = 0 := by simpa [g, aeval_def] using huroot
+      exact sub_eq_zero.mp h
     have hu_mem : u ∈ solvableByRad ℚ ℂ := cube_root_mem A u hA_mem hu3
     have hA0 : A ≠ 0 := by
       intro hA
-      have : ((P : ℂ) ^ 3) = 0 := by
-        have := hAB
-        rw [hA, zero_mul] at this
-        field_simp at this
-        linarith
-      have : (P : ℂ) = 0 := pow_eq_zero this
-      exact hP (by exact_mod_cast this)
+      have hPpow : ((P : ℂ) ^ 3) = 0 := by
+        have hab := hAB
+        rw [hA, zero_mul] at hab
+        field_simp at hab
+        exact neg_eq_zero.mp hab.symm
+      have hPc : (P : ℂ) ≠ 0 := by exact_mod_cast hP
+      exact (pow_ne_zero 3 hPc) hPpow
     have hu0 : u ≠ 0 := by
       intro hu
       rw [hu, zero_pow (by norm_num : 3 ≠ 0)] at hu3
@@ -115,22 +116,36 @@ private theorem depressed_cubic_root_solvable
       field_simp [hu0]
       ring
     have hv3 : v ^ 3 = B := by
-      have hprod : u ^ 3 * v ^ 3 = A * B := by rw [← mul_pow, huv, hu3]
-      rw [hu3, hAB] at hprod
-      apply (mul_left_cancel₀ hA0)
-      rw [← hu3]
-      calc
-        u ^ 3 * v ^ 3 = -((P : ℂ) ^ 3) / 27 := hprod
-        _ = A * B := hAB.symm
-        _ = u ^ 3 * B := by rw [hu3]
-    have hB_mem : B ∈ solvableByRad ℚ ℂ := by rw [← hv3]; exact (solvableByRad ℚ ℂ).pow_mem ((solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).neg_mem (base_mem P)) ((solvableByRad ℚ ℂ).mul_mem (base_mem 3) hu_mem)) 3
+      have hmul : A * v ^ 3 = A * B := by
+        rw [← hu3, ← mul_pow, huv, hAB]
+        ring
+      exact (mul_left_cancel₀ hA0 hmul)
+    have hB_mem : B ∈ solvableByRad ℚ ℂ := by
+      rw [← hv3]
+      exact (solvableByRad ℚ ℂ).pow_mem
+        ((solvableByRad ℚ ℂ).div_mem
+          ((solvableByRad ℚ ℂ).neg_mem (base_mem P))
+          ((solvableByRad ℚ ℂ).mul_mem (base_mem 3) hu_mem)) 3
     have hv_mem : v ∈ solvableByRad ℚ ℂ := cube_root_mem B v hB_mem hv3
+
+    -- A primitive cube root of unity is quadratic, hence radical-solvable.
     let wpoly : ℚ[X] := X ^ 2 + X + 1
-    have hwdeg : wpoly.natDegree = 2 := by simp [wpoly]
+    have hwdeg : wpoly.natDegree = 2 := by
+      change (X ^ 2 + X + 1 : ℚ[X]).natDegree = 2
+      norm_num
     obtain ⟨w, hwroot⟩ :=
-      (IsAlgClosed.splits (wpoly.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by simp [wpoly])
-    have hw : w ^ 2 + w + 1 = 0 := by simpa [wpoly, aeval_def] using hwroot
-    have hw_mem : w ∈ solvableByRad ℚ ℂ := degree_two_solvable wpoly hwdeg w (by simpa [aeval_def] using hwroot)
+      (IsAlgClosed.splits (wpoly.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
+        change (X ^ 2 + X + 1 : ℂ[X]).degree ≠ 0
+        norm_num)
+    have hw : w ^ 2 + w + 1 = 0 := by
+      simpa [wpoly, aeval_def] using hwroot
+    have hw_mem : w ∈ solvableByRad ℚ ℂ :=
+      degree_two_solvable wpoly hwdeg w (by simpa [aeval_def] using hwroot)
+    have hw3 : w ^ 3 = 1 := by
+      calc
+        w ^ 3 - 1 = (w - 1) * (w ^ 2 + w + 1) := by ring
+        _ = 0 := by rw [hw]; ring
+      exact sub_eq_zero.mp this
     have hsum : u ^ 3 + v ^ 3 = -(Q : ℂ) := by
       rw [hu3, hv3]
       dsimp [A, B]
@@ -139,11 +154,6 @@ private theorem depressed_cubic_root_solvable
         (y - (u + v)) *
           (y - (u * w + v * w ^ 2)) *
           (y - (u * w ^ 2 + v * w)) = 0 := by
-      have hw3 : w ^ 3 = 1 := by
-        calc
-          w ^ 3 - 1 = (w - 1) * (w ^ 2 + w + 1) := by ring
-          _ = 0 := by rw [hw]; ring
-        linarith
       have hpoly :
           (y - (u + v)) *
             (y - (u * w + v * w ^ 2)) *
@@ -154,21 +164,21 @@ private theorem depressed_cubic_root_solvable
       linear_combination hy
     rcases mul_eq_zero.mp hfactor with h12 | h3
     · rcases mul_eq_zero.mp h12 with h1 | h2
-      · have : y = u + v := sub_eq_zero.mp h1
-        rw [this]
+      · have hEq : y = u + v := sub_eq_zero.mp h1
+        rw [hEq]
         exact (solvableByRad ℚ ℂ).add_mem hu_mem hv_mem
-      · have : y = u * w + v * w ^ 2 := sub_eq_zero.mp h2
-        rw [this]
+      · have hEq : y = u * w + v * w ^ 2 := sub_eq_zero.mp h2
+        rw [hEq]
         exact (solvableByRad ℚ ℂ).add_mem
           ((solvableByRad ℚ ℂ).mul_mem hu_mem hw_mem)
           ((solvableByRad ℚ ℂ).mul_mem hv_mem ((solvableByRad ℚ ℂ).pow_mem hw_mem 2))
-    · have : y = u * w ^ 2 + v * w := sub_eq_zero.mp h3
-      rw [this]
+    · have hEq : y = u * w ^ 2 + v * w := sub_eq_zero.mp h3
+      rw [hEq]
       exact (solvableByRad ℚ ℂ).add_mem
         ((solvableByRad ℚ ℂ).mul_mem hu_mem ((solvableByRad ℚ ℂ).pow_mem hw_mem 2))
         ((solvableByRad ℚ ℂ).mul_mem hv_mem hw_mem)
 
- theorem degree_three_solvable
+theorem degree_three_solvable
     (p : ℚ[X]) (hp : p.natDegree = 3) (x : ℂ) (hx : aeval x p = 0) :
     x ∈ solvableByRad ℚ ℂ := by
   have hdeg : p.degree = (3 : WithBot ℕ) :=
