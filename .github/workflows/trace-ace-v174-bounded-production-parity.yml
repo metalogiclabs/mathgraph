@@ -1,0 +1,27 @@
+name: Trace the Ace V174 Bounded Production Parity
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v174/**'
+      - '.github/workflows/trace-ace-v174-bounded-production-parity.yml'
+  workflow_dispatch:
+jobs:
+  v174:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/V157_RECOVERED_SUBMISSION.zip
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run V174 bounded exact runtime separator
+        run: python3 experiments/trace_the_ace_v174/run_v174_bounded_production_parity.py
+      - name: Show result
+        run: cat /workspace/trace-ace-results/v174/v174_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v174-results
+          path: /workspace/trace-ace-results/v174/
