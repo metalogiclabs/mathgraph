@@ -38,6 +38,16 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/QuarticUniversal.lean" QuarticUniversal.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('QuarticUniversal.lean')
+          s = p.read_text()
+          s = s.replace(', hn1\', hN0\', ← C_pow]', ', hN1\', hN0\']')
+          s = s.replace('[resolvent, coeff_X_pow, coeff_C_mul_X, ← C_pow]', '[resolvent, coeff_X_pow, coeff_C_mul_X]')
+          s = s.replace('''      field_simp [hs0]\n      rw [hs4]\n      rw [hQsq]\n      ring''', '''      field_simp [hs0]\n      ring_nf\n      rw [hs4]\n      ring_nf\n      rw [hQsq]\n      ring''')
+          s = s.replace('''      simp [q, coeff_X_pow, coeff_C_mul_X, hn4, hn3, hn2, hn1, hn0, hn1\', hn0\']''', '''      simp [q, coeff_X_pow, coeff_X, coeff_C, hn4, hn3, hn2, hn1, hn0, hn1\', hn0\']''')
+          p.write_text(s)
+          PY
           mkdir -p .lake/build/lib/lean
           set +e
           lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
