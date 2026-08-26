@@ -1,0 +1,44 @@
+name: Trace the Ace V164 Local Sufficiency Separator
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v164/**'
+      - '.github/workflows/trace-the-ace-v164-local-sufficiency.yml'
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download portable bundle
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: '32792841883'
+          repository: metalogiclabs/mathgraph
+      - name: Verify bundle
+        run: test -s v145-portable/v146_bundle.npz
+      - name: Prepare CPU
+        run: python -m pip install -q numpy scipy scikit-learn pandas
+      - name: Run V164 separator
+        run: |
+          mkdir -p v164-results
+          python experiments/trace_the_ace_v164/run_v164_local_sufficiency_separator.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --out v164-results/v164_results.json
+      - name: Publish result
+        if: always()
+        run: cat v164-results/v164_results.json 2>/dev/null || true
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v164-${{ github.run_id }}
+          path: v164-results/v164_results.json
+          retention-days: 30
