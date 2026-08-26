@@ -47,9 +47,11 @@ private theorem depressed_quartic_root_solvable
     have hN2 : N ≠ 2 := by omega
     have hN1 : N ≠ 1 := by omega
     have hN0 : N ≠ 0 := by omega
-    simp [resolvent, coeff_X_pow, coeff_X, hN3, hN2, hN1, hN0]
+    have hN1' : 1 ≠ N := by omega
+    have hN0' : 0 ≠ N := by omega
+    simp [resolvent, coeff_X_pow, coeff_C_mul_X, hN3, hN2, hN1, hN0, hN1', hN0', ← C_pow]
   have hrescoeff : resolvent.coeff 3 = 1 := by
-    simp [resolvent, coeff_X_pow, coeff_X]
+    simp [resolvent, coeff_X_pow, coeff_C_mul_X, ← C_pow]
   have hresdeg : resolvent.natDegree = 3 := by
     apply natDegree_eq_of_le_of_coeff_ne_zero hresdeg_le
     simpa [hrescoeff]
@@ -92,16 +94,18 @@ private theorem depressed_quartic_root_solvable
     exact ht
   · have hQsq : (Q : ℂ) ^ 2 = (z - (P : ℂ)) * (z ^ 2 - 4 * (R : ℂ)) := by
       linear_combination -hres
+    have hs4 : s ^ 4 = (z - (P : ℂ)) ^ 2 := by
+      calc
+        s ^ 4 = (s ^ 2) ^ 2 := by ring
+        _ = (z - (P : ℂ)) ^ 2 := by rw [hs2]
     have hfacIdentity :
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) =
         y ^ 4 + (P : ℂ) * y ^ 2 + (Q : ℂ) * y + (R : ℂ) := by
       field_simp [hs0]
-      ring_nf
-      rw [hs2]
-      ring_nf
+      rw [hs4]
       rw [hQsq]
-      ring_nf
+      ring
     have hfac:
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
@@ -147,7 +151,9 @@ theorem degree_four_solvable
       have hn2 : n ≠ 2 := by omega
       have hn1 : n ≠ 1 := by omega
       have hn0 : n ≠ 0 := by omega
-      simp [q, coeff_X_pow, coeff_X, hn4, hn3, hn2, hn1, hn0]
+      have hn1' : 1 ≠ n := by omega
+      have hn0' : 0 ≠ n := by omega
+      simp [q, coeff_X_pow, coeff_C_mul_X, hn4, hn3, hn2, hn1, hn0, hn1', hn0']
   rw [hpform] at hx
   simp [aeval_def] at hx
   let y : ℂ := 4 * (a : ℂ) * x + (b : ℂ)
