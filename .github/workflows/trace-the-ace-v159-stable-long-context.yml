@@ -1,0 +1,93 @@
+name: Trace the Ace V159 Stable Long Context
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v159/**'
+      - '.github/workflows/trace-the-ace-v159-stable-long-context.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trace-ace-v159-stable-long-context
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m py_compile experiments/trace_the_ace_v159/run_v159_stable_long_context.py
+
+  stable-gate:
+    needs: contract
+    runs-on: trace-ace-gpu
+    timeout-minutes: 720
+    env:
+      HF_HOME: /root/hf-cache
+      TRANSFORMERS_CACHE: /root/hf-cache
+      TOKENIZERS_PARALLELISM: 'true'
+      PIP_NO_CACHE_DIR: '1'
+      V159_CHECKPOINT_ROOT: /workspace/trace-ace-checkpoints/v159
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source data and GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          nvidia-smi
+          test -s /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -s /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -s /workspace/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip
+      - name: Prepare environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x /root/venvs/trace-ace-v158/bin/python ]; then
+            python3 -m venv /root/venvs/trace-ace-v158 --system-site-packages
+          fi
+          source /root/venvs/trace-ace-v158/bin/activate
+          python -m pip install -q --upgrade pip
+          python -m pip install -q 'transformers>=4.51,<5' accelerate pandas scipy scikit-learn
+          python - <<'PY'
+          import torch
+          print('cuda', torch.cuda.is_available(), torch.__version__)
+          assert torch.cuda.is_available()
+          PY
+      - name: Run stable V159 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /root/venvs/trace-ace-v158/bin/activate
+          mkdir -p /workspace/trace-ace-work/v159 /workspace/trace-ace-results/v159-${{ github.run_id }}
+          python experiments/trace_the_ace_v159/run_v159_stable_long_context.py \
+            --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
+            --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
+            --transcripts /workspace/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip \
+            --model answerdotai/ModernBERT-base \
+            --limit 8000 \
+            --folds 3 \
+            --max-len 8192 \
+            --char-cap 30000 \
+            --epochs 1 \
+            --batch 1 \
+            --eval-batch 2 \
+            --grad-accum 8 \
+            --work /workspace/trace-ace-work/v159 \
+            --out /workspace/trace-ace-results/v159-${{ github.run_id }}/v159_results.json
+      - name: Publish result
+        if: always()
+        run: |
+          RESULT=/workspace/trace-ace-results/v159-${{ github.run_id }}/v159_results.json
+          if [ -s "$RESULT" ]; then cat "$RESULT"; else echo 'No V159 result yet'; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-ace-v159-${{ github.run_id }}
+          path: /workspace/trace-ace-results/v159-${{ github.run_id }}/v159_results.json
+          if-no-files-found: warn
+          retention-days: 30
