@@ -59,7 +59,7 @@ jobs:
             dsimp [P, Q, R]
             push_cast
             field_simp [ha]
-            linear_combination 256 * (a : ℂ)^3 * hx
+            linear_combination 524032 * (a : ℂ)^3 * hx
 
           theorem quartic_square_radical
               (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
