@@ -1,0 +1,57 @@
+name: Trace the Ace V161 Stronger Base Separator
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: V145 portable source run
+        required: false
+        default: '32792841883'
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v161/**'
+      - '.github/workflows/trace-the-ace-v161-stronger-base.yml'
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve source run
+        id: src
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=${{ inputs.source_run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=32792841883" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download V145 bundle
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trace-ace-v145-portable-*
+          path: v145-portable
+          merge-multiple: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.src.outputs.run }}
+          repository: metalogiclabs/mathgraph
+      - run: test -s v145-portable/v146_bundle.npz
+      - name: Prepare CPU
+        run: python -m pip install -q numpy pandas scipy scikit-learn catboost
+      - name: Run V161 separator
+        run: |
+          mkdir -p v161-results
+          python experiments/trace_the_ace_v161/run_v161_stronger_base_separator.py \
+            --bundle v145-portable/v146_bundle.npz \
+            --out v161-results/v161_results.json
+      - name: Publish result
+        if: always()
+        run: cat v161-results/v161_results.json 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-ace-v161-${{ github.run_id }}
+          path: v161-results/v161_results.json
+          if-no-files-found: warn
+          retention-days: 30
