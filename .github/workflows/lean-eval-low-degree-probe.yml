@@ -92,7 +92,7 @@ jobs:
               (p : ℚ[X]) (hp : p.natDegree = 2) (x : ℂ) (hx : aeval x p = 0) :
               x ∈ solvableByRad ℚ ℂ := by
             have hdeg : p.degree = (2 : WithBot ℕ) :=
-              (degree_eq_iff_natDegree_eq_of_pos (by omega)).2 hp
+              (degree_eq_iff_natDegree_eq_of_pos (by norm_num : 0 < 2)).2 hp
             have hlead : p.coeff 2 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
             let a : ℚ := p.coeff 2
             let b : ℚ := p.coeff 1
@@ -107,7 +107,8 @@ jobs:
                 have hn1 : n ≠ 1 := by omega
                 have hn2 : n ≠ 2 := by omega
                 rw [hpzero]
-                simp [a, b, c, coeff_X_pow, hn0, hn1, hn2]
+                rw [coeff_add, coeff_add, coeff_mul, coeff_mul]
+                simp [coeff_X, coeff_X_pow, hn0, hn1, hn2]
             rw [hpform] at hx
             simp [aeval_def] at hx
             let y : ℂ := 2 * (a : ℂ) * x + (b : ℂ)
@@ -115,7 +116,7 @@ jobs:
             have hy_sq : y ^ 2 = (d : ℂ) := by
               dsimp [y, d]
               push_cast
-              linear_combination 4 * hx
+              linear_combination 4 * (a : ℂ) * hx
             have hd_mem : (d : ℂ) ∈ solvableByRad ℚ ℂ := by
               have h := (solvableByRad ℚ ℂ).algebraMap_mem d
               simpa [algebraMap.coe_ratCast] using h
@@ -131,7 +132,6 @@ jobs:
               have htwo : (2 : ℂ) ∈ solvableByRad ℚ ℂ := by
                 have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
                 norm_num at h ⊢
-                exact h
               have ha_mem : (a : ℂ) ∈ solvableByRad ℚ ℂ := by
                 have h := (solvableByRad ℚ ℂ).algebraMap_mem a
                 simpa [algebraMap.coe_ratCast] using h
@@ -140,8 +140,7 @@ jobs:
               exact_mod_cast hlead
             have hxform : x = (y - (b : ℂ)) / (2 * (a : ℂ)) := by
               dsimp [y]
-              field_simp
-              ring
+              field_simp [haC]
             rw [hxform]
             exact (solvableByRad ℚ ℂ).div_mem
               ((solvableByRad ℚ ℂ).sub_mem hy_mem hb_mem) hden_mem
