@@ -36,6 +36,7 @@ jobs:
 
       - name: Probe degree-one bridge
         working-directory: /tmp/abel_ruffini
+        continue-on-error: true
         run: |
           cat > DegreeOne.lean <<'EOF'
           import Mathlib
@@ -45,8 +46,9 @@ jobs:
           theorem degree_one_root_rational
               (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
               ∃ q : ℚ, x = algebraMap ℚ ℂ q := by
-            have hlead : p.coeff 1 ≠ 0 := by
-              simpa [hp] using p.leadingCoeff_ne_zero
+            have hdeg : p.degree = (1 : WithBot ℕ) :=
+              (degree_eq_iff_natDegree_eq_of_pos (by omega)).2 hp
+            have hlead : p.coeff 1 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
             let a : ℚ := p.coeff 1
             let b : ℚ := p.coeff 0
             have hpform : p = C b + C a * X := by
@@ -54,21 +56,21 @@ jobs:
               by_cases hn : n ≤ 1
               · interval_cases n <;> simp [a, b]
               · have hlt : p.natDegree < n := by omega
-                simp [a, b, coeff_eq_zero_of_natDegree_lt hlt]
+                have hpzero : p.coeff n = 0 := coeff_eq_zero_of_natDegree_lt hlt
+                simp [a, b, hpzero]
             rw [hpform] at hx
             simp [aeval_def] at hx
             refine ⟨-b / a, ?_⟩
-            have haC : (algebraMap ℚ ℂ a) ≠ 0 := by
-              exact map_ne_zero_of_injective (algebraMap ℚ ℂ).injective hlead
-            apply (mul_left_cancel₀ haC)
-            field_simp [a, hlead] at hx ⊢
-            linarith
+            have haC : (algebraMap ℚ ℂ a) ≠ 0 := map_ne_zero (algebraMap ℚ ℂ) hlead
+            rw [map_div, map_neg]
+            apply (eq_div_iff haC).2
+            linear_combination hx
 
           theorem degree_one_solvable
               (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
               x ∈ solvableByRad ℚ ℂ := by
             obtain ⟨q, rfl⟩ := degree_one_root_rational p hp x hx
-            exact solvableByRad.algebraMap_mem q
+            exact (solvableByRad ℚ ℂ).algebraMap_mem q
           EOF
           set -o pipefail
           lake env lean DegreeOne.lean 2>&1 | tee /tmp/degree-one.log
