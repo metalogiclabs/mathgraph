@@ -63,7 +63,12 @@ jobs:
               simp
             rw [hmap]
             apply (eq_div_iff haC).2
-            simpa only [Rat.cast_def] using hx
+            have ha_cast : algebraMap ℚ ℂ a = (a : ℂ) := by
+              exact algebraMap.coe_ratCast ℚ ℂ a
+            have hb_cast : algebraMap ℚ ℂ b = (b : ℂ) := by
+              exact algebraMap.coe_ratCast ℚ ℂ b
+            rw [ha_cast, hb_cast]
+            linear_combination hx
 
           theorem degree_one_solvable
               (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
