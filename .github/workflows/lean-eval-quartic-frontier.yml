@@ -58,15 +58,19 @@ jobs:
               y ∈ solvableByRad ℚ ℂ := by
             have hs_mem : s ∈ solvableByRad ℚ ℂ := quartic_square_radical z hz s hs
             have hhalf : ((2 : ℚ) : ℂ) ∈ solvableByRad ℚ ℂ := by
-              exact (solvableByRad.base_mem ℚ ℂ (2 : ℚ))
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
+              simpa [algebraMap.coe_ratCast] using h
             have hsden : (2*s) ∈ solvableByRad ℚ ℂ := mul_mem hhalf hs_mem
             have hsden0 : (2*s : ℂ) ≠ 0 := by exact mul_ne_zero (by norm_num) hs0
             have hc : ((z + P)/2 - Q/(2*s)) ∈ solvableByRad ℚ ℂ := by
               apply sub_mem
               · exact div_mem (add_mem hz hP) hhalf
               · exact div_mem hQ hsden
+            have hfour : (4 : ℂ) ∈ solvableByRad ℚ ℂ := by
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem (4 : ℚ)
+              norm_num at h ⊢
             have hdisc : (s^2 - 4 * ((z + P)/2 - Q/(2*s))) ∈ solvableByRad ℚ ℂ := by
-              exact sub_mem (pow_mem hs_mem 2) (mul_mem (solvableByRad.base_mem ℚ ℂ (4 : ℚ)) hc)
+              exact sub_mem (pow_mem hs_mem 2) (mul_mem hfour hc)
             let t : ℂ := 2*y + s
             have ht2 : t^2 = s^2 - 4 * ((z + P)/2 - Q/(2*s)) := by
               dsimp [t]
@@ -75,7 +79,9 @@ jobs:
               apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
               rw [ht2]
               exact hdisc
-            have htwo : ((2 : ℚ) : ℂ) ∈ solvableByRad ℚ ℂ := solvableByRad.base_mem ℚ ℂ (2 : ℚ)
+            have htwo : (2 : ℂ) ∈ solvableByRad ℚ ℂ := by
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
+              norm_num at h ⊢
             have : y = (t - s) / 2 := by
               dsimp [t]
               ring
