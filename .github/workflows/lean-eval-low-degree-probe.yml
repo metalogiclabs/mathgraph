@@ -57,15 +57,15 @@ jobs:
               · interval_cases n <;> simp [a, b]
               · have hlt : p.natDegree < n := by omega
                 have hpzero : p.coeff n = 0 := coeff_eq_zero_of_natDegree_lt hlt
-                have hn0 : n ≠ 0 := by omega
                 have hn1 : n ≠ 1 := by omega
-                simp [a, b, hpzero, hn0, hn1]
+                rw [hpzero]
+                simp [a, b, hn1]
             rw [hpform] at hx
             simp [aeval_def] at hx
             refine ⟨-b / a, ?_⟩
             have haC : (algebraMap ℚ ℂ a) ≠ 0 := by
-              exact (map_ne_zero_iff (algebraMap ℚ ℂ)).2 hlead
-            change x = -(algebraMap ℚ ℂ b) / (algebraMap ℚ ℂ a)
+              exact (map_ne_zero_iff (algebraMap ℚ ℂ) (algebraMap ℚ ℂ).injective).2 hlead
+            rw [_root_.map_div, _root_.map_neg]
             apply (eq_div_iff haC).2
             linear_combination hx
 
