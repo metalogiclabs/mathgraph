@@ -31,7 +31,7 @@ jobs:
           lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
           cd /tmp/abel_ruffini
           lake update
-      - name: Verify cheap quartic frontier pieces
+      - name: Verify stable quartic frontier pieces
         working-directory: /tmp/abel_ruffini
         run: |
           cat > DegreeFour.lean <<'EOF'
@@ -58,8 +58,20 @@ jobs:
             refine ⟨P, Q, R, ?_⟩
             dsimp [P, Q, R]
             push_cast
-            field_simp [ha]
-            linear_combination 256 * (a : ℂ)^3 * hx
+            have hident :
+                (x + (b : ℂ) / (4 * (a : ℂ)))^4 +
+                    ((8*(a : ℂ)*(c : ℂ) - 3*(b : ℂ)^2) / (8*(a : ℂ)^2)) *
+                      (x + (b : ℂ) / (4 * (a : ℂ)))^2 +
+                    (((b : ℂ)^3 - 4*(a : ℂ)*(b : ℂ)*(c : ℂ) + 8*(a : ℂ)^2*(d : ℂ)) /
+                      (8*(a : ℂ)^3)) * (x + (b : ℂ) / (4 * (a : ℂ))) +
+                    ((-3*(b : ℂ)^4 + 16*(a : ℂ)*(b : ℂ)^2*(c : ℂ) -
+                      64*(a : ℂ)^2*(b : ℂ)*(d : ℂ) + 256*(a : ℂ)^3*(e : ℂ)) /
+                      (256*(a : ℂ)^4)) =
+                  ((a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ)) /
+                    (a : ℂ) := by
+              field_simp [ha]
+              ring
+            rw [hident, hx, zero_div]
 
           theorem quartic_square_radical
               (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
