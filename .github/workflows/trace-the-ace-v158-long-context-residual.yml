@@ -1,0 +1,155 @@
+name: Trace the Ace V158 Long Context Residual
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Rows in decisive sniff gate (0 = full)"
+        required: true
+        default: '8000'
+        type: string
+      runner:
+        description: "GPU runner label"
+        required: true
+        default: trace-ace-gpu
+        type: string
+      data_root:
+        description: "Persistent RunPod data directory"
+        required: true
+        default: /root/trace_the_ace
+        type: string
+      model:
+        description: "Long-context encoder"
+        required: true
+        default: answerdotai/ModernBERT-base
+        type: string
+  push:
+    paths:
+      - '.github/workflows/trace-the-ace-v158-long-context-residual.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trace-ace-v158-long-context-residual
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    name: Freeze V158 contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile exact experiment
+        run: |
+          python -m py_compile experiments/trace_the_ace_v158/run_v158_long_context_residual.py
+      - name: Record preregistered gate
+        run: |
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          # V158 frozen gate
+          Representation change: target objective + ordered role-labelled raw transcript -> token-level residual over strong base.
+
+          Promotion requires >=0.005 OOF log-loss gain in both session-cold and objective-cold validation, at least folds-1 fold wins in each, and >=0.001 separation from both chronology-reversal and objective-shuffle controls.
+          EOF
+
+  long-context-gate:
+    name: V158 token-level residual
+    needs: contract
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner || 'trace-ace-gpu' }}
+    timeout-minutes: 720
+    env:
+      HF_HOME: /root/hf-cache
+      TRANSFORMERS_CACHE: /root/hf-cache
+      TOKENIZERS_PARALLELISM: 'true'
+      PIP_NO_CACHE_DIR: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify GPU and inspect source headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          nvidia-smi
+          DATA_ROOT="${{ github.event_name == 'workflow_dispatch' && inputs.data_root || '/root/trace_the_ace' }}"
+          test -s "$DATA_ROOT/train_features_TMQTWsB.csv"
+          test -s "$DATA_ROOT/train_labels_44ujmj2.csv"
+          test -s "$DATA_ROOT/trace_the_ace_transcripts_v123_single_run_fresh.zip"
+          python3 - "$DATA_ROOT" <<'PY'
+          import csv, sys
+          from pathlib import Path
+          root=Path(sys.argv[1])
+          for name in ('train_features_TMQTWsB.csv','train_labels_44ujmj2.csv'):
+              with (root/name).open(newline='') as f:
+                  print(name, next(csv.reader(f)))
+          PY
+      - name: Prepare persistent GPU environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x /root/venvs/trace-ace-v158/bin/python ]; then
+            python3 -m venv /root/venvs/trace-ace-v158 --system-site-packages
+          fi
+          source /root/venvs/trace-ace-v158/bin/activate
+          python -m pip install -q --upgrade pip
+          python -m pip install -q 'transformers>=4.51,<5' accelerate pandas scipy scikit-learn
+          python - <<'PY'
+          import torch, transformers
+          print('torch', torch.__version__, 'cuda', torch.cuda.is_available())
+          print('transformers', transformers.__version__)
+          assert torch.cuda.is_available()
+          PY
+      - name: Run V158 decisive sniff
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /root/venvs/trace-ace-v158/bin/activate
+          DATA_ROOT="${{ github.event_name == 'workflow_dispatch' && inputs.data_root || '/root/trace_the_ace' }}"
+          LIMIT="${{ github.event_name == 'workflow_dispatch' && inputs.limit || '8000' }}"
+          MODEL="${{ github.event_name == 'workflow_dispatch' && inputs.model || 'answerdotai/ModernBERT-base' }}"
+          RUN_ROOT="/root/trace-ace-results/v158-${{ github.run_id }}"
+          mkdir -p "$RUN_ROOT"
+          python experiments/trace_the_ace_v158/run_v158_long_context_residual.py \
+            --features "$DATA_ROOT/train_features_TMQTWsB.csv" \
+            --labels "$DATA_ROOT/train_labels_44ujmj2.csv" \
+            --transcripts "$DATA_ROOT/trace_the_ace_transcripts_v123_single_run_fresh.zip" \
+            --model "$MODEL" \
+            --limit "$LIMIT" \
+            --folds 3 \
+            --max-len 8192 \
+            --char-cap 30000 \
+            --epochs 1 \
+            --batch 1 \
+            --eval-batch 2 \
+            --grad-accum 8 \
+            --work "$RUN_ROOT/work" \
+            --out "$RUN_ROOT/v158_results.json"
+      - name: Publish scientific decision
+        if: always()
+        shell: bash
+        run: |
+          RESULT="/root/trace-ace-results/v158-${{ github.run_id }}/v158_results.json"
+          if [ -s "$RESULT" ]; then
+            python3 - "$RESULT" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys
+          r=json.load(open(sys.argv[1]))
+          print('# Trace the Ace V158')
+          print(f"\n**Decision: `{r['decision']}`**\n")
+          print('| Regime | Base LL | Residual LL | Gain | Fold wins | Chronology sep | Objective sep |')
+          print('|---|---:|---:|---:|---:|---:|---:|')
+          for key,label in [('session','session-cold'),('objective_cold','objective-cold')]:
+              x=r[key]
+              print(f"| {label} | {x['base']['logloss']:.6f} | {x['residual']['logloss']:.6f} | {x['improvement']:.6f} | {x['fold_wins']}/3 | {x['chronology_separator']:.6f} | {x['objective_separator']:.6f} |")
+          PY
+          else
+            echo 'V158 result file missing; inspect failed step.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload V158 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-ace-v158-long-context-${{ github.run_id }}
+          path: /root/trace-ace-results/v158-${{ github.run_id }}/v158_results.json
+          if-no-files-found: warn
+          retention-days: 30
