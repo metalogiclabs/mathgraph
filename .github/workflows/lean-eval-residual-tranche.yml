@@ -1,0 +1,118 @@
+name: LeanEval residual tranche
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-residual-tranche.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  residual-tranche:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Clone frozen LeanEval and hydrate cache
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+
+      - name: Freeze residual tranche
+        run: |
+          cat > /tmp/tranche.txt <<'EOF'
+          list_append_singleton_length
+          cyclotomic_integer_house_le_two
+          abel_ruffini
+          EOF
+          cat /tmp/tranche.txt
+
+      - name: Push strongest cheap proof portfolio
+        working-directory: /tmp/lean-eval
+        run: |
+          set +e
+          : > /tmp/residual.tsv
+          printf 'problem\troute\tresult\n' >> /tmp/residual.tsv
+          while read -r problem; do
+            rm -rf "/tmp/$problem"
+            lake exe lean-eval start-problem "$problem" "/tmp/$problem" || {
+              printf '%s\tworkspace\tSTART_FAIL\n' "$problem" >> /tmp/residual.tsv
+              continue
+            }
+            cd "/tmp/$problem" || exit 1
+            lake update >/tmp/${problem}_update.log 2>&1
+            cp Submission.lean /tmp/${problem}_orig.lean
+
+            # Preserve the theorem statement and replace only the benchmark `sorry`.
+            solved=0
+            for route in rfl aesop simp_all norm_num omega exact_assumption; do
+              cp /tmp/${problem}_orig.lean Submission.lean
+              case "$route" in
+                rfl) repl='rfl' ;;
+                aesop) repl='aesop' ;;
+                simp_all) repl='simp_all' ;;
+                norm_num) repl='norm_num' ;;
+                omega) repl='omega' ;;
+                exact_assumption) repl='assumption' ;;
+              esac
+              python3 - "$repl" <<'PY'
+import pathlib, sys
+p = pathlib.Path('Submission.lean')
+s = p.read_text()
+repl = sys.argv[1]
+if 'sorry' not in s:
+    raise SystemExit('no sorry hole found')
+s = s.replace('sorry', repl, 1)
+p.write_text(s)
+PY
+              if lake build >/tmp/${problem}_${route}.log 2>&1; then
+                printf '%s\t%s\tBUILD_PASS\n' "$problem" "$route" >> /tmp/residual.tsv
+                solved=1
+                cp Submission.lean /tmp/${problem}_winner.lean
+                break
+              else
+                tail -n 12 /tmp/${problem}_${route}.log > /tmp/${problem}_${route}_tail.log
+                printf '%s\t%s\tBUILD_FAIL\n' "$problem" "$route" >> /tmp/residual.tsv
+              fi
+            done
+            if [ "$solved" -eq 0 ]; then
+              printf '%s\tportfolio\tRESIDUAL_UNSOLVED\n' "$problem" >> /tmp/residual.tsv
+            fi
+            cd /tmp/lean-eval || exit 1
+          done < /tmp/tranche.txt
+          cat /tmp/residual.tsv
+          {
+            echo '## Frozen LeanEval residual tranche'
+            echo '```text'
+            cat /tmp/residual.tsv
+            echo '```'
+            echo 'A BUILD_PASS is only a candidate. Comparator/nanoda acceptance is required before a solve is claimed.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assert known control remains reachable
+        run: |
+          grep -q $'list_append_singleton_length\trfl\tBUILD_PASS' /tmp/residual.tsv
+
+      - name: Upload sharp residual logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-residual-tranche
+          path: |
+            /tmp/residual.tsv
+            /tmp/*_tail.log
+            /tmp/*_winner.lean
+          if-no-files-found: error
