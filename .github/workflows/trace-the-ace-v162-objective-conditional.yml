@@ -56,3 +56,5 @@ jobs:
           name: trace-ace-v162-${{ github.run_id }}
           path: v162-results/v162_results.json
           retention-days: 30
+
+# manual trigger marker 2026-08-26
