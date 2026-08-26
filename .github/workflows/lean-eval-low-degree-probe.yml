@@ -63,7 +63,7 @@ jobs:
               simp
             rw [hmap]
             apply (eq_div_iff haC).2
-            linear_combination hx
+            simpa only [Rat.cast_def] using hx
 
           theorem degree_one_solvable
               (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
