@@ -35,3 +35,5 @@ A build, candidate proof, tactic success outside the comparator, bounded search 
 - Gate 3+: apply the residual loop only to unresolved problems; every new constructor/capability must be tested for replay and transfer.
 
 The public leaderboard submission repo accepts a repository containing one or more benchmark workspaces; only `Submission.lean` and Lean files under `Submission/` are consumed by the hosted evaluator.
+
+<!-- CI trigger: quartic universal verification 2026-08-27 -->
