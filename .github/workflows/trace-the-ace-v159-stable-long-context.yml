@@ -42,7 +42,10 @@ jobs:
           nvidia-smi
           test -s /workspace/trace_the_ace/train_features_TMQTWsB.csv
           test -s /workspace/trace_the_ace/train_labels_44ujmj2.csv
-          test -s /workspace/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          N=$(find /workspace/trace_the_ace/transcripts_extracted -type f -name '*.csv' | wc -l)
+          echo "transcript_csvs=$N"
+          test "$N" -eq 22821
       - name: Prepare environment
         shell: bash
         run: |
@@ -67,7 +70,7 @@ jobs:
           python experiments/trace_the_ace_v159/run_v159_stable_long_context.py \
             --features /workspace/trace_the_ace/train_features_TMQTWsB.csv \
             --labels /workspace/trace_the_ace/train_labels_44ujmj2.csv \
-            --transcripts /workspace/trace_the_ace/trace_the_ace_transcripts_v123_single_run_fresh.zip \
+            --transcripts /workspace/trace_the_ace/transcripts_extracted \
             --model answerdotai/ModernBERT-base \
             --limit 8000 \
             --folds 3 \
