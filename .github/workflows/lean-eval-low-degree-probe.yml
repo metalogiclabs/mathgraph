@@ -51,21 +51,17 @@ jobs:
             have hlead : p.coeff 1 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
             let a : ℚ := p.coeff 1
             let b : ℚ := p.coeff 0
-            have hpform : p = C b + C a * X := by
-              ext n
-              by_cases hn : n ≤ 1
-              · interval_cases n <;> simp [a, b]
-              · have hlt : p.natDegree < n := by omega
-                have hpzero : p.coeff n = 0 := coeff_eq_zero_of_natDegree_lt hlt
-                have hn1 : n ≠ 1 := by omega
-                rw [hpzero]
-                simp [a, b, hn1]
+            have hpform : p = C a * X + C b := by
+              simpa [a, b] using eq_X_add_C_of_natDegree_le_one (p := p) hp.le
             rw [hpform] at hx
             simp [aeval_def] at hx
             refine ⟨-b / a, ?_⟩
             have haC : (algebraMap ℚ ℂ a) ≠ 0 := by
               exact (map_ne_zero_iff (algebraMap ℚ ℂ) (algebraMap ℚ ℂ).injective).2 hlead
-            rw [_root_.map_div, _root_.map_neg]
+            have hmap : algebraMap ℚ ℂ (-b / a) =
+                -(algebraMap ℚ ℂ b) / (algebraMap ℚ ℂ a) := by
+              simp
+            rw [hmap]
             apply (eq_div_iff haC).2
             linear_combination hx
 
