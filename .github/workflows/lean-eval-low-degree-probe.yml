@@ -1,0 +1,100 @@
+name: LeanEval low-degree radical probe
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-low-degree-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  low-degree-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Clone frozen LeanEval
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+
+      - name: Probe degree-one bridge
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cat > DegreeOne.lean <<'EOF'
+          import Mathlib
+          import Submission.Helpers
+
+          open Polynomial
+
+          theorem degree_one_root_rational
+              (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
+              ∃ q : ℚ, x = algebraMap ℚ ℂ q := by
+            have hlead : p.coeff 1 ≠ 0 := by
+              simpa [natDegree_eq_iff_degree_eq_iff, hp] using p.leadingCoeff_ne_zero
+            let a : ℚ := p.coeff 1
+            let b : ℚ := p.coeff 0
+            have hpform : p = C b + C a * X := by
+              ext n
+              interval_cases n <;> simp [a, b, hp, coeff_eq_zero_of_natDegree_lt]
+            rw [hpform] at hx
+            simp [aeval_def] at hx
+            refine ⟨-b / a, ?_⟩
+            apply (mul_left_cancel₀ (show (algebraMap ℚ ℂ a) ≠ 0 by exact map_ne_zero_of_injective (algebraMap ℚ ℂ).injective hlead))
+            field_simp [a, hlead] at hx ⊢
+            linarith
+
+          theorem degree_one_solvable
+              (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
+              x ∈ solvableByRad ℚ ℂ := by
+            obtain ⟨q, rfl⟩ := degree_one_root_rational p hp x hx
+            exact solvableByRad.algebraMap_mem q
+          EOF
+          set -o pipefail
+          lake env lean DegreeOne.lean 2>&1 | tee /tmp/degree-one.log
+
+      - name: Probe degree two by strongest existing automation
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cat > DegreeTwo.lean <<'EOF'
+          import Mathlib
+          import Submission.Helpers
+
+          open Polynomial
+
+          theorem degree_two_solvable_probe
+              (p : ℚ[X]) (hp : p.natDegree = 2) (x : ℂ) (hx : aeval x p = 0) :
+              x ∈ solvableByRad ℚ ℂ := by
+            aesop
+          EOF
+          set +e
+          lake env lean DegreeTwo.lean > /tmp/degree-two.log 2>&1
+          code=$?
+          echo "degree_two_exit=$code" | tee /tmp/low-degree-summary.txt
+          tail -n 30 /tmp/degree-two.log
+          exit 0
+
+      - name: Upload low-degree residual
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-low-degree-probe
+          path: |
+            /tmp/degree-one.log
+            /tmp/degree-two.log
+            /tmp/low-degree-summary.txt
