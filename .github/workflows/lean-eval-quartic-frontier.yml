@@ -1,0 +1,109 @@
+name: LeanEval quartic frontier
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-quartic-frontier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quartic-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Clone frozen LeanEval
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+      - name: Verify quartic structural frontier
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cat > DegreeFour.lean <<'EOF'
+          import Mathlib
+
+          open Polynomial
+
+          theorem quartic_root_normal_form
+              (p : ℚ[X]) (hp : p.natDegree = 4) (x : ℂ) (hx : aeval x p = 0) :
+              let a : ℚ := p.coeff 4
+              let b : ℚ := p.coeff 3
+              let c : ℚ := p.coeff 2
+              let d : ℚ := p.coeff 1
+              let e : ℚ := p.coeff 0
+              (a : ℂ) * x^4 + (b : ℂ) * x^3 + (c : ℂ) * x^2 + (d : ℂ) * x + (e : ℂ) = 0 := by
+            have hdeg : p.degree = (4 : WithBot ℕ) :=
+              (degree_eq_iff_natDegree_eq_of_pos (by norm_num : 0 < 4)).2 hp
+            let a : ℚ := p.coeff 4
+            let b : ℚ := p.coeff 3
+            let c : ℚ := p.coeff 2
+            let d : ℚ := p.coeff 1
+            let e : ℚ := p.coeff 0
+            have hpform : p = C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e := by
+              let q : ℚ[X] := C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e
+              have hqdeg : q.degree ≤ (4 : WithBot ℕ) := by
+                dsimp [q]
+                calc
+                  degree (C a * X^4 + C b * X^3 + C c * X^2 + C d * X + C e)
+                      ≤ max (degree (C a * X^4)) (degree (C b * X^3 + C c * X^2 + C d * X + C e)) := degree_add_le _ _
+                  _ ≤ 4 := by
+                    apply max_le
+                    · exact (degree_C_mul_X_pow_le 4 a)
+                    · calc
+                        degree (C b * X^3 + C c * X^2 + C d * X + C e) ≤ 3 := degree_cubic_le
+                        _ ≤ 4 := by norm_num
+              ext n
+              by_cases hn : n ≤ 4
+              · interval_cases n <;> simp [q, a, b, c, d, e]
+              · have hp_lt : p.degree < n := by
+                  rw [hdeg]
+                  exact_mod_cast (Nat.lt_of_not_ge hn)
+                have hq_lt : q.degree < n :=
+                  lt_of_le_of_lt hqdeg (by exact_mod_cast (Nat.lt_of_not_ge hn))
+                rw [coeff_eq_zero_of_degree_lt hp_lt, coeff_eq_zero_of_degree_lt hq_lt]
+            rw [hpform] at hx
+            simp [aeval_def] at hx
+            simpa using hx
+
+          theorem quartic_square_radical
+              (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
+              (s : ℂ) (hs : s^2 = z) : s ∈ solvableByRad ℚ ℂ := by
+            apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
+            rw [hs]
+            exact hz
+
+          theorem quartic_resolvent_transfer
+              (r : ℂ) (hr : r ∈ solvableByRad ℚ ℂ)
+              (s : ℂ) (hs : s^2 = r) :
+              s ∈ solvableByRad ℚ ℂ :=
+            quartic_square_radical r hr s hs
+          EOF
+          set +e
+          lake env lean DegreeFour.lean > /tmp/degree-four.log 2>&1
+          code=$?
+          echo "degree_four_frontier_exit=$code" | tee /tmp/quartic-summary.txt
+          tail -n 100 /tmp/degree-four.log
+          exit 0
+      - name: Upload quartic residual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-quartic-frontier
+          path: |
+            /tmp/degree-four.log
+            /tmp/quartic-summary.txt
