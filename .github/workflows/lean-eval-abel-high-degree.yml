@@ -91,10 +91,87 @@ jobs:
           echo '## Abel-Ruffini high-degree bridge' >> "$GITHUB_STEP_SUMMARY"
           echo 'High-degree direction compiled; low-degree constructive direction intentionally remains the only sorry.' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Probe cubic capability composition
+        working-directory: /tmp/abel_ruffini
+        if: always()
+        run: |
+          cat > DegreeThree.lean <<'EOF'
+          import Mathlib
+
+          open Polynomial
+
+          theorem degree_three_depressed_bridge
+              (p : ℚ[X]) (hp : p.natDegree = 3) (x : ℂ) (hx : aeval x p = 0) :
+              let a : ℚ := p.coeff 3
+              let b : ℚ := p.coeff 2
+              let c : ℚ := p.coeff 1
+              let d : ℚ := p.coeff 0
+              let y : ℂ := 3 * (a : ℂ) * x + (b : ℂ)
+              let P : ℚ := 3 * (3 * a * c - b ^ 2)
+              let Q : ℚ := 27 * a ^ 2 * d - 9 * a * b * c + 2 * b ^ 3
+              y ^ 3 + (P : ℂ) * y + (Q : ℂ) = 0 := by
+            have hdeg : p.degree = (3 : WithBot ℕ) :=
+              (degree_eq_iff_natDegree_eq_of_pos (by norm_num : 0 < 3)).2 hp
+            let a : ℚ := p.coeff 3
+            let b : ℚ := p.coeff 2
+            let c : ℚ := p.coeff 1
+            let d : ℚ := p.coeff 0
+            have hpform : p = C a * X ^ 3 + C b * X ^ 2 + C c * X + C d := by
+              let q : ℚ[X] := C a * X ^ 3 + C b * X ^ 2 + C c * X + C d
+              have hqdeg : q.degree ≤ (3 : WithBot ℕ) := by
+                dsimp [q]
+                exact degree_cubic_le
+              ext n
+              by_cases hn : n ≤ 3
+              · interval_cases n <;> simp [q, a, b, c, d]
+              · have hp_lt : p.degree < n := by
+                  rw [hdeg]
+                  exact_mod_cast (Nat.lt_of_not_ge hn)
+                have hq_lt : q.degree < n :=
+                  lt_of_le_of_lt hqdeg (by exact_mod_cast (Nat.lt_of_not_ge hn))
+                rw [coeff_eq_zero_of_degree_lt hp_lt, coeff_eq_zero_of_degree_lt hq_lt]
+            rw [hpform] at hx
+            simp [aeval_def] at hx
+            dsimp
+            push_cast
+            linear_combination 27 * (a : ℂ) ^ 2 * hx
+
+          theorem cubic_resolvent_coeffs_base
+              (P Q : ℚ) :
+              ((Q : ℂ) ^ 2 + 4 * ((P : ℂ) ^ 3 / 27)) ∈ solvableByRad ℚ ℂ := by
+            have h := (solvableByRad ℚ ℂ).algebraMap_mem (Q ^ 2 + 4 * (P ^ 3 / 27))
+            simpa [algebraMap.coe_ratCast] using h
+
+          theorem cubic_resolvent_discriminant_radical
+              (P Q : ℚ) (s : ℂ)
+              (hs : s ^ 2 = (Q : ℂ) ^ 2 + 4 * ((P : ℂ) ^ 3 / 27)) :
+              s ∈ solvableByRad ℚ ℂ := by
+            apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
+            rw [hs]
+            exact cubic_resolvent_coeffs_base P Q
+
+          theorem cubic_cube_radical
+              (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
+              (u : ℂ) (hu : u ^ 3 = z) :
+              u ∈ solvableByRad ℚ ℂ := by
+            apply solvableByRad.rad_mem (by norm_num : (3 : ℕ) ≠ 0)
+            rw [hu]
+            exact hz
+          EOF
+          set +e
+          lake env lean DegreeThree.lean > /tmp/degree-three.log 2>&1
+          code=$?
+          echo "degree_three_bridge_exit=$code" | tee /tmp/cubic-summary.txt
+          tail -n 100 /tmp/degree-three.log
+          exit 0
+
       - name: Upload bridge evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lean-eval-abel-high-degree
-          path: /tmp/abel-high-degree.log
+          path: |
+            /tmp/abel-high-degree.log
+            /tmp/degree-three.log
+            /tmp/cubic-summary.txt
           if-no-files-found: warn
