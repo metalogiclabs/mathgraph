@@ -18,6 +18,11 @@ private theorem depressed_cubic_root_solvable
     exact (solvableByRad ℚ ℂ).neg_mem (base_mem Q)
   · let disc : ℚ := Q ^ 2 + 4 * (P ^ 3 / 27)
     obtain ⟨s, hs2⟩ := IsAlgClosed.exists_pow_nat_eq (disc : ℂ) (by norm_num : 0 < 2)
+    have hs2' : s ^ 2 = (Q : ℂ) ^ 2 + 4 * ((P : ℂ) ^ 3 / 27) := by
+      rw [hs2]
+      dsimp [disc]
+      push_cast
+      ring
     have hs_mem : s ∈ solvableByRad ℚ ℂ := by
       apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
       rw [hs2]
@@ -25,10 +30,10 @@ private theorem depressed_cubic_root_solvable
     let A : ℂ := (-(Q : ℂ) + s) / 2
     let B : ℂ := (-(Q : ℂ) - s) / 2
     have hAB : A * B = -((P : ℂ) ^ 3) / 27 := by
-      dsimp [A, B, disc] at *
-      push_cast at hs2
+      dsimp [A, B]
       field_simp
-      nlinarith [hs2]
+      rw [hs2']
+      ring
     have hA_mem : A ∈ solvableByRad ℚ ℂ := by
       exact (solvableByRad ℚ ℂ).div_mem
         ((solvableByRad ℚ ℂ).add_mem
@@ -41,13 +46,12 @@ private theorem depressed_cubic_root_solvable
       exact hA_mem
     have hA0 : A ≠ 0 := by
       intro hA
-      rw [hA, zero_mul] at hAB
+      have hP3zero : (P : ℂ) ^ 3 = 0 := by
+        calc
+          (P : ℂ) ^ 3 = -27 * (A * B) := by rw [hAB]; ring
+          _ = 0 := by rw [hA]; ring
       have hPc : (P : ℂ) ≠ 0 := by exact_mod_cast hP
-      have hP3 : (P : ℂ) ^ 3 ≠ 0 := pow_ne_zero 3 hPc
-      apply hP3
-      field_simp at hAB
-      norm_num at hAB ⊢
-      exact hAB.symm
+      exact (pow_ne_zero 3 hPc) hP3zero
     have hu0 : u ≠ 0 := by
       intro hu
       rw [hu, zero_pow (by norm_num : 3 ≠ 0)] at hu3
@@ -58,45 +62,45 @@ private theorem depressed_cubic_root_solvable
       field_simp [hu0]
       ring
     have hv3 : v ^ 3 = B := by
-      have hmul : A * v ^ 3 = A * B := by
+      have hl : A * v ^ 3 = -((P : ℂ) ^ 3) / 27 := by
         rw [← hu3, ← mul_pow, huv]
-        rw [hAB]
         ring
-      exact mul_left_cancel₀ hA0 hmul
+      exact mul_left_cancel₀ hA0 (hl.trans hAB.symm)
     have hv_mem : v ∈ solvableByRad ℚ ℂ := by
-      apply solvableByRad.rad_mem (by norm_num : (3 : ℕ) ≠ 0)
-      rw [hv3]
-      rw [← hv3]
-      exact (solvableByRad ℚ ℂ).pow_mem
-        ((solvableByRad ℚ ℂ).div_mem
-          ((solvableByRad ℚ ℂ).neg_mem (base_mem P))
-          ((solvableByRad ℚ ℂ).mul_mem (base_mem 3) hu_mem)) 3
+      dsimp [v]
+      exact (solvableByRad ℚ ℂ).div_mem
+        ((solvableByRad ℚ ℂ).neg_mem (base_mem P))
+        ((solvableByRad ℚ ℂ).mul_mem (base_mem 3) hu_mem)
 
     obtain ⟨r, hr2⟩ := IsAlgClosed.exists_pow_nat_eq (-3 : ℂ) (by norm_num : 0 < 2)
     have hr_mem : r ∈ solvableByRad ℚ ℂ := by
       apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
       rw [hr2]
-      norm_num
-      exact (solvableByRad ℚ ℂ).neg_mem (base_mem 3)
+      simpa using (solvableByRad ℚ ℂ).neg_mem (base_mem 3)
     let w : ℂ := (-1 + r) / 2
     have hw_mem : w ∈ solvableByRad ℚ ℂ := by
       dsimp [w]
       exact (solvableByRad ℚ ℂ).div_mem
         ((solvableByRad ℚ ℂ).add_mem
-          ((solvableByRad ℚ ℂ).neg_mem (base_mem 1)) hr_mem)
+          ((solvableByRad ℚ ℂ).neg_mem (by simpa using base_mem (1 : ℚ))) hr_mem)
         (base_mem 2)
     have hw : w ^ 2 + w + 1 = 0 := by
       dsimp [w]
       field_simp
-      nlinarith [hr2]
+      rw [hr2]
+      ring
     have hw3 : w ^ 3 = 1 := by
-      have hfac : w ^ 3 - 1 = (w - 1) * (w ^ 2 + w + 1) := by ring
-      rw [hw] at hfac
-      simpa using sub_eq_zero.mp hfac
+      have hzero : w ^ 3 - 1 = 0 := by
+        calc
+          w ^ 3 - 1 = (w - 1) * (w ^ 2 + w + 1) := by ring
+          _ = 0 := by rw [hw]; ring
+      exact sub_eq_zero.mp hzero
     have hsum : u ^ 3 + v ^ 3 = -(Q : ℂ) := by
       rw [hu3, hv3]
       dsimp [A, B]
       ring
+    have hw2 : w ^ 2 = -w - 1 := by
+      linear_combination hw
     have hfactor :
         (y - (u + v)) *
           (y - (u * w + v * w ^ 2)) *
@@ -106,7 +110,10 @@ private theorem depressed_cubic_root_solvable
             (y - (u * w + v * w ^ 2)) *
             (y - (u * w ^ 2 + v * w)) =
             y ^ 3 - 3 * (u * v) * y - (u ^ 3 + v ^ 3) := by
-        nlinarith [hw, hw3]
+        rw [hw2]
+        ring_nf at hw ⊢
+        linear_combination
+          (u ^ 2 * v + u * v ^ 2 + u ^ 2 * v * w + u * v ^ 2 * w) * hw
       rw [hpoly, huv, hsum]
       linear_combination hy
     rcases mul_eq_zero.mp hfactor with h12 | h3
