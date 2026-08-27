@@ -1,0 +1,23 @@
+name: VDN ARC-AGI-2 v13 heldout diagnostic
+on:
+  push:
+    branches: [vdn-arc2-meta-v11]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose-v13:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Diagnose v13 heldout residual
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/diagnose_v13_heldout.py /tmp/ARC-AGI-2/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-v13-heldout-diagnostic
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v13_heldout_diagnostic/result.json
