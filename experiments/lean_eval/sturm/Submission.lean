@@ -79,5 +79,9 @@ theorem simple_root_local_quotient_positive (p : ℝ[X]) (r : ℝ)
   have hpos : 0 < p.derivative.eval r * p.derivative.eval r := mul_self_pos.mpr hd
   have hnhds : Set.Ioi (0 : ℝ) ∈ 𝓝 ((fun x => q x * p.derivative.eval r) r) := by
     simpa [q] using (IsOpen.mem_nhds isOpen_Ioi hpos)
-  have h := hprod hnhds
-  simpa [q] using h
+  change
+    (fun x =>
+      Function.update
+        (fun x => (p.eval x - p.eval r) / (x - r))
+        r (p.derivative.eval r) x * p.derivative.eval r) ⁻¹' Set.Ioi 0 ∈ 𝓝 r
+  simpa [q] using hprod hnhds
