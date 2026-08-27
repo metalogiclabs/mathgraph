@@ -1,0 +1,29 @@
+name: Trace the Ace V179 Key Moment Sniffs
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v179/**'
+      - '.github/workflows/trace-ace-v179-key-moment-sniffs.yml'
+  workflow_dispatch:
+jobs:
+  v179:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run high-impact sniff tests
+        run: python3 experiments/trace_the_ace_v179/run_v179_key_moment_sniffs.py
+      - name: Show result
+        if: always()
+        run: cat /workspace/trace-ace-results/v179/v179_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v179-results
+          path: /workspace/trace-ace-results/v179/
+          if-no-files-found: warn
