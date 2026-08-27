@@ -27,7 +27,6 @@ def main():
     print('FEATURE_HEADERS',list(X.columns)); print('LABEL_HEADERS',list(Y.columns))
     df=X.merge(Y,on='response_id',validate='one_to_one')
 
-    # Deterministic session-cold sample: hash session ids, take whole sessions until ~N_TARGET rows.
     sessions=(df.groupby('session_id').size().rename('n').reset_index())
     sessions['h']=sessions.session_id.astype(str).map(lambda s:int(hashlib.sha256(s.encode()).hexdigest()[:16],16))
     sessions=sessions.sort_values(['h','session_id'])
@@ -39,18 +38,15 @@ def main():
     test=df.loc[mask].copy(); train=df.loc[~mask].copy()
     print('SAMPLE_ROWS',len(test),'SAMPLE_SESSIONS',test.session_id.nunique(),'TRAIN_ROWS',len(train))
 
-    # Strict session-cold objective prior from complement only (V171 best alpha=10).
     gm=float(train.is_correct.mean())
     obj=train.groupby('learning_objective_id').is_correct.agg(['sum','count'])
     prior10=(obj['sum']+10*gm)/(obj['count']+10)
-    p_prior=np.clip(test.learning_objective_id.map(prior10).fillna(gm).to_numpy(float),1e-6,1-1e-6)
+    test['strict_prior']=np.clip(test.learning_objective_id.map(prior10).fillna(gm).to_numpy(float),1e-6,1-1e-6)
     y=test.is_correct.to_numpy(int)
-    prior_ll=float(log_loss(y,p_prior)); prior_auc=float(roc_auc_score(y,p_prior))
+    prior_ll=float(log_loss(y,test.strict_prior)); prior_auc=float(roc_auc_score(y,test.strict_prior))
 
-    # Exact competition filesystem, only bounded rows changed. V157 package is untouched.
     DATA.mkdir(parents=True,exist_ok=True)
-    test_features=test[X.columns].copy()
-    test_features.to_csv(DATA/'test_features.csv',index=False)
+    test[X.columns].to_csv(DATA/'test_features.csv',index=False)
     sf=test[['response_id']].copy(); sf['is_correct']=0.5
     sf.to_csv(DATA/'submission_format.csv',index=False)
     target=DATA/'test_transcripts'
@@ -70,10 +66,10 @@ def main():
     else:
         P=pd.read_csv(sub); print('SUB_HEADERS',list(P.columns),'SUB_ROWS',len(P))
         pred_col='is_correct' if 'is_correct' in P.columns else [c for c in P.columns if c!='response_id'][0]
-        Z=test[['response_id','is_correct']].merge(P[['response_id',pred_col]],on='response_id',validate='one_to_one',suffixes=('_y','_p'))
-        yy=Z['is_correct_y'].to_numpy(); pp=np.clip(Z[pred_col].to_numpy(float),1e-6,1-1e-6)
-        prod_ll=float(log_loss(yy,pp)); prod_auc=float(roc_auc_score(yy,pp)); gap=prod_ll-prior_ll
-        result.update(production_logloss=prod_ll,production_auc=prod_auc,production_minus_strict_prior=gap,pred_mean=float(pp.mean()),pred_std=float(pp.std()),rows_returned=len(P))
+        Z=test[['response_id','is_correct','strict_prior']].merge(P[['response_id',pred_col]],on='response_id',validate='one_to_one')
+        yy=Z['is_correct'].to_numpy(int); pp=np.clip(Z[pred_col].to_numpy(float),1e-6,1-1e-6)
+        prod_ll=float(log_loss(yy,pp)); prod_auc=float(roc_auc_score(yy,pp)); exact_prior_ll=float(log_loss(yy,Z.strict_prior.to_numpy(float))); gap=prod_ll-exact_prior_ll
+        result.update(production_logloss=prod_ll,production_auc=prod_auc,strict_prior_same_rows_logloss=exact_prior_ll,production_minus_strict_prior=gap,pred_mean=float(pp.mean()),pred_std=float(pp.std()),rows_returned=len(P),prediction_column=pred_col)
         if gap>0.02:
             result.update(decision='PRODUCTION_EQUATION_DESTROYS_SIGNAL',residual='Exact V157 runtime is materially worse than strict objective prior on identical bounded rows. Next: ablate runtime transforms and build production-safe prior baseline.')
         elif gap<=0.01:
@@ -81,7 +77,7 @@ def main():
         else:
             result.update(decision='MODERATE_RUNTIME_PENALTY',residual='Runtime loses 0.01-0.02 logloss versus strict prior; decompose prior shrinkage, trajectory and calibration transforms.')
         P.to_csv(OUT/'v174_production_predictions.csv',index=False)
-        pd.DataFrame({'response_id':test.response_id,'y':y,'strict_prior':p_prior}).to_csv(OUT/'v174_strict_prior.csv',index=False)
+        Z[['response_id','is_correct','strict_prior']].to_csv(OUT/'v174_strict_prior.csv',index=False)
     (OUT/'v174_results.json').write_text(json.dumps(result,indent=2)); print(json.dumps(result,indent=2))
 
 if __name__=='__main__': main()
