@@ -26,3 +26,10 @@ theorem signChanges_opposite_neighbours (a : ℝ) (ha : a ≠ 0) :
     signChanges [a, 0, -a] = 1 := by
   simp [signChanges, ha]
   exact mul_neg_self_lt_zero ha
+
+/-- Context-composition separator: inserting a zero anywhere in a list does
+not change sign variation.  If this compiles, the local zero quotient lifts
+through arbitrary Sturm-chain context without introducing a new sign state. -/
+theorem signChanges_insert_zero (xs ys : List ℝ) :
+    signChanges (xs ++ 0 :: ys) = signChanges (xs ++ ys) := by
+  simp [signChanges, List.filter_append]
