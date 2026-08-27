@@ -22,3 +22,4 @@ jobs:
         working-directory: verified-developmental-navigation/lean
         run: |
           lake build
+          lake env lean VerifiedDevelopmentalNavigation/PalomarSeed.lean
