@@ -1,0 +1,36 @@
+name: Trace the Ace V189 Combined Meta Judge
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/trace_the_ace_v189/**'
+      - '.github/workflows/trace-ace-v189-combined-meta-judge.yml'
+  workflow_dispatch:
+
+jobs:
+  v189:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persisted inputs and headers
+        run: |
+          test -f /workspace/trace-ace-results/v187/v187_predictions.csv
+          test -f /workspace/trace-ace-results/v188/v188_predictions.csv
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          python - <<'PY'
+          import pandas as pd
+          for p in ['/workspace/trace-ace-results/v187/v187_predictions.csv','/workspace/trace-ace-results/v188/v188_predictions.csv','/workspace/trace_the_ace/train_features_TMQTWsB.csv']:
+              print(p,pd.read_csv(p,nrows=2).columns.tolist())
+          PY
+      - name: Run combined meta judge
+        run: python experiments/trace_the_ace_v189/run_v189_combined_meta_judge.py
+      - name: Show result
+        if: always()
+        run: test -f /workspace/trace-ace-results/v189/v189_results.json && cat /workspace/trace-ace-results/v189/v189_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v189-results
+          path: /workspace/trace-ace-results/v189/
+          if-no-files-found: warn
