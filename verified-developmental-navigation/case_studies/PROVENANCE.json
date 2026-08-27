@@ -1,0 +1,24 @@
+{
+  "kernel_v41": {
+    "repository": "heathsanchez/test",
+    "run_id": 32782797883,
+    "commit": "cfa4d1cbb838d3116808ea3a2babdc7f805a9d80",
+    "artifact_id": 9540466245,
+    "artifact_name": "v41-disagreement-atlas",
+    "artifact_digest": "sha256:4e569c189a295d7deba0fc55b33dc1664a10d64a00e8aa667608e8261a4926c7"
+  },
+  "uvrm_graph_v6": {
+    "repository": "heathsanchez/test",
+    "run_id": 32691619972,
+    "commit": "d38055fd8790871ddfd4db7e082171d642bf2ede",
+    "artifact_id": 9507502715,
+    "artifact_name": "uvrm-graph-v6-protected",
+    "artifact_digest": "sha256:f6f8d185c83dd7c1ddffada270b8ecba8995c2f2e9f42384d91e6da92971f5db"
+  },
+  "palomar": {
+    "repository": "metalogiclabs/mathgraph",
+    "commit": "743fdf17213d9b3cfa29be51f9590f6c976f8de1",
+    "project_directory": "palomar/closure-capability",
+    "verification_run": 32942024682
+  }
+}
