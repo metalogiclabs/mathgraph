@@ -15,21 +15,24 @@ theorem sturm_remainder_eval_at_root (a b : ℝ[X]) (x : ℝ)
   simp [hrem]
 
 /-- VDN separator probe: zeros carry no sign information, so the local
-three-term Sturm configuration quotients to its two nonzero neighbours. -/
+three-term Sturm configuration quotients to its two neighbours. -/
 theorem signChanges_middle_zero (a c : ℝ) :
     signChanges [a, 0, c] = signChanges [a, c] := by
-  simp [signChanges]
+  by_cases ha : a = 0 <;> by_cases hc : c = 0 <;> simp [signChanges, ha, hc]
 
-/-- Finite sign law for the interior-zero Sturm configuration.  Once the
+/-- Finite sign law for the interior-zero Sturm configuration. Once the
 neighbours are known to be opposites, their local contribution is exactly one. -/
 theorem signChanges_opposite_neighbours (a : ℝ) (ha : a ≠ 0) :
     signChanges [a, 0, -a] = 1 := by
-  simp [signChanges, ha]
-  exact mul_neg_self_lt_zero ha
+  simp [signChanges, ha, mul_neg_self_lt_zero ha]
 
 /-- Context-composition separator: inserting a zero anywhere in a list does
-not change sign variation.  If this compiles, the local zero quotient lifts
-through arbitrary Sturm-chain context without introducing a new sign state. -/
+not change sign variation. This lifts the zero quotient through arbitrary
+Sturm-chain context without introducing a new sign state. -/
 theorem signChanges_insert_zero (xs ys : List ℝ) :
     signChanges (xs ++ 0 :: ys) = signChanges (xs ++ ys) := by
-  simp [signChanges, List.filter_append]
+  have hfilter :
+      (xs ++ 0 :: ys).filter (· ≠ 0) = (xs ++ ys).filter (· ≠ 0) := by
+    simp [List.filter_append]
+  simp only [signChanges]
+  rw [hfilter]
