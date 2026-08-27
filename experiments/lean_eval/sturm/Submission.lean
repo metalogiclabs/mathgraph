@@ -77,7 +77,7 @@ theorem simple_root_local_quotient_positive (p : ℝ[X]) (r : ℝ)
   have hprod : ContinuousAt (fun x => q x * p.derivative.eval r) r :=
     hq.mul continuousAt_const
   have hpos : 0 < p.derivative.eval r * p.derivative.eval r := mul_self_pos.mpr hd
-  have hnhds : Set.Ioi (0 : ℝ) ∈ 𝓝 (p.derivative.eval r * p.derivative.eval r) :=
-    Set.Ioi_mem_nhds hpos
+  have hnhds : Set.Ioi (0 : ℝ) ∈ 𝓝 ((fun x => q x * p.derivative.eval r) r) := by
+    simpa [q] using (IsOpen.mem_nhds isOpen_Ioi hpos)
   have h := hprod hnhds
   simpa [q] using h
