@@ -1,0 +1,77 @@
+name: Trace the Ace V192 Final Independent Shot
+on:
+  push:
+    branches: [mathgraph/trace-ace-final-shot-20260828]
+    paths:
+      - 'experiments/trace_the_ace_v192/**'
+      - '.github/workflows/trace-ace-v192-final-shot.yml'
+  workflow_dispatch:
+
+jobs:
+  v192:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run final independent tournament
+        run: python experiments/trace_the_ace_v192/run_v192_final_independent_tournament.py
+      - name: Official-format and independence harness
+        run: |
+          set -euxo pipefail
+          rm -rf /code_execution
+          mkdir -p /code_execution/data/test_transcripts
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd, shutil
+          root=Path('/code_execution'); data=root/'data'
+          x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv')
+          sess=x.session_id.astype(str).drop_duplicates().iloc[:40]
+          t=x[x.session_id.astype(str).isin(set(sess))].copy().reset_index(drop=True)
+          t.to_csv(data/'test_features.csv',index=False)
+          pd.DataFrame({'response_id':t.response_id.astype(str),'probability':0.5}).to_csv(data/'submission_format.csv',index=False)
+          src=Path('/workspace/trace_the_ace/transcripts_extracted')
+          for sid in sess:
+            p=src/f'{sid}.csv'
+            if not p.exists(): p=list(src.glob(f'**/{sid}.csv'))[0]
+            shutil.copy2(p,data/'test_transcripts'/f'{sid}.csv')
+          PY
+          python - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile('/workspace/trace-ace-results/v192/trace_ace_v192_final_independent_submission.zip') as z: z.extractall('/code_execution')
+          PY
+          cd /code_execution
+          python main.py
+          python - <<'PY'
+          import pandas as pd, numpy as np, shutil
+          f=pd.read_csv('data/submission_format.csv'); s=pd.read_csv('submission.csv')
+          assert list(s.columns)==['response_id','probability']
+          assert s.response_id.astype(str).tolist()==f.response_id.astype(str).tolist()
+          p=s.probability.to_numpy(float); assert np.isfinite(p).all(); assert ((p>=0)&(p<=1)).all()
+          shutil.copy2('submission.csv','/tmp/v192_full.csv')
+          print('OFFICIAL_FORMAT_PASS',len(s),float(p.min()),float(p.max()))
+          PY
+          python - <<'PY'
+          import pandas as pd
+          d='/code_execution/data'; x=pd.read_csv(d+'/test_features.csv'); f=pd.read_csv(d+'/submission_format.csv'); one=x.iloc[[0]].copy(); one.to_csv(d+'/test_features.csv',index=False); f[f.response_id.astype(str)==str(one.iloc[0].response_id)].to_csv(d+'/submission_format.csv',index=False)
+          PY
+          python main.py
+          python - <<'PY'
+          import pandas as pd
+          a=pd.read_csv('/tmp/v192_full.csv'); b=pd.read_csv('submission.csv'); rid=str(b.iloc[0].response_id); pa=float(a[a.response_id.astype(str)==rid].iloc[0].probability); pb=float(b.iloc[0].probability); print('INDEPENDENCE_PARITY',rid,pa,pb,abs(pa-pb)); assert abs(pa-pb)<1e-12
+          PY
+      - name: Seal result
+        run: |
+          python - <<'PY'
+          import json, hashlib, zipfile
+          from pathlib import Path
+          p=Path('/workspace/trace-ace-results/v192/trace_ace_v192_final_independent_submission.zip'); rpath=Path('/workspace/trace-ace-results/v192/v192_results.json'); r=json.loads(rpath.read_text())
+          with zipfile.ZipFile(p) as z: names=z.namelist()
+          r.update({'package_members':names,'package_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'official_format_harness':'PASS','independent_sample_invariance':'PASS','decision':'SUBMISSION_READY__FINAL_SHOT' if r.get('promote') else 'V191_CONTROL_RETAINED'})
+          rpath.write_text(json.dumps(r,indent=2)); print(json.dumps(r,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v192-final-production
+          path: /workspace/trace-ace-results/v192/
+          if-no-files-found: warn
