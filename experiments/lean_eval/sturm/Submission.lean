@@ -39,3 +39,22 @@ theorem signChanges_insert_zero (xs ys : List ℝ) :
     simp [List.filter_append]
   simp only [signChanges]
   rw [hfilter]
+
+/-- Simple-root crossing separator for the leading Sturm pair. If the value
+on the left has sign opposite to the derivative and the value on the right
+has the same sign, the first pair loses exactly one sign variation. -/
+theorem signChanges_simple_crossing (left right deriv : ℝ)
+    (hleft : left * deriv < 0) (hright : 0 < right * deriv) :
+    signChanges [left, deriv] = signChanges [right, deriv] + 1 := by
+  have hl0 : left ≠ 0 := by
+    intro h
+    simp [h] at hleft
+  have hd0 : deriv ≠ 0 := by
+    intro h
+    simp [h] at hleft
+  have hr0 : right ≠ 0 := by
+    intro h
+    simp [h] at hright
+  have hnright : ¬ right * deriv < 0 := by
+    linarith
+  simp [signChanges, hl0, hd0, hr0, hleft, hnright]
