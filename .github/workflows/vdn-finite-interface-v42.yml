@@ -1,0 +1,21 @@
+name: VDN finite interface v42
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v42_choice_vs_future_equivalence.py'
+      - '.github/workflows/vdn-finite-interface-v42.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  falsify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust finite decision worlds
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v42_choice_vs_future_equivalence.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-finite-interface-v42
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v42_choice_vs_future_equivalence/result.json
