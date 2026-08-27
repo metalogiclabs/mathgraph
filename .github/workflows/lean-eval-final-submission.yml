@@ -1,0 +1,69 @@
+name: LeanEval final submission
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-final-submission.yml'
+      - 'competitions/lean_eval/submission/abel_ruffini/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-eval-final-submission-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-submission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Generate frozen Abel-Ruffini workspace
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+
+      - name: Install admissible submission files only
+        run: |
+          rm -rf /tmp/abel_ruffini/Submission
+          mkdir -p /tmp/abel_ruffini/Submission
+          cp "$GITHUB_WORKSPACE/competitions/lean_eval/submission/abel_ruffini/Submission.lean" /tmp/abel_ruffini/Submission.lean
+          cp -R "$GITHUB_WORKSPACE/competitions/lean_eval/submission/abel_ruffini/Submission/." /tmp/abel_ruffini/Submission/
+
+      - name: Compile exact Submission.lean
+        working-directory: /tmp/abel_ruffini
+        run: |
+          lake env lean Submission.lean | tee /tmp/final-submission.log
+
+      - name: Verify no sorry in submitted sources
+        run: |
+          if grep -R -n -E '\bsorry\b|admit|axiom' \
+            "$GITHUB_WORKSPACE/competitions/lean_eval/submission/abel_ruffini/Submission.lean" \
+            "$GITHUB_WORKSPACE/competitions/lean_eval/submission/abel_ruffini/Submission"; then
+            echo 'Forbidden proof placeholder found'
+            exit 1
+          fi
+
+      - name: Upload verification log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-final-submission
+          path: /tmp/final-submission.log
