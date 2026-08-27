@@ -180,6 +180,41 @@ theorem step_respects_futureEq {x y : X} (hxy : W.FutureEq x y) (a : A) :
   · rcases hsome with ⟨x', y', hx, hy, hxy'⟩
     simp [hx, hy, hxy']
 
+/-- Verified reachability / capability under the admitted action language. -/
+def Reachable (x y : X) : Prop :=
+  ∃ trace : List A, W.run trace x = some y
+
 end World
+
+/-- A conservative action-language extension embeds every old action into the
+new language without changing its one-step semantics. -/
+structure ActionExtension {X C O A₀ A₁ : Type}
+    (W₀ : World X C A₀ O) (W₁ : World X C A₁ O) where
+  embed : A₀ → A₁
+  step_preserved : ∀ (a : A₀) (x : X), W₁.step (embed a) x = W₀.step a x
+
+namespace ActionExtension
+
+variable {X C O A₀ A₁ : Type}
+variable {W₀ : World X C A₀ O} {W₁ : World X C A₁ O}
+
+/-- Embedded old traces execute identically in the extended world. -/
+theorem run_map (E : ActionExtension W₀ W₁) (trace : List A₀) (x : X) :
+    W₁.run (trace.map E.embed) x = W₀.run trace x := by
+  induction trace generalizing x with
+  | nil => rfl
+  | cons a as ih =>
+      simp [World.run, E.step_preserved, ih]
+
+/-- Verified capability is monotone under a conservative action-language
+extension: every old reachable target remains reachable. -/
+theorem reachability_monotone (E : ActionExtension W₀ W₁) {x y : X}
+    (h : W₀.Reachable x y) : W₁.Reachable x y := by
+  rcases h with ⟨trace, hrun⟩
+  refine ⟨trace.map E.embed, ?_⟩
+  rw [E.run_map]
+  exact hrun
+
+end ActionExtension
 
 end VerifiedDevelopmentalNavigation
