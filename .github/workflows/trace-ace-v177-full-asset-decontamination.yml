@@ -1,0 +1,28 @@
+name: Trace the Ace V177 Full Asset Decontamination
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v177/**'
+      - '.github/workflows/trace-ace-v177-full-asset-decontamination.yml'
+  workflow_dispatch:
+jobs:
+  v177:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/V157_RECOVERED_SUBMISSION.zip
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run full decontamination rebuild
+        run: |
+          python3 experiments/trace_the_ace_v177/run_v177_full_asset_decontamination.py
+      - name: Show result
+        run: cat /workspace/trace-ace-results/v177/v177_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v177-results
+          path: /workspace/trace-ace-results/v177/
