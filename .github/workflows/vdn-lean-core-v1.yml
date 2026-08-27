@@ -1,0 +1,21 @@
+name: VDN Lean Core V1
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/lean/MinimalSufficientInterface.lean'
+      - '.github/workflows/vdn-lean-core-v1.yml'
+  workflow_dispatch:
+jobs:
+  lean-core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build theorem core
+        run: |
+          if [ -f lakefile.lean ] || [ -f lakefile.toml ]; then
+            lake env lean verified-developmental-navigation/lean/MinimalSufficientInterface.lean
+          else
+            echo 'No root Lake project found'
+            exit 2
+          fi
