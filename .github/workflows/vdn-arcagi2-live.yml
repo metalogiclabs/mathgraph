@@ -30,7 +30,7 @@ jobs:
             /tmp/ARC-AGI-2/data/evaluation
       - name: Run residual-driven v2 expansion
         run: |
-          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v2.py \
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v2_safe.py \
             /tmp/ARC-AGI-2/data/training \
             /tmp/ARC-AGI-2/data/evaluation
       - name: Upload results
