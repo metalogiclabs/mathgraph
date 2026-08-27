@@ -21,10 +21,11 @@ theorem degree_one_solvable
     · have hp_lt : p.degree < n := by
         rw [hdeg]
         exact_mod_cast Nat.lt_of_not_ge hn
-      rw [coeff_eq_zero_of_degree_lt hp_lt]
+      have hp0 : p.coeff n = 0 := coeff_eq_zero_of_degree_lt hp_lt
+      rw [hp0]
       have hn1 : n ≠ 1 := by omega
       have hn0 : n ≠ 0 := by omega
-      simp [a, b, hn1, hn0]
+      simp [coeff_C, coeff_X, a, b, hn1, hn0]
   rw [hpform] at hx
   simp [aeval_def] at hx
   have haC : (a : ℂ) ≠ 0 := by exact_mod_cast hlead
@@ -51,11 +52,12 @@ theorem degree_two_solvable
     · have hp_lt : p.degree < n := by
         rw [hdeg]
         exact_mod_cast Nat.lt_of_not_ge hn
-      rw [coeff_eq_zero_of_degree_lt hp_lt]
+      have hp0 : p.coeff n = 0 := coeff_eq_zero_of_degree_lt hp_lt
+      rw [hp0]
       have hn2 : n ≠ 2 := by omega
       have hn1 : n ≠ 1 := by omega
       have hn0 : n ≠ 0 := by omega
-      simp [a, b, c, hn2, hn1, hn0]
+      simp [coeff_C, coeff_X, coeff_X_pow, a, b, c, hn2, hn1, hn0]
   rw [hpform] at hx
   simp [aeval_def] at hx
   let disc : ℚ := b ^ 2 - 4 * a * c
@@ -73,6 +75,8 @@ theorem degree_two_solvable
     dsimp [t]
     field_simp [haC]
     ring
+  have hden : (2 * (a : ℂ)) ∈ solvableByRad ℚ ℂ := by
+    exact (solvableByRad ℚ ℂ).mul_mem (baseMem 2) (baseMem a)
   rw [hxform]
   exact (solvableByRad ℚ ℂ).div_mem
-    ((solvableByRad ℚ ℂ).sub_mem ht (baseMem b)) (baseMem (2 * a))
+    ((solvableByRad ℚ ℂ).sub_mem ht (baseMem b)) hden
