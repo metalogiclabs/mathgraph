@@ -1,0 +1,21 @@
+name: Trace the Ace V175 Asset Dependency Audit
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v175/**'
+      - '.github/workflows/trace-ace-v175-asset-dependency-audit.yml'
+  workflow_dispatch:
+jobs:
+  v175:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: test -f /workspace/V157_RECOVERED_SUBMISSION.zip
+      - name: Audit recovered V157 assets and source dependencies
+        run: python3 experiments/trace_the_ace_v175/run_v175_asset_dependency_audit.py
+      - run: cat /workspace/trace-ace-results/v175/v175_results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v175-results
+          path: /workspace/trace-ace-results/v175/
