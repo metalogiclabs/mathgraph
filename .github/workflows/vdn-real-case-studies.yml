@@ -1,0 +1,42 @@
+name: VDN real case studies
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - vdn-real-case-studies-v01
+    paths:
+      - 'verified-developmental-navigation/**'
+      - '.github/workflows/vdn-real-case-studies.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  real-cases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch immutable real-source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash verified-developmental-navigation/case_studies/scripts/fetch_sources.sh
+      - name: Replay real-data case studies
+        run: python3 verified-developmental-navigation/case_studies/scripts/run_all.py
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check VDN Lean seed
+        working-directory: verified-developmental-navigation/lean
+        run: |
+          lake build
+          lake env lean VerifiedDevelopmentalNavigation/PalomarSeed.lean
+          lake env lean VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean
+          lake env lean VerifiedDevelopmentalNavigation/Routing.lean
+      - name: Upload recomputed results
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-real-case-study-results
+          path: verified-developmental-navigation/case_studies/results/*.json
