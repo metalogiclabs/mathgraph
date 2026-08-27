@@ -4,12 +4,8 @@ namespace VerifiedDevelopmentalNavigation.PalomarSeed
 
 /-!
 A direct VDN instantiation of the finite closure-capability witness submitted to
-Palomar.  This file deliberately keeps the witness tiny: old capability =
-rotation plus LT→LE; extended capability additionally admits AND→OR.
-
-The point is not to re-prove every Palomar packaging theorem.  It is to show
-that the same witness is literally an instance of the generic verified-future
-and verified-reachability core.
+Palomar. This file keeps the witness tiny: old capability = rotation plus
+LT→LE; extended capability additionally admits AND→OR.
 -/
 
 inductive Token where
@@ -53,8 +49,7 @@ private def newStep : NewAction → State → Option State
   | .ltle p, s => some (replaceAt p .LT .LE s)
   | .andor p, s => some (replaceAt p .AND .OR s)
 
-/-- Coordinate observations make every token-level consequence externally
-visible to the verifier. -/
+/-- Coordinate observations make token-level consequences verifier-visible. -/
 def oldWorld : World State Pos OldAction Token where
   observe p s := s p
   step := oldStep
@@ -81,7 +76,7 @@ def target : State
   | .p2 => .B
   | .p3 => .OR
 
-/-- Generic VDN reachability: a target is reachable when some finite admitted
+/-- Generic VDN reachability: a target is reachable when some admitted finite
 action trace executes to it. -/
 def ReachBy {X C A O : Type} (W : World X C A O) (x y : X) : Prop :=
   ∃ trace : List A, W.run trace x = some y
@@ -102,18 +97,6 @@ private theorem noOR_ltle {s : State} (p : Pos) (h : NoOR s) :
     · simp [replaceAt, hs, h p]
   · simp [replaceAt, hqp, h q]
 
-private theorem oldStep_preserves_noOR (a : OldAction) {s t : State}
-    (hstep : oldStep a s = some t) (h : NoOR s) : NoOR t := by
-  cases a with
-  | rot =>
-      simp [oldStep] at hstep
-      subst t
-      exact noOR_rotate h
-  | ltle p =>
-      simp [oldStep] at hstep
-      subst t
-      exact noOR_ltle p h
-
 private theorem oldRun_preserves_noOR (trace : List OldAction) {s t : State}
     (hrun : oldWorld.run trace s = some t) (h : NoOR s) : NoOR t := by
   induction trace generalizing s t with
@@ -122,15 +105,17 @@ private theorem oldRun_preserves_noOR (trace : List OldAction) {s t : State}
       subst t
       exact h
   | cons a as ih =>
-      simp [World.run] at hrun
-      cases hs : oldStep a s with
-      | none => simp [hs] at hrun
-      | some u =>
-          have hu : NoOR u := oldStep_preserves_noOR a hs h
-          exact ih hrun hu
+      cases a with
+      | rot =>
+          have hrun' : oldWorld.run as (rotate s) = some t := by
+            simpa [World.run, oldWorld, oldStep] using hrun
+          exact ih hrun' (noOR_rotate h)
+      | ltle p =>
+          have hrun' : oldWorld.run as (replaceAt p .LT .LE s) = some t := by
+            simpa [World.run, oldWorld, oldStep] using hrun
+          exact ih hrun' (noOR_ltle p h)
 
-/-- Palomar's negative half, now stated directly in the generic VDN reachability
-language: the protected target is outside the old admitted continuation closure. -/
+/-- The protected target is outside the old admitted continuation closure. -/
 theorem old_closure_obstruction : ¬ ReachBy oldWorld start target := by
   intro h
   rcases h with ⟨trace, hrun⟩
@@ -139,14 +124,20 @@ theorem old_closure_obstruction : ¬ ReachBy oldWorld start target := by
     cases p <;> decide)
   exact hno .p3 rfl
 
-/-- Palomar's positive half, now in VDN form: adjoining AND→OR makes the target
-reachable by an explicit two-step continuation. -/
+/-- Adjoining AND→OR makes the target reachable by an explicit two-step
+continuation. -/
 theorem extended_closure_reaches_target : ReachBy newWorld start target := by
+  have e1 : replaceAt .p1 .LT .LE start = afterO1 := by
+    funext p
+    cases p <;> rfl
+  have e2 : replaceAt .p3 .AND .OR afterO1 = target := by
+    funext p
+    cases p <;> rfl
   refine ⟨[.ltle .p1, .andor .p3], ?_⟩
-  rfl
+  simp [World.run, newWorld, newStep, e1, e2]
 
-/-- The seed therefore exhibits a strict verified capability phase change:
-unreachable in the old continuation language, reachable in the extension. -/
+/-- The seed exhibits a strict verified capability phase change: unreachable
+under the old continuation language and reachable under its extension. -/
 theorem strict_verified_capability_growth :
     (¬ ReachBy oldWorld start target) ∧ ReachBy newWorld start target := by
   exact ⟨old_closure_obstruction, extended_closure_reaches_target⟩
