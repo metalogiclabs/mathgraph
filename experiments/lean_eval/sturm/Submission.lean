@@ -24,7 +24,10 @@ theorem signChanges_middle_zero (a c : ℝ) :
 neighbours are known to be opposites, their local contribution is exactly one. -/
 theorem signChanges_opposite_neighbours (a : ℝ) (ha : a ≠ 0) :
     signChanges [a, 0, -a] = 1 := by
-  simp [signChanges, ha, mul_neg_self_lt_zero ha]
+  have hpos : 0 < a * a := mul_self_pos.mpr ha
+  have hneg : a * (-a) < 0 := by
+    nlinarith
+  simp [signChanges, ha, hneg]
 
 /-- Context-composition separator: inserting a zero anywhere in a list does
 not change sign variation. This lifts the zero quotient through arbitrary
