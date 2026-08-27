@@ -47,10 +47,16 @@ jobs:
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/submission/abel_ruffini/Submission.lean" /tmp/abel_ruffini/Submission.lean
           cp -R "$GITHUB_WORKSPACE/competitions/lean_eval/submission/abel_ruffini/Submission/." /tmp/abel_ruffini/Submission/
 
-      - name: Compile exact Submission.lean
+      - name: Build exact Submission target
         working-directory: /tmp/abel_ruffini
         run: |
-          lake env lean Submission.lean | tee /tmp/final-submission.log
+          set -o pipefail
+          lake build Submission 2>&1 | tee /tmp/final-submission.log
+
+      - name: Run workspace test
+        working-directory: /tmp/abel_ruffini
+        run: |
+          lake test 2>&1 | tee /tmp/final-workspace-test.log
 
       - name: Verify no sorry in submitted sources
         run: |
@@ -61,9 +67,11 @@ jobs:
             exit 1
           fi
 
-      - name: Upload verification log
+      - name: Upload verification logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lean-eval-final-submission
-          path: /tmp/final-submission.log
+          path: |
+            /tmp/final-submission.log
+            /tmp/final-workspace-test.log
