@@ -23,3 +23,4 @@ jobs:
         run: |
           lake build
           lake env lean VerifiedDevelopmentalNavigation/PalomarSeed.lean
+          lake env lean VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean
