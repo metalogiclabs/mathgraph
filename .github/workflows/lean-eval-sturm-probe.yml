@@ -1,0 +1,45 @@
+name: LeanEval Sturm probe
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/lean_eval/sturm/**'
+      - '.github/workflows/lean-eval-sturm-probe.yml'
+  workflow_dispatch:
+
+jobs:
+  sturm-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Generate frozen Sturm workspace
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem sturm /tmp/sturm
+          cd /tmp/sturm
+          lake update
+      - name: Install probe
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Submission.lean" /tmp/sturm/Submission.lean
+      - name: Compile and expose residual
+        run: |
+          set +e
+          cd /tmp/sturm
+          lake env lean Submission.lean 2>&1 | tee /tmp/sturm-probe.log
+          code=${PIPESTATUS[0]}
+          echo "sturm_probe_exit=$code"
+          exit 0
+      - name: Upload probe log
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-sturm-probe
+          path: /tmp/sturm-probe.log
