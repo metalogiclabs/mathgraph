@@ -61,7 +61,7 @@ jobs:
               z.extractall('/code_execution')
           PY
           cd /code_execution
-          /usr/bin/time -f 'RUNTIME_SECONDS %e' python main.py
+          python main.py
           cd -
       - name: Validate exact output and seal result
         run: |
