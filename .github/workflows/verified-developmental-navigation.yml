@@ -24,3 +24,4 @@ jobs:
           lake build
           lake env lean VerifiedDevelopmentalNavigation/PalomarSeed.lean
           lake env lean VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean
+          lake env lean VerifiedDevelopmentalNavigation/Routing.lean
