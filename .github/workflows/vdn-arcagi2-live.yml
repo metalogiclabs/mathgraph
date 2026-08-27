@@ -23,13 +23,20 @@ jobs:
           test "$(git rev-parse HEAD)" = "f3283f727488ad98fe575ea6a5ac981e4a188e49"
           test "$(find data/training -name '*.json' | wc -l)" -eq 1000
           test "$(find data/evaluation -name '*.json' | wc -l)" -eq 120
-      - name: Run prospective navigation benchmark
+      - name: Reproduce frozen v1
         run: |
           python3 verified-developmental-navigation/case_studies/arc_agi2_live/run.py \
             /tmp/ARC-AGI-2/data/training \
             /tmp/ARC-AGI-2/data/evaluation
-      - name: Upload result
+      - name: Run residual-driven v2 expansion
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v2.py \
+            /tmp/ARC-AGI-2/data/training \
+            /tmp/ARC-AGI-2/data/evaluation
+      - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: vdn-arc-agi2-live-v1
-          path: verified-developmental-navigation/case_studies/arc_agi2_live/results/result.json
+          name: vdn-arc-agi2-live-v2
+          path: |
+            verified-developmental-navigation/case_studies/arc_agi2_live/results/result.json
+            verified-developmental-navigation/case_studies/arc_agi2_live/results_v2/result.json
