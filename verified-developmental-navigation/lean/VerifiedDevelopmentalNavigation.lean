@@ -204,7 +204,15 @@ theorem run_map (E : ActionExtension W₀ W₁) (trace : List A₀) (x : X) :
   induction trace generalizing x with
   | nil => rfl
   | cons a as ih =>
-      simp [World.run, E.step_preserved, ih]
+      cases h : W₀.step a x with
+      | none =>
+          have hp : W₁.step (E.embed a) x = none := by
+            simpa [h] using E.step_preserved a x
+          simp [World.run, h, hp]
+      | some y =>
+          have hp : W₁.step (E.embed a) x = some y := by
+            simpa [h] using E.step_preserved a x
+          simp [World.run, h, hp, ih y]
 
 /-- Verified capability is monotone under a conservative action-language
 extension: every old reachable target remains reachable. -/
