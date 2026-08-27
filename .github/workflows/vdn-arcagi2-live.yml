@@ -1,0 +1,35 @@
+name: VDN ARC-AGI-2 live
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - vdn-arcagi2-live-v01
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/**'
+      - '.github/workflows/vdn-arcagi2-live.yml'
+
+jobs:
+  arc-agi2-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+          test "$(git rev-parse HEAD)" = "f3283f727488ad98fe575ea6a5ac981e4a188e49"
+          test "$(find data/training -name '*.json' | wc -l)" -eq 1000
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 120
+      - name: Run prospective navigation benchmark
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run.py \
+            /tmp/ARC-AGI-2/data/training \
+            /tmp/ARC-AGI-2/data/evaluation
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-agi2-live-v1
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results/result.json
