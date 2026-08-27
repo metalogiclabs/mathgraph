@@ -1,0 +1,37 @@
+name: VDN ARC retained macros v5
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - vdn-arc-composition-v4
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v5_retention.py'
+      - '.github/workflows/vdn-arc-retention-v5.yml'
+
+jobs:
+  retained-macros:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Test frozen retained macros across source-distinct tasks
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v5_retention.py \
+            /tmp/ARC-AGI-2/data/training /tmp/ARC-AGI-2/data/evaluation \
+            /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-1/data/evaluation
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-retained-macros-v5
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v5_retention/result.json
