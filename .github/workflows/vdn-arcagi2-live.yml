@@ -1,4 +1,4 @@
-name: VDN ARC-AGI-2 live
+name: VDN ARC live navigation
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
       - '.github/workflows/vdn-arcagi2-live.yml'
 
 jobs:
-  arc-agi2-live:
+  arc-live:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -23,20 +23,34 @@ jobs:
           test "$(git rev-parse HEAD)" = "f3283f727488ad98fe575ea6a5ac981e4a188e49"
           test "$(find data/training -name '*.json' | wc -l)" -eq 1000
           test "$(find data/evaluation -name '*.json' | wc -l)" -eq 120
-      - name: Reproduce frozen v1
+      - name: Reproduce ARC-AGI-2 v1
         run: |
           python3 verified-developmental-navigation/case_studies/arc_agi2_live/run.py \
             /tmp/ARC-AGI-2/data/training \
             /tmp/ARC-AGI-2/data/evaluation
-      - name: Run residual-driven v2 expansion
+      - name: Reproduce ARC-AGI-2 v2 residual expansion
         run: |
           python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v2_safe.py \
             /tmp/ARC-AGI-2/data/training \
             /tmp/ARC-AGI-2/data/evaluation
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+          test "$(git rev-parse HEAD)" = "399030444e0ab0cc8b4e199870fb20b863846f34"
+          test "$(find data/training -name '*.json' | wc -l)" -eq 400
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 400
+      - name: Run ARC-AGI-1 reachable-regime transfer
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v3_arc1.py \
+            /tmp/ARC-AGI-1/data/training \
+            /tmp/ARC-AGI-1/data/evaluation
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: vdn-arc-agi2-live-v2
+          name: vdn-arc-live-v3
           path: |
             verified-developmental-navigation/case_studies/arc_agi2_live/results/result.json
             verified-developmental-navigation/case_studies/arc_agi2_live/results_v2/result.json
+            verified-developmental-navigation/case_studies/arc_agi2_live/results_v3_arc1/result.json
