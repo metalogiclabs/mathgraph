@@ -1,8 +1,9 @@
 """V23: induce a representation directly from train input/output traces.
 
-No ring/cross/carrier vocabulary is supplied.  The learner extracts connected
-edit components from training pairs, converts them into color-equivariant local
-patch rewrite rules, freezes those rules, and applies them to held-out inputs.
+No ring/cross/carrier vocabulary is supplied. The learner extracts connected
+edit components from shape-preserving training pairs, converts them into
+color-equivariant local patch rewrite rules, freezes those rules, and applies
+them to held-out inputs.
 
 This is deliberately small: it tests whether the representation generator can
 be moved from designer-authored object names to verifier-observed edit traces.
@@ -10,7 +11,7 @@ Public ARC evaluation data makes this a retrospective diagnostic, not protected
 capability evidence.
 """
 import json, sys
-from collections import Counter, deque
+from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -41,7 +42,6 @@ def canon_patch(inp, out, comp, pad=1):
     is_=[p[0] for p in comp]; js=[p[1] for p in comp]
     a=max(0,min(is_)-pad); b=min(h-1,max(is_)+pad)
     c=max(0,min(js)-pad); d=min(w-1,max(js)+pad)
-    # Canonicalise colors by first occurrence in input patch. Background 0 stays 0.
     cmap={0:0}; nxt=1
     pin=[]; pout=[]; mask=[]
     for i in range(a,b+1):
@@ -62,18 +62,21 @@ def canon_patch(inp, out, comp, pad=1):
 
 
 def learn_rules(task):
-    counts=Counter(); examples={}
+    counts=Counter(); examples={}; usable=0
     for pair in task['train']:
-        x,y=pair['input'],pair['output']; h,w=shape(x)
+        x,y=pair['input'],pair['output']
+        if shape(x)!=shape(y):
+            continue
+        usable+=1; h,w=shape(x)
         changed=[(i,j) for i in range(h) for j in range(w) if x[i][j]!=y[i][j]]
         for comp in comps(changed):
             r=canon_patch(x,y,comp)
             key=(r['in'],r['out'],r['mask'])
             counts[key]+=1; examples[key]=r
-    # Freeze only rules observed at least twice, or all if nothing repeats.
     kept=[k for k,n in counts.items() if n>=2]
     if not kept: kept=list(counts)
-    return [examples[k] | {'support':counts[k]} for k in sorted(kept,key=lambda k:(-counts[k],str(k)))]
+    rules=[examples[k] | {'support':counts[k]} for k in sorted(kept,key=lambda k:(-counts[k],str(k)))]
+    return rules, usable
 
 
 def match_color_equivariant(pat, grid, top, left):
@@ -95,7 +98,6 @@ def apply_rule(z, rule):
         for b in range(w-pw+1):
             m=match_color_equivariant(rule['in'],z,a,b)
             if m is not None: hits.append((a,b,m))
-    # Conservative: only unique matches are actionable.
     if len(hits)!=1: return False
     a,b,m=hits[0]
     for i in range(ph):
@@ -109,34 +111,37 @@ def apply_rule(z, rule):
 def program(rules):
     def f(g):
         z=[list(r) for r in g]
-        any_hit=False
-        # Iterate to fixed point with a hard bound; trace-induced rules are frozen.
         for _ in range(16):
             changed=False
             for r in rules:
                 before=tuple(tuple(x) for x in z)
-                if apply_rule(z,r):
-                    after=tuple(tuple(x) for x in z)
-                    if after!=before: changed=True; any_hit=True
+                if apply_rule(z,r) and tuple(tuple(x) for x in z)!=before:
+                    changed=True
             if not changed: break
-        return tuple(tuple(r) for r in z) if any_hit else tuple(tuple(r) for r in z)
+        return tuple(tuple(r) for r in z)
     return f
 
 
 def eval_task(tid,t):
-    rules=learn_rules(t); p=program(rules)
-    fit=run_v2.v1.exact_on_pairs(p,run_v2.v1.task_pairs(t))
+    rules,usable=learn_rules(t)
+    if usable!=len(t['train']) or not rules:
+        return {'task':tid,'eligible':False,'usable_train_pairs':usable,'rule_count':len(rules),
+                'supports':[r['support'] for r in rules],'demo_fit':False,'heldout_solved':False}
+    p=program(rules)
+    try: fit=run_v2.v1.exact_on_pairs(p,run_v2.v1.task_pairs(t))
+    except Exception: fit=False
     solved=False
     try: solved=run_v2.v1.task_solved(p,t)
     except Exception: pass
-    return {'task':tid,'rule_count':len(rules),'supports':[r['support'] for r in rules],
-            'demo_fit':fit,'heldout_solved':solved}
+    return {'task':tid,'eligible':True,'usable_train_pairs':usable,'rule_count':len(rules),
+            'supports':[r['support'] for r in rules],'demo_fit':fit,'heldout_solved':solved}
 
 
 def main():
     if len(sys.argv)!=2: raise SystemExit('usage run_v23_trace_induced_patch.py EVAL_DIR')
     tasks=run_v2.v1.load_tasks(sys.argv[1])
     rows=[eval_task(tid,t) for tid,t in sorted(tasks.items())]
+    eligible=[r for r in rows if r['eligible']]
     fits=[r['task'] for r in rows if r['demo_fit']]
     solves=[r['task'] for r in rows if r['heldout_solved']]
     target=next(r for r in rows if r['task']=='d35bdbdc')
@@ -146,11 +151,12 @@ def main():
       'meta_move':'INDUCE_REPRESENTATION_FROM_VERIFIER_EDIT_TRACES',
       'generator':'connected edit components -> padded local patches -> color-equivariant rewrite templates; repeated templates preferred; unique-match application',
       'designer_object_vocabulary':[],
-      'task_count':len(rows),'demonstration_fit_count':len(fits),'heldout_solved_count':len(solves),
+      'task_count':len(rows),'eligible_shape_preserving_tasks':len(eligible),
+      'demonstration_fit_count':len(fits),'heldout_solved_count':len(solves),
       'fit_ids':fits,'heldout_solved_ids':solves,'target':target,
       'source_distinct_solved_ids':[x for x in solves if x!='d35bdbdc'],
-      'claim_boundary':'Rules are induced only from each task training input/output traces, but the ARC evaluation corpus is public and this lineage has inspected held-out outputs. Treat as retrospective mechanism evidence only.',
-      'next_gate':'If this yields any source-distinct solve, freeze the generator exactly and rerun on a genuinely protected source/split; otherwise inspect whether failure is matching, decomposition, or action composition before adding ontology.' ,
+      'claim_boundary':'Rules are induced only from each task training input/output traces. V23 is defined only for tasks whose train pairs preserve grid shape. The ARC evaluation corpus is public and this lineage has inspected held-out outputs, so treat results as retrospective mechanism evidence only.',
+      'next_gate':'If this yields source-distinct solves, freeze the generator and transfer it unchanged. If not, classify failure into edit decomposition, equivariant matching, or rewrite composition before introducing any new object vocabulary.',
       'rows':rows}
     out=HERE/'results_v23_trace_induced_patch'; out.mkdir(exist_ok=True)
     (out/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True))
