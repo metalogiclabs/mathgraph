@@ -1,0 +1,29 @@
+name: Trace the Ace V180 Dual Channel Gate
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v180/**'
+      - '.github/workflows/trace-ace-v180-dual-channel-gate.yml'
+  workflow_dispatch:
+jobs:
+  v180:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run dual-channel support-gated test
+        run: python3 experiments/trace_the_ace_v180/run_v180_dual_channel_gate.py
+      - name: Show result
+        if: always()
+        run: cat /workspace/trace-ace-results/v180/v180_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v180-results
+          path: /workspace/trace-ace-results/v180/
+          if-no-files-found: warn
