@@ -1,0 +1,29 @@
+name: Trace the Ace V184 Geometry Stability
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v184/**'
+      - '.github/workflows/trace-ace-v184-geometry-stability.yml'
+  workflow_dispatch:
+jobs:
+  v184:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run geometry stability scale test
+        run: python3 experiments/trace_the_ace_v184/run_v184_geometry_stability.py
+      - name: Show result
+        if: always()
+        run: cat /workspace/trace-ace-results/v184/v184_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v184-results
+          path: /workspace/trace-ace-results/v184/
+          if-no-files-found: warn
