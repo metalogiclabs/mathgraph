@@ -1,0 +1,29 @@
+name: VDN ARC-AGI-2 relational actions v10
+
+on:
+  push:
+    branches: [vdn-arc2-relational-v9]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v10_relational_actions.py'
+      - '.github/workflows/vdn-arc2-relational-v10.yml'
+  workflow_dispatch:
+
+jobs:
+  relational-actions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 120
+      - name: Test pairwise relational actions
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v10_relational_actions.py /tmp/ARC-AGI-2/data/evaluation
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-relational-actions-v10
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v10_relational_actions/result.json
