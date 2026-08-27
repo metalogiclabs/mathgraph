@@ -151,7 +151,7 @@ def main():
     champs=[]
     for r in finalists:
         c=tuple(r['combo']); Tr=np.column_stack([A]+[mod_oof[k] for k in c]); Ec=np.column_stack([Bchamp]+[mod_eval[k][champ_start:] for k in c])
-        p,m=eval_candidate(Tr,Ec,y,ychamp,.1); pb=base_model.predict_proba(Bchamp)[:,1]; bm=metric(ychamp,p)
+        p,m=eval_candidate(Tr,Ec,y,ychamp,.1); pb=base_model.predict_proba(Bchamp)[:,1]; bm=metric(ychamp,pb)
         champs.append({'combo':list(c),'metric':m,'base':bm,'delta_logloss':m['logloss']-bm['logloss'],'delta_auc':m['auc']-bm['auc']})
     champs.sort(key=lambda r:r['metric']['logloss']); winner=champs[0]
     decision='TOURNAMENT_WINNER__PROMOTE' if winner['delta_logloss']<=-0.002 else ('SMALL_WIN__USE_V184' if winner['delta_logloss']<0 else 'NO_WIN__V184_REMAINS')
