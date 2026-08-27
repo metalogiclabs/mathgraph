@@ -1,0 +1,27 @@
+name: Verified Developmental Navigation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - verified-developmental-navigation-v01
+    paths:
+      - 'verified-developmental-navigation/**'
+      - '.github/workflows/verified-developmental-navigation.yml'
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build VDN core
+        working-directory: verified-developmental-navigation/lean
+        run: |
+          lake build
+          lake env lean VerifiedDevelopmentalNavigation/PalomarSeed.lean
+          lake env lean VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean
+          lake env lean VerifiedDevelopmentalNavigation/Routing.lean
