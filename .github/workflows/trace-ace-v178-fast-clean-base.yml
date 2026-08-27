@@ -1,0 +1,30 @@
+name: Trace the Ace V178 Fast Clean Base
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v178/**'
+      - '.github/workflows/trace-ace-v178-fast-clean-base.yml'
+jobs:
+  v178:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check inputs
+        run: |
+          test -f /workspace/V157_RECOVERED_SUBMISSION.zip
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Run fast clean base separator
+        run: python3 experiments/trace_the_ace_v178/run_v178_fast_clean_base.py
+      - name: Show result
+        if: always()
+        run: cat /workspace/trace-ace-results/v178/v178_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v178-results
+          path: /workspace/trace-ace-results/v178/
+          if-no-files-found: warn
