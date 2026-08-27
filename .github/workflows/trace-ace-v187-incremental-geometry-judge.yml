@@ -1,0 +1,37 @@
+name: Trace the Ace V187 Incremental Geometry Judge
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/trace_the_ace_v187/**'
+      - '.github/workflows/trace-ace-v187-incremental-geometry-judge.yml'
+  workflow_dispatch:
+
+jobs:
+  v187:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check inputs and headers
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          python - <<'PY'
+          import pandas as pd
+          x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv',nrows=2)
+          y=pd.read_csv('/workspace/trace_the_ace/train_labels_44ujmj2.csv',nrows=2)
+          print('FEATURE_HEADERS',list(x.columns)); print('LABEL_HEADERS',list(y.columns))
+          PY
+      - name: Run frozen incremental judge
+        run: python experiments/trace_the_ace_v187/run_v187_incremental_geometry_judge.py
+      - name: Show result
+        if: always()
+        run: test -f /workspace/trace-ace-results/v187/v187_results.json && cat /workspace/trace-ace-results/v187/v187_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v187-results
+          path: /workspace/trace-ace-results/v187/
+          if-no-files-found: warn
