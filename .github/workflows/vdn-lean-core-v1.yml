@@ -11,11 +11,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Build theorem core
+      - name: Install elan
         run: |
-          if [ -f lakefile.lean ] || [ -f lakefile.toml ]; then
-            lake env lean verified-developmental-navigation/lean/MinimalSufficientInterface.lean
-          else
-            echo 'No root Lake project found'
-            exit 2
-          fi
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build theorem core in pinned mathlib project
+        working-directory: experiments/continuation_claim_audit_lab/lean_project
+        run: |
+          lake update
+          lake env lean ../../../verified-developmental-navigation/lean/MinimalSufficientInterface.lean
