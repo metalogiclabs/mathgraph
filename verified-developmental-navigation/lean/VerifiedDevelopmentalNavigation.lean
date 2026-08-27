@@ -11,8 +11,8 @@ same definedness and, whenever both traces survive, every protected verifier
 observation agrees.
 
 The key design choice is that definedness is part of the future semantics even
-when there are no observation contexts.  This makes lawful-continuation
-identity independent of an accidental `Nonempty C` assumption.
+when there are no observation contexts. This makes lawful-continuation identity
+independent of an accidental `Nonempty C` assumption.
 -/
 
 structure World (X C A O : Type) where
@@ -39,8 +39,8 @@ def run : List A → X → Option X
 
 /-- Two partial outcomes have the same verified meaning.
 
-Undefined must match undefined.  If both survive, every protected observation
-must agree.  Mixed defined/undefined outcomes are always distinguishable. -/
+Undefined must match undefined. If both survive, every protected observation
+must agree. Mixed defined/undefined outcomes are always distinguishable. -/
 def OutcomeEq : Option X → Option X → Prop
   | none, none => True
   | some x, some y => ∀ c : C, W.observe c x = W.observe c y
@@ -106,7 +106,7 @@ def FutureSufficient (R : X → X → Prop) : Prop :=
 /-- Minimal Verified Sufficient-State Theorem.
 
 Every relation safe for quotienting with respect to all protected verified
-futures refines `FutureEq`.  Thus `FutureEq` is the greatest safe relation and
+futures refines `FutureEq`. Thus `FutureEq` is the greatest safe relation and
 its quotient is the coarsest safe state representation. -/
 theorem futureEq_greatest_future_sufficient
     {R : X → X → Prop} (hR : W.FutureSufficient R) :
@@ -148,7 +148,9 @@ theorem futureEq_step {x y : X} (hxy : W.FutureEq x y) (a : A) :
   cases hx : W.step a x with
   | none =>
       cases hy : W.step a y with
-      | none => exact Or.inl ⟨hx, hy⟩
+      | none =>
+          left
+          exact ⟨rfl, rfl⟩
       | some y' =>
           exfalso
           have h := hxy [a]
@@ -161,11 +163,11 @@ theorem futureEq_step {x y : X} (hxy : W.FutureEq x y) (a : A) :
           simp [run, hx, hy, OutcomeEq] at h
       | some y' =>
           right
-          refine ⟨x', y', hx, hy, ?_⟩
+          refine ⟨x', y', rfl, rfl, ?_⟩
           intro trace
           simpa [run, hx, hy] using hxy (a :: trace)
 
-/-- Every admitted action respects verified-future equivalence.  This is the
+/-- Every admitted action respects verified-future equivalence. This is the
 congruence fact needed to descend lawful actions to the quotient. -/
 theorem step_respects_futureEq {x y : X} (hxy : W.FutureEq x y) (a : A) :
     match W.step a x, W.step a y with
