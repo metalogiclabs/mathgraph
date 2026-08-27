@@ -27,8 +27,13 @@ jobs:
           PY
           test -d /workspace/trace_the_ace/transcripts_extracted
           test -f /workspace/trace-ace-work/v185/feature_cache.pkl
-      - name: Build full-data V184 plus session ability package
-        run: python experiments/trace_the_ace_v190/run_v190_submission_build.py
+      - name: Reuse or build full-data V184 plus session ability package
+        run: |
+          if test -f /workspace/trace-ace-results/v190/trace_ace_v190_mastery_geometry_session_ability_submission.zip && test -f /workspace/trace-ace-work/v190/package/v190_assets.joblib; then
+            echo REUSE_COMPLETED_V190_ASSETS
+          else
+            python experiments/trace_the_ace_v190/run_v190_submission_build.py
+          fi
       - name: Run exact code_execution smoke harness
         run: |
           python - <<'PY'
@@ -50,7 +55,11 @@ jobs:
           (data/'test_transcripts').symlink_to(src,target_is_directory=True)
           print('HARNESS_ROWS',len(t),'HARNESS_SESSIONS',t.session_id.nunique())
           PY
-          unzip -q /workspace/trace-ace-results/v190/trace_ace_v190_mastery_geometry_session_ability_submission.zip -d /code_execution
+          python - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile('/workspace/trace-ace-results/v190/trace_ace_v190_mastery_geometry_session_ability_submission.zip') as z:
+              z.extractall('/code_execution')
+          PY
           cd /code_execution
           /usr/bin/time -f 'RUNTIME_SECONDS %e' python main.py
           cd -
