@@ -4,8 +4,8 @@ namespace VerifiedDevelopmentalNavigation.PalomarSeed
 
 /-!
 A direct VDN instantiation of the finite closure-capability witness submitted to
-Palomar. This file keeps the witness tiny: old capability = rotation plus
-LT→LE; extended capability additionally admits AND→OR.
+Palomar. Old capability = rotation plus LT→LE; extended capability additionally
+admits AND→OR.
 -/
 
 inductive Token where
@@ -58,6 +58,17 @@ def newWorld : World State Pos NewAction Token where
   observe p s := s p
   step := newStep
 
+private def embedOld : OldAction → NewAction
+  | .rot => .rot
+  | .ltle p => .ltle p
+
+/-- The new action language is a conservative extension of the old one. -/
+def oldToNew : ActionExtension oldWorld newWorld where
+  embed := embedOld
+  step_preserved := by
+    intro a s
+    cases a <;> rfl
+
 def start : State
   | .p0 => .A
   | .p1 => .LT
@@ -75,11 +86,6 @@ def target : State
   | .p1 => .LE
   | .p2 => .B
   | .p3 => .OR
-
-/-- Generic VDN reachability: a target is reachable when some admitted finite
-action trace executes to it. -/
-def ReachBy {X C A O : Type} (W : World X C A O) (x y : X) : Prop :=
-  ∃ trace : List A, W.run trace x = some y
 
 private def NoOR (s : State) : Prop := ∀ p, s p ≠ .OR
 
@@ -116,7 +122,7 @@ private theorem oldRun_preserves_noOR (trace : List OldAction) {s t : State}
           exact ih hrun' (noOR_ltle p h)
 
 /-- The protected target is outside the old admitted continuation closure. -/
-theorem old_closure_obstruction : ¬ ReachBy oldWorld start target := by
+theorem old_closure_obstruction : ¬ oldWorld.Reachable start target := by
   intro h
   rcases h with ⟨trace, hrun⟩
   have hno : NoOR target := oldRun_preserves_noOR trace hrun (by
@@ -124,9 +130,8 @@ theorem old_closure_obstruction : ¬ ReachBy oldWorld start target := by
     cases p <;> decide)
   exact hno .p3 rfl
 
-/-- Adjoining AND→OR makes the target reachable by an explicit two-step
-continuation. -/
-theorem extended_closure_reaches_target : ReachBy newWorld start target := by
+/-- Adjoining AND→OR makes the target reachable by an explicit two-step trace. -/
+theorem extended_closure_reaches_target : newWorld.Reachable start target := by
   have e1 : replaceAt .p1 .LT .LE start = afterO1 := by
     funext p
     cases p <;> rfl
@@ -136,10 +141,16 @@ theorem extended_closure_reaches_target : ReachBy newWorld start target := by
   refine ⟨[.ltle .p1, .andor .p3], ?_⟩
   simp [World.run, newWorld, newStep, e1, e2]
 
-/-- The seed exhibits a strict verified capability phase change: unreachable
-under the old continuation language and reachable under its extension. -/
+/-- Every old reachable state remains reachable after extension. -/
+theorem old_capability_retained {y : State} :
+    oldWorld.Reachable start y → newWorld.Reachable start y := by
+  exact oldToNew.reachability_monotone
+
+/-- The seed exhibits a strict verified capability phase change: old capability
+is retained, while the extension reaches a protected target the old language
+provably cannot reach. -/
 theorem strict_verified_capability_growth :
-    (¬ ReachBy oldWorld start target) ∧ ReachBy newWorld start target := by
+    (¬ oldWorld.Reachable start target) ∧ newWorld.Reachable start target := by
   exact ⟨old_closure_obstruction, extended_closure_reaches_target⟩
 
 end VerifiedDevelopmentalNavigation.PalomarSeed
