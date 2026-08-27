@@ -1,0 +1,6 @@
+name = "verified-developmental-navigation"
+version = "0.1.0"
+defaultTargets = ["VerifiedDevelopmentalNavigation"]
+
+[[lean_lib]]
+name = "VerifiedDevelopmentalNavigation"
