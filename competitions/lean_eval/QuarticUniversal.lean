@@ -107,8 +107,8 @@ private theorem depressed_quartic_root_solvable
         rw [hQsq, ← hs2]
       ring_nf at hQsq' ⊢
       rw [hQsq']
-      linear_combination
-        -(4 * s ^ 2 * y ^ 2 + 4 * (P : ℂ) * y ^ 2 + 4 * (Q : ℂ) * y + 4 * y ^ 4 + z ^ 2) * hs2'
+      rw [← hs2']
+      ring
     have hfac:
         (y ^ 2 + s * y + z / 2 - (Q : ℂ) / (2 * s)) *
           (y ^ 2 - s * y + z / 2 + (Q : ℂ) / (2 * s)) = 0 := by
