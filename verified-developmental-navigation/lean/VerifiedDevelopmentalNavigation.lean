@@ -184,6 +184,43 @@ theorem step_respects_futureEq {x y : X} (hxy : W.FutureEq x y) (a : A) :
 def Reachable (x y : X) : Prop :=
   ∃ trace : List A, W.run trace x = some y
 
+/-- A declared search boundary is a predicate on finite action traces.  It can
+encode a depth, cost, grammar, resource, or any other explicit admissibility
+boundary. -/
+abbrev TraceBoundary := List A → Prop
+
+/-- Reachability relative to an explicit declared boundary. -/
+def ReachableWithin (B : TraceBoundary (A := A)) (x y : X) : Prop :=
+  ∃ trace : List A, B trace ∧ W.run trace x = some y
+
+/-- A finite trace list is a complete cover of a declared boundary when every
+trace admitted by the boundary occurs in the list.  This is intentionally
+boundary-relative: it says nothing about traces outside `B`. -/
+def CompleteCover (B : TraceBoundary (A := A)) (cover : List (List A)) : Prop :=
+  ∀ trace : List A, B trace → trace ∈ cover
+
+/-- CompleteCover bounded-impossibility theorem.
+
+If `cover` exhausts the declared boundary and every covered trace fails to reach
+`target`, then the target is unreachable *within that boundary*.  No global
+impossibility claim is licensed. -/
+theorem unreachableWithin_of_completeCover
+    (B : TraceBoundary (A := A)) (cover : List (List A)) (start target : X)
+    (hcover : CompleteCover B cover)
+    (hfail : ∀ trace ∈ cover, W.run trace start ≠ some target) :
+    ¬ W.ReachableWithin B start target := by
+  intro hreach
+  rcases hreach with ⟨trace, hB, hrun⟩
+  have hmem : trace ∈ cover := hcover trace hB
+  exact (hfail trace hmem) hrun
+
+/-- Enlarging a declared boundary can only enlarge bounded reachability. -/
+theorem reachableWithin_mono {B₀ B₁ : TraceBoundary (A := A)}
+    (hB : ∀ trace, B₀ trace → B₁ trace) {x y : X}
+    (h : W.ReachableWithin B₀ x y) : W.ReachableWithin B₁ x y := by
+  rcases h with ⟨trace, hb, hrun⟩
+  exact ⟨trace, hB trace hb, hrun⟩
+
 end World
 
 /-- A conservative action-language extension embeds every old action into the
