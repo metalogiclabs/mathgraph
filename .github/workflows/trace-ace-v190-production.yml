@@ -1,0 +1,100 @@
+name: Trace the Ace V190 Production Build and Exact Harness
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/trace_the_ace_v190/**'
+      - '.github/workflows/trace-ace-v190-production.yml'
+  workflow_dispatch:
+
+jobs:
+  v190:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect authoritative inputs
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          paths=[
+            '/workspace/trace_the_ace/train_features_TMQTWsB.csv',
+            '/workspace/trace_the_ace/train_labels_44ujmj2.csv',
+          ]
+          for p in paths:
+              z=pd.read_csv(p,nrows=3)
+              print(p,z.columns.tolist(),z.shape)
+          PY
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          test -f /workspace/trace-ace-work/v185/feature_cache.pkl
+      - name: Build full-data V184 plus session ability package
+        run: python experiments/trace_the_ace_v190/run_v190_submission_build.py
+      - name: Run exact code_execution smoke harness
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil, pandas as pd
+          root=Path('/code_execution')
+          if str(root.resolve())!='/code_execution':
+              raise RuntimeError('unsafe harness target')
+          if root.exists():
+              shutil.rmtree(root)
+          data=root/'data'; data.mkdir(parents=True)
+          x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv')
+          print('TRAIN_FEATURE_HEADERS',x.columns.tolist())
+          sessions=x.session_id.astype(str).drop_duplicates().iloc[:100]
+          t=x[x.session_id.astype(str).isin(set(sessions))].copy()
+          t.to_csv(data/'test_features.csv',index=False)
+          pd.DataFrame({'response_id':t.response_id,'is_correct':0.5}).to_csv(data/'submission_format.csv',index=False)
+          src=Path('/workspace/trace_the_ace/transcripts_extracted')
+          (data/'test_transcripts').symlink_to(src,target_is_directory=True)
+          print('HARNESS_ROWS',len(t),'HARNESS_SESSIONS',t.session_id.nunique())
+          PY
+          unzip -q /workspace/trace-ace-results/v190/trace_ace_v190_mastery_geometry_session_ability_submission.zip -d /code_execution
+          cd /code_execution
+          /usr/bin/time -f 'RUNTIME_SECONDS %e' python main.py
+          cd -
+      - name: Validate exact output and seal result
+        run: |
+          python - <<'PY'
+          import hashlib, json, math, zipfile
+          from pathlib import Path
+          import numpy as np, pandas as pd
+          pkg=Path('/workspace/trace-ace-results/v190/trace_ace_v190_mastery_geometry_session_ability_submission.zip')
+          with zipfile.ZipFile(pkg) as z:
+              names=z.namelist()
+          print('ZIP_MEMBERS',names)
+          if 'main.py' not in names or 'v190_assets.joblib' not in names:
+              raise RuntimeError('package root contract failed')
+          x=pd.read_csv('/code_execution/data/test_features.csv')
+          s=pd.read_csv('/code_execution/submission.csv')
+          print('TEST_HEADERS',x.columns.tolist())
+          print('SUBMISSION_HEADERS',s.columns.tolist())
+          if list(s.columns)!=['response_id','is_correct']:
+              raise RuntimeError('submission columns failed')
+          if len(s)!=len(x) or s.response_id.astype(str).tolist()!=x.response_id.astype(str).tolist():
+              raise RuntimeError('row/id parity failed')
+          p=s.is_correct.to_numpy(float)
+          if not np.isfinite(p).all() or not ((p>0)&(p<1)).all():
+              raise RuntimeError('probability validity failed')
+          rp=Path('/workspace/trace-ace-results/v190/v190_results.json')
+          r=json.loads(rp.read_text())
+          r.update({
+            'exact_harness_rows':len(s),
+            'submission_headers':list(s.columns),
+            'probability_min':float(p.min()),
+            'probability_max':float(p.max()),
+            'package_sha256':hashlib.sha256(pkg.read_bytes()).hexdigest(),
+            'package_members':names,
+            'decision':'SUBMISSION_READY__EXACT_HARNESS_PASS'
+          })
+          rp.write_text(json.dumps(r,indent=2))
+          print(json.dumps(r,indent=2))
+          PY
+      - name: Upload production package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-the-ace-v190-production
+          path: /workspace/trace-ace-results/v190/
+          if-no-files-found: warn
