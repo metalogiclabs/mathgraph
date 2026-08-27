@@ -1,0 +1,29 @@
+name: VDN ARC-AGI-2 relational roles v9
+
+on:
+  push:
+    branches: [vdn-arc2-relational-v9]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v9_relational_roles.py'
+      - '.github/workflows/vdn-arc2-relational-v9.yml'
+  workflow_dispatch:
+
+jobs:
+  relational-roles:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 120
+      - name: Test pairwise relational role interface
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v9_relational_roles.py /tmp/ARC-AGI-2/data/evaluation
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-relational-roles-v9
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v9_relational_roles/result.json
