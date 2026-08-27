@@ -27,6 +27,7 @@ jobs:
           lake exe lean-eval start-problem sturm /tmp/sturm
           cd /tmp/sturm
           lake update
+          lake build ChallengeDeps Challenge
       - name: Install probe
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Submission.lean" /tmp/sturm/Submission.lean
@@ -34,7 +35,7 @@ jobs:
         run: |
           set +e
           cd /tmp/sturm
-          lake env lean Submission.lean 2>&1 | tee /tmp/sturm-probe.log
+          lake build Submission 2>&1 | tee /tmp/sturm-probe.log
           code=${PIPESTATUS[0]}
           echo "sturm_probe_exit=$code"
           exit 0
