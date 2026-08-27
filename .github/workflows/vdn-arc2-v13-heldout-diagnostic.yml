@@ -1,7 +1,10 @@
 name: VDN ARC-AGI-2 v13 heldout diagnostic
 on:
   push:
-    branches: [vdn-arc2-meta-v11]
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/diagnose_v13_heldout.py'
+      - '.github/workflows/vdn-arc2-v13-heldout-diagnostic.yml'
   workflow_dispatch:
 permissions:
   contents: read
