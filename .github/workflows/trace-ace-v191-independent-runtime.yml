@@ -1,0 +1,102 @@
+name: Trace the Ace V191 Independent Mastery Official Runtime
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/trace_the_ace_v191/**'
+      - '.github/workflows/trace-ace-v191-independent-runtime.yml'
+  workflow_dispatch:
+
+jobs:
+  v191:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify authoritative inputs
+        run: |
+          set -euxo pipefail
+          python - <<'PY'
+          import pandas as pd
+          x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv',nrows=3)
+          y=pd.read_csv('/workspace/trace_the_ace/train_labels_44ujmj2.csv',nrows=3)
+          print('FEATURE_HEADERS',list(x.columns)); print('LABEL_HEADERS',list(y.columns))
+          PY
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          test -f /workspace/trace-ace-work/v185/feature_cache.pkl
+      - name: Run independent-response mastery tournament and build
+        run: python experiments/trace_the_ace_v191/run_v191_independent_mastery.py
+      - name: Exact official-format harness
+        run: |
+          set -euxo pipefail
+          rm -rf /tmp/v191_code_execution
+          mkdir -p /tmp/v191_code_execution/data/test_transcripts
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd, shutil
+          root=Path('/tmp/v191_code_execution'); data=root/'data'
+          x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv')
+          sess=x.session_id.astype(str).drop_duplicates().iloc[:40]
+          t=x[x.session_id.astype(str).isin(set(sess))].copy().reset_index(drop=True)
+          t.to_csv(data/'test_features.csv',index=False)
+          pd.DataFrame({'response_id':t.response_id.astype(str),'probability':0.5}).to_csv(data/'submission_format.csv',index=False)
+          src=Path('/workspace/trace_the_ace/transcripts_extracted')
+          for sid in sess:
+            p=src/f'{sid}.csv'
+            if not p.exists():
+              xs=list(src.glob(f'**/{sid}.csv')); p=xs[0]
+            shutil.copy2(p,data/'test_transcripts'/f'{sid}.csv')
+          print('HARNESS_ROWS',len(t),'HARNESS_SESSIONS',t.session_id.nunique())
+          PY
+          python - <<'PY'
+          from zipfile import ZipFile
+          z='/workspace/trace-ace-results/v191/trace_ace_v191_independent_transcript_mastery_submission.zip'
+          with ZipFile(z) as q: q.extractall('/tmp/v191_code_execution')
+          PY
+          cd /tmp/v191_code_execution
+          python main.py
+          python - <<'PY'
+          import pandas as pd, numpy as np
+          x=pd.read_csv('data/submission_format.csv'); s=pd.read_csv('submission.csv')
+          print('FORMAT_HEADERS',list(x.columns)); print('OUTPUT_HEADERS',list(s.columns))
+          assert list(s.columns)==['response_id','probability']
+          assert s.response_id.astype(str).tolist()==x.response_id.astype(str).tolist()
+          p=s.probability.to_numpy(float); assert np.isfinite(p).all(); assert ((p>=0)&(p<=1)).all()
+          print('OFFICIAL_FORMAT_PASS',len(s),float(p.min()),float(p.max()))
+          PY
+      - name: Independent-sample invariance test
+        run: |
+          set -euxo pipefail
+          cd /tmp/v191_code_execution
+          cp submission.csv /tmp/full.csv
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+          d=Path('data'); x=pd.read_csv(d/'test_features.csv'); f=pd.read_csv(d/'submission_format.csv')
+          one=x.iloc[[0]].copy(); one.to_csv(d/'test_features.csv',index=False)
+          f[f.response_id.astype(str)==str(one.iloc[0].response_id)].to_csv(d/'submission_format.csv',index=False)
+          PY
+          python main.py
+          python - <<'PY'
+          import pandas as pd
+          a=pd.read_csv('/tmp/full.csv'); b=pd.read_csv('submission.csv'); rid=str(b.iloc[0].response_id)
+          pa=float(a[a.response_id.astype(str)==rid].iloc[0].probability); pb=float(b.iloc[0].probability)
+          print('INDEPENDENCE_PARITY',rid,pa,pb,abs(pa-pb)); assert abs(pa-pb)<1e-12
+          PY
+      - name: Seal result
+        run: |
+          python - <<'PY'
+          import json, hashlib, zipfile
+          from pathlib import Path
+          p=Path('/workspace/trace-ace-results/v191/trace_ace_v191_independent_transcript_mastery_submission.zip')
+          r=json.loads(Path('/workspace/trace-ace-results/v191/v191_results.json').read_text())
+          with zipfile.ZipFile(p) as z: names=z.namelist()
+          r.update({'package_members':names,'package_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'official_format_harness':'PASS','independent_sample_invariance':'PASS','decision':'SUBMISSION_READY__ONE_PLATFORM_SMOKE'})
+          Path('/workspace/trace-ace-results/v191/v191_results.json').write_text(json.dumps(r,indent=2)); print(json.dumps(r,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v191-independent-production
+          path: /workspace/trace-ace-results/v191/
+          if-no-files-found: warn
