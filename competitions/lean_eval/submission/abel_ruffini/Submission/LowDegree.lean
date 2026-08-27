@@ -24,8 +24,9 @@ theorem degree_one_solvable
       have hp0 : p.coeff n = 0 := coeff_eq_zero_of_degree_lt hp_lt
       rw [hp0]
       have hn1 : n ≠ 1 := by omega
+      have hn1' : 1 ≠ n := by omega
       have hn0 : n ≠ 0 := by omega
-      simp [coeff_C, coeff_X, a, b, hn1, hn0]
+      simp [coeff_C, coeff_X, a, b, hn1, hn1', hn0]
   rw [hpform] at hx
   simp [aeval_def] at hx
   have haC : (a : ℂ) ≠ 0 := by exact_mod_cast hlead
@@ -55,9 +56,11 @@ theorem degree_two_solvable
       have hp0 : p.coeff n = 0 := coeff_eq_zero_of_degree_lt hp_lt
       rw [hp0]
       have hn2 : n ≠ 2 := by omega
+      have hn2' : 2 ≠ n := by omega
       have hn1 : n ≠ 1 := by omega
+      have hn1' : 1 ≠ n := by omega
       have hn0 : n ≠ 0 := by omega
-      simp [coeff_C, coeff_X, coeff_X_pow, a, b, c, hn2, hn1, hn0]
+      simp [coeff_C, coeff_X, coeff_X_pow, a, b, c, hn2, hn2', hn1, hn1', hn0]
   rw [hpform] at hx
   simp [aeval_def] at hx
   let disc : ℚ := b ^ 2 - 4 * a * c
