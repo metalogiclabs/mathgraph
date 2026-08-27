@@ -24,17 +24,22 @@ jobs:
           PY
           test -d /workspace/trace_the_ace/transcripts_extracted
           test -f /workspace/trace-ace-work/v185/feature_cache.pkl
-      - name: Run independent-response mastery tournament and build
-        run: python experiments/trace_the_ace_v191/run_v191_independent_mastery.py
-      - name: Exact official-format harness
+      - name: Reuse or build independent-response mastery package
+        run: |
+          if test -f /workspace/trace-ace-results/v191/trace_ace_v191_independent_transcript_mastery_submission.zip && test -f /workspace/trace-ace-results/v191/v191_results.json; then
+            echo REUSE_COMPLETED_V191_BUILD
+          else
+            python experiments/trace_the_ace_v191/run_v191_independent_mastery.py
+          fi
+      - name: Exact official /code_execution format harness
         run: |
           set -euxo pipefail
-          rm -rf /tmp/v191_code_execution
-          mkdir -p /tmp/v191_code_execution/data/test_transcripts
+          rm -rf /code_execution
+          mkdir -p /code_execution/data/test_transcripts
           python - <<'PY'
           from pathlib import Path
           import pandas as pd, shutil
-          root=Path('/tmp/v191_code_execution'); data=root/'data'
+          root=Path('/code_execution'); data=root/'data'
           x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv')
           sess=x.session_id.astype(str).drop_duplicates().iloc[:40]
           t=x[x.session_id.astype(str).isin(set(sess))].copy().reset_index(drop=True)
@@ -47,13 +52,14 @@ jobs:
               xs=list(src.glob(f'**/{sid}.csv')); p=xs[0]
             shutil.copy2(p,data/'test_transcripts'/f'{sid}.csv')
           print('HARNESS_ROWS',len(t),'HARNESS_SESSIONS',t.session_id.nunique())
+          print('FORMAT_HEADERS',pd.read_csv(data/'submission_format.csv',nrows=1).columns.tolist())
           PY
           python - <<'PY'
           from zipfile import ZipFile
           z='/workspace/trace-ace-results/v191/trace_ace_v191_independent_transcript_mastery_submission.zip'
-          with ZipFile(z) as q: q.extractall('/tmp/v191_code_execution')
+          with ZipFile(z) as q: q.extractall('/code_execution')
           PY
-          cd /tmp/v191_code_execution
+          cd /code_execution
           python main.py
           python - <<'PY'
           import pandas as pd, numpy as np
@@ -67,8 +73,8 @@ jobs:
       - name: Independent-sample invariance test
         run: |
           set -euxo pipefail
-          cd /tmp/v191_code_execution
-          cp submission.csv /tmp/full.csv
+          cd /code_execution
+          cp submission.csv /tmp/v191_full.csv
           python - <<'PY'
           import pandas as pd
           from pathlib import Path
@@ -79,7 +85,7 @@ jobs:
           python main.py
           python - <<'PY'
           import pandas as pd
-          a=pd.read_csv('/tmp/full.csv'); b=pd.read_csv('submission.csv'); rid=str(b.iloc[0].response_id)
+          a=pd.read_csv('/tmp/v191_full.csv'); b=pd.read_csv('submission.csv'); rid=str(b.iloc[0].response_id)
           pa=float(a[a.response_id.astype(str)==rid].iloc[0].probability); pb=float(b.iloc[0].probability)
           print('INDEPENDENCE_PARITY',rid,pa,pb,abs(pa-pb)); assert abs(pa-pb)<1e-12
           PY
