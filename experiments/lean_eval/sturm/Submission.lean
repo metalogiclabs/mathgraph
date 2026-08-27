@@ -4,12 +4,12 @@ open LeanEval.Algebra
 open Polynomial
 open scoped Classical
 
-/-- First decisive probe for LeanEval `sturm`: push only the existing imported
-surface and expose the residual after unfolding the public variation wrapper. -/
-theorem sturm_probe (p : ℝ[X]) (hp : Squarefree p) {a b : ℝ} (hab : a < b)
-    (ha : p.eval a ≠ 0) (hb : p.eval b ≠ 0) :
-    ((p.roots.toFinset).filter (fun x => a < x ∧ x < b)).card =
-      sigma p a - sigma p b := by
-  classical
-  simp only [sigma]
-  aesop
+/-- Local Sturm invariant: at a zero of the middle polynomial, the next
+negated remainder evaluates to the negative of the preceding polynomial. -/
+theorem sturm_remainder_eval_at_root (a b : ℝ[X]) (x : ℝ)
+    (hb : b.eval x = 0) :
+    (-(a % b)).eval x = -a.eval x := by
+  have h := congrArg (fun q : ℝ[X] => q.eval x) (EuclideanDomain.mod_add_div a b)
+  have hrem : (a % b).eval x = a.eval x := by
+    simpa [hb] using h
+  simp [hrem]
