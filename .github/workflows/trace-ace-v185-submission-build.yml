@@ -1,0 +1,29 @@
+name: Trace the Ace V185 Submission Build
+on:
+  push:
+    paths:
+      - 'experiments/trace_the_ace_v185/**'
+      - '.github/workflows/trace-ace-v185-submission-build.yml'
+  workflow_dispatch:
+jobs:
+  v185:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+      - name: Build full-data mastery geometry assets
+        run: python3 experiments/trace_the_ace_v185/run_v185_submission_build.py
+      - name: Show result
+        if: always()
+        run: cat /workspace/trace-ace-results/v185/v185_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v185-submission-build
+          path: /workspace/trace-ace-results/v185/
+          if-no-files-found: warn
