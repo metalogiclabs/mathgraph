@@ -1,0 +1,40 @@
+name: Trace the Ace V186 Mastery Tournament
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/trace_the_ace_v186/**'
+      - '.github/workflows/trace-ace-v186-mastery-tournament.yml'
+  workflow_dispatch:
+
+jobs:
+  v186:
+    runs-on: [self-hosted, trace-ace-gpu]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check persistent inputs
+        run: |
+          test -f /workspace/trace_the_ace/train_features_TMQTWsB.csv
+          test -f /workspace/trace_the_ace/train_labels_44ujmj2.csv
+          test -d /workspace/trace_the_ace/transcripts_extracted
+          python - <<'PY'
+          import pandas as pd
+          x=pd.read_csv('/workspace/trace_the_ace/train_features_TMQTWsB.csv',nrows=2)
+          y=pd.read_csv('/workspace/trace_the_ace/train_labels_44ujmj2.csv',nrows=2)
+          print('FEATURE_HEADERS',list(x.columns)); print('LABEL_HEADERS',list(y.columns))
+          PY
+      - name: Run fast mastery module tournament
+        run: |
+          mkdir -p /workspace/trace-ace-results/v186
+          python experiments/trace_the_ace_v186/run_v186_mastery_tournament.py
+      - name: Show result
+        if: always()
+        run: |
+          test -f /workspace/trace-ace-results/v186/v186_results.json && cat /workspace/trace-ace-results/v186/v186_results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trace-the-ace-v186-results
+          path: /workspace/trace-ace-results/v186/
+          if-no-files-found: warn
