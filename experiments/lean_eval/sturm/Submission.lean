@@ -2,7 +2,7 @@ import ChallengeDeps
 
 open LeanEval.Algebra
 open Polynomial
-open scoped Classical
+open scoped Classical Topology
 
 /-- Local Sturm invariant: at a zero of the middle polynomial, the next
 negated remainder evaluates to the negative of the preceding polynomial. -/
@@ -58,3 +58,26 @@ theorem signChanges_simple_crossing (left right deriv : ℝ)
   have hnright : ¬ right * deriv < 0 := by
     linarith
   simp [signChanges, hl0, hd0, hr0, hleft, hnright]
+
+/-- Analytic separator for a simple polynomial root. The difference quotient,
+continuously filled at the root by the derivative, has positive product with
+the derivative throughout a neighbourhood of the root. -/
+theorem simple_root_local_quotient_positive (p : ℝ[X]) (r : ℝ)
+    (hd : p.derivative.eval r ≠ 0) :
+    ∀ᶠ x in 𝓝 r,
+      0 < (Function.update
+        (fun x => (p.eval x - p.eval r) / (x - r))
+        r (p.derivative.eval r) x) * p.derivative.eval r := by
+  let q : ℝ → ℝ := Function.update
+    (fun x => (p.eval x - p.eval r) / (x - r))
+    r (p.derivative.eval r)
+  have hq : ContinuousAt q r := by
+    dsimp [q]
+    exact (p.hasDerivAt r).continuousAt_div
+  have hprod : ContinuousAt (fun x => q x * p.derivative.eval r) r :=
+    hq.mul continuousAt_const
+  have hpos : 0 < p.derivative.eval r * p.derivative.eval r := mul_self_pos.mpr hd
+  have hnhds : Set.Ioi (0 : ℝ) ∈ 𝓝 (p.derivative.eval r * p.derivative.eval r) :=
+    Set.Ioi_mem_nhds hpos
+  have h := hprod hnhds
+  simpa [q] using h
