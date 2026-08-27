@@ -1,0 +1,21 @@
+name: VDN finite interface v46
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v46_setvalued_choice_nonuniqueness.py'
+      - '.github/workflows/vdn-finite-interface-v46.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  setvalued-choice:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust set-valued choice worlds
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v46_setvalued_choice_nonuniqueness.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-finite-interface-v46
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v46_setvalued_choice_nonuniqueness/result.json
