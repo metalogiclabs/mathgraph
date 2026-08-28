@@ -1,0 +1,27 @@
+name: VDN ARC future-consequence memory quotient V30
+
+on:
+  push:
+    branches:
+      - mathgraph/msi-arc-pikpi-v11-20260828
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v30_future_consequence_memory_quotient.py'
+      - '.github/workflows/vdn-arc-future-consequence-memory-v30.yml'
+  workflow_dispatch:
+
+jobs:
+  future-consequence-memory:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V30 future-consequence memory quotient
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v30_future_consequence_memory_quotient.py /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-future-consequence-memory-v30
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v30_future_consequence_memory_quotient/result.json
