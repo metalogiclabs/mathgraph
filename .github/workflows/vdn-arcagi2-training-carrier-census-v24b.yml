@@ -1,0 +1,29 @@
+name: VDN ARC-AGI-2 training carrier census V24b
+
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - ".github/workflows/vdn-arcagi2-training-carrier-census-v24b.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arcagi2-training-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Run V24b ARC-AGI-2 training carrier census
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v24_arcagi2_carrier_census.py /tmp/ARC-AGI-2/data/training
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arcagi2-training-carrier-census-v24b
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v24_arcagi2_carrier_census/result.json
