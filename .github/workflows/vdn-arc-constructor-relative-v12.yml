@@ -1,0 +1,33 @@
+name: VDN ARC constructor-relative V12
+
+on:
+  push:
+    branches:
+      - mathgraph/msi-arc-pikpi-v11-20260828
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  constructor-relative:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run constructor-relative interface test
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v12_constructor_relative_pi.py \
+            /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-1/data/evaluation
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-constructor-relative-v12
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v12_constructor_relative_pi/result.json
+          if-no-files-found: warn
