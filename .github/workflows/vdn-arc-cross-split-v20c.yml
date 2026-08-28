@@ -1,0 +1,27 @@
+name: VDN ARC cross-split policy transfer V20c
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v20c_cross_split_policy_transfer.py"
+      - ".github/workflows/vdn-arc-cross-split-v20c.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI
+          cd /tmp/ARC-AGI
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run cross-split transfer
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v20c_cross_split_policy_transfer.py /tmp/ARC-AGI/data/evaluation /tmp/ARC-AGI/data/training
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-cross-split-v20c
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v20c_cross_split_policy_transfer/result.json
