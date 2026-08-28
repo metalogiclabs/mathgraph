@@ -85,3 +85,58 @@ theorem simple_root_local_quotient_positive (p : ℝ[X]) (r : ℝ)
         (fun x => (p.eval x - p.eval r) / (x - r))
         r (p.derivative.eval r) x * p.derivative.eval r) ⁻¹' Set.Ioi 0 ∈ 𝓝 r
   simpa [q] using hprod hnhds
+
+/-- A simple real root has the expected local crossing sign: immediately to
+the left the polynomial has sign opposite to its derivative at the root, and
+immediately to the right it has the same sign. -/
+theorem simple_root_local_crossing_sign (p : ℝ[X]) (r : ℝ)
+    (hr : p.eval r = 0) (hd : p.derivative.eval r ≠ 0) :
+    ∀ᶠ x in 𝓝 r,
+      (x < r → p.eval x * p.derivative.eval r < 0) ∧
+      (r < x → 0 < p.eval x * p.derivative.eval r) := by
+  filter_upwards [simple_root_local_quotient_positive p r hd] with x hx
+  constructor
+  · intro hxr
+    have hne : x ≠ r := ne_of_lt hxr
+    have hden : x - r ≠ 0 := sub_ne_zero.mpr hne
+    have hq : 0 < (p.eval x / (x - r)) * p.derivative.eval r := by
+      simpa [hne, hr] using hx
+    have heq :
+        p.eval x * p.derivative.eval r =
+          ((p.eval x / (x - r)) * p.derivative.eval r) * (x - r) := by
+      field_simp [hden]
+      <;> ring
+    rw [heq]
+    exact mul_neg_of_pos_of_neg hq (sub_neg.mpr hxr)
+  · intro hrx
+    have hne : x ≠ r := ne_of_gt hrx
+    have hden : x - r ≠ 0 := sub_ne_zero.mpr hne
+    have hq : 0 < (p.eval x / (x - r)) * p.derivative.eval r := by
+      simpa [hne, hr] using hx
+    have heq :
+        p.eval x * p.derivative.eval r =
+          ((p.eval x / (x - r)) * p.derivative.eval r) * (x - r) := by
+      field_simp [hden]
+      <;> ring
+    rw [heq]
+    exact mul_pos hq (sub_pos.mpr hrx)
+
+/-- Composed local Sturm crossing law. There is one common neighbourhood of a
+simple root in which every left/right pair witnesses exactly one lost sign
+variation in the leading polynomial/derivative pair. -/
+theorem simple_root_local_variation_drop (p : ℝ[X]) (r : ℝ)
+    (hr : p.eval r = 0) (hd : p.derivative.eval r ≠ 0) :
+    ∃ U : Set ℝ, U ∈ 𝓝 r ∧
+      ∀ x ∈ U, ∀ y ∈ U, x < r → r < y →
+        signChanges [p.eval x, p.derivative.eval r] =
+          signChanges [p.eval y, p.derivative.eval r] + 1 := by
+  let U : Set ℝ := {x |
+    (x < r → p.eval x * p.derivative.eval r < 0) ∧
+    (r < x → 0 < p.eval x * p.derivative.eval r)}
+  have hU : U ∈ 𝓝 r := by
+    simpa [U] using simple_root_local_crossing_sign p r hr hd
+  refine ⟨U, hU, ?_⟩
+  intro x hx y hy hxr hry
+  have hxsign : p.eval x * p.derivative.eval r < 0 := hx.1 hxr
+  have hysign : 0 < p.eval y * p.derivative.eval r := hy.2 hry
+  exact signChanges_simple_crossing _ _ _ hxsign hysign
