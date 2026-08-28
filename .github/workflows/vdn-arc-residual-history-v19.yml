@@ -1,0 +1,30 @@
+name: VDN ARC residual-history policy V19
+
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v19_residual_history_policy.py"
+      - ".github/workflows/vdn-arc-residual-history-v19.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  residual-history-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V19 residual-history policy
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v19_residual_history_policy.py /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-residual-history-v19
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v19_residual_history_policy/result.json
