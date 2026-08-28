@@ -33,6 +33,8 @@ jobs:
           cat "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/TailComposition.lean" > /tmp/sturm/Submission.lean
           printf '\n\n' >> /tmp/sturm/Submission.lean
           tail -n +3 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/SigmaLocal.lean" >> /tmp/sturm/Submission.lean
+          printf '\n\n' >> /tmp/sturm/Submission.lean
+          tail -n +4 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Termination.lean" >> /tmp/sturm/Submission.lean
       - name: Compile and expose residual
         run: |
           set +e
