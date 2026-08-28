@@ -1,0 +1,36 @@
+name: VDN ARC cross-dataset generator V25
+
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_cross_dataset_generator_transfer.py"
+      - ".github/workflows/vdn-arc-cross-dataset-generator-v25.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-dataset-generator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Run V25 cross-dataset observation-generator transfer
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_cross_dataset_generator_transfer.py /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-2/data/training
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-arc-cross-dataset-generator-v25
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v25_cross_dataset_generator_transfer/result.json
