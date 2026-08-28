@@ -1,0 +1,25 @@
+name: VDN ARC state-conditioned method transfer V25
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_state_conditioned_method_transfer.py'
+      - '.github/workflows/vdn-arc-state-conditioned-method-v25.yml'
+
+jobs:
+  state-conditioned-method-transfer:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V25 state-conditioned method transfer
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_state_conditioned_method_transfer.py /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-state-conditioned-method-v25
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v25_state_conditioned_method_transfer/result.json
