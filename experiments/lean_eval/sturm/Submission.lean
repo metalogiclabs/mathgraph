@@ -149,3 +149,32 @@ theorem squarefree_root_derivative_ne_zero (p : ℝ[X]) (r : ℝ)
     p.derivative.eval r ≠ 0 := by
   have hsep : p.Separable := (PerfectField.separable_iff_squarefree).2 hp
   exact hsep.eval₂_derivative_ne_zero (RingHom.id ℝ) hr
+
+/-- MSI tail separator: once two adjacent chain entries are both nonzero at a
+reference point, the only bit observed by `signChanges` for that pair — whether
+their product is negative — is locally constant. -/
+theorem polynomial_pair_negativity_locally_constant
+    (a b : ℝ[X]) (r : ℝ) (ha : a.eval r ≠ 0) (hb : b.eval r ≠ 0) :
+    ∀ᶠ x in 𝓝 r,
+      (a.eval x * b.eval x < 0 ↔ a.eval r * b.eval r < 0) := by
+  let f : ℝ → ℝ := fun x => a.eval x * b.eval x
+  have hf : ContinuousAt f r := a.continuousAt.mul b.continuousAt
+  have hfr : f r ≠ 0 := by
+    simpa [f] using mul_ne_zero ha hb
+  rcases lt_or_gt_of_ne hfr with hneg | hpos
+  · have hmem : Set.Iio (0 : ℝ) ∈ 𝓝 (f r) :=
+      IsOpen.mem_nhds isOpen_Iio hneg
+    have hev : ∀ᶠ x in 𝓝 r, f x < 0 := by
+      change f ⁻¹' Set.Iio 0 ∈ 𝓝 r
+      exact hf hmem
+    filter_upwards [hev] with x hx
+    simpa [f, hneg] using hx
+  · have hmem : Set.Ioi (0 : ℝ) ∈ 𝓝 (f r) :=
+      IsOpen.mem_nhds isOpen_Ioi hpos
+    have hev : ∀ᶠ x in 𝓝 r, 0 < f x := by
+      change f ⁻¹' Set.Ioi 0 ∈ 𝓝 r
+      exact hf hmem
+    filter_upwards [hev] with x hx
+    have hnx : ¬ f x < 0 := not_lt.mpr (le_of_lt hx)
+    have hnr : ¬ f r < 0 := not_lt.mpr (le_of_lt hpos)
+    simpa [f, hnx, hnr]
