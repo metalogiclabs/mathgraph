@@ -131,8 +131,11 @@ theorem simple_root_local_variation_drop (p : ℝ[X]) (r : ℝ)
   let U : Set ℝ := {x |
     (x < r → p.eval x * p.derivative.eval r < 0) ∧
     (r < x → 0 < p.eval x * p.derivative.eval r)}
+  have hsign := simple_root_local_crossing_sign p r hr hd
   have hU : U ∈ 𝓝 r := by
-    exact simple_root_local_crossing_sign p r hr hd
+    rcases hsign with ⟨hleft, hright⟩
+    filter_upwards [hleft, hright] with x hxleft hxright
+    exact ⟨hxleft, hxright⟩
   refine ⟨U, hU, ?_⟩
   intro x hx y hy hxr hry
   have hxsign : p.eval x * p.derivative.eval r < 0 := hx.1 hxr
