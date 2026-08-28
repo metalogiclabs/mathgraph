@@ -46,10 +46,10 @@ def reachable_residual_snapshots(states, keys, demo, held, true_atoms):
 
     seen = set()
     for pref in prefixes:
-        cols = [keys.index(a) for a in pref if a in keys]
+        chosen = [a for a in pref if a in keys]
         buckets = {}
         for i, s in enumerate(states):
-            sig = tuple(bool(s['obs'][j]) for j in cols)
+            sig = tuple(bool(s['obs'][k]) for k in chosen)
             buckets.setdefault(sig, []).append(i)
         unresolved_pairs = []
         for ids in buckets.values():
@@ -68,11 +68,10 @@ def reachable_residual_snapshots(states, keys, demo, held, true_atoms):
 def consequence_vector(atom, states, keys, snapshots):
     if atom not in keys:
         return tuple(('ABSENT', 0, 0) for _ in snapshots)
-    j = keys.index(atom)
     vec = []
     for snap in snapshots:
         pairs = snap['pairs']
-        sep = [(a, b) for (a, b) in pairs if bool(states[a]['obs'][j]) != bool(states[b]['obs'][j])]
+        sep = [(a, b) for (a, b) in pairs if bool(states[a]['obs'][atom]) != bool(states[b]['obs'][atom])]
         if not sep:
             vec.append(('NOSEP', len(pairs), len(pairs)))
         else:
