@@ -6,8 +6,7 @@ open Polynomial
 open scoped Classical Topology
 
 /-- If the next Sturm remainder vanishes at a point, the following remainder
-has value opposite to the current entry. This is the local regularity law
-used to quotient an interior zero out of the chain. -/
+has value opposite to the current entry. -/
 theorem sturm_next_after_zero (a b : ℝ[X]) (r : ℝ)
     (hb : b.eval r = 0) :
     (-(a % b)).eval r = -a.eval r := by
@@ -51,8 +50,7 @@ theorem polynomial_pair_signchange_locally_constant
     have hnr : ¬ f r < 0 := not_lt.mpr (le_of_lt hpos)
     simp [f, hnx, hnr]
 
-/-- Squarefreeness protects the Sturm start pair: a real root of `p` cannot
-also be a root of `p'`. -/
+/-- Squarefree polynomials and their derivatives have no common real root. -/
 theorem squarefree_root_derivative_ne_zero (p : ℝ[X]) (r : ℝ)
     (hp : Squarefree p) (hr : p.eval r = 0) :
     p.derivative.eval r ≠ 0 := by
@@ -65,8 +63,7 @@ theorem squarefree_sturm_start_no_common_root (p : ℝ[X]) (r : ℝ)
   rintro ⟨hr, hdr⟩
   exact squarefree_root_derivative_ne_zero p r hp hr hdr
 
-/-- The no-common-zero condition is preserved by one negated-remainder Sturm
-step. -/
+/-- No-common-zero is preserved by a negated-remainder Sturm step. -/
 theorem sturm_step_no_common_zero (a b : ℝ[X]) (r : ℝ)
     (hab : ¬ (a.eval r = 0 ∧ b.eval r = 0)) :
     ¬ (b.eval r = 0 ∧ (-(a % b)).eval r = 0) := by
@@ -77,6 +74,7 @@ theorem sturm_step_no_common_zero (a b : ℝ[X]) (r : ℝ)
     simpa using hc
   exact hab ⟨ha, hb⟩
 
+/-- Safety of active adjacent states. -/
 noncomputable def SturmSafeAt (r : ℝ) : ℝ[X] → ℝ[X] → ℕ → Prop
   | _, _, 0 => True
   | a, b, n + 1 =>
@@ -94,31 +92,38 @@ theorem sturmSafeAt_of_no_common_zero (a b : ℝ[X]) (r : ℝ) (n : ℕ)
       · simp only [SturmSafeAt, hbpoly, if_false]
         exact ⟨hab, ih b (-(a % b)) (sturm_step_no_common_zero a b r hab)⟩
 
-theorem squarefree_sturmChain_safe (p : ℝ[X]) (r : ℝ)
-    (hp : Squarefree p) :
-    SturmSafeAt r p p.derivative (p.natDegree + 2) := by
-  exact sturmSafeAt_of_no_common_zero p p.derivative r (p.natDegree + 2)
-    (squarefree_sturm_start_no_common_root p r hp)
+/-- The missing boundary condition from the failed arbitrary-fuel probe:
+not only are active adjacent states regular, but if fuel ends, the displayed
+terminal entry is nonzero at the reference point. -/
+noncomputable def SturmRegularAt (r : ℝ) : ℝ[X] → ℝ[X] → ℕ → Prop
+  | a, _, 0 => a.eval r ≠ 0
+  | a, b, n + 1 =>
+      if b = 0 then a.eval r ≠ 0
+      else (¬ (a.eval r = 0 ∧ b.eval r = 0)) ∧ SturmRegularAt r b (-(a % b)) n
 
-/-- Prefixing a nonzero real value adds exactly the sign-change contribution
-of the first surviving tail entry.  This is the composition interface used by
-the arbitrary-fuel induction. -/
-theorem signChanges_cons_of_head_ne_zero (a : ℝ) (xs : List ℝ) (ha : a ≠ 0) :
-    signChanges (a :: xs) =
-      match xs.filter (· ≠ 0) with
-      | [] => 0
-      | b :: _ => (if a * b < 0 then 1 else 0) + signChanges xs := by
-  simp [signChanges, ha]
-  cases h : xs.filter (· ≠ 0) with
-  | nil => simp [h, signChanges]
-  | cons b bs => simp [h, signChanges]
+/-- A Sturm computation is never empty and its head is its first argument. -/
+theorem sturmAux_eq_cons_tail (a b : ℝ[X]) (n : ℕ) :
+    sturmAux a b n = a :: (sturmAux a b n).tail := by
+  cases n with
+  | zero => simp [sturmAux]
+  | succ n =>
+      by_cases hb : b = 0 <;> simp [sturmAux, hb]
 
-/-- Arbitrary-fuel local constancy for a Sturm tail whose current head is
-nonzero at the reference point. `SturmSafeAt` rules out the terminal-zero
-pathology; interior zeros are quotiented by the opposite-neighbour law. -/
+/-- Explicit two-head composition law.  This avoids unfolding the benchmark's
+zip/filter representation inside the recursive proof. -/
+theorem signChanges_cons_cons_of_ne_zero
+    (a b : ℝ) (xs : List ℝ) (ha : a ≠ 0) (hb : b ≠ 0) :
+    signChanges (a :: b :: xs) =
+      (if a * b < 0 then 1 else 0) + signChanges (b :: xs) := by
+  rw [signChanges_eq_pairChanges_filter, signChanges_eq_pairChanges_filter]
+  simp [ha, hb, pairChanges]
+
+/-- Correct arbitrary-fuel local-constancy theorem.  Unlike mere active-state
+safety, `SturmRegularAt` protects the displayed terminal entry when fuel is
+exhausted. -/
 theorem sturmAux_variation_locally_constant
     (a b : ℝ[X]) (r : ℝ) (n : ℕ)
-    (ha : a.eval r ≠ 0) (hsafe : SturmSafeAt r a b n) :
+    (ha : a.eval r ≠ 0) (hreg : SturmRegularAt r a b n) :
     ∀ᶠ x in 𝓝 r,
       signChanges ((sturmAux a b n).map (fun q => q.eval x)) =
       signChanges ((sturmAux a b n).map (fun q => q.eval r)) := by
@@ -126,85 +131,88 @@ theorem sturmAux_variation_locally_constant
   | h n ih =>
       cases n with
       | zero =>
-          simpa [sturmAux, signChanges] using polynomial_eval_eventually_ne_zero a r ha
+          simp [sturmAux, signChanges]
       | succ n =>
           by_cases hbpoly : b = 0
-          · have haev := polynomial_eval_eventually_ne_zero a r ha
-            filter_upwards [haev] with x hax
-            simp [sturmAux, hbpoly, signChanges, ha, hax]
-          · have hsafe' :
+          · simp [sturmAux, hbpoly, signChanges]
+          · have hreg' :
                 (¬ (a.eval r = 0 ∧ b.eval r = 0)) ∧
-                  SturmSafeAt r b (-(a % b)) n := by
-              simpa [SturmSafeAt, hbpoly] using hsafe
+                  SturmRegularAt r b (-(a % b)) n := by
+              simpa [SturmRegularAt, hbpoly] using hreg
             let c : ℝ[X] := -(a % b)
-            have hrecSafe : SturmSafeAt r b c n := by simpa [c] using hsafe'.2
+            have hrecReg : SturmRegularAt r b c n := by
+              simpa [c] using hreg'.2
             by_cases hb : b.eval r = 0
             · have hc : c.eval r = -a.eval r := by
                 dsimp [c]
                 exact sturm_next_after_zero a b r hb
-              have hcne : c.eval r ≠ 0 := by simpa [hc] using ha
+              have hcne : c.eval r ≠ 0 := by
+                rw [hc]
+                exact neg_ne_zero.mpr ha
               cases n with
               | zero =>
-                  have hac : a.eval r * c.eval r < 0 := by
-                    rw [hc]
-                    have hpos : 0 < a.eval r * a.eval r := mul_self_pos.mpr ha
-                    nlinarith
-                  let f : ℝ → ℝ := fun x => a.eval x * c.eval x
-                  have hf : ContinuousAt f r := a.continuousAt.mul c.continuousAt
-                  have hev : ∀ᶠ x in 𝓝 r, f x < 0 := by
-                    apply hf.eventually_lt_const
-                    simpa [f] using hac
-                  filter_upwards [hev] with x hx
-                  simp [sturmAux, hbpoly, c, signChanges, hb, hc, f] at hx ⊢
+                  have : b.eval r ≠ 0 := by simpa [SturmRegularAt] using hrecReg
+                  exact (this hb).elim
               | succ m =>
                   have hcpoly : c ≠ 0 := by
                     intro hz
-                    subst c
-                    simpa using hcne
+                    have : c.eval r = 0 := by simp [hz]
+                    exact hcne this
                   let d : ℝ[X] := -(b % c)
-                  have hcdsafe : SturmSafeAt r c d m := by
-                    simpa [SturmSafeAt, c, d, hcpoly] using hrecSafe
-                  have htail := ih m (Nat.lt_succ_self m) c d hcne hcdsafe
+                  have hcdreg : SturmRegularAt r c d m := by
+                    simpa [SturmRegularAt, c, d, hcpoly] using hrecReg
+                  have htail := ih m (by omega) c d hcne hcdreg
                   have hac : a.eval r * c.eval r < 0 := by
                     rw [hc]
                     have hpos : 0 < a.eval r * a.eval r := mul_self_pos.mpr ha
                     nlinarith
-                  let f : ℝ → ℝ := fun x => a.eval x * c.eval x
-                  have hf : ContinuousAt f r := a.continuousAt.mul c.continuousAt
-                  have hev : ∀ᶠ x in 𝓝 r, f x < 0 := by
-                    apply hf.eventually_lt_const
-                    simpa [f] using hac
-                  filter_upwards [htail, hev] with x htx hx
-                  rw [show sturmAux a b (Nat.succ (Nat.succ m)) =
-                    a :: b :: sturmAux c d m by
-                      simp [sturmAux, hbpoly, c, d, hcpoly]]
-                  simp only [List.map_cons]
-                  have hxdrop := signChanges_context_three_of_opposite_ends
-                    ([] : List ℝ) (a.eval x) (b.eval x) (c.eval x)
-                    ((sturmAux c d m).map (fun q => q.eval x)).tail
-                    (by simpa [f] using hx)
-                  have hrdrop := signChanges_context_three_of_opposite_ends
-                    ([] : List ℝ) (a.eval r) (b.eval r) (c.eval r)
-                    ((sturmAux c d m).map (fun q => q.eval r)).tail hac
-                  simpa [sturmAux] using hxdrop.trans (congrArg (fun z => z) htx) |>.trans hrdrop.symm
-            · have hbne := hb
+                  have hevac := polynomial_pair_signchange_locally_constant a c r ha hcne
+                  have haev := polynomial_eval_eventually_ne_zero a r ha
+                  have hcev := polynomial_eval_eventually_ne_zero c r hcne
+                  filter_upwards [htail, hevac, haev, hcev] with x htailx hpac hax hcx
+                  have hshapeX :
+                      signChanges ((sturmAux a b (Nat.succ (Nat.succ m))).map (fun q => q.eval x)) =
+                      signChanges (a.eval x :: b.eval x :: c.eval x ::
+                        ((sturmAux c d m).tail.map (fun q => q.eval x))) := by
+                    simp [sturmAux, hbpoly, c, d, hcpoly, sturmAux_eq_cons_tail]
+                  have hshapeR :
+                      signChanges ((sturmAux a b (Nat.succ (Nat.succ m))).map (fun q => q.eval r)) =
+                      signChanges (a.eval r :: b.eval r :: c.eval r ::
+                        ((sturmAux c d m).tail.map (fun q => q.eval r))) := by
+                    simp [sturmAux, hbpoly, c, d, hcpoly, sturmAux_eq_cons_tail]
+                  rw [hshapeX, hshapeR]
+                  rw [signChanges_context_three_elim_of_opposite_ends
+                        [] ((sturmAux c d m).tail.map (fun q => q.eval x))
+                        (a.eval x) (b.eval x) (c.eval x)]
+                  · rw [signChanges_context_three_elim_of_opposite_ends
+                          [] ((sturmAux c d m).tail.map (fun q => q.eval r))
+                          (a.eval r) (b.eval r) (c.eval r) hac]
+                    simp only [List.nil_append, List.map_tail]
+                    rw [signChanges_cons_cons_of_ne_zero _ _ _ hax hcx,
+                        signChanges_cons_cons_of_ne_zero _ _ _ ha hcne]
+                    have htailShapeX := sturmAux_eq_cons_tail c d m
+                    have htailShapeR := sturmAux_eq_cons_tail c d m
+                    simp only [List.map_cons, List.map_tail] at htailx
+                    rw [htailShapeX] at htailx
+                    simpa using congrArg (fun k => (if a.eval r * c.eval r < 0 then 1 else 0) + k) htailx
+                  · have hpac' := hpac
+                    simpa using (show a.eval x * c.eval x < 0 from by
+                      by_cases h : a.eval r * c.eval r < 0
+                      · simpa [h] using hpac'
+                      · exact (h hac).elim)
+            · have hbne : b.eval r ≠ 0 := hb
               have hb_ev := polynomial_eval_eventually_ne_zero b r hbne
+              have ha_ev := polynomial_eval_eventually_ne_zero a r ha
               have hp := polynomial_pair_signchange_locally_constant a b r ha hbne
-              have htail := ih n (Nat.lt_succ_self n) b c hbne hrecSafe
-              filter_upwards [hb_ev, hp, htail, polynomial_eval_eventually_ne_zero a r ha]
-                with x hbx hpair htailx hax
+              have htail := ih n (by omega) b c hbne hrecReg
+              filter_upwards [hb_ev, ha_ev, hp, htail] with x hbx hax hpair htailx
               rw [show sturmAux a b (Nat.succ n) = a :: sturmAux b c n by
                 simp [sturmAux, hbpoly, c]]
-              simp only [List.map_cons]
-              rw [signChanges_cons_of_head_ne_zero _ _ hax,
-                  signChanges_cons_of_head_ne_zero _ _ ha]
-              simpa [sturmAux, hbpoly, c, hbx, hbne] using congrArg (fun k => k + signChanges ((sturmAux b c n).map (fun q => q.eval x))) hpair
-
-/-- The benchmark-facing corollary: away from a root of a squarefree
-polynomial, its complete Sturm-chain variation is locally constant. -/
-theorem squarefree_sigma_locally_constant_at_nonroot
-    (p : ℝ[X]) (r : ℝ) (hp : Squarefree p) (hr : p.eval r ≠ 0) :
-    ∀ᶠ x in 𝓝 r, sigma p x = sigma p r := by
-  simpa [sigma, sturmChain] using
-    sturmAux_variation_locally_constant p p.derivative r (p.natDegree + 2) hr
-      (squarefree_sturmChain_safe p r hp)
+              have hsx := sturmAux_eq_cons_tail b c n
+              have hsr := sturmAux_eq_cons_tail b c n
+              rw [hsx, hsr]
+              simp only [List.map_cons, List.map_tail]
+              rw [signChanges_cons_cons_of_ne_zero _ _ _ hax hbx,
+                  signChanges_cons_cons_of_ne_zero _ _ _ ha hbne]
+              simpa [hpair] using congrArg (fun k =>
+                (if a.eval r * b.eval r < 0 then 1 else 0) + k) htailx
