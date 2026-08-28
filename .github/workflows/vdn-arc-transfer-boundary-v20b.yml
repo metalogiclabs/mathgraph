@@ -1,0 +1,27 @@
+name: VDN ARC transfer boundary V20b
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v20b_transfer_boundary_census.py"
+      - ".github/workflows/vdn-arc-transfer-boundary-v20b.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run full transfer-boundary census
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v20b_transfer_boundary_census.py /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-transfer-boundary-v20b
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v20b_transfer_boundary_census/result.json
