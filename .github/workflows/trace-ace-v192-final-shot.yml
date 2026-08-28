@@ -1,23 +1,23 @@
-name: Trace the Ace V193 Strict Public Proxy
+name: Trace the Ace V194 Strict Geometry Tournament
 on:
   push:
     branches: [mathgraph/trace-ace-final-shot-20260828]
     paths:
-      - 'experiments/trace_the_ace_v193/**'
+      - 'experiments/trace_the_ace_v194/**'
       - '.github/workflows/trace-ace-v192-final-shot.yml'
   workflow_dispatch:
 
 jobs:
-  v193_proxy:
+  v194_geometry:
     runs-on: [self-hosted, trace-ace-gpu]
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
-      - name: Run strict untouched-session proxy
-        run: python experiments/trace_the_ace_v193/run_v193_strict_public_proxy.py
+      - name: Run strict objective geometry tournament
+        run: python experiments/trace_the_ace_v194/run_v194_geometry_tournament.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trace-the-ace-v193-strict-proxy
-          path: /workspace/trace-ace-results/v193/
+          name: trace-the-ace-v194-geometry
+          path: /workspace/trace-ace-results/v194/
           if-no-files-found: warn
