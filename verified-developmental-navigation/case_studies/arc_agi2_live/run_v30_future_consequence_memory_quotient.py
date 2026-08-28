@@ -23,15 +23,6 @@ SOURCE = v27.SOURCE
 TARGET = v27.TARGET
 MAXQ = v27.MAXQ
 
-# V30 automatically quotient-compresses source-acquired executable observations
-# by their verified target-future consequences.  It does not name or privilege
-# width_parity or embedding atoms.  Each source-retained atom is characterized
-# solely by the complete transition it induces over every verifier-returned
-# residual state reachable during target navigation under the frozen V28 rule:
-# whether it is admissible/separating and, if selected alone at that residual,
-# the resulting unresolved-count transition.  Atoms with identical consequence
-# vectors are treated as one developmental-memory equivalence class.
-
 
 def prepare_target(ev):
     return v23.prepare(ev[TARGET])
@@ -42,28 +33,10 @@ def source_atoms(ev):
     return sorted(set(model['source_atoms'])), model
 
 
-def reachable_residual_snapshots(states, keys, demo):
-    # Collect all residual states encountered by the full V28 WARM trajectory and
-    # by COLD V19.  This is a mechanism audit after V28, so the protected target
-    # is already fixed; no atom labels are used to define equivalence.
-    true_model = None
+def reachable_residual_snapshots(states, keys, demo, held, true_atoms):
     snaps = []
-
-    # Replay helper copied semantically from V27/V28: ask current residual pair,
-    # record the full current unresolved set and labels, then advance.
-    def collect_from_trace(trace):
-        # We cannot reconstruct hidden internal state from trace alone, so instead
-        # run the public arm while instrumenting the exact same state transition
-        # through V27's helper if available.  Fallback below uses each prefix atom
-        # set to expose the residual encountered after that prefix.
-        return
-
-    # Build snapshots by deterministic prefix replay of both trajectories.
-    true_atoms = source_atoms_current
-    warm = v28.make_arm(states, keys, demo, held_current, true_atoms)
-    cold_choices, cold_trace = v19.run_history(states, keys, demo, False)
-
-    # Initial residual is represented by no chosen observations.
+    warm = v28.make_arm(states, keys, demo, held, true_atoms)
+    _, cold_trace = v19.run_history(states, keys, demo, False)
     prefixes = [()]
     warm_atoms = [t['atom'] for t in warm.get('trace', [])]
     cold_atoms = [t['atom'] for t in cold_trace]
@@ -73,12 +46,10 @@ def reachable_residual_snapshots(states, keys, demo):
 
     seen = set()
     for pref in prefixes:
-        # Use the deterministic partition induced by pref to compute unresolved
-        # positive/negative pairs exactly from observation bit-vectors.
         cols = [keys.index(a) for a in pref if a in keys]
         buckets = {}
         for i, s in enumerate(states):
-            sig = tuple(s['bits'][j] for j in cols)
+            sig = tuple(bool(s['obs'][j]) for j in cols)
             buckets.setdefault(sig, []).append(i)
         unresolved_pairs = []
         for ids in buckets.values():
@@ -101,14 +72,11 @@ def consequence_vector(atom, states, keys, snapshots):
     vec = []
     for snap in snapshots:
         pairs = snap['pairs']
-        sep = [(a, b) for (a, b) in pairs if states[a]['bits'][j] != states[b]['bits'][j]]
+        sep = [(a, b) for (a, b) in pairs if bool(states[a]['obs'][j]) != bool(states[b]['obs'][j])]
         if not sep:
             vec.append(('NOSEP', len(pairs), len(pairs)))
-            continue
-        # Applying the atom refines by its bit; unresolved pairs remaining are
-        # exactly those not separated by this observation.
-        after = len(pairs) - len(sep)
-        vec.append(('SEP', len(pairs), after))
+        else:
+            vec.append(('SEP', len(pairs), len(pairs) - len(sep)))
     return tuple(vec)
 
 
@@ -117,28 +85,25 @@ def eval_atoms(states, keys, demo, held, atoms):
 
 
 def main():
-    global source_atoms_current, held_current
     if len(sys.argv) != 2:
         raise SystemExit('usage: run_v30_future_consequence_memory_quotient.py EVAL')
     ev = v13.v2.v1.load_tasks(sys.argv[1])
     atoms, model = source_atoms(ev)
-    source_atoms_current = atoms
     states, keys, demo, held = prepare_target(ev)
-    held_current = held
 
     target_supported = [a for a in atoms if a in set(keys)]
-    snapshots = reachable_residual_snapshots(states, keys, demo)
+    snapshots = reachable_residual_snapshots(states, keys, demo, held, atoms)
 
     classes = {}
     for a in target_supported:
-        v = consequence_vector(a, states, keys, snapshots)
-        classes.setdefault(v, []).append(a)
+        vec = consequence_vector(a, states, keys, snapshots)
+        classes.setdefault(vec, []).append(a)
 
     quotient_classes = []
     reps = []
     for idx, (vec, members) in enumerate(sorted(classes.items(), key=lambda kv: kv[1])):
         members = sorted(members)
-        rep = members[0]  # deterministic lexical representative, not semantic.
+        rep = members[0]
         reps.append(rep)
         quotient_classes.append({
             'class_id': idx,
@@ -152,9 +117,6 @@ def main():
     cc, ct = v19.run_history(states, keys, demo, False)
     cold = v27.arm(states, cc, ct, 0, demo, held)
 
-    # Automatic recompression: exhaustive subsets over quotient classes only,
-    # ordered solely by cardinality then lexical representative tuple.  Success
-    # criterion is preserving full-WARM query count or better with exact demo + heldout.
     successful = []
     for r in range(len(reps) + 1):
         for sub in itertools.combinations(reps, r):
