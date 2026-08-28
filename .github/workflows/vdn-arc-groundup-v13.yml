@@ -1,0 +1,33 @@
+name: VDN ARC ground-up future quotient V13
+
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v13_groundup_future_quotient.py"
+      - ".github/workflows/vdn-arc-groundup-v13.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  groundup-future-quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 400
+      - name: Run V13 ground-up future quotient
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v13_groundup_future_quotient.py /tmp/ARC-AGI-1/data/evaluation
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-groundup-v13
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v13_groundup_future_quotient/result.json
