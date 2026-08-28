@@ -86,14 +86,14 @@ theorem simple_root_local_quotient_positive (p : ℝ[X]) (r : ℝ)
         r (p.derivative.eval r) x * p.derivative.eval r) ⁻¹' Set.Ioi 0 ∈ 𝓝 r
   simpa [q] using hprod hnhds
 
-/-- A simple real root has the expected local crossing sign: immediately to
+/-- Local sign law at a simple root. In one neighbourhood of the root, on
 the left the polynomial has sign opposite to its derivative at the root, and
 immediately to the right it has the same sign. -/
 theorem simple_root_local_crossing_sign (p : ℝ[X]) (r : ℝ)
     (hr : p.eval r = 0) (hd : p.derivative.eval r ≠ 0) :
     ∀ᶠ x in 𝓝 r,
-      (x < r → p.eval x * p.derivative.eval r < 0) ∧
-      (r < x → 0 < p.eval x * p.derivative.eval r) := by
+      ((x < r → p.eval x * p.derivative.eval r < 0) ∧
+       (r < x → 0 < p.eval x * p.derivative.eval r)) := by
   filter_upwards [simple_root_local_quotient_positive p r hd] with x hx
   constructor
   · intro hxr
@@ -105,7 +105,6 @@ theorem simple_root_local_crossing_sign (p : ℝ[X]) (r : ℝ)
         p.eval x * p.derivative.eval r =
           ((p.eval x / (x - r)) * p.derivative.eval r) * (x - r) := by
       field_simp [hden]
-      <;> ring
     rw [heq]
     exact mul_neg_of_pos_of_neg hq (sub_neg.mpr hxr)
   · intro hrx
@@ -117,7 +116,6 @@ theorem simple_root_local_crossing_sign (p : ℝ[X]) (r : ℝ)
         p.eval x * p.derivative.eval r =
           ((p.eval x / (x - r)) * p.derivative.eval r) * (x - r) := by
       field_simp [hden]
-      <;> ring
     rw [heq]
     exact mul_pos hq (sub_pos.mpr hrx)
 
@@ -134,7 +132,7 @@ theorem simple_root_local_variation_drop (p : ℝ[X]) (r : ℝ)
     (x < r → p.eval x * p.derivative.eval r < 0) ∧
     (r < x → 0 < p.eval x * p.derivative.eval r)}
   have hU : U ∈ 𝓝 r := by
-    simpa [U] using simple_root_local_crossing_sign p r hr hd
+    exact simple_root_local_crossing_sign p r hr hd
   refine ⟨U, hU, ?_⟩
   intro x hx y hy hxr hry
   have hxsign : p.eval x * p.derivative.eval r < 0 := hx.1 hxr
