@@ -1,0 +1,24 @@
+name: VDN ARC minimal causal observation basis V29
+on:
+  push:
+    branches: [mathgraph/msi-arc-pikpi-v11-20260828]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v29_minimal_causal_observation_basis.py'
+      - '.github/workflows/vdn-arc-minimal-causal-basis-v29.yml'
+  workflow_dispatch:
+jobs:
+  minimal-causal-basis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V29 minimal causal basis census
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v29_minimal_causal_observation_basis.py /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-minimal-causal-basis-v29
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v29_minimal_causal_observation_basis/result.json
