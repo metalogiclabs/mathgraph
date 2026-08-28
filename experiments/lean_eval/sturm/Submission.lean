@@ -178,3 +178,62 @@ theorem polynomial_pair_negativity_locally_constant
     have hnx : ¬ f x < 0 := not_lt.mpr (le_of_lt hx)
     have hnr : ¬ f r < 0 := not_lt.mpr (le_of_lt hpos)
     simpa [f, hnx, hnr]
+
+/-- MSI quotient for a three-entry sign window: if the endpoint signs are
+opposite, the middle value is behaviourally irrelevant to `signChanges`.
+Every possible middle value yields exactly one variation. -/
+theorem signChanges_three_of_opposite_ends (a b c : ℝ)
+    (hac : a * c < 0) :
+    signChanges [a, b, c] = 1 := by
+  rcases (mul_neg_iff.mp hac) with h | h
+  · rcases h with ⟨ha, hc⟩
+    have hane : a ≠ 0 := ne_of_gt ha
+    have hcne : c ≠ 0 := ne_of_lt hc
+    by_cases hb0 : b = 0
+    · subst b
+      simp [signChanges, hane, hcne, hac]
+    · rcases lt_or_gt_of_ne hb0 with hbneg | hbpos
+      · have hab : a * b < 0 := mul_neg_of_pos_of_neg ha hbneg
+        have hbc : ¬ b * c < 0 := by
+          have : 0 < b * c := mul_pos_of_neg_of_neg hbneg hc
+          linarith
+        simp [signChanges, hane, hb0, hcne, hab, hbc]
+      · have hab : ¬ a * b < 0 := by
+          have : 0 < a * b := mul_pos ha hbpos
+          linarith
+        have hbc : b * c < 0 := mul_neg_of_pos_of_neg hbpos hc
+        simp [signChanges, hane, hb0, hcne, hab, hbc]
+  · rcases h with ⟨ha, hc⟩
+    have hane : a ≠ 0 := ne_of_lt ha
+    have hcne : c ≠ 0 := ne_of_gt hc
+    by_cases hb0 : b = 0
+    · subst b
+      simp [signChanges, hane, hcne, hac]
+    · rcases lt_or_gt_of_ne hb0 with hbneg | hbpos
+      · have hab : ¬ a * b < 0 := by
+          have : 0 < a * b := mul_pos_of_neg_of_neg ha hbneg
+          linarith
+        have hbc : b * c < 0 := mul_neg_of_neg_of_pos hbneg hc
+        simp [signChanges, hane, hb0, hcne, hab, hbc]
+      · have hab : a * b < 0 := mul_neg_of_neg_of_pos ha hbpos
+        have hbc : ¬ b * c < 0 := by
+          have : 0 < b * c := mul_pos hbpos hc
+          linarith
+        simp [signChanges, hane, hb0, hcne, hab, hbc]
+
+/-- Continuous lift of the three-entry MSI quotient. Once the endpoint
+polynomials are opposite at a reference point, one neighbourhood fixes the
+whole three-entry variation at one, with no condition at all on the middle
+polynomial. -/
+theorem polynomial_triple_variation_locally_one
+    (a b c : ℝ[X]) (r : ℝ) (hac : a.eval r * c.eval r < 0) :
+    ∀ᶠ x in 𝓝 r, signChanges [a.eval x, b.eval x, c.eval x] = 1 := by
+  let f : ℝ → ℝ := fun x => a.eval x * c.eval x
+  have hf : ContinuousAt f r := a.continuousAt.mul c.continuousAt
+  have hmem : Set.Iio (0 : ℝ) ∈ 𝓝 (f r) := by
+    exact IsOpen.mem_nhds isOpen_Iio (by simpa [f] using hac)
+  have hev : ∀ᶠ x in 𝓝 r, f x < 0 := by
+    change f ⁻¹' Set.Iio 0 ∈ 𝓝 r
+    exact hf hmem
+  filter_upwards [hev] with x hx
+  exact signChanges_three_of_opposite_ends _ _ _ (by simpa [f] using hx)
