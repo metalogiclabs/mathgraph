@@ -109,6 +109,10 @@ theorem sturmAux_eq_cons_tail (a b : ℝ[X]) (n : ℕ) :
   | succ n =>
       by_cases hb : b = 0 <;> simp [sturmAux, hb]
 
+/-- A singleton has no adjacent sign changes. -/
+theorem signChanges_singleton (a : ℝ) : signChanges [a] = 0 := by
+  by_cases ha : a = 0 <;> simp [signChanges, ha]
+
 /-- Explicit two-head composition law.  This avoids unfolding the benchmark's
 zip/filter representation inside the recursive proof. -/
 theorem signChanges_cons_cons_of_ne_zero
@@ -131,10 +135,10 @@ theorem sturmAux_variation_locally_constant
   | h n ih =>
       cases n with
       | zero =>
-          simp [sturmAux, signChanges]
+          simp [sturmAux, signChanges_singleton]
       | succ n =>
           by_cases hbpoly : b = 0
-          · simp [sturmAux, hbpoly, signChanges]
+          · simp [sturmAux, hbpoly, signChanges_singleton]
           · have hreg' :
                 (¬ (a.eval r = 0 ∧ b.eval r = 0)) ∧
                   SturmRegularAt r b (-(a % b)) n := by
@@ -151,16 +155,19 @@ theorem sturmAux_variation_locally_constant
                 exact neg_ne_zero.mpr ha
               cases n with
               | zero =>
-                  have : b.eval r ≠ 0 := by simpa [SturmRegularAt] using hrecReg
-                  exact (this hb).elim
+                  have hbne : b.eval r ≠ 0 := by
+                    simpa [SturmRegularAt] using hrecReg
+                  exact (hbne hb).elim
               | succ m =>
                   have hcpoly : c ≠ 0 := by
                     intro hz
-                    have : c.eval r = 0 := by simp [hz]
-                    exact hcne this
+                    have hz' : c.eval r = 0 := by simp [hz]
+                    exact hcne hz'
                   let d : ℝ[X] := -(b % c)
-                  have hcdreg : SturmRegularAt r c d m := by
+                  have hrecReg' :
+                      (¬ (b.eval r = 0 ∧ c.eval r = 0)) ∧ SturmRegularAt r c d m := by
                     simpa [SturmRegularAt, c, d, hcpoly] using hrecReg
+                  have hcdreg : SturmRegularAt r c d m := hrecReg'.2
                   have htail := ih m (by omega) c d hcne hcdreg
                   have hac : a.eval r * c.eval r < 0 := by
                     rw [hc]
@@ -170,49 +177,80 @@ theorem sturmAux_variation_locally_constant
                   have haev := polynomial_eval_eventually_ne_zero a r ha
                   have hcev := polynomial_eval_eventually_ne_zero c r hcne
                   filter_upwards [htail, hevac, haev, hcev] with x htailx hpac hax hcx
-                  have hshapeX :
-                      signChanges ((sturmAux a b (Nat.succ (Nat.succ m))).map (fun q => q.eval x)) =
+                  have hchain :
+                      sturmAux a b (Nat.succ (Nat.succ m)) =
+                        a :: b :: c :: (sturmAux c d m).tail := by
+                    calc
+                      sturmAux a b (Nat.succ (Nat.succ m)) =
+                          a :: b :: sturmAux c d m := by
+                            simp [sturmAux, hbpoly, c, d, hcpoly]
+                      _ = a :: b :: c :: (sturmAux c d m).tail := by
+                            rw [sturmAux_eq_cons_tail c d m]
+                  rw [hchain]
+                  simp only [List.map_cons]
+                  have hxdrop :
                       signChanges (a.eval x :: b.eval x :: c.eval x ::
-                        ((sturmAux c d m).tail.map (fun q => q.eval x))) := by
-                    simp [sturmAux, hbpoly, c, d, hcpoly, sturmAux_eq_cons_tail]
-                  have hshapeR :
-                      signChanges ((sturmAux a b (Nat.succ (Nat.succ m))).map (fun q => q.eval r)) =
+                        (sturmAux c d m).tail.map (fun q => q.eval x)) =
+                      signChanges (a.eval x :: c.eval x ::
+                        (sturmAux c d m).tail.map (fun q => q.eval x)) := by
+                    simpa using signChanges_context_three_elim_of_opposite_ends
+                      ([] : List ℝ)
+                      ((sturmAux c d m).tail.map (fun q => q.eval x))
+                      (a.eval x) (b.eval x) (c.eval x)
+                      (by
+                        have hpac' := hpac
+                        by_cases hneg : a.eval r * c.eval r < 0
+                        · simpa [hneg] using hpac'
+                        · exact (hneg hac).elim)
+                  have hrdrop :
                       signChanges (a.eval r :: b.eval r :: c.eval r ::
-                        ((sturmAux c d m).tail.map (fun q => q.eval r))) := by
-                    simp [sturmAux, hbpoly, c, d, hcpoly, sturmAux_eq_cons_tail]
-                  rw [hshapeX, hshapeR]
-                  rw [signChanges_context_three_elim_of_opposite_ends
-                        [] ((sturmAux c d m).tail.map (fun q => q.eval x))
-                        (a.eval x) (b.eval x) (c.eval x)]
-                  · rw [signChanges_context_three_elim_of_opposite_ends
-                          [] ((sturmAux c d m).tail.map (fun q => q.eval r))
-                          (a.eval r) (b.eval r) (c.eval r) hac]
-                    simp only [List.nil_append, List.map_tail]
-                    rw [signChanges_cons_cons_of_ne_zero _ _ _ hax hcx,
-                        signChanges_cons_cons_of_ne_zero _ _ _ ha hcne]
-                    have htailShapeX := sturmAux_eq_cons_tail c d m
-                    have htailShapeR := sturmAux_eq_cons_tail c d m
-                    simp only [List.map_cons, List.map_tail] at htailx
-                    rw [htailShapeX] at htailx
-                    simpa using congrArg (fun k => (if a.eval r * c.eval r < 0 then 1 else 0) + k) htailx
-                  · have hpac' := hpac
-                    simpa using (show a.eval x * c.eval x < 0 from by
-                      by_cases h : a.eval r * c.eval r < 0
-                      · simpa [h] using hpac'
-                      · exact (h hac).elim)
+                        (sturmAux c d m).tail.map (fun q => q.eval r)) =
+                      signChanges (a.eval r :: c.eval r ::
+                        (sturmAux c d m).tail.map (fun q => q.eval r)) := by
+                    simpa using signChanges_context_three_elim_of_opposite_ends
+                      ([] : List ℝ)
+                      ((sturmAux c d m).tail.map (fun q => q.eval r))
+                      (a.eval r) (b.eval r) (c.eval r) hac
+                  rw [hxdrop, hrdrop]
+                  rw [signChanges_cons_cons_of_ne_zero _ _ _ hax hcx,
+                      signChanges_cons_cons_of_ne_zero _ _ _ ha hcne]
+                  have htailShapeX :
+                      (sturmAux c d m).map (fun q => q.eval x) =
+                        c.eval x :: (sturmAux c d m).tail.map (fun q => q.eval x) := by
+                    rw [sturmAux_eq_cons_tail c d m]
+                    rfl
+                  have htailShapeR :
+                      (sturmAux c d m).map (fun q => q.eval r) =
+                        c.eval r :: (sturmAux c d m).tail.map (fun q => q.eval r) := by
+                    rw [sturmAux_eq_cons_tail c d m]
+                    rfl
+                  rw [htailShapeX, htailShapeR] at htailx
+                  rw [hpac]
+                  exact congrArg (fun k =>
+                    (if a.eval r * c.eval r < 0 then 1 else 0) + k) htailx
             · have hbne : b.eval r ≠ 0 := hb
               have hb_ev := polynomial_eval_eventually_ne_zero b r hbne
               have ha_ev := polynomial_eval_eventually_ne_zero a r ha
               have hp := polynomial_pair_signchange_locally_constant a b r ha hbne
               have htail := ih n (by omega) b c hbne hrecReg
               filter_upwards [hb_ev, ha_ev, hp, htail] with x hbx hax hpair htailx
-              rw [show sturmAux a b (Nat.succ n) = a :: sturmAux b c n by
-                simp [sturmAux, hbpoly, c]]
-              have hsx := sturmAux_eq_cons_tail b c n
-              have hsr := sturmAux_eq_cons_tail b c n
-              rw [hsx, hsr]
-              simp only [List.map_cons, List.map_tail]
+              have hchain : sturmAux a b (Nat.succ n) = a :: sturmAux b c n := by
+                simp [sturmAux, hbpoly, c]
+              rw [hchain]
+              have htailShapeX :
+                  (sturmAux b c n).map (fun q => q.eval x) =
+                    b.eval x :: (sturmAux b c n).tail.map (fun q => q.eval x) := by
+                rw [sturmAux_eq_cons_tail b c n]
+                rfl
+              have htailShapeR :
+                  (sturmAux b c n).map (fun q => q.eval r) =
+                    b.eval r :: (sturmAux b c n).tail.map (fun q => q.eval r) := by
+                rw [sturmAux_eq_cons_tail b c n]
+                rfl
+              rw [htailShapeX, htailShapeR]
               rw [signChanges_cons_cons_of_ne_zero _ _ _ hax hbx,
                   signChanges_cons_cons_of_ne_zero _ _ _ ha hbne]
-              simpa [hpair] using congrArg (fun k =>
+              rw [htailShapeX, htailShapeR] at htailx
+              rw [hpair]
+              exact congrArg (fun k =>
                 (if a.eval r * b.eval r < 0 then 1 else 0) + k) htailx
