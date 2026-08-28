@@ -30,7 +30,7 @@ jobs:
           lake build ChallengeDeps Challenge
       - name: Install probe
         run: |
-          cp "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Submission.lean" /tmp/sturm/Submission.lean
+          cp "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/TailComposition.lean" /tmp/sturm/Submission.lean
       - name: Compile and expose residual
         run: |
           set +e
