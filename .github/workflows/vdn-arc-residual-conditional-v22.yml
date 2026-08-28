@@ -1,0 +1,27 @@
+name: VDN ARC residual-conditional transfer V22
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v22_residual_conditional_transfer.py"
+      - ".github/workflows/vdn-arc-residual-conditional-v22.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI
+          cd /tmp/ARC-AGI
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run residual-conditional held-out transfer
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v22_residual_conditional_transfer.py /tmp/ARC-AGI/data/training /tmp/ARC-AGI/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-residual-conditional-v22
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v22_residual_conditional_transfer/result.json
