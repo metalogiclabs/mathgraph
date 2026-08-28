@@ -113,8 +113,7 @@ theorem sturmAux_eq_cons_tail (a b : ℝ[X]) (n : ℕ) :
 theorem signChanges_singleton (a : ℝ) : signChanges [a] = 0 := by
   by_cases ha : a = 0 <;> simp [signChanges, ha]
 
-/-- Explicit two-head composition law.  This avoids unfolding the benchmark's
-zip/filter representation inside the recursive proof. -/
+/-- Explicit two-head composition law. -/
 theorem signChanges_cons_cons_of_ne_zero
     (a b : ℝ) (xs : List ℝ) (ha : a ≠ 0) (hb : b ≠ 0) :
     signChanges (a :: b :: xs) =
@@ -122,9 +121,7 @@ theorem signChanges_cons_cons_of_ne_zero
   rw [signChanges_eq_pairChanges_filter, signChanges_eq_pairChanges_filter]
   simp [ha, hb, pairChanges]
 
-/-- Correct arbitrary-fuel local-constancy theorem.  Unlike mere active-state
-safety, `SturmRegularAt` protects the displayed terminal entry when fuel is
-exhausted. -/
+/-- Correct arbitrary-fuel local-constancy theorem. -/
 theorem sturmAux_variation_locally_constant
     (a b : ℝ[X]) (r : ℝ) (n : ℕ)
     (ha : a.eval r ≠ 0) (hreg : SturmRegularAt r a b n) :
@@ -177,15 +174,17 @@ theorem sturmAux_variation_locally_constant
                   have haev := polynomial_eval_eventually_ne_zero a r ha
                   have hcev := polynomial_eval_eventually_ne_zero c r hcne
                   filter_upwards [htail, hevac, haev, hcev] with x htailx hpac hax hcx
+                  have htailEq : sturmAux c d m = c :: (sturmAux c d m).tail :=
+                    sturmAux_eq_cons_tail c d m
                   have hchain :
                       sturmAux a b (Nat.succ (Nat.succ m)) =
                         a :: b :: c :: (sturmAux c d m).tail := by
-                    calc
-                      sturmAux a b (Nat.succ (Nat.succ m)) =
+                    have hfirst :
+                        sturmAux a b (Nat.succ (Nat.succ m)) =
                           a :: b :: sturmAux c d m := by
-                            simp [sturmAux, hbpoly, c, d, hcpoly]
-                      _ = a :: b :: c :: (sturmAux c d m).tail := by
-                            rw [sturmAux_eq_cons_tail c d m]
+                      simp [sturmAux, hbpoly, c, d, hcpoly]
+                    exact hfirst.trans
+                      (congrArg (fun ys : List ℝ[X] => a :: b :: ys) htailEq)
                   rw [hchain]
                   simp only [List.map_cons]
                   have hxdrop :
@@ -237,6 +236,7 @@ theorem sturmAux_variation_locally_constant
               have hchain : sturmAux a b (Nat.succ n) = a :: sturmAux b c n := by
                 simp [sturmAux, hbpoly, c]
               rw [hchain]
+              simp only [List.map_cons]
               have htailShapeX :
                   (sturmAux b c n).map (fun q => q.eval x) =
                     b.eval x :: (sturmAux b c n).tail.map (fun q => q.eval x) := by
