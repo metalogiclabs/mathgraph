@@ -66,3 +66,48 @@ theorem squarefree_sturm_start_no_common_root (p : ℝ[X]) (r : ℝ)
     ¬ (p.eval r = 0 ∧ p.derivative.eval r = 0) := by
   rintro ⟨hr, hdr⟩
   exact squarefree_root_derivative_ne_zero p r hp hr hdr
+
+/-- The no-common-zero condition is preserved by one negated-remainder Sturm
+step. This is the recursive boundary protection exposed by the failed
+truncated-tail probe. -/
+theorem sturm_step_no_common_zero (a b : ℝ[X]) (r : ℝ)
+    (hab : ¬ (a.eval r = 0 ∧ b.eval r = 0)) :
+    ¬ (b.eval r = 0 ∧ (-(a % b)).eval r = 0) := by
+  rintro ⟨hb, hc⟩
+  have hnext := sturm_next_after_zero a b r hb
+  have ha : a.eval r = 0 := by
+    rw [hnext] at hc
+    simpa using hc
+  exact hab ⟨ha, hb⟩
+
+/-- Recursive safety interface for a bounded Sturm computation. Every active
+successive state is protected against simultaneous vanishing at `r`. -/
+noncomputable def SturmSafeAt (r : ℝ) : ℝ[X] → ℝ[X] → ℕ → Prop
+  | _, _, 0 => True
+  | a, b, n + 1 =>
+      if b = 0 then True
+      else (¬ (a.eval r = 0 ∧ b.eval r = 0)) ∧ SturmSafeAt r b (-(a % b)) n
+
+/-- A single no-common-zero certificate at the start propagates through
+arbitrary `sturmAux` fuel. -/
+theorem sturmSafeAt_of_no_common_zero (a b : ℝ[X]) (r : ℝ) (n : ℕ)
+    (hab : ¬ (a.eval r = 0 ∧ b.eval r = 0)) :
+    SturmSafeAt r a b n := by
+  induction n generalizing a b with
+  | zero =>
+      simp [SturmSafeAt]
+  | succ n ih =>
+      by_cases hbpoly : b = 0
+      · simp [SturmSafeAt, hbpoly]
+      · simp only [SturmSafeAt, hbpoly, if_false]
+        constructor
+        · exact hab
+        · exact ih b (-(a % b)) (sturm_step_no_common_zero a b r hab)
+
+/-- Squarefreeness therefore supplies the recursive safety certificate for
+the complete fuel used by the benchmark's Sturm chain. -/
+theorem squarefree_sturmChain_safe (p : ℝ[X]) (r : ℝ)
+    (hp : Squarefree p) :
+    SturmSafeAt r p p.derivative (p.natDegree + 2) := by
+  exact sturmSafeAt_of_no_common_zero p p.derivative r (p.natDegree + 2)
+    (squarefree_sturm_start_no_common_root p r hp)
