@@ -1,0 +1,24 @@
+name: VDN ARC blind fresh-target causal transfer V31
+on:
+  push:
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v31_blind_fresh_target_transfer.py'
+      - '.github/workflows/vdn-arc-blind-fresh-target-v31.yml'
+  workflow_dispatch:
+jobs:
+  blind-fresh-target:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V31 blind fresh-target transfer
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v31_blind_fresh_target_transfer.py /tmp/ARC-AGI-1/data/evaluation /tmp/ARC-AGI-1/data/training
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-blind-fresh-target-v31
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v31_blind_fresh_target_transfer/result.json
