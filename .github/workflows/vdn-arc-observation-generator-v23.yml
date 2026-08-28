@@ -1,0 +1,31 @@
+name: VDN ARC observation-generator transfer V23
+
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_observation_generator_transfer.py"
+      - ".github/workflows/vdn-arc-observation-generator-v23.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observation-generator-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V23 observation-generator transfer
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_observation_generator_transfer.py /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-arc-observation-generator-v23
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v23_observation_generator_transfer/result.json
