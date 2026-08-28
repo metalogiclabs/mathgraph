@@ -51,52 +51,18 @@ theorem polynomial_pair_signchange_locally_constant
     have hnr : ¬ f r < 0 := not_lt.mpr (le_of_lt hpos)
     simp [f, hnx, hnr]
 
-/-- First bounded tail-composition theorem. For two Euclidean steps, once the
-head evaluation is nonzero, sign variation is locally constant. This is the
-smallest nontrivial instance containing the interior-zero branch. -/
-theorem sturmAux_two_step_variation_locally_constant
-    (a b : ℝ[X]) (r : ℝ) (ha : a.eval r ≠ 0) :
-    ∀ᶠ x in 𝓝 r,
-      signChanges ((sturmAux a b 2).map (fun q => q.eval x)) =
-      signChanges ((sturmAux a b 2).map (fun q => q.eval r)) := by
-  by_cases hbpoly : b = 0
-  · simp [sturmAux, hbpoly]
-  · rw [show sturmAux a b 2 = a :: sturmAux b (-(a % b)) 1 by simp [sturmAux, hbpoly]]
-    let c : ℝ[X] := -(a % b)
-    by_cases hcpoly : c = 0
-    · have hbc : sturmAux b c 1 = [b] := by simp [sturmAux, c, hcpoly]
-      rw [hbc]
-      simp [signChanges]
-    · have hbc : sturmAux b c 1 = [b, c] := by
-        simp [sturmAux, c, hcpoly]
-      rw [hbc]
-      by_cases hb : b.eval r = 0
-      · have hc : c.eval r = -a.eval r := by
-          dsimp [c]
-          exact sturm_next_after_zero a b r hb
-        have hac : a.eval r * c.eval r < 0 := by
-          rw [hc]
-          have : 0 < a.eval r * a.eval r := mul_self_pos.mpr ha
-          nlinarith
-        let f : ℝ → ℝ := fun x => a.eval x * c.eval x
-        have hf : ContinuousAt f r := a.continuousAt.mul c.continuousAt
-        have hmem : Set.Iio (0 : ℝ) ∈ 𝓝 (f r) :=
-          IsOpen.mem_nhds isOpen_Iio (by simpa [f] using hac)
-        have hev : ∀ᶠ x in 𝓝 r, f x < 0 := by
-          change f ⁻¹' Set.Iio 0 ∈ 𝓝 r
-          exact hf hmem
-        filter_upwards [hev] with x hx
-        have hxone := signChanges_three_of_opposite_ends
-          (a.eval x) (b.eval x) (c.eval x) (by simpa [f] using hx)
-        have hrone := signChanges_three_of_opposite_ends
-          (a.eval r) (b.eval r) (c.eval r) hac
-        simpa using hxone.trans hrone.symm
-      · have hb_ev := polynomial_eval_eventually_ne_zero b r hb
-        by_cases hc : c.eval r = 0
-        · have hnext : c.eval r = 0 := hc
-          filter_upwards [hb_ev] with x hbx
-          simp [signChanges, hb, hc, hbx]
-        · have hab := polynomial_pair_signchange_locally_constant a b r ha hb
-          have hbcv := polynomial_pair_signchange_locally_constant b c r hb hc
-          filter_upwards [hab, hbcv, hb_ev, polynomial_eval_eventually_ne_zero c r hc] with x habx hbcx hbx hcx
-          simp [signChanges, ha, hb, hc, hbx, hcx, habx, hbcx]
+/-- Squarefreeness protects the Sturm start pair: a real root of `p` cannot
+also be a root of `p'`. This is the boundary condition missing from arbitrary
+truncated-tail local constancy. -/
+theorem squarefree_root_derivative_ne_zero (p : ℝ[X]) (r : ℝ)
+    (hp : Squarefree p) (hr : p.eval r = 0) :
+    p.derivative.eval r ≠ 0 := by
+  have hsep : p.Separable := (PerfectField.separable_iff_squarefree).2 hp
+  exact hsep.eval₂_derivative_ne_zero (RingHom.id ℝ) hr
+
+/-- Equivalent no-common-real-root form for the initial Sturm pair. -/
+theorem squarefree_sturm_start_no_common_root (p : ℝ[X]) (r : ℝ)
+    (hp : Squarefree p) :
+    ¬ (p.eval r = 0 ∧ p.derivative.eval r = 0) := by
+  rintro ⟨hr, hdr⟩
+  exact squarefree_root_derivative_ne_zero p r hp hr hdr
