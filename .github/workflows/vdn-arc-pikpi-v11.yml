@@ -1,0 +1,33 @@
+name: VDN ARC Pi-to-K causal V11
+
+on:
+  push:
+    branches:
+      - mathgraph/msi-arc-pikpi-v11-20260828
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pi-to-k-causal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+          test "$(find data/training -name '*.json' | wc -l)" -eq 400
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 400
+      - name: Run matched-budget Pi-to-K test
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v11_pikpi_causal.py \
+            /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-1/data/evaluation
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-pikpi-v11
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v11_pikpi_causal/result.json
