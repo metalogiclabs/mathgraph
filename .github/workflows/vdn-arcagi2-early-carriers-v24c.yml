@@ -1,0 +1,30 @@
+name: VDN ARC-AGI-2 early carriers V24c
+
+on:
+  push:
+    branches: ["mathgraph/msi-arc-pikpi-v11-20260828"]
+    paths:
+      - "verified-developmental-navigation/case_studies/arc_agi2_live/run_v24c_arcagi2_early_carriers.py"
+      - ".github/workflows/vdn-arcagi2-early-carriers-v24c.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  early-carriers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/ARC-AGI-2
+          cd /tmp/ARC-AGI-2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Find first nontrivial ARC-AGI-2 training carriers
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v24c_arcagi2_early_carriers.py /tmp/ARC-AGI-2/data/training
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arcagi2-early-carriers-v24c
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v24c_arcagi2_early_carriers/result.json
