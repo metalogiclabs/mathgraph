@@ -141,3 +141,11 @@ theorem simple_root_local_variation_drop (p : ℝ[X]) (r : ℝ)
   have hxsign : p.eval x * p.derivative.eval r < 0 := hx.1 hxr
   have hysign : 0 < p.eval y * p.derivative.eval r := hy.2 hry
   exact signChanges_simple_crossing _ _ _ hxsign hysign
+
+/-- MSI bridge from the benchmark's global squarefree hypothesis to the local
+simple-root capability used by the crossing package. -/
+theorem squarefree_root_derivative_ne_zero (p : ℝ[X]) (r : ℝ)
+    (hp : Squarefree p) (hr : p.eval r = 0) :
+    p.derivative.eval r ≠ 0 := by
+  have hsep : p.Separable := (PerfectField.separable_iff_squarefree).2 hp
+  exact hsep.eval₂_derivative_ne_zero (RingHom.id ℝ) hr
