@@ -26,8 +26,17 @@ jobs:
         run: |
           python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v11_pikpi_causal.py \
             /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-1/data/evaluation
-      - name: Upload result
+      - name: Run V18 residual-induced query synthesis
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v18_residual_induced_query_synthesis.py \
+            /tmp/ARC-AGI-1/data/evaluation
+      - name: Upload V11 result
         uses: actions/upload-artifact@v4
         with:
           name: vdn-arc-pikpi-v11
           path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v11_pikpi_causal/result.json
+      - name: Upload V18 result
+        uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-residual-query-v18
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v18_residual_induced_query_synthesis/result.json
