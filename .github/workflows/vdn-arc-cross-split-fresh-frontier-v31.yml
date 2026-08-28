@@ -1,0 +1,23 @@
+name: VDN ARC cross-split fresh frontier V31
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  fresh-frontier-census:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-1
+        run: |
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+      - name: Run V31 cross-split fresh frontier census
+        run: |
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v31_cross_split_fresh_frontier_census.py /tmp/ARC-AGI-1/data/training /tmp/ARC-AGI-1/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc-cross-split-fresh-frontier-v31
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v31_cross_split_fresh_frontier_census/result.json
