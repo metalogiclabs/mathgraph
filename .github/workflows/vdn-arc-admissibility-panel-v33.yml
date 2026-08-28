@@ -19,3 +19,4 @@ jobs:
         with:
           name: vdn-arc-admissibility-panel-v33
           path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v33_admissibility_panel/result.json
+          if-no-files-found: error
