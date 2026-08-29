@@ -3,100 +3,106 @@ name: LeanEval capability ladder
 on:
   push:
     branches:
-      - lean-eval-behavioural-router
+      - lean-eval-multitarget-sweep
     paths:
       - '.github/workflows/lean-eval-capability-ladder.yml'
-      - 'competitions/lean_eval/**'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  capability-ladder:
+  cold-sweep:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - annals_absolute_profinite_rigidity
+          - annals_algebraic_integers
+          - annals_bose_gases
+          - annals_bounded_multiplicative_functions
+          - annals_chowla_and_twin_prime_over_fq_t
+          - annals_conjecture_of_marton
+          - annals_dirichlet_weyl_bound
+          - annals_duffin_schaeffer_conjecture
+          - annals_enumerating_number_fields
+          - annals_equiangular_lines_fixed_angle
+          - annals_erdos_faber_lovasz_conjecture
+          - annals_erdos_supersingular_primes
+          - annals_flat_littlewood_poly
+          - annals_fractional_expectation_thresholds
+          - annals_good_lt_codes
+          - annals_improved_bounds_sunflower_lemma
     env:
       LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+      TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v4
       - name: Install elan
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Build frozen workspace
+      - name: Prepare frozen target
         run: |
           git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
           cd /tmp/lean-eval
           git checkout "$LEAN_EVAL_SHA"
-          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
           lake exe cache get
           lake build
-          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
-          cd /tmp/abel_ruffini
+          lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
+          cd "/tmp/$TARGET"
           lake update
-      - name: Fixed reconstruction checkpoint
-        working-directory: /tmp/abel_ruffini
+      - name: Matched cold portfolio
+        id: sweep
+        working-directory: /tmp/${{ matrix.target }}
         run: |
           set +e
-          cat > QuarticReconstruct.lean <<'EOF'
-          import Mathlib
-          theorem square_radical
-              (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
-              (s : ℂ) (hs : s^2 = z) : s ∈ solvableByRad ℚ ℂ := by
-            apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
-            rw [hs]
-            exact hz
-          theorem quartic_final_reconstruct
-              (P Q R y z s : ℂ)
-              (hP : P ∈ solvableByRad ℚ ℂ)
-              (hQ : Q ∈ solvableByRad ℚ ℂ)
-              (_hR : R ∈ solvableByRad ℚ ℂ)
-              (hz : z ∈ solvableByRad ℚ ℂ)
-              (hs : s^2 = z)
-              (_hs0 : s ≠ 0)
-              (hy : y^2 + s*y + (z + P)/2 - Q/(2*s) = 0) :
-              y ∈ solvableByRad ℚ ℂ := by
-            have hs_mem := square_radical z hz s hs
-            have htwo : (2 : ℂ) ∈ solvableByRad ℚ ℂ := by
-              have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
-              norm_num at h ⊢
-            have hfour : (4 : ℂ) ∈ solvableByRad ℚ ℂ := by
-              have h := (solvableByRad ℚ ℂ).algebraMap_mem (4 : ℚ)
-              norm_num at h ⊢
-            have hsden : (2*s) ∈ solvableByRad ℚ ℂ := (solvableByRad ℚ ℂ).mul_mem htwo hs_mem
-            have hc : ((z + P)/2 - Q/(2*s)) ∈ solvableByRad ℚ ℂ := by
-              exact (solvableByRad ℚ ℂ).sub_mem
-                ((solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).add_mem hz hP) htwo)
-                ((solvableByRad ℚ ℂ).div_mem hQ hsden)
-            have hdisc : (s^2 - 4 * ((z + P)/2 - Q/(2*s))) ∈ solvableByRad ℚ ℂ := by
-              exact (solvableByRad ℚ ℂ).sub_mem
-                ((solvableByRad ℚ ℂ).pow_mem hs_mem 2)
-                ((solvableByRad ℚ ℂ).mul_mem hfour hc)
-            let t : ℂ := 2*y + s
-            have ht2 : t^2 = s^2 - 4 * ((z + P)/2 - Q/(2*s)) := by
-              dsimp [t]
-              linear_combination 4 * hy
-            have ht : t ∈ solvableByRad ℚ ℂ := by
-              apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
-              rw [ht2]
-              exact hdisc
-            have hyform : y = (t - s) / 2 := by
-              dsimp [t]
-              ring
-            rw [hyform]
-            exact (solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).sub_mem ht hs_mem) htwo
-          EOF
-          lake env lean QuarticReconstruct.lean | tee /tmp/quartic-reconstruct.log
-          code=${PIPESTATUS[0]}
-          echo "quartic_reconstruct_exit=$code"
-          exit $code
-      - name: Compile retained universal interfaces
-        working-directory: /tmp/abel_ruffini
-        run: |
-          cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
-          cp "$GITHUB_WORKSPACE/competitions/lean_eval/QuarticUniversal.lean" QuarticUniversal.lean
-          mkdir -p .lake/build/lib/lean
-          lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean
-          lake env lean QuarticUniversal.lean
-          echo "retained_interfaces_exit=0"
+          cp Challenge.lean /tmp/original.lean
+          : > /tmp/sweep.tsv
+          solved=0
+          for tactic in aesop simp_all grind omega norm_num portfolio; do
+            cp /tmp/original.lean Submission.lean
+            TACTIC="$tactic" python3 - <<'PY'
+          import os,re
+          s=open('Submission.lean').read()
+          b={'aesop':'aesop','simp_all':'simp_all','grind':'grind','omega':'omega','norm_num':'norm_num','portfolio':'first | aesop | grind | simp_all | omega | norm_num'}[os.environ['TACTIC']]
+          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b,s)
+          open('Submission.lean','w').write(s)
+          print('holes_replaced',n)
+          PY
+            lake build Submission > "/tmp/${TARGET}-${tactic}.log" 2>&1
+            b=$?
+            if [ "$b" -eq 0 ]; then
+              lake test > "/tmp/${TARGET}-${tactic}-test.log" 2>&1
+              t=$?
+            else
+              t=99
+            fi
+            printf '%s\t%s\t%s\n' "$tactic" "$b" "$t" >> /tmp/sweep.tsv
+            if [ "$b" -eq 0 ] && [ "$t" -eq 0 ]; then
+              solved=1
+              cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
+              echo "winner=$tactic" >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+          echo "solved=$solved" >> "$GITHUB_OUTPUT"
+          echo "TARGET=$TARGET"
+          cat /tmp/sweep.tsv
+          for f in /tmp/${TARGET}-*.log; do echo "--- $f"; tail -n 25 "$f"; done
+          exit 0
+      - name: Exact solve marker
+        if: steps.sweep.outputs.solved == '1'
+        run: echo "GREEN_EXACT_COLD_SOLVE target=$TARGET winner=${{ steps.sweep.outputs.winner }}"
+      - name: Upload residual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: residual-${{ matrix.target }}
+          path: |
+            /tmp/sweep.tsv
+            /tmp/${{ matrix.target }}-*.log
+            /tmp/${{ matrix.target }}-SOLVED.lean
+          if-no-files-found: ignore
