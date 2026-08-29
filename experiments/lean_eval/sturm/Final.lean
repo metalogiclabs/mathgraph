@@ -58,7 +58,8 @@ theorem squarefree_sigma_local_root_drop
       (r < x → 0 < p.eval x * p.derivative.eval r)) ∧
     0 < d.eval x * d.eval r ∧ d.eval x ≠ 0}
   have hU : U ∈ 𝓝 r := by
-    exact Filter.inter_mem (Filter.inter_mem (Filter.inter_mem htail hcross) hdsign) hdev
+    filter_upwards [htail, hcross, hdsign, hdev] with x hx1 hx2 hx3 hx4
+    exact ⟨hx1, hx2, hx3, hx4⟩
   refine ⟨U, hU, ?_⟩
   intro x hx y hy hxr hry
   have hpxfix : p.eval x * d.eval r < 0 := by simpa [d] using hx.2.1.1 hxr
@@ -82,12 +83,12 @@ theorem squarefree_sigma_local_root_drop
     simp [sturmAux, d, c, hdpoly, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
   have htailShapeX :
       (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x) =
-        d.eval x :: (sturmAux d c (p.natDegree + 1)).tail.map (fun q => q.eval x) := by
+        d.eval x :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x)).tail := by
     rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
     rfl
   have htailShapeY :
       (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval y) =
-        d.eval y :: (sturmAux d c (p.natDegree + 1)).tail.map (fun q => q.eval y) := by
+        d.eval y :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval y)).tail := by
     rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
     rfl
   rw [sigma, sturmChain, hchain]
@@ -163,7 +164,8 @@ theorem squarefree_sigma_local_root_profile
       (r < x → 0 < p.eval x * p.derivative.eval r)) ∧
     0 < d.eval x * d.eval r ∧ d.eval x ≠ 0}
   have hU : U ∈ 𝓝 r := by
-    exact Filter.inter_mem (Filter.inter_mem (Filter.inter_mem htail hcross) hdsign) hdev
+    filter_upwards [htail, hcross, hdsign, hdev] with x hx1 hx2 hx3 hx4
+    exact ⟨hx1, hx2, hx3, hx4⟩
   refine ⟨U, hU, ?_⟩
   intro x hx
   have hchain : sturmAux p d (p.natDegree + 2) =
@@ -171,12 +173,12 @@ theorem squarefree_sigma_local_root_profile
     simp [sturmAux, d, c, hdpoly, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
   have htailShapeX :
       (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x) =
-        d.eval x :: (sturmAux d c (p.natDegree + 1)).tail.map (fun q => q.eval x) := by
+        d.eval x :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x)).tail := by
     rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
     rfl
   have htailShapeR :
       (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval r) =
-        d.eval r :: (sturmAux d c (p.natDegree + 1)).tail.map (fun q => q.eval r) := by
+        d.eval r :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval r)).tail := by
     rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
     rfl
   have hroot : sigma p r =
