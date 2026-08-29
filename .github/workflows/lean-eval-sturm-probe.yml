@@ -30,7 +30,9 @@ jobs:
           lake build ChallengeDeps Challenge
       - name: Install probe
         run: |
-          cat "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/TailComposition.lean" > /tmp/sturm/Submission.lean
+          cat "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/CrossingBase.lean" > /tmp/sturm/Submission.lean
+          printf '\n\n' >> /tmp/sturm/Submission.lean
+          tail -n +2 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/TailComposition.lean" >> /tmp/sturm/Submission.lean
           printf '\n\n' >> /tmp/sturm/Submission.lean
           tail -n +3 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/SigmaLocal.lean" >> /tmp/sturm/Submission.lean
           printf '\n\n' >> /tmp/sturm/Submission.lean
