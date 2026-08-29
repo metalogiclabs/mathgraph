@@ -1,0 +1,30 @@
+name: Calculus core Lean kernel
+
+on:
+  push:
+    branches:
+      - calculus/core-v0
+    paths:
+      - 'MathGraph/Calculus/**'
+      - '.github/workflows/calculus-core.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean 4.33.0
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.33.0
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.0
+      - name: Verify calculus kernel
+        run: |
+          lean MathGraph/Calculus/Core.lean
+          echo 'CALCULUS_CORE_GATE {"classification":"LEAN_VERIFIED_BASE_KERNEL"}'
