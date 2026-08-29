@@ -61,6 +61,7 @@ jobs:
           sham	s.l = s.l	exact rfl
           product_nonzero	(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0	have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
           factor_nonzero	∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0	apply Finset.prod_ne_zero_iff.mp; have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
+          factor_coprime_d	∀ i ∈ Finset.range k, Int.gcd (s.n + i * s.d) s.d = 1	intro i hi; simpa [s.gcd] using (Int.gcd_add_mul_left_left s.n s.d (i : ℤ))
           EOF
           sed -i 's/^          //' /tmp/interfaces.tsv
 
