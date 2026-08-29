@@ -77,7 +77,7 @@ theorem sturmRootCountLE_sub_eq_interval_card
       have har : a < r := lt_of_not_ge hna
       have hrb' : r < b := by
         rcases hrb.eq_or_lt with rfl | hlt
-        · have hroot : IsRoot p b := (Polynomial.mem_roots hp0).1 (by
+        · have hroot : IsRoot p r := (Polynomial.mem_roots hp0).1 (by
             simpa [sturmRootFinset] using hrS)
           exact (hb (by simpa [Polynomial.IsRoot.def] using hroot)).elim
         · exact hlt
@@ -86,10 +86,8 @@ theorem sturmRootCountLE_sub_eq_interval_card
       refine ⟨⟨hrS, hrb.le⟩, ?_⟩
       intro hA
       exact (not_le_of_gt har) hA.2
-  have hinter : A ∩ B = A := Finset.inter_eq_left.mpr hsub
-  have hcard0 := Finset.card_sdiff (s := B) (t := A)
-  have hcard : (B \ A).card = B.card - A.card := by
-    simpa [hinter] using hcard0
+  have hcard : (B \ A).card = B.card - A.card :=
+    Finset.card_sdiff_of_subset hsub
   rw [hdiff] at hcard
   simpa [sturmRootCountLE, A, B, S] using hcard.symm
 
