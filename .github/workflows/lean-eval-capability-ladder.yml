@@ -12,9 +12,9 @@ permissions:
   contents: read
 
 jobs:
-  cold-sweep:
+  behavioural-quotient:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +36,7 @@ jobs:
           - annals_good_lt_codes
           - annals_improved_bounds_sunflower_lemma
     env:
-      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+      LEAN_EVAL_SHA: 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
       TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v4
@@ -54,55 +54,85 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Matched cold portfolio
-        id: sweep
+      - name: Behavioural future composition
+        id: quotient
         working-directory: /tmp/${{ matrix.target }}
         run: |
           set +e
           cp Challenge.lean /tmp/original.lean
-          : > /tmp/sweep.tsv
+          : > /tmp/behaviour.tsv
           solved=0
-          for tactic in aesop simp_all grind omega norm_num portfolio; do
+          # Representative continuations chosen to expose future-obligation behaviour,
+          # not merely repeat the first cold portfolio.
+          for tactic in simp_aesop simp_grind aesop_all grind_all norm_linarith field_ring positivity exact_assumption; do
             cp /tmp/original.lean Submission.lean
             TACTIC="$tactic" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          b={'aesop':'aesop','simp_all':'simp_all','grind':'grind','omega':'omega','norm_num':'norm_num','portfolio':'first | aesop | grind | simp_all | omega | norm_num'}[os.environ['TACTIC']]
+          bodies={
+            'simp_aesop':'simp_all <;> aesop',
+            'simp_grind':'simp_all <;> grind',
+            'aesop_all':'aesop (add safe (by intros; assumption))',
+            'grind_all':'grind',
+            'norm_linarith':'norm_num at * <;> try linarith <;> try nlinarith',
+            'field_ring':'try field_simp <;> try ring <;> try ring_nf <;> aesop',
+            'positivity':'try positivity <;> try norm_num <;> aesop',
+            'exact_assumption':'first | assumption | exact Classical.choice (show Nonempty _ from inferInstance) | aesop'
+          }
+          b=bodies[os.environ['TACTIC']]
           s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b,s)
           open('Submission.lean','w').write(s)
           print('holes_replaced',n)
           PY
             lake build Submission > "/tmp/${TARGET}-${tactic}.log" 2>&1
             b=$?
+            sig=$(python3 - "/tmp/${TARGET}-${tactic}.log" <<'PY'
+          import re,sys,hashlib
+          s=open(sys.argv[1],errors='ignore').read()
+          goals=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,700}',s)
+          x=(goals[-1] if goals else s[-1200:])
+          x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
+          x=re.sub(r'\d+\.\d+s','<TIME>',x)
+          print(hashlib.sha256(x.encode()).hexdigest()[:12])
+          PY
+          )
+            printf '%s\t%s\t%s\n' "$tactic" "$b" "$sig" >> /tmp/behaviour.tsv
             if [ "$b" -eq 0 ]; then
               lake test > "/tmp/${TARGET}-${tactic}-test.log" 2>&1
               t=$?
-            else
-              t=99
-            fi
-            printf '%s\t%s\t%s\n' "$tactic" "$b" "$t" >> /tmp/sweep.tsv
-            if [ "$b" -eq 0 ] && [ "$t" -eq 0 ]; then
-              solved=1
-              cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
-              echo "winner=$tactic" >> "$GITHUB_OUTPUT"
-              break
+              if [ "$t" -eq 0 ]; then
+                solved=1
+                cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
+                echo "winner=$tactic" >> "$GITHUB_OUTPUT"
+                break
+              fi
             fi
           done
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
           echo "TARGET=$TARGET"
-          cat /tmp/sweep.tsv
-          for f in /tmp/${TARGET}-*.log; do echo "--- $f"; tail -n 25 "$f"; done
+          cat /tmp/behaviour.tsv
+          python3 - <<'PY'
+          from collections import defaultdict
+          rows=[]
+          for line in open('/tmp/behaviour.tsv'):
+              t,b,s=line.rstrip().split('\t'); rows.append((t,b,s))
+          q=defaultdict(list)
+          for t,b,s in rows:q[(b,s)].append(t)
+          print('BEHAVIOURAL_CLASSES',len(q),'OF',len(rows))
+          for k,v in q.items(): print(k,','.join(v))
+          PY
+          for f in /tmp/${TARGET}-*.log; do echo "--- $f"; tail -n 18 "$f"; done
           exit 0
       - name: Exact solve marker
-        if: steps.sweep.outputs.solved == '1'
-        run: echo "GREEN_EXACT_COLD_SOLVE target=$TARGET winner=${{ steps.sweep.outputs.winner }}"
-      - name: Upload residual
+        if: steps.quotient.outputs.solved == '1'
+        run: echo "GREEN_EXACT_BEHAVIOURAL_SOLVE target=$TARGET winner=${{ steps.quotient.outputs.winner }}"
+      - name: Upload behavioural residual
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: residual-${{ matrix.target }}
+          name: behavioural-${{ matrix.target }}
           path: |
-            /tmp/sweep.tsv
+            /tmp/behaviour.tsv
             /tmp/${{ matrix.target }}-*.log
             /tmp/${{ matrix.target }}-SOLVED.lean
           if-no-files-found: ignore
