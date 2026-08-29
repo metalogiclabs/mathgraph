@@ -73,7 +73,7 @@ theorem sturmComplete_of_natDegree_lt
           · simp only [SturmComplete, hb, if_false]
             by_cases hbdeg : b.natDegree = 0
             · have hzero := sturm_remainder_zero_of_natDegree_eq_zero a b hb hbdeg
-              subst hzero
+              rw [hzero]
               cases n with
               | zero => simp [SturmComplete]
               | succ n => simp [SturmComplete]
@@ -89,7 +89,8 @@ chain.  This is a purely algebraic fact and does not require squarefreeness. -/
 theorem sturmChain_complete (p : ℝ[X]) :
     SturmComplete p p.derivative (p.natDegree + 2) := by
   apply sturmComplete_of_natDegree_lt
-  have hderiv : p.derivative.natDegree ≤ p.natDegree := natDegree_derivative_le p
+  have hderiv : p.derivative.natDegree ≤ p.natDegree := by
+    exact (natDegree_derivative_le p).trans (Nat.sub_le _ _)
   omega
 
 /-- Consequently a squarefree Sturm chain has the exact terminal-safe
