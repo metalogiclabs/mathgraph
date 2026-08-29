@@ -57,8 +57,6 @@ jobs:
           end ErdosSupersingularPrimes
           LEAN
 
-          # Candidate interfaces are generic consequences of the available structure,
-          # not target-answer lemmas. Every candidate must verify before replay.
           cat > /tmp/interfaces.tsv <<'EOF'
           sham	s.l = s.l	exact rfl
           prime_two_le	2 ≤ s.l	exact hs.two_le
@@ -74,11 +72,15 @@ jobs:
           : > /tmp/verified-interfaces.tsv
           while IFS=$'\t' read -r name prop proof; do
             cp /tmp/base.lean Submission.lean
-            NAME="$name" PROP="$prop" PROOF="$proof" python3 - <<'PY'
+            PROP="$prop" PROOF="$proof" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          ins=f"have hDelta : {os.environ['PROP']} := by\n      {os.environ['PROOF']}\n    sorry"
-          s,n=re.subn(r'sorry\nend ErdosSupersingularPrimes',ins+'\nend ErdosSupersingularPrimes',s,count=1)
+          repl=("    have hDelta : " + os.environ['PROP'] + " := by\n"
+                + "      " + os.environ['PROOF'] + "\n"
+                + "    sorry\n"
+                + "end ErdosSupersingularPrimes")
+          s,n=re.subn(r'    sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          if n != 1: raise SystemExit(f'interface hole replacements={n}')
           open('Submission.lean','w').write(s)
           PY
             lake build Submission > "/tmp/interface-${name}.log" 2>&1
@@ -117,9 +119,12 @@ jobs:
           import os,re
           s=open('Submission.lean').read()
           body=os.environ['BODY'].replace('\\n','\n')
-          repl=(f"have hDelta : {os.environ['PROP']} := by\n      {os.environ['PROOF']}\n"
-                + "    " + body.replace('\n','\n    '))
-          s,n=re.subn(r'sorry\nend ErdosSupersingularPrimes',repl+'\nend ErdosSupersingularPrimes',s,count=1)
+          repl=("    have hDelta : " + os.environ['PROP'] + " := by\n"
+                + "      " + os.environ['PROOF'] + "\n"
+                + "    " + body.replace('\n','\n    ') + "\n"
+                + "end ErdosSupersingularPrimes")
+          s,n=re.subn(r'    sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          if n != 1: raise SystemExit(f'replay hole replacements={n}')
           open('Submission.lean','w').write(s)
           PY
               lake build Submission > "/tmp/replay-${iname}-${tname}.log" 2>&1
@@ -146,7 +151,7 @@ jobs:
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
           echo "winner=$winner" >> "$GITHUB_OUTPUT"
           python3 - <<'PY'
-          from collections import defaultdict,Counter
+          from collections import defaultdict
           rows=[x.rstrip().split('\t') for x in open('/tmp/replay.tsv') if x.strip()]
           by=defaultdict(list)
           for r in rows:
