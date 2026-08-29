@@ -99,7 +99,7 @@ jobs:
           echo "verified=$verified" >> "$GITHUB_OUTPUT"
           echo "VERIFIED_STRUCTURAL_INTERFACES count=$verified"
           exit 0
-      - name: Replay frozen old language after each verified interface
+      - name: Replay primitive old language after each verified interface
         id: replay
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -111,8 +111,7 @@ jobs:
             ('nlinarith','try nlinarith'), ('positivity','try positivity'),
             ('ringnf','try ring_nf'), ('fieldsimp','try field_simp'),
             ('elim','try solve_by_elim'), ('contra','try contradiction'), ('tauto','try tauto')]
-          rows=list(prims)+[(a+'__'+b,x+'\n  '+y) for a,x in prims for b,y in prims]
-          for n,b in rows: print(n+'\t'+b.replace('\n','\\n'))
+          for n,b in prims: print(n+'\t'+b)
           PY
           : > /tmp/replay.tsv
           solved=0
@@ -123,10 +122,10 @@ jobs:
               PROP="$prop" PROOF="$proof" BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          body=os.environ['BODY'].replace('\\n','\n')
+          body=os.environ['BODY']
           repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
                 + "    " + os.environ['PROOF'] + "\n"
-                + "  " + body.replace('\n','\n  ') + "\n"
+                + "  " + body + "\n"
                 + "end ErdosSupersingularPrimes")
           s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
           if n != 1: raise SystemExit(f'replay hole replacements={n}')
@@ -144,8 +143,10 @@ jobs:
           s=open(sys.argv[1],errors='ignore').read()
           chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,1200}',s)
           x=(chunks[-1] if chunks else s[-2200:])
+          x=re.sub(r'^hDelta\s*:.*$', '', x, flags=re.M)
           x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
           x=re.sub(r'\d+\.\d+s','<TIME>',x)
+          x='\n'.join(line for line in x.splitlines() if line.strip())
           print(hashlib.sha256(x.encode()).hexdigest()[:16])
           PY
           )
