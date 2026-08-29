@@ -91,8 +91,7 @@ theorem squarefree_sigma_local_root_drop
         d.eval y :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval y)).tail := by
     rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
     rfl
-  rw [sigma, sturmChain, hchain]
-  simp only [List.map_cons]
+  simp only [sigma, sturmChain, hchain, List.map_cons]
   rw [htailShapeX, htailShapeY]
   rw [signChanges_cons_cons_of_ne_zero _ _ _ hpx hx.2.2.2,
       signChanges_cons_cons_of_ne_zero _ _ _ hpy hy.2.2.2]
@@ -244,8 +243,9 @@ theorem finset_order_profile_eventually (S : Finset ℝ) (r : ℝ) (hr : r ∉ S
         exact hr (Finset.mem_insert_of_mem hrs)
       have hzr : z ≠ r := by
         intro h
-        subst h
-        exact hr (Finset.mem_insert_self r S)
+        apply hr
+        rw [← h]
+        exact Finset.mem_insert_self z S
       have hzprof : ∀ᶠ x in 𝓝 r, (z ≤ x ↔ z ≤ r) := by
         rcases lt_or_gt_of_ne hzr with hlt | hgt
         · have hev : ∀ᶠ x in 𝓝 r, z < x := Ioi_mem_nhds hlt
@@ -304,10 +304,10 @@ theorem finset_countLE_local_root_profile
   · intro hxr
     rw [hS]
     have hrnot : ¬ r ≤ x := not_le_of_gt hxr
-    simp [hrnot, hT]
+    simp [Finset.filter_insert, hrnot, hT, hrT]
   · intro hrx
     rw [hS]
-    simp [hrx, hT]
+    simp [Finset.filter_insert, hrx, hT, hrT]
 
 /-- The polynomial root prefix count is locally constant at every nonroot. -/
 theorem sturmRootCountLE_locally_constant_at_nonroot
