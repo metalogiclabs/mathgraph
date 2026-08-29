@@ -16,6 +16,8 @@ jobs:
   verify-core:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      LEAN_PATH: .
     steps:
       - uses: actions/checkout@v4
       - name: Install Lean 4.33.0
