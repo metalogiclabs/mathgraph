@@ -26,5 +26,9 @@ jobs:
           "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.0
       - name: Verify calculus kernel
         run: |
-          lean MathGraph/Calculus/Core.lean
+          lean -o MathGraph/Calculus/Core.olean MathGraph/Calculus/Core.lean
           echo 'CALCULUS_CORE_GATE {"classification":"LEAN_VERIFIED_BASE_KERNEL"}'
+      - name: Verify refinement algebra
+        run: |
+          lean MathGraph/Calculus/Refinement.lean
+          echo 'CALCULUS_REFINEMENT_GATE {"classification":"LEAN_VERIFIED_INFORMATION_ALGEBRA"}'
