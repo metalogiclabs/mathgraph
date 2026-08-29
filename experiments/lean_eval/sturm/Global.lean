@@ -43,8 +43,8 @@ line, by connectedness. -/
 theorem squarefree_sturmCompensated_eq
     (p : ℝ[X]) (hp : Squarefree p) (hp0 : p ≠ 0) (a b : ℝ) :
     sturmCompensated p a = sturmCompensated p b := by
-  exact (squarefree_sturmCompensated_isLocallyConstant p hp hp0)
-    .apply_eq_of_preconnectedSpace a b
+  exact IsLocallyConstant.apply_eq_of_preconnectedSpace
+    (squarefree_sturmCompensated_isLocallyConstant p hp hp0) a b
 
 /-- Distinct roots strictly inside an interval, represented exactly as in the
 frozen LeanEval challenge. -/
@@ -86,9 +86,12 @@ theorem sturmRootCountLE_sub_eq_interval_card
       refine ⟨⟨hrS, hrb.le⟩, ?_⟩
       intro hA
       exact (not_le_of_gt har) hA.2
-  have hcard := Finset.card_sdiff hsub
+  have hinter : A ∩ B = A := Finset.inter_eq_left.mpr hsub
+  have hcard0 := Finset.card_sdiff (s := B) (t := A)
+  have hcard : (B \ A).card = B.card - A.card := by
+    simpa [hinter] using hcard0
   rw [hdiff] at hcard
-  simpa [sturmRootCountLE, A, B, S] using hcard
+  simpa [sturmRootCountLE, A, B, S] using hcard.symm
 
 /-- Exact frozen LeanEval target. -/
 theorem sturm (p : ℝ[X]) (hp : Squarefree p) {a b : ℝ} (hab : a < b)
