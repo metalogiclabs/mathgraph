@@ -32,5 +32,9 @@ jobs:
           echo 'CALCULUS_CORE_GATE {"classification":"LEAN_VERIFIED_BASE_KERNEL"}'
       - name: Verify refinement algebra
         run: |
-          lean MathGraph/Calculus/Refinement.lean
+          lean -o MathGraph/Calculus/Refinement.olean MathGraph/Calculus/Refinement.lean
           echo 'CALCULUS_REFINEMENT_GATE {"classification":"LEAN_VERIFIED_INFORMATION_ALGEBRA"}'
+      - name: Verify consequence-separation bridge
+        run: |
+          lean MathGraph/Calculus/Separation.lean
+          echo 'CALCULUS_SEPARATION_GATE {"classification":"LEAN_VERIFIED_CONSEQUENCE_SEPARATION_DUALITY"}'
