@@ -7,18 +7,10 @@ on:
     paths:
       - '.github/workflows/lean-eval-capability-ladder.yml'
       - 'competitions/lean_eval/**'
-  pull_request:
-    paths:
-      - '.github/workflows/lean-eval-capability-ladder.yml'
-      - 'competitions/lean_eval/**'
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: lean-eval-capability-ladder-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   capability-ladder:
@@ -28,13 +20,11 @@ jobs:
       LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
     steps:
       - uses: actions/checkout@v4
-
       - name: Install elan
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
-      - name: Build one frozen LeanEval workspace
+      - name: Build frozen workspace
         run: |
           git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
           cd /tmp/lean-eval
@@ -45,38 +35,18 @@ jobs:
           lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
           cd /tmp/abel_ruffini
           lake update
-
-      - name: API preflight
-        working-directory: /tmp/abel_ruffini
-        run: |
-          cat > Preflight.lean <<'EOF'
-          import Mathlib
-          #check (solvableByRad ℚ ℂ).algebraMap_mem
-          #check solvableByRad.rad_mem
-          #check (solvableByRad ℚ ℂ).mul_mem
-          #check (solvableByRad ℚ ℂ).sub_mem
-          #check (solvableByRad ℚ ℂ).div_mem
-          #check (solvableByRad ℚ ℂ).pow_mem
-          #check algebraMap.coe_ratCast
-          EOF
-          lake env lean Preflight.lean | tee /tmp/preflight.log
-
-      - name: Batch capability checkpoints
+      - name: Fixed reconstruction checkpoint
         working-directory: /tmp/abel_ruffini
         run: |
           set +e
-          printf 'checkpoint\texit\n' > /tmp/ladder.tsv
-
           cat > QuarticReconstruct.lean <<'EOF'
           import Mathlib
-
           theorem square_radical
               (z : ℂ) (hz : z ∈ solvableByRad ℚ ℂ)
               (s : ℂ) (hs : s^2 = z) : s ∈ solvableByRad ℚ ℂ := by
             apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
             rw [hs]
             exact hz
-
           theorem quartic_final_reconstruct
               (P Q R y z s : ℂ)
               (hP : P ∈ solvableByRad ℚ ℂ)
@@ -84,7 +54,7 @@ jobs:
               (_hR : R ∈ solvableByRad ℚ ℂ)
               (hz : z ∈ solvableByRad ℚ ℂ)
               (hs : s^2 = z)
-              (hs0 : s ≠ 0)
+              (_hs0 : s ≠ 0)
               (hy : y^2 + s*y + (z + P)/2 - Q/(2*s) = 0) :
               y ∈ solvableByRad ℚ ℂ := by
             have hs_mem := square_radical z hz s hs
@@ -100,7 +70,7 @@ jobs:
                 ((solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).add_mem hz hP) htwo)
                 ((solvableByRad ℚ ℂ).div_mem hQ hsden)
             have hdisc : (s^2 - 4 * ((z + P)/2 - Q/(2*s))) ∈ solvableByRad ℚ ℂ := by
-              exact (solvableByRad ℚ ℚ).sub_mem
+              exact (solvableByRad ℚ ℂ).sub_mem
                 ((solvableByRad ℚ ℂ).pow_mem hs_mem 2)
                 ((solvableByRad ℚ ℂ).mul_mem hfour hc)
             let t : ℂ := 2*y + s
@@ -117,79 +87,16 @@ jobs:
             rw [hyform]
             exact (solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).sub_mem ht hs_mem) htwo
           EOF
-          lake env lean QuarticReconstruct.lean > /tmp/quartic-reconstruct.log 2>&1
-          q1=$?
-          printf 'quartic_reconstruct\t%s\n' "$q1" >> /tmp/ladder.tsv
-
-          cat > QuarticZeroBranch.lean <<'EOF'
-          import Mathlib
-          theorem quadratic_zero_linear_branch
-              (y c : ℂ) (hc : c ∈ solvableByRad ℚ ℂ)
-              (hy : y^2 + c = 0) : y ∈ solvableByRad ℚ ℂ := by
-            have hnegc : (-c) ∈ solvableByRad ℚ ℂ := (solvableByRad ℚ ℂ).neg_mem hc
-            apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
-            have : y^2 = -c := by linear_combination hy
-            rw [this]
-            exact hnegc
-          EOF
-          lake env lean QuarticZeroBranch.lean > /tmp/quartic-zero.log 2>&1
-          q0=$?
-          printf 'quartic_zero_branch\t%s\n' "$q0" >> /tmp/ladder.tsv
-
-          cat > TranslateBack.lean <<'EOF'
-          import Mathlib
-          theorem affine_translate_back
-              (a b : ℚ) (y x : ℂ) (ha : (a : ℂ) ≠ 0)
-              (hy : y ∈ solvableByRad ℚ ℂ)
-              (hrel : y = 4 * (a : ℂ) * x + (b : ℂ)) :
-              x ∈ solvableByRad ℚ ℂ := by
-            have hb : (b : ℂ) ∈ solvableByRad ℚ ℂ := by
-              have h := (solvableByRad ℚ ℂ).algebraMap_mem b
-              simpa [algebraMap.coe_ratCast] using h
-            have hden : (4 * (a : ℂ)) ∈ solvableByRad ℚ ℂ := by
-              have h := (solvableByRad ℚ ℂ).algebraMap_mem (4*a)
-              simpa [algebraMap.coe_ratCast] using h
-            have hx : x = (y - (b : ℂ)) / (4 * (a : ℂ)) := by
-              rw [hrel]
-              field_simp [ha]
-              ring
-            rw [hx]
-            exact (solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).sub_mem hy hb) hden
-          EOF
-          lake env lean TranslateBack.lean > /tmp/translate-back.log 2>&1
-          qt=$?
-          printf 'translate_back\t%s\n' "$qt" >> /tmp/ladder.tsv
-
-          cat /tmp/ladder.tsv
-          exit 0
-
-      - name: Compile universal quartic
+          lake env lean QuarticReconstruct.lean | tee /tmp/quartic-reconstruct.log
+          code=${PIPESTATUS[0]}
+          echo "quartic_reconstruct_exit=$code"
+          exit $code
+      - name: Compile retained universal interfaces
         working-directory: /tmp/abel_ruffini
         run: |
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
           cp "$GITHUB_WORKSPACE/competitions/lean_eval/QuarticUniversal.lean" QuarticUniversal.lean
           mkdir -p .lake/build/lib/lean
-          set +e
-          lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
-          dep=$?
-          echo "cubic_dependency_exit=$dep"
-          if [ "$dep" -ne 0 ]; then tail -n 160 /tmp/cubic-dependency.log; exit 0; fi
-          lake env lean QuarticUniversal.lean > /tmp/quartic-universal.log 2>&1
-          code=$?
-          echo "quartic_universal_exit=$code"
-          tail -n 240 /tmp/quartic-universal.log
-          exit 0
-
-      - name: Upload all residuals
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lean-eval-capability-ladder
-          path: |
-            /tmp/preflight.log
-            /tmp/ladder.tsv
-            /tmp/quartic-reconstruct.log
-            /tmp/quartic-zero.log
-            /tmp/translate-back.log
-            /tmp/cubic-dependency.log
-            /tmp/quartic-universal.log
+          lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean
+          lake env lean QuarticUniversal.lean
+          echo "retained_interfaces_exit=0"
