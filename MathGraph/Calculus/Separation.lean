@@ -22,8 +22,9 @@ theorem consequentialEq_iff_not_separated
     exact hne (hEq i)
   · intro hNoSep i
     classical
-    by_contra hne
-    exact hNoSep ⟨i, hne⟩
+    cases Classical.em (L i x = L i y) with
+    | inl hEq => exact hEq
+    | inr hNe => exact False.elim (hNoSep ⟨i, hNe⟩)
 
 /-- The induced separation is irreflexive. -/
 theorem separated_irrefl
@@ -42,7 +43,7 @@ theorem separated_symm
   rcases h with ⟨i, hne⟩
   exact ⟨i, fun hEq => hne hEq.symm⟩
 
-/-- The induced separation is cotransitive.  Thus the observation language
+/-- The induced separation is cotransitive. Thus the observation language
 canonically induces an apartness relation, and consequential identity is its
 negation. -/
 theorem separated_cotrans
@@ -61,7 +62,7 @@ theorem separated_cotrans
     exact ⟨i, hxy⟩
 
 /-- Extending a language by one consequence adds exactly the old separators
-plus pairs separated by the new consequence.  This is the separation-dual of
+plus pairs separated by the new consequence. This is the separation-dual of
 the golden refinement law. -/
 theorem separated_extend_iff
     {ι : Type w} {α : Type u} {β : Type v}
@@ -109,15 +110,17 @@ theorem refines_iff_separation_inclusion
   classical
   constructor
   · intro hRef x y hSepWeak
-    by_contra hNoStrong
-    have hStrongEq : ConsequentialEq strong x y :=
-      (consequentialEq_iff_not_separated strong x y).mpr hNoStrong
-    have hWeakEq : ConsequentialEq weak x y := hRef hStrongEq
-    exact (consequentialEq_iff_not_separated weak x y).mp hWeakEq hSepWeak
+    cases Classical.em (Separated strong x y) with
+    | inl hSepStrong => exact hSepStrong
+    | inr hNoStrong =>
+        have hStrongEq : ConsequentialEq strong x y :=
+          (consequentialEq_iff_not_separated strong x y).mpr hNoStrong
+        have hWeakEq : ConsequentialEq weak x y := hRef hStrongEq
+        exact False.elim ((consequentialEq_iff_not_separated weak x y).mp hWeakEq hSepWeak)
   · intro hSep x y hStrongEq
     apply (consequentialEq_iff_not_separated weak x y).mpr
     intro hWeakSep
-    have hStrongSep := hSep hWeakSep
+    have hStrongSep : Separated strong x y := hSep hWeakSep
     exact (consequentialEq_iff_not_separated strong x y).mp hStrongEq hStrongSep
 
 end MathGraph.Calculus
