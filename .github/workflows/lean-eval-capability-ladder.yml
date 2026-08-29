@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  promoted-retrieval:
+  bounded-closure:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -55,77 +55,109 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Promoted theorem retrieval and elimination
-        id: retrieval
+      - name: Exhaust frozen depth-2 proof language
+        id: closure
         working-directory: /tmp/${{ matrix.target }}
         run: |
           set +e
           cp Challenge.lean /tmp/original.lean
-          : > /tmp/retrieval.tsv
+          python3 - <<'PY' > /tmp/candidates.tsv
+          prims = [
+            ('simp','try simp_all'),
+            ('aesop','try aesop'),
+            ('grind','try grind'),
+            ('norm','try norm_num at *'),
+            ('linarith','try linarith'),
+            ('nlinarith','try nlinarith'),
+            ('positivity','try positivity'),
+            ('ringnf','try ring_nf'),
+            ('fieldsimp','try field_simp'),
+            ('elim','try solve_by_elim'),
+            ('contra','try contradiction'),
+            ('tauto','try tauto'),
+          ]
+          rows=[]
+          for n,b in prims: rows.append((n,b))
+          for n1,b1 in prims:
+            for n2,b2 in prims:
+              rows.append((n1+'__'+n2,b1+'\n  '+b2))
+          for n,b in rows:
+            print(n+'\t'+b.replace('\n','\\n'))
+          PY
+          total=$(wc -l < /tmp/candidates.tsv)
+          : > /tmp/closure.tsv
+          : > /tmp/signatures.tsv
           solved=0
-          for tactic in library_search exact_q apply_q solve_by_elim aesop_q classical_aesop contradiction tauto; do
+          tested=0
+          while IFS=$'\t' read -r name body; do
+            tested=$((tested+1))
             cp /tmp/original.lean Submission.lean
-            TACTIC="$tactic" python3 - <<'PY'
+            NAME="$name" BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          bodies={
-            'library_search':'library_search',
-            'exact_q':'exact?',
-            'apply_q':'apply?',
-            'solve_by_elim':'solve_by_elim',
-            'aesop_q':'aesop?',
-            'classical_aesop':'classical\n  aesop',
-            'contradiction':'contradiction',
-            'tauto':'tauto'
-          }
-          b=bodies[os.environ['TACTIC']]
+          b=os.environ['BODY'].replace('\\n','\n')
           s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b,s)
           open('Submission.lean','w').write(s)
-          print('holes_replaced',n)
+          if n != 1: print('HOLE_REPLACEMENT_COUNT',n)
           PY
-            lake build Submission > "/tmp/${TARGET}-${tactic}.log" 2>&1
+            lake build Submission > "/tmp/${TARGET}-closure-${name}.log" 2>&1
             b=$?
             t=99
             if [ "$b" -eq 0 ]; then
-              lake test > "/tmp/${TARGET}-${tactic}-test.log" 2>&1
+              lake test > "/tmp/${TARGET}-closure-${name}-test.log" 2>&1
               t=$?
             fi
-            category=$(python3 - "/tmp/${TARGET}-${tactic}.log" <<'PY'
-          import re,sys
+            sig=$(python3 - "/tmp/${TARGET}-closure-${name}.log" <<'PY'
+          import re,sys,hashlib
           s=open(sys.argv[1],errors='ignore').read()
-          if 'no applicable theorem' in s.lower() or 'library_search' in s and 'failed' in s.lower(): c='NO_LIBRARY_THEOREM'
-          elif 'Tactic `aesop` failed' in s or 'made no progress' in s: c='NO_AUTOMATION_PROGRESS'
-          elif 'unsolved goals' in s: c='UNSOLVED_GOAL'
-          elif 'type mismatch' in s: c='TYPE_MISMATCH'
-          elif 'unknown tactic' in s or 'unexpected token' in s: c='TACTIC_SYNTAX'
-          elif 'error:' in s: c='OTHER_ERROR'
-          else: c='BUILD_OK'
-          print(c)
+          chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,900}',s)
+          x=(chunks[-1] if chunks else s[-1500:])
+          x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
+          x=re.sub(r'\d+\.\d+s','<TIME>',x)
+          print(hashlib.sha256(x.encode()).hexdigest()[:16])
           PY
           )
-            printf '%s\t%s\t%s\t%s\n' "$tactic" "$b" "$t" "$category" >> /tmp/retrieval.tsv
+            printf '%s\t%s\t%s\t%s\n' "$name" "$b" "$t" "$sig" >> /tmp/closure.tsv
+            printf '%s\t%s\n' "$name" "$sig" >> /tmp/signatures.tsv
             if [ "$b" -eq 0 ] && [ "$t" -eq 0 ]; then
               solved=1
               cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
-              echo "winner=$tactic" >> "$GITHUB_OUTPUT"
+              echo "winner=$name" >> "$GITHUB_OUTPUT"
               break
             fi
-          done
+          done < /tmp/candidates.tsv
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
-          echo "TARGET=$TARGET"
-          cat /tmp/retrieval.tsv
-          for f in /tmp/${TARGET}-*.log; do echo "--- $f"; tail -n 16 "$f"; done
+          echo "tested=$tested" >> "$GITHUB_OUTPUT"
+          echo "declared=$total" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          from collections import Counter
+          rows=[line.rstrip().split('\t') for line in open('/tmp/closure.tsv')]
+          c=Counter(r[3] for r in rows)
+          print('TARGET',__import__('os').environ['TARGET'])
+          print('CLOSURE_DECLARED',sum(1 for _ in open('/tmp/candidates.tsv')))
+          print('CLOSURE_ENUMERATED',len(rows))
+          print('RESIDUAL_SIGNATURE_CLASSES',len(c))
+          for sig,n in c.most_common(): print('SIG',sig,'COUNT',n)
+          PY
+          if [ "$solved" -eq 0 ] && [ "$tested" -eq "$total" ]; then
+            echo "CERTIFIED_BOUNDED_NONMEMBERSHIP target=$TARGET language=depth2_12_primitives enumerated=$tested"
+          fi
           exit 0
       - name: Exact solve marker
-        if: steps.retrieval.outputs.solved == '1'
-        run: echo "GREEN_EXACT_PROMOTED_SOLVE target=$TARGET winner=${{ steps.retrieval.outputs.winner }}"
-      - name: Upload promoted residual
+        if: steps.closure.outputs.solved == '1'
+        run: echo "GREEN_EXACT_CLOSURE_SOLVE target=$TARGET winner=${{ steps.closure.outputs.winner }}"
+      - name: Certified nonmembership marker
+        if: steps.closure.outputs.solved != '1' && steps.closure.outputs.tested == steps.closure.outputs.declared
+        run: echo "RED_CERTIFIED_BOUNDED_NONMEMBERSHIP target=$TARGET enumerated=${{ steps.closure.outputs.tested }}"
+      - name: Upload closure evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: promoted-${{ matrix.target }}
+          name: closure-${{ matrix.target }}
           path: |
-            /tmp/retrieval.tsv
-            /tmp/${{ matrix.target }}-*.log
+            /tmp/candidates.tsv
+            /tmp/closure.tsv
+            /tmp/signatures.tsv
+            /tmp/${{ matrix.target }}-closure-*.log
             /tmp/${{ matrix.target }}-SOLVED.lean
           if-no-files-found: ignore
