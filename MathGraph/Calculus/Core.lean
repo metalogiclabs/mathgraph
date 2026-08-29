@@ -15,18 +15,18 @@ def ConsequentialEq {ι : Type w} {α : Type u} {β : Type v}
     (L : Language ι α β) (x y : α) : Prop :=
   ∀ i, L i x = L i y
 
-@[refl] theorem consequentialEq_refl {ι : Type w} {α : Type u} {β : Type v}
+theorem consequentialEq_refl {ι : Type w} {α : Type u} {β : Type v}
     (L : Language ι α β) (x : α) : ConsequentialEq L x x := by
   intro i
   rfl
 
-@[symm] theorem consequentialEq_symm {ι : Type w} {α : Type u} {β : Type v}
+theorem consequentialEq_symm {ι : Type w} {α : Type u} {β : Type v}
     {L : Language ι α β} {x y : α} (h : ConsequentialEq L x y) :
     ConsequentialEq L y x := by
   intro i
   exact (h i).symm
 
-@[trans] theorem consequentialEq_trans {ι : Type w} {α : Type u} {β : Type v}
+theorem consequentialEq_trans {ι : Type w} {α : Type u} {β : Type v}
     {L : Language ι α β} {x y z : α}
     (hxy : ConsequentialEq L x y) (hyz : ConsequentialEq L y z) :
     ConsequentialEq L x z := by
