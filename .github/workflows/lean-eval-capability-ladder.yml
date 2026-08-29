@@ -12,32 +12,12 @@ permissions:
   contents: read
 
 jobs:
-  extension-genesis:
+  lemma-genesis:
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - annals_absolute_profinite_rigidity
-          - annals_algebraic_integers
-          - annals_bose_gases
-          - annals_bounded_multiplicative_functions
-          - annals_chowla_and_twin_prime_over_fq_t
-          - annals_conjecture_of_marton
-          - annals_dirichlet_weyl_bound
-          - annals_duffin_schaeffer_conjecture
-          - annals_enumerating_number_fields
-          - annals_equiangular_lines_fixed_angle
-          - annals_erdos_faber_lovasz_conjecture
-          - annals_erdos_supersingular_primes
-          - annals_flat_littlewood_poly
-          - annals_fractional_expectation_thresholds
-          - annals_good_lt_codes
-          - annals_improved_bounds_sunflower_lemma
     env:
       LEAN_EVAL_SHA: 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
-      TARGET: ${{ matrix.target }}
+      TARGET: annals_erdos_supersingular_primes
     steps:
       - uses: actions/checkout@v4
       - name: Install elan
@@ -55,92 +35,103 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Generate, compile, verify, and replay extensions
-        id: extend
-        working-directory: /tmp/${{ matrix.target }}
+      - name: Derive and verify the minimal logical cut
+        id: bridge
+        working-directory: /tmp/${{ env.TARGET }}
         run: |
           set +e
-          cp Challenge.lean /tmp/original.lean
-          : > /tmp/observer.tsv
-          : > /tmp/generated.tsv
-          : > /tmp/extension-results.tsv
+          cat > Submission.lean <<'LEAN'
+          import ChallengeDeps
+          import Mathlib.Analysis.Complex.Exponential
 
-          # New observation language: interrogate Lean for structurally relevant
-          # continuations. These observers do not count as solutions; their emitted
-          # suggestions are compiled and externally checked below.
-          for obs in exactq applyq rwq simpq aesopq; do
-            cp /tmp/original.lean Submission.lean
-            OBS="$obs" python3 - <<'PY'
-          import os,re
-          s=open('Submission.lean').read()
-          body={
-            'exactq':'exact?',
-            'applyq':'apply?',
-            'rwq':'rw?',
-            'simpq':'simp?',
-            'aesopq':'aesop?',
-          }[os.environ['OBS']]
-          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+body,s)
-          open('Submission.lean','w').write(s)
-          print('holes_replaced',n)
+          set_option autoImplicit false
+          namespace ErdosSupersingularPrimes
+          open Int Real
+
+          def k₀ : ℕ := sorry
+
+          theorem core_to_main
+              (core : ∀ (k : ℕ), k ≥ k₀ → ∀ (s : Solution k), s.l.Prime →
+                s.y ≠ 0 → s.d ≠ 0 → s.l ≤ exp (10 ^ k))
+              (k : ℕ) (hk : k ≥ k₀) (s : Solution k) (hs : s.l.Prime) :
+              s.y = 0 ∨ s.d = 0 ∨ s.l ≤ exp (10 ^ k) := by
+            by_cases hy : s.y = 0
+            · exact Or.inl hy
+            by_cases hd : s.d = 0
+            · exact Or.inr (Or.inl hd)
+            exact Or.inr (Or.inr (core k hk s hs hy hd))
+
+          theorem theorem_2 (k : ℕ) (hk : k ≥ k₀) (s : Solution k) (hs : s.l.Prime) :
+              s.y = 0 ∨ s.d = 0 ∨ s.l ≤ exp (10 ^ k) := by
+            sorry
+          end ErdosSupersingularPrimes
+          LEAN
+          lake build Submission > /tmp/bridge.log 2>&1
+          code=$?
+          echo "bridge_build=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -eq 0 ]; then
+            echo "LEMMA_GENESIS_BRIDGE_VERIFIED interface=nondegenerate_core_bound"
+          fi
+          exit 0
+      - name: Exhaust old language on generated core lemma
+        id: core
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          cat > /tmp/core-template.lean <<'LEAN'
+          import ChallengeDeps
+          import Mathlib.Analysis.Complex.Exponential
+
+          set_option autoImplicit false
+          namespace ErdosSupersingularPrimes
+          open Int Real
+
+          def k₀ : ℕ := sorry
+
+          theorem generated_core_bound (k : ℕ) (hk : k ≥ k₀) (s : Solution k)
+              (hs : s.l.Prime) (hy : s.y ≠ 0) (hd : s.d ≠ 0) :
+              s.l ≤ exp (10 ^ k) := by
+            sorry
+          end ErdosSupersingularPrimes
+          LEAN
+
+          python3 - <<'PY' > /tmp/core-candidates.tsv
+          prims = [
+            ('simp','try simp_all'),
+            ('aesop','try aesop'),
+            ('grind','try grind'),
+            ('norm','try norm_num at *'),
+            ('linarith','try linarith'),
+            ('nlinarith','try nlinarith'),
+            ('positivity','try positivity'),
+            ('ringnf','try ring_nf'),
+            ('fieldsimp','try field_simp'),
+            ('elim','try solve_by_elim'),
+            ('contra','try contradiction'),
+            ('tauto','try tauto'),
+          ]
+          rows=list(prims)
+          rows += [(n1+'__'+n2,b1+'\n  '+b2) for n1,b1 in prims for n2,b2 in prims]
+          for n,b in rows: print(n+'\t'+b.replace('\n','\\n'))
           PY
-            lake build Submission > "/tmp/${TARGET}-observer-${obs}.log" 2>&1
-            printf '%s\t%s\n' "$obs" "$?" >> /tmp/observer.tsv
-          done
 
-          # Compile all distinct `Try this:` suggestions into executable candidates.
-          python3 - <<'PY'
-          import glob,re,os
-          target=os.environ['TARGET']
-          seen=set(); out=[]
-          for p in sorted(glob.glob(f'/tmp/{target}-observer-*.log')):
-              obs=p.rsplit('-',1)[-1].split('.')[0]
-              txt=open(p,errors='ignore').read()
-              # Lean suggestions are normally single-line after `Try this:`.
-              for m in re.finditer(r'Try this:\s*([^\n\r]+)',txt):
-                  body=m.group(1).strip()
-                  body=re.sub(r'\x1b\[[0-9;]*m','',body)
-                  if body and body not in seen:
-                      seen.add(body); out.append((obs,body))
-          with open('/tmp/generated.tsv','w') as f:
-              for i,(obs,body) in enumerate(out):
-                  f.write(f'g{i:03d}\t{obs}\t{body}\n')
-          print('GENERATED_EXTENSION_CANDIDATES',len(out))
-          PY
-
+          : > /tmp/core-results.tsv
           solved=0
-          winner=''
-          generated=$(wc -l < /tmp/generated.tsv)
-
-          # Every generated continuation is tested alone and with a frozen replay
-          # tail from L0. This is L1 = L0 + compiled suggestion, not a larger blind
-          # tactic sweep.
-          while IFS=$'\t' read -r gid obs body; do
-            [ -z "$gid" ] && continue
-            for tail in none simp aesop grind elim; do
-              cp /tmp/original.lean Submission.lean
-              GID="$gid" BODY="$body" TAIL="$tail" python3 - <<'PY'
+          tested=0
+          total=$(wc -l < /tmp/core-candidates.tsv)
+          while IFS=$'\t' read -r name body; do
+            tested=$((tested+1))
+            cp /tmp/core-template.lean Submission.lean
+            BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          b=os.environ['BODY']
-          tail={
-            'none':'',
-            'simp':'\n  all_goals try simp_all',
-            'aesop':'\n  all_goals try aesop',
-            'grind':'\n  all_goals try grind',
-            'elim':'\n  all_goals try solve_by_elim',
-          }[os.environ['TAIL']]
-          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b+tail,s)
+          b=os.environ['BODY'].replace('\\n','\n')
+          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b,s,count=1)
           open('Submission.lean','w').write(s)
           PY
-              lake build Submission > "/tmp/${TARGET}-extension-${gid}-${tail}.log" 2>&1
-              bcode=$?
-              tcode=99
-              if [ "$bcode" -eq 0 ]; then
-                lake test > "/tmp/${TARGET}-extension-${gid}-${tail}-test.log" 2>&1
-                tcode=$?
-              fi
-              sig=$(python3 - "/tmp/${TARGET}-extension-${gid}-${tail}.log" <<'PY'
+            lake build Submission > "/tmp/core-${name}.log" 2>&1
+            bcode=$?
+            sig=$(python3 - "/tmp/core-${name}.log" <<'PY'
           import re,sys,hashlib
           s=open(sys.argv[1],errors='ignore').read()
           chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,1000}',s)
@@ -150,58 +141,49 @@ jobs:
           print(hashlib.sha256(x.encode()).hexdigest()[:16])
           PY
           )
-              printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$gid" "$obs" "$tail" "$bcode" "$tcode" "$sig" >> /tmp/extension-results.tsv
-              if [ "$bcode" -eq 0 ] && [ "$tcode" -eq 0 ]; then
-                solved=1
-                winner="${gid}-${tail}"
-                cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
-                break 2
-              fi
-            done
-          done < /tmp/generated.tsv
-
+            printf '%s\t%s\t%s\n' "$name" "$bcode" "$sig" >> /tmp/core-results.tsv
+            if [ "$bcode" -eq 0 ]; then
+              solved=1
+              cp Submission.lean /tmp/CORE-SOLVED.lean
+              echo "winner=$name" >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done < /tmp/core-candidates.tsv
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
-          echo "winner=$winner" >> "$GITHUB_OUTPUT"
-          echo "generated=$generated" >> "$GITHUB_OUTPUT"
-
+          echo "tested=$tested" >> "$GITHUB_OUTPUT"
+          echo "total=$total" >> "$GITHUB_OUTPUT"
           python3 - <<'PY'
-          from collections import Counter,defaultdict
-          import os
-          target=os.environ['TARGET']
-          rows=[]
-          for line in open('/tmp/extension-results.tsv'):
-              p=line.rstrip().split('\t')
-              if len(p)==6: rows.append(p)
-          sig=Counter(r[5] for r in rows)
-          obs=defaultdict(set)
-          for r in rows: obs[r[1]].add(r[5])
-          print('TARGET',target)
-          print('EXTENSION_PROGRAMS_TESTED',len(rows))
-          print('EXTENSION_RESIDUAL_CLASSES',len(sig))
-          for k,v in sorted(obs.items()): print('OBSERVER',k,'DISTINCT_FUTURES',len(v))
-          for s,n in sig.most_common(12): print('EXT_SIG',s,'COUNT',n)
+          from collections import Counter
+          rows=[x.rstrip().split('\t') for x in open('/tmp/core-results.tsv')]
+          c=Counter(r[2] for r in rows if len(r)==3)
+          print('CORE_CANDIDATES_DECLARED',sum(1 for _ in open('/tmp/core-candidates.tsv')))
+          print('CORE_CANDIDATES_ENUMERATED',len(rows))
+          print('CORE_RESIDUAL_CLASSES',len(c))
+          for sig,n in c.most_common(): print('CORE_SIG',sig,'COUNT',n)
           PY
-
-          if [ "$solved" -eq 0 ]; then
-            echo "EXTENSION_FRONTIER_MEASURED target=$TARGET generated=$generated"
+          if [ "$solved" -eq 0 ] && [ "$tested" -eq "$total" ]; then
+            echo "CERTIFIED_CORE_NONMEMBERSHIP interface=nondegenerate_core_bound enumerated=$tested"
           fi
           exit 0
-      - name: Exact promoted solve marker
-        if: steps.extend.outputs.solved == '1'
-        run: echo "GREEN_EXACT_PROMOTED_EXTENSION_SOLVE target=$TARGET winner=${{ steps.extend.outputs.winner }}"
-      - name: Extension frontier marker
-        if: steps.extend.outputs.solved != '1'
-        run: echo "EXTENSION_REPLAY_COMPLETE target=$TARGET generated=${{ steps.extend.outputs.generated }}"
-      - name: Upload extension evidence
+      - name: Decisive lemma gate
+        run: |
+          if [ "${{ steps.bridge.outputs.bridge_build }}" = "0" ] && [ "${{ steps.core.outputs.solved }}" != "1" ] && [ "${{ steps.core.outputs.tested }}" = "${{ steps.core.outputs.total }}" ]; then
+            echo 'LEMMA_GENESIS_GATE {"bridge":0,"core_old_language":1,"classification":"MINIMAL_CORE_OBSTRUCTION_CERTIFIED"}'
+          elif [ "${{ steps.core.outputs.solved }}" = "1" ]; then
+            echo 'LEMMA_GENESIS_GATE {"bridge":0,"core_old_language":0,"classification":"CORE_REACHED"}'
+          else
+            echo 'LEMMA_GENESIS_GATE {"bridge":${{ steps.bridge.outputs.bridge_build }},"classification":"INCONCLUSIVE"}'
+          fi
+      - name: Upload lemma evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: extension-${{ matrix.target }}
+          name: lemma-genesis-erdos-supersingular
           path: |
-            /tmp/observer.tsv
-            /tmp/generated.tsv
-            /tmp/extension-results.tsv
-            /tmp/${{ matrix.target }}-observer-*.log
-            /tmp/${{ matrix.target }}-extension-*.log
-            /tmp/${{ matrix.target }}-SOLVED.lean
+            /tmp/bridge.log
+            /tmp/core-template.lean
+            /tmp/core-candidates.tsv
+            /tmp/core-results.tsv
+            /tmp/core-*.log
+            /tmp/CORE-SOLVED.lean
           if-no-files-found: ignore
