@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  bounded-closure:
+  extension-genesis:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -55,109 +55,153 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Exhaust frozen depth-2 proof language
-        id: closure
+      - name: Generate, compile, verify, and replay extensions
+        id: extend
         working-directory: /tmp/${{ matrix.target }}
         run: |
           set +e
           cp Challenge.lean /tmp/original.lean
-          python3 - <<'PY' > /tmp/candidates.tsv
-          prims = [
-            ('simp','try simp_all'),
-            ('aesop','try aesop'),
-            ('grind','try grind'),
-            ('norm','try norm_num at *'),
-            ('linarith','try linarith'),
-            ('nlinarith','try nlinarith'),
-            ('positivity','try positivity'),
-            ('ringnf','try ring_nf'),
-            ('fieldsimp','try field_simp'),
-            ('elim','try solve_by_elim'),
-            ('contra','try contradiction'),
-            ('tauto','try tauto'),
-          ]
-          rows=[]
-          for n,b in prims: rows.append((n,b))
-          for n1,b1 in prims:
-            for n2,b2 in prims:
-              rows.append((n1+'__'+n2,b1+'\n  '+b2))
-          for n,b in rows:
-            print(n+'\t'+b.replace('\n','\\n'))
-          PY
-          total=$(wc -l < /tmp/candidates.tsv)
-          : > /tmp/closure.tsv
-          : > /tmp/signatures.tsv
-          solved=0
-          tested=0
-          while IFS=$'\t' read -r name body; do
-            tested=$((tested+1))
+          : > /tmp/observer.tsv
+          : > /tmp/generated.tsv
+          : > /tmp/extension-results.tsv
+
+          # New observation language: interrogate Lean for structurally relevant
+          # continuations. These observers do not count as solutions; their emitted
+          # suggestions are compiled and externally checked below.
+          for obs in exactq applyq rwq simpq aesopq; do
             cp /tmp/original.lean Submission.lean
-            NAME="$name" BODY="$body" python3 - <<'PY'
+            OBS="$obs" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          b=os.environ['BODY'].replace('\\n','\n')
-          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b,s)
+          body={
+            'exactq':'exact?',
+            'applyq':'apply?',
+            'rwq':'rw?',
+            'simpq':'simp?',
+            'aesopq':'aesop?',
+          }[os.environ['OBS']]
+          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+body,s)
           open('Submission.lean','w').write(s)
-          if n != 1: print('HOLE_REPLACEMENT_COUNT',n)
+          print('holes_replaced',n)
           PY
-            lake build Submission > "/tmp/${TARGET}-closure-${name}.log" 2>&1
-            b=$?
-            t=99
-            if [ "$b" -eq 0 ]; then
-              lake test > "/tmp/${TARGET}-closure-${name}-test.log" 2>&1
-              t=$?
-            fi
-            sig=$(python3 - "/tmp/${TARGET}-closure-${name}.log" <<'PY'
+            lake build Submission > "/tmp/${TARGET}-observer-${obs}.log" 2>&1
+            printf '%s\t%s\n' "$obs" "$?" >> /tmp/observer.tsv
+          done
+
+          # Compile all distinct `Try this:` suggestions into executable candidates.
+          python3 - <<'PY'
+          import glob,re,os
+          target=os.environ['TARGET']
+          seen=set(); out=[]
+          for p in sorted(glob.glob(f'/tmp/{target}-observer-*.log')):
+              obs=p.rsplit('-',1)[-1].split('.')[0]
+              txt=open(p,errors='ignore').read()
+              # Lean suggestions are normally single-line after `Try this:`.
+              for m in re.finditer(r'Try this:\s*([^\n\r]+)',txt):
+                  body=m.group(1).strip()
+                  body=re.sub(r'\x1b\[[0-9;]*m','',body)
+                  if body and body not in seen:
+                      seen.add(body); out.append((obs,body))
+          with open('/tmp/generated.tsv','w') as f:
+              for i,(obs,body) in enumerate(out):
+                  f.write(f'g{i:03d}\t{obs}\t{body}\n')
+          print('GENERATED_EXTENSION_CANDIDATES',len(out))
+          PY
+
+          solved=0
+          winner=''
+          generated=$(wc -l < /tmp/generated.tsv)
+
+          # Every generated continuation is tested alone and with a frozen replay
+          # tail from L0. This is L1 = L0 + compiled suggestion, not a larger blind
+          # tactic sweep.
+          while IFS=$'\t' read -r gid obs body; do
+            [ -z "$gid" ] && continue
+            for tail in none simp aesop grind elim; do
+              cp /tmp/original.lean Submission.lean
+              GID="$gid" BODY="$body" TAIL="$tail" python3 - <<'PY'
+          import os,re
+          s=open('Submission.lean').read()
+          b=os.environ['BODY']
+          tail={
+            'none':'',
+            'simp':'\n  all_goals try simp_all',
+            'aesop':'\n  all_goals try aesop',
+            'grind':'\n  all_goals try grind',
+            'elim':'\n  all_goals try solve_by_elim',
+          }[os.environ['TAIL']]
+          s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b+tail,s)
+          open('Submission.lean','w').write(s)
+          PY
+              lake build Submission > "/tmp/${TARGET}-extension-${gid}-${tail}.log" 2>&1
+              bcode=$?
+              tcode=99
+              if [ "$bcode" -eq 0 ]; then
+                lake test > "/tmp/${TARGET}-extension-${gid}-${tail}-test.log" 2>&1
+                tcode=$?
+              fi
+              sig=$(python3 - "/tmp/${TARGET}-extension-${gid}-${tail}.log" <<'PY'
           import re,sys,hashlib
           s=open(sys.argv[1],errors='ignore').read()
-          chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,900}',s)
-          x=(chunks[-1] if chunks else s[-1500:])
+          chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,1000}',s)
+          x=(chunks[-1] if chunks else s[-1800:])
           x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
           x=re.sub(r'\d+\.\d+s','<TIME>',x)
           print(hashlib.sha256(x.encode()).hexdigest()[:16])
           PY
           )
-            printf '%s\t%s\t%s\t%s\n' "$name" "$b" "$t" "$sig" >> /tmp/closure.tsv
-            printf '%s\t%s\n' "$name" "$sig" >> /tmp/signatures.tsv
-            if [ "$b" -eq 0 ] && [ "$t" -eq 0 ]; then
-              solved=1
-              cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
-              echo "winner=$name" >> "$GITHUB_OUTPUT"
-              break
-            fi
-          done < /tmp/candidates.tsv
+              printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$gid" "$obs" "$tail" "$bcode" "$tcode" "$sig" >> /tmp/extension-results.tsv
+              if [ "$bcode" -eq 0 ] && [ "$tcode" -eq 0 ]; then
+                solved=1
+                winner="${gid}-${tail}"
+                cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
+                break 2
+              fi
+            done
+          done < /tmp/generated.tsv
+
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
-          echo "tested=$tested" >> "$GITHUB_OUTPUT"
-          echo "declared=$total" >> "$GITHUB_OUTPUT"
+          echo "winner=$winner" >> "$GITHUB_OUTPUT"
+          echo "generated=$generated" >> "$GITHUB_OUTPUT"
+
           python3 - <<'PY'
-          from collections import Counter
-          rows=[line.rstrip().split('\t') for line in open('/tmp/closure.tsv')]
-          c=Counter(r[3] for r in rows)
-          print('TARGET',__import__('os').environ['TARGET'])
-          print('CLOSURE_DECLARED',sum(1 for _ in open('/tmp/candidates.tsv')))
-          print('CLOSURE_ENUMERATED',len(rows))
-          print('RESIDUAL_SIGNATURE_CLASSES',len(c))
-          for sig,n in c.most_common(): print('SIG',sig,'COUNT',n)
+          from collections import Counter,defaultdict
+          import os
+          target=os.environ['TARGET']
+          rows=[]
+          for line in open('/tmp/extension-results.tsv'):
+              p=line.rstrip().split('\t')
+              if len(p)==6: rows.append(p)
+          sig=Counter(r[5] for r in rows)
+          obs=defaultdict(set)
+          for r in rows: obs[r[1]].add(r[5])
+          print('TARGET',target)
+          print('EXTENSION_PROGRAMS_TESTED',len(rows))
+          print('EXTENSION_RESIDUAL_CLASSES',len(sig))
+          for k,v in sorted(obs.items()): print('OBSERVER',k,'DISTINCT_FUTURES',len(v))
+          for s,n in sig.most_common(12): print('EXT_SIG',s,'COUNT',n)
           PY
-          if [ "$solved" -eq 0 ] && [ "$tested" -eq "$total" ]; then
-            echo "CERTIFIED_BOUNDED_NONMEMBERSHIP target=$TARGET language=depth2_12_primitives enumerated=$tested"
+
+          if [ "$solved" -eq 0 ]; then
+            echo "EXTENSION_FRONTIER_MEASURED target=$TARGET generated=$generated"
           fi
           exit 0
-      - name: Exact solve marker
-        if: steps.closure.outputs.solved == '1'
-        run: echo "GREEN_EXACT_CLOSURE_SOLVE target=$TARGET winner=${{ steps.closure.outputs.winner }}"
-      - name: Certified nonmembership marker
-        if: steps.closure.outputs.solved != '1' && steps.closure.outputs.tested == steps.closure.outputs.declared
-        run: echo "RED_CERTIFIED_BOUNDED_NONMEMBERSHIP target=$TARGET enumerated=${{ steps.closure.outputs.tested }}"
-      - name: Upload closure evidence
+      - name: Exact promoted solve marker
+        if: steps.extend.outputs.solved == '1'
+        run: echo "GREEN_EXACT_PROMOTED_EXTENSION_SOLVE target=$TARGET winner=${{ steps.extend.outputs.winner }}"
+      - name: Extension frontier marker
+        if: steps.extend.outputs.solved != '1'
+        run: echo "EXTENSION_REPLAY_COMPLETE target=$TARGET generated=${{ steps.extend.outputs.generated }}"
+      - name: Upload extension evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: closure-${{ matrix.target }}
+          name: extension-${{ matrix.target }}
           path: |
-            /tmp/candidates.tsv
-            /tmp/closure.tsv
-            /tmp/signatures.tsv
-            /tmp/${{ matrix.target }}-closure-*.log
+            /tmp/observer.tsv
+            /tmp/generated.tsv
+            /tmp/extension-results.tsv
+            /tmp/${{ matrix.target }}-observer-*.log
+            /tmp/${{ matrix.target }}-extension-*.log
             /tmp/${{ matrix.target }}-SOLVED.lean
           if-no-files-found: ignore
