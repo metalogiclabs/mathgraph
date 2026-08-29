@@ -64,7 +64,8 @@ jobs:
           prime_ne_zero	s.l ≠ 0	exact hs.ne_zero
           prime_ne_one	s.l ≠ 1	exact hs.ne_one
           y_pow_ne_zero	s.y ^ s.l ≠ 0	exact pow_ne_zero _ hy
-          product_ne_zero	(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0	by simpa [s.eq] using (pow_ne_zero s.l hy)
+          product_nonzero	(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0	have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
+          factor_nonzero	∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0	have hprod : (∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0 := by have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow; exact Finset.prod_ne_zero_iff.mp hprod
           gcd_one	Int.gcd s.n s.d = 1	exact s.gcd
           EOF
           sed -i 's/^          //' /tmp/interfaces.tsv
