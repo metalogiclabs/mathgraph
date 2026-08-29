@@ -36,5 +36,9 @@ jobs:
           echo 'CALCULUS_REFINEMENT_GATE {"classification":"LEAN_VERIFIED_INFORMATION_ALGEBRA"}'
       - name: Verify consequence-separation bridge
         run: |
-          lean MathGraph/Calculus/Separation.lean
+          lean -o MathGraph/Calculus/Separation.olean MathGraph/Calculus/Separation.lean
           echo 'CALCULUS_SEPARATION_GATE {"classification":"LEAN_VERIFIED_CONSEQUENCE_SEPARATION_DUALITY"}'
+      - name: Verify lawful separation representation
+        run: |
+          lean MathGraph/Calculus/Representation.lean
+          echo 'CALCULUS_REPRESENTATION_GATE {"classification":"LEAN_VERIFIED_LAWFUL_SEPARATION_REPRESENTABILITY"}'
