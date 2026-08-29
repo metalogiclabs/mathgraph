@@ -126,3 +126,99 @@ theorem squarefree_sigma_at_root_eq_tail
   simpa using signChanges_insert_zero ([] : List ℝ)
     ((sturmAux p.derivative (-(p % p.derivative)) (p.natDegree + 1)).map
       (fun q => q.eval r))
+
+/-- Stronger one-point form of the root crossing law.  In one neighbourhood,
+points to the left have one extra variation while the root itself and points
+to the right have exactly the root variation. -/
+theorem squarefree_sigma_local_root_profile
+    (p : ℝ[X]) (r : ℝ) (hp : Squarefree p) (hr : p.eval r = 0) :
+    ∃ U : Set ℝ, U ∈ 𝓝 r ∧ ∀ x ∈ U,
+      (x < r → sigma p x = sigma p r + 1) ∧
+      (r ≤ x → sigma p x = sigma p r) := by
+  let d : ℝ[X] := p.derivative
+  let c : ℝ[X] := -(p % d)
+  have hd : d.eval r ≠ 0 := by
+    simpa [d] using squarefree_root_derivative_ne_zero p r hp hr
+  have hdpoly : d ≠ 0 := by
+    intro h
+    have : d.eval r = 0 := by simp [h]
+    exact hd this
+  have hreg := squarefree_sturmChain_regular p r hp
+  have htailreg : SturmRegularAt r d c (p.natDegree + 1) := by
+    have hstep :
+        (¬ (p.eval r = 0 ∧ d.eval r = 0)) ∧
+          SturmRegularAt r d c (p.natDegree + 1) := by
+      simpa [SturmRegularAt, d, c, hdpoly, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+        using hreg
+    exact hstep.2
+  have htail := sturmAux_variation_locally_constant
+      d c r (p.natDegree + 1) hd htailreg
+  have hcross := simple_root_local_crossing_sign p r hr (by simpa [d] using hd)
+  have hdsign := polynomial_eval_same_sign_locally d r hd
+  have hdev := polynomial_eval_eventually_ne_zero d r hd
+  let U : Set ℝ := {x |
+    signChanges ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x)) =
+      signChanges ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval r)) ∧
+    ((x < r → p.eval x * p.derivative.eval r < 0) ∧
+      (r < x → 0 < p.eval x * p.derivative.eval r)) ∧
+    0 < d.eval x * d.eval r ∧ d.eval x ≠ 0}
+  have hU : U ∈ 𝓝 r := by
+    exact Filter.inter_mem (Filter.inter_mem (Filter.inter_mem htail hcross) hdsign) hdev
+  refine ⟨U, hU, ?_⟩
+  intro x hx
+  have hchain : sturmAux p d (p.natDegree + 2) =
+      p :: sturmAux d c (p.natDegree + 1) := by
+    simp [sturmAux, d, c, hdpoly, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+  have htailShapeX :
+      (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x) =
+        d.eval x :: (sturmAux d c (p.natDegree + 1)).tail.map (fun q => q.eval x) := by
+    rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
+    rfl
+  have htailShapeR :
+      (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval r) =
+        d.eval r :: (sturmAux d c (p.natDegree + 1)).tail.map (fun q => q.eval r) := by
+    rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
+    rfl
+  have hroot : sigma p r =
+      signChanges ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval r)) := by
+    simpa [d, c] using squarefree_sigma_at_root_eq_tail p r hp hr
+  constructor
+  · intro hxr
+    have hpxfix : p.eval x * d.eval r < 0 := by simpa [d] using hx.2.1.1 hxr
+    have hpxd : p.eval x * d.eval x < 0 := by
+      have hs := hx.2.2.1
+      have hdr2 : 0 < d.eval r * d.eval r := mul_self_pos.mpr hd
+      nlinarith [hpxfix, hs, hdr2]
+    have hpx : p.eval x ≠ 0 := by
+      intro hz
+      simp [hz] at hpxd
+    rw [sigma, sturmChain, hchain]
+    simp only [List.map_cons]
+    rw [htailShapeX]
+    rw [signChanges_cons_cons_of_ne_zero _ _ _ hpx hx.2.2.2]
+    simp [hpxd]
+    have htx := hx.1
+    rw [htailShapeX] at htx
+    rw [hroot]
+    omega
+  · intro hrx
+    rcases hrx.eq_or_lt with rfl | hrx
+    · rfl
+    · have hpyfix : 0 < p.eval x * d.eval r := by simpa [d] using hx.2.1.2 hrx
+      have hpyd : 0 < p.eval x * d.eval x := by
+        have hs := hx.2.2.1
+        have hdr2 : 0 < d.eval r * d.eval r := mul_self_pos.mpr hd
+        nlinarith [hpyfix, hs, hdr2]
+      have hpx : p.eval x ≠ 0 := by
+        intro hz
+        simp [hz] at hpyd
+      rw [sigma, sturmChain, hchain]
+      simp only [List.map_cons]
+      rw [htailShapeX]
+      rw [signChanges_cons_cons_of_ne_zero _ _ _ hpx hx.2.2.2]
+      have hn : ¬ p.eval x * d.eval x < 0 := not_lt.mpr (le_of_lt hpyd)
+      simp [hn]
+      have htx := hx.1
+      rw [htailShapeX] at htx
+      rw [hroot]
+      exact htx
