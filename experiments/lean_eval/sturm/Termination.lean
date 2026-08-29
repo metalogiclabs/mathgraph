@@ -102,3 +102,13 @@ theorem squarefree_sturmChain_regular (p : ℝ[X]) (r : ℝ)
     p p.derivative r (p.natDegree + 2)
     (squarefree_sturm_start_no_common_root p r hp)
     (sturmChain_complete p)
+
+/-- For a squarefree polynomial, the benchmark variation function `sigma`
+is locally constant at every point that is not a root. -/
+theorem squarefree_sigma_locally_constant_at_nonroot
+    (p : ℝ[X]) (r : ℝ) (hp : Squarefree p) (hr : p.eval r ≠ 0) :
+    ∀ᶠ x in 𝓝 r, sigma p x = sigma p r := by
+  simpa [sigma, sturmChain] using
+    sturmAux_variation_locally_constant
+      p p.derivative r (p.natDegree + 2) hr
+      (squarefree_sturmChain_regular p r hp)
