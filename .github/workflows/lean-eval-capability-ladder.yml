@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  behavioural-quotient:
+  promoted-retrieval:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -49,35 +49,34 @@ jobs:
           git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
           cd /tmp/lean-eval
           git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
           lake exe cache get
           lake build
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Behavioural future composition
-        id: quotient
+      - name: Promoted theorem retrieval and elimination
+        id: retrieval
         working-directory: /tmp/${{ matrix.target }}
         run: |
           set +e
           cp Challenge.lean /tmp/original.lean
-          : > /tmp/behaviour.tsv
+          : > /tmp/retrieval.tsv
           solved=0
-          # Representative continuations chosen to expose future-obligation behaviour,
-          # not merely repeat the first cold portfolio.
-          for tactic in simp_aesop simp_grind aesop_all grind_all norm_linarith field_ring positivity exact_assumption; do
+          for tactic in library_search exact_q apply_q solve_by_elim aesop_q classical_aesop contradiction tauto; do
             cp /tmp/original.lean Submission.lean
             TACTIC="$tactic" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
           bodies={
-            'simp_aesop':'simp_all <;> aesop',
-            'simp_grind':'simp_all <;> grind',
-            'aesop_all':'aesop (add safe (by intros; assumption))',
-            'grind_all':'grind',
-            'norm_linarith':'norm_num at * <;> try linarith <;> try nlinarith',
-            'field_ring':'try field_simp <;> try ring <;> try ring_nf <;> aesop',
-            'positivity':'try positivity <;> try norm_num <;> aesop',
-            'exact_assumption':'first | assumption | exact Classical.choice (show Nonempty _ from inferInstance) | aesop'
+            'library_search':'library_search',
+            'exact_q':'exact?',
+            'apply_q':'apply?',
+            'solve_by_elim':'solve_by_elim',
+            'aesop_q':'aesop?',
+            'classical_aesop':'classical\n  aesop',
+            'contradiction':'contradiction',
+            'tauto':'tauto'
           }
           b=bodies[os.environ['TACTIC']]
           s,n=re.subn(r'by\s*\n\s*sorry\b','by\n  '+b,s)
@@ -86,53 +85,47 @@ jobs:
           PY
             lake build Submission > "/tmp/${TARGET}-${tactic}.log" 2>&1
             b=$?
-            sig=$(python3 - "/tmp/${TARGET}-${tactic}.log" <<'PY'
-          import re,sys,hashlib
-          s=open(sys.argv[1],errors='ignore').read()
-          goals=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,700}',s)
-          x=(goals[-1] if goals else s[-1200:])
-          x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
-          x=re.sub(r'\d+\.\d+s','<TIME>',x)
-          print(hashlib.sha256(x.encode()).hexdigest()[:12])
-          PY
-          )
-            printf '%s\t%s\t%s\n' "$tactic" "$b" "$sig" >> /tmp/behaviour.tsv
+            t=99
             if [ "$b" -eq 0 ]; then
               lake test > "/tmp/${TARGET}-${tactic}-test.log" 2>&1
               t=$?
-              if [ "$t" -eq 0 ]; then
-                solved=1
-                cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
-                echo "winner=$tactic" >> "$GITHUB_OUTPUT"
-                break
-              fi
+            fi
+            category=$(python3 - "/tmp/${TARGET}-${tactic}.log" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],errors='ignore').read()
+          if 'no applicable theorem' in s.lower() or 'library_search' in s and 'failed' in s.lower(): c='NO_LIBRARY_THEOREM'
+          elif 'Tactic `aesop` failed' in s or 'made no progress' in s: c='NO_AUTOMATION_PROGRESS'
+          elif 'unsolved goals' in s: c='UNSOLVED_GOAL'
+          elif 'type mismatch' in s: c='TYPE_MISMATCH'
+          elif 'unknown tactic' in s or 'unexpected token' in s: c='TACTIC_SYNTAX'
+          elif 'error:' in s: c='OTHER_ERROR'
+          else: c='BUILD_OK'
+          print(c)
+          PY
+          )
+            printf '%s\t%s\t%s\t%s\n' "$tactic" "$b" "$t" "$category" >> /tmp/retrieval.tsv
+            if [ "$b" -eq 0 ] && [ "$t" -eq 0 ]; then
+              solved=1
+              cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
+              echo "winner=$tactic" >> "$GITHUB_OUTPUT"
+              break
             fi
           done
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
           echo "TARGET=$TARGET"
-          cat /tmp/behaviour.tsv
-          python3 - <<'PY'
-          from collections import defaultdict
-          rows=[]
-          for line in open('/tmp/behaviour.tsv'):
-              t,b,s=line.rstrip().split('\t'); rows.append((t,b,s))
-          q=defaultdict(list)
-          for t,b,s in rows:q[(b,s)].append(t)
-          print('BEHAVIOURAL_CLASSES',len(q),'OF',len(rows))
-          for k,v in q.items(): print(k,','.join(v))
-          PY
-          for f in /tmp/${TARGET}-*.log; do echo "--- $f"; tail -n 18 "$f"; done
+          cat /tmp/retrieval.tsv
+          for f in /tmp/${TARGET}-*.log; do echo "--- $f"; tail -n 16 "$f"; done
           exit 0
       - name: Exact solve marker
-        if: steps.quotient.outputs.solved == '1'
-        run: echo "GREEN_EXACT_BEHAVIOURAL_SOLVE target=$TARGET winner=${{ steps.quotient.outputs.winner }}"
-      - name: Upload behavioural residual
+        if: steps.retrieval.outputs.solved == '1'
+        run: echo "GREEN_EXACT_PROMOTED_SOLVE target=$TARGET winner=${{ steps.retrieval.outputs.winner }}"
+      - name: Upload promoted residual
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: behavioural-${{ matrix.target }}
+          name: promoted-${{ matrix.target }}
           path: |
-            /tmp/behaviour.tsv
+            /tmp/retrieval.tsv
             /tmp/${{ matrix.target }}-*.log
             /tmp/${{ matrix.target }}-SOLVED.lean
           if-no-files-found: ignore
