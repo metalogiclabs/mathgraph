@@ -222,3 +222,113 @@ theorem squarefree_sigma_local_root_profile
       rw [htailShapeX] at htx
       rw [hroot]
       exact htx
+
+/-- Distinct real roots, forgetting multiplicity. -/
+noncomputable def sturmRootFinset (p : ℝ[X]) : Finset ℝ := p.roots.toFinset
+
+/-- Number of distinct real roots at or to the left of `x`. -/
+noncomputable def sturmRootCountLE (p : ℝ[X]) (x : ℝ) : ℕ :=
+  (sturmRootFinset p).filter (fun r => r ≤ x) |>.card
+
+/-- Away from a member of a finite ordered set, the complete comparison
+profile with that set is locally constant. -/
+theorem finset_order_profile_eventually (S : Finset ℝ) (r : ℝ) (hr : r ∉ S) :
+    ∀ᶠ x in 𝓝 r, ∀ z ∈ S, (z ≤ x ↔ z ≤ r) := by
+  induction S using Finset.induction_on with
+  | empty => simp
+  | @insert z S hz ih =>
+      have hrS : r ∉ S := by
+        intro hrs
+        exact hr (Finset.mem_insert_of_mem hrs)
+      have hzr : z ≠ r := by
+        intro h
+        subst h
+        exact hr (Finset.mem_insert_self r S)
+      have hzprof : ∀ᶠ x in 𝓝 r, (z ≤ x ↔ z ≤ r) := by
+        rcases lt_or_gt_of_ne hzr with hlt | hgt
+        · have hev : ∀ᶠ x in 𝓝 r, z < x := Ioi_mem_nhds hlt
+          filter_upwards [hev] with x hx
+          constructor <;> intro
+          · exact le_of_lt hlt
+          · exact le_of_lt hx
+        · have hev : ∀ᶠ x in 𝓝 r, x < z := Iio_mem_nhds hgt
+          filter_upwards [hev] with x hx
+          have hnx : ¬ z ≤ x := not_le_of_gt hx
+          have hnr : ¬ z ≤ r := not_le_of_gt hgt
+          simp [hnx, hnr]
+      filter_upwards [ih hrS, hzprof] with x hx hzx
+      intro w hw
+      rcases Finset.mem_insert.mp hw with rfl | hw
+      · exact hzx
+      · exact hx w hw
+
+/-- Consequently the prefix count of a finite set is locally constant away
+from the set. -/
+theorem finset_countLE_eventually_eq_of_not_mem
+    (S : Finset ℝ) (r : ℝ) (hr : r ∉ S) :
+    ∀ᶠ x in 𝓝 r,
+      (S.filter (fun z => z ≤ x)).card = (S.filter (fun z => z ≤ r)).card := by
+  filter_upwards [finset_order_profile_eventually S r hr] with x hx
+  have heq : S.filter (fun z => z ≤ x) = S.filter (fun z => z ≤ r) := by
+    ext z
+    by_cases hz : z ∈ S
+    · simp [hz, hx z hz]
+    · simp [hz]
+  exact congrArg Finset.card heq
+
+/-- At a member `r`, the finite prefix count has exactly the complementary
+one-step profile needed to cancel the Sturm variation jump. -/
+theorem finset_countLE_local_root_profile
+    (S : Finset ℝ) (r : ℝ) (hr : r ∈ S) :
+    ∃ U : Set ℝ, U ∈ 𝓝 r ∧ ∀ x ∈ U,
+      (x < r → (S.filter (fun z => z ≤ x)).card + 1 =
+        (S.filter (fun z => z ≤ r)).card) ∧
+      (r ≤ x → (S.filter (fun z => z ≤ x)).card =
+        (S.filter (fun z => z ≤ r)).card) := by
+  let T := S.erase r
+  have hrT : r ∉ T := by simp [T]
+  let U : Set ℝ := {x | ∀ z ∈ T, (z ≤ x ↔ z ≤ r)}
+  have hU : U ∈ 𝓝 r := finset_order_profile_eventually T r hrT
+  refine ⟨U, hU, ?_⟩
+  intro x hx
+  have hT : T.filter (fun z => z ≤ x) = T.filter (fun z => z ≤ r) := by
+    ext z
+    by_cases hz : z ∈ T
+    · simp [hz, hx z hz]
+    · simp [hz]
+  have hS : S = insert r T := by
+    simpa [T] using (Finset.insert_erase hr).symm
+  constructor
+  · intro hxr
+    rw [hS]
+    have hrnot : ¬ r ≤ x := not_le_of_gt hxr
+    simp [hrnot, hT]
+  · intro hrx
+    rw [hS]
+    simp [hrx, hT]
+
+/-- The polynomial root prefix count is locally constant at every nonroot. -/
+theorem sturmRootCountLE_locally_constant_at_nonroot
+    (p : ℝ[X]) (r : ℝ) (hp0 : p ≠ 0) (hr : p.eval r ≠ 0) :
+    ∀ᶠ x in 𝓝 r, sturmRootCountLE p x = sturmRootCountLE p r := by
+  have hrmem : r ∉ sturmRootFinset p := by
+    intro hmem
+    have hroot : IsRoot p r := by
+      exact (Polynomial.mem_roots hp0).1 (by simpa [sturmRootFinset] using hmem)
+    exact hr (by simpa [Polynomial.IsRoot.def] using hroot)
+  simpa [sturmRootCountLE] using
+    finset_countLE_eventually_eq_of_not_mem (sturmRootFinset p) r hrmem
+
+/-- At an actual root, the polynomial root-prefix count has the one-step
+profile complementary to `sigma`. -/
+theorem sturmRootCountLE_local_root_profile
+    (p : ℝ[X]) (r : ℝ) (hp0 : p ≠ 0) (hr : p.eval r = 0) :
+    ∃ U : Set ℝ, U ∈ 𝓝 r ∧ ∀ x ∈ U,
+      (x < r → sturmRootCountLE p x + 1 = sturmRootCountLE p r) ∧
+      (r ≤ x → sturmRootCountLE p x = sturmRootCountLE p r) := by
+  have hrmem : r ∈ sturmRootFinset p := by
+    have hroot : IsRoot p r := by simpa [Polynomial.IsRoot.def] using hr
+    have : r ∈ p.roots := (Polynomial.mem_roots hp0).2 hroot
+    simpa [sturmRootFinset] using this
+  simpa [sturmRootCountLE] using
+    finset_countLE_local_root_profile (sturmRootFinset p) r hrmem
