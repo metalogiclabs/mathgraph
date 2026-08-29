@@ -81,6 +81,9 @@ theorem squarefree_sigma_local_root_drop
   have hchain : sturmAux p d (p.natDegree + 2) =
       p :: sturmAux d c (p.natDegree + 1) := by
     simp [sturmAux, d, c, hdpoly, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+  have hchain' : sturmAux p p.derivative (p.natDegree + 2) =
+      p :: sturmAux d c (p.natDegree + 1) := by
+    simpa [d] using hchain
   have htailShapeX :
       (sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x) =
         d.eval x :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval x)).tail := by
@@ -91,7 +94,10 @@ theorem squarefree_sigma_local_root_drop
         d.eval y :: ((sturmAux d c (p.natDegree + 1)).map (fun q => q.eval y)).tail := by
     rw [sturmAux_eq_cons_tail d c (p.natDegree + 1)]
     rfl
-  simp only [sigma, sturmChain, hchain, List.map_cons]
+  change signChanges ((sturmAux p p.derivative (p.natDegree + 2)).map (fun q => q.eval x)) =
+    signChanges ((sturmAux p p.derivative (p.natDegree + 2)).map (fun q => q.eval y)) + 1
+  rw [hchain']
+  simp only [List.map_cons]
   rw [htailShapeX, htailShapeY]
   rw [signChanges_cons_cons_of_ne_zero _ _ _ hpx hx.2.2.2,
       signChanges_cons_cons_of_ne_zero _ _ _ hpy hy.2.2.2]
