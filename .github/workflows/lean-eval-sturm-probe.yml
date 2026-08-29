@@ -49,8 +49,10 @@ jobs:
           code=${PIPESTATUS[0]}
           echo "sturm_probe_exit=$code"
           exit 0
-      - name: Upload probe log
+      - name: Upload verified submission package
         uses: actions/upload-artifact@v4
         with:
-          name: lean-eval-sturm-probe
-          path: /tmp/sturm-probe.log
+          name: lean-eval-sturm-verified
+          path: |
+            /tmp/sturm/Submission.lean
+            /tmp/sturm-probe.log
