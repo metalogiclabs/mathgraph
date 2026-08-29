@@ -37,6 +37,8 @@ jobs:
           tail -n +4 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Termination.lean" >> /tmp/sturm/Submission.lean
           printf '\n\n' >> /tmp/sturm/Submission.lean
           tail -n +6 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Final.lean" >> /tmp/sturm/Submission.lean
+          printf '\n\n' >> /tmp/sturm/Submission.lean
+          tail -n +7 "$GITHUB_WORKSPACE/experiments/lean_eval/sturm/Global.lean" >> /tmp/sturm/Submission.lean
       - name: Compile and expose residual
         run: |
           set +e
