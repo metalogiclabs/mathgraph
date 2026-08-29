@@ -75,14 +75,19 @@ jobs:
             PROP="$prop" PROOF="$proof" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          repl=("    have hDelta : " + os.environ['PROP'] + " := by\n"
-                + "      " + os.environ['PROOF'] + "\n"
-                + "    sorry\n"
+          repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
+                + "    " + os.environ['PROOF'] + "\n"
+                + "  sorry\n"
                 + "end ErdosSupersingularPrimes")
-          s,n=re.subn(r'    sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
           if n != 1: raise SystemExit(f'interface hole replacements={n}')
           open('Submission.lean','w').write(s)
           PY
+            pycode=$?
+            if [ "$pycode" -ne 0 ]; then
+              echo "HARNESS_FATAL phase=interface name=$name python_exit=$pycode"
+              exit "$pycode"
+            fi
             lake build Submission > "/tmp/interface-${name}.log" 2>&1
             code=$?
             echo "INTERFACE_VERIFY name=$name exit=$code"
@@ -119,14 +124,19 @@ jobs:
           import os,re
           s=open('Submission.lean').read()
           body=os.environ['BODY'].replace('\\n','\n')
-          repl=("    have hDelta : " + os.environ['PROP'] + " := by\n"
-                + "      " + os.environ['PROOF'] + "\n"
-                + "    " + body.replace('\n','\n    ') + "\n"
+          repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
+                + "    " + os.environ['PROOF'] + "\n"
+                + "  " + body.replace('\n','\n  ') + "\n"
                 + "end ErdosSupersingularPrimes")
-          s,n=re.subn(r'    sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
           if n != 1: raise SystemExit(f'replay hole replacements={n}')
           open('Submission.lean','w').write(s)
           PY
+              pycode=$?
+              if [ "$pycode" -ne 0 ]; then
+                echo "HARNESS_FATAL phase=replay interface=$iname tail=$tname python_exit=$pycode"
+                exit "$pycode"
+              fi
               lake build Submission > "/tmp/replay-${iname}-${tname}.log" 2>&1
               code=$?
               sig=$(python3 - "/tmp/replay-${iname}-${tname}.log" <<'PY'
