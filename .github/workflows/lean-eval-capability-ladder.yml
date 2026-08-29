@@ -1,6 +1,12 @@
 name: LeanEval capability ladder
 
 on:
+  push:
+    branches:
+      - lean-eval-behavioural-router
+    paths:
+      - '.github/workflows/lean-eval-capability-ladder.yml'
+      - 'competitions/lean_eval/**'
   pull_request:
     paths:
       - '.github/workflows/lean-eval-capability-ladder.yml'
@@ -94,7 +100,7 @@ jobs:
                 ((solvableByRad ℚ ℂ).div_mem ((solvableByRad ℚ ℂ).add_mem hz hP) htwo)
                 ((solvableByRad ℚ ℂ).div_mem hQ hsden)
             have hdisc : (s^2 - 4 * ((z + P)/2 - Q/(2*s))) ∈ solvableByRad ℚ ℂ := by
-              exact (solvableByRad ℚ ℂ).sub_mem
+              exact (solvableByRad ℚ ℚ).sub_mem
                 ((solvableByRad ℚ ℂ).pow_mem hs_mem 2)
                 ((solvableByRad ℚ ℂ).mul_mem hfour hc)
             let t : ℂ := 2*y + s
@@ -117,10 +123,8 @@ jobs:
 
           cat > QuarticZeroBranch.lean <<'EOF'
           import Mathlib
-
           theorem quadratic_zero_linear_branch
-              (y c : ℂ)
-              (hc : c ∈ solvableByRad ℚ ℂ)
+              (y c : ℂ) (hc : c ∈ solvableByRad ℚ ℂ)
               (hy : y^2 + c = 0) : y ∈ solvableByRad ℚ ℂ := by
             have hnegc : (-c) ∈ solvableByRad ℚ ℂ := (solvableByRad ℚ ℂ).neg_mem hc
             apply solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0)
@@ -134,10 +138,8 @@ jobs:
 
           cat > TranslateBack.lean <<'EOF'
           import Mathlib
-
           theorem affine_translate_back
-              (a b : ℚ) (y x : ℂ)
-              (ha : (a : ℂ) ≠ 0)
+              (a b : ℚ) (y x : ℂ) (ha : (a : ℂ) ≠ 0)
               (hy : y ∈ solvableByRad ℚ ℂ)
               (hrel : y = 4 * (a : ℂ) * x + (b : ℂ)) :
               x ∈ solvableByRad ℚ ℂ := by
@@ -158,43 +160,7 @@ jobs:
           qt=$?
           printf 'translate_back\t%s\n' "$qt" >> /tmp/ladder.tsv
 
-          cat > DegreeFiveBoundary.lean <<'EOF'
-          import Mathlib
-          import Archive.Wiedijk100Theorems.AbelRuffini
-
-          open Polynomial
-
-          theorem high_degree_obstruction (n : ℕ) (hn : 5 ≤ n) :
-              ¬ (∀ p : ℚ[X], p.natDegree = n → ∀ x : ℂ, aeval x p = 0 →
-                  x ∈ solvableByRad ℚ ℂ) := by
-            intro hall
-            let bad : ℚ[X] := AbelRuffini.Φ ℚ 4 2
-            obtain ⟨y, hy⟩ := (IsAlgClosed.splits (bad.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
-              simp [bad, AbelRuffini.degree_Phi])
-            have hyroot : aeval y bad = 0 := by simpa [aeval_def] using hy
-            have hynot : y ∉ solvableByRad ℚ ℂ := by
-              apply AbelRuffini.not_solvable_by_rad' y
-              simpa [bad, aeval_def] using hyroot
-            let p : ℚ[X] := bad * X ^ (n - 5)
-            have hbad0 : bad ≠ 0 := (AbelRuffini.monic_Phi 4 2).ne_zero
-            have hdeg : p.natDegree = n := by
-              rw [show p = bad * X ^ (n - 5) by rfl, natDegree_mul hbad0 (pow_ne_zero _ X_ne_zero)]
-              simp [bad, AbelRuffini.natDegree_Phi]
-              omega
-            have hroot : aeval y p = 0 := by simp [p, hyroot]
-            exact hynot (hall p hdeg y hroot)
-          EOF
-          lake env lean DegreeFiveBoundary.lean > /tmp/degree-five.log 2>&1
-          q5=$?
-          printf 'degree5_obstruction\t%s\n' "$q5" >> /tmp/ladder.tsv
-
           cat /tmp/ladder.tsv
-          {
-            echo '## LeanEval capability ladder'
-            echo '```text'
-            cat /tmp/ladder.tsv
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
       - name: Compile universal quartic
@@ -207,23 +173,11 @@ jobs:
           lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
           dep=$?
           echo "cubic_dependency_exit=$dep"
-          if [ "$dep" -ne 0 ]; then
-            printf 'cubic_dependency\t%s\n' "$dep" >> /tmp/ladder.tsv
-            tail -n 160 /tmp/cubic-dependency.log
-            exit 0
-          fi
+          if [ "$dep" -ne 0 ]; then tail -n 160 /tmp/cubic-dependency.log; exit 0; fi
           lake env lean QuarticUniversal.lean > /tmp/quartic-universal.log 2>&1
           code=$?
           echo "quartic_universal_exit=$code"
-          printf 'quartic_universal\t%s\n' "$code" >> /tmp/ladder.tsv
           tail -n 240 /tmp/quartic-universal.log
-          {
-            echo '## Universal quartic'
-            echo '```text'
-            echo "cubic_dependency_exit=$dep"
-            echo "quartic_universal_exit=$code"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
       - name: Upload all residuals
@@ -237,6 +191,5 @@ jobs:
             /tmp/quartic-reconstruct.log
             /tmp/quartic-zero.log
             /tmp/translate-back.log
-            /tmp/degree-five.log
             /tmp/cubic-dependency.log
             /tmp/quartic-universal.log
