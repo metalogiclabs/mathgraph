@@ -1,0 +1,121 @@
+import MathGraph.Calculus.RockBottomAblation
+
+universe u v w
+
+namespace MathGraph.Calculus
+
+/-- The first derived notion on the ascent: generated identity is mutual finite
+continuation in the free closure of the raw directed generators. -/
+def GeneratedIdentity {Ω : Type u} (G : Ω → Ω → Type v) (x y : Ω) :
+    Type (max u v) :=
+  Mutual (FreePath G) x y
+
+/-- Generated identity is reflexive without adding an identity generator. -/
+def generatedIdentity_refl {Ω : Type u} (G : Ω → Ω → Type v) (x : Ω) :
+    GeneratedIdentity G x x :=
+  ⟨.nil, .nil⟩
+
+/-- Generated identity is symmetric because mutuality swaps two already
+existing directed paths; no reverse edge is manufactured. -/
+def generatedIdentity_symm {Ω : Type u} {G : Ω → Ω → Type v} {x y : Ω} :
+    GeneratedIdentity G x y → GeneratedIdentity G y x :=
+  fun h => ⟨h.2, h.1⟩
+
+/-- Generated identity is transitive by path concatenation. -/
+def generatedIdentity_trans {Ω : Type u} {G : Ω → Ω → Type v} {x y z : Ω} :
+    GeneratedIdentity G x y → GeneratedIdentity G y z → GeneratedIdentity G x z :=
+  fun hxy hyz =>
+    ⟨FreePath.append hxy.1 hyz.1,
+     FreePath.append hyz.2 hxy.2⟩
+
+/-- A refinement of raw generators is only a pointwise map of primitive
+directed evidence. No path-level map is supplied. -/
+def GeneratorRefines {Ω : Type u}
+    (G : Ω → Ω → Type v) (H : Ω → Ω → Type w) : Type (max u v w) :=
+  (x y : Ω) → G x y → H x y
+
+/-- Primitive refinement lifts canonically through the free finite closure. -/
+def FreePath.map {Ω : Type u}
+    {G : Ω → Ω → Type v} {H : Ω → Ω → Type w}
+    (r : GeneratorRefines G H) {x y : Ω} :
+    FreePath G x y → FreePath H x y
+  | .nil => .nil
+  | .step e p => .step (r _ _ e) (FreePath.map r p)
+
+/-- The lifted map preserves zero-length continuation definitionally. -/
+theorem freePath_map_nil {Ω : Type u}
+    {G : Ω → Ω → Type v} {H : Ω → Ω → Type w}
+    (r : GeneratorRefines G H) (x : Ω) :
+    FreePath.map r (.nil : FreePath G x x) =
+      (.nil : FreePath H x x) :=
+  rfl
+
+/-- The lifted map commutes with generated composition. -/
+theorem freePath_map_append {Ω : Type u}
+    {G : Ω → Ω → Type v} {H : Ω → Ω → Type w}
+    (r : GeneratorRefines G H) {x y z : Ω}
+    (p : FreePath G x y) (q : FreePath G y z) :
+    FreePath.map r (FreePath.append p q) =
+      FreePath.append (FreePath.map r p) (FreePath.map r q) := by
+  induction p with
+  | nil => rfl
+  | step e p ih =>
+      simp [FreePath.append, FreePath.map, ih]
+
+/-- Hence every identity witnessed before raw-generator refinement remains
+witnessed afterwards. -/
+def generatedIdentity_mono {Ω : Type u}
+    {G : Ω → Ω → Type v} {H : Ω → Ω → Type w}
+    (r : GeneratorRefines G H) {x y : Ω} :
+    GeneratedIdentity G x y → GeneratedIdentity H x y :=
+  fun h => ⟨FreePath.map r h.1, FreePath.map r h.2⟩
+
+/-- Refinement itself has an identity map. -/
+def generatorRefines_refl {Ω : Type u} (G : Ω → Ω → Type v) :
+    GeneratorRefines G G :=
+  fun _ _ e => e
+
+/-- And primitive refinements compose. -/
+def generatorRefines_trans {Ω : Type u}
+    {G : Ω → Ω → Type v} {H : Ω → Ω → Type w}
+    {J : Ω → Ω → Type}
+    (r : GeneratorRefines G H) (s : GeneratorRefines H J) :
+    GeneratorRefines G J :=
+  fun x y e => s x y (r x y e)
+
+/-- Finite causal witness: adding the missing primitive reverse generator is
+exactly what turns one-way continuation into generated identity. -/
+def twoWayGenerator : Bool → Bool → Type :=
+  fun x y => match x, y with
+    | false, true => Unit
+    | true, false => Unit
+    | _, _ => Empty
+
+/-- The one-way raw world refines into the two-way raw world. -/
+def oneWay_refines_twoWay : GeneratorRefines oneEdgeGenerator twoWayGenerator := by
+  intro x y e
+  cases x <;> cases y
+  · exact nomatch e
+  · exact ()
+  · exact nomatch e
+  · exact nomatch e
+
+/-- After the single missing reverse generator is supplied, mutual continuation
+between the two endpoints is derivable. -/
+def twoWay_generatedIdentity : GeneratedIdentity twoWayGenerator false true :=
+  ⟨FreePath.ofGenerator (), FreePath.ofGenerator ()⟩
+
+/-- Before that refinement, the same generated identity is impossible. -/
+def oneWay_not_generatedIdentity :
+    GeneratedIdentity oneEdgeGenerator false true → Empty :=
+  fun h => oneEdge_no_reverse h.2
+
+/-- First ascent certificate: from verified bedrock alone we derive finite
+continuation, an equivalence-like generated identity, and a monotone refinement
+operation that lifts primitive evidence to arbitrary finite paths. -/
+def reconstruction_stage1_certificate {Ω : Type u}
+    (G : Ω → Ω → Type v) (x : Ω) :
+    GeneratedIdentity G x x × GeneratorRefines G G :=
+  ⟨generatedIdentity_refl G x, generatorRefines_refl G⟩
+
+end MathGraph.Calculus
