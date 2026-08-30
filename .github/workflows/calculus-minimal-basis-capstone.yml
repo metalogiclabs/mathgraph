@@ -1,0 +1,62 @@
+name: Calculus minimal basis capstone
+
+on:
+  push:
+    branches:
+      - calculus/core-v0
+    paths:
+      - 'MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.lean'
+      - '.github/workflows/calculus-minimal-basis-capstone.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-minimal-basis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LEAN_PATH: .
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean 4.33.0
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.33.0
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.0
+      - name: Compile reconstruction dependency chain
+        run: |
+          lean -o MathGraph/Calculus/RawTransportGenesis.olean MathGraph/Calculus/RawTransportGenesis.lean
+          lean -o MathGraph/Calculus/RockBottomAblation.olean MathGraph/Calculus/RockBottomAblation.lean
+          lean -o MathGraph/Calculus/ReconstructionFromBedrock.olean MathGraph/Calculus/ReconstructionFromBedrock.lean
+          lean -o MathGraph/Calculus/ReconstructionStage2Profiles.olean MathGraph/Calculus/ReconstructionStage2Profiles.lean
+          lean -o MathGraph/Calculus/ReconstructionStage3Logic.olean MathGraph/Calculus/ReconstructionStage3Logic.lean
+          lean -o MathGraph/Calculus/ReconstructionStage4Separation.olean MathGraph/Calculus/ReconstructionStage4Separation.lean
+          lean -o MathGraph/Calculus/ReconstructionStage5Refinement.olean MathGraph/Calculus/ReconstructionStage5Refinement.lean
+          lean -o MathGraph/Calculus/ReconstructionStage6Residual.olean MathGraph/Calculus/ReconstructionStage6Residual.lean
+          lean -o MathGraph/Calculus/ReconstructionStage7FirstDistinction.olean MathGraph/Calculus/ReconstructionStage7FirstDistinction.lean
+          lean -o MathGraph/Calculus/ReconstructionStage8Selection.olean MathGraph/Calculus/ReconstructionStage8Selection.lean
+          lean -o MathGraph/Calculus/ReconstructionStage9Saturation.olean MathGraph/Calculus/ReconstructionStage9Saturation.lean
+          lean -o MathGraph/Calculus/ReconstructionStage10Sufficiency.olean MathGraph/Calculus/ReconstructionStage10Sufficiency.lean
+          lean -o MathGraph/Calculus/ReconstructionStage11MinimalSufficient.olean MathGraph/Calculus/ReconstructionStage11MinimalSufficient.lean
+          lean -o MathGraph/Calculus/ReconstructionStage12FiniteTermination.olean MathGraph/Calculus/ReconstructionStage12FiniteTermination.lean
+          lean -o MathGraph/Calculus/ReconstructionStage13Development.olean MathGraph/Calculus/ReconstructionStage13Development.lean
+          lean -o MathGraph/Calculus/ReconstructionStage14ConstructorGenesis.olean MathGraph/Calculus/ReconstructionStage14ConstructorGenesis.lean
+          lean -o MathGraph/Calculus/ReconstructionStage15RecursiveDevelopment.olean MathGraph/Calculus/ReconstructionStage15RecursiveDevelopment.lean
+          lean -o MathGraph/Calculus/ReconstructionStage16SchemaGenesis.olean MathGraph/Calculus/ReconstructionStage16SchemaGenesis.lean
+          lean -o MathGraph/Calculus/ReconstructionStage17DirectGeneratorGenesis.olean MathGraph/Calculus/ReconstructionStage17DirectGeneratorGenesis.lean
+          lean -o MathGraph/Calculus/ReconstructionStage18ResidualAsGenerator.olean MathGraph/Calculus/ReconstructionStage18ResidualAsGenerator.lean
+          lean -o MathGraph/Calculus/ReconstructionStage19GenericResidualGenerator.olean MathGraph/Calculus/ReconstructionStage19GenericResidualGenerator.lean
+          lean -o MathGraph/Calculus/ReconstructionStage20ResidualClosure.olean MathGraph/Calculus/ReconstructionStage20ResidualClosure.lean
+          lean -o MathGraph/Calculus/ReconstructionStage21DirectionBoundary.olean MathGraph/Calculus/ReconstructionStage21DirectionBoundary.lean
+          lean -o MathGraph/Calculus/ReconstructionStage22MeasurementGenesis.olean MathGraph/Calculus/ReconstructionStage22MeasurementGenesis.lean
+          lean -o MathGraph/Calculus/ReconstructionStage23GeneratedInterface.olean MathGraph/Calculus/ReconstructionStage23GeneratedInterface.lean
+          lean -o MathGraph/Calculus/ReconstructionStage24HistoryQuotient.olean MathGraph/Calculus/ReconstructionStage24HistoryQuotient.lean
+          lean -o MathGraph/Calculus/ReconstructionStage25StateNecessity.olean MathGraph/Calculus/ReconstructionStage25StateNecessity.lean
+          lean -o MathGraph/Calculus/ReconstructionStage26TaskOrientation.olean MathGraph/Calculus/ReconstructionStage26TaskOrientation.lean
+      - name: Verify Stage27 minimal basis capstone
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE27_GATE {"classification":"LEAN_VERIFIED_RELATIVE_MINIMAL_SUFFICIENT_DEVELOPMENTAL_BASIS_WITH_HISTORY_AND_INTERNAL_ORIENTATION_ELIMINATED_AND_STATE_BEDROCK_NECESSITY_ABLATIONS"}'
