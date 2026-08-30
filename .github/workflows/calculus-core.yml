@@ -156,5 +156,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE13_GATE {"classification":"LEAN_VERIFIED_ONE_CYCLE_RESIDUAL_SELECTED_PROMOTION_CHANGES_REACHABLE_CLOSURE_WITH_ABLATION_AND_NO_RESIDUAL_NEGATIVE"}'
       - name: Verify reconstruction stage 14
         run: |
-          lean MathGraph/Calculus/ReconstructionStage14ConstructorGenesis.lean
+          lean -o MathGraph/Calculus/ReconstructionStage14ConstructorGenesis.olean MathGraph/Calculus/ReconstructionStage14ConstructorGenesis.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE14_GATE {"classification":"LEAN_VERIFIED_RESIDUAL_DRIVEN_CONSTRUCTOR_LANGUAGE_EXPANSION_CHANGES_REACHABLE_CLOSURE_WITH_EXACT_ABLATION"}'
+      - name: Verify reconstruction stage 15
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage15RecursiveDevelopment.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE15_GATE {"classification":"LEAN_VERIFIED_RECURSIVE_DEVELOPMENTAL_STATE_SELF_APPLICATION_REACTS_TO_ITS_OWN_NEW_RESIDUAL_AND_REACHES_FIXED_POINT"}'
