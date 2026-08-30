@@ -148,5 +148,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE11_GATE {"classification":"LEAN_VERIFIED_FIRST_MINIMAL_SUFFICIENT_INTERFACE_GENERATED_FROM_BEDROCK_BY_RESIDUAL_SELECTION"}'
       - name: Verify reconstruction stage 12
         run: |
-          lean MathGraph/Calculus/ReconstructionStage12FiniteTermination.lean
+          lean -o MathGraph/Calculus/ReconstructionStage12FiniteTermination.olean MathGraph/Calculus/ReconstructionStage12FiniteTermination.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE12_GATE {"classification":"LEAN_VERIFIED_FINITE_RESIDUAL_SELECTION_TERMINATES_AT_SATURATED_SUFFICIENT_INTERFACE"}'
+      - name: Verify reconstruction stage 13
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage13Development.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE13_GATE {"classification":"LEAN_VERIFIED_ONE_CYCLE_RESIDUAL_SELECTED_PROMOTION_CHANGES_REACHABLE_CLOSURE_WITH_ABLATION_AND_NO_RESIDUAL_NEGATIVE"}'
