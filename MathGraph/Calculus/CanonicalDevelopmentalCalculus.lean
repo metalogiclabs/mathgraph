@@ -170,4 +170,7 @@ theorem canonical_developmental_calculus_certificate :
     canonical_recursive_development,
     canonical_final_ablation_matrix⟩
 
+-- This file is the compact canonical surface; numbered reconstruction stages
+-- remain as experimental provenance and proof dependencies.
+
 end MathGraph.Calculus
