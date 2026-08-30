@@ -192,5 +192,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE22_GATE {"classification":"LEAN_VERIFIED_MEASUREMENT_SEMANTICS_AND_RESIDUAL_SOURCE_GENESIS_FROM_BEDROCK_WITHOUT_SUPPLIED_CANDIDATE_PROBE_POOL"}'
       - name: Verify reconstruction stage 23
         run: |
-          lean MathGraph/Calculus/ReconstructionStage23GeneratedInterface.lean
+          lean -o MathGraph/Calculus/ReconstructionStage23GeneratedInterface.olean MathGraph/Calculus/ReconstructionStage23GeneratedInterface.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE23_GATE {"classification":"LEAN_VERIFIED_INTERFACE_STATE_RECONSTRUCTED_FROM_ENDOGENOUS_SOURCE_HISTORY_WITH_STRICT_REFINEMENT_AND_EXACT_HISTORY_ABLATION"}'
+      - name: Verify reconstruction stage 24
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage24HistoryQuotient.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE24_GATE {"classification":"LEAN_VERIFIED_EXACT_SOURCE_HISTORY_ELIMINABLE_UP_TO_EXTensional_OBSERVATIONAL_STATE_WITH_RESIDUAL_INVARIANCE"}'
