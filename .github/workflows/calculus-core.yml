@@ -200,5 +200,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE24_GATE {"classification":"LEAN_VERIFIED_EXACT_SOURCE_HISTORY_ELIMINABLE_UP_TO_EXTENSIONAL_OBSERVATIONAL_STATE_WITH_RESIDUAL_INVARIANCE"}'
       - name: Verify reconstruction stage 25
         run: |
-          lean MathGraph/Calculus/ReconstructionStage25StateNecessity.lean
+          lean -o MathGraph/Calculus/ReconstructionStage25StateNecessity.olean MathGraph/Calculus/ReconstructionStage25StateNecessity.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE25_GATE {"classification":"LEAN_VERIFIED_SELECTIVE_OBSERVATIONAL_STATE_NECESSARY_FOR_ENDOGENOUS_RESIDUAL_DEVELOPMENT_MAXIMAL_BEDROCK_REGENERATION_SATURATES_AND_KILLS_RESIDUAL"}'
+      - name: Verify reconstruction stage 26
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage26TaskOrientation.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE26_GATE {"classification":"LEAN_VERIFIED_UNIQUE_OPERATIONAL_DIRECTION_CAN_BE_SUPPLIED_BY_EXTERNAL_ORDERED_TASK_BOUNDARY_WITHOUT_INTERNAL_ORIENTATION_PRIMITIVE_AND_EXACT_ABLATION_RESTORES_SYMMETRY_OBSTRUCTION"}'
