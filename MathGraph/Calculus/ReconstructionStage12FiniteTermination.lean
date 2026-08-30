@@ -70,6 +70,13 @@ theorem member_listProbeRedundant
   intro x y hEq
   exact hEq k hk
 
+/-- Residual selection is logically classical: deciding whether an arbitrary
+Prop-valued residual exists is exactly the explicit choice boundary needed by
+the finite controller. The generated interface and all later certificates
+remain ordinary propositions once this decision is made. -/
+local instance residualPropDecidable (p : Prop) : Decidable p :=
+  Classical.propDecidable p
+
 /-- One finite residual-selection pass. A candidate is added exactly when it
 currently has a residual; otherwise it is forgotten. The recursion is purely
 on the finite candidate list, so termination is structural rather than an
