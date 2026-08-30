@@ -1,0 +1,16 @@
+name = "MathGraphPalomarLaw43"
+version = "0.1.0"
+defaultTargets = ["Challenge", "Solution"]
+
+[[require]]
+name = "equational_theories"
+git = "https://github.com/teorth/equational_theories.git"
+rev = "54edcda2f320cef0a241f8109fa164f901a69b87"
+
+[[lean_lib]]
+name = "Challenge"
+roots = ["Challenge"]
+
+[[lean_lib]]
+name = "Solution"
+roots = ["Solution"]
