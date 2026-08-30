@@ -56,5 +56,9 @@ jobs:
           echo 'CALCULUS_EQUALITY_ABLATION_GATE {"classification":"LEAN_VERIFIED_APARTNESS_AND_IDENTITY_FROM_RAW_PROP_TESTS_WITHOUT_OUTCOME_EQUALITY"}'
       - name: Verify incidence grounding
         run: |
-          lean MathGraph/Calculus/IncidenceGrounding.lean
+          lean -o MathGraph/Calculus/IncidenceGrounding.olean MathGraph/Calculus/IncidenceGrounding.lean
           echo 'CALCULUS_INCIDENCE_GROUNDING_GATE {"classification":"LEAN_VERIFIED_STATIC_CALCULUS_FROM_BARE_TEST_STATE_INCIDENCE"}'
+      - name: Verify witness-incidence grounding
+        run: |
+          lean MathGraph/Calculus/WitnessIncidenceGrounding.lean
+          echo 'CALCULUS_WITNESS_INCIDENCE_GATE {"classification":"LEAN_VERIFIED_CONSTRUCTIVE_STATIC_CORE_FROM_TYPE_VALUED_WITNESS_INCIDENCE_WITH_LOGICAL_REFLECTION_BOUNDARY"}'
