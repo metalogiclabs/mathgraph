@@ -1,16 +1,17 @@
 import Std
 
-#check Fintype.card
-#check Fintype.card_congr
-#check Fintype.card_le_of_injective
-#check Fintype.card_fun
-#check Fintype.card_fin
-#check Fintype.card_bool
-#check Nat.pow
-#check Nat.lt_succ_self
-
-example (b : Nat) : Fintype.card (Fin b → Bool) = 2 ^ b := by
-  simp
-
-example (b : Nat) : Fintype.card (Fin (2 ^ b + 1)) = 2 ^ b + 1 := by
-  simp
+#check List.range
+#check List.length_range
+#check List.nodup_range
+#check List.Nodup.map
+#check List.Pairwise
+#check List.Subset
+#check List.Nodup.length_le_of_subset
+#check List.length_le_of_sublist
+#check List.mem_map
+#check List.map_append
+#check List.length_append
+#check List.length_map
+#check List.nodup_map_iff_injective
+#check Nat.pow_succ
+#check Nat.two_pow_succ
