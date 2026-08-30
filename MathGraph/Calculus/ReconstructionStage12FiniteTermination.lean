@@ -74,7 +74,7 @@ theorem member_listProbeRedundant
 Prop-valued residual exists is exactly the explicit choice boundary needed by
 the finite controller. The generated interface and all later certificates
 remain ordinary propositions once this decision is made. -/
-local instance residualPropDecidable (p : Prop) : Decidable p :=
+noncomputable local instance residualPropDecidable (p : Prop) : Decidable p :=
   Classical.propDecidable p
 
 /-- One finite residual-selection pass. A candidate is added exactly when it
