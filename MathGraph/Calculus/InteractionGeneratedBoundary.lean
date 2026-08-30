@@ -92,7 +92,10 @@ theorem response_licenses_development {R : Type}
       exact stage29_true_anchor_recovers_reverse_task
     rw [show (C.boundaryFromResponse r).current =
       (⟨true, false⟩ : Stage26TaskBoundary Bool) by exact hTask]
-    exact stage21_cold_reverse_generator_exists
+    refine ⟨⟨true, ?_⟩⟩
+    constructor
+    · exact stage21_cold_true_generic_residual
+    · exact ⟨(.nil : FreePath Stage13G0 true true)⟩
 
 /-- Retaining the encountered task generates the next selective observational
 state from the transcript.  The stored coordinate is exactly the representative
