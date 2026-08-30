@@ -157,7 +157,8 @@ jobs:
                   intro hpj
                   have hji' := hUnique p hp hkp hpd j hj i hi hpj hpi
                   exact hji hji'
-                simpa using (padicValInt.eq_zero_of_not_dvd (p := p) hnot)
+                rw [padicValRat.of_int]
+                exact_mod_cast padicValInt.eq_zero_of_not_dvd (p := p) hnot
               · intro hni
                 exact (hni hi).elim
           LEAN
