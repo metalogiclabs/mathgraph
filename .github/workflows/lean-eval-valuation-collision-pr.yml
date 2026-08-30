@@ -1,4 +1,4 @@
-name: LeanEval valuation collision PR
+name: LeanEval large-prime valuation concentration PR
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  valuation-collision-portal:
+  large-prime-concentration:
     if: github.head_ref == 'lean-eval-multitarget-sweep'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -34,7 +34,7 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Verify combined valuation collision interface
+      - name: Verify large-prime concentration interface
         id: verify
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -43,6 +43,7 @@ jobs:
           import ChallengeDeps
           import Mathlib.Analysis.Complex.Exponential
           import Mathlib.NumberTheory.Padics.PadicVal.Basic
+          import Mathlib.Data.Nat.Prime.Int
 
           set_option autoImplicit false
           namespace ErdosSupersingularPrimes
@@ -95,13 +96,39 @@ jobs:
               intro q i j hi hj
               have h : q ∣ (s.n + i * s.d) - (s.n + j * s.d) := hi.sub hj
               convert h using 1 <;> ring
+            have hUnique : ∀ p : ℕ, p.Prime → k ≤ p → ¬ (p : ℤ) ∣ s.d →
+                ∀ i ∈ Finset.range k, ∀ j ∈ Finset.range k,
+                  (p : ℤ) ∣ (s.n + i * s.d) →
+                  (p : ℤ) ∣ (s.n + j * s.d) → i = j := by
+              intro p hp hkp hpd i hi j hj hpi hpj
+              have hpInt : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+              have hmul := hCollision (p : ℤ) i j hpi hpj
+              have hdiff : (p : ℤ) ∣ ((i : ℤ) - (j : ℤ)) :=
+                (hpInt.dvd_mul.mp hmul).resolve_right hpd
+              rcases hdiff with ⟨z, hz⟩
+              have hip : i < p := lt_of_lt_of_le (Finset.mem_range.mp hi) hkp
+              have hjp : j < p := lt_of_lt_of_le (Finset.mem_range.mp hj) hkp
+              have hp0 : (0 : ℤ) < (p : ℤ) := by exact_mod_cast hp.pos
+              have hi0 : (0 : ℤ) ≤ (i : ℤ) := by positivity
+              have hj0 : (0 : ℤ) ≤ (j : ℤ) := by positivity
+              have hiP : (i : ℤ) < (p : ℤ) := by exact_mod_cast hip
+              have hjP : (j : ℤ) < (p : ℤ) := by exact_mod_cast hjp
+              rcases lt_trichotomy z 0 with hzneg | rfl | hzpos
+              · have hzle : z ≤ -1 := by omega
+                exfalso
+                nlinarith
+              · norm_num at hz
+                exact_mod_cast (sub_eq_zero.mp hz)
+              · have hzge : 1 ≤ z := by omega
+                exfalso
+                nlinarith
             sorry
           end ErdosSupersingularPrimes
           LEAN
-          lake build Submission > /tmp/valuation-collision-interface.log 2>&1
+          lake build Submission > /tmp/large-prime-interface.log 2>&1
           code=$?
-          echo "VALUATION_COLLISION_INTERFACE_VERIFY exit=$code"
-          cat /tmp/valuation-collision-interface.log
+          echo "LARGE_PRIME_INTERFACE_VERIFY exit=$code"
+          cat /tmp/large-prime-interface.log
           echo "verified=$([ "$code" -eq 0 ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
       - name: Replay frozen primitive language
         id: replay
@@ -109,7 +136,7 @@ jobs:
         working-directory: /tmp/${{ env.TARGET }}
         run: |
           set +e
-          cp Submission.lean /tmp/combined-base.lean
+          cp Submission.lean /tmp/concentration-base.lean
           : > /tmp/replay.tsv
           solved=0
           winner=''
@@ -126,7 +153,7 @@ jobs:
           printf '%s\t%s\n' contra 'try contradiction' >> /tmp/tails.tsv
           printf '%s\t%s\n' tauto 'try tauto' >> /tmp/tails.tsv
           while IFS=$'\t' read -r name body; do
-            cp /tmp/combined-base.lean Submission.lean
+            cp /tmp/concentration-base.lean Submission.lean
             BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
@@ -138,30 +165,30 @@ jobs:
             if [ $? -ne 0 ]; then exit 90; fi
             lake build Submission > "/tmp/replay-${name}.log" 2>&1
             code=$?
-            echo "VALUATION_COLLISION_REPLAY name=$name exit=$code"
+            echo "LARGE_PRIME_REPLAY name=$name exit=$code"
             printf '%s\t%s\n' "$name" "$code" >> /tmp/replay.tsv
-            if [ "$code" -eq 0 ]; then solved=1; winner="$name"; cp Submission.lean /tmp/VALUATION-COLLISION-SOLVED.lean; break; fi
+            if [ "$code" -eq 0 ]; then solved=1; winner="$name"; cp Submission.lean /tmp/LARGE-PRIME-SOLVED.lean; break; fi
           done < /tmp/tails.tsv
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
           echo "winner=$winner" >> "$GITHUB_OUTPUT"
-      - name: Combined portal gate
+      - name: Large-prime concentration gate
         if: always()
         run: |
           if [ "${{ steps.verify.outputs.verified }}" != "1" ]; then
-            echo 'VALUATION_COLLISION_GATE {"classification":"INTERFACE_PROOF_FAILURE"}'
+            echo 'LARGE_PRIME_GATE {"classification":"INTERFACE_PROOF_FAILURE"}'
           elif [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
-            echo 'VALUATION_COLLISION_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
+            echo 'LARGE_PRIME_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
           else
-            echo 'VALUATION_COLLISION_GATE {"classification":"VALUATION_COLLISION_VERIFIED_NO_EXACT"}'
+            echo 'LARGE_PRIME_GATE {"classification":"LARGE_PRIME_CONCENTRATION_VERIFIED_NO_EXACT"}'
           fi
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: valuation-collision-portal
+          name: large-prime-valuation-concentration
           path: |
-            /tmp/valuation-collision-interface.log
+            /tmp/large-prime-interface.log
             /tmp/replay.tsv
             /tmp/replay-*.log
-            /tmp/VALUATION-COLLISION-SOLVED.lean
+            /tmp/LARGE-PRIME-SOLVED.lean
           if-no-files-found: ignore
