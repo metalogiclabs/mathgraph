@@ -57,18 +57,23 @@ jobs:
           end ErdosSupersingularPrimes
           LEAN
 
-          cat > /tmp/interfaces.tsv <<'EOF'
-          sham\ts.l = s.l\texact rfl
-          product_nonzero\t(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0\thave hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
-          factor_nonzero\t∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0\tapply Finset.prod_ne_zero_iff.mp; have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
-          factor_coprime_d\t∀ i ∈ Finset.range k, Int.gcd (s.n + i * s.d) s.d = 1\tintro i hi; simpa [s.gcd] using (Int.gcd_add_mul_left_left s.n s.d (i : ℤ))
-          prime_support_transfer\t∀ q : ℤ, Prime q → q ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d)) → q ∣ s.y\tintro q hq hdiv; rw [s.eq] at hdiv; exact hq.dvd_of_dvd_pow hdiv
-          exponent_multiplicity\t∀ q : ℤ, q ∣ s.y → q ^ s.l ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d))\tintro q hq; rw [s.eq]; exact pow_dvd_pow_of_dvd hq s.l
-          EOF
-          sed -i 's/^          //' /tmp/interfaces.tsv
+          : > /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'sham' 's.l = s.l' 'exact rfl' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'product_nonzero' '(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0' 'have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'factor_nonzero' '∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0' 'apply Finset.prod_ne_zero_iff.mp; have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'factor_coprime_d' '∀ i ∈ Finset.range k, Int.gcd (s.n + i * s.d) s.d = 1' 'intro i hi; simpa [s.gcd] using (Int.gcd_add_mul_left_left s.n s.d (i : ℤ))' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'prime_support_transfer' '∀ q : ℤ, Prime q → q ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d)) → q ∣ s.y' 'intro q hq hdiv; rw [s.eq] at hdiv; exact hq.dvd_of_dvd_pow hdiv' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'exponent_multiplicity' '∀ q : ℤ, q ∣ s.y → q ^ s.l ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d))' 'intro q hq; rw [s.eq]; exact pow_dvd_pow_of_dvd hq s.l' >> /tmp/interfaces.tsv
 
           : > /tmp/verified.tsv
+          total=0
+          verified=0
           while IFS=$'\t' read -r name prop proof; do
+            total=$((total+1))
+            if [ -z "$name" ] || [ -z "$prop" ] || [ -z "$proof" ]; then
+              echo "PORTAL_HARNESS_FATAL malformed_interface row=$total"
+              exit 90
+            fi
             cp /tmp/base.lean Submission.lean
             PROP="$prop" PROOF="$proof" python3 - <<'PY'
           import os,re
@@ -90,33 +95,42 @@ jobs:
             code=$?
             echo "PORTAL_INTERFACE_VERIFY name=$name exit=$code"
             if [ "$code" -eq 0 ]; then
+              verified=$((verified+1))
               printf '%s\t%s\t%s\n' "$name" "$prop" "$proof" >> /tmp/verified.tsv
             fi
           done < /tmp/interfaces.tsv
-          echo "verified=$(wc -l < /tmp/verified.tsv)" >> "$GITHUB_OUTPUT"
+          if [ "$total" -ne 6 ]; then
+            echo "PORTAL_HARNESS_FATAL expected_interfaces=6 actual=$total"
+            exit 91
+          fi
+          echo "verified=$verified" >> "$GITHUB_OUTPUT"
       - name: Replay primitive language across portal
         id: replay
         working-directory: /tmp/${{ env.TARGET }}
         run: |
           set +e
-          cat > /tmp/tails.tsv <<'EOF'
-          simp\ttry simp_all
-          aesop\ttry aesop
-          grind\ttry grind
-          norm\ttry norm_num at *
-          linarith\ttry linarith
-          nlinarith\ttry nlinarith
-          positivity\ttry positivity
-          ringnf\ttry ring_nf
-          fieldsimp\ttry field_simp
-          elim\ttry solve_by_elim
-          contra\ttry contradiction
-          tauto\ttry tauto
-          EOF
-          sed -i 's/^          //' /tmp/tails.tsv
+          : > /tmp/tails.tsv
+          printf '%s\t%s\n' simp 'try simp_all' >> /tmp/tails.tsv
+          printf '%s\t%s\n' aesop 'try aesop' >> /tmp/tails.tsv
+          printf '%s\t%s\n' grind 'try grind' >> /tmp/tails.tsv
+          printf '%s\t%s\n' norm 'try norm_num at *' >> /tmp/tails.tsv
+          printf '%s\t%s\n' linarith 'try linarith' >> /tmp/tails.tsv
+          printf '%s\t%s\n' nlinarith 'try nlinarith' >> /tmp/tails.tsv
+          printf '%s\t%s\n' positivity 'try positivity' >> /tmp/tails.tsv
+          printf '%s\t%s\n' ringnf 'try ring_nf' >> /tmp/tails.tsv
+          printf '%s\t%s\n' fieldsimp 'try field_simp' >> /tmp/tails.tsv
+          printf '%s\t%s\n' elim 'try solve_by_elim' >> /tmp/tails.tsv
+          printf '%s\t%s\n' contra 'try contradiction' >> /tmp/tails.tsv
+          printf '%s\t%s\n' tauto 'try tauto' >> /tmp/tails.tsv
+
           : > /tmp/replay.tsv
           solved=0
           winner=''
+          vcount=$(wc -l < /tmp/verified.tsv)
+          if [ "$vcount" -eq 0 ]; then
+            echo 'PORTAL_HARNESS_FATAL no_verified_interfaces'
+            exit 92
+          fi
           while IFS=$'\t' read -r iname prop proof; do
             while IFS=$'\t' read -r tname body; do
               cp /tmp/base.lean Submission.lean
@@ -168,6 +182,8 @@ jobs:
           for r in rows:
               if len(r)==4: by[r[0]].append(r)
           sham=set(r[3] for r in by.get('sham',[]))
+          if not sham:
+              raise SystemExit('PORTAL_HARNESS_FATAL no_sham_replay')
           changed=[]
           print('PORTAL_REPLAY_PROGRAMS',len(rows))
           print('PORTAL_SHAM_CLASSES',len(sham))
@@ -179,6 +195,8 @@ jobs:
           print('PORTAL_CHANGING_INTERFACES',','.join(changed) if changed else 'NONE')
           open('/tmp/changing.txt','w').write('\n'.join(changed))
           PY
+          pycode=$?
+          if [ "$pycode" -ne 0 ]; then exit "$pycode"; fi
           changing=$(grep -c . /tmp/changing.txt 2>/dev/null || true)
           echo "changing=$changing" >> "$GITHUB_OUTPUT"
       - name: Equation portal gate
