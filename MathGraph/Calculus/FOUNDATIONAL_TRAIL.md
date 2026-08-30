@@ -115,6 +115,66 @@ Gate: `LEAN_VERIFIED_FIRST_DISTINCTION_GENERATED_FROM_EMPTY_PROBE_INTERFACE_BY_R
 
 Authoritative run: `33287786871`; job `99193926530`; workflow commit `0e8f1df61595d17b0c9ea1823587a9a5f740310f`.
 
+### Stage 8 — SPLIT-or-FORGET selection law
+
+For any candidate source probe, Lean proves an exhaustive and exclusive semantic dichotomy:
+
+- **SPLIT**: a residual pair exists, and adding the probe is a strict information refinement;
+- **FORGET**: the probe is redundant, and adding it is observationally conservative.
+
+Exhaustiveness uses excluded middle; the consequence of each branch is then verified by the lower reconstruction machinery.
+
+Gate: `LEAN_VERIFIED_SPLIT_OR_FORGET_SELECTION_LAW_RECONSTRUCTED_FROM_BEDROCK`
+
+Authoritative run: `33287878514`; job `99194175265`; workflow commit `a9f85f706b43e9c2c5c6f08aff1a5815f902babb`.
+
+### Stage 9 — first recursive selection cycle reaches saturation
+
+In the two-state one-way world, start from no probes. Source `true` is a residual and is selected. After that split, the only remaining Bool source probe `false` is redundant, so the controller takes FORGET and no further residual remains.
+
+This is the first verified closed selection loop:
+
+```text
+Empty probes → residual → SPLIT → retest → FORGET → saturation
+```
+
+Gate: `LEAN_VERIFIED_FIRST_RECURSIVE_SELECTION_CYCLE_REACHES_SATURATION`
+
+Authoritative run: `33287949314`; job `99194370700`; workflow commit `ae0f2e9c3ae912ffceb88c1a72441cf873658201`.
+
+### Stage 10 — saturation → full sufficiency
+
+Define saturation by requiring every possible source probe to be redundant relative to the selected interface. Lean proves the general theorem that any saturated selected interface induces exactly the same consequential identity as the full all-source incoming-reachability language.
+
+At saturation:
+
+```text
+ConsequentialEq selected x y
+↔ ConsequentialEq full x y
+↔ Nonempty (GeneratedIdentity G x y)
+```
+
+Thus “no remaining residual” is a verifier-checkable sufficiency certificate, not merely a stopping heuristic.
+
+Gate: `LEAN_VERIFIED_RESIDUAL_SATURATION_IS_SUFFICIENT_FOR_FULL_REACHABILITY_IDENTITY`
+
+Authoritative run: `33288005362`; job `99194525751`; workflow commit `ef4d1814a2a6c7b3c8a1e3ca19c758c3d3d87ffd`.
+
+### Stage 11 — first generated minimal sufficient interface
+
+Return to the two-state one-way world. Lean verifies:
+
+1. the zero-probe interface is **not sufficient** for full reachability identity;
+2. the first residual-selected probe (`true`) produces a one-probe interface;
+3. that one-probe interface is saturated;
+4. therefore it is sufficient for the full all-source identity interface.
+
+So, in this first nontrivial world, zero observations are insufficient while one residual-generated observation is sufficient. This is a concrete minimal-sufficiency certificate relative to the zero-probe predecessor, not yet a general cardinal-minimality theorem for arbitrary finite systems.
+
+Gate: `LEAN_VERIFIED_FIRST_MINIMAL_SUFFICIENT_INTERFACE_GENERATED_FROM_BEDROCK_BY_RESIDUAL_SELECTION`
+
+Authoritative run: `33288063483`; job `99194675764`; workflow commit `05f99bb0fbeec4073144fd97ec474b0dbd2683f0`.
+
 ## Current dependency trail
 
 ```text
@@ -125,10 +185,15 @@ raw typed directed evidence / composability boundaries
   -> Nonempty logical reflection
   -> ConsequentialEq
   -> lawful separation / apartness
-  -> selected reachability probes
+  -> selected source probes
   -> residual probe
   -> strict information refinement
-  -> first generated distinction from an Empty observation interface
+  -> first distinction from Empty probe interface
+  -> SPLIT-or-FORGET selection law
+  -> recursive residual selection
+  -> saturation
+  -> saturation sufficiency
+  -> first residual-generated minimal sufficient interface
 ```
 
 The key separation now visible on ascent is:
