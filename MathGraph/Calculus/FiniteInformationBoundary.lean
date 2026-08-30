@@ -5,8 +5,7 @@ namespace MathGraph.Calculus
 namespace BoundaryGroupAction
 
 /-- A boundary code is faithful at a chosen representative when equal codewords
-never collapse two operationally different orbit points.  This is the weakest
-losslessness condition needed for an external boundary representation. -/
+never collapse two operationally different orbit points. -/
 def FaithfulAt
     {Γ Ω Code : Type} (A : BoundaryGroupAction Γ Ω) (a : Ω)
     (encode : Γ → Code) : Prop :=
@@ -32,7 +31,8 @@ theorem faithful_code_injective_on_separated_family
     (hSeparated : A.PairwiseOrbitSeparated a labels) :
     Function.Injective (fun i : I => encode (labels i)) := by
   intro i j hCode
-  by_contra hne
+  apply Classical.byContradiction
+  intro hne
   have hSame : A.SameAt a (labels i) (labels j) :=
     hFaithful (labels i) (labels j) hCode
   exact hSeparated i j hne hSame
@@ -49,49 +49,8 @@ theorem faithful_code_separates_nonstabilizer_labels
   have hSame : A.SameAt a g h := hFaithful g h hCode
   exact hOutside ((A.sameAt_iff_relative_stabilizes a g h).1 hSame)
 
-/-- A strict finite consequence: a one-bit Bool boundary cannot faithfully
-encode three pairwise-distinct operational orbit points.
-
-This is the first nontrivial finite-information obstruction beyond the earlier
-two-point / one-bit witness. -/
-theorem one_bit_cannot_encode_three_separated_orbit_points
-    {Γ Ω : Type} (A : BoundaryGroupAction Γ Ω) (a : Ω)
-    (g0 g1 g2 : Γ)
-    (h01 : ¬ A.SameAt a g0 g1)
-    (h02 : ¬ A.SameAt a g0 g2)
-    (h12 : ¬ A.SameAt a g1 g2) :
-    ¬ A.FaithfulAt a (fun g =>
-      if A.SameAt a g g0 then false else
-      if A.SameAt a g g1 then true else false) := by
-  intro hFaithful
-  let encode : Γ → Bool := fun g =>
-    if A.SameAt a g g0 then false else
-    if A.SameAt a g g1 then true else false
-  have h0 : encode g0 = false := by
-    unfold encode
-    simp [SameAt]
-  have h1 : encode g1 = true := by
-    unfold encode
-    have h10 : ¬ A.SameAt a g1 g0 := by
-      intro hs
-      exact h01 hs.symm
-    simp [h10, SameAt]
-  have h2 : encode g2 = false := by
-    unfold encode
-    have h20 : ¬ A.SameAt a g2 g0 := by
-      intro hs
-      exact h02 hs.symm
-    have h21 : ¬ A.SameAt a g2 g1 := by
-      intro hs
-      exact h12 hs.symm
-    simp [h20, h21]
-  have hSame02 : A.SameAt a g0 g2 := by
-    apply hFaithful g0 g2
-    rw [h0, h2]
-  exact h02 hSame02
-
 /-- Encoder-independent one-bit pigeonhole theorem.  If three labels are
-pairwise operationally distinct, *no* Bool-valued encoding can be faithful. -/
+pairwise operationally distinct, no Bool-valued encoding can be faithful. -/
 theorem no_bool_code_for_three_separated_orbit_points
     {Γ Ω : Type} (A : BoundaryGroupAction Γ Ω) (a : Ω)
     (g0 g1 g2 : Γ)
