@@ -1,0 +1,19 @@
+name: VDN finite interface v48
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v47_probe_completion_convergence.py'
+      - '.github/workflows/vdn-finite-interface-v48.yml'
+  workflow_dispatch:
+jobs:
+  convergence:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust probe-completion worlds and orders
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v47_probe_completion_convergence.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-finite-interface-v48
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v47_probe_completion_convergence/result.json

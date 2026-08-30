@@ -1,0 +1,19 @@
+name: VDN Residual Guided V51
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v51_residual_guided_basis_discovery.py'
+      - '.github/workflows/vdn-residual-guided-v51.yml'
+  workflow_dispatch:
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust residual-guided repair paths
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v51_residual_guided_basis_discovery.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-residual-guided-v51
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v51_residual_guided_basis_discovery/result.json
