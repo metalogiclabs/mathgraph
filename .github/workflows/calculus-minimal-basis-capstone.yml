@@ -14,6 +14,7 @@ on:
       - 'MathGraph/Calculus/GeneralOrbitStabilizerBoundary.lean'
       - 'MathGraph/Calculus/FiniteInformationBoundary.lean'
       - 'MathGraph/Calculus/NumericInformationBoundary.lean'
+      - 'MathGraph/Calculus/InteractionGeneratedBoundary.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -117,3 +118,7 @@ jobs:
         run: |
           lean MathGraph/Calculus/NumericInformationBoundary.lean
           echo 'CALCULUS_NUMERIC_INFORMATION_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_B_BIT_FAITHFUL_BOUNDARY_HAS_AT_MOST_TWO_POW_B_PAIRWISE_SEPARATED_OPERATIONAL_ORBIT_CHOICES"}'
+      - name: Verify interaction-generated symmetry-breaking boundary
+        run: |
+          lean MathGraph/Calculus/InteractionGeneratedBoundary.lean
+          echo 'CALCULUS_INTERACTION_GENERATED_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_PRELOADED_ANCHOR_REPLACED_BY_RUNTIME_EQUIVARIANT_CONTACT_RESPONSE_WHILE_SYMMETRY_INVARIANT_RESPONSE_CHANNEL_CANNOT_TRANSMIT_ORIENTATION"}'
