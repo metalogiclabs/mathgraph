@@ -52,5 +52,9 @@ jobs:
           echo 'CALCULUS_OUTCOME_GROUNDING_GATE {"classification":"LEAN_VERIFIED_STATE_APARTNESS_DERIVED_FROM_RAW_OUTCOME_INEQUALITY"}'
       - name: Verify equality ablation
         run: |
-          lean MathGraph/Calculus/EqualityAblation.lean
+          lean -o MathGraph/Calculus/EqualityAblation.olean MathGraph/Calculus/EqualityAblation.lean
           echo 'CALCULUS_EQUALITY_ABLATION_GATE {"classification":"LEAN_VERIFIED_APARTNESS_AND_IDENTITY_FROM_RAW_PROP_TESTS_WITHOUT_OUTCOME_EQUALITY"}'
+      - name: Verify incidence grounding
+        run: |
+          lean MathGraph/Calculus/IncidenceGrounding.lean
+          echo 'CALCULUS_INCIDENCE_GROUNDING_GATE {"classification":"LEAN_VERIFIED_STATIC_CALCULUS_FROM_BARE_TEST_STATE_INCIDENCE"}'
