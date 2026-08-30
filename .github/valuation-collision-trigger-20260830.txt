@@ -1,1 +1,1 @@
-Trigger the residual-induced carrier-mass constructor genesis experiment through PR #132.
+Rerun residual-induced carrier-mass genesis after repairing the equality orientation in hCarrierMass.
