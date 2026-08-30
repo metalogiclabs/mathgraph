@@ -46,3 +46,7 @@ jobs:
         run: |
           lean MathGraph/Calculus/AxiomNecessity.lean
           echo 'CALCULUS_AXIOM_NECESSITY_GATE {"classification":"LEAN_VERIFIED_EXACT_REPRESENTABILITY_IFF_LAWFUL_SEPARATION"}'
+      - name: Verify raw outcome grounding
+        run: |
+          lean MathGraph/Calculus/OutcomeGrounding.lean
+          echo 'CALCULUS_OUTCOME_GROUNDING_GATE {"classification":"LEAN_VERIFIED_STATE_APARTNESS_DERIVED_FROM_RAW_OUTCOME_INEQUALITY"}'
