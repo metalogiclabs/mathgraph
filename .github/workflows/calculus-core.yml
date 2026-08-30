@@ -40,5 +40,9 @@ jobs:
           echo 'CALCULUS_SEPARATION_GATE {"classification":"LEAN_VERIFIED_CONSEQUENCE_SEPARATION_DUALITY"}'
       - name: Verify lawful separation representation
         run: |
-          lean MathGraph/Calculus/Representation.lean
+          lean -o MathGraph/Calculus/Representation.olean MathGraph/Calculus/Representation.lean
           echo 'CALCULUS_REPRESENTATION_GATE {"classification":"LEAN_VERIFIED_LAWFUL_SEPARATION_REPRESENTABILITY"}'
+      - name: Verify separation axiom necessity
+        run: |
+          lean MathGraph/Calculus/AxiomNecessity.lean
+          echo 'CALCULUS_AXIOM_NECESSITY_GATE {"classification":"LEAN_VERIFIED_EXACT_REPRESENTABILITY_IFF_LAWFUL_SEPARATION"}'
