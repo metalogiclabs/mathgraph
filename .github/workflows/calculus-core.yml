@@ -164,5 +164,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE15_GATE {"classification":"LEAN_VERIFIED_RECURSIVE_DEVELOPMENTAL_STATE_SELF_APPLICATION_REACTS_TO_ITS_OWN_NEW_RESIDUAL_AND_REACHES_FIXED_POINT"}'
       - name: Verify reconstruction stage 16
         run: |
-          lean MathGraph/Calculus/ReconstructionStage16SchemaGenesis.lean
+          lean -o MathGraph/Calculus/ReconstructionStage16SchemaGenesis.olean MathGraph/Calculus/ReconstructionStage16SchemaGenesis.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE16_GATE {"classification":"LEAN_VERIFIED_RESIDUAL_SYNTHESIZES_FRESH_PARAMETRIC_CONSTRUCTOR_SCHEMA_WITHOUT_FINITE_NAMED_KIND_ENUMERATION"}'
+      - name: Verify reconstruction stage 17
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage17DirectGeneratorGenesis.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE17_GATE {"classification":"LEAN_VERIFIED_RESIDUAL_COMPILES_DIRECTLY_TO_RAW_GENERATOR_EVIDENCE_WITHOUT_INTERMEDIATE_SCHEMA_REPRESENTATION_AND_WITH_EXACT_ABLATION"}'
