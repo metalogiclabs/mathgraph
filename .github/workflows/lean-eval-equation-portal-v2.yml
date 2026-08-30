@@ -58,12 +58,12 @@ jobs:
           LEAN
 
           cat > /tmp/interfaces.tsv <<'EOF'
-          sham	s.l = s.l	exact rfl
-          product_nonzero	(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0	have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
-          factor_nonzero	∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0	apply Finset.prod_ne_zero_iff.mp; have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
-          factor_coprime_d	∀ i ∈ Finset.range k, Int.gcd (s.n + i * s.d) s.d = 1	intro i hi; simpa [s.gcd] using (Int.gcd_add_mul_left_left s.n s.d (i : ℤ))
-          prime_support_transfer	∀ q : ℤ, Prime q → q ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d)) → q ∣ s.y	intro q hq hdiv; rw [s.eq] at hdiv; exact hq.dvd_of_dvd_pow hdiv
-          exponent_multiplicity	∀ q : ℤ, q ∣ s.y → q ^ s.l ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d))	intro q hq; rcases hq with ⟨c, rfl⟩; rw [s.eq]; exact ⟨c ^ s.l, by simp [mul_pow]⟩
+          sham\ts.l = s.l\texact rfl
+          product_nonzero\t(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0\thave hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
+          factor_nonzero\t∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0\tapply Finset.prod_ne_zero_iff.mp; have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow
+          factor_coprime_d\t∀ i ∈ Finset.range k, Int.gcd (s.n + i * s.d) s.d = 1\tintro i hi; simpa [s.gcd] using (Int.gcd_add_mul_left_left s.n s.d (i : ℤ))
+          prime_support_transfer\t∀ q : ℤ, Prime q → q ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d)) → q ∣ s.y\tintro q hq hdiv; rw [s.eq] at hdiv; exact hq.dvd_of_dvd_pow hdiv
+          exponent_multiplicity\t∀ q : ℤ, q ∣ s.y → q ^ s.l ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d))\tintro q hq; rw [s.eq]; exact pow_dvd_pow_of_dvd hq s.l
           EOF
           sed -i 's/^          //' /tmp/interfaces.tsv
 
@@ -100,18 +100,18 @@ jobs:
         run: |
           set +e
           cat > /tmp/tails.tsv <<'EOF'
-          simp	try simp_all
-          aesop	try aesop
-          grind	try grind
-          norm	try norm_num at *
-          linarith	try linarith
-          nlinarith	try nlinarith
-          positivity	try positivity
-          ringnf	try ring_nf
-          fieldsimp	try field_simp
-          elim	try solve_by_elim
-          contra	try contradiction
-          tauto	try tauto
+          simp\ttry simp_all
+          aesop\ttry aesop
+          grind\ttry grind
+          norm\ttry norm_num at *
+          linarith\ttry linarith
+          nlinarith\ttry nlinarith
+          positivity\ttry positivity
+          ringnf\ttry ring_nf
+          fieldsimp\ttry field_simp
+          elim\ttry solve_by_elim
+          contra\ttry contradiction
+          tauto\ttry tauto
           EOF
           sed -i 's/^          //' /tmp/tails.tsv
           : > /tmp/replay.tsv
