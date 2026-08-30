@@ -13,12 +13,11 @@ def Stage17SynthesizeGenerator (newSources : List Bool) (target : Bool) :
 its directly synthesized generator contains no cross-endpoint evidence. -/
 theorem stage17_empty_residual_generator_has_no_cross :
     ¬ Nonempty (FreePath (Stage17SynthesizeGenerator [] true) false true) := by
-  intro h
-  rcases h with ⟨p⟩
-  induction p with
-  | nil => contradiction
-  | @cons a b c g rest ih =>
-      simp [Stage17SynthesizeGenerator] at g
+  have hEq : Stage17SynthesizeGenerator [] true = Stage13G0 := by
+    funext x y
+    simp [Stage17SynthesizeGenerator, Stage13G0, emptyGenerator]
+  rw [hEq]
+  exact stage13_cold_target_unreachable
 
 /-- The existing residual selector supplies the source data. Direct generator
 synthesis immediately creates the missing raw continuation, without first
@@ -31,7 +30,7 @@ theorem stage17_residual_directly_generates_cross :
         false true) := by
   rw [stage13_selection_is_endogenous]
   refine ⟨FreePath.ofGenerator ?_⟩
-  simp [Stage17SynthesizeGenerator]
+  exact ()
 
 /-- Exact residual ablation removes the generated edge again. This is the
 causal control distinguishing residual-driven generator genesis from a merely
