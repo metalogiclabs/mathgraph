@@ -1,0 +1,196 @@
+name: LeanEval repaired carrier-mass composition PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  carrier-mass-fixed:
+    if: github.head_ref == 'lean-eval-multitarget-sweep'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
+      TARGET: annals_erdos_supersingular_primes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare frozen target
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
+          cd "/tmp/$TARGET"
+          lake update
+      - name: Verify repaired carrier-mass interface
+        id: verify
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          cat > Submission.lean <<'LEAN'
+          import ChallengeDeps
+          import Mathlib.Analysis.Complex.Exponential
+          import Mathlib.NumberTheory.Padics.PadicVal.Basic
+          import Mathlib.Data.Nat.Prime.Int
+          import Mathlib.Algebra.BigOperators.Associated
+
+          set_option autoImplicit false
+          namespace ErdosSupersingularPrimes
+          open Int Real
+
+          def k₀ : ℕ := sorry
+
+          theorem generated_core_bound (k : ℕ) (hk : k ≥ k₀) (s : Solution k)
+              (hs : s.l.Prime) (hy : s.y ≠ 0) (hd : s.d ≠ 0) :
+              s.l ≤ exp (10 ^ k) := by
+            have hVal : ∀ p : ℕ, p.Prime →
+                (∑ i ∈ Finset.range k,
+                  padicValRat p (((s.n + i * s.d) : ℤ) : ℚ)) =
+                (s.l : ℤ) * padicValRat p (s.y : ℚ) := by
+              intro p hp
+              letI : Fact p.Prime := ⟨hp⟩
+              have hprod : (∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0 := by
+                have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy
+                rw [← s.eq] at hpow
+                exact hpow
+              have hfac : ∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0 :=
+                Finset.prod_ne_zero_iff.mp hprod
+              let f : ℕ → ℤ := fun i => s.n + i * s.d
+              have hval_general : ∀ t : Finset ℕ,
+                  (∀ i ∈ t, f i ≠ 0) →
+                  padicValRat p (((∏ i ∈ t, f i) : ℤ) : ℚ) =
+                    ∑ i ∈ t, padicValRat p ((f i : ℤ) : ℚ) := by
+                intro t
+                refine Finset.induction_on t ?_ ?_
+                · intro ht
+                  simp
+                · intro a t ha ih ht
+                  rw [Finset.prod_insert ha, Finset.sum_insert ha, Int.cast_mul]
+                  rw [padicValRat.mul]
+                  · rw [ih]
+                    intro i hi
+                    exact ht i (Finset.mem_insert_of_mem hi)
+                  · exact_mod_cast ht a (Finset.mem_insert_self a t)
+                  · exact_mod_cast Finset.prod_ne_zero_iff.mpr (by
+                      intro i hi
+                      exact ht i (Finset.mem_insert_of_mem hi))
+              have hval := hval_general (Finset.range k) (by simpa [f] using hfac)
+              rw [← hval]
+              rw [s.eq]
+              simpa using (padicValRat.pow (p := p) (s.y : ℚ) (k := s.l))
+            have hCollision : ∀ (q : ℤ) (i j : ℕ),
+                q ∣ (s.n + i * s.d) →
+                q ∣ (s.n + j * s.d) →
+                q ∣ ((i : ℤ) - (j : ℤ)) * s.d := by
+              intro q i j hi hj
+              have h : q ∣ (s.n + i * s.d) - (s.n + j * s.d) := hi.sub hj
+              convert h using 1 <;> ring
+            have hUnique : ∀ p : ℕ, p.Prime → k ≤ p → ¬ (p : ℤ) ∣ s.d →
+                ∀ i ∈ Finset.range k, ∀ j ∈ Finset.range k,
+                  (p : ℤ) ∣ (s.n + i * s.d) →
+                  (p : ℤ) ∣ (s.n + j * s.d) → i = j := by
+              intro p hp hkp hpd i hi j hj hpi hpj
+              have hpInt : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+              have hmul := hCollision (p : ℤ) i j hpi hpj
+              have hdiff : (p : ℤ) ∣ ((i : ℤ) - (j : ℤ)) :=
+                (hpInt.dvd_mul.mp hmul).resolve_right hpd
+              rcases hdiff with ⟨z, hz⟩
+              have hip : i < p := lt_of_lt_of_le (Finset.mem_range.mp hi) hkp
+              have hjp : j < p := lt_of_lt_of_le (Finset.mem_range.mp hj) hkp
+              have hp0 : (0 : ℤ) < (p : ℤ) := by exact_mod_cast hp.pos
+              have hi0 : (0 : ℤ) ≤ (i : ℤ) := by positivity
+              have hj0 : (0 : ℤ) ≤ (j : ℤ) := by positivity
+              have hiP : (i : ℤ) < (p : ℤ) := by exact_mod_cast hip
+              have hjP : (j : ℤ) < (p : ℤ) := by exact_mod_cast hjp
+              rcases lt_trichotomy z 0 with hzneg | rfl | hzpos
+              · have hzle : z ≤ -1 := by omega
+                exfalso
+                nlinarith
+              · norm_num at hz
+                exact_mod_cast (sub_eq_zero.mp hz)
+              · have hzge : 1 ≤ z := by omega
+                exfalso
+                nlinarith
+            have hCarrierMass : ∀ p : ℕ, p.Prime → k ≤ p → ¬ (p : ℤ) ∣ s.d →
+                (p : ℤ) ∣ s.y →
+                ∃ i ∈ Finset.range k,
+                  (p : ℤ) ∣ (s.n + i * s.d) ∧
+                  (s.l : ℤ) * padicValRat p (s.y : ℚ) =
+                    padicValRat p (((s.n + i * s.d) : ℤ) : ℚ) := by
+              intro p hp hkp hpd hpy
+              letI : Fact p.Prime := ⟨hp⟩
+              have hpInt : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+              have hpow : (p : ℤ) ∣ s.y ^ s.l := hpy.pow hs.ne_zero
+              rw [← s.eq] at hpow
+              rcases hpInt.exists_mem_finset_dvd hpow with ⟨i, hi, hpi⟩
+              refine ⟨i, hi, hpi, ?_⟩
+              rw [← hVal p hp]
+              apply Finset.sum_eq_single i
+              · intro j hj hji
+                have hnot : ¬ (p : ℤ) ∣ (s.n + j * s.d) := by
+                  intro hpj
+                  have hji' := hUnique p hp hkp hpd j hj i hi hpj hpi
+                  exact hji hji'
+                rw [padicValRat.of_int]
+                exact_mod_cast padicValInt.eq_zero_of_not_dvd (p := p) hnot
+              · intro hni
+                exact (hni hi).elim
+            sorry
+          end ErdosSupersingularPrimes
+          LEAN
+          set +e
+          lake build Submission > /tmp/carrier-mass-fixed.log 2>&1
+          code=$?
+          cat /tmp/carrier-mass-fixed.log
+          echo "CARRIER_MASS_FIXED_INTERFACE exit=$code"
+          echo "ok=$([ $code -eq 0 ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+          exit $code
+      - name: Replay frozen primitive language
+        id: replay
+        if: steps.verify.outputs.ok == '1'
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          printf '%s\t%s\n' simp 'try simp_all' aesop 'try aesop' grind 'try grind' norm 'try norm_num at *' linarith 'try linarith' nlinarith 'try nlinarith' positivity 'try positivity' ringnf 'try ring_nf' fieldsimp 'try field_simp' elim 'try solve_by_elim' contra 'try contradiction' tauto 'try tauto' > /tmp/tails.tsv
+          solved=0
+          winner=''
+          cp Submission.lean /tmp/carrier-base.lean
+          while IFS=$'\t' read -r tname body; do
+            cp /tmp/carrier-base.lean Submission.lean
+            BODY="$body" python3 - <<'PY'
+          import os,re
+          p='Submission.lean'
+          s=open(p).read()
+          s,n=re.subn(r'            sorry\n          end ErdosSupersingularPrimes', '            '+os.environ['BODY']+'\n          end ErdosSupersingularPrimes', s, count=1)
+          if n != 1: raise SystemExit(f'replacements={n}')
+          open(p,'w').write(s)
+          PY
+            lake build Submission > "/tmp/replay-$tname.log" 2>&1
+            code=$?
+            echo "CARRIER_MASS_FIXED_REPLAY tactic=$tname exit=$code"
+            if [ "$code" -eq 0 ]; then solved=1; winner="$tname"; cp Submission.lean /tmp/CARRIER-MASS-SOLVED.lean; break; fi
+          done < /tmp/tails.tsv
+          echo "solved=$solved" >> "$GITHUB_OUTPUT"
+          echo "winner=$winner" >> "$GITHUB_OUTPUT"
+      - name: Gate
+        if: always()
+        run: |
+          if [ "${{ steps.verify.outputs.ok }}" != "1" ]; then
+            echo 'CARRIER_MASS_FIXED_GATE {"classification":"INTERFACE_PROOF_FAILURE"}'
+          elif [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
+            echo 'CARRIER_MASS_FIXED_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
+          else
+            echo 'CARRIER_MASS_FIXED_GATE {"classification":"CARRIER_MASS_VERIFIED_NO_EXACT"}'
+          fi
