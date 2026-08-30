@@ -7,6 +7,7 @@ on:
     paths:
       - 'MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.lean'
       - 'MathGraph/Calculus/CanonicalDevelopmentalCalculus.lean'
+      - 'MathGraph/Calculus/ActiveBoundaryCompression.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -80,5 +81,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE27_GATE {"classification":"LEAN_VERIFIED_RELATIVE_MINIMAL_SUFFICIENT_DEVELOPMENTAL_BASIS_WITH_HISTORY_AND_INTERNAL_ORIENTATION_ELIMINATED_AND_STATE_BEDROCK_NECESSITY_ABLATIONS"}'
       - name: Verify canonical calculus and final survivor ablation matrix
         run: |
-          lean MathGraph/Calculus/CanonicalDevelopmentalCalculus.lean
+          lean -o MathGraph/Calculus/CanonicalDevelopmentalCalculus.olean MathGraph/Calculus/CanonicalDevelopmentalCalculus.lean
           echo 'CALCULUS_CANONICAL_ABLATION_GATE {"classification":"LEAN_VERIFIED_CANONICAL_DEVELOPMENTAL_CALCULUS_WITH_FOUR_SURVIVOR_RELATIVE_ABLATION_MATRIX"}'
+      - name: Verify active boundary compression
+        run: |
+          lean MathGraph/Calculus/ActiveBoundaryCompression.lean
+          echo 'CALCULUS_ACTIVE_BOUNDARY_COMPRESSION_GATE {"classification":"LEAN_VERIFIED_THREE_TOP_LEVEL_OBJECT_PACKAGING_WITH_TWO_INDEPENDENTLY_NECESSARY_BOUNDARY_ROLES_STRUCTURAL_NOT_INFORMATION_THEORETIC_COMPRESSION"}'
