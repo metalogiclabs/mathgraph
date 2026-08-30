@@ -53,12 +53,20 @@ theorem stage13_true_redundant_after_false :
 informative source. -/
 theorem stage13_selection_is_endogenous :
     finiteResidualSelect Stage13G0 Stage13Candidates [] = [false] := by
-  change finiteResidualSelect Stage13G0 (false :: [true]) [] = [false]
-  rw [finiteResidualSelect.eq_def, if_pos stage13_false_residual]
-  rw [finiteResidualSelect.eq_def, if_neg]
-  · rfl
-  · exact (noListProbeResidual_iff_redundant Stage13G0 [false] true).mpr
+  have hTrueNo : ¬ ListProbeResidual Stage13G0 [false] true :=
+    (noListProbeResidual_iff_redundant Stage13G0 [false] true).mpr
       stage13_true_redundant_after_false
+  change
+    (if ListProbeResidual Stage13G0 [] false then
+       finiteResidualSelect Stage13G0 [true] [false]
+     else finiteResidualSelect Stage13G0 [true] []) = [false]
+  rw [if_pos stage13_false_residual]
+  change
+    (if ListProbeResidual Stage13G0 [false] true then
+       finiteResidualSelect Stage13G0 [] [true, false]
+     else finiteResidualSelect Stage13G0 [] [false]) = [false]
+  rw [if_neg hTrueNo]
+  rfl
 
 /-- A selected source is compiled into a raw cross-endpoint possibility. This
 is the smallest promotion operator needed for the finite consolidation world:
@@ -115,7 +123,11 @@ theorem finiteResidualSelect_no_residual_no_extension
       have hkRed : ListProbeRedundant G B k := hRed k (by simp)
       have hkNo : ¬ ListProbeResidual G B k :=
         (noListProbeResidual_iff_redundant G B k).mpr hkRed
-      rw [finiteResidualSelect.eq_def, if_neg hkNo]
+      change
+        (if ListProbeResidual G B k then
+           finiteResidualSelect G ks (k :: B)
+         else finiteResidualSelect G ks B) = B
+      rw [if_neg hkNo]
       apply ih
       intro p hp
       exact hRed p (by simp [hp])
