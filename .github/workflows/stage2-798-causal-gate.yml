@@ -14,7 +14,7 @@ jobs:
           ref: fc59ebc329b6cf488ec775e2f59208437cd5f0a2
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
-      - name: Build exact frozen candidate
+      - name: Build exact verified 0040 candidate
         run: |
           python experiments/mathgraph/build_behavioural_future_specialist.py --base submissions/mathgraph/solver.py --output /tmp/solver.py
           python - <<'PY'
@@ -22,7 +22,7 @@ jobs:
           p=Path('/tmp/solver.py'); s=p.read_text()
           a='frontier_seconds = min(12.0, max(0.5, timeout / 40.0))'; b='given_seconds = min(5.0, max(0.5, timeout / 80.0))'
           assert s.count(a)==1 and s.count(b)==1
-          p.write_text(s.replace(a,'frontier_seconds = 12.0').replace(b,'given_seconds = 5.0'))
+          p.write_text(s.replace(a,'frontier_seconds = 30.0').replace(b,'given_seconds = 10.0'))
           PY
           cp /tmp/solver.py submissions/mathgraph/solver.py
           python -m py_compile submissions/mathgraph/solver.py
