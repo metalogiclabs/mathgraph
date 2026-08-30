@@ -91,7 +91,7 @@ noncomputable def finiteResidualSelect {Ω : Type u}
         finiteResidualSelect G ks B
 
 /-- Residual selection never deletes an already selected probe. -/
-noncomputable theorem finiteResidualSelect_contains_base
+theorem finiteResidualSelect_contains_base
     {Ω : Type u} (G : Ω → Ω → Type v) :
     ∀ candidates B p,
       p ∈ B → p ∈ finiteResidualSelect G candidates B := by
@@ -111,7 +111,7 @@ noncomputable theorem finiteResidualSelect_contains_base
 /-- Every candidate processed by the finite controller is redundant relative
 to the final selected interface: selected candidates are redundant because
 present; forgotten candidates remain redundant under later refinement. -/
-noncomputable theorem finiteResidualSelect_processed_redundant
+theorem finiteResidualSelect_processed_redundant
     {Ω : Type u} (G : Ω → Ω → Type v) :
     ∀ candidates B k,
       k ∈ candidates →
@@ -144,7 +144,7 @@ noncomputable theorem finiteResidualSelect_processed_redundant
 
 /-- If `allProbes` enumerates every possible source, one structurally finite
 selection pass ends in a saturated interface. -/
-noncomputable theorem finiteResidualSelect_saturated
+theorem finiteResidualSelect_saturated
     {Ω : Type u} (G : Ω → Ω → Type v)
     (allProbes : List Ω)
     (hcomplete : ∀ k : Ω, k ∈ allProbes)
@@ -161,7 +161,7 @@ def FullReachabilityEq {Ω : Type u}
 
 /-- The saturated finite result is sufficient for the full all-source
 reachability quotient. -/
-noncomputable theorem finiteResidualSelect_sufficient
+theorem finiteResidualSelect_sufficient
     {Ω : Type u} (G : Ω → Ω → Type v)
     (allProbes : List Ω)
     (hcomplete : ∀ k : Ω, k ∈ allProbes)
@@ -179,7 +179,7 @@ the bedrock residual controller terminates by structural recursion and its
 output is saturated and sufficient for the full reachability identity. This
 bridges the generated-probe story to finite-basis results without assuming the
 minimal basis itself as input. -/
-noncomputable theorem reconstruction_stage12_finite_termination_certificate
+theorem reconstruction_stage12_finite_termination_certificate
     {Ω : Type u} (G : Ω → Ω → Type v)
     (allProbes : List Ω)
     (hcomplete : ∀ k : Ω, k ∈ allProbes)
