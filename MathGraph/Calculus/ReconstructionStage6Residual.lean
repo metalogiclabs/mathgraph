@@ -59,7 +59,8 @@ theorem probeResidual_forces_strict_refinement
   exact residual_forces_strict_refinement r
 
 /-- No residual exists exactly when the new probe is redundant relative to all
-already selected probes. -/
+already selected probes. The forward direction uses excluded middle only to
+decide equality of the two Prop-valued probe outcomes. -/
 theorem noProbeResidual_iff_redundant
     {ι : Type w} {Ω : Type u}
     (G : Ω → Ω → Type v) (P : ProbeFamily ι Ω) (k : Ω) :
@@ -67,9 +68,9 @@ theorem noProbeResidual_iff_redundant
       Redundant (ProbedReachabilityLanguage G P) (ProbeObservation G k) := by
   constructor
   · intro hNo x y hEq
-    classical
-    by_contra hNe
-    exact hNo ⟨x, y, ⟨hEq, hNe⟩⟩
+    exact Classical.em (ProbeObservation G k x = ProbeObservation G k y) |>.elim
+      (fun hSame => hSame)
+      (fun hNe => False.elim (hNo ⟨x, y, ⟨hEq, hNe⟩⟩))
   · intro hRed hExists
     rcases hExists with ⟨x, y, r⟩
     exact r.separated (hRed r.indistinguishable)
