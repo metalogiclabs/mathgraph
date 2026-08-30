@@ -1,13 +1,19 @@
-name: LeanEval Abel high-degree bridge (archived)
+name: LeanEval registered trigger probe
 
 on:
+  push:
+    branches:
+      - lean-eval-multitarget-sweep
+    paths:
+      - '.github/workflows/lean-eval-abel-high-degree.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  archived:
+  trigger-probe:
     runs-on: ubuntu-latest
     steps:
-      - run: echo 'Archived exact workflow: competitions/lean_eval/archive/workflows/lean-eval-abel-high-degree.yml'
+      - name: Confirm registered execution
+        run: echo REGISTERED_TRIGGER_OK
