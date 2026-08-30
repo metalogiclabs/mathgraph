@@ -42,7 +42,7 @@ For the present reconstruction target the surviving substrate is represented by 
 G : Ω → Ω → Type
 ```
 
-`G x y` is raw directed primitive evidence whose indices carry the boundary/composability information. At this floor there is no assumed identity arrow, composition operator, symmetry, state equality, consequence language, separation relation, or algebraic law.
+`G x y` is raw directed primitive evidence whose indices carry the boundary/composability information. At this floor there is no assumed identity arrow, composition operator, symmetry, state equality, consequence language, separation relation, probe index, or algebraic law.
 
 From `G`, `FreePath G` generates finite continuation. Zero steps generate self-continuation; concatenation generates composition; suitable primitive edges generate cross-boundary change; reverse paths are not manufactured without reverse-directed evidence.
 
@@ -56,42 +56,86 @@ This is verified bedrock **relative to the current reconstruction target**, not 
 
 Gate: `LEAN_VERIFIED_IDENTITY_AND_REFINEMENT_RECONSTRUCTED_FROM_RAW_DIRECTED_BEDROCK`
 
-Authoritative crossing run: run `33287338158`, job `99192711554` (also reverified subsequently).
-
 ### Stage 2 — paths → witness profiles / transport
 
 For endpoint `x`, define the incoming path profile `k ↦ FreePath G k x`. Any path `x → y` transports incoming paths by postcomposition. Conversely, profile transport applied at source `x` to the zero-length path recovers an `x → y` path. Mutual generated identity and mutual incoming-profile transport therefore imply one another constructively.
 
 Gate: `LEAN_VERIFIED_WITNESS_PROFILE_TRANSPORT_RECONSTRUCTED_FROM_BEDROCK_PATHS`
 
-Authoritative run: `33287338158`; job `99192711554`.
-
 ### Stage 3 — witness paths → Prop-valued consequence reflection
 
-Reflect each incoming path type to `Nonempty (FreePath G k x)`, producing the original `Language Ω Ω Prop` interface.
-
-- generated identity implies `ConsequentialEq` of the reflected reachability language;
-- consequential equality recovers `Nonempty (GeneratedIdentity G x y)` while remaining inside `Prop`;
-- extraction of concrete Type-valued generated identity is explicitly isolated behind `Classical.choice`.
-
-Thus the ascent reproduces the logical-reflection boundary exposed on descent instead of hiding witness erasure.
+Reflect each incoming path type to `Nonempty (FreePath G k x)`, producing the original `Language Ω Ω Prop` interface. Generated identity implies `ConsequentialEq`; the reverse recovers only `Nonempty (GeneratedIdentity ...)` constructively, with concrete witness extraction isolated behind `Classical.choice`.
 
 Gate: `LEAN_VERIFIED_PROP_CONSEQUENCE_REFLECTION_FROM_BEDROCK_WITH_EXPLICIT_CHOICE_BOUNDARY`
 
-Authoritative run: `33287408780`; job `99192899839`; workflow commit `7937d68392b869fcae8fed5fa467dea745d404cb`.
+### Stage 4 — consequence reflection → lawful separation
+
+Define bedrock separation from the reflected incoming-reachability language. Lean verifies irreflexivity, symmetry, and cotransitivity, and the exact bridge
+
+```text
+Nonempty (GeneratedIdentity G x y) ↔ ¬ BedrockSeparated G x y
+```
+
+Thus the lawful separation interface is generated after continuation closure and logical reflection rather than assumed at bedrock.
+
+Gate: `LEAN_VERIFIED_LAWFUL_SEPARATION_RECONSTRUCTED_FROM_BEDROCK_REACHABILITY`
+
+### Stage 5 — distinguish world enrichment from information refinement
+
+A finite countermodel shows that raw generator enrichment is not semantic information refinement: the empty raw world refines pointwise into a two-way world, yet adding transitions makes formerly separated endpoints mutually reachable and therefore observationally coarser.
+
+Information refinement is instead reconstructed by **probe extension**: adding a source probe to a fixed world always refines consequential identity.
+
+Gate: `LEAN_VERIFIED_INFORMATION_REFINEMENT_EMERGES_FROM_PROBE_EXTENSION_NOT_RAW_WORLD_ENRICHMENT`
+
+Authoritative confirmed run: `33287608202`; job `99193430519`; commit `8367179a692872f4741f457c9617f13d11320ff2`.
+
+### Stage 6 — residual → strict information gain
+
+For a selected probe family `P`, a `ProbeResidual G P k x y` is exactly the old residual form: existing probes identify `x,y`, while candidate source probe `k` has unequal reachability outcomes. The golden extension law specializes to this bedrock-generated probe language.
+
+Lean verifies:
+- a probe residual forces the extended interface to split the pair;
+- the extension is a strict semantic refinement;
+- absence of any residual pair is equivalent to redundancy of the candidate probe (with explicit excluded middle only at Prop-outcome equality).
+
+Gate: `LEAN_VERIFIED_RESIDUAL_INFORMATION_GAIN_RECONSTRUCTED_AS_NEW_PROBE_SPLIT`
+
+Authoritative run: `33287729295`; job `99193769626`; commit `b23d40a46fb2d865e4a8cc84498f358f7b1e882b`.
+
+### Stage 7 — first distinction from an empty observation interface
+
+Start with `ProbeFamily Empty Ω`. There are literally no observation coordinates, so every pair is consequentially identical. In the one-way raw world `false → true`, source `true` is a residual probe because it reaches itself by the zero path but cannot reach `false`.
+
+Selecting that one residual grows the observation interface from `Empty` to one probe and strictly splits `false` from `true`.
+
+Therefore the observation/test coordinate set need not be supplied fully formed: a first distinction can be generated from a zero-probe interface by selecting a reachability residual already latent in the raw directed substrate.
+
+Gate: `LEAN_VERIFIED_FIRST_DISTINCTION_GENERATED_FROM_EMPTY_PROBE_INTERFACE_BY_REACHABILITY_RESIDUAL`
+
+Authoritative run: `33287786871`; job `99193926530`; workflow commit `0e8f1df61595d17b0c9ea1823587a9a5f740310f`.
 
 ## Current dependency trail
 
 ```text
 raw typed directed evidence / composability boundaries
   -> FreePath finite continuation
-  -> generated identity + generated lawful composition
-  -> generator refinement lifted to paths
-  -> incoming witness profiles
-  -> profile transport / mutual typed identity
+  -> generated identity + lawful generated composition
+  -> incoming witness profiles / transport
   -> Nonempty logical reflection
   -> ConsequentialEq
-  -> [next] separation / apartness / higher refinement
+  -> lawful separation / apartness
+  -> selected reachability probes
+  -> residual probe
+  -> strict information refinement
+  -> first generated distinction from an Empty observation interface
+```
+
+The key separation now visible on ascent is:
+
+```text
+world change (add transitions)  ≠  information gain
+information gain = select an observation whose kernel splits a current equivalence class
 ```
 
 Every further ascent stage must receive its own Lean gate or a finite obstruction explaining why the bridge fails.
