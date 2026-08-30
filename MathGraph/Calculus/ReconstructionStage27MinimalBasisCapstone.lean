@@ -130,7 +130,7 @@ theorem stage27_bedrock_components_are_necessary :
   refine ⟨?_, ?_, ?_⟩
   · intro h
     rcases h with ⟨c⟩
-    exact no_objects_no_continuation c
+    exact Empty.elim (no_objects_no_continuation c)
   · exact stage13_cold_target_unreachable
   · exact ⟨one_generator_creates_cross_transition⟩
 
