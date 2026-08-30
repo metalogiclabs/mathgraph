@@ -39,7 +39,7 @@ def bareMutualTrans (A : BareTransportAlgebra.{u,v}) {x y z : A.Obj} :
 /-- Every coordinate-indexed witness-profile presentation compiles into the
 bare algebra. The coordinate type is hidden inside the implementation of Hom;
 it is not part of the abstract interface. -/
-def profileBareTransport (κ : Type w) : BareTransportAlgebra.{max (w+1) (v+1), max w v} where
+def profileBareTransport (κ : Type w) : BareTransportAlgebra.{max (v+1) w, max w v} where
   Obj := WitnessProfile.{v,w} κ
   Hom := ProfileTransport
   ident := profileRefl
@@ -49,7 +49,7 @@ def profileBareTransport (κ : Type w) : BareTransportAlgebra.{max (w+1) (v+1), 
 original pointwise transport. -/
 theorem profileBare_hom_exact {κ : Type w}
     (P Q : WitnessProfile.{v,w} κ) :
-    (profileBareTransport (v := v) κ).Hom P Q = ProfileTransport P Q :=
+    (profileBareTransport κ).Hom P Q = ProfileTransport P Q :=
   rfl
 
 /-- Removing identity witnesses really loses reflexivity. This finite relation
