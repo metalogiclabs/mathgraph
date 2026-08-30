@@ -140,5 +140,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE9_GATE {"classification":"LEAN_VERIFIED_FIRST_RECURSIVE_SELECTION_CYCLE_REACHES_SATURATION"}'
       - name: Verify reconstruction stage 10
         run: |
-          lean MathGraph/Calculus/ReconstructionStage10Sufficiency.lean
+          lean -o MathGraph/Calculus/ReconstructionStage10Sufficiency.olean MathGraph/Calculus/ReconstructionStage10Sufficiency.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE10_GATE {"classification":"LEAN_VERIFIED_RESIDUAL_SATURATION_IS_SUFFICIENT_FOR_FULL_REACHABILITY_IDENTITY"}'
+      - name: Verify reconstruction stage 11
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage11MinimalSufficient.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE11_GATE {"classification":"LEAN_VERIFIED_FIRST_MINIMAL_SUFFICIENT_INTERFACE_GENERATED_FROM_BEDROCK_BY_RESIDUAL_SELECTION"}'
