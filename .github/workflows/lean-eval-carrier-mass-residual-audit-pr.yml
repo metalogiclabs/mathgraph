@@ -43,12 +43,12 @@ jobs:
                   raise SystemExit(f'CARRIER_MASS_AUDIT_FATAL arm={arm} logs={len(files)}')
               for f in files:
                   s=f.read_text(errors='ignore')
-                  ms=list(re.finditer(r'^⊢\\s.*$',s,re.M))
+                  ms=list(re.finditer(r'^⊢\s.*$',s,re.M))
                   if not ms:
                       raise SystemExit(f'CARRIER_MASS_AUDIT_FATAL no_goal file={f.name}')
                   tail=s[ms[-1].start():]
-                  goal=re.split(r'\\n(?:error:|Some required targets|warning:|✖|✔|trace:)',tail,maxsplit=1)[0]
-                  goal='\\n'.join(line.strip() for line in goal.splitlines() if line.strip())
+                  goal=re.split(r'\n(?:error:|Some required targets|warning:|✖|✔|trace:)',tail,maxsplit=1)[0]
+                  goal='\n'.join(line.strip() for line in goal.splitlines() if line.strip())
                   sig=hashlib.sha256(goal.encode()).hexdigest()[:16]
                   sigs.append(sig); goals.append(goal)
                   print(f'CARRIER_MASS_TARGET arm={arm} file={f.name} sig={sig} goal={goal!r}')
