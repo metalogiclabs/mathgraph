@@ -102,3 +102,7 @@ jobs:
         run: |
           lean MathGraph/Calculus/BoundaryTypingAblation.lean
           echo 'CALCULUS_BOUNDARY_TYPING_GATE {"classification":"LEAN_VERIFIED_ERASING_COMPOSABILITY_BOUNDARIES_CREATES_SPURIOUS_CONTINUATION"}'
+      - name: Verify reconstruction stage 1
+        run: |
+          lean MathGraph/Calculus/ReconstructionFromBedrock.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE1_GATE {"classification":"LEAN_VERIFIED_IDENTITY_AND_REFINEMENT_RECONSTRUCTED_FROM_RAW_DIRECTED_BEDROCK"}'
