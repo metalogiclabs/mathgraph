@@ -112,5 +112,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE2_GATE {"classification":"LEAN_VERIFIED_WITNESS_PROFILE_TRANSPORT_RECONSTRUCTED_FROM_BEDROCK_PATHS"}'
       - name: Verify reconstruction stage 3
         run: |
-          lean MathGraph/Calculus/ReconstructionStage3Logic.lean
+          lean -o MathGraph/Calculus/ReconstructionStage3Logic.olean MathGraph/Calculus/ReconstructionStage3Logic.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE3_GATE {"classification":"LEAN_VERIFIED_PROP_CONSEQUENCE_REFLECTION_FROM_BEDROCK_WITH_EXPLICIT_CHOICE_BOUNDARY"}'
+      - name: Verify reconstruction stage 4
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage4Separation.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE4_GATE {"classification":"LEAN_VERIFIED_LAWFUL_SEPARATION_RECONSTRUCTED_FROM_BEDROCK_REACHABILITY"}'
