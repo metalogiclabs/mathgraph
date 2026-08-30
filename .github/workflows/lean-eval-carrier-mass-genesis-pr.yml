@@ -151,7 +151,6 @@ jobs:
               rcases hpInt.exists_mem_finset_dvd hpow with ⟨i, hi, hpi⟩
               refine ⟨i, hi, hpi, ?_⟩
               rw [← hVal p hp]
-              symm
               apply Finset.sum_eq_single i
               · intro j hj hji
                 have hnot : ¬ (p : ℤ) ∣ (s.n + j * s.d) := by
