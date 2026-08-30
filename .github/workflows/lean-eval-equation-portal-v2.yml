@@ -35,7 +35,7 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Verify equation-derived interfaces
+      - name: Verify collision interfaces
         id: verify
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -43,7 +43,6 @@ jobs:
           cat > /tmp/base.lean <<'LEAN'
           import ChallengeDeps
           import Mathlib.Analysis.Complex.Exponential
-          import Mathlib.Algebra.BigOperators.Associated
 
           set_option autoImplicit false
           namespace ErdosSupersingularPrimes
@@ -60,12 +59,7 @@ jobs:
 
           : > /tmp/interfaces.tsv
           printf '%s\t%s\t%s\n' 'sham' 's.l = s.l' 'exact rfl' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'product_nonzero' '(∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0' 'have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'factor_nonzero' '∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0' 'apply Finset.prod_ne_zero_iff.mp; have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy; rw [← s.eq] at hpow; exact hpow' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'factor_coprime_d' '∀ i ∈ Finset.range k, Int.gcd (s.n + i * s.d) s.d = 1' 'intro i hi; simpa [s.gcd] using (Int.gcd_add_mul_left_left s.n s.d (i : ℤ))' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'prime_support_transfer' '∀ q : ℤ, Prime q → q ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d)) → q ∣ s.y' 'intro q hq hdiv; rw [s.eq] at hdiv; exact hq.dvd_of_dvd_pow hdiv' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'exponent_multiplicity' '∀ q : ℤ, q ∣ s.y → q ^ s.l ∣ (∏ i ∈ Finset.range k, (s.n + i * s.d))' 'intro q hq; rw [s.eq]; exact pow_dvd_pow_of_dvd hq s.l' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'prime_factor_localization' '∀ q : ℤ, Prime q → q ∣ s.y → ∃ i ∈ Finset.range k, q ∣ (s.n + i * s.d)' 'intro q hq hqy; apply hq.exists_mem_finset_dvd; rw [s.eq]; exact hqy.pow hs.ne_zero' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'pair_collision_geometry' '∀ (q : ℤ) (i j : ℕ), q ∣ (s.n + i * s.d) → q ∣ (s.n + j * s.d) → q ∣ ((i : ℤ) - (j : ℤ)) * s.d' 'intro q i j hi hj; have h : q ∣ (s.n + i * s.d) - (s.n + j * s.d) := hi.sub hj; convert h using 1 <;> ring' >> /tmp/interfaces.tsv
 
           : > /tmp/verified.tsv
           total=0
@@ -101,12 +95,16 @@ jobs:
               printf '%s\t%s\t%s\n' "$name" "$prop" "$proof" >> /tmp/verified.tsv
             fi
           done < /tmp/interfaces.tsv
-          if [ "$total" -ne 7 ]; then
-            echo "PORTAL_HARNESS_FATAL expected_interfaces=7 actual=$total"
+          if [ "$total" -ne 2 ]; then
+            echo "PORTAL_HARNESS_FATAL expected_interfaces=2 actual=$total"
             exit 91
           fi
+          if ! grep -q '^sham' /tmp/verified.tsv; then
+            echo 'PORTAL_HARNESS_FATAL sham_not_verified'
+            exit 92
+          fi
           echo "verified=$verified" >> "$GITHUB_OUTPUT"
-      - name: Replay primitive language across portal
+      - name: Replay primitive language across collision portal
         id: replay
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -128,11 +126,6 @@ jobs:
           : > /tmp/replay.tsv
           solved=0
           winner=''
-          vcount=$(wc -l < /tmp/verified.tsv)
-          if [ "$vcount" -eq 0 ]; then
-            echo 'PORTAL_HARNESS_FATAL no_verified_interfaces'
-            exit 92
-          fi
           while IFS=$'\t' read -r iname prop proof; do
             while IFS=$'\t' read -r tname body; do
               cp /tmp/base.lean Submission.lean
@@ -208,13 +201,13 @@ jobs:
           elif [ "${{ steps.replay.outputs.changing }}" -gt 0 ]; then
             echo 'EQUATION_PORTAL_GATE {"classification":"REPRESENTATION_SEPARATION","changing":${{ steps.replay.outputs.changing }}}'
           else
-            echo 'EQUATION_PORTAL_GATE {"classification":"EQUATION_PORTAL_EXHAUSTED","changing":0}'
+            echo 'EQUATION_PORTAL_GATE {"classification":"PAIR_COLLISION_PORTAL_EXHAUSTED","changing":0}'
           fi
       - name: Upload portal evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: equation-factor-portal-v2
+          name: equation-pair-collision-portal
           path: |
             /tmp/interfaces.tsv
             /tmp/verified.tsv
