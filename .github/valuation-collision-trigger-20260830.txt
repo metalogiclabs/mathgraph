@@ -1,1 +1,1 @@
-Trigger the valuation + pairwise collision attachment experiment through PR #132.
+Trigger the large-prime valuation concentration experiment through PR #132.
