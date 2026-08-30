@@ -60,8 +60,8 @@ theorem stage29_no_endogenous_canonical_anchor :
     ¬ Nonempty Stage29CanonicalAnchor := by
   intro h
   rcases h with ⟨a⟩
-  cases hAnchor : a.anchor <;>
-    simp [hAnchor] at a.rename_invariant
+  have hInv := a.rename_invariant
+  cases hAnchor : a.anchor <;> simp [hAnchor] at hInv
 
 /-- The anchor carries precisely the symmetry-breaking role: once erased, the
 old symmetric residual mechanism again licenses both directions and admits no
