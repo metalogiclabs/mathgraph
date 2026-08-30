@@ -68,5 +68,9 @@ jobs:
           echo 'CALCULUS_DIRECT_WITNESS_GATE {"classification":"LEAN_VERIFIED_IDENTITY_REFINEMENT_FROM_DIRECT_WITNESS_TRANSPORT_WITHOUT_NONEMPTY"}'
       - name: Verify type-valued identity grounding
         run: |
-          lean MathGraph/Calculus/TypedIdentityGrounding.lean
+          lean -o MathGraph/Calculus/TypedIdentityGrounding.olean MathGraph/Calculus/TypedIdentityGrounding.lean
           echo 'CALCULUS_TYPED_IDENTITY_GATE {"classification":"LEAN_VERIFIED_TYPE_VALUED_IDENTITY_COMPOSITION_AND_REFINEMENT_BELOW_PROP"}'
+      - name: Verify directed transport grounding
+        run: |
+          lean MathGraph/Calculus/DirectedTransportGrounding.lean
+          echo 'CALCULUS_DIRECTED_TRANSPORT_GATE {"classification":"LEAN_VERIFIED_DIRECTED_TRANSPORT_PREORDER_WITH_MUTUAL_REACHABILITY_DERIVING_TYPED_IDENTITY"}'
