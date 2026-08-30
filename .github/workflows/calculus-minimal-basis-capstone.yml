@@ -12,6 +12,7 @@ on:
       - 'MathGraph/Calculus/SymmetryBreakingAnchor.lean'
       - 'MathGraph/Calculus/OrbitStabilizerBoundary.lean'
       - 'MathGraph/Calculus/GeneralOrbitStabilizerBoundary.lean'
+      - 'MathGraph/Calculus/FiniteInformationBoundary.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -105,5 +106,9 @@ jobs:
           echo 'CALCULUS_ORBIT_STABILIZER_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_FREE_INVOLUTIVE_SYMMETRY_REQUIRES_EXTERNAL_ORBIT_REPRESENTATIVE_FOR_ORIENTATION_AND_FORBIDS_EQUIVARIANT_ENDOGENOUS_ANCHOR"}'
       - name: Verify full group-action orbit stabilizer boundary
         run: |
-          lean MathGraph/Calculus/GeneralOrbitStabilizerBoundary.lean
+          lean -o MathGraph/Calculus/GeneralOrbitStabilizerBoundary.olean MathGraph/Calculus/GeneralOrbitStabilizerBoundary.lean
           echo 'CALCULUS_GENERAL_ORBIT_STABILIZER_GATE {"classification":"LEAN_VERIFIED_ARBITRARY_GROUP_ACTION_BOUNDARY_LABELS_QUOTIENT_EXACTLY_BY_STABILIZER_AND_NO_GLOBAL_FIXED_POINT_FORCES_EXTERNAL_ORBIT_REPRESENTATIVE"}'
+      - name: Verify finite information boundary lower bound
+        run: |
+          lean MathGraph/Calculus/FiniteInformationBoundary.lean
+          echo 'CALCULUS_FINITE_INFORMATION_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_FAITHFUL_BOUNDARY_CODE_MUST_INJECT_EVERY_PAIRWISE_SEPARATED_ORBIT_FAMILY_AND_ONE_BOOL_BIT_CANNOT_ENCODE_THREE_OPERATIONALLY_DISTINCT_ORBIT_POINTS"}'
