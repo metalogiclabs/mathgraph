@@ -88,5 +88,9 @@ jobs:
           echo 'CALCULUS_STATE_CARRIER_ABLATION_GATE {"classification":"LEAN_VERIFIED_STATE_CARRIER_ELIMINABLE_FROM_TRANSPORT_CORE"}'
       - name: Verify bare transport descent
         run: |
-          lean MathGraph/Calculus/BareTransportAlgebra.lean
+          lean -o MathGraph/Calculus/BareTransportAlgebra.olean MathGraph/Calculus/BareTransportAlgebra.lean
           echo 'CALCULUS_BARE_TRANSPORT_GATE {"classification":"LEAN_VERIFIED_COORDINATE_FREE_TRANSPORT_ALGEBRA_WITH_IDENTITY_AND_COMPOSITION_NECESSITY"}'
+      - name: Verify raw transport genesis
+        run: |
+          lean MathGraph/Calculus/RawTransportGenesis.lean
+          echo 'CALCULUS_RAW_TRANSPORT_GENESIS_GATE {"classification":"LEAN_VERIFIED_IDENTITY_AND_COMPOSITION_GENERATED_BY_FREE_FINITE_CONTINUATION_FROM_RAW_DIRECTED_POSSIBILITY"}'
