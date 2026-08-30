@@ -23,17 +23,34 @@ theorem stage21_cold_residual_has_both_presentations :
   · exact stage19_cold_generic_residual
   · exact probeResidual_symm stage19_cold_generic_residual
 
-/-- Yet the reverse directed generator is absent. Stage 20 succeeds only in the
-orientation whose left endpoint has a positive reachability witness. Thus the
-bare symmetric residual does not itself determine the directed edge. -/
-theorem stage21_reverse_residual_without_orientation_has_no_generator :
-    ProbeResidual Stage13G0 (NoProbes Bool) false true false ∧
-    ¬ Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) true false) := by
+/-- The opposite source gives the mirror residual as well: identity reaches
+`true`, while the empty raw generator cannot continue from `true` to `false`. -/
+theorem stage21_cold_true_generic_residual :
+    ProbeResidual Stage13G0 (NoProbes Bool) true true false := by
+  refine ⟨noProbes_consequentialEq true false, ?_⟩
+  intro hEq
+  have hTrue : ProbeObservation Stage13G0 true true :=
+    ⟨(.nil : FreePath Stage13G0 true true)⟩
+  have hFalse : ProbeObservation Stage13G0 true false := hEq.mp hTrue
+  rcases hFalse with ⟨p⟩
+  cases p with
+  | step e _rest =>
+      exact e.elim
+
+/-- The Stage-20 rule therefore admits raw generator evidence in both endpoint
+directions. This is the sharper result exposed by the first Stage-21 attempt:
+the symmetric cold residual does not fail to orient; rather, distinct source
+witnesses symmetrically license both orientations. -/
+theorem stage21_cold_stage20_generates_both_directions :
+    Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) false true) ∧
+    Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) true false) := by
   constructor
-  · exact probeResidual_symm stage19_cold_generic_residual
-  · intro h
-    rcases h with ⟨e⟩
-    exact stage13_cold_target_unreachable e.property.2
+  · refine ⟨⟨false, ?_⟩⟩
+    exact ⟨stage19_cold_generic_residual,
+      ⟨(.nil : FreePath Stage13G0 false false)⟩⟩
+  · refine ⟨⟨true, ?_⟩⟩
+    exact ⟨stage21_cold_true_generic_residual,
+      ⟨(.nil : FreePath Stage13G0 true true)⟩⟩
 
 /-- A genuinely canonical orientation extracted from an unordered symmetric
 residual should not depend on whether its two endpoints were presented as
@@ -64,21 +81,24 @@ theorem stage21_no_canonical_orientation_from_symmetric_pair :
 
 /-- Stage-21 boundary certificate.
 
-The Stage-6 residual survives endpoint reversal, while Stage-20 directed raw
-edge evidence does not survive reversal without the positive reachability
-orientation. Moreover no orientation of an unordered two-point residual can
-respect both endpoint-swap invariance and state-renaming equivariance.
+The Stage-6 residual survives endpoint reversal. In the symmetric cold world,
+Stage 20 can also realize both directed raw edges, using the corresponding
+endpoint as the positive source witness. But no chooser on the unordered
+Bool pair can simultaneously ignore endpoint presentation order and commute
+with the carrier's nontrivial renaming.
 
-Therefore some symmetry-breaking directional evidence is necessary for
-canonical directed generator genesis. In the current reconstruction that role
-is played by positive reachability of the chosen source to one endpoint. -/
+Thus bare residual differentiation does not canonically select a unique
+direction. Any unique directed genesis must obtain symmetry-breaking evidence
+from somewhere else (for example a distinguished source, goal, intervention,
+resource gradient, temporal order, or other oriented structure). -/
 theorem reconstruction_stage21_direction_boundary_certificate :
     (ProbeResidual Stage13G0 (NoProbes Bool) false false true ∧
      ProbeResidual Stage13G0 (NoProbes Bool) false true false) ∧
-    (¬ Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) true false)) ∧
+    (Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) false true) ∧
+     Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) true false)) ∧
     (¬ Nonempty Stage21CanonicalOrientation) := by
-  refine ⟨stage21_cold_residual_has_both_presentations, ?_,
+  exact ⟨stage21_cold_residual_has_both_presentations,
+    stage21_cold_stage20_generates_both_directions,
     stage21_no_canonical_orientation_from_symmetric_pair⟩
-  exact stage21_reverse_residual_without_orientation_has_no_generator.2
 
 end MathGraph.Calculus
