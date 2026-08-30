@@ -1,1 +1,1 @@
-Trigger carrier-mass target-only residual audit after invalidating multiline-context separation.
+Trigger carrier-mass target-only residual audit with corrected goal parser.
