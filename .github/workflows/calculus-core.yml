@@ -132,5 +132,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE7_GATE {"classification":"LEAN_VERIFIED_FIRST_DISTINCTION_GENERATED_FROM_EMPTY_PROBE_INTERFACE_BY_REACHABILITY_RESIDUAL"}'
       - name: Verify reconstruction stage 8
         run: |
-          lean MathGraph/Calculus/ReconstructionStage8Selection.lean
+          lean -o MathGraph/Calculus/ReconstructionStage8Selection.olean MathGraph/Calculus/ReconstructionStage8Selection.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE8_GATE {"classification":"LEAN_VERIFIED_SPLIT_OR_FORGET_SELECTION_LAW_RECONSTRUCTED_FROM_BEDROCK"}'
+      - name: Verify reconstruction stage 9
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage9Saturation.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE9_GATE {"classification":"LEAN_VERIFIED_FIRST_RECURSIVE_SELECTION_CYCLE_REACHES_SATURATION"}'
