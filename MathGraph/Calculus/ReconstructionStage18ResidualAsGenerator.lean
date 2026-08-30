@@ -68,8 +68,9 @@ theorem stage18_exact_selection_ablation_restores_failure :
    stage18_residual_itself_generates_cross⟩
 
 /-- Any putative edge under an empty selected interface is impossible directly
-from its own evidence field. -/
-theorem stage18_no_selected_no_generator_evidence
+from its own evidence field. This is data elimination, so it is a definition
+rather than a proposition-valued theorem. -/
+def stage18_no_selected_no_generator_evidence
     {Ω : Type} (G : Ω → Ω → Type) (B : List Ω) (x y : Ω) :
     Stage18Generator G B [] x y → Empty := by
   intro e
