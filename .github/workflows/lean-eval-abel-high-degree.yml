@@ -1,0 +1,19 @@
+name: LeanEval registered trigger probe
+
+on:
+  push:
+    branches:
+      - lean-eval-multitarget-sweep
+    paths:
+      - '.github/workflows/lean-eval-abel-high-degree.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm registered execution
+        run: echo REGISTERED_TRIGGER_OK
