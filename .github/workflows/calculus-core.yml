@@ -124,5 +124,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE5_GATE {"classification":"LEAN_VERIFIED_INFORMATION_REFINEMENT_EMERGES_FROM_PROBE_EXTENSION_NOT_RAW_WORLD_ENRICHMENT"}'
       - name: Verify reconstruction stage 6
         run: |
-          lean MathGraph/Calculus/ReconstructionStage6Residual.lean
+          lean -o MathGraph/Calculus/ReconstructionStage6Residual.olean MathGraph/Calculus/ReconstructionStage6Residual.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE6_GATE {"classification":"LEAN_VERIFIED_RESIDUAL_INFORMATION_GAIN_RECONSTRUCTED_AS_NEW_PROBE_SPLIT"}'
+      - name: Verify reconstruction stage 7
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage7FirstDistinction.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE7_GATE {"classification":"LEAN_VERIFIED_FIRST_DISTINCTION_GENERATED_FROM_EMPTY_PROBE_INTERFACE_BY_REACHABILITY_RESIDUAL"}'
