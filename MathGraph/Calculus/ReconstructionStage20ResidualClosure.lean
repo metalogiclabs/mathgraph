@@ -36,15 +36,14 @@ theorem stage20_generic_residual_derives_missing_right
 /-- General negative law: when no generic residual exists for an endpoint pair,
 Stage 20 has no raw generator evidence for that pair. This is the exact
 residual-absence control after removing the explicit selection gate. -/
-theorem stage20_no_residual_no_generator
+def stage20_no_residual_no_generator
     {ι Ω : Type} {G : Ω → Ω → Type} {P : ProbeFamily ι Ω}
     {x y : Ω}
     (hNo : ∀ k, ¬ ProbeResidual G P k x y) :
-    IsEmpty (Stage20Generator G P x y) := by
-  constructor
+    Stage20Generator G P x y → Empty := by
   intro e
   rcases e with ⟨k, r, _hx⟩
-  exact hNo k r
+  exact (hNo k r).elim
 
 /-- The original cold raw world still cannot reach the cross endpoint before
 residual-derived generator evidence is admitted. -/
