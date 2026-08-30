@@ -13,6 +13,7 @@ on:
       - 'MathGraph/Calculus/OrbitStabilizerBoundary.lean'
       - 'MathGraph/Calculus/GeneralOrbitStabilizerBoundary.lean'
       - 'MathGraph/Calculus/FiniteInformationBoundary.lean'
+      - 'MathGraph/Calculus/NumericCapacityProbe.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -112,3 +113,5 @@ jobs:
         run: |
           lean MathGraph/Calculus/FiniteInformationBoundary.lean
           echo 'CALCULUS_FINITE_INFORMATION_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_FAITHFUL_BOUNDARY_CODE_MUST_INJECT_EVERY_PAIRWISE_SEPARATED_ORBIT_FAMILY_AND_ONE_BOOL_BIT_CANNOT_ENCODE_THREE_OPERATIONALLY_DISTINCT_ORBIT_POINTS"}'
+      - name: Probe exact bit-capacity theorem support
+        run: lean MathGraph/Calculus/NumericCapacityProbe.lean
