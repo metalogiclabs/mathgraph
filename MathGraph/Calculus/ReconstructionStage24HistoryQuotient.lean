@@ -5,8 +5,8 @@ universe u v
 namespace MathGraph.Calculus
 
 /-- The extensional observational state induced by a generated source history.
-Only the consequential identity relation is retained; source order and
-multiplicity are forgotten. -/
+Only the consequential identity relation is retained; exact source history is
+forgotten. -/
 def GeneratedObservationalState
     {Ω : Type u} (G : Ω → Ω → Type v) (I : GeneratedInterface Ω) :
     Ω → Ω → Prop :=
@@ -34,48 +34,64 @@ theorem generatedInterface_semEq_iff_state_eq
   · intro h x y
     rw [h]
 
-/-- Duplicating an already retained source does not change consequential
-identity. This gives two genuinely different histories with one extensional
-observational state. -/
-theorem stage24_duplicate_source_semEq :
-    GeneratedInterface.SemEq oneEdgeGenerator
-      ([true] : GeneratedInterface Bool)
-      ([true, true] : GeneratedInterface Bool) := by
-  intro x y
+/-- In the two-way Bool world, the two distinct sources induce the same
+reachability measurement on every endpoint. Source identity is therefore more
+intensional than the observational content it contributes. -/
+theorem stage24_twoWay_generated_measurements_equal :
+    ProbeObservation twoWayGenerator false =
+      ProbeObservation twoWayGenerator true := by
+  funext x
+  apply propext
   constructor
-  · intro h i
-    have h0 := h (0 : Fin 1)
-    fin_cases i <;>
-      simpa [GeneratedObservationalState, GeneratedInterface.language,
-        GeneratedInterface.probes, ProbedReachabilityLanguage] using h0
-  · intro h i
-    have h0 := h (0 : Fin 2)
-    fin_cases i
-    simpa [GeneratedObservationalState, GeneratedInterface.language,
-      GeneratedInterface.probes, ProbedReachabilityLanguage] using h0
+  · intro _h
+    cases x with
+    | false => exact ⟨FreePath.ofGenerator ()⟩
+    | true => exact ⟨(.nil : FreePath twoWayGenerator true true)⟩
+  · intro _h
+    cases x with
+    | false => exact ⟨(.nil : FreePath twoWayGenerator false false)⟩
+    | true => exact ⟨FreePath.ofGenerator ()⟩
 
-/-- The histories themselves are not equal: one records one source occurrence,
-the other two. -/
-theorem stage24_duplicate_histories_are_distinct :
-    ([true] : GeneratedInterface Bool) ≠ [true, true] := by
-  intro h
-  have hLen := congrArg List.length h
-  simp at hLen
+/-- One-source histories containing `false` and `true` are extensionally the
+same interface in the two-way world, even though the histories differ. -/
+theorem stage24_distinct_source_histories_semEq :
+    GeneratedInterface.SemEq twoWayGenerator
+      ([false] : GeneratedInterface Bool)
+      ([true] : GeneratedInterface Bool) := by
+  have hLang :
+      GeneratedInterface.language twoWayGenerator
+        ([false] : GeneratedInterface Bool) =
+      GeneratedInterface.language twoWayGenerator
+        ([true] : GeneratedInterface Bool) := by
+    funext i x
+    have hi : i = (0 : Fin 1) := Fin.eq_zero i
+    subst hi
+    have hObs := congrFun stage24_twoWay_generated_measurements_equal x
+    simpa [GeneratedInterface.language, GeneratedInterface.probes,
+      ProbedReachabilityLanguage, ProbeObservation] using hObs
+  intro x y
+  rw [hLang]
 
-/-- Consequently, exact generated history is not identifiable from the
-observational state it induces. -/
+/-- The histories themselves are genuinely different. -/
+theorem stage24_distinct_source_histories_are_distinct :
+    ([false] : GeneratedInterface Bool) ≠ [true] := by
+  simp
+
+/-- Exact history is therefore not identifiable from extensional observational
+state. -/
 theorem stage24_distinct_histories_same_state :
-    ([true] : GeneratedInterface Bool) ≠ [true, true] ∧
-    GeneratedObservationalState oneEdgeGenerator
-      ([true] : GeneratedInterface Bool) =
-    GeneratedObservationalState oneEdgeGenerator
-      ([true, true] : GeneratedInterface Bool) := by
-  exact ⟨stage24_duplicate_histories_are_distinct,
-    (generatedInterface_semEq_iff_state_eq.mp stage24_duplicate_source_semEq)⟩
+    ([false] : GeneratedInterface Bool) ≠ [true] ∧
+    GeneratedObservationalState twoWayGenerator
+      ([false] : GeneratedInterface Bool) =
+    GeneratedObservationalState twoWayGenerator
+      ([true] : GeneratedInterface Bool) := by
+  exact ⟨stage24_distinct_source_histories_are_distinct,
+    generatedInterface_semEq_iff_state_eq.mp
+      stage24_distinct_source_histories_semEq⟩
 
-/-- Any residual whose current-side requirement is only consequential identity
-is invariant under replacing a history by an observationally equivalent one.
-Thus downstream residual detection does not need access to the exact history. -/
+/-- Residual detection depends only on current consequential identity, so it
+transports across observationally equivalent histories. Downstream development
+therefore does not need access to the exact retained source history. -/
 theorem stage24_residual_invariant_under_semEq
     {Ω : Type u} {G : Ω → Ω → Type v}
     {I J : GeneratedInterface Ω} {k x y : Ω}
@@ -86,29 +102,30 @@ theorem stage24_residual_invariant_under_semEq
       (ProbeObservation G k) x y := by
   exact ⟨(hIJ x y).mp r.indistinguishable, r.separated⟩
 
-/-- Stage-24 certificate: source-history representation is eliminable at the
-observational layer. Distinct histories can induce the same extensional state,
-and residual detection transports across that quotient. What must survive is
-therefore the induced consequential state, not source order or multiplicity. -/
+/-- Stage-24 certificate: exact source-history representation is eliminable at
+this observational/residual layer. Distinct histories can induce exactly the
+same extensional state, and residual detection is invariant under that
+quotient. What must survive is the induced consequential state, not history. -/
 theorem reconstruction_stage24_history_quotient_certificate :
-    ([true] : GeneratedInterface Bool) ≠ [true, true] ∧
-    GeneratedObservationalState oneEdgeGenerator
-      ([true] : GeneratedInterface Bool) =
-    GeneratedObservationalState oneEdgeGenerator
-      ([true, true] : GeneratedInterface Bool) ∧
+    ([false] : GeneratedInterface Bool) ≠ [true] ∧
+    GeneratedObservationalState twoWayGenerator
+      ([false] : GeneratedInterface Bool) =
+    GeneratedObservationalState twoWayGenerator
+      ([true] : GeneratedInterface Bool) ∧
     (∀ k x y,
       ResidualWitness
-        (GeneratedInterface.language oneEdgeGenerator
-          ([true] : GeneratedInterface Bool))
-        (ProbeObservation oneEdgeGenerator k) x y →
+        (GeneratedInterface.language twoWayGenerator
+          ([false] : GeneratedInterface Bool))
+        (ProbeObservation twoWayGenerator k) x y →
       ResidualWitness
-        (GeneratedInterface.language oneEdgeGenerator
-          ([true, true] : GeneratedInterface Bool))
-        (ProbeObservation oneEdgeGenerator k) x y) := by
-  refine ⟨stage24_duplicate_histories_are_distinct,
-    generatedInterface_semEq_iff_state_eq.mp stage24_duplicate_source_semEq, ?_⟩
+        (GeneratedInterface.language twoWayGenerator
+          ([true] : GeneratedInterface Bool))
+        (ProbeObservation twoWayGenerator k) x y) := by
+  refine ⟨stage24_distinct_source_histories_are_distinct,
+    generatedInterface_semEq_iff_state_eq.mp
+      stage24_distinct_source_histories_semEq, ?_⟩
   intro k x y r
   exact stage24_residual_invariant_under_semEq
-    stage24_duplicate_source_semEq r
+    stage24_distinct_source_histories_semEq r
 
 end MathGraph.Calculus
