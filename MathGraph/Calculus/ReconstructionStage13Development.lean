@@ -2,6 +2,11 @@ import MathGraph.Calculus.ReconstructionStage12FiniteTermination
 
 namespace MathGraph.Calculus
 
+/-- Stage 13 reuses the same explicit classical decision boundary as Stage 12:
+finite residual selection needs to decide arbitrary Prop-valued residuals. -/
+noncomputable local instance stage13ResidualPropDecidable (p : Prop) : Decidable p :=
+  Classical.propDecidable p
+
 /-- Stage 13 starts from the raw two-endpoint world with no cross-endpoint
 change. The only continuations are the zero-length identity paths generated
 by free closure. -/
