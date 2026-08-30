@@ -6,6 +6,7 @@ on:
       - calculus/core-v0
     paths:
       - 'MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.lean'
+      - 'MathGraph/Calculus/CanonicalDevelopmentalCalculus.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -75,5 +76,9 @@ jobs:
           lean -o MathGraph/Calculus/ReconstructionStage26TaskOrientation.olean MathGraph/Calculus/ReconstructionStage26TaskOrientation.lean
       - name: Verify Stage27 minimal basis capstone
         run: |
-          lean MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.lean
+          lean -o MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.olean MathGraph/Calculus/ReconstructionStage27MinimalBasisCapstone.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE27_GATE {"classification":"LEAN_VERIFIED_RELATIVE_MINIMAL_SUFFICIENT_DEVELOPMENTAL_BASIS_WITH_HISTORY_AND_INTERNAL_ORIENTATION_ELIMINATED_AND_STATE_BEDROCK_NECESSITY_ABLATIONS"}'
+      - name: Verify canonical calculus and final survivor ablation matrix
+        run: |
+          lean MathGraph/Calculus/CanonicalDevelopmentalCalculus.lean
+          echo 'CALCULUS_CANONICAL_ABLATION_GATE {"classification":"LEAN_VERIFIED_CANONICAL_DEVELOPMENTAL_CALCULUS_WITH_FOUR_SURVIVOR_RELATIVE_ABLATION_MATRIX"}'
