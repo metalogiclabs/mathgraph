@@ -13,7 +13,7 @@ on:
       - 'MathGraph/Calculus/OrbitStabilizerBoundary.lean'
       - 'MathGraph/Calculus/GeneralOrbitStabilizerBoundary.lean'
       - 'MathGraph/Calculus/FiniteInformationBoundary.lean'
-      - 'MathGraph/Calculus/NumericCapacityProbe.lean'
+      - 'MathGraph/Calculus/NumericInformationBoundary.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -111,7 +111,9 @@ jobs:
           echo 'CALCULUS_GENERAL_ORBIT_STABILIZER_GATE {"classification":"LEAN_VERIFIED_ARBITRARY_GROUP_ACTION_BOUNDARY_LABELS_QUOTIENT_EXACTLY_BY_STABILIZER_AND_NO_GLOBAL_FIXED_POINT_FORCES_EXTERNAL_ORBIT_REPRESENTATIVE"}'
       - name: Verify finite information boundary lower bound
         run: |
-          lean MathGraph/Calculus/FiniteInformationBoundary.lean
+          lean -o MathGraph/Calculus/FiniteInformationBoundary.olean MathGraph/Calculus/FiniteInformationBoundary.lean
           echo 'CALCULUS_FINITE_INFORMATION_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_FAITHFUL_BOUNDARY_CODE_MUST_INJECT_EVERY_PAIRWISE_SEPARATED_ORBIT_FAMILY_AND_ONE_BOOL_BIT_CANNOT_ENCODE_THREE_OPERATIONALLY_DISTINCT_ORBIT_POINTS"}'
-      - name: Probe exact bit-capacity theorem support
-        run: lean MathGraph/Calculus/NumericCapacityProbe.lean
+      - name: Verify exact numeric bit-capacity boundary
+        run: |
+          lean MathGraph/Calculus/NumericInformationBoundary.lean
+          echo 'CALCULUS_NUMERIC_INFORMATION_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_B_BIT_FAITHFUL_BOUNDARY_HAS_AT_MOST_TWO_POW_B_PAIRWISE_SEPARATED_OPERATIONAL_ORBIT_CHOICES"}'
