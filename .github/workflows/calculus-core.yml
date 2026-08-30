@@ -196,5 +196,9 @@ jobs:
           echo 'CALCULUS_RECONSTRUCTION_STAGE23_GATE {"classification":"LEAN_VERIFIED_INTERFACE_STATE_RECONSTRUCTED_FROM_ENDOGENOUS_SOURCE_HISTORY_WITH_STRICT_REFINEMENT_AND_EXACT_HISTORY_ABLATION"}'
       - name: Verify reconstruction stage 24
         run: |
-          lean MathGraph/Calculus/ReconstructionStage24HistoryQuotient.lean
-          echo 'CALCULUS_RECONSTRUCTION_STAGE24_GATE {"classification":"LEAN_VERIFIED_EXACT_SOURCE_HISTORY_ELIMINABLE_UP_TO_EXTensional_OBSERVATIONAL_STATE_WITH_RESIDUAL_INVARIANCE"}'
+          lean -o MathGraph/Calculus/ReconstructionStage24HistoryQuotient.olean MathGraph/Calculus/ReconstructionStage24HistoryQuotient.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE24_GATE {"classification":"LEAN_VERIFIED_EXACT_SOURCE_HISTORY_ELIMINABLE_UP_TO_EXTENSIONAL_OBSERVATIONAL_STATE_WITH_RESIDUAL_INVARIANCE"}'
+      - name: Verify reconstruction stage 25
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage25StateNecessity.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE25_GATE {"classification":"LEAN_VERIFIED_SELECTIVE_OBSERVATIONAL_STATE_NECESSARY_FOR_ENDOGENOUS_RESIDUAL_DEVELOPMENT_MAXIMAL_BEDROCK_REGENERATION_SATURATES_AND_KILLS_RESIDUAL"}'
