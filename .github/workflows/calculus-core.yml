@@ -96,5 +96,9 @@ jobs:
           echo 'CALCULUS_RAW_TRANSPORT_GENESIS_GATE {"classification":"LEAN_VERIFIED_IDENTITY_AND_COMPOSITION_GENERATED_BY_FREE_FINITE_CONTINUATION_FROM_RAW_DIRECTED_POSSIBILITY"}'
       - name: Verify rock bottom ablation
         run: |
-          lean MathGraph/Calculus/RockBottomAblation.lean
+          lean -o MathGraph/Calculus/RockBottomAblation.olean MathGraph/Calculus/RockBottomAblation.lean
           echo 'CALCULUS_ROCK_BOTTOM_GATE {"classification":"LEAN_VERIFIED_ENDPOINTS_REQUIRED_FOR_ANY_CONTINUATION_AND_RAW_GENERATORS_REQUIRED_FOR_CROSS_ENDPOINT_CHANGE"}'
+      - name: Verify boundary typing ablation
+        run: |
+          lean MathGraph/Calculus/BoundaryTypingAblation.lean
+          echo 'CALCULUS_BOUNDARY_TYPING_GATE {"classification":"LEAN_VERIFIED_ERASING_COMPOSABILITY_BOUNDARIES_CREATES_SPURIOUS_CONTINUATION"}'
