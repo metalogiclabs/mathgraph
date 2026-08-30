@@ -104,5 +104,9 @@ jobs:
           echo 'CALCULUS_BOUNDARY_TYPING_GATE {"classification":"LEAN_VERIFIED_ERASING_COMPOSABILITY_BOUNDARIES_CREATES_SPURIOUS_CONTINUATION"}'
       - name: Verify reconstruction stage 1
         run: |
-          lean MathGraph/Calculus/ReconstructionFromBedrock.lean
+          lean -o MathGraph/Calculus/ReconstructionFromBedrock.olean MathGraph/Calculus/ReconstructionFromBedrock.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE1_GATE {"classification":"LEAN_VERIFIED_IDENTITY_AND_REFINEMENT_RECONSTRUCTED_FROM_RAW_DIRECTED_BEDROCK"}'
+      - name: Verify reconstruction stage 2
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage2Profiles.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE2_GATE {"classification":"LEAN_VERIFIED_WITNESS_PROFILE_TRANSPORT_RECONSTRUCTED_FROM_BEDROCK_PATHS"}'
