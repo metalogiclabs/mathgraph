@@ -64,12 +64,17 @@ theorem stage24_distinct_source_histories_semEq :
       GeneratedInterface.language twoWayGenerator
         ([true] : GeneratedInterface Bool) := by
     funext i x
-    have hi : i = (0 : Fin 1) := Fin.eq_zero i
-    subst hi
     have hObs := congrFun stage24_twoWay_generated_measurements_equal x
     simpa [GeneratedInterface.language, GeneratedInterface.probes,
       ProbedReachabilityLanguage, ProbeObservation] using hObs
   intro x y
+  change
+    ConsequentialEq
+      (GeneratedInterface.language twoWayGenerator
+        ([false] : GeneratedInterface Bool)) x y ↔
+    ConsequentialEq
+      (GeneratedInterface.language twoWayGenerator
+        ([true] : GeneratedInterface Bool)) x y
   rw [hLang]
 
 /-- The histories themselves are genuinely different. -/
