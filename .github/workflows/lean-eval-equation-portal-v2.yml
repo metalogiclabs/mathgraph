@@ -35,7 +35,7 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Verify collision interfaces
+      - name: Verify valuation interfaces
         id: verify
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -43,6 +43,7 @@ jobs:
           cat > /tmp/base.lean <<'LEAN'
           import ChallengeDeps
           import Mathlib.Analysis.Complex.Exponential
+          import Mathlib.NumberTheory.Padics.PadicVal.Basic
 
           set_option autoImplicit false
           namespace ErdosSupersingularPrimes
@@ -59,7 +60,7 @@ jobs:
 
           : > /tmp/interfaces.tsv
           printf '%s\t%s\t%s\n' 'sham' 's.l = s.l' 'exact rfl' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'pair_collision_geometry' '∀ (q : ℤ) (i j : ℕ), q ∣ (s.n + i * s.d) → q ∣ (s.n + j * s.d) → q ∣ ((i : ℤ) - (j : ℤ)) * s.d' 'intro q i j hi hj; have h : q ∣ (s.n + i * s.d) - (s.n + j * s.d) := hi.sub hj; convert h using 1 <;> ring' >> /tmp/interfaces.tsv
+          printf '%s\t%s\t%s\n' 'padic_power_accounting' '∀ p : ℕ, p.Prime → padicValRat p ((∏ i ∈ Finset.range k, (s.n + i * s.d) : ℤ) : ℚ) = (s.l : ℤ) * padicValRat p (s.y : ℚ)' 'intro p hp; letI : Fact p.Prime := ⟨hp⟩; rw [s.eq]; simpa using (padicValRat.pow (p := p) (s.y : ℚ) (k := s.l))' >> /tmp/interfaces.tsv
 
           : > /tmp/verified.tsv
           total=0
@@ -103,8 +104,11 @@ jobs:
             echo 'PORTAL_HARNESS_FATAL sham_not_verified'
             exit 92
           fi
+          if ! grep -q '^padic_power_accounting' /tmp/verified.tsv; then
+            echo 'PORTAL_VALUATION_NOT_VERIFIED'
+          fi
           echo "verified=$verified" >> "$GITHUB_OUTPUT"
-      - name: Replay primitive language across collision portal
+      - name: Replay primitive language across valuation portal
         id: replay
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -201,13 +205,13 @@ jobs:
           elif [ "${{ steps.replay.outputs.changing }}" -gt 0 ]; then
             echo 'EQUATION_PORTAL_GATE {"classification":"REPRESENTATION_SEPARATION","changing":${{ steps.replay.outputs.changing }}}'
           else
-            echo 'EQUATION_PORTAL_GATE {"classification":"PAIR_COLLISION_PORTAL_EXHAUSTED","changing":0}'
+            echo 'EQUATION_PORTAL_GATE {"classification":"PADIC_VALUATION_PORTAL_EXHAUSTED","changing":0}'
           fi
       - name: Upload portal evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: equation-pair-collision-portal
+          name: equation-padic-valuation-portal
           path: |
             /tmp/interfaces.tsv
             /tmp/verified.tsv
