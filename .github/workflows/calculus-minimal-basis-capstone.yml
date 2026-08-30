@@ -9,6 +9,7 @@ on:
       - 'MathGraph/Calculus/CanonicalDevelopmentalCalculus.lean'
       - 'MathGraph/Calculus/ActiveBoundaryCompression.lean'
       - 'MathGraph/Calculus/VerifierBoundaryEndogenization.lean'
+      - 'MathGraph/Calculus/SymmetryBreakingAnchor.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -90,5 +91,9 @@ jobs:
           echo 'CALCULUS_ACTIVE_BOUNDARY_COMPRESSION_GATE {"classification":"LEAN_VERIFIED_THREE_TOP_LEVEL_OBJECT_PACKAGING_WITH_TWO_INDEPENDENTLY_NECESSARY_BOUNDARY_ROLES_STRUCTURAL_NOT_INFORMATION_THEORETIC_COMPRESSION"}'
       - name: Verify verifier boundary endogenization
         run: |
-          lean MathGraph/Calculus/VerifierBoundaryEndogenization.lean
+          lean -o MathGraph/Calculus/VerifierBoundaryEndogenization.olean MathGraph/Calculus/VerifierBoundaryEndogenization.lean
           echo 'CALCULUS_VERIFIER_BOUNDARY_ENDOGENIZATION_GATE {"classification":"LEAN_VERIFIED_SELECTIVE_OBSERVATIONAL_STATE_DERIVED_FROM_ORDERED_VERIFIER_TASK_HISTORY_WHILE_COMPLETE_BOUNDARY_ENDOGENIZATION_IS_BLOCKED_BY_SYMMETRY"}'
+      - name: Verify minimal symmetry-breaking anchor
+        run: |
+          lean MathGraph/Calculus/SymmetryBreakingAnchor.lean
+          echo 'CALCULUS_SYMMETRY_BREAKING_ANCHOR_GATE {"classification":"LEAN_VERIFIED_ORDERED_TASK_PAIR_REDUCES_TO_ONE_EXTERNAL_SYMMETRY_BREAKING_BIT_ON_TWO_POINT_SEED_AND_NO_EQUIVARIANT_ENDOGENOUS_ANCHOR_EXISTS"}'
