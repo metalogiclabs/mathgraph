@@ -61,7 +61,8 @@ cross-endpoint continuation. -/
 theorem stage16_synthesized_schema_reaches_target :
     Nonempty (FreePath (Stage16Compile Stage16Needed) false true) := by
   refine ⟨FreePath.ofGenerator ?_⟩
-  simp [Stage16Compile, Stage16Needed]
+  change Unit
+  exact ()
 
 /-- Exact schema ablation restores the original cold obstruction: without the
 synthesized schema, the raw world remains `Stage13G0`. -/
