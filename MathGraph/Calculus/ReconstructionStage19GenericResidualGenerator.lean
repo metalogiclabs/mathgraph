@@ -4,14 +4,19 @@ namespace MathGraph.Calculus
 
 /-- Stage 19 removes the Stage-18 bespoke residual-edge record. Raw generator
     evidence is built directly from the already reconstructed generic
-    `ProbeResidual`, together with the selected-source membership and the
-    positive orientation that the source reaches the left endpoint. -/
+    `ProbeResidual`, together with selected-source membership and the positive
+    orientation that the source reaches the left endpoint.
+
+    The propositions are packaged only by Lean's generic `Subtype`; no new
+    domain-specific residual structure is introduced. -/
 def Stage19Generator
     {ι Ω : Type} (G : Ω → Ω → Type) (P : ProbeFamily ι Ω)
     (selected : List Ω) : Ω → Ω → Type :=
   fun x y =>
-    Sigma (fun k : Ω =>
-      (k ∈ selected) × ProbeResidual G P k x y × ProbeObservation G k x)
+    { k : Ω //
+      k ∈ selected ∧
+      ProbeResidual G P k x y ∧
+      ProbeObservation G k x }
 
 /-- The right-side failure carried explicitly by the Stage-18 record is not
     needed. It follows from the generic residual inequality plus the positive
@@ -21,7 +26,7 @@ theorem stage19_generic_residual_derives_missing_right
     {selected : List Ω} {x y : Ω}
     (e : Stage19Generator G P selected x y) :
     ¬ ProbeObservation G e.1 y := by
-  rcases e with ⟨k, _hSelected, r, hx⟩
+  rcases e with ⟨k, hSelected, r, hx⟩
   intro hy
   apply r.separated
   apply propext
@@ -55,7 +60,7 @@ theorem stage19_empty_selection_has_no_cross :
   rcases h with ⟨p⟩
   cases p with
   | step e rest =>
-      rcases e with ⟨k, hk, _⟩
+      rcases e with ⟨k, hk, _r, _hx⟩
       exact (by simpa using hk)
 
 /-- Selecting the generic residual source is sufficient to inhabit the raw
@@ -67,8 +72,11 @@ theorem stage19_generic_residual_directly_generates_cross :
         (Stage19Generator Stage13G0 (NoProbes Bool) [false])
         false true) := by
   refine ⟨FreePath.ofGenerator ?_⟩
-  refine ⟨false, ?_, stage19_cold_generic_residual, ?_⟩
+  refine ⟨false, ?_⟩
+  constructor
   · simp
+  constructor
+  · exact stage19_cold_generic_residual
   · exact ⟨(.nil : FreePath Stage13G0 false false)⟩
 
 /-- Stage-19 certificate: the already existing generic residual predicate,
