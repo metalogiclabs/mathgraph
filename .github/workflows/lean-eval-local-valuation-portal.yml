@@ -1,4 +1,4 @@
-name: LeanEval local valuation portal
+name: LeanEval local valuation portal v2
 
 on:
   push:
