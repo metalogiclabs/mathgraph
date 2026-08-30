@@ -4,7 +4,7 @@ universe u v w
 
 namespace MathGraph.Calculus
 
-/-- Identity itself as data, not as a proposition.  An inhabitant gives a
+/-- Identity itself as data, not as a proposition. An inhabitant gives a
 bidirectional witness transport for every test. -/
 def TypedIdentity {κ : Type w} {α : Type u}
     (W : WitnessIncidence.{u,v,w} κ α) (x y : α) : Type (max w v) :=
@@ -57,7 +57,7 @@ def typedIdentity_new_component
   fun h => h (Sum.inr ())
 
 /-- A genuinely impossible new bidirectional transport makes the extended
-identity type empty.  The obstruction is expressed with `Empty`, not negation. -/
+identity type empty. The obstruction is expressed with `Empty`, not negation. -/
 def typedIdentity_new_test_obstructs
     {κ : Type w} {α : Type u}
     (W : WitnessIncidence.{u,v,w} κ α) (c : α → Type v) {x y : α}
@@ -99,31 +99,29 @@ def typedIdentity_duplicate_backward
       | Sum.inr a => a⟩
 
 /-- Truncating a typed identity to proposition-level pointwise existence is
-constructive.  This is the first point where the richer identity data is
+constructive. This is the first point where the richer identity data is
 forgotten. -/
 theorem typedIdentity_implies_directWitnessSame
     {κ : Type w} {α : Type u}
     {W : WitnessIncidence.{u,v,w} κ α} {x y : α}
     (h : TypedIdentity W x y) : DirectWitnessSame W x y := by
   intro k
-  exact ⟨(h k).1, (h k).2⟩
+  exact ⟨(h k).1, (h k).2, True.intro⟩
 
 /-- The proposition-level identity reconstructs one global typed identity only
-when classical choice is admitted.  Pointwise existential transports do not
+when classical choice is admitted. Pointwise existential transports do not
 constructively provide the dependent family of chosen transports. -/
-def directWitnessSame_to_typedIdentity_classical
+noncomputable def directWitnessSame_to_typedIdentity_classical
     {κ : Type w} {α : Type u}
     {W : WitnessIncidence.{u,v,w} κ α} {x y : α}
     (h : DirectWitnessSame W x y) : TypedIdentity W x y := by
   classical
   intro k
-  have hf : ∃ f : W k x → W k y, True := by
-    rcases h k with ⟨f, g⟩
-    exact ⟨f, True.intro⟩
-  have hg : ∃ g : W k y → W k x, True := by
-    rcases h k with ⟨f, g⟩
-    exact ⟨g, True.intro⟩
-  exact ⟨Classical.choose hf, Classical.choose hg⟩
+  have hf : ∃ f : W k x → W k y, ∃ g : W k y → W k x, True := h k
+  let f : W k x → W k y := Classical.choose hf
+  have hg : ∃ g : W k y → W k x, True := Classical.choose_spec hf
+  let g : W k y → W k x := Classical.choose hg
+  exact ⟨f, g⟩
 
 /-- Every typed identity reaches the existing consequence calculus after
 ordinary propositional forgetting. -/
