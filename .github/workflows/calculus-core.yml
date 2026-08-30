@@ -154,3 +154,7 @@ jobs:
         run: |
           lean MathGraph/Calculus/ReconstructionStage13Development.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE13_GATE {"classification":"LEAN_VERIFIED_ONE_CYCLE_RESIDUAL_SELECTED_PROMOTION_CHANGES_REACHABLE_CLOSURE_WITH_ABLATION_AND_NO_RESIDUAL_NEGATIVE"}'
+      - name: Verify reconstruction stage 14
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage14ConstructorGenesis.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE14_GATE {"classification":"LEAN_VERIFIED_RESIDUAL_DRIVEN_CONSTRUCTOR_LANGUAGE_EXPANSION_CHANGES_REACHABLE_CLOSURE_WITH_EXACT_ABLATION"}'
