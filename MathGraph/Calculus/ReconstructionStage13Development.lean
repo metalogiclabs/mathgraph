@@ -24,7 +24,7 @@ theorem stage13_false_residual :
       ⟨(.nil : FreePath Stage13G0 false false)⟩
     have hTrue : ProbeObservation Stage13G0 false true := hEq.mp hFalse
     rcases hTrue with ⟨p⟩
-    exact emptyGenerator_no_false_to_true p
+    exact (emptyGenerator_no_false_to_true p).elim
 
 /-- Once the `false` source has been selected, the other source is redundant:
 the first probe already separates the only two endpoints. -/
@@ -39,22 +39,23 @@ theorem stage13_true_redundant_after_false :
       ⟨(.nil : FreePath Stage13G0 false false)⟩
     have hBad : ProbeObservation Stage13G0 false true := hFalseEq.mp hReach
     rcases hBad with ⟨p⟩
-    exact emptyGenerator_no_false_to_true p
+    exact (emptyGenerator_no_false_to_true p).elim
   · exfalso
     have hFalseEq := hEq false (by simp)
     have hReach : ProbeObservation Stage13G0 false false :=
       ⟨(.nil : FreePath Stage13G0 false false)⟩
     have hBad : ProbeObservation Stage13G0 false true := hFalseEq.mpr hReach
     rcases hBad with ⟨p⟩
-    exact emptyGenerator_no_false_to_true p
+    exact (emptyGenerator_no_false_to_true p).elim
   · rfl
 
 /-- Therefore finite residual selection mechanically returns exactly the one
 informative source. -/
 theorem stage13_selection_is_endogenous :
     finiteResidualSelect Stage13G0 Stage13Candidates [] = [false] := by
-  rw [finiteResidualSelect, if_pos stage13_false_residual]
-  rw [finiteResidualSelect, if_neg]
+  change finiteResidualSelect Stage13G0 (false :: [true]) [] = [false]
+  rw [finiteResidualSelect.eq_def, if_pos stage13_false_residual]
+  rw [finiteResidualSelect.eq_def, if_neg]
   · rfl
   · exact (noListProbeResidual_iff_redundant Stage13G0 [false] true).mpr
       stage13_true_redundant_after_false
@@ -75,28 +76,31 @@ theorem stage13_promoted_generator_eq :
 
 /-- Cold closure cannot reach the target. -/
 theorem stage13_cold_target_unreachable :
-    FreePath Stage13G0 false true → Empty :=
-  emptyGenerator_no_false_to_true
+    ¬ Nonempty (FreePath Stage13G0 false true) := by
+  intro h
+  rcases h with ⟨p⟩
+  exact (emptyGenerator_no_false_to_true p).elim
 
 /-- Merely possessing the selected observational interface does not alter raw
 world closure: before promotion the target remains unreachable. -/
 theorem stage13_components_only_target_unreachable :
-    FreePath Stage13G0 false true → Empty :=
-  emptyGenerator_no_false_to_true
+    ¬ Nonempty (FreePath Stage13G0 false true) :=
+  stage13_cold_target_unreachable
 
 /-- After residual-driven promotion, the same free-path closure reaches the
 previously unavailable target. -/
 theorem stage13_warm_target_reachable :
-    FreePath
-      (Stage13Promote (finiteResidualSelect Stage13G0 Stage13Candidates []))
-      false true := by
+    Nonempty
+      (FreePath
+        (Stage13Promote (finiteResidualSelect Stage13G0 Stage13Candidates []))
+        false true) := by
   rw [stage13_promoted_generator_eq]
-  exact oneEdge_false_to_true
+  exact ⟨oneEdge_false_to_true⟩
 
 /-- Exact ancestor ablation restores the cold obstruction. -/
 theorem stage13_exact_ablation_restores_failure :
-    FreePath Stage13G0 false true → Empty :=
-  emptyGenerator_no_false_to_true
+    ¬ Nonempty (FreePath Stage13G0 false true) :=
+  stage13_cold_target_unreachable
 
 /-- Negative developmental law: if every candidate is already redundant,
 finite residual selection introduces no new selected probe. -/
@@ -111,7 +115,7 @@ theorem finiteResidualSelect_no_residual_no_extension
       have hkRed : ListProbeRedundant G B k := hRed k (by simp)
       have hkNo : ¬ ListProbeResidual G B k :=
         (noListProbeResidual_iff_redundant G B k).mpr hkRed
-      rw [finiteResidualSelect, if_neg hkNo]
+      rw [finiteResidualSelect.eq_def, if_neg hkNo]
       apply ih
       intro p hp
       exact hRed p (by simp [hp])
@@ -131,18 +135,18 @@ actual closure-changing developmental step:
 This is a finite consolidation theorem, not yet self-hosting constructor
 language genesis. -/
 theorem reconstruction_stage13_development_certificate :
-    (FreePath Stage13G0 false true → Empty) ∧
+    (¬ Nonempty (FreePath Stage13G0 false true)) ∧
     (finiteResidualSelect Stage13G0 Stage13Candidates [] = [false]) ∧
-    (FreePath Stage13G0 false true → Empty) ∧
+    (¬ Nonempty (FreePath Stage13G0 false true)) ∧
     Nonempty
       (FreePath
         (Stage13Promote (finiteResidualSelect Stage13G0 Stage13Candidates []))
         false true) ∧
-    (FreePath Stage13G0 false true → Empty) :=
+    (¬ Nonempty (FreePath Stage13G0 false true)) :=
   ⟨stage13_cold_target_unreachable,
    stage13_selection_is_endogenous,
    stage13_components_only_target_unreachable,
-   ⟨stage13_warm_target_reachable⟩,
+   stage13_warm_target_reachable,
    stage13_exact_ablation_restores_failure⟩
 
 end MathGraph.Calculus
