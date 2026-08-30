@@ -80,5 +80,9 @@ jobs:
           echo 'CALCULUS_TRANSPORT_EQUALITY_ABLATION_GATE {"classification":"LEAN_VERIFIED_MUTUAL_TRANSPORT_DOES_NOT_FORCE_STATE_EQUALITY"}'
       - name: Verify witness coordinate ablation
         run: |
-          lean MathGraph/Calculus/CoordinateAblation.lean
+          lean -o MathGraph/Calculus/CoordinateAblation.olean MathGraph/Calculus/CoordinateAblation.lean
           echo 'CALCULUS_COORDINATE_ABLATION_GATE {"classification":"LEAN_VERIFIED_ERASING_DISTINCTION_COORDINATES_CREATES_SPURIOUS_MUTUAL_TRANSPORT"}'
+      - name: Verify state carrier ablation
+        run: |
+          lean MathGraph/Calculus/StateCarrierAblation.lean
+          echo 'CALCULUS_STATE_CARRIER_ABLATION_GATE {"classification":"LEAN_VERIFIED_STATE_CARRIER_ELIMINABLE_FROM_TRANSPORT_CORE"}'
