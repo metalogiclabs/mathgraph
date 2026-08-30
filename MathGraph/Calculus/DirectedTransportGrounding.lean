@@ -85,26 +85,26 @@ def typedIdentity_from_mutualDirected
   fun h => mutualDirected_to_typedIdentity h.1 h.2
 
 /-- Concrete asymmetric witness family: `false` has no witness and `true` has
-one witness. Transport from `false` to `true` exists vacuously. -/
+one witness. -/
 def asymmetricWitness : Unit → Bool → Type :=
-  fun _ b => if b then Unit else Empty
+  fun _ b => match b with
+    | false => Empty
+    | true => Unit
 
+/-- Transport from `false` to `true` exists vacuously. -/
 def false_reaches_true :
     DirectedTransport asymmetricWitness false true := by
   intro k h
   cases k
-  simp [asymmetricWitness] at h
+  exact nomatch h
 
 /-- But the reverse transport is impossible. This finite countermodel proves
 symmetry is not derivable from directed transport + reflexivity + composition. -/
 def true_not_reach_false :
     DirectedTransport asymmetricWitness true false → Empty := by
   intro h
-  have f := h ()
-  have u : asymmetricWitness () true := by
-    simp [asymmetricWitness]
-  have e : asymmetricWitness () false := f u
-  simpa [asymmetricWitness] using e
+  have f : Unit → Empty := h ()
+  exact f ()
 
 /-- Therefore mutual reachability is strictly stronger than one-way reachability
 in the same raw witness substrate. -/
