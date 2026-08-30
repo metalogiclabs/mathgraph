@@ -94,7 +94,10 @@ theorem response_licenses_development {R : Type}
       (⟨true, false⟩ : Stage26TaskBoundary Bool) by exact hTask]
     refine ⟨⟨true, ?_⟩⟩
     constructor
-    · exact stage21_cold_true_generic_residual
+    · constructor
+      · intro i
+        exact Fin.elim0 i
+      · exact stage21_cold_true_generic_residual.separated
     · exact ⟨(.nil : FreePath Stage13G0 true true)⟩
 
 /-- Retaining the encountered task generates the next selective observational
