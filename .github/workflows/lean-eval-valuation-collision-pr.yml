@@ -1,0 +1,167 @@
+name: LeanEval valuation collision PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  valuation-collision-portal:
+    if: github.head_ref == 'lean-eval-multitarget-sweep'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      LEAN_EVAL_SHA: 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
+      TARGET: annals_erdos_supersingular_primes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare frozen target
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
+          cd "/tmp/$TARGET"
+          lake update
+      - name: Verify combined valuation collision interface
+        id: verify
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          cat > Submission.lean <<'LEAN'
+          import ChallengeDeps
+          import Mathlib.Analysis.Complex.Exponential
+          import Mathlib.NumberTheory.Padics.PadicVal.Basic
+
+          set_option autoImplicit false
+          namespace ErdosSupersingularPrimes
+          open Int Real
+
+          def k₀ : ℕ := sorry
+
+          theorem generated_core_bound (k : ℕ) (hk : k ≥ k₀) (s : Solution k)
+              (hs : s.l.Prime) (hy : s.y ≠ 0) (hd : s.d ≠ 0) :
+              s.l ≤ exp (10 ^ k) := by
+            have hVal : ∀ p : ℕ, p.Prime →
+                (∑ i ∈ Finset.range k,
+                  padicValRat p (((s.n + i * s.d) : ℤ) : ℚ)) =
+                (s.l : ℤ) * padicValRat p (s.y : ℚ) := by
+              intro p hp
+              letI : Fact p.Prime := ⟨hp⟩
+              have hprod : (∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0 := by
+                have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy
+                rw [← s.eq] at hpow
+                exact hpow
+              have hfac : ∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0 :=
+                Finset.prod_ne_zero_iff.mp hprod
+              let f : ℕ → ℤ := fun i => s.n + i * s.d
+              have hval_general : ∀ t : Finset ℕ,
+                  (∀ i ∈ t, f i ≠ 0) →
+                  padicValRat p (((∏ i ∈ t, f i) : ℤ) : ℚ) =
+                    ∑ i ∈ t, padicValRat p ((f i : ℤ) : ℚ) := by
+                intro t
+                refine Finset.induction_on t ?_ ?_
+                · intro ht
+                  simp
+                · intro a t ha ih ht
+                  rw [Finset.prod_insert ha, Finset.sum_insert ha, Int.cast_mul]
+                  rw [padicValRat.mul]
+                  · rw [ih]
+                    intro i hi
+                    exact ht i (Finset.mem_insert_of_mem hi)
+                  · exact_mod_cast ht a (Finset.mem_insert_self a t)
+                  · exact_mod_cast Finset.prod_ne_zero_iff.mpr (by
+                      intro i hi
+                      exact ht i (Finset.mem_insert_of_mem hi))
+              have hval := hval_general (Finset.range k) (by simpa [f] using hfac)
+              rw [← hval]
+              rw [s.eq]
+              simpa using (padicValRat.pow (p := p) (s.y : ℚ) (k := s.l))
+            have hCollision : ∀ (q : ℤ) (i j : ℕ),
+                q ∣ (s.n + i * s.d) →
+                q ∣ (s.n + j * s.d) →
+                q ∣ ((i : ℤ) - (j : ℤ)) * s.d := by
+              intro q i j hi hj
+              have h : q ∣ (s.n + i * s.d) - (s.n + j * s.d) := hi.sub hj
+              convert h using 1 <;> ring
+            sorry
+          end ErdosSupersingularPrimes
+          LEAN
+          lake build Submission > /tmp/valuation-collision-interface.log 2>&1
+          code=$?
+          echo "VALUATION_COLLISION_INTERFACE_VERIFY exit=$code"
+          cat /tmp/valuation-collision-interface.log
+          echo "verified=$([ "$code" -eq 0 ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+      - name: Replay frozen primitive language
+        id: replay
+        if: steps.verify.outputs.verified == '1'
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          cp Submission.lean /tmp/combined-base.lean
+          : > /tmp/replay.tsv
+          solved=0
+          winner=''
+          printf '%s\t%s\n' simp 'try simp_all' > /tmp/tails.tsv
+          printf '%s\t%s\n' aesop 'try aesop' >> /tmp/tails.tsv
+          printf '%s\t%s\n' grind 'try grind' >> /tmp/tails.tsv
+          printf '%s\t%s\n' norm 'try norm_num at *' >> /tmp/tails.tsv
+          printf '%s\t%s\n' linarith 'try linarith' >> /tmp/tails.tsv
+          printf '%s\t%s\n' nlinarith 'try nlinarith' >> /tmp/tails.tsv
+          printf '%s\t%s\n' positivity 'try positivity' >> /tmp/tails.tsv
+          printf '%s\t%s\n' ringnf 'try ring_nf' >> /tmp/tails.tsv
+          printf '%s\t%s\n' fieldsimp 'try field_simp' >> /tmp/tails.tsv
+          printf '%s\t%s\n' elim 'try solve_by_elim' >> /tmp/tails.tsv
+          printf '%s\t%s\n' contra 'try contradiction' >> /tmp/tails.tsv
+          printf '%s\t%s\n' tauto 'try tauto' >> /tmp/tails.tsv
+          while IFS=$'\t' read -r name body; do
+            cp /tmp/combined-base.lean Submission.lean
+            BODY="$body" python3 - <<'PY'
+          import os,re
+          s=open('Submission.lean').read()
+          repl='  '+os.environ['BODY']+'\nend ErdosSupersingularPrimes'
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes', repl, s, count=1)
+          if n != 1: raise SystemExit(f'replay replacements={n}')
+          open('Submission.lean','w').write(s)
+          PY
+            if [ $? -ne 0 ]; then exit 90; fi
+            lake build Submission > "/tmp/replay-${name}.log" 2>&1
+            code=$?
+            echo "VALUATION_COLLISION_REPLAY name=$name exit=$code"
+            printf '%s\t%s\n' "$name" "$code" >> /tmp/replay.tsv
+            if [ "$code" -eq 0 ]; then solved=1; winner="$name"; cp Submission.lean /tmp/VALUATION-COLLISION-SOLVED.lean; break; fi
+          done < /tmp/tails.tsv
+          echo "solved=$solved" >> "$GITHUB_OUTPUT"
+          echo "winner=$winner" >> "$GITHUB_OUTPUT"
+      - name: Combined portal gate
+        if: always()
+        run: |
+          if [ "${{ steps.verify.outputs.verified }}" != "1" ]; then
+            echo 'VALUATION_COLLISION_GATE {"classification":"INTERFACE_PROOF_FAILURE"}'
+          elif [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
+            echo 'VALUATION_COLLISION_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
+          else
+            echo 'VALUATION_COLLISION_GATE {"classification":"VALUATION_COLLISION_VERIFIED_NO_EXACT"}'
+          fi
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: valuation-collision-portal
+          path: |
+            /tmp/valuation-collision-interface.log
+            /tmp/replay.tsv
+            /tmp/replay-*.log
+            /tmp/VALUATION-COLLISION-SOLVED.lean
+          if-no-files-found: ignore
