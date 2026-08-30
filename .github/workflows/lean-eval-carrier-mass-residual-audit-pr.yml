@@ -1,0 +1,75 @@
+name: LeanEval carrier-mass residual target audit PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  carrier-mass-residual-audit:
+    if: github.head_ref == 'lean-eval-multitarget-sweep'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Download preserved causal evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/evidence
+          gh run download 33289622901 -R metalogiclabs/mathgraph -n residual-induced-carrier-mass-genesis -D /tmp/evidence
+          test -f /tmp/evidence/replay.tsv
+          test -f /tmp/evidence/replay-sham-simp.log
+          test -f /tmp/evidence/replay-components-simp.log
+          test -f /tmp/evidence/replay-carrier_mass-simp.log
+      - name: Recompute residuals from target goals only
+        id: audit
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, hashlib
+          root=Path('/tmp/evidence')
+          by={}
+          for arm in ('sham','components','carrier_mass'):
+              sigs=[]
+              goals=[]
+              files=sorted(root.glob(f'replay-{arm}-*.log'))
+              if len(files) != 12:
+                  raise SystemExit(f'CARRIER_MASS_AUDIT_FATAL arm={arm} logs={len(files)}')
+              for f in files:
+                  s=f.read_text(errors='ignore')
+                  ms=list(re.finditer(r'^⊢\\s.*$',s,re.M))
+                  if not ms:
+                      raise SystemExit(f'CARRIER_MASS_AUDIT_FATAL no_goal file={f.name}')
+                  tail=s[ms[-1].start():]
+                  goal=re.split(r'\\n(?:error:|Some required targets|warning:|✖|✔|trace:)',tail,maxsplit=1)[0]
+                  goal='\\n'.join(line.strip() for line in goal.splitlines() if line.strip())
+                  sig=hashlib.sha256(goal.encode()).hexdigest()[:16]
+                  sigs.append(sig); goals.append(goal)
+                  print(f'CARRIER_MASS_TARGET arm={arm} file={f.name} sig={sig} goal={goal!r}')
+              by[arm]=set(sigs)
+              print(f'CARRIER_MASS_TARGET_CLASSES arm={arm} classes={len(by[arm])}')
+          sham,comp,mass=by['sham'],by['components'],by['carrier_mass']
+          sep=int(mass != sham and mass != comp)
+          component_sep=int(comp != sham)
+          print('CARRIER_MASS_TARGET_NOVEL_VS_SHAM',len(mass-sham))
+          print('CARRIER_MASS_TARGET_NOVEL_VS_COMPONENTS',len(mass-comp))
+          print('CARRIER_MASS_TARGET_SEPARATION',sep)
+          print('CARRIER_MASS_TARGET_COMPONENT_SEPARATION',component_sep)
+          Path('/tmp/target-separation.txt').write_text(str(sep))
+          Path('/tmp/target-component-separation.txt').write_text(str(component_sep))
+          PY
+          echo "separation=$(cat /tmp/target-separation.txt)" >> "$GITHUB_OUTPUT"
+          echo "component_separation=$(cat /tmp/target-component-separation.txt)" >> "$GITHUB_OUTPUT"
+      - name: Audit gate
+        run: |
+          if [ "${{ steps.audit.outputs.separation }}" = "1" ]; then
+            echo 'CARRIER_MASS_TARGET_AUDIT_GATE {"classification":"TARGET_RESIDUAL_PHASE_CHANGE"}'
+          else
+            echo 'CARRIER_MASS_TARGET_AUDIT_GATE {"classification":"CARRIER_MASS_VERIFIED_NO_TARGET_SEPARATION","invalidated_prior_gate":"COMPOSED_OPERATOR_PHASE_CHANGE","reason":"multiline_context_leak"}'
+          fi
