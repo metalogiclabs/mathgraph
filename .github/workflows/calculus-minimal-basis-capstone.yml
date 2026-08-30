@@ -26,10 +26,27 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.33.0
           "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.0
-      - name: Compile reconstruction dependency chain
+      - name: Compile foundational dependency chain
         run: |
+          lean -o MathGraph/Calculus/Core.olean MathGraph/Calculus/Core.lean
+          lean -o MathGraph/Calculus/Refinement.olean MathGraph/Calculus/Refinement.lean
+          lean -o MathGraph/Calculus/Separation.olean MathGraph/Calculus/Separation.lean
+          lean -o MathGraph/Calculus/Representation.olean MathGraph/Calculus/Representation.lean
+          lean -o MathGraph/Calculus/OutcomeGrounding.olean MathGraph/Calculus/OutcomeGrounding.lean
+          lean -o MathGraph/Calculus/EqualityAblation.olean MathGraph/Calculus/EqualityAblation.lean
+          lean -o MathGraph/Calculus/IncidenceGrounding.olean MathGraph/Calculus/IncidenceGrounding.lean
+          lean -o MathGraph/Calculus/WitnessIncidenceGrounding.olean MathGraph/Calculus/WitnessIncidenceGrounding.lean
+          lean -o MathGraph/Calculus/DirectWitnessGrounding.olean MathGraph/Calculus/DirectWitnessGrounding.lean
+          lean -o MathGraph/Calculus/TypedIdentityGrounding.olean MathGraph/Calculus/TypedIdentityGrounding.lean
+          lean -o MathGraph/Calculus/DirectedTransportGrounding.olean MathGraph/Calculus/DirectedTransportGrounding.lean
+          lean -o MathGraph/Calculus/TransportEqualityAblation.olean MathGraph/Calculus/TransportEqualityAblation.lean
+          lean -o MathGraph/Calculus/CoordinateAblation.olean MathGraph/Calculus/CoordinateAblation.lean
+          lean -o MathGraph/Calculus/StateCarrierAblation.olean MathGraph/Calculus/StateCarrierAblation.lean
+          lean -o MathGraph/Calculus/BareTransportAlgebra.olean MathGraph/Calculus/BareTransportAlgebra.lean
           lean -o MathGraph/Calculus/RawTransportGenesis.olean MathGraph/Calculus/RawTransportGenesis.lean
           lean -o MathGraph/Calculus/RockBottomAblation.olean MathGraph/Calculus/RockBottomAblation.lean
+      - name: Compile reconstruction dependency chain
+        run: |
           lean -o MathGraph/Calculus/ReconstructionFromBedrock.olean MathGraph/Calculus/ReconstructionFromBedrock.lean
           lean -o MathGraph/Calculus/ReconstructionStage2Profiles.olean MathGraph/Calculus/ReconstructionStage2Profiles.lean
           lean -o MathGraph/Calculus/ReconstructionStage3Logic.olean MathGraph/Calculus/ReconstructionStage3Logic.lean
