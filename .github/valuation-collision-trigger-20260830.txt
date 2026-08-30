@@ -1,1 +1,1 @@
-Trigger isolated carrier valuation zero bridge probe before rerunning carrier-mass genesis.
+Trigger repaired carrier-mass composition after verified valuation zero bridge.
