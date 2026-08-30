@@ -182,3 +182,7 @@ jobs:
         run: |
           lean MathGraph/Calculus/ReconstructionStage20ResidualClosure.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE20_GATE {"classification":"LEAN_VERIFIED_GENERIC_RESIDUAL_ALONE_INHABITS_RAW_GENERATOR_RELATION_WITHOUT_SELECTION_LAYER_AND_WITH_RESIDUAL_ABSENCE_NEGATIVE"}'
+      - name: Verify reconstruction stage 21
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage21DirectionBoundary.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE21_GATE {"classification":"LEAN_VERIFIED_BARE_RESIDUAL_IS_ENDPOINT_SYMMETRIC_AND_CANONICAL_DIRECTED_GENESIS_REQUIRES_SYMMETRY_BREAKING_ORIENTATION_EVIDENCE"}'
