@@ -10,6 +10,7 @@ on:
       - 'MathGraph/Calculus/ActiveBoundaryCompression.lean'
       - 'MathGraph/Calculus/VerifierBoundaryEndogenization.lean'
       - 'MathGraph/Calculus/SymmetryBreakingAnchor.lean'
+      - 'MathGraph/Calculus/OrbitStabilizerBoundary.lean'
       - '.github/workflows/calculus-minimal-basis-capstone.yml'
   workflow_dispatch:
 
@@ -95,5 +96,9 @@ jobs:
           echo 'CALCULUS_VERIFIER_BOUNDARY_ENDOGENIZATION_GATE {"classification":"LEAN_VERIFIED_SELECTIVE_OBSERVATIONAL_STATE_DERIVED_FROM_ORDERED_VERIFIER_TASK_HISTORY_WHILE_COMPLETE_BOUNDARY_ENDOGENIZATION_IS_BLOCKED_BY_SYMMETRY"}'
       - name: Verify minimal symmetry-breaking anchor
         run: |
-          lean MathGraph/Calculus/SymmetryBreakingAnchor.lean
+          lean -o MathGraph/Calculus/SymmetryBreakingAnchor.olean MathGraph/Calculus/SymmetryBreakingAnchor.lean
           echo 'CALCULUS_SYMMETRY_BREAKING_ANCHOR_GATE {"classification":"LEAN_VERIFIED_ORDERED_TASK_PAIR_REDUCES_TO_ONE_EXTERNAL_SYMMETRY_BREAKING_BIT_ON_TWO_POINT_SEED_AND_NO_EQUIVARIANT_ENDOGENOUS_ANCHOR_EXISTS"}'
+      - name: Verify generalized orbit stabilizer boundary
+        run: |
+          lean MathGraph/Calculus/OrbitStabilizerBoundary.lean
+          echo 'CALCULUS_ORBIT_STABILIZER_BOUNDARY_GATE {"classification":"LEAN_VERIFIED_FREE_INVOLUTIVE_SYMMETRY_REQUIRES_EXTERNAL_ORBIT_REPRESENTATIVE_FOR_ORIENTATION_AND_FORBIDS_EQUIVARIANT_ENDOGENOUS_ANCHOR"}'
