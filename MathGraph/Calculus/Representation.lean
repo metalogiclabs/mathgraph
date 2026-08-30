@@ -42,7 +42,7 @@ theorem lawfulSeparation_represented
   · intro hxy
     refine ⟨x, ?_⟩
     intro hEq
-    have hxx : S.sep x x := hEq ▸ hxy
+    have hxx : S.sep x x := Eq.mpr hEq hxy
     exact S.irrefl x hxx
 
 /-- Consequently, the abstract identity induced by non-separation is exactly
@@ -50,8 +50,15 @@ consequential identity in the canonical language. -/
 theorem lawfulSeparation_identity_is_consequential
     {α : Type u} (S : LawfulSeparation α) (x y : α) :
     (¬ S.sep x y) ↔ ConsequentialEq S.language x y := by
-  rw [consequentialEq_iff_not_separated]
-  exact not_congr (lawfulSeparation_represented S x y)
+  constructor
+  · intro hNoSep
+    apply (consequentialEq_iff_not_separated S.language x y).mpr
+    intro hSep
+    exact hNoSep ((lawfulSeparation_represented S x y).mp hSep)
+  · intro hEq hSep
+    have hNoInduced : ¬ Separated S.language x y :=
+      (consequentialEq_iff_not_separated S.language x y).mp hEq
+    exact hNoInduced ((lawfulSeparation_represented S x y).mpr hSep)
 
 /-- The consequence/separation construction is therefore surjective onto all
 lawful separation relations: no additional representability axiom is needed
