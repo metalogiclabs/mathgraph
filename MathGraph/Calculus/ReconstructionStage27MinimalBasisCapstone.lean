@@ -1,6 +1,5 @@
+import MathGraph.Calculus.ReconstructionStage15RecursiveDevelopment
 import MathGraph.Calculus.ReconstructionStage26TaskOrientation
-
-universe u v w
 
 namespace MathGraph.Calculus
 
@@ -12,18 +11,20 @@ The internal calculus keeps only:
 * a selective extensional observational interface `P`;
 * an ordered external task/verifier boundary.
 
-History and an internal orientation primitive are deliberately absent. -/
+History and an internal orientation primitive are deliberately absent.  This
+capstone uses the small universe in which the Stage-20/26 developmental edge
+interface is currently formalized. -/
 structure Stage27MinimalBasis where
-  Ω : Type u
-  G : Ω → Ω → Type v
-  ι : Type w
+  Ω : Type
+  G : Ω → Ω → Type
+  ι : Type
   P : ProbeFamily ι Ω
   task : Stage26TaskBoundary Ω
 
 namespace Stage27MinimalBasis
 
 /-- Free continuation is reconstructed from raw generators. -/
-def Path (B : Stage27MinimalBasis) (x y : B.Ω) : Type v :=
+def Path (B : Stage27MinimalBasis) (x y : B.Ω) : Type :=
   FreePath B.G x y
 
 /-- Measurement semantics are reconstructed from bedrock reachability. -/
@@ -42,7 +43,7 @@ def Residual (B : Stage27MinimalBasis) (k : B.Ω) : Prop :=
 
 /-- Raw developmental generator evidence is reconstructed from the same
 residual mechanism and the external ordered task boundary. -/
-def DevelopmentalEdge (B : Stage27MinimalBasis) : Type _ :=
+def DevelopmentalEdge (B : Stage27MinimalBasis) : Type :=
   Stage20Generator B.G B.P B.task.source B.task.target
 
 end Stage27MinimalBasis
@@ -87,12 +88,13 @@ theorem stage27_recursive_power :
     Nonempty (FreePath (Stage15Generator Stage15S1.world) false true) :=
   reconstruction_stage15_recursive_development_certificate
 
-/-- Exact-history storage is not part of the surviving basis. -/
+/-- Exact-history storage is not part of the surviving basis: two genuinely
+different histories can induce the same extensional consequential state. -/
 theorem stage27_history_not_primitive :
-    ExtensionalHistoryEq twoWayGenerator
+    GeneratedInterface.SemEq twoWayGenerator
       ([false] : GeneratedInterface Bool)
       ([true] : GeneratedInterface Bool) :=
-  stage24_distinct_histories_same_observational_state
+  stage24_distinct_source_histories_semEq
 
 /-- Selective observational partiality *is* causally necessary for this
 residual-driven mechanism: replacing it by the maximal bedrock-regenerated
@@ -122,11 +124,15 @@ theorem stage27_internal_orientation_not_primitive :
 without endpoints there is no continuation witness at all, and without raw
 generators free closure cannot create a cross-endpoint transition. -/
 theorem stage27_bedrock_components_are_necessary :
-    (SomeContinuation emptyObjectGenerator → Empty) ∧
-    (FreePath (emptyGenerator (Ω := Bool)) false true → Empty) ∧
+    (¬ Nonempty (SomeContinuation emptyObjectGenerator)) ∧
+    (¬ Nonempty (FreePath (emptyGenerator (Ω := Bool)) false true)) ∧
     Nonempty (FreePath oneEdgeGenerator false true) := by
-  refine ⟨no_objects_no_continuation, no_generators_no_cross_transition, ?_⟩
-  exact ⟨one_generator_creates_cross_transition⟩
+  refine ⟨?_, ?_, ?_⟩
+  · intro h
+    rcases h with ⟨c⟩
+    exact no_objects_no_continuation c
+  · exact stage13_cold_target_unreachable
+  · exact ⟨one_generator_creates_cross_transition⟩
 
 /-- Stage-27 minimal-basis capstone.
 
@@ -160,7 +166,7 @@ theorem reconstruction_stage27_minimal_basis_capstone :
      Stage15Step Stage15S2 = Stage15S2 ∧
      (¬ Nonempty (FreePath (Stage15Generator Stage15S0.world) false true)) ∧
      Nonempty (FreePath (Stage15Generator Stage15S1.world) false true)) ∧
-    ExtensionalHistoryEq twoWayGenerator
+    GeneratedInterface.SemEq twoWayGenerator
       ([false] : GeneratedInterface Bool)
       ([true] : GeneratedInterface Bool) ∧
     (ProbeResidual oneEdgeGenerator
@@ -174,8 +180,8 @@ theorem reconstruction_stage27_minimal_basis_capstone :
      ((Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) false true) ∧
        Nonempty (Stage20Generator Stage13G0 (NoProbes Bool) true false)) ∧
       ¬ Nonempty Stage21CanonicalOrientation)) ∧
-    ((SomeContinuation emptyObjectGenerator → Empty) ∧
-     (FreePath (emptyGenerator (Ω := Bool)) false true → Empty) ∧
+    ((¬ Nonempty (SomeContinuation emptyObjectGenerator)) ∧
+     (¬ Nonempty (FreePath (emptyGenerator (Ω := Bool)) false true)) ∧
      Nonempty (FreePath oneEdgeGenerator false true)) := by
   exact ⟨stage27_lower_sufficiency,
     stage27_recursive_power,
