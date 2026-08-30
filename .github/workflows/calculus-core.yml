@@ -48,5 +48,9 @@ jobs:
           echo 'CALCULUS_AXIOM_NECESSITY_GATE {"classification":"LEAN_VERIFIED_EXACT_REPRESENTABILITY_IFF_LAWFUL_SEPARATION"}'
       - name: Verify raw outcome grounding
         run: |
-          lean MathGraph/Calculus/OutcomeGrounding.lean
+          lean -o MathGraph/Calculus/OutcomeGrounding.olean MathGraph/Calculus/OutcomeGrounding.lean
           echo 'CALCULUS_OUTCOME_GROUNDING_GATE {"classification":"LEAN_VERIFIED_STATE_APARTNESS_DERIVED_FROM_RAW_OUTCOME_INEQUALITY"}'
+      - name: Verify equality ablation
+        run: |
+          lean MathGraph/Calculus/EqualityAblation.lean
+          echo 'CALCULUS_EQUALITY_ABLATION_GATE {"classification":"LEAN_VERIFIED_APARTNESS_AND_IDENTITY_FROM_RAW_PROP_TESTS_WITHOUT_OUTCOME_EQUALITY"}'
