@@ -139,11 +139,11 @@ theorem freePath_assoc {Ω : Type u} {G : Ω → Ω → Type v}
 
 /-- First ascent certificate: from verified bedrock alone we derive finite
 continuation, an equivalence-like generated identity, a monotone refinement
-operation, and lawful generated composition. -/
+operation, and lawful generated composition. The lawfulness theorems above are
+kept as propositions rather than being mixed into this Type-valued certificate. -/
 def reconstruction_stage1_certificate {Ω : Type u}
     (G : Ω → Ω → Type v) (x : Ω) :
-    GeneratedIdentity G x x × GeneratorRefines G G ×
-      (FreePath.append (.nil : FreePath G x x) .nil = .nil) :=
-  ⟨generatedIdentity_refl G x, generatorRefines_refl G, rfl⟩
+    GeneratedIdentity G x x × GeneratorRefines G G :=
+  ⟨generatedIdentity_refl G x, generatorRefines_refl G⟩
 
 end MathGraph.Calculus
