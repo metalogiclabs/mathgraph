@@ -1,0 +1,308 @@
+name: LeanEval residual-induced carrier-mass genesis PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  carrier-mass-genesis:
+    if: github.head_ref == 'lean-eval-multitarget-sweep'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
+      TARGET: annals_erdos_supersingular_primes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare frozen target
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
+          cd "/tmp/$TARGET"
+          lake update
+      - name: Materialize residual-derived interface arms
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set -euxo pipefail
+          cat > /tmp/base.lean <<'LEAN'
+          import ChallengeDeps
+          import Mathlib.Analysis.Complex.Exponential
+          import Mathlib.NumberTheory.Padics.PadicVal.Basic
+          import Mathlib.Data.Nat.Prime.Int
+          import Mathlib.Algebra.BigOperators.Associated
+
+          set_option autoImplicit false
+          namespace ErdosSupersingularPrimes
+          open Int Real
+
+          def k₀ : ℕ := sorry
+
+          theorem generated_core_bound (k : ℕ) (hk : k ≥ k₀) (s : Solution k)
+              (hs : s.l.Prime) (hy : s.y ≠ 0) (hd : s.d ≠ 0) :
+              s.l ≤ exp (10 ^ k) := by
+          @@INTERFACE@@
+            sorry
+          end ErdosSupersingularPrimes
+          LEAN
+
+          cat > /tmp/sham.txt <<'LEAN'
+            have hSham : s.l = s.l := rfl
+          LEAN
+
+          cat > /tmp/components.txt <<'LEAN'
+            have hVal : ∀ p : ℕ, p.Prime →
+                (∑ i ∈ Finset.range k,
+                  padicValRat p (((s.n + i * s.d) : ℤ) : ℚ)) =
+                (s.l : ℤ) * padicValRat p (s.y : ℚ) := by
+              intro p hp
+              letI : Fact p.Prime := ⟨hp⟩
+              have hprod : (∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0 := by
+                have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy
+                rw [← s.eq] at hpow
+                exact hpow
+              have hfac : ∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0 :=
+                Finset.prod_ne_zero_iff.mp hprod
+              let f : ℕ → ℤ := fun i => s.n + i * s.d
+              have hval_general : ∀ t : Finset ℕ,
+                  (∀ i ∈ t, f i ≠ 0) →
+                  padicValRat p (((∏ i ∈ t, f i) : ℤ) : ℚ) =
+                    ∑ i ∈ t, padicValRat p ((f i : ℤ) : ℚ) := by
+                intro t
+                refine Finset.induction_on t ?_ ?_
+                · intro ht
+                  simp
+                · intro a t ha ih ht
+                  rw [Finset.prod_insert ha, Finset.sum_insert ha, Int.cast_mul]
+                  rw [padicValRat.mul]
+                  · rw [ih]
+                    intro i hi
+                    exact ht i (Finset.mem_insert_of_mem hi)
+                  · exact_mod_cast ht a (Finset.mem_insert_self a t)
+                  · exact_mod_cast Finset.prod_ne_zero_iff.mpr (by
+                      intro i hi
+                      exact ht i (Finset.mem_insert_of_mem hi))
+              have hval := hval_general (Finset.range k) (by simpa [f] using hfac)
+              rw [← hval]
+              rw [s.eq]
+              simpa using (padicValRat.pow (p := p) (s.y : ℚ) (k := s.l))
+            have hCollision : ∀ (q : ℤ) (i j : ℕ),
+                q ∣ (s.n + i * s.d) →
+                q ∣ (s.n + j * s.d) →
+                q ∣ ((i : ℤ) - (j : ℤ)) * s.d := by
+              intro q i j hi hj
+              have h : q ∣ (s.n + i * s.d) - (s.n + j * s.d) := hi.sub hj
+              convert h using 1 <;> ring
+            have hUnique : ∀ p : ℕ, p.Prime → k ≤ p → ¬ (p : ℤ) ∣ s.d →
+                ∀ i ∈ Finset.range k, ∀ j ∈ Finset.range k,
+                  (p : ℤ) ∣ (s.n + i * s.d) →
+                  (p : ℤ) ∣ (s.n + j * s.d) → i = j := by
+              intro p hp hkp hpd i hi j hj hpi hpj
+              have hpInt : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+              have hmul := hCollision (p : ℤ) i j hpi hpj
+              have hdiff : (p : ℤ) ∣ ((i : ℤ) - (j : ℤ)) :=
+                (hpInt.dvd_mul.mp hmul).resolve_right hpd
+              rcases hdiff with ⟨z, hz⟩
+              have hip : i < p := lt_of_lt_of_le (Finset.mem_range.mp hi) hkp
+              have hjp : j < p := lt_of_lt_of_le (Finset.mem_range.mp hj) hkp
+              have hp0 : (0 : ℤ) < (p : ℤ) := by exact_mod_cast hp.pos
+              have hi0 : (0 : ℤ) ≤ (i : ℤ) := by positivity
+              have hj0 : (0 : ℤ) ≤ (j : ℤ) := by positivity
+              have hiP : (i : ℤ) < (p : ℤ) := by exact_mod_cast hip
+              have hjP : (j : ℤ) < (p : ℤ) := by exact_mod_cast hjp
+              rcases lt_trichotomy z 0 with hzneg | rfl | hzpos
+              · have hzle : z ≤ -1 := by omega
+                exfalso
+                nlinarith
+              · norm_num at hz
+                exact_mod_cast (sub_eq_zero.mp hz)
+              · have hzge : 1 ≤ z := by omega
+                exfalso
+                nlinarith
+          LEAN
+
+          cp /tmp/components.txt /tmp/carrier_mass.txt
+          cat >> /tmp/carrier_mass.txt <<'LEAN'
+            have hCarrierMass : ∀ p : ℕ, p.Prime → k ≤ p → ¬ (p : ℤ) ∣ s.d →
+                (p : ℤ) ∣ s.y →
+                ∃ i ∈ Finset.range k,
+                  (p : ℤ) ∣ (s.n + i * s.d) ∧
+                  (s.l : ℤ) * padicValRat p (s.y : ℚ) =
+                    padicValRat p (((s.n + i * s.d) : ℤ) : ℚ) := by
+              intro p hp hkp hpd hpy
+              letI : Fact p.Prime := ⟨hp⟩
+              have hpInt : Prime (p : ℤ) := Nat.prime_iff_prime_int.mp hp
+              have hpow : (p : ℤ) ∣ s.y ^ s.l := hpy.pow hs.ne_zero
+              rw [← s.eq] at hpow
+              rcases hpInt.exists_mem_finset_dvd hpow with ⟨i, hi, hpi⟩
+              refine ⟨i, hi, hpi, ?_⟩
+              rw [← hVal p hp]
+              symm
+              apply Finset.sum_eq_single i
+              · intro j hj hji
+                have hnot : ¬ (p : ℤ) ∣ (s.n + j * s.d) := by
+                  intro hpj
+                  have hji' := hUnique p hp hkp hpd j hj i hi hpj hpi
+                  exact hji hji'
+                simpa using (padicValInt.eq_zero_of_not_dvd (p := p) hnot)
+              · intro hni
+                exact (hni hi).elim
+          LEAN
+
+          python3 - <<'PY'
+          from pathlib import Path
+          base=Path('/tmp/base.lean').read_text()
+          for arm in ('sham','components','carrier_mass'):
+              body=Path(f'/tmp/{arm}.txt').read_text().rstrip()
+              s=base.replace('@@INTERFACE@@',body)
+              if '@@INTERFACE@@' in s: raise SystemExit('template replacement failed')
+              Path(f'/tmp/{arm}.lean').write_text(s)
+          PY
+      - name: Verify all interface arms fail closed
+        id: verify
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          : > /tmp/verify.tsv
+          all=1
+          for arm in sham components carrier_mass; do
+            cp "/tmp/$arm.lean" Submission.lean
+            lake build Submission > "/tmp/verify-$arm.log" 2>&1
+            code=$?
+            echo "CARRIER_MASS_INTERFACE_VERIFY arm=$arm exit=$code"
+            printf '%s\t%s\n' "$arm" "$code" >> /tmp/verify.tsv
+            if [ "$code" -ne 0 ]; then all=0; fi
+          done
+          echo "all=$all" >> "$GITHUB_OUTPUT"
+          if [ "$all" -ne 1 ]; then
+            echo 'CARRIER_MASS_HARNESS_FATAL interface_arm_failed'
+            cat /tmp/verify-*.log
+            exit 90
+          fi
+      - name: Replay frozen language and compare normalized residuals
+        id: replay
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          : > /tmp/tails.tsv
+          printf '%s\t%s\n' simp 'try simp_all' >> /tmp/tails.tsv
+          printf '%s\t%s\n' aesop 'try aesop' >> /tmp/tails.tsv
+          printf '%s\t%s\n' grind 'try grind' >> /tmp/tails.tsv
+          printf '%s\t%s\n' norm 'try norm_num at *' >> /tmp/tails.tsv
+          printf '%s\t%s\n' linarith 'try linarith' >> /tmp/tails.tsv
+          printf '%s\t%s\n' nlinarith 'try nlinarith' >> /tmp/tails.tsv
+          printf '%s\t%s\n' positivity 'try positivity' >> /tmp/tails.tsv
+          printf '%s\t%s\n' ringnf 'try ring_nf' >> /tmp/tails.tsv
+          printf '%s\t%s\n' fieldsimp 'try field_simp' >> /tmp/tails.tsv
+          printf '%s\t%s\n' elim 'try solve_by_elim' >> /tmp/tails.tsv
+          printf '%s\t%s\n' contra 'try contradiction' >> /tmp/tails.tsv
+          printf '%s\t%s\n' tauto 'try tauto' >> /tmp/tails.tsv
+          : > /tmp/replay.tsv
+          solved=0
+          winner=''
+          for arm in sham components carrier_mass; do
+            while IFS=$'\t' read -r tname body; do
+              cp "/tmp/$arm.lean" Submission.lean
+              BODY="$body" python3 - <<'PY'
+          import os,re
+          s=open('Submission.lean').read()
+          repl='  '+os.environ['BODY']+'\nend ErdosSupersingularPrimes'
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes', repl, s, count=1)
+          if n != 1: raise SystemExit(f'replay replacements={n}')
+          open('Submission.lean','w').write(s)
+          PY
+              if [ $? -ne 0 ]; then exit 91; fi
+              lake build Submission > "/tmp/replay-${arm}-${tname}.log" 2>&1
+              code=$?
+              sig=$(python3 - "/tmp/replay-${arm}-${tname}.log" <<'PY'
+          import re,sys,hashlib
+          s=open(sys.argv[1],errors='ignore').read()
+          chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,1800}',s)
+          x=(chunks[-1] if chunks else s[-3000:])
+          # Compare the target frontier, not arm-local context names or generated paths.
+          x=re.sub(r'^h(?:Sham|Val|Collision|Unique|CarrierMass)\s*:.*$', '', x, flags=re.M)
+          x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
+          x=re.sub(r'\d+\.\d+s','<TIME>',x)
+          x='\n'.join(line for line in x.splitlines() if line.strip())
+          print(hashlib.sha256(x.encode()).hexdigest()[:16])
+          PY
+          )
+              echo "CARRIER_MASS_REPLAY arm=$arm tactic=$tname exit=$code sig=$sig"
+              printf '%s\t%s\t%s\t%s\n' "$arm" "$tname" "$code" "$sig" >> /tmp/replay.tsv
+              if [ "$code" -eq 0 ]; then solved=1; winner="$arm:$tname"; cp Submission.lean /tmp/CARRIER-MASS-SOLVED.lean; break 2; fi
+            done < /tmp/tails.tsv
+          done
+          echo "solved=$solved" >> "$GITHUB_OUTPUT"
+          echo "winner=$winner" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          from collections import defaultdict
+          rows=[x.rstrip().split('\t') for x in open('/tmp/replay.tsv') if x.strip()]
+          by=defaultdict(list)
+          for r in rows: by[r[0]].append(r)
+          for arm in ('sham','components','carrier_mass'):
+              if len(by[arm]) != 12:
+                  raise SystemExit(f'CARRIER_MASS_HARNESS_FATAL arm={arm} programs={len(by[arm])}')
+          sham=set(r[3] for r in by['sham'])
+          comp=set(r[3] for r in by['components'])
+          mass=set(r[3] for r in by['carrier_mass'])
+          print('CARRIER_MASS_SHAM_CLASSES',len(sham))
+          print('CARRIER_MASS_COMPONENT_CLASSES',len(comp),'NOVEL_VS_SHAM',len(comp-sham))
+          print('CARRIER_MASS_GENESIS_CLASSES',len(mass),'NOVEL_VS_SHAM',len(mass-sham),'NOVEL_VS_COMPONENTS',len(mass-comp))
+          separation=int(mass != sham and mass != comp)
+          component_sep=int(comp != sham)
+          print('CARRIER_MASS_GENESIS_SEPARATION',separation)
+          print('CARRIER_MASS_COMPONENT_SEPARATION',component_sep)
+          open('/tmp/separation.txt','w').write(str(separation))
+          open('/tmp/component-separation.txt','w').write(str(component_sep))
+          PY
+          if [ $? -ne 0 ]; then exit 92; fi
+          echo "separation=$(cat /tmp/separation.txt)" >> "$GITHUB_OUTPUT"
+          echo "component_separation=$(cat /tmp/component-separation.txt)" >> "$GITHUB_OUTPUT"
+      - name: Carrier-mass genesis gate
+        if: always()
+        run: |
+          if [ "${{ steps.verify.outputs.all }}" != "1" ]; then
+            echo 'CARRIER_MASS_GATE {"classification":"INTERFACE_PROOF_FAILURE"}'
+          elif [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
+            echo 'CARRIER_MASS_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
+          elif [ "${{ steps.replay.outputs.separation }}" = "1" ]; then
+            echo 'CARRIER_MASS_GATE {"classification":"COMPOSED_OPERATOR_PHASE_CHANGE","ablation":"components_only"}'
+          else
+            echo 'CARRIER_MASS_GATE {"classification":"CARRIER_MASS_VERIFIED_NO_SEPARATION"}'
+          fi
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: residual-induced-carrier-mass-genesis
+          path: |
+            /tmp/base.lean
+            /tmp/sham.txt
+            /tmp/components.txt
+            /tmp/carrier_mass.txt
+            /tmp/sham.lean
+            /tmp/components.lean
+            /tmp/carrier_mass.lean
+            /tmp/verify.tsv
+            /tmp/verify-*.log
+            /tmp/tails.tsv
+            /tmp/replay.tsv
+            /tmp/replay-*.log
+            /tmp/separation.txt
+            /tmp/component-separation.txt
+            /tmp/CARRIER-MASS-SOLVED.lean
+          if-no-files-found: ignore
