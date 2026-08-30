@@ -60,5 +60,9 @@ jobs:
           echo 'CALCULUS_INCIDENCE_GROUNDING_GATE {"classification":"LEAN_VERIFIED_STATIC_CALCULUS_FROM_BARE_TEST_STATE_INCIDENCE"}'
       - name: Verify witness-incidence grounding
         run: |
-          lean MathGraph/Calculus/WitnessIncidenceGrounding.lean
+          lean -o MathGraph/Calculus/WitnessIncidenceGrounding.olean MathGraph/Calculus/WitnessIncidenceGrounding.lean
           echo 'CALCULUS_WITNESS_INCIDENCE_GATE {"classification":"LEAN_VERIFIED_CONSTRUCTIVE_STATIC_CORE_FROM_TYPE_VALUED_WITNESS_INCIDENCE_WITH_LOGICAL_REFLECTION_BOUNDARY"}'
+      - name: Verify direct witness grounding
+        run: |
+          lean MathGraph/Calculus/DirectWitnessGrounding.lean
+          echo 'CALCULUS_DIRECT_WITNESS_GATE {"classification":"LEAN_VERIFIED_IDENTITY_REFINEMENT_FROM_DIRECT_WITNESS_TRANSPORT_WITHOUT_NONEMPTY"}'
