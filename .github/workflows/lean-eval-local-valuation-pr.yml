@@ -124,7 +124,8 @@ jobs:
             BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          s,n=re.subn(r'            sorry\n          end ErdosSupersingularPrimes', '            '+os.environ['BODY']+'\n          end ErdosSupersingularPrimes', s, count=1)
+          repl='  '+os.environ['BODY']+'\nend ErdosSupersingularPrimes'
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes', repl, s, count=1)
           if n != 1: raise SystemExit(f'replay replacements={n}')
           open('Submission.lean','w').write(s)
           PY
