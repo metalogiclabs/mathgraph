@@ -174,3 +174,7 @@ jobs:
         run: |
           lean MathGraph/Calculus/ReconstructionStage18ResidualAsGenerator.lean
           echo 'CALCULUS_RECONSTRUCTION_STAGE18_GATE {"classification":"LEAN_VERIFIED_ORIENTED_RESIDUAL_WITNESS_IS_ITSELF_RAW_GENERATOR_EVIDENCE_WITHOUT_PROTECTED_TARGET_OR_DOMAIN_SPECIFIC_PROMOTION_COMPILER"}'
+      - name: Verify reconstruction stage 19
+        run: |
+          lean MathGraph/Calculus/ReconstructionStage19GenericResidualGenerator.lean
+          echo 'CALCULUS_RECONSTRUCTION_STAGE19_GATE {"classification":"LEAN_VERIFIED_GENERIC_PROBE_RESIDUAL_DIRECTLY_INHABITS_RAW_GENERATOR_RELATION_WITH_DERIVED_ORIENTATION_AND_EXACT_SELECTION_ABLATION"}'
