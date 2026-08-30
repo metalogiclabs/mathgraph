@@ -2,10 +2,8 @@ name: LeanEval equation portal V2
 
 on:
   push:
-    branches:
-      - lean-eval-multitarget-sweep
-    paths:
-      - '.github/workflows/lean-eval-equation-portal-v2.yml'
+    branches: [lean-eval-multitarget-sweep]
+    paths: ['.github/workflows/lean-eval-equation-portal-v2.yml']
   workflow_dispatch:
 
 permissions:
@@ -35,12 +33,12 @@ jobs:
           lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
           cd "/tmp/$TARGET"
           lake update
-      - name: Verify valuation interfaces
+      - name: Verify local valuation interface
         id: verify
         working-directory: /tmp/${{ env.TARGET }}
         run: |
           set +e
-          cat > /tmp/base.lean <<'LEAN'
+          cat > Submission.lean <<'LEAN'
           import ChallengeDeps
           import Mathlib.Analysis.Complex.Exponential
           import Mathlib.NumberTheory.Padics.PadicVal.Basic
@@ -54,171 +52,108 @@ jobs:
           theorem generated_core_bound (k : ℕ) (hk : k ≥ k₀) (s : Solution k)
               (hs : s.l.Prime) (hy : s.y ≠ 0) (hd : s.d ≠ 0) :
               s.l ≤ exp (10 ^ k) := by
+            have hDelta : ∀ p : ℕ, p.Prime →
+                (∑ i ∈ Finset.range k,
+                  padicValRat p (((s.n + i * s.d) : ℤ) : ℚ)) =
+                (s.l : ℤ) * padicValRat p (s.y : ℚ) := by
+              intro p hp
+              letI : Fact p.Prime := ⟨hp⟩
+              have hprod : (∏ i ∈ Finset.range k, (s.n + i * s.d)) ≠ 0 := by
+                have hpow : s.y ^ s.l ≠ 0 := pow_ne_zero _ hy
+                rw [← s.eq] at hpow
+                exact hpow
+              have hfac : ∀ i ∈ Finset.range k, (s.n + i * s.d) ≠ 0 :=
+                Finset.prod_ne_zero_iff.mp hprod
+              let f : ℕ → ℤ := fun i => s.n + i * s.d
+              have hval_general : ∀ t : Finset ℕ,
+                  (∀ i ∈ t, f i ≠ 0) →
+                  padicValRat p (((∏ i ∈ t, f i) : ℤ) : ℚ) =
+                    ∑ i ∈ t, padicValRat p ((f i : ℤ) : ℚ) := by
+                intro t
+                refine Finset.induction_on t ?_ ?_
+                · intro ht
+                  simp
+                · intro a t ha ih ht
+                  rw [Finset.prod_insert ha, Finset.sum_insert ha, Int.cast_mul]
+                  rw [padicValRat.mul]
+                  · rw [ih]
+                    intro i hi
+                    exact ht i (Finset.mem_insert_of_mem hi)
+                  · exact_mod_cast ht a (Finset.mem_insert_self a t)
+                  · exact_mod_cast Finset.prod_ne_zero_iff.mpr (by
+                      intro i hi
+                      exact ht i (Finset.mem_insert_of_mem hi))
+              have hval := hval_general (Finset.range k) (by simpa [f] using hfac)
+              rw [← hval]
+              rw [s.eq]
+              simpa using (padicValRat.pow (p := p) (s.y : ℚ) (k := s.l))
             sorry
           end ErdosSupersingularPrimes
           LEAN
-
-          : > /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'sham' 's.l = s.l' 'exact rfl' >> /tmp/interfaces.tsv
-          printf '%s\t%s\t%s\n' 'padic_power_accounting' '∀ p : ℕ, p.Prime → padicValRat p ((∏ i ∈ Finset.range k, (s.n + i * s.d) : ℤ) : ℚ) = (s.l : ℤ) * padicValRat p (s.y : ℚ)' 'intro p hp; letI : Fact p.Prime := ⟨hp⟩; rw [s.eq]; simpa using (padicValRat.pow (p := p) (s.y : ℚ) (k := s.l))' >> /tmp/interfaces.tsv
-
-          : > /tmp/verified.tsv
-          total=0
-          verified=0
-          while IFS=$'\t' read -r name prop proof; do
-            total=$((total+1))
-            if [ -z "$name" ] || [ -z "$prop" ] || [ -z "$proof" ]; then
-              echo "PORTAL_HARNESS_FATAL malformed_interface row=$total"
-              exit 90
-            fi
-            cp /tmp/base.lean Submission.lean
-            PROP="$prop" PROOF="$proof" python3 - <<'PY'
-          import os,re
-          s=open('Submission.lean').read()
-          repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
-                + "    " + os.environ['PROOF'] + "\n"
-                + "  sorry\n"
-                + "end ErdosSupersingularPrimes")
-          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
-          if n != 1: raise SystemExit(f'interface replacements={n}')
-          open('Submission.lean','w').write(s)
-          PY
-            pycode=$?
-            if [ "$pycode" -ne 0 ]; then
-              echo "PORTAL_HARNESS_FATAL name=$name python_exit=$pycode"
-              exit "$pycode"
-            fi
-            lake build Submission > "/tmp/interface-${name}.log" 2>&1
-            code=$?
-            echo "PORTAL_INTERFACE_VERIFY name=$name exit=$code"
-            if [ "$code" -eq 0 ]; then
-              verified=$((verified+1))
-              printf '%s\t%s\t%s\n' "$name" "$prop" "$proof" >> /tmp/verified.tsv
-            fi
-          done < /tmp/interfaces.tsv
-          if [ "$total" -ne 2 ]; then
-            echo "PORTAL_HARNESS_FATAL expected_interfaces=2 actual=$total"
-            exit 91
-          fi
-          if ! grep -q '^sham' /tmp/verified.tsv; then
-            echo 'PORTAL_HARNESS_FATAL sham_not_verified'
-            exit 92
-          fi
-          if ! grep -q '^padic_power_accounting' /tmp/verified.tsv; then
-            echo 'PORTAL_VALUATION_NOT_VERIFIED'
-          fi
-          echo "verified=$verified" >> "$GITHUB_OUTPUT"
-      - name: Replay primitive language across valuation portal
+          lake build Submission > /tmp/local-valuation-interface.log 2>&1
+          code=$?
+          echo "LOCAL_VALUATION_INTERFACE_VERIFY exit=$code"
+          cat /tmp/local-valuation-interface.log
+          echo "verified=$([ "$code" -eq 0 ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
+      - name: Replay frozen primitive language
         id: replay
+        if: steps.verify.outputs.verified == '1'
         working-directory: /tmp/${{ env.TARGET }}
         run: |
           set +e
-          : > /tmp/tails.tsv
-          printf '%s\t%s\n' simp 'try simp_all' >> /tmp/tails.tsv
-          printf '%s\t%s\n' aesop 'try aesop' >> /tmp/tails.tsv
-          printf '%s\t%s\n' grind 'try grind' >> /tmp/tails.tsv
-          printf '%s\t%s\n' norm 'try norm_num at *' >> /tmp/tails.tsv
-          printf '%s\t%s\n' linarith 'try linarith' >> /tmp/tails.tsv
-          printf '%s\t%s\n' nlinarith 'try nlinarith' >> /tmp/tails.tsv
-          printf '%s\t%s\n' positivity 'try positivity' >> /tmp/tails.tsv
-          printf '%s\t%s\n' ringnf 'try ring_nf' >> /tmp/tails.tsv
-          printf '%s\t%s\n' fieldsimp 'try field_simp' >> /tmp/tails.tsv
-          printf '%s\t%s\n' elim 'try solve_by_elim' >> /tmp/tails.tsv
-          printf '%s\t%s\n' contra 'try contradiction' >> /tmp/tails.tsv
-          printf '%s\t%s\n' tauto 'try tauto' >> /tmp/tails.tsv
-
+          cp Submission.lean /tmp/local-base.lean
           : > /tmp/replay.tsv
           solved=0
           winner=''
-          while IFS=$'\t' read -r iname prop proof; do
-            while IFS=$'\t' read -r tname body; do
-              cp /tmp/base.lean Submission.lean
-              PROP="$prop" PROOF="$proof" BODY="$body" python3 - <<'PY'
+          while IFS=$'\t' read -r name body; do
+            cp /tmp/local-base.lean Submission.lean
+            BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
-          repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
-                + "    " + os.environ['PROOF'] + "\n"
-                + "  " + os.environ['BODY'] + "\n"
-                + "end ErdosSupersingularPrimes")
-          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          s,n=re.subn(r'            sorry\n          end ErdosSupersingularPrimes', '            '+os.environ['BODY']+'\n          end ErdosSupersingularPrimes', s, count=1)
           if n != 1: raise SystemExit(f'replay replacements={n}')
           open('Submission.lean','w').write(s)
           PY
-              pycode=$?
-              if [ "$pycode" -ne 0 ]; then
-                echo "PORTAL_HARNESS_FATAL replay=$iname:$tname python_exit=$pycode"
-                exit "$pycode"
-              fi
-              lake build Submission > "/tmp/replay-${iname}-${tname}.log" 2>&1
-              code=$?
-              sig=$(python3 - "/tmp/replay-${iname}-${tname}.log" <<'PY'
-          import re,sys,hashlib
-          s=open(sys.argv[1],errors='ignore').read()
-          chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,1200}',s)
-          x=(chunks[-1] if chunks else s[-2200:])
-          x=re.sub(r'^hDelta\s*:.*$', '', x, flags=re.M)
-          x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
-          x=re.sub(r'\d+\.\d+s','<TIME>',x)
-          x='\n'.join(line for line in x.splitlines() if line.strip())
-          print(hashlib.sha256(x.encode()).hexdigest()[:16])
-          PY
-          )
-              printf '%s\t%s\t%s\t%s\n' "$iname" "$tname" "$code" "$sig" >> /tmp/replay.tsv
-              if [ "$code" -eq 0 ]; then
-                solved=1
-                winner="${iname}:${tname}"
-                cp Submission.lean /tmp/PORTAL-SOLVED.lean
-                break 2
-              fi
-            done < /tmp/tails.tsv
-          done < /tmp/verified.tsv
+            if [ $? -ne 0 ]; then exit 90; fi
+            lake build Submission > "/tmp/replay-${name}.log" 2>&1
+            code=$?
+            echo "LOCAL_VALUATION_REPLAY name=$name exit=$code"
+            printf '%s\t%s\n' "$name" "$code" >> /tmp/replay.tsv
+            if [ "$code" -eq 0 ]; then solved=1; winner="$name"; cp Submission.lean /tmp/LOCAL-VALUATION-SOLVED.lean; break; fi
+          done <<'EOF'
+          simp	try simp_all
+          aesop	try aesop
+          grind	try grind
+          norm	try norm_num at *
+          linarith	try linarith
+          nlinarith	try nlinarith
+          positivity	try positivity
+          ringnf	try ring_nf
+          fieldsimp	try field_simp
+          elim	try solve_by_elim
+          contra	try contradiction
+          tauto	try tauto
+          EOF
           echo "solved=$solved" >> "$GITHUB_OUTPUT"
           echo "winner=$winner" >> "$GITHUB_OUTPUT"
-          python3 - <<'PY'
-          from collections import defaultdict
-          rows=[x.rstrip().split('\t') for x in open('/tmp/replay.tsv') if x.strip()]
-          by=defaultdict(list)
-          for r in rows:
-              if len(r)==4: by[r[0]].append(r)
-          sham=set(r[3] for r in by.get('sham',[]))
-          if not sham:
-              raise SystemExit('PORTAL_HARNESS_FATAL no_sham_replay')
-          changed=[]
-          print('PORTAL_REPLAY_PROGRAMS',len(rows))
-          print('PORTAL_SHAM_CLASSES',len(sham))
-          for name,rs in sorted(by.items()):
-              sig=set(r[3] for r in rs)
-              delta=len(sig-sham)
-              print('PORTAL_FRONTIER',name,'PROGRAMS',len(rs),'CLASSES',len(sig),'NOVEL_VS_SHAM',delta)
-              if name!='sham' and sig != sham: changed.append(name)
-          print('PORTAL_CHANGING_INTERFACES',','.join(changed) if changed else 'NONE')
-          open('/tmp/changing.txt','w').write('\n'.join(changed))
-          PY
-          pycode=$?
-          if [ "$pycode" -ne 0 ]; then exit "$pycode"; fi
-          changing=$(grep -c . /tmp/changing.txt 2>/dev/null || true)
-          echo "changing=$changing" >> "$GITHUB_OUTPUT"
-      - name: Equation portal gate
+      - name: Local valuation gate
+        if: always()
         run: |
-          if [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
-            echo 'EQUATION_PORTAL_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
-          elif [ "${{ steps.replay.outputs.changing }}" -gt 0 ]; then
-            echo 'EQUATION_PORTAL_GATE {"classification":"REPRESENTATION_SEPARATION","changing":${{ steps.replay.outputs.changing }}}'
+          if [ "${{ steps.verify.outputs.verified }}" != "1" ]; then
+            echo 'LOCAL_VALUATION_GATE {"classification":"INTERFACE_PROOF_FAILURE"}'
+          elif [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
+            echo 'LOCAL_VALUATION_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
           else
-            echo 'EQUATION_PORTAL_GATE {"classification":"PADIC_VALUATION_PORTAL_EXHAUSTED","changing":0}'
+            echo 'LOCAL_VALUATION_GATE {"classification":"LOCAL_VALUATION_VERIFIED_NO_EXACT"}'
           fi
-      - name: Upload portal evidence
+      - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: equation-padic-valuation-portal
+          name: local-valuation-portal
           path: |
-            /tmp/interfaces.tsv
-            /tmp/verified.tsv
-            /tmp/interface-*.log
-            /tmp/tails.tsv
+            /tmp/local-valuation-interface.log
             /tmp/replay.tsv
             /tmp/replay-*.log
-            /tmp/changing.txt
-            /tmp/PORTAL-SOLVED.lean
+            /tmp/LOCAL-VALUATION-SOLVED.lean
           if-no-files-found: ignore
