@@ -12,6 +12,7 @@ structure BoundaryGroupAction (Γ Ω : Type) where
   act : Γ → Ω → Ω
   one_mul : ∀ g, mul one g = g
   inv_mul : ∀ g, mul (inv g) g = one
+  mul_inv : ∀ g, mul g (inv g) = one
   assoc : ∀ g h k, mul (mul g h) k = mul g (mul h k)
   one_act : ∀ x, act one x = x
   mul_act : ∀ g h x, act (mul g h) x = act g (act h x)
@@ -56,8 +57,8 @@ theorem relative_stabilizes_implies_sameAt
   have h1 : A.act (A.mul (A.inv h) g) a = a := hStab
   have h2 := congrArg (fun z => A.act h z) h1
   rw [← A.mul_act] at h2
-  rw [A.assoc] at h2
-  rw [A.inv_mul] at h2
+  rw [← A.assoc] at h2
+  rw [A.mul_inv] at h2
   rw [A.one_mul] at h2
   exact h2
 
@@ -84,9 +85,10 @@ theorem task_eq_of_relative_stabilizes
     {Γ Ω : Type} (A : BoundaryGroupAction Γ Ω) (a : Ω) (g h : Γ)
     (hStab : A.Stabilizes a (A.Relative g h)) :
     A.TaskFromRepresentative a g = A.TaskFromRepresentative a h := by
-  apply Stage26TaskBoundary.ext
-  · rfl
-  · exact A.relative_stabilizes_implies_sameAt a g h hStab
+  have hSame : A.act g a = A.act h a :=
+    A.relative_stabilizes_implies_sameAt a g h hStab
+  unfold TaskFromRepresentative
+  rw [hSame]
 
 /-- A canonical endogenous representative would have to be fixed by every
 symmetry of the seed. -/
