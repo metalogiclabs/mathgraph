@@ -91,7 +91,7 @@ def run_e(problem: dict, cpu_seconds: int) -> dict:
     started = time.monotonic()
     try:
         cp = subprocess.run(
-            ["eprover", "--auto", f"--cpu-limit={cpu_seconds}", path],
+            ["eprover", f"--cpu-limit={cpu_seconds}", "--proof-object", path],
             text=True,
             capture_output=True,
             timeout=cpu_seconds + 4,
@@ -186,7 +186,12 @@ def cvc5_model(problem: dict, timeout_ms: int) -> dict:
     res=slv.checkSat()
     elapsed=int((time.monotonic()-started)*1000)
     if not res.isSat():
-        return {"status":"unknown" if res.isUnknown() else "unsat","elapsed_ms":elapsed,"verified":False}
+        return {
+            "status":"unknown" if res.isUnknown() else "unsat",
+            "elapsed_ms":elapsed,
+            "verified":False,
+            "theorem_candidate": bool(res.isUnsat()),
+        }
 
     elems=list(slv.getModelDomainElements(U))
     index={str(e):i for i,e in enumerate(elems)}
@@ -215,6 +220,8 @@ def route(problem: dict, e_seconds: int, model_timeout_ms: int) -> dict:
     models.append({"backend":"cvc5",**cvc})
     if cvc["status"]=="sat" and cvc["verified"]:
         return {"terminal":"FALSE","route":"FINITE_MODEL_CVC5","e":e,"models":models,"n":cvc["n"]}
+    if cvc["status"]=="unsat" and e["proved"]:
+        return {"terminal":"TRUE","route":"TRUE_CONSENSUS_CVC5_E","e":e,"models":models}
     for n in range(2,7):
         res=exact_model(problem,n,model_timeout_ms)
         models.append({"backend":"z3","n":n,**res})
@@ -242,8 +249,8 @@ def main():
         print(json.dumps({k:v for k,v in result.items() if k not in {"models"}},sort_keys=True),flush=True)
 
     checks={
-        "true_42607_proved": next(r for r in rows if r["id"]=="42607_to_41601")["route"]=="E_PROOF",
-        "true_1334_proved": next(r for r in rows if r["id"]=="1334_to_3294")["route"]=="E_PROOF",
+        "true_42607_proved": next(r for r in rows if r["id"]=="42607_to_41601")["route"]=="TRUE_CONSENSUS_CVC5_E",
+        "true_1334_proved": next(r for r in rows if r["id"]=="1334_to_3294")["route"]=="TRUE_CONSENSUS_CVC5_E",
         "false_2314_model": next(r for r in rows if r["id"]=="2314_to_47730")["route"].startswith("FINITE_MODEL"),
         "false_2318_model": next(r for r in rows if r["id"]=="2318_to_31013")["route"].startswith("FINITE_MODEL"),
         "symbolic_1486_not_falsely_proved": next(r for r in rows if r["id"]=="1486_to_17185")["route"]!="E_PROOF",
