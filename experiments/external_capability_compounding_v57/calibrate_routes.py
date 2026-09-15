@@ -27,6 +27,8 @@ import time
 from pathlib import Path
 
 from z3 import Array, Int, IntSort, Select, Solver, sat, unknown
+import cvc5
+from cvc5 import Kind
 
 CASES = {
     "42607_to_41601": {"expected": "TRUE_PROOF"},
@@ -89,7 +91,7 @@ def run_e(problem: dict, cpu_seconds: int) -> dict:
     started = time.monotonic()
     try:
         cp = subprocess.run(
-            ["eprover", "--auto", f"--cpu-limit={cpu_seconds}", "--tstp-format", path],
+            ["eprover", "--auto", f"--cpu-limit={cpu_seconds}", path],
             text=True,
             capture_output=True,
             timeout=cpu_seconds + 4,
@@ -105,6 +107,7 @@ def run_e(problem: dict, cpu_seconds: int) -> dict:
                 line for line in stdout.splitlines()
                 if "SZS status" in line or "Proof found" in line
             )[:2000],
+            "stderr_excerpt": cp.stderr[:3000],
         }
     except subprocess.TimeoutExpired:
         return {"proved": False, "returncode": None, "elapsed_ms": int((time.monotonic()-started)*1000), "status_excerpt": "timeout"}
@@ -150,16 +153,73 @@ def exact_model(problem: dict, n: int, timeout_ms: int) -> dict:
     return {"status":"unknown" if st==unknown else "unsat","n":n,"elapsed_ms":elapsed,"verified":False}
 
 
+def cvc5_eval(term, op, env, tm):
+    if term.name is not None:
+        return env[term.name]
+    return tm.mkTerm(Kind.APPLY_UF, op, cvc5_eval(term.left,op,env,tm), cvc5_eval(term.right,op,env,tm))
+
+
+def cvc5_model(problem: dict, timeout_ms: int) -> dict:
+    tm=cvc5.TermManager()
+    slv=cvc5.Solver(tm)
+    slv.setLogic("ALL")
+    slv.setOption("produce-models","true")
+    slv.setOption("finite-model-find","true")
+    slv.setOption("tlimit-per",str(timeout_ms))
+    U=tm.mkUninterpretedSort("U")
+    fsort=tm.mkFunctionSort([U,U],U)
+    op=tm.mkConst(fsort,"m")
+    src=_FMW.parse_equation(norm(problem["equation1"]))
+    tgt=_FMW.parse_equation(norm(problem["equation2"]))
+
+    def quantified(eq, existential=False, negate=False):
+        env={name:tm.mkVar(U,name.upper()) for name in eq.variables()}
+        body=tm.mkTerm(Kind.EQUAL,cvc5_eval(eq.lhs,op,env,tm),cvc5_eval(eq.rhs,op,env,tm))
+        if negate:
+            body=tm.mkTerm(Kind.NOT,body)
+        vl=tm.mkTerm(Kind.VARIABLE_LIST,*[env[n] for n in eq.variables()])
+        return tm.mkTerm(Kind.EXISTS if existential else Kind.FORALL,vl,body)
+
+    slv.assertFormula(quantified(src,False,False))
+    slv.assertFormula(quantified(tgt,True,True))
+    started=time.monotonic()
+    res=slv.checkSat()
+    elapsed=int((time.monotonic()-started)*1000)
+    if not res.isSat():
+        return {"status":"unknown" if res.isUnknown() else "unsat","elapsed_ms":elapsed,"verified":False}
+
+    elems=list(slv.getModelDomainElements(U))
+    index={str(e):i for i,e in enumerate(elems)}
+    n=len(elems)
+    table=[]
+    for a in elems:
+        row=[]
+        for b in elems:
+            val=slv.getValue(tm.mkTerm(Kind.APPLY_UF,op,a,b))
+            key=str(val)
+            if key not in index:
+                return {"status":"model_parse_failure","elapsed_ms":elapsed,"verified":False,"domain_size":n,"value":key}
+            row.append(index[key])
+        table.append(row)
+    ok=independent_check(problem,table)
+    if not ok:
+        raise RuntimeError(f"MathGraph rejected cvc5 model for {problem['id']} n={n}")
+    return {"status":"sat","elapsed_ms":elapsed,"verified":True,"n":n,"table":table}
+
 def route(problem: dict, e_seconds: int, model_timeout_ms: int) -> dict:
     e=run_e(problem,e_seconds)
     if e["proved"]:
         return {"terminal":"TRUE_CANDIDATE","route":"E_PROOF","e":e,"models":[]}
     models=[]
+    cvc=cvc5_model(problem,model_timeout_ms)
+    models.append({"backend":"cvc5",**cvc})
+    if cvc["status"]=="sat" and cvc["verified"]:
+        return {"terminal":"FALSE","route":"FINITE_MODEL_CVC5","e":e,"models":models,"n":cvc["n"]}
     for n in range(2,7):
         res=exact_model(problem,n,model_timeout_ms)
-        models.append(res)
+        models.append({"backend":"z3","n":n,**res})
         if res["status"]=="sat" and res["verified"]:
-            return {"terminal":"FALSE","route":"FINITE_MODEL","e":e,"models":models,"n":n}
+            return {"terminal":"FALSE","route":"FINITE_MODEL_Z3","e":e,"models":models,"n":n}
     return {"terminal":"UNKNOWN","route":"UNKNOWN","e":e,"models":models}
 
 
@@ -184,8 +244,8 @@ def main():
     checks={
         "true_42607_proved": next(r for r in rows if r["id"]=="42607_to_41601")["route"]=="E_PROOF",
         "true_1334_proved": next(r for r in rows if r["id"]=="1334_to_3294")["route"]=="E_PROOF",
-        "false_2314_model": next(r for r in rows if r["id"]=="2314_to_47730")["route"]=="FINITE_MODEL",
-        "false_2318_model": next(r for r in rows if r["id"]=="2318_to_31013")["route"]=="FINITE_MODEL",
+        "false_2314_model": next(r for r in rows if r["id"]=="2314_to_47730")["route"].startswith("FINITE_MODEL"),
+        "false_2318_model": next(r for r in rows if r["id"]=="2318_to_31013")["route"].startswith("FINITE_MODEL"),
         "symbolic_1486_not_falsely_proved": next(r for r in rows if r["id"]=="1486_to_17185")["route"]!="E_PROOF",
     }
     summary={
