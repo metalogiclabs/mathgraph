@@ -1,0 +1,51 @@
+{
+  "operator": {
+    "action_constraints": {
+      "a_dir": 0,
+      "a_is_source": true,
+      "b_dir": 0,
+      "b_is_source": true,
+      "overlap_depth": 1,
+      "proper_overlap": true,
+      "same_parent": true
+    },
+    "continuation_rule": "cold_default_after_scoped_seed",
+    "invocation_uses_target_structure_only": true,
+    "position_invariant": true,
+    "round_quotas": [
+      16,
+      15
+    ],
+    "schema": "mathgraph.causal-action-scope.v69.calibration",
+    "scope_feature_names": [
+      "target_size_gap",
+      "target_structural_distance",
+      "target_match_count",
+      "target_root_match_count"
+    ],
+    "scope_feature_scales": [
+      1,
+      4,
+      4,
+      1
+    ],
+    "scope_rule": "linear_centroid_discriminant_on_target_seed_relation",
+    "scope_threshold": 0.14124999999999993,
+    "scope_weights": [
+      0,
+      0,
+      -0.050000000000000044,
+      0.19999999999999996
+    ],
+    "source_id_invariant": true,
+    "source_selection_target_independent": true,
+    "total_derived_budget": 31
+  },
+  "sha256": "4ad6949706d9306b5c277cf3b72681dad597c636e757c1579f82368764dab9dc",
+  "provenance": {
+    "source_run": 35006965912,
+    "source_commit": "0dd7760640b3f2f8df21217156256d7462cd8544",
+    "source_verdict": "CALIBRATION_NO_CAUSAL_ACTION_SCOPE_SIGNAL_V69",
+    "acquisition_note": "Operator itself was frozen before V69 calibration evaluation; this artifact persists it without reacquisition."
+  }
+}
