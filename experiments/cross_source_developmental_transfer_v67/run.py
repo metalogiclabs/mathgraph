@@ -8,8 +8,7 @@ retention budget given the current target obstruction.
 
 Training reads only previously opened Wrong Book windows consumed through V66:
 Book 3000 rows 2628:2980 and Book 3500 rows 2628:3500. It trains specifically
-from V66's independently verified developmental source episodes (4095, 3501,
-3892) and uses exact replayed proof lineages as supervision:
+from V66's independently verified causal recurrence episodes (3501, 3892) and uses exact replayed proof lineages as supervision:
 every derived lemma used by a successful proof, plus its derivational ancestry,
 is a positive developmental decision; unused derived lemmas are negatives.
 
@@ -66,8 +65,8 @@ V58 = V64.V58
 TRAIN_START = 2628
 TRAIN_END_3000 = 2980
 TRAIN_END_3500 = 3500
-TRAIN_SOURCE_IDS = ("4095", "3501", "3892")
-TRAIN_TARGETS_PER_SOURCE = 12
+TRAIN_SOURCE_IDS = ("3501", "3892")
+TRAIN_TARGETS_PER_SOURCE = 32
 
 EVAL_SOURCE_LIMIT = 100
 EVAL_TARGETS_PER_SOURCE = 2
