@@ -1,0 +1,56 @@
+name: V67 Minimal Sufficient Proof Basis
+
+on:
+  push:
+    branches: [external-capability-compounding-v67]
+    paths:
+      - 'experiments/external_capability_compounding_v67/**'
+      - '.github/workflows/external-capability-compounding-v67.yml'
+  workflow_dispatch:
+
+jobs:
+  distill-proof-basis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Recover exact V66 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: v66-fresh-recurrence-capability-compounding
+          path: v66-evidence
+          github-token: ${{ github.token }}
+          repository: metalogiclabs/mathgraph
+          run-id: 34970731077
+
+      - name: Verify V66 evidence provenance
+        run: |
+          echo "3525580b4a530481066feb57f0fcec01af195795f8d7c68f9e070a9b72180ac1  v66-evidence/phase_a_archive.json" | sha256sum -c -
+          echo "cf679e7272919e96924a6128d279e1f71cc59b6b239ddd8bac84cbdb1d2646af  v66-evidence/result.json" | sha256sum -c -
+
+      - name: Freeze already-open external corpus bytes
+        run: |
+          set -euo pipefail
+          mkdir -p external-v67
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3000/wrong-book-3000.jsonl -o external-v67/book3000.jsonl
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl -o external-v67/book3500.jsonl
+          echo "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7  external-v67/book3000.jsonl" | sha256sum -c -
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v67/book3500.jsonl" | sha256sum -c -
+          echo "V67_USES_OPENED_V66_EVIDENCE_ONLY"
+
+      - name: Distill to necessity-certified proof basis
+        run: |
+          PYTHONPATH=. python3 experiments/external_capability_compounding_v67/run.py \
+            --v66-archive v66-evidence/phase_a_archive.json \
+            --v66-result v66-evidence/result.json \
+            --book3000 external-v67/book3000.jsonl \
+            --book3500 external-v67/book3500.jsonl \
+            --out external-v67/results
+
+      - name: Preserve V67 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v67-minimal-sufficient-proof-basis
+          path: external-v67/results/
