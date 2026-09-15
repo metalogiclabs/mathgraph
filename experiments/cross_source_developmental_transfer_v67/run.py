@@ -6,8 +6,10 @@ recurs. V67 freezes and transfers a different object: a source-ID-agnostic
 policy for deciding which newly generated critical-pair lemmas deserve scarce
 retention budget given the current target obstruction.
 
-Training reads only previously opened Wrong Book rows below 2980. It recompiles
-verified source bases and uses exact replayed proof lineages as supervision:
+Training reads only previously opened Wrong Book windows consumed through V66:
+Book 3000 rows 2628:2980 and Book 3500 rows 2628:3500. It trains specifically
+from V66's independently verified developmental source episodes (4095, 3501,
+3892) and uses exact replayed proof lineages as supervision:
 every derived lemma used by a successful proof, plus its derivational ancestry,
 is a positive developmental decision; unused derived lemmas are negatives.
 
@@ -62,9 +64,10 @@ V62 = V64.V62
 V58 = V64.V58
 
 TRAIN_START = 2628
-TRAIN_END = 2980
-TRAIN_SOURCE_LIMIT = 32
-TRAIN_TARGETS_PER_SOURCE = 4
+TRAIN_END_3000 = 2980
+TRAIN_END_3500 = 3500
+TRAIN_SOURCE_IDS = ("4095", "3501", "3892")
+TRAIN_TARGETS_PER_SOURCE = 12
 
 EVAL_SOURCE_LIMIT = 100
 EVAL_TARGETS_PER_SOURCE = 2
@@ -252,9 +255,18 @@ def training_groups(rows):
     groups = defaultdict(list)
     for row in rows:
         groups[sid(row)].append(row)
-    recurring = [(source, group) for source, group in groups.items() if len(group) >= 2]
-    recurring.sort(key=lambda item: (-len(item[1]), int(item[0]) if item[0].isdigit() else item[0]))
-    return recurring[:TRAIN_SOURCE_LIMIT]
+
+    chosen = []
+    missing = []
+    for source in TRAIN_SOURCE_IDS:
+        group = groups.get(source, [])
+        if len(group) < 2:
+            missing.append((source, len(group)))
+        else:
+            chosen.append((source, group))
+    if missing:
+        raise RuntimeError(f"missing prior V66 developmental source episodes: {missing}")
+    return chosen
 
 
 def learn_developer(training_rows):
@@ -437,7 +449,10 @@ def learn_developer(training_rows):
     developer_hash = sha_doc(developer)
 
     training_summary = {
-        "window": [TRAIN_START, TRAIN_END],
+        "windows": {
+            "book3000": [TRAIN_START, TRAIN_END_3000],
+            "book3500": [TRAIN_START, TRAIN_END_3500],
+        },
         "source_ids_seen": len(all_training_ids),
         "recurring_sources_considered": len(groups),
         "sources_compiled": full_compiles,
@@ -781,8 +796,8 @@ def main():
         Path(args.book3500), V58.EXPECTED_3500_SHA256
     )
 
-    train3000 = parse_slice(book3000_lines, TRAIN_START, TRAIN_END)
-    train3500 = parse_slice(book3500_lines, TRAIN_START, TRAIN_END)
+    train3000 = parse_slice(book3000_lines, TRAIN_START, TRAIN_END_3000)
+    train3500 = parse_slice(book3500_lines, TRAIN_START, TRAIN_END_3500)
     training_rows = train3000 + train3500
 
     developer, developer_hash, training, training_ids = learn_developer(training_rows)
@@ -792,7 +807,10 @@ def main():
     freeze_marker = {
         "developer_sha256": developer_hash,
         "training_source_ids_seen": len(training_ids),
-        "training_window": [TRAIN_START, TRAIN_END],
+        "training_windows": {
+            "book3000": [TRAIN_START, TRAIN_END_3000],
+            "book3500": [TRAIN_START, TRAIN_END_3500],
+        },
     }
     print(json.dumps({"phase": "FREEZE", **freeze_marker}, sort_keys=True), flush=True)
 
@@ -881,7 +899,10 @@ def main():
             "commit": V58.EXTERNAL_COMMIT,
             "book3000_sha256": sha3000,
             "book3500_sha256": sha3500,
-            "window": [TRAIN_START, TRAIN_END],
+            "windows": {
+                "book3000": [TRAIN_START, TRAIN_END_3000],
+                "book3500": [TRAIN_START, TRAIN_END_3500],
+            },
         },
         "evaluation_external": {
             "repository": "heathsanchez/equational-theories-lean-stage2",
