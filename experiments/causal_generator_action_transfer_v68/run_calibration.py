@@ -61,6 +61,7 @@ def learn_operator(training_rows):
         basis = V64.compile_source(group[0])
         if basis["verified_count"] != len(basis["eqs"]):
             raise RuntimeError("training basis replay failure")
+        found_source_root = False
         for problem in group[:V67.TRAIN_TARGETS_PER_SOURCE]:
             route = V65.route(problem)
             if not route["proof_candidate"]:
@@ -80,7 +81,10 @@ def learn_operator(training_rows):
                         "descriptor": descriptor(basis["eqs"][eid]),
                         "removed_count": len(removed),
                     }
+                    found_source_root = True
                     break
+            if found_source_root:
+                break
     by_source = defaultdict(list)
     for (source, eid), rec in causal.items():
         by_source[source].append((eid, rec))
