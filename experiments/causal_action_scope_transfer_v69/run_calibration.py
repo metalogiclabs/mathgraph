@@ -454,7 +454,15 @@ def evaluate(rows, training_source_ids, op):
         cold_basis = compile_budgeted(problem, "cold", op)
         meta_basis = compile_budgeted(problem, "meta", op)
         cold = V64.proof_for(problem, cold_basis["eqs"])
-        meta = V64.proof_for(problem, meta_basis["eqs"])
+        same_basis = (
+            [(eid, eq.key) for eid, eq in sorted(cold_basis["eqs"].items())]
+            == [(eid, eq.key) for eid, eq in sorted(meta_basis["eqs"].items())]
+        )
+        if same_basis:
+            meta = cold
+            stats["identical_basis_proof_reuses"] += 1
+        else:
+            meta = V64.proof_for(problem, meta_basis["eqs"])
 
         stats["cold_proved"] += int(cold["proved"])
         stats["meta_proved"] += int(meta["proved"])
