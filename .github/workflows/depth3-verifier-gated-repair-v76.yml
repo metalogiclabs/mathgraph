@@ -1,0 +1,37 @@
+name: V76 Minimal Depth3 Verifier Expansion Repair
+
+on:
+  push:
+    branches: [depth3-verifier-gated-repair-v76]
+    paths:
+      - 'experiments/depth3_verifier_gated_repair_v76/**'
+      - '.github/workflows/depth3-verifier-gated-repair-v76.yml'
+  workflow_dispatch:
+
+jobs:
+  repair-depth3-verifier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: python3 -m py_compile experiments/depth3_verifier_gated_repair_v76/run.py
+      - name: Install inherited frozen backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch opened calibration universe
+        run: |
+          set -euo pipefail
+          mkdir -p external-v76
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/eq_size5.txt -o external-v76/eq_size5.txt
+          test "$(git hash-object external-v76/eq_size5.txt)" = "0deca9c8860fb60f2ae161ab7e3f458ec3b178ca"
+      - name: Run V76 minimal expansion repair
+        run: |
+          PYTHONPATH=. python3 experiments/depth3_verifier_gated_repair_v76/run.py \
+            --opened-laws external-v76/eq_size5.txt \
+            --out external-v76/results
+      - name: Preserve V76 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v76-depth3-verifier-expansion-repair
+          path: external-v76/results/
