@@ -192,7 +192,11 @@ def learn_many(train_rows):
   "training_rule":"pairwise_rank_exact_causal_action_roots_across_source_disjoint_curriculum"}
  summary={"source_groups_scanned":probed_sources,"independent_causal_sources":causal_sources,
   "causal_target_episodes":len(episodes),"pairwise_updates":updates,
-  "episode_ranking_accuracy":ranked_ok/len(episodes),"records":records}
+  "episode_ranking_accuracy":ranked_ok/len(episodes),"records":records,
+  "feature_episodes":[
+    {"positives":[list(v) for v in positives],"negatives":[list(v) for v in negatives]}
+    for positives,negatives in episodes
+  ]}
  return op,stable_hash(op),summary
 
 def main():
