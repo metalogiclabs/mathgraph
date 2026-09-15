@@ -1,0 +1,41 @@
+name: V71 Capability Graph Frontier Transfer
+
+on:
+  push:
+    branches: [capability-graph-frontier-transfer-v71]
+    paths:
+      - 'experiments/capability_graph_frontier_transfer_v71/**'
+      - '.github/workflows/capability-graph-frontier-transfer-v71.yml'
+  workflow_dispatch:
+
+jobs:
+  calibrate-capability-graph-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static check
+        run: python3 -m py_compile experiments/capability_graph_frontier_transfer_v71/run_calibration.py
+
+      - name: Fetch pinned opened unlabeled law universe
+        run: |
+          set -euo pipefail
+          mkdir -p external-v71
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/eq_size5.txt -o external-v71/eq_size5.txt
+          test "$(git hash-object external-v71/eq_size5.txt)" = "0deca9c8860fb60f2ae161ab7e3f458ec3b178ca"
+          echo "V71_CALIBRATION_ONLY=eq_size5_already_opened_not_fresh"
+          echo "V71_FRESH_STREAM=UNSPENT"
+
+      - name: Run V71 graph-frontier calibration
+        run: |
+          PYTHONPATH=. python3 experiments/capability_graph_frontier_transfer_v71/run_calibration.py \
+            --laws external-v71/eq_size5.txt \
+            --out external-v71/results
+
+      - name: Preserve V71 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v71-capability-graph-frontier-transfer
+          path: external-v71/results/
