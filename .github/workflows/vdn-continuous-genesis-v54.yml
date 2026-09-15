@@ -1,0 +1,59 @@
+name: VDN Continuous Capability Genesis V54
+
+on:
+  push:
+    branches: [vdn-continuous-genesis-v54]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v54_commit_sealed_continuous_genesis.py'
+      - '.github/workflows/vdn-continuous-genesis-v54.yml'
+  workflow_dispatch:
+
+jobs:
+  continuous-genesis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      VDN_V54_SEAL: \${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax check frozen V54 protocol
+        run: python3 -m py_compile verified-developmental-navigation/case_studies/finite_inevitability/run_v54_commit_sealed_continuous_genesis.py
+
+      - name: Re-run parent V53 causal calibration
+        run: |
+          python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v53_developmental_ratchet_crown_jewel.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("verified-developmental-navigation/case_studies/finite_inevitability/results_v53_developmental_ratchet_crown_jewel/result.json")
+          row = json.loads(p.read_text())
+          assert row["all_crown_calibration_gates_pass"], row["verdict"]
+          print("V53_PARENT=PASS")
+          PY
+
+      - name: Run commit-sealed continuous capability-genesis census
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v54_commit_sealed_continuous_genesis.py
+
+      - name: Check frozen V54 scientific verdict
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("verified-developmental-navigation/case_studies/finite_inevitability/results_v54_commit_sealed_continuous_genesis/result.json")
+          row = json.loads(p.read_text())
+          assert row["all_gates_pass"], row["verdict"]
+          assert row["verifier_failures"] == 0
+          assert row["restart_mismatches"] == 0
+          assert row["route_neutrality_mismatches"] == 0
+          assert row["ancestor_ablation_failures"] == 0
+          print("V54_VERDICT=" + row["verdict"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-continuous-capability-genesis-v54
+          path: |
+            verified-developmental-navigation/case_studies/finite_inevitability/results_v53_developmental_ratchet_crown_jewel/result.json
+            verified-developmental-navigation/case_studies/finite_inevitability/results_v54_commit_sealed_continuous_genesis/result.json
