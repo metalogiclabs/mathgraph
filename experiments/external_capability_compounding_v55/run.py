@@ -64,6 +64,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 import importlib.util
+import sys
 
 # Load the stdlib-only verifier module directly so this frozen experiment does
 # not execute MathGraph's package-wide __init__ or require unrelated optional
@@ -73,6 +74,7 @@ _FMW_SPEC = importlib.util.spec_from_file_location("v55_finite_magma_world", _FM
 if _FMW_SPEC is None or _FMW_SPEC.loader is None:
     raise RuntimeError(f"cannot load finite magma verifier from {_FMW_PATH}")
 _FMW = importlib.util.module_from_spec(_FMW_SPEC)
+sys.modules[_FMW_SPEC.name] = _FMW
 _FMW_SPEC.loader.exec_module(_FMW)
 
 add_mod_n = _FMW.add_mod_n
