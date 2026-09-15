@@ -107,7 +107,8 @@ def learn_operator(training_rows):
     operator = {
         "schema": "mathgraph.causal-generator-action.v68.calibration",
         "action_constraints": common,
-        "recursive_descendant_priority": min(removed_counts) > 1,
+        "recursive_descendant_priority": False,
+        "continuation_rule": "cold_default_after_learned_seed",
         "round_quotas": list(QUOTAS),
         "total_derived_budget": TOTAL_BUDGET,
         "training_rule": "intersection_of_independent_exact_causal_ablation_roots",
@@ -204,10 +205,12 @@ def compile_budgeted(problem, mode, op):
                 priority = (0, 0)
             else:
                 is_seed = round_no == 1 and action_matches(proof, op)
-                is_desc = round_no > 1 and (
-                    int(proof["a"]) in lineage or int(proof["b"]) in lineage
-                )
-                priority = (int(is_seed), int(is_desc))
+                # Minimal repair: the learned object selects only the causal
+                # generator seed. All remaining budget returns to the cold
+                # complexity ordering instead of recursively privileging its
+                # whole descendant cone.
+                is_desc = False
+                priority = (int(is_seed), 0)
             ranked.append((priority, complexity, ck, cl, cr, proof))
         if mode == "cold":
             ranked.sort(key=lambda x: (x[1], x[2]))
