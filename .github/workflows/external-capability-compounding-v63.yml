@@ -1,0 +1,37 @@
+name: V63 Verified Lemma Narrowing
+
+on:
+  push:
+    branches: [external-capability-compounding-v63]
+    paths:
+      - 'experiments/external_capability_compounding_v63/**'
+      - '.github/workflows/external-capability-compounding-v63.yml'
+  workflow_dispatch:
+
+jobs:
+  verified-narrowing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze external corpus bytes
+        run: |
+          set -euo pipefail
+          mkdir -p external-v63
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3000/wrong-book-3000.jsonl -o external-v63/book3000.jsonl
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl -o external-v63/book3500.jsonl
+          echo "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7  external-v63/book3000.jsonl" | sha256sum -c -
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v63/book3500.jsonl" | sha256sum -c -
+          echo "FRESH_ROWS_2820_PLUS_UNTOUCHED"
+      - name: Run verified lemma genesis plus explicit narrowing
+        run: |
+          PYTHONPATH=. python3 experiments/external_capability_compounding_v63/run.py \
+            --book3000 external-v63/book3000.jsonl \
+            --book3500 external-v63/book3500.jsonl \
+            --out external-v63/results
+      - name: Preserve V63 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v63-verified-lemma-narrowing
+          path: external-v63/results/
