@@ -1,0 +1,42 @@
+name: V74A Verified Causal Curriculum Archive
+
+on:
+  push:
+    branches: [verified-causal-curriculum-archive-v74a]
+    paths:
+      - 'experiments/verified_causal_curriculum_archive_v74a/**'
+      - 'experiments/multi_source_causal_curriculum_v74/run_calibration.py'
+      - '.github/workflows/verified-causal-curriculum-archive-v74a.yml'
+  workflow_dispatch:
+
+jobs:
+  archive-causal-curriculum:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: |
+          python3 -m py_compile experiments/multi_source_causal_curriculum_v74/run_calibration.py
+          python3 -m py_compile experiments/verified_causal_curriculum_archive_v74a/run_archive.py
+      - name: Install frozen route backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch pinned opened curriculum
+        run: |
+          set -euo pipefail
+          mkdir -p external-v74a
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/normal.jsonl -o external-v74a/stage2-normal.jsonl
+          echo "2ca8dda3011aaf2db85f201ceb5aaf76d795395d504dd7d29d053fa0c767647a  external-v74a/stage2-normal.jsonl" | sha256sum -c -
+          echo "V74A_DATA_STATUS=opened_training_archive_only"
+          echo "V74A_FRESH_STREAM=UNSPENT"
+      - name: Harvest and persist verified causal curriculum
+        run: |
+          PYTHONPATH=. python3 experiments/verified_causal_curriculum_archive_v74a/run_archive.py \
+            --stage2 external-v74a/stage2-normal.jsonl \
+            --out external-v74a/results
+      - name: Preserve curriculum archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v74a-verified-causal-curriculum
+          path: external-v74a/results/
