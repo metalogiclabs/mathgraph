@@ -63,20 +63,30 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from mathgraph.finite_magma_world import (
-    add_mod_n,
-    check_finite_countermodel,
-    commutative_nonassociative_3,
-    constant_table,
-    deterministic_perturbation_3,
-    left_projection,
-    max_table,
-    min_table,
-    normalize_table,
-    right_projection,
-    sub_mod_n,
-    xor_mod_2,
-)
+import importlib.util
+
+# Load the stdlib-only verifier module directly so this frozen experiment does
+# not execute MathGraph's package-wide __init__ or require unrelated optional
+# dependencies. This changes only runner plumbing, not the scientific protocol.
+_FMW_PATH = Path(__file__).resolve().parents[2] / "mathgraph" / "finite_magma_world.py"
+_FMW_SPEC = importlib.util.spec_from_file_location("v55_finite_magma_world", _FMW_PATH)
+if _FMW_SPEC is None or _FMW_SPEC.loader is None:
+    raise RuntimeError(f"cannot load finite magma verifier from {_FMW_PATH}")
+_FMW = importlib.util.module_from_spec(_FMW_SPEC)
+_FMW_SPEC.loader.exec_module(_FMW)
+
+add_mod_n = _FMW.add_mod_n
+check_finite_countermodel = _FMW.check_finite_countermodel
+commutative_nonassociative_3 = _FMW.commutative_nonassociative_3
+constant_table = _FMW.constant_table
+deterministic_perturbation_3 = _FMW.deterministic_perturbation_3
+left_projection = _FMW.left_projection
+max_table = _FMW.max_table
+min_table = _FMW.min_table
+normalize_table = _FMW.normalize_table
+right_projection = _FMW.right_projection
+sub_mod_n = _FMW.sub_mod_n
+xor_mod_2 = _FMW.xor_mod_2
 
 EXPECTED_3000_SHA256 = "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7"
 EXPECTED_3500_SHA256 = "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8"
