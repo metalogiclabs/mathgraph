@@ -12,3 +12,5 @@ It calibrates a generic route stack:
 
 No result from this file is fresh evidence. Once the route stack is calibrated,
 its budgets and code are frozen before any row >= 2628 is opened.
+
+Calibration backend: E for proof search; cvc5 first for finite-model finding, with Z3 retained as a fallback and MathGraph as the independent finite checker.
