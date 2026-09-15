@@ -1,0 +1,42 @@
+name: V74 Global Frontier Optimality Audit
+
+on:
+  push:
+    branches: [global-frontier-optimality-audit-v74]
+    paths:
+      - 'experiments/global_frontier_optimality_audit_v74/**'
+      - '.github/workflows/global-frontier-optimality-audit-v74.yml'
+  workflow_dispatch:
+
+jobs:
+  audit-global-frontier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static check
+        run: python3 -m py_compile experiments/global_frontier_optimality_audit_v74/run.py
+
+      - name: Install inherited frozen backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+
+      - name: Fetch opened calibration universe
+        run: |
+          set -euo pipefail
+          mkdir -p external-v74
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/eq_size5.txt -o external-v74/eq_size5.txt
+          test "$(git hash-object external-v74/eq_size5.txt)" = "0deca9c8860fb60f2ae161ab7e3f458ec3b178ca"
+
+      - name: Run exact global audit
+        run: |
+          PYTHONPATH=. python3 experiments/global_frontier_optimality_audit_v74/run.py \
+            --opened-laws external-v74/eq_size5.txt \
+            --out external-v74/results
+
+      - name: Preserve V74 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v74-global-frontier-optimality-audit
+          path: external-v74/results/
