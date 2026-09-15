@@ -32,10 +32,10 @@ V72=importlib.util.module_from_spec(S); sys.modules[S.name]=V72; S.loader.exec_m
 CF,V67,V65,V64,V62=V72.CF,V72.V67,V72.V65,V72.V64,V72.V62
 TRAIN_BUCKETS={0,1,2}
 CAL_BUCKETS={3,4}
-MAX_TRAIN_SOURCE_PROBES=44
-MAX_CAUSAL_SOURCE_EPISODES=12
-TARGETS_PER_TRAIN_SOURCE=2
-MIN_CAUSAL_SOURCES=4
+MAX_TRAIN_SOURCE_PROBES=96
+MAX_CAUSAL_SOURCE_EPISODES=10
+TARGETS_PER_TRAIN_SOURCE=1
+MIN_CAUSAL_SOURCES=5
 
 def stable_hash(x):
  return hashlib.sha256(json.dumps(x,sort_keys=True,separators=(",",":")).encode()).hexdigest()
@@ -111,8 +111,58 @@ def learn_many(train_rows):
     "source_id_for_audit_only":V67.sid(group[0]),
     "causal_episode":causal_record})
 
+ # Second pass: only revisit still-unproductive sources with one additional
+ # target. This compounds cheaply: broad one-target census first, then spend
+ # extra proof search only where the first pass did not yield a causal episode.
+ if causal_sources < MIN_CAUSAL_SOURCES:
+  productive = {r["source_key_for_audit_only"] for r in records if r["causal_episode"] is not None}
+  for key in source_order[:MAX_TRAIN_SOURCE_PROBES]:
+   if causal_sources>=MAX_CAUSAL_SOURCE_EPISODES or causal_sources>=MIN_CAUSAL_SOURCES: break
+   if key in productive: continue
+   group=groups[key]
+   if len(group)<2: continue
+   basis=None
+   for problem in group[1:3]:
+    route=V65.route(problem)
+    if not route["proof_candidate"]: continue
+    cold=V64.proof_for(problem,V64.source_only_basis(problem))
+    if cold["proved"]: continue
+    if basis is None:
+     basis=V64.compile_source(problem)
+     if basis["verified_count"]!=len(basis["eqs"]): raise RuntimeError("basis replay failure")
+    warm=V64.proof_for(problem,basis["eqs"])
+    if not warm["proved"] or not any(int(e)!=0 for e in warm["used_rule_ids"]): continue
+    used=set(int(e) for e in warm["used_rule_ids"] if int(e)!=0)
+    ancestry=set()
+    for eid in used: ancestry |= V65.equation_ancestry(basis["eqs"],eid)
+    src,seeds=CF.enumerate_round1(problem)
+    bmap={e.key:eid for eid,e in basis["eqs"].items() if eid!=0 and int(e.round)==1}
+    positives=[]; negatives=[]; audit=[]
+    for seed in seeds:
+     eid=bmap.get(seed.key)
+     if eid is None: continue
+     roll=CF.rollout_seed(src,seed)
+     feat=V72.action_features(src,seed,roll,problem)
+     causal=False
+     if eid in ancestry:
+      ablated,removed=V65.ablate_lineage(basis["eqs"],eid)
+      gone=V64.proof_for(problem,ablated)
+      restored=V64.proof_for(problem,basis["eqs"])
+      causal=(not gone["proved"]) and restored["proved"]
+     (positives if causal else negatives).append(feat)
+     audit.append({"eid":eid,"causal":causal,"in_used_ancestry":eid in ancestry})
+    if positives and negatives:
+     episodes.append((positives,negatives)); causal_sources+=1; productive.add(key)
+     records.append({"source_key_for_audit_only":key,"source_id_for_audit_only":V67.sid(problem),
+       "causal_episode":{"source_key_for_audit_only":key,
+        "source_id_for_audit_only":V67.sid(problem),"problem_id_for_audit_only":problem["id"],
+        "positive_actions":len(positives),"negative_actions":len(negatives),"action_labels":audit},
+       "second_pass":True})
+     break
+
+ # Persist an acquisition summary even when diversity remains insufficient.
  if causal_sources<MIN_CAUSAL_SOURCES:
-  raise RuntimeError(f"too few independent causal sources: {causal_sources}")
+  raise RuntimeError(f"too few independent causal sources after adaptive census: {causal_sources}")
 
  all_raw=[v for p,n in episodes for v in (p+n)]
  scales=[max(1.0,max(abs(v[i]) for v in all_raw)) for i in range(len(V72.FEATURE_NAMES))]
