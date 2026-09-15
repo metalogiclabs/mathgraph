@@ -1,0 +1,44 @@
+name: V75O Developmental Action Oracle Ceiling
+
+on:
+  push:
+    branches: [developmental-action-oracle-ceiling-v75o]
+    paths:
+      - 'experiments/developmental_action_oracle_ceiling_v75o/**'
+      - '.github/workflows/developmental-action-oracle-ceiling-v75o.yml'
+  workflow_dispatch:
+
+jobs:
+  oracle-ceiling:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: python3 -m py_compile experiments/developmental_action_oracle_ceiling_v75o/run_calibration.py
+      - name: Install frozen route backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch pinned opened calibration streams
+        run: |
+          set -euo pipefail
+          mkdir -p external-v75o
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3000/wrong-book-3000.jsonl -o external-v75o/book3000.jsonl
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl -o external-v75o/book3500.jsonl
+          echo "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7  external-v75o/book3000.jsonl" | sha256sum -c -
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v75o/book3500.jsonl" | sha256sum -c -
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/normal.jsonl -o external-v75o/stage2-normal.jsonl
+          echo "V75O_DATA_STATUS=opened_oracle_calibration_only"
+          echo "V75O_FRESH_STREAM=UNSPENT"
+      - name: Measure bounded budget-1 action oracle ceiling
+        run: |
+          PYTHONPATH=. python3 experiments/developmental_action_oracle_ceiling_v75o/run_calibration.py \
+            --book3000 external-v75o/book3000.jsonl \
+            --book3500 external-v75o/book3500.jsonl \
+            --stage2 external-v75o/stage2-normal.jsonl \
+            --out external-v75o/results
+      - name: Preserve oracle evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v75o-developmental-action-oracle-ceiling
+          path: external-v75o/results/
