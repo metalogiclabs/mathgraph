@@ -1,0 +1,38 @@
+name: V71 Compiled Developer Causal Self-Test
+
+on:
+  push:
+    branches: [compiled-developmental-operator-v71]
+    paths:
+      - 'experiments/compiled_developmental_operator_v71/run_selftest.py'
+      - 'experiments/compiled_developmental_operator_v71/frozen_operator_v69.json'
+      - '.github/workflows/compiled-developmental-operator-selftest-v71.yml'
+  workflow_dispatch:
+
+jobs:
+  causal-selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: python3 -m py_compile experiments/compiled_developmental_operator_v71/run_selftest.py
+      - name: Install frozen route backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch pinned V66 recurrence history
+        run: |
+          set -euo pipefail
+          mkdir -p external-v71-selftest
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl -o external-v71-selftest/book3500.jsonl
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v71-selftest/book3500.jsonl" | sha256sum -c -
+      - name: Run causal self-test
+        run: |
+          PYTHONPATH=. python3 experiments/compiled_developmental_operator_v71/run_selftest.py \
+            --book3500 external-v71-selftest/book3500.jsonl \
+            --out external-v71-selftest/results
+      - name: Preserve self-test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v71-compiled-developer-selftest
+          path: external-v71-selftest/results/
