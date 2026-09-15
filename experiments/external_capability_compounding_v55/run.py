@@ -254,8 +254,21 @@ class Capability:
         )
 
 
+def _normalize_external_equation(text: str) -> str:
+    # YanbiaoLab publishes the magma operator as ◇. The frozen MathGraph finite
+    # verifier on this branch parses '*'. This is a notation-only adapter.
+    out = str(text)
+    for op in ("◇", "⋄", "·", "∙", "∗", "＊", "×"):
+        out = out.replace(op, "*")
+    return out
+
+
 def verify_false(problem: dict, table: Sequence[Sequence[int]]) -> bool:
-    result = check_finite_countermodel(problem["equation1"], problem["equation2"], table)
+    result = check_finite_countermodel(
+        _normalize_external_equation(problem["equation1"]),
+        _normalize_external_equation(problem["equation2"]),
+        table,
+    )
     return bool(result.terminal_candidate_ok)
 
 
