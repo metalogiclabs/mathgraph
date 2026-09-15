@@ -1,0 +1,39 @@
+name: V74 Multi-Source Causal Curriculum
+
+on:
+  push:
+    branches: [multi-source-causal-curriculum-v74]
+    paths:
+      - 'experiments/multi_source_causal_curriculum_v74/**'
+      - '.github/workflows/multi-source-causal-curriculum-v74.yml'
+  workflow_dispatch:
+
+jobs:
+  multi-source-causal-curriculum:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: python3 -m py_compile experiments/multi_source_causal_curriculum_v74/run_calibration.py
+      - name: Install frozen route backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch pinned opened curriculum stream
+        run: |
+          set -euo pipefail
+          mkdir -p external-v74
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/normal.jsonl -o external-v74/stage2-normal.jsonl
+          echo "V74_STAGE2_SHA256=$(sha256sum external-v74/stage2-normal.jsonl | awk '{print $1}')"
+          echo "V74_DATA_STATUS=opened_by_v67_training_calibration_only"
+          echo "V74_FRESH_STREAM=UNSPENT"
+      - name: Run source-disjoint multi-source causal curriculum
+        run: |
+          PYTHONPATH=. python3 experiments/multi_source_causal_curriculum_v74/run_calibration.py \
+            --stage2 external-v74/stage2-normal.jsonl \
+            --out external-v74/results
+      - name: Preserve V74 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v74-multi-source-causal-curriculum
+          path: external-v74/results/
