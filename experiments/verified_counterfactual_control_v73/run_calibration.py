@@ -62,7 +62,6 @@ def micro_probe(problem,eqs):
       if per_term>=48: break
      if per_term>=48: break
     if per_term>=48: break
-   if per_term>=48: break
   ordered=sorted(candidates.items(),key=lambda kv:kv[1])[:MICRO_BEAM]
   beam={t for t,_ in ordered}
   seen|=beam
