@@ -1,0 +1,40 @@
+name: V74B Compiled Causal Curriculum Developer
+
+on:
+  push:
+    branches: [compiled-causal-curriculum-developer-v74b]
+    paths:
+      - 'experiments/compiled_causal_curriculum_developer_v74b/**'
+      - 'experiments/verified_causal_curriculum_archive_v74a/causal_curriculum_sanitized.json'
+      - '.github/workflows/compiled-causal-curriculum-developer-v74b.yml'
+  workflow_dispatch:
+
+jobs:
+  compiled-curriculum-developer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: python3 -m py_compile experiments/compiled_causal_curriculum_developer_v74b/run_calibration.py
+      - name: Install frozen route backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch pinned opened source-disjoint calibration corpus
+        run: |
+          set -euo pipefail
+          mkdir -p external-v74b
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/normal.jsonl -o external-v74b/stage2-normal.jsonl
+          echo "2ca8dda3011aaf2db85f201ceb5aaf76d795395d504dd7d29d053fa0c767647a  external-v74b/stage2-normal.jsonl" | sha256sum -c -
+          echo "V74B_CAUSAL_REACQUISITION=ZERO"
+          echo "V74B_FRESH_STREAM=UNSPENT"
+      - name: Restart compiled curriculum developer and calibrate
+        run: |
+          PYTHONPATH=. python3 experiments/compiled_causal_curriculum_developer_v74b/run_calibration.py \
+            --stage2 external-v74b/stage2-normal.jsonl \
+            --out external-v74b/results
+      - name: Preserve V74B evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v74b-compiled-causal-curriculum-developer
+          path: external-v74b/results/
