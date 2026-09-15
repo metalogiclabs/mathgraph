@@ -12,10 +12,7 @@
     "continuation_rule": "cold_default_after_scoped_seed",
     "invocation_uses_target_structure_only": true,
     "position_invariant": true,
-    "round_quotas": [
-      16,
-      15
-    ],
+    "round_quotas": [16, 15],
     "schema": "mathgraph.causal-action-scope.v69.calibration",
     "scope_feature_names": [
       "target_size_gap",
@@ -23,20 +20,10 @@
       "target_match_count",
       "target_root_match_count"
     ],
-    "scope_feature_scales": [
-      1,
-      4,
-      4,
-      1
-    ],
+    "scope_feature_scales": [1.0, 4.0, 4.0, 1.0],
     "scope_rule": "linear_centroid_discriminant_on_target_seed_relation",
     "scope_threshold": 0.14124999999999993,
-    "scope_weights": [
-      0,
-      0,
-      -0.050000000000000044,
-      0.19999999999999996
-    ],
+    "scope_weights": [0.0, 0.0, -0.050000000000000044, 0.19999999999999996],
     "source_id_invariant": true,
     "source_selection_target_independent": true,
     "total_derived_budget": 31
