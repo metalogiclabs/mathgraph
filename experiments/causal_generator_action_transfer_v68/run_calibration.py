@@ -138,6 +138,28 @@ def action_matches(proof, op):
     }
     return all(d.get(k) == v for k, v in op["action_constraints"].items())
 
+def source_operator_applicable(problem, op):
+    sl, sr = V62.parse_eq(problem["equation1"])
+    lhs, rhs, key = V62.canonical_equation(sl, sr)
+    src = V62.Equation(0, lhs, rhs, key, {"kind": "SOURCE"}, 0)
+    for ad in (0, 1):
+        al, _ = V62.orientation(src, ad)
+        if al[0] == "v":
+            continue
+        for bd in (0, 1):
+            bl, _ = V62.orientation(src, bd)
+            if bl[0] == "v":
+                continue
+            for pos in V62.nonvar_positions(bl):
+                proof = {"kind":"CRITICAL_PAIR","a":0,"b":0,
+                         "a_dir":ad,"b_dir":bd,"pos":list(pos)}
+                if not action_matches(proof, op):
+                    continue
+                out = V62.derive_overlap(src, src, ad, bd, pos)
+                if out is not None and out[2] != key:
+                    return True
+    return False
+
 def compile_budgeted(problem, mode, op):
     sl, sr = V62.parse_eq(problem["equation1"])
     lhs, rhs, key = V62.canonical_equation(sl, sr)
@@ -220,8 +242,16 @@ def compile_budgeted(problem, mode, op):
     return {"eqs":eqs,"rounds":rounds,"seed_ids":seed_ids,"lineage_ids":sorted(lineage)}
 
 def evaluate(rows, training_ids, op):
+    applicability = {}
+    filtered = []
+    for row in rows:
+        source = V67.sid(row)
+        if source not in applicability:
+            applicability[source] = source_operator_applicable(row, op)
+        if applicability[source]:
+            filtered.append(row)
     sources, selected, rejected = V67.select_unseen_sources(
-        rows, training_ids, SOURCE_LIMIT, TARGETS_PER_SOURCE
+        filtered, training_ids, SOURCE_LIMIT, TARGETS_PER_SOURCE
     )
     stats = defaultdict(int)
     records, examples = [], []
@@ -279,6 +309,8 @@ def evaluate(rows, training_ids, op):
                           "cold":cold["proved"],"meta":meta["proved"],"meta_only":is_meta_only,
                           "exclusive":len(exclusive),"causal":causal}, sort_keys=True), flush=True)
     return {"selected_sources":len(sources),"selected_rows":len(selected),
+            "operator_applicable_source_count":sum(1 for v in applicability.values() if v),
+            "selection_uses_source_only_operator_applicability":True,
             "training_overlap":len(set(sources)&training_ids),"rejected_training_rows":rejected,
             **dict(stats),"causal_examples":examples,"records":records}
 
