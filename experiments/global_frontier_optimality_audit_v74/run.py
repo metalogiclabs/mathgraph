@@ -6,9 +6,9 @@ repair. V74 asks whether those local optima are actually global optima of the
 frozen objective.
 
 For each of the exact 16 V73 source graphs, enumerate every retained set of
-B=5 nodes from the fixed round-1 pool of 18 nodes:
+B=5 nodes from that source's actual deterministic round-1 pool (up to 18 nodes).
 
-    C(18, 5) = 8568 states per source.
+For a source with n round-1 nodes this is exactly C(n, 5) retained states.
 
 For each retained set K, compute the exact replay-verified next consequence
 frontier R(K). The maximum |R(K)| is therefore the global optimum under the
@@ -40,17 +40,16 @@ S73.loader.exec_module(V73)
 V72 = V73.V72
 V71 = V73.V71
 
-EXPECTED_POOL = 18
 EXPECTED_BUDGET = 5
-EXPECTED_STATES = math.comb(EXPECTED_POOL, EXPECTED_BUDGET)
 
 
 def global_optimum(graph):
     ids = tuple(sorted(graph["round1_ids"]))
-    if len(ids) != EXPECTED_POOL:
+    if len(ids) < EXPECTED_BUDGET:
         raise RuntimeError(
-            f"unexpected round1 pool size {len(ids)} != {EXPECTED_POOL}"
+            f"round1 pool too small for budget: {len(ids)} < {EXPECTED_BUDGET}"
         )
+    expected_states = math.comb(len(ids), EXPECTED_BUDGET)
 
     best_size = -1
     best_sets = []
@@ -66,10 +65,12 @@ def global_optimum(graph):
             if len(best_sets) < 64:
                 best_sets.append(tuple(kept))
 
-    if states != EXPECTED_STATES:
-        raise RuntimeError(f"state census mismatch: {states} != {EXPECTED_STATES}")
+    if states != expected_states:
+        raise RuntimeError(f"state census mismatch: {states} != {expected_states}")
 
     return {
+        "round1_pool_size": len(ids),
+        "expected_states": expected_states,
         "global_best_frontier_size": best_size,
         "states_enumerated": states,
         "stored_global_optima": best_sets,
@@ -135,6 +136,8 @@ def main():
         rec = {
             "index": index,
             "source_key": graph["source_key"],
+            "round1_pool_size": audit["round1_pool_size"],
+            "expected_states": audit["expected_states"],
             "learned_final_retained": learned_final,
             "learned_final_frontier_size": learned_size,
             "learned_one_swap_local_optimum_certified": (
@@ -157,6 +160,7 @@ def main():
             "global": global_size,
             "gap": gap,
             "distance": min_distance,
+            "round1_pool": audit["round1_pool_size"],
             "states": audit["states_enumerated"],
         }, sort_keys=True), flush=True)
 
@@ -166,12 +170,12 @@ def main():
         "developer_hash_exact": (
             developer_hash == V73.AUTHORITATIVE_V72_DEVELOPER_SHA256
         ),
-        "fixed_round1_pool_18": all(
-            len(g["round1_ids"]) == EXPECTED_POOL for g in fresh_graphs
+        "all_round1_pools_support_budget": all(
+            len(g["round1_ids"]) >= EXPECTED_BUDGET for g in fresh_graphs
         ),
         "fixed_retained_budget_5": V71.RETAIN_BUDGET == EXPECTED_BUDGET,
-        "all_8568_states_enumerated_per_source": all(
-            r["states_enumerated"] == EXPECTED_STATES for r in records
+        "every_fixed_budget_state_enumerated": all(
+            r["states_enumerated"] == r["expected_states"] for r in records
         ),
         "every_learned_state_one_swap_local_optimum": all(
             r["learned_one_swap_local_optimum_certified"] for r in records
@@ -186,11 +190,11 @@ def main():
         "developer_sha256": developer_hash,
         "v73_source_seed": V73.FRESH_STREAM_SEED,
         "objective": "maximize exact replay-verified round2 frontier size",
-        "round1_pool": EXPECTED_POOL,
+        "round1_pool_sizes": [r["round1_pool_size"] for r in records],
         "retained_budget": EXPECTED_BUDGET,
-        "states_per_source": EXPECTED_STATES,
+        "states_per_source": [r["states_enumerated"] for r in records],
         "sources": len(records),
-        "total_states_enumerated": EXPECTED_STATES * len(records),
+        "total_states_enumerated": sum(r["states_enumerated"] for r in records),
         "global_matches": global_matches,
         "total_global_optimality_gap": total_gap,
         "max_global_optimality_gap": max_gap,
@@ -205,7 +209,7 @@ def main():
         ),
         "claim_boundary": (
             "A PASS certifies global optimality only for the frozen V73 graph model: "
-            "18 replay-verified round-1 capability nodes, exactly 5 retained nodes, and "
+            "each source's deterministic replay-verified round-1 capability pool (up to 18 nodes), exactly 5 retained nodes, and "
             "objective equal to the number of directly replay-verified round-2 consequences "
             "whose recorded parents are retained. It does not establish optimality for deeper "
             "consequence layers, larger capability pools, variable budgets, other action "
@@ -223,7 +227,8 @@ def main():
     print(json.dumps({
         "verdict": result["verdict"],
         "sources": len(records),
-        "states_per_source": EXPECTED_STATES,
+        "round1_pool_sizes": result["round1_pool_sizes"],
+        "states_per_source": result["states_per_source"],
         "total_states_enumerated": result["total_states_enumerated"],
         "global_matches": global_matches,
         "total_gap": total_gap,
