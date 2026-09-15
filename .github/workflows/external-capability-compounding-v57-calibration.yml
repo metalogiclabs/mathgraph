@@ -1,0 +1,43 @@
+name: V57 Opened Route Calibration
+
+on:
+  push:
+    branches: [external-capability-compounding-v57]
+    paths:
+      - 'experiments/external_capability_compounding_v57/**'
+      - '.github/workflows/external-capability-compounding-v57-calibration.yml'
+  workflow_dispatch:
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install theorem/model backends
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq eprover
+          python3 -m pip install --disable-pip-version-check z3-solver==4.13.3.0
+          eprover --version | head -3
+      - name: Freeze external problem bytes
+        run: |
+          mkdir -p external-v57
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3000/wrong-book-3000.jsonl -o external-v57/wrong-book-3000.jsonl
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl -o external-v57/wrong-book-3500.jsonl
+          echo "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7  external-v57/wrong-book-3000.jsonl" | sha256sum -c -
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v57/wrong-book-3500.jsonl" | sha256sum -c -
+      - name: Run opened route calibration
+        run: |
+          PYTHONPATH=. python3 experiments/external_capability_compounding_v57/calibrate_routes.py \
+            --dataset3000 external-v57/wrong-book-3000.jsonl \
+            --dataset3500 external-v57/wrong-book-3500.jsonl \
+            --e-seconds 5 \
+            --model-timeout-ms 5000 \
+            --out external-v57/calibration
+      - name: Preserve calibration
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v57-opened-route-calibration
+          path: external-v57/calibration/
