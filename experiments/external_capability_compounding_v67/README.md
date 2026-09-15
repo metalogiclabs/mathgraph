@@ -22,3 +22,5 @@ For the 11 protected later targets, it:
 The result is only a local minimality statement relative to the declared V66
 protected targets and frozen V63 search. It does not claim a globally minimal
 equational basis.
+
+Infrastructure note: the runner installs cvc5 only because inherited V58 modules import it; V67 itself does not use cvc5 for its distillation logic.
