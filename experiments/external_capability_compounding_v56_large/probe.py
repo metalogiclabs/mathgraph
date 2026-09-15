@@ -97,6 +97,7 @@ def solve(problem: dict, n: int, timeout_ms: int) -> dict:
         raw=json.dumps([list(r) for r in table],separators=(",",":"))
         row["verified"]=True
         row["table_sha256"]=hashlib.sha256(raw.encode()).hexdigest()
+        row["table"]=[list(r) for r in table]
         row["witness_env"]=checked.witness_env
     elif status == unknown:
         row["reason_unknown"]=s.reason_unknown()
