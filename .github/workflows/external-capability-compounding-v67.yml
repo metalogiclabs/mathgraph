@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Recover exact V66 evidence
+      - name: Install frozen import dependency\n        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1\n\n      - name: Recover exact V66 evidence
         uses: actions/download-artifact@v4
         with:
           name: v66-fresh-recurrence-capability-compounding
