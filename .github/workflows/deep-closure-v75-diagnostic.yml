@@ -1,0 +1,38 @@
+name: V75 Deep Closure Diagnostic
+
+on:
+  push:
+    branches: [deep-closure-v75-diagnostic]
+    paths:
+      - 'experiments/deep_closure_optimality_audit_v75/**'
+      - '.github/workflows/deep-closure-v75-diagnostic.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnose-depth3-closure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static check
+        run: python3 -m py_compile experiments/deep_closure_optimality_audit_v75/run_diagnostic.py
+      - name: Install inherited frozen backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+      - name: Fetch opened calibration universe
+        run: |
+          set -euo pipefail
+          mkdir -p external-v75-diag
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/eq_size5.txt -o external-v75-diag/eq_size5.txt
+          test "$(git hash-object external-v75-diag/eq_size5.txt)" = "0deca9c8860fb60f2ae161ab7e3f458ec3b178ca"
+          echo "V75_DIAGNOSTIC_ONLY=NO_CLAIM"
+      - name: Run fast depth-3 diagnostic
+        run: |
+          PYTHONPATH=. python3 experiments/deep_closure_optimality_audit_v75/run_diagnostic.py \
+            --opened-laws external-v75-diag/eq_size5.txt \
+            --out external-v75-diag/results
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v75-deep-closure-diagnostic
+          path: external-v75-diag/results/
