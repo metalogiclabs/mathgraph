@@ -32,7 +32,7 @@ jobs:
 
       - name: Run frozen V55 developmental stream
         run: |
-          python3 experiments/external_capability_compounding_v55/run.py \
+          PYTHONPATH=. python3 experiments/external_capability_compounding_v55/run.py \
             --wrong-book-3000 external-v55/wrong-book-3000.jsonl \
             --wrong-book-3500 external-v55/wrong-book-3500.jsonl \
             --out external-v55/results
