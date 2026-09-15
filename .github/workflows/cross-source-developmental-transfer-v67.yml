@@ -1,0 +1,53 @@
+name: V67 Cross-Source Developmental Transfer
+
+on:
+  push:
+    branches: [cross-source-developmental-transfer-v67]
+    paths:
+      - 'experiments/cross_source_developmental_transfer_v67/**'
+      - '.github/workflows/cross-source-developmental-transfer-v67.yml'
+  workflow_dispatch:
+
+jobs:
+  cross-source-developmental-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static check before prospective bytes
+        run: |
+          set -euo pipefail
+          python3 -m py_compile experiments/cross_source_developmental_transfer_v67/run.py
+
+      - name: Install frozen route backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+
+      - name: Fetch pinned external streams
+        run: |
+          set -euo pipefail
+          mkdir -p external-v67
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3000/wrong-book-3000.jsonl -o external-v67/book3000.jsonl
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl -o external-v67/book3500.jsonl
+          echo "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7  external-v67/book3000.jsonl" | sha256sum -c -
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v67/book3500.jsonl" | sha256sum -c -
+
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/normal.jsonl -o external-v67/stage2-normal.jsonl
+          echo "V67_STAGE2_SHA256=$(sha256sum external-v67/stage2-normal.jsonl | awk '{print $1}')"
+          echo "V67_PROTOCOL=freeze_developer_before_eval_parse"
+          echo "V67_SOURCE_RULE=zero_training_source_id_overlap"
+
+      - name: Run frozen V67 developmental transfer protocol
+        run: |
+          PYTHONPATH=. python3 experiments/cross_source_developmental_transfer_v67/run.py \
+            --book3000 external-v67/book3000.jsonl \
+            --book3500 external-v67/book3500.jsonl \
+            --stage2 external-v67/stage2-normal.jsonl \
+            --out external-v67/results
+
+      - name: Preserve V67 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v67-cross-source-developmental-transfer
+          path: external-v67/results/
