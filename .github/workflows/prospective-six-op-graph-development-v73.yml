@@ -1,0 +1,43 @@
+name: V73 Prospective Six-Operation Graph Development
+
+on:
+  push:
+    branches: [prospective-six-op-graph-development-v73]
+    paths:
+      - 'experiments/prospective_six_op_graph_development_v73/**'
+      - '.github/workflows/prospective-six-op-graph-development-v73.yml'
+  workflow_dispatch:
+
+jobs:
+  prospective-six-op-development:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static check before prospective generation
+        run: python3 -m py_compile experiments/prospective_six_op_graph_development_v73/run.py
+
+      - name: Install inherited frozen backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+
+      - name: Fetch opened training universe only
+        run: |
+          set -euo pipefail
+          mkdir -p external-v73
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/eq_size5.txt -o external-v73/eq_size5.txt
+          test "$(git hash-object external-v73/eq_size5.txt)" = "0deca9c8860fb60f2ae161ab7e3f458ec3b178ca"
+          echo "V73_PROSPECTIVE_RULE=freeze_exact_v72_developer_before_six_op_generation"
+
+      - name: Run V73 prospective six-operation development
+        run: |
+          PYTHONPATH=. python3 experiments/prospective_six_op_graph_development_v73/run.py \
+            --opened-laws external-v73/eq_size5.txt \
+            --out external-v73/results
+
+      - name: Preserve V73 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v73-prospective-six-op-graph-development
+          path: external-v73/results/
