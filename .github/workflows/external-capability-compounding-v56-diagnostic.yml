@@ -1,0 +1,50 @@
+name: V56 Opened Exact Constructor Diagnostic
+
+on:
+  push:
+    branches: [external-capability-compounding-v56]
+    paths:
+      - 'experiments/external_capability_compounding_v56/**'
+      - '.github/workflows/external-capability-compounding-v56-diagnostic.yml'
+  workflow_dispatch:
+
+jobs:
+  opened-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned exact-model backend
+        run: python3 -m pip install --disable-pip-version-check z3-solver==4.13.3.0
+
+      - name: Freeze external corpus bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external-v56
+          curl -fsSL --retry 3 \
+            https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3000/wrong-book-3000.jsonl \
+            -o external-v56/wrong-book-3000.jsonl
+          curl -fsSL --retry 3 \
+            https://raw.githubusercontent.com/YanbiaoLab/equational-challenges/bed33e36c33fca139d902addd8cb77cd4172fe64/datasets/wrong-book-3500/wrong-book-3500.jsonl \
+            -o external-v56/wrong-book-3500.jsonl
+          echo "fb1606578ceafcd1019d96733db4c418596f9884952237e72af2579c382ef1f7  external-v56/wrong-book-3000.jsonl" | sha256sum -c -
+          echo "fca0ccfdb31fd2eae5f6669586309130ccb9e591f19a5142aa6604e81f7023f8  external-v56/wrong-book-3500.jsonl" | sha256sum -c -
+          echo "OPENED_DIAGNOSTIC_ONLY=rows_2500_2628"
+
+      - name: Run exact finite constructor on opened V55 rows only
+        run: |
+          PYTHONPATH=. python3 experiments/external_capability_compounding_v56/diagnose_opened.py \
+            --wrong-book-3000 external-v56/wrong-book-3000.jsonl \
+            --wrong-book-3500 external-v56/wrong-book-3500.jsonl \
+            --max-n 4 \
+            --timeout-ms 1500 \
+            --out external-v56/diagnostic
+
+      - name: Preserve diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v56-opened-exact-constructor-diagnostic
+          path: external-v56/diagnostic/
