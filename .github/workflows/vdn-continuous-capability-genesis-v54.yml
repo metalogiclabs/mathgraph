@@ -1,0 +1,23 @@
+name: VDN Continuous Capability Genesis V54
+
+on:
+  push:
+    branches: [vdn-continuous-capability-genesis-v54]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v54_continuous_capability_genesis.py'
+      - '.github/workflows/vdn-continuous-capability-genesis-v54.yml'
+  workflow_dispatch:
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run frozen continuous capability-genesis census
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v54_continuous_capability_genesis.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-continuous-capability-genesis-v54
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v54_continuous_capability_genesis/result.json
