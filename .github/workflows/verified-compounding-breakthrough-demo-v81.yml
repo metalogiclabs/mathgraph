@@ -17,10 +17,11 @@ jobs:
           python3 -m pip install --disable-pip-version-check \
             pytest>=8.0 numpy>=1.24 pandas>=2.0 cvc5==1.3.1
 
-      - name: Run V81 focused tests
-        run: |
-          pytest \
-            tests/test_developmental_artifacts.py \
-            tests/test_breakthrough_lineage.py \
-            tests/test_verified_compounding_breakthrough_demo.py \
-            -q
+      - name: Test developmental artifacts
+        run: pytest tests/test_developmental_artifacts.py -q
+
+      - name: Test breakthrough lineage
+        run: pytest tests/test_breakthrough_lineage.py -q
+
+      - name: Test V81 breakthrough protocol
+        run: pytest tests/test_verified_compounding_breakthrough_demo.py -q
