@@ -1,0 +1,43 @@
+name: V80 Prospective Deep Horizon Controller
+
+on:
+  push:
+    branches: [prospective-deep-horizon-controller-v80]
+    paths:
+      - 'experiments/prospective_deep_horizon_controller_v80/**'
+      - '.github/workflows/prospective-deep-horizon-controller-v80.yml'
+  workflow_dispatch:
+
+jobs:
+  prospective-deep-horizon-controller:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static check before fresh generation
+        run: python3 -m py_compile experiments/prospective_deep_horizon_controller_v80/run.py
+
+      - name: Install inherited frozen backend
+        run: python3 -m pip install --disable-pip-version-check cvc5==1.3.1
+
+      - name: Fetch opened training universe only
+        run: |
+          set -euo pipefail
+          mkdir -p external-v80
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/heathsanchez/equational-theories-lean-stage2/374eb40ba5389915deb174fbc12cc92346214dd1/examples/problems/eq_size5.txt -o external-v80/eq_size5.txt
+          test "$(git hash-object external-v80/eq_size5.txt)" = "0deca9c8860fb60f2ae161ab7e3f458ec3b178ca"
+          echo "V80_RULE=freeze_deep_controller_before_any_nine_op_source_generation"
+
+      - name: Run V80 prospective deep-horizon controller
+        run: |
+          PYTHONPATH=. python3 experiments/prospective_deep_horizon_controller_v80/run.py \
+            --opened-laws external-v80/eq_size5.txt \
+            --out external-v80/results
+
+      - name: Preserve V80 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v80-prospective-deep-horizon-controller
+          path: external-v80/results/
