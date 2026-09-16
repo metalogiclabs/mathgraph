@@ -1,0 +1,24 @@
+name: V81 Verified Compounding Breakthrough Demo
+
+on:
+  push:
+    branches: [verified-compounding-breakthrough-demo-v81]
+  workflow_dispatch:
+
+jobs:
+  v81-demo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install test dependencies
+        run: python3 -m pip install --disable-pip-version-check pytest>=8.0
+
+      - name: Run V81 focused tests
+        run: |
+          pytest \
+            tests/test_developmental_artifacts.py \
+            tests/test_breakthrough_lineage.py \
+            tests/test_verified_compounding_breakthrough_demo.py \
+            -q
