@@ -51,7 +51,7 @@ def historical_lineage_manifest() -> dict[str, Any]:
             "developer_sha256": V72_DEVELOPER_SHA256,
             "verdict": "CALIBRATION_PASS_VERIFIER_GATED_RECURSIVE_GRAPH_DEVELOPMENT_V72",
             "claim": "learned proposal ordering reduced verifier work while exact verification controlled admission",
-            "local_paths": ("experiments/verifier_gated_graph_hillclimb_v72/run.py",),
+            "local_paths": ("experiments/verifier_gated_graph_hillclimb_v72/run_calibration.py",),
         },
         {
             "stage": "v73",
