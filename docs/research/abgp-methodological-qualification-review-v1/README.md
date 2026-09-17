@@ -42,6 +42,6 @@ Please attack the inferential-unit definitions, dependence assumptions, and powe
 
 The design remains `REVIEW_PENDING` and confirmatory execution remains disabled. A later confirmatory run would be a separate event and is not represented by this review package.
 
-## Mirrored evidence
+## Audit binding
 
-This directory also contains the exact canonical `abgp-qualification-summary.json` used for the numbers above and its SHA-256 checksum. No personal-repository URL is required to review this package.
+The qualification digest and canonical qualification-JSON SHA-256 above bind this review note to the exact qualified artifact. The canonical JSON can be supplied separately if a line-by-line audit is useful; no personal-repository URL is required to review this package.
