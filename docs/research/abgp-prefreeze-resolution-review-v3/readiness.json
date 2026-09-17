@@ -1,0 +1,38 @@
+{
+  "code_evidence_commit": "f9764a3696f880e2ec09e8eb7b60054f92b8ac53",
+  "complete_pass_power_qualified": false,
+  "confirmatory_namespace_used_by_this_review": false,
+  "date": "2026-09-18",
+  "freeze_authorized": false,
+  "historical_artifact": {
+    "artifact_id": 10509835364,
+    "interpretation": "synthetic_fixture_and_statistical_harness_only",
+    "legacy_verdict": "QUALIFIED",
+    "run_id": 35251639106,
+    "zip_sha256": "df64e32e17acb26760e457bb0015ae1db34b5636a45075814b32a61ebedace10"
+  },
+  "implementation_qualified": false,
+  "independent_diagnostic": {
+    "exact_small_reference_cases": 24,
+    "file": "power-floor-diagnostic.json",
+    "max_absolute_error": 1.1102230246251565e-16
+  },
+  "open_acceptance_items": [
+    "complete_stochastic_ancestry_and_sampling_model",
+    "B_independent_grammar_acquisition_and_exact_information_matched_control",
+    "G_actual_outcome_exchangeability_design_argument",
+    "P_enforced_hard_restart_and_measured_causal_deletion",
+    "normative_text_consistency_including_P_cold_margin",
+    "complete_PASS_power_under_jointly_reviewed_planning_assumptions"
+  ],
+  "publication_revision": 1,
+  "reported_seed_field_duplicates": {
+    "A": 0,
+    "P": 0
+  },
+  "schema": "abgp.review-readiness.v3.1",
+  "scientific_criteria_changed": false,
+  "seed_audit_limit": "The named seed fields are not an independently traced complete stochastic dependency graph.",
+  "source_snapshot": "0e37943e3364e8dda671b4fc47ded812c437a56d",
+  "status": "REVIEW_PENDING"
+}

@@ -1,0 +1,149 @@
+{
+  "arms": {
+    "A": {
+      "alpha": 0.0125,
+      "complete_arm_pass_power": null,
+      "grid": [
+        {
+          "probability": 0.5042883150068149,
+          "q": 0.05
+        },
+        {
+          "probability": 0.5047861241036429,
+          "q": 0.1
+        },
+        {
+          "probability": 0.5036514875185242,
+          "q": 0.25
+        },
+        {
+          "probability": 0.5027245046877302,
+          "q": 0.5
+        },
+        {
+          "probability": 0.5022629244404487,
+          "q": 0.75
+        },
+        {
+          "probability": 0.4988558029005322,
+          "q": 1.0
+        }
+      ],
+      "minimum_on_listed_grid": 0.4988558029005322,
+      "n_per_component": 4096,
+      "observed_floor": 0.05,
+      "significance_and_effect_components": 3,
+      "true_effect": 0.05,
+      "union_bound_lower_bound_for_those_components": 0.0
+    },
+    "B_component": {
+      "alpha": 0.0125,
+      "complete_arm_pass_power": null,
+      "grid": [
+        {
+          "probability": 0.4871436132001272,
+          "q": 0.15
+        },
+        {
+          "probability": 0.49374502682148214,
+          "q": 0.3
+        },
+        {
+          "probability": 0.4959016153030002,
+          "q": 0.5
+        },
+        {
+          "probability": 0.4969382937101784,
+          "q": 0.75
+        },
+        {
+          "probability": 0.5037995395566155,
+          "q": 1.0
+        }
+      ],
+      "minimum_on_listed_grid": 0.4871436132001272,
+      "n_per_component": 1015,
+      "observed_floor": 0.15,
+      "significance_and_effect_components": 36,
+      "true_effect": 0.15,
+      "union_bound_lower_bound_for_those_components": 0.0
+    },
+    "G_max_dose_only": {
+      "alpha": 0.0125,
+      "complete_arm_pass_power": null,
+      "grid": [
+        {
+          "probability": 0.4746157433367155,
+          "q": 0.15
+        },
+        {
+          "probability": 0.4865933380471126,
+          "q": 0.3
+        },
+        {
+          "probability": 0.490823797617421,
+          "q": 0.5
+        },
+        {
+          "probability": 0.49296881028480466,
+          "q": 0.75
+        },
+        {
+          "probability": 0.4842742363914661,
+          "q": 1.0
+        }
+      ],
+      "minimum_on_listed_grid": 0.4746157433367155,
+      "n_per_component": 421,
+      "observed_floor": 0.15,
+      "significance_and_effect_components": 1,
+      "true_effect": 0.15,
+      "union_bound_lower_bound_for_those_components": 0.4746157433367155
+    },
+    "P": {
+      "alpha": 0.0125,
+      "complete_arm_pass_power": null,
+      "grid": [
+        {
+          "probability": 0.5042883150068149,
+          "q": 0.05
+        },
+        {
+          "probability": 0.5047861241036429,
+          "q": 0.1
+        },
+        {
+          "probability": 0.5036514875185242,
+          "q": 0.25
+        },
+        {
+          "probability": 0.5027245046877302,
+          "q": 0.5
+        },
+        {
+          "probability": 0.5022629244404487,
+          "q": 0.75
+        },
+        {
+          "probability": 0.4988558029005322,
+          "q": 1.0
+        }
+      ],
+      "minimum_on_listed_grid": 0.4988558029005322,
+      "n_per_component": 4096,
+      "observed_floor": 0.05,
+      "significance_and_effect_components": 7,
+      "true_effect": 0.05,
+      "union_bound_lower_bound_for_those_components": 0.0
+    }
+  },
+  "basis": "finite paired Bernoulli model evaluated numerically, not experimental outcomes",
+  "confirmatory_namespace_used": false,
+  "numpy_version": "2.3.5",
+  "schema": "abgp.independent-power-floor-diagnostic.v1",
+  "scipy_version": "1.17.0",
+  "scope": "minimum over explicit finite q grids; no continuum-envelope guarantee; no joint hard-gate power",
+  "small_exact_reference_cases": 24,
+  "small_reference_max_absolute_error": 1.1102230246251565e-16,
+  "status": "DIAGNOSTIC_ONLY_NOT_FULL_PASS_QUALIFICATION"
+}

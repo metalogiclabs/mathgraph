@@ -1,104 +1,84 @@
-# A/B/G/P Pre-Freeze Resolution Review V3
+# A/B/G/P Pre-Freeze Review V3
 
-**Metalogic Labs - review candidate only**
+*Metalogic Labs | Publication revision 1 | 18 September 2026*
 
-**Status:** `REVIEW_PENDING`  
-**Confirmatory execution:** disabled  
-**Confirmatory namespace used:** no  
-**Implementation snapshot:** `f9764a3696f880e2ec09e8eb7b60054f92b8ac53`
+> **REVIEW_PENDING | IMPLEMENTATION QUALIFICATION PENDING | NOT FROZEN**
 
-This supersedes the power/implementation interpretation in the earlier v1 qualification sheet. It is not a confirmatory result and it is not yet a freeze-ready package.
+This publication replaces the stronger readiness interpretation in the V3 draft. It records implementation progress and remaining acceptance requirements. It is neither a confirmatory result nor a final-lock candidate. No scientific threshold or confirmatory execution is authorized by this document.
 
-## What has been resolved since v2
+## 1. What is implemented, and what it establishes
 
-### 1. A/P inferential units now trace to the earliest sampled ancestor
+A/P ancestry: the new review functions list protocol constants and count shared acquisition/future seed fields. The saved DEV records report zero duplicates among those listed fields. This is useful trace information, but it does not independently discover every upstream sampled object or prove the full sampling model. Earliest-shared-stochastic-ancestor acceptance remains pending. [S1]
 
-The audit no longer treats a hard restart or a fresh future seed as sufficient proof of independence.
+B recovery: the direct recovered_order = target_order assignment is gone. Grammar-specific encode/infer paths and predictions now execute. However, represent() still starts from the protected ordering; supplied slot-token mappings recover common canonical slots. The control called bisimulation/Bayes uses a two-candidate parity grouping. These mechanisms do not yet establish independent grammar acquisition or the required acquisition-posterior/greatest-bisimulation control. [S2]
 
-- **A:** every episode has its own acquisition seed plus separately derived sealed-future seed. Fixed constructor code, old-language definition, verifier-message alphabet and analysis rule are protocol constants, not sampled ancestors.
-- **P:** every episode has its own acquisition seed; its retained object is a within-episode descendant and the only state crossing that restart; its four future probes are nested and do not increase `n`.
+G blocking: matched-pair selection and a fixed dose schedule are implemented. The additional null check duplicates the same label-blind output in both positions before swapping them. It checks that constructed example, not exchangeability of the actual outcome process. The scored DEV flips are still planted outputs. A design-level justification covering actual generation, selection and stopping remains open. [S3]
 
-The current finite generator audit finds **zero sampled stochastic ancestors reused across scored episodes** in either A or P.
+P restart/deletion: the inspected episode path serializes and deserializes in the same process and assigns deletion success from cold success. That exercises record construction, not the enforced hard-restart and causal-deletion boundary agreed in the thread. Those mechanisms still need end-to-end acceptance evidence. [S4]
 
-### 2. B placeholders have been removed
+## 2. B multiplicity: the distinction to preserve
 
-The treatment now executes a real source-to-target path:
+The candidate B analysis takes the maximum of 36 direction-by-control p-values as its single arm p-value. This matches an intersection-union requirement only when all required component alternatives must hold. The 0.0125 diagnostic threshold comes from 0.05/4 for conservative four-arm Holm planning, not an extra 36-way correction within B. Full PASS additionally includes effect floors, agreement and validity gates. [S5]
 
-`source grammar encode -> source grammar infer -> retain capability-order -> predict intervention -> target grammar encode/infer -> protected evaluator comparison`
+> **Publication status is settled; scientific acceptance is not. Passing the existing tests is not evidence that the remaining requirements above are satisfied.**
 
-The extensional, compositional, graph/reachability and constraint/order grammars use different surface carriers, serialization schemas, primitive inventories/arity patterns and inference routes. No cross-grammar translation table is supplied.
+# Power: a reproduced diagnostic, not a guarantee
 
-The three primary controls are now executable:
+*V3 publication revision 1 | Same scientific PASS floors; no new counts adopted*
 
-- matched wrong capability class;
-- shuffled source/target coupling via an independently seeded source world;
-- target-bisimulation/Bayesian control whose coarse observation merges two candidate protected orders, with a registered intervention that separates those observationally equivalent candidates.
+The previous 0.80-0.83 figures concern significance components under particular models, not the probability that an entire arm satisfies every PASS condition. An independent calculation now reproduces the effect-floor diagnostic without generating any study tasks. [D1]
 
-All four interventions remain nested inside the ordered-direction world unit.
+## 3. Exactly what was calculated
 
-### 3. B alpha provenance is explicit
+For n independent paired binary outcomes, let q be the probability of disagreement and delta the true treatment-minus-control difference. Then M, the number of discordant pairs, is Binomial(n,q), and wins W given M=m are Binomial(m,(q+delta)/(2q)). The component event requires BOTH the one-sided null binomial tail to be at most 0.0125 and (2W-M)/n to reach the observed PASS floor.
 
-`0.0125` is the worst-case component alpha used for **four-arm Holm power planning** (`0.05 / 4`). It is **not** a 36-way Bonferroni correction inside B.
+The calculation sets delta equal to that observed floor and sums the finite distribution. The table gives the minimum only over the listed q grid. It is a hypothetical paired-data calculation, not proof that the actual generator supplies independent episodes and not a guarantee over an unexamined continuous nuisance range.
 
-B remains an intersection-union arm: PASS requires all registered direction-by-control component requirements; the B arm p-value is the maximum of the 36 component p-values, and that one p-value enters the four-arm Holm procedure.
+| Diagnostic | Candidate n | Floor | Minimum probability |
+| --- | --- | --- | --- |
+| A | 4,096 | 5 pp | 0.498856 |
+| B component | 1,015 / direction | 15 pp | 0.487144 |
+| P | 4,096 | 5 pp | 0.498856 |
+| G max-dose only | 421 worlds | 15 pp | 0.474616 |
 
-### 4. G now has a design-level exchangeability contract
+A/P q grid: .05, .10, .25, .50, .75, 1.00. B/G grid: .15, .30, .50, .75, 1.00. G is a max-dose-only special-case diagnostic; it is not the complete dose-weighted world-blocked test.
 
-DP/brute-force agreement only verifies the arithmetic. The proposed generator resolution now also fixes the selection/generation/stopping conditions needed by the randomization argument.
+When the true effect equals the threshold imposed on its estimate, these component probabilities are near one half at the candidate sizes. Increasing n alone does not supply the claimed 80% guarantee across these exact-floor planning cases. For A/B/P the corresponding dependence-agnostic union-bound lower bound is zero. A zero lower bound is uninformative; it does NOT mean actual simultaneous PASS probability is zero.
 
-Relevant and irrelevant cells are selected as pre-outcome matched pairs. Pair ranking uses an **unordered pair identity**, so a relevant/irrelevant label exchange cannot change which pairs are selected. Count and magnitude are identical within each pair. All doses are fixed before outcomes and there is no adaptive stopping.
+## 4. What must precede a complete-PASS power claim
 
-The registered sharp null is:
+Keep the scientific floors separate from a scientifically justified planning alternative. Specify the full joint outcome model, or defensible worst-case bounds, including multi-control dependence, B's 90% agreement gate, P's deletion/reacquisition conditions, and G's full dose vector. Any selected planning alternative and final count require joint review. No alternative has been fitted to confirmatory outcomes or adopted in this release.
 
-> conditional on the fixed matched-pair construction and all non-label inputs, the complete within-world outcome vector is unchanged by one joint exchange of relevant/irrelevant labels across every nonzero dose.
+> **Independent numerical verification: 24 small cases agree with exhaustive rational-probability enumeration; maximum absolute discrepancy is 1.12e-16. The script and all grid values are included in the package. This validates this diagnostic only.**
 
-A label-blind null path checks the complete vector after that joint exchange. The audit fails closed when matching, schedule or stopping invariance is broken.
+# Acceptance map and release record
 
-This is a finite-generator design contract, not a claim that arbitrary natural-domain relevance classes are exchangeable. The matched-pair generation procedure therefore remains subject to joint text-implementation review before freeze.
+*V3 publication revision 1 | Requirements retained; unresolved items remain open*
 
-## Power correction: one real issue remains
+| Requirement | Evidence now | Acceptance status |
+| --- | --- | --- |
+| A/P earliest sampled ancestor | Listed-seed audit and fixed-object inventory | PENDING: complete ancestry/model |
+| B grammar recovery and controls | Executable finite encode/infer demonstrator | PENDING: independence and full control |
+| B IUT and alpha provenance | 36-component maximum; four-arm planning alpha | DOCUMENTED; validity still conditional |
+| G exchangeability | Matched pairs; constructed symmetric null example | PENDING: actual design argument |
+| P restart and causal deletion | In-process round trip; assigned deletion score | PENDING: enforced execution |
+| Complete-PASS power | Independent component + floor calculation | NOT QUALIFIED |
+| Confirmatory execution | Review status; existing disabled manifest | NOT AUTHORIZED |
 
-The previous `0.80-0.83` figures were significance-component power diagnostics, **not complete-arm PASS power**.
+## 5. Preserve the agreed scientific criteria
 
-The exact audit now includes the frozen rule that the **observed** treatment-control difference must itself meet the effect floor. The earlier planning calculation simultaneously assumed a **true** effect exactly equal to that same floor.
+This publication changes no hypotheses, margins, sample counts, source-distinctness rules, tests or PASS conditions in the normative files. Existing values remain review candidates, not newly approved choices. B's four interventions stay nested; the proposed four P probes do not inflate n. A retains its exact-information-matching obligation.
 
-At that planning alternative, the observed difference is centered on the PASS threshold, so the probability of satisfying `significance AND observed effect >= floor` stays close to one half; increasing `n` alone does not make it an 80% event.
+The thread requires P deletion to return performance within two percentage points of cold, followed by tracked reacquisition. The candidate analysis-plan wording instead refers to an ordinary-control envelope. That text-implementation discrepancy remains explicitly unresolved; this publication does not silently select either interpretation. [S5]
 
-Current exact minimum component probabilities across the registered discordance envelopes are:
+## 6. Evidence and limits
 
-| Arm | Candidate n used in historical diagnostic | Observed PASS floor | Min `significance + observed floor` probability when true effect = floor |
-|---|---:|---:|---:|
-| A | 4,096 | 5 pp | **0.498856** |
-| B | 1,015 / direction | 15 pp | **0.487144** |
-| P | 4,096 | 5 pp | **0.498856** |
-| G max-dose diagnostic | 421 worlds | 15 pp | **0.474616** |
+Code evidence: f9764a3696f880e2ec09e8eb7b60054f92b8ac53. Reviewed source snapshot, including its later documentation commit: 0e37943e3364e8dda671b4fc47ded812c437a56d.
 
-For A/B/P, the dependence-agnostic union-bound lower bound for simultaneous success of all registered primary components at those exact-floor planning alternatives is therefore **0**, before adding B's `>=90%` pooled agreement gate or P's deletion/reacquisition gates.
+Historical run 35251639106 completed successfully. Its downloaded artifact ZIP was verified against the reported SHA-256. The legacy QUALIFIED output concerns its synthetic-fixture/statistical harness; it is not promoted to end-to-end qualification here. This publication did not rerun the full source regression, execute confirmation, or contact the collaborator. [S6]
 
-### Why this cannot be fixed by just making N bigger
+The separate readiness record sets implementation_qualified=false, complete_pass_power_qualified=false and freeze_authorized=false. Outstanding acceptance work belongs to the implementation; it is not delegated to the collaborator merely by publishing this review.
 
-The issue is the planning alternative, not merely sample size. If the true effect is exactly the threshold the observed estimate must exceed, the estimate remains centered on the threshold as `n` grows.
+Evidence keys S1-S6 refer to evidence-and-limits.md; D1 is power-floor-diagnostic.json and its reproducible script. Prior versions remain in Git history. V1 is superseded; V2 remains a provisional design summary. The V3 draft's stronger "addressed" labels are superseded by this publication revision.
 
-A complete-PASS power calculation therefore needs a **jointly frozen planning alternative strictly above the observed PASS floor**. B also needs a planning value above its `0.90` agreement gate, and P needs an explicit planning model for the deletion/reacquisition gate and dependence among its seven primary comparisons.
-
-This does **not** require changing the scientific PASS floors. It requires distinguishing the minimum effect required to call a result meaningful from the larger effect assumed when choosing a sample size for 80% power.
-
-## Requirement-to-evidence map
-
-| Bill review item | Current state |
-|---|---|
-| A/P earliest stochastic ancestor | **Implemented and audited** - zero reused sampled ancestors in current finite generator |
-| B recovered structure | **Executable** - direct target injection placeholder removed |
-| B posterior/bisimulation control | **Executable** - coarse merged states plus separating intervention witness |
-| B 36-component IUT | **Retained** - one arm p-value = max of 36; no second within-B multiplicity correction |
-| `alpha=.0125` provenance | **Explicit** - four-arm Holm planning floor, not 36-way B correction |
-| G joint world exchangeability | **Proposed executable design contract** - matched-pair label-swap-invariant selection, label-blind sharp null, fixed schedule/no stopping |
-| Complete-PASS power | **Still requires joint planning choice** - the earlier exact-floor power rule cannot deliver 80% complete-PASS power |
-
-## Proposed disposition before freeze
-
-Do **not** mark the study `FROZEN` yet.
-
-The implementation issues that caused the v1 qualification overstatement are now materially reduced. The remaining substantive choice is statistical: jointly specify the planning alternatives used for complete-PASS power while leaving the scientific PASS thresholds unchanged. The proposed G matched-pair generation procedure should be reviewed at the same time for text-implementation consistency.
-
-After those are agreed, the final manifest can bind the exact generator/analysis hashes and the confirmatory namespace can remain untouched until the one-shot run.
+[PDF](ABGP_PreFreeze_Resolution_Review_v3.pdf) | [Evidence and limitations](evidence-and-limits.md) | [Power diagnostic](power-floor-diagnostic.json) | [Reproduce it](power_floor_diagnostic.py) | [Readiness record](readiness.json)
