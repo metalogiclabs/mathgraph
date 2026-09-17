@@ -1,0 +1,35 @@
+{
+  "schema": "abgp.final-lock-review.v4",
+  "date": "2026-09-18",
+  "status": "REVIEW_PENDING",
+  "metalogic_publication_status": "FINAL_LOCK_REVIEW_CANDIDATE",
+  "realitygraph_branch": "abgp-preregistration-freeze-v1",
+  "realitygraph_head": "bed8a4e5d35e211e7bdebca42f39d923f264fb70",
+  "candidate_digest": "771793f52cc8228c54bf2ac8ab46ebbcb0c7a99284d94e3042951a7976921e04",
+  "implementation_qualification_digest": "a7a9e40a8c55427ae35e475fb3f50f3a3f4c06e00db79c69d5aa8e57f866cfd3",
+  "planning_proposal_digest": "a38c94cf8180984f671936158182e72ebb2523e0c85a22211dd9b56671df9f34",
+  "implementation_qualified": true,
+  "complete_pass_power_qualified": false,
+  "freeze_authorized": false,
+  "confirmatory_namespace": "ABGP-CONFIRM-v1",
+  "confirmatory_namespace_used": false,
+  "scientific_pass_criteria_changed": false,
+  "counts_changed": false,
+  "joint_decisions": {
+    "planning_effects": {"A": 0.10, "B": 0.25, "G": 0.25, "P": 0.10},
+    "counts": {"A": 4096, "B_worlds_per_direction": 1015, "B_total_worlds": 12180, "G": 421, "P": 4096},
+    "B_all_four_world_agreement_planning": 0.95,
+    "B_observed_agreement_gate": 0.90,
+    "P_deletion_to_cold": "MECHANICALLY_ENFORCED_EQUAL_NULL_RETAINED_STATE",
+    "text_implementation_consistency": "PENDING_JOINT_APPROVAL"
+  },
+  "planning_lower_bounds": {"A": 0.9980001263937174, "B": 0.9809777958055284, "G": 0.9804949796333768, "P": 0.9953336282520072},
+  "ci": {
+    "dev_preregistration_run": 35285093632,
+    "executed_boundaries_run": 35285093739,
+    "full_regression_tests": 280,
+    "full_regression_result": "OK"
+  },
+  "approval_phrase": "APPROVED AS WRITTEN",
+  "post_approval_rule": "Update exact normative planning text, hash exact tree and environment, mark FROZEN, recheck confirmatory namespace unused, then enable exactly one ABGP-CONFIRM-v1 run."
+}
