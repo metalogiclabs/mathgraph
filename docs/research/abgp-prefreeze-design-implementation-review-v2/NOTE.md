@@ -1,0 +1,1 @@
+This package supersedes the earlier v1 qualification review. The PDF file is generated from the same corrected content as README.md. If the PDF is not present in a given mirror, README.md is the normative review document.
