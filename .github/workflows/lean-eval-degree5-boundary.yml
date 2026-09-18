@@ -1,0 +1,83 @@
+name: LeanEval degree-5 boundary
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-degree5-boundary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  degree5-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build frozen LeanEval workspace
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+      - name: Build exact archived Abel-Ruffini module
+        working-directory: /tmp/abel_ruffini
+        run: |
+          mkdir -p .lake/packages/mathlib/.lake/build/lib/lean/Archive/Wiedijk100Theorems
+          lake env lean \
+            -o .lake/packages/mathlib/.lake/build/lib/lean/Archive/Wiedijk100Theorems/AbelRuffini.olean \
+            .lake/packages/mathlib/Archive/Wiedijk100Theorems/AbelRuffini.lean
+      - name: Verify degree-5 and higher obstruction
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cat > DegreeFiveBoundary.lean <<'EOF'
+          import Mathlib
+          import Archive.Wiedijk100Theorems.AbelRuffini
+
+          open Polynomial
+
+          theorem high_degree_obstruction (n : ℕ) (hn : 5 ≤ n) :
+              ¬ (∀ p : ℚ[X], p.natDegree = n → ∀ x : ℂ, aeval x p = 0 →
+                  x ∈ solvableByRad ℚ ℂ) := by
+            intro hall
+            let bad : ℚ[X] := AbelRuffini.Φ ℚ 4 2
+            obtain ⟨y, hy⟩ := (IsAlgClosed.splits (bad.map (algebraMap ℚ ℂ))).exists_eval_eq_zero (by
+              simp [bad, AbelRuffini.degree_Phi])
+            have hyroot : aeval y bad = 0 := by simpa [aeval_def] using hy
+            have hynot : y ∉ solvableByRad ℚ ℂ := by
+              apply AbelRuffini.not_solvable_by_rad' y
+              simpa [bad, aeval_def] using hyroot
+            let p : ℚ[X] := bad * X ^ (n - 5)
+            have hbad0 : bad ≠ 0 := (AbelRuffini.monic_Phi 4 2).ne_zero
+            have hdeg : p.natDegree = n := by
+              rw [show p = bad * X ^ (n - 5) by rfl, natDegree_mul hbad0 (pow_ne_zero _ X_ne_zero)]
+              simp [bad, AbelRuffini.natDegree_Phi]
+              omega
+            have hroot : aeval y p = 0 := by simp [p, hyroot]
+            exact hynot (hall p hdeg y hroot)
+          EOF
+          set +e
+          lake env lean DegreeFiveBoundary.lean > /tmp/degree-five.log 2>&1
+          code=$?
+          echo "degree5_obstruction_exit=$code" | tee /tmp/degree-five-summary.txt
+          tail -n 160 /tmp/degree-five.log
+          exit 0
+      - name: Upload degree-5 residual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-degree5-boundary
+          path: |
+            /tmp/degree-five.log
+            /tmp/degree-five-summary.txt
