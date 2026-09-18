@@ -73,7 +73,8 @@ jobs:
           assert len(report["promoted_capabilities"]) >= 4
           assert report["aggregate"]["warm"]["reuse_hits"] > 0
           assert report["aggregate"]["restart"]["reuse_hits"] == report["aggregate"]["warm"]["reuse_hits"]
-          assert report["aggregate"]["warm"]["candidate_bytes"] <= report["aggregate"]["cold"]["candidate_bytes"]
+          assert report["aggregate"]["warm"]["materialized_table_cells"] < report["aggregate"]["cold"]["materialized_table_cells"]
+          assert report["comparisons"]["warm_table_cell_reduction"] > 0
           print("PASS_MODEL_SUSTAINED_USE_PROTOCOL_V1")
           PY
 
