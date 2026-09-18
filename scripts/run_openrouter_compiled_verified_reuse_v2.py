@@ -374,12 +374,24 @@ def main() -> int:
         ),
         "restart_preserves_ids": [cap.capability_id for cap in bank]
         == [cap.capability_id for cap in restarted],
-        "restart_matches_warm": restart == warm,
+        "restart_matches_warm": (
+            restart["tasks"] == warm["tasks"]
+            and restart["verified_terminal_results"] == warm["verified_terminal_results"]
+            and restart["terminal_yield"] == warm["terminal_yield"]
+            and restart["verified_reuse_hits"] == warm["verified_reuse_hits"]
+            and restart["model_calls"] == warm["model_calls"]
+            and restart["input_tokens"] == warm["input_tokens"]
+            and restart["output_tokens"] == warm["output_tokens"]
+            and restart["total_tokens"] == warm["total_tokens"]
+            and restart["model_latency_ms"] == warm["model_latency_ms"]
+            and restart["openrouter_cost"] == warm["openrouter_cost"]
+        ),
         "warm_not_worse_terminal_yield": warm["terminal_yield"] >= cold["terminal_yield"],
         "warm_uses_fewer_model_calls": warm["model_calls"] < cold["model_calls"],
         "warm_uses_fewer_tokens": warm["total_tokens"] < cold["total_tokens"],
         "warm_costs_less_openrouter": warm["openrouter_cost"] < cold["openrouter_cost"],
         "sham_not_better_than_warm_yield": sham_agg["terminal_yield"] <= warm["terminal_yield"],
+        "sham_uses_more_tokens_than_warm": sham_agg["total_tokens"] > warm["total_tokens"],
         "ablation_restores_model_calls": ablation["model_calls"] == cold["model_calls"],
         "ablation_restores_tokens": ablation["total_tokens"] == cold["total_tokens"],
         "ablation_restores_terminal_yield": ablation["terminal_yield"] == cold["terminal_yield"],
