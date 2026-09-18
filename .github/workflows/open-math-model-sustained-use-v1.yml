@@ -13,6 +13,7 @@ on:
       - "scripts/run_sair_official_sample200_reuse_probe.py"
       - "scripts/run_sair_normal_reuse_replication_v1.py"
       - "scripts/run_sair_cross_set_transfer_v1.py"
+      - "scripts/run_sair_scope_calibration_diagnostic_v1.py"
       - "docs/open_math_model_sustained_use_v1.md"
       - ".github/workflows/open-math-model-sustained-use-v1.yml"
 
@@ -280,4 +281,48 @@ jobs:
         with:
           name: sair-cross-set-transfer-v1
           path: /tmp/sair-cross-set-transfer-v1/
+          if-no-files-found: error
+
+
+  sair-scope-calibration-diagnostic-v1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run target-local scope calibration diagnostic
+        run: |
+          python scripts/run_sair_scope_calibration_diagnostic_v1.py \
+            --out-dir /tmp/sair-scope-calibration-diagnostic-v1
+
+      - name: Audit diagnostic integrity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/sair-scope-calibration-diagnostic-v1")
+          report = json.loads((root / "report.json").read_text())
+          assert report["verdict"] == "PASS"
+          assert report["diagnostic_status"] == "POST_RESULT_EXPLORATORY"
+          assert [row["k"] for row in report["curve"]] == [0, 1, 2, 5, 10, 25, 50, 100]
+          assert report["gates"]["fixed_fresh_set_size_400"]
+          assert report["gates"]["all_conditions_preserve_bounded_terminal_yield"]
+          assert report["gates"]["k0_equals_cold"]
+          print("PASS_SAIR_SCOPE_CALIBRATION_DIAGNOSTIC_V1")
+          print(json.dumps({
+              "minimum_k_with_strict_fresh_gain": report["minimum_k_with_strict_fresh_gain"],
+              "curve": report["curve"],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload scope calibration diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: sair-scope-calibration-diagnostic-v1
+          path: /tmp/sair-scope-calibration-diagnostic-v1/
           if-no-files-found: error
