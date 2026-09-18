@@ -1,0 +1,14 @@
+name = "MathGraphPalomarLaw43"
+version = "0.2.0"
+defaultTargets = ["MathGraphPalomarLaw43", "Challenge", "Solution"]
+
+[[lean_lib]]
+name = "MathGraphPalomarLaw43"
+
+[[lean_lib]]
+name = "Challenge"
+roots = ["Challenge"]
+
+[[lean_lib]]
+name = "Solution"
+roots = ["Solution"]
