@@ -1,0 +1,87 @@
+name: OpenRouter SAIR sealed reserve confirmation V6
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter model ID
+        required: false
+        default: google/gemma-4-31b-it
+      provider:
+        description: OpenRouter provider slug
+        required: false
+        default: deepinfra
+  push:
+    branches:
+      - open-math-model-sustained-use-v1
+    paths:
+      - "experiments/openrouter_sair_v5/frozen_model_acquired_verified_bank.json"
+      - "experiments/openrouter_sair_v5/frozen_bank_manifest.json"
+      - "scripts/run_openrouter_sair_sealed_reserve_confirmation_v6.py"
+      - ".github/workflows/openrouter-sair-sealed-reserve-confirmation-v6.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sair-sealed-reserve-confirmation-v6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_MODEL: ${{ github.event.inputs.model || 'google/gemma-4-31b-it' }}
+      OPENROUTER_PROVIDER: ${{ github.event.inputs.provider || 'deepinfra' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require OpenRouter API key
+        run: |
+          test -n "$OPENROUTER_API_KEY"
+
+      - name: Run sealed 250-problem reserve confirmation
+        run: |
+          python scripts/run_openrouter_sair_sealed_reserve_confirmation_v6.py \
+            --out-dir /tmp/openrouter-sair-sealed-reserve-v6 \
+            --model "$OPENROUTER_MODEL" \
+            --provider "$OPENROUTER_PROVIDER"
+
+      - name: Audit V6 evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path("/tmp/openrouter-sair-sealed-reserve-v6/report.json").read_text()
+          )
+          summary = {
+              "verdict": report["verdict"],
+              "model": report["model"],
+              "provider": report["provider"],
+              "frozen_bank_source_run": report["frozen_bank_manifest"]["source_run_id"],
+              "reserve_task_count": len(report["reserve_manifest"]),
+              "aggregate": report["aggregate"],
+              "reserve_comparisons": report["reserve_comparisons"],
+              "cumulative_500_false_stream": report["cumulative_500_false_stream"],
+              "gates": report["gates"],
+              "claim_boundary": report["claim_boundary"],
+          }
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          assert report["verdict"] == "PASS"
+          assert all(report["gates"].values())
+          assert report["frozen_bank_manifest"]["source_run_id"] == 35402563917
+          assert len(report["reserve_manifest"]) == 250
+          PY
+
+      - name: Upload V6 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrouter-sair-sealed-reserve-confirmation-v6
+          path: /tmp/openrouter-sair-sealed-reserve-v6/
+          if-no-files-found: warn
