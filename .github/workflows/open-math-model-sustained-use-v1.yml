@@ -12,6 +12,7 @@ on:
       - "scripts/assemble_model_sustained_use_transcript.py"
       - "scripts/run_sair_official_sample200_reuse_probe.py"
       - "scripts/run_sair_normal_reuse_replication_v1.py"
+      - "scripts/run_sair_cross_set_transfer_v1.py"
       - "docs/open_math_model_sustained_use_v1.md"
       - ".github/workflows/open-math-model-sustained-use-v1.yml"
 
@@ -235,4 +236,48 @@ jobs:
         with:
           name: sair-normal-reuse-replication-v1
           path: /tmp/sair-normal-reuse-replication-v1/
+          if-no-files-found: error
+
+
+  sair-cross-set-transfer-v1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run frozen cross-set verified capability transfer
+        run: |
+          python scripts/run_sair_cross_set_transfer_v1.py \
+            --out-dir /tmp/sair-cross-set-transfer-v1
+
+      - name: Audit cross-set transfer evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/sair-cross-set-transfer-v1")
+          report = json.loads((root / "report.json").read_text())
+          assert report["verdict"] == "PASS"
+          assert report["provenance"]["commit"] == "817a4653bf762584931d49c6714c9fcfab7df66a"
+          assert report["split"]["source_acquisition_false_count"] == 25
+          assert report["split"]["target_false_count"] > 0
+          assert len(report["capabilities"]) > 0
+          assert report["true_controls"]["countermodels_found"] == 0
+          assert report["gates"]["no_target_side_acquisition"]
+          assert report["gates"]["restart_exact"]
+          assert report["gates"]["all_orderings_preserve_bounded_terminal_yield"]
+          print("PASS_SAIR_CROSS_SET_VERIFIED_CAPABILITY_TRANSFER_V1")
+          print(json.dumps(report["comparisons"], indent=2, sort_keys=True))
+          PY
+
+      - name: Upload cross-set transfer evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sair-cross-set-transfer-v1
+          path: /tmp/sair-cross-set-transfer-v1/
           if-no-files-found: error
