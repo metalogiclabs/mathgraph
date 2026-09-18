@@ -1,0 +1,59 @@
+[
+  {
+    "capability_id": "modelcap_fa99b1ac5b3d7708",
+    "carrier_size": 2,
+    "source_task_id": "normal_0006",
+    "table": [
+      [0, 0],
+      [0, 0]
+    ],
+    "verifier_evidence": {
+      "acquisition_round": 1,
+      "generation_id": "gen-1789771222-JNET2FlBbSuUeIpMD347",
+      "model": "google/gemma-4-31b-it",
+      "provider": "DeepInfra",
+      "source_equation": "x * y = ((z * w) * u) * y",
+      "target_equation": "x = x * ((y * x) * (y * z))",
+      "terminal_candidate_ok": true,
+      "witness_env": {"x": 1, "y": 0, "z": 0}
+    }
+  },
+  {
+    "capability_id": "modelcap_d1c87fb5ba499431",
+    "carrier_size": 2,
+    "source_task_id": "normal_0016",
+    "table": [
+      [0, 0],
+      [0, 1]
+    ],
+    "verifier_evidence": {
+      "acquisition_round": 1,
+      "generation_id": "gen-1789771230-18KWJigghqIRZu5l7Uhq",
+      "model": "google/gemma-4-31b-it",
+      "provider": "DeepInfra",
+      "source_equation": "(x * y) * z = (z * y) * x",
+      "target_equation": "x * (y * x) = (x * z) * y",
+      "terminal_candidate_ok": true,
+      "witness_env": {"x": 1, "y": 1, "z": 0}
+    }
+  },
+  {
+    "capability_id": "modelcap_ac320b742751f8f0",
+    "carrier_size": 2,
+    "source_task_id": "normal_0027",
+    "table": [
+      [0, 1],
+      [1, 0]
+    ],
+    "verifier_evidence": {
+      "acquisition_round": 1,
+      "generation_id": "gen-1789771236-NQhrkNt8nuNjgTYEVeHO",
+      "model": "google/gemma-4-31b-it",
+      "provider": "DeepInfra",
+      "source_equation": "x * y = ((y * x) * x) * x",
+      "target_equation": "x = (x * x) * (y * (y * y))",
+      "terminal_candidate_ok": true,
+      "witness_env": {"x": 0, "y": 1}
+    }
+  }
+]
