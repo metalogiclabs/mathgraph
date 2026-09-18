@@ -8,6 +8,7 @@ on:
     paths:
       - "scripts/run_open_math_model_sustained_use_pilot.py"
       - "scripts/run_model_sustained_use_eval.py"
+      - "scripts/export_model_sustained_use_prompt_pack.py"
       - "docs/open_math_model_sustained_use_v1.md"
       - ".github/workflows/open-math-model-sustained-use-v1.yml"
 
@@ -76,6 +77,28 @@ jobs:
           assert report["aggregate"]["warm"]["materialized_table_cells"] < report["aggregate"]["cold"]["materialized_table_cells"]
           assert report["comparisons"]["warm_table_cell_reduction"] > 0
           print("PASS_MODEL_SUSTAINED_USE_PROTOCOL_V1")
+          PY
+
+      - name: Export external-model prompt pack
+        run: |
+          python scripts/export_model_sustained_use_prompt_pack.py \
+            --out-dir /tmp/open-math-model-sustained-use-v1/external-prompt-pack
+
+      - name: Check external-model prompt pack
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/open-math-model-sustained-use-v1/external-prompt-pack")
+          manifest = json.loads((root / "manifest.json").read_text())
+          assert manifest["bank_capability_count"] == 4
+          assert manifest["fresh_task_count"] == 7
+          assert manifest["request_count"] == 35
+          assert set(manifest["conditions"]) == {"cold", "warm", "restart", "sham", "ablation"}
+          assert (root / "preauthorized_verified_bank.json").exists()
+          assert (root / "requests.jsonl").exists()
+          print("PASS_EXTERNAL_MODEL_PROMPT_PACK_V1")
           PY
 
       - name: Upload evidence
