@@ -1,0 +1,76 @@
+name: abgp-mathgraph-qualification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/abgp-mathgraph-qualification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-abgp:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout canonical MathGraph ABGP branch
+        uses: actions/checkout@v4
+        with:
+          ref: abgp-confirmatory-v1
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Assert MathGraph ownership and package surface
+        run: |
+          test -d mathgraph/abgp
+          test ! -d realitygraph
+          if grep -R -n -i 'heathsanchez/realitygraph\|realitygraph\.abgp\|realitygraph/abgp'               mathgraph/abgp preregistration/abgp-*.json abgp_*.py tests/test_abgp_*.py; then
+            echo "legacy RealityGraph reference remains in canonical ABGP package"
+            exit 1
+          fi
+
+      - name: Run MathGraph ABGP test suite
+        run: python -m unittest discover -s tests -p 'test_abgp_*.py' -v
+
+      - name: Run methodological qualification
+        run: |
+          python abgp_qualify.py | tee abgp-qualification.log
+          grep -Fx 'ABGP_HARNESS_QUALIFIED' abgp-qualification.log
+
+      - name: Run DEV-only matrix
+        run: |
+          python abgp_dev_matrix.py | tee abgp-dev-matrix.log
+          grep -Fx 'ABGP_DEV_MATRIX_OK' abgp-dev-matrix.log
+
+      - name: Verify frozen lock remains confirmation-disabled
+        run: |
+          python abgp_frozen_lock.py --output abgp-frozen-lock.json | tee abgp-frozen-lock.log
+          grep -Fx 'ABGP_FROZEN_LOCK_VERIFIED_CONFIRMATION_DISABLED' abgp-frozen-lock.log
+          python - <<'PY'
+          import json
+          lock = json.load(open('abgp-frozen-lock.json', encoding='utf-8'))
+          assert lock['status'] == 'FROZEN'
+          assert lock['planning_status'] == 'FROZEN_APPROVED'
+          assert lock['confirmatory_execution_enabled'] is False
+          assert lock['confirmatory_namespace_used'] is False
+          print('ABGP_MATHGRAPH_MIGRATION_QUALIFIED')
+          PY
+
+      - name: Upload MathGraph ABGP qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: abgp-mathgraph-qualification
+          path: |
+            abgp-qualification-summary.json
+            abgp-qualification.log
+            abgp-dev-matrix-summary.json
+            abgp-dev-matrix.log
+            abgp-frozen-lock.json
+            abgp-frozen-lock.log
+          if-no-files-found: error
+          retention-days: 30
