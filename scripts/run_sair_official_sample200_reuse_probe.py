@@ -43,12 +43,6 @@ SAIR_REPO = "SAIRcompetition/equational-theories-lean-stage2"
 SAIR_COMMIT = "817a4653bf762584931d49c6714c9fcfab7df66a"
 RAW_BASE = f"https://raw.githubusercontent.com/{SAIR_REPO}/{SAIR_COMMIT}"
 SAMPLE_PATH = "examples/problems/sample_200.json"
-LABEL_PATHS = (
-    "examples/problems/normal.jsonl",
-    "examples/problems/hard1.jsonl",
-    "examples/problems/hard2.jsonl",
-    "examples/problems/hard3.jsonl",
-)
 ACQUISITION_FALSE_COUNT = 25
 
 
@@ -89,25 +83,20 @@ def _fetch_text(path: str) -> tuple[str, dict[str, Any]]:
 def _load_official_sample() -> tuple[list[Problem], dict[str, Any]]:
     sample_text, sample_meta = _fetch_text(SAMPLE_PATH)
     sample = json.loads(sample_text)
-    labels: dict[str, dict[str, Any]] = {}
-    label_meta = []
-    for path in LABEL_PATHS:
-        text, meta = _fetch_text(path)
-        label_meta.append(meta)
-        for line in text.splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            labels[str(row["id"])] = row
+    if not isinstance(sample, list):
+        raise RuntimeError("official sample_200 must be a JSON list")
 
     problems: list[Problem] = []
-    missing: list[str] = []
+    malformed: list[str] = []
+    prefix_mismatches: list[str] = []
     for i, row in enumerate(sample):
-        pid = str(row["id"])
-        label = labels.get(pid)
-        if label is None:
-            missing.append(pid)
+        pid = str(row.get("id", ""))
+        if not pid or "answer" not in row:
+            malformed.append(pid or f"index:{i}")
             continue
+        answer = bool(row["answer"])
+        if (pid.startswith("true_") and not answer) or (pid.startswith("false_") and answer):
+            prefix_mismatches.append(pid)
         problems.append(
             Problem(
                 problem_id=pid,
@@ -115,20 +104,23 @@ def _load_official_sample() -> tuple[list[Problem], dict[str, Any]]:
                 eq2_id=int(row["eq2_id"]),
                 source=str(row["equation1"]).replace("◇", "*"),
                 target=str(row["equation2"]).replace("◇", "*"),
-                answer=bool(label["answer"]),
-                difficulty=str(label.get("difficulty") or pid.split("_", 1)[0]),
+                answer=answer,
+                difficulty="official_sample_200",
                 sample_index=i,
             )
         )
-    if missing:
-        raise RuntimeError(f"missing labels for {len(missing)} sample problems: {missing[:10]}")
+    if malformed:
+        raise RuntimeError(f"malformed official sample rows: {malformed[:10]}")
+    if prefix_mismatches:
+        raise RuntimeError(f"sample id/answer mismatches: {prefix_mismatches[:10]}")
     if len(problems) != len(sample):
-        raise RuntimeError("sample/label join was incomplete")
+        raise RuntimeError("official sample parse was incomplete")
     return problems, {
         "repository": SAIR_REPO,
         "commit": SAIR_COMMIT,
         "sample": sample_meta,
-        "labels": label_meta,
+        "sample_answer_source": "answer field embedded in pinned sample_200.json",
+        "sample_id_prefix_crosscheck": True,
         "sample_problem_count": len(problems),
     }
 
