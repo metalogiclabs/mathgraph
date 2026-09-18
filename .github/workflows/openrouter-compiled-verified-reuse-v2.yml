@@ -1,0 +1,116 @@
+name: OpenRouter compiled verified reuse V2
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter model ID
+        required: false
+        default: google/gemma-4-31b-it
+      provider:
+        description: OpenRouter provider slug
+        required: false
+        default: deepinfra
+  push:
+    branches:
+      - open-math-model-sustained-use-v1
+    paths:
+      - "scripts/run_openrouter_compiled_verified_reuse_v2.py"
+      - ".github/workflows/openrouter-compiled-verified-reuse-v2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compiled-verified-reuse-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_MODEL: ${{ github.event.inputs.model || 'google/gemma-4-31b-it' }}
+      OPENROUTER_PROVIDER: ${{ github.event.inputs.provider || 'deepinfra' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require OpenRouter API key
+        run: |
+          test -n "$OPENROUTER_API_KEY"
+
+      - name: Export frozen prompt pack
+        run: |
+          python scripts/export_model_sustained_use_prompt_pack.py \
+            --out-dir /tmp/openrouter-compiled-v2/prompt-pack
+
+      - name: Extract paired cold requests only
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/openrouter-compiled-v2/prompt-pack")
+          source = root / "requests.jsonl"
+          target = root / "cold_requests.jsonl"
+          rows = [
+              json.loads(line)
+              for line in source.read_text().splitlines()
+              if line.strip()
+          ]
+          cold = [row for row in rows if row["mode"] == "cold"]
+          assert len(cold) == 7
+          target.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in cold))
+          print("cold_request_count", len(cold))
+          PY
+
+      - name: Capture one frozen OpenRouter baseline per fresh task
+        run: |
+          python scripts/run_openrouter_sustained_use_capture_v1.py \
+            --requests /tmp/openrouter-compiled-v2/prompt-pack/cold_requests.jsonl \
+            --responses /tmp/openrouter-compiled-v2/openrouter_cold_responses.jsonl \
+            --model "$OPENROUTER_MODEL" \
+            --provider "$OPENROUTER_PROVIDER" \
+            --max-tokens 256
+
+      - name: Evaluate compiled verified reuse against paired baseline
+        run: |
+          python scripts/run_openrouter_compiled_verified_reuse_v2.py \
+            --requests /tmp/openrouter-compiled-v2/prompt-pack/cold_requests.jsonl \
+            --responses /tmp/openrouter-compiled-v2/openrouter_cold_responses.jsonl \
+            --capability-bank /tmp/openrouter-compiled-v2/prompt-pack/preauthorized_verified_bank.json \
+            --out-dir /tmp/openrouter-compiled-v2/evidence
+
+      - name: Gate V2 evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path("/tmp/openrouter-compiled-v2/evidence/report.json").read_text()
+          )
+          print(json.dumps({
+              "models": report["models"],
+              "providers": report["providers"],
+              "aggregate": report["aggregate"],
+              "comparisons": report["comparisons"],
+              "gates": report["gates"],
+              "verdict": report["verdict"],
+              "claim_boundary": report["claim_boundary"],
+          }, indent=2, sort_keys=True))
+          assert report["verdict"] == "PASS"
+          assert all(report["gates"].values())
+          assert report["aggregate"]["cold"]["tasks"] == 7
+          assert report["aggregate"]["warm"]["tasks"] == 7
+          PY
+
+      - name: Upload V2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrouter-compiled-verified-reuse-v2
+          path: /tmp/openrouter-compiled-v2/
+          if-no-files-found: warn
