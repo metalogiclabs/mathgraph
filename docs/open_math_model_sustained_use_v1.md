@@ -109,3 +109,101 @@ A positive result requires warm improvement with terminal correctness preserved,
 This branch is an evaluation protocol and initial bounded fixture. It does **not** claim that an external Open Math Model, SAIR model, GPT model, or any other LLM already shows the same 28× gain.
 
 The point is to make that future claim testable, reproducible, and difficult to fake.
+
+
+## Phase 1 harness now implemented
+
+The branch now includes a provider-neutral, model-facing benchmark:
+
+```bash
+python scripts/run_model_sustained_use_eval.py \
+  --provider deterministic \
+  --out-dir /tmp/open_math_model_sustained_use_v1/model-pilot
+```
+
+The deterministic provider is **CI qualification only**. It is explicitly marked
+`provider_is_external_model=false` and must never be reported as an LLM result.
+
+The model-facing protocol uses four training implications. A proposed finite
+magma table is independently checked. Only a table for which the source equation
+holds globally and the target equation is actually violated is promoted into the
+capability bank.
+
+Fresh tasks are then evaluated under five conditions:
+
+- `cold`: no capability bank;
+- `warm`: independently verified promoted capabilities are available by compact ID;
+- `restart`: the capability bank is serialized, reloaded, and used again;
+- `sham`: the same memory shape and summaries are supplied with deliberately
+  corrupted payloads as a negative control;
+- `ablation`: all promoted capabilities that independently solve the current
+  fresh task are removed before the attempt.
+
+A model may return either a new table or a compact reuse reference:
+
+```json
+{"table": [[0, 0], [1, 1]]}
+```
+
+or:
+
+```json
+{"reuse_id": "cap_0123456789abcdef"}
+```
+
+The second form is the key sustained-use mechanism: a model need not regenerate
+a previously verified mathematical object. MathGraph resolves the identifier and
+rechecks the object against the new task.
+
+### Frozen external-model transcript format
+
+External-model runs enter the evaluator as JSONL. One row is required for every
+`(mode, task_id)` requested by the benchmark. This keeps the evidence immutable
+and lets independent users replay the mathematical verification without access
+to the original model.
+
+A row has this shape:
+
+```json
+{
+  "mode": "warm",
+  "task_id": "fresh_assoc_not_comm",
+  "model": "provider/model-version",
+  "candidate": {"reuse_id": "cap_0123456789abcdef"},
+  "raw": "{\"reuse_id\":\"cap_0123456789abcdef\"}",
+  "usage": {
+    "input_tokens": 210,
+    "output_tokens": 12,
+    "total_tokens": 222
+  },
+  "latency_ms": 840.4
+}
+```
+
+Replay:
+
+```bash
+python scripts/run_model_sustained_use_eval.py \
+  --provider transcript \
+  --transcript /path/to/frozen_model_run.jsonl \
+  --out-dir /tmp/open_math_model_sustained_use_v1/external-model
+```
+
+Token reduction is reported only when the transcript contains provider-reported
+usage. Otherwise the evaluator reports exact prompt/response byte counts but
+does not upgrade those proxies into token claims.
+
+### Evidence required before contacting SAIR with a result
+
+A sendable result should have all of the following:
+
+1. a named model/version and frozen transcript;
+2. independently verified terminal outcomes for every counted success;
+3. exact cold/warm/restart/sham/ablation task manifests;
+4. provider-reported token usage for any token-cost claim;
+5. restart-preserved reuse;
+6. a warm gain that is absent or reduced under sham/ablation;
+7. the full claim boundary beside the headline number.
+
+That produces an evaluation artifact rather than a demonstration that depends on
+trusting either the model or MathGraph's routing heuristics.
