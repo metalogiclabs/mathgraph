@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install MathGraph runtime dependencies
+        run: python -m pip install -e '.[sair]'
+
       - name: Assert MathGraph ownership and package surface
         run: |
           test -d mathgraph/abgp
