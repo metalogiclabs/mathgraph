@@ -1,1 +1,14 @@
-{"frozen_commit":"8ade20b82ebf075e9ea4f28e5dc97bfe2aaf2aa8","frozen_tree":"d9279b987e02a5dfe7debc1f71049ba93a97e93f","namespace":"ABGP-CONFIRM-v1","schema":"mathgraph.abgp.one-shot-marker.v1","state":"STARTED","workflow_run_id":"35302348593"}
+{
+  "schema": "mathgraph.abgp.one-shot-marker.v1",
+  "state": "COMPLETED",
+  "namespace": "ABGP-CONFIRM-v1",
+  "workflow_run_id": "35302348593",
+  "frozen_commit": "8ade20b82ebf075e9ea4f28e5dc97bfe2aaf2aa8",
+  "frozen_tree": "d9279b987e02a5dfe7debc1f71049ba93a97e93f",
+  "execution_lock_digest": "ceff752f60859985329454e28c37cd937dffa89bd2edec11d126ffe0eaa8dd6b",
+  "result_digest": "ee2d5bb03147800798f4266a2e85150bbf15cb8ebd42629fcdec360a79061478",
+  "combined_verdict": "PASS",
+  "result_artifact_id": 10530189449,
+  "result_artifact_digest": "sha256:e155915cdb04a3557c120222260c3f51c24024dc455a218f3717651c16f11bd0",
+  "publication_recovered_without_rerun": true
+}
