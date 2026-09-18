@@ -1,0 +1,59 @@
+name: Open Math Model sustained-use V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - open-math-model-sustained-use-v1
+    paths:
+      - "scripts/run_open_math_model_sustained_use_pilot.py"
+      - "docs/open_math_model_sustained_use_v1.md"
+      - ".github/workflows/open-math-model-sustained-use-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mechanistic-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run exact sustained-use fixture
+        run: |
+          python scripts/run_open_math_model_sustained_use_pilot.py \
+            --out-dir /tmp/open-math-model-sustained-use-v1
+
+      - name: Check evidence gates
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("/tmp/open-math-model-sustained-use-v1/report.json")
+          report = json.loads(path.read_text())
+          mech = report["mechanistic_fixture"]
+          econ = mech["sustained_use"]
+
+          assert report["verdict"] == "PASS"
+          assert all(mech["gates"].values())
+          assert econ["cold_cost"] == 784
+          assert econ["warm_cost"] == 28
+          assert econ["compression_ratio"] == 28.0
+          assert econ["sham_solution_count"] == 0
+          assert econ["ablation_solution_count"] == 0
+          assert econ["restart_solution_count"] > 0
+          print("PASS_OPEN_MATH_MODEL_SUSTAINED_USE_V1")
+          PY
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-math-model-sustained-use-v1
+          path: /tmp/open-math-model-sustained-use-v1/
+          if-no-files-found: error
