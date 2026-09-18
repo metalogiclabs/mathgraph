@@ -50,6 +50,23 @@ jobs:
           python abgp_dev_matrix.py | tee abgp-dev-matrix.log
           grep -Fx 'ABGP_DEV_MATRIX_OK' abgp-dev-matrix.log
 
+      - name: Validate confirmatory execution plan without deriving confirmatory seeds
+        run: |
+          set -euo pipefail
+          TREE="$(git rev-parse HEAD^{tree})"
+          python abgp_confirm.py --expected-tree "$TREE" plan --output abgp-confirmatory-plan.json | tee abgp-confirmatory-plan.log
+          grep -Fx 'ABGP_CONFIRMATORY_PLAN_VALIDATED_NO_SEEDS_DERIVED' abgp-confirmatory-plan.log
+          python - <<'PY'
+          import json
+          from mathgraph.abgp.manifest import active_seed_namespace
+          lock = json.load(open('abgp-confirmatory-plan.json', encoding='utf-8'))
+          assert lock['status'] == 'FROZEN'
+          assert lock['confirmatory_execution_enabled'] is True
+          assert lock['confirmatory_namespace_identifier'] == 'ABGP-CONFIRM-v1'
+          assert active_seed_namespace() == 'ABGP-DEV-v1'
+          print('ABGP_CONFIRMATORY_PLAN_SAFETY_OK')
+          PY
+
       - name: Verify frozen lock remains confirmation-disabled
         run: |
           python abgp_frozen_lock.py --output abgp-frozen-lock.json | tee abgp-frozen-lock.log
@@ -75,5 +92,7 @@ jobs:
             abgp-dev-matrix.log
             abgp-frozen-lock.json
             abgp-frozen-lock.log
+            abgp-confirmatory-plan.json
+            abgp-confirmatory-plan.log
           if-no-files-found: error
           retention-days: 30
