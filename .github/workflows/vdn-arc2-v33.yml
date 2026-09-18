@@ -1,0 +1,26 @@
+name: VDN ARC-AGI-2 v33 missing continuation census
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v33_missing_continuation_census.py'
+      - '.github/workflows/vdn-arc2-v33.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/arc2
+          cd /tmp/arc2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Diagnose missing continuation coordinate
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v33_missing_continuation_census.py /tmp/arc2/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-v33
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v33_missing_continuation_census/result.json

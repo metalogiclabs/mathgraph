@@ -1,0 +1,25 @@
+name: VDN ARC-AGI-2 v40 inter-component relation adequacy
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v40_intercomponent_relation_adequacy.py'
+      - '.github/workflows/vdn-arc2-v40.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relation-adequacy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/arc2
+          cd /tmp/arc2 && git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Test inter-component relation lift
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v40_intercomponent_relation_adequacy.py /tmp/arc2/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-v40
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v40_intercomponent_relation_adequacy/result.json
