@@ -1,0 +1,104 @@
+name: QCKN Heterogeneous Global Flash V1
+
+on:
+  push:
+    branches:
+      - qckn-heterogeneous-global-flash-v1
+    paths:
+      - 'experiments/qckn_heterogeneous_global_flash_v1/**'
+      - 'docs/research/qckn-heterogeneous-global-flash-v1.md'
+      - '.github/workflows/qckn-heterogeneous-global-flash-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_REPO: https://github.com/heathsanchez/test.git
+      SOURCE_COMMIT: 129901f70d5dd440cc0238ee734e9b7528305be7
+      SOURCE_RUN: '35212705346'
+      SOURCE_ARTIFACT: '10494015583'
+      SOURCE_ARTIFACT_DIGEST: sha256:129b56231c95d71e4e03ca0150e80cc8970aa263d481b5f7f44d851a105b5e62
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Acquire pinned cross-domain source
+        run: |
+          set -euxo pipefail
+          git clone --quiet --filter=blob:none "$SOURCE_REPO" _vendor/arc_robotics_source
+          cd _vendor/arc_robotics_source
+          git checkout --quiet "$SOURCE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+
+      - name: Verify qualified source run and artifact
+        run: |
+          set -euxo pipefail
+          run_json="$(curl -fsSL "https://api.github.com/repos/heathsanchez/test/actions/runs/$SOURCE_RUN")"
+          test "$(printf '%s' "$run_json" | jq -r .conclusion)" = "success"
+          test "$(printf '%s' "$run_json" | jq -r .head_sha)" = "$SOURCE_COMMIT"
+
+          artifact_json="$(curl -fsSL "https://api.github.com/repos/heathsanchez/test/actions/artifacts/$SOURCE_ARTIFACT")"
+          test "$(printf '%s' "$artifact_json" | jq -r .digest)" = "$SOURCE_ARTIFACT_DIGEST"
+          test "$(printf '%s' "$artifact_json" | jq -r .workflow_run.id)" = "$SOURCE_RUN"
+
+      - name: Re-run pinned source contracts
+        env:
+          PYTHONPATH: _vendor/arc_robotics_source
+        run: |
+          python -m unittest discover             -s _vendor/arc_robotics_source/experiments/arc_robotics_cross_domain_v1             -p 'test_*.py' -v
+
+      - name: Run Global Flash regression tests
+        env:
+          PYTHONPATH: _vendor/arc_robotics_source:.
+        run: |
+          python -m unittest             experiments.qckn_heterogeneous_global_flash_v1.test_run -v
+
+      - name: Run prospective heterogeneous Flash
+        env:
+          PYTHONPATH: _vendor/arc_robotics_source:.
+        run: |
+          python -m experiments.qckn_heterogeneous_global_flash_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_heterogeneous_global_flash_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict'] == 'PASS_ONE_VERIFIED_LIVE_CROSS_DOMAIN_FLASH_EDGE'
+          assert r['gates']['pass'] is True
+          costs={k:v['developmental_cost'] for k,v in r['arms'].items()}
+          assert costs == {
+              'ABLATION': 518,
+              'COLD': 518,
+              'FLASH': 261,
+              'RAW_SHARED': 518,
+              'SHAM': 789,
+              'UPFRONT': 5,
+          }, costs
+          assert all(x['after'] == 'LIVE' for x in r['spectators'])
+          assert r['arms']['FLASH']['cold_prefix_evaluations'] > 0
+          assert r['arms']['SHAM']['transferred_rejected'] is True
+          print('QCKN_HETEROGENEOUS_GLOBAL_FLASH_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST=' + r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-heterogeneous-global-flash-v1
+          path: |
+            experiments/qckn_heterogeneous_global_flash_v1/result.json
+            experiments/qckn_heterogeneous_global_flash_v1/run.py
+            experiments/qckn_heterogeneous_global_flash_v1/test_run.py
+            docs/research/qckn-heterogeneous-global-flash-v1.md
+          if-no-files-found: error
