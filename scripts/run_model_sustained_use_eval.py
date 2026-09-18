@@ -288,6 +288,22 @@ def _restart(bank: Sequence[Capability], path: Path) -> list[Capability]:
     ]
 
 
+def _load_bank(path: str | Path) -> list[Capability]:
+    rows = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(rows, list):
+        raise ValueError("capability bank must be a JSON list")
+    return [
+        Capability(
+            capability_id=row["capability_id"],
+            table=normalize_table(row["table"]),
+            source_task_id=row["source_task_id"],
+            behavior_signature={k: bool(v) for k, v in row["behavior_signature"].items()},
+            verifier_evidence=dict(row["verifier_evidence"]),
+        )
+        for row in rows
+    ]
+
+
 def _sham(bank: Sequence[Capability]) -> list[Capability]:
     out = []
     for cap in bank:
@@ -339,10 +355,26 @@ def _aggregate(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def run(provider: Any, out_dir: str | Path) -> dict[str, Any]:
+def run(
+    provider: Any,
+    out_dir: str | Path,
+    preauthorized_bank: Sequence[Capability] | None = None,
+) -> dict[str, Any]:
     output = Path(out_dir)
     output.mkdir(parents=True, exist_ok=True)
-    bank, training = _promote(provider, _tasks(TRAIN_TASKS))
+    if preauthorized_bank is None:
+        bank, training = _promote(provider, _tasks(TRAIN_TASKS))
+        bank_origin = "provider_training"
+    else:
+        bank = list(preauthorized_bank)
+        training = [{
+            "mode": "preauthorized_bank",
+            "capability_count": len(bank),
+            "all_verifier_backed": all(
+                bool(cap.verifier_evidence.get("terminal_candidate_ok")) for cap in bank
+            ),
+        }]
+        bank_origin = "preauthorized_verified_bank"
     restarted = _restart(bank, output / "capability_bank.json")
     sham = _sham(restarted)
 
@@ -370,7 +402,7 @@ def run(provider: Any, out_dir: str | Path) -> dict[str, Any]:
         "ablation_reuse_hits": agg["ablation"]["reuse_hits"],
     }
     gates = {
-        "verified_training_promotes_capability": bool(bank),
+        "verified_memory_available": bool(bank),
         "promoted_memory_is_verifier_backed": all(cap.verifier_evidence.get("terminal_candidate_ok") for cap in bank),
         "restart_preserves_ids": [cap.capability_id for cap in restarted] == [cap.capability_id for cap in bank],
         "warm_preserves_cold_terminal_yield": warm["terminal_yield"] == cold["terminal_yield"],
@@ -385,6 +417,7 @@ def run(provider: Any, out_dir: str | Path) -> dict[str, Any]:
         "protocol": "MATHGRAPH_MODEL_SUSTAINED_USE_V1",
         "provider": provider.name,
         "provider_is_external_model": provider.name == "transcript_replay",
+        "bank_origin": bank_origin,
         "training": training,
         "promoted_capabilities": [cap.to_dict() for cap in bank],
         "rows": rows,
@@ -407,6 +440,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", choices=("deterministic", "transcript"), default="deterministic")
     parser.add_argument("--transcript")
+    parser.add_argument(
+        "--capability-bank",
+        help="Optional preauthorized verified bank JSON. With transcript replay, this permits a fresh-task-only transcript.",
+    )
     parser.add_argument("--out-dir", default="/tmp/open_math_model_sustained_use_v1/model_pilot")
     args = parser.parse_args()
 
@@ -417,7 +454,8 @@ def main() -> int:
     else:
         provider = DeterministicHarnessProvider()
 
-    report = run(provider, args.out_dir)
+    preauthorized_bank = _load_bank(args.capability_bank) if args.capability_bank else None
+    report = run(provider, args.out_dir, preauthorized_bank=preauthorized_bank)
     print(json.dumps({
         "provider": report["provider"],
         "provider_is_external_model": report["provider_is_external_model"],
