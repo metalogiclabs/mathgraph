@@ -1,0 +1,81 @@
+name: abgp-executed-boundaries-v1
+
+on:
+  push:
+    branches: [abgp-preregistration-freeze-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: abgp-executed-boundaries-v1
+  cancel-in-progress: true
+
+jobs:
+  boundary-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Export tracked source only for reproducible local execution
+        run: |
+          git archive --format=tar.gz --output=abgp-source.tar.gz HEAD
+          git rev-parse HEAD > abgp-source-commit.txt
+          git rev-parse HEAD^{tree} > abgp-source-tree.txt
+          sha256sum abgp-source.tar.gz > abgp-source.sha256
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: abgp-executed-boundaries-source
+          path: |
+            abgp-source.tar.gz
+            abgp-source-commit.txt
+            abgp-source-tree.txt
+            abgp-source.sha256
+          retention-days: 7
+          if-no-files-found: error
+      - name: Full DEV regression, never confirmation
+        run: python -m unittest discover -s tests -v
+      - name: Execute isolated restart deletion and ordinary controls
+        run: |
+          set -euo pipefail
+          python abgp_executed_boundaries.py | tee abgp-executed-boundaries.log
+          grep -Fx 'ABGP_EXECUTED_BOUNDARIES_OK' abgp-executed-boundaries.log
+          sha256sum abgp-executed-boundaries.json > abgp-executed-boundaries.sha256
+      - name: Verify exact frozen lock with confirmation disabled
+        run: |
+          set -euo pipefail
+          python abgp_frozen_lock.py --output abgp-frozen-lock.json | tee abgp-frozen-lock.log
+          grep -Fx 'ABGP_FROZEN_LOCK_VERIFIED_CONFIRMATION_DISABLED' abgp-frozen-lock.log
+          sha256sum abgp-frozen-lock.json > abgp-frozen-lock.sha256
+          python - <<'PY'
+          import json
+          lock = json.load(open('abgp-frozen-lock.json', encoding='utf-8'))
+          assert lock['status'] == 'FROZEN'
+          assert lock['freeze_authorized'] is True
+          assert lock['joint_review_complete'] is True
+          assert lock['planning_status'] == 'FROZEN_APPROVED'
+          assert lock['confirmatory_execution_enabled'] is False
+          assert lock['confirmatory_namespace_used'] is False
+          assert lock['approved_candidate_digest'] == '771793f52cc8228c54bf2ac8ab46ebbcb0c7a99284d94e3042951a7976921e04'
+          print('ABGP_FROZEN_LOCK_SAFETY_BOUNDARY_OK')
+          PY
+      - name: Upload executed mechanism and frozen-lock receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: abgp-frozen-lock-v1-evidence
+          path: |
+            abgp-executed-boundaries.json
+            abgp-executed-boundaries.log
+            abgp-executed-boundaries.sha256
+            abgp-frozen-lock.json
+            abgp-frozen-lock.log
+            abgp-frozen-lock.sha256
+          retention-days: 30
+          if-no-files-found: error

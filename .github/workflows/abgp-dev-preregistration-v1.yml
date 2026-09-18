@@ -1,0 +1,134 @@
+name: abgp-dev-preregistration-v1
+
+on:
+  push:
+    branches:
+      - abgp-preregistration-freeze-v1
+  workflow_dispatch:
+
+concurrency:
+  group: abgp-dev-preregistration-v1
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Manifest and seed-firewall tests
+        run: python -m unittest tests.test_abgp_manifest -v
+
+      - name: Frozen statistical analysis tests
+        run: python -m unittest tests.test_abgp_analysis -v
+
+      - name: Explicit validity semantics tests
+        run: python -m unittest tests.test_abgp_validity -v
+
+      - name: Independent exact statistical-reference tests
+        run: python -m unittest tests.test_abgp_statistical_reference -v
+
+      - name: Frozen qualification fixture tests
+        run: python -m unittest tests.test_abgp_qualification_fixtures -v
+
+      - name: Pre-freeze power qualification tests
+        run: python -m unittest tests.test_abgp_power -v
+
+      - name: Deterministic qualification runner tests
+        run: python -m unittest tests.test_abgp_qualification -v
+
+      - name: DEV verifier and corruption tests
+        run: python -m unittest tests.test_abgp_arm_a_g -v
+
+      - name: DEV independent grammar tests
+        run: python -m unittest tests.test_abgp_arm_b -v
+
+      - name: DEV persistence tests
+        run: python -m unittest tests.test_abgp_arm_p -v
+
+      - name: DEV independent P episode budget audit
+        run: |
+          python abgp_p_episode_budget.py | tee abgp-p-episode-budget.log
+          grep -Fx 'ABGP_P_EPISODE_BUDGET_OK' abgp-p-episode-budget.log
+
+      - name: DEV runner and replay tests
+        run: python -m unittest tests.test_abgp_runner -v
+
+      - name: Legacy review-lock tests
+        run: python -m unittest tests.test_abgp_lock -v
+
+      - name: Frozen-lock tests
+        run: python -m unittest tests.test_abgp_frozen_lock -v
+
+      - name: Inherited V3 qualification tests
+        run: python -m unittest tests.test_verified_meta_growth_v3 -v
+
+      - name: Full regression suite
+        run: python -m unittest discover -s tests -v
+
+      - name: Run explicit ABGP methodological qualification
+        run: |
+          python abgp_qualify.py | tee abgp-qualification.log
+          grep -Fx 'ABGP_HARNESS_QUALIFIED' abgp-qualification.log
+          sha256sum abgp-qualification-summary.json | tee abgp-qualification-summary.sha256
+
+      - name: Run DEV-only ABGP matrix
+        run: |
+          python abgp_dev_matrix.py | tee abgp-dev-matrix.log
+          grep -Fx 'ABGP_DEV_MATRIX_OK' abgp-dev-matrix.log
+
+      - name: Assert DEV/QUAL scientific safety boundary
+        run: |
+          python - <<'PY'
+          import json
+          from mathgraph.abgp.manifest import load_design_manifest
+
+          design = load_design_manifest('preregistration/abgp-design-manifest-v1.json')
+          summary = json.load(open('abgp-dev-matrix-summary.json', encoding='utf-8'))
+          p_budget = json.load(open('abgp-p-episode-budget.json', encoding='utf-8'))
+          qualification = json.load(open('abgp-qualification-summary.json', encoding='utf-8'))
+
+          assert design.status == 'FROZEN'
+          assert design.confirmatory_execution_enabled is False
+          assert design.development_namespace == 'ABGP-DEV-v1'
+          assert design.confirmatory_namespace == 'ABGP-CONFIRM-v1'
+          assert summary['mode'] == 'DEV_ONLY'
+          assert summary['confirmatory_namespace_used'] is False
+          assert summary['scientific_status'] == 'DEVELOPMENT_MECHANICS_ONLY_NOT_CONFIRMATORY_EVIDENCE'
+          assert set(summary['raw_records']) == {'A', 'B', 'G', 'P'}
+          assert summary['analysis']['analysis_plan_digest'] == summary['design']['analysis_plan_digest']
+          assert p_budget['mode'] == 'DEV_QUAL_ONLY'
+          assert p_budget['confirmatory_namespace_used'] is False
+          assert p_budget['independence_audit']['primary_n'] == 4096
+          assert p_budget['independence_audit']['future_tasks_per_episode'] == 4
+          assert qualification['schema'] == 'mathgraph.abgp.qualification.v1'
+          assert qualification['mode'] == 'QUALIFICATION_ONLY'
+          assert qualification['verdict'] == 'HARNESS_QUALIFIED'
+          assert qualification['confirmatory_namespace_used'] is False
+          assert qualification['safety']['confirmatory_namespace_accessed'] is False
+          assert qualification['implementation_qualified'] is False
+          assert qualification['complete_pass_power_qualified'] is False
+          assert qualification['safety']['all_fixture_expectations_matched'] is True
+          assert qualification['statistical_reference_audit']['status'] == 'PASS'
+          assert qualification['power_audit']['qualified'] is True
+          print('ABGP_DEV_QUAL_SAFETY_BOUNDARY_OK')
+          PY
+
+      - name: Upload DEV/QUAL qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: abgp-dev-qual-v1-evidence
+          path: |
+            abgp-qualification-summary.json
+            abgp-qualification-summary.sha256
+            abgp-qualification.log
+            abgp-dev-matrix-summary.json
+            abgp-dev-matrix.log
+            abgp-p-episode-budget.json
+            abgp-p-episode-budget.log
+          if-no-files-found: error
+          retention-days: 30

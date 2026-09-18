@@ -1,0 +1,264 @@
+{
+  "schema": "mathgraph.abgp.design-manifest.v1",
+  "status": "FROZEN",
+  "confirmatory_execution_enabled": false,
+  "design_version": "ABGP-v1-review-hardened",
+  "base_branch": "verified-meta-growth-v3",
+  "base_commit": "45c766cd3d5410cea90790a67958390be9ccb896",
+  "design_spec": "docs/superpowers/specs/2026-09-17-abgp-confirmatory-design.md",
+  "ordinary_explanation_addendum": "docs/superpowers/specs/2026-09-17-abgp-ordinary-explanation-controls-design.md",
+  "qualification_spec": "docs/superpowers/specs/2026-09-17-abgp-test-qualification-design.md",
+  "analysis_plan": "preregistration/abgp-analysis-plan-v1.json",
+  "analysis_plan_is_normative": true,
+  "seed_namespaces": {
+    "development": "ABGP-DEV-v1",
+    "qualification": "ABGP-QUAL-v1",
+    "confirmatory": "ABGP-CONFIRM-v1"
+  },
+  "seed_derivation": "SHA256(root_namespace || arm || cell || index || generator_version)",
+  "statistics": {
+    "primary_hypotheses": [
+      "A",
+      "B",
+      "G",
+      "P"
+    ],
+    "familywise_alpha": 0.05,
+    "multiplicity": "Holm-Bonferroni across the four arm-level primary p-values after each arm's frozen intersection-union maximum rule",
+    "exact_test_definitions_live_in": "preregistration/abgp-analysis-plan-v1.json",
+    "full_pass_requires_effect_floor": true,
+    "full_pass_requires_adjusted_significance": true,
+    "pre_freeze_minimum_power": 0.8,
+    "pre_freeze_component_alpha_floor": 0.0125
+  },
+  "arms": {
+    "A": {
+      "name": "verified prospective representation growth",
+      "task_count": 4096,
+      "inferential_unit": "independent acquisition-to-sealed-future episode",
+      "phases": [
+        "single-message acquisition/construction",
+        "independently seeded sealed prospective future"
+      ],
+      "primary_metric": "exact_protected_action_selection_on_sealed_future",
+      "primary_controls": [
+        "acquisition_carry_forward_fixed_language_bayes",
+        "matched_novel_sham_expansion",
+        "equal_compute_construction_free_recheck"
+      ],
+      "effect_floor_absolute_each_control": 0.05,
+      "direct_action_insufficiency": "for every admitted message, posterior protected-action support > 1",
+      "old_language_complete": true,
+      "repeated_binary_elimination_allowed": false,
+      "future_verifier_access": 0,
+      "future_message_access": 0,
+      "acquisition_and_future_seed_material_must_be_disjoint": true,
+      "earned_extension_requirements": [
+        "nonmeasurable_in_old_information",
+        "strict_partition_refinement",
+        "action_relevant_collision_witness",
+        "independent_semantic_verification",
+        "no_future_target_directed_proposal_leak"
+      ]
+    },
+    "B": {
+      "name": "cross-grammar future-action structure beyond ordinary posterior plus target bisimulation",
+      "grammar_families": [
+        "extensional_action_observation_consequence",
+        "compositional_operator",
+        "graph_reachability",
+        "constraint_order"
+      ],
+      "shared_across_grammars_only": [
+        "latent_world_task_generator",
+        "protected_objective",
+        "protected_action_order_semantics"
+      ],
+      "independently_generated": [
+        "surface_symbols",
+        "primitive_relations_or_operators",
+        "primitive_arity",
+        "composition_rules",
+        "derivation_templates",
+        "inference_paths",
+        "serialization",
+        "candidate_set_generation"
+      ],
+      "supplied_deterministic_translation": false,
+      "simple_primitive_dictionary_recoverable_by_construction": false,
+      "ordered_cross_grammar_directions": 12,
+      "fresh_worlds_per_direction": 1015,
+      "total_world_units": 12180,
+      "structural_interventions": [
+        "edge_or_relation_deletion",
+        "protected_order_reversal_perturbation",
+        "scope_change",
+        "constraint_change"
+      ],
+      "interventions_are_nested_within_world_unit": true,
+      "primary_metric": "all_four_interventions_exact_protected_action_order_agreement_per_world_unit",
+      "minimum_exact_agreement_pooled_hard_gate": 0.9,
+      "minimum_advantage_each_component": 0.15,
+      "primary_controls": [
+        "matched_complexity_wrong_class",
+        "shuffled_coupling",
+        "acquisition_posterior_target_bisimulation_bayes"
+      ],
+      "arm_test": "intersection-union over 12 ordered directions x 3 controls; arm p-value is maximum of 36 exact paired component p-values",
+      "power_requirement": "dependence-agnostic union-bound lower bound for simultaneous success of all 36 components >= 0.80"
+    },
+    "G": {
+      "name": "action-relevance corruption dose response",
+      "task_count": 421,
+      "inferential_unit": "independent world",
+      "corruption_doses": [
+        0,
+        0.1,
+        0.25,
+        0.5,
+        1
+      ],
+      "relevance_classes": [
+        "action_relevant",
+        "action_irrelevant"
+      ],
+      "relevance_definition": "changing the cell can alter protected ordering among live actions under the frozen evaluator",
+      "relevance_computed_before_corruption": true,
+      "matched_corruption_count_and_magnitude": true,
+      "primary_test": "one-sided exact world-blocked dose-weighted relevance-label sign-randomization test",
+      "randomization_block": "one relevant/irrelevant exchange per world applied jointly across all nonzero doses",
+      "minimum_flip_rate_gap_at_max_nonzero_dose": 0.15,
+      "qualification_power_model": "lower doses set to zero signal; power guaranteed using max-dose effect only",
+      "secondary_metrics": [
+        "downstream_accuracy",
+        "zero_target_entropy_rate",
+        "dose_monotonicity",
+        "matched_random_location_control"
+      ]
+    },
+    "P": {
+      "name": "retained persistence across independent acquisitions without verifier",
+      "task_count": 4096,
+      "inferential_unit": "independently seeded acquisition -> serialize -> hard restart -> fixed four-probe held-out future episode",
+      "future_tasks_per_episode": 4,
+      "nested_future_tasks_count_toward_n": false,
+      "episode_success_rule": "all four preregistered abstract-context probes correct",
+      "retained_object_form": "non_verbal_structural_object_plus_explicit_applicability_metadata",
+      "hard_restart_from_retained_object_only": true,
+      "only_cross_restart_state": "retained_object_bytes",
+      "future_verifier_access": 0,
+      "future_reconstruction_search": 0,
+      "future_applicability_uses_target_labels": false,
+      "source_distinct_shared_only": [
+        "protected_objective_or_action_order_principle"
+      ],
+      "source_distinct_forbidden_shared_features": [
+        "entity_identifiers",
+        "lexical_templates",
+        "instance_seeds",
+        "surface_serialization",
+        "exact_structures_or_topologies",
+        "source_specific_labels",
+        "verifier_outputs"
+      ],
+      "primary_baselines": [
+        "cold",
+        "equal_compute_recheck",
+        "size_matched_sham",
+        "wrong_class_object",
+        "target_only_bisimulation_bayes",
+        "posterior_only_retained_bayes",
+        "targeted_deletion"
+      ],
+      "secondary_negative_baseline": "verbal_rule_negative",
+      "primary_metric": "exact_episode_success",
+      "minimum_advantage_each_primary_baseline": 0.05,
+      "targeted_deletion_required": true,
+      "targeted_deletion_control_requirements": [
+        "deleted and cold invocation receive the same null retained state and identical future-task payload; corresponding action outputs are mechanically identical",
+        "treatment minus deleted performance >= 0.05",
+        "zero verifier before explicit reacquisition",
+        "zero pre-action reconstruction/search on deleted path",
+        "explicit reacquisition re-enters preregistered search/construction",
+        "reacquisition restores performance within 0.02 of pre-deletion treatment"
+      ]
+    }
+  },
+  "verdicts": [
+    "PASS",
+    "PARTIAL",
+    "FAIL",
+    "INVALID"
+  ],
+  "verdict_rule_source": "preregistration/abgp-analysis-plan-v1.json",
+  "combined_full_claim_requires": {
+    "A": "PASS",
+    "B": "PASS",
+    "G": "PASS",
+    "P": "PASS"
+  },
+  "development_policy": {
+    "allowed_seed_namespaces": [
+      "ABGP-DEV-v1",
+      "ABGP-QUAL-v1"
+    ],
+    "confirmatory_namespace_access_during_development": false,
+    "allowed_uses": [
+      "determinism_tests",
+      "generator_coverage",
+      "negative_controls",
+      "leakage_detection",
+      "synthetic_statistical_tests",
+      "failure_behavior",
+      "restart_and_serialization",
+      "artifact_schema_tests",
+      "runtime_and_resource_bounds",
+      "pre_freeze_power_and_sensitivity_qualification",
+      "planted_positive_and_ordinary_explanation_challenge_suite"
+    ]
+  },
+  "final_lock_requirements": [
+    "design_manifest_digest",
+    "analysis_plan_digest",
+    "repository_tree_hash",
+    "arm_generator_code_hashes",
+    "verifier_implementation_hash",
+    "protected_evaluator_hash",
+    "analysis_implementation_hash",
+    "grammar_family_generator_hashes",
+    "sham_object_construction_hash",
+    "wrong_class_construction_hash",
+    "corruption_implementation_hash",
+    "ablation_implementation_hash",
+    "ordinary_explanation_oracle_hashes",
+    "bisimulation_canonicalizer_hashes",
+    "inferential_unit_audit_hashes",
+    "qualification_status",
+    "qualification_evidence_digest",
+    "model_and_runtime_versions",
+    "dependency_environment_hash",
+    "resource_budgets",
+    "confirmatory_namespace_identifier",
+    "one_shot_execution_marker_policy"
+  ],
+  "final_lock_status_required": "FROZEN",
+  "confirmatory_change_policy": "Any post-unlock change to thresholds, counts, inferential units, dependence structure, grammar independence, intervention classes, corruption schedule, information boundaries, source-distinctness, statistical tests, PASS/FAIL/INVALID semantics, or scientific code requires a new preregistration version and new confirmatory namespace.",
+  "claim_boundary": {
+    "representation_independent_invention": false,
+    "universal_grammar_invariance": false,
+    "arbitrary_substrate_invention": false,
+    "unbounded_self_development": false,
+    "universal_bayesian_inadequacy": false,
+    "universal_verifier_sufficiency": false,
+    "transfer_outside_frozen_generators": false
+  },
+  "final_lock_approval": {
+    "status": "APPROVED",
+    "approved_at": "2026-09-18",
+    "approval_text": "Approved",
+    "review_commit": "59370776af7b410522fdfdbc0ee479f3856f5d24",
+    "review_document": "docs/research/abgp-final-lock-review-v4/ABGP_Final_Lock_Review_v4.pdf",
+    "approved_candidate_head": "bed8a4e5d35e211e7bdebca42f39d923f264fb70",
+    "approved_candidate_digest": "771793f52cc8228c54bf2ac8ab46ebbcb0c7a99284d94e3042951a7976921e04"
+  }
+}
