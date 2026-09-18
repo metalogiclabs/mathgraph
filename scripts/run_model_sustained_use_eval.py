@@ -217,6 +217,11 @@ def _evaluate(provider: Any, task: Task, mode: str, bank: Sequence[Capability]) 
     usage = row.get("usage") or {}
     prompt = _prompt(task, mode, bank)
     raw = str(row.get("raw") or json.dumps(candidate, sort_keys=True))
+    materialized_table_cells = 0
+    if "table" in candidate and isinstance(candidate.get("table"), list):
+        materialized_table_cells = sum(
+            len(row) for row in candidate["table"] if isinstance(row, list)
+        )
     return {
         "task_id": task.task_id,
         "mode": mode,
@@ -232,6 +237,7 @@ def _evaluate(provider: Any, task: Task, mode: str, bank: Sequence[Capability]) 
         "prompt_bytes": len(prompt.encode()),
         "candidate_bytes": len(json.dumps(candidate, sort_keys=True, separators=(",", ":")).encode()),
         "raw_response_bytes": len(raw.encode()),
+        "materialized_table_cells": materialized_table_cells,
     }
 
 
@@ -325,6 +331,7 @@ def _aggregate(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "prompt_bytes": sum(row["prompt_bytes"] for row in rows),
         "candidate_bytes": sum(row["candidate_bytes"] for row in rows),
         "raw_response_bytes": sum(row["raw_response_bytes"] for row in rows),
+        "materialized_table_cells": sum(row["materialized_table_cells"] for row in rows),
         "input_tokens": optional_sum("input_tokens"),
         "output_tokens": optional_sum("output_tokens"),
         "total_tokens": optional_sum("total_tokens"),
@@ -355,6 +362,7 @@ def run(provider: Any, out_dir: str | Path) -> dict[str, Any]:
     comparisons = {
         "warm_minus_cold_terminal_yield": warm["terminal_yield"] - cold["terminal_yield"],
         "warm_candidate_byte_reduction": 1.0 - warm["candidate_bytes"] / cold["candidate_bytes"] if cold["candidate_bytes"] else None,
+        "warm_table_cell_reduction": 1.0 - warm["materialized_table_cells"] / cold["materialized_table_cells"] if cold["materialized_table_cells"] else None,
         "warm_total_token_reduction": 1.0 - warm["total_tokens"] / cold["total_tokens"] if token_claim and cold["total_tokens"] else None,
         "token_claim_available": token_claim,
         "warm_reuse_hits": warm["reuse_hits"],
@@ -369,7 +377,7 @@ def run(provider: Any, out_dir: str | Path) -> dict[str, Any]:
         "warm_has_reuse": warm["reuse_hits"] > 0,
         "restart_matches_warm_yield": agg["restart"]["terminal_yield"] == warm["terminal_yield"],
         "restart_matches_warm_reuse": agg["restart"]["reuse_hits"] == warm["reuse_hits"],
-        "warm_candidate_payload_not_larger": warm["candidate_bytes"] <= cold["candidate_bytes"],
+        "warm_materializes_fewer_table_cells": warm["materialized_table_cells"] < cold["materialized_table_cells"],
         "sham_not_better_than_warm": agg["sham"]["terminal_yield"] <= warm["terminal_yield"],
         "ablation_not_more_reuse_than_warm": agg["ablation"]["reuse_hits"] <= warm["reuse_hits"],
     }
