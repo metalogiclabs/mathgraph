@@ -1,0 +1,14 @@
+{
+  "schema": "mathgraph.abgp.confirmatory-arm.v1",
+  "state": "ARMED",
+  "namespace": "ABGP-CONFIRM-v1",
+  "branch": "abgp-confirmatory-v1",
+  "frozen_commit": "8ade20b82ebf075e9ea4f28e5dc97bfe2aaf2aa8",
+  "frozen_tree": "d9279b987e02a5dfe7debc1f71049ba93a97e93f",
+  "qualified_workflow_blob": "ab3df9799bce250c0893cf9771749a65422dd469",
+  "qualification_run": 35302167670,
+  "confirmatory_plan_lock_digest": "ceff752f60859985329454e28c37cd937dffa89bd2edec11d126ffe0eaa8dd6b",
+  "frozen_lock_digest": "e05d0828b582f836f5dad42628bd5c183d4806afb39b02ebd150e1f3b387b016",
+  "approved_candidate_digest": "771793f52cc8228c54bf2ac8ab46ebbcb0c7a99284d94e3042951a7976921e04",
+  "note": "Creating this record triggers the single ABGP-CONFIRM-v1 execution. A STARTED marker is written before any confirmatory seed is derived."
+}
