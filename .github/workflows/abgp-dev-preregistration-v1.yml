@@ -3,7 +3,7 @@ name: abgp-dev-preregistration-v1
 on:
   push:
     branches:
-      - abgp-preregistration-freeze-v1
+      - abgp-confirmatory-v1
   workflow_dispatch:
 
 concurrency:

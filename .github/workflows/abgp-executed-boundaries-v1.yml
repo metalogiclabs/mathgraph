@@ -2,7 +2,7 @@ name: abgp-executed-boundaries-v1
 
 on:
   push:
-    branches: [abgp-preregistration-freeze-v1]
+    branches: [abgp-confirmatory-v1]
   workflow_dispatch:
 
 permissions:
