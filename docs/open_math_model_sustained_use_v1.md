@@ -207,3 +207,63 @@ A sendable result should have all of the following:
 
 That produces an evaluation artifact rather than a demonstration that depends on
 trusting either the model or MathGraph's routing heuristics.
+
+
+## Ready-to-run external-model capture path
+
+The first live pilot no longer needs the model itself to perform the acquisition
+phase. MathGraph can export a small **preauthorized verified bank** plus the
+complete cold/warm/restart/sham/ablation prompt pack:
+
+```bash
+python scripts/export_model_sustained_use_prompt_pack.py \
+  --out-dir /tmp/open_math_model_sustained_use_v1/external-prompt-pack
+```
+
+This writes:
+
+- `preauthorized_verified_bank.json` — four finite structures independently
+  checked before inclusion;
+- `requests.jsonl` — 35 frozen requests: seven fresh tasks × five conditions;
+- `manifest.json` — hashes and the claim boundary.
+
+A model runner only needs to execute each `prompt` in `requests.jsonl` and
+write one response row keyed by `request_id`. The minimum response is:
+
+```json
+{
+  "request_id": "warm:fresh_assoc_not_comm",
+  "model": "provider/model-version",
+  "candidate": {"reuse_id": "cap_..."},
+  "raw": "{\"reuse_id\":\"cap_...\"}",
+  "usage": {
+    "input_tokens": 123,
+    "output_tokens": 9,
+    "total_tokens": 132
+  },
+  "latency_ms": 500.0
+}
+```
+
+Assemble and freeze the responses:
+
+```bash
+python scripts/assemble_model_sustained_use_transcript.py \
+  --requests /tmp/open_math_model_sustained_use_v1/external-prompt-pack/requests.jsonl \
+  --responses /path/to/model_responses.jsonl \
+  --out-dir /tmp/open_math_model_sustained_use_v1/frozen-model-run
+```
+
+Then independently replay every mathematical outcome:
+
+```bash
+python scripts/run_model_sustained_use_eval.py \
+  --provider transcript \
+  --transcript /tmp/open_math_model_sustained_use_v1/frozen-model-run/transcript.jsonl \
+  --capability-bank /tmp/open_math_model_sustained_use_v1/external-prompt-pack/preauthorized_verified_bank.json \
+  --out-dir /tmp/open_math_model_sustained_use_v1/replayed-model-run
+```
+
+This fixed-bank pilot is deliberately the shortest route to a genuine external
+model result. A later acquisition experiment can require the model itself to
+discover the training capabilities before promotion.
