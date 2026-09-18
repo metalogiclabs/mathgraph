@@ -1,0 +1,132 @@
+name: OpenRouter sustained-use V1
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenRouter model ID
+        required: false
+        default: google/gemma-4-31b-it
+      provider:
+        description: OpenRouter provider slug
+        required: false
+        default: deepinfra
+  push:
+    branches:
+      - open-math-model-sustained-use-v1
+    paths:
+      - "scripts/run_openrouter_sustained_use_capture_v1.py"
+      - ".github/workflows/openrouter-sustained-use-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  openrouter-gemma-sustained-use:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_MODEL: ${{ github.event.inputs.model || 'google/gemma-4-31b-it' }}
+      OPENROUTER_PROVIDER: ${{ github.event.inputs.provider || 'deepinfra' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require OpenRouter API key
+        run: |
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            echo "::error::Repository secret OPENROUTER_API_KEY is not configured."
+            exit 1
+          fi
+
+      - name: Export frozen sustained-use prompt pack
+        run: |
+          python scripts/export_model_sustained_use_prompt_pack.py \
+            --out-dir /tmp/openrouter-sustained-use-v1/prompt-pack
+
+      - name: Capture OpenRouter responses
+        run: |
+          set +e
+          python scripts/run_openrouter_sustained_use_capture_v1.py \
+            --requests /tmp/openrouter-sustained-use-v1/prompt-pack/requests.jsonl \
+            --responses /tmp/openrouter-sustained-use-v1/openrouter_responses.jsonl \
+            --model "$OPENROUTER_MODEL" \
+            --provider "$OPENROUTER_PROVIDER" \
+            --max-tokens 256
+          code=$?
+          echo "$code" > /tmp/openrouter-sustained-use-v1/capture_exit_code.txt
+          set -e
+
+      - name: Assemble frozen transcript
+        run: |
+          python scripts/assemble_model_sustained_use_transcript.py \
+            --requests /tmp/openrouter-sustained-use-v1/prompt-pack/requests.jsonl \
+            --responses /tmp/openrouter-sustained-use-v1/openrouter_responses.jsonl \
+            --out-dir /tmp/openrouter-sustained-use-v1/frozen-transcript
+
+      - name: Independently replay model candidates
+        run: |
+          set +e
+          python scripts/run_model_sustained_use_eval.py \
+            --provider transcript \
+            --transcript /tmp/openrouter-sustained-use-v1/frozen-transcript/transcript.jsonl \
+            --capability-bank /tmp/openrouter-sustained-use-v1/prompt-pack/preauthorized_verified_bank.json \
+            --out-dir /tmp/openrouter-sustained-use-v1/replay
+          code=$?
+          echo "$code" > /tmp/openrouter-sustained-use-v1/replay_exit_code.txt
+          set -e
+
+      - name: Summarize OpenRouter evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/openrouter-sustained-use-v1")
+          capture = json.loads((root / "openrouter_responses.manifest.json").read_text())
+          transcript = json.loads((root / "frozen-transcript/transcript_manifest.json").read_text())
+          report = json.loads((root / "replay/model_sustained_use_report.json").read_text())
+
+          summary = {
+              "protocol": "MATHGRAPH_OPENROUTER_SUSTAINED_USE_V1",
+              "requested_model": capture["requested_model"],
+              "requested_provider": capture["requested_provider"],
+              "request_count": capture["request_count"],
+              "transport_success_count": capture["transport_success_count"],
+              "transport_failure_count": capture["transport_failure_count"],
+              "provider_token_usage_complete": capture["provider_token_usage_complete"],
+              "models": transcript["models"],
+              "replay_verdict": report["verdict"],
+              "aggregate": report["aggregate"],
+              "comparisons": report["comparisons"],
+              "gates": report["gates"],
+              "claim_boundary": (
+                  "External-model evidence only. Mathematical successes are counted only after "
+                  "independent finite-checker replay. A negative or non-reuse model result is retained "
+                  "as evidence rather than treated as a workflow failure."
+              ),
+          }
+          (root / "openrouter_evidence_summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(summary, indent=2, sort_keys=True))
+
+          assert capture["request_count"] == 35
+          assert transcript["request_count"] == 35
+          assert report["provider_is_external_model"] is True
+          assert report["aggregate"]["cold"]["tasks"] == 7
+          assert report["aggregate"]["warm"]["tasks"] == 7
+          PY
+
+      - name: Upload OpenRouter evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrouter-sustained-use-v1
+          path: /tmp/openrouter-sustained-use-v1/
+          if-no-files-found: warn
