@@ -7,6 +7,7 @@ on:
       - open-math-model-sustained-use-v1
     paths:
       - "scripts/run_open_math_model_sustained_use_pilot.py"
+      - "scripts/run_model_sustained_use_eval.py"
       - "docs/open_math_model_sustained_use_v1.md"
       - ".github/workflows/open-math-model-sustained-use-v1.yml"
 
@@ -29,7 +30,7 @@ jobs:
           python scripts/run_open_math_model_sustained_use_pilot.py \
             --out-dir /tmp/open-math-model-sustained-use-v1
 
-      - name: Check evidence gates
+      - name: Check exact fixture gates
         run: |
           python - <<'PY'
           import json
@@ -49,6 +50,31 @@ jobs:
           assert econ["ablation_solution_count"] == 0
           assert econ["restart_solution_count"] > 0
           print("PASS_OPEN_MATH_MODEL_SUSTAINED_USE_V1")
+          PY
+
+      - name: Run model-facing protocol qualification
+        run: |
+          python scripts/run_model_sustained_use_eval.py \
+            --provider deterministic \
+            --out-dir /tmp/open-math-model-sustained-use-v1/model-pilot
+
+      - name: Check model-facing protocol gates
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("/tmp/open-math-model-sustained-use-v1/model-pilot/model_sustained_use_report.json")
+          report = json.loads(path.read_text())
+          assert report["provider"] == "deterministic_harness"
+          assert report["provider_is_external_model"] is False
+          assert report["verdict"] == "PASS"
+          assert all(report["gates"].values())
+          assert len(report["promoted_capabilities"]) >= 4
+          assert report["aggregate"]["warm"]["reuse_hits"] > 0
+          assert report["aggregate"]["restart"]["reuse_hits"] == report["aggregate"]["warm"]["reuse_hits"]
+          assert report["aggregate"]["warm"]["candidate_bytes"] <= report["aggregate"]["cold"]["candidate_bytes"]
+          print("PASS_MODEL_SUSTAINED_USE_PROTOCOL_V1")
           PY
 
       - name: Upload evidence
