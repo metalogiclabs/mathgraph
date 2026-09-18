@@ -1,0 +1,39 @@
+{
+  "protocol": "MATHGRAPH_OPENROUTER_SAIR_V5_FROZEN_BANK",
+  "source_run_id": 35402563917,
+  "source_artifact_id": 10570398912,
+  "source_artifact_digest": "sha256:724bdf792b4d099fc786f52c59638c3c87dfc299266fd4f4064dcad2da1ad380",
+  "source_head_sha": "e0a20cb8a9e40f424229aaff3be7f33afcb13adf",
+  "original_bank_sha256": "cd1f1ad1dedf3d5146fe4474ecb05e2cda619458cd74b8484c2d89ffced2b6af",
+  "model": "google/gemma-4-31b-it",
+  "provider": "DeepInfra",
+  "sair_commit": "817a4653bf762584931d49c6714c9fcfab7df66a",
+  "sample200_pairs_excluded": true,
+  "acquisition_false_count": 50,
+  "fresh_false_count_v5": 200,
+  "untouched_reserve_false_count": 250,
+  "acquisition_cost": {
+    "model_calls": 81,
+    "input_tokens": 11361,
+    "output_tokens": 1155,
+    "total_tokens": 12516,
+    "latency_ms": 48414.21680399994,
+    "openrouter_cost": 0.00129103
+  },
+  "v5_fresh_cold": {
+    "model_calls": 200,
+    "total_tokens": 28777,
+    "openrouter_cost": 0.00325576,
+    "model_latency_ms": 128597.18546800007,
+    "verified_terminal_results": 66
+  },
+  "v5_fresh_warm": {
+    "model_calls": 94,
+    "total_tokens": 13515,
+    "openrouter_cost": 0.00152672,
+    "model_latency_ms": 63205.660462999986,
+    "verified_terminal_results": 106,
+    "verified_reuse_hits": 106
+  },
+  "claim_boundary": "This manifest freezes the exact three-capability bank produced by V5 before the final 250-problem reserve is evaluated. The reserve was explicitly withheld from V5 model calls and controller evaluation."
+}
