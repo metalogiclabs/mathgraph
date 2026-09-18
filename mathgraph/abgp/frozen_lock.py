@@ -21,7 +21,10 @@ _ROOT = Path(__file__).resolve().parents[2]
 _BOUND_FILES = (
     "preregistration/abgp-design-manifest-v1.json",
     "preregistration/abgp-analysis-plan-v1.json",
+    "abgp_confirm.py",
     "mathgraph/abgp/analysis.py",
+    "mathgraph/abgp/manifest.py",
+    "mathgraph/abgp/confirmatory.py",
     "mathgraph/abgp/validity.py",
     "mathgraph/abgp/executed_a.py",
     "mathgraph/abgp/executed_b.py",

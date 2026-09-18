@@ -11,6 +11,41 @@ class ConfirmatoryLockedError(RuntimeError):
     """Raised when code attempts to enter the confirmatory namespace before lock."""
 
 
+_ACTIVE_SEED_NAMESPACE = "ABGP-DEV-v1"
+_AUTHORIZED_CONFIRM_LOCK_DIGEST: str | None = None
+
+
+def active_seed_namespace() -> str:
+    return _ACTIVE_SEED_NAMESPACE
+
+
+def confirmatory_namespace_active() -> bool:
+    return _ACTIVE_SEED_NAMESPACE == "ABGP-CONFIRM-v1"
+
+
+def activate_confirmatory_namespace(namespace: str, final_lock: Mapping[str, Any]) -> None:
+    global _ACTIVE_SEED_NAMESPACE, _AUTHORIZED_CONFIRM_LOCK_DIGEST
+    if namespace != "ABGP-CONFIRM-v1":
+        raise ValueError(f"not the registered confirmatory namespace: {namespace}")
+    if final_lock.get("status") != "FROZEN":
+        raise ConfirmatoryLockedError("ABGP confirmation is locked: final lock is not FROZEN")
+    if final_lock.get("confirmatory_execution_enabled") is not True:
+        raise ConfirmatoryLockedError("ABGP confirmation is locked: execution is not enabled")
+    if final_lock.get("confirmatory_namespace_identifier") != namespace:
+        raise ConfirmatoryLockedError("ABGP confirmation is locked: namespace mismatch")
+    digest = final_lock.get("lock_digest")
+    if not isinstance(digest, str) or len(digest) != 64:
+        raise ConfirmatoryLockedError("ABGP confirmation is locked: malformed lock digest")
+    _AUTHORIZED_CONFIRM_LOCK_DIGEST = digest
+    _ACTIVE_SEED_NAMESPACE = namespace
+
+
+def reset_development_namespace() -> None:
+    global _ACTIVE_SEED_NAMESPACE, _AUTHORIZED_CONFIRM_LOCK_DIGEST
+    _ACTIVE_SEED_NAMESPACE = "ABGP-DEV-v1"
+    _AUTHORIZED_CONFIRM_LOCK_DIGEST = None
+
+
 def _canonical_json(data: Any) -> str:
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 
@@ -105,7 +140,10 @@ def derive_dev_seed(arm: str, cell: str, index: int, generator_version: str) -> 
         raise ValueError("index must be non-negative")
     if not cell or not generator_version:
         raise ValueError("cell and generator_version are required")
-    material = f"ABGP-DEV-v1|{arm}|{cell}|{index}|{generator_version}"
+    namespace = active_seed_namespace()
+    if namespace == "ABGP-CONFIRM-v1" and _AUTHORIZED_CONFIRM_LOCK_DIGEST is None:
+        raise ConfirmatoryLockedError("confirmatory seed namespace is not authorized")
+    material = f"{namespace}|{arm}|{cell}|{index}|{generator_version}"
     return sha256(material.encode("utf-8")).hexdigest()
 
 

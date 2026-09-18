@@ -6,7 +6,7 @@ from itertools import permutations
 import json
 from typing import Any, Mapping, Sequence
 
-from .manifest import derive_dev_seed
+from .manifest import confirmatory_namespace_active, derive_dev_seed
 
 
 FAMILY_IDS = ("extensional", "compositional", "reachability", "constraint_order")
@@ -458,7 +458,7 @@ def run_b_direction(acquisition_family: str, transfer_family: str, world_index: 
 
     return {
         "schema": "abgp.executed-b-direction.v1",
-        "mode": "DEV_MECHANISM_ONLY",
+        "mode": "CONFIRMATORY" if confirmatory_namespace_active() else "DEV_MECHANISM_ONLY",
         "acquisition_family": acquisition_family,
         "transfer_family": transfer_family,
         "world_index": world_index,
@@ -492,7 +492,7 @@ def run_b_direction(acquisition_family: str, transfer_family: str, world_index: 
                 "same raw target representation; frozen old transition language omits cross-position token co-reference"
             ),
         },
-        "confirmatory_namespace_used": False,
+        "confirmatory_namespace_used": confirmatory_namespace_active(),
     }
 
 

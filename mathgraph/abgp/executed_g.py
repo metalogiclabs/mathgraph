@@ -75,7 +75,7 @@ from hashlib import sha256
 from math import floor
 
 from .exchangeability import audit_joint_law
-from .manifest import derive_dev_seed
+from .manifest import confirmatory_namespace_active, derive_dev_seed
 
 
 _STRUCTURAL_DOSES = (0.1, 0.25, 0.5, 1.0)
@@ -288,7 +288,7 @@ def run_structural_g_world(world_index: int) -> dict[str, Any]:
     records = [_dose_record(world, dose) for dose in _STRUCTURAL_DOSES]
     return {
         'schema': 'abgp.executed-g-world.v1',
-        'mode': 'DEV_MECHANISM_ONLY',
+        'mode': 'CONFIRMATORY' if confirmatory_namespace_active() else 'DEV_MECHANISM_ONLY',
         'world_index': world_index,
         'base_world_digest': world.base_world_digest,
         'assignment': world.assignment,
@@ -298,7 +298,7 @@ def run_structural_g_world(world_index: int) -> dict[str, Any]:
         'dose_records': records,
         'max_dose_relevant_flip': records[-1]['relevant_flip'],
         'max_dose_irrelevant_flip': records[-1]['irrelevant_flip'],
-        'confirmatory_namespace_used': False,
+        'confirmatory_namespace_used': confirmatory_namespace_active(),
     }
 
 
@@ -331,7 +331,7 @@ def run_structural_g_batch(world_count: int) -> dict[str, Any]:
     )
     return {
         'schema': 'abgp.executed-g-batch.v1',
-        'mode': 'DEV_MECHANISM_ONLY',
+        'mode': 'CONFIRMATORY' if confirmatory_namespace_active() else 'DEV_MECHANISM_ONLY',
         'worlds': worlds,
         'analysis_input': {
             'pairs': pairs,
@@ -345,5 +345,5 @@ def run_structural_g_batch(world_count: int) -> dict[str, Any]:
                 'same_evaluator': True,
             },
         },
-        'confirmatory_namespace_used': False,
+        'confirmatory_namespace_used': confirmatory_namespace_active(),
     }

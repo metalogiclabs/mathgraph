@@ -12,7 +12,7 @@ from .executed_a import run_a_batch
 from .executed_b import INTERVENTIONS, run_b_batch
 from .executed_g import run_structural_g_batch
 from .executed_p_structural import run_structural_p_batch
-from .manifest import load_design_manifest
+from .manifest import active_seed_namespace, load_design_manifest
 
 
 def _b_analysis_input(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -94,7 +94,7 @@ def _ancestry_audits(
             "unique_generated_root_count": len({x for group in a_groups for x in group}),
             "no_shared_generated_ancestor_across_scored_units": _no_duplicates(a_groups),
             "fixed_protocol_objects": [
-                "ABGP-DEV-v1 namespace",
+                f"{active_seed_namespace()} namespace",
                 "executed structural candidate languages",
                 "generator code and registered analysis",
             ],

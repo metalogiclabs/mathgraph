@@ -12,7 +12,7 @@ from itertools import product
 from typing import Any
 
 from .executed_p import run_worker
-from .manifest import derive_dev_seed
+from .manifest import active_seed_namespace, confirmatory_namespace_active, derive_dev_seed
 
 
 SOURCE_SCHEMA = 'source-symbol-sequence+label-v1'
@@ -167,7 +167,7 @@ def run_structural_p_episode(episode_index: int) -> dict[str, Any]:
 
     return {
         'schema': 'abgp.executed-p-structural-episode.v1',
-        'mode': 'DEV_MECHANISM_ONLY',
+        'mode': 'CONFIRMATORY' if confirmatory_namespace_active() else 'DEV_MECHANISM_ONLY',
         'episode_index': episode_index,
         'inferential_unit': 'acquisition_restart_future_episode',
         'future_task_count': 4,
@@ -200,18 +200,17 @@ def run_structural_p_episode(episode_index: int) -> dict[str, Any]:
         'future_reconstruction_search_count': sum(
             row['trace']['candidate_checks'] for row in retained_runs
         ),
-        'confirmatory_namespace_used': False,
+        'confirmatory_namespace_used': confirmatory_namespace_active(),
     }
 
 
-def run_structural_p_batch(
-    episode_count: int, *, namespace: str = 'ABGP-DEV-v1'
-) -> dict[str, Any]:
-    if namespace != 'ABGP-DEV-v1':
-        raise ValueError('structural P executor accepts only ABGP-DEV-v1')
-    if type(episode_count) is not int or episode_count <= 0:
-        raise ValueError('episode_count must be positive')
-    episodes = [run_structural_p_episode(index) for index in range(episode_count)]
+def summarize_structural_p_episodes(episodes: list[dict[str, Any]]) -> dict[str, Any]:
+    if not episodes:
+        raise ValueError('P summary requires at least one episode')
+    indices = [int(episode['episode_index']) for episode in episodes]
+    if len(set(indices)) != len(indices):
+        raise ValueError('P summary contains duplicate episode indices')
+    episodes = sorted(episodes, key=lambda episode: int(episode['episode_index']))
     retained = [episode['scores']['retained'] for episode in episodes]
     baselines = {
         'cold': [episode['scores']['cold'] for episode in episodes],
@@ -250,8 +249,10 @@ def run_structural_p_batch(
     reacquired = [episode['scores']['reacquired'] for episode in episodes]
     return {
         'schema': 'abgp.executed-p-structural-batch.v1',
-        'mode': 'DEV_MECHANISM_ONLY',
+        'mode': 'CONFIRMATORY' if confirmatory_namespace_active() else 'DEV_MECHANISM_ONLY',
         'episodes': episodes,
+        'episode_index_min': min(indices),
+        'episode_index_max': max(indices),
         'analysis_input': {
             'inferential_unit': 'acquisition_restart_future_episode',
             'future_tasks_per_episode': 4,
@@ -283,5 +284,20 @@ def run_structural_p_batch(
             'label_free': label_free,
             'lineage_targeted': lineage_targeted,
         },
-        'confirmatory_namespace_used': False,
+        'confirmatory_namespace_used': confirmatory_namespace_active(),
     }
+
+
+def run_structural_p_batch(
+    episode_count: int, *, namespace: str = 'ABGP-DEV-v1', start_index: int = 0
+) -> dict[str, Any]:
+    if namespace not in ('ABGP-DEV-v1', 'ABGP-CONFIRM-v1'):
+        raise ValueError('structural P executor received unknown namespace')
+    if namespace != active_seed_namespace():
+        raise ValueError('requested P namespace is not the active authorized seed namespace')
+    if type(episode_count) is not int or episode_count <= 0:
+        raise ValueError('episode_count must be positive')
+    if type(start_index) is not int or start_index < 0:
+        raise ValueError('start_index must be nonnegative')
+    episodes = [run_structural_p_episode(start_index + offset) for offset in range(episode_count)]
+    return summarize_structural_p_episodes(episodes)

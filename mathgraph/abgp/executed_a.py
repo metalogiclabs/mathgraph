@@ -3,7 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 from typing import Any
 
-from .manifest import derive_dev_seed
+from .manifest import confirmatory_namespace_active, derive_dev_seed
 from .structural_world import (
     CONSTRUCTION_REDUCERS,
     OLD_REDUCERS,
@@ -109,7 +109,7 @@ def run_a_batch(count: int) -> dict[str, Any]:
     }
     return {
         'schema': 'abgp.executed-a.v1',
-        'mode': 'DEV_MECHANISM_ONLY',
+        'mode': 'CONFIRMATORY' if confirmatory_namespace_active() else 'DEV_MECHANISM_ONLY',
         'episodes': episodes,
         'analysis_input': analysis_input,
         'same_information_source_history': all(e['same_source_history_for_old_bayes'] for e in episodes),
@@ -118,5 +118,5 @@ def run_a_batch(count: int) -> dict[str, Any]:
         'representation_growth_gate': analysis_input['representation_growth_gate'],
         'minimum_constructor_visible_action_support': min(e['posterior_action_support'] for e in episodes),
         'future_verifier_calls': sum(e['future_verifier_calls'] for e in episodes),
-        'confirmatory_namespace_used': False,
+        'confirmatory_namespace_used': confirmatory_namespace_active(),
     }
