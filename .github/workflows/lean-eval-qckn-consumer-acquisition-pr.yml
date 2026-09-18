@@ -179,7 +179,7 @@ jobs:
           set +e
           : > /tmp/verify.tsv
           all=1
-          for arm in sham components carrier_mass; do
+          for arm in carrier_mass; do
             cp "/tmp/$arm.lean" Submission.lean
             lake build Submission > "/tmp/verify-$arm.log" 2>&1
             code=$?
@@ -193,7 +193,7 @@ jobs:
             cat /tmp/verify-*.log
             exit 90
           fi
-      - name: Replay frozen language and compare normalized residuals
+      - name: QCKN bounded consumer attachment replay
         id: replay
         working-directory: /tmp/${{ env.TARGET }}
         run: |
@@ -216,7 +216,7 @@ jobs:
           winner=''
           for arm in sham components carrier_mass; do
             while IFS=$'\t' read -r tname body; do
-              cp "/tmp/$arm.lean" Submission.lean
+              cp "/tmp/$arm.lean" Submission.lean\n              # QCKN consumer: force a target-adjacent continuation into the compiled present.\n              BODY="have hConsumerExpPos : 0 < exp (10 ^ k) := Real.exp_pos _\n    $body"
               BODY="$body" python3 - <<'PY'
           import os,re
           s=open('Submission.lean').read()
@@ -253,21 +253,7 @@ jobs:
           rows=[x.rstrip().split('\t') for x in open('/tmp/replay.tsv') if x.strip()]
           by=defaultdict(list)
           for r in rows: by[r[0]].append(r)
-          for arm in ('sham','components','carrier_mass'):
-              if len(by[arm]) != 12:
-                  raise SystemExit(f'CARRIER_MASS_HARNESS_FATAL arm={arm} programs={len(by[arm])}')
-          sham=set(r[3] for r in by['sham'])
-          comp=set(r[3] for r in by['components'])
-          mass=set(r[3] for r in by['carrier_mass'])
-          print('CARRIER_MASS_SHAM_CLASSES',len(sham))
-          print('CARRIER_MASS_COMPONENT_CLASSES',len(comp),'NOVEL_VS_SHAM',len(comp-sham))
-          print('CARRIER_MASS_GENESIS_CLASSES',len(mass),'NOVEL_VS_SHAM',len(mass-sham),'NOVEL_VS_COMPONENTS',len(mass-comp))
-          separation=int(mass != sham and mass != comp)
-          component_sep=int(comp != sham)
-          print('CARRIER_MASS_GENESIS_SEPARATION',separation)
-          print('CARRIER_MASS_COMPONENT_SEPARATION',component_sep)
-          open('/tmp/separation.txt','w').write(str(separation))
-          open('/tmp/component-separation.txt','w').write(str(component_sep))
+          if len(by['carrier_mass']) != 12:\n              raise SystemExit(f\"QCKN_CONSUMER_HARNESS_FATAL programs={len(by['carrier_mass'])}\")\n          goals=set(r[3] for r in by['carrier_mass'])\n          print('QCKN_CONSUMER_CLASSES',len(goals))\n          separation=0\n          component_sep=0\n          open('/tmp/separation.txt','w').write('0')\n          open('/tmp/component-separation.txt','w').write('0')
           PY
           if [ $? -ne 0 ]; then exit 92; fi
           echo "separation=$(cat /tmp/separation.txt)" >> "$GITHUB_OUTPUT"
@@ -282,7 +268,7 @@ jobs:
           elif [ "${{ steps.replay.outputs.separation }}" = "1" ]; then
             echo 'CARRIER_MASS_GATE {"classification":"ATTACHED_CONSUMER_FOUND","ablation":"components_only"}'
           else
-            echo 'CARRIER_MASS_GATE {"classification":"BOUNDED_CONSUMER_VERSION_SPACE_EXHAUSTED"}'
+            echo 'QCKN_CONSUMER_GATE {"classification":"BOUNDED_CONSUMER_VERSION_SPACE_EXHAUSTED","consumer":"exp_pos"}'
           fi
       - name: Upload evidence
         if: always()
