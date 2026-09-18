@@ -1,0 +1,320 @@
+name: abgp-confirmatory-v1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - preregistration/abgp-confirmatory-arm-v1.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: abgp-confirmatory-v1-one-shot
+  cancel-in-progress: false
+
+env:
+  CONFIRM_NAMESPACE: ABGP-CONFIRM-v1
+  RESULT_DIR: docs/research/abgp-confirmatory-result-v1
+  MARKER_PATH: docs/research/abgp-confirmatory-result-v1/one-shot-marker.json
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    outputs:
+      frozen_commit: ${{ steps.arm.outputs.frozen_commit }}
+      frozen_tree: ${{ steps.arm.outputs.frozen_tree }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - id: arm
+        name: Validate arm record
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          arm = json.load(open("preregistration/abgp-confirmatory-arm-v1.json", encoding="utf-8"))
+          assert arm["schema"] == "mathgraph.abgp.confirmatory-arm.v1"
+          assert arm["state"] == "ARMED"
+          assert arm["namespace"] == "ABGP-CONFIRM-v1"
+          assert arm["branch"] == "abgp-confirmatory-v1"
+          assert len(arm["frozen_commit"]) == 40
+          assert len(arm["frozen_tree"]) == 40
+          print("frozen_commit=" + arm["frozen_commit"])
+          print("frozen_tree=" + arm["frozen_tree"])
+          PY
+
+      - name: Refuse any second start and atomically mark STARTED
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROZEN_COMMIT: ${{ steps.arm.outputs.frozen_commit }}
+          FROZEN_TREE: ${{ steps.arm.outputs.frozen_tree }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/contents/$MARKER_PATH" -f ref=main >/tmp/existing.json 2>/dev/null; then
+            echo "one-shot marker already exists; refusing any repeat confirmatory execution"
+            cat /tmp/existing.json
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os
+          marker = {
+              "schema": "mathgraph.abgp.one-shot-marker.v1",
+              "state": "STARTED",
+              "namespace": os.environ["CONFIRM_NAMESPACE"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "frozen_commit": os.environ["FROZEN_COMMIT"],
+              "frozen_tree": os.environ["FROZEN_TREE"],
+          }
+          open("/tmp/marker.json", "w", encoding="utf-8").write(
+              json.dumps(marker, sort_keys=True, separators=(",", ":")) + "\n"
+          )
+          PY
+          CONTENT="$(base64 -w0 /tmp/marker.json)"
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$MARKER_PATH"             -f message="Start one-shot ABGP confirmation"             -f content="$CONTENT"             -f branch=main >/tmp/put-marker.json
+          echo "ABGP_CONFIRMATORY_ONE_SHOT_STARTED"
+
+  arm_a:
+    needs: guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.frozen_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[sair]'
+      - name: Verify exact frozen tree and execute A once
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{tree})" = "${{ needs.guard.outputs.frozen_tree }}"
+          python abgp_confirm.py --expected-tree "${{ needs.guard.outputs.frozen_tree }}" a --output confirm-a.json
+          gzip -9 confirm-a.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abgp-confirm-a-raw
+          path: confirm-a.json.gz
+          retention-days: 90
+          if-no-files-found: error
+
+  arm_b:
+    needs: guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.frozen_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[sair]'
+      - name: Verify exact frozen tree and execute B once
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{tree})" = "${{ needs.guard.outputs.frozen_tree }}"
+          python abgp_confirm.py --expected-tree "${{ needs.guard.outputs.frozen_tree }}" b --output confirm-b.json
+          gzip -9 confirm-b.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abgp-confirm-b-raw
+          path: confirm-b.json.gz
+          retention-days: 90
+          if-no-files-found: error
+
+  arm_g:
+    needs: guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.frozen_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[sair]'
+      - name: Verify exact frozen tree and execute G once
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{tree})" = "${{ needs.guard.outputs.frozen_tree }}"
+          python abgp_confirm.py --expected-tree "${{ needs.guard.outputs.frozen_tree }}" g --output confirm-g.json
+          gzip -9 confirm-g.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abgp-confirm-g-raw
+          path: confirm-g.json.gz
+          retention-days: 90
+          if-no-files-found: error
+
+  arm_p:
+    needs: guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: true
+      max-parallel: 16
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.frozen_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[sair]'
+      - name: Verify exact frozen tree and execute disjoint P shard once
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{tree})" = "${{ needs.guard.outputs.frozen_tree }}"
+          START=$((SHARD * 128))
+          printf -v NAME 'p-%02d.json' "$SHARD"
+          python abgp_confirm.py --expected-tree "${{ needs.guard.outputs.frozen_tree }}"             p-shard --start "$START" --count 128 --output "$NAME"
+          gzip -9 "$NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abgp-confirm-p-${{ matrix.shard }}
+          path: p-*.json.gz
+          retention-days: 90
+          if-no-files-found: error
+
+  aggregate:
+    needs: [guard, arm_a, arm_b, arm_g, arm_p]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.guard.outputs.frozen_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[sair]'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: abgp-confirm-a-raw
+          path: confirm/a
+      - uses: actions/download-artifact@v4
+        with:
+          name: abgp-confirm-b-raw
+          path: confirm/b
+      - uses: actions/download-artifact@v4
+        with:
+          name: abgp-confirm-g-raw
+          path: confirm/g
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: abgp-confirm-p-*
+          path: confirm/p
+          merge-multiple: true
+
+      - name: Reassemble exact frozen inferential units and analyze once
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{tree})" = "${{ needs.guard.outputs.frozen_tree }}"
+          gunzip confirm/a/confirm-a.json.gz
+          gunzip confirm/b/confirm-b.json.gz
+          gunzip confirm/g/confirm-g.json.gz
+          gunzip confirm/p/p-*.json.gz
+          test "$(find confirm/p -name 'p-*.json' | wc -l)" -eq 32
+          python abgp_confirm.py --expected-tree "${{ needs.guard.outputs.frozen_tree }}" aggregate             --a confirm/a/confirm-a.json             --b confirm/b/confirm-b.json             --g confirm/g/confirm-g.json             --p-dir confirm/p             --output abgp-confirmatory-result.json             | tee abgp-confirmatory-result.log
+          grep -Fx 'ABGP_CONFIRMATORY_RESULT_COMPLETE' abgp-confirmatory-result.log
+          sha256sum abgp-confirmatory-result.json > abgp-confirmatory-result.sha256
+
+      - name: Build public result summary
+        run: |
+          python - <<'PY'
+          import json
+          r = json.load(open("abgp-confirmatory-result.json", encoding="utf-8"))
+          a = r["analysis"]["arms"]
+          lines = [
+              "# A/B/G/P Confirmatory Result V1",
+              "",
+              "**Metalogic Labs / MathGraph**",
+              "",
+              f"- Namespace: `{r['namespace']}`",
+              f"- Frozen tree: `{r['execution_lock']['repository_tree_hash']}`",
+              f"- Execution lock digest: `{r['execution_lock']['lock_digest']}`",
+              f"- Result digest: `{r['result_digest']}`",
+              f"- Combined verdict: **{r['combined_verdict']}**",
+              "",
+              "## Arm verdicts",
+              "",
+              "| Arm | Verdict | Effect | Raw p | Holm-adjusted p |",
+              "|---|---:|---:|---:|---:|",
+          ]
+          for arm in "ABGP":
+              row = a[arm]
+              lines.append(
+                  f"| {arm} | {row['verdict']} | {row['effect']:.6f} | "
+                  f"{row['raw_pvalue']:.6g} | {row['holm_adjusted_pvalue']:.6g} |"
+              )
+          lines += [
+              "",
+              "This is the single preregistered ABGP-CONFIRM-v1 execution. "
+              "Interpretation is bounded by the frozen claim boundary in the result artifact.",
+              "",
+          ]
+          open("ABGP_Confirmatory_Result_v1.md", "w", encoding="utf-8").write("\n".join(lines))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: abgp-confirmatory-v1-result
+          path: |
+            abgp-confirmatory-result.json
+            abgp-confirmatory-result.sha256
+            abgp-confirmatory-result.log
+            ABGP_Confirmatory_Result_v1.md
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Publish result and mark COMPLETED
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROZEN_COMMIT: ${{ needs.guard.outputs.frozen_commit }}
+          FROZEN_TREE: ${{ needs.guard.outputs.frozen_tree }}
+        run: |
+          set -euo pipefail
+          RESULT_CONTENT="$(base64 -w0 abgp-confirmatory-result.json)"
+          SUMMARY_CONTENT="$(base64 -w0 ABGP_Confirmatory_Result_v1.md)"
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$RESULT_DIR/result.json"             -f message="Publish one-shot ABGP confirmatory result"             -f content="$RESULT_CONTENT" -f branch=main >/tmp/result-put.json
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$RESULT_DIR/README.md"             -f message="Publish ABGP confirmatory result summary"             -f content="$SUMMARY_CONTENT" -f branch=main >/tmp/summary-put.json
+
+          MARKER_SHA="$(gh api "repos/$GITHUB_REPOSITORY/contents/$MARKER_PATH" -f ref=main --jq .sha)"
+          python - <<'PY'
+          import json, os
+          r = json.load(open("abgp-confirmatory-result.json", encoding="utf-8"))
+          marker = {
+              "schema": "mathgraph.abgp.one-shot-marker.v1",
+              "state": "COMPLETED",
+              "namespace": "ABGP-CONFIRM-v1",
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "frozen_commit": os.environ["FROZEN_COMMIT"],
+              "frozen_tree": os.environ["FROZEN_TREE"],
+              "execution_lock_digest": r["execution_lock"]["lock_digest"],
+              "result_digest": r["result_digest"],
+              "combined_verdict": r["combined_verdict"],
+          }
+          open("/tmp/completed.json", "w", encoding="utf-8").write(
+              json.dumps(marker, sort_keys=True, separators=(",", ":")) + "\n"
+          )
+          PY
+          COMPLETED_CONTENT="$(base64 -w0 /tmp/completed.json)"
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$MARKER_PATH"             -f message="Complete one-shot ABGP confirmation"             -f content="$COMPLETED_CONTENT"             -f sha="$MARKER_SHA"             -f branch=main >/tmp/completed-put.json
+          echo "ABGP_CONFIRMATORY_ONE_SHOT_COMPLETED"

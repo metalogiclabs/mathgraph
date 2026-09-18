@@ -19,6 +19,7 @@ from .planning_review import build_planning_proposal
 
 _ROOT = Path(__file__).resolve().parents[2]
 _BOUND_FILES = (
+    ".github/workflows/abgp-confirmatory-v1.yml",
     "preregistration/abgp-design-manifest-v1.json",
     "preregistration/abgp-analysis-plan-v1.json",
     "abgp_confirm.py",

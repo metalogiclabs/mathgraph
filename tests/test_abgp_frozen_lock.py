@@ -24,6 +24,9 @@ class FrozenLockTests(unittest.TestCase):
         self.assertTrue(lock["qualification_status"].startswith("IMPLEMENTATION_QUALIFIED"))
         self.assertEqual(len(lock["lock_digest"]), 64)
         self.assertTrue(all(len(v) == 64 for v in lock["bound_file_hashes"].values()))
+        self.assertIn(".github/workflows/abgp-confirmatory-v1.yml", lock["bound_file_hashes"])
+        self.assertIn("mathgraph/abgp/confirmatory.py", lock["bound_file_hashes"])
+        self.assertIn("abgp_confirm.py", lock["bound_file_hashes"])
 
     def test_approved_planning_is_exact(self):
         lock = build_frozen_lock(
