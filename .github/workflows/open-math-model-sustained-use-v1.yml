@@ -10,6 +10,7 @@ on:
       - "scripts/run_model_sustained_use_eval.py"
       - "scripts/export_model_sustained_use_prompt_pack.py"
       - "scripts/assemble_model_sustained_use_transcript.py"
+      - "scripts/run_sair_official_sample200_reuse_probe.py"
       - "docs/open_math_model_sustained_use_v1.md"
       - ".github/workflows/open-math-model-sustained-use-v1.yml"
 
@@ -145,4 +146,48 @@ jobs:
         with:
           name: open-math-model-sustained-use-v1
           path: /tmp/open-math-model-sustained-use-v1/
+          if-no-files-found: error
+
+
+  sair-official-sample200-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run pinned official SAIR sample-200 bounded reuse probe
+        run: |
+          python scripts/run_sair_official_sample200_reuse_probe.py \
+            --out-dir /tmp/sair-official-sample200-reuse-v1
+
+      - name: Audit public SAIR reuse evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/sair-official-sample200-reuse-v1")
+          report = json.loads((root / "report.json").read_text())
+          assert report["verdict"] == "PASS"
+          assert report["provenance"]["commit"] == "817a4653bf762584931d49c6714c9fcfab7df66a"
+          assert report["provenance"]["sample_problem_count"] == 200
+          assert report["split"]["acquisition_false_count"] == 25
+          assert report["split"]["fresh_false_count"] > 0
+          assert len(report["capabilities"]) > 0
+          assert report["true_controls"]["countermodels_found"] == 0
+          assert report["gates"]["restart_exact"]
+          assert report["gates"]["all_orderings_preserve_bounded_terminal_yield"]
+          print("PASS_SAIR_OFFICIAL_SAMPLE200_BOUNDED_REUSE_V1")
+          print(json.dumps(report["comparisons"], indent=2, sort_keys=True))
+          PY
+
+      - name: Upload public SAIR reuse evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sair-official-sample200-bounded-reuse-v1
+          path: /tmp/sair-official-sample200-reuse-v1/
           if-no-files-found: error
