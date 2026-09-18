@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import sys
 from dataclasses import asdict, dataclass
@@ -17,14 +18,16 @@ from pathlib import Path
 from typing import Any, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from mathgraph.finite_magma_world import (
-    check_finite_countermodel,
-    normalize_table,
-    table_satisfies_equation,
-)
+FINITE_WORLD_PATH = REPO_ROOT / "mathgraph" / "finite_magma_world.py"
+_SPEC = importlib.util.spec_from_file_location("_mathgraph_finite_magma_world_standalone", FINITE_WORLD_PATH)
+if _SPEC is None or _SPEC.loader is None:
+    raise RuntimeError(f"cannot load finite checker from {FINITE_WORLD_PATH}")
+_FINITE = importlib.util.module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = _FINITE
+_SPEC.loader.exec_module(_FINITE)
+check_finite_countermodel = _FINITE.check_finite_countermodel
+normalize_table = _FINITE.normalize_table
+table_satisfies_equation = _FINITE.table_satisfies_equation
 
 
 PROPERTY_EQUATIONS = {
