@@ -9,6 +9,7 @@ on:
       - "scripts/run_open_math_model_sustained_use_pilot.py"
       - "scripts/run_model_sustained_use_eval.py"
       - "scripts/export_model_sustained_use_prompt_pack.py"
+      - "scripts/assemble_model_sustained_use_transcript.py"
       - "docs/open_math_model_sustained_use_v1.md"
       - ".github/workflows/open-math-model-sustained-use-v1.yml"
 
@@ -99,6 +100,44 @@ jobs:
           assert (root / "preauthorized_verified_bank.json").exists()
           assert (root / "requests.jsonl").exists()
           print("PASS_EXTERNAL_MODEL_PROMPT_PACK_V1")
+          PY
+
+      - name: Qualify transcript assembly
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/open-math-model-sustained-use-v1/external-prompt-pack")
+          responses = root / "fixture_responses.jsonl"
+          rows = []
+          for line in (root / "requests.jsonl").read_text().splitlines():
+              req = json.loads(line)
+              rows.append({
+                  "request_id": req["request_id"],
+                  "model": "fixture/not-an-external-model",
+                  "candidate": {"table": [[0]]},
+                  "raw": "{\"table\":[[0]]}",
+                  "usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
+                  "latency_ms": 0.0,
+              })
+          responses.write_text("".join(json.dumps(row) + "\n" for row in rows))
+          PY
+          python scripts/assemble_model_sustained_use_transcript.py \
+            --requests /tmp/open-math-model-sustained-use-v1/external-prompt-pack/requests.jsonl \
+            --responses /tmp/open-math-model-sustained-use-v1/external-prompt-pack/fixture_responses.jsonl \
+            --out-dir /tmp/open-math-model-sustained-use-v1/transcript-assembly-fixture
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/open-math-model-sustained-use-v1/transcript-assembly-fixture")
+          manifest = json.loads((root / "transcript_manifest.json").read_text())
+          assert manifest["request_count"] == 35
+          assert manifest["response_count"] == 35
+          assert manifest["models"] == ["fixture/not-an-external-model"]
+          assert manifest["provider_token_usage_complete"] is True
+          print("PASS_TRANSCRIPT_ASSEMBLY_V1")
           PY
 
       - name: Upload evidence
