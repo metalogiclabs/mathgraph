@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parent
-MSI_ROOT = Path(os.environ.get("MSI_SOURCE_ROOT", "_vendor/representation_genesis_source"))
+MSI_ROOT = Path(os.environ.get("MSI_SOURCE_ROOT", "_vendor/msi_kernel"))
 PVSNP_ROOT = Path(os.environ.get("PVSNP_SOURCE_ROOT", "_vendor/pvsnp_source"))
 
 sys.path.insert(0, str(MSI_ROOT))
@@ -23,7 +23,7 @@ from consequential_core import (
 )
 from consequential_certification import certify_representation_repair
 
-SOURCE_RUN = 34591859113
+MSI_KERNEL_COMMIT = "5d448c0ecc82ff3945d009963064ebbb67d2f308"\n\nSOURCE_RUN = 34591859113
 SOURCE_COMMIT = "9e6ba7cac5eeb965e1e882ebe038424a87a69ea0"
 SOURCE_ARTIFACT = 10195947331
 SOURCE_ARTIFACT_DIGEST = "sha256:3ede7957ea74f3ee7417977781e3841361e7c73b3485d70364b4da8cc6392029"
@@ -316,7 +316,7 @@ def run() -> dict:
             "artifact_digest": SOURCE_ARTIFACT_DIGEST,
             "snapshot_digest": SOURCE_SNAPSHOT_DIGEST,
             "representation_artifact_digest": SOURCE_REPRESENTATION_DIGEST,
-            "transferred_capability": "generic quotient-by-certified-separator minimum-refinement constructor",
+            "transferred_capability": "generic quotient-by-certified-separator minimum-refinement constructor",\n            "certification_kernel_commit": MSI_KERNEL_COMMIT,
         },
         "target": {
             "domain": "finite_nand_circuit_complexity",
