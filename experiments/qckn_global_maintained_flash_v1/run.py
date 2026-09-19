@@ -78,7 +78,7 @@ class LiveTarget:
 @lru_cache(maxsize=1)
 def qualify_source_results():
     representation = run_representation_flash()
-    heterogeneous = run_heterogeneous_flash()
+    heterogeneous = run_heterogeneous_flash(0)
     cross_rep = run_cross_representation_flash()
     revocable = run_revocable_v3()
 
