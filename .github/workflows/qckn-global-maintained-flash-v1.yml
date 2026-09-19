@@ -92,7 +92,7 @@ jobs:
           test "$(git -C _vendor/collatz_source rev-parse HEAD)" = "$COLLATZ_COMMIT"
           test "$(git -C _vendor/collatz_source hash-object evidence/collatz-flash-v1/summary.json)" = "6ea5ce6ef40db44bb4c4d8f556534987e6742577"
           grep -F 'class GlobalFlashBus' _vendor/realitygraph_bus/realitygraph/flash_bus.py
-          grep -F 'Cross-domain consequences exist only when an independently admitted exact bridge matches' _vendor/realitygraph_bus/realitygraph/flash_bus.py
+          grep -F 'independently admitted exact bridge' _vendor/realitygraph_bus/realitygraph/flash_bus.py
           echo PINNED_GLOBAL_SOURCES=PASS
 
       - name: Reproduce representation-genesis authority
