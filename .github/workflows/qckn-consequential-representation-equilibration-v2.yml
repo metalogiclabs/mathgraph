@@ -1,0 +1,117 @@
+name: QCKN Consequential Representation Equilibration V2
+
+on:
+  push:
+    branches:
+      - qckn-consequential-representation-equilibration-v2
+    paths:
+      - 'experiments/qckn_consequential_representation_equilibration_v2/**'
+      - 'docs/research/qckn-consequential-representation-equilibration-v2.md'
+      - '.github/workflows/qckn-consequential-representation-equilibration-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PVSNP_COMMIT: 4df88a272926126b895c2fb6220c56012949df05
+      MSI_COMMIT: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+      PVSNP_SOURCE_ROOT: _vendor/pvsnp_source
+      MSI_SOURCE_ROOT: _vendor/msi_source
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.PVSNP_COMMIT }}
+          path: _vendor/pvsnp_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: ${{ env.MSI_COMMIT }}
+          path: _vendor/msi_source
+
+      - name: Verify pinned sources
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/pvsnp_source rev-parse HEAD)" = "$PVSNP_COMMIT"
+          test "$(git -C _vendor/msi_source rev-parse HEAD)" = "$MSI_COMMIT"
+          test "$(git -C _vendor/msi_source hash-object tests/test_arithmetic_base_invariance.py)" = "5d23b9b5b2d16e94e2c15c2ed7439fba1335c6a3"
+
+      - name: Reproduce exact P-vs-NP finite signal
+        run: |
+          cd _vendor/pvsnp_source/experiments/pvsnp_hardness_lab_v1
+          python experiment.py > /tmp/pvsnp-evidence.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/pvsnp-evidence.json'))
+          m=r['metric_collision']
+          assert m['functions_hex']==['0x8f','0xea']
+          assert m['sizes']==[2,3]
+          assert len(m['shared_12_metric_signature'])==12
+          print('PVSNP_EQUILIBRATION_SOURCE=PASS')
+          PY
+
+      - name: Reproduce arithmetic two-state quotient
+        working-directory: _vendor/msi_source
+        run: |
+          python -m unittest tests.test_arithmetic_base_invariance -v
+
+      - name: Reproduce exhaustive coarsest-sufficient quotient law
+        working-directory: _vendor/msi_source
+        run: |
+          python -m unittest tests.test_golden_law_exhaustive.GoldenLawExhaustive.test_quotient_is_unique_coarsest_sufficient_representation -v
+
+      - name: Run representation equilibration regression tests
+        run: |
+          python -m unittest experiments.qckn_consequential_representation_equilibration_v2.test_run -v
+
+      - name: Run prospective bidirectional equilibration
+        run: |
+          python -m experiments.qckn_consequential_representation_equilibration_v2.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_consequential_representation_equilibration_v2/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_BIDIRECTIONAL_CONSEQUENTIAL_REPRESENTATION_EQUILIBRATION'
+          assert r['gates']['pass'] is True
+          assert r['circuit_world']['move']=='REFINE'
+          assert r['arithmetic_world']['move']=='COARSEN'
+          ca=r['circuit_world']['arms']
+          aa=r['arithmetic_world']['arms']
+          assert ca['FLASH']['resolved'] is True and ca['FLASH']['diagnostic_checks']==6
+          assert ca['COLD']['resolved'] is False and ca['COLD']['diagnostic_checks']==12
+          assert aa['COLD']['record_allocations']==101
+          assert aa['WARM']['record_allocations']==2
+          assert aa['FLASH']['record_allocations']==22
+          assert aa['FLASH']['final_classes']==2
+          assert aa['SHAM_ALL_MERGED']['sham_rejected'] is True
+          assert aa['ABLATION']['final_classes']==101
+          print('QCKN_REPRESENTATION_EQUILIBRATION_V2_QUALIFIED=PASS')
+          print('RESULT_DIGEST='+r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-consequential-representation-equilibration-v2
+          path: |
+            experiments/qckn_consequential_representation_equilibration_v2/result.json
+            experiments/qckn_consequential_representation_equilibration_v2/run.py
+            experiments/qckn_consequential_representation_equilibration_v2/test_run.py
+            docs/research/qckn-consequential-representation-equilibration-v2.md
+          if-no-files-found: error
