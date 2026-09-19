@@ -1,0 +1,152 @@
+name: QCKN Maintained Revocable Equilibration V3
+
+on:
+  push:
+    branches:
+      - qckn-maintained-revocable-equilibration-v3
+    paths:
+      - 'experiments/qckn_maintained_revocable_equilibration_v3/**'
+      - 'docs/research/qckn-maintained-revocable-equilibration-v3.md'
+      - '.github/workflows/qckn-maintained-revocable-equilibration-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      MSI_COMMIT: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+      PVSNP_COMMIT: 4df88a272926126b895c2fb6220c56012949df05
+      REALITYGRAPH_COMMIT: a03310d7660ea98ac37cdeace4264e36f2a4b6ed
+      MSI_SOURCE_ROOT: _vendor/msi_source
+      PVSNP_SOURCE_ROOT: _vendor/pvsnp_source
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: ${{ env.MSI_COMMIT }}
+          path: _vendor/msi_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.PVSNP_COMMIT }}
+          path: _vendor/pvsnp_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: ${{ env.REALITYGRAPH_COMMIT }}
+          path: _vendor/realitygraph_source
+
+      - name: Verify pinned sources and QCKN revocation pattern
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/msi_source rev-parse HEAD)" = "$MSI_COMMIT"
+          test "$(git -C _vendor/pvsnp_source rev-parse HEAD)" = "$PVSNP_COMMIT"
+          test "$(git -C _vendor/realitygraph_source rev-parse HEAD)" = "$REALITYGRAPH_COMMIT"
+          test "$(git -C _vendor/msi_source hash-object tests/test_arithmetic_base_invariance.py)" = "5d23b9b5b2d16e94e2c15c2ed7439fba1335c6a3"
+          grep -F 'class MemoryRevocation' _vendor/realitygraph_source/realitygraph/memory_graph.py
+          grep -F 'def revoke_capability' _vendor/realitygraph_source/realitygraph/compiled_present.py
+          grep -F 'reserve_ids' _vendor/realitygraph_source/qckn_v2_compounding_falsification.py
+          echo QCKN_REVOCATION_RETENTION_PATTERN=PASS
+
+      - name: Reproduce arithmetic sufficient-basis source
+        working-directory: _vendor/msi_source
+        run: |
+          python -m unittest tests.test_arithmetic_base_invariance -v
+          python - <<'PY'
+          import importlib.util, pathlib
+          p=pathlib.Path('tests/test_arithmetic_base_invariance.py')
+          s=importlib.util.spec_from_file_location('arith',p)
+          m=importlib.util.module_from_spec(s); s.loader.exec_module(m)
+          pairs,histories,retained,classes=m.adaptive_partition(10)
+          assert len(histories)==101
+          assert retained==((0,0),)
+          assert len(classes)==2
+          full={h:m.signature(h,pairs,10) for h in histories}
+          basis={h:m.oracle_next_digit(h,(0,0),10) for h in histories}
+          def part(values):
+              b={}
+              for h,v in values.items(): b.setdefault(v,[]).append(h)
+              return sorted(sorted(x) for x in b.values())
+          assert part(full)==part(basis)
+          print('ARITHMETIC_SUFFICIENT_BASIS_CERTIFICATE=PASS')
+          PY
+
+      - name: Re-run V2 bidirectional baseline
+        run: |
+          python -m experiments.qckn_consequential_representation_equilibration_v2.run
+          python - <<'PY'
+          import json
+          p='experiments/qckn_consequential_representation_equilibration_v2/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_BIDIRECTIONAL_CONSEQUENTIAL_REPRESENTATION_EQUILIBRATION'
+          assert r['gates']['pass'] is True
+          print('V2_BIDIRECTIONAL_BASELINE=PASS')
+          PY
+
+      - name: Run V3 regression tests
+        run: |
+          python -m unittest experiments.qckn_maintained_revocable_equilibration_v3.test_run -v
+
+      - name: Run maintained revocable equilibration
+        run: |
+          python -m experiments.qckn_maintained_revocable_equilibration_v3.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_maintained_revocable_equilibration_v3/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_INCREMENTAL_REVOCABLE_CONSEQUENTIAL_EQUILIBRATION'
+          assert r['gates']['pass'] is True
+
+          f=r['flash']
+          assert f['initial_runtime_authority_evaluations']==101
+          assert f['initial_active_classes']==2
+          assert f['reserve_entries_after_stream']==101
+          assert f['active_serializes_raw_membership'] is False
+          assert f['restart_exact'] is True
+          assert f['revocation_count']==1
+          assert f['reopened_classes']==101
+          assert f['raw_reacquisition_count']==0
+          assert f['expanded_runtime_authority_evaluations']==101
+          assert f['final_active_classes']==3
+          assert f['total_runtime_authority_evaluations']==202
+
+          assert r['no_reserve_control']['reserve_entries']==0
+          assert r['no_reserve_control']['recovery_failed'] is True
+          assert r['no_revocation_control']['unsoundness_detected'] is True
+
+          e=r['economics']
+          assert e['v2_pairwise_checks_if_repeated_for_two_updates']==10100
+          assert e['v3_runtime_authority_evaluations_two_updates']==202
+          assert abs(e['runtime_check_reduction_fraction_vs_repeated_v2_pairwise']-0.98)<1e-12
+
+          print('QCKN_MAINTAINED_REVOCABLE_EQUILIBRATION_V3_QUALIFIED=PASS')
+          print('RESULT_DIGEST='+r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-maintained-revocable-equilibration-v3
+          path: |
+            experiments/qckn_maintained_revocable_equilibration_v3/result.json
+            experiments/qckn_maintained_revocable_equilibration_v3/run.py
+            experiments/qckn_maintained_revocable_equilibration_v3/test_run.py
+            docs/research/qckn-maintained-revocable-equilibration-v3.md
+            experiments/qckn_consequential_representation_equilibration_v2/result.json
+          if-no-files-found: error
