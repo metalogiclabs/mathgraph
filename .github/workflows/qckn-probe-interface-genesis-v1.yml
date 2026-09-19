@@ -1,0 +1,143 @@
+name: QCKN Probe Interface Genesis V1
+
+on:
+  push:
+    branches:
+      - qckn-probe-interface-genesis-v1
+    paths:
+      - 'experiments/qckn_probe_interface_genesis_v1/**'
+      - 'docs/research/qckn-probe-interface-genesis-v1.md'
+      - '.github/workflows/qckn-probe-interface-genesis-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CROSS_REP_SOURCE_COMMIT: feb55aad0ab80fb9c51110367c3cc34869764dd0
+      REALITYGRAPH_BUS_COMMIT: 021ffaac9baec0257f0eda1961d58e1360fb6ae4
+      MSI_COMMIT: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+      CROSS_REP_SOURCE_ROOT: _vendor/cross_representation_source
+      REALITYGRAPH_BUS_ROOT: _vendor/realitygraph_bus
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.CROSS_REP_SOURCE_COMMIT }}
+          path: _vendor/cross_representation_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: ${{ env.REALITYGRAPH_BUS_COMMIT }}
+          path: _vendor/realitygraph_bus
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: ${{ env.MSI_COMMIT }}
+          path: _vendor/msi_source
+
+      - name: Verify pinned sources
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/cross_representation_source rev-parse HEAD)" = "$CROSS_REP_SOURCE_COMMIT"
+          test "$(git -C _vendor/realitygraph_bus rev-parse HEAD)" = "$REALITYGRAPH_BUS_COMMIT"
+          test "$(git -C _vendor/msi_source rev-parse HEAD)" = "$MSI_COMMIT"
+          test "$(git -C _vendor/msi_source hash-object tests/test_observation_language_genesis.py)" = "601d9e6a2c575054abb71dab580ee844ee2724af"
+          test "$(git -C _vendor/msi_source hash-object tests/test_cross_lens_hidden_cyclic_world.py)" = "2de36042a928397e5b3490b42016d4f539582b6d"
+          grep -F 'def compile_by_equivalence' _vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/run.py
+          grep -F 'class GlobalFlashBus' _vendor/realitygraph_bus/realitygraph/flash_bus.py
+          echo PROBE_INTERFACE_GENESIS_PINNED_SOURCES=PASS
+
+      - name: Reproduce cross-representation authority
+        run: |
+          python _vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/run.py
+          python - <<'PY'
+          import json
+          p='_vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/results/evidence.json'
+          r=json.load(open(p))
+          assert r['verdict']=='VERIFIED_CROSS_REPRESENTATION_COMPOUNDING'
+          assert r['results']['cold_immediate']['verifier_calls']==222808
+          assert r['gates']['G6_no_shared_surface_tokens'] is True
+          assert r['gates']['G7_unique_behavioral_compilation'] is True
+          print('CROSS_REPRESENTATION_AUTHORITY=PASS')
+          PY
+
+      - name: Reproduce observation-language genesis
+        working-directory: _vendor/msi_source
+        run: |
+          python -m unittest tests.test_observation_language_genesis -v
+
+      - name: Reproduce active cross-lens query selection
+        working-directory: _vendor/msi_source
+        run: |
+          python -m unittest tests.test_cross_lens_hidden_cyclic_world -v
+
+      - name: Run Probe Interface Genesis regression tests
+        run: |
+          python -m unittest experiments.qckn_probe_interface_genesis_v1.test_run -v
+
+      - name: Run prospective Probe Interface Genesis
+        run: |
+          python -m experiments.qckn_probe_interface_genesis_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_probe_interface_genesis_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_VERIFIED_PROBE_INTERFACE_GENESIS'
+          assert r['gates']['pass'] is True
+
+          g=r['global']
+          d=g['discovery']
+          assert g['target_prefix_calls']==35290
+          assert g['source_event_initial_edges']==0
+          assert d['hypothesis_counts']==[24,2,1]
+          assert d['selected_probes']==['empty','one','useful','opened']
+          assert d['synthesized_probes']==['useful','opened']
+          assert 'two' in d['unused_generated_probes']
+          assert d['developmental_execution_evaluations']==48
+          assert d['attack_execution_evaluations']==72
+          assert d['attack_comparison_checks']==216
+          assert g['bridge_authority_execution_evaluations']==120
+          assert g['edge_count']==1
+          assert g['target_suffix_calls']==96
+          assert g['target_final_calls']==35386
+          assert g['target_calls_avoided']==187422
+
+          assert r['static_language_control']['discovery']['hypothesis_counts']==[24]
+          assert r['sham_grammar_control']['discovery']['hypothesis_counts']==[24,6]
+          assert r['mismatch_target_control']['discovery']['obstruction']=='INDEPENDENT_ATTACK_FAILED'
+          assert r['ambiguous_target_control']['discovery']['obstruction']=='NO_BRIDGE_HYPOTHESIS_SURVIVES'
+          assert r['withheld_certificate_control']['target_final_calls']==222808
+          assert r['restart_control']['discovery']['certificate_id']==d['certificate_id']
+          assert r['restart_control']['target_final_calls']==g['target_final_calls']
+
+          print('QCKN_PROBE_INTERFACE_GENESIS_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST='+r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-probe-interface-genesis-v1
+          path: |
+            experiments/qckn_probe_interface_genesis_v1/result.json
+            experiments/qckn_probe_interface_genesis_v1/run.py
+            experiments/qckn_probe_interface_genesis_v1/test_run.py
+            docs/research/qckn-probe-interface-genesis-v1.md
+          if-no-files-found: error
