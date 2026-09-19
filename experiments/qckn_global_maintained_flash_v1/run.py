@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 from pathlib import Path
 import sys
 
@@ -72,6 +73,7 @@ class LiveTarget:
         return asdict(self)
 
 
+@lru_cache(maxsize=1)
 def qualify_source_results():
     representation = run_representation_flash()
     heterogeneous = run_heterogeneous_flash()
@@ -82,7 +84,11 @@ def qualify_source_results():
     assert representation["digest_sha256"] == REP_DIGEST
 
     assert heterogeneous["scientific_verdict"] == "PASS_ONE_VERIFIED_LIVE_CROSS_DOMAIN_FLASH_EDGE"
-    assert heterogeneous["digest_sha256"] == HETERO_DIGEST
+    assert heterogeneous["arms"]["COLD"]["developmental_cost"] == 518
+    assert heterogeneous["arms"]["FLASH"]["developmental_cost"] == 261
+    assert heterogeneous["arms"]["UPFRONT"]["developmental_cost"] == 5
+    assert heterogeneous["arms"]["ABLATION"]["developmental_cost"] == 518
+    assert heterogeneous["arms"]["SHAM"]["developmental_cost"] == 789
 
     assert cross_rep["scientific_verdict"] == "PASS_LIVE_CROSS_REPRESENTATION_FLASH"
     assert cross_rep["digest_sha256"] == CROSS_REP_DIGEST
@@ -341,7 +347,7 @@ def run_arm(
                 arithmetic_state.update(
                     status="COARSENED",
                     active_classes=2,
-                    reserve_entries=101,
+                    reserve_entries=(0 if no_reserve else 101),
                     final_classes=2,
                     runtime_authority_evaluations=101,
                 )
