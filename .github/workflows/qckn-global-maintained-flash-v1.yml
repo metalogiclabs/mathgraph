@@ -1,0 +1,207 @@
+name: QCKN Global Maintained Flash V1
+
+on:
+  push:
+    branches:
+      - qckn-global-maintained-flash-v1
+    paths:
+      - 'experiments/qckn_global_maintained_flash_v1/**'
+      - 'docs/research/qckn-global-maintained-flash-v1.md'
+      - '.github/workflows/qckn-global-maintained-flash-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      MSI_COMMIT: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+      PVSNP_COMMIT: 4df88a272926126b895c2fb6220c56012949df05
+      ARC_SOURCE_COMMIT: 129901f70d5dd440cc0238ee734e9b7528305be7
+      CROSS_REP_SOURCE_COMMIT: feb55aad0ab80fb9c51110367c3cc34869764dd0
+      REPRESENTATION_SOURCE_COMMIT: 9e6ba7cac5eeb965e1e882ebe038424a87a69ea0
+      REALITYGRAPH_BUS_COMMIT: 021ffaac9baec0257f0eda1961d58e1360fb6ae4
+      COLLATZ_COMMIT: 0bd6cc71a5fb4268109d5b404ecbf21c7aaaf4c1
+      MSI_SOURCE_ROOT: _vendor/msi_source
+      PVSNP_SOURCE_ROOT: _vendor/pvsnp_source
+      ARC_ROBOTICS_ROOT: _vendor/arc_robotics_source
+      CROSS_REP_SOURCE_ROOT: _vendor/cross_representation_source
+      REALITYGRAPH_BUS_ROOT: _vendor/realitygraph_bus
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: ${{ env.MSI_COMMIT }}
+          path: _vendor/msi_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.PVSNP_COMMIT }}
+          path: _vendor/pvsnp_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.ARC_SOURCE_COMMIT }}
+          path: _vendor/arc_robotics_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.CROSS_REP_SOURCE_COMMIT }}
+          path: _vendor/cross_representation_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.REPRESENTATION_SOURCE_COMMIT }}
+          path: _vendor/representation_genesis_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: ${{ env.REALITYGRAPH_BUS_COMMIT }}
+          path: _vendor/realitygraph_bus
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.COLLATZ_COMMIT }}
+          path: _vendor/collatz_source
+
+      - name: Verify all pinned sources
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/msi_source rev-parse HEAD)" = "$MSI_COMMIT"
+          test "$(git -C _vendor/pvsnp_source rev-parse HEAD)" = "$PVSNP_COMMIT"
+          test "$(git -C _vendor/arc_robotics_source rev-parse HEAD)" = "$ARC_SOURCE_COMMIT"
+          test "$(git -C _vendor/cross_representation_source rev-parse HEAD)" = "$CROSS_REP_SOURCE_COMMIT"
+          test "$(git -C _vendor/representation_genesis_source rev-parse HEAD)" = "$REPRESENTATION_SOURCE_COMMIT"
+          test "$(git -C _vendor/realitygraph_bus rev-parse HEAD)" = "$REALITYGRAPH_BUS_COMMIT"
+          test "$(git -C _vendor/collatz_source rev-parse HEAD)" = "$COLLATZ_COMMIT"
+          test "$(git -C _vendor/collatz_source hash-object evidence/collatz-flash-v1/summary.json)" = "6ea5ce6ef40db44bb4c4d8f556534987e6742577"
+          grep -F 'class GlobalFlashBus' _vendor/realitygraph_bus/realitygraph/flash_bus.py
+          grep -F 'Cross-domain consequences exist only when an independently admitted exact bridge matches' _vendor/realitygraph_bus/realitygraph/flash_bus.py
+          echo PINNED_GLOBAL_SOURCES=PASS
+
+      - name: Reproduce representation-genesis authority
+        run: |
+          python _vendor/representation_genesis_source/experiments/verified_representation_genesis_v1/run.py
+          python - <<'PY'
+          import json
+          p='_vendor/representation_genesis_source/experiments/verified_representation_genesis_v1/results/evidence.json'
+          r=json.load(open(p))
+          assert r['verdict']=='VERIFIED_REPRESENTATION_GENESIS'
+          assert all(r['gates'].values())
+          print('REPRESENTATION_GENESIS_AUTHORITY=PASS')
+          PY
+
+      - name: Reproduce ARC to embodied source contracts
+        env:
+          PYTHONPATH: _vendor/arc_robotics_source
+        run: |
+          python -m unittest discover -s _vendor/arc_robotics_source/experiments/arc_robotics_cross_domain_v1 -p 'test_*.py' -v
+
+      - name: Reproduce cross-representation source result
+        run: |
+          python _vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/run.py
+          python - <<'PY'
+          import json
+          p='_vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/results/evidence.json'
+          r=json.load(open(p))
+          assert r['verdict']=='VERIFIED_CROSS_REPRESENTATION_COMPOUNDING'
+          assert r['results']['cold_immediate']['verifier_calls']==222808
+          assert r['results']['q_warm']['verifier_calls']==320
+          assert r['gates']['G6_no_shared_surface_tokens'] is True
+          print('CROSS_REPRESENTATION_AUTHORITY=PASS')
+          PY
+
+      - name: Verify Collatz remains a negative/control source
+        run: |
+          python - <<'PY'
+          import json
+          p='_vendor/collatz_source/evidence/collatz-flash-v1/summary.json'
+          r=json.load(open(p))
+          assert r['verdict']=='PASS_BOUNDED_PROPAGATION_NO_ADVANTAGE_OVER_UPFRONT_GUARD'
+          assert r['arms']['isolated']['T_calls']==1501097
+          assert r['arms']['flash']['T_calls']==208613
+          assert r['arms']['guarded']['T_calls']==17401
+          print('COLLATZ_CONTROL_AUTHORITY=PASS')
+          PY
+
+      - name: Re-run maintained revocable V3 baseline
+        run: |
+          python -m experiments.qckn_maintained_revocable_equilibration_v3.run
+          python - <<'PY'
+          import json
+          r=json.load(open('experiments/qckn_maintained_revocable_equilibration_v3/result.json'))
+          assert r['scientific_verdict']=='PASS_INCREMENTAL_REVOCABLE_CONSEQUENTIAL_EQUILIBRATION'
+          assert r['digest_sha256']=='73c600192c6f689d5d6d0d8bcddbc6b9bd2e776c3d559fbc0738c01552008d11'
+          print('MAINTAINED_V3_BASELINE=PASS')
+          PY
+
+      - name: Run global maintained Flash regression tests
+        run: |
+          python -m unittest experiments.qckn_global_maintained_flash_v1.test_run -v
+
+      - name: Run global fixed-point runtime
+        run: |
+          python -m experiments.qckn_global_maintained_flash_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_global_maintained_flash_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_GLOBAL_MAINTAINED_FLASH_FIXED_POINT'
+          assert r['gates']['pass'] is True
+
+          g=r['global']
+          assert len(g['cross_domain_edges'])==3
+          assert g['typed_avoided']=={
+              'circuit.metric_checks':6,
+              'embodied.developmental_cost':257,
+              'opaque.verifier_calls':187206,
+          }
+          assert g['arithmetic']['status']=='REVOKED_REOPENED_RECOMPILED'
+          assert g['arithmetic']['final_classes']==3
+          assert g['arithmetic']['raw_reacquisition']==0
+          assert g['arithmetic']['runtime_authority_evaluations']==202
+          assert g['collatz']['cross_domain_mutations']==0
+          assert g['queue_empty'] is True
+          assert g['waves']>=3
+
+          assert r['isolated']['cross_domain_edges']==[]
+          assert r['sham_bridge_control']['cross_domain_edges']==[]
+          assert r['no_revocation_control']['arithmetic']['unsoundness_detected'] is True
+          assert r['no_reserve_control']['arithmetic']['reserve_entries']==0
+          assert r['no_reserve_control']['arithmetic']['recovery_failed'] is True
+          assert r['restart_control']['digest']==g['digest']
+
+          print('QCKN_GLOBAL_MAINTAINED_FLASH_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST='+r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-global-maintained-flash-v1
+          path: |
+            experiments/qckn_global_maintained_flash_v1/result.json
+            experiments/qckn_global_maintained_flash_v1/run.py
+            experiments/qckn_global_maintained_flash_v1/test_run.py
+            docs/research/qckn-global-maintained-flash-v1.md
+            experiments/qckn_maintained_revocable_equilibration_v3/result.json
+          if-no-files-found: error
