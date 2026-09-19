@@ -1,0 +1,112 @@
+name: QCKN Cross Representation Flash V1
+
+on:
+  push:
+    branches:
+      - qckn-cross-representation-flash-v1
+    paths:
+      - 'experiments/qckn_cross_representation_flash_v1/**'
+      - 'docs/research/qckn-cross-representation-flash-v1.md'
+      - '.github/workflows/qckn-cross-representation-flash-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_REPO: https://github.com/heathsanchez/test.git
+      SOURCE_COMMIT: feb55aad0ab80fb9c51110367c3cc34869764dd0
+      SOURCE_RUN: '34603649113'
+      SOURCE_ARTIFACT: '10265656833'
+      SOURCE_ARTIFACT_DIGEST: sha256:86e7dc456daae4da807b2b6cac87a2659c2dfe88c526dab6607565ef17e8b7d9
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Acquire pinned verified cross-representation source
+        run: |
+          set -euxo pipefail
+          git clone --quiet --filter=blob:none "$SOURCE_REPO" _vendor/cross_representation_source
+          cd _vendor/cross_representation_source
+          git checkout --quiet "$SOURCE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+
+      - name: Verify frozen authority
+        run: |
+          set -euxo pipefail
+          run_json="$(curl -fsSL "https://api.github.com/repos/heathsanchez/test/actions/runs/$SOURCE_RUN")"
+          test "$(printf '%s' "$run_json" | jq -r .conclusion)" = "success"
+          test "$(printf '%s' "$run_json" | jq -r .head_sha)" = "$SOURCE_COMMIT"
+          artifact_json="$(curl -fsSL "https://api.github.com/repos/heathsanchez/test/actions/artifacts/$SOURCE_ARTIFACT")"
+          test "$(printf '%s' "$artifact_json" | jq -r .digest)" = "$SOURCE_ARTIFACT_DIGEST"
+          test "$(printf '%s' "$artifact_json" | jq -r .workflow_run.id)" = "$SOURCE_RUN"
+
+      - name: Reproduce frozen cross-representation source result
+        run: |
+          python _vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/run.py
+          python - <<'PY'
+          import json
+          p='_vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/results/evidence.json'
+          r=json.load(open(p))
+          assert r['verdict']=='VERIFIED_CROSS_REPRESENTATION_COMPOUNDING'
+          assert r['results']['cold_immediate']['verifier_calls']==222808
+          assert r['results']['q_warm']['verifier_calls']==320
+          assert r['gates']['G6_no_shared_surface_tokens'] is True
+          print('FROZEN_CROSS_REPRESENTATION_SOURCE=PASS')
+          PY
+
+      - name: Run live Flash regression tests
+        env:
+          CROSS_REP_SOURCE_ROOT: _vendor/cross_representation_source
+        run: |
+          python -m unittest experiments.qckn_cross_representation_flash_v1.test_run -v
+
+      - name: Run live cross-representation Flash
+        env:
+          CROSS_REP_SOURCE_ROOT: _vendor/cross_representation_source
+        run: |
+          python -m experiments.qckn_cross_representation_flash_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_cross_representation_flash_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_LIVE_CROSS_REPRESENTATION_FLASH'
+          assert r['gates']['pass'] is True
+          costs={k:v['verifier_calls'] for k,v in r['arms'].items()}
+          assert costs == {
+              'ABLATION': 222808,
+              'ANSWER_MEMORY_ONLY': 222808,
+              'COLD': 222808,
+              'FLASH': 35602,
+              'RAW_HISTORY': 222808,
+              'SHAM_REDUNDANT_MACRO': 530562,
+              'UPFRONT': 320,
+          }, costs
+          assert r['schedule']['cold_prefix_verifier_calls']==35290
+          assert r['arms']['FLASH']['post_event_calls']==312
+          assert r['avoided_verifier_calls']==187206
+          print('QCKN_CROSS_REPRESENTATION_FLASH_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST=' + r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-cross-representation-flash-v1
+          path: |
+            experiments/qckn_cross_representation_flash_v1/result.json
+            experiments/qckn_cross_representation_flash_v1/run.py
+            experiments/qckn_cross_representation_flash_v1/test_run.py
+            docs/research/qckn-cross-representation-flash-v1.md
+          if-no-files-found: error
