@@ -5,6 +5,7 @@ import itertools
 import json
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 import sys
 
@@ -319,6 +320,13 @@ def source_event(source_key):
     )
 
 
+@lru_cache(maxsize=1)
+def cold_baseline():
+    mod = _load_source()
+    prefix, cold = cold_baseline()
+    return prefix, cold
+
+
 def run_arm(target_mode: str, grammar_mode: str, admit_certificate: bool = True, restart: bool = False):
     mod = _load_source()
     source = source_signatures(mod)
@@ -431,6 +439,7 @@ def run_arm(target_mode: str, grammar_mode: str, admit_certificate: bool = True,
     return payload
 
 
+@lru_cache(maxsize=1)
 def run():
     global_arm = run_arm("EXACT", "FULL")
     static = run_arm("EXACT", "STATIC")
