@@ -10,7 +10,9 @@ import sys
 
 ROOT = Path(__file__).resolve().parent
 REALITYGRAPH_ROOT = Path(os.environ.get("REALITYGRAPH_BUS_ROOT", "_vendor/realitygraph_bus"))
+ARC_ROBOTICS_ROOT = Path(os.environ.get("ARC_ROBOTICS_ROOT", "_vendor/arc_robotics_source"))
 sys.path.insert(0, str(REALITYGRAPH_ROOT))
+sys.path.insert(0, str(ARC_ROBOTICS_ROOT))
 
 from realitygraph.flash_bus import (  # type: ignore
     BridgeCertificate,
@@ -522,6 +524,7 @@ def run():
         "no_reserve_fails_recovery": (
             no_reserve["arithmetic"]["recovery_failed"]
             and no_reserve["arithmetic"]["status"] == "RECOVERY_UNAVAILABLE"
+            and no_reserve["arithmetic"]["reserve_entries"] == 0
         ),
         "restart_wave1_snapshot_exact": (
             global_wave1 is not None
