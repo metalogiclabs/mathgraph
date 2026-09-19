@@ -318,7 +318,8 @@ def run() -> dict:
             "artifact_digest": SOURCE_ARTIFACT_DIGEST,
             "snapshot_digest": SOURCE_SNAPSHOT_DIGEST,
             "representation_artifact_digest": SOURCE_REPRESENTATION_DIGEST,
-            "transferred_capability": "generic quotient-by-certified-separator minimum-refinement constructor",\n            "certification_kernel_commit": MSI_KERNEL_COMMIT,
+            "transferred_capability": "generic quotient-by-certified-separator minimum-refinement constructor",
+            "certification_kernel_commit": MSI_KERNEL_COMMIT,
         },
         "target": {
             "domain": "finite_nand_circuit_complexity",
