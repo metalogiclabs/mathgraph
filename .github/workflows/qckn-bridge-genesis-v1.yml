@@ -1,0 +1,116 @@
+name: QCKN Verified Bridge Genesis V1
+
+on:
+  push:
+    branches:
+      - qckn-bridge-genesis-v1
+    paths:
+      - 'experiments/qckn_bridge_genesis_v1/**'
+      - 'docs/research/qckn-bridge-genesis-v1.md'
+      - '.github/workflows/qckn-bridge-genesis-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CROSS_REP_SOURCE_COMMIT: feb55aad0ab80fb9c51110367c3cc34869764dd0
+      REALITYGRAPH_BUS_COMMIT: 021ffaac9baec0257f0eda1961d58e1360fb6ae4
+      CROSS_REP_SOURCE_ROOT: _vendor/cross_representation_source
+      REALITYGRAPH_BUS_ROOT: _vendor/realitygraph_bus
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.CROSS_REP_SOURCE_COMMIT }}
+          path: _vendor/cross_representation_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/realitygraph
+          ref: ${{ env.REALITYGRAPH_BUS_COMMIT }}
+          path: _vendor/realitygraph_bus
+
+      - name: Verify pinned sources
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/cross_representation_source rev-parse HEAD)" = "$CROSS_REP_SOURCE_COMMIT"
+          test "$(git -C _vendor/realitygraph_bus rev-parse HEAD)" = "$REALITYGRAPH_BUS_COMMIT"
+          grep -F 'def compile_by_equivalence' _vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/run.py
+          grep -F 'class GlobalFlashBus' _vendor/realitygraph_bus/realitygraph/flash_bus.py
+          echo BRIDGE_GENESIS_PINNED_SOURCES=PASS
+
+      - name: Reproduce cross-representation authority
+        run: |
+          python _vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/run.py
+          python - <<'PY'
+          import json
+          p='_vendor/cross_representation_source/experiments/verified_cross_representation_compounding_v1/results/evidence.json'
+          r=json.load(open(p))
+          assert r['verdict']=='VERIFIED_CROSS_REPRESENTATION_COMPOUNDING'
+          assert r['results']['cold_immediate']['verifier_calls']==222808
+          assert r['results']['q_warm']['verifier_calls']==320
+          assert r['gates']['G6_no_shared_surface_tokens'] is True
+          assert r['gates']['G7_unique_behavioral_compilation'] is True
+          print('CROSS_REPRESENTATION_SOURCE_AUTHORITY=PASS')
+          PY
+
+      - name: Run Bridge Genesis regression tests
+        run: |
+          python -m unittest experiments.qckn_bridge_genesis_v1.test_run -v
+
+      - name: Run prospective Bridge Genesis
+        run: |
+          python -m experiments.qckn_bridge_genesis_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_bridge_genesis_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_VERIFIED_BRIDGE_GENESIS'
+          assert r['gates']['pass'] is True
+          g=r['global']
+          d=g['discovery']
+          assert g['target_cold_prefix_calls']==35290
+          assert g['source_event_had_zero_edges_before_genesis'] is True
+          assert d['admitted'] is True
+          assert d['target_interface_id']=='opaque-exact-v1'
+          assert len(d['mapping'])==6
+          assert d['behavior_probe_calls']==864
+          assert g['edge_count']==1
+          assert g['target_suffix_calls_after_bridge']==96
+          assert g['target_final_verifier_calls']==35386
+          assert g['target_calls_avoided']==187422
+          assert r['withheld_certificate_control']['target_final_verifier_calls']==222808
+          assert r['incomplete_probe_control']['discovery']['admitted'] is False
+          assert r['no_exact_target_control']['discovery']['admitted'] is False
+          assert r['ambiguous_destination_control']['discovery']['admitted'] is False
+          assert r['restart_control']['discovery']['certificate_id']==d['certificate_id']
+          assert r['restart_control']['active_bus_edges']==g['active_bus_edges']
+          print('QCKN_BRIDGE_GENESIS_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST='+r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-bridge-genesis-v1
+          path: |
+            experiments/qckn_bridge_genesis_v1/result.json
+            experiments/qckn_bridge_genesis_v1/run.py
+            experiments/qckn_bridge_genesis_v1/test_run.py
+            docs/research/qckn-bridge-genesis-v1.md
+          if-no-files-found: error
