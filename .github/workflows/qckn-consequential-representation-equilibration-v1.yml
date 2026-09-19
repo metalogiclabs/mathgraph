@@ -1,0 +1,141 @@
+name: QCKN Consequential Representation Equilibration V1
+
+on:
+  push:
+    branches:
+      - qckn-consequential-representation-equilibration-v1
+    paths:
+      - 'experiments/qckn_consequential_representation_equilibration_v1/**'
+      - 'docs/research/qckn-consequential-representation-equilibration-v1.md'
+      - '.github/workflows/qckn-consequential-representation-equilibration-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PVSNP_COMMIT: 4df88a272926126b895c2fb6220c56012949df05
+      LEAN_COMMIT: 919937fb4a58becfb31ad7cbcce9351b601d8e11
+      LEAN_CONTEXT_CACHE_BLOB: b4ad942b7a12772044f9edeba8f86051e0ba8eca
+      PVSNP_SOURCE_ROOT: _vendor/pvsnp_source
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.PVSNP_COMMIT }}
+          path: _vendor/pvsnp_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/lean-kernel-arena
+          ref: ${{ env.LEAN_COMMIT }}
+          path: _vendor/lean_kernel
+
+      - name: Verify pinned sources
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/pvsnp_source rev-parse HEAD)" = "$PVSNP_COMMIT"
+          test "$(git -C _vendor/lean_kernel rev-parse HEAD)" = "$LEAN_COMMIT"
+          test "$(git -C _vendor/lean_kernel hash-object experiments/localdef-semantic-context-cache.mjs)" = "$LEAN_CONTEXT_CACHE_BLOB"
+          grep -F 'parts[i]="D:"+objectId(k,x.type)+":"+objectId(k,x.value);' _vendor/lean_kernel/experiments/localdef-semantic-context-cache.mjs
+
+      - name: Reproduce exact P-vs-NP finite signal
+        run: |
+          cd _vendor/pvsnp_source/experiments/pvsnp_hardness_lab_v1
+          python experiment.py > /tmp/pvsnp-evidence.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/pvsnp-evidence.json'))
+          m=r['metric_collision']
+          assert m['functions_hex']==['0x8f','0xea']
+          assert m['sizes']==[2,3]
+          assert len(m['shared_12_metric_signature'])==12
+          print('PVSNP_EQUILIBRATION_SOURCE=PASS')
+          PY
+
+      - name: Check pinned Lean semantic-context source
+        run: |
+          node --check _vendor/lean_kernel/experiments/localdef-semantic-context-cache.mjs
+          grep -F 'transient wrapper object' _vendor/lean_kernel/experiments/localdef-semantic-context-cache.mjs
+          grep -F 'exact identity pair (entry.type, entry.value)' _vendor/lean_kernel/experiments/localdef-semantic-context-cache.mjs
+          echo LEAN_CONTEXT_KEY_CONTRACT=PASS
+
+      - name: Run retained Lean semantic-context audit
+        working-directory: _vendor/lean_kernel
+        run: |
+          timeout 40s node genesis/test.mjs
+          timeout 440s node experiments/localdef-semantic-context-cache.mjs
+          python - <<'PY'
+          import json
+          p='genesis/evidence/localdef-semantic-context-cache.json'
+          r=json.load(open(p))
+          assert r['arena_sha256']=='85942e6f19274699a476d4e5b772abf4bf16f6a719985938bfcb5349ad90d118'
+          assert all(x['wrong']==0 for x in r['focus'].values())
+          if r.get('full') is not None:
+              assert r['full']['lawful'] is True
+          print('LEAN_SEMANTIC_CONTEXT_AUDIT=PASS')
+          print('LEAN_WINNER_MODE='+str(r['winner_mode']))
+          print('LEAN_FULL='+str(None if r.get('full') is None else {
+              'lawful':r['full']['lawful'],
+              'promotable':r['full']['promotable'],
+              'resolved':len(r['full']['candidate']['resolved']),
+          }))
+          PY
+
+      - name: Run equilibration regression tests
+        run: |
+          python -m unittest experiments.qckn_consequential_representation_equilibration_v1.test_run -v
+
+      - name: Run prospective representation equilibration
+        run: |
+          python -m experiments.qckn_consequential_representation_equilibration_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_consequential_representation_equilibration_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_BIDIRECTIONAL_CONSEQUENTIAL_REPRESENTATION_EQUILIBRATION'
+          assert r['gates']['pass'] is True
+          assert r['circuit_world']['move']=='REFINE'
+          assert r['lean_world']['move']=='COARSEN'
+          ca=r['circuit_world']['arms']
+          la=r['lean_world']['arms']
+          assert ca['FLASH']['resolved'] is True and ca['FLASH']['metric_checks']==6
+          assert ca['COLD']['resolved'] is False and ca['COLD']['metric_checks']==12
+          assert la['COLD']['misses']==8
+          assert la['WARM']['misses']==2 and la['WARM']['hits']==6
+          assert la['FLASH']['misses']==3 and la['FLASH']['hits']==5
+          assert la['SHAM_ALL_MERGED']['sham_rejected'] is True
+          assert la['ABLATION']['misses']==8
+          print('QCKN_REPRESENTATION_EQUILIBRATION_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST='+r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-consequential-representation-equilibration-v1
+          path: |
+            experiments/qckn_consequential_representation_equilibration_v1/result.json
+            experiments/qckn_consequential_representation_equilibration_v1/run.py
+            experiments/qckn_consequential_representation_equilibration_v1/test_run.py
+            docs/research/qckn-consequential-representation-equilibration-v1.md
+            _vendor/lean_kernel/genesis/evidence/localdef-semantic-context-cache.json
+          if-no-files-found: warn
