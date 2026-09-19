@@ -1,0 +1,138 @@
+name: QCKN Flash Representation Genesis V1
+
+on:
+  push:
+    branches:
+      - qckn-flash-representation-genesis-v1
+    paths:
+      - 'experiments/qckn_flash_representation_genesis_v1/**'
+      - 'docs/research/qckn-flash-representation-genesis-v1.md'
+      - '.github/workflows/qckn-flash-representation-genesis-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_COMMIT: 9e6ba7cac5eeb965e1e882ebe038424a87a69ea0
+      SOURCE_RUN: '34591859113'
+      SOURCE_ARTIFACT: '10195947331'
+      SOURCE_ARTIFACT_DIGEST: sha256:3ede7957ea74f3ee7417977781e3841361e7c73b3485d70364b4da8cc6392029
+      MSI_COMMIT: 5d448c0ecc82ff3945d009963064ebbb67d2f308
+      PVSNP_COMMIT: 4df88a272926126b895c2fb6220c56012949df05
+      MSI_SOURCE_ROOT: _vendor/msi_kernel
+      PVSNP_SOURCE_ROOT: _vendor/pvsnp_source
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.SOURCE_COMMIT }}
+          path: _vendor/representation_genesis_source
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: ${{ env.MSI_COMMIT }}
+          path: _vendor/msi_kernel
+
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: ${{ env.PVSNP_COMMIT }}
+          path: _vendor/pvsnp_source
+
+      - name: Verify frozen representation-genesis authority
+        run: |
+          set -euxo pipefail
+          test "$(git -C _vendor/representation_genesis_source rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git -C _vendor/msi_kernel rev-parse HEAD)" = "$MSI_COMMIT"
+          test "$(git -C _vendor/pvsnp_source rev-parse HEAD)" = "$PVSNP_COMMIT"
+
+          run_json="$(curl -fsSL "https://api.github.com/repos/heathsanchez/test/actions/runs/$SOURCE_RUN")"
+          test "$(printf '%s' "$run_json" | jq -r .conclusion)" = "success"
+          test "$(printf '%s' "$run_json" | jq -r .head_sha)" = "$SOURCE_COMMIT"
+
+          artifact_json="$(curl -fsSL "https://api.github.com/repos/heathsanchez/test/actions/artifacts/$SOURCE_ARTIFACT")"
+          test "$(printf '%s' "$artifact_json" | jq -r .digest)" = "$SOURCE_ARTIFACT_DIGEST"
+          test "$(printf '%s' "$artifact_json" | jq -r .workflow_run.id)" = "$SOURCE_RUN"
+
+      - name: Reproduce frozen representation genesis
+        run: |
+          python _vendor/representation_genesis_source/experiments/verified_representation_genesis_v1/run.py
+          python - <<'PY'
+          import json
+          p='_vendor/representation_genesis_source/experiments/verified_representation_genesis_v1/results/evidence.json'
+          r=json.load(open(p))
+          assert r['verdict']=='VERIFIED_REPRESENTATION_GENESIS'
+          assert r['classification']=='BOUNDED_EXHAUSTIVE_CAUSAL'
+          assert r['snapshot_digest']=='3106999ce529f3b7c5f6308d0e0217c208fdb4d9c426aea38d23bc94904f9cc7'
+          assert r['artifact_digest']=='6d6847fb66ad4c31fe54ab16022f97df7c2b359219c8f9202e76b58b7d798987'
+          assert all(r['gates'].values())
+          print('FROZEN_REPRESENTATION_GENESIS_SOURCE=PASS')
+          PY
+
+      - name: Reproduce exact circuit residual
+        run: |
+          cd _vendor/pvsnp_source/experiments/pvsnp_hardness_lab_v1
+          python experiment.py > /tmp/pvsnp-evidence.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/pvsnp-evidence.json'))
+          c=r['coavailability_residual']
+          assert c['truth_table_hex']=='0x66'
+          assert c['xor_costs']==[3,4]
+          m=r['metric_collision']
+          assert m['functions_hex']==['0x8f','0xea']
+          assert m['sizes']==[2,3]
+          assert len(m['shared_12_metric_signature'])==12
+          print('FROZEN_PVSNP_FINITE_SIGNAL=PASS')
+          PY
+
+      - name: Run Flash Representation Genesis regression tests
+        run: |
+          python -m unittest experiments.qckn_flash_representation_genesis_v1.test_run -v
+
+      - name: Run prospective cross-domain representation Flash
+        run: |
+          python -m experiments.qckn_flash_representation_genesis_v1.run
+
+      - name: Qualification
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/qckn_flash_representation_genesis_v1/result.json'
+          r=json.load(open(p))
+          assert r['scientific_verdict']=='PASS_CROSS_DOMAIN_FLASH_REPRESENTATION_GENESIS'
+          assert r['gates']['pass'] is True
+          a=r['arms']
+          assert a['WARM']['resolved'] is True and a['WARM']['candidate_metric_checks']==0
+          assert a['FLASH']['resolved'] is True and a['FLASH']['candidate_metric_checks']==6
+          assert a['COLD']['resolved'] is False and a['COLD']['candidate_metric_checks']==12
+          assert a['RAW_HISTORY']['resolved'] is False
+          assert a['SHAM_OVERFINE']['sham_rejected'] is True
+          assert a['ABLATION']['exact_ablation'] is True and a['ABLATION']['resolved'] is False
+          print('QCKN_FLASH_REPRESENTATION_GENESIS_V1_QUALIFIED=PASS')
+          print('RESULT_DIGEST=' + r['digest_sha256'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qckn-flash-representation-genesis-v1
+          path: |
+            experiments/qckn_flash_representation_genesis_v1/result.json
+            experiments/qckn_flash_representation_genesis_v1/run.py
+            experiments/qckn_flash_representation_genesis_v1/test_run.py
+            docs/research/qckn-flash-representation-genesis-v1.md
+          if-no-files-found: error
