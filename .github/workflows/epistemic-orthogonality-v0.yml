@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install MathGraph
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[all]"
       - name: Run orthogonality qualification
         run: |
           python -m pytest -q             tests/test_epistemic_orthogonality.py             tests/test_proof_digestion.py             tests/test_faithfulness.py             tests/test_lawbook.py
@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p evidence/epistemic_orthogonality_v0
           {
-            echo "EPistemic_ORTHOGONALITY_V0=PASS"
+            echo "EPISTEMIC_ORTHOGONALITY_V0=PASS"
             echo "commit=$GITHUB_SHA"
             echo "claim=verification, digestion, statement fidelity, and reusable-schema candidacy remain distinct authority axes"
             echo "boundary=focused Python regressions only; no claim of complete scholarly ontology"
