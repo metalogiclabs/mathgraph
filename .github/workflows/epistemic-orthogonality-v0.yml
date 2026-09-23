@@ -1,0 +1,40 @@
+name: Epistemic Orthogonality V0
+
+on:
+  push:
+    branches:
+      - experiment/warrant-understanding-orthogonality-v0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Run orthogonality qualification
+        run: |
+          python -m pytest -q             tests/test_epistemic_orthogonality.py             tests/test_proof_digestion.py             tests/test_faithfulness.py             tests/test_lawbook.py
+      - name: Record qualified source
+        run: |
+          mkdir -p evidence/epistemic_orthogonality_v0
+          {
+            echo "EPISTEMIC_ORTHOGONALITY_V0=PASS"
+            echo "commit=$GITHUB_SHA"
+            echo "claim=verification, digestion, statement fidelity, and reusable-schema candidacy remain distinct authority axes"
+            echo "boundary=focused Python regressions only; no claim of complete scholarly ontology"
+          } > evidence/epistemic_orthogonality_v0/qualification.txt
+      - name: Upload qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-orthogonality-v0
+          path: evidence/epistemic_orthogonality_v0/qualification.txt
