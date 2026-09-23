@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from mathgraph.epistemic_status import (
@@ -118,3 +120,27 @@ def test_public_demo_explains_epistemic_axes_even_when_no_claim_is_verified():
     assert "Statement fidelity" in markdown
     assert "Generalization" in markdown
     assert "do not promote truth" in markdown
+
+
+def test_status_renderer_cli_emits_real_artifact_card(tmp_path):
+    out = tmp_path / "status.md"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/render_epistemic_status.py",
+            "--artifact",
+            "artifacts/lawbook/finite_htilt_survivor_law_v1.json",
+            "--sidecar",
+            "experiments/epistemic_orthogonality_v0/finite_htilt_survivor_state.json",
+            "--format",
+            "markdown",
+            "--out",
+            str(out),
+            "--fail-on-critical",
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    text = out.read_text(encoding="utf-8")
+    assert "VERIFIED_PROOF" in text
+    assert "UNDIGESTED" in text
