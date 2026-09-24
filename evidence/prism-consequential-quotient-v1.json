@@ -1,0 +1,97 @@
+{
+  "schema": "mathgraph.prism-consequential-quotient-v1.qualified",
+  "status": "QUALIFIED_BOUNDED",
+  "source": {
+    "repository": "prismmodelchecker/prism",
+    "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+    "model_path": "prism-examples/imdps/simple/robot.prism",
+    "model_blob": "0b836883421726aaba676713c0656335206120d3",
+    "properties_path": "prism-examples/imdps/simple/robot.props",
+    "properties_blob": "53794f1ba7dac57fa5720ab138a5051e444ac402",
+    "parameters": {
+      "delta": "0.1"
+    }
+  },
+  "protected_boundary": {
+    "interface": "probability.reachability.interval@1",
+    "target_label": "goal1",
+    "resolver": "max",
+    "discarded_interface": "state.identity@1"
+  },
+  "safe_quotient": {
+    "state_map": {
+      "s0": "s0",
+      "s1": "s1",
+      "s2": "dead",
+      "s3": "dead",
+      "s4": "s4",
+      "s5": "s5"
+    },
+    "states_before": 6,
+    "states_after": 5,
+    "prism": {
+      "pmaxmin": 0.3999998711509811,
+      "pmaxmax": 0.5999997852516352
+    },
+    "mathgraph_before": {
+      "pmaxmin": "0.39999999999999999999999960123160126452523812885788",
+      "pmaxmax": "0.59999999999999999999999933538600210754206354809647"
+    },
+    "mathgraph_after": {
+      "pmaxmin": "0.39999999999999999999999960123160126452523812885788",
+      "pmaxmax": "0.59999999999999999999999933538600210754206354809647"
+    },
+    "discarded_identity_query": "UNKNOWN(outside_preservation_contract)"
+  },
+  "separator_control": {
+    "state_map": {
+      "s0": "s0",
+      "s1": "s1",
+      "s2": "dead",
+      "s3": "dead",
+      "s4": "dead",
+      "s5": "s5"
+    },
+    "states_after": 4,
+    "result": {
+      "pmaxmin": "1.000",
+      "pmaxmax": "1.000"
+    },
+    "reason": "Merging s4 with the absorbing dead class unions s4's east-to-goal action into the quotient class, creating spurious max-resolver control power and changing the protected future."
+  },
+  "typed_effect_quotient_law": {
+    "rule": "For a merged target group G, normalized interval projection uses lower=max(sum_G lower, 1-sum_notG upper) and upper=min(sum_G upper, 1-sum_notG lower).",
+    "reason": "Naive endpoint summation is not closed under normalized probability quotienting."
+  },
+  "identities": {
+    "source_adapter_contract": "adapter:ef4844b226bcca0a73f53575409000c8ce864beb5e9fd925e912220034e6473c",
+    "quotient_adapter_contract": "adapter:640160969864a975d7dae80c961a07c22919c584a6e5a0589bf10a5afb3c228f",
+    "composed_adapter_contract": "adapter:d4974b7728c1151301bf18be197bfb67ef58207c2c8ea6a7b5c8a25753624e73",
+    "pre_quotient_semantic_object": "semantic:3d192dd302cc560108af5485e333f3b4d9802d767e57155f7e477843cc572a4d",
+    "post_quotient_semantic_object": "semantic:899407f03081672f46b714f89b008a47b7ff575ec4f5535d778cd5bc63c8fc74"
+  },
+  "qualification": {
+    "exact_code_head": "6b04c496e9bce2e19e927aaf0f5a5ebe55e182e1",
+    "workflow_run": 35999329271,
+    "job": 107631819315,
+    "crystal_tests_passed": 75,
+    "artifact": 10807416536,
+    "artifact_digest": "sha256:aabbc8e75632ee55b930fdb6eab81ddd775743abf71ca51cab02819715886ed5",
+    "all_prior_external_gates_green": true
+  },
+  "negative_lineage": [
+    {
+      "run": 35999050718,
+      "result": "FAILED",
+      "finding": "Naive sum of interval endpoints produced an invalid quotient interval with upper bound greater than 1.",
+      "correction": "Use normalized marginal interval projection; no preservation assertion was weakened."
+    },
+    {
+      "run": 35999182825,
+      "result": "FAILED",
+      "finding": "The deliberately bad quotient changed protected reachability to 1/1, not the initially expected 0/0, because merging source states unions their available actions under max resolution.",
+      "correction": "Record the actual separator result; the scientific rejection criterion remains protected-future inequality."
+    }
+  ],
+  "claim_boundary": "Exact source-pinned PRISM robot interval-MDP at delta=0.1. The qualified two-stage PRISM->MathGraph->consequence-relative quotient chain reduces 6 states to 5 while preserving the protected max-min/max-max goal1 reachability result and returning UNKNOWN for discarded state identity. The 4-state over-quotient is rejected by a protected-future separator. This is not a generic quotient-discovery algorithm, a universal probabilistic bisimulation theorem, or a general PRISM quotienter."
+}
