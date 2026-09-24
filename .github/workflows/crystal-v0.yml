@@ -17,7 +17,7 @@ jobs:
       - name: Install repository test dependencies
         run: python -m pip install -e ".[all]"
       - name: Run crystal representation gate
-        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py
       - name: Recheck external TLA+ Peterson model
         run: |
           set -euo pipefail
@@ -97,3 +97,18 @@ jobs:
           cd "$(dirname "$PRISM")"
           ./prism "$MODEL" "$PROPS" -const delta=0.1 | tee "$LOG"
           grep -q "Result:" "$LOG"
+          python - "$LOG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          text = Path(sys.argv[1]).read_text(encoding="utf-8")
+          values = [float(x) for x in re.findall(r"Result: ([0-9.]+)", text)]
+          assert len(values) == 4, values
+          p_worst, p_best, r_worst, r_best = values
+          assert 0.399 < p_worst < 0.401, values
+          assert 0.599 < p_best < 0.601, values
+          assert p_best - p_worst > 0.19, values
+          assert 1.224 < r_worst < 1.226, values
+          assert 1.210 < r_best < 1.212, values
+          PY
