@@ -88,6 +88,23 @@
         "stateDepth": 11,
         "result": "success"
       }
+    },
+    "prism_uncertain_robot": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/imdps/simple/robot.prism",
+      "blob_sha": "0b836883421726aaba676713c0656335206120d3"
+    },
+    "prism_uncertain_robot_props": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/imdps/simple/robot.props",
+      "blob_sha": "53794f1ba7dac57fa5720ab138a5051e444ac402"
+    },
+    "prism_4_10_1": {
+      "release": "v4.10.1",
+      "asset": "prism-4.10.1-linux64-x86.tar.gz",
+      "sha256": "9f2135b1d49293cdc9b16b1756a24f99beff320b78134825c1f477f43942ab17"
     }
   }
 }
