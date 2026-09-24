@@ -1,0 +1,34 @@
+{
+  "schema": "mathgraph.tla-adapter-composition-v1.qualified",
+  "status": "QUALIFIED_BOUNDED",
+  "composition": {
+    "first": "tla.peterson-to-lock@2",
+    "second": "tla.lock-to-critical-occupancy@1",
+    "composed_adapter_id": "adapter:d861f7766584a6fbbce7779d09595d40490265c9a809333aff18d7880d1426d1",
+    "preserved_interfaces": [
+      "tla.critical-occupancy@1"
+    ],
+    "deliberately_unpreserved": [
+      "tla.control-state@1"
+    ],
+    "law": "preserves(composed)=preserves(first) ∩ preserves(second)"
+  },
+  "qualification": {
+    "exact_code_head": "a52301821f85df22bc9446540b75a1703e571adf",
+    "workflow_run": 35978649102,
+    "job": 107565013374,
+    "crystal_tests_passed": 63,
+    "reachable_peterson_states": 42,
+    "direct_mismatches": 0,
+    "staged_mismatches": 0,
+    "control_probe": "UNKNOWN(outside_preservation_contract)",
+    "all_prior_external_gates_green": true
+  },
+  "provenance": {
+    "source_repository": "tlaplus/Examples",
+    "source_commit": "c9e45d0e4695a8552d31105b93dff21456b7be69",
+    "source_peterson_blob": "1c56470b957d680e7989d460c92738019a87a4b4",
+    "source_lock_blob": "d8ce7721d26ab726bf9a1f163a16b186f01931eb"
+  },
+  "claim_boundary": "Exact finite source-pinned Peterson→Lock→critical-occupancy composition. Contract composition is mechanical by interface intersection and provenance/assumption union. Direct protected observation equals staged and mechanically composed lowering on all 42 reachable Peterson states; any interface absent from either leg is UNKNOWN. This is not a universal category-theoretic composition theorem for arbitrary semantic effects."
+}
