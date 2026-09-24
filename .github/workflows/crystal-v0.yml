@@ -64,3 +64,30 @@ jobs:
           grep -q "Model checking completed. No error has been found." tlc.log
           grep -q "77 states generated, 42 distinct states found" tlc.log
           grep -q "The depth of the complete state graph search is 11" tlc.log
+      - name: Probe PRISM quantitative separator
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathgraph-prism
+          cd /tmp/mathgraph-prism
+          curl -fsSL -o robot.prism https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/imdps/simple/robot.prism
+          curl -fsSL -o robot.props https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/imdps/simple/robot.props
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+              "robot.prism": "0b836883421726aaba676713c0656335206120d3",
+              "robot.props": "53794f1ba7dac57fa5720ab138a5051e444ac402",
+          }
+          for name, sha in expected.items():
+              data = Path(name).read_bytes()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+              assert got == sha, (name, got, sha)
+          PY
+          curl -fsSL -o prism.tar.gz https://github.com/prismmodelchecker/prism/releases/download/v4.10.1/prism-4.10.1-linux64-x86.tar.gz
+          echo "9f2135b1d49293cdc9b16b1756a24f99beff320b78134825c1f477f43942ab17  prism.tar.gz" | sha256sum -c -
+          tar -xzf prism.tar.gz
+          PRISM="$(find . -type f -path '*/bin/prism' | head -1)"
+          test -n "$PRISM"
+          chmod +x "$PRISM"
+          "$PRISM" robot.prism robot.props -const delta=0.1 | tee prism.log
+          grep -q "Result:" prism.log
