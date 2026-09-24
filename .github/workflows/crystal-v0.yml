@@ -215,3 +215,42 @@ jobs:
           assert 0.999 < full <= 1.000001, vals
           assert full - partial > 0.39, vals
           PY
+      - name: Check PRISM resolver-choice boundary
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph-prism
+          curl -fsSL -o mutual3.nm https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/mdps/mutual/mutual3.nm
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          data = Path("mutual3.nm").read_bytes()
+          got = hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+          assert got == "8724ac6638cb58737e6d08fb9a2f5e3faf3523d8", got
+          src = data.decode("utf-8")
+          assert "[] p1=0 -> (p1'=0);" in src
+          assert "[] p1=0 -> (p1'=1);" in src
+          Path("choice.props").write_text(
+              'Pmin=? [ F p1=1 ];\nPmax=? [ F p1=1 ];\n',
+              encoding="utf-8",
+          )
+          PY
+          PRISM="$(find "$PWD" -type f -path '*/bin/prism' | head -1)"
+          PRISM_ROOT="$(dirname "$(dirname "$PRISM")")"
+          sed -i "s|^PRISM_DIR=.*|PRISM_DIR=$PRISM_ROOT|" "$PRISM"
+          MODEL="$PWD/mutual3.nm"
+          PROPS="$PWD/choice.props"
+          LOG="$PWD/choice.log"
+          cd "$(dirname "$PRISM")"
+          ./prism "$MODEL" "$PROPS" | tee "$LOG"
+          python - "$LOG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+          text = Path(sys.argv[1]).read_text(encoding="utf-8")
+          vals = [float(x) for x in re.findall(r"Result: ([0-9.Ee+-]+)", text)]
+          assert len(vals) == 2, vals
+          pmin, pmax = vals
+          print(f"CHOICE_BOUNDARY pmin={pmin} pmax={pmax}")
+          assert -1e-12 <= pmin < 1e-9, vals
+          assert 0.999999 < pmax <= 1.000001, vals
+          PY
