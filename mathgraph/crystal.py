@@ -51,6 +51,144 @@ def content_id(value: Any, *, prefix: str = "mg") -> str:
     return f"{prefix}:{hashlib.sha256(canonical_bytes(value)).hexdigest()}"
 
 
+_SEMANTIC_OBJECT_MAGIC = b"MGSO\\x00\\x01"
+
+
+def _pack_u32(value: int) -> bytes:
+    if not 0 <= value <= 0xFFFFFFFF:
+        raise ValueError("value does not fit canonical u32")
+    return value.to_bytes(4, "big")
+
+
+def _pack_u64(value: int) -> bytes:
+    if not 0 <= value <= 0xFFFFFFFFFFFFFFFF:
+        raise ValueError("value does not fit canonical u64")
+    return value.to_bytes(8, "big")
+
+
+def _pack_text(value: str) -> bytes:
+    data = value.encode("utf-8")
+    return _pack_u32(len(data)) + data
+
+
+@dataclass(frozen=True)
+class SemanticObject:
+    """Opaque, content-addressed semantic object envelope.
+
+    The microkernel owns only this envelope. Payload is meaning-bearing
+    canonical bytes defined by type_id + contract_version; an older runtime
+    must preserve those bytes without interpreting or normalising them.
+    Interfaces are stable semantic contracts advertised by the object and are
+    canonicalised as a sorted set.
+
+    Envelope encoding v1 is deterministic:
+    MAGIC | type-id | u32 version | interface-set | u64 payload-len | payload.
+
+    Unknown semantic types are valid objects. Unsupported interpretation
+    returns UnknownSemantics rather than degrading the payload.
+    """
+
+    type_id: str
+    contract_version: int
+    payload: bytes
+    interfaces: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.type_id:
+            raise ValueError("semantic object type_id must be non-empty")
+        if not 0 <= self.contract_version <= 0xFFFFFFFF:
+            raise ValueError("contract_version must fit canonical u32")
+        if not isinstance(self.payload, bytes):
+            raise TypeError("semantic object payload must be bytes")
+        if any(not interface for interface in self.interfaces):
+            raise ValueError("interface ids must be non-empty")
+        canonical_interfaces = tuple(sorted(set(self.interfaces)))
+        object.__setattr__(self, "interfaces", canonical_interfaces)
+
+    @property
+    def id(self) -> str:
+        return f"semantic:{hashlib.sha256(self.to_bytes()).hexdigest()}"
+
+    def to_bytes(self) -> bytes:
+        type_bytes = self.type_id.encode("utf-8")
+        out = bytearray(_SEMANTIC_OBJECT_MAGIC)
+        out += _pack_u32(len(type_bytes))
+        out += type_bytes
+        out += _pack_u32(self.contract_version)
+        out += _pack_u32(len(self.interfaces))
+        for interface in self.interfaces:
+            out += _pack_text(interface)
+        out += _pack_u64(len(self.payload))
+        out += self.payload
+        return bytes(out)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "SemanticObject":
+        """Decode only the stable envelope; never interpret opaque payload."""
+
+        if not isinstance(data, bytes):
+            raise TypeError("semantic object transport must be bytes")
+        if not data.startswith(_SEMANTIC_OBJECT_MAGIC):
+            raise ValueError("unknown semantic object envelope")
+        offset = len(_SEMANTIC_OBJECT_MAGIC)
+
+        def take(count: int) -> bytes:
+            nonlocal offset
+            end = offset + count
+            if count < 0 or end > len(data):
+                raise ValueError("truncated semantic object")
+            chunk = data[offset:end]
+            offset = end
+            return chunk
+
+        def take_u32() -> int:
+            return int.from_bytes(take(4), "big")
+
+        def take_u64() -> int:
+            return int.from_bytes(take(8), "big")
+
+        type_id = take(take_u32()).decode("utf-8")
+        contract_version = take_u32()
+        interfaces = []
+        for _ in range(take_u32()):
+            interfaces.append(take(take_u32()).decode("utf-8"))
+        payload = take(take_u64())
+        if offset != len(data):
+            raise ValueError("trailing bytes in semantic object")
+
+        obj = cls(type_id, contract_version, payload, tuple(interfaces))
+        if obj.to_bytes() != data:
+            raise ValueError("non-canonical semantic object encoding")
+        return obj
+
+
+@dataclass(frozen=True)
+class UnknownSemantics:
+    """Typed epistemic residual produced by unsupported interpretation."""
+
+    object_id: str
+    requested_interface: str
+    reason: str = "missing_interface"
+
+
+def interpret_semantic_object(
+    obj: SemanticObject,
+    interface_id: str,
+    interpreters: Mapping[str, Any],
+) -> Any | UnknownSemantics:
+    """Interpret through a supported interface or preserve typed UNKNOWN.
+
+    Registering a future interpreter can add operations over an old object,
+    but cannot change the object canonical bytes or identity.
+    """
+
+    if interface_id not in obj.interfaces or interface_id not in interpreters:
+        return UnknownSemantics(obj.id, interface_id)
+    interpreter = interpreters[interface_id]
+    if not callable(interpreter):
+        raise TypeError("semantic interface interpreter must be callable")
+    return interpreter(obj)
+
 @dataclass(frozen=True)
 class Boundary:
     """Scope relative to which distinctions are consequential."""
