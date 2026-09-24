@@ -117,6 +117,18 @@
       "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
       "path": "prism-examples/ctmcs/cell/cell.csl",
       "blob_sha": "13b54bc990ed3133816d9ae3c056f442330afb9b"
+    },
+    "prism_pomdp_guess": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/pomdps/simple/guess.prism",
+      "blob_sha": "961f8bd540c9d1e1afa15d45413e9a17bee22277"
+    },
+    "prism_pomdp_guess_props": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/pomdps/simple/guess.props",
+      "blob_sha": "19500169192331d81956fca3d7cf0f5fb2d51b4b"
     }
   }
 }
