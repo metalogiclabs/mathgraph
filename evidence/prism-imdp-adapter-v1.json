@@ -1,0 +1,50 @@
+{
+  "schema": "mathgraph.prism-imdp-adapter-v1.qualified",
+  "status": "QUALIFIED_BOUNDED",
+  "source": {
+    "repository": "prismmodelchecker/prism",
+    "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+    "model_path": "prism-examples/imdps/simple/robot.prism",
+    "model_blob": "0b836883421726aaba676713c0656335206120d3",
+    "properties_path": "prism-examples/imdps/simple/robot.props",
+    "properties_blob": "53794f1ba7dac57fa5720ab138a5051e444ac402",
+    "verifier": "PRISM v4.10.1",
+    "verifier_archive_sha256": "9f2135b1d49293cdc9b16b1756a24f99beff320b78134825c1f477f43942ab17",
+    "parameters": {
+      "delta": "0.1"
+    }
+  },
+  "adapter": {
+    "module": "mathgraph/prism_adapter.py",
+    "contract_id": "adapter:ef4844b226bcca0a73f53575409000c8ce864beb5e9fd925e912220034e6473c",
+    "semantic_object_id": "semantic:3d192dd302cc560108af5485e333f3b4d9802d767e57155f7e477843cc572a4d",
+    "preserves": [
+      "probability.reachability.interval@1"
+    ],
+    "explicitly_unpreserved": [
+      "reward.expected-time@1"
+    ]
+  },
+  "qualification": {
+    "exact_code_head": "7a5416026d215cc0f4bbff8421932a4ef1b51238",
+    "workflow_run": 35976620106,
+    "job": 107558520576,
+    "crystal_tests_passed": 59,
+    "artifact": 10797934247,
+    "artifact_digest": "sha256:18b2f978148b4e73ab88040746ff55c58849536ccecc81c35513cce8d517c308",
+    "prism": {
+      "pmaxmin_goal1": 0.3999998711509811,
+      "pmaxmax_goal1": 0.5999997852516352,
+      "rminmax_goal1_or_goal2_unpreserved": 1.224999936,
+      "rminmin_goal1_or_goal2_unpreserved": 1.211111
+    },
+    "mathgraph": {
+      "pmaxmin_goal1": "0.39999999999999999999999960123160126452523812885788",
+      "pmaxmax_goal1": "0.59999999999999999999999933538600210754206354809647",
+      "reward_query": "UNKNOWN(outside_preservation_contract)"
+    },
+    "all_prior_external_gates_green": true,
+    "tla_peterson_adapter": "PASS"
+  },
+  "claim_boundary": "Exact source-pinned finite one-variable PRISM interval-MDP adapter at delta=0.1. The adapter lowers the pinned transition system to generic MathGraph interval effects and independently reproduces the protected max-min/max-max reachability family within 1e-6 of PRISM. Expected-time reward semantics are deliberately outside the adapter contract and return typed UNKNOWN. This is not a general PRISM parser, generic IMDP model checker, or reward-semantics preservation theorem."
+}
