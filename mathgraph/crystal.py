@@ -51,7 +51,7 @@ def content_id(value: Any, *, prefix: str = "mg") -> str:
     return f"{prefix}:{hashlib.sha256(canonical_bytes(value)).hexdigest()}"
 
 
-_SEMANTIC_OBJECT_MAGIC = b"MGSO\\x00\\x01"
+_SEMANTIC_OBJECT_MAGIC = bytes((77, 71, 83, 79, 0, 1))
 
 
 def _pack_u32(value: int) -> bytes:
