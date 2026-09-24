@@ -1,0 +1,53 @@
+{
+  "schema": "mathgraph.adapter-category-laws-v1.canonical",
+  "status": "WARRANTED_REUSABLE_BOUNDED",
+  "canonical_parent_authority": {
+    "branch": "crystal-real-adapters-integration-v1",
+    "head": "4d05863b0aa0217f7a18854d126697a2cb89e089",
+    "claim": "Real multi-language adapter boundary remains sealed and unchanged."
+  },
+  "promoted_from_experiment": {
+    "branch": "mathgraph-crystal-v0",
+    "head": "0602e474ea1e81a60f29afab12e078d2e082dd5e"
+  },
+  "laws": {
+    "composition": "Compatible AdapterContracts compose by semantic-space alignment and preserved-interface intersection.",
+    "associativity": "(C∘B)∘A = C∘(B∘A) at preservation meaning, automatic canonical contract identity, and protected-output level.",
+    "identity": "Canonical identity adapters are neutral on both sides and identity lowering preserves exact semantic-object bytes and ID.",
+    "unknown": "Interfaces not preserved by every leg fail closed to UNKNOWN(outside_preservation_contract).",
+    "provenance": "Composition provenance is the ordered canonical leaf-adapter path, not a parenthesization parse tree."
+  },
+  "negative_lineage": {
+    "head": "02e2e57c7c2faf1ec846cf902a99850e63878f3d",
+    "workflow_run": 35979560372,
+    "job": 107567947757,
+    "result": "1 failed / 64 passed",
+    "finding": "Preservation meaning was associative, but canonical AdapterContract identity was not because evidence_refs encoded intermediate composite IDs and therefore the parenthesization tree.",
+    "correction": "Flatten provenance to ordered leaf adapter-contract lineage and derive automatic composition identity from that canonical path."
+  },
+  "repaired_experiment": {
+    "head": "0602e474ea1e81a60f29afab12e078d2e082dd5e",
+    "workflow_run": 35979979957,
+    "job": 107569293890,
+    "tests_passed": 69,
+    "result": "SUCCESS"
+  },
+  "canonical_promotion": {
+    "branch": "crystal-adapter-composition-v1",
+    "exact_code_head": "0d3812f772db7973bda94606f857ffb44467e2b9",
+    "workflow_run": 35999212015,
+    "job": 107631429771,
+    "tests_passed": 69,
+    "result": "SUCCESS",
+    "all_prior_external_gates_green": true
+  },
+  "retained_external_checks": {
+    "tla_peterson_adapter": "PASS",
+    "prism_adapter_commutation": "PASS",
+    "ctmc_rate_separator": "PASS",
+    "observation_separator": "PASS",
+    "resolver_separator": "PASS",
+    "mixed_ownership_separator": "0.9775 -> 0.0"
+  },
+  "claim_boundary": "Bounded deterministic AdapterContract/reference-lowering semantics only. This establishes associativity and identity for the current open-interface composition algebra with canonical flattened provenance; it is not a universal category-theory theorem for arbitrary effectful or partial translators."
+}
