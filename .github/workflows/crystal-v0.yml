@@ -254,3 +254,77 @@ jobs:
           assert -1e-12 <= pmin < 1e-9, vals
           assert 0.999999 < pmax <= 1.000001, vals
           PY
+      - name: Probe PRISM-games mixed-ownership separator
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathgraph-prism-games
+          cd /tmp/mathgraph-prism-games
+          curl -fsSL -o game.prism https://raw.githubusercontent.com/prismmodelchecker/prism-games/984de6579bfd7cbf655eaa663d91006e6b4c0f2f/prism-examples/smgs/simple/smg_example.prism
+          curl -fsSL -o game.props https://raw.githubusercontent.com/prismmodelchecker/prism-games/984de6579bfd7cbf655eaa663d91006e6b4c0f2f/prism-examples/smgs/simple/smg_example.props
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+              "game.prism": "0f5a4b518cf66548d8ddf91d39cd1020dcc1b050",
+              "game.props": "aed7b6e22f333c5b75e92423240e084ea2a708fa",
+          }
+          for name, sha in expected.items():
+              data = Path(name).read_bytes()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+              assert got == sha, (name, got, sha)
+
+          src = Path("game.prism").read_text(encoding="utf-8")
+          original = """player p1
+            host, [send1], [send2]
+          endplayer
+
+          player p2
+            client
+          endplayer"""
+          swapped = """player p1
+            client
+          endplayer
+
+          player p2
+            host, [send1], [send2]
+          endplayer"""
+          # Be whitespace-robust but modify only the player declarations.
+          original = original.replace("          ", "")
+          swapped = swapped.replace("          ", "")
+          assert src.count(original) == 1
+          derived = src.replace(original, swapped, 1)
+          assert derived != src
+          # Everything after the player declarations is byte-identical.
+          assert derived.split("module host", 1)[1] == src.split("module host", 1)[1]
+          Path("game_swapped.prism").write_text(derived, encoding="utf-8")
+          PY
+          curl -fsSL -o prism-games.tar.gz https://github.com/prismmodelchecker/prism-games/releases/download/v3.2.4/prism-games-3.2.4-linux64-x86.tar.gz
+          echo "11fb5c67d9897493588e0198d3c3fa3bbb28b4eee9b128b8d15f86b87fffec6b  prism-games.tar.gz" | sha256sum -c -
+          tar -xzf prism-games.tar.gz
+          PRISM="$(find "$PWD" -type f -path '*/bin/prism' | head -1)"
+          test -n "$PRISM"
+          chmod +x "$PRISM"
+          PRISM_ROOT="$(dirname "$(dirname "$PRISM")")"
+          sed -i "s|^PRISM_DIR=.*|PRISM_DIR=$PRISM_ROOT|" "$PRISM"
+          BASE="$PWD/game.prism"
+          SWAP="$PWD/game_swapped.prism"
+          PROPS="$PWD/game.props"
+          BLOG="$PWD/base.log"
+          SLOG="$PWD/swap.log"
+          cd "$(dirname "$PRISM")"
+          ./prism "$BASE" "$PROPS" -prop 2 | tee "$BLOG"
+          ./prism "$SWAP" "$PROPS" -prop 2 | tee "$SLOG"
+          python - "$BLOG" "$SLOG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+          vals = []
+          for path in sys.argv[1:]:
+              text = Path(path).read_text(encoding="utf-8")
+              results = [float(x) for x in re.findall(r"Result: ([0-9.Ee+-]+)", text)]
+              assert len(results) == 1, (path, results)
+              vals.append(results[0])
+          original, swapped = vals
+          print(f"MIXED_OWNERSHIP_SEPARATOR original={original} swapped={swapped} gap={original-swapped}")
+          assert original - swapped > 0.5, vals
+          PY
