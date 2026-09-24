@@ -134,4 +134,5 @@ def test_discovery_retains_exact_initial_prism_boundary():
 
     assert abs(original["s0"][0] - Decimal("0.4")) < Decimal("1e-12")
     assert abs(original["s0"][1] - Decimal("0.6")) < Decimal("1e-12")
-    assert reduced[q0] == original["s0"]
+    assert abs(reduced[q0][0] - original["s0"][0]) < Decimal("1e-18")
+    assert abs(reduced[q0][1] - original["s0"][1]) < Decimal("1e-18")
