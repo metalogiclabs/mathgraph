@@ -17,6 +17,8 @@ from mathgraph.crystal import (
     SemanticObject,
     UnknownTranslation,
     canonical_bytes,
+    compose_adapter_contracts,
+    compose_lower_semantic_object,
     lower_semantic_object,
 )
 
@@ -301,6 +303,158 @@ def qualification_report() -> dict[str, object]:
         "abstract_stutters": stutter_count,
         "violations": tuple(violations),
         "adapter_contract_id": ADAPTER_CONTRACT.id,
+    }
+
+OCCUPANCY_INTERFACE = "tla.critical-occupancy@1"
+
+
+@dataclass(frozen=True, order=True)
+class CriticalOccupancy:
+    p1: bool
+    p2: bool
+
+
+def peterson_occupancy(state: PetersonState) -> CriticalOccupancy:
+    return CriticalOccupancy(
+        state.pc1 in ("cs", "a4"),
+        state.pc2 in ("cs", "a4"),
+    )
+
+
+def lock_occupancy(state: LockState) -> CriticalOccupancy:
+    return CriticalOccupancy(
+        state.pc1 in ("cs", "l2"),
+        state.pc2 in ("cs", "l2"),
+    )
+
+
+def peterson_state_object_v2(state: PetersonState) -> SemanticObject:
+    base = peterson_state_object(state)
+    return SemanticObject(
+        base.type_id, base.contract_version, base.payload,
+        base.interfaces + (OCCUPANCY_INTERFACE,),
+    )
+
+
+def lock_state_object_v2(state: LockState) -> SemanticObject:
+    base = lock_state_object(state)
+    return SemanticObject(
+        base.type_id, base.contract_version, base.payload,
+        base.interfaces + (OCCUPANCY_INTERFACE,),
+    )
+
+
+def occupancy_object(view: CriticalOccupancy) -> SemanticObject:
+    return SemanticObject(
+        "tla.critical-occupancy",
+        1,
+        canonical_bytes({"p1": view.p1, "p2": view.p2}),
+        (OCCUPANCY_INTERFACE,),
+    )
+
+
+def _decode_lock_object(obj: SemanticObject) -> LockState:
+    if obj.type_id != "tla.lock.state" or obj.contract_version != 1:
+        raise ValueError("unsupported Lock semantic object")
+    raw = json.loads(obj.payload.decode("utf-8"))
+    return LockState(raw["pc"]["1"], raw["pc"]["2"], int(raw["lock"]))
+
+
+def _lower_peterson_object_v2(obj: SemanticObject) -> SemanticObject:
+    return lock_state_object_v2(lower_state(_decode_peterson_object(obj)))
+
+
+def _lower_lock_occupancy(obj: SemanticObject) -> SemanticObject:
+    return occupancy_object(lock_occupancy(_decode_lock_object(obj)))
+
+
+PETERSON_TO_LOCK_OCCUPANCY_CONTRACT = AdapterContract(
+    adapter_id="tla.peterson-to-lock",
+    contract_version=2,
+    source_space=f"tla.peterson@{SOURCE_COMMIT}",
+    target_space=f"tla.lock@{SOURCE_COMMIT}",
+    preserves_interfaces=(OCCUPANCY_INTERFACE,),
+    assumption_refs=ADAPTER_CONTRACT.assumption_refs,
+    evidence_refs=ADAPTER_CONTRACT.evidence_refs + (
+        "qualified-observation:critical-occupancy",
+    ),
+)
+
+
+LOCK_TO_OCCUPANCY_CONTRACT = AdapterContract(
+    adapter_id="tla.lock-to-critical-occupancy",
+    contract_version=1,
+    source_space=f"tla.lock@{SOURCE_COMMIT}",
+    target_space="mathgraph.tla.critical-occupancy@1",
+    preserves_interfaces=(OCCUPANCY_INTERFACE,),
+    assumption_refs=(
+        f"git:{SOURCE_REPOSITORY}@{SOURCE_COMMIT}:{TARGET_PATH}:{TARGET_BLOB_SHA}",
+    ),
+    evidence_refs=("source-definition:Lock.lockcs",),
+)
+
+
+COMPOSED_OCCUPANCY_CONTRACT = compose_adapter_contracts(
+    PETERSON_TO_LOCK_OCCUPANCY_CONTRACT,
+    LOCK_TO_OCCUPANCY_CONTRACT,
+    adapter_id="tla.peterson-to-critical-occupancy",
+)
+
+
+def lower_peterson_to_occupancy(
+    obj: SemanticObject, requested_interface: str
+) -> SemanticObject | UnknownTranslation:
+    return compose_lower_semantic_object(
+        obj,
+        PETERSON_TO_LOCK_OCCUPANCY_CONTRACT,
+        LOCK_TO_OCCUPANCY_CONTRACT,
+        requested_interface,
+        _lower_peterson_object_v2,
+        _lower_lock_occupancy,
+        adapter_id="tla.peterson-to-critical-occupancy",
+    )
+
+
+def composition_qualification_report() -> dict[str, object]:
+    direct_mismatches = []
+    staged_mismatches = []
+    states = reachable_peterson_states()
+    for state in states:
+        source = peterson_state_object_v2(state)
+        composed = lower_peterson_to_occupancy(source, OCCUPANCY_INTERFACE)
+        if not isinstance(composed, SemanticObject):
+            staged_mismatches.append((state, composed))
+            continue
+        direct = occupancy_object(peterson_occupancy(state))
+        if composed != direct:
+            direct_mismatches.append((state, composed.id, direct.id))
+
+        middle = lower_semantic_object(
+            source,
+            PETERSON_TO_LOCK_OCCUPANCY_CONTRACT,
+            OCCUPANCY_INTERFACE,
+            _lower_peterson_object_v2,
+        )
+        assert isinstance(middle, SemanticObject)
+        staged = lower_semantic_object(
+            middle,
+            LOCK_TO_OCCUPANCY_CONTRACT,
+            OCCUPANCY_INTERFACE,
+            _lower_lock_occupancy,
+        )
+        if staged != composed:
+            staged_mismatches.append((state, staged, composed))
+
+    control_probe = lower_peterson_to_occupancy(
+        peterson_state_object_v2(PETERSON_INIT), CONTROL_INTERFACE
+    )
+    return {
+        "reachable_states": len(states),
+        "direct_mismatches": tuple(direct_mismatches),
+        "staged_mismatches": tuple(staged_mismatches),
+        "composed_contract_id": COMPOSED_OCCUPANCY_CONTRACT.id,
+        "composed_interfaces": COMPOSED_OCCUPANCY_CONTRACT.preserves_interfaces,
+        "control_probe": control_probe,
     }
 
 
