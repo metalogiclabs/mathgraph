@@ -135,7 +135,9 @@ def test_overquotient_is_rejected_by_protected_future_separator():
 
     assert safe_result[0] > Decimal("0.39")
     assert safe_result[1] > Decimal("0.59")
-    assert bad_result == (Decimal(0), Decimal(0))
+    # The over-quotient unions s4's goal-reaching action into the merged
+    # dead class, creating spurious max-resolver control power.
+    assert bad_result == (Decimal(1), Decimal(1))
     assert bad_result != safe_result
 
 
