@@ -212,11 +212,13 @@ class RateKernelEffect:
 
     @property
     def qualitative_support(self) -> tuple[str, ...]:
+        from decimal import Decimal
+
         return tuple(
             sorted(
                 outcome.target
                 for outcome in self.outcomes
-                if outcome.rate != "0"
+                if Decimal(outcome.rate) != 0
             )
         )
 
