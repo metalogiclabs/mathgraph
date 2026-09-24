@@ -271,7 +271,8 @@ jobs:
           assert reduced == original
           assert abs(reduced[0] - Decimal(str(prism_worst))) < Decimal("1e-6")
           assert abs(reduced[1] - Decimal(str(prism_best))) < Decimal("1e-6")
-          assert separated == (Decimal(0), Decimal(0))
+          # Bad merge unions the goal-reaching s4 action into the dead class.
+          assert separated == (Decimal(1), Decimal(1))
 
           composed = compose_adapter_contracts(
               adapted.contract,
