@@ -281,26 +281,21 @@ def _effect_expectation(
     )
 
 
-def reachability_extrema(
+def reachability_state_extrema(
     model: AdaptedIntervalMDP,
     *,
     target_label: str,
     tolerance: str = "1e-24",
     max_iterations: int = 10000,
-) -> tuple[Decimal, Decimal]:
-    """Compute max-min and max-max infinite-horizon reachability.
-
-    Nondeterministic actions use the protected max resolver. The interval
-    uncertainty is minimized for the lower result and maximized for the upper
-    result. Monotone iteration starts from the least reachability fixed point.
-    """
+) -> dict[str, tuple[Decimal, Decimal]]:
+    """Compute protected max-min/max-max reachability from every state."""
 
     getcontext().prec = max(getcontext().prec, 50)
     targets = frozenset(model.states_for_label(target_label))
     if not targets:
         raise ValueError("target label has no states")
 
-    def solve(*, maximize_uncertainty: bool) -> Decimal:
+    def solve(*, maximize_uncertainty: bool) -> dict[str, Decimal]:
         values = {
             state: Decimal(1) if state in targets else Decimal(0)
             for state in model.states
@@ -325,14 +320,31 @@ def reachability_extrema(
                 abs(updated[state] - values[state])
                 for state in model.states
             ) <= tol:
-                values = updated
-                break
+                return updated
             values = updated
-        else:
-            raise RuntimeError("reachability iteration did not converge")
-        return values["s0"]
+        raise RuntimeError("reachability iteration did not converge")
 
-    return (
-        solve(maximize_uncertainty=False),
-        solve(maximize_uncertainty=True),
+    lower = solve(maximize_uncertainty=False)
+    upper = solve(maximize_uncertainty=True)
+    return {
+        state: (lower[state], upper[state])
+        for state in model.states
+    }
+
+
+def reachability_extrema(
+    model: AdaptedIntervalMDP,
+    *,
+    target_label: str,
+    tolerance: str = "1e-24",
+    max_iterations: int = 10000,
+) -> tuple[Decimal, Decimal]:
+    """Compute max-min and max-max infinite-horizon reachability from s0."""
+
+    values = reachability_state_extrema(
+        model,
+        target_label=target_label,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
     )
+    return values["s0"]
