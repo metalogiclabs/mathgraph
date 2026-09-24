@@ -10,6 +10,8 @@ import pytest
 from mathgraph.crystal import (
     IntervalDistributionEffect,
     IntervalOutcome,
+    RateKernelEffect,
+    RateOutcome,
     deterministic_effect,
     find_quotient_falsifiers,
 )
@@ -101,3 +103,49 @@ def test_invalid_interval_distribution_is_rejected():
                 IntervalOutcome("b", "0.3", "0.4"),
             )
         )
+
+
+def test_prism_ctmc_source_is_rate_valued_not_probability_normalized():
+    model = _fetch("prism_ctmc_cell")
+    props = _fetch("prism_ctmc_cell_props")
+    assert "ctmc" in model
+    assert "const double lambda1=49;" in model
+    assert "[] (n<N*0.8) -> lambda1 : (n'=n+1);" in model
+    assert "P=?[ true U<=T (n>=N*0.8)" in props
+
+
+def test_same_ctmc_support_with_different_rate_is_a_protected_separator():
+    base = RateKernelEffect((RateOutcome("n+1", "49"),))
+    fast = RateKernelEffect((RateOutcome("n+1", "98"),))
+    assert base.qualitative_support == fast.qualitative_support == ("n+1",)
+    assert base.id != fast.id
+
+    witnesses = find_quotient_falsifiers(
+        {
+            "lambda49": base.qualitative_support,
+            "lambda98": fast.qualitative_support,
+        },
+        {
+            "lambda49": ("P<=0.1", "0.9955635603814414"),
+            "lambda98": ("P<=0.1", "0.9999226161775444"),
+        },
+    )
+    assert len(witnesses) == 1
+
+
+def test_rate_kernel_is_not_forced_to_normalize():
+    effect = RateKernelEffect(
+        (
+            RateOutcome("new-call", "49"),
+            RateOutcome("handoff", "21"),
+        )
+    )
+    assert effect.qualitative_support == ("handoff", "new-call")
+    assert effect.id.startswith("effect:")
+
+
+def test_negative_or_zero_total_rate_kernel_is_rejected():
+    with pytest.raises(ValueError):
+        RateKernelEffect((RateOutcome("x", "-1"),))
+    with pytest.raises(ValueError):
+        RateKernelEffect((RateOutcome("x", "0.0"),))
