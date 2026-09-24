@@ -1,0 +1,95 @@
+{
+  "schema": "mathgraph.prism-quotient-discovery-v1.qualified",
+  "status": "QUALIFIED_BOUNDED",
+  "source": {
+    "repository": "prismmodelchecker/prism",
+    "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+    "model_path": "prism-examples/imdps/simple/robot.prism",
+    "model_blob": "0b836883421726aaba676713c0656335206120d3",
+    "properties_path": "prism-examples/imdps/simple/robot.props",
+    "properties_blob": "53794f1ba7dac57fa5720ab138a5051e444ac402",
+    "parameters": {
+      "delta": "0.1"
+    }
+  },
+  "protected_boundary": {
+    "interface": "probability.reachability.interval@1",
+    "target_label": "goal1",
+    "resolver": "max",
+    "all_source_states_checked": true,
+    "comparison_tolerance": "1e-18"
+  },
+  "discovery": {
+    "algorithm": "exhaustive target-membership-respecting finite partition enumeration",
+    "state_limit": 8,
+    "source_states": 6,
+    "target_respecting_partitions_tested": 52,
+    "accepted_partitions": 4,
+    "coarser_than_selected_rejected": 16,
+    "selected_states": 4,
+    "selected_partition": [
+      ["s0", "s1"],
+      ["s2", "s3"],
+      ["s4"],
+      ["s5"]
+    ],
+    "unique_coarsest": true,
+    "state_map": {
+      "s0": "q0",
+      "s1": "q0",
+      "s2": "q1",
+      "s3": "q1",
+      "s4": "q2",
+      "s5": "q3"
+    },
+    "reference_values": {
+      "s0": {
+        "pmaxmin": "0.39999999999999999999999960123160126452523812885788",
+        "pmaxmax": "0.59999999999999999999999933538600210754206354809647"
+      },
+      "s1": {
+        "pmaxmin": "0.4",
+        "pmaxmax": "0.6"
+      },
+      "s2": {
+        "pmaxmin": "0",
+        "pmaxmax": "0"
+      },
+      "s3": {
+        "pmaxmin": "0",
+        "pmaxmax": "0"
+      },
+      "s4": {
+        "pmaxmin": "1",
+        "pmaxmax": "1"
+      },
+      "s5": {
+        "pmaxmin": "1",
+        "pmaxmax": "1"
+      }
+    },
+    "interpretation": "The discovered quotient merges not only the manually identified dead states s2/s3 but also s0/s1, whose protected all-state reachability signatures agree within the declared tolerance and whose merged action structure preserves the protected future. Target membership keeps s4 and s5 distinct despite both having value 1."
+  },
+  "qualified_dependencies": {
+    "typed_interval_quotient": "evidence/prism-consequential-quotient-v1.json",
+    "interval_projection_rule": "lower=max(sum_G lower,1-sum_notG upper); upper=min(sum_G upper,1-sum_notG lower)"
+  },
+  "qualification": {
+    "exact_code_head": "48a3bbd5c50f689b175eeb76d05e95caea61130a",
+    "workflow_run": 36000682876,
+    "job": 107636294510,
+    "crystal_tests_passed": 80,
+    "artifact": 10807619390,
+    "artifact_digest": "sha256:8da94873e7697ae06c2d89da520243fbe0ce526a3943eec95e804538aeda271b",
+    "all_prior_external_gates_green": true
+  },
+  "negative_lineage": [
+    {
+      "run": 36000368371,
+      "result": "FAILED",
+      "finding": "A final test demanded exact Decimal equality between a quotient fixed point returning 0.40/0.60 and the original iterative fixed point returning values within 1e-24 of 0.4/0.6.",
+      "correction": "Use the already declared 1e-18 protected-consequence comparison tolerance; the discovery acceptance oracle was unchanged."
+    }
+  ],
+  "claim_boundary": "For this exact source-pinned six-state PRISM robot IMDP and the protected goal1 max-min/max-max reachability family, exhaustive enumeration of all 52 target-respecting partitions proves the unique coarsest preserving quotient has four classes: {s0,s1}, {s2,s3}, {s4}, {s5}. All 16 target-respecting partitions with fewer than four classes were tested and rejected. This is a finite bounded minimality result, not a scalable universal quotient algorithm or a general probabilistic bisimulation theorem."
+}
