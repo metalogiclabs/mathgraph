@@ -403,9 +403,21 @@ jobs:
               target_label="goal1",
           )
           mapping = dict(result.state_map)
+          expected = (
+              ("s0", "s1"),
+              ("s2", "s3"),
+              ("s4",),
+              ("s5",),
+          )
+          assert result.tested_partitions == 52
+          assert result.accepted_partitions == 4
+          assert result.coarser_partitions_rejected == 16
+          assert result.partition == expected
+          assert result.coarsest_partitions == (expected,)
+          assert mapping["s0"] == mapping["s1"]
           assert mapping["s2"] == mapping["s3"]
           assert mapping["s4"] != mapping["s2"]
-          assert len(result.partition) < len(adapted.model.states)
+          assert len(result.partition) == 4
 
           evidence = {
               "schema": "mathgraph.prism-quotient-discovery.v1",
