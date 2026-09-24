@@ -73,6 +73,45 @@ class ConsequentialState:
 
 
 @dataclass(frozen=True)
+class ObservationMap:
+    """Observer/interface partition over underlying consequential states.
+
+    Entries map an underlying state identity to the observation exposed at a
+    declared interface. States sharing an observation are intentionally
+    indistinguishable to that interface. The map carries no truth authority;
+    it is a content-addressed consequential coordinate when protected futures
+    depend on what the acting/querying observer can distinguish.
+    """
+
+    entries: tuple[tuple[str, str], ...]
+
+    def __post_init__(self) -> None:
+        states = [state for state, _ in self.entries]
+        if len(states) != len(set(states)):
+            raise ValueError("observation map contains duplicate states")
+
+    @property
+    def id(self) -> str:
+        return content_id(self, prefix="observer")
+
+    def observe(self, state: str) -> str:
+        for candidate, observation in self.entries:
+            if candidate == state:
+                return observation
+        raise KeyError(state)
+
+    @property
+    def classes(self) -> dict[str, tuple[str, ...]]:
+        classes: dict[str, list[str]] = {}
+        for state, observation in self.entries:
+            classes.setdefault(observation, []).append(state)
+        return {
+            observation: tuple(sorted(states))
+            for observation, states in classes.items()
+        }
+
+
+@dataclass(frozen=True)
 class ResidualPair:
     """Witness that a proposed representation merged a consequential distinction."""
 
