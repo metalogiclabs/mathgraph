@@ -1,0 +1,62 @@
+{
+  "schema": "mathgraph.crystal-source-pins.v1",
+  "sources": {
+    "msi_quotient": {
+      "repository": "heathsanchez/Minimal-Sufficient-Interface",
+      "commit": "af60141ab47a68c67f4c04d7ec6a9adb2a50776a",
+      "path": "tests/test_quotient_sufficiency.py",
+      "blob_sha": "6bce64823d3ea825eaee3ac34b42b9152b9ae488",
+      "run": 35898526105
+    },
+    "metatron_v5": {
+      "repository": "metalogiclabs/metatron",
+      "commit": "86ae67a0ffda901e78b4bd1f3050ba473129cb50",
+      "path": "scripts/warranted_continuation_viability_v5.py",
+      "blob_sha": "9183aa8bead3b6bea349a3f21232ccf28e218c47",
+      "run": 35928378587,
+      "artifact": 10779468575,
+      "artifact_digest": "sha256:5cb97d159886e6851c51745c75a641579d0c571adc2737ac98ca3b95fe6ff40a"
+    },
+    "metatron_v7": {
+      "repository": "metalogiclabs/metatron",
+      "commit": "21923060852ed75311e15045ddab3673ae93db37",
+      "path": "scripts/warranted_continuation_viability_v7.py",
+      "blob_sha": "cd368ba868e7c3915ee826d1f149441886f28a91",
+      "run": 35930307507
+    },
+    "clc_provenance": {
+      "repository": "metalogiclabs/metatron",
+      "commit": "8d2323da735720478c50eab068f844d9a3c0948d",
+      "path": "formal_adapter/CLCMetatronAdapter/CertificateProvenanceTest.lean",
+      "blob_sha": "0bfea3626566ab7fe7c15058893830273848631d",
+      "run": 35927873890,
+      "artifact": 10780042332,
+      "artifact_digest": "sha256:764b687d0273c726bdff1172131fc01ba676cf91c2c3c5b6a0edcd69906f1c3d"
+    },
+    "arc_generator_effects": {
+      "repository": "heathsanchez/Minimal-Sufficient-Interface",
+      "commit": "38d5c9768ed15a246ca775cde9dcf5b31fcf5c2c",
+      "path": "experiments/arc3_public_generator_effect_census_g3.py",
+      "blob_sha": "8cf2eeb41b6addd1555152aab7dad85006abf560",
+      "run": 35947695990,
+      "artifact": 10786574367,
+      "artifact_digest": "sha256:4b740fcd285065d6b5a1677f0752e15554c0ed6c1ab0dbcf8100e3e08acf33ae"
+    },
+    "arc_bd_dynamics": {
+      "repository": "heathsanchez/Minimal-Sufficient-Interface",
+      "commit": "bfb7fc806ae342793abc7a51c69c8972274f14df",
+      "path": "experiments/arc3_public_bd_transition_table_g3.py",
+      "blob_sha": "58c75f8add2d9ae6d4d4e3658f69a8ba9acdda8e",
+      "run": 35947917695,
+      "artifact": 10786419818,
+      "artifact_digest": "sha256:f3ed418f626bcde40703f5ccf632769cee151d22992bd8ea1cd329fd3a696a60"
+    },
+    "lean_external_capability": {
+      "repository": "heathsanchez/Minimal-Sufficient-Interface",
+      "commit": "d5b9e623192f237731188467212dc2f47d7cee36",
+      "path": "experiments/lean_external_capability_synthesis.py",
+      "blob_sha": "e5e5404c3b027767cebe03107867dd354c5757cd",
+      "run": 35930875216
+    }
+  }
+}
