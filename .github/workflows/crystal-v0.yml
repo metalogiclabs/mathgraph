@@ -161,3 +161,57 @@ jobs:
           print(f"CTMC_RATE_SEPARATOR base={base} fast={fast} gap={fast-base}")
           assert abs(fast - base) > 1e-4, vals
           PY
+      - name: Probe PRISM partial-observation separator
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph-prism
+          curl -fsSL -o guess.prism https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/pomdps/simple/guess.prism
+          curl -fsSL -o guess.props https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/pomdps/simple/guess.props
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+              "guess.prism": "961f8bd540c9d1e1afa15d45413e9a17bee22277",
+              "guess.props": "19500169192331d81956fca3d7cf0f5fb2d51b4b",
+          }
+          for name, sha in expected.items():
+              data = Path(name).read_bytes()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+              assert got == sha, (name, got, sha)
+
+          src = Path("guess.prism").read_text(encoding="utf-8")
+          assert "pomdp" in src
+          assert "observables s endobservables" in src
+          full = src.replace("pomdp", "mdp", 1).replace(
+              "observables s endobservables\n\n", ""
+          )
+          Path("guess_full.prism").write_text(full, encoding="utf-8")
+          PY
+          PRISM="$(find "$PWD" -type f -path '*/bin/prism' | head -1)"
+          PRISM_ROOT="$(dirname "$(dirname "$PRISM")")"
+          sed -i "s|^PRISM_DIR=.*|PRISM_DIR=$PRISM_ROOT|" "$PRISM"
+          POMDP="$PWD/guess.prism"
+          FULL="$PWD/guess_full.prism"
+          PROPS="$PWD/guess.props"
+          PLOG="$PWD/guess_pomdp.log"
+          FLOG="$PWD/guess_full.log"
+          cd "$(dirname "$PRISM")"
+          ./prism "$POMDP" "$PROPS" | tee "$PLOG"
+          ./prism "$FULL" "$PROPS" | tee "$FLOG"
+          python - "$PLOG" "$FLOG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          vals = []
+          for path in sys.argv[1:]:
+              text = Path(path).read_text(encoding="utf-8")
+              results = [float(x) for x in re.findall(r"Result: ([0-9.Ee+-]+)", text)]
+              assert len(results) == 1, (path, results)
+              vals.append(results[0])
+          partial, full = vals
+          print(f"OBSERVATION_SEPARATOR partial={partial} full={full} gap={full-partial}")
+          assert 0.59 < partial < 0.61, vals
+          assert 0.999 < full <= 1.000001, vals
+          assert full - partial > 0.39, vals
+          PY
