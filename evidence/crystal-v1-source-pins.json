@@ -129,6 +129,12 @@
       "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
       "path": "prism-examples/pomdps/simple/guess.props",
       "blob_sha": "19500169192331d81956fca3d7cf0f5fb2d51b4b"
+    },
+    "prism_mdp_mutual3": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/mdps/mutual/mutual3.nm",
+      "blob_sha": "8724ac6638cb58737e6d08fb9a2f5e3faf3523d8"
     }
   }
 }
