@@ -112,6 +112,48 @@ class ObservationMap:
 
 
 @dataclass(frozen=True)
+class ControlMap:
+    """Local control/ownership over choice points.
+
+    Entries map a stable choice-point identity to a controller identity.
+    This is intentionally not part of Boundary: a fixed protected
+    coalition/query can have different lawful futures when control of local
+    choices changes while states and effects remain identical.
+
+    Controller identities are opaque semantic identifiers. This object does
+    not define game theory, coalitions, or scheduler policy; those remain typed
+    boundary/interface semantics.
+    """
+
+    entries: tuple[tuple[str, str], ...]
+
+    def __post_init__(self) -> None:
+        points = [point for point, _ in self.entries]
+        if len(points) != len(set(points)):
+            raise ValueError("control map contains duplicate choice points")
+
+    @property
+    def id(self) -> str:
+        return content_id(self, prefix="control")
+
+    def controller(self, choice_point: str) -> str:
+        for candidate, controller in self.entries:
+            if candidate == choice_point:
+                return controller
+        raise KeyError(choice_point)
+
+    @property
+    def by_controller(self) -> dict[str, tuple[str, ...]]:
+        grouped: dict[str, list[str]] = {}
+        for point, controller in self.entries:
+            grouped.setdefault(controller, []).append(point)
+        return {
+            controller: tuple(sorted(points))
+            for controller, points in grouped.items()
+        }
+
+
+@dataclass(frozen=True)
 class ResidualPair:
     """Witness that a proposed representation merged a consequential distinction."""
 
