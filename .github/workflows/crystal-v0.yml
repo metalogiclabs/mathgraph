@@ -18,3 +18,33 @@ jobs:
         run: python -m pip install -e ".[all]"
       - name: Run crystal representation gate
         run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py
+      - name: Recheck external TLA+ Peterson model
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathgraph-tla
+          cd /tmp/mathgraph-tla
+          curl -fsSL -o Peterson.tla https://raw.githubusercontent.com/tlaplus/Examples/c9e45d0e4695a8552d31105b93dff21456b7be69/specifications/locks_auxiliary_vars/Peterson.tla
+          curl -fsSL -o Peterson.cfg https://raw.githubusercontent.com/tlaplus/Examples/c9e45d0e4695a8552d31105b93dff21456b7be69/specifications/locks_auxiliary_vars/Peterson.cfg
+          curl -fsSL -o Lock.tla https://raw.githubusercontent.com/tlaplus/Examples/c9e45d0e4695a8552d31105b93dff21456b7be69/specifications/locks_auxiliary_vars/Lock.tla
+          curl -fsSL -o tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
+          echo "bee4a54f3ee3d4afc347c3240ec2d9e93b075104  tla2tools.jar" | sha1sum -c -
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          expected = {
+              "Peterson.tla": "1c56470b957d680e7989d460c92738019a87a4b4",
+              "Peterson.cfg": "ae8a5c6b21ea19334c8d019deb0a1ed5ea5c44f4",
+              "Lock.tla": "d8ce7721d26ab726bf9a1f163a16b186f01931eb",
+          }
+          for name, sha in expected.items():
+              data = Path(name).read_bytes()
+              got = hashlib.sha1(
+                  f"blob {len(data)}\0".encode("ascii") + data
+              ).hexdigest()
+              assert got == sha, (name, got, sha)
+          PY
+          java -cp tla2tools.jar tlc2.TLC -workers 1 -config Peterson.cfg Peterson.tla | tee tlc.log
+          grep -q "Model checking completed. No error has been found." tlc.log
+          grep -q "77 states generated, 42 distinct states found" tlc.log
+          grep -q "The depth of the complete state graph search is 11" tlc.log
