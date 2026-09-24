@@ -86,8 +86,12 @@ jobs:
           curl -fsSL -o prism.tar.gz https://github.com/prismmodelchecker/prism/releases/download/v4.10.1/prism-4.10.1-linux64-x86.tar.gz
           echo "9f2135b1d49293cdc9b16b1756a24f99beff320b78134825c1f477f43942ab17  prism.tar.gz" | sha256sum -c -
           tar -xzf prism.tar.gz
-          PRISM="$(find . -type f -path '*/bin/prism' | head -1)"
+          PRISM="$(find "$PWD" -type f -path '*/bin/prism' | head -1)"
           test -n "$PRISM"
           chmod +x "$PRISM"
-          "$PRISM" robot.prism robot.props -const delta=0.1 | tee prism.log
-          grep -q "Result:" prism.log
+          MODEL="$PWD/robot.prism"
+          PROPS="$PWD/robot.props"
+          LOG="$PWD/prism.log"
+          cd "$(dirname "$PRISM")"
+          ./prism "$MODEL" "$PROPS" -const delta=0.1 | tee "$LOG"
+          grep -q "Result:" "$LOG"
