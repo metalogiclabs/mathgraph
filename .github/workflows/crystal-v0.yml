@@ -89,6 +89,8 @@ jobs:
           PRISM="$(find "$PWD" -type f -path '*/bin/prism' | head -1)"
           test -n "$PRISM"
           chmod +x "$PRISM"
+          PRISM_ROOT="$(dirname "$(dirname "$PRISM")")"
+          sed -i "s|^PRISM_DIR=.*|PRISM_DIR=$PRISM_ROOT|" "$PRISM"
           MODEL="$PWD/robot.prism"
           PROPS="$PWD/robot.props"
           LOG="$PWD/prism.log"
