@@ -135,6 +135,23 @@
       "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
       "path": "prism-examples/mdps/mutual/mutual3.nm",
       "blob_sha": "8724ac6638cb58737e6d08fb9a2f5e3faf3523d8"
+    },
+    "prism_games_smg_example": {
+      "repository": "prismmodelchecker/prism-games",
+      "commit": "984de6579bfd7cbf655eaa663d91006e6b4c0f2f",
+      "path": "prism-examples/smgs/simple/smg_example.prism",
+      "blob_sha": "0f5a4b518cf66548d8ddf91d39cd1020dcc1b050"
+    },
+    "prism_games_smg_example_props": {
+      "repository": "prismmodelchecker/prism-games",
+      "commit": "984de6579bfd7cbf655eaa663d91006e6b4c0f2f",
+      "path": "prism-examples/smgs/simple/smg_example.props",
+      "blob_sha": "aed7b6e22f333c5b75e92423240e084ea2a708fa"
+    },
+    "prism_games_3_2_4": {
+      "release": "v3.2.4",
+      "asset": "prism-games-3.2.4-linux64-x86.tar.gz",
+      "sha256": "11fb5c67d9897493588e0198d3c3fa3bbb28b4eee9b128b8d15f86b87fffec6b"
     }
   }
 }
