@@ -57,10 +57,18 @@ def test_exhaustive_discovery_finds_a_nontrivial_safe_quotient():
         target_label="goal1",
     )
 
+    expected = (
+        ("s0", "s1"),
+        ("s2", "s3"),
+        ("s4",),
+        ("s5",),
+    )
     assert result.tested_partitions == 52
-    assert len(result.partition) < len(adapted.model.states)
-    assert result.partition in result.coarsest_partitions
-    assert result.coarser_partitions_rejected > 0
+    assert result.accepted_partitions == 4
+    assert result.coarser_partitions_rejected == 16
+    assert result.partition == expected
+    assert result.coarsest_partitions == (expected,)
+    assert len(result.partition) == 4
 
 
 def test_discovered_quotient_preserves_every_state_protected_future():
@@ -93,7 +101,9 @@ def test_discovery_earns_dead_state_merge_but_rejects_s4_into_dead():
     )
     mapping = dict(result.state_map)
 
+    assert mapping["s0"] == mapping["s1"]
     assert mapping["s2"] == mapping["s3"]
+    assert mapping["s0"] != mapping["s2"]
     assert mapping["s4"] != mapping["s2"]
     assert mapping["s5"] != mapping["s4"]
     assert mapping["s5"] != mapping["s2"]
