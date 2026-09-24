@@ -466,6 +466,16 @@ def main() -> None:
     for key, value in report.items():
         print(f"{key}={value}")
 
+    composition = composition_qualification_report()
+    assert composition["reachable_states"] == 42, composition
+    assert composition["direct_mismatches"] == (), composition
+    assert composition["staged_mismatches"] == (), composition
+    assert composition["composed_interfaces"] == (OCCUPANCY_INTERFACE,), composition
+    assert isinstance(composition["control_probe"], UnknownTranslation), composition
+    print("TLA_ADAPTER_COMPOSITION=PASS")
+    for key, value in composition.items():
+        print(f"composition_{key}={value}")
+
 
 if __name__ == "__main__":
     main()
