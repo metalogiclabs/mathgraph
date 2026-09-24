@@ -112,3 +112,52 @@ jobs:
           assert 1.224 < r_worst < 1.226, values
           assert 1.210 < r_best < 1.212, values
           PY
+      - name: Probe PRISM continuous-time rate separator
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph-prism
+          curl -fsSL -o cell.sm https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/ctmcs/cell/cell.sm
+          curl -fsSL -o cell.csl https://raw.githubusercontent.com/prismmodelchecker/prism/1eee02217bfdfbaad09dc34f27d6eeea5cde1020/prism-examples/ctmcs/cell/cell.csl
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+              "cell.sm": "91f88503b565779d6cfd2b77ed856b2f09ce953b",
+              "cell.csl": "13b54bc990ed3133816d9ae3c056f442330afb9b",
+          }
+          for name, sha in expected.items():
+              data = Path(name).read_bytes()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+              assert got == sha, (name, got, sha)
+          src = Path("cell.sm").read_text(encoding="utf-8")
+          assert "const double lambda1=49;" in src
+          fast = src.replace("const double lambda1=49;", "const double lambda1=98;")
+          assert fast != src
+          Path("cell_fast.sm").write_text(fast, encoding="utf-8")
+          PY
+          PRISM="$(find "$PWD" -type f -path '*/bin/prism' | head -1)"
+          PRISM_ROOT="$(dirname "$(dirname "$PRISM")")"
+          sed -i "s|^PRISM_DIR=.*|PRISM_DIR=$PRISM_ROOT|" "$PRISM"
+          BASE="$PWD/cell.sm"
+          FAST="$PWD/cell_fast.sm"
+          CSL="$PWD/cell.csl"
+          BASELOG="$PWD/cell_base.log"
+          FASTLOG="$PWD/cell_fast.log"
+          cd "$(dirname "$PRISM")"
+          ./prism "$BASE" "$CSL" -prop 2 -const N=10,T=0.1 | tee "$BASELOG"
+          ./prism "$FAST" "$CSL" -prop 2 -const N=10,T=0.1 | tee "$FASTLOG"
+          python - "$BASELOG" "$FASTLOG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          vals = []
+          for path in sys.argv[1:]:
+              text = Path(path).read_text(encoding="utf-8")
+              results = [float(x) for x in re.findall(r"Result: ([0-9.Ee+-]+)", text)]
+              assert len(results) == 1, (path, results)
+              vals.append(results[0])
+          base, fast = vals
+          print(f"CTMC_RATE_SEPARATOR base={base} fast={fast} gap={fast-base}")
+          assert abs(fast - base) > 1e-4, vals
+          PY
