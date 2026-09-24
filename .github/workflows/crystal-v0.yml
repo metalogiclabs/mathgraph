@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - mathgraph-crystal-v0
+      - crystal-prism-consequential-quotient-v1
       - crystal-real-adapters-integration-v1
   workflow_dispatch:
 
@@ -18,7 +19,7 @@ jobs:
       - name: Install repository test dependencies
         run: python -m pip install -e ".[all]"
       - name: Run crystal representation gate
-        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py tests/test_crystal_ownership.py tests/test_crystal_extension.py tests/test_crystal_adapter_contract.py tests/test_tla_peterson_adapter.py tests/test_crystal_prism_adapter.py tests/test_crystal_adapter_composition.py tests/test_crystal_adapter_associativity_probe.py
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py tests/test_crystal_ownership.py tests/test_crystal_extension.py tests/test_crystal_adapter_contract.py tests/test_tla_peterson_adapter.py tests/test_crystal_prism_adapter.py tests/test_crystal_adapter_composition.py tests/test_crystal_adapter_associativity_probe.py tests/test_crystal_prism_quotient_composition.py
       - name: Run Peterson to Lock adapter qualification
         run: python -m adapters.tla_peterson_refinement
       - name: Recheck external TLA+ Peterson model
@@ -190,6 +191,186 @@ jobs:
               f"reward={reward.reason}"
           )
           PY
+      - name: Probe PRISM consequential quotient composition
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph-prism
+          python - <<'PY'
+          import json
+          import re
+          from decimal import Decimal
+          from pathlib import Path
+
+          from mathgraph.crystal import (
+              SemanticObject,
+              UnknownTranslation,
+              compose_adapter_contracts,
+              compose_lower_semantic_object,
+          )
+          from mathgraph.prism_adapter import (
+              PRISM_REACHABILITY_INTERFACE,
+              adapt_prism_imdp,
+              reachability_extrema,
+          )
+          from mathgraph.prism_quotient import (
+              STATE_IDENTITY_INTERFACE,
+              quotient_interval_mdp,
+          )
+
+          source = Path("robot.prism").read_text(encoding="utf-8")
+          prism_log = Path("prism.log").read_text(encoding="utf-8")
+          values = [float(x) for x in re.findall(r"Result: ([0-9.]+)", prism_log)]
+          assert len(values) == 4, values
+          prism_worst, prism_best, _, _ = values
+
+          source_ref = (
+              "prismmodelchecker/prism@"
+              "1eee02217bfdfbaad09dc34f27d6eeea5cde1020:"
+              "prism-examples/imdps/simple/robot.prism"
+              "#gitblob=0b836883421726aaba676713c0656335206120d3"
+          )
+          adapted = adapt_prism_imdp(
+              source,
+              delta="0.1",
+              source_ref=source_ref,
+          )
+          safe_map = {
+              "s0": "s0",
+              "s1": "s1",
+              "s2": "dead",
+              "s3": "dead",
+              "s4": "s4",
+              "s5": "s5",
+          }
+          bad_map = {
+              "s0": "s0",
+              "s1": "s1",
+              "s2": "dead",
+              "s3": "dead",
+              "s4": "dead",
+              "s5": "s5",
+          }
+          quotient = quotient_interval_mdp(
+              adapted.model,
+              safe_map,
+              partition_id="goal1-dead-s2-s3",
+          )
+          bad = quotient_interval_mdp(
+              adapted.model,
+              bad_map,
+              partition_id="bad-merge-s4-into-dead",
+          )
+
+          original = reachability_extrema(adapted.model, target_label="goal1")
+          reduced = reachability_extrema(quotient.model, target_label="goal1")
+          separated = reachability_extrema(bad.model, target_label="goal1")
+
+          assert len(adapted.model.states) == 6
+          assert len(quotient.model.states) == 5
+          assert len(bad.model.states) == 4
+          assert reduced == original
+          assert abs(reduced[0] - Decimal(str(prism_worst))) < Decimal("1e-6")
+          assert abs(reduced[1] - Decimal(str(prism_best))) < Decimal("1e-6")
+          assert separated == (Decimal(0), Decimal(0))
+
+          composed = compose_adapter_contracts(
+              adapted.contract,
+              quotient.contract,
+          )
+          assert composed.preserves_interfaces == (
+              PRISM_REACHABILITY_INTERFACE,
+          )
+
+          source_obj = SemanticObject(
+              type_id=adapted.contract.source_space,
+              contract_version=1,
+              payload=source.encode("utf-8"),
+              interfaces=(PRISM_REACHABILITY_INTERFACE,),
+          )
+
+          def lower_prism(obj):
+              assert obj.payload.decode("utf-8") == source
+              return adapted.semantic_object
+
+          def lower_quotient(obj):
+              assert obj.id == adapted.semantic_object.id
+              return quotient.semantic_object
+
+          lowered = compose_lower_semantic_object(
+              source_obj,
+              adapted.contract,
+              quotient.contract,
+              PRISM_REACHABILITY_INTERFACE,
+              lower_prism,
+              lower_quotient,
+          )
+          assert isinstance(lowered, SemanticObject)
+          assert lowered.id == quotient.semantic_object.id
+          assert lowered.id != adapted.semantic_object.id
+
+          discarded = compose_lower_semantic_object(
+              source_obj,
+              adapted.contract,
+              quotient.contract,
+              STATE_IDENTITY_INTERFACE,
+              lower_prism,
+              lower_quotient,
+          )
+          assert isinstance(discarded, UnknownTranslation)
+          assert discarded.reason == "outside_preservation_contract"
+
+          evidence = {
+              "schema": "mathgraph.prism-consequential-quotient.v1",
+              "source_ref": source_ref,
+              "protected_interface": PRISM_REACHABILITY_INTERFACE,
+              "discarded_interface": STATE_IDENTITY_INTERFACE,
+              "source_states": len(adapted.model.states),
+              "quotient_states": len(quotient.model.states),
+              "bad_quotient_states": len(bad.model.states),
+              "safe_partition": safe_map,
+              "bad_partition": bad_map,
+              "prism": {
+                  "pmaxmin": prism_worst,
+                  "pmaxmax": prism_best,
+              },
+              "mathgraph_original": {
+                  "pmaxmin": str(original[0]),
+                  "pmaxmax": str(original[1]),
+              },
+              "mathgraph_quotient": {
+                  "pmaxmin": str(reduced[0]),
+                  "pmaxmax": str(reduced[1]),
+              },
+              "bad_quotient": {
+                  "pmaxmin": str(separated[0]),
+                  "pmaxmax": str(separated[1]),
+              },
+              "adapter_contracts": {
+                  "source": adapted.contract.id,
+                  "quotient": quotient.contract.id,
+                  "composed": composed.id,
+              },
+              "semantic_objects": {
+                  "pre_quotient": adapted.semantic_object.id,
+                  "post_quotient": quotient.semantic_object.id,
+              },
+              "discarded_identity_query": (
+                  "UNKNOWN(outside_preservation_contract)"
+              ),
+          }
+          Path("prism_quotient_composition.json").write_text(
+              json.dumps(evidence, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(
+              "PRISM_QUOTIENT_COMPOSITION=PASS "
+              f"states={len(adapted.model.states)}->{len(quotient.model.states)} "
+              f"protected=({reduced[0]},{reduced[1]}) "
+              f"bad=({separated[0]},{separated[1]}) "
+              f"discarded={discarded.reason}"
+          )
+          PY
+
       - name: Probe PRISM continuous-time rate separator
         run: |
           set -euo pipefail
@@ -412,3 +593,9 @@ jobs:
         with:
           name: prism-adapter-commutation
           path: /tmp/mathgraph-prism/prism_adapter_commutation.json
+
+      - name: Upload PRISM quotient composition evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-quotient-composition
+          path: /tmp/mathgraph-prism/prism_quotient_composition.json
