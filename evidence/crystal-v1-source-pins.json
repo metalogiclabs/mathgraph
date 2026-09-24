@@ -57,6 +57,37 @@
       "path": "experiments/lean_external_capability_synthesis.py",
       "blob_sha": "e5e5404c3b027767cebe03107867dd354c5757cd",
       "run": 35930875216
+    },
+    "tla_peterson": {
+      "repository": "tlaplus/Examples",
+      "commit": "c9e45d0e4695a8552d31105b93dff21456b7be69",
+      "path": "specifications/locks_auxiliary_vars/Peterson.tla",
+      "blob_sha": "1c56470b957d680e7989d460c92738019a87a4b4",
+      "verifier": "TLC v1.7.4 + source proof"
+    },
+    "tla_peterson_cfg": {
+      "repository": "tlaplus/Examples",
+      "commit": "c9e45d0e4695a8552d31105b93dff21456b7be69",
+      "path": "specifications/locks_auxiliary_vars/Peterson.cfg",
+      "blob_sha": "ae8a5c6b21ea19334c8d019deb0a1ed5ea5c44f4"
+    },
+    "tla_lock": {
+      "repository": "tlaplus/Examples",
+      "commit": "c9e45d0e4695a8552d31105b93dff21456b7be69",
+      "path": "specifications/locks_auxiliary_vars/Lock.tla",
+      "blob_sha": "d8ce7721d26ab726bf9a1f163a16b186f01931eb"
+    },
+    "tla_manifest": {
+      "repository": "tlaplus/Examples",
+      "commit": "c9e45d0e4695a8552d31105b93dff21456b7be69",
+      "path": "specifications/locks_auxiliary_vars/manifest.json",
+      "blob_sha": "6d6c7b8d71cbc6d981b93efc117a0a0bf8cec2b5",
+      "expected": {
+        "distinctStates": 42,
+        "totalStates": 77,
+        "stateDepth": 11,
+        "result": "success"
+      }
     }
   }
 }
