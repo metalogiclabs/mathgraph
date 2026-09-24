@@ -113,6 +113,62 @@ class Residual:
     reason: str
 
 
+@dataclass(frozen=True)
+class IntervalOutcome:
+    """One outcome of an interval-valued transition effect."""
+
+    target: str
+    lower: str
+    upper: str
+
+
+@dataclass(frozen=True)
+class IntervalDistributionEffect:
+    """A normalized interval distribution over consequential targets.
+
+    This is the first quantitative effect admitted by a protected separator.
+    Deterministic transitions are the degenerate case with one [1,1] outcome.
+    Decimal bounds are stored canonically as strings so content identity does
+    not depend on binary floating-point representation.
+    """
+
+    outcomes: tuple[IntervalOutcome, ...]
+
+    def __post_init__(self) -> None:
+        from decimal import Decimal
+
+        if not self.outcomes:
+            raise ValueError("an interval distribution needs at least one outcome")
+        lowers = []
+        uppers = []
+        seen: set[str] = set()
+        for outcome in self.outcomes:
+            if outcome.target in seen:
+                raise ValueError("duplicate target in interval distribution")
+            seen.add(outcome.target)
+            lo = Decimal(outcome.lower)
+            hi = Decimal(outcome.upper)
+            if lo < 0 or hi > 1 or lo > hi:
+                raise ValueError("invalid probability interval")
+            lowers.append(lo)
+            uppers.append(hi)
+        one = Decimal("1")
+        if sum(lowers) > one or sum(uppers) < one:
+            raise ValueError("intervals admit no normalized distribution")
+
+    @property
+    def id(self) -> str:
+        return content_id(self, prefix="effect")
+
+    @property
+    def qualitative_support(self) -> tuple[str, ...]:
+        return tuple(sorted(outcome.target for outcome in self.outcomes))
+
+
+def deterministic_effect(target: str) -> IntervalDistributionEffect:
+    return IntervalDistributionEffect((IntervalOutcome(target, "1", "1"),))
+
+
 
 def quotient_states(states: Sequence[ConsequentialState]) -> dict[tuple[str, ...], tuple[str, ...]]:
     """Collapse raw states exactly by their declared protected signature."""
