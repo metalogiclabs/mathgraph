@@ -316,6 +316,58 @@ def lower_semantic_object(
     target = SemanticObject.from_bytes(target.to_bytes())
     return target
 
+def compose_adapter_contracts(
+    first: AdapterContract,
+    second: AdapterContract,
+    *,
+    adapter_id: str | None = None,
+) -> AdapterContract:
+    """Mechanically compose compatible adapter preservation contracts.
+
+    Only interfaces preserved by both legs survive composition. Assumptions
+    and evidence compose by set union plus explicit component-contract refs.
+    """
+
+    if first.target_space != second.source_space:
+        raise ValueError("adapter spaces do not compose")
+    shared = tuple(sorted(set(first.preserves_interfaces) & set(second.preserves_interfaces)))
+    return AdapterContract(
+        adapter_id=adapter_id or f"{second.adapter_id}∘{first.adapter_id}",
+        contract_version=1,
+        source_space=first.source_space,
+        target_space=second.target_space,
+        preserves_interfaces=shared,
+        assumption_refs=first.assumption_refs + second.assumption_refs,
+        evidence_refs=(
+            first.evidence_refs
+            + second.evidence_refs
+            + (f"adapter-contract:{first.id}", f"adapter-contract:{second.id}")
+        ),
+    )
+
+
+def compose_lower_semantic_object(
+    obj: SemanticObject,
+    first: AdapterContract,
+    second: AdapterContract,
+    requested_interface: str,
+    first_lowerer: Any,
+    second_lowerer: Any,
+    *,
+    adapter_id: str | None = None,
+) -> SemanticObject | UnknownTranslation:
+    """Compose two non-identity lowerings under the mechanically composed contract."""
+
+    composed = compose_adapter_contracts(first, second, adapter_id=adapter_id)
+    if requested_interface not in composed.preserves_interfaces:
+        return UnknownTranslation(
+            obj.id, composed.id, requested_interface, "outside_preservation_contract"
+        )
+    middle = lower_semantic_object(obj, first, requested_interface, first_lowerer)
+    if isinstance(middle, UnknownTranslation):
+        return middle
+    return lower_semantic_object(middle, second, requested_interface, second_lowerer)
+
 @dataclass(frozen=True)
 class Boundary:
     """Scope relative to which distinctions are consequential."""
