@@ -280,6 +280,42 @@ def translate_semantic_object(
         raise AssertionError("lossless translation changed semantic identity")
     return translated
 
+def lower_semantic_object(
+    obj: SemanticObject,
+    contract: AdapterContract,
+    requested_interface: str,
+    lowerer: Any,
+) -> SemanticObject | UnknownTranslation:
+    """Apply a real lowering under an explicit preservation contract.
+
+    Unlike ``translate_semantic_object``, the target may have a different
+    concrete type, payload and content identity. The microkernel checks only
+    that the requested interface is in-contract on both sides and that the
+    lowerer returns a canonical SemanticObject. Actual semantic preservation
+    remains a qualification obligation referenced by the contract evidence.
+    """
+
+    if requested_interface not in contract.preserves_interfaces:
+        return UnknownTranslation(
+            obj.id, contract.id, requested_interface, "outside_preservation_contract"
+        )
+    if requested_interface not in obj.interfaces:
+        return UnknownTranslation(
+            obj.id, contract.id, requested_interface, "object_missing_interface"
+        )
+    if not callable(lowerer):
+        raise TypeError("semantic adapter lowerer must be callable")
+    target = lowerer(obj)
+    if not isinstance(target, SemanticObject):
+        raise TypeError("semantic adapter lowerer must return SemanticObject")
+    if requested_interface not in target.interfaces:
+        return UnknownTranslation(
+            obj.id, contract.id, requested_interface, "target_missing_interface"
+        )
+    # Exercise canonical target transport before exposing the lowering result.
+    target = SemanticObject.from_bytes(target.to_bytes())
+    return target
+
 @dataclass(frozen=True)
 class Boundary:
     """Scope relative to which distinctions are consequential."""
