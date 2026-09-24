@@ -142,3 +142,27 @@ def test_noncanonical_transport_is_rejected_not_silently_rewritten():
         assert "non-canonical" in str(exc)
     else:
         raise AssertionError("non-canonical transport must be rejected")
+
+def test_known_interface_can_dispatch_on_unknown_concrete_type():
+    future = _future_object()
+    before_wire = future.to_bytes()
+    before_id = future.id
+
+    result = interpret_semantic_object(
+        future,
+        "effect.compose@2",
+        interpreters={
+            "effect.compose@2": lambda obj: (
+                "generic-interface-dispatch",
+                obj.type_id,
+                obj.id,
+            )
+        },
+    )
+    assert result == (
+        "generic-interface-dispatch",
+        "effect.weird.future.physics",
+        before_id,
+    )
+    assert future.to_bytes() == before_wire
+    assert future.id == before_id
