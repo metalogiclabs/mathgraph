@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from mathgraph.crystal import AdapterContract, compose_adapter_contracts
+from mathgraph.crystal import (
+    AdapterContract,
+    SemanticObject,
+    compose_adapter_contracts,
+    compose_lower_semantic_object,
+    identity_adapter_contract,
+    lower_semantic_object,
+)
 
 
 I = "interface.i@1"
@@ -62,3 +69,85 @@ def test_strict_contract_identity_is_associative():
     )
     assert left == right
     assert left.id == right.id
+
+
+def test_automatic_composition_identity_is_associative():
+    left = compose_adapter_contracts(
+        compose_adapter_contracts(_a(), _b()),
+        _c(),
+    )
+    right = compose_adapter_contracts(
+        _a(),
+        compose_adapter_contracts(_b(), _c()),
+    )
+    assert left == right
+    assert left.id == right.id
+
+
+def test_identity_contract_is_neutral_on_both_sides():
+    a = _a()
+    left_identity = identity_adapter_contract("S", (I, J, K))
+    right_identity = identity_adapter_contract("M", (I, J, K))
+    assert compose_adapter_contracts(left_identity, a) == a
+    assert compose_adapter_contracts(a, right_identity) == a
+
+
+def _obj(space: str, marker: str) -> SemanticObject:
+    return SemanticObject(space, 1, marker.encode("utf-8"), (I,))
+
+
+def _la(obj: SemanticObject) -> SemanticObject:
+    return _obj("M", obj.payload.decode("utf-8") + "A")
+
+
+def _lb(obj: SemanticObject) -> SemanticObject:
+    return _obj("N", obj.payload.decode("utf-8") + "B")
+
+
+def _lc(obj: SemanticObject) -> SemanticObject:
+    return _obj("T", obj.payload.decode("utf-8") + "C")
+
+
+def _identity_lowerer(obj: SemanticObject) -> SemanticObject:
+    return SemanticObject.from_bytes(obj.to_bytes())
+
+
+def test_lowering_outputs_are_associative():
+    source = _obj("S", "x")
+    ab_contract = compose_adapter_contracts(_a(), _b())
+    bc_contract = compose_adapter_contracts(_b(), _c())
+
+    def lower_ab(obj: SemanticObject) -> SemanticObject:
+        mid = lower_semantic_object(obj, _a(), I, _la)
+        assert isinstance(mid, SemanticObject)
+        out = lower_semantic_object(mid, _b(), I, _lb)
+        assert isinstance(out, SemanticObject)
+        return out
+
+    def lower_bc(obj: SemanticObject) -> SemanticObject:
+        mid = lower_semantic_object(obj, _b(), I, _lb)
+        assert isinstance(mid, SemanticObject)
+        out = lower_semantic_object(mid, _c(), I, _lc)
+        assert isinstance(out, SemanticObject)
+        return out
+
+    left = compose_lower_semantic_object(
+        source, ab_contract, _c(), I, lower_ab, _lc
+    )
+    right = compose_lower_semantic_object(
+        source, _a(), bc_contract, I, _la, lower_bc
+    )
+    assert isinstance(left, SemanticObject)
+    assert isinstance(right, SemanticObject)
+    assert left == right
+    assert left.payload == b"xABC"
+
+
+def test_identity_lowering_is_neutral():
+    source = _obj("S", "x")
+    identity = identity_adapter_contract("S", (I,))
+    result = lower_semantic_object(source, identity, I, _identity_lowerer)
+    assert isinstance(result, SemanticObject)
+    assert result == source
+    assert result.id == source.id
+    assert result.to_bytes() == source.to_bytes()
