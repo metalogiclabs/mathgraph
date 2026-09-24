@@ -6,10 +6,12 @@ from pathlib import Path
 import urllib.request
 
 from mathgraph.crystal import (
+    ConsequentialState,
     Hyperedge,
     action_quotient,
     find_quotient_falsifiers,
     greatest_viability_kernel,
+    quotient_states,
     uncovered_failures,
 )
 
@@ -228,3 +230,38 @@ def test_real_external_lean_capability_is_just_supported_transition_plus_residua
     assert uncovered_failures(
         "z2", ["synthesize"], [edge], {"learned-interface"}
     ) == ()
+
+
+def test_tla_peterson_refinement_is_the_same_future_relative_quotient():
+    src = _fetch("tla_peterson")
+    manifest = json.loads(_fetch("tla_manifest"))
+
+    assert 'pc_translation(label) ==' in src
+    assert '(label \\in {"a1", "a2", "a3"}) -> "l1"' in src
+    assert "THEOREM Refinement == Spec => L!Spec" in src
+
+    module = next(
+        m for m in manifest["modules"]
+        if m["path"].endswith("/Peterson.tla")
+    )
+    model = module["models"][0]
+    assert model["result"] == "success"
+    assert (model["distinctStates"], model["totalStates"], model["stateDepth"]) == (
+        42,
+        77,
+        11,
+    )
+
+    states = [
+        ConsequentialState("a0", ("l0",), ("a0",)),
+        ConsequentialState("a1", ("l1",), ("a1",)),
+        ConsequentialState("a2", ("l1",), ("a2",)),
+        ConsequentialState("a3", ("l1",), ("a3",)),
+        ConsequentialState("cs", ("cs",), ("cs",)),
+        ConsequentialState("a4", ("l2",), ("a4",)),
+    ]
+    classes = quotient_states(states)
+    assert classes[("l1",)] == ("a1", "a2", "a3")
+    assert classes[("l0",)] == ("a0",)
+    assert classes[("cs",)] == ("cs",)
+    assert classes[("l2",)] == ("a4",)
