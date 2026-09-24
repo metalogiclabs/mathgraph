@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - mathgraph-crystal-v0
+      - crystal-prism-adapter-v1
   workflow_dispatch:
 
 jobs:
@@ -17,7 +18,7 @@ jobs:
       - name: Install repository test dependencies
         run: python -m pip install -e ".[all]"
       - name: Run crystal representation gate
-        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py tests/test_crystal_ownership.py tests/test_crystal_extension.py tests/test_crystal_adapter_contract.py
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py tests/test_crystal_ownership.py tests/test_crystal_extension.py tests/test_crystal_adapter_contract.py tests/test_crystal_prism_adapter.py
       - name: Recheck external TLA+ Peterson model
         run: |
           set -euo pipefail
@@ -97,10 +98,20 @@ jobs:
           cd "$(dirname "$PRISM")"
           ./prism "$MODEL" "$PROPS" -const delta=0.1 | tee "$LOG"
           grep -q "Result:" "$LOG"
-          python - "$LOG" <<'PY'
+          python - "$LOG" "$MODEL" <<'PY'
+          import json
           import re
           import sys
+          from decimal import Decimal
           from pathlib import Path
+
+          from mathgraph.crystal import UnknownTranslation, translate_semantic_object
+          from mathgraph.prism_adapter import (
+              PRISM_REACHABILITY_INTERFACE,
+              PRISM_REWARD_INTERFACE,
+              adapt_prism_imdp,
+              reachability_extrema,
+          )
 
           text = Path(sys.argv[1]).read_text(encoding="utf-8")
           values = [float(x) for x in re.findall(r"Result: ([0-9.]+)", text)]
@@ -111,6 +122,71 @@ jobs:
           assert p_best - p_worst > 0.19, values
           assert 1.224 < r_worst < 1.226, values
           assert 1.210 < r_best < 1.212, values
+
+          source = Path(sys.argv[2]).read_text(encoding="utf-8")
+          source_ref = (
+              "prismmodelchecker/prism@"
+              "1eee02217bfdfbaad09dc34f27d6eeea5cde1020:"
+              "prism-examples/imdps/simple/robot.prism"
+              "#gitblob=0b836883421726aaba676713c0656335206120d3"
+          )
+          adapted = adapt_prism_imdp(
+              source,
+              delta="0.1",
+              source_ref=source_ref,
+          )
+          mg_worst, mg_best = reachability_extrema(
+              adapted.model,
+              target_label="goal1",
+          )
+          assert abs(mg_worst - Decimal(str(p_worst))) < Decimal("1e-6")
+          assert abs(mg_best - Decimal(str(p_best))) < Decimal("1e-6")
+
+          preserved = translate_semantic_object(
+              adapted.semantic_object,
+              adapted.contract,
+              PRISM_REACHABILITY_INTERFACE,
+          )
+          assert preserved.id == adapted.semantic_object.id
+          assert preserved.to_bytes() == adapted.semantic_object.to_bytes()
+
+          reward = translate_semantic_object(
+              adapted.semantic_object,
+              adapted.contract,
+              PRISM_REWARD_INTERFACE,
+          )
+          assert isinstance(reward, UnknownTranslation)
+          assert reward.reason == "outside_preservation_contract"
+
+          evidence = {
+              "schema": "mathgraph.prism-adapter-commutation.v1",
+              "source_ref": source_ref,
+              "interface": PRISM_REACHABILITY_INTERFACE,
+              "prism": {
+                  "pmaxmin": p_worst,
+                  "pmaxmax": p_best,
+                  "rminmax_unpreserved": r_worst,
+                  "rminmin_unpreserved": r_best,
+              },
+              "mathgraph": {
+                  "pmaxmin": str(mg_worst),
+                  "pmaxmax": str(mg_best),
+                  "semantic_object_id": adapted.semantic_object.id,
+                  "adapter_contract_id": adapted.contract.id,
+                  "reward_query": "UNKNOWN(outside_preservation_contract)",
+              },
+          }
+          evidence_path = Path("/tmp/mathgraph-prism/prism_adapter_commutation.json")
+          evidence_path.write_text(
+              json.dumps(evidence, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(
+              "PRISM_ADAPTER_COMMUTES "
+              f"prism=({p_worst},{p_best}) "
+              f"mathgraph=({mg_worst},{mg_best}) "
+              f"reward={reward.reason}"
+          )
           PY
       - name: Probe PRISM continuous-time rate separator
         run: |
@@ -328,3 +404,9 @@ jobs:
           print(f"MIXED_OWNERSHIP_SEPARATOR original={original} swapped={swapped} gap={original-swapped}")
           assert original - swapped > 0.5, vals
           PY
+
+      - name: Upload PRISM adapter commutation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-adapter-commutation
+          path: /tmp/mathgraph-prism/prism_adapter_commutation.json
