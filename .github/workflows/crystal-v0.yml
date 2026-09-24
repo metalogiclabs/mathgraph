@@ -5,6 +5,7 @@ on:
     branches:
       - mathgraph-crystal-v0
       - crystal-real-adapters-integration-v1
+      - crystal-adapter-composition-v1
   workflow_dispatch:
 
 jobs:
