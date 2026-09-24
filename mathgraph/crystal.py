@@ -316,6 +316,48 @@ def lower_semantic_object(
     target = SemanticObject.from_bytes(target.to_bytes())
     return target
 
+def identity_adapter_contract(
+    space: str,
+    interfaces: Iterable[str],
+) -> AdapterContract:
+    """Canonical identity adapter for a semantic space and interface family."""
+
+    return AdapterContract(
+        adapter_id=f"identity:{space}",
+        contract_version=1,
+        source_space=space,
+        target_space=space,
+        preserves_interfaces=tuple(interfaces),
+    )
+
+
+def _is_identity_adapter(contract: AdapterContract) -> bool:
+    return (
+        contract.contract_version == 1
+        and contract.source_space == contract.target_space
+        and contract.adapter_id == f"identity:{contract.source_space}"
+        and contract.assumption_refs == ()
+        and contract.evidence_refs == ()
+    )
+
+
+def _composition_path(contract: AdapterContract) -> tuple[str, ...]:
+    prefix = "adapter-path:"
+    paths = [
+        ref[len(prefix):]
+        for ref in contract.evidence_refs
+        if ref.startswith(prefix)
+    ]
+    if len(paths) > 1:
+        raise ValueError("adapter contract contains multiple composition paths")
+    if not paths:
+        return (contract.id,)
+    path = tuple(part for part in paths[0].split(">") if part)
+    if not path:
+        raise ValueError("adapter composition path is empty")
+    return path
+
+
 def compose_adapter_contracts(
     first: AdapterContract,
     second: AdapterContract,
@@ -324,39 +366,50 @@ def compose_adapter_contracts(
 ) -> AdapterContract:
     """Mechanically compose compatible adapter preservation contracts.
 
-    Only interfaces preserved by both legs survive composition. Assumptions
-    and evidence compose by set union plus explicit component-contract refs.
+    Preserved interfaces intersect. Assumptions and evidence compose
+    canonically. Composition provenance is flattened to an ordered leaf path,
+    so automatic contract identity is independent of parenthesization.
     """
 
     if first.target_space != second.source_space:
         raise ValueError("adapter spaces do not compose")
-    shared = tuple(sorted(set(first.preserves_interfaces) & set(second.preserves_interfaces)))
 
-    def leaf_contract_refs(contract: AdapterContract) -> tuple[str, ...]:
-        inherited = tuple(
-            ref for ref in contract.evidence_refs
-            if ref.startswith("adapter-contract:")
-        )
-        return inherited or (f"adapter-contract:{contract.id}",)
+    if adapter_id is None:
+        if (
+            _is_identity_adapter(first)
+            and set(second.preserves_interfaces).issubset(first.preserves_interfaces)
+        ):
+            return second
+        if (
+            _is_identity_adapter(second)
+            and set(first.preserves_interfaces).issubset(second.preserves_interfaces)
+        ):
+            return first
+
+    shared = tuple(
+        sorted(set(first.preserves_interfaces) & set(second.preserves_interfaces))
+    )
+    path = _composition_path(first) + _composition_path(second)
 
     def base_evidence(contract: AdapterContract) -> tuple[str, ...]:
         return tuple(
             ref for ref in contract.evidence_refs
             if not ref.startswith("adapter-contract:")
+            and not ref.startswith("adapter-path:")
         )
 
-    # Provenance is semantic lineage, not parse-tree history. Flatten composed
-    # contracts to the same canonical set of leaf contract refs so equivalent
-    # parenthesizations receive the same evidence payload.
+    leaf_refs = tuple(f"adapter-contract:{leaf_id}" for leaf_id in path)
+    path_ref = "adapter-path:" + ">".join(path)
     evidence_refs = (
         base_evidence(first)
         + base_evidence(second)
-        + leaf_contract_refs(first)
-        + leaf_contract_refs(second)
+        + leaf_refs
+        + (path_ref,)
     )
+    automatic_id = "compose:" + hashlib.sha256(canonical_bytes(path)).hexdigest()
 
     return AdapterContract(
-        adapter_id=adapter_id or f"{second.adapter_id}∘{first.adapter_id}",
+        adapter_id=adapter_id or automatic_id,
         contract_version=1,
         source_space=first.source_space,
         target_space=second.target_space,
