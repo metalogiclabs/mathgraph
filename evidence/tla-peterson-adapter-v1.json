@@ -1,0 +1,39 @@
+{
+  "schema": "mathgraph.tla-peterson-adapter-v1.qualified",
+  "status": "QUALIFIED_BOUNDED",
+  "source": {
+    "repository": "tlaplus/Examples",
+    "commit": "c9e45d0e4695a8552d31105b93dff21456b7be69",
+    "peterson_path": "specifications/locks_auxiliary_vars/Peterson.tla",
+    "peterson_blob": "1c56470b957d680e7989d460c92738019a87a4b4",
+    "lock_path": "specifications/locks_auxiliary_vars/Lock.tla",
+    "lock_blob": "d8ce7721d26ab726bf9a1f163a16b186f01931eb",
+    "cfg_blob": "ae8a5c6b21ea19334c8d019deb0a1ed5ea5c44f4"
+  },
+  "adapter": {
+    "module": "adapters/tla_peterson_refinement.py",
+    "contract_id": "adapter:0b7476b83f1e9ae59c50e86595598cff6598ffefec8045030e1b036a9409c142",
+    "preserves": [
+      "tla.refinement.lock-spec@1",
+      "tla.control-state@1"
+    ],
+    "explicitly_unpreserved": [
+      "tla.peterson.internal@1"
+    ]
+  },
+  "qualification": {
+    "exact_code_head": "5b085a11812281c6a439cb4ea3754e74ba52331a",
+    "workflow_run": 35976296875,
+    "job": 107557486222,
+    "crystal_tests_passed": 54,
+    "reachable_states": 42,
+    "concrete_transitions": 76,
+    "abstract_steps": 40,
+    "abstract_stutters": 36,
+    "refinement_violations": 0,
+    "tlc_distinct_states": 42,
+    "tlc_total_states": 77,
+    "tlc_depth": 11
+  },
+  "claim_boundary": "Exact source-pinned Peterson-to-Lock finite refinement adapter. Every reachable concrete transition maps to an abstract Lock transition or stutter; Peterson-only internals are explicitly UNKNOWN outside the adapter preservation contract. This is not a generic TLA+ parser or universal refinement theorem."
+}
