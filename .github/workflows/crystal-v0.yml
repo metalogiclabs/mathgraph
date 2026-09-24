@@ -44,6 +44,22 @@ jobs:
               ).hexdigest()
               assert got == sha, (name, got, sha)
           PY
+          python - <<'PY'
+          from pathlib import Path
+
+          # TLC does not ship the proof-only TLAPS.tla module. Build a
+          # model-check view from the exact pinned sources by removing only
+          # the TLAPS import and proof sections. Spec, invariants, refinement
+          # mapping, and configured PROPERTY remain byte-for-byte otherwise.
+          for name in ("Peterson.tla", "Lock.tla"):
+              p = Path(name)
+              text = p.read_text(encoding="utf-8")
+              text = text.replace(", TLAPS", "")
+              marker = "\n-------------------------------------------------------------------------------\n\nLEMMA"
+              if marker in text:
+                  text = text.split(marker, 1)[0] + "\n===============================================================================\n"
+              p.write_text(text, encoding="utf-8")
+          PY
           java -cp tla2tools.jar tlc2.TLC -workers 1 -config Peterson.cfg Peterson.tla | tee tlc.log
           grep -q "Model checking completed. No error has been found." tlc.log
           grep -q "77 states generated, 42 distinct states found" tlc.log
