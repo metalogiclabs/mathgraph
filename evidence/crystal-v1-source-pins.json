@@ -105,6 +105,18 @@
       "release": "v4.10.1",
       "asset": "prism-4.10.1-linux64-x86.tar.gz",
       "sha256": "9f2135b1d49293cdc9b16b1756a24f99beff320b78134825c1f477f43942ab17"
+    },
+    "prism_ctmc_cell": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/ctmcs/cell/cell.sm",
+      "blob_sha": "91f88503b565779d6cfd2b77ed856b2f09ce953b"
+    },
+    "prism_ctmc_cell_props": {
+      "repository": "prismmodelchecker/prism",
+      "commit": "1eee02217bfdfbaad09dc34f27d6eeea5cde1020",
+      "path": "prism-examples/ctmcs/cell/cell.csl",
+      "blob_sha": "13b54bc990ed3133816d9ae3c056f442330afb9b"
     }
   }
 }
