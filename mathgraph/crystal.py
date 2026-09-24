@@ -331,6 +331,30 @@ def compose_adapter_contracts(
     if first.target_space != second.source_space:
         raise ValueError("adapter spaces do not compose")
     shared = tuple(sorted(set(first.preserves_interfaces) & set(second.preserves_interfaces)))
+
+    def leaf_contract_refs(contract: AdapterContract) -> tuple[str, ...]:
+        inherited = tuple(
+            ref for ref in contract.evidence_refs
+            if ref.startswith("adapter-contract:")
+        )
+        return inherited or (f"adapter-contract:{contract.id}",)
+
+    def base_evidence(contract: AdapterContract) -> tuple[str, ...]:
+        return tuple(
+            ref for ref in contract.evidence_refs
+            if not ref.startswith("adapter-contract:")
+        )
+
+    # Provenance is semantic lineage, not parse-tree history. Flatten composed
+    # contracts to the same canonical set of leaf contract refs so equivalent
+    # parenthesizations receive the same evidence payload.
+    evidence_refs = (
+        base_evidence(first)
+        + base_evidence(second)
+        + leaf_contract_refs(first)
+        + leaf_contract_refs(second)
+    )
+
     return AdapterContract(
         adapter_id=adapter_id or f"{second.adapter_id}∘{first.adapter_id}",
         contract_version=1,
@@ -338,11 +362,7 @@ def compose_adapter_contracts(
         target_space=second.target_space,
         preserves_interfaces=shared,
         assumption_refs=first.assumption_refs + second.assumption_refs,
-        evidence_refs=(
-            first.evidence_refs
-            + second.evidence_refs
-            + (f"adapter-contract:{first.id}", f"adapter-contract:{second.id}")
-        ),
+        evidence_refs=evidence_refs,
     )
 
 
