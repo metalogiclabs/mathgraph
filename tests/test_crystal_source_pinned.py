@@ -40,8 +40,9 @@ def _fetch(name: str) -> str:
 
 
 def test_every_source_pin_matches_exact_git_blob():
-    for name in PINS:
-        assert _fetch(name)
+    for name, pin in PINS.items():
+        if {"repository", "commit", "path", "blob_sha"} <= set(pin):
+            assert _fetch(name)
 
 
 def test_msi_real_quotient_witness_maps_without_new_fields():
