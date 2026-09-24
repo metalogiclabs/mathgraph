@@ -169,6 +169,58 @@ def deterministic_effect(target: str) -> IntervalDistributionEffect:
     return IntervalDistributionEffect((IntervalOutcome(target, "1", "1"),))
 
 
+@dataclass(frozen=True)
+class RateOutcome:
+    """One target with a non-negative continuous-time transition rate."""
+
+    target: str
+    rate: str
+
+
+@dataclass(frozen=True)
+class RateKernelEffect:
+    """A CTMC-style rate kernel over consequential targets.
+
+    Unlike a probability distribution, rates are non-negative intensities and
+    need not sum to one. Holding times are therefore part of the future
+    consequence. This type was admitted only after an external PRISM CTMC
+    separator showed identical qualitative support with different rates can
+    change a protected time-bounded probability.
+    """
+
+    outcomes: tuple[RateOutcome, ...]
+
+    def __post_init__(self) -> None:
+        from decimal import Decimal
+
+        if not self.outcomes:
+            raise ValueError("a rate kernel needs at least one outcome")
+        seen: set[str] = set()
+        for outcome in self.outcomes:
+            if outcome.target in seen:
+                raise ValueError("duplicate target in rate kernel")
+            seen.add(outcome.target)
+            rate = Decimal(outcome.rate)
+            if rate < 0:
+                raise ValueError("transition rate must be non-negative")
+        if all(Decimal(outcome.rate) == 0 for outcome in self.outcomes):
+            raise ValueError("rate kernel must have positive total exit rate")
+
+    @property
+    def id(self) -> str:
+        return content_id(self, prefix="effect")
+
+    @property
+    def qualitative_support(self) -> tuple[str, ...]:
+        return tuple(
+            sorted(
+                outcome.target
+                for outcome in self.outcomes
+                if outcome.rate != "0"
+            )
+        )
+
+
 
 def quotient_states(states: Sequence[ConsequentialState]) -> dict[tuple[str, ...], tuple[str, ...]]:
     """Collapse raw states exactly by their declared protected signature."""
