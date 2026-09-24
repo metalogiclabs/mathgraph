@@ -17,7 +17,7 @@ jobs:
       - name: Install repository test dependencies
         run: python -m pip install -e ".[all]"
       - name: Run crystal representation gate
-        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py
       - name: Recheck external TLA+ Peterson model
         run: |
           set -euo pipefail
