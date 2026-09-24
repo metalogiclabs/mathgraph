@@ -93,9 +93,39 @@ def interval_mdp_quotient_contract(
     )
 
 
-def _sum_decimal_strings(values: list[str]) -> str:
-    total = sum((Decimal(value) for value in values), Decimal(0))
-    return format(total, "f")
+def _normalized_group_interval(
+    *,
+    group_lowers: list[str],
+    group_uppers: list[str],
+    all_lowers: list[str],
+    all_uppers: list[str],
+) -> tuple[str, str]:
+    """Project normalized interval probabilities through a target quotient.
+
+    Endpoint sums alone are not sound enough: source outcomes are coupled by
+    the global normalization constraint. The exact marginal envelope implied
+    by independent per-outcome bounds plus sum(p)=1 is
+
+      lower = max(sum(group lows), 1 - sum(other uppers))
+      upper = min(sum(group uppers), 1 - sum(other lowers)).
+    """
+
+    one = Decimal(1)
+    group_low = sum((Decimal(value) for value in group_lowers), Decimal(0))
+    group_high = sum((Decimal(value) for value in group_uppers), Decimal(0))
+    all_low = sum((Decimal(value) for value in all_lowers), Decimal(0))
+    all_high = sum((Decimal(value) for value in all_uppers), Decimal(0))
+    other_low = all_low - group_low
+    other_high = all_high - group_high
+    lower = max(group_low, one - other_high)
+    upper = min(group_high, one - other_low)
+    if lower < 0:
+        lower = Decimal(0)
+    if upper > 1:
+        upper = Decimal(1)
+    if lower > upper:
+        raise ValueError("quotient projection produced infeasible interval")
+    return format(lower, "f"), format(upper, "f")
 
 
 def quotient_interval_mdp(
@@ -137,14 +167,22 @@ def quotient_interval_mdp(
             bucket["lower"].append(outcome.lower)
             bucket["upper"].append(outcome.upper)
 
-        outcomes = tuple(
-            IntervalOutcome(
-                target,
-                _sum_decimal_strings(by_target[target]["lower"]),
-                _sum_decimal_strings(by_target[target]["upper"]),
+        all_lowers = [
+            outcome.lower for outcome in action.effect.outcomes
+        ]
+        all_uppers = [
+            outcome.upper for outcome in action.effect.outcomes
+        ]
+        projected = []
+        for target in sorted(by_target):
+            lower, upper = _normalized_group_interval(
+                group_lowers=by_target[target]["lower"],
+                group_uppers=by_target[target]["upper"],
+                all_lowers=all_lowers,
+                all_uppers=all_uppers,
             )
-            for target in sorted(by_target)
-        )
+            projected.append(IntervalOutcome(target, lower, upper))
+        outcomes = tuple(projected)
         quotient_action = IntervalAction(
             source=state_map[action.source],
             action=action.action,
