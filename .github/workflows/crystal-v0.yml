@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - mathgraph-crystal-v0
+      - crystal-prism-quotient-discovery-v1
       - crystal-prism-consequential-quotient-v1
       - crystal-real-adapters-integration-v1
   workflow_dispatch:
@@ -19,7 +20,7 @@ jobs:
       - name: Install repository test dependencies
         run: python -m pip install -e ".[all]"
       - name: Run crystal representation gate
-        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py tests/test_crystal_ownership.py tests/test_crystal_extension.py tests/test_crystal_adapter_contract.py tests/test_tla_peterson_adapter.py tests/test_crystal_prism_adapter.py tests/test_crystal_adapter_composition.py tests/test_crystal_adapter_associativity_probe.py tests/test_crystal_prism_quotient_composition.py
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_source_pinned.py tests/test_crystal_quantitative.py tests/test_crystal_observation.py tests/test_crystal_choice.py tests/test_crystal_ownership.py tests/test_crystal_extension.py tests/test_crystal_adapter_contract.py tests/test_tla_peterson_adapter.py tests/test_crystal_prism_adapter.py tests/test_crystal_adapter_composition.py tests/test_crystal_adapter_associativity_probe.py tests/test_crystal_prism_quotient_composition.py tests/test_crystal_prism_quotient_discovery.py
       - name: Run Peterson to Lock adapter qualification
         run: python -m adapters.tla_peterson_refinement
       - name: Recheck external TLA+ Peterson model
@@ -372,6 +373,83 @@ jobs:
           )
           PY
 
+      - name: Discover coarsest protected PRISM quotient
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph-prism
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.prism_adapter import adapt_prism_imdp
+          from mathgraph.prism_quotient_discovery import (
+              discover_coarsest_reachability_quotient,
+          )
+
+          source = Path("robot.prism").read_text(encoding="utf-8")
+          source_ref = (
+              "prismmodelchecker/prism@"
+              "1eee02217bfdfbaad09dc34f27d6eeea5cde1020:"
+              "prism-examples/imdps/simple/robot.prism"
+              "#gitblob=0b836883421726aaba676713c0656335206120d3"
+          )
+          adapted = adapt_prism_imdp(
+              source,
+              delta="0.1",
+              source_ref=source_ref,
+          )
+          result = discover_coarsest_reachability_quotient(
+              adapted.model,
+              target_label="goal1",
+          )
+          mapping = dict(result.state_map)
+          assert mapping["s2"] == mapping["s3"]
+          assert mapping["s4"] != mapping["s2"]
+          assert len(result.partition) < len(adapted.model.states)
+
+          evidence = {
+              "schema": "mathgraph.prism-quotient-discovery.v1",
+              "source_ref": source_ref,
+              "target_label": "goal1",
+              "tested_partitions": result.tested_partitions,
+              "accepted_partitions": result.accepted_partitions,
+              "coarser_partitions_rejected": result.coarser_partitions_rejected,
+              "selected_partition": [
+                  list(block) for block in result.partition
+              ],
+              "coarsest_partitions": [
+                  [list(block) for block in partition]
+                  for partition in result.coarsest_partitions
+              ],
+              "state_map": dict(result.state_map),
+              "reference_values": [
+                  {
+                      "state": state,
+                      "pmaxmin": lower,
+                      "pmaxmax": upper,
+                  }
+                  for state, lower, upper in result.reference_values
+              ],
+              "quotient_states": len(result.quotient.model.states),
+              "quotient_contract_id": result.quotient.contract.id,
+              "quotient_semantic_object_id": (
+                  result.quotient.semantic_object.id
+              ),
+          }
+          Path("prism_quotient_discovery.json").write_text(
+              json.dumps(evidence, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(
+              "PRISM_QUOTIENT_DISCOVERY=PASS "
+              f"tested={result.tested_partitions} "
+              f"accepted={result.accepted_partitions} "
+              f"coarser_rejected={result.coarser_partitions_rejected} "
+              f"states=6->{len(result.partition)} "
+              f"partition={result.partition}"
+          )
+          PY
+
       - name: Probe PRISM continuous-time rate separator
         run: |
           set -euo pipefail
@@ -600,3 +678,9 @@ jobs:
         with:
           name: prism-quotient-composition
           path: /tmp/mathgraph-prism/prism_quotient_composition.json
+
+      - name: Upload PRISM quotient discovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-quotient-discovery
+          path: /tmp/mathgraph-prism/prism_quotient_discovery.json
