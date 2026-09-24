@@ -190,6 +190,97 @@ def interpret_semantic_object(
     return interpreter(obj)
 
 @dataclass(frozen=True)
+class AdapterContract:
+    """Content-addressed claim about a translation preservation boundary.
+
+    The contract does not make itself true. ``evidence_refs`` point to
+    independent qualification evidence. A runtime may use only preservation
+    interfaces named here; every other requested consequence is UNKNOWN.
+    """
+
+    adapter_id: str
+    contract_version: int
+    source_space: str
+    target_space: str
+    preserves_interfaces: tuple[str, ...]
+    assumption_refs: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.adapter_id:
+            raise ValueError("adapter_id must be non-empty")
+        if not 0 <= self.contract_version <= 0xFFFFFFFF:
+            raise ValueError("contract_version must fit canonical u32")
+        if not self.source_space or not self.target_space:
+            raise ValueError("source_space and target_space must be non-empty")
+        if any(not x for x in self.preserves_interfaces):
+            raise ValueError("preserved interface ids must be non-empty")
+        object.__setattr__(
+            self,
+            "preserves_interfaces",
+            tuple(sorted(set(self.preserves_interfaces))),
+        )
+        object.__setattr__(
+            self,
+            "assumption_refs",
+            tuple(sorted(set(self.assumption_refs))),
+        )
+        object.__setattr__(
+            self,
+            "evidence_refs",
+            tuple(sorted(set(self.evidence_refs))),
+        )
+
+    @property
+    def id(self) -> str:
+        return content_id(self, prefix="adapter")
+
+
+@dataclass(frozen=True)
+class UnknownTranslation:
+    """Typed residual for a consequence outside an adapter contract."""
+
+    object_id: str
+    adapter_contract_id: str
+    requested_interface: str
+    reason: str
+
+
+def translate_semantic_object(
+    obj: SemanticObject,
+    contract: AdapterContract,
+    requested_interface: str,
+) -> SemanticObject | UnknownTranslation:
+    """Transport an opaque semantic object under an explicit preservation claim.
+
+    This reference operation models the conservative case where the adapter
+    preserves the canonical semantic envelope itself. It may claim a protected
+    interface only when both the object implements that interface and the
+    adapter contract explicitly preserves it. No payload interpretation or
+    normalisation occurs here.
+    """
+
+    if requested_interface not in contract.preserves_interfaces:
+        return UnknownTranslation(
+            obj.id,
+            contract.id,
+            requested_interface,
+            "outside_preservation_contract",
+        )
+    if requested_interface not in obj.interfaces:
+        return UnknownTranslation(
+            obj.id,
+            contract.id,
+            requested_interface,
+            "object_missing_interface",
+        )
+    # Re-decode canonical bytes to exercise the actual transport boundary.
+    translated = SemanticObject.from_bytes(obj.to_bytes())
+    if translated.id != obj.id:
+        raise AssertionError("lossless translation changed semantic identity")
+    return translated
+
+@dataclass(frozen=True)
 class Boundary:
     """Scope relative to which distinctions are consequential."""
 
