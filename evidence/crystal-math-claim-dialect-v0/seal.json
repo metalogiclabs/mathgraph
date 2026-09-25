@@ -1,0 +1,37 @@
+{
+  "schema": "mathgraph.crystal-math-claim-dialect-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "parent_crystal_head": "a2c66bb6bad37188a7d54a527b9db2fc5785524d",
+  "qualified_code_head": "6a66a3a4033e0afd5c24b7734fa14864ccd23773",
+  "crystal_waist_changed": false,
+  "qualification": {
+    "workflow": "Crystal Math Claim Dialect V0",
+    "run": 36085673504,
+    "job": 107916903906,
+    "artifact": 10843786295,
+    "artifact_digest": "sha256:a935af498695ec0da1171452f01fbf2d164b9417ed664864fafb214d288dbb81",
+    "unit_tests_passed": 9
+  },
+  "results": {
+    "families": 5,
+    "claims": 20,
+    "source_objects": 40,
+    "cross_dialect_truth_matches": 20,
+    "z3_relation_checks": 30,
+    "warranted_equivalence_classes": 15,
+    "false_merges": 0,
+    "strict_strengthening_families": 5,
+    "strict_weakening_families": 5
+  },
+  "source_digests": {
+    "lean_sha256": "bb7d6abb428eba58143bb9cd0193647cca99a9164a48e363ab4342b9dcb911c9",
+    "smtlib_sha256": "ca4ba39f8192d9cf8ee5961e7d5f617f8227ae4ad8255d6f19b998063214ed49",
+    "generated_smt_queries_sha256": "0dbdc70c82c39390bb1973603afa5a958165306f7100ca36d2040d87bbcfe021"
+  },
+  "tool_versions": {
+    "lean": "Lean 4.24.0 (797c613eb9b6d4ec95db23e3e00af9ac6657f24b)",
+    "z3": "4.8.12",
+    "python": "3.12.14"
+  },
+  "boundary": "Finite propositional Bool fragment only. The existing Crystal SemanticObject waist carries two independently executed claim dialects and verified equivalence, implication, and separation relations without modification. This does not establish a universal mathematical claim language, cross-foundation equivalence, quantifier or dependent-type normalization, or unrestricted theorem extraction from prose."
+}
