@@ -1,0 +1,26 @@
+{
+  "schema": "mathgraph.crystal-swarm-scale-v1-finite-refinement.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "d56ba46f113b52a64253630b9a33246639c888a2",
+  "qualification": {
+    "workflow": "Crystal Swarm Scale V1 Finite Refinement",
+    "run": 36123342052,
+    "job": 108033724229,
+    "artifact": 10858429865,
+    "artifact_digest": "sha256:d4d9f7a58efc856668fb5f58a2b59921cca27552acd4eb34f495aad07aebe7d8",
+    "inherited_tests_passed": 9
+  },
+  "finite_frontier_families": 76,
+  "selected_submotif": "countermodel_falsifier",
+  "selected_family_count": 56,
+  "selected_domain_count": 11,
+  "selected_provider_count": 65,
+  "selected_market_score": 29.75,
+  "anti_overfit": {
+    "development_families": 57,
+    "heldout_families": 19,
+    "selected_submotif_development_count": 40,
+    "selected_submotif_heldout_count": 16
+  },
+  "boundary": "Static repository-mined refinement only. Next gate must execute a generic falsifier/witness compiler on real representative families."
+}
