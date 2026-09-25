@@ -1,0 +1,52 @@
+name: Crystal Math Claim Dialect V0
+
+on:
+  push:
+    branches:
+      - crystal-math-claim-dialect-v0
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python test dependencies
+        run: python -m pip install -e ".[all]"
+
+      - name: Install Z3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y z3
+          z3 --version
+
+      - name: Install pinned Lean 4
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version
+
+      - name: Prove Crystal waist unchanged
+        run: git diff --exit-code a2c66bb6bad37188a7d54a527b9db2fc5785524d -- mathgraph/crystal.py
+
+      - name: Run claim dialect unit tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+
+      - name: Run dual-dialect semantic qualification
+        run: python scripts/run_crystal_math_claim_dialect_v0.py
+
+      - name: Upload qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-math-claim-dialect-v0-evidence
+          path: evidence/crystal-math-claim-dialect-v0/result.json
+          if-no-files-found: error
