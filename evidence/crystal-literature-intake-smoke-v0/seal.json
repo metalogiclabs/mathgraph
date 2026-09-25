@@ -1,0 +1,32 @@
+{
+  "schema": "mathgraph.crystal-literature-intake-smoke-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "parent_crystal_claim_head": "8111fe6abab66c2d3aae622432f1c04614e796f0",
+  "qualified_code_head": "0047509cac893b9fbffbbe80c073ab171098faeb",
+  "crystal_waist_changed": false,
+  "claim_dialect_code_changed": false,
+  "qualification": {
+    "workflow": "Crystal Literature Intake Smoke V0",
+    "run": 36087046339,
+    "job": 107921152765,
+    "artifact": 10844556617,
+    "artifact_digest": "sha256:a002140e933668a5d7ccb5d2a368b50fd1a864bb421447237d4d5a2c4f51bd7f",
+    "inherited_tests_passed": 9
+  },
+  "results": {
+    "sources_ingested": 2,
+    "archives": 2,
+    "atomic_claims_extracted": 2,
+    "formalized_claims_decisively_verified": 2,
+    "formalized_claims_rejected": 0,
+    "formalized_claims_unknown": 0,
+    "new_crystal_waist_fields": 0,
+    "new_claim_dialect_fields": 0
+  },
+  "epistemic_split": {
+    "source_claim_extraction": "CANDIDATE_UNTIL_INDEPENDENT_SOURCE_FIDELITY_CHECK",
+    "formalized_claim_mathematics": "WARRANTED_ON_DECLARED_BOUNDARY",
+    "crystal_admission": "FORMAL_OBJECTS_ONLY"
+  },
+  "boundary": "Two explicit abstract-level claims only; source-fidelity remains separate from mathematical warrant."
+}
