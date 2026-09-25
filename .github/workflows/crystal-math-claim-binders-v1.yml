@@ -1,0 +1,46 @@
+name: Crystal Math Claim Binders V1
+
+on:
+  push:
+    branches:
+      - crystal-math-claim-binders-v1
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[all]"
+      - name: Install Z3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y z3
+          z3 --version
+      - name: Install pinned Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version
+      - name: Prove Crystal and V0 claim dialect unchanged
+        run: |
+          git diff --exit-code 68f30f828840977ec1bac9ea04288438627b8a37 -- mathgraph/crystal.py
+          git diff --exit-code 68f30f828840977ec1bac9ea04288438627b8a37 -- mathgraph/math_claim.py
+      - name: Recheck inherited claim dialect tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+      - name: Run binder/type dual-dialect qualification
+        run: python scripts/run_crystal_math_claim_binders_v1.py
+      - name: Upload qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-math-claim-binders-v1-evidence
+          path: evidence/crystal-math-claim-binders-v1/result.json
+          if-no-files-found: error
