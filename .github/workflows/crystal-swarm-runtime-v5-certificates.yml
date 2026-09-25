@@ -1,0 +1,35 @@
+name: Crystal Swarm Runtime V5 Certificates
+on:
+  push:
+    branches: [crystal-swarm-runtime-v5-certificates]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove inherited semantic waists unchanged
+        run: |
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/crystal.py
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/math_claim.py
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/graph_invariants.py
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/finite_relation.py
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/finite_falsifier.py
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/falsifier_adapter.py
+          git diff --exit-code bf23d4ae3023e46e35e71cc35cae9aed86eca5a8 -- mathgraph/falsifier_semantic_adapter.py
+      - name: Qualify certificate compiler provider
+        run: |
+          python -m pytest -q             tests/test_certificates.py             tests/test_evidence_manifest_replay.py             tests/test_replayable_evidence_manifest.py             tests/test_manifest_semantic_validation_fields.py
+      - name: Forge certificate witness adapters
+        run: python scripts/run_crystal_swarm_runtime_v5_certificates.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-swarm-runtime-v5-certificates-evidence
+          path: evidence/crystal-swarm-runtime-v5-certificates/result.json
+          if-no-files-found: error
