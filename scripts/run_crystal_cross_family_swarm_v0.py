@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
-from itertools import product
+from itertools import combinations, product
 import json
 from pathlib import Path
 
@@ -21,7 +21,6 @@ from mathgraph.graph_invariants import (
     maximum_matching_number,
     minimum_edge_cover_number,
 )
-from scripts.run_crystal_residual_swarm_v0 import all_graphs
 
 ROOT = Path(__file__).resolve().parents[1]
 PARENT = "36ef1100abc6f989f6d19e42775319259dbb54d1"
@@ -54,6 +53,16 @@ def better(a: Action, b: Action, live: set[str]) -> bool:
     bn, bd = b.score(live)
     lhs, rhs = an * bd, bn * ad
     return lhs > rhs or (lhs == rhs and a.name < b.name)
+
+
+def all_graphs(n: int):
+    edges = tuple(combinations(range(n), 2))
+    from mathgraph.graph_invariants import FiniteSimpleGraphPayload
+    for mask in range(1 << len(edges)):
+        yield FiniteSimpleGraphPayload(
+            n,
+            tuple(edge for i, edge in enumerate(edges) if mask & (1 << i)),
+        )
 
 
 def roundtrip(*profiles) -> int:
