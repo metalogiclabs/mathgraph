@@ -1,0 +1,29 @@
+{
+  "schema": "mathgraph.crystal-protected-continuation-adversarial-v1.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "49a7460a5fdefc379d7462526e48685c577f8352",
+  "parent_core_head": "2efa47b2efc27434ed24dbf6ad6e1f50e463f947",
+  "qualification": {
+    "workflow": "Crystal Protected Continuation Adversarial V1",
+    "run": 36177812184,
+    "job": 108212591472,
+    "artifact": 10883295855,
+    "artifact_digest": "sha256:f5ecc73779f56e59201ed0f4ca66d9868217aa57bf30587ce782c380fa53b662",
+    "compact_core_tests_passed": 7,
+    "adversarial_source_tests_passed": 35,
+    "adversarial_core_tests_passed": 7
+  },
+  "separator_families_attacked": [
+    "quantitative-intervals",
+    "rate-kernels",
+    "partial-observation",
+    "local-control",
+    "composed-adapter-lineage",
+    "support-revocation-resource-mutation",
+    "unknown-future-interface"
+  ],
+  "earned_new_core_coordinates": [],
+  "result": "NO_SEPARATOR_FOUND_ON_DECLARED_ATTACK_SURFACE",
+  "compact_core_changed": false,
+  "boundary": "No separator was found on these already-qualified fixtures. This is not a universal sufficiency proof; higher-order, infinite, continuous, learned and richer quantitative semantics remain open."
+}
