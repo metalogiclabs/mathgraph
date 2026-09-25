@@ -1,0 +1,24 @@
+{
+  "schema": "mathgraph.crystal-swarm-scale-v2-falsifier.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "c6d73b611b560e200ab5ed7956e5057e89691df2",
+  "qualification": {
+    "workflow": "Crystal Swarm Scale V2 Falsifier",
+    "run": 36123759533,
+    "job": 108035049427,
+    "artifact": 10858980559,
+    "artifact_digest": "sha256:a8fd53d67e81503e2e85662d58af99d7ccc8a707b48ad950ebc6b24fec18de98",
+    "inherited_tests_passed": 9
+  },
+  "selected_compiler": "falsifier.finite.witness@1",
+  "representative_families_executed": 9,
+  "projected_frontier_fanout_from_v1": 56,
+  "actual_representative_residuals_closed": 9,
+  "total_cases_checked_until_first_witness": 15,
+  "measured_search_wall_seconds": 0.00018640899997990346,
+  "crystal_waist_changed": false,
+  "claim_dialect_changed": false,
+  "graph_dialect_changed": false,
+  "relation_dialect_changed": false,
+  "boundary": "Actual execution covers nine representative families. The 56-family number is projected fanout from repository mining until thin adapters are generated and requalified."
+}
