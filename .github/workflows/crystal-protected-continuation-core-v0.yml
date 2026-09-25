@@ -1,0 +1,56 @@
+name: Crystal Protected Continuation Core V0
+on:
+  push:
+    branches: [crystal-protected-continuation-core-v0]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove qualified surfaces unchanged
+        run: |
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/crystal.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/math_claim.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/graph_invariants.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/finite_relation.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/finite_falsifier.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/falsifier_adapter.py
+      - name: Recheck inherited Crystal surfaces
+        run: |
+          python -m pytest -q             tests/test_crystal.py             tests/test_crystal_math_claim_dialect_v0.py             tests/test_crystal_adapter_contract.py             tests/test_crystal_adapter_composition.py             tests/test_crystal_prism_quotient_composition.py             tests/test_viability_operators.py
+      - name: Test one compact protected-continuation view
+        run: python -m pytest -q tests/test_crystal_protected_continuation_core_v0.py
+      - name: Emit evidence
+        run: |
+          mkdir -p evidence/crystal-protected-continuation-core-v0
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          core=Path("mathgraph/protected_future.py")
+          test=Path("tests/test_crystal_protected_continuation_core_v0.py")
+          out={
+            "schema":"mathgraph.crystal-protected-continuation-core-v0.qualified",
+            "status":"QUALIFIED_BOUNDED",
+            "parent_head":"2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c",
+            "existing_surfaces_changed":False,
+            "candidate_core":"future.protected.partial@1",
+            "statuses":["WARRANTED","EXCLUDED","UNKNOWN"],
+            "views_qualified":["math-claim-relations","finite-relations","graph-invariants","falsifier-witness","adapter-contract","stateful-viability"],
+            "core_sha256":hashlib.sha256(core.read_bytes()).hexdigest(),
+            "test_sha256":hashlib.sha256(test.read_bytes()).hexdigest(),
+            "boundary":"Operational parity on declared fixtures and inherited tests only. This does not prove universal sufficiency of the protected-continuation core."
+          }
+          Path("evidence/crystal-protected-continuation-core-v0/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-protected-continuation-core-v0-evidence
+          path: evidence/crystal-protected-continuation-core-v0/result.json
+          if-no-files-found: error
