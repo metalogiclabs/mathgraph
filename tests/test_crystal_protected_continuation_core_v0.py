@@ -54,7 +54,7 @@ def test_graph_invariants_are_protected_observation_view():
         ProtectedContinuation("K4","has-isolated",(str(has_isolated_vertex(g)),),ContinuationStatus.WARRANTED),
     ))
     sig={name:outcome for name,outcome,_ in m.lower_signature("K4")}
-    assert sig=={"edge-cover-defined":("True",),"has-isolated":("False",),"max-matching":("1",),"min-edge-cover":("2",)}
+    assert sig=={"edge-cover-defined":("True",),"has-isolated":("False",),"max-matching":("2",),"min-edge-cover":("2",)}
 
 def test_falsifier_witness_is_excluded_future_view():
     w=FiniteFalsifierWitness("magma","commutative","order2","0,1",b"xy=0,yx=1","finite-enum",("run:1",))
