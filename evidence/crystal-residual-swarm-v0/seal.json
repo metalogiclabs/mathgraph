@@ -1,0 +1,33 @@
+{
+  "schema": "mathgraph.crystal-residual-swarm-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "3abe5f4ac8f34d19a6e4007e15268735628a56c3",
+  "qualification": {
+    "workflow": "Crystal Residual Swarm V0",
+    "run": 36117308942,
+    "job": 108014323795,
+    "artifact": 10855483626,
+    "artifact_digest": "sha256:e5002c08cd9897a3391530fe69a6c11476b574cf15e735bb67d2dbad47fef7a2",
+    "inherited_tests_passed": 9
+  },
+  "selected_action": "extend_graph_edge_cover_interface",
+  "candidate_action_scores": {
+    "extend_graph_edge_cover_interface": 10.5,
+    "search_more_gallai_sources": 5.0,
+    "attempt_universal_gallai_proof": 2.375
+  },
+  "residual_delta": {
+    "before": ["formal_edge_cover_interface_gap", "universal_gallai_proof_gap"],
+    "after": ["universal_gallai_proof_gap"]
+  },
+  "execution": {
+    "graphs_checked": 33867,
+    "edge_cover_defined": 28263,
+    "definedness_mismatches": 0,
+    "gallai_equality_failures": 0,
+    "semantic_object_roundtrips": 33867
+  },
+  "crystal_waist_changed": false,
+  "claim_dialect_changed": false,
+  "boundary": "Candidate scheduling policy only; not an optimality theorem. Graph execution exhaustive only through six vertices."
+}
