@@ -1,0 +1,100 @@
+{
+  "schema": "mathgraph.heldout-extraction-contract-set-v1",
+  "contracts": [
+    {
+      "name": "arxiv-strong-perfect-graph-c5-instance",
+      "source_id": "arxiv:math/0212070v1",
+      "acquisition": {
+        "kind": "html",
+        "urls": ["https://arxiv.org/abs/math/0212070v1", "https://arxiv.org/abs/math/0212070"]
+      },
+      "matching": {
+        "normalizers": ["lower", "collapse_ws"],
+        "required_markers": [
+          "the strong perfect graph theorem",
+          "a graph g is perfect if for every induced subgraph h",
+          "g is berge if no induced subgraph of g is an odd cycle of length at least 5",
+          "a graph is perfect if and only if it is berge",
+          "in this paper we prove both these conjectures"
+        ],
+        "required_compact_markers": []
+      },
+      "source_claim": {
+        "claim_id": "spgt.perfect-iff-berge.source",
+        "dialect": "literature-prose-extraction-v0",
+        "context": [["G", "FiniteSimpleGraph"]],
+        "assumptions": [],
+        "statement": "Every finite graph G is perfect if and only if G is Berge.",
+        "source_ref": "arxiv:math/0212070v1|https://arxiv.org/abs/math/0212070v1"
+      },
+      "formal_claim": {
+        "claim_id": "spgt.c5.instance",
+        "dialect": "finite-graph-instance-v0",
+        "context": [["G", "FiniteSimpleGraph"]],
+        "assumptions": ["G = C5"],
+        "statement": "perfect(G) iff berge(G)",
+        "source_ref": "arxiv:math/0212070v1|https://arxiv.org/abs/math/0212070v1"
+      },
+      "relation": "implies",
+      "glossary_assumptions": [
+        "C5 is a finite simple graph",
+        "perfect and Berge use the definitions stated in the source abstract"
+      ],
+      "falsifiers": [
+        {
+          "kind": "literal",
+          "label": "iff-to-one-way",
+          "old": "if and only if it is Berge",
+          "new": "if it is Berge"
+        }
+      ],
+      "verifier_route": "finite-c5-perfect-berge-v0"
+    },
+    {
+      "name": "vixra-padic-ultrametric-bounded-instance",
+      "source_id": "vixra:2508.0165v1",
+      "acquisition": {
+        "kind": "pdf",
+        "urls": ["https://vixra.org/pdf/2508.0165v1.pdf", "https://mail.vixra.org/pdf/2508.0165v1.pdf"]
+      },
+      "matching": {
+        "normalizers": ["lower", "collapse_ws"],
+        "required_markers": [
+          "proposition 7.31.",
+          "strong triangle inequality implies",
+          "p-adic valuation satisfies"
+        ],
+        "required_compact_markers": []
+      },
+      "source_claim": {
+        "claim_id": "padic.strong-triangle.unequal-norms.source",
+        "dialect": "literature-prose-extraction-v0",
+        "context": [["p", "Prime"], ["x", "Rational"], ["y", "Rational"]],
+        "assumptions": ["|.|_p is the p-adic norm"],
+        "statement": "If |x|_p != |y|_p then |x+y|_p = max(|x|_p, |y|_p).",
+        "source_ref": "vixra:2508.0165v1|https://vixra.org/pdf/2508.0165v1.pdf"
+      },
+      "formal_claim": {
+        "claim_id": "padic.strong-triangle.bounded-instance",
+        "dialect": "bounded-p-adic-arithmetic-v0",
+        "context": [["p", "Prime"], ["x", "Integer"], ["y", "Integer"]],
+        "assumptions": ["p in {2,3,5}", "-20 <= x <= 20", "-20 <= y <= 20"],
+        "statement": "|x|_p != |y|_p -> |x+y|_p = max(|x|_p, |y|_p)",
+        "source_ref": "vixra:2508.0165v1|https://vixra.org/pdf/2508.0165v1.pdf"
+      },
+      "relation": "implies",
+      "glossary_assumptions": [
+        "|n|_p = p^(-v_p(n)) for nonzero integers n and |0|_p = 0"
+      ],
+      "falsifiers": [
+        {
+          "kind": "literal",
+          "label": "implies-to-does-not-imply",
+          "old": "strong triangle inequality implies",
+          "new": "strong triangle inequality does not imply"
+        }
+      ],
+      "verifier_route": "bounded-padic-ultrametric-v0"
+    }
+  ]
+}
