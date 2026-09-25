@@ -1,0 +1,38 @@
+name: Crystal Literature Extraction Adapter V2
+
+on:
+  push:
+    branches:
+      - crystal-literature-extraction-adapter-v2
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[all]"
+      - name: Prove Crystal and claim dialect unchanged
+        run: |
+          git diff --exit-code 3de9e2528ee6370c9227fdfb3c49f9c2ae09bd65 -- mathgraph/crystal.py
+          git diff --exit-code 3de9e2528ee6370c9227fdfb3c49f9c2ae09bd65 -- mathgraph/math_claim.py
+      - name: Rebuild live source snapshots
+        run: python scripts/run_crystal_literature_source_fidelity_v1.py
+      - name: Qualify source-to-formal adapters
+        run: python scripts/run_crystal_literature_extraction_adapter_v2.py
+      - name: Upload adapter evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-literature-extraction-adapter-v2-evidence
+          path: |
+            evidence/crystal-literature-source-fidelity-v1/
+            evidence/crystal-literature-extraction-adapter-v2/
+          if-no-files-found: error
