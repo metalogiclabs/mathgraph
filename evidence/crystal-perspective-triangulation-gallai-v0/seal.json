@@ -1,0 +1,25 @@
+{
+  "schema": "mathgraph.crystal-perspective-triangulation-gallai-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "fb6677851176d2af59393851ee435985f163c32d",
+  "qualification": {
+    "workflow": "Crystal Perspective Triangulation Gallai V0",
+    "run": 36115383357,
+    "job": 108008142970,
+    "artifact": 10854827842,
+    "artifact_digest": "sha256:2531ccc18343e8d90ff19af9c28dd99fdeb6c5ffd6874750fe0b7795082a5312",
+    "inherited_tests_passed": 9
+  },
+  "results": {
+    "labelled_graphs_exhaustively_checked": 33867,
+    "graphs_with_defined_edge_cover": 28263,
+    "graphs_with_isolated_vertex": 5604,
+    "gallai_equality_failures_on_defined_domain": 0,
+    "strict_cases_for_vixra_leq_on_defined_domain": 0,
+    "edge_cover_exists_iff_no_isolated_mismatches": 0,
+    "smallest_obstruction": "isolated vertex"
+  },
+  "crystal_waist_changed": false,
+  "claim_dialect_changed": false,
+  "boundary": "All labelled finite simple graphs on 1..6 vertices only; not a universal proof."
+}
