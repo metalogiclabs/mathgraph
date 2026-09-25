@@ -1,0 +1,24 @@
+{
+  "schema": "mathgraph.crystal-swarm-runtime-v4.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "3197f880a7f31b90b0fc7d197e203c48f3cd28fa",
+  "qualification": {
+    "workflow": "Crystal Swarm Runtime V4",
+    "run": 36129975669,
+    "job": 108054750473,
+    "artifact": 10861931778,
+    "artifact_digest": "sha256:2f4d57921fd4248811347a1be2d252e99ee1a6f85e201c5cd5809b54bc71da69",
+    "registry_provider_tests_passed": 31
+  },
+  "frontier_size": 96,
+  "registry_size": 10,
+  "families_with_selected_anchor": 95,
+  "replay_pass_families": 94,
+  "forged_operation_adapters": 266,
+  "fully_anchored_families": 32,
+  "uncompiled_high_fanout_motif": {
+    "motif": "certificate_witness",
+    "frontier_occurrences": 71
+  },
+  "boundary": "Operation adapters warrant replayable compiler contact, not full semantic equivalence. Certificate/witness remains unregistered in V4 despite existing Certificate/EvidenceManifest machinery."
+}
