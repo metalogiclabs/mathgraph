@@ -1,0 +1,41 @@
+{
+  "schema": "mathgraph.crystal-cross-family-swarm-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "1397b03dd634dd3f3be4f821fca3f0ceffff15ce",
+  "qualification": {
+    "workflow": "Crystal Cross Family Swarm V0",
+    "run": 36119445326,
+    "job": 108021190327,
+    "artifact": 10856975174,
+    "artifact_digest": "sha256:4bcf8f5cf308139a9ac1966c2be4346712d0ca76d19ce529731c2a6c885aa3df",
+    "inherited_tests_passed": 9
+  },
+  "selected_action": "compile_generic_finite_relation_interface",
+  "residual_count_delta": [9, 4],
+  "closed_residuals": [
+    "arc_relation_compiler_gap",
+    "claim_relation_compiler_gap",
+    "clc_relation_compiler_gap",
+    "gallai_relation_compiler_gap",
+    "metatron_relation_compiler_gap"
+  ],
+  "candidate_action_scores": {
+    "compile_generic_finite_relation_interface": 13.75,
+    "search_more_sources": 7.0,
+    "solve_arc_target_projection": 3.8,
+    "prove_clc_general_transport": 3.1666666666666665,
+    "solve_metatron_unbounded_viability": 2.7142857142857144,
+    "attempt_universal_gallai_proof": 2.375
+  },
+  "new_interfaces": [
+    "relation.equivalence@1",
+    "relation.implication@1",
+    "relation.separator@1",
+    "relation.partition@1",
+    "relation.quotient-falsifier@1"
+  ],
+  "crystal_waist_changed": false,
+  "claim_dialect_changed": false,
+  "graph_dialect_changed": false,
+  "boundary": "Five bounded replays of already-qualified finite families; scheduler policy remains candidate, not an optimality theorem."
+}
