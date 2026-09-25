@@ -1,0 +1,25 @@
+{
+  "schema": "mathgraph.crystal-literature-heldout-transfer-v4.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "frozen_interpreter_head": "7c26a228971132a6c40920fd974dbd3f95b294f6",
+  "qualified_code_head": "1f4d6e15d9ca1790ccd97fe308e769b502e3e8a9",
+  "qualification": {
+    "workflow": "Crystal Literature Heldout Transfer V4",
+    "run": 36088590979,
+    "job": 107925846735,
+    "artifact": 10844118598,
+    "artifact_digest": "sha256:e04dcf50c1de82237f0e88bb4d95a7798ac0c5a0e02bc28bea908bd78b54cd40"
+  },
+  "results": {
+    "heldout_sources": 2,
+    "acquisition_kinds": ["html", "pdf"],
+    "contracts_qualified": 2,
+    "relations": ["implies"],
+    "falsifiers_rejected": 2,
+    "independent_math_verifiers_green": 2,
+    "interpreter_source_changes": 0,
+    "new_crystal_waist_fields": 0,
+    "new_claim_dialect_fields": 0
+  },
+  "boundary": "Two held-out sources only; generic theorem extraction and full source-theorem truth remain outside the warrant."
+}
