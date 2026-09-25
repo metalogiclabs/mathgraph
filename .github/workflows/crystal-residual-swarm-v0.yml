@@ -1,0 +1,29 @@
+name: Crystal Residual Swarm V0
+on:
+  push:
+    branches: [crystal-residual-swarm-v0]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove Crystal and claim dialect unchanged
+        run: |
+          git diff --exit-code 2b224b30523322bd580f05800ab9a5c2d59fa0cf -- mathgraph/crystal.py
+          git diff --exit-code 2b224b30523322bd580f05800ab9a5c2d59fa0cf -- mathgraph/math_claim.py
+      - name: Recheck inherited Crystal tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+      - name: Run residual-first swarm
+        run: python scripts/run_crystal_residual_swarm_v0.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-residual-swarm-v0-evidence
+          path: evidence/crystal-residual-swarm-v0/result.json
+          if-no-files-found: error
