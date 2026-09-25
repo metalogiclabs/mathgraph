@@ -1,0 +1,56 @@
+name: Crystal Protected Continuation Adversarial V1
+on:
+  push:
+    branches: [crystal-protected-continuation-adversarial-v1]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove compact core and qualified surfaces unchanged
+        run: |
+          git diff --exit-code 2efa47b2efc27434ed24dbf6ad6e1f50e463f947 -- mathgraph/protected_future.py
+          git diff --exit-code 2efa47b2efc27434ed24dbf6ad6e1f50e463f947 -- mathgraph/crystal.py
+          git diff --exit-code 2efa47b2efc27434ed24dbf6ad6e1f50e463f947 -- mathgraph/math_claim.py
+          git diff --exit-code 2efa47b2efc27434ed24dbf6ad6e1f50e463f947 -- mathgraph/finite_relation.py
+          git diff --exit-code 2efa47b2efc27434ed24dbf6ad6e1f50e463f947 -- mathgraph/finite_falsifier.py
+      - name: Recheck compact core
+        run: python -m pytest -q tests/test_crystal_protected_continuation_core_v0.py
+      - name: Recheck adversarial source surfaces
+        run: |
+          python -m pytest -q             tests/test_crystal_quantitative.py             tests/test_crystal_observation.py             tests/test_crystal_ownership.py             tests/test_crystal_adapter_associativity_probe.py             tests/test_crystal_adapter_composition.py             tests/test_crystal_choice.py             tests/test_crystal_extension.py
+      - name: Attack compact core with protected separators
+        run: python -m pytest -q tests/test_crystal_protected_continuation_adversarial_v1.py
+      - name: Emit evidence
+        run: |
+          mkdir -p evidence/crystal-protected-continuation-adversarial-v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.crystal-protected-continuation-adversarial-v1.qualified",
+            "status":"QUALIFIED_BOUNDED",
+            "parent_head":"2efa47b2efc27434ed24dbf6ad6e1f50e463f947",
+            "compact_core_changed":False,
+            "separator_families_attacked":[
+              "quantitative-intervals","rate-kernels","partial-observation","local-control",
+              "composed-adapter-lineage","support-revocation-resource-mutation","unknown-future-interface"
+            ],
+            "earned_new_core_coordinates":[],
+            "result":"NO_SEPARATOR_FOUND_ON_DECLARED_ATTACK_SURFACE",
+            "boundary":"No separator was found on these already-qualified fixtures. This is not a universal sufficiency proof; untested higher-order, infinite, continuous, learned or richer quantitative semantics remain open."
+          }
+          Path("evidence/crystal-protected-continuation-adversarial-v1/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-protected-continuation-adversarial-v1-evidence
+          path: evidence/crystal-protected-continuation-adversarial-v1/result.json
+          if-no-files-found: error
