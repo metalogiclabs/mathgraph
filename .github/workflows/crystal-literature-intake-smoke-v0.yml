@@ -1,0 +1,43 @@
+name: Crystal Literature Intake Smoke V0
+
+on:
+  push:
+    branches:
+      - crystal-literature-intake-smoke-v0
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[all]"
+      - name: Install Z3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y z3
+          z3 --version
+      - name: Prove Crystal and claim dialect unchanged
+        run: |
+          git diff --exit-code 8111fe6abab66c2d3aae622432f1c04614e796f0 -- mathgraph/crystal.py
+          git diff --exit-code 8111fe6abab66c2d3aae622432f1c04614e796f0 -- mathgraph/math_claim.py
+      - name: Recheck inherited claim dialect tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+      - name: Run real-source intake smoke
+        run: python scripts/run_crystal_literature_intake_smoke_v0.py
+      - name: Upload qualification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-literature-intake-smoke-v0-evidence
+          path: |
+            evidence/crystal-literature-intake-smoke-v0/source_manifest.json
+            evidence/crystal-literature-intake-smoke-v0/result.json
+          if-no-files-found: error

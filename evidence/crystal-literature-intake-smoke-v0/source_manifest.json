@@ -1,0 +1,29 @@
+{
+  "schema": "mathgraph.literature-intake-smoke-v0.sources",
+  "sources": [
+    {
+      "source_id": "arxiv:2608.06538v1",
+      "archive": "arXiv",
+      "title": "Tuza's conjecture for graphs of maximum degree at most seven",
+      "source_url": "https://arxiv.org/abs/2608.06538v1",
+      "submitted": "2026-08-06",
+      "locator": "abstract; explicit sharpness sentence",
+      "provenance_strength": "version-pinned-abstract",
+      "claim_id": "tuza.sharpness.max-degree-3",
+      "extracted_claim": "There exists a finite simple graph of maximum degree at most 3 with triangle edge-cover number equal to twice its edge-disjoint triangle packing number.",
+      "formal_target": "K4 witnesses maxDegree=3, nu=1, tau=2."
+    },
+    {
+      "source_id": "vixra:2609.0064",
+      "archive": "viXra",
+      "title": "Quantum Energy Levels and Riemann Zeros",
+      "source_url": "https://vixra.org/mathph/",
+      "submitted": "2026-09-23",
+      "locator": "archive abstract under viXra:2609.0064",
+      "provenance_strength": "archive-id-and-listing; bytes-not-pinned",
+      "claim_id": "zeta.quadratic-energy.real-iff-critical-line",
+      "extracted_claim": "Assuming Im(E_rho)=t(1-2 sigma) for rho=sigma+it with t nonzero, E_rho is real exactly when sigma=1/2.",
+      "formal_target": "t != 0 implies (t*(1-2*sigma)=0 iff sigma=1/2)."
+    }
+  ]
+}
