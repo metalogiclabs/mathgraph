@@ -1,0 +1,20 @@
+{
+  "schema": "mathgraph.crystal-swarm-scale-v3-adapter-forge-complete.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "72692846959895d4e3dfaa1dbc14ca654b5b0d63",
+  "qualification": {
+    "workflow": "Crystal Swarm Scale V3 Adapter Forge Complete",
+    "run": 36129480926,
+    "job": 108053180461,
+    "artifact": 10860882612,
+    "artifact_digest": "sha256:97aec7a50e744943e0c8da82f4df426f20e00cbb7fd543da2c45d4ce45af9231",
+    "inherited_tests_passed": 9
+  },
+  "mined_falsifier_families": 56,
+  "direct_v3_adapters": 51,
+  "semantic_v31_adapters": 5,
+  "total_forged_adapters": 56,
+  "remaining_unknown": 0,
+  "coverage_ratio": 1.0,
+  "boundary": "100% coverage is for replayable anchored negative evidence, not full translation of each family's mathematical semantics into the finite case/property API."
+}
