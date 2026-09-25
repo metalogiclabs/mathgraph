@@ -41,19 +41,17 @@ def source_object(source: dict) -> SemanticObject:
 
 def parse_tuza(source: dict, text: str) -> SemanticObject:
     lower=text.lower()
+    semantic_text=lower.replace("$", "")
     required=[
         "tuza's conjecture for graphs of maximum degree at most seven",
         "pairwise edge-disjoint triangles",
         "triangle-free",
         "maximum degree three",
+        "constant 2 is sharp",
     ]
-    missing=[x for x in required if x not in lower]
-    sharp_match=re.search(r"constant\\s+\\$?2\\$?\\s+is\\s+sharp", lower)
-    if missing or sharp_match is None:
-        raise ValueError(
-            "tuza extraction contract not satisfied: "
-            + repr(missing + ([] if sharp_match is not None else ["constant $2$ is sharp"]))
-        )
+    missing=[x for x in required if x not in semantic_text]
+    if missing:
+        raise ValueError("tuza extraction contract not satisfied: " + repr(missing))
     obj=MathClaimPayload(
         claim_id=source["claim_id"],
         dialect="finite-graph-certificate-v0",
@@ -115,14 +113,19 @@ def main() -> None:
     vixra_source=source_object(vixra)
 
     # Exact semantic perturbation falsifiers: the adapter must fail closed.
-    tuza_bound_perturbed, tuza_bound_replacements = re.subn(
-        r"constant\\s+\\$?2\\$?\\s+is\\s+sharp",
-        "constant 3 is sharp",
-        arxiv_text,
-        flags=re.I,
-        count=1,
-    )
-    assert tuza_bound_replacements == 1
+    if "$2$" in arxiv_text:
+        tuza_bound_perturbed = arxiv_text.replace("$2$", "$3$", 1)
+    elif "constant 2 is sharp" in arxiv_text.lower():
+        tuza_bound_perturbed = re.sub(
+            r"constant 2 is sharp",
+            "constant 3 is sharp",
+            arxiv_text,
+            flags=re.I,
+            count=1,
+        )
+    else:
+        raise AssertionError("could not locate Tuza sharpness constant for perturbation")
+    assert tuza_bound_perturbed != arxiv_text
     assert_rejected(
         parse_tuza, arxiv, tuza_bound_perturbed, "tuza-bound-2-to-3"
     )
