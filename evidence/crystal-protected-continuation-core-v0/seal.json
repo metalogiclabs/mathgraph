@@ -5,15 +5,19 @@
   "parent_head": "2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c",
   "qualification": {
     "workflow": "Crystal Protected Continuation Core V0",
-    "run": 36171162090,
-    "job": 108190748920,
-    "artifact": 10880350226,
-    "artifact_digest": "sha256:f088559403d6d9119ef4f66563c1593e9680084bac9b38bb72a596e17170ec33",
+    "run": 36171249775,
+    "job": 108191037407,
+    "artifact": 10881100165,
+    "artifact_digest": "sha256:990c17a87743e18d0c2668a2a8bb651920bafedfe14a78af6f518d61df010efc",
     "inherited_surface_tests_passed": 30,
     "compact_core_tests_passed": 7
   },
   "candidate_core": "future.protected.partial@1",
-  "statuses": ["WARRANTED", "EXCLUDED", "UNKNOWN"],
+  "statuses": [
+    "WARRANTED",
+    "EXCLUDED",
+    "UNKNOWN"
+  ],
   "views_qualified": [
     "math-claim-relations",
     "finite-relations",
@@ -24,5 +28,6 @@
   ],
   "existing_surfaces_changed": false,
   "negative_lineage": "Initial run 36171088263 failed only because the K4 fixture expected matching number 1; K4 actually has matching number 2. The fixture was corrected without changing the candidate core.",
-  "boundary": "Operational parity on declared fixtures and inherited gates only. This does not establish universal sufficiency of the protected-continuation core."
+  "boundary": "Operational parity on declared fixtures and inherited gates only. This does not establish universal sufficiency of the protected-continuation core.",
+  "exact_head_qualified": "8dbbc9d7a90df78b0e8495f7609ac26d241aec9d"
 }
