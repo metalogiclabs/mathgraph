@@ -1,0 +1,38 @@
+name: Crystal Perspective Triangulation Gallai V0
+
+on:
+  push:
+    branches:
+      - crystal-perspective-triangulation-gallai-v0
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[all]"
+      - name: Prove Crystal and claim dialect unchanged
+        run: |
+          git diff --exit-code 3eb314d50cefb25b187d33e3c80aa4f298e97e98 -- mathgraph/crystal.py
+          git diff --exit-code 3eb314d50cefb25b187d33e3c80aa4f298e97e98 -- mathgraph/math_claim.py
+      - name: Recheck inherited Crystal claim tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+      - name: Exhaustively triangulate Gallai family
+        run: python scripts/run_crystal_perspective_triangulation_gallai_v0.py
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-perspective-triangulation-gallai-v0-evidence
+          path: |
+            evidence/crystal-perspective-triangulation-gallai-v0/source_manifest.json
+            evidence/crystal-perspective-triangulation-gallai-v0/result.json
+          if-no-files-found: error
