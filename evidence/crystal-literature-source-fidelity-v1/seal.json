@@ -1,0 +1,23 @@
+{
+  "schema": "mathgraph.crystal-literature-source-fidelity-v1.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "parent_literature_intake_head": "3eb314d50cefb25b187d33e3c80aa4f298e97e98",
+  "qualified_code_head": "c890908874bce84e984834f6ab1a80a3c9b5d714",
+  "qualification": {
+    "workflow": "Crystal Literature Source Fidelity V1",
+    "run": 36087276224,
+    "job": 107921860438,
+    "artifact": 10844256745,
+    "artifact_digest": "sha256:227b6f1dd8d98f5055cde6361ebecc9e383d8ee40fa7dddf724ad53e88dab2e4"
+  },
+  "source_snapshots": {
+    "arxiv:2608.06538v1": "sha256:6d14b10245f134d25d3fefe2cfaa3f8a59bcf585c59428074ed66cf6b911c333",
+    "vixra:2609.0064": "sha256:2df27d47b2e59a560d75bf1e5dbb61889a438bf2b66ee0dca7a67a7dd0e31fea"
+  },
+  "epistemic_result": {
+    "source_presence_and_claim_markers": "WARRANTED_ON_FETCHED_SNAPSHOTS",
+    "formalized_mathematics": "WARRANTED_BY_PARENT_INTAKE_SMOKE",
+    "source_to_formal_semantic_equivalence": "CANDIDATE_INTERPRETATION"
+  },
+  "boundary": "Source identity and explicit claim-marker presence only; generic prose-to-formal semantic equivalence remains unqualified."
+}
