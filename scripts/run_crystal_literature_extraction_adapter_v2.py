@@ -45,12 +45,15 @@ def parse_tuza(source: dict, text: str) -> SemanticObject:
         "tuza's conjecture for graphs of maximum degree at most seven",
         "pairwise edge-disjoint triangles",
         "triangle-free",
-        "constant 2 is sharp",
         "maximum degree three",
     ]
     missing=[x for x in required if x not in lower]
-    if missing:
-        raise ValueError("tuza extraction contract not satisfied: " + repr(missing))
+    sharp_match=re.search(r"constant\\s+\\$?2\\$?\\s+is\\s+sharp", lower)
+    if missing or sharp_match is None:
+        raise ValueError(
+            "tuza extraction contract not satisfied: "
+            + repr(missing + ([] if sharp_match is not None else ["constant $2$ is sharp"]))
+        )
     obj=MathClaimPayload(
         claim_id=source["claim_id"],
         dialect="finite-graph-certificate-v0",
@@ -112,10 +115,16 @@ def main() -> None:
     vixra_source=source_object(vixra)
 
     # Exact semantic perturbation falsifiers: the adapter must fail closed.
+    tuza_bound_perturbed, tuza_bound_replacements = re.subn(
+        r"constant\\s+\\$?2\\$?\\s+is\\s+sharp",
+        "constant 3 is sharp",
+        arxiv_text,
+        flags=re.I,
+        count=1,
+    )
+    assert tuza_bound_replacements == 1
     assert_rejected(
-        parse_tuza, arxiv,
-        re.sub(r"constant 2 is sharp","constant 3 is sharp",arxiv_text,flags=re.I,count=1),
-        "tuza-bound-2-to-3",
+        parse_tuza, arxiv, tuza_bound_perturbed, "tuza-bound-2-to-3"
     )
     assert_rejected(
         parse_tuza, arxiv,
