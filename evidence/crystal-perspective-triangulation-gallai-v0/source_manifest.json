@@ -1,0 +1,31 @@
+{
+  "schema": "mathgraph.crystal-perspective-triangulation-gallai-v0.sources",
+  "theme": "maximum matching + minimum edge cover",
+  "perspectives": [
+    {
+      "regime": "canonical_reference",
+      "source_id": "cwi:agtco:gallai-theorem-2.1",
+      "source_url": "https://homepages.cwi.nl/~lex/files/agtco.pdf",
+      "claim": "For every graph without isolated vertices, nu(G)+rho(G)=|V|."
+    },
+    {
+      "regime": "research_frontier",
+      "source_id": "arxiv:1905.02141",
+      "source_url": "https://arxiv.org/abs/1905.02141",
+      "claim": "For a finite simple graph with no isolated vertex, minimum edge-cover cardinality plus matching number equals the number of vertices."
+    },
+    {
+      "regime": "speculative_frontier",
+      "source_id": "vixra:2202.0183",
+      "source_url": "https://vixra.org/all/2202",
+      "claim": "For an arbitrary graph, maximum matching plus minimum edge cover is less than or equal to the number of vertices."
+    },
+    {
+      "regime": "formal_library",
+      "source_id": "github:leanprover-community/mathlib4@5e0c4e5239cb0a2d86d68a884bf52cfd963fce22",
+      "source_url": "https://github.com/leanprover-community/mathlib4/blob/5e0c4e5239cb0a2d86d68a884bf52cfd963fce22/Mathlib/Combinatorics/SimpleGraph/Matching.lean",
+      "claim": "Matching infrastructure is present; repository search found no edge-cover interface/theorem at this pin."
+    }
+  ],
+  "verification_boundary": "all labelled finite simple graphs on 1..6 vertices"
+}
