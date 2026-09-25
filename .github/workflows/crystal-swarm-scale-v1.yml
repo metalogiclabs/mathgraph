@@ -1,0 +1,31 @@
+name: Crystal Swarm Scale V1
+on:
+  push:
+    branches: [crystal-swarm-scale-v1]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove inherited semantic waists unchanged
+        run: |
+          git diff --exit-code 3f323e5b713acd5b5c47d68fe13d485027aa676c -- mathgraph/crystal.py
+          git diff --exit-code 3f323e5b713acd5b5c47d68fe13d485027aa676c -- mathgraph/math_claim.py
+          git diff --exit-code 3f323e5b713acd5b5c47d68fe13d485027aa676c -- mathgraph/graph_invariants.py
+          git diff --exit-code 3f323e5b713acd5b5c47d68fe13d485027aa676c -- mathgraph/finite_relation.py
+      - name: Recheck inherited Crystal tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+      - name: Mine 96-family residual market
+        run: python scripts/run_crystal_swarm_scale_v1.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-swarm-scale-v1-evidence
+          path: evidence/crystal-swarm-scale-v1/result.json
+          if-no-files-found: error
