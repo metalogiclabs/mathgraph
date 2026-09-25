@@ -1,0 +1,34 @@
+name: Crystal Literature Source Fidelity V1
+
+on:
+  push:
+    branches:
+      - crystal-literature-source-fidelity-v1
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[all]"
+      - name: Prove Crystal and claim dialect unchanged
+        run: |
+          git diff --exit-code 3eb314d50cefb25b187d33e3c80aa4f298e97e98 -- mathgraph/crystal.py
+          git diff --exit-code 3eb314d50cefb25b187d33e3c80aa4f298e97e98 -- mathgraph/math_claim.py
+      - name: Run live source-fidelity check
+        run: python scripts/run_crystal_literature_source_fidelity_v1.py
+      - name: Upload source snapshots and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-literature-source-fidelity-v1-evidence
+          path: evidence/crystal-literature-source-fidelity-v1/
+          if-no-files-found: error
