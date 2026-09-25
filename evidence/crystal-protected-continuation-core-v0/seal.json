@@ -1,0 +1,28 @@
+{
+  "schema": "mathgraph.crystal-protected-continuation-core-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "aea7bb8b1b971c251787b5b0d0d54c9973f0879c",
+  "parent_head": "2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c",
+  "qualification": {
+    "workflow": "Crystal Protected Continuation Core V0",
+    "run": 36171162090,
+    "job": 108190748920,
+    "artifact": 10880350226,
+    "artifact_digest": "sha256:f088559403d6d9119ef4f66563c1593e9680084bac9b38bb72a596e17170ec33",
+    "inherited_surface_tests_passed": 30,
+    "compact_core_tests_passed": 7
+  },
+  "candidate_core": "future.protected.partial@1",
+  "statuses": ["WARRANTED", "EXCLUDED", "UNKNOWN"],
+  "views_qualified": [
+    "math-claim-relations",
+    "finite-relations",
+    "graph-invariants",
+    "falsifier-witness",
+    "adapter-contract",
+    "stateful-viability"
+  ],
+  "existing_surfaces_changed": false,
+  "negative_lineage": "Initial run 36171088263 failed only because the K4 fixture expected matching number 1; K4 actually has matching number 2. The fixture was corrected without changing the candidate core.",
+  "boundary": "Operational parity on declared fixtures and inherited gates only. This does not establish universal sufficiency of the protected-continuation core."
+}
