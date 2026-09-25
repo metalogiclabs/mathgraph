@@ -1,0 +1,43 @@
+{
+  "schema": "mathgraph.crystal-math-claim-binders-v1.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "parent_claim_dialect_head": "68f30f828840977ec1bac9ea04288438627b8a37",
+  "qualified_code_head": "f7cbf7bc8f62d94d6d46b8bd3c7640b13d5e0f8e",
+  "crystal_waist_changed": false,
+  "claim_dialect_code_changed": false,
+  "qualification": {
+    "workflow": "Crystal Math Claim Binders V1",
+    "run": 36086616806,
+    "job": 107919820984,
+    "artifact": 10844180991,
+    "artifact_digest": "sha256:705033dc76664a1913f1742fc87d96b0a6577bedfad26664fe5a27e264ff3e04",
+    "inherited_tests_passed": 9
+  },
+  "results": {
+    "families": 5,
+    "claims": 20,
+    "source_objects": 40,
+    "cross_dialect_signature_matches": 20,
+    "z3_relation_checks": 30,
+    "warranted_equivalence_classes": 15,
+    "false_merges": 0,
+    "strict_strengthening_families": 5,
+    "strict_weakening_families": 5
+  },
+  "features": [
+    "forall",
+    "exists",
+    "nested-binders",
+    "two-sorts",
+    "free-predicates",
+    "binary-relations",
+    "typed-functions",
+    "alternating-quantifiers"
+  ],
+  "source_digests": {
+    "lean_sha256": "841f57473ac9a0d2fe8faa94e9f7f34ed9043d41a4dd2e4cd80a7b6e18f2c719",
+    "smtlib_sha256": "aaea6e51bf5a74ee2d7d22aeacb745fbd2bb291389a07123a743eac60648f207",
+    "generated_z3_queries_sha256": "e510ed3f1f6f1b5a0615fa9cecc55a9cb1057b7fd442a992420a8d9928b15eb7"
+  },
+  "boundary": "Finite typed domains only. Binder/type-sensitive mathematical claims fit behind the unchanged Crystal and V0 claim-dialect waist. No claim of infinite-domain completeness, dependent-type normalization, arbitrary foundations, or literature extraction."
+}
