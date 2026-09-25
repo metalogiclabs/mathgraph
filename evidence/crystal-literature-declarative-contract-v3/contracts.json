@@ -1,0 +1,91 @@
+{
+  "schema": "mathgraph.extraction-contract-set-v1",
+  "contracts": [
+    {
+      "name": "arxiv-tuza-sharpness",
+      "source_id": "arxiv:2608.06538v1",
+      "snapshot_path": "evidence/crystal-literature-source-fidelity-v1/arxiv-2608.06538v1.snapshot",
+      "matching": {
+        "normalizers": ["lower", "collapse_ws", "strip_tex_dollars"],
+        "required_markers": [
+          "tuza's conjecture for graphs of maximum degree at most seven",
+          "pairwise edge-disjoint triangles",
+          "triangle-free",
+          "maximum degree three",
+          "constant 2 is sharp"
+        ],
+        "required_compact_markers": []
+      },
+      "source_claim": {
+        "claim_id": "tuza.sharpness.max-degree-3.source",
+        "dialect": "literature-prose-extraction-v0",
+        "context": [],
+        "assumptions": [],
+        "statement": "There exists a finite simple graph of maximum degree at most 3 with triangle edge-cover number equal to twice its edge-disjoint triangle packing number.",
+        "source_ref": "arxiv:2608.06538v1|https://arxiv.org/abs/2608.06538v1"
+      },
+      "formal_claim": {
+        "claim_id": "tuza.sharpness.max-degree-3",
+        "dialect": "finite-graph-certificate-v0",
+        "context": [
+          ["G", "FiniteSimpleGraph"],
+          ["nu", "triangle-edge-disjoint-packing-number"],
+          ["tau", "triangle-edge-cover-number"]
+        ],
+        "assumptions": ["maxDegree(G) <= 3"],
+        "statement": "exists G: maxDegree(G)<=3 and tau(G)=2*nu(G)",
+        "source_ref": "arxiv:2608.06538v1|https://arxiv.org/abs/2608.06538v1"
+      },
+      "relation": "equivalent",
+      "glossary_assumptions": [
+        "tau = minimum triangle edge-cover number",
+        "nu = maximum edge-disjoint triangle packing number",
+        "sharp bound = equality is attained"
+      ],
+      "expected_source_object_id": "semantic:01761c089a5928d102002162a6541dd92d491ba9730e6f82b2a3fc0c5e3678a9",
+      "expected_formal_object_id": "semantic:50e4ea0b8808bc95ead224bed6baee804e259f9e43d72c44bffe3e3259515df1",
+      "falsifiers": [
+        {"kind": "literal", "label": "bound-2-to-3", "old": "$2$", "new": "$3$"},
+        {"kind": "literal", "label": "degree-three-to-two", "old": "maximum degree three", "new": "maximum degree two"}
+      ]
+    },
+    {
+      "name": "vixra-zeta-energy-critical-line",
+      "source_id": "vixra:2609.0064",
+      "snapshot_path": "evidence/crystal-literature-source-fidelity-v1/vixra-2609.0064.snapshot",
+      "matching": {
+        "normalizers": ["lower", "collapse_ws"],
+        "required_markers": [
+          "quantum energy levels and riemann zeros",
+          "imaginary part of the energy",
+          "real precisely on the critical line"
+        ],
+        "required_compact_markers": ["t(1-2"]
+      },
+      "source_claim": {
+        "claim_id": "zeta.quadratic-energy.real-iff-critical-line.source",
+        "dialect": "literature-prose-extraction-v0",
+        "context": [],
+        "assumptions": [],
+        "statement": "Assuming Im(E_rho)=t(1-2 sigma) for rho=sigma+it with t nonzero, E_rho is real exactly when sigma=1/2.",
+        "source_ref": "vixra:2609.0064|https://vixra.org/mathph/"
+      },
+      "formal_claim": {
+        "claim_id": "zeta.quadratic-energy.real-iff-critical-line",
+        "dialect": "real-arithmetic-claim-v0",
+        "context": [["sigma", "Real"], ["t", "Real"]],
+        "assumptions": ["0 < sigma < 1", "t != 0", "Im(E_rho)=t*(1-2*sigma)"],
+        "statement": "Im(E_rho)=0 iff sigma=1/2",
+        "source_ref": "vixra:2609.0064|https://vixra.org/mathph/"
+      },
+      "relation": "equivalent",
+      "glossary_assumptions": ["Riemann critical line means Re(s)=sigma=1/2"],
+      "expected_source_object_id": "semantic:2200977593952d0005cd492244ed16558b3a6ab7fea2c02336a8c8615e974811",
+      "expected_formal_object_id": "semantic:d1bc4def7962e5998a9a6d66a5c41e6fa3b13963922d60342db6bf0808176b70",
+      "falsifiers": [
+        {"kind": "literal", "label": "coefficient-2-to-3", "old": "t(1-2", "new": "t(1-3"},
+        {"kind": "literal", "label": "precisely-to-possibly", "old": "real precisely on the critical line", "new": "real possibly on the critical line"}
+      ]
+    }
+  ]
+}
