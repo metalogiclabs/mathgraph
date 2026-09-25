@@ -1,0 +1,28 @@
+{
+  "schema": "mathgraph.crystal-swarm-scale-v1.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "89bdece6c23984954772fcf3d8ffdf38aa8f7d46",
+  "qualification": {
+    "workflow": "Crystal Swarm Scale V1",
+    "run": 36122976357,
+    "job": 108032564645,
+    "artifact": 10857623889,
+    "artifact_digest": "sha256:5653246417ce4753a2777d71ce9df07352347ad20a28dc058766bc867c856370",
+    "inherited_tests_passed": 9
+  },
+  "repository_test_files": 417,
+  "semantic_test_files": 381,
+  "frontier_size": 96,
+  "selected_compiler_motif": "finite_enumeration",
+  "selected_family_count": 76,
+  "selected_domain_count": 11,
+  "selected_provider_count": 71,
+  "selected_market_score": 39.76973684210526,
+  "anti_overfit": {
+    "development_families": 72,
+    "heldout_families": 24,
+    "selected_motif_development_count": 55,
+    "selected_motif_heldout_count": 21
+  },
+  "boundary": "Repository-mined scheduling evidence only. The winning finite_enumeration motif is intentionally broad and must be refined before compiler construction."
+}
