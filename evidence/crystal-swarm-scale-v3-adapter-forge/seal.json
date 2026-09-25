@@ -1,0 +1,22 @@
+{
+  "schema": "mathgraph.crystal-swarm-scale-v3-adapter-forge.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "db69b7617371f7fc46979838a1119f6e75951367",
+  "qualification": {
+    "workflow": "Crystal Swarm Scale V3 Adapter Forge",
+    "run": 36128977564,
+    "job": 108051586317,
+    "artifact": 10860684817,
+    "artifact_digest": "sha256:3d3de055efc029fcdfce90c2ece9947471fb174c6221ee731855b4437e059765",
+    "inherited_tests_passed": 9
+  },
+  "mined_falsifier_families": 56,
+  "families_with_mechanical_anchor": 51,
+  "forged_adapters": 51,
+  "unknown_families": 5,
+  "forged_domain_count": 11,
+  "adapter_coverage_ratio": 0.9107142857142857,
+  "adapter_forge_wall_seconds": 39.09642937,
+  "replay_wall_seconds_sum": 223.39109399599994,
+  "boundary": "Adapters warrant replayable anchored negative-test evidence only. Five families remain UNKNOWN because V3 recognizes only direct negative assertion anchors."
+}
