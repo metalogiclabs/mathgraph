@@ -1,0 +1,35 @@
+name: Crystal Swarm Runtime V4
+on:
+  push:
+    branches: [crystal-swarm-runtime-v4]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove inherited semantic waists unchanged
+        run: |
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/crystal.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/math_claim.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/graph_invariants.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/finite_relation.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/finite_falsifier.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/falsifier_adapter.py
+          git diff --exit-code 2dd1a4410e4d0c02fb354fe7a60bcfc947ae469c -- mathgraph/falsifier_semantic_adapter.py
+      - name: Qualify registry providers
+        run: |
+          python -m pytest -q             tests/test_evidence_manifest_replay.py             tests/test_lawbook_acceptance_contract.py             tests/test_crystal_adapter_contract.py             tests/test_discovery_scheduler.py             tests/test_compounding_engine.py             tests/test_core_invariants.py
+      - name: Run compiler registry and replay-anchor forge
+        run: python scripts/run_crystal_swarm_runtime_v4.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-swarm-runtime-v4-evidence
+          path: evidence/crystal-swarm-runtime-v4/result.json
+          if-no-files-found: error
