@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections import Counter
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +17,7 @@ PARENT = "4a12e1aa0996b664e0ed4f5d46a2b3cf162af12a"
 spec = importlib.util.spec_from_file_location("swarm_scale_v1_base", BASE_PATH)
 base = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
+sys.modules[spec.name] = base
 spec.loader.exec_module(base)
 
 SUBMOTIFS = {
