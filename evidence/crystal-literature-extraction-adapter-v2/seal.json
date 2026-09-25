@@ -1,0 +1,40 @@
+{
+  "schema": "mathgraph.crystal-literature-extraction-adapter-v2.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "parent_source_fidelity_head": "3de9e2528ee6370c9227fdfb3c49f9c2ae09bd65",
+  "qualified_code_head": "0f9e006721cd7fc697333512f80b4b5fa6949ecf",
+  "qualification": {
+    "workflow": "Crystal Literature Extraction Adapter V2",
+    "run": 36087865337,
+    "job": 107923649853,
+    "artifact": 10844022870,
+    "artifact_digest": "sha256:c14b539627ffdff54c3d613b4e3e2cdc23a9c416441313aacd78e0eb545cc1f4"
+  },
+  "results": {
+    "sources": 2,
+    "exact_parent_formal_ids_reconstructed": 2,
+    "source_to_formal_relations_qualified": 2,
+    "semantic_perturbation_falsifiers_rejected": 4,
+    "new_crystal_waist_fields": 0,
+    "new_claim_dialect_fields": 0
+  },
+  "negative_lineage": [
+    {
+      "head": "bca07e736fdc8c61d5ae411d5ffae8baef486ff0",
+      "run": 36087629913,
+      "finding": "Source preserves TeX $2$ while first adapter demanded rendered prose."
+    },
+    {
+      "head": "195cae9a8e2dcadeb7f971b3759a2041cae9e850",
+      "run": 36087717100,
+      "finding": "Harness regex was double-escaped; semantic criteria unchanged."
+    }
+  ],
+  "epistemic_result": {
+    "source_snapshots": "WARRANTED_BY_PARENT",
+    "source_to_formal_adapter": "WARRANTED_ON_TWO_EXPLICIT_TEMPLATES",
+    "formalized_mathematics": "WARRANTED_BY_INTAKE_PARENT",
+    "generic_prose_extraction": "UNKNOWN"
+  },
+  "boundary": "Two explicit source templates only. No generic natural-language theorem extraction claim."
+}
