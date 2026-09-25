@@ -1,0 +1,33 @@
+name: Crystal Swarm Scale V3 Adapter Forge Complete
+on:
+  push:
+    branches: [crystal-swarm-scale-v3-adapter-forge-complete]
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove inherited semantic waists unchanged
+        run: |
+          git diff --exit-code 999c791a894865fc36d0f76480308038650346bf -- mathgraph/crystal.py
+          git diff --exit-code 999c791a894865fc36d0f76480308038650346bf -- mathgraph/math_claim.py
+          git diff --exit-code 999c791a894865fc36d0f76480308038650346bf -- mathgraph/graph_invariants.py
+          git diff --exit-code 999c791a894865fc36d0f76480308038650346bf -- mathgraph/finite_relation.py
+          git diff --exit-code 999c791a894865fc36d0f76480308038650346bf -- mathgraph/finite_falsifier.py
+          git diff --exit-code 999c791a894865fc36d0f76480308038650346bf -- mathgraph/falsifier_adapter.py
+      - name: Recheck inherited Crystal tests
+        run: python -m pytest -q tests/test_crystal.py tests/test_crystal_math_claim_dialect_v0.py
+      - name: Complete adapter forge on V3 unknowns
+        run: python scripts/run_crystal_swarm_scale_v3_adapter_forge_complete.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-swarm-scale-v3-adapter-forge-complete-evidence
+          path: evidence/crystal-swarm-scale-v3-adapter-forge-complete/result.json
+          if-no-files-found: error
