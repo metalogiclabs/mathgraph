@@ -1,0 +1,19 @@
+{
+  "schema": "mathgraph.crystal-swarm-runtime-v5-certificates.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "5bd757451036ed1bf4fa97e4abe56d19154f2da4",
+  "qualification": {
+    "workflow": "Crystal Swarm Runtime V5 Certificates",
+    "run": 36130522573,
+    "job": 108056477468,
+    "artifact": 10861403012,
+    "artifact_digest": "sha256:e6c732e46c73785b65d1cbdfc3c45a452d7ffb763edda4f8711729913cab120f",
+    "provider_tests_passed": 13
+  },
+  "certificate_witness_families": 71,
+  "forged_certificate_adapters": 71,
+  "unknown_families": 0,
+  "coverage_ratio": 1.0,
+  "forged_domain_count": 11,
+  "boundary": "Certificate adapters warrant replayable contact with certificate/witness machinery, not independent validity of every certificate object in the family."
+}
