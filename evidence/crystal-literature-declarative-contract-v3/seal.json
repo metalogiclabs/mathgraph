@@ -1,0 +1,24 @@
+{
+  "schema": "mathgraph.crystal-literature-declarative-contract-v3.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "parent_extraction_head": "043a670231475020c8aa0297b477f7ccdab7867c",
+  "qualified_code_head": "cb2405aee7c29cd3eee8cc80e99a0c133859dab3",
+  "qualification": {
+    "workflow": "Crystal Literature Declarative Contract V3",
+    "run": 36088223006,
+    "job": 107924727981,
+    "artifact": 10844901046,
+    "artifact_digest": "sha256:518efdbb536d227d7430c06f47fd496115aa6f54fe1d85268465a30b120caf2c"
+  },
+  "results": {
+    "contracts": 2,
+    "source_specific_parser_functions": 0,
+    "exact_parent_source_ids_reconstructed": 2,
+    "exact_parent_formal_ids_reconstructed": 2,
+    "relations_qualified": 2,
+    "falsifiers_rejected": 4,
+    "new_crystal_waist_fields": 0,
+    "new_claim_dialect_fields": 0
+  },
+  "boundary": "Declarative interpreter qualified on two heterogeneous parent-qualified sources only; held-out transfer and generic prose extraction remain UNKNOWN."
+}
