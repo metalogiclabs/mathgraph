@@ -123,6 +123,14 @@ def default_registry() -> tuple[CompilerSpec, ...]:
             "Replayable evidence/provenance carrier; family semantics require adapters.",
         ),
         CompilerSpec(
+            "compiler:certificate-evidence@1",
+            "certificate_witness",
+            ("mathgraph.certificates", "mathgraph.evidence_manifest"),
+            ("certificate.terminal@1", "certificate.witness@1", "evidence.replay@1"),
+            ("gate:swarm-runtime-v5:certificate-evidence",),
+            "Terminal certificate/witness carrier plus replayable evidence manifest; family semantics require adapters.",
+        ),
+        CompilerSpec(
             "compiler:lawbook-acceptance@1",
             "admission_promotion",
             ("mathgraph.lawbook_acceptance",),
