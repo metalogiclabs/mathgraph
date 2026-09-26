@@ -1,0 +1,26 @@
+name: Crystal Query Admission V1
+on:
+  push:
+    branches: [crystal-query-admission-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve exact source for offline inspection
+        run: git archive --format=tar.gz HEAD > /tmp/crystal-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-admission-source
+          path: /tmp/crystal-source.tar.gz
+          retention-days: 7
+      - run: python -m pip install -e '.[all]'
+      - name: Red phase - expose missing admission and negative revocation
+        run: python -m pytest -q tests/test_crystal_query_admission_v1.py
