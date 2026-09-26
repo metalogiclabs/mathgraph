@@ -1,0 +1,40 @@
+{
+  "schema": "mathgraph.crystal-query-gateway-atp-v0.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "7c445e013b70ca313441b867dc53edfceed9cc14",
+  "parent_head": "c661bb6a34601c5827272f2185f028f25f01e05a",
+  "qualification": {
+    "workflow": "Crystal Query Gateway ATP V0",
+    "run": 36207713788,
+    "gateway_job": 108307645848,
+    "vampire_live_job": 108307713015,
+    "gateway_artifact": 10893987177,
+    "gateway_artifact_digest": "sha256:eac2d886bf3d40f079ccbefd101381cdb6a97a5a4df9d18166644374bb928071",
+    "vampire_live_artifact": 10893997188,
+    "vampire_live_artifact_digest": "sha256:9160fadc8e22f798be0b3eb898b0336427e88790439aefe6cb71d0583c11f86d",
+    "inherited_core_adversarial_tests_passed": 14,
+    "gateway_atp_tests_passed": 11
+  },
+  "query_gateway": {
+    "answers": ["WARRANTED", "EXCLUDED", "UNKNOWN"],
+    "returns_provenance": true,
+    "support_sensitive": true,
+    "unknown_emits_minimal_residual": true,
+    "conflicting_authority_returns_unknown": true,
+    "first_order_route_hint": "atp:tptp"
+  },
+  "atp_fabric": {
+    "protocol": "TPTP FOF + SZS",
+    "engine": "Vampire",
+    "vampire_version": "5.1.0",
+    "vampire_linux_x64_sha256": "495828dc76cb17a27080d62dedce755e46de96f47f06f5f0ad4be9cdaf6f968f",
+    "live_problem": "socrates-mortal",
+    "live_szs_status": "Theorem",
+    "live_candidate_status": "CANDIDATE_WARRANTED",
+    "crystal_before": "UNKNOWN",
+    "crystal_after_atp_candidate": "UNKNOWN",
+    "requires_independent_admission": true
+  },
+  "crystal_core_changed": false,
+  "boundary": "The query gateway answers only from current Crystal authority. Vampire/TPTP output is candidate evidence and cannot mutate WARRANTED/EXCLUDED status without a separately declared admission checker."
+}
