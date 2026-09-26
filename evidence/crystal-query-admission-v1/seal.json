@@ -1,0 +1,39 @@
+{
+  "schema": "mathgraph.crystal-query-admission-v1.seal",
+  "status": "QUALIFIED_BOUNDED",
+  "qualified_code_head": "025acd4aa9de1d327457d801496fbfc685bb1da9",
+  "parent_gateway_head": "fa151b066ab44155fbaad1368aa36139145b6579",
+  "qualification": {
+    "run": 36209634969,
+    "job": 108313298218,
+    "artifact": 10895270879,
+    "artifact_sha256": "eea8438b96dbc6e973d4c222772cd8ffdbcdfa8b53b7b80b4887c1102984f75e",
+    "tests": 47,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "lean_version": "4.24.0",
+    "vampire_version": "5.1.0",
+    "repository_wide_diagnostic": "UNKNOWN: timeout after 90 seconds, exit 124; not a repository-wide green claim"
+  },
+  "live_cases": [
+    {"case":"socrates","before":"UNKNOWN","after":"WARRANTED","terminal_form":"VERIFIED_PROOF","axioms":[],"replay_external_calls":0,"revoked":"UNKNOWN","cold_seconds":0.20283477300006325,"warm_gateway_median_ns":56682.5},
+    {"case":"invalid_converse","before":"UNKNOWN","after":"EXCLUDED","terminal_form":"FINITE_COUNTERMODEL","axioms":[],"replay_external_calls":0,"revoked":"UNKNOWN","cold_seconds":0.1753882729999532,"warm_gateway_median_ns":57736.0},
+    {"case":"renamed_chain","before":"UNKNOWN","after":"WARRANTED","terminal_form":"VERIFIED_PROOF","axioms":[],"replay_external_calls":0,"revoked":"UNKNOWN","cold_seconds":0.16943806000006134,"warm_gateway_median_ns":56313.0}
+  ],
+  "regression_fixed": "EXCLUDED evidence now loses authority when required support is revoked; previously only WARRANTED evidence was filtered.",
+  "negative_lineage": [
+    {"head":"dd080e9fade603ea085bd615f15a8b4db65c12c3","run":36208708789,"result":"RED: missing admission module and revoked exclusion remained EXCLUDED"},
+    {"head":"38949059e1d3d8b09a155cdfeeb1212ab4957d29","run":36209286893,"result":"46 passed, 1 failed: first finite-model certificate rejected by Lean; admission remained UNKNOWN"}
+  ],
+  "representation_changes": {
+    "crystal_core": false,
+    "protected_continuation_core": false,
+    "existing_tptp_route": false,
+    "query_gateway": "support-liveness correction for negative evidence"
+  },
+  "authority_boundary": "Independent Lean reproof or complete finite-model validation for ground unary facts, universally quantified unary implications, and ground unary conjectures. Strict parser/code generator, pinned checker executable, local storage and runner remain trusted. Not a general TPTP/Vampire proof-trace checker or authenticated public service.",
+  "performance_boundary": "1000 in-process warm queries per case; three tiny instances only. Cold timing excludes dependency installation; warm timing excludes CLI startup and storage loading. No general scaling claim.",
+  "entrypoint": "scripts/learn_crystal.py",
+  "next_residual": "Extend the checked certificate grammar and shared query store without weakening exact problem binding, revocation, or independent admission."
+}
