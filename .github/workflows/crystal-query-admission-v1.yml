@@ -8,19 +8,56 @@ permissions:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      REQUIRE_LEAN: '1'
+      ELAN_TOOLCHAIN: leanprover/lean4:v4.24.0
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Preserve exact source for offline inspection
-        run: git archive --format=tar.gz HEAD > /tmp/crystal-source.tar.gz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: crystal-admission-source
-          path: /tmp/crystal-source.tar.gz
-          retention-days: 7
       - run: python -m pip install -e '.[all]'
-      - name: Red phase - expose missing admission and negative revocation
-        run: python -m pytest -q tests/test_crystal_query_admission_v1.py
+      - name: Install fixed Lean toolchain
+        run: |
+          curl -sSf --retry 3 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          echo "LEAN=$HOME/.elan/bin/lean" >> "$GITHUB_ENV"
+          "$HOME/.elan/bin/lean" --version
+      - name: Install digest-pinned Vampire
+        run: |
+          curl -L --fail --retry 3 https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          echo '495828dc76cb17a27080d62dedce755e46de96f47f06f5f0ad4be9cdaf6f968f  /tmp/vampire.zip' | sha256sum -c -
+          mkdir -p /tmp/vampire-bin
+          unzip -q /tmp/vampire.zip -d /tmp/vampire-bin
+          VAMP="$(find /tmp/vampire-bin -type f -name 'vampire*' | head -n 1)"
+          test -n "$VAMP"
+          chmod +x "$VAMP"
+          echo "VAMP=$VAMP" >> "$GITHUB_ENV"
+      - name: Preserve compact representation and ATP route
+        run: git diff --exit-code fa151b066ab44155fbaad1368aa36139145b6579 -- mathgraph/crystal.py mathgraph/protected_future.py mathgraph/atp_tptp.py
+      - name: Admission regressions and inherited gates
+        run: |
+          mkdir -p evidence/crystal-query-admission-v1
+          python -m pytest -q tests/test_crystal_query_admission_v1.py tests/test_crystal_query_gateway_atp_v0.py tests/test_crystal_protected_continuation_core_v0.py tests/test_crystal_protected_continuation_adversarial_v1.py --junitxml=evidence/crystal-query-admission-v1/tests.xml
+      - name: Complete live learning loop and disable engines on replay
+        run: python scripts/run_crystal_admission_v1.py
+      - name: Record broader repository diagnostic
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence/crystal-query-admission-v1
+          set +e
+          timeout --kill-after=5s 90s python -m pytest -q --maxfail=5 > evidence/crystal-query-admission-v1/repository-diagnostic.log 2>&1
+          result=$?
+          echo "$result" > evidence/crystal-query-admission-v1/repository-diagnostic.exit
+          tail -60 evidence/crystal-query-admission-v1/repository-diagnostic.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crystal-query-admission-v1-evidence
+          path: evidence/crystal-query-admission-v1/
+          if-no-files-found: error

@@ -177,7 +177,11 @@ def query_crystal(
         edge for edge in relevant
         if edge.status is ContinuationStatus.WARRANTED and not edge.is_live(live_supports)
     )
-    excluded = tuple(edge for edge in relevant if edge.status is ContinuationStatus.EXCLUDED)
+    excluded = tuple(edge for edge in relevant if edge.status is ContinuationStatus.EXCLUDED
+                     and set(edge.support_refs).issubset(live_supports))
+    blocked_excluded = tuple(edge for edge in relevant if edge.status is ContinuationStatus.EXCLUDED
+                             and not set(edge.support_refs).issubset(live_supports))
+    blocked = blocked_warranted + blocked_excluded
     unresolved = tuple(edge for edge in relevant if edge.status is ContinuationStatus.UNKNOWN)
 
     all_refs = tuple(sorted({ref for edge in relevant for ref in edge.evidence_refs}))
@@ -186,7 +190,7 @@ def query_crystal(
 
     # Exact contradiction at the same requested outcome is a residual, never an
     # arbitrary precedence choice.
-    if live_warranted and excluded:
+    if {e.outcome for e in live_warranted} & {e.outcome for e in excluded}:
         residual = _residual(machine, question, "conflicting_authority", relevant)
         return CrystalAnswer(
             question.id, ContinuationStatus.UNKNOWN, machine.boundary_ref,
@@ -196,17 +200,17 @@ def query_crystal(
         )
 
     if question.outcome is None and (
-        unresolved or blocked_warranted or
+        unresolved or blocked or
         (live_warranted and excluded)
     ):
         missing = tuple(sorted({
             support
-            for edge in blocked_warranted
+            for edge in blocked
             for support in edge.support_refs
             if support not in live_supports
         }))
         reason = "mixed_or_partial_knowledge"
-        if blocked_warranted and not unresolved and not live_warranted and not excluded:
+        if blocked and not unresolved and not live_warranted and not excluded:
             reason = "missing_live_support"
         residual = _residual(machine, question, reason, relevant, missing_supports=missing)
         return CrystalAnswer(
@@ -227,7 +231,7 @@ def query_crystal(
             continuation_ids=tuple(edge.id for edge in live_warranted),
         )
 
-    if excluded and not unresolved and not blocked_warranted:
+    if excluded:
         return CrystalAnswer(
             question.id, ContinuationStatus.EXCLUDED, machine.boundary_ref,
             question.source, question.continuation,
@@ -240,11 +244,11 @@ def query_crystal(
 
     missing = tuple(sorted({
         support
-        for edge in blocked_warranted
+        for edge in blocked
         for support in edge.support_refs
         if support not in live_supports
     }))
-    if blocked_warranted:
+    if blocked:
         reason = "missing_live_support"
     elif unresolved:
         reason = "unresolved_continuation"
