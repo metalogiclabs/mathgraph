@@ -109,16 +109,28 @@ def prepare_check(r: FirstOrderResidual) -> CheckPlan:
         status = S.WARRANTED
     else:
         # Complete nonempty interpretation, not "bounded search found nothing".
-        domain = f'Fin {len(cs)}'
-        definitions = [f'def {cn[c]} : {domain} := {i}' for i, c in enumerate(cs)]
+        domain = 'ModelDomain'
+        definitions = ['inductive ModelDomain where\n' + '\n'.join(f'  | {cn[c]}' for c in cs)]
+        definitions += [f'def {cn[c]} : {domain} := .{cn[c]}' for c in cs]
         for p in ps:
-            terms = [f'x = {cn[c]}' for c in cs if (p, c) in known]
-            body = ' ∨ '.join(terms) if terms else 'False'
-            definitions.append(f'def {pn[p]} (x : {domain}) : Prop := {body}')
+            rows = '\n'.join(f'  | .{cn[c]} => {"True" if (p,c) in known else "False"}' for c in cs)
+            definitions.append(f'def {pn[p]} : {domain} → Prop\n{rows}')
         constraints = [f'({formula(item, domain)})' for item in parsed]
         constraints.append(f'(¬ {pn[goal_atom[0]]} {cn[goal_atom[1]]})')
+        proofs = []
+        for kind, p, q in parsed:
+            if kind == 'fact':
+                proofs.append('True.intro')
+            else:
+                rows = '\n'.join(
+                    f'    | .{cn[c]} => fun h => {"True.intro" if (q,c) in known else "False.elim h"}'
+                    for c in cs)
+                proofs.append(f'(fun x => match x with\n{rows})')
+        proof = '(fun h => h)'
+        for item in reversed(proofs):
+            proof = f'And.intro ({item}) ({proof})'
         source = '\n'.join(definitions) + '\ntheorem certificate : '
-        source += ' ∧ '.join(constraints) + ' := by decide\n'
+        source += ' ∧ '.join(constraints) + ' :=\n  ' + proof + '\n'
         status = S.EXCLUDED
     source += '#print axioms certificate\n'
     return CheckPlan(status, cs, ps, tuple(sorted(known)), source)

@@ -1,7 +1,13 @@
 """Regression and admission lifecycle gates; added before implementation."""
 import importlib.util
+import os
+import shutil
+from dataclasses import replace
+import json
+import pytest
+from mathgraph.atp_tptp import FirstOrderResidual, ATPCandidateEvidence
 from mathgraph.protected_future import ContinuationStatus as S, ProtectedContinuation as Edge, ProtectedContinuationMachine as Machine
-from mathgraph.query_gateway import CrystalQuestion, query_crystal
+from mathgraph.query_gateway import CrystalQuestion, query_crystal, machine_from_dict, machine_to_dict
 
 
 def test_revoked_counterexample_cannot_remain_authoritative():
@@ -15,13 +21,6 @@ def test_revoked_counterexample_cannot_remain_authoritative():
 
 def test_independent_admission_boundary_exists():
     assert importlib.util.find_spec('mathgraph.fol_admission') is not None
-import os
-import shutil
-from dataclasses import replace
-import pytest
-from mathgraph.atp_tptp import FirstOrderResidual, ATPCandidateEvidence
-from mathgraph.protected_future import ContinuationStatus as S, ProtectedContinuation as Edge, ProtectedContinuationMachine as Machine
-from mathgraph.query_gateway import CrystalQuestion, query_crystal, machine_from_dict, machine_to_dict
 
 
 def residual(goal='mortal(socrates)'):
@@ -63,7 +62,9 @@ def test_reversed_implication_has_actual_finite_countermodel():
     assert plan.status is S.EXCLUDED
     assert ('mortal','socrates') in plan.true_atoms
     assert ('human','socrates') not in plan.true_atoms
-    assert 'Fin 1' in plan.lean_source
+    assert len(plan.constants)==1
+    assert 'inductive ModelDomain' in plan.lean_source
+    assert 'by decide' not in plan.lean_source
 
 
 def test_different_constants_do_not_collapse():
@@ -130,7 +131,7 @@ def test_live_lean_admission_replay_and_revocation(goal,expected,szs,tmp_path):
     lean=require_lean(); a=api(); r=residual(goal); m,q=a.initial_query(r)
     assert query_crystal(m,q).status is S.UNKNOWN
     checked=a.check_and_admit(m,q,r,evidence(r,szs),lean=lean,evidence_dir=tmp_path)
-    assert checked.status is expected, checked.record
+    assert checked.status is expected, json.dumps(checked.record,indent=2)
     assert query_crystal(checked.machine,q).status is expected
     assert query_crystal(checked.machine,replace(q,live_supports=())).status is S.UNKNOWN
     restored=machine_from_dict(machine_to_dict(checked.machine))
