@@ -1,0 +1,9 @@
+{
+  "source": "claim:socrates-mortal",
+  "continuation": "logic.first-order.entailment@1",
+  "outcome": [
+    "holds"
+  ],
+  "interface_id": "logic.first-order.entailment@1",
+  "live_supports": []
+}

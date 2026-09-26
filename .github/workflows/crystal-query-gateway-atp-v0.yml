@@ -1,0 +1,129 @@
+name: Crystal Query Gateway ATP V0
+on:
+  push:
+    branches: [crystal-query-gateway-atp-v0]
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Prove compact Crystal core unchanged
+        run: |
+          git diff --exit-code c661bb6a34601c5827272f2185f028f25f01e05a -- mathgraph/protected_future.py
+          git diff --exit-code c661bb6a34601c5827272f2185f028f25f01e05a -- mathgraph/crystal.py
+          git diff --exit-code c661bb6a34601c5827272f2185f028f25f01e05a -- mathgraph/math_claim.py
+          git diff --exit-code c661bb6a34601c5827272f2185f028f25f01e05a -- mathgraph/finite_relation.py
+          git diff --exit-code c661bb6a34601c5827272f2185f028f25f01e05a -- mathgraph/finite_falsifier.py
+      - name: Recheck compact and adversarial Crystal authority
+        run: |
+          python -m pytest -q             tests/test_crystal_protected_continuation_core_v0.py             tests/test_crystal_protected_continuation_adversarial_v1.py
+      - name: Qualify query gateway and ATP protocol
+        run: python -m pytest -q tests/test_crystal_query_gateway_atp_v0.py
+      - name: Emit gateway evidence
+        run: |
+          mkdir -p evidence/crystal-query-gateway-atp-v0
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          files=["mathgraph/query_gateway.py","mathgraph/atp_tptp.py","scripts/query_crystal.py"]
+          out={
+            "schema":"mathgraph.crystal-query-gateway-atp-v0.qualified",
+            "status":"QUALIFIED_BOUNDED",
+            "parent_head":"c661bb6a34601c5827272f2185f028f25f01e05a",
+            "crystal_core_changed":False,
+            "gateway_contract":{
+              "answers":["WARRANTED","EXCLUDED","UNKNOWN"],
+              "unknown_emits_machine_residual":True,
+              "provenance_returned":True,
+              "support_sensitive":True,
+              "conflict_returns_unknown":True
+            },
+            "atp_contract":{
+              "protocol":"TPTP FOF + SZS",
+              "engine":"Vampire",
+              "solver_output_self_authorizing":False,
+              "theorem_result":"CANDIDATE_WARRANTED",
+              "countermodel_result":"CANDIDATE_EXCLUDED",
+              "contradictory_axioms":"INVALID_PREMISE_SET"
+            },
+            "sha256":{f:hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in files},
+            "boundary":"ATP output remains candidate evidence; no gateway route mutates Crystal authority without a separate admission checker."
+          }
+          Path("evidence/crystal-query-gateway-atp-v0/gateway.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-query-gateway-atp-v0-gateway
+          path: evidence/crystal-query-gateway-atp-v0/gateway.json
+          if-no-files-found: error
+
+  vampire_live:
+    needs: qualify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[all]"
+      - name: Download pinned Vampire 5.1.0
+        run: |
+          curl -L --fail --retry 3             https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip             -o /tmp/vampire.zip
+          echo "495828dc76cb17a27080d62dedce755e46de96f47f06f5f0ad4be9cdaf6f968f  /tmp/vampire.zip" | sha256sum -c -
+          rm -rf /tmp/vampire-bin
+          mkdir -p /tmp/vampire-bin
+          unzip -q /tmp/vampire.zip -d /tmp/vampire-bin
+          VAMP="$(find /tmp/vampire-bin -type f -name 'vampire*' | head -n 1)"
+          test -n "$VAMP"
+          chmod +x "$VAMP"
+          echo "VAMP=$VAMP" >> "$GITHUB_ENV"
+      - name: Run live Crystal UNKNOWN through Vampire
+        run: |
+          mkdir -p evidence/crystal-query-gateway-atp-v0
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from mathgraph.atp_tptp import residual_from_dict, run_vampire
+          from mathgraph.protected_future import ContinuationStatus
+          from mathgraph.query_gateway import machine_from_dict, question_from_dict, query_crystal
+
+          machine=machine_from_dict(json.loads(Path("examples/crystal_brain_demo_machine.json").read_text()))
+          question=question_from_dict(json.loads(Path("examples/crystal_brain_demo_question.json").read_text()))
+          answer=query_crystal(machine,question)
+          assert answer.status is ContinuationStatus.UNKNOWN
+          assert answer.residual is not None
+          assert answer.residual.route_hint=="atp:tptp"
+
+          residual=residual_from_dict(json.loads(Path("examples/crystal_brain_demo_residual.json").read_text()))
+          evidence=run_vampire(residual, executable=os.environ["VAMP"], time_limit_seconds=5)
+          assert evidence.szs_status=="Theorem", evidence.to_dict()
+          assert evidence.candidate_status=="CANDIDATE_WARRANTED"
+          proposal=evidence.as_unadmitted_continuation(question.source)
+          assert proposal.status is ContinuationStatus.UNKNOWN
+
+          out={
+            "schema":"mathgraph.crystal-query-gateway-atp-v0.vampire-live",
+            "status":"QUALIFIED_BOUNDED",
+            "vampire_version":"5.1.0",
+            "vampire_asset_sha256":"495828dc76cb17a27080d62dedce755e46de96f47f06f5f0ad4be9cdaf6f968f",
+            "crystal_before":answer.to_dict(),
+            "atp_candidate":evidence.to_dict(include_output=True),
+            "proposal_status":proposal.status.value,
+            "crystal_authority_after":"UNCHANGED_UNKNOWN",
+            "boundary":"The live Vampire theorem result is candidate evidence only; independent proof checking/admission is still required."
+          }
+          Path("evidence/crystal-query-gateway-atp-v0/vampire-live.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-query-gateway-atp-v0-vampire-live
+          path: evidence/crystal-query-gateway-atp-v0/vampire-live.json
+          if-no-files-found: error

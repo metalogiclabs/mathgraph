@@ -1,0 +1,20 @@
+{
+  "schema": "mathgraph.atp.first-order-residual@1",
+  "problem_id": "socrates-mortal",
+  "axioms": [
+    {
+      "name": "all_humans_mortal",
+      "formula": "! [X] : (human(X) => mortal(X))"
+    },
+    {
+      "name": "socrates_human",
+      "formula": "human(socrates)"
+    }
+  ],
+  "conjecture": "mortal(socrates)",
+  "conjecture_name": "socrates_mortal",
+  "boundary_ref": "demo:socrates",
+  "source_refs": [
+    "demo:query-gateway-v0"
+  ]
+}

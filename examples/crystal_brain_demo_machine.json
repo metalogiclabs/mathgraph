@@ -1,0 +1,20 @@
+{
+  "schema": "mathgraph.future.protected.partial@1",
+  "boundary_ref": "demo:socrates",
+  "states": [
+    "claim:socrates-mortal"
+  ],
+  "continuations": [
+    {
+      "source": "claim:socrates-mortal",
+      "continuation": "logic.first-order.entailment@1",
+      "outcome": [
+        "holds"
+      ],
+      "status": "UNKNOWN",
+      "target": null,
+      "support_refs": [],
+      "evidence_refs": []
+    }
+  ]
+}
