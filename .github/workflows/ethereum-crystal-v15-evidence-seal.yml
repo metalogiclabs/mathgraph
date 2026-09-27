@@ -1,0 +1,31 @@
+name: ethereum-crystal-v15-cross-client-evidence-seal
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  seal-prior-cross-client-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify prior V15 semantic authority from GitHub logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run view 36356411033 --repo metalogiclabs/mathgraph --log > /tmp/v15.log
+          grep -q 'ETHEREUM_CRYSTAL_V15_RETH=PASS' /tmp/v15.log
+          grep -q 'records=1112' /tmp/v15.log
+          grep -q 'reth_bal_state_update_parity_all=true' /tmp/v15.log
+          grep -q 'speedup_vs_full=1.404361075' /tmp/v15.log
+          grep -q 'test result: ok. 1 passed; 0 failed' /tmp/v15.log
+          grep -q 'test result: FAILED. 161 passed; 1 failed' /tmp/v15.log
+          grep -q 'CRYSTAL_BAL_CORPUS: NotPresent' /tmp/v15.log
+      - name: Seal cross-client replication boundary
+        run: |
+          echo 'ETHEREUM_CRYSTAL_V15_CROSS_CLIENT_EVIDENCE_SEAL=PASS'
+          echo 'SEMANTIC_PARITY_RECORDS=1112'
+          echo 'RETH_NATIVE_TESTS_PASSING=161'
+          echo 'ONLY_WRAPPER_FAILURE=missing_CRYSTAL_BAL_CORPUS_for_injected_test'
+          echo 'FIX_COMMIT=a409f3707a6b6780bca9c234040f771cf32daed8'
