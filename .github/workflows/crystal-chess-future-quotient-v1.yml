@@ -53,7 +53,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/crystal-chess-future-v1
           cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-future-v1/
-          python experiments/crystal_chess_future_quotient_v1.py             --tablebase-dir /tmp/syzygy             --max-iterations 512             --output artifacts/crystal-chess-future-v1/crystal_chess_future_v1.json             | tee artifacts/crystal-chess-future-v1/run.log
+          python experiments/crystal_chess_future_quotient_v1.py             --tablebase-dir /tmp/syzygy             --max-splits 500000             --output artifacts/crystal-chess-future-v1/crystal_chess_future_v1.json             | tee artifacts/crystal-chess-future-v1/run.log
           grep -q "CRYSTAL_CHESS_FUTURE_QUOTIENT_V1=PASS" artifacts/crystal-chess-future-v1/run.log
 
       - name: Upload Crystal Chess V1 evidence
