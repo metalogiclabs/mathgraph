@@ -1,0 +1,70 @@
+name: Crystal Chess Piece Family V10
+
+on:
+  push:
+    branches:
+      - crystal-chess-piece-family-v10
+    paths:
+      - "experiments/crystal_chess_piece_family_v10.py"
+      - ".github/workflows/crystal-chess-piece-family-v10.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  piece-family:
+    strategy:
+      fail-fast: false
+      matrix:
+        piece: [Q, R, B, N]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile chess experiment
+        run: python -m py_compile experiments/crystal_chess_piece_family_v10.py
+
+      - name: Acquire exact WDL + DTZ authority
+        env:
+          PIECE: ${{ matrix.piece }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          wdl="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          dtz="https://tablebase.lichess.ovh/tables/standard/3-4-5-dtz"
+          stem="K${PIECE}vK"
+          curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/${stem}.rtbw" "$wdl/${stem}.rtbw"
+          curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/${stem}.rtbz" "$dtz/${stem}.rtbz"
+          test -s "/tmp/syzygy/${stem}.rtbw"
+          test -s "/tmp/syzygy/${stem}.rtbz"
+          sha256sum /tmp/syzygy/*.rtb* | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Compile exact DTZ policy
+        env:
+          PIECE: ${{ matrix.piece }}
+        run: |
+          set -euo pipefail
+          mkdir -p "artifacts/crystal-chess-v10-${PIECE}"
+          cp /tmp/syzygy/SHA256SUMS "artifacts/crystal-chess-v10-${PIECE}/"
+          python experiments/crystal_chess_piece_family_v10.py             --tablebase-dir /tmp/syzygy             --piece "${PIECE}"             --output "artifacts/crystal-chess-v10-${PIECE}/result.json"             | tee "artifacts/crystal-chess-v10-${PIECE}/run.log"
+          grep -q "CRYSTAL_CHESS_PIECE_FAMILY_V10=PASS" "artifacts/crystal-chess-v10-${PIECE}/run.log"
+
+      - name: Upload V10 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-piece-family-v10-${{ matrix.piece }}
+          path: artifacts/crystal-chess-v10-${{ matrix.piece }}/
+          if-no-files-found: error
