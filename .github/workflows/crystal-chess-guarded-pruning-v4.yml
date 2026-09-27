@@ -1,0 +1,62 @@
+name: Crystal Chess Guarded Pruning V4
+
+on:
+  push:
+    branches:
+      - crystal-chess-guarded-pruning-v4
+    paths:
+      - "experiments/crystal_chess_guarded_pruning_v4.py"
+      - "experiments/crystal_chess_guarded_separator_v3.py"
+      - "experiments/crystal_chess_action_congruence_v1.py"
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - ".github/workflows/crystal-chess-guarded-pruning-v4.yml"
+  workflow_dispatch:
+
+jobs:
+  guarded-pruning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999"
+
+      - name: Acquire exact WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Compile guards and seal untouched d-file policy
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-guarded-pruning-v4
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-guarded-pruning-v4/
+          python experiments/crystal_chess_guarded_pruning_v4.py \
+            --tablebase-dir /tmp/syzygy \
+            --promising-limit 60 \
+            --clauses-per-rule 6 \
+            --min-train-safe 40 \
+            --min-dev-safe 10 \
+            --output artifacts/crystal-chess-guarded-pruning-v4/result.json \
+            | tee artifacts/crystal-chess-guarded-pruning-v4/run.log
+          grep -q "CRYSTAL_CHESS_GUARDED_PRUNING_V4=" artifacts/crystal-chess-guarded-pruning-v4/run.log
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-guarded-pruning-v4
+          path: artifacts/crystal-chess-guarded-pruning-v4/
+          if-no-files-found: error
