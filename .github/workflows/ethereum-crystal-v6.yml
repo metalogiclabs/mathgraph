@@ -1,0 +1,33 @@
+name: ethereum-crystal-v6-executable-eels
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  executable-eels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install EELS test environment
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Execute official EIP-7928 tests
+        working-directory: /tmp/eels
+        run: |
+          uv run pytest -q             tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists.py             tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists_cross_index.py             -k "noop_storage_write or delegated_storage_reads or delegated_storage_writes or withdrawal_contract_cross_index or consolidation_contract_cross_index or zero_value_transfer or account_access_target or net_zero_balance_transfer"             --disable-warnings
+      - name: Requalify Crystal held-out transfer
+        run: |
+          python experiments/ethereum_crystal_v4/run.py
+          python experiments/ethereum_crystal_v5/run.py
+      - name: Emit executable evidence boundary
+        run: |
+          echo "ETHEREUM_CRYSTAL_V6_EXECUTABLE_EELS=PASS"
+          echo "EELS_PIN=84e7d2c266e3319fc3882e72f379282bb1c40f2d"
