@@ -1,0 +1,66 @@
+name: ethereum-crystal-v17-nethermind-cross-client
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  nethermind-cross-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate official Amsterdam BAL corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v17-fixtures
+          uv run fill --from Amsterdam --until Amsterdam --output=/tmp/eels-v17-fixtures --skip-index --no-html -n 2 tests/amsterdam/eip7928_block_level_access_lists
+      - name: Export frozen held-out BAL RLP
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py /tmp/eels-v17-fixtures /tmp/crystal-v17-heldout.rlpbin
+          sha256sum /tmp/crystal-v17-heldout.rlpbin > /tmp/crystal-v17-heldout.sha256
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.300
+      - name: Checkout pinned Nethermind and inject Crystal test
+        run: |
+          git clone --filter=blob:none https://github.com/NethermindEth/nethermind.git /tmp/nethermind
+          cd /tmp/nethermind
+          git checkout 62e29468020c5770a78594e84a07a8a328759e93
+          test "$(git rev-parse HEAD)" = "62e29468020c5770a78594e84a07a8a328759e93"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v17/CrystalBlockAccessListCrossClientTests.cs" src/Nethermind/Nethermind.Core.Test/Encoding/CrystalBlockAccessListCrossClientTests.cs
+          git diff --check
+          git diff > /tmp/crystal-v17-nethermind.patch
+      - name: Run third-client parity and benchmark
+        working-directory: /tmp/nethermind
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v17-heldout.rlpbin
+        run: |
+          dotnet test src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c Release             --filter "FullyQualifiedName~CrystalBlockAccessListCrossClientTests"             --logger "console;verbosity=normal" | tee /tmp/crystal-v17-nethermind.txt
+          grep -q 'ETHEREUM_CRYSTAL_V17_NETHERMIND=PASS' /tmp/crystal-v17-nethermind.txt
+          grep -q 'nethermind_final_state_projection_parity_all=true' /tmp/crystal-v17-nethermind.txt
+      - name: Run Nethermind BAL decoder regression suite
+        working-directory: /tmp/nethermind
+        run: |
+          dotnet test src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c Release             --filter "FullyQualifiedName~BlockAccessListDecoderTests"
+      - name: Upload V17 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v17-nethermind-cross-client
+          path: |
+            /tmp/crystal-v17-nethermind.patch
+            /tmp/crystal-v17-nethermind.txt
+            /tmp/crystal-v17-heldout.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V17_NETHERMIND_CROSS_CLIENT=PASS"
+          echo "NETHERMIND_PIN=62e29468020c5770a78594e84a07a8a328759e93"
+          echo "NO_UPSTREAM_PR_CREATED=true"
