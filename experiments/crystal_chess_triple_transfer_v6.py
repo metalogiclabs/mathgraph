@@ -38,6 +38,7 @@ from crystal_chess_kpvk_v0 import (
     BASE_CRYSTAL_AUTHORITY,
     PROTECTED_INTERFACE,
     probe_wdl,
+    make_kpvk,
 )
 from crystal_chess_goal_certificate_v3 import file_sha256, move_role
 from crystal_chess_cross_material_v5 import (
@@ -47,7 +48,7 @@ from crystal_chess_cross_material_v5 import (
 )
 
 
-SCHEMA = "mathgraph.crystal-chess.kpppvk-zero-shot-transfer.v6"
+SCHEMA = "mathgraph.crystal-chess.kpppvk-zero-shot-transfer.v6b"
 REVOKED_ROLES = frozenset({"K:-1,+0", "K:+0,-1", "P:+0,+1"})
 
 
@@ -105,7 +106,9 @@ def main() -> int:
         ]
 
         candidates = legal_states = terminal_states = 0
-        projection_unknown = projection_disagreement = revoked = 0
+        projection_unknown = projection_disagreement = 0
+        projection_value_disagreement = 0
+        revoked = 0
         nonunique_realizer = 0
         acted = correct = wrong = 0
         by_role: Counter[str] = Counter()
@@ -149,6 +152,23 @@ def main() -> int:
                         if len(set(roles)) != 1:
                             projection_disagreement += 1
                             continue
+
+                        # Crystal composition requires agreement on the
+                        # protected source consequence as well as the proposed
+                        # continuation. These are KPvK queries only; the richer
+                        # KPPPvK target remains unseen until after commitment.
+                        projected_wdls = [
+                            probe_wdl(
+                                tablebase,
+                                make_kpvk(wk, bk, pawn, turn),
+                                cache,
+                            )
+                            for pawn in pawns
+                        ]
+                        if len(set(projected_wdls)) != 1:
+                            projection_value_disagreement += 1
+                            continue
+
                         role = roles[0]
                         if role in REVOKED_ROLES:
                             revoked += 1
@@ -217,8 +237,9 @@ def main() -> int:
                 "no KPPPvK value"
             ),
             "guard": (
-                "all three projections agree; V4-residual role families "
-                "revoked prospectively; exactly one legal realizer"
+                "all three projections agree on KPvK WDL and move role; "
+                "V4-residual role families revoked prospectively; exactly one "
+                "legal realizer"
             ),
             "revoked_roles": sorted(REVOKED_ROLES),
             "audit": (
@@ -241,6 +262,7 @@ def main() -> int:
             "terminal_states": terminal_states,
             "projection_unknown": projection_unknown,
             "projection_disagreement": projection_disagreement,
+            "projection_value_disagreement": projection_value_disagreement,
             "revoked": revoked,
             "nonunique_realizer": nonunique_realizer,
             "acted": acted,
@@ -281,14 +303,15 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    print("CRYSTAL_CHESS_TRIPLE_TRANSFER_V6=PASS")
+    print("CRYSTAL_CHESS_TRIPLE_TRANSFER_V6B=PASS")
     print(
         f"legal={legal_states} acted={acted} correct={correct} wrong={wrong} "
         f"precision={correct/acted if acted else 0.0:.6f} "
         f"coverage={acted/legal_states if legal_states else 0.0:.6f}"
     )
     print(
-        f"unknown={projection_unknown} disagree={projection_disagreement} "
+        f"unknown={projection_unknown} role_disagree={projection_disagreement} "
+        f"value_disagree={projection_value_disagreement} "
         f"revoked={revoked} nonunique={nonunique_realizer}"
     )
     print(f"artifact={args.output}")
