@@ -1,0 +1,19 @@
+name: ethereum-typed-msi-v3
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  typed-interface-qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin normative EIP-7928
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-7928.md -o /tmp/eip7928.md
+          grep -q "Addresses accessed without state changes" /tmp/eip7928.md
+          grep -q "Slots written with unchanged values" /tmp/eip7928.md
+          grep -q "State reconstruction without executing transactions" /tmp/eip7928.md
+          grep -q "Parallel disk reads and transaction execution" /tmp/eip7928.md
+      - name: Run typed MSI qualification
+        run: python experiments/ethereum_msi_v3/run.py
