@@ -432,7 +432,7 @@ def main() -> int:
                         "board": list(board),
                         "predicted_role": predicted,
                         "winning_roles": sorted(winning_roles),
-                        "features": list(features[0]),
+                        "features": [int(x) for x in features[0]],
                     }
                 )
 
