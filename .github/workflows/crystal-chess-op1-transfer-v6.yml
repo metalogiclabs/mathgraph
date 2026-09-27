@@ -1,0 +1,51 @@
+name: Crystal Chess Op1 Transfer V6
+
+on:
+  push:
+    branches:
+      - crystal-chess-op1-transfer-v6
+    paths:
+      - "experiments/crystal_chess_op1_action_census_v1.py"
+      - "experiments/crystal_chess_op1_transfer_v6.py"
+      - ".github/workflows/crystal-chess-op1-transfer-v6.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  op1-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile transfer experiment
+        run: |
+          python -m py_compile experiments/crystal_chess_op1_action_census_v1.py
+          python -m py_compile experiments/crystal_chess_op1_transfer_v6.py
+
+      - name: Run prospective exact cross-material transfer
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-op1-transfer-v6
+          python experiments/crystal_chess_op1_transfer_v6.py             --target 128             --max-attempts 1200             --output artifacts/crystal-chess-op1-transfer-v6/result.json             | tee artifacts/crystal-chess-op1-transfer-v6/run.log
+          grep -q "CRYSTAL_CHESS_OP1_TRANSFER_V6=" artifacts/crystal-chess-op1-transfer-v6/run.log
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-op1-transfer-v6
+          path: artifacts/crystal-chess-op1-transfer-v6/
+          if-no-files-found: error
