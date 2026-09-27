@@ -1,9 +1,9 @@
-name: Crystal Chess Cross Material V5
+name: Crystal Chess Cross Material V5B
 
 on:
   push:
     branches:
-      - crystal-chess-cross-material-v5
+      - crystal-chess-cross-material-v5b
     paths:
       - "experiments/crystal_chess_kpvk_v0.py"
       - "experiments/crystal_chess_goal_certificate_v3.py"
@@ -56,11 +56,11 @@ jobs:
           mkdir -p artifacts/crystal-chess-v5
           cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v5/
           python experiments/crystal_chess_cross_material_v5.py             --tablebase-dir /tmp/syzygy             --output artifacts/crystal-chess-v5/crystal_chess_cross_material_v5.json             | tee artifacts/crystal-chess-v5/run.log
-          grep -q "CRYSTAL_CHESS_CROSS_MATERIAL_V5=PASS" artifacts/crystal-chess-v5/run.log
+          grep -q "CRYSTAL_CHESS_CROSS_MATERIAL_V5B=PASS" artifacts/crystal-chess-v5/run.log
 
       - name: Upload Crystal Chess V5 evidence
         uses: actions/upload-artifact@v4
         with:
-          name: crystal-chess-cross-material-v5
+          name: crystal-chess-cross-material-v5b
           path: artifacts/crystal-chess-v5/
           if-no-files-found: error
