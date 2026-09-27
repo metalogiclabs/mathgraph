@@ -1,0 +1,66 @@
+name: Crystal Chess Four Pawn Transfer V9
+
+on:
+  push:
+    branches:
+      - crystal-chess-four-pawn-transfer-v9
+    paths:
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - "experiments/crystal_chess_goal_certificate_v3.py"
+      - "experiments/crystal_chess_richer_transfer_v5.py"
+      - "experiments/crystal_chess_four_pawn_transfer_v9.py"
+      - ".github/workflows/crystal-chess-four-pawn-transfer-v9.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  four-pawn-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile chess experiment
+        run: python -m py_compile experiments/crystal_chess_four_pawn_transfer_v9.py
+
+      - name: Acquire exact Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          w345="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w345/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
+          test -s /tmp/syzygy/KPPPPvK.rtbw
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Prospectively transfer frozen KPvK capability to KPPPPvK
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v9
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v9/
+          python experiments/crystal_chess_four_pawn_transfer_v9.py             --tablebase-dir /tmp/syzygy             --sample-size 100000             --seed 20261001             --output artifacts/crystal-chess-v9/crystal_chess_four_pawn_transfer_v9.json             | tee artifacts/crystal-chess-v9/run.log
+          grep -q "CRYSTAL_CHESS_FOUR_PAWN_TRANSFER_V9=PASS" artifacts/crystal-chess-v9/run.log
+
+      - name: Upload V9 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-four-pawn-transfer-v9
+          path: artifacts/crystal-chess-v9/
+          if-no-files-found: error
