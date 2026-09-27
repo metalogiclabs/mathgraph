@@ -1,0 +1,65 @@
+name: ethereum-crystal-v12-geth-snap-apply
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  geth-snap-apply-view:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+          test "$(git rev-parse HEAD)" = "84e7d2c266e3319fc3882e72f379282bb1c40f2d"
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate broad official EIP-7928 corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v12-fixtures
+          uv run fill --from Amsterdam --until Amsterdam             --output=/tmp/eels-v12-fixtures --skip-index --no-html -n 2             tests/amsterdam/eip7928_block_level_access_lists
+      - name: Export frozen held-out RLP corpus
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py             /tmp/eels-v12-fixtures /tmp/crystal-v12-heldout.rlpbin
+          sha256sum /tmp/crystal-v12-heldout.rlpbin > /tmp/crystal-v12-heldout.sha256
+      - name: Checkout pinned go-ethereum
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v12/bal_apply_view_bench_test.go"             core/types/bal/crystal_apply_view_bench_test.go
+      - name: Verify apply view against production geth BAL objects
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v12-heldout.rlpbin
+        run: go test ./core/types/bal -run '^TestCrystalApplyViewCorrectness$' -count=1
+      - name: Benchmark geth full decode vs snap apply view
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v12-heldout.rlpbin
+        run: |
+          go test ./core/types/bal -run '^$'             -bench '^BenchmarkCrystalApply(FullGeth|View)$'             -benchmem -benchtime=1s -count=5 | tee /tmp/crystal-v12-geth-bench.txt
+      - name: Summarize V12
+        run: |
+          python experiments/ethereum_crystal_v12/parse_bench.py             /tmp/crystal-v12-geth-bench.txt /tmp/crystal-v12-certificate.json
+          cat /tmp/crystal-v12-certificate.json
+      - name: Upload V12 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v12-geth-snap-apply-evidence
+          path: |
+            /tmp/crystal-v12-certificate.json
+            /tmp/crystal-v12-geth-bench.txt
+            /tmp/crystal-v12-heldout.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V12_GETH_SNAP_APPLY_VIEW=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "PARENT_V11_RUN=36355206069"
