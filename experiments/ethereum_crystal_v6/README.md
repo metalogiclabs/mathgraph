@@ -9,3 +9,8 @@ This does **not** yet mean Crystal consumes serialized BAL fixtures directly. It
 `official executable Ethereum semantics green → Crystal acquisition green → held-out family reuse green`.
 
 If the official test selection cannot execute at the pinned commit, V6 fails rather than falling back to source inspection.
+
+
+## Integration residual update
+
+The canonical EELS `fill` runner has now generated the selected Amsterdam EIP-7928 fixtures successfully (40/40 at the pinned commit). The next gate is schema discovery over those realized JSON artifacts followed by direct Crystal ingestion. A prior run stopped only because the inspector file was added one commit after the workflow began; that failure is infrastructure lineage, not semantic evidence.
