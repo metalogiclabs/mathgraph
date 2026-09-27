@@ -25,8 +25,8 @@ jobs:
       - name: Install bounded verifier dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .
-          python -m pip install "pytest>=8" "python-chess==1.999"
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999"
 
       - name: Requalify Crystal microkernel
         run: python -m pytest -q tests/test_crystal.py
@@ -37,7 +37,7 @@ jobs:
           mkdir -p /tmp/syzygy
           base="https://tablebase.lichess.ovh/tables/standard/3-4-5"
           for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw; do
-            curl --fail --location --retry 5 --retry-delay 2               -o "/tmp/syzygy/$f" "$base/$f"
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
             test -s "/tmp/syzygy/$f"
           done
           sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/crystal-chess-v0
           cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v0/
-          python experiments/crystal_chess_kpvk_v0.py             --tablebase-dir /tmp/syzygy             --action-limit 50000             --output artifacts/crystal-chess-v0/crystal_chess_kpvk_v0.json             | tee artifacts/crystal-chess-v0/run.log
+          python experiments/crystal_chess_kpvk_v0.py --tablebase-dir /tmp/syzygy --action-limit 50000 --output artifacts/crystal-chess-v0/crystal_chess_kpvk_v0.json | tee artifacts/crystal-chess-v0/run.log
           grep -q "CRYSTAL_CHESS_KPVK_V0=PASS" artifacts/crystal-chess-v0/run.log
 
       - name: Upload Crystal Chess evidence
