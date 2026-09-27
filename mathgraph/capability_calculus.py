@@ -166,12 +166,14 @@ def forced_goal_attractor(
     goals: Iterable[str],
     steps: Sequence[CapabilityStep],
     live_supports: set[str] | frozenset[str],
+    forbidden: Iterable[str] = (),
 ) -> tuple[frozenset[str], dict[str, int], dict[str, CapabilityStep]]:
     """Least fixed point for forced finite progress to a protected goal."""
 
     state_set = set(states)
     goal_set = set(goals)
-    _validate_world(state_set, steps, goal_set, set(), set())
+    forbidden_set = set(forbidden)
+    _validate_world(state_set, steps, goal_set, forbidden_set, set())
 
     live = _live_by_source(state_set, steps, live_supports)
     winning = set(goal_set)
@@ -180,7 +182,7 @@ def forced_goal_attractor(
 
     while True:
         additions: list[tuple[int, str, CapabilityStep]] = []
-        for state in sorted(state_set - winning):
+        for state in sorted(state_set - winning - forbidden_set):
             candidates: list[tuple[int, str, CapabilityStep]] = []
             for step in live[state]:
                 if all(outcome in winning for outcome in step.outcomes):
@@ -281,7 +283,7 @@ def compile_strategy_calculus(
 
     live = _live_by_source(state_set, steps, live_supports)
     winning, rank, goal_witness = forced_goal_attractor(
-        state_set, goal_set, steps, live_supports
+        state_set, goal_set, steps, live_supports, forbidden_set
     )
     safe, safety_witness = safety_kernel(
         state_set, forbidden_set, safe_terminal_set | goal_set, steps, live_supports
