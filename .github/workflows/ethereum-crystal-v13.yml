@@ -1,0 +1,73 @@
+name: ethereum-crystal-v13-geth-catchup-prototype
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  geth-catchup-prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate broad official EIP-7928 corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v13-fixtures
+          uv run fill --from Amsterdam --until Amsterdam             --output=/tmp/eels-v13-fixtures --skip-index --no-html -n 2             tests/amsterdam/eip7928_block_level_access_lists
+      - name: Export frozen held-out RLP corpus
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py             /tmp/eels-v13-fixtures /tmp/crystal-v13-heldout.rlpbin
+          sha256sum /tmp/crystal-v13-heldout.rlpbin > /tmp/crystal-v13-heldout.sha256
+      - name: Checkout and patch pinned go-ethereum
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder.go"             core/types/bal/crystal_apply_decoder.go
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder_test.go"             core/types/bal/crystal_apply_decoder_test.go
+          python "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/patch_geth.py"
+          gofmt -w core/types/bal/crystal_apply_decoder.go             core/types/bal/crystal_apply_decoder_test.go             eth/protocols/snap/syncv2.go
+          git diff --check
+          git diff > /tmp/crystal-v13-geth.patch
+      - name: Verify compact apply decoder against production BAL objects
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v13-heldout.rlpbin
+        run: go test ./core/types/bal -run '^TestDecodeApplyRLPMatchesProductionConsequences$' -count=1
+      - name: Run geth BAL package tests
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v13-heldout.rlpbin
+        run: go test ./core/types/bal -count=1
+      - name: Run snap catch-up regression tests through patched path
+        working-directory: /tmp/geth
+        run: |
+          go test ./eth/protocols/snap -count=1             -run '^(TestPivotMovement|TestPivotMovementRepeated|TestCatchUpPersistsIncrementally|TestCatchUpWindowed)$'
+      - name: Benchmark compact decoder
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v13-heldout.rlpbin
+        run: |
+          go test ./core/types/bal -run '^$'             -bench '^BenchmarkDecodeApplyRLP(Full|Compact)$'             -benchmem -benchtime=1s -count=5 | tee /tmp/crystal-v13-bench.txt
+      - name: Upload V13 prototype evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v13-geth-catchup-prototype
+          path: |
+            /tmp/crystal-v13-geth.patch
+            /tmp/crystal-v13-bench.txt
+            /tmp/crystal-v13-heldout.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V13_GETH_CATCHUP_PROTOTYPE=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "NO_UPSTREAM_PR_CREATED=true"
