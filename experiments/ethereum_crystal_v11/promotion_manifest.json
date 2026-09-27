@@ -1,0 +1,46 @@
+{
+  "protocol": "ETHEREUM_CRYSTAL_V11_GETH_PACKAGE",
+  "epistemic_state": "WARRANTED_REUSABLE",
+  "authority": {
+    "repo": "metalogiclabs/mathgraph",
+    "branch": "ethereum-msi-consequential-interface-v1",
+    "run_id": 36355203318,
+    "job_id": 108721455645,
+    "artifact_id": 10943641142,
+    "artifact_sha256": "835f228df20298d5133952432c3e113978a2d2408c841b11f5d5f607646305ad"
+  },
+  "pins": {
+    "eels": "84e7d2c266e3319fc3882e72f379282bb1c40f2d",
+    "geth": "920c07774c65ebb3023536f85df642c44478b540",
+    "parent_v10_run": 36354980547
+  },
+  "heldout_records": 1112,
+  "correctness": {
+    "dependency_view_field_for_field_vs_geth": true,
+    "records_checked": 1112
+  },
+  "benchmark": {
+    "full_ns_op": 7056849,
+    "dependency_ns_op": 2710536,
+    "speedup": 2.603488387536635,
+    "full_B_op": 7842088,
+    "dependency_B_op": 4146728,
+    "allocation_byte_ratio": 0.5287785599957562,
+    "full_allocs_op": 82163,
+    "dependency_allocs_op": 54565,
+    "allocation_call_ratio": 0.6641067147012646,
+    "performance_positive": true
+  },
+  "promotion_boundary": "pinned go-ethereum core/types/bal package integration benchmark over frozen V9 held-out EELS RLP corpus",
+  "unknowns": [
+    "full-node end-to-end performance benefit",
+    "upstream merge suitability",
+    "optimal implementation inside go-ethereum",
+    "replication in Reth/Nethermind/Besu/Erigon",
+    "universal EIP-7928 minimality"
+  ],
+  "non_actions": [
+    "no upstream geth branch created",
+    "no upstream geth PR created"
+  ]
+}
