@@ -1,0 +1,58 @@
+name: Crystal Chess Continuation Quotient V2
+
+on:
+  push:
+    branches:
+      - crystal-chess-continuation-quotient-v2
+    paths:
+      - "experiments/crystal_chess_continuation_quotient_v2.py"
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - ".github/workflows/crystal-chess-continuation-quotient-v2.yml"
+  workflow_dispatch:
+
+jobs:
+  continuation-quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install exact chess verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999"
+
+      - name: Acquire exact 3-piece WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Discover bounded lawful-continuation quotient
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-continuation-v2
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-continuation-v2/
+          python experiments/crystal_chess_continuation_quotient_v2.py \
+            --tablebase-dir /tmp/syzygy \
+            --discovery-states 20000 \
+            --max-depth 3 \
+            --output artifacts/crystal-chess-continuation-v2/result.json \
+            | tee artifacts/crystal-chess-continuation-v2/run.log
+          grep -q "CRYSTAL_CHESS_CONTINUATION_V2=" artifacts/crystal-chess-continuation-v2/run.log
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-continuation-v2
+          path: artifacts/crystal-chess-continuation-v2/
+          if-no-files-found: error
