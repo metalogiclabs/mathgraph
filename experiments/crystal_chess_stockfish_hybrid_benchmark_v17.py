@@ -152,6 +152,28 @@ def sample_kppvk(rng: random.Random, n: int) -> list[chess.Board]:
     return out
 
 
+def make_kppppvk(
+    wk: int,
+    bk: int,
+    p0: int,
+    p1: int,
+    p2: int,
+    p3: int,
+    turn: bool,
+) -> chess.Board:
+    board = chess.Board(None)
+    board.turn = turn
+    board.castling_rights = chess.BB_EMPTY
+    board.ep_square = None
+    board.halfmove_clock = 0
+    board.fullmove_number = 1
+    board.set_piece_at(wk, chess.Piece(chess.KING, chess.WHITE))
+    board.set_piece_at(bk, chess.Piece(chess.KING, chess.BLACK))
+    for pawn in (p0, p1, p2, p3):
+        board.set_piece_at(pawn, chess.Piece(chess.PAWN, chess.WHITE))
+    return board
+
+
 def sample_kpppvk(rng: random.Random, n: int) -> list[chess.Board]:
     seen: set[str] = set()
     out: list[chess.Board] = []
@@ -164,6 +186,31 @@ def sample_kpppvk(rng: random.Random, n: int) -> list[chess.Board]:
         wk, bk = rng.sample(list(chess.SQUARES), 2)
         turn = bool(rng.getrandbits(1))
         board = make_kpppvk(wk, bk, *pawns, turn)
+        if not board.is_valid() or not any(board.legal_moves):
+            continue
+        board.halfmove_clock = 0
+        board.fullmove_number = 1
+        fen = board.fen()
+        if fen in seen:
+            continue
+        seen.add(fen)
+        out.append(board)
+    return out
+
+
+def sample_kpppppvk(rng: random.Random, n: int) -> list[chess.Board]:
+    seen: set[str] = set()
+    out: list[chess.Board] = []
+    while len(out) < n:
+        pawns = (
+            chess.square(1, rng.randrange(1, 4)),
+            chess.square(2, rng.randrange(1, 4)),
+            chess.square(3, rng.randrange(1, 4)),
+            chess.square(4, rng.randrange(1, 4)),
+        )
+        wk, bk = rng.sample(list(chess.SQUARES), 2)
+        turn = bool(rng.getrandbits(1))
+        board = make_kppppvk(wk, bk, *pawns, turn)
         if not board.is_valid() or not any(board.legal_moves):
             continue
         board.halfmove_clock = 0
@@ -199,15 +246,24 @@ def main() -> int:
     ap.add_argument("--roles", type=Path, required=True)
     ap.add_argument("--tablebase-dir", type=Path, required=True)
     ap.add_argument("--kppvk", type=int, default=600)
-    ap.add_argument("--kpppvk", type=int, default=600)
+    ap.add_argument("--kpppvk", type=int, default=500)
+    ap.add_argument("--kppppvk", type=int, default=500)
     ap.add_argument("--nodes", type=int, default=10000)
     ap.add_argument("--seed", type=int, default=20260928)
     ap.add_argument("--output", type=Path, required=True)
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
-    boards = sample_kppvk(rng, args.kppvk) + sample_kpppvk(rng, args.kpppvk)
-    labels = ["KPPvK"] * args.kppvk + ["KPPPvK"] * args.kpppvk
+    boards = (
+        sample_kppvk(rng, args.kppvk)
+        + sample_kpppvk(rng, args.kpppvk)
+        + sample_kpppppvk(rng, args.kppppvk)
+    )
+    labels = (
+        ["KPPvK"] * args.kppvk
+        + ["KPPPvK"] * args.kpppvk
+        + ["KPPPPvK"] * args.kppppvk
+    )
 
     suite_digest = hashlib.sha256()
     for label, board in zip(labels, boards):
@@ -232,6 +288,7 @@ def main() -> int:
     by_family = {
         "KPPvK": Counter(),
         "KPPPvK": Counter(),
+        "KPPPPvK": Counter(),
     }
     examples: list[dict[str, object]] = []
 
@@ -352,6 +409,7 @@ def main() -> int:
             "nodes_per_position": args.nodes,
             "kppvk_positions": args.kppvk,
             "kpppvk_positions": args.kpppvk,
+            "kppppvk_positions": args.kppppvk,
             "suite_sha256": suite_digest.hexdigest(),
             "wall_seconds_total_both_arms": elapsed,
         },
