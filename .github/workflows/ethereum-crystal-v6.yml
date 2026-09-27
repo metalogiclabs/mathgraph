@@ -41,6 +41,10 @@ jobs:
         run: |
           python experiments/ethereum_crystal_v7/fixture_crystal.py /tmp/eels-fixtures /tmp/crystal-v7-certificate.json
           cat /tmp/crystal-v7-certificate.json
+      - name: Verify exact BAL reassembly and Ethereum hash
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v8/exact_reassembly.py /tmp/eels-fixtures /tmp/crystal-v8-certificate.json
+          cat /tmp/crystal-v8-certificate.json
       - name: Requalify Crystal developmental lineage
         run: |
           python experiments/developmental_capability_growth_v1/run.py >/tmp/canonical-crystal.txt
@@ -52,8 +56,9 @@ jobs:
           name: ethereum-crystal-v7-evidence
           path: |
             /tmp/crystal-v7-certificate.json
+            /tmp/crystal-v8-certificate.json
             /tmp/eels-fixtures
       - name: Emit executable evidence boundary
         run: |
-          echo "ETHEREUM_CRYSTAL_V7_FIXTURE_NATIVE=PASS"
+          echo "ETHEREUM_CRYSTAL_V8_EXACT_BAL=PASS"
           echo "EELS_PIN=84e7d2c266e3319fc3882e72f379282bb1c40f2d"
