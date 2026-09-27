@@ -1,0 +1,70 @@
+name: Crystal Chess Capability Calculus V8
+
+on:
+  push:
+    branches:
+      - crystal-chess-capability-calculus-v8
+    paths:
+      - "mathgraph/capability_calculus.py"
+      - "tests/test_capability_calculus.py"
+      - "experiments/crystal_chess_capability_calculus_v8.py"
+      - ".github/workflows/crystal-chess-capability-calculus-v8.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  capability-calculus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Qualify generic calculus
+        run: |
+          python -m pytest -q tests/test_capability_calculus.py
+          python -m pytest -q tests/test_crystal.py
+
+      - name: Compile experiment
+        run: python -m py_compile experiments/crystal_chess_capability_calculus_v8.py
+
+      - name: Acquire exact Syzygy WDL plus DTZ authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          wdl="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          dtz="https://tablebase.lichess.ovh/tables/standard/3-4-5-dtz"
+          for stem in KPvK KQvK KRvK KBvK KNvK; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$stem.rtbw" "$wdl/$stem.rtbw"
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$stem.rtbz" "$dtz/$stem.rtbz"
+            test -s "/tmp/syzygy/$stem.rtbw"
+            test -s "/tmp/syzygy/$stem.rtbz"
+          done
+          sha256sum /tmp/syzygy/*.rtb* | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Run complete KPvK capability calculus
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v8
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v8/
+          python experiments/crystal_chess_capability_calculus_v8.py \
+            --tablebase-dir /tmp/syzygy \
+            --output artifacts/crystal-chess-v8/crystal_chess_capability_calculus_v8.json \
+            | tee artifacts/crystal-chess-v8/run.log
+          grep -q "CRYSTAL_CHESS_CAPABILITY_CALCULUS_V8=PASS" artifacts/crystal-chess-v8/run.log
+
+      - name: Upload V8 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-capability-calculus-v8
+          path: artifacts/crystal-chess-v8/
+          if-no-files-found: error
