@@ -63,11 +63,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/syzygy
-          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w345="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
           for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw KPPPvK.rtbw; do
-            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w345/$f"
             test -s "/tmp/syzygy/$f"
           done
+          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
+          test -s /tmp/syzygy/KPPPPvK.rtbw
           sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
 
       - name: Compile frozen runtime role map
@@ -100,8 +103,9 @@ jobs:
             --guard /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz \
             --roles artifacts/crystal-chess-v17/crystal_chess_roles_v17.jsonl.gz \
             --tablebase-dir /tmp/syzygy \
-            --kppvk 500 \
-            --kpppvk 500 \
+            --kppvk 400 \
+            --kpppvk 400 \
+            --kppppvk 400 \
             --nodes 5000 \
             --seed 20260928 \
             --output artifacts/crystal-chess-v17/crystal_chess_stockfish_hybrid_benchmark_v17.json \
