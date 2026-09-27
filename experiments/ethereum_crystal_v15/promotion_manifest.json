@@ -1,0 +1,17 @@
+{
+  "protocol":"ETHEREUM_CRYSTAL_V15_RETH_CROSS_CLIENT",
+  "epistemic_state":"WARRANTED_REUSABLE",
+  "scientific_run":{"run_id":36356411033,"job_id":108724906135},
+  "evidence_seal_run":36357291612,
+  "reth_commit":"5723a3fed5521fad105b44f86876580242f31be9",
+  "parent_v13_run":36355884299,
+  "heldout_records":1112,
+  "production_consumer_parity_all":true,
+  "full_decode_median_s":0.024908064,
+  "compact_apply_decode_median_s":0.017736225,
+  "speedup_vs_full":1.404361075,
+  "architectural_separator":"Reth already carries one authenticated decoded BAL forward; the geth duplicate-decode mechanism does not transfer.",
+  "red_lineage":{"native_reth_tests_passed":161,"only_failed_test":"injected Crystal test without CRYSTAL_BAL_CORPUS","failure":"CRYSTAL_BAL_CORPUS: NotPresent","fix_commit":"a409f3707a6b6780bca9c234040f771cf32daed8"},
+  "promotion_boundary":"pinned Reth snap-sync production BalStateUpdate consumer over frozen held-out EELS corpus",
+  "unknowns":["live-node wall-clock impact","upstream merge suitability","replication in additional clients"]
+}
