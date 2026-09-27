@@ -1,17 +1,28 @@
 #!/usr/bin/env python3
 """Crystal Chess V1: exact action-quotiented future fixed point on KPvK.
 
-This strengthens V0.  States are not merged merely because they share Syzygy
-WDL.  They are merged only when they have the same protected observation and
-the same SET of quotient-successor consequences, iterated to a fixed point.
+V0 showed that one-ply WDL collapses many legal moves, but WDL is deliberately
+coarse.  V1 computes the stronger recursive object directly.
 
-The action names themselves are intentionally quotiented by induced protected
-transition, matching MathGraph Crystal's action_quotient principle.  Therefore
-this is a bounded minimax congruence, not literal equality of UCI move strings.
+Two KPvK states may share a class only when:
+1. their protected observation (Syzygy WDL + side to move) agrees; and
+2. the SET of protected successor classes reachable by legal moves agrees.
+
+Action strings and multiplicity are intentionally quotiented away: multiple
+legal moves into the same protected successor class are one consequential
+action.  The partition is refined to the greatest fixed point satisfying these
+conditions.
+
+The first implementation used synchronous depth refinement and did not
+stabilise within 512 rounds (run 36349028488).  This implementation computes
+the same fixed point event-wise.  Whenever a target block splits, only
+predecessors whose successor-block signature can change are reconsidered.
+Largest split parts retain their block id, so moved targets always enter a
+strictly smaller block.
 
 Boundary:
 * Standard White K+P vs Black K states with pawn files a..d, ranks 2..7.
-* Horizontal reflection is already qualified by Crystal Chess V0.
+* Horizontal reflection is inherited from qualified Crystal Chess V0.
 * Internal continuation is exact while the position remains KPvK.
 * Exit from KPvK is observed by exact Syzygy WDL plus exit material class.
 * No claim is made about futures after that exit observation.
@@ -20,14 +31,13 @@ Boundary:
 from __future__ import annotations
 
 import argparse
-from collections import Counter
+from collections import Counter, deque
 import hashlib
 import json
 from pathlib import Path
 import platform
 import sys
 import time
-from typing import Iterable
 
 import chess
 import chess.syzygy
@@ -35,7 +45,6 @@ import chess.syzygy
 from crystal_chess_kpvk_v0 import (
     BASE_CRYSTAL_AUTHORITY,
     PROTECTED_INTERFACE,
-    WDL_VALUES,
     enumerate_records,
     make_kpvk,
     probe_wdl,
@@ -46,6 +55,8 @@ SCHEMA = "mathgraph.crystal-chess.kpvk-future-quotient.v1"
 V0_AUTHORITY = (
     "metalogiclabs/mathgraph@d8da8268068e7d94950aadeea53ad74906683355"
 )
+NAIVE_DEPTH_RUN = "metalogiclabs/mathgraph actions run 36349028488"
+NAIVE_DEPTH_LOWER_BOUND = 512
 
 
 def state_key(wk: int, bk: int, pawn: int, turn: bool) -> tuple[int, int, int, int]:
@@ -56,8 +67,6 @@ def child_kpvk_key(board: chess.Board) -> tuple[int, int, int, int] | None:
     pawns = tuple(board.pieces(chess.PAWN, chess.WHITE))
     if len(pawns) != 1:
         return None
-    # The declared world has no black non-king material and exactly one white
-    # pawn.  Promotion or capture therefore leaves the internal boundary.
     extras = (
         len(board.pieces(chess.QUEEN, chess.WHITE))
         + len(board.pieces(chess.ROOK, chess.WHITE))
@@ -72,9 +81,6 @@ def child_kpvk_key(board: chess.Board) -> tuple[int, int, int, int] | None:
         return None
     pawn = pawns[0]
     if chess.square_file(pawn) >= 4:
-        # Starting from files a..d a pawn cannot cross files without capturing;
-        # there is no capturable black non-king piece.  Keep this as a hard
-        # boundary assertion rather than silently canonicalising.
         raise AssertionError(f"unexpected pawn-file escape: {board.fen()}")
     if not 1 <= chess.square_rank(pawn) <= 6:
         return None
@@ -113,19 +119,195 @@ def external_label(
     return f"exit:{material_label(board)}:turn={int(board.turn)}:wdl={wdl}"
 
 
-def stable_ids(signatures: Iterable[tuple]) -> tuple[list[int], int]:
-    sigs = list(signatures)
-    unique = sorted(set(sigs))
-    mapping = {sig: idx for idx, sig in enumerate(unique)}
-    return [mapping[sig] for sig in sigs], len(unique)
-
-
 def file_sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def initialise_partition(
+    records,
+) -> tuple[dict[int, set[int]], list[int], int]:
+    by_observation: dict[tuple[int, int], list[int]] = {}
+    for i, rec in enumerate(records):
+        by_observation.setdefault((rec.wdl, int(rec.turn)), []).append(i)
+    blocks: dict[int, set[int]] = {}
+    block_of = [-1] * len(records)
+    for block_id, observation in enumerate(sorted(by_observation)):
+        members = set(by_observation[observation])
+        blocks[block_id] = members
+        for state in members:
+            block_of[state] = block_id
+    assert all(block >= 0 for block in block_of)
+    return blocks, block_of, len(blocks)
+
+
+def partition_digest(blocks: dict[int, set[int]]) -> str:
+    canonical = sorted(tuple(sorted(members)) for members in blocks.values())
+    raw = json.dumps(canonical, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def direct_future_fixed_point(
+    records,
+    adjacency: list[tuple[int, ...]],
+    max_splits: int,
+) -> tuple[list[int], dict[int, set[int]], dict[str, int | float]]:
+    """Event-driven coarsest successor-set partition.
+
+    Successor multiplicity and concrete action names are not protected.
+    Distinct target *states* inside one target block count only as presence of
+    that block.  Counts are maintained internally only so a target split can
+    update predecessor presence exactly.
+    """
+
+    n = len(records)
+    blocks, block_of, next_block_id = initialise_partition(records)
+    initial_blocks = len(blocks)
+
+    # Remove duplicate action targets because action multiplicity is quotiented.
+    unique_adjacency = [tuple(sorted(set(edges))) for edges in adjacency]
+
+    # Reverse incidence for internal target states only.  One source appears at
+    # most once per target because unique_adjacency removed duplicate moves.
+    reverse: list[list[int]] = [[] for _ in range(n)]
+    for source, edges in enumerate(unique_adjacency):
+        for target in edges:
+            if target >= 0:
+                reverse[target].append(source)
+
+    # Per source: number of DISTINCT target states currently lying in each
+    # internal block; external typed observations remain fixed negative keys.
+    successor_counts: list[dict[int, int]] = []
+    for edges in unique_adjacency:
+        counts: dict[int, int] = {}
+        for target in edges:
+            key = target if target < 0 else block_of[target]
+            counts[key] = counts.get(key, 0) + 1
+        successor_counts.append(counts)
+
+    queue = deque(sorted(blocks))
+    pending = set(blocks)
+    splits = 0
+    moved_states = 0
+    reverse_edge_updates = 0
+    blocks_reconsidered = 0
+    max_queue = len(queue)
+    largest_split_arity = 1
+
+    def state_signature(state: int) -> tuple[int, int, tuple[int, ...]]:
+        rec = records[state]
+        return (
+            rec.wdl,
+            int(rec.turn),
+            tuple(sorted(successor_counts[state])),
+        )
+
+    def enqueue(block_id: int) -> None:
+        nonlocal max_queue
+        if block_id in blocks and block_id not in pending:
+            pending.add(block_id)
+            queue.append(block_id)
+            if len(queue) > max_queue:
+                max_queue = len(queue)
+
+    while queue:
+        block_id = queue.popleft()
+        pending.discard(block_id)
+        members = blocks.get(block_id)
+        if not members or len(members) <= 1:
+            continue
+        blocks_reconsidered += 1
+
+        groups: dict[tuple[int, int, tuple[int, ...]], list[int]] = {}
+        for state in members:
+            groups.setdefault(state_signature(state), []).append(state)
+        if len(groups) == 1:
+            continue
+
+        splits += len(groups) - 1
+        if splits > max_splits:
+            raise AssertionError(
+                f"direct partition exceeded max_splits={max_splits}"
+            )
+        largest_split_arity = max(largest_split_arity, len(groups))
+
+        # Determinism: largest group keeps the old id; ties choose the group
+        # with the smallest member. Every moved group is <= half the old block.
+        grouped = sorted(
+            groups.values(),
+            key=lambda g: (-len(g), min(g)),
+        )
+        keep = grouped[0]
+        old_size = len(members)
+        blocks[block_id] = set(keep)
+
+        moved: list[tuple[int, int]] = []
+        new_ids: list[int] = []
+        for group in grouped[1:]:
+            new_id = next_block_id
+            next_block_id += 1
+            new_ids.append(new_id)
+            blocks[new_id] = set(group)
+            for state in group:
+                block_of[state] = new_id
+                moved.append((state, new_id))
+            if len(group) * 2 > old_size:
+                raise AssertionError("moved split part is not <= half old block")
+
+        # Target partition changed. Update only predecessor successor-block
+        # counts touched by moved target states.
+        dirty_source_blocks: set[int] = set()
+        for target_state, new_id in moved:
+            moved_states += 1
+            for source in reverse[target_state]:
+                counts = successor_counts[source]
+                old_count = counts.get(block_id, 0)
+                if old_count <= 0:
+                    raise AssertionError("missing predecessor old-block count")
+                if old_count == 1:
+                    del counts[block_id]
+                else:
+                    counts[block_id] = old_count - 1
+                counts[new_id] = counts.get(new_id, 0) + 1
+                reverse_edge_updates += 1
+                dirty_source_blocks.add(block_of[source])
+
+        # The just-created groups are homogeneous under the pre-update
+        # signatures, but self/cyclic predecessor updates can immediately make
+        # them dirty. Queue all affected source blocks. Also queue every new
+        # target block once: their appearance as distinct successor blocks may
+        # separate predecessors that were not touched by the retained part.
+        for dirty in sorted(dirty_source_blocks):
+            enqueue(dirty)
+        enqueue(block_id)
+        for new_id in new_ids:
+            enqueue(new_id)
+
+    # Fixed-point validation: every block has one protected successor signature.
+    for block_id, members in blocks.items():
+        if not members:
+            raise AssertionError("empty final block")
+        signatures = {state_signature(state) for state in members}
+        if len(signatures) != 1:
+            raise AssertionError(
+                f"non-fixed block {block_id}: {len(signatures)} signatures"
+            )
+
+    stats: dict[str, int | float] = {
+        "initial_blocks": initial_blocks,
+        "final_blocks": len(blocks),
+        "splits": splits,
+        "moved_states": moved_states,
+        "reverse_edge_updates": reverse_edge_updates,
+        "blocks_reconsidered": blocks_reconsidered,
+        "max_queue": max_queue,
+        "largest_split_arity": largest_split_arity,
+        "partition_sha256": partition_digest(blocks),
+    }
+    return block_of, blocks, stats
 
 
 def main() -> int:
@@ -136,7 +318,7 @@ def main() -> int:
         type=Path,
         default=Path("crystal_chess_kpvk_future_quotient_v1.json"),
     )
-    parser.add_argument("--max-iterations", type=int, default=512)
+    parser.add_argument("--max-splits", type=int, default=500000)
     args = parser.parse_args()
     started = time.time()
 
@@ -167,8 +349,6 @@ def main() -> int:
         index = {key: i for i, key in enumerate(keys)}
         assert len(index) == len(records), "duplicate canonical KPvK state"
 
-        # Adjacency uses non-negative ints for internal node ids and negative
-        # ints for typed boundary-exit observations.
         external_ids: dict[str, int] = {}
         external_labels: list[str] = []
         adjacency: list[tuple[int, ...]] = []
@@ -217,73 +397,41 @@ def main() -> int:
 
         assert one_ply_mismatches == 0, one_ply_mismatches
 
-        base_signatures = [(rec.wdl, int(rec.turn)) for rec in records]
-        classes, class_count = stable_ids(base_signatures)
-        trace: list[dict[str, int | float]] = []
-
-        def mapped_successors(node: int, cls: list[int]) -> tuple[int, ...]:
-            values = {
-                edge if edge < 0 else cls[edge]
-                for edge in adjacency[node]
-            }
-            return tuple(sorted(values))
-
-        for iteration in range(args.max_iterations + 1):
-            quotient_actions = sum(
-                len(mapped_successors(i, classes)) for i in range(len(records))
-            )
-            sizes = Counter(classes)
-            trace.append(
-                {
-                    "iteration": iteration,
-                    "classes": class_count,
-                    "state_compression_ratio": len(records) / class_count,
-                    "protected_action_classes": quotient_actions,
-                    "action_compression_ratio": (
-                        raw_legal_moves / quotient_actions
-                        if quotient_actions
-                        else 1.0
-                    ),
-                    "largest_class": max(sizes.values()),
-                    "singleton_classes": sum(v == 1 for v in sizes.values()),
-                }
-            )
-
-            signatures = [
-                (
-                    rec.wdl,
-                    int(rec.turn),
-                    mapped_successors(i, classes),
-                )
-                for i, rec in enumerate(records)
-            ]
-            new_classes, new_count = stable_ids(signatures)
-            if new_classes == classes:
-                break
-            classes = new_classes
-            class_count = new_count
-        else:
-            raise AssertionError(
-                f"future quotient did not stabilise within {args.max_iterations}"
-            )
-
-        final_action_classes = sum(
-            len(mapped_successors(i, classes)) for i in range(len(records))
+        fixed_started = time.time()
+        block_of, blocks, refine_stats = direct_future_fixed_point(
+            records, adjacency, args.max_splits
         )
-        class_sizes = Counter(classes)
-        size_hist = Counter(class_sizes.values())
+        fixed_seconds = time.time() - fixed_started
 
-        # Every final class must have exactly one recursive signature.
-        final_signatures: dict[int, tuple] = {}
-        for i, rec in enumerate(records):
+        class_sizes = Counter(block_of)
+        size_hist = Counter(class_sizes.values())
+        final_action_classes = 0
+        for state, edges in enumerate(adjacency):
+            successor_classes = {
+                edge if edge < 0 else block_of[edge]
+                for edge in edges
+            }
+            final_action_classes += len(successor_classes)
+
+        # Strong post-check: all members in a class expose exactly the same set
+        # of final protected successor classes.
+        class_signatures: dict[int, tuple] = {}
+        for state, rec in enumerate(records):
             sig = (
                 rec.wdl,
                 int(rec.turn),
-                mapped_successors(i, classes),
+                tuple(
+                    sorted(
+                        {
+                            edge if edge < 0 else block_of[edge]
+                            for edge in adjacency[state]
+                        }
+                    )
+                ),
             )
-            previous = final_signatures.setdefault(classes[i], sig)
+            previous = class_signatures.setdefault(block_of[state], sig)
             if previous != sig:
-                raise AssertionError("inhomogeneous fixed-point class")
+                raise AssertionError("inhomogeneous final future class")
 
         result = {
             "schema": SCHEMA,
@@ -291,6 +439,14 @@ def main() -> int:
             "base_crystal_authority": BASE_CRYSTAL_AUTHORITY,
             "v0_authority": V0_AUTHORITY,
             "protected_interface": PROTECTED_INTERFACE,
+            "lineage": {
+                "naive_depth_run": NAIVE_DEPTH_RUN,
+                "naive_depth_nonstabilisation_rounds": NAIVE_DEPTH_LOWER_BOUND,
+                "consequence": (
+                    "synchronous unfolding is rejected as the fixed-point "
+                    "algorithm; direct event-driven partition refinement is used"
+                ),
+            },
             "boundary": {
                 "material": "White K+P vs Black K",
                 "canonical_pawn_files": ["a", "b", "c", "d"],
@@ -318,10 +474,8 @@ def main() -> int:
                 "one_ply_minimax_mismatches": one_ply_mismatches,
             },
             "fixed_point": {
-                "iterations": trace[-1]["iteration"],
-                "initial_classes": trace[0]["classes"],
-                "final_classes": class_count,
-                "state_compression_ratio": len(records) / class_count,
+                **refine_stats,
+                "state_compression_ratio": len(records) / len(blocks),
                 "final_protected_action_classes": final_action_classes,
                 "action_compression_ratio": (
                     raw_legal_moves / final_action_classes
@@ -333,7 +487,7 @@ def main() -> int:
                 "class_size_histogram": {
                     str(k): v for k, v in sorted(size_hist.items())
                 },
-                "trace": trace,
+                "fixed_point_seconds": fixed_seconds,
             },
             "epistemic_boundary": {
                 "warranted_if_green": [
@@ -371,18 +525,20 @@ def main() -> int:
     )
     print("CRYSTAL_CHESS_FUTURE_QUOTIENT_V1=PASS")
     print(
-        f"states={len(records)} classes={class_count} "
-        f"state_compression={len(records) / class_count:.6f}x"
+        f"states={len(records)} classes={len(blocks)} "
+        f"state_compression={len(records) / len(blocks):.6f}x"
     )
     print(
         f"moves={raw_legal_moves}->{final_action_classes} "
         f"action_compression={raw_legal_moves / final_action_classes:.6f}x"
     )
     print(
-        f"iterations={trace[-1]['iteration']} "
+        f"splits={refine_stats['splits']} "
+        f"moved_states={refine_stats['moved_states']} "
         f"largest_class={max(class_sizes.values())} "
         f"singletons={sum(v == 1 for v in class_sizes.values())}"
     )
+    print(f"partition_sha256={refine_stats['partition_sha256']}")
     print(f"artifact={args.output}")
     return 0
 
