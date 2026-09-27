@@ -403,7 +403,6 @@ def main() -> int:
         for board in boards:
             winning_moves = solver.winning_black_moves(board)
             if not winning_moves:
-                target_losses += 1
                 continue
 
             target_wins += 1
