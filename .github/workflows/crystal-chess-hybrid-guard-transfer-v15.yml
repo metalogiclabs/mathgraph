@@ -50,8 +50,8 @@ jobs:
         run: |
           set -euo pipefail
           test -s /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz
-          sha256sum /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz
-          test "$(sha256sum /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz | awk '{print $1}')" = "10bb241dbadaa3b8229196ccf6e11587abd69554ff61802343451a4e691a7baa"
+          gzip -dc /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz | sha256sum
+          test "$(gzip -dc /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz | sha256sum | awk '{print $1}')" = "10bb241dbadaa3b8229196ccf6e11587abd69554ff61802343451a4e691a7baa"
 
       - name: Acquire exact five-piece Syzygy WDL authority
         run: |
