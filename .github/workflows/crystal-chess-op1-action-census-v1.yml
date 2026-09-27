@@ -1,0 +1,41 @@
+name: Crystal Chess Op1 Action Census V1
+
+on:
+  push:
+    branches:
+      - crystal-chess-op1-action-census-v1
+    paths:
+      - "experiments/crystal_chess_op1_action_census_v1.py"
+      - ".github/workflows/crystal-chess-op1-action-census-v1.yml"
+  workflow_dispatch:
+
+jobs:
+  op1-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install chess legality dependency
+        run: python -m pip install "python-chess==1.999"
+
+      - name: Probe exact Op1 8-piece action consequences
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-op1-action-census-v1
+          python experiments/crystal_chess_op1_action_census_v1.py \
+            --target 128 \
+            --max-attempts 1200 \
+            --output artifacts/crystal-chess-op1-action-census-v1/result.json \
+            | tee artifacts/crystal-chess-op1-action-census-v1/run.log
+          grep -q "CRYSTAL_CHESS_OP1_CENSUS=" artifacts/crystal-chess-op1-action-census-v1/run.log
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-op1-action-census-v1
+          path: artifacts/crystal-chess-op1-action-census-v1/
+          if-no-files-found: error
