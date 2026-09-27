@@ -55,10 +55,20 @@ V3_AUTHORITY = (
 DTZ_INTERFACE = "chess.syzygy.wdl-dtz.v1"
 
 
-def probe_dtz_safe(tablebase: chess.syzygy.Tablebase, board: chess.Board) -> int:
+def probe_dtz_safe(
+    tablebase: chess.syzygy.Tablebase,
+    board: chess.Board,
+    cache: dict[tuple[str, bool], int],
+) -> int:
+    key = (board.board_fen(), board.turn)
+    if key in cache:
+        return cache[key]
     if board.is_checkmate() or board.is_stalemate() or board.is_insufficient_material():
-        return 0
-    return int(tablebase.probe_dtz(board))
+        value = 0
+    else:
+        value = int(tablebase.probe_dtz(board))
+    cache[key] = value
+    return value
 
 
 def dtz_optimal_roles(
@@ -67,6 +77,7 @@ def dtz_optimal_roles(
     root_dtz: int,
     tablebase: chess.syzygy.Tablebase,
     wdl_cache: dict[tuple[str, bool], int],
+    dtz_cache: dict[tuple[str, bool], int],
 ) -> tuple[str, ...]:
     # The exact KPvK census contains only unconditional wins/draws/losses.
     # This lets us use the unconditional Syzygy Bellman recurrence directly.
@@ -91,7 +102,7 @@ def dtz_optimal_roles(
             # A capture or pawn move is itself the next zeroing move.
             candidate_dtz = 1 if root_wdl == 2 else -1
         else:
-            child_dtz = probe_dtz_safe(tablebase, child)
+            child_dtz = probe_dtz_safe(tablebase, child, dtz_cache)
             candidate_dtz = -child_dtz + (1 if root_wdl == 2 else -1)
 
         # Independent replay criterion: the chosen edge must satisfy the exact
@@ -166,6 +177,7 @@ def main() -> int:
     feature_names = [name for name, _ in bank]
     feature_fns = [fn for _, fn in bank]
     wdl_cache: dict[tuple[str, bool], int] = {}
+    dtz_cache: dict[tuple[str, bool], int] = {}
 
     with chess.syzygy.open_tablebase(
         str(args.tablebase_dir), load_wdl=True, load_dtz=True
@@ -181,14 +193,14 @@ def main() -> int:
         for i, rec in enumerate(records):
             board = make_kpvk(rec.wk, rec.bk, rec.pawn, rec.turn)
             if list(board.legal_moves):
-                root_dtz = probe_dtz_safe(tablebase, board)
+                root_dtz = probe_dtz_safe(tablebase, board, dtz_cache)
                 dtz_distribution[root_dtz] += 1
                 if rec.wdl not in (-2, 0, 2):
                     raise AssertionError(
                         f"KPvK unexpectedly contains WDL={rec.wdl}"
                     )
                 roles = dtz_optimal_roles(
-                    board, rec.wdl, root_dtz, tablebase, wdl_cache
+                    board, rec.wdl, root_dtz, tablebase, wdl_cache, dtz_cache
                 )
                 role_sets.append(roles)
                 nonterminal.append(i)
@@ -270,6 +282,10 @@ def main() -> int:
             "python": sys.version,
             "platform": platform.platform(),
             "numpy": np.__version__,
+        },
+        "cache": {
+            "wdl_positions": len(wdl_cache),
+            "dtz_positions": len(dtz_cache),
         },
         "elapsed_seconds": time.time() - started,
     }
