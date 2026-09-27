@@ -1,4 +1,5 @@
 import VerifiedDevelopmentalNavigation.ActionQuotient
+import VerifiedDevelopmentalNavigation.StrategyProgress
 
 namespace VerifiedDevelopmentalNavigation
 
