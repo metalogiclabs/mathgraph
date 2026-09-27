@@ -379,6 +379,16 @@ def main() -> int:
     rank_hist = Counter(r for r in rank if r is not None)
     proof_classes = len(set(proof["class_of"].values()))
     max_support = max(proof["class_support"].values()) if proof_classes else 0
+    certificate_payload = {
+        "class_of": sorted(proof["class_of"].items()),
+        "class_signature": sorted(proof["class_signature"].items()),
+        "chosen_witness": sorted(proof["chosen_witness"].items()),
+    }
+    certificate_sha256 = hashlib.sha256(
+        json.dumps(
+            certificate_payload, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
 
     result = {
         "schema": SCHEMA,
@@ -440,6 +450,11 @@ def main() -> int:
                 else 1.0
             ),
             "largest_class_support": max_support,
+            "certificate_sha256": certificate_sha256,
+            "certificate_binding": (
+                "hash of complete raw-state->proof-class map, recursive class "
+                "signatures, and existential witness choices"
+            ),
             "obligation_semantics": {
                 "white_turn": "EXISTS one rank-decreasing certified witness",
                 "black_turn": "FORALL legal replies have lower certified rank",
