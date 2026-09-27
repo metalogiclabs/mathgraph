@@ -89,10 +89,14 @@ def main():
     def slot_from_cap(e): return slot_read(e)[0]
     retained=(("account",f_account),("changed",f_changed),("slot_from_cap",slot_from_cap))
     transfer=acquire(retained,rec,(("post",f_post),("pre",f_pre)))
-    assert [n for n,_ in transfer]==["post"], [n for n,_ in transfer]
-    cap3=retained+(transfer[0],)
+    transfer_names=[n for n,_ in transfer]
+    assert set(transfer_names)=={"post","pre"}, transfer_names
+    # Both are valid residual encodings in a binary world because changed+pre
+    # determines post. Choose post canonically because EIP-7928 records post-state.
+    chosen=next(x for x in transfer if x[0]=="post")
+    cap3=retained+(chosen,)
     assert closes(cap3,rec)
-    heldout_acquisitions=[transfer[0][0]]
+    heldout_acquisitions=[chosen[0]]
     assert "slot_from_cap" not in heldout_acquisitions
 
     # Compound combined interface from retained verified capabilities.
@@ -105,7 +109,7 @@ def main():
     print("generation2_promoted=slot_read_composite dependency_closed=true")
     print("heldout_target=reconstruction")
     print("heldout_reused=slot_projection_of_verified_composite acquisition_cost=0")
-    print("heldout_new_acquisition=post")
+    print("heldout_residual_equivalent_repairs=post,pre canonical_eip_choice=post")
     print("ablation_slot_read_composite=FAIL_RESTORED")
     print("combined_interface_closes_dependency_and_reconstruction=true")
 
