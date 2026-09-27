@@ -6,7 +6,7 @@ on:
 jobs:
   executable-eels:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Checkout pinned EELS
@@ -14,17 +14,30 @@ jobs:
           git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
           cd /tmp/eels
           git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+          test "$(git rev-parse HEAD)" = "84e7d2c266e3319fc3882e72f379282bb1c40f2d"
       - name: Install uv
         uses: astral-sh/setup-uv@v6
-      - name: Install EELS test environment
+      - name: Install EELS workspace test environment
         working-directory: /tmp/eels
         run: uv sync --group test
-      - name: Execute official EIP-7928 tests
+      - name: Verify canonical fill runner configuration
         working-directory: /tmp/eels
         run: |
-          uv run pytest -q             tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists.py             tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists_cross_index.py             -k "noop_storage_write or delegated_storage_reads or delegated_storage_writes or withdrawal_contract_cross_index or consolidation_contract_cross_index or zero_value_transfer or account_access_target or net_zero_balance_transfer"             --disable-warnings
-      - name: Requalify Crystal held-out transfer
+          uv run fill --help >/tmp/fill-help.txt
+          test -f packages/testing/src/execution_testing/cli/pytest_commands/pytest_ini_files/pytest-fill.ini
+          grep -q "plugins.filler.filler" packages/testing/src/execution_testing/cli/pytest_commands/pytest_ini_files/pytest-fill.ini
+      - name: Fill selected official EIP-7928 fixtures with EELS
+        working-directory: /tmp/eels
         run: |
+          rm -rf /tmp/eels-fixtures
+          uv run fill             --from Amsterdam --until Amsterdam             --output=/tmp/eels-fixtures             --skip-index             --no-html             -n 1             -k "noop_storage_write or delegated_storage_reads or delegated_storage_writes or withdrawal_contract_cross_index or consolidation_contract_cross_index or zero_value_transfer or account_access_target or net_zero_balance_transfer"             tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists.py             tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists_cross_index.py
+          find /tmp/eels-fixtures -type f | sort | tee /tmp/eels-fixture-files.txt
+          test -s /tmp/eels-fixture-files.txt
+      - name: Inspect generated fixture BAL surface
+        run: python experiments/ethereum_crystal_v6/inspect_fixtures.py /tmp/eels-fixtures
+      - name: Requalify Crystal developmental lineage
+        run: |
+          python experiments/developmental_capability_growth_v1/run.py >/tmp/canonical-crystal.txt
           python experiments/ethereum_crystal_v4/run.py
           python experiments/ethereum_crystal_v5/run.py
       - name: Emit executable evidence boundary
