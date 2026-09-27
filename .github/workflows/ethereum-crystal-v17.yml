@@ -43,10 +43,14 @@ jobs:
         working-directory: /tmp/nethermind
         env:
           CRYSTAL_BAL_CORPUS: /tmp/crystal-v17-heldout.rlpbin
+          CRYSTAL_V17_OUTPUT: /tmp/crystal-v17-certificate.txt
         run: |
           dotnet test --project src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c release -- --filter "FullyQualifiedName~CrystalBlockAccessListCrossClientTests" | tee /tmp/crystal-v17-nethermind.txt
-          grep -q 'ETHEREUM_CRYSTAL_V17_NETHERMIND=PASS' /tmp/crystal-v17-nethermind.txt
-          grep -q 'nethermind_final_state_projection_parity_all=true' /tmp/crystal-v17-nethermind.txt
+          test -s /tmp/crystal-v17-certificate.txt
+          cat /tmp/crystal-v17-certificate.txt
+          grep -q 'protocol=ETHEREUM_CRYSTAL_V17_NETHERMIND' /tmp/crystal-v17-certificate.txt
+          grep -q 'records=1112' /tmp/crystal-v17-certificate.txt
+          grep -q 'nethermind_final_state_projection_parity_all=true' /tmp/crystal-v17-certificate.txt
       - name: Run Nethermind BAL decoder regression suite
         working-directory: /tmp/nethermind
         run: |
@@ -58,6 +62,7 @@ jobs:
           path: |
             /tmp/crystal-v17-nethermind.patch
             /tmp/crystal-v17-nethermind.txt
+            /tmp/crystal-v17-certificate.txt
             /tmp/crystal-v17-heldout.sha256
       - name: Seal
         run: |
