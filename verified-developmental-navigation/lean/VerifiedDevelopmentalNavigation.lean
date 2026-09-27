@@ -1,3 +1,5 @@
+import VerifiedDevelopmentalNavigation.CapabilityCalculus
+
 namespace VerifiedDevelopmentalNavigation
 
 /-!
