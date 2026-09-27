@@ -50,7 +50,7 @@ from crystal_chess_goal_certificate_v3 import (
 )
 
 
-SCHEMA = "mathgraph.crystal-chess.kppvk-zero-shot-transfer.v5b"
+SCHEMA = "mathgraph.crystal-chess.kppvk-zero-shot-transfer.v5c"
 V3_AUTHORITY = (
     "metalogiclabs/mathgraph@73be9f4159816bf18a3ca70a1fb3eeb9793536a6"
 )
@@ -137,7 +137,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tablebase-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--shard-count", type=int, default=1)
     args = parser.parse_args()
+    if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
+        raise SystemExit("invalid shard index/count")
     started = time.time()
 
     tb_files = sorted(args.tablebase_dir.glob("*.rtbw"))
@@ -180,7 +184,14 @@ def main() -> int:
         by_role: Counter[str] = Counter()
         wrong_examples: list[dict[str, object]] = []
 
-        for p1, p2 in combinations(pawn_squares, 2):
+        pawn_pairs = list(combinations(pawn_squares, 2))
+        selected_pairs = [
+            pair
+            for pair_index, pair in enumerate(pawn_pairs)
+            if pair_index % args.shard_count == args.shard_index
+        ]
+
+        for p1, p2 in selected_pairs:
             for wk in chess.SQUARES:
                 if wk in (p1, p2):
                     continue
@@ -301,6 +312,12 @@ def main() -> int:
             "python": sys.version,
             "platform": platform.platform(),
             "numpy": np.__version__,
+        },
+        "shard": {
+            "index": args.shard_index,
+            "count": args.shard_count,
+            "selected_pawn_pairs": len(selected_pairs),
+            "total_pawn_pairs": len(pawn_pairs),
         },
         "coverage": {
             "candidate_assignments": candidates,
