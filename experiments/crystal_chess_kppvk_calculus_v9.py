@@ -21,11 +21,13 @@ Capability order
    labels.
 2. In each KPPvK state, instantiate that single-pawn capability against each
    pawn independently.
-3. Admit a transported move only when exact KPPvK Syzygy WDL+DTZ verifies that
-   it realizes the root Bellman value.
-4. If neither transported instance is exact, use one exact Syzygy-backed
-   residual/backstop move. This is the Complete-Then-Specialize correctness
-   floor, not a learned KPPvK capability.
+3. Admit a transported move only when exact KPPvK Syzygy WDL verifies that
+   it preserves the protected result.
+4. Expose every exact WDL-preserving move as a Syzygy-backed alternative
+   backstop capability. This is the Complete-Then-Specialize correctness
+   floor, not a learned KPPvK capability. The generic calculus arbitrates
+   among alternatives by forced progress / safety rather than a hand-written
+   richer-material DTZ recurrence.
 5. Compile two-ply White-move/all-Black-replies capability steps and require
    the generic V8 calculus to reconstruct the exact richer-material win/draw
    partition with zero internal residuals.
@@ -157,9 +159,8 @@ def in_root_slice(board: chess.Board) -> bool:
 def enumerate_root_slice(
     tablebase: chess.syzygy.Tablebase,
     wdl_cache: dict[tuple[str, bool], int],
-    dtz_cache: dict[tuple[str, bool], int],
-) -> tuple[list[tuple[int, int, int, int, int, int]], Counter[int]]:
-    records: list[tuple[int, int, int, int, int, int]] = []
+) -> tuple[list[tuple[int, int, int, int, int]], Counter[int]]:
+    records: list[tuple[int, int, int, int, int]] = []
     wdl_counts: Counter[int] = Counter()
     pawns = root_pawn_squares()
 
@@ -177,8 +178,7 @@ def enumerate_root_slice(
                 wdl = probe_wdl(tablebase, board, wdl_cache)
                 if wdl not in (-2, -1, 0, 1, 2):
                     raise AssertionError(wdl)
-                dtz = probe_dtz_safe(tablebase, board, dtz_cache)
-                records.append((wk, bk, p0, p1, wdl, dtz))
+                records.append((wk, bk, p0, p1, wdl))
                 wdl_counts[wdl] += 1
     return records, wdl_counts
 
@@ -268,64 +268,17 @@ def role_to_move(
     return candidate if candidate in board.legal_moves else None
 
 
-def exact_root_move(
+def preserves_root_wdl(
     board: chess.Board,
     move: chess.Move,
     root_wdl: int,
-    root_dtz: int,
     tablebase: chess.syzygy.Tablebase,
     wdl_cache: dict[tuple[str, bool], int],
-    dtz_cache: dict[tuple[str, bool], int],
 ) -> bool:
     child = board.copy(stack=False)
     child.push(move)
     child_wdl = probe_wdl(tablebase, child, wdl_cache)
-
-    if -child_wdl != root_wdl:
-        return False
-
-    # Syzygy WDL +/-1 are 50-move draws. For this first richer slice, if they
-    # occur we require exact WDL preservation but do not promote them to a
-    # forced-win progress claim. The calculus classifies only +2 as forced win.
-    if root_wdl in (-1, 1):
-        return True
-    if root_wdl == 0:
-        return True
-
-    if child.halfmove_clock == 0:
-        candidate_dtz = 1 if root_wdl == 2 else -1
-    else:
-        child_dtz = probe_dtz_safe(tablebase, child, dtz_cache)
-        candidate_dtz = -child_dtz + (1 if root_wdl == 2 else -1)
-    return candidate_dtz == root_dtz
-
-
-def exact_optimal_moves(
-    board: chess.Board,
-    root_wdl: int,
-    root_dtz: int,
-    tablebase: chess.syzygy.Tablebase,
-    wdl_cache: dict[tuple[str, bool], int],
-    dtz_cache: dict[tuple[str, bool], int],
-) -> list[chess.Move]:
-    moves = [
-        move
-        for move in board.legal_moves
-        if exact_root_move(
-            board,
-            move,
-            root_wdl,
-            root_dtz,
-            tablebase,
-            wdl_cache,
-            dtz_cache,
-        )
-    ]
-    if not moves:
-        raise AssertionError(
-            f"no exact root move wdl={root_wdl} dtz={root_dtz} fen={board.fen()}"
-        )
-    return moves
+    return -child_wdl == root_wdl
 
 
 def projected_features(
@@ -386,16 +339,16 @@ def main() -> int:
         ) = train_frozen_kpvk_policy(tb, wdl_cache, dtz_cache)
 
         records, wdl_counts = enumerate_root_slice(
-            tb, wdl_cache, dtz_cache
+            tb, wdl_cache
         )
         state_id: dict[tuple[int, int, int, int], str] = {}
-        sid_record: dict[str, tuple[int, int, int, int, int, int]] = {}
+        sid_record: dict[str, tuple[int, int, int, int, int]] = {}
         expected_wins: set[str] = set()
         expected_draws: set[str] = set()
         expected_losses: set[str] = set()
 
         for idx, rec in enumerate(records):
-            wk, bk, p0, p1, wdl, _dtz = rec
+            wk, bk, p0, p1, wdl = rec
             sid = f"s{idx}"
             key = (wk, bk, p0, p1)
             state_id[key] = sid
@@ -407,89 +360,22 @@ def main() -> int:
             else:
                 expected_draws.add(sid)
 
-        transported = 0
+        transported_states = 0
         transported_anchor0 = 0
         transported_anchor1 = 0
-        residual_backstop = 0
+        transported_steps = 0
+        backstop_steps = 0
         transported_role_frequency = Counter()
-        residual_role_frequency = Counter()
+        backstop_role_frequency = Counter()
         steps: list[CapabilityStep] = []
 
-        for sid, rec in sid_record.items():
-            wk, bk, p0, p1, root_wdl, root_dtz = rec
-            board = make_kppvk(wk, bk, p0, p1, chess.WHITE)
-            pawns = (p0, p1)
-
-            candidate_rows = np.asarray(
-                [
-                    projected_features(wk, bk, p0, feature_fns),
-                    projected_features(wk, bk, p1, feature_fns),
-                ],
-                dtype=np.int16,
-            )
-            predicted = [str(x) for x in base_tree.predict(candidate_rows)]
-
-            chosen_move: chess.Move | None = None
-            chosen_capability: str | None = None
-            chosen_support: frozenset[str] | None = None
-            chosen_anchor = None
-
-            for anchor_index, (anchor, role_label) in enumerate(
-                zip(pawns, predicted)
-            ):
-                candidate = role_to_move(board, role_label, anchor)
-                if candidate is None:
-                    continue
-                if exact_root_move(
-                    board,
-                    candidate,
-                    root_wdl,
-                    root_dtz,
-                    tb,
-                    wdl_cache,
-                    dtz_cache,
-                ):
-                    chosen_move = candidate
-                    chosen_capability = (
-                        f"transport:kpvk-anchor{anchor_index}:{role_label}"
-                    )
-                    chosen_support = frozenset(
-                        {
-                            SYZYGY_SUPPORT,
-                            f"capability:kpvk-role:{role_label}",
-                        }
-                    )
-                    chosen_anchor = anchor_index
-                    transported_role_frequency[role_label] += 1
-                    transported += 1
-                    if anchor_index == 0:
-                        transported_anchor0 += 1
-                    else:
-                        transported_anchor1 += 1
-                    break
-
-            if chosen_move is None:
-                exact_moves = exact_optimal_moves(
-                    board,
-                    root_wdl,
-                    root_dtz,
-                    tb,
-                    wdl_cache,
-                    dtz_cache,
-                )
-                chosen_move = min(exact_moves, key=lambda m: m.uci())
-                residual_role = move_role(board, chosen_move)
-                chosen_capability = f"residual:{residual_role}"
-                chosen_support = frozenset(
-                    {SYZYGY_SUPPORT, RESIDUAL_SUPPORT}
-                )
-                residual_role_frequency[residual_role] += 1
-                residual_backstop += 1
-
+        def macro_outcomes(
+            board: chess.Board,
+            move: chess.Move,
+        ) -> tuple[str, ...]:
             after_white = board.copy(stack=False)
-            after_white.push(chosen_move)
+            after_white.push(move)
             outcomes: set[str] = set()
-
             black_replies = list(after_white.legal_moves)
             if not black_replies:
                 outcomes.add(
@@ -511,19 +397,113 @@ def main() -> int:
                         outcomes.add(
                             white_value_outcome(child, tb, wdl_cache)
                         )
+            return tuple(sorted(outcomes))
 
-            steps.append(
-                CapabilityStep(
-                    source=sid,
-                    capability_id=chosen_capability,
-                    outcomes=tuple(sorted(outcomes)),
-                    support_refs=chosen_support,
-                    evidence_refs=(
-                        V8_AUTHORITY,
-                        "authority:syzygy-kppvk",
-                    ),
-                )
+        for sid, rec in sid_record.items():
+            wk, bk, p0, p1, root_wdl = rec
+            board = make_kppvk(wk, bk, p0, p1, chess.WHITE)
+            pawns = (p0, p1)
+
+            candidate_rows = np.asarray(
+                [
+                    projected_features(wk, bk, p0, feature_fns),
+                    projected_features(wk, bk, p1, feature_fns),
+                ],
+                dtype=np.int16,
             )
+            predicted = [str(x) for x in base_tree.predict(candidate_rows)]
+
+            exact_transport_moves: dict[str, tuple[chess.Move, int, str]] = {}
+            for anchor_index, (anchor, role_label) in enumerate(
+                zip(pawns, predicted)
+            ):
+                candidate = role_to_move(board, role_label, anchor)
+                if candidate is None:
+                    continue
+                if preserves_root_wdl(
+                    board,
+                    candidate,
+                    root_wdl,
+                    tb,
+                    wdl_cache,
+                ):
+                    key = candidate.uci()
+                    exact_transport_moves.setdefault(
+                        key, (candidate, anchor_index, role_label)
+                    )
+
+            if exact_transport_moves:
+                transported_states += 1
+
+            outcome_cache: dict[str, tuple[str, ...]] = {}
+            for key, (candidate, anchor_index, role_label) in sorted(
+                exact_transport_moves.items()
+            ):
+                outcomes = outcome_cache.setdefault(
+                    key, macro_outcomes(board, candidate)
+                )
+                steps.append(
+                    CapabilityStep(
+                        source=sid,
+                        capability_id=(
+                            f"transport:kpvk-anchor{anchor_index}:{role_label}"
+                        ),
+                        outcomes=outcomes,
+                        support_refs=frozenset(
+                            {
+                                SYZYGY_SUPPORT,
+                                f"capability:kpvk-role:{role_label}",
+                            }
+                        ),
+                        evidence_refs=(
+                            V8_AUTHORITY,
+                            "authority:syzygy-kppvk",
+                        ),
+                    )
+                )
+                transported_steps += 1
+                transported_role_frequency[role_label] += 1
+                if anchor_index == 0:
+                    transported_anchor0 += 1
+                else:
+                    transported_anchor1 += 1
+
+            # Complete-Then-Specialize backstop: expose every exact
+            # WDL-preserving move as an alternative certified capability.
+            # The calculus—not a hand-written richer-material scorer—decides
+            # which one actually belongs to the forced-goal attractor or
+            # greatest safety kernel.
+            preserving_moves = [
+                move
+                for move in board.legal_moves
+                if preserves_root_wdl(
+                    board, move, root_wdl, tb, wdl_cache
+                )
+            ]
+            if not preserving_moves and list(board.legal_moves):
+                raise AssertionError(
+                    f"no WDL-preserving legal move: {board.fen()}"
+                )
+
+            for move in preserving_moves:
+                key = move.uci()
+                outcomes = outcome_cache.setdefault(
+                    key, macro_outcomes(board, move)
+                )
+                role_label = move_role(board, move)
+                steps.append(
+                    CapabilityStep(
+                        source=sid,
+                        capability_id=f"backstop:{key}",
+                        outcomes=outcomes,
+                        support_refs=frozenset(
+                            {SYZYGY_SUPPORT, RESIDUAL_SUPPORT}
+                        ),
+                        evidence_refs=("authority:syzygy-kppvk",),
+                    )
+                )
+                backstop_steps += 1
+                backstop_role_frequency[role_label] += 1
 
     states = set(sid_record) | {GOAL, DRAW, LOSS}
     all_base_supports = {
@@ -536,10 +516,12 @@ def main() -> int:
         *all_base_supports,
     }
 
+    forbidden_states = {LOSS} | expected_losses
+
     result = compile_strategy_calculus(
         states=states,
         goals={GOAL},
-        forbidden={LOSS},
+        forbidden=forbidden_states,
         safe_terminals={DRAW},
         steps=steps,
         live_supports=live_supports,
@@ -548,7 +530,7 @@ def main() -> int:
         result,
         states=states,
         goals={GOAL},
-        forbidden={LOSS},
+        forbidden=forbidden_states,
         safe_terminals={DRAW},
         steps=steps,
         live_supports=live_supports,
@@ -587,7 +569,7 @@ def main() -> int:
     base_only = compile_strategy_calculus(
         states=states,
         goals={GOAL},
-        forbidden={LOSS},
+        forbidden=forbidden_states,
         safe_terminals={DRAW},
         steps=steps,
         live_supports=base_only_supports,
@@ -640,16 +622,16 @@ def main() -> int:
             "expected_losses": len(expected_losses),
         },
         "capability_cover": {
-            "transported_exact_states": transported,
-            "transported_ratio": transported / len(records),
-            "transported_anchor0": transported_anchor0,
-            "transported_anchor1": transported_anchor1,
+            "transported_exact_states": transported_states,
+            "transported_state_ratio": transported_states / len(records),
+            "transported_steps": transported_steps,
+            "transported_anchor0_steps": transported_anchor0,
+            "transported_anchor1_steps": transported_anchor1,
             "transported_role_frequency": dict(
                 transported_role_frequency
             ),
-            "residual_backstop_states": residual_backstop,
-            "residual_ratio": residual_backstop / len(records),
-            "residual_role_frequency": dict(residual_role_frequency),
+            "exact_backstop_steps": backstop_steps,
+            "backstop_role_frequency": dict(backstop_role_frequency),
         },
         "calculus": {
             "capability_steps": len(steps),
@@ -716,8 +698,10 @@ def main() -> int:
         f"draws={len(expected_draws)} losses={len(expected_losses)}"
     )
     print(
-        f"transported={transported} ratio={transported/len(records):.6f} "
-        f"residual={residual_backstop} ratio={residual_backstop/len(records):.6f}"
+        f"transported_states={transported_states} "
+        f"ratio={transported_states/len(records):.6f} "
+        f"transport_steps={transported_steps} "
+        f"backstop_steps={backstop_steps}"
     )
     print(
         f"calculus wins={len(forced_internal)}/{len(expected_wins)} "
