@@ -118,3 +118,41 @@ def test_safe_terminal_needs_no_outgoing_capability():
     )
     assert result.safety_states == frozenset({"draw-terminal"})
     assert result.decision_map["draw-terminal"].mode == "safe_terminal"
+
+
+def test_one_bad_adversarial_outcome_blocks_forced_goal():
+    states = {"s", "goal", "bad"}
+    steps = [
+        CapabilityStep("s", "unsafe-fork", ("goal", "bad"), frozenset({"w"})),
+        CapabilityStep("bad", "fake-escape", ("goal",), frozenset({"w"})),
+    ]
+    result = compile_strategy_calculus(
+        states=states,
+        goals={"goal"},
+        forbidden={"bad"},
+        safe_terminals=set(),
+        steps=steps,
+        live_supports={"w"},
+    )
+    assert result.forced_goal_states == frozenset({"goal"})
+    assert "s" not in result.decision_map
+
+
+def test_forbidden_state_cannot_reenter_goal_attractor_via_outgoing_edge():
+    states = {"goal", "forbidden"}
+    steps = [
+        CapabilityStep(
+            "forbidden",
+            "outgoing-but-illegal-for-goal-closure",
+            ("goal",),
+            frozenset({"w"}),
+        )
+    ]
+    winning, _rank, _witness = forced_goal_attractor(
+        states,
+        {"goal"},
+        steps,
+        {"w"},
+        {"forbidden"},
+    )
+    assert winning == frozenset({"goal"})
