@@ -7,6 +7,7 @@ on:
     paths:
       - "mathgraph/capability_calculus.py"
       - "tests/test_capability_calculus.py"
+      - "verified-developmental-navigation/lean/**"
       - "experiments/crystal_chess_capability_calculus_v8.py"
       - ".github/workflows/crystal-chess-capability-calculus-v8.yml"
       - "mathgraph/crystal.py"
@@ -36,6 +37,13 @@ jobs:
 
       - name: Compile experiment
         run: python -m py_compile experiments/crystal_chess_capability_calculus_v8.py
+
+      - name: Install Lean toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: verified-developmental-navigation/lean
+          build: true
+          test: false
 
       - name: Acquire exact Syzygy WDL plus DTZ authority
         run: |
