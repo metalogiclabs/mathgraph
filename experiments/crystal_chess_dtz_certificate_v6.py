@@ -64,37 +64,48 @@ def probe_dtz_safe(tablebase: chess.syzygy.Tablebase, board: chess.Board) -> int
 def dtz_optimal_roles(
     board: chess.Board,
     root_wdl: int,
+    root_dtz: int,
     tablebase: chess.syzygy.Tablebase,
     wdl_cache: dict[tuple[str, bool], int],
 ) -> tuple[str, ...]:
-    scored: list[tuple[chess.Move, int, int]] = []
+    # The exact KPvK census contains only unconditional wins/draws/losses.
+    # This lets us use the unconditional Syzygy Bellman recurrence directly.
+    if root_wdl not in (-2, 0, 2):
+        raise AssertionError(f"unexpected cursed/blessed KPvK state: {root_wdl}")
+
+    roles: set[str] = set()
+    legal_count = 0
     for move in board.legal_moves:
+        legal_count += 1
         child = board.copy(stack=False)
         child.push(move)
         child_wdl = probe_wdl(tablebase, child, wdl_cache)
-        child_dtz = probe_dtz_safe(tablebase, child)
-        scored.append((move, child_wdl, child_dtz))
 
-    if not scored:
+        # First preserve the exact game-theoretic WDL value.
+        if -child_wdl != root_wdl:
+            continue
+
+        if root_wdl == 0:
+            candidate_dtz = 0
+        elif child.halfmove_clock == 0:
+            # A capture or pawn move is itself the next zeroing move.
+            candidate_dtz = 1 if root_wdl == 2 else -1
+        else:
+            child_dtz = probe_dtz_safe(tablebase, child)
+            candidate_dtz = -child_dtz + (1 if root_wdl == 2 else -1)
+
+        # Independent replay criterion: the chosen edge must satisfy the exact
+        # root DTZ Bellman value, including zeroing moves.
+        if candidate_dtz == root_dtz:
+            roles.add(move_role(board, move))
+
+    if legal_count == 0:
         return ()
-
-    # Child values are from the opponent's point of view. Our exact minimax
-    # objective is therefore: minimize child WDL, then maximize child DTZ.
-    best_child_wdl = min(wdl for _move, wdl, _dtz in scored)
-    if -best_child_wdl != root_wdl:
-        raise AssertionError(
-            f"WDL minimax mismatch root={root_wdl} child={best_child_wdl} fen={board.fen()}"
-        )
-    best_child_dtz = max(
-        dtz for _move, wdl, dtz in scored if wdl == best_child_wdl
-    )
-    roles = {
-        move_role(board, move)
-        for move, wdl, dtz in scored
-        if wdl == best_child_wdl and dtz == best_child_dtz
-    }
     if not roles:
-        raise AssertionError("nonterminal state has no DTZ-optimal role")
+        raise AssertionError(
+            f"nonterminal state has no root-DTZ-realizing role "
+            f"wdl={root_wdl} dtz={root_dtz} fen={board.fen()}"
+        )
     return tuple(sorted(roles))
 
 
@@ -172,8 +183,12 @@ def main() -> int:
             if list(board.legal_moves):
                 root_dtz = probe_dtz_safe(tablebase, board)
                 dtz_distribution[root_dtz] += 1
+                if rec.wdl not in (-2, 0, 2):
+                    raise AssertionError(
+                        f"KPvK unexpectedly contains WDL={rec.wdl}"
+                    )
                 roles = dtz_optimal_roles(
-                    board, rec.wdl, tablebase, wdl_cache
+                    board, rec.wdl, root_dtz, tablebase, wdl_cache
                 )
                 role_sets.append(roles)
                 nonterminal.append(i)
@@ -206,9 +221,11 @@ def main() -> int:
         "v3_authority": V3_AUTHORITY,
         "protected_interfaces": [PROTECTED_INTERFACE, DTZ_INTERFACE],
         "method": {
-            "move_order": "min child WDL, then max child DTZ",
+            "move_order": "exact unconditional Syzygy DTZ Bellman recurrence",
             "child_view": "opponent side-to-move",
-            "obligation": "emit one exact Syzygy WDL+DTZ-optimal relative move role",
+            "zeroing_move_rule": "candidate DTZ = +1 on win / -1 on loss",
+            "nonzeroing_rule": "candidate DTZ = -child_DTZ +1 on win / -1 on loss",
+            "obligation": "emit one role whose concrete legal move exactly realizes root WDL and root DTZ",
             "representation": "generic geometry -> symbolic CART policy",
         },
         "authority": {
@@ -237,7 +254,7 @@ def main() -> int:
         },
         "epistemic_boundary": {
             "warranted_if_green": [
-                "every nonterminal state in the declared canonical KPvK cover receives a role matching at least one exact Syzygy WDL+DTZ-optimal legal move",
+                "every nonterminal state in the declared canonical KPvK cover receives a role matching at least one legal move that exactly reproduces the root Syzygy WDL and DTZ Bellman value",
                 "the symbolic policy is a compact certificate constructor for the exact tablebase objective, not a replacement authority",
             ],
             "external_semantic_fact": (
