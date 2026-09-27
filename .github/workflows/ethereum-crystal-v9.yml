@@ -1,0 +1,48 @@
+name: ethereum-crystal-v9-consumer-compiler
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  broader-heldout-consumer-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+          test "$(git rev-parse HEAD)" = "84e7d2c266e3319fc3882e72f379282bb1c40f2d"
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate full official EIP-7928 Amsterdam corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v9-fixtures
+          uv run fill             --from Amsterdam --until Amsterdam             --output=/tmp/eels-v9-fixtures             --skip-index             --no-html             -n 2             tests/amsterdam/eip7928_block_level_access_lists
+          find /tmp/eels-v9-fixtures -type f -name '*.json' -print0 | sort -z | xargs -0 sha256sum > /tmp/eels-v9-fixture-sha256.txt
+          test -s /tmp/eels-v9-fixture-sha256.txt
+      - name: Run fixture-native consumer compiler benchmark
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v9/consumer_views.py             /tmp/eels-v9-fixtures /tmp/crystal-v9-certificate.json
+          cat /tmp/crystal-v9-certificate.json
+      - name: Requalify exact V8 lineage on original protected slice
+        run: |
+          python experiments/developmental_capability_growth_v1/run.py >/tmp/canonical-crystal.txt
+          python experiments/ethereum_crystal_v4/run.py
+          python experiments/ethereum_crystal_v5/run.py
+      - name: Upload V9 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v9-consumer-evidence
+          path: |
+            /tmp/crystal-v9-certificate.json
+            /tmp/eels-v9-fixture-sha256.txt
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V9_CONSUMER_COMPILER=PASS"
+          echo "EELS_PIN=84e7d2c266e3319fc3882e72f379282bb1c40f2d"
