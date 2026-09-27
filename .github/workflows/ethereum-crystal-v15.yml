@@ -48,6 +48,8 @@ jobs:
           grep -q 'reth_bal_state_update_parity_all=true' /tmp/crystal-v15-reth.txt
       - name: Run Reth snap-sync regression suite
         working-directory: /tmp/reth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v15-heldout.rlpbin
         run: cargo test -p reth-snap-sync --release
       - name: Upload V15 evidence
         uses: actions/upload-artifact@v4
