@@ -219,18 +219,18 @@ def main() -> int:
 
                 split_events += 1
 
-                # Hopcroft rule: if b was already scheduled, both children
-                # must eventually act as splitters. Otherwise the smaller child
-                # suffices to preserve O(m log n)-style refinement behaviour.
-                if b in queued_internal:
-                    if new_b not in queued_internal:
-                        queue.append(("internal", new_b))
-                        queued_internal.add(new_b)
-                    # b remains queued already.
-                else:
-                    if new_b not in queued_internal:
-                        queue.append(("internal", new_b))
-                        queued_internal.add(new_b)
+                # This is a nondeterministic unlabeled transition system:
+                # equality requires the full SET of successor blocks.  After a
+                # split, adjacency to the old union plus adjacency to only one
+                # child does not determine adjacency to the other child (a
+                # state may reach both). Therefore both children must act as
+                # future splitters unless already queued.
+                if b not in queued_internal:
+                    queue.append(("internal", b))
+                    queued_internal.add(b)
+                if new_b not in queued_internal:
+                    queue.append(("internal", new_b))
+                    queued_internal.add(new_b)
 
             max_queue = max(max_queue, len(queue))
 
