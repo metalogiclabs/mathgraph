@@ -4,8 +4,9 @@
 Crystal is allowed to bypass search only inside previously-qualified exact
 boundaries:
 * V14 complete KPPvK ranks 2..6 with the frozen pair@8 guard.
-* V15 complete KPPPvK target: one pawn each on b,c,d, ranks 2..4, with the
-  byte-identical V14 guard required pairwise against every other pawn.
+* V15 complete KPPPvK target: one pawn each on b,c,d, ranks 2..4.
+* V16 complete KPPPPvK target: one pawn each on b,c,d,e, ranks 2..4.
+  Both richer rungs reuse the byte-identical V14 guard universally pairwise.
 
 All other positions, unsupported UCI search modes, and disabled Crystal states
 are forwarded to the fallback engine unchanged.
@@ -31,7 +32,6 @@ from crystal_chess_verified_hybrid_search_v14 import (
     candidate_bindings,
     signature,
 )
-from crystal_chess_hybrid_guard_transfer_v15 import guarded_candidates
 
 ENGINE_NAME = "CrystalChess-Stockfish-Hybrid-V17"
 ENGINE_AUTHOR = "Metalogic Labs"
@@ -42,6 +42,10 @@ V14_AUTHORITY = (
 V15_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-hybrid-guard-transfer-v15"
     "@7f258e22057e8ffe1bb51c72ddca5d1ca3316949"
+)
+V16_AUTHORITY = (
+    "metalogiclabs/mathgraph:crystal-chess-hybrid-guard-transfer-v16"
+    "@80599fe6c9dd509a18119bcee6f52f91290d7b33"
 )
 
 
@@ -76,6 +80,43 @@ def load_roles(path: Path) -> tuple[dict[str, object], dict[tuple[int, int, int,
     if not roles:
         raise ValueError("empty role map")
     return header, roles
+
+
+def universal_pair_candidates(
+    board: chess.Board,
+    pawns: tuple[int, ...],
+    wk: int,
+    bk: int,
+    turn: bool,
+    role_map: dict[tuple[int, int, int, int], str],
+    tier: int,
+    safe_signatures: set[tuple[object, ...]],
+) -> list[chess.Move]:
+    """Apply the frozen V14 pair contract against every other pawn."""
+    seen: set[chess.Move] = set()
+    out: list[chess.Move] = []
+    for anchor in pawns:
+        role = role_map[(wk, bk, anchor, int(turn))]
+        other0 = next(other for other in pawns if other != anchor)
+        bindings = candidate_bindings(
+            board, anchor, other0, wk, bk, turn, role_map
+        )
+        move = None
+        for b_anchor, _b_other, b_role, candidate in bindings:
+            if b_anchor == anchor and b_role == role:
+                move = candidate
+                break
+        if move is None:
+            continue
+        if all(
+            signature(board, anchor, other, role, tier) in safe_signatures
+            for other in pawns
+            if other != anchor
+        ):
+            if move not in seen:
+                seen.add(move)
+                out.append(move)
+    return out
 
 
 def parse_position_command(line: str) -> chess.Board:
@@ -173,7 +214,7 @@ class CrystalOracle:
                 return None
             if not all(1 <= chess.square_rank(p) <= 3 for p in pawns):
                 return None
-            candidates = guarded_candidates(
+            candidates = universal_pair_candidates(
                 board,
                 pawns,
                 wk,
@@ -182,10 +223,30 @@ class CrystalOracle:
                 self.role_map,
                 self.tier,
                 self.safe_signatures,
-                block_connected_front=False,
             )
             if candidates:
                 return candidates[0], "V15_KPPPvK_universal_pair"
+            return None
+
+        if pure_white_pawns_vs_black_king(board, 4):
+            pawns = tuple(sorted(board.pieces(chess.PAWN, chess.WHITE)))
+            files = {chess.square_file(p) for p in pawns}
+            if files != {1, 2, 3, 4}:
+                return None
+            if not all(1 <= chess.square_rank(p) <= 3 for p in pawns):
+                return None
+            candidates = universal_pair_candidates(
+                board,
+                pawns,
+                wk,
+                bk,
+                board.turn,
+                self.role_map,
+                self.tier,
+                self.safe_signatures,
+            )
+            if candidates:
+                return candidates[0], "V16_KPPPPvK_universal_pair"
             return None
 
         return None
@@ -354,7 +415,7 @@ class HybridUCI:
                     move, authority = choice
                     self.emit(
                         "info string Crystal certified "
-                        f"{authority} {V14_AUTHORITY} {V15_AUTHORITY}"
+                        f"{authority} {V14_AUTHORITY} {V15_AUTHORITY} {V16_AUTHORITY}"
                     )
                     self.emit(
                         f"info depth 0 seldepth 0 nodes 0 time 0 pv {move.uci()}"
