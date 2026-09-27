@@ -1,0 +1,48 @@
+name: ethereum-crystal-v10-native
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  native-heldout-replication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate broad official EIP-7928 corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v10-fixtures
+          uv run fill --from Amsterdam --until Amsterdam             --output=/tmp/eels-v10-fixtures --skip-index --no-html -n 2             tests/amsterdam/eip7928_block_level_access_lists
+      - name: Export frozen V9 held-out canonical RLP
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py             /tmp/eels-v10-fixtures /tmp/crystal-v10-heldout.rlpbin
+          sha256sum /tmp/crystal-v10-heldout.rlpbin > /tmp/crystal-v10-heldout.sha256
+      - name: Compile optimized native consumer
+        run: |
+          rustc --version
+          rustc --edition=2021 -O experiments/ethereum_crystal_v10/native_consumer.rs -o /tmp/crystal-v10-native
+      - name: Run native replication
+        run: |
+          /tmp/crystal-v10-native /tmp/crystal-v10-heldout.rlpbin /tmp/crystal-v10-certificate.json
+          cat /tmp/crystal-v10-certificate.json
+      - name: Upload V10 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v10-native-evidence
+          path: |
+            /tmp/crystal-v10-certificate.json
+            /tmp/crystal-v10-heldout.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V10_NATIVE_REPLICATION=PASS"
+          echo "PARENT_V9_RUN=36354473773"
