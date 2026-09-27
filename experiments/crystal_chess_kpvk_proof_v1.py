@@ -184,13 +184,17 @@ def solve_white_attractor(records, edges):
         if not edges[i] and board.is_checkmate() and board.turn == chess.BLACK:
             rank[i] = 0
 
-    changed = True
     passes = 0
-    while changed:
-        changed = False
+    while True:
+        # Synchronous Kleene layering: the new layer may depend only on
+        # strictly earlier layers. This makes the rank canonical/minimal
+        # rather than dependent on enumeration order within a sweep.
+        previous = list(rank)
+        updates: list[tuple[int, int]] = []
         passes += 1
+
         for i, rec in enumerate(records):
-            if rank[i] is not None:
+            if previous[i] is not None:
                 continue
             es = edges[i]
             if not es:
@@ -199,7 +203,7 @@ def solve_white_attractor(records, edges):
             target_ranks: list[int | None] = []
             for edge in es:
                 if edge.internal_target is not None:
-                    target_ranks.append(rank[edge.internal_target])
+                    target_ranks.append(previous[edge.internal_target])
                 elif edge.external_white_outcome == 2:
                     target_ranks.append(0)
                 else:
@@ -208,12 +212,17 @@ def solve_white_attractor(records, edges):
             if rec.turn == chess.WHITE:
                 known = [r for r in target_ranks if r is not None]
                 if known:
-                    rank[i] = 1 + min(known)
-                    changed = True
+                    updates.append((i, 1 + min(known)))
             else:
                 if all(r is not None for r in target_ranks):
-                    rank[i] = 1 + max(r for r in target_ranks if r is not None)
-                    changed = True
+                    updates.append(
+                        (i, 1 + max(r for r in target_ranks if r is not None))
+                    )
+
+        if not updates:
+            break
+        for i, value in updates:
+            rank[i] = value
 
     return rank, passes
 
