@@ -30,10 +30,10 @@
     },
     {
       "stage": "V11 go-ethereum BAL package replication",
-      "run": 36355206069,
-      "artifact": 10944001216,
-      "artifact_sha256": "e43f5d702681069c02aa4d53d9a46eec31d3a93a4cc980a7557cb243a2fb59bb",
-      "result": "dependency view matches geth objects; 2.447x faster, 0.5288 allocation-byte ratio, 0.6641 allocation-call ratio"
+      "run": 36355203318,
+      "artifact": 10943641142,
+      "artifact_sha256": "835f228df20298d5133952432c3e113978a2d2408c841b11f5d5f607646305ad",
+      "result": "dependency view matches geth objects; 2.603x faster, 0.5288 allocation-byte ratio, 0.6641 allocation-call ratio"
     },
     {
       "stage": "V12 geth snap apply consequence",
