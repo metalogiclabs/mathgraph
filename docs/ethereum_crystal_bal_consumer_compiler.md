@@ -61,15 +61,15 @@ This rejected “Python/Pydantic overhead explains the whole effect”.
 
 ### V11 — inside go-ethereum's BAL package
 
-Run [36355206069](https://github.com/metalogiclabs/mathgraph/actions/runs/36355206069) copied a benchmark-only dependency decoder into pinned geth's `core/types/bal`.
+Run [36355203318](https://github.com/metalogiclabs/mathgraph/actions/runs/36355203318) copied a benchmark-only dependency decoder into pinned geth's `core/types/bal`.
 
 Before timing, the dependency fields were checked field-for-field against geth's production `BlockAccessList` decoder on all 1,112 held-out BALs.
 
 Median result:
 
-- full geth decode: **6,772,303 ns/op**
-- Crystal dependency view: **2,767,455 ns/op**
-- **2.447x faster**
+- full geth decode: **7,056,849 ns/op**
+- Crystal dependency view: **2,710,536 ns/op**
+- **2.603x faster**
 - allocation bytes: **0.5288x**
 - allocation calls: **0.6641x**
 
