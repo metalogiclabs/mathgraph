@@ -54,8 +54,6 @@ from crystal_chess_verified_hybrid_search_v14 import (
     candidate_bindings,
     signature,
 )
-from crystal_chess_interaction_law_v7 import connected_front
-from crystal_chess_triple_transfer_v6 import make_kpppvk
 
 
 SCHEMA = "mathgraph.crystal-chess.hybrid-guard-transfer.v15"
@@ -68,6 +66,43 @@ V7_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-interaction-law-v7"
     "@e3b1d2230236c67d574f6e89c4fbc01e1d8d4b34"
 )
+
+def make_kpppvk(
+    wk: int,
+    bk: int,
+    p0: int,
+    p1: int,
+    p2: int,
+    turn: bool,
+) -> chess.Board:
+    board = chess.Board(None)
+    board.turn = turn
+    board.castling_rights = chess.BB_EMPTY
+    board.ep_square = None
+    board.halfmove_clock = 0
+    board.fullmove_number = 1
+    board.set_piece_at(wk, chess.Piece(chess.KING, chess.WHITE))
+    board.set_piece_at(bk, chess.Piece(chess.KING, chess.BLACK))
+    for pawn in (p0, p1, p2):
+        board.set_piece_at(pawn, chess.Piece(chess.PAWN, chess.WHITE))
+    return board
+
+
+def connected_front(pawns: tuple[int, int, int]) -> bool:
+    for i in range(len(pawns)):
+        for j in range(i + 1, len(pawns)):
+            if (
+                abs(
+                    chess.square_file(pawns[i])
+                    - chess.square_file(pawns[j])
+                )
+                == 1
+                and chess.square_rank(pawns[i])
+                == chess.square_rank(pawns[j])
+            ):
+                return True
+    return False
+
 
 
 def load_guard(path: Path) -> tuple[dict[str, object], set[tuple[object, ...]]]:
