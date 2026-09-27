@@ -1,0 +1,64 @@
+name: Crystal Chess Future Quotient V1
+
+on:
+  push:
+    branches:
+      - crystal-chess-future-quotient-v1
+    paths:
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - "experiments/crystal_chess_future_quotient_v1.py"
+      - ".github/workflows/crystal-chess-future-quotient-v1.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  future-fixed-point:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile chess experiments
+        run: |
+          python -m py_compile experiments/crystal_chess_kpvk_v0.py
+          python -m py_compile experiments/crystal_chess_future_quotient_v1.py
+
+      - name: Acquire exact 3-piece Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Execute recursive protected-future fixed point
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-future-v1
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-future-v1/
+          python experiments/crystal_chess_future_quotient_v1.py             --tablebase-dir /tmp/syzygy             --max-iterations 512             --output artifacts/crystal-chess-future-v1/crystal_chess_future_v1.json             | tee artifacts/crystal-chess-future-v1/run.log
+          grep -q "CRYSTAL_CHESS_FUTURE_QUOTIENT_V1=PASS" artifacts/crystal-chess-future-v1/run.log
+
+      - name: Upload Crystal Chess V1 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-future-quotient-v1
+          path: artifacts/crystal-chess-future-v1/
+          if-no-files-found: error
