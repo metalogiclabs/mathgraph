@@ -29,9 +29,49 @@ from crystal_chess_goal_certificate_v3 import (
 from crystal_chess_dtz_certificate_v6 import (
     DTZ_INTERFACE, probe_dtz_safe, dtz_optimal_roles
 )
-from crystal_chess_richer_transfer_v5 import (
-    make_kppvk, sample_kppvk, canonical_feature_row, reflect_role
-)
+from crystal_chess_kpvk_v0 import horizontal_square
+import random
+
+def make_kppvk(wk,bk,p0,p1,turn):
+    b=chess.Board(None); b.turn=turn; b.castling_rights=chess.BB_EMPTY
+    b.ep_square=None; b.halfmove_clock=0; b.fullmove_number=1
+    b.set_piece_at(wk,chess.Piece(chess.KING,chess.WHITE))
+    b.set_piece_at(bk,chess.Piece(chess.KING,chess.BLACK))
+    b.set_piece_at(p0,chess.Piece(chess.PAWN,chess.WHITE))
+    b.set_piece_at(p1,chess.Piece(chess.PAWN,chess.WHITE))
+    return b
+
+def sample_kppvk(count,seed):
+    rng=random.Random(seed)
+    ps=[chess.square(f,r) for f in range(8) for r in range(1,6)]
+    seen=set(); out=[]; attempts=0
+    while len(out)<count:
+        attempts+=1
+        if attempts>count*100: raise RuntimeError("sample construction failed")
+        p0,p1=sorted(rng.sample(ps,2))
+        wk=rng.randrange(64)
+        if wk in (p0,p1): continue
+        bk=rng.randrange(64)
+        if bk in (p0,p1,wk): continue
+        turn=bool(rng.getrandbits(1))
+        key=(wk,bk,p0,p1,turn)
+        if key in seen: continue
+        b=make_kppvk(wk,bk,p0,p1,turn)
+        if not b.is_valid(): continue
+        seen.add(key); out.append(key)
+    return out
+
+def canonical_feature_row(wk,bk,anchor,turn,feature_fns):
+    reflected=chess.square_file(anchor)>=4
+    if reflected:
+        wk=horizontal_square(wk); bk=horizontal_square(bk); anchor=horizontal_square(anchor)
+    return tuple(fn(wk,bk,anchor,turn) for fn in feature_fns), reflected
+
+def reflect_role(role):
+    if role.startswith("P:"): return role
+    if not role.startswith("K:"): return role
+    body=role.split(":",1)[1]; a,b=body.split(",")
+    return f"K:{-int(a):+d},{int(b):+d}"
 
 SCHEMA="mathgraph.crystal-chess.kpvk-dtz-to-kppvk-transfer.v11"
 V6_AUTHORITY="metalogiclabs/mathgraph@7c46d0144efea61dca7899a4c8eecbd1e05186fc"
