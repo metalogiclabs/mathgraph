@@ -1,8 +1,7 @@
 {
   "protocol":"ETHEREUM_CRYSTAL_V15_RETH_CROSS_CLIENT",
   "epistemic_state":"WARRANTED_REUSABLE",
-  "scientific_run":{"run_id":36356411033,"job_id":108724906135},
-  "evidence_seal_run":36357291612,
+  "authority":{"run_id":36357032694,"job_id":108726711616,"artifact_id":10943534315,"artifact_sha256":"c095d0f9166c7f1323fceb835b9b9798192861a70313aca8bd3439e184a355a5"},
   "reth_commit":"5723a3fed5521fad105b44f86876580242f31be9",
   "parent_v13_run":36355884299,
   "heldout_records":1112,
@@ -10,8 +9,9 @@
   "full_decode_median_s":0.024908064,
   "compact_apply_decode_median_s":0.017736225,
   "speedup_vs_full":1.404361075,
+  "reth_snap_sync_tests":{"passed":162,"failed":0},
   "architectural_separator":"Reth already carries one authenticated decoded BAL forward; the geth duplicate-decode mechanism does not transfer.",
-  "red_lineage":{"native_reth_tests_passed":161,"only_failed_test":"injected Crystal test without CRYSTAL_BAL_CORPUS","failure":"CRYSTAL_BAL_CORPUS: NotPresent","fix_commit":"a409f3707a6b6780bca9c234040f771cf32daed8"},
+  "superseded_red_lineage":{"run_id":36356411033,"failure":"second invocation omitted CRYSTAL_BAL_CORPUS after semantic parity had passed"},
   "promotion_boundary":"pinned Reth snap-sync production BalStateUpdate consumer over frozen held-out EELS corpus",
   "unknowns":["live-node wall-clock impact","upstream merge suitability","replication in additional clients"]
 }
