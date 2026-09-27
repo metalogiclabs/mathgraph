@@ -1,0 +1,14 @@
+name: ethereum-crystal-v4
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  crystal-developmental-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify canonical Crystal protocol remains green
+        run: python experiments/developmental_capability_growth_v1/run.py > /tmp/canonical_crystal.txt
+      - name: Run Ethereum Crystal developmental experiment
+        run: python experiments/ethereum_crystal_v4/run.py
