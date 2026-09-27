@@ -1,0 +1,64 @@
+{
+  "campaign": "ethereum-crystal-bal-consumer-compiler",
+  "branch": "ethereum-msi-consequential-interface-v1",
+  "head": "6412d5c1b0a406668e6565cc857a85be2dd6b451",
+  "pins": {
+    "eels": "84e7d2c266e3319fc3882e72f379282bb1c40f2d",
+    "go_ethereum": "920c07774c65ebb3023536f85df642c44478b540"
+  },
+  "authorities": [
+    {
+      "stage": "V8 exact BAL reassembly",
+      "run": 36354003831,
+      "artifact": 10943008717,
+      "artifact_sha256": "5dc7d0c65d5888539ca6f4a1f2be767d7951710242a2d916a85f2be2a216abf6",
+      "result": "22/22 exact BAL objects and 22/22 EELS BAL hashes"
+    },
+    {
+      "stage": "V9 broad held-out Python consumer compiler",
+      "run": 36354473773,
+      "artifact": 10943795345,
+      "artifact_sha256": "1a29dde3a003c45207d52845f7f3d655ac9a59bb7931305ee49ce5f5992e6b23",
+      "result": "1112 held-out BALs / 163 unseen families; dependency 2.838x, reconstruction 1.517x; exact byte/hash replay"
+    },
+    {
+      "stage": "V10 optimized Rust replication",
+      "run": 36354980547,
+      "artifact": 10944065087,
+      "artifact_sha256": "bd702be13d72002eb6cc7ebfffaf8c1ad0b37c72e288f9fddec42bff30233f63",
+      "result": "1112 held-out BALs; dependency 1.915x, reconstruction 1.186x; exact reassembly"
+    },
+    {
+      "stage": "V11 go-ethereum BAL package replication",
+      "run": 36355206069,
+      "artifact": 10944001216,
+      "artifact_sha256": "e43f5d702681069c02aa4d53d9a46eec31d3a93a4cc980a7557cb243a2fb59bb",
+      "result": "dependency view matches geth objects; 2.447x faster, 0.5288 allocation-byte ratio, 0.6641 allocation-call ratio"
+    },
+    {
+      "stage": "V12 geth snap apply consequence",
+      "run": 36355853836,
+      "artifact": 10943473891,
+      "artifact_sha256": "0f6e71a8f326c24e498465c0abcaf185177e7e3cb67a965ba9285ad585b67274",
+      "result": "apply-view matches geth final-state consequences; 3.015x faster, 0.6856 allocation-byte ratio, 0.09990 allocation-call ratio"
+    },
+    {
+      "stage": "V13 local geth snap catch-up prototype",
+      "run": 36355884299,
+      "artifact": 10944166947,
+      "artifact_sha256": "cfb85d762120b8f6763afead18234d1b6c9673dbc09ccb65e91f2431f182d48d",
+      "result": "compact decoder installed in actual snap catch-up second-decode path; BAL package + pivot/catch-up tests green; decoder median 2.245x faster, 0.79775 allocation-byte ratio, 0.36177 allocation-call ratio"
+    }
+  ],
+  "rejected_or_corrected": [
+    "monolithic BAL compression objective",
+    "atomic slot separator as warranted acquisition",
+    "unique post-state encoding in the binary abstraction",
+    "plain pytest invocation for EELS fixture generators",
+    "Python/Pydantic overhead as sufficient explanation of the systems gain"
+  ],
+  "current_epistemic_state": {
+    "warranted": "fixture-native consequence-specific capability acquisition, held-out reuse, exact BAL/hash reconstruction, native replication, geth-package replication, and a local patched geth snap catch-up path passing declared regression tests",
+    "unknown": "whole-client/end-to-end snap catch-up speedup under realistic network/database/trie workload; universal optimality over all possible EIP-7928 BALs; upstream acceptability"
+  }
+}
