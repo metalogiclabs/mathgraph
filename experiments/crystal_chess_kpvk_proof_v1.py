@@ -124,6 +124,7 @@ def build_graph(records, tablebase, cache):
     }
     edges: list[list[Edge]] = [[] for _ in records]
     exit_oracle_mismatches = []
+    exit_oracle_mismatch_count = 0
     raw_edges = 0
     external_edges = 0
 
@@ -149,21 +150,26 @@ def build_graph(records, tablebase, cache):
                 elementary = elementary_exit_outcome(child)
                 stm_wdl = probe_wdl(tablebase, child, cache)
                 oracle = white_outcome_from_stm_wdl(child.turn, stm_wdl)
-                if elementary != oracle and len(exit_oracle_mismatches) < 20:
-                    exit_oracle_mismatches.append(
-                        {
-                            "fen": child.fen(),
-                            "elementary": elementary,
-                            "syzygy": oracle,
-                            "move": move.uci(),
-                        }
-                    )
-                edges[i].append(Edge(label, None, elementary))
+                if elementary != oracle:
+                    exit_oracle_mismatch_count += 1
+                    if len(exit_oracle_mismatches) < 20:
+                        exit_oracle_mismatches.append(
+                            {
+                                "fen": child.fen(),
+                                "elementary": elementary,
+                                "syzygy": oracle,
+                                "move": move.uci(),
+                            }
+                        )
+                # Crystal repair: material class is not a sufficient exit
+                # interface. Carry the exact verified external consequence.
+                edges[i].append(Edge(label, None, oracle))
 
     return edges, {
         "raw_edges": raw_edges,
         "external_edges": external_edges,
-        "exit_oracle_mismatches": exit_oracle_mismatches,
+        "exit_oracle_mismatch_count": exit_oracle_mismatch_count,
+        "exit_oracle_mismatch_examples": exit_oracle_mismatches,
     }
 
 
@@ -346,8 +352,6 @@ def main() -> int:
             raise AssertionError(enumeration)
 
         edges, graph_stats = build_graph(records, tablebase, cache)
-        if graph_stats["exit_oracle_mismatches"]:
-            raise AssertionError(graph_stats["exit_oracle_mismatches"])
 
         rank, passes = solve_white_attractor(records, edges)
 
@@ -402,8 +406,8 @@ def main() -> int:
             "independent_oracle": "Syzygy WDL",
             "tablebase_files": manifest,
             "oracle_role": (
-                "checks complete KPvK classification and every reachable "
-                "material-exit base; it is not used by attractor recurrence"
+                "exact WDL authority is used only at transitions leaving KPvK "
+                "and withheld for all internal KPvK states until final verification"
             ),
         },
         "boundary": {
@@ -413,14 +417,15 @@ def main() -> int:
             "states": len(records),
             "external_base": [
                 "terminal checkmate/stalemate",
-                "KQvK and KRvK nonterminal = White win",
-                "KBvK, KNvK, KvK = draw",
+                "exact Syzygy WDL of the concrete KQvK/KRvK/KBvK/KNvK/KvK exit state",
             ],
         },
         "graph": {
             "legal_edges": graph_stats["raw_edges"],
             "material_exit_edges": graph_stats["external_edges"],
-            "exit_oracle_mismatches": 0,
+            "material_only_exit_candidate_mismatches": graph_stats["exit_oracle_mismatch_count"],
+            "material_only_exit_counterexamples": graph_stats["exit_oracle_mismatch_examples"],
+            "promoted_separator": "exact external exit state WDL",
         },
         "solution": {
             "white_winning_states": winning_states,
@@ -468,6 +473,7 @@ def main() -> int:
             ],
             "rejected": [
                 "static local geometry is required to identify proof identity",
+                "promotion material class alone determines the exact exit consequence",
             ],
             "candidate": [
                 "proof-obligation classes and action schemas transfer to richer pawn endings",
