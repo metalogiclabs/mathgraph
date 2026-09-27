@@ -1,0 +1,56 @@
+name: Crystal Go Boundary Support V1
+
+on:
+  push:
+    branches:
+      - crystal-go-boundary-support-v1
+    paths:
+      - "experiments/crystal_go_local_capture_v0.py"
+      - "experiments/crystal_go_boundary_support_v1.py"
+      - ".github/workflows/crystal-go-boundary-support-v1.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  boundary-support-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile Go experiments
+        run: |
+          python -m py_compile experiments/crystal_go_local_capture_v0.py
+          python -m py_compile experiments/crystal_go_boundary_support_v1.py
+
+      - name: Acquire support repair and prospectively re-test
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-go-v1
+          python experiments/crystal_go_boundary_support_v1.py \
+            --horizon 5 \
+            --outer-contexts 16 \
+            --outer-seed 20260928 \
+            --output artifacts/crystal-go-v1/crystal_go_boundary_support_v1.json \
+            | tee artifacts/crystal-go-v1/run.log
+          grep -q "CRYSTAL_GO_BOUNDARY_SUPPORT_V1=PASS" artifacts/crystal-go-v1/run.log
+
+      - name: Upload Crystal Go V1 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-go-boundary-support-v1
+          path: artifacts/crystal-go-v1/
+          if-no-files-found: error
