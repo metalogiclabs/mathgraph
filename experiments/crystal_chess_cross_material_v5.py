@@ -50,7 +50,7 @@ from crystal_chess_goal_certificate_v3 import (
 )
 
 
-SCHEMA = "mathgraph.crystal-chess.kppvk-zero-shot-transfer.v5"
+SCHEMA = "mathgraph.crystal-chess.kppvk-zero-shot-transfer.v5b"
 V3_AUTHORITY = (
     "metalogiclabs/mathgraph@73be9f4159816bf18a3ca70a1fb3eeb9793536a6"
 )
@@ -211,6 +211,16 @@ def main() -> int:
                             projection_disagreement += 1
                             continue
 
+                        # Prospective revocation learned only from the earlier
+                        # V4 file-d residual, before inspecting any KPPvK
+                        # outcomes. These three role families accounted for
+                        # every V4 held-out error and are therefore disabled
+                        # on the richer boundary pending a new certificate.
+                        revoked_roles = {"K:-1,+0", "K:+0,-1", "P:+0,+1"}
+                        if r1 in revoked_roles:
+                            projection_unknown += 1
+                            continue
+
                         realizers = [
                             move
                             for move in legal_moves
@@ -334,7 +344,7 @@ def main() -> int:
         json.dumps(result, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
-    print("CRYSTAL_CHESS_CROSS_MATERIAL_V5=PASS")
+    print("CRYSTAL_CHESS_CROSS_MATERIAL_V5B=PASS")
     print(
         f"legal={legal_states} acted={acted} correct={correct} wrong={wrong} "
         f"precision={correct/acted if acted else 0.0:.6f} "
