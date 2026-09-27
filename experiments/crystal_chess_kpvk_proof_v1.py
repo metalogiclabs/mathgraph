@@ -33,7 +33,7 @@ from typing import Iterable
 import chess
 import chess.syzygy
 
-from experiments.crystal_chess_kpvk_v0 import (
+from crystal_chess_kpvk_v0 import (
     BASE_CRYSTAL_AUTHORITY,
     PROTECTED_INTERFACE,
     coordinate_feature_bank,
