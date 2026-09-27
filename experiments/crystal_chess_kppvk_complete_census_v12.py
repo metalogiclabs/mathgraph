@@ -90,10 +90,6 @@ def parse_role_move(board: chess.Board, anchor: int, role: str) -> chess.Move | 
 
 
 def exact_wdl(tb: chess.syzygy.Tablebase, board: chess.Board) -> int:
-    if board.is_checkmate():
-        return -2
-    if board.is_stalemate() or board.is_insufficient_material():
-        return 0
     return int(tb.probe_wdl(board))
 
 
