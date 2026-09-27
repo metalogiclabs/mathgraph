@@ -1,0 +1,41 @@
+{
+  "protocol": "ETHEREUM_CRYSTAL_V9_CONSUMER_COMPILER",
+  "epistemic_state": "WARRANTED_REUSABLE",
+  "repo": "metalogiclabs/mathgraph",
+  "branch": "ethereum-msi-consequential-interface-v1",
+  "head": "e9b0432e5abb592255f7881b669944cb56ecdfc8",
+  "run_id": 36354473773,
+  "job_id": 108719320678,
+  "artifact_id": 10943795345,
+  "eels_repository": "ethereum/execution-specs",
+  "eels_commit": "84e7d2c266e3319fc3882e72f379282bb1c40f2d",
+  "total_records": 1134,
+  "heldout_records": 1112,
+  "heldout_families": 163,
+  "exact_byte_reassembly_all_heldout": true,
+  "exact_hash_match_all_heldout": true,
+  "dependency": {
+    "payload_fraction": 0.4930266178226175,
+    "speedup_vs_full_eels_decode": 2.838355276602334,
+    "peak_allocation_ratio": 0.02849502149222912
+  },
+  "reconstruction": {
+    "payload_fraction": 0.703864,
+    "speedup_vs_full_eels_decode": 1.517,
+    "peak_allocation_ratio_approx": 0.1410
+  },
+  "promotion_boundary": "WARRANTED/REUSABLE for pinned EELS/Python consequence-specific BAL consumer compilation on the declared held-out generated corpus",
+  "unknowns": [
+    "production-client speedup in Geth/Reth/Nethermind/Besu/Erigon",
+    "universal minimality over all possible EIP-7928 blocks",
+    "native-client memory/latency benefit",
+    "arbitrary representation invention outside the declared BAL grammar"
+  ],
+  "rejected_or_superseded": [
+    "monolithic BAL compression objective",
+    "atomic slot separator",
+    "unique post representation",
+    "plain pytest as the EELS fixture runner"
+  ],
+  "next_residual": "replicate the skip-materialization consumer views in one production execution client or native parser while preserving exact canonical BAL/hash semantics"
+}
