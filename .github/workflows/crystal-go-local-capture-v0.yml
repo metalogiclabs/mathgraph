@@ -1,0 +1,54 @@
+name: Crystal Go Local Capture V0
+
+on:
+  push:
+    branches:
+      - crystal-go-local-capture-v0
+    paths:
+      - "experiments/crystal_go_local_capture_v0.py"
+      - ".github/workflows/crystal-go-local-capture-v0.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  local-capture-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile Go experiment
+        run: python -m py_compile experiments/crystal_go_local_capture_v0.py
+
+      - name: Exhaust source world and transfer into larger board
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-go-v0
+          python experiments/crystal_go_local_capture_v0.py \
+            --horizon 5 \
+            --outer-contexts 16 \
+            --outer-seed 20260928 \
+            --output artifacts/crystal-go-v0/crystal_go_local_capture_v0.json \
+            | tee artifacts/crystal-go-v0/run.log
+          grep -q "CRYSTAL_GO_LOCAL_CAPTURE_V0=PASS" artifacts/crystal-go-v0/run.log
+
+      - name: Upload Crystal Go V0 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-go-local-capture-v0
+          path: artifacts/crystal-go-v0/
+          if-no-files-found: error
