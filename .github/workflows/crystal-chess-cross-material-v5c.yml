@@ -1,0 +1,166 @@
+name: Crystal Chess Cross Material V5C
+
+on:
+  push:
+    branches:
+      - crystal-chess-cross-material-v5c
+    paths:
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - "experiments/crystal_chess_goal_certificate_v3.py"
+      - "experiments/crystal_chess_cross_material_v5.py"
+      - ".github/workflows/crystal-chess-cross-material-v5c.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile chess experiments
+        run: |
+          python -m py_compile experiments/crystal_chess_kpvk_v0.py
+          python -m py_compile experiments/crystal_chess_goal_certificate_v3.py
+          python -m py_compile experiments/crystal_chess_cross_material_v5.py
+
+      - name: Acquire exact Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw > /tmp/syzygy/SHA256SUMS
+
+      - name: Execute exact shard
+        run: |
+          set -euo pipefail
+          mkdir -p "artifacts/shard-${{ matrix.shard }}"
+          cp /tmp/syzygy/SHA256SUMS "artifacts/shard-${{ matrix.shard }}/"
+          python experiments/crystal_chess_cross_material_v5.py \
+            --tablebase-dir /tmp/syzygy \
+            --shard-index "${{ matrix.shard }}" \
+            --shard-count 8 \
+            --output "artifacts/shard-${{ matrix.shard }}/result.json" \
+            | tee "artifacts/shard-${{ matrix.shard }}/run.log"
+          grep -q "CRYSTAL_CHESS_CROSS_MATERIAL_V5C=PASS" "artifacts/shard-${{ matrix.shard }}/run.log"
+
+      - name: Upload shard evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-v5c-shard-${{ matrix.shard }}
+          path: artifacts/shard-${{ matrix.shard }}/
+          if-no-files-found: error
+
+  aggregate:
+    needs: shard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: crystal-chess-v5c-shard-*
+          path: shards
+
+      - name: Aggregate exact complete boundary
+        run: |
+          python - <<'PY'
+          import glob
+          import hashlib
+          import json
+          from pathlib import Path
+
+          files = sorted(glob.glob("shards/**/result.json", recursive=True))
+          assert len(files) == 8, files
+          rows = [json.load(open(p, encoding="utf-8")) for p in files]
+          indices = sorted(r["shard"]["index"] for r in rows)
+          assert indices == list(range(8)), indices
+          assert {r["shard"]["count"] for r in rows} == {8}
+          assert sum(r["shard"]["selected_pawn_pairs"] for r in rows) == 190
+          assert {r["shard"]["total_pawn_pairs"] for r in rows} == {190}
+          assert len({r["v3_tree_sha256"] for r in rows}) == 1
+
+          keys = [
+              "candidate_assignments",
+              "legal_states",
+              "terminal_states",
+              "projection_unknown",
+              "projection_disagreement",
+              "nonunique_realizer",
+              "acted",
+              "correct",
+              "wrong",
+          ]
+          total = {k: sum(r["coverage"][k] for r in rows) for k in keys}
+          total["precision"] = total["correct"] / total["acted"] if total["acted"] else 0.0
+          total["coverage_ratio_of_legal"] = (
+              total["acted"] / total["legal_states"] if total["legal_states"] else 0.0
+          )
+
+          wrong_examples = []
+          for r in rows:
+              wrong_examples.extend(r["coverage"]["wrong_examples"])
+          wrong_examples = wrong_examples[:100]
+
+          result = {
+              "schema": "mathgraph.crystal-chess.kppvk-zero-shot-transfer.v5c.aggregate",
+              "status": (
+                  "WARRANTED_ZERO_SHOT_CROSS_MATERIAL_TRANSFER"
+                  if total["acted"] > 0 and total["wrong"] == 0
+                  else "EXACT_RESIDUAL_CROSS_MATERIAL_TRANSFER"
+              ),
+              "source_shards": files,
+              "v3_authority": rows[0]["v3_authority"],
+              "v3_tree_sha256": rows[0]["v3_tree_sha256"],
+              "protected_interface": rows[0]["protected_interface"],
+              "method": rows[0]["method"],
+              "coverage": {**total, "wrong_examples": wrong_examples},
+              "shard_digests": {
+                  p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+                  for p in files
+              },
+          }
+          Path("aggregate.json").write_text(
+              json.dumps(result, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print("CRYSTAL_CHESS_CROSS_MATERIAL_V5C_AGGREGATE=PASS")
+          print(
+              f"legal={total['legal_states']} acted={total['acted']} "
+              f"correct={total['correct']} wrong={total['wrong']} "
+              f"precision={total['precision']:.6f} "
+              f"coverage={total['coverage_ratio_of_legal']:.6f}"
+          )
+          if total["wrong"]:
+              print("STATUS=EXACT_RESIDUAL_CROSS_MATERIAL_TRANSFER")
+          else:
+              print("STATUS=WARRANTED_ZERO_SHOT_CROSS_MATERIAL_TRANSFER")
+          PY
+
+      - name: Upload aggregate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-cross-material-v5c-aggregate
+          path: aggregate.json
+          if-no-files-found: error
