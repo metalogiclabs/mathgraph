@@ -110,11 +110,11 @@ def make_kppvk(
 
 def root_pawn_squares() -> tuple[int, ...]:
     # Files a-b; ranks 2-6. Rank 7 is intentionally an exact external basin.
-    return tuple(
+    return tuple(sorted(
         chess.square(file_index, rank_index)
         for file_index in (0, 1)
         for rank_index in range(1, 6)
-    )
+    ))
 
 
 def state_tuple(board: chess.Board) -> tuple[int, int, int, int]:
