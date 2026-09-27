@@ -1,0 +1,136 @@
+name: Crystal Chess Stockfish Hybrid UCI V17
+
+on:
+  push:
+    branches:
+      - crystal-chess-stockfish-hybrid-uci-v17
+    paths:
+      - "experiments/crystal_chess_uci_assets_v17.py"
+      - "experiments/crystal_chess_stockfish_hybrid_uci_v17.py"
+      - "experiments/crystal_chess_stockfish_hybrid_benchmark_v17.py"
+      - "experiments/crystal_chess_verified_hybrid_search_v14.py"
+      - "experiments/crystal_chess_hybrid_guard_transfer_v15.py"
+      - "experiments/crystal_chess_kppvk_complete_census_v12.py"
+      - ".github/workflows/crystal-chess-stockfish-hybrid-uci-v17.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  stockfish-hybrid-uci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal and compile V17
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_crystal.py
+          python -m py_compile experiments/crystal_chess_uci_assets_v17.py
+          python -m py_compile experiments/crystal_chess_stockfish_hybrid_uci_v17.py
+          python -m py_compile experiments/crystal_chess_stockfish_hybrid_benchmark_v17.py
+
+      - name: Download frozen V14 guard artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-verified-hybrid-search-v14
+          path: /tmp/v14-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36357299241
+
+      - name: Verify frozen V14 guard identity
+        run: |
+          set -euo pipefail
+          guard=/tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz
+          test -s "$guard"
+          actual="$(gzip -dc "$guard" | sha256sum | awk '{print $1}')"
+          echo "guard_uncompressed_sha256=$actual"
+          test "$actual" = "10bb241dbadaa3b8229196ccf6e11587abd69554ff61802343451a4e691a7baa"
+
+      - name: Acquire exact Syzygy verifier authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw KPPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Compile frozen runtime role map
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v17
+          python experiments/crystal_chess_uci_assets_v17.py \
+            --tablebase-dir /tmp/syzygy \
+            --guard /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz \
+            --roles-output artifacts/crystal-chess-v17/crystal_chess_roles_v17.jsonl.gz \
+            | tee artifacts/crystal-chess-v17/assets.log
+          cp /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz artifacts/crystal-chess-v17/
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v17/
+
+      - name: Build pinned Stockfish fallback
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > artifacts/crystal-chess-v17/stockfish-bench.log 2>&1
+          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v17/STOCKFISH_PIN.txt
+
+      - name: Run real UCI hybrid benchmark
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_stockfish_hybrid_benchmark_v17.py \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --hybrid-script experiments/crystal_chess_stockfish_hybrid_uci_v17.py \
+            --guard /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz \
+            --roles artifacts/crystal-chess-v17/crystal_chess_roles_v17.jsonl.gz \
+            --tablebase-dir /tmp/syzygy \
+            --kppvk 500 \
+            --kpppvk 500 \
+            --nodes 5000 \
+            --seed 20260928 \
+            --output artifacts/crystal-chess-v17/crystal_chess_stockfish_hybrid_benchmark_v17.json \
+            | tee artifacts/crystal-chess-v17/run.log
+
+      - name: Package UCI wrapper
+        run: |
+          set -euo pipefail
+          cp experiments/crystal_chess_stockfish_hybrid_uci_v17.py artifacts/crystal-chess-v17/
+          cat > artifacts/crystal-chess-v17/crystal-chess-v17 <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          here="$(cd "$(dirname "$0")" && pwd)"
+          : "${STOCKFISH:?Set STOCKFISH to the fallback Stockfish executable}"
+          exec python3 "$here/crystal_chess_stockfish_hybrid_uci_v17.py" \
+            --fallback "$STOCKFISH" \
+            --guard "$here/crystal_chess_verified_hybrid_guard_v14.jsonl.gz" \
+            --roles "$here/crystal_chess_roles_v17.jsonl.gz"
+          EOF
+          chmod +x artifacts/crystal-chess-v17/crystal-chess-v17
+
+      - name: Upload V17 evidence and runnable wrapper
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-stockfish-hybrid-uci-v17
+          path: artifacts/crystal-chess-v17/
+          if-no-files-found: error
+
+      - name: Require verified real-system gain
+        run: |
+          grep -q "CRYSTAL_CHESS_STOCKFISH_HYBRID_UCI_V17=WARRANTED_PINNED_STOCKFISH_FAIL_CLOSED_UCI_SYSTEM_GAIN" artifacts/crystal-chess-v17/run.log
