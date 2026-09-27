@@ -1,7 +1,7 @@
 name: ethereum-crystal-v17-nethermind-cross-client
 on:
   push:
-    branches: [ethereum-msi-consequential-interface-v1]
+    branches: [ethereum-crystal-v17-nethermind-v1]
   workflow_dispatch:
 jobs:
   nethermind-cross-client:
