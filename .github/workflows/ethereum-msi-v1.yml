@@ -1,0 +1,15 @@
+name: ethereum-msi-v1
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  exact-finite-qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run exact finite MSI experiment
+        run: python experiments/ethereum_msi_v1/run.py
