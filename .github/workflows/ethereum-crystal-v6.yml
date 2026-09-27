@@ -34,7 +34,9 @@ jobs:
           find /tmp/eels-fixtures -type f | sort | tee /tmp/eels-fixture-files.txt
           test -s /tmp/eels-fixture-files.txt
       - name: Inspect generated fixture BAL surface
-        run: python experiments/ethereum_crystal_v6/inspect_fixtures.py /tmp/eels-fixtures
+        run: |
+          test -f experiments/ethereum_crystal_v6/inspect_fixtures.py
+          python experiments/ethereum_crystal_v6/inspect_fixtures.py /tmp/eels-fixtures
       - name: Requalify Crystal developmental lineage
         run: |
           python experiments/developmental_capability_growth_v1/run.py >/tmp/canonical-crystal.txt
