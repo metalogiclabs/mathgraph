@@ -140,10 +140,10 @@ public class CrystalBlockAccessListCrossClientTests
 
     private static void AssertParity(ReadOnlyBlockAccessList full, CompactAccount[] compact, int record)
     {
-        Assert.That(compact.Length, Is.EqualTo(full.AccountChanges.Length), $"record {record} account count");
+        Assert.That(compact.Length, Is.EqualTo(full.AccountChanges.Count), $"record {record} account count");
         for (int i = 0; i < compact.Length; i++)
         {
-            ReadOnlyAccountChanges f = full.AccountChanges[i];
+            ReadOnlyAccountChanges f = full.AccountChanges.AsSpan()[i];
             CompactAccount c = compact[i];
             Assert.That(c.Address, Is.EqualTo(f.Address), $"record {record} account {i} address");
             Assert.That(c.Storage.Length, Is.EqualTo(f.StorageChanges.Length), $"record {record} account {i} storage count");
@@ -206,7 +206,7 @@ public class CrystalBlockAccessListCrossClientTests
             int sink = 0;
             for (int rep = 0; rep < 20; rep++)
                 foreach (byte[] raw in records)
-                    sink ^= Rlp.Decode<ReadOnlyBlockAccessList>(raw)!.AccountChanges.Length;
+                    sink ^= Rlp.Decode<ReadOnlyBlockAccessList>(raw)!.AccountChanges.Count;
             sw.Stop(); GC.KeepAlive(sink); fullTimes.Add(sw.Elapsed.TotalSeconds);
 
             sw.Restart(); sink = 0;
