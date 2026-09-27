@@ -1,0 +1,20 @@
+{
+  "protocol":"ETHEREUM_CRYSTAL_V16_GETH_CATCHUP_END_TO_END",
+  "epistemic_state":"WARRANTED_REUSABLE",
+  "authority":{"run_id":36358745584,"job_id":108731561495,"artifact_id":10944827384,"artifact_sha256":"f5df0d00eb7feb1208c090f94762d6aab6593a445c89895becacc3469cc579fe"},
+  "geth_commit":"920c07774c65ebb3023536f85df642c44478b540",
+  "records":1112,
+  "final_db_digest":"e55478e602cd9f1666a5cda95c3f738cdc7b2252a455d17ac7f8fe3d518e4584",
+  "state_parity_all":true,
+  "full_ns_op":29846835,
+  "compact_ns_op":25461591,
+  "speedup":1.1722297715017103,
+  "full_B_op":17899256,
+  "compact_B_op":16310560,
+  "allocation_byte_ratio":0.9112423443745371,
+  "full_allocs_op":243839,
+  "compact_allocs_op":191348,
+  "allocation_call_ratio":0.7847309085093033,
+  "promotion_boundary":"pinned geth in-memory snap applyAccessList plus DB batch-write corpus pass",
+  "unknowns":["live p2p/mainnet catch-up throughput impact","real disk-I/O effect","upstream merge suitability"]
+}
