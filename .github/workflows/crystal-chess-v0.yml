@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/syzygy
-          base="https://tablebase.lichess.ovh/tables/standard/3-4-5"
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
           for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw; do
             curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
             test -s "/tmp/syzygy/$f"
