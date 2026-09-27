@@ -38,12 +38,14 @@ jobs:
       - name: Compile experiment
         run: python -m py_compile experiments/crystal_chess_capability_calculus_v8.py
 
-      - name: Install Lean toolchain
-        uses: leanprover/lean-action@v1
-        with:
-          lake-package-directory: verified-developmental-navigation/lean
-          build: true
-          test: false
+      - name: Qualify Lean capability-calculus laws
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          source "$HOME/.elan/env"
+          cd verified-developmental-navigation/lean
+          lake update
+          lake build
 
       - name: Acquire exact Syzygy WDL plus DTZ authority
         run: |
