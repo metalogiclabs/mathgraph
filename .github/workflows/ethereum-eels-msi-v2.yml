@@ -1,0 +1,25 @@
+name: ethereum-eels-msi-v2
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  official-eels-anchor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned Ethereum executable spec
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+          test "$(git rev-parse HEAD)" = "84e7d2c266e3319fc3882e72f379282bb1c40f2d"
+      - name: Verify semantic anchors exist in executable Amsterdam spec
+        run: |
+          grep -q "def sload" /tmp/eels/src/ethereum/forks/amsterdam/vm/instructions/storage.py
+          grep -q "def sstore" /tmp/eels/src/ethereum/forks/amsterdam/vm/instructions/storage.py
+          grep -q "class BlockAccessListBuilder" /tmp/eels/src/ethereum/forks/amsterdam/block_access_lists.py
+          grep -q "test_bal_noop_write_filtering" /tmp/eels/tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists_cross_index.py
+          grep -q "test_bal_intra_tx_round_trip_after_prior_tx_write" /tmp/eels/tests/amsterdam/eip7928_block_level_access_lists/test_block_access_lists_cross_index.py
+      - name: Run MSI exact quotient against extracted EELS contract
+        run: python experiments/ethereum_msi_v2/run.py
