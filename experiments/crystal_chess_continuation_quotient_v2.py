@@ -68,10 +68,19 @@ def base_observation(board: chess.Board) -> tuple[object, ...]:
 
 class ContinuationCompiler:
     def __init__(self) -> None:
-        self.cache: dict[tuple[str, int], str] = {}
+        self.cache: dict[tuple[str, int], int] = {}
+        self.intern: dict[tuple[object, ...], int] = {}
         self.nodes_by_depth: Counter[int] = Counter()
 
-    def signature(self, board: chess.Board, depth: int) -> str:
+    def _intern(self, payload: tuple[object, ...]) -> int:
+        existing = self.intern.get(payload)
+        if existing is not None:
+            return existing
+        ident = len(self.intern)
+        self.intern[payload] = ident
+        return ident
+
+    def signature(self, board: chess.Board, depth: int) -> int:
         key = (board_key(board), depth)
         cached = self.cache.get(key)
         if cached is not None:
@@ -79,9 +88,9 @@ class ContinuationCompiler:
 
         base = base_observation(board)
         if depth == 0:
-            payload = ("v0", base)
+            payload: tuple[object, ...] = ("v0", base)
         else:
-            child_sigs: list[str] = []
+            child_sigs: list[int] = []
             for move in board.legal_moves:
                 child = board.copy(stack=False)
                 child.push(move)
@@ -89,12 +98,10 @@ class ContinuationCompiler:
             child_sigs.sort()
             payload = ("v0", base, tuple(child_sigs))
 
-        digest = hashlib.sha256(
-            repr(payload).encode("utf-8")
-        ).hexdigest()
-        self.cache[key] = digest
+        ident = self._intern(payload)
+        self.cache[key] = ident
         self.nodes_by_depth[depth] += 1
-        return digest
+        return ident
 
 
 def enumerate_root_specs() -> list[tuple[int, int, int, int, bool]]:
@@ -174,7 +181,7 @@ def evaluate(
     examples = []
 
     for case in cases:
-        groups: dict[str, list[ChildAction]] = defaultdict(list)
+        groups: dict[int, list[ChildAction]] = defaultdict(list)
         for action in case.actions:
             child = chess.Board(action.child_fen)
             sig = compiler.signature(child, depth)
@@ -198,7 +205,7 @@ def evaluate(
                         {
                             "state_id": case.state_id,
                             "root_fen": case.root_fen,
-                            "signature": sig,
+                            "signature_id": sig,
                             "moves": sorted((a.uci, a.consequence) for a in group),
                         }
                     )
@@ -323,7 +330,8 @@ def main() -> int:
         "selected_discovery": selected_discovery,
         "selected_test": selected_test,
         "compiler": {
-            "cached_signatures": len(compiler.cache),
+            "cached_board_depth_signatures": len(compiler.cache),
+            "interned_exact_signatures": len(compiler.intern),
             "new_nodes_by_depth": dict(sorted(compiler.nodes_by_depth.items())),
         },
         "wdl_cache_positions": len(wdl_cache),
