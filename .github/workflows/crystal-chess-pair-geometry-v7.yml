@@ -1,0 +1,63 @@
+name: Crystal Chess Pair Geometry V7
+
+on:
+  push:
+    branches:
+      - crystal-chess-pair-geometry-v7
+    paths:
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - "experiments/crystal_chess_goal_certificate_v3.py"
+      - "experiments/crystal_chess_richer_transfer_v5.py"
+      - "experiments/crystal_chess_pair_geometry_v7.py"
+      - ".github/workflows/crystal-chess-pair-geometry-v7.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  pair-geometry-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile chess experiment
+        run: python -m py_compile experiments/crystal_chess_pair_geometry_v7.py
+
+      - name: Acquire exact Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Acquire pair-geometry repair and prospectively re-test
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v7
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v7/
+          python experiments/crystal_chess_pair_geometry_v7.py             --tablebase-dir /tmp/syzygy             --acquire-size 50000             --test-size 100000             --acquire-seed 20260928             --test-seed 20260929             --output artifacts/crystal-chess-v7/crystal_chess_pair_geometry_v7.json             | tee artifacts/crystal-chess-v7/run.log
+          grep -q "CRYSTAL_CHESS_PAIR_GEOMETRY_V7=PASS" artifacts/crystal-chess-v7/run.log
+
+      - name: Upload V7 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-pair-geometry-v7
+          path: artifacts/crystal-chess-v7/
+          if-no-files-found: error
