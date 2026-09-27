@@ -1,0 +1,52 @@
+name: ethereum-crystal-v14-geth-node-integration
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  geth-node-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout and patch pinned go-ethereum
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder.go" core/types/bal/crystal_apply_decoder.go
+          python "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/patch_geth.py"
+          gofmt -w core/types/bal/crystal_apply_decoder.go eth/protocols/snap/syncv2.go
+          git diff --check
+          git diff > /tmp/crystal-v14-geth.patch
+      - name: Full BAL package qualification
+        working-directory: /tmp/geth
+        run: go test ./core/types/bal -count=1
+      - name: Full snap package qualification
+        working-directory: /tmp/geth
+        run: go test ./eth/protocols/snap -count=1
+      - name: Stress modified catch-up path
+        working-directory: /tmp/geth
+        run: |
+          go test ./eth/protocols/snap -count=5             -run '^(TestPivotMovement|TestPivotMovementRepeated|TestCatchUpPersistsIncrementally|TestCatchUpWindowed)$'
+      - name: Build actual geth node binary
+        working-directory: /tmp/geth
+        run: |
+          go build -o /tmp/geth-crystal ./cmd/geth
+          /tmp/geth-crystal version | tee /tmp/crystal-v14-geth-version.txt
+          sha256sum /tmp/geth-crystal | tee /tmp/crystal-v14-geth-binary.sha256
+      - name: Upload V14 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v14-geth-node-integration
+          path: |
+            /tmp/crystal-v14-geth.patch
+            /tmp/crystal-v14-geth-version.txt
+            /tmp/crystal-v14-geth-binary.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V14_GETH_NODE_INTEGRATION=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "PARENT_V13_RUN=36355884299"
+          echo "NO_UPSTREAM_PR_CREATED=true"

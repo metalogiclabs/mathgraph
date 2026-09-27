@@ -1,0 +1,65 @@
+name: ethereum-crystal-v15-reth-cross-client
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  reth-cross-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate broad official EIP-7928 corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v15-fixtures
+          uv run fill --from Amsterdam --until Amsterdam             --output=/tmp/eels-v15-fixtures --skip-index --no-html -n 2             tests/amsterdam/eip7928_block_level_access_lists
+      - name: Export frozen V9/V13 held-out canonical RLP
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py             /tmp/eels-v15-fixtures /tmp/crystal-v15-heldout.rlpbin
+          sha256sum /tmp/crystal-v15-heldout.rlpbin > /tmp/crystal-v15-heldout.sha256
+      - name: Checkout pinned Reth and inject cross-client test
+        run: |
+          git clone --filter=blob:none https://github.com/paradigmxyz/reth.git /tmp/reth
+          cd /tmp/reth
+          git checkout 5723a3fed5521fad105b44f86876580242f31be9
+          test "$(git rev-parse HEAD)" = "5723a3fed5521fad105b44f86876580242f31be9"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v15/crystal_cross_client.rs"             crates/snap-sync/src/crystal_cross_client.rs
+          printf '\n#[cfg(test)]\nmod crystal_cross_client;\n' >> crates/snap-sync/src/lib.rs
+          cargo fmt --all -- --check || cargo fmt --all
+          git diff --check
+          git diff > /tmp/crystal-v15-reth.patch
+      - name: Run production-consumer parity and benchmark
+        working-directory: /tmp/reth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v15-heldout.rlpbin
+        run: |
+          cargo test -p reth-snap-sync --release             crystal_cross_client_reth_apply_consequence_and_benchmark             -- --nocapture | tee /tmp/crystal-v15-reth.txt
+          grep -q 'ETHEREUM_CRYSTAL_V15_RETH=PASS' /tmp/crystal-v15-reth.txt
+          grep -q 'reth_bal_state_update_parity_all=true' /tmp/crystal-v15-reth.txt
+      - name: Run Reth snap-sync regression suite
+        working-directory: /tmp/reth
+        run: cargo test -p reth-snap-sync --release
+      - name: Upload V15 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v15-reth-cross-client
+          path: |
+            /tmp/crystal-v15-reth.patch
+            /tmp/crystal-v15-reth.txt
+            /tmp/crystal-v15-heldout.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V15_RETH_CROSS_CLIENT=PASS"
+          echo "RETH_PIN=5723a3fed5521fad105b44f86876580242f31be9"
+          echo "PARENT_V13_RUN=36355884299"
+          echo "NO_UPSTREAM_PR_CREATED=true"
