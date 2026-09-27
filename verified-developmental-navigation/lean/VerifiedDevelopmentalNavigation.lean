@@ -1,4 +1,4 @@
-namespace VerifiedDevelopmentalNavigation
+import VerifiedDevelopmentalNavigation.ActionQuotient\n\nnamespace VerifiedDevelopmentalNavigation
 
 /-!
 # Minimal verified future sufficiency
