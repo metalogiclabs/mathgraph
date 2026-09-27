@@ -1,0 +1,78 @@
+name: Crystal Chess Consequence Pruning V13
+
+on:
+  push:
+    branches:
+      - crystal-chess-consequence-pruning-v13
+    paths:
+      - "experiments/crystal_chess_consequence_pruning_v13.py"
+      - ".github/workflows/crystal-chess-consequence-pruning-v13.yml"
+      - "experiments/crystal_chess_piece_family_v10.py"
+      - "experiments/crystal_chess_dtz_certificate_v6.py"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  prune-family:
+    strategy:
+      fail-fast: false
+      matrix:
+        piece: [P, Q, R, B, N]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile experiment
+        run: python -m py_compile experiments/crystal_chess_consequence_pruning_v13.py
+
+      - name: Acquire exact WDL + DTZ authority
+        env:
+          PIECE: ${{ matrix.piece }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          wdl="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          dtz="https://tablebase.lichess.ovh/tables/standard/3-4-5-dtz"
+          if [ "$PIECE" = "P" ]; then
+            stems="KPvK KQvK KRvK KBvK KNvK"
+          else
+            stems="K${PIECE}vK"
+          fi
+          for stem in $stems; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$stem.rtbw" "$wdl/$stem.rtbw"
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$stem.rtbz" "$dtz/$stem.rtbz"
+            test -s "/tmp/syzygy/$stem.rtbw"
+            test -s "/tmp/syzygy/$stem.rtbz"
+          done
+          sha256sum /tmp/syzygy/*.rtb* | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Consequence-prune exact certificate tree
+        env:
+          PIECE: ${{ matrix.piece }}
+        run: |
+          set -euo pipefail
+          mkdir -p "artifacts/crystal-chess-v13-${PIECE}"
+          cp /tmp/syzygy/SHA256SUMS "artifacts/crystal-chess-v13-${PIECE}/"
+          python experiments/crystal_chess_consequence_pruning_v13.py             --tablebase-dir /tmp/syzygy             --piece "$PIECE"             --output "artifacts/crystal-chess-v13-${PIECE}/result.json"             | tee "artifacts/crystal-chess-v13-${PIECE}/run.log"
+          grep -q "CRYSTAL_CHESS_CONSEQUENCE_PRUNING_V13=PASS" "artifacts/crystal-chess-v13-${PIECE}/run.log"
+
+      - name: Upload V13 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-consequence-pruning-v13-${{ matrix.piece }}
+          path: artifacts/crystal-chess-v13-${{ matrix.piece }}/
+          if-no-files-found: error
