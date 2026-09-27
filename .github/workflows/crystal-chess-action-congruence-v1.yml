@@ -1,0 +1,62 @@
+name: Crystal Chess Action Congruence V1
+
+on:
+  push:
+    branches:
+      - crystal-chess-action-congruence-v1
+    paths:
+      - "experiments/crystal_chess_action_congruence_v1.py"
+      - "experiments/crystal_chess_kpvk_v0.py"
+      - ".github/workflows/crystal-chess-action-congruence-v1.yml"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  action-congruence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999"
+
+      - name: Requalify inherited Crystal boundary
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Acquire pinned exact 3-piece WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Discover train-dev action schema and seal untouched d-file test
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-action-congruence-v1
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-action-congruence-v1/
+          python experiments/crystal_chess_action_congruence_v1.py \
+            --tablebase-dir /tmp/syzygy \
+            --output artifacts/crystal-chess-action-congruence-v1/result.json \
+            | tee artifacts/crystal-chess-action-congruence-v1/run.log
+          grep -q "CRYSTAL_CHESS_ACTION_CONGRUENCE_V1=" artifacts/crystal-chess-action-congruence-v1/run.log
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-action-congruence-v1
+          path: artifacts/crystal-chess-action-congruence-v1/
+          if-no-files-found: error
