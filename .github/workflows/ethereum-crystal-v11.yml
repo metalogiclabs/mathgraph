@@ -1,0 +1,63 @@
+name: ethereum-crystal-v11-geth
+on:
+  push:
+    branches: [ethereum-msi-consequential-interface-v1]
+  workflow_dispatch:
+jobs:
+  geth-package-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+      - uses: astral-sh/setup-uv@v6
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+      - name: Generate broad official EIP-7928 corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v11-fixtures
+          uv run fill --from Amsterdam --until Amsterdam             --output=/tmp/eels-v11-fixtures --skip-index --no-html -n 2             tests/amsterdam/eip7928_block_level_access_lists
+      - name: Export frozen held-out RLP corpus
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py             /tmp/eels-v11-fixtures /tmp/crystal-v11-heldout.rlpbin
+          sha256sum /tmp/crystal-v11-heldout.rlpbin > /tmp/crystal-v11-heldout.sha256
+      - name: Checkout pinned go-ethereum
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v11/bal_crystal_bench_test.go" core/types/bal/crystal_consumer_bench_test.go
+      - name: Verify dependency view against geth BAL decoder
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v11-heldout.rlpbin
+        run: go test ./core/types/bal -run '^TestCrystalDependencyViewCorrectness$' -count=1
+      - name: Benchmark production geth decoder vs Crystal view
+        working-directory: /tmp/geth
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v11-heldout.rlpbin
+        run: |
+          go test ./core/types/bal -run '^$'             -bench '^BenchmarkCrystal(FullGeth|DependencyView)$'             -benchmem -benchtime=1s -count=5 | tee /tmp/crystal-v11-geth-bench.txt
+      - name: Summarize V11
+        run: |
+          python experiments/ethereum_crystal_v11/parse_bench.py             /tmp/crystal-v11-geth-bench.txt /tmp/crystal-v11-certificate.json
+      - name: Upload V11 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v11-geth-evidence
+          path: |
+            /tmp/crystal-v11-certificate.json
+            /tmp/crystal-v11-geth-bench.txt
+            /tmp/crystal-v11-heldout.sha256
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V11_GETH_COMPLETE=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "PARENT_V10_RUN=36354980547"
