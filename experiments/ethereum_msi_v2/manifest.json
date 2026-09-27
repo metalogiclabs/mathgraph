@@ -1,0 +1,9 @@
+{
+  "experiment": "ethereum-eels-msi-v2",
+  "eels_repository": "ethereum/execution-specs",
+  "eels_commit": "84e7d2c266e3319fc3882e72f379282bb1c40f2d",
+  "fork": "Amsterdam",
+  "eip": 7928,
+  "epistemic_state": "CANDIDATE_PENDING_CI",
+  "verification_boundary": "pinned EELS semantic anchors plus exhaustive finite BAL consequence model"
+}
