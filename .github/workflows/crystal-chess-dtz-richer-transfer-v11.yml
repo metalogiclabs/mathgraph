@@ -43,7 +43,7 @@ jobs:
           mkdir -p /tmp/syzygy
           wdl="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
           dtz="https://tablebase.lichess.ovh/tables/standard/3-4-5-dtz"
-          for stem in KPvK KPPvK; do
+          for stem in KPvK KPPvK KQvK KRvK KBvK KNvK; do
             curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$stem.rtbw" "$wdl/$stem.rtbw"
             curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$stem.rtbz" "$dtz/$stem.rtbz"
             test -s "/tmp/syzygy/$stem.rtbw"
