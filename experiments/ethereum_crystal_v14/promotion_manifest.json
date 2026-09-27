@@ -1,0 +1,10 @@
+{
+  "protocol":"ETHEREUM_CRYSTAL_V14_GETH_NODE_INTEGRATION",
+  "epistemic_state":"WARRANTED_REUSABLE",
+  "authority":{"run_id":36356411019,"job_id":108724906064,"artifact_id":10943562791,"artifact_sha256":"250f8689237d232dcf5f7687bb1055999092411837effc19e15bb2d3d1864339"},
+  "geth_commit":"920c07774c65ebb3023536f85df642c44478b540",
+  "parent_v13_run":36355884299,
+  "qualified":["full core/types/bal tests","full eth/protocols/snap tests","modified catch-up tests repeated five times","cmd/geth build and version execution"],
+  "promotion_boundary":"pinned geth source/build and snap catch-up integration",
+  "unknowns":["live-mainnet end-to-end node throughput impact","upstream merge suitability","cross-client behavior beyond separately qualified V15"]
+}
