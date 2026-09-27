@@ -189,9 +189,11 @@ def forced_goal_attractor(
                     worst = max(rank[outcome] for outcome in step.outcomes)
                     candidates.append((worst + 1, step.capability_id, step))
             if candidates:
-                additions.append(
-                    min(candidates, key=lambda item: (item[0], item[1], item[2].id))
+                best_rank, _best_capability_id, best_step = min(
+                    candidates,
+                    key=lambda item: (item[0], item[1], item[2].id),
                 )
+                additions.append((best_rank, state, best_step))
 
         if not additions:
             break
