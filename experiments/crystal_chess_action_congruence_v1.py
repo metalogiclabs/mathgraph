@@ -297,6 +297,16 @@ def split_records(records: Iterable[ActionRecord], files: set[int]) -> list[Acti
     return [r for r in records if r.pawn_file in files]
 
 
+def deterministic_state_sample(
+    records: list[ActionRecord], limit: int
+) -> list[ActionRecord]:
+    states = sorted({r.state_id for r in records})
+    if limit <= 0 or len(states) <= limit:
+        return records
+    chosen = {states[(i * len(states)) // limit] for i in range(limit)}
+    return [r for r in records if r.state_id in chosen]
+
+
 def evaluate(
     records: list[ActionRecord],
     selected: tuple[int, ...],
@@ -484,24 +494,43 @@ def main() -> int:
     dev = split_records(records, {2})
     test = split_records(records, {3})
 
-    selected, train_trace = refine_to_purity(
-        train, feature_names, stage="train_ab"
-    )
-    train_eval = evaluate(train, selected)
-    dev_before = evaluate(dev, selected)
+    # Cheap discovery, hard qualification: learn on a deterministic spread,
+    # then reopen only witnessed residuals on the complete split.
+    train_discovery = deterministic_state_sample(train, 12000)
+    dev_discovery = deterministic_state_sample(dev, 8000)
 
+    selected, train_trace = refine_to_purity(
+        train_discovery, feature_names, stage="train_ab_discovery"
+    )
+
+    train_full_before = evaluate(train, selected)
+    train_full_trace: list[dict[str, object]] = []
+    if int(train_full_before["conflict_mass"]) > 0:
+        selected, train_full_trace = refine_to_purity(
+            train, feature_names, selected=selected, stage="train_ab_full_repair"
+        )
+
+    dev_before = evaluate(dev, selected)
     dev_trace: list[dict[str, object]] = []
     if int(dev_before["conflict_mass"]) > 0:
         selected, dev_trace = refine_to_purity(
-            dev, feature_names, selected=selected, stage="dev_c_repair"
+            dev_discovery, feature_names, selected=selected, stage="dev_c_discovery_repair"
         )
+        dev_full_after_sample = evaluate(dev, selected)
+        if int(dev_full_after_sample["conflict_mass"]) > 0:
+            selected, dev_full_trace = refine_to_purity(
+                dev, feature_names, selected=selected, stage="dev_c_full_repair"
+            )
+            dev_trace.extend(dev_full_trace)
 
     train_final = evaluate(train, selected)
     dev_final = evaluate(dev, selected)
     test_final = evaluate(test, selected)
 
     transfer_exact = (
-        int(test_final["conflict_mass"]) == 0
+        int(train_final["conflict_mass"]) == 0
+        and int(dev_final["conflict_mass"]) == 0
+        and int(test_final["conflict_mass"]) == 0
         and int(test_final["pruned_minimax_mismatches"]) == 0
     )
     status = (
@@ -527,7 +556,11 @@ def main() -> int:
         "candidate_features": feature_names,
         "selected_features": [feature_names[i] for i in selected],
         "selection": {
+            "train_discovery_states": len({r.state_id for r in train_discovery}),
+            "dev_discovery_states": len({r.state_id for r in dev_discovery}),
             "train_trace": train_trace,
+            "train_full_before": train_full_before,
+            "train_full_trace": train_full_trace,
             "dev_before": dev_before,
             "dev_trace": dev_trace,
         },
