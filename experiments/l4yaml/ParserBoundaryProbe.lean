@@ -2,7 +2,6 @@ import L4YAML.Scanner.Scanner
 import L4YAML.Parser.TokenParser
 import L4YAML.Proofs.Composition
 import L4YAML.Proofs.Production.StructureProduction
-import L4YAML.Proofs.Production.StructureProduction
 
 /-!
 # L4YAML parser-boundary probe
@@ -181,54 +180,6 @@ lemma scanFlowEntry_full_prod
       hcorr_adv.input_prefix, hcorr_adv.indent_cols_nonneg⟩
 
 
-/--
-Fix-A brick: scanner success on a comma does not merely preserve surface
-correspondence; it yields the exact YAML production [7] character witness.
-Upstream `scanFlowEntry_prod` currently returns correspondence only.
--/
-lemma scanFlowEntry_literal_prod
-    (sc : L4YAML.Scanner.ScannerState)
-    (sp : L4YAML.Surface.SurfPos)
-    (s' : L4YAML.Scanner.ScannerState)
-    (hcorr : L4YAML.Proofs.CouplingBridge.ScannerSurfCorr sc sp)
-    (hpeek : sc.peek? = some ',')
-    (hok : L4YAML.Scanner.scanFlowEntry sc = .ok s') :
-    ∃ sp',
-      L4YAML.Surface.GLit ',' sp sp' ∧
-      L4YAML.Proofs.CouplingBridge.ScannerSurfCorr s' sp' := by
-  open L4YAML.Surface in
-  open L4YAML.Scanner in
-  open L4YAML.Proofs.CouplingBridge in
-  obtain ⟨rest, hsp_eq⟩ := peek_some_sp hcorr hpeek
-  subst hsp_eq
-  have hmore := peek_some_has_more hpeek
-  unfold scanFlowEntry at hok
-  simp only [bind, Except.bind] at hok
-  split at hok
-  · split at hok
-    · simp at hok
-    · have h := Except.ok.inj hok
-      subst s'
-      refine ⟨⟨rest, sc.col + 1⟩, GLit.mk rest sc.col, ?_⟩
-      have hcorr_emit : ScannerSurfCorr
-          (sc.emit .flowEntry) ⟨',' :: rest, sc.col⟩ :=
-        ⟨hcorr.chars_from, hcorr.col_eq, hcorr.end_eq,
-         hcorr.input_prefix, hcorr.indent_cols_nonneg⟩
-      have hcorr_adv := advance_non_newline_corr
-        (sc.emit .flowEntry) ',' rest hcorr_emit hmore (by decide) (by decide)
-      exact ⟨hcorr_adv.chars_from, hcorr_adv.col_eq, hcorr_adv.end_eq,
-             hcorr_adv.input_prefix, hcorr_adv.indent_cols_nonneg⟩
-  · have h := Except.ok.inj hok
-    subst s'
-    refine ⟨⟨rest, sc.col + 1⟩, GLit.mk rest sc.col, ?_⟩
-    have hcorr_emit : ScannerSurfCorr
-        (sc.emit .flowEntry) ⟨',' :: rest, sc.col⟩ :=
-      ⟨hcorr.chars_from, hcorr.col_eq, hcorr.end_eq,
-       hcorr.input_prefix, hcorr.indent_cols_nonneg⟩
-    have hcorr_adv := advance_non_newline_corr
-      (sc.emit .flowEntry) ',' rest hcorr_emit hmore (by decide) (by decide)
-    exact ⟨hcorr_adv.chars_from, hcorr_adv.col_eq, hcorr_adv.end_eq,
-           hcorr_adv.input_prefix, hcorr_adv.indent_cols_nonneg⟩
 
 #eval scanAccepts "[[a][b]]"
 #eval parseAccepts "[[a][b]]"
