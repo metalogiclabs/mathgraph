@@ -1,6 +1,8 @@
 # SerializationWellFormed — handoff status
 
 Upstream working-state pin: nasa-jpl/L4YAML@326e4bdfd599fa74e7601bdd84632845a3353ccb
+MathGraph qualified head: 825cbf205750ca567bd269465fd19d609efe4175
+Qualification: GitHub Actions run 36471324111 (green)
 
 This directory answers the stateful part of the corrected L4YAML load capstone.
 
@@ -81,5 +83,31 @@ The intended final capstone shape after those surface obligations close is:
 The stateful predicate and its runtime correspondence are the contribution of
 this branch; the remaining surface exactness work belongs to the upstream
 grammar-completeness refactor.
+
+## Evidence map
+
+- SerializationWellFormed.lean — independent state/event semantics and exact runtime guard projections.
+- SourceEvents.lean — independent local source lexeme recognition and surface-production bridges.
+- RuntimeScopes.lean — document-scope reset correspondence.
+- AnchorTiming.lean — separator proving lexical anchor appearance is not semantic commitment.
+- CommitTrace.lean — compositional node-completion event ordering.
+- SurfaceEvents.lean — surface witnesses become pending/use events at the correct layer.
+- AnchorRuntime.lean — parser addAnchor/applyNodeFinalization correspondence.
+- ErrorCensus.lean — exhaustive current ScanError layer classification.
+- Census.lean — fixed executable controls, including self-reference and cross-document reset.
+
+## Verification boundary
+
+Qualified at MathGraph head 825cbf205750ca567bd269465fd19d609efe4175 by
+run 36471324111 against upstream pin
+326e4bdfd599fa74e7601bdd84632845a3353ccb.
+
+There are no sorry/admit placeholders in the packaged Lean files. The printed
+axiom profiles for generalized claims contain only Lean/L4YAML ambient logical
+axioms such as propext, Quot.sound, and where surface extraction requires it,
+Classical.choice. No generalized theorem is carried by native_decide.
+
+The runtime census is evidence for fixed controls; the family-level claims are
+the Lean theorems listed above.
 
 No upstream PR has been opened.
