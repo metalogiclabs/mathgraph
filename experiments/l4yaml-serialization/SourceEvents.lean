@@ -234,9 +234,41 @@ lemma gplus_gchar_of_cons
 
 lemma anchor_char_bool_true_iff (c : Char) :
     isAnchorCharBool c = true ↔ isNsAnchorChar c := by
-  simp [isAnchorCharBool, isNsAnchorChar, isNsChar,
-    isLineBreak_iff, isWhiteSpace_iff, isPrintable_iff,
-    isFlowIndicator_iff]
+  constructor
+  · intro h
+    simp only [isAnchorCharBool, Bool.and_eq_true, Bool.not_eq_true] at h
+    rcases h with ⟨⟨⟨⟨hbreak, hwhite⟩, hprint⟩, hbom⟩, hflow⟩
+    have hnbreak : ¬ isLineBreakProp c := by
+      intro hp
+      have ht : isLineBreakBool c = true := (isLineBreak_iff c).2 hp
+      simp [ht] at hbreak
+    have hnwhite : ¬ isWhiteSpaceProp c := by
+      intro hp
+      have ht : isWhiteSpaceBool c = true := (isWhiteSpace_iff c).2 hp
+      simp [ht] at hwhite
+    have hpprint : isPrintableProp c :=
+      (isPrintable_iff c).1 hprint
+    have hnflow : ¬ isFlowIndicatorProp c := by
+      intro hp
+      have ht : isFlowIndicatorBool c = true := (isFlowIndicator_iff c).2 hp
+      simp [ht] at hflow
+    exact ⟨⟨hnbreak, hnwhite, hpprint, by simpa using hbom⟩, hnflow⟩
+  · intro h
+    rcases h with ⟨⟨hbreak, hwhite, hprint, hbom⟩, hflow⟩
+    have hb : isLineBreakBool c = false := by
+      cases hbc : isLineBreakBool c
+      · rfl
+      · exact False.elim (hbreak ((isLineBreak_iff c).1 hbc))
+    have hw : isWhiteSpaceBool c = false := by
+      cases hwc : isWhiteSpaceBool c
+      · rfl
+      · exact False.elim (hwhite ((isWhiteSpace_iff c).1 hwc))
+    have hp : isPrintableBool c = true := (isPrintable_iff c).2 hprint
+    have hf : isFlowIndicatorBool c = false := by
+      cases hfc : isFlowIndicatorBool c
+      · rfl
+      · exact False.elim (hflow ((isFlowIndicator_iff c).1 hfc))
+    simp [isAnchorCharBool, hb, hw, hp, hbom, hf]
 
 lemma anchor_definition_surface
     (c : Char) (cs tail : List Char) (col : Nat)
