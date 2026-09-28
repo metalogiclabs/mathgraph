@@ -77,3 +77,5 @@ theorem executable_implies_scanner (input : String) :
   exact ⟨tokens, hscan⟩
 
 end L4YAMLCorrectedCapstone
+
+#print axioms L4YAMLCorrectedCapstone.parse_iff_executable_language
