@@ -5,6 +5,7 @@ on:
     branches: [l4yaml-parser-boundary-v1]
     paths:
       - 'experiments/l4yaml/CapstoneObstruction.lean'
+      - 'experiments/l4yaml/SemanticObstruction.lean'
       - '.github/workflows/l4yaml-capstone-obstruction-fast.yml'
   workflow_dispatch:
 
@@ -32,8 +33,10 @@ jobs:
         working-directory: upstream
         run: |
           lake build L4YAML.Surface.Document L4YAML.Scanner.Scanner L4YAML.Parser.TokenParser L4YAML.Parser.Composition L4YAML.Proofs.Coupling.CouplingBridge
-      - name: Kernel-check capstone obstruction
+      - name: Kernel-check capstone obstructions
         run: |
           cp experiments/l4yaml/CapstoneObstruction.lean upstream/CapstoneObstruction.lean
+          cp experiments/l4yaml/SemanticObstruction.lean upstream/SemanticObstruction.lean
           cd upstream
           lake env lean CapstoneObstruction.lean
+          lake env lean SemanticObstruction.lean
