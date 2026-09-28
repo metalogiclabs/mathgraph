@@ -1,6 +1,7 @@
 import L4YAML.Surface.Node
 import SerializationWellFormed
 import CommitTrace
+import SourceEvents
 
 /-!
 # Surface-derivation semantic event witnesses
