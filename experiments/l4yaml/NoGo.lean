@@ -50,3 +50,5 @@ theorem executable_factorization (input : String) :
   L4YAMLCorrectedCapstone.parse_iff_executable_language input
 
 end L4YAMLNoGo
+
+#print axioms L4YAMLNoGo.advertised_parse_iff_grammar_is_false
