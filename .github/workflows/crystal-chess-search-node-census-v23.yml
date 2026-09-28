@@ -43,8 +43,8 @@ jobs:
           git -C /tmp/stockfish diff --check
           make -C /tmp/stockfish/src -j2 build ARCH=x86-64
           /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/instrumented-bench.txt 2>&1
-          base_nodes="$(grep -E 'Nodes searched' /tmp/baseline-bench.txt | tail -1 | awk '{print $3}')"
-          inst_nodes="$(grep -E 'Nodes searched' /tmp/instrumented-bench.txt | tail -1 | awk '{print $3}')"
+          base_nodes="$(grep -E 'Nodes searched' /tmp/baseline-bench.txt | tail -1 | awk '{print $NF}')"
+          inst_nodes="$(grep -E 'Nodes searched' /tmp/instrumented-bench.txt | tail -1 | awk '{print $NF}')"
           echo "baseline_bench_nodes=$base_nodes"
           echo "instrumented_bench_nodes=$inst_nodes"
           test "$base_nodes" = "$inst_nodes"
