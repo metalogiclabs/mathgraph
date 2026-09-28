@@ -24,6 +24,12 @@ jobs:
           path: upstream
           submodules: recursive
 
+      - name: Cache pinned L4YAML build
+        uses: actions/cache@v4
+        with:
+          path: upstream/.lake/build
+          key: l4yaml-16562a74421f94cc0f8216eecf21f1ff58166fa7-${{ runner.os }}
+
       - name: Install Elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
