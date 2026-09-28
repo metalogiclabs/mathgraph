@@ -1,0 +1,86 @@
+diff --git a/src/search.cpp b/src/search.cpp
+index 0000000..0000000 100644
+--- a/src/search.cpp
++++ b/src/search.cpp
+@@ -29,6 +29,7 @@
+ #include <initializer_list>
+ #include <iostream>
+ #include <list>
++#include <map>
+ #include <ratio>
+ #include <string>
+ #include <utility>
+@@ -58,6 +59,43 @@ namespace {
+ 
+ constexpr u64 NODES_LIMIT_OUTPUT = 10'000'000;
+ 
++// Diagnostic-only material census for Crystal Chess V23. The qualification
++// workflow pins Threads=1, so only the main search worker records nodes.
++// This code does not alter search decisions or values.
++std::map<std::uint64_t, std::uint64_t> crystalMaterialCounts;
++
++std::uint64_t crystal_material_code(const Position& pos) {
++    constexpr std::array<PieceType, 5> pts = {PAWN, KNIGHT, BISHOP, ROOK, QUEEN};
++    std::uint64_t code = 0;
++    int shift = 0;
++    for (Color c : {WHITE, BLACK})
++        for (PieceType pt : pts)
++        {
++            const std::uint64_t n = std::uint64_t(popcount(pos.pieces(c, pt)));
++            code |= (n & 0xFULL) << shift;
++            shift += 4;
++        }
++    return code;
++}
++
++void crystal_record_material(const Position& pos) {
++    if (pos.count<ALL_PIECES>() <= 8)
++        ++crystalMaterialCounts[crystal_material_code(pos)];
++}
++
++void crystal_dump_material() {
++    for (const auto& [code, count] : crystalMaterialCounts)
++        std::cout << "info string CRYSTAL_SEARCH_MATERIAL " << code << " " << count << std::endl;
++}
++
+ constexpr int SEARCHEDLIST_CAPACITY = 32;
+ using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
+@@ -173,6 +211,9 @@ void Search::Worker::start_searching() {
+ 
+     accumulatorStack.reset();
+ 
++    if (is_mainthread())
++        crystalMaterialCounts.clear();
++
+     // Non-main threads go directly to iterative_deepening()
+     if (!is_mainthread())
+     {
+@@ -244,6 +285,9 @@ void Search::Worker::start_searching() {
+     if (bestThread->rootMoves[0].pv.size() > 1)
+         ponder = UCIEngine::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+ 
++    if (is_mainthread())
++        crystal_dump_material();
++
+     auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+     main_manager()->updates.onBestmove(bestmove, ponder);
+ }
+@@ -531,6 +575,9 @@ Value Search::Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, D
+     if (depth <= 0)
+         return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
+ 
++    if (is_mainthread())
++        crystal_record_material(pos);
++
+     // Limit the depth if extensions made it too large
+     depth = std::min(depth, MAX_PLY - 1);
+@@ -1007,6 +1054,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta) {
+     assert(alpha >= -VALUE_INFINITE && alpha < beta && beta <= VALUE_INFINITE);
+     assert(PvNode || (alpha == beta - 1));
+ 
++    if (is_mainthread())
++        crystal_record_material(pos);
++
+     // Check if we have an upcoming move that draws by repetition
+     if (alpha < VALUE_DRAW && pos.upcoming_repetition(ss->ply))
+     {
