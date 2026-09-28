@@ -6,7 +6,7 @@ on:
     branches:
       - crystal-chess-search-node-census-v23
     paths:
-      - "experiments/stockfish_crystal_material_census_v23.patch"
+      - "experiments/patch_stockfish_material_census_v23.py"
       - "experiments/crystal_chess_stockfish_node_census_v23.py"
       - ".github/workflows/crystal-chess-search-node-census-v23.yml"
   workflow_dispatch:
@@ -39,7 +39,7 @@ jobs:
       - name: Apply diagnostic-only material census patch
         run: |
           set -euo pipefail
-          git -C /tmp/stockfish apply "$GITHUB_WORKSPACE/experiments/stockfish_crystal_material_census_v23.patch"
+          python experiments/patch_stockfish_material_census_v23.py /tmp/stockfish/src/search.cpp
           git -C /tmp/stockfish diff --check
           make -C /tmp/stockfish/src -j2 build ARCH=x86-64
           /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/instrumented-bench.txt 2>&1
