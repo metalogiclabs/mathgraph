@@ -62,9 +62,9 @@ jobs:
           lake env lean ParserBoundaryProbe.lean
           lake env lean FlowContinuation.lean
           lake env lean ExactNestedFlow.lean
-          lake env lean CapstoneObstruction.lean
-          lake env lean SemanticObstruction.lean
-          lake env lean CorrectedCapstone.lean
+          lake env lean -o .lake/build/lib/lean/CapstoneObstruction.olean CapstoneObstruction.lean
+          lake env lean -o .lake/build/lib/lean/SemanticObstruction.olean SemanticObstruction.lean
+          lake env lean -o .lake/build/lib/lean/CorrectedCapstone.olean CorrectedCapstone.lean
           lake env lean TagHandleObstruction.lean
           lake env lean BlockHeaderObstruction.lean
           lake env lean NoGo.lean
