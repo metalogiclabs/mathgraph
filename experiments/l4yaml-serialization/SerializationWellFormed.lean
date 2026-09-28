@@ -248,6 +248,34 @@ lemma parser_tag_guard_ext
   simp [TagHandleAllowed, hproj]
 
 
+
+/-- Alias acceptance depends only on set-membership, not list order or
+multiplicity in the projected state. -/
+lemma scanner_alias_guard_set_ext
+    (s₁ s₂ : L4YAML.Scanner.ScannerState)
+    (hproj : ∀ name : String,
+      name ∈ (ofScannerAliases s₁).anchors ↔
+      name ∈ (ofScannerAliases s₂).anchors)
+    (name : String) :
+    (s₁.definedAnchors.any (fun x => x == name) = true) ↔
+      (s₂.definedAnchors.any (fun x => x == name) = true) := by
+  rw [scanner_alias_guard_exact, scanner_alias_guard_exact]
+  exact hproj name
+
+/-- Named-tag declaration acceptance likewise depends only on the set of
+declared handle names, not parser-table order, duplicate declarations, or tag
+prefix values. -/
+lemma parser_tag_guard_set_ext
+    (ps₁ ps₂ : L4YAML.TokenParser.ParseState)
+    (hproj : ∀ handle : String,
+      handle ∈ (ofParserTags ps₁).tagHandles ↔
+      handle ∈ (ofParserTags ps₂).tagHandles)
+    (handle : String) :
+    parserTagGuard ps₁ handle = true ↔ parserTagGuard ps₂ handle = true := by
+  rw [parser_tag_guard_exact, parser_tag_guard_exact]
+  unfold TagHandleAllowed
+  exact or_congr Iff.rfl (hproj handle)
+
 /-! ## Necessity / separator laws -/
 
 /-- Anchor-name membership is not merely sufficient state: changing it can
@@ -283,3 +311,6 @@ end L4YAMLSerializationWellFormed
 
 #print axioms L4YAMLSerializationWellFormed.alias_membership_separator
 #print axioms L4YAMLSerializationWellFormed.tag_membership_separator
+
+#print axioms L4YAMLSerializationWellFormed.scanner_alias_guard_set_ext
+#print axioms L4YAMLSerializationWellFormed.parser_tag_guard_set_ext
