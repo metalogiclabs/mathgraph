@@ -71,33 +71,38 @@ def anchorEventAt : List Char → Option (Event × List Char)
       else some (.useAlias (String.ofList name), rest)
   | _ => none
 
+/-- Tail parser after the leading `!` of a possible custom tag use. -/
+def namedTagUseTail (cs : List Char) : Option (Event × List Char) :=
+  let (body, rest) := spanWhile isWordCharBool cs
+  match body, rest with
+  | [], _ => none
+  | _, '!' :: suffix =>
+      some (.useTag ("!" ++ String.ofList body ++ "!"), suffix)
+  | _, _ => none
+
 /-- Parse a *custom named* tag use `!h!suffix` at the current source
 position. Builtin `!`, `!!`, and verbatim `!<...>` forms do not create a
 well-formedness obligation and therefore return `none` here. -/
 def namedTagUseAt : List Char → Option (Event × List Char)
-  | '!' :: cs =>
-      let (body, rest) := spanWhile isWordCharBool cs
-      match body, rest with
-      | [], _ => none
-      | _, '!' :: suffix =>
-          some (.useTag ("!" ++ String.ofList body ++ "!"), suffix)
-      | _, _ => none
+  | '!' :: cs => namedTagUseTail cs
   | _ => none
+
+/-- Tail parser after the first `!` of a custom %TAG handle. -/
+def namedTagDeclarationTail (afterBang : List Char) : Option (Event × List Char) :=
+  let (body, rest) := spanWhile isWordCharBool afterBang
+  match body, rest with
+  | [], _ => none
+  | _, '!' :: tail =>
+      some (.declareTag ("!" ++ String.ofList body ++ "!"), tail)
+  | _, _ => none
 
 /-- Parse a custom named handle declaration from a `%TAG` directive at the
 current source position.  Prefix contents are irrelevant to the declaration
 accept/reject state, so this projection deliberately stops after the handle. -/
 def namedTagDeclarationAt : List Char → Option (Event × List Char)
   | '%' :: 'T' :: 'A' :: 'G' :: cs =>
-      let cs := dropHSpace cs
-      match cs with
-      | '!' :: afterBang =>
-          let (body, rest) := spanWhile isWordCharBool afterBang
-          match body, rest with
-          | [], _ => none
-          | _, '!' :: tail =>
-              some (.declareTag ("!" ++ String.ofList body ++ "!"), tail)
-          | _, _ => none
+      match dropHSpace cs with
+      | '!' :: afterBang => namedTagDeclarationTail afterBang
       | _ => none
   | _ => none
 
@@ -155,7 +160,7 @@ lemma named_tag_use_source_exact
     namedTagUseAt ('!' :: (handleChars ++ '!' :: suffix)) =
       some (.useTag ("!" ++ String.ofList handleChars ++ "!"), suffix) := by
   have hbang : isWordCharBool '!' = false := by decide
-  unfold namedTagUseAt
+  simp only [namedTagUseAt, namedTagUseTail]
   rw [spanWhile_append_stop isWordCharBool handleChars '!' suffix hchars hbang]
   simp [hne]
 
@@ -168,8 +173,7 @@ lemma named_tag_declaration_source_exact
           (handleChars ++ '!' :: tail)) =
       some (.declareTag ("!" ++ String.ofList handleChars ++ "!"), tail) := by
   have hbang : isWordCharBool '!' = false := by decide
-  unfold namedTagDeclarationAt
-  simp only [dropHSpace]
+  simp only [namedTagDeclarationAt, dropHSpace, namedTagDeclarationTail]
   rw [spanWhile_append_stop isWordCharBool handleChars '!' tail hchars hbang]
   simp [hne]
 
@@ -207,7 +211,7 @@ lemma gstar_gchar_of_all
         ⟨cs ++ tail, col + 1⟩
         ⟨tail, (col + 1) + cs.length⟩
         hstep htail
-      convert hfull using 1 <;> simp <;> omega
+      simpa [List.length_cons, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hfull
 
 lemma gplus_gchar_of_cons
     (P : Char → Prop)
@@ -226,7 +230,7 @@ lemma gplus_gchar_of_cons
     ⟨cs ++ tail, col + 1⟩
     ⟨tail, (col + 1) + cs.length⟩
     hfirst hrest
-  convert hfull using 1 <;> simp <;> omega
+  simpa [List.length_cons, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hfull
 
 lemma anchor_char_bool_true_iff (c : Char) :
     isAnchorCharBool c = true ↔ isNsAnchorChar c := by
