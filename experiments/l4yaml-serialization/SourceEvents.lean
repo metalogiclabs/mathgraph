@@ -32,6 +32,11 @@ open L4YAML.CharPredicates
 open L4YAML.Surface
 open L4YAMLSerializationWellFormed
 
+/-- Local decidability for the surface grammar's anchor-name character class. -/
+instance (c : Char) : Decidable (isNsAnchorChar c) := by
+  unfold isNsAnchorChar isNsChar
+  infer_instance
+
 /-- Boolean spelling of the surface grammar's anchor-name character class. -/
 def isAnchorCharBool (c : Char) : Bool :=
   decide (isNsAnchorChar c)
@@ -69,8 +74,6 @@ def anchorEventAt : List Char → Option (Event × List Char)
 position. Builtin `!`, `!!`, and verbatim `!<...>` forms do not create a
 well-formedness obligation and therefore return `none` here. -/
 def namedTagUseAt : List Char → Option (Event × List Char)
-  | '!' :: '<' :: _ => none
-  | '!' :: '!' :: _ => none
   | '!' :: cs =>
       let (body, rest) := spanWhile isWordCharBool cs
       match body, rest with
@@ -151,9 +154,9 @@ lemma named_tag_use_source_exact
     namedTagUseAt ('!' :: (handleChars ++ '!' :: suffix)) =
       some (.useTag ("!" ++ String.ofList handleChars ++ "!"), suffix) := by
   have hbang : isWordCharBool '!' = false := by decide
-  simp [namedTagUseAt,
-    spanWhile_append_stop isWordCharBool handleChars '!' suffix hchars hbang,
-    hne]
+  unfold namedTagUseAt
+  rw [spanWhile_append_stop isWordCharBool handleChars '!' suffix hchars hbang]
+  simp [hne]
 
 lemma named_tag_declaration_source_exact
     (handleChars tail : List Char)
@@ -164,9 +167,10 @@ lemma named_tag_declaration_source_exact
           (handleChars ++ '!' :: tail)) =
       some (.declareTag ("!" ++ String.ofList handleChars ++ "!"), tail) := by
   have hbang : isWordCharBool '!' = false := by decide
-  simp [namedTagDeclarationAt, dropHSpace,
-    spanWhile_append_stop isWordCharBool handleChars '!' tail hchars hbang,
-    hne]
+  unfold namedTagDeclarationAt
+  simp only [dropHSpace]
+  rw [spanWhile_append_stop isWordCharBool handleChars '!' tail hchars hbang]
+  simp [hne]
 
 
 /-! ## Bridge to the formal surface productions
@@ -202,7 +206,7 @@ lemma gstar_gchar_of_all
         ⟨cs ++ tail, col + 1⟩
         ⟨tail, (col + 1) + cs.length⟩
         hstep htail
-      simpa [List.length_cons, Nat.add_assoc] using hfull
+      convert hfull using 1 <;> simp <;> omega
 
 lemma gplus_gchar_of_cons
     (P : Char → Prop) [DecidablePred P]
@@ -221,7 +225,7 @@ lemma gplus_gchar_of_cons
     ⟨cs ++ tail, col + 1⟩
     ⟨tail, (col + 1) + cs.length⟩
     hfirst hrest
-  simpa [List.length_cons, Nat.add_assoc] using hfull
+  convert hfull using 1 <;> simp <;> omega
 
 lemma anchor_char_bool_true_iff (c : Char) :
     isAnchorCharBool c = true ↔ isNsAnchorChar c := by
