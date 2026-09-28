@@ -290,8 +290,17 @@ def main() -> int:
     }
     fresh_keys = {position_key(board) for board in fresh}
     overlap = source_keys & fresh_keys
+    # Independence is enforced before any target search. Exact source
+    # duplicates are removed mechanically; no target label is consulted.
     if overlap:
-        raise AssertionError(("source/fresh overlap", len(overlap)))
+        fresh = [
+            board for board in fresh
+            if position_key(board) not in source_keys
+        ]
+    if len(fresh) < 200:
+        raise AssertionError(
+            ("fresh target too small after source-overlap filtering", len(fresh))
+        )
 
     engine = UCIStockfish(args.stockfish)
     try:
@@ -465,7 +474,7 @@ def main() -> int:
             "seed": FRESH_SEED,
             "book_sha256": fresh_manifest["book_sha256"],
             "positions": n,
-            "source_position_overlap": len(overlap),
+            "source_position_overlap_removed_before_search": len(overlap),
             "parent_guard_fires": parent_guard_fires,
             "separator_rejects": separator_rejects,
             "accepted_shortcuts": accepted,
@@ -482,7 +491,7 @@ def main() -> int:
                 "only states inside the frozen V25 guard pay the new continuation probe",
                 "one source false positive earns one separator in continuation-feature space only",
                 "separator is frozen before any fresh 100k authority query",
-                "fresh target uses a new opening seed and no selected source position overlaps it",
+                "fresh target uses a new opening seed and any exact source-position duplicate is removed before target search without consulting target labels",
                 "every prospectively accepted shortcut matches pinned 100k Stockfish and total expected node work is lower",
             ],
             "unknown": [
