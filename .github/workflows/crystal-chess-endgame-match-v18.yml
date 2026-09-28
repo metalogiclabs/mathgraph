@@ -1,3 +1,4 @@
+# Triggered after V17 all-rungs authority reconciliation.
 name: Crystal Chess Certified Endgame Match V18
 
 on:
