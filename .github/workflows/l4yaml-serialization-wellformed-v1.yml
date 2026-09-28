@@ -51,7 +51,7 @@ jobs:
           cp experiments/l4yaml-serialization/AnchorRuntime.lean upstream/AnchorRuntime.lean
           cd upstream
           lake env lean -o .lake/build/lib/lean/SerializationWellFormed.olean SerializationWellFormed.lean
-          lake env lean SourceEvents.lean
+          lake env lean -o .lake/build/lib/lean/SourceEvents.olean SourceEvents.lean
           lake env lean RuntimeScopes.lean
           lake env lean AnchorTiming.lean
           lake env lean -o .lake/build/lib/lean/CommitTrace.olean CommitTrace.lean
