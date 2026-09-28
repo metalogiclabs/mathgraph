@@ -7,7 +7,7 @@
 
 ## Claim blocked
 
-The advertised universal theorem
+The proposed universal theorem
 
 ```lean
 ∀ input : String,
