@@ -21,7 +21,7 @@ inductive CommitNode where
   | alias (name : String)
   | seq (children : List CommitNode)
   | anchored (name : String) (content : CommitNode)
-  deriving Repr, DecidableEq
+  deriving Repr
 
 mutual
   def nodeEvents : CommitNode → List Event
