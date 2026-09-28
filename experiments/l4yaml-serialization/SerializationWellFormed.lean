@@ -117,17 +117,7 @@ lemma checkFrom_correct (env : Env) (events : List Event) :
   | nil =>
       simp [checkFrom, WellFormedFrom]
   | cons e rest ih =>
-      cases e <;>
-        simp only [checkFrom, WellFormedFrom] <;>
-        try simp [ih]
-      · rename_i name
-        by_cases h : AliasAllowed env name
-        · simp [h, ih]
-        · simp [h]
-      · rename_i handle
-        by_cases h : TagHandleAllowed env handle
-        · simp [h, ih]
-        · simp [h]
+      cases e <;> simp [checkFrom, WellFormedFrom, ih]
 
 lemma serializationWellFormed_iff_check (events : List Event) :
     SerializationWellFormed events ↔ checkFrom {} events = true := by
@@ -200,13 +190,32 @@ def parserTagGuard (ps : L4YAML.TokenParser.ParseState) (handle : String) : Bool
   (handle == "") || (handle == "!") || (handle == "!!") ||
     ps.tagHandles.any (fun p => p.1 == handle)
 
+/-- Array-level bridge used by the parser projection: the executable
+`Array.any` test for a handle is extensionally the same as existence of a
+semantic declaration carrying that handle. -/
+lemma parser_declared_handle_exact
+    (ps : L4YAML.TokenParser.ParseState) (handle : String) :
+    ps.tagHandles.any (fun p => p.1 == handle) = true ↔
+      ∃ entry ∈ ps.tagHandles.toList, entry.1 = handle := by
+  simp only [Array.any_eq_true, beq_iff_eq]
+  constructor
+  · rintro ⟨i, hi, hname⟩
+    let entry := ps.tagHandles[i]
+    refine ⟨entry, ?_, ?_⟩
+    · exact Array.getElem_mem hi
+    · exact hname
+  · rintro ⟨entry, hmem, hname⟩
+    rw [Array.mem_iff_getElem] at hmem
+    obtain ⟨i, hi, heq⟩ := hmem
+    exact ⟨i, hi, by simpa [heq] using hname⟩
+
 /-- The parser's tag-handle decision agrees with the independent semantic
 specification for every parser state and handle. -/
 lemma parser_tag_guard_exact (ps : L4YAML.TokenParser.ParseState) (handle : String) :
     parserTagGuard ps handle = true ↔
       TagHandleAllowed (ofParserTags ps) handle := by
   simp [parserTagGuard, TagHandleAllowed, BuiltinTagHandle, ofParserTags,
-    Array.mem_iff_getElem, or_assoc]
+    parser_declared_handle_exact, or_assoc]
 
 end L4YAMLSerializationWellFormed
 
