@@ -37,12 +37,11 @@ theorem unbound_alias_is_in_surface :
   let s1 : SurfPos := ⟨['x'], 1⟩
   let s2 : SurfPos := ⟨[], 2⟩
 
-  have hx : GChar L4YAML.CharPredicates.isNsAnchorChar s1 s2 := by
+  have hx : GChar L4YAML.Surface.isNsAnchorChar s1 s2 := by
     exact GChar.mk 'x' [] 1 (by
-      simp [L4YAML.CharPredicates.isNsAnchorChar,
-        L4YAML.CharPredicates.isNsChar,
-        L4YAML.CharPredicates.isNsCharBool,
-        L4YAML.CharPredicates.isLineBreakProp,
+      simp [L4YAML.Surface.isNsAnchorChar,
+        L4YAML.Surface.isNsChar,
+                L4YAML.CharPredicates.isLineBreakProp,
         L4YAML.CharPredicates.isLineFeedProp,
         L4YAML.CharPredicates.isCarriageReturnProp,
         L4YAML.CharPredicates.isWhiteSpaceProp,
@@ -50,7 +49,7 @@ theorem unbound_alias_is_in_surface :
         L4YAML.CharPredicates.isTabProp,
         L4YAML.CharPredicates.isFlowIndicatorProp])
 
-  have hname : GPlus (GChar L4YAML.CharPredicates.isNsAnchorChar) s1 s2 :=
+  have hname : GPlus (GChar L4YAML.Surface.isNsAnchorChar) s1 s2 :=
     GPlus.mk s1 s2 s2 hx (GStar.nil s2)
 
   have halias : SCNsAliasNode s0 s2 :=
@@ -84,7 +83,11 @@ theorem unbound_alias_is_in_surface :
 theorem unbound_alias_has_no_parse
     (docs : Array YamlDocument) :
     L4YAML.TokenParser.parseYaml "*x" ≠ .ok docs := by
-  native_decide
+  intro h
+  have hrejected : parseAccepts "*x" = false := by native_decide
+  unfold parseAccepts at hrejected
+  rw [h] at hrejected
+  contradiction
 
 /-- A second kernel-level counterexample to the advertised capstone, arising
     from parser/scanner semantic validation rather than a relaxed local grammar
