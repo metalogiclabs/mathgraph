@@ -1,0 +1,76 @@
+name: Crystal Chess Color Symmetry V20
+
+on:
+  push:
+    branches:
+      - crystal-chess-color-symmetry-v20
+    paths:
+      - "experiments/crystal_chess_stockfish_hybrid_uci_v17.py"
+      - "experiments/crystal_chess_color_symmetry_v20.py"
+      - ".github/workflows/crystal-chess-color-symmetry-v20.yml"
+  workflow_dispatch:
+
+jobs:
+  color-symmetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999"
+
+      - name: Compile runtime and gate
+        run: |
+          python -m py_compile experiments/crystal_chess_stockfish_hybrid_uci_v17.py
+          python -m py_compile experiments/crystal_chess_color_symmetry_v20.py
+
+      - name: Download frozen V17 runtime assets
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-stockfish-hybrid-uci-v17
+          path: /tmp/v17
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36360365229
+
+      - name: Verify frozen assets
+        run: |
+          set -euo pipefail
+          guard=/tmp/v17/crystal_chess_verified_hybrid_guard_v14.jsonl.gz
+          roles=/tmp/v17/crystal_chess_roles_v17.jsonl.gz
+          test "$(gzip -dc "$guard" | sha256sum | awk '{print $1}')" = "10bb241dbadaa3b8229196ccf6e11587abd69554ff61802343451a4e691a7baa"
+          test "$(gzip -dc "$roles" | sha256sum | awk '{print $1}')" = "028353c82c3fefdd7d9e36907916b9a1aec7c1c13da9a4b8710b4deef8298b99"
+
+      - name: Acquire exact Syzygy verifier authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          w5="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
+          for f in KPPvK.rtbw KPPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w5/$f"
+          done
+          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Verify color-symmetry transport
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v20
+          python experiments/crystal_chess_color_symmetry_v20.py             --guard /tmp/v17/crystal_chess_verified_hybrid_guard_v14.jsonl.gz             --roles /tmp/v17/crystal_chess_roles_v17.jsonl.gz             --tablebase-dir /tmp/syzygy             --per-family 50000             --seed 20260928             --output artifacts/crystal-chess-v20/result.json             | tee artifacts/crystal-chess-v20/run.log
+          grep -q "CRYSTAL_CHESS_COLOR_SYMMETRY_V20=WARRANTED_EXACT_COLOR_SYMMETRY_RUNTIME_TRANSPORT" artifacts/crystal-chess-v20/run.log
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v20/
+
+      - name: Upload V20 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-color-symmetry-v20
+          path: artifacts/crystal-chess-v20/
+          if-no-files-found: error
