@@ -8,7 +8,6 @@ on:
       - 'experiments/l4yaml/SemanticObstruction.lean'
       - 'experiments/l4yaml/CorrectedCapstone.lean'
       - 'experiments/l4yaml/TagHandleObstruction.lean'
-      - 'experiments/l4yaml/NoGo.lean'
       - 'experiments/l4yaml/BlockHeaderObstruction.lean'
       - '.github/workflows/l4yaml-capstone-obstruction-fast.yml'
   workflow_dispatch:
@@ -43,7 +42,6 @@ jobs:
           cp experiments/l4yaml/SemanticObstruction.lean upstream/SemanticObstruction.lean
           cp experiments/l4yaml/CorrectedCapstone.lean upstream/CorrectedCapstone.lean
           cp experiments/l4yaml/TagHandleObstruction.lean upstream/TagHandleObstruction.lean
-          cp experiments/l4yaml/NoGo.lean upstream/NoGo.lean
           cp experiments/l4yaml/BlockHeaderObstruction.lean upstream/BlockHeaderObstruction.lean
           cd upstream
           lake env lean CapstoneObstruction.lean
@@ -51,4 +49,3 @@ jobs:
           lake env lean CorrectedCapstone.lean
           lake env lean TagHandleObstruction.lean
           lake env lean BlockHeaderObstruction.lean
-          lake env lean NoGo.lean
