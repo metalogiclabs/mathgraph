@@ -68,3 +68,7 @@ The first public reproduction ran green in `heathsanchez/test`:
 https://github.com/heathsanchez/test/actions/runs/36361994375
 
 This MathGraph branch is the canonical continuation of that experiment.
+
+## Qualification
+
+This branch replays the pinned L4YAML build and kernel-check on Metalogic Labs infrastructure.
