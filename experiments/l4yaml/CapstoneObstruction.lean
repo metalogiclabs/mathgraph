@@ -151,19 +151,19 @@ theorem malformed_yaml_version_is_in_surface :
   refine ⟨s10, ?_, rfl⟩
   exact hStream
 
-/-- The executable pipeline rejects the same string at the strict YAML
-    version check. This is a closed computation with no free variables. -/
-theorem malformed_yaml_version_parse_error :
-    L4YAML.TokenParser.parseYaml "%YAML .2\n---" =
-      .error (.directiveTrailingContent 0 8) := by
-  native_decide
-
-/-- Every candidate parser result for this fixed input is impossible. -/
+/-- Every candidate parser result for this fixed input is impossible.
+    We use the executable Boolean rejection above, avoiding any need for a
+    DecidableEq instance on full parsed documents. -/
 theorem malformed_yaml_version_has_no_parse
     (docs : Array YamlDocument) :
     L4YAML.TokenParser.parseYaml "%YAML .2\n---" ≠ .ok docs := by
-  rw [malformed_yaml_version_parse_error]
-  simp
+  intro hdocs
+  have hfalse : parseAccepts "%YAML .2\n---" = false := by
+    native_decide
+  have htrue : parseAccepts "%YAML .2\n---" = true := by
+    simp [parseAccepts, hdocs]
+  rw [hfalse] at htrue
+  contradiction
 
 /-- Kernel-level counterexample to the capstone biconditional as currently
     stated. -/
