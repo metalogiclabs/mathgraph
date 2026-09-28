@@ -18,7 +18,7 @@ for this theorem as the surface grammar currently stands.
 non-break text. The executable scanner is stricter for the special `%YAML`
 directive: YAML 1.2.2 requires digit+ "." digit+, so `%YAML .2` is rejected.
 
-This file asks the kernel whether the current exact surface constructors
+This file asks the kernel directly whether the current exact surface constructors
 (non-scannerDrop) nevertheless derive the malformed directive stream. If so,
 the biconditional capstone is false as currently stated and the next residual is
 a surface-grammar tightening, not merely scannerDrop removal.
