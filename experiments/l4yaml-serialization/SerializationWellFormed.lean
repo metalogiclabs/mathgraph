@@ -252,3 +252,6 @@ end L4YAMLSerializationWellFormed
 #print axioms L4YAMLSerializationWellFormed.checkFrom_correct
 #print axioms L4YAMLSerializationWellFormed.scanner_alias_guard_exact
 #print axioms L4YAMLSerializationWellFormed.parser_tag_guard_exact
+
+#print axioms L4YAMLSerializationWellFormed.scanner_alias_guard_ext
+#print axioms L4YAMLSerializationWellFormed.parser_tag_guard_ext
