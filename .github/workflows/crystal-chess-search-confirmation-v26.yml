@@ -1,0 +1,100 @@
+name: Crystal Chess Search Confirmation V26
+
+on:
+  push:
+    branches:
+      - crystal-chess-search-confirmation-v26
+    paths:
+      - "experiments/crystal_chess_search_confirmation_v26.py"
+      - ".github/workflows/crystal-chess-search-confirmation-v26.yml"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  search-confirmation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_search_confirmation_v26.py
+          python -m py_compile experiments/crystal_chess_search_sufficiency_v25.py
+          python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
+
+      - name: Download frozen V25 guard
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-sufficiency-v25
+          path: /tmp/v25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36362896141
+
+      - name: Download V22 source corpus for disjointness check
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Generate untouched normal-game target
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v26
+          python experiments/crystal_chess_normal_exposure_v22.py generate \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --book artifacts/crystal-chess-v26/fresh_normal.epd \
+            --manifest artifacts/crystal-chess-v26/fresh_manifest.json \
+            --openings 256 \
+            --plies 12 \
+            --depth 6 \
+            --multipv 4 \
+            --seed 20260929 \
+            | tee artifacts/crystal-chess-v26/generate.log
+          grep -q "CRYSTAL_CHESS_NORMAL_BOOK_V22=PASS" artifacts/crystal-chess-v26/generate.log
+
+      - name: Test residual-earned continuation confirmation prospectively
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_search_confirmation_v26.py \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --guard /tmp/v25/search_sufficiency_guard_v25.json.gz \
+            --fresh-epd artifacts/crystal-chess-v26/fresh_normal.epd \
+            --source-pgn /tmp/v22/match.pgn \
+            --output artifacts/crystal-chess-v26/result.json \
+            | tee artifacts/crystal-chess-v26/run.log
+          grep -Eq "CRYSTAL_CHESS_SEARCH_CONFIRMATION_V26=(WARRANTED_PROSPECTIVE_NORMAL_SEARCH_CONFIRMATION_GUARD|FRESH_NORMAL_SEARCH_CONFIRMATION_RESIDUAL|NO_CONTINUATION_CONFIRMATION_SEPARATOR)" artifacts/crystal-chess-v26/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v26/
+          cp /tmp/v25/search_sufficiency_guard_v25.json.gz artifacts/crystal-chess-v26/
+          sha256sum /tmp/v25/search_sufficiency_guard_v25.json.gz > artifacts/crystal-chess-v26/V25_GUARD_GZIP_SHA256.txt
+          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v26/STOCKFISH_PIN.txt
+
+      - name: Upload V26 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-search-confirmation-v26
+          path: artifacts/crystal-chess-v26/
+          if-no-files-found: error
