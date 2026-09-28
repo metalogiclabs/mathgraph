@@ -1,6 +1,7 @@
 import L4YAML.Surface.Document
 import L4YAML.Scanner.Scanner
 import L4YAML.Parser.TokenParser
+import L4YAML.Parser.Composition
 import L4YAML.Proofs.Coupling.CouplingBridge
 
 /-!
