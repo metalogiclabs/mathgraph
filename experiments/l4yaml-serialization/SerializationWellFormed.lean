@@ -247,6 +247,31 @@ lemma parser_tag_guard_ext
   rw [parser_tag_guard_exact, parser_tag_guard_exact]
   simp [TagHandleAllowed, hproj]
 
+
+/-! ## Necessity / separator laws -/
+
+/-- Anchor-name membership is not merely sufficient state: changing it can
+change an observable acceptance decision immediately. -/
+lemma alias_membership_separator
+    (env₁ env₂ : Env) (name : String)
+    (h₁ : AliasAllowed env₁ name)
+    (h₂ : ¬ AliasAllowed env₂ name) :
+    checkFrom env₁ [.useAlias name] ≠ checkFrom env₂ [.useAlias name] := by
+  simp [checkFrom, h₁, h₂]
+
+/-- For a non-builtin tag handle, declaration membership is likewise an
+observable distinction. -/
+lemma tag_membership_separator
+    (env₁ env₂ : Env) (handle : String)
+    (h_builtin : ¬ BuiltinTagHandle handle)
+    (h₁ : handle ∈ env₁.tagHandles)
+    (h₂ : handle ∉ env₂.tagHandles) :
+    checkFrom env₁ [.useTag handle] ≠ checkFrom env₂ [.useTag handle] := by
+  have ha₁ : TagHandleAllowed env₁ handle := Or.inr h₁
+  have ha₂ : ¬ TagHandleAllowed env₂ handle := by
+    simp [TagHandleAllowed, h_builtin, h₂]
+  simp [checkFrom, ha₁, ha₂]
+
 end L4YAMLSerializationWellFormed
 
 #print axioms L4YAMLSerializationWellFormed.checkFrom_correct
@@ -255,3 +280,6 @@ end L4YAMLSerializationWellFormed
 
 #print axioms L4YAMLSerializationWellFormed.scanner_alias_guard_ext
 #print axioms L4YAMLSerializationWellFormed.parser_tag_guard_ext
+
+#print axioms L4YAMLSerializationWellFormed.alias_membership_separator
+#print axioms L4YAMLSerializationWellFormed.tag_membership_separator
