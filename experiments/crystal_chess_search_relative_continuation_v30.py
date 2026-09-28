@@ -517,7 +517,7 @@ def main() -> int:
 
         # Frozen here. No fresh 100k authority has been queried.
         j = int(relation["feature"])
-        parent = accepted = wrong_fresh = 0
+        v25_fires = sep1_admitted = parent = accepted = wrong_fresh = 0
         no_alt = 0
         examples = []
 
@@ -527,11 +527,13 @@ def main() -> int:
             fires, leaf = guard_fires(guard, board, p1, p2)
             if not fires:
                 continue
+            v25_fires += 1
             cnames, cfeats, _ = continuation_features(
                 engine, board, str(p2["bestmove"])
             )
             if not apply_pred(cnames, cfeats, SEP1):
                 continue
+            sep1_admitted += 1
             if not apply_pred(cnames, cfeats, SEP2):
                 continue
 
@@ -571,18 +573,15 @@ def main() -> int:
 
     n = len(fresh)
     baseline = n * AUTHORITY_NODES
-    # Root probes everywhere. Candidate-continuation probe is paid only for
-    # V25-covered roots, just as V28/V29. Alternative continuation adds one
-    # extra 5k only after sep1+sep2 admit the state.
-    # parent is exactly the states paying that alternative probe.
-    v25_cost_states = 0
-    # Recompute economically from source-free target without deep authority is
-    # unnecessary for correctness; parent is a lower bound for V25 fires after
-    # sep1+sep2. We conservatively charge 10k continuation work to every parent
-    # state and retain the V28 5k cost only there. This never overstates savings.
+    # Exact declared runtime cost:
+    # * 5k root probe on every state;
+    # * 5k candidate-continuation probe whenever V25 fires;
+    # * another 5k alternative-continuation probe only after sep1+sep2 admit;
+    # * 100k fallback for every state not finally accepted.
     hybrid = (
         n * PROBE_TOTAL_NODES
-        + parent * (2 * CHILD_PROBE_TOTAL_NODES)
+        + v25_fires * CHILD_PROBE_TOTAL_NODES
+        + parent * CHILD_PROBE_TOTAL_NODES
         + (n - accepted) * AUTHORITY_NODES
     )
     reduction = 1.0 - hybrid / baseline
@@ -620,6 +619,8 @@ def main() -> int:
             "book_sha256": manifest["book_sha256"],
             "positions": n,
             "source_overlap_removed": len(overlap),
+            "v25_guard_fires": v25_fires,
+            "sep1_admitted": sep1_admitted,
             "parent_admitted": parent,
             "no_alternative": no_alt,
             "accepted": accepted,
@@ -658,7 +659,8 @@ def main() -> int:
         f"generations={dict(generations)} relation={relation}"
     )
     print(
-        f"fresh positions={n} parent={parent} accepted={accepted} "
+        f"fresh positions={n} v25={v25_fires} sep1={sep1_admitted} "
+        f"parent={parent} accepted={accepted} "
         f"wrong={wrong_fresh} coverage={accepted/n:.8f} "
         f"reduction={reduction:.8f}"
     )
