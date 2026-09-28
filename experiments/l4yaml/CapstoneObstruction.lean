@@ -1,6 +1,7 @@
 import L4YAML.Surface.Document
 import L4YAML.Scanner.Scanner
 import L4YAML.Parser.TokenParser
+import L4YAML.Proofs.Coupling.CouplingBridge
 
 /-!
 # L4YAML capstone obstruction probe
@@ -28,9 +29,10 @@ namespace L4YAMLCapstoneObstruction
 
 open L4YAML
 open L4YAML.Surface
+open L4YAML.Proofs.CouplingBridge
 
 def parseAccepts (s : String) : Bool :=
-  match L4YAML.TokenParser.parseYaml s with
+  match L4YAML.L4YAML.TokenParser.parseYaml s with
   | .ok _ => true
   | .error _ => false
 
@@ -153,13 +155,13 @@ theorem malformed_yaml_version_is_in_surface :
 /-- Every candidate parser result for this fixed input is impossible. -/
 theorem malformed_yaml_version_has_no_parse
     (docs : Array YamlDocument) :
-    L4YAML.TokenParser.parseYaml "%YAML .2\n---" ≠ .ok docs := by
+    L4YAML.L4YAML.TokenParser.parseYaml "%YAML .2\n---" ≠ .ok docs := by
   native_decide
 
 /-- Kernel-level counterexample to the capstone biconditional as currently
     stated. -/
 theorem parse_iff_grammar_current_statement_false :
-    ¬ ((∃ docs, L4YAML.TokenParser.parseYaml "%YAML .2\n---" = .ok docs) ↔
+    ¬ ((∃ docs, L4YAML.L4YAML.TokenParser.parseYaml "%YAML .2\n---" = .ok docs) ↔
        InYamlLanguage "%YAML .2\n---") := by
   intro h
   obtain ⟨docs, hdocs⟩ := h.mpr malformed_yaml_version_is_in_surface
