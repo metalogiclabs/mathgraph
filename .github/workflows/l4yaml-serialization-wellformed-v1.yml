@@ -43,6 +43,8 @@ jobs:
         run: |
           cp experiments/l4yaml-serialization/SerializationWellFormed.lean upstream/SerializationWellFormed.lean
           cp experiments/l4yaml-serialization/Census.lean upstream/Census.lean
+          cp experiments/l4yaml-serialization/SourceEvents.lean upstream/SourceEvents.lean
           cd upstream
-          lake env lean SerializationWellFormed.lean
+          lake env lean -o .lake/build/lib/lean/SerializationWellFormed.olean SerializationWellFormed.lean
+          lake env lean SourceEvents.lean
           lake env lean Census.lean
