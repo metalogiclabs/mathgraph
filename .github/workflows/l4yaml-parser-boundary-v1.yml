@@ -50,6 +50,8 @@ jobs:
         run: |
           cp experiments/l4yaml/ParserBoundaryProbe.lean upstream/ParserBoundaryProbe.lean
           cp experiments/l4yaml/FlowContinuation.lean upstream/FlowContinuation.lean
+          cp experiments/l4yaml/ExactNestedFlow.lean upstream/ExactNestedFlow.lean
           cd upstream
           lake env lean ParserBoundaryProbe.lean
           lake env lean FlowContinuation.lean
+          lake env lean ExactNestedFlow.lean
