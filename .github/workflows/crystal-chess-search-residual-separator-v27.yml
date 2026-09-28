@@ -1,0 +1,95 @@
+name: Crystal Chess Search Residual Separator V27
+
+on:
+  push:
+    branches:
+      - crystal-chess-search-residual-separator-v27
+    paths:
+      - "experiments/crystal_chess_search_residual_separator_v27.py"
+      - ".github/workflows/crystal-chess-search-residual-separator-v27.yml"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_search_confirmation_v26.py"
+  workflow_dispatch:
+
+jobs:
+  search-residual-separator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_search_residual_separator_v27.py
+          python -m py_compile experiments/crystal_chess_search_sufficiency_v25.py
+          python -m py_compile experiments/crystal_chess_search_confirmation_v26.py
+
+      - name: Download frozen V25 guard
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-sufficiency-v25
+          path: /tmp/v25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36362896141
+
+      - name: Download V22 source corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Download untouched V26 target corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-confirmation-v26
+          path: /tmp/v26
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36367418497
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Acquire source-only separator and test fresh corpus
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v27
+          python experiments/crystal_chess_search_residual_separator_v27.py \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --guard /tmp/v25/search_sufficiency_guard_v25.json.gz \
+            --source-pgn /tmp/v22/match.pgn \
+            --fresh-epd /tmp/v26/fresh_normal.epd \
+            --fresh-manifest /tmp/v26/fresh_manifest.json \
+            --output artifacts/crystal-chess-v27/result.json \
+            | tee artifacts/crystal-chess-v27/run.log
+          grep -Eq "CRYSTAL_CHESS_SEARCH_RESIDUAL_SEPARATOR_V27=(WARRANTED_PROSPECTIVE_NORMAL_SEARCH_RESIDUAL_SEPARATOR|FRESH_NORMAL_SEARCH_SEPARATOR_RESIDUAL|NO_ONE_FEATURE_SOURCE_RESIDUAL_SEPARATOR)" artifacts/crystal-chess-v27/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v27/
+          cp /tmp/v25/search_sufficiency_guard_v25.json.gz artifacts/crystal-chess-v27/
+          cp /tmp/v26/fresh_manifest.json artifacts/crystal-chess-v27/
+          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v27/STOCKFISH_PIN.txt
+
+      - name: Upload V27 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-search-residual-separator-v27
+          path: artifacts/crystal-chess-v27/
+          if-no-files-found: error
