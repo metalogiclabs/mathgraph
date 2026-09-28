@@ -1,4 +1,4 @@
-import L4YAML.Surface.Basic
+import L4YAML.Surface.Node
 import SerializationWellFormed
 
 /-!
