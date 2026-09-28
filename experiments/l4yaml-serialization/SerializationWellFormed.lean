@@ -58,8 +58,16 @@ instance (h : String) : Decidable (BuiltinTagHandle h) := by
 def AliasAllowed (env : Env) (name : String) : Prop :=
   name ∈ env.anchors
 
+instance (env : Env) (name : String) : Decidable (AliasAllowed env name) := by
+  unfold AliasAllowed
+  infer_instance
+
 def TagHandleAllowed (env : Env) (handle : String) : Prop :=
-  BuiltinTagHandle handle ∨ ∃ pfx, (handle, pfx) ∈ env.tagHandles
+  BuiltinTagHandle handle ∨ ∃ entry ∈ env.tagHandles, entry.1 = handle
+
+instance (env : Env) (handle : String) : Decidable (TagHandleAllowed env handle) := by
+  unfold TagHandleAllowed
+  infer_instance
 
 /-- Declarative trace well-formedness.
 
@@ -144,7 +152,7 @@ lemma declare_then_use_tag (env : Env) (handle pfx : String) (rest : List Event)
 
 lemma undeclared_named_tag_rejected (env : Env) (handle : String)
     (h_builtin : ¬ BuiltinTagHandle handle)
-    (h_decl : ¬ ∃ pfx, (handle, pfx) ∈ env.tagHandles)
+    (h_decl : ¬ ∃ entry ∈ env.tagHandles, entry.1 = handle)
     (rest : List Event) :
     ¬ WellFormedFrom env (.useTag handle :: rest) := by
   simp [WellFormedFrom, TagHandleAllowed, h_builtin, h_decl]
@@ -198,7 +206,7 @@ lemma parser_tag_guard_exact (ps : L4YAML.TokenParser.ParseState) (handle : Stri
     parserTagGuard ps handle = true ↔
       TagHandleAllowed (ofParserTags ps) handle := by
   simp [parserTagGuard, TagHandleAllowed, BuiltinTagHandle, ofParserTags,
-    Array.mem_iff_getElem]
+    Array.mem_iff_getElem, or_assoc]
 
 end L4YAMLSerializationWellFormed
 
