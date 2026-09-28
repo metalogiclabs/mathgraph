@@ -1,0 +1,39 @@
+name: L4YAML capstone obstruction fast
+
+on:
+  push:
+    branches: [l4yaml-parser-boundary-v1]
+    paths:
+      - 'experiments/l4yaml/CapstoneObstruction.lean'
+      - '.github/workflows/l4yaml-capstone-obstruction-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  obstruction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: 16562a74421f94cc0f8216eecf21f1ff58166fa7
+          path: upstream
+          submodules: recursive
+      - name: Install Elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Lean
+        working-directory: upstream
+        run: |
+          elan toolchain install "$(cat lean-toolchain)" || true
+      - name: Build only obstruction dependencies
+        working-directory: upstream
+        run: |
+          lake build L4YAML.Surface.Document L4YAML.Scanner.Scanner L4YAML.Parser.TokenParser
+      - name: Kernel-check capstone obstruction
+        run: |
+          cp experiments/l4yaml/CapstoneObstruction.lean upstream/CapstoneObstruction.lean
+          cd upstream
+          lake env lean CapstoneObstruction.lean
