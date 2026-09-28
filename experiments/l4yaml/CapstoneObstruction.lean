@@ -30,7 +30,7 @@ open L4YAML
 open L4YAML.Surface
 
 def parseAccepts (s : String) : Bool :=
-  match TokenParser.parseYaml s with
+  match L4YAML.TokenParser.parseYaml s with
   | .ok _ => true
   | .error _ => false
 
@@ -63,19 +63,40 @@ theorem malformed_yaml_version_is_in_surface :
   let s10 : SurfPos := ⟨[], 3⟩
 
   have hY : SCommentChar s1 s2 := by
-    exact GChar.mk 'Y' _ 1 (by decide)
+    exact GChar.mk 'Y' _ 1 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
   have hA : SCommentChar s2 s3 := by
-    exact GChar.mk 'A' _ 2 (by decide)
+    exact GChar.mk 'A' _ 2 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
   have hM : SCommentChar s3 s4 := by
-    exact GChar.mk 'M' _ 3 (by decide)
+    exact GChar.mk 'M' _ 3 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
   have hL : SCommentChar s4 s5 := by
-    exact GChar.mk 'L' _ 4 (by decide)
+    exact GChar.mk 'L' _ 4 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
   have hSpace : SCommentChar s5 s6 := by
-    exact GChar.mk ' ' _ 5 (by decide)
+    exact GChar.mk ' ' _ 5 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
   have hDot : SCommentChar s6 s7 := by
-    exact GChar.mk '.' _ 6 (by decide)
+    exact GChar.mk '.' _ 6 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
   have hTwo : SCommentChar s7 s8 := by
-    exact GChar.mk '2' _ 7 (by decide)
+    exact GChar.mk '2' _ 7 (by
+      simp [isCommentTextChar, L4YAML.CharPredicates.isLineBreakProp,
+        L4YAML.CharPredicates.isLineFeedProp,
+        L4YAML.CharPredicates.isCarriageReturnProp])
 
   have hBody : GStar SCommentChar s1 s8 :=
     GStar.cons s1 s2 s8 hY
@@ -132,13 +153,13 @@ theorem malformed_yaml_version_is_in_surface :
 /-- Every candidate parser result for this fixed input is impossible. -/
 theorem malformed_yaml_version_has_no_parse
     (docs : Array YamlDocument) :
-    TokenParser.parseYaml "%YAML .2\n---" ≠ .ok docs := by
+    L4YAML.TokenParser.parseYaml "%YAML .2\n---" ≠ .ok docs := by
   native_decide
 
 /-- Kernel-level counterexample to the capstone biconditional as currently
     stated. -/
 theorem parse_iff_grammar_current_statement_false :
-    ¬ ((∃ docs, TokenParser.parseYaml "%YAML .2\n---" = .ok docs) ↔
+    ¬ ((∃ docs, L4YAML.TokenParser.parseYaml "%YAML .2\n---" = .ok docs) ↔
        InYamlLanguage "%YAML .2\n---") := by
   intro h
   obtain ⟨docs, hdocs⟩ := h.mpr malformed_yaml_version_is_in_surface
