@@ -1,0 +1,47 @@
+name: L4YAML parser-boundary v1
+
+on:
+  push:
+    branches: [l4yaml-parser-boundary-v1]
+    paths:
+      - 'experiments/l4yaml/**'
+      - '.github/workflows/l4yaml-parser-boundary-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  parser-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout MathGraph experiment
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned L4YAML
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: 16562a74421f94cc0f8216eecf21f1ff58166fa7
+          path: upstream
+          submodules: recursive
+
+      - name: Install Elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Install pinned Lean toolchain
+        working-directory: upstream
+        run: |
+          TOOLCHAIN="$(cat lean-toolchain)"
+          elan toolchain install "$TOOLCHAIN" || true
+          elan show
+
+      - name: Build L4YAML
+        working-directory: upstream
+        run: lake build
+
+      - name: Kernel-check parser-boundary probe
+        run: |
+          cp experiments/l4yaml/ParserBoundaryProbe.lean upstream/ParserBoundaryProbe.lean
+          cd upstream
+          lake env lean ParserBoundaryProbe.lean
