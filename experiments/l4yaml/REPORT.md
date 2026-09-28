@@ -2,12 +2,12 @@
 
 **Date:** 2026-09-28  
 **Upstream:** `nasa-jpl/L4YAML`  
-**Pinned upstream commit:** `16562a74421f94cc0f8216eecf21f1ff58166fa7`  
+**Pinned upstream commit:** `16562a74421f94cc0f8216eecf21f1ff58166fa7` (confirmed as `main` HEAD on 2026-09-28)  
 **MathGraph branch:** `l4yaml-parser-boundary-v1`
 
 ## Executive result
 
-The advertised capstone
+The proposed capstone
 
 ```lean
 theorem parse_iff_grammar (input : String) :
@@ -41,7 +41,7 @@ layers.
 
 ### A. Scanner acceptance is not exact parser syntax
 
-The parser-boundary probe checks:
+The parser-boundary probe checks (finite executable rejection/acceptance facts are discharged with `native_decide`, consistent with upstream's documented use of `native_decide` for some capstones):
 
 ```text
 scan "[[a][b]]"  = yes    parse = no
@@ -52,8 +52,7 @@ scan "[a,b]"      = yes    parse = yes
 ```
 
 It also proves that every successful `parseYaml` already contains both
-`scanFiltered` success and `parseStream` success through upstream
-`parseYamlRaw_ok_decompose`.
+`scanFiltered` success and `parseStream` success **on the token stream produced by that `scanFiltered` run**, through upstream `parseYamlRaw_ok_decompose`.
 
 **Evidence:**  
 https://github.com/metalogiclabs/mathgraph/actions/runs/36362994161
@@ -316,7 +315,7 @@ Either route is layer-correct. The current pure
   flow-adjacency cases.
 - Successful `parseYaml` contains a successful `parseStream` witness that
   current `parse_strict_proof` does not use.
-- The advertised universal `parse_iff_grammar` theorem is false at the pinned
+- The proposed universal `parse_iff_grammar` theorem is false at the pinned
   upstream revision.
 - The malformed-directive counterexample does not use `scannerDrop`.
 - The unbound-alias counterexample does not use `scannerDrop`.
@@ -372,3 +371,45 @@ The transferable proof-engineering result is:
 
 No upstream PR has been created or submitted. All work remains on the public
 MathGraph experiment branch.
+
+
+## Verification and reproducibility notes
+
+The upstream pin above was re-checked against GitHub on 2026-09-28 and was still
+the `main` HEAD.
+
+The key architectural claim about `parse_strict_proof` is directly visible in
+upstream `L4YAML/Proofs/Production/DocumentProduction.lean`: the proof obtains
+
+```lean
+obtain ⟨tokens, h_sf, _⟩ :=
+  L4YAML.Proofs.Composition.parseYamlRaw_ok_decompose input rawDocs h_raw
+```
+
+so the available successful `parseStream` witness is intentionally bound to
+`_`; the proof then derives `InYamlLanguage` through `scan_strict_proof`.
+
+Some fixed-input rejection facts in this experiment use `native_decide`.
+That matches L4YAML's own documented proof discipline: upstream states that a
+subset of its capstones is `native_decide`-backed and that these proofs trust
+Lean's compiled evaluator in addition to the kernel. Accordingly, this report
+uses **Lean-checked** for those executable facts rather than implying a
+pure-kernel reduction.
+
+Minimal reproduction from a checkout of this MathGraph branch:
+
+```bash
+git clone https://github.com/nasa-jpl/L4YAML.git upstream
+git -C upstream checkout 16562a74421f94cc0f8216eecf21f1ff58166fa7
+cp experiments/l4yaml/CapstoneObstruction.lean upstream/
+cp experiments/l4yaml/SemanticObstruction.lean upstream/
+cp experiments/l4yaml/CorrectedCapstone.lean upstream/
+cd upstream
+lake build
+lake env lean CapstoneObstruction.lean
+lake env lean SemanticObstruction.lean
+lake env lean CorrectedCapstone.lean
+```
+
+The public Lean source is the primary evidence; CI run links are convenience
+replays. No pull request or change has been opened against `nasa-jpl/L4YAML`.
