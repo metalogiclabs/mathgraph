@@ -27,11 +27,134 @@ from typing import TextIO
 
 import chess
 
-from crystal_chess_verified_hybrid_search_v14 import (
-    TIER_NAMES,
-    candidate_bindings,
-    signature,
-)
+TIER_NAMES = ("role", "pair", "distance", "relational")
+
+
+def sq_file(sq: int) -> int:
+    return chess.square_file(sq)
+
+
+def sq_rank(sq: int) -> int:
+    return chess.square_rank(sq)
+
+
+def sign(x: int) -> int:
+    return (x > 0) - (x < 0)
+
+
+def cheb(a: int, b: int) -> int:
+    return max(abs(sq_file(a) - sq_file(b)), abs(sq_rank(a) - sq_rank(b)))
+
+
+def file_edge(sq: int) -> int:
+    f = sq_file(sq)
+    return min(f, 7 - f)
+
+
+def board_edge(sq: int) -> int:
+    f, r = sq_file(sq), sq_rank(sq)
+    return min(f, 7 - f, r, 7 - r)
+
+
+def signature(
+    board: chess.Board,
+    anchor: int,
+    other: int,
+    role: str,
+    tier: int,
+) -> tuple[object, ...]:
+    wk = board.king(chess.WHITE)
+    bk = board.king(chess.BLACK)
+    if wk is None or bk is None:
+        raise AssertionError("missing king")
+    base: tuple[object, ...] = (int(board.turn), role)
+    if tier == 0:
+        return base
+    df = sq_file(other) - sq_file(anchor)
+    dr = sq_rank(other) - sq_rank(anchor)
+    pair = base + (
+        sq_rank(anchor),
+        file_edge(anchor),
+        abs(df),
+        dr,
+        sign(df),
+    )
+    if tier == 1:
+        return pair
+    dist = pair + (
+        cheb(wk, anchor),
+        cheb(bk, anchor),
+        cheb(wk, other),
+        cheb(bk, other),
+        cheb(wk, bk),
+    )
+    if tier == 2:
+        return dist
+    relational = dist + (
+        sign(sq_file(wk) - sq_file(anchor)),
+        sign(sq_rank(wk) - sq_rank(anchor)),
+        sign(sq_file(bk) - sq_file(anchor)),
+        sign(sq_rank(bk) - sq_rank(anchor)),
+        board_edge(wk),
+        board_edge(bk),
+    )
+    if tier == 3:
+        return relational
+    raise ValueError(tier)
+
+
+def parse_role_move(
+    board: chess.Board,
+    anchor: int,
+    role: str,
+) -> chess.Move | None:
+    try:
+        tag, body = role.split(":", 1)
+        df_text, dr_text = body.split(",", 1)
+        promotion = None
+        if "=" in dr_text:
+            dr_text, promo_text = dr_text.split("=", 1)
+            promotion = {
+                "Q": chess.QUEEN,
+                "R": chess.ROOK,
+                "B": chess.BISHOP,
+                "N": chess.KNIGHT,
+            }.get(promo_text)
+        df = int(df_text)
+        dr = int(dr_text)
+    except Exception:
+        return None
+    source = (
+        board.king(chess.WHITE)
+        if tag == "K"
+        else anchor if tag == "P" else None
+    )
+    if source is None:
+        return None
+    f = chess.square_file(source) + df
+    r = chess.square_rank(source) + dr
+    if not (0 <= f < 8 and 0 <= r < 8):
+        return None
+    move = chess.Move(source, chess.square(f, r), promotion=promotion)
+    return move if board.is_legal(move) else None
+
+
+def candidate_bindings(
+    board: chess.Board,
+    p0: int,
+    p1: int,
+    wk: int,
+    bk: int,
+    turn: bool,
+    role_map: dict[tuple[int, int, int, int], str],
+) -> list[tuple[int, int, str, chess.Move]]:
+    out: list[tuple[int, int, str, chess.Move]] = []
+    for anchor, other in ((p0, p1), (p1, p0)):
+        role = role_map[(wk, bk, anchor, int(turn))]
+        move = parse_role_move(board, anchor, role)
+        if move is not None:
+            out.append((anchor, other, role, move))
+    return out
 
 ENGINE_NAME = "CrystalChess-Stockfish-Hybrid-V17"
 ENGINE_AUTHOR = "Metalogic Labs"
