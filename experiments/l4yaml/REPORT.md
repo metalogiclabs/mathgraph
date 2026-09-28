@@ -5,204 +5,340 @@
 **Pinned upstream commit:** `16562a74421f94cc0f8216eecf21f1ff58166fa7`  
 **MathGraph branch:** `l4yaml-parser-boundary-v1`
 
-## Executive summary
+## Executive result
 
-The advertised final capstone is:
+The advertised capstone
 
 ```lean
 theorem parse_iff_grammar (input : String) :
     (∃ docs, parseYaml input = .ok docs) ↔ InYamlLanguage input
 ```
 
-The current upstream plan treats removal of `SLYamlStream.scannerDrop` as the
-main prerequisite for the converse direction.
+is **false at the pinned upstream revision**. This is now a kernel-checked
+result, not a search failure or an architectural opinion.
 
-MathGraph found two distinct issues.
+MathGraph found three independent classes of obstruction:
 
-1. **Parser-boundary mismatch.** The scanner accepts/tokenizes some malformed
-   flow-adjacency inputs that the parser correctly rejects. Yet
-   `parse_strict_proof` obtains the successful `parseStream` witness and
-   discards it, proving surface-language membership from scanner success alone.
-   This explains why `scannerDrop` is needed and suggests a smaller exact
-   proof boundary:
-   `scanFiltered ok ∧ parseStream ok → exact surface derivation`.
+1. **Flow proof-boundary mismatch.** Scanner acceptance is broader than parser
+   acceptance for adjacency-invalid flow syntax. The current
+   `parse_strict_proof` obtains parser success and then discards it, forcing
+   scanner-only proof machinery to reconstruct distinctions the parser already
+   made.
+2. **Local surface over-approximations.** Ordinary surface constructors derive
+   strings the executable parser rejects, independently of
+   `SLYamlStream.scannerDrop`. Verified examples include malformed
+   `%YAML .2` syntax and an overlong block-scalar header.
+3. **Stateful semantic conditions absent from the surface relation.** The
+   executable load pipeline rejects an unbound alias and an undeclared named
+   tag handle, while the pure surface grammar derives both strings.
 
-2. **Independent capstone obstruction.** Even if `scannerDrop` is removed,
-   the current biconditional is still false as stated. The surface grammar's
-   simplified `SLDirective` accepts malformed YAML directives that the
-   executable parser rejects. This was kernel-checked with the concrete input:
+Consequently, removing `scannerDrop` cannot make the advertised
+biconditional true. The problem is not just unfinished proof engineering: the
+two sides currently describe different languages at different abstraction
+layers.
 
-   ```text
-   %YAML .2
-   ---
-   ```
+## Kernel-qualified evidence
 
-   Lean verifies both `InYamlLanguage` for this string and that no
-   `parseYaml` result can be `.ok`, yielding a direct proof that the current
-   biconditional fails on this input.
+### A. Scanner acceptance is not exact parser syntax
 
-The consequence is that the cheapest route to the true capstone is not to
-begin with the full planned 1.1–2.3k-line flow-scanner strengthening. First
-audit and tighten every intentionally relaxed surface production that can
-admit strings rejected by the executable scanner/parser. Then remove
-`scannerDrop`, preferably at the parser-success boundary, and only then prove
-the converse.
-
-## Verified results
-
-### 1. Scanner success is not exact YAML syntax
-
-The public MathGraph probe kernel-checks:
+The parser-boundary probe checks:
 
 ```text
-scanAccepts "[[a][b]]" = true
-parseAccepts "[[a][b]]" = false
-
-scanAccepts "[[a]b]" = true
-parseAccepts "[[a]b]" = false
-
-scanAccepts "[\"a\"\"b\"]" = true
-parseAccepts "[\"a\"\"b\"]" = false
-
-scanAccepts "{a: b: c}" = true
-parseAccepts "{a: b: c}" = false
-
-scanAccepts "[a,b]" = true
-parseAccepts "[a,b]" = true
+scan "[[a][b]]"  = yes    parse = no
+scan "[[a]b]"    = yes    parse = no
+scan "[\"a\"\"b\"]" = yes    parse = no
+scan "{a: b: c}" = yes    parse = no
+scan "[a,b]"      = yes    parse = yes
 ```
 
-It also proves that any successful `parseYaml` already contains both
+It also proves that every successful `parseYaml` already contains both
 `scanFiltered` success and `parseStream` success through upstream
 `parseYamlRaw_ok_decompose`.
 
 **Evidence:**  
 https://github.com/metalogiclabs/mathgraph/actions/runs/36362994161
 
-### 2. Parser success contains the missing separator distinction
+The same probe derives parser-loop theorems showing that after a flow
+collection has an item/pair, any successful growth crosses an explicit
+`.flowEntry` token. It also upgrades comma scanning to an exact
+`GLit ','` production witness.
 
-The MathGraph probe proves, for flow sequences and mappings, that once a
-collection already contains an item/pair, successful loop growth requires the
-current parser token to be `.flowEntry`.
+### B. Exact nested flow is constructible without `scannerDrop`
 
-This is exactly the syntactic distinction absent from scanner-only strictness.
+`ExactNestedFlow.lean` builds a complete ordinary surface derivation for
+`[[],[]]`, while `[[][]]` remains the negative parser control.
 
-### 3. Exact flow grammar can be built without `scannerDrop`
+`FlowContinuation.lean` proves a continuation algebra for
+`SFlowSeqEntries` and `SFlowMapEntries`. This avoids repeatedly rebuilding
+or inverting the right-recursive grammar while execution proceeds
+left-to-right.
 
-`ExactNestedFlow.lean` constructs a full exact surface derivation for
-`[[],[]]` using the ordinary YAML surface constructors only. It also keeps
-`[[][]]` as the negative parser control.
+These results make parser-guided flow reconstruction a concrete alternative to
+the proposed large scanner-side `snoc` accumulator.
 
-This demonstrates that the flow-side target object is constructible without
-the escape hatch.
+### C. Malformed directive: local grammar counterexample
 
-### 4. Continuation algebra removes unnecessary left-to-right rebuild cost
-
-`FlowContinuation.lean` defines continuation-style interfaces for
-`SFlowSeqEntries` and `SFlowMapEntries`.
-
-Instead of repeatedly rebuilding or inverting a right-recursive grammar while
-the scanner/parser proceeds left-to-right, the proof keeps a continuation:
+For
 
 ```text
-valid tail from current position
-    -> valid full collection from collection start
+%YAML .2
+---
 ```
 
-Each comma-separated entry composes one constructor into the continuation.
-This is a smaller proof interface than bespoke structural `snoc` machinery.
-
-### 5. The current capstone statement is false independently of `scannerDrop`
-
-The kernel-checked theorem establishes:
+Lean proves:
 
 ```lean
-¬ ((∃ docs, L4YAML.TokenParser.parseYaml "%YAML .2\n---" = .ok docs) ↔
+InYamlLanguage "%YAML .2\n---"
+```
+
+using ordinary surface-production constructors and no `scannerDrop`, while
+the executable scanner/parser rejects the malformed YAML version.
+
+The kernel then proves:
+
+```lean
+¬ ((∃ docs, parseYaml "%YAML .2\n---" = .ok docs) ↔
    InYamlLanguage "%YAML .2\n---")
 ```
 
-The surface witness uses the normal document/directive constructors, not
-`SLYamlStream.scannerDrop`.
-
-The root cause is upstream's deliberately simplified directive production:
-
-```text
-SLDirective ≈ '%' + arbitrary non-linebreak text + line ending
-```
-
-whereas the executable scanner validates special `%YAML` syntax, including
-nonempty numeric version components.
+The cause is explicit in upstream source: `SLDirective` is deliberately
+simplified to approximately `'%' + arbitrary non-break text + comments`,
+while the scanner validates special directives more strictly.
 
 **Evidence:**  
-https://github.com/metalogiclabs/mathgraph/actions/runs/36365275334  
-https://github.com/metalogiclabs/mathgraph/actions/runs/36365275334/job/108750293248
+https://github.com/metalogiclabs/mathgraph/actions/runs/36365275334
+
+### D. Unbound alias: stateful semantic counterexample
+
+For
+
+```text
+*x
+```
+
+the surface grammar derives a normal alias node with
+`SCNsAliasNode → SFlowNode.alias → SBlockNode → SLYamlStream`.
+
+The executable scanner/parser rejects it because no preceding `&x` binding
+exists. This stateful environment requirement is not present in the pure
+surface derivation.
+
+Therefore surface syntax alone cannot characterize the current `parseYaml`
+load API merely by repairing local grammar productions.
+
+### E. Undeclared named tag handle: second stateful counterexample
+
+For
+
+```text
+!h!x
+```
+
+the ordinary surface tag/property constructors derive the input, but
+`parseNodeProperties` rejects it because `!h!` was not introduced by a
+preceding `%TAG` directive.
+
+This independently confirms the layer mismatch: executable acceptance includes
+per-document semantic environments that `InYamlLanguage` does not encode.
+
+### F. Block-scalar header: second local grammar counterexample
+
+The surface `SCBBlockHeader` currently uses an unbounded `GStar` over block
+header indicator characters. The executable scanner only consumes two header
+indicator positions.
+
+MathGraph therefore proves an exact surface derivation for
+
+```text
+|+++
+```
+
+(with the terminating newline) while `parseYaml` rejects it. This witness is
+also independent of directives, aliases, tags, and `scannerDrop`.
+
+A separate executable audit found that `|++\n` and `|11\n` are currently
+accepted. Upstream's own block-header specification comments describe the
+intended header as at most one chomping indicator and one indentation
+indicator, so strict YAML-spec conformance at this boundary deserves a separate
+repair even where parser and current surface grammar agree.
+
+### G. Universal no-go theorem
+
+The consolidated fast qualification kernel-checks:
+
+```lean
+theorem advertised_parse_iff_grammar_is_false :
+  ¬ (∀ input : String,
+      ((∃ docs, parseYaml input = .ok docs) ↔ InYamlLanguage input))
+```
+
+and a second proof of the same universal negation using the unbound-alias
+counterexample.
+
+**Consolidated evidence:**  
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367045472
+
+### H. Exact executable factorization
+
+MathGraph also proves the exact theorem that *is* already true:
+
+```lean
+def InExecutableLanguage (input : String) : Prop :=
+  ∃ tokens rawDocs,
+    Scanner.scanFiltered input = .ok tokens ∧
+    TokenParser.parseStream tokens = .ok rawDocs
+
+theorem parse_iff_executable_language (input : String) :
+  (∃ docs, TokenParser.parseYaml input = .ok docs) ↔
+  InExecutableLanguage input
+```
+
+This is not proposed as an independent YAML specification; it is a
+factorization theorem. It isolates the real missing bridge from specification
+to executable acceptance.
+
+## Acceptance audit
+
+The executable differential audit is green and records:
+
+```text
+"--- foo"                         OK
+"--- a: b"                       ERR content-on-document-start-line
+"*x"                             ERR undefined alias
+"!h!x"                           ERR undeclared tag handle
+"%YAML 1.2\n%YAML 1.2\n---"     ERR duplicate YAML directive
+"%YAML .2\n---"                  ERR malformed/trailing directive content
+"!!"                             OK
+"!h!"                            ERR undeclared named handle
+"|++\n"                          OK
+"|11\n"                          OK
+```
+
+**Evidence:**  
+https://github.com/metalogiclabs/mathgraph/actions/runs/36366475770
+
+## What changed relative to the upstream plan
+
+The upstream plan treats this as essentially:
+
+```text
+remove scannerDrop
+→ prove grammar_completeness
+→ assemble parse_iff_grammar
+```
+
+The verified dependency structure is instead:
+
+```text
+surface-spec exactness
+        +
+stateful load well-formedness
+        +
+parser-guided flow reconstruction
+        ↓
+exact specification ↔ executable acceptance
+        ↓
+parse/load capstone
+```
+
+`scannerDrop` is one obstruction, not the root contract.
+
+## Correct contract
+
+There are two coherent end states.
+
+### Option 1 — syntax capstone
+
+Separate syntax recognition from stateful loading/validation, then prove:
+
+```text
+syntax parser accepts input
+    ↔
+exact YAML 1.2.2 surface syntax
+```
+
+Alias binding, tag-handle environments and similar serialization constraints
+are proved in a second theorem about loading/validation.
+
+### Option 2 — load capstone
+
+Keep the current `parseYaml` behavior and strengthen the right-hand side:
+
+```text
+parseYaml accepts input
+    ↔
+ExactSurfaceLanguage input
+  ∧ SerializationWellFormed input
+```
+
+where `SerializationWellFormed` explicitly carries the stateful conditions
+currently enforced operationally, including at least anchor/alias ordering and
+tag-handle declaration state.
+
+Either route is layer-correct. The current pure
+`parseYaml ↔ InYamlLanguage` statement is not.
 
 ## Epistemic status
 
-**WARRANTED**
+**WARRANTED / kernel-checked**
 
-- Scanner success alone is broader than parser acceptance for the tested flow
-  adjacency cases.
-- Successful `parseYaml` retains a successful `parseStream` witness that
+- Scanner success alone is broader than parser acceptance for the recorded
+  flow-adjacency cases.
+- Successful `parseYaml` contains a successful `parseStream` witness that
   current `parse_strict_proof` does not use.
-- The current advertised `parse_iff_grammar` statement is false on the
-  kernel-checked malformed `%YAML .2` input.
-- This counterexample does not depend on `scannerDrop`.
-- Exact nested-flow surface evidence can be constructed without
+- The advertised universal `parse_iff_grammar` theorem is false at the pinned
+  upstream revision.
+- The malformed-directive counterexample does not use `scannerDrop`.
+- The unbound-alias counterexample does not use `scannerDrop`.
+- The undeclared-tag-handle counterexample does not use `scannerDrop`.
+- The overlong block-header counterexample does not use `scannerDrop`.
+- Exact nested-flow surface evidence is constructible without
   `scannerDrop`.
-- Continuation-style flow accumulation is valid Lean algebra for the existing
-  surface grammar.
+- Continuation-style flow accumulation is valid Lean algebra.
+- Full `parseYaml` acceptance is exactly equivalent to the factored
+  scanner+`parseStream` predicate `InExecutableLanguage`.
 
 **CANDIDATE**
 
-- Replacing scanner-only strictness with a parser-guided surface
-  reconstruction will materially reduce the full Fix-A proof burden.
-- Continuation accumulation can replace most of the proposed entry-`snoc`
-  machinery in the final upstream implementation.
+- Parser-guided reconstruction plus continuation accumulation can remove most
+  of the proposed scanner-side Fix-A complexity.
+- Splitting the syntax and load contracts will lead to a substantially smaller
+  and more maintainable final proof than enriching scanner strictness until it
+  duplicates parser/semantic state.
 
 **UNKNOWN**
 
-- Whether directive exactness is the only non-`scannerDrop` obstruction.
-- How many other deliberately relaxed surface productions admit parser-rejected
-  strings.
-- The final line count / complexity of the repaired capstone proof.
-
-## Corrected route to the capstone
-
-The evidence supports the following order:
-
-```text
-1. Audit all relaxed surface productions against executable acceptance.
-2. Tighten every proven surface/parser mismatch.
-3. Replace scanner-only exactness at flow boundaries with
-   scanner-character evidence + parser-success structure.
-4. Remove scannerDrop.
-5. Prove:
-      InYamlLanguage input -> ∃ docs, parseYaml input = .ok docs
-6. Assemble:
-      (∃ docs, parseYaml input = .ok docs) ↔ InYamlLanguage input
-7. Run full upstream qualification and submit the minimal patch series.
-```
-
-The highest-leverage immediate experiment is a finite, systematic
-surface-relaxation differential audit. The source already marks several
-productions as simplified or deliberately loose (directives, tag/property
-syntax, comment/directive character handling, selected document/prefix
-rules). Each should be tested for a kernel-constructible surface witness paired
-with executable rejection.
+- The complete set of surface/spec deviations beyond the now-verified
+  directive and block-header examples.
+- The smallest independent definition of `SerializationWellFormed` that
+  exactly matches all current load-time checks.
+- Final implementation size after Nicolas chooses syntax-capstone versus
+  load-capstone semantics.
 
 ## Ultimate target
 
-The ultimate result is not merely a critique of the proof plan. It is an
-upstream-quality, sorry-free patch series that:
+The useful finish is no longer “force the advertised theorem through.”
 
-- makes `InYamlLanguage` exact enough for the claimed YAML 1.2.2 contract;
-- removes `scannerDrop`;
-- proves `grammar_completeness`;
-- proves the final `parse_iff_grammar` biconditional;
-- preserves the existing build/test/capstone qualification; and
-- leaves behind a reusable proof-engineering rule: **do not force one proof
-  layer to reconstruct distinctions already certified by a later layer, and
-  audit every intentional over-approximation before attempting a
-  bidirectional correctness theorem.**
+It is a sorry-free, independently specified contract in which the two sides
+actually describe the same layer, followed by a proof of their equivalence.
+For the existing load API that means:
 
-That final rule is the transferable MathGraph result from this case.
+```text
+ExactSurfaceLanguage
++ explicit stateful serialization validity
+             ↕
+scanFiltered + parseStream
+             ↕
+          parseYaml
+```
+
+The transferable proof-engineering result is:
+
+> **Before spending proof effort on a biconditional, audit whether both sides
+> carry the same distinctions. Never force an earlier proof layer to recreate
+> information already certified downstream, and never equate a local syntax
+> relation with an executable pipeline that enforces additional stateful
+> semantics.**
+
+No upstream PR has been created or submitted. All work remains on the public
+MathGraph experiment branch.
