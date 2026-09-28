@@ -54,7 +54,7 @@ jobs:
           lake env lean SourceEvents.lean
           lake env lean RuntimeScopes.lean
           lake env lean AnchorTiming.lean
-          lake env lean CommitTrace.lean
+          lake env lean -o .lake/build/lib/lean/CommitTrace.olean CommitTrace.lean
           lake env lean SurfaceEvents.lean
           lake env lean AnchorRuntime.lean
           lake env lean Census.lean
