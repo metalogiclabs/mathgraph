@@ -190,13 +190,36 @@ def parserTagGuard (ps : L4YAML.TokenParser.ParseState) (handle : String) : Bool
   (handle == "") || (handle == "!") || (handle == "!!") ||
     ps.tagHandles.any (fun p => p.1 == handle)
 
+/-- Presence of a named handle in the parser's richer handle→prefix table
+is exactly presence of that handle in the minimal semantic projection.  The
+prefix is intentionally discarded: it affects tag resolution, but not the
+accept/reject decision for declaration well-formedness. -/
+lemma parser_declared_handle_exact
+    (ps : L4YAML.TokenParser.ParseState) (handle : String) :
+    ps.tagHandles.any (fun p => p.1 == handle) = true ↔
+      handle ∈ ps.tagHandles.toList.map Prod.fst := by
+  constructor
+  · rw [Array.any_eq_true]
+    rintro ⟨i, hi, hname⟩
+    apply List.mem_map.mpr
+    exact ⟨ps.tagHandles[i], by simpa using Array.getElem_mem hi, hname⟩
+  · intro h
+    rw [Array.any_eq_true]
+    obtain ⟨entry, hmem, hname⟩ := List.mem_map.mp h
+    have hmem' : entry ∈ ps.tagHandles := by simpa using hmem
+    rw [Array.mem_iff_getElem] at hmem'
+    obtain ⟨i, hi, heq⟩ := hmem'
+    exact ⟨i, hi, by simpa [heq] using hname⟩
+
 /-- The parser's tag-handle decision agrees with the independent semantic
 specification for every parser state and handle. -/
 lemma parser_tag_guard_exact (ps : L4YAML.TokenParser.ParseState) (handle : String) :
     parserTagGuard ps handle = true ↔
       TagHandleAllowed (ofParserTags ps) handle := by
-  simp [parserTagGuard, TagHandleAllowed, BuiltinTagHandle, ofParserTags,
-    Array.mem_iff_getElem, or_assoc]
+  simp only [parserTagGuard, Bool.or_eq_true, beq_iff_eq,
+    TagHandleAllowed, BuiltinTagHandle, ofParserTags]
+  rw [parser_declared_handle_exact]
+  simp [or_assoc]
 
 end L4YAMLSerializationWellFormed
 
