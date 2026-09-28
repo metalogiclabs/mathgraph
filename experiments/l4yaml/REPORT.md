@@ -14,8 +14,10 @@ theorem parse_iff_grammar (input : String) :
     (∃ docs, parseYaml input = .ok docs) ↔ InYamlLanguage input
 ```
 
-is **false at the pinned upstream revision**. This is now a kernel-checked
-result, not a search failure or an architectural opinion.
+is **false at the pinned upstream revision**. This is now a Lean-checked
+result, not a search failure or an architectural opinion. The fixed executable
+rejection facts use `native_decide`; the relevant axiom profiles are recorded
+below.
 
 MathGraph found three independent classes of obstruction:
 
@@ -32,12 +34,12 @@ MathGraph found three independent classes of obstruction:
    executable load pipeline rejects an unbound alias and an undeclared named
    tag handle, while the pure surface grammar derives both strings.
 
-Consequently, removing `scannerDrop` cannot make the advertised
+Consequently, removing `scannerDrop` cannot make the proposed
 biconditional true. The problem is not just unfinished proof engineering: the
 two sides currently describe different languages at different abstraction
 layers.
 
-## Kernel-qualified evidence
+## Lean-checked evidence
 
 ### A. Scanner acceptance is not exact parser syntax
 
@@ -163,7 +165,7 @@ repair even where parser and current surface grammar agree.
 
 ### G. Universal no-go theorem
 
-The consolidated fast qualification kernel-checks:
+The consolidated fast qualification Lean-checks:
 
 ```lean
 theorem advertised_parse_iff_grammar_is_false :
@@ -309,7 +311,7 @@ Either route is layer-correct. The current pure
 
 ## Epistemic status
 
-**WARRANTED / kernel-checked**
+**WARRANTED / Lean-checked**
 
 - Scanner success alone is broader than parser acceptance for the recorded
   flow-adjacency cases.
@@ -341,12 +343,12 @@ Either route is layer-correct. The current pure
   directive and block-header examples.
 - The smallest independent definition of `SerializationWellFormed` that
   exactly matches all current load-time checks.
-- Final implementation size after Nicolas chooses syntax-capstone versus
+- Final implementation size after choosing syntax-capstone versus
   load-capstone semantics.
 
 ## Ultimate target
 
-The useful finish is no longer “force the advertised theorem through.”
+The useful finish is no longer “force the proposed theorem through.”
 
 It is a sorry-free, independently specified contract in which the two sides
 actually describe the same layer, followed by a proof of their equivalence.
@@ -372,6 +374,35 @@ The transferable proof-engineering result is:
 No upstream PR has been created or submitted. All work remains on the public
 MathGraph experiment branch.
 
+
+
+### Axiom profiles
+
+Fresh `#print axioms` output from the qualified proof files reports:
+
+```text
+L4YAMLCapstoneObstruction.parse_iff_grammar_current_statement_false
+  [propext, Classical.choice, Quot.sound]
+
+L4YAMLSemanticObstruction.parse_iff_grammar_semantic_obstruction
+  [propext, Classical.choice, Quot.sound]
+
+L4YAMLCorrectedCapstone.parse_iff_executable_language
+  [propext, Classical.choice, Quot.sound]
+
+L4YAMLNoGo.advertised_parse_iff_grammar_is_false
+  [propext, Classical.choice, Quot.sound]
+```
+
+No `sorryAx` or custom axiom appears in these profiles. Some fixed-input
+acceptance/rejection subproofs are discharged with `native_decide`; as
+upstream itself documents, this additionally trusts Lean's compiled evaluator
+even when the resulting theorem's `#print axioms` profile contains only the
+standard axioms above.
+
+**Axiom-profile replay evidence:**  
+https://github.com/metalogiclabs/mathgraph/actions/runs/36373369963  
+https://github.com/metalogiclabs/mathgraph/actions/runs/36373369980
 
 ## Verification and reproducibility notes
 
