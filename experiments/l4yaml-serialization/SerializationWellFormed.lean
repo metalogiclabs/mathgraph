@@ -274,7 +274,15 @@ lemma parser_tag_guard_set_ext
     parserTagGuard ps₁ handle = true ↔ parserTagGuard ps₂ handle = true := by
   rw [parser_tag_guard_exact, parser_tag_guard_exact]
   unfold TagHandleAllowed
-  exact or_congr Iff.rfl (hproj handle)
+  constructor
+  · intro h
+    rcases h with h | h
+    · exact Or.inl h
+    · exact Or.inr ((hproj handle).mp h)
+  · intro h
+    rcases h with h | h
+    · exact Or.inl h
+    · exact Or.inr ((hproj handle).mpr h)
 
 /-! ## Necessity / separator laws -/
 
