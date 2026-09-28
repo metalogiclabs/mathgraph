@@ -46,14 +46,26 @@ jobs:
         working-directory: upstream
         run: lake build
 
-      - name: Kernel-check parser-boundary probe
+      - name: Kernel-check L4YAML audit suite
         run: |
           cp experiments/l4yaml/ParserBoundaryProbe.lean upstream/ParserBoundaryProbe.lean
           cp experiments/l4yaml/FlowContinuation.lean upstream/FlowContinuation.lean
           cp experiments/l4yaml/ExactNestedFlow.lean upstream/ExactNestedFlow.lean
           cp experiments/l4yaml/CapstoneObstruction.lean upstream/CapstoneObstruction.lean
+          cp experiments/l4yaml/SemanticObstruction.lean upstream/SemanticObstruction.lean
+          cp experiments/l4yaml/CorrectedCapstone.lean upstream/CorrectedCapstone.lean
+          cp experiments/l4yaml/TagHandleObstruction.lean upstream/TagHandleObstruction.lean
+          cp experiments/l4yaml/BlockHeaderObstruction.lean upstream/BlockHeaderObstruction.lean
+          cp experiments/l4yaml/NoGo.lean upstream/NoGo.lean
+          cp experiments/l4yaml/LanguageRelation.lean upstream/LanguageRelation.lean
           cd upstream
           lake env lean ParserBoundaryProbe.lean
           lake env lean FlowContinuation.lean
           lake env lean ExactNestedFlow.lean
           lake env lean CapstoneObstruction.lean
+          lake env lean SemanticObstruction.lean
+          lake env lean CorrectedCapstone.lean
+          lake env lean TagHandleObstruction.lean
+          lake env lean BlockHeaderObstruction.lean
+          lake env lean NoGo.lean
+          lake env lean LanguageRelation.lean
