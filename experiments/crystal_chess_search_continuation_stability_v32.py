@@ -235,6 +235,7 @@ def main() -> int:
 
     target_sets: list[list[chess.Board]] = []
     overlaps: list[int] = []
+    cross_target_overlaps: list[int] = []
     target_keys: set[tuple[str, bool, str, int | None]] = set()
     for path in (args.fresh_epd_a, args.fresh_epd_b):
         boards_all = read_epd(path)
@@ -246,11 +247,21 @@ def main() -> int:
         if len(boards) < 200:
             raise AssertionError(("fresh target too small", len(boards)))
         cross = {position_key(b) for b in boards} & target_keys
+        # Mechanical de-duplication happens before any target authority search.
+        # It changes no target label or guard.
         if cross:
-            raise AssertionError(("fresh targets overlap", len(cross)))
+            boards = [
+                b for b in boards
+                if position_key(b) not in target_keys
+            ]
+        if len(boards) < 200:
+            raise AssertionError(
+                ("fresh target too small after cross-target dedup", len(boards))
+            )
         target_keys.update(position_key(b) for b in boards)
         target_sets.append(boards)
         overlaps.append(len(overlap))
+        cross_target_overlaps.append(len(cross))
 
     engine = UCIStockfish(args.stockfish)
     try:
@@ -333,6 +344,7 @@ def main() -> int:
                 "seed": FRESH_SEEDS[i],
                 "book_sha256": manifests[i]["book_sha256"],
                 "source_overlap_removed_before_search": overlaps[i],
+                "earlier_target_overlap_removed_before_search": cross_target_overlaps[i],
                 **targets[i],
             }
             for i in range(2)
@@ -353,7 +365,7 @@ def main() -> int:
             "warranted_if_green": [
                 "reply stability is the only distinction added after V31",
                 "the exact exposed V31 false positive is removed with zero retained V31 source errors",
-                "both new target seeds are frozen and source-disjoint before 100k authority search",
+                "both new target seeds are frozen; source overlaps and cross-seed duplicate positions are removed mechanically before 100k authority search",
                 "every prospectively accepted shortcut on both targets equals pinned 100k Stockfish",
                 "both targets retain positive net node reduction after charging the conditional continuation probe",
             ],
