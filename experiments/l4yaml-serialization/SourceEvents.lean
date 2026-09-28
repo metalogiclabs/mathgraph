@@ -173,7 +173,9 @@ lemma named_tag_declaration_source_exact
           (handleChars ++ '!' :: tail)) =
       some (.declareTag ("!" ++ String.ofList handleChars ++ "!"), tail) := by
   have hbang : isWordCharBool '!' = false := by decide
-  simp only [namedTagDeclarationAt, dropHSpace, namedTagDeclarationTail]
+  change namedTagDeclarationTail (handleChars ++ '!' :: tail) =
+    some (.declareTag ("!" ++ String.ofList handleChars ++ "!"), tail)
+  unfold namedTagDeclarationTail
   rw [spanWhile_append_stop isWordCharBool handleChars '!' tail hchars hbang]
   simp [hne]
 
