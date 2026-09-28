@@ -6,6 +6,7 @@ on:
     paths:
       - 'experiments/l4yaml/CapstoneObstruction.lean'
       - 'experiments/l4yaml/SemanticObstruction.lean'
+      - 'experiments/l4yaml/CorrectedCapstone.lean'
       - '.github/workflows/l4yaml-capstone-obstruction-fast.yml'
   workflow_dispatch:
 
@@ -37,6 +38,8 @@ jobs:
         run: |
           cp experiments/l4yaml/CapstoneObstruction.lean upstream/CapstoneObstruction.lean
           cp experiments/l4yaml/SemanticObstruction.lean upstream/SemanticObstruction.lean
+          cp experiments/l4yaml/CorrectedCapstone.lean upstream/CorrectedCapstone.lean
           cd upstream
           lake env lean CapstoneObstruction.lean
           lake env lean SemanticObstruction.lean
+          lake env lean CorrectedCapstone.lean
