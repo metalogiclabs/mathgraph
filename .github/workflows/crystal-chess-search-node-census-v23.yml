@@ -1,3 +1,4 @@
+# Trigger V23 after workflow registration.
 name: Crystal Chess Stockfish Search Node Census V23
 
 on:
