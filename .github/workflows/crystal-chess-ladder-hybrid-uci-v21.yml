@@ -1,0 +1,97 @@
+name: Crystal Chess Ladder Hybrid UCI V21
+
+on:
+  push:
+    branches:
+      - crystal-chess-ladder-hybrid-uci-v21
+    paths:
+      - "experiments/crystal_chess_stockfish_hybrid_uci_v17.py"
+      - "experiments/crystal_chess_ladder_hybrid_benchmark_v21.py"
+      - ".github/workflows/crystal-chess-ladder-hybrid-uci-v21.yml"
+  workflow_dispatch:
+
+jobs:
+  ladder-hybrid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999"
+
+      - name: Compile V21
+        run: |
+          python -m py_compile experiments/crystal_chess_stockfish_hybrid_uci_v17.py
+          python -m py_compile experiments/crystal_chess_ladder_hybrid_benchmark_v21.py
+
+      - name: Download frozen residual ladder
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-residual-guard-ladder-v16
+          path: /tmp/ladder
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36359443246
+
+      - name: Download frozen role map
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-stockfish-hybrid-uci-v17
+          path: /tmp/v17
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36360365229
+
+      - name: Verify frozen assets
+        run: |
+          set -euo pipefail
+          ladder=/tmp/ladder/crystal_chess_residual_guard_ladder_v16.jsonl.gz
+          roles=/tmp/v17/crystal_chess_roles_v17.jsonl.gz
+          test -s "$ladder"
+          test -s "$roles"
+          test "$(gzip -dc "$ladder" | sha256sum | awk '{print $1}')" = "7c19923878b0fe4502871cc025582137471f93227c76dff537c1870da3401285"
+          test "$(gzip -dc "$roles" | sha256sum | awk '{print $1}')" = "028353c82c3fefdd7d9e36907916b9a1aec7c1c13da9a4b8710b4deef8298b99"
+
+      - name: Acquire exact Syzygy verifier authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          w5="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
+          for f in KPvK.rtbw KPPvK.rtbw KPPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w5/$f"
+          done
+          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Build pinned Stockfish
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+
+      - name: Run ladder + color-symmetric UCI benchmark
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v21
+          python experiments/crystal_chess_ladder_hybrid_benchmark_v21.py             --stockfish /tmp/stockfish/src/stockfish             --hybrid-script experiments/crystal_chess_stockfish_hybrid_uci_v17.py             --guard /tmp/ladder/crystal_chess_residual_guard_ladder_v16.jsonl.gz             --roles /tmp/v17/crystal_chess_roles_v17.jsonl.gz             --tablebase-dir /tmp/syzygy             --per-family 400             --nodes 5000             --seed 20260928             --output artifacts/crystal-chess-v21/result.json             | tee artifacts/crystal-chess-v21/run.log
+          grep -q "CRYSTAL_CHESS_LADDER_HYBRID_UCI_V21=WARRANTED_LADDER_COLOR_SYMMETRIC_UCI_SYSTEM_GAIN" artifacts/crystal-chess-v21/run.log
+          cp /tmp/ladder/crystal_chess_residual_guard_ladder_v16.jsonl.gz artifacts/crystal-chess-v21/
+          cp /tmp/v17/crystal_chess_roles_v17.jsonl.gz artifacts/crystal-chess-v21/
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v21/
+          cp experiments/crystal_chess_stockfish_hybrid_uci_v17.py artifacts/crystal-chess-v21/crystal_chess_uci_v21.py
+
+      - name: Upload V21 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-ladder-hybrid-uci-v21
+          path: artifacts/crystal-chess-v21/
+          if-no-files-found: error
