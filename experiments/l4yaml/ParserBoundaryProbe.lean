@@ -1,6 +1,7 @@
 import L4YAML.Scanner.Scanner
 import L4YAML.Parser.TokenParser
 import L4YAML.Proofs.Composition
+import L4YAML.Proofs.Production.StructureProduction
 
 /-!
 # L4YAML parser-boundary probe
@@ -28,6 +29,10 @@ syntax.
 -/
 
 namespace L4YAMLParserBoundaryProbe
+
+open L4YAML.Surface
+open L4YAML.Scanner
+open L4YAML.Proofs.CouplingBridge
 
 def scanAccepts (s : String) : Bool :=
   match L4YAML.Scanner.scan s with
@@ -105,6 +110,73 @@ lemma parseFlowSequenceLoop_growth_requires_separator
     · simp only [Except.ok.injEq, Prod.mk.injEq] at hok
       obtain ⟨rfl, _⟩ := hok
       exact False.elim (Nat.lt_irrefl _ hgrowth)
+
+/--
+Flow-mapping parser success carries the same separator distinction as flow
+sequences: once one pair already exists, any successful loop result that grows
+the pair array must have crossed an explicit FLOW-ENTRY token.
+-/
+lemma parseFlowMappingLoop_growth_requires_separator
+    (ps ps' : L4YAML.TokenParser.ParseState)
+    (fuel : Nat)
+    (pairs result : Array (L4YAML.YamlValue × L4YAML.YamlValue))
+    (hpairs : pairs.size > 0)
+    (hgrowth : result.size > pairs.size)
+    (hok : L4YAML.TokenParser.parseFlowMappingLoop ps (fuel + 1) pairs = .ok (result, ps')) :
+    ps.peek? = some .flowEntry := by
+  unfold L4YAML.TokenParser.parseFlowMappingLoop at hok
+  simp only [bind, Except.bind, pure, Except.pure] at hok
+  split at hok
+  · simp only [Except.ok.injEq, Prod.mk.injEq] at hok
+    obtain ⟨rfl, _⟩ := hok
+    exact False.elim (Nat.lt_irrefl _ hgrowth)
+  · simp [hpairs] at hok
+    split at hok
+    · assumption
+    · simp only [Except.ok.injEq, Prod.mk.injEq] at hok
+      obtain ⟨rfl, _⟩ := hok
+      exact False.elim (Nat.lt_irrefl _ hgrowth)
+
+/--
+Upgrade the upstream comma coupling from mere position correspondence to the
+actual YAML production witness `GLit ','`. This is one of the concrete Fix-A
+items in the upstream plan, and it is independent of any scanner-tightening.
+-/
+lemma scanFlowEntry_full_prod
+    (sc : ScannerState) (sp : SurfPos)
+    (hcorr : ScannerSurfCorr sc sp)
+    (hpeek : sc.peek? = some ',')
+    (s' : ScannerState) (hok : scanFlowEntry sc = .ok s') :
+    ∃ sp', GLit ',' sp sp' ∧ ScannerSurfCorr s' sp' := by
+  obtain ⟨rest, hsp_eq⟩ := peek_some_sp hcorr hpeek
+  subst hsp_eq
+  refine ⟨⟨rest, sc.col + 1⟩, GLit.mk rest sc.col, ?_⟩
+  have hmore := peek_some_has_more hpeek
+  unfold scanFlowEntry at hok
+  simp only [bind, Except.bind] at hok
+  split at hok
+  · split at hok
+    · simp at hok
+    · have h := Except.ok.inj hok
+      subst h
+      have hcorr_emit : ScannerSurfCorr
+          (sc.emit .flowEntry) ⟨',' :: rest, sc.col⟩ :=
+        ⟨hcorr.chars_from, hcorr.col_eq, hcorr.end_eq,
+          hcorr.input_prefix, hcorr.indent_cols_nonneg⟩
+      have hcorr_adv := advance_non_newline_corr
+        (sc.emit .flowEntry) ',' rest hcorr_emit hmore (by decide) (by decide)
+      exact ⟨hcorr_adv.chars_from, hcorr_adv.col_eq, hcorr_adv.end_eq,
+        hcorr_adv.input_prefix, hcorr_adv.indent_cols_nonneg⟩
+  · have h := Except.ok.inj hok
+    subst h
+    have hcorr_emit : ScannerSurfCorr
+        (sc.emit .flowEntry) ⟨',' :: rest, sc.col⟩ :=
+      ⟨hcorr.chars_from, hcorr.col_eq, hcorr.end_eq,
+        hcorr.input_prefix, hcorr.indent_cols_nonneg⟩
+    have hcorr_adv := advance_non_newline_corr
+      (sc.emit .flowEntry) ',' rest hcorr_emit hmore (by decide) (by decide)
+    exact ⟨hcorr_adv.chars_from, hcorr_adv.col_eq, hcorr_adv.end_eq,
+      hcorr_adv.input_prefix, hcorr_adv.indent_cols_nonneg⟩
 
 #eval scanAccepts "[[a][b]]"
 #eval parseAccepts "[[a][b]]"
