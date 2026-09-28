@@ -35,13 +35,16 @@ theorem triple_chomp_header_is_in_surface :
 
   have hp1 :
       GChar (fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true) s1 s2 := by
-    exact GChar.mk '+' ['+', '\n'] 1 (show L4YAML.Grammar.isBlockScalarHeaderChar '+' = true by native_decide)
+    exact GChar.mk (p := fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true)
+      '+' ['+', '\n'] 1 (by native_decide)
   have hp2 :
       GChar (fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true) s2 s3 := by
-    exact GChar.mk '+' ['\n'] 2 (show L4YAML.Grammar.isBlockScalarHeaderChar '+' = true by native_decide)
+    exact GChar.mk (p := fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true)
+      '+' ['\n'] 2 (by native_decide)
   have hp3 :
       GChar (fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true) s3 s4 := by
-    exact GChar.mk '+' [] 3 (show L4YAML.Grammar.isBlockScalarHeaderChar '+' = true by native_decide)
+    exact GChar.mk (p := fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true)
+      '+' [] 3 (by native_decide)
 
   have hheaders :
       GStar (GChar (fun c => L4YAML.Grammar.isBlockScalarHeaderChar c = true)) s1 s4 :=
