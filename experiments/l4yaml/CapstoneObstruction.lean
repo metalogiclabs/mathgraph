@@ -185,6 +185,16 @@ theorem advertised_parse_iff_grammar_is_false :
   intro h
   exact parse_iff_grammar_current_statement_false (h "%YAML .2\n---")
 
+
+/-- The advertised capstone is universally false at this pinned upstream
+    revision. A single exact counterexample suffices. -/
+theorem advertised_parse_iff_grammar_universally_false :
+    ¬ (∀ input : String,
+      ((∃ docs, L4YAML.TokenParser.parseYaml input = .ok docs) ↔
+       InYamlLanguage input)) := by
+  intro h
+  exact parse_iff_grammar_current_statement_false (h "%YAML .2\n---")
+
 end L4YAMLCapstoneObstruction
 
 -- qualification replay
