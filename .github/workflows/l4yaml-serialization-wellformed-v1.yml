@@ -42,5 +42,7 @@ jobs:
       - name: Kernel-check SerializationWellFormed
         run: |
           cp experiments/l4yaml-serialization/SerializationWellFormed.lean upstream/SerializationWellFormed.lean
+          cp experiments/l4yaml-serialization/Census.lean upstream/Census.lean
           cd upstream
           lake env lean SerializationWellFormed.lean
+          lake env lean Census.lean
