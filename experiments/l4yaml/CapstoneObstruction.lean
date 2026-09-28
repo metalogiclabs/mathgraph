@@ -198,3 +198,5 @@ theorem advertised_parse_iff_grammar_universally_false :
 end L4YAMLCapstoneObstruction
 
 -- qualification replay
+
+#print axioms L4YAMLCapstoneObstruction.parse_iff_grammar_current_statement_false
