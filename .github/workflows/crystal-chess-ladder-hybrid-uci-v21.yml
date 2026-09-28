@@ -1,3 +1,4 @@
+# Trigger V21 qualification after workflow registration.
 name: Crystal Chess Ladder Hybrid UCI V21
 
 on:
