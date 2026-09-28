@@ -35,7 +35,11 @@ def aliasCases : List (String × String) := [
   ("use-before-definition", "a: *x\nb: &x 1\n"),
   ("explicit same-doc", "---\na: &x 1\nb: *x\n"),
   ("cross-doc reset", "---\na: &x 1\n...\n---\nb: *x\n"),
-  ("redefine next-doc", "---\na: &x 1\n...\n---\nb: &x 2\nc: *x\n")
+  ("redefine next-doc", "---\na: &x 1\n...\n---\nb: &x 2\nc: *x\n"),
+  ("self-reference seq", "&x [*x]\n"),
+  ("self-reference map", "&x {a: *x}\n"),
+  ("nested define then use", "a: [&x 1, *x]\n"),
+  ("redefine same doc", "a: &x 1\nb: &x 2\nc: *x\n")
 ]
 
 def tagCases : List (String × String) := [
