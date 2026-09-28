@@ -22,6 +22,7 @@ namespace L4YAMLSemanticObstruction
 
 open L4YAML
 open L4YAML.Surface
+open L4YAML.CharPredicates
 
 def parseAccepts (s : String) : Bool :=
   match L4YAML.TokenParser.parseYaml s with
@@ -38,7 +39,10 @@ theorem unbound_alias_is_in_surface :
   let s2 : SurfPos := ⟨[], 2⟩
 
   have hx : GChar isNsAnchorChar s1 s2 := by
-    exact GChar.mk 'x' [] 1 (by native_decide)
+    exact GChar.mk 'x' [] 1 (by
+      simp [isNsAnchorChar, isNsChar, isLineBreakProp, isLineFeedProp,
+        isCarriageReturnProp, isWhiteSpaceProp, isSpaceProp, isTabProp,
+        isPrintableProp, isFlowIndicatorProp])
 
   have hname : GPlus (GChar isNsAnchorChar) s1 s2 :=
     GPlus.mk s1 s2 s2 hx (GStar.nil s2)
