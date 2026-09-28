@@ -168,6 +168,131 @@ lemma named_tag_declaration_source_exact
     spanWhile_append_stop isWordCharBool handleChars '!' tail hchars hbang,
     hne]
 
+
+/-! ## Bridge to the formal surface productions
+
+The next lemmas show that the independent source recognizers are not merely
+string conventions: on well-formed lexemes they construct the corresponding
+L4YAML surface-production witnesses.
+-/
+
+lemma gstar_gchar_of_all
+    (P : Char → Prop) [DecidablePred P]
+    (xs tail : List Char) (col : Nat)
+    (h : ∀ c ∈ xs, P c) :
+    GStar (GChar P)
+      ⟨xs ++ tail, col⟩
+      ⟨tail, col + xs.length⟩ := by
+  induction xs generalizing col with
+  | nil =>
+      simp
+      exact GStar.nil _
+  | cons c cs ih =>
+      have hc : P c := h c (by simp)
+      have hcs : ∀ d ∈ cs, P d := by
+        intro d hd
+        exact h d (by simp [hd])
+      have htail := ih (col := col + 1) hcs
+      have hstep : GChar P
+          ⟨c :: (cs ++ tail), col⟩
+          ⟨cs ++ tail, col + 1⟩ :=
+        GChar.mk c (cs ++ tail) col hc
+      have hfull := GStar.cons
+        ⟨c :: (cs ++ tail), col⟩
+        ⟨cs ++ tail, col + 1⟩
+        ⟨tail, (col + 1) + cs.length⟩
+        hstep htail
+      simpa [List.length_cons, Nat.add_assoc] using hfull
+
+lemma gplus_gchar_of_cons
+    (P : Char → Prop) [DecidablePred P]
+    (c : Char) (cs tail : List Char) (col : Nat)
+    (hc : P c) (hcs : ∀ d ∈ cs, P d) :
+    GPlus (GChar P)
+      ⟨(c :: cs) ++ tail, col⟩
+      ⟨tail, col + (c :: cs).length⟩ := by
+  have hrest := gstar_gchar_of_all P cs tail (col + 1) hcs
+  have hfirst : GChar P
+      ⟨c :: (cs ++ tail), col⟩
+      ⟨cs ++ tail, col + 1⟩ :=
+    GChar.mk c (cs ++ tail) col hc
+  have hfull := GPlus.mk
+    ⟨c :: (cs ++ tail), col⟩
+    ⟨cs ++ tail, col + 1⟩
+    ⟨tail, (col + 1) + cs.length⟩
+    hfirst hrest
+  simpa [List.length_cons, Nat.add_assoc] using hfull
+
+lemma anchor_char_bool_true_iff (c : Char) :
+    isAnchorCharBool c = true ↔ isNsAnchorChar c := by
+  simp [isAnchorCharBool]
+
+lemma anchor_definition_surface
+    (c : Char) (cs tail : List Char) (col : Nat)
+    (hc : isAnchorCharBool c = true)
+    (hcs : ∀ d ∈ cs, isAnchorCharBool d = true) :
+    SCNsAnchorProperty
+      ⟨'&' :: ((c :: cs) ++ tail), col⟩
+      ⟨tail, col + 1 + (c :: cs).length⟩ := by
+  have hc' : isNsAnchorChar c := (anchor_char_bool_true_iff c).mp hc
+  have hcs' : ∀ d ∈ cs, isNsAnchorChar d := by
+    intro d hd
+    exact (anchor_char_bool_true_iff d).mp (hcs d hd)
+  have hname := gplus_gchar_of_cons isNsAnchorChar c cs tail (col + 1) hc' hcs'
+  exact SCNsAnchorProperty.mk
+    ((c :: cs) ++ tail) col
+    ⟨tail, col + 1 + (c :: cs).length⟩
+    (by simpa [Nat.add_assoc] using hname)
+
+lemma alias_use_surface
+    (c : Char) (cs tail : List Char) (col : Nat)
+    (hc : isAnchorCharBool c = true)
+    (hcs : ∀ d ∈ cs, isAnchorCharBool d = true) :
+    SCNsAliasNode
+      ⟨'*' :: ((c :: cs) ++ tail), col⟩
+      ⟨tail, col + 1 + (c :: cs).length⟩ := by
+  have hc' : isNsAnchorChar c := (anchor_char_bool_true_iff c).mp hc
+  have hcs' : ∀ d ∈ cs, isNsAnchorChar d := by
+    intro d hd
+    exact (anchor_char_bool_true_iff d).mp (hcs d hd)
+  have hname := gplus_gchar_of_cons isNsAnchorChar c cs tail (col + 1) hc' hcs'
+  exact SCNsAliasNode.mk
+    ((c :: cs) ++ tail) col
+    ⟨tail, col + 1 + (c :: cs).length⟩
+    (by simpa [Nat.add_assoc] using hname)
+
+lemma named_tag_use_surface
+    (c : Char) (handleRest suffix tail : List Char) (col : Nat)
+    (hc : isWordCharProp c)
+    (hhandle : ∀ d ∈ handleRest, isWordCharProp d)
+    (hsuffix : ∀ d ∈ suffix, isTagCharProp d) :
+    SCNsTagProperty
+      ⟨'!' :: ((c :: handleRest) ++ '!' :: (suffix ++ tail)), col⟩
+      ⟨tail, col + 1 + (c :: handleRest).length + 1 + suffix.length⟩ := by
+  let handle := c :: handleRest
+  have hwords : GPlus (GChar isWordCharProp)
+      ⟨handle ++ '!' :: (suffix ++ tail), col + 1⟩
+      ⟨'!' :: (suffix ++ tail), col + 1 + handle.length⟩ := by
+    simpa [handle, Nat.add_assoc] using
+      (gplus_gchar_of_cons isWordCharProp c handleRest
+        ('!' :: (suffix ++ tail)) (col + 1) hc hhandle)
+  have hbang : GLit '!'
+      ⟨'!' :: (suffix ++ tail), col + 1 + handle.length⟩
+      ⟨suffix ++ tail, col + 1 + handle.length + 1⟩ :=
+    GLit.mk (suffix ++ tail) (col + 1 + handle.length)
+  have hsuffixStar : GStar (GChar isTagCharProp)
+      ⟨suffix ++ tail, col + 1 + handle.length + 1⟩
+      ⟨tail, col + 1 + handle.length + 1 + suffix.length⟩ := by
+    simpa [Nat.add_assoc] using
+      (gstar_gchar_of_all isTagCharProp suffix tail
+        (col + 1 + handle.length + 1) hsuffix)
+  exact SCNsTagProperty.named
+    (handle ++ '!' :: (suffix ++ tail)) col
+    ⟨'!' :: (suffix ++ tail), col + 1 + handle.length⟩
+    ⟨suffix ++ tail, col + 1 + handle.length + 1⟩
+    ⟨tail, col + 1 + handle.length + 1 + suffix.length⟩
+    hwords hbang hsuffixStar
+
 /-! ## Composition with the already-proved runtime guards
 
 These lemmas are deliberately local: the source recognizer establishes which
@@ -199,3 +324,7 @@ end L4YAMLSerializationSourceEvents
 #print axioms L4YAMLSerializationSourceEvents.named_tag_use_source_exact
 #print axioms L4YAMLSerializationSourceEvents.source_alias_allowed_iff_scanner_guard
 #print axioms L4YAMLSerializationSourceEvents.source_named_tag_allowed_iff_parser_guard
+
+#print axioms L4YAMLSerializationSourceEvents.anchor_definition_surface
+#print axioms L4YAMLSerializationSourceEvents.alias_use_surface
+#print axioms L4YAMLSerializationSourceEvents.named_tag_use_surface
