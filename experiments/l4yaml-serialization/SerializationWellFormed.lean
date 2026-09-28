@@ -34,7 +34,7 @@ inductive Event where
   | endDocument
   | defineAnchor (name : String)
   | useAlias (name : String)
-  | declareTag (handle pfx : String)
+  | declareTag (handle : String)
   | useTag (handle : String)
   deriving Repr, DecidableEq
 
@@ -42,7 +42,7 @@ inductive Event where
 stateful acceptance families. -/
 structure Env where
   anchors : List String := []
-  tagHandles : List (String × String) := []
+  tagHandles : List String := []
   deriving Repr, Inhabited
 
 def Env.reset (_ : Env) : Env := {}
@@ -63,7 +63,7 @@ instance (env : Env) (name : String) : Decidable (AliasAllowed env name) := by
   infer_instance
 
 def TagHandleAllowed (env : Env) (handle : String) : Prop :=
-  BuiltinTagHandle handle ∨ ∃ entry ∈ env.tagHandles, entry.1 = handle
+  BuiltinTagHandle handle ∨ handle ∈ env.tagHandles
 
 instance (env : Env) (handle : String) : Decidable (TagHandleAllowed env handle) := by
   unfold TagHandleAllowed
@@ -84,8 +84,8 @@ def WellFormedFrom : Env → List Event → Prop
       WellFormedFrom { env with anchors := name :: env.anchors } rest
   | env, .useAlias name :: rest =>
       AliasAllowed env name ∧ WellFormedFrom env rest
-  | env, .declareTag handle pfx :: rest =>
-      WellFormedFrom { env with tagHandles := (handle, pfx) :: env.tagHandles } rest
+  | env, .declareTag handle :: rest =>
+      WellFormedFrom { env with tagHandles := handle :: env.tagHandles } rest
   | env, .useTag handle :: rest =>
       TagHandleAllowed env handle ∧ WellFormedFrom env rest
 
@@ -105,8 +105,8 @@ def checkFrom : Env → List Event → Bool
       checkFrom { env with anchors := name :: env.anchors } rest
   | env, .useAlias name :: rest =>
       if _h : AliasAllowed env name then checkFrom env rest else false
-  | env, .declareTag handle pfx :: rest =>
-      checkFrom { env with tagHandles := (handle, pfx) :: env.tagHandles } rest
+  | env, .declareTag handle :: rest =>
+      checkFrom { env with tagHandles := handle :: env.tagHandles } rest
   | env, .useTag handle :: rest =>
       if _h : TagHandleAllowed env handle then checkFrom env rest else false
 
@@ -135,14 +135,14 @@ lemma undeclared_alias_rejected (env : Env) (name : String)
     ¬ WellFormedFrom env (.useAlias name :: rest) := by
   simp [WellFormedFrom, AliasAllowed, h]
 
-lemma declare_then_use_tag (env : Env) (handle pfx : String) (rest : List Event) :
-    WellFormedFrom env (.declareTag handle pfx :: .useTag handle :: rest) ↔
-      WellFormedFrom { env with tagHandles := (handle, pfx) :: env.tagHandles } rest := by
+lemma declare_then_use_tag (env : Env) (handle : String) (rest : List Event) :
+    WellFormedFrom env (.declareTag handle :: .useTag handle :: rest) ↔
+      WellFormedFrom { env with tagHandles := handle :: env.tagHandles } rest := by
   simp [WellFormedFrom, TagHandleAllowed]
 
 lemma undeclared_named_tag_rejected (env : Env) (handle : String)
     (h_builtin : ¬ BuiltinTagHandle handle)
-    (h_decl : ¬ ∃ entry ∈ env.tagHandles, entry.1 = handle)
+    (h_decl : handle ∉ env.tagHandles)
     (rest : List Event) :
     ¬ WellFormedFrom env (.useTag handle :: rest) := by
   simp [WellFormedFrom, TagHandleAllowed, h_builtin, h_decl]
@@ -154,10 +154,10 @@ lemma document_reset_forgets_anchor (env : Env) (name : String) (rest : List Eve
   intro h
   simpa [WellFormedFrom, AliasAllowed, Env.reset] using h
 
-lemma document_reset_forgets_custom_tag (env : Env) (handle pfx : String)
+lemma document_reset_forgets_custom_tag (env : Env) (handle : String)
     (h_builtin : ¬ BuiltinTagHandle handle) (rest : List Event) :
     WellFormedFrom env
-      (.declareTag handle pfx :: .endDocument :: .beginDocument :: .useTag handle :: rest) →
+      (.declareTag handle :: .endDocument :: .beginDocument :: .useTag handle :: rest) →
       False := by
   intro h
   simpa [WellFormedFrom, TagHandleAllowed, Env.reset, h_builtin] using h
@@ -181,7 +181,7 @@ lemma scanner_alias_guard_exact (s : L4YAML.Scanner.ScannerState) (name : String
 
 /-- Projection of exactly the tag-relevant part of parser state. -/
 def ofParserTags (ps : L4YAML.TokenParser.ParseState) : Env :=
-  { tagHandles := ps.tagHandles.toList }
+  { tagHandles := ps.tagHandles.toList.map Prod.fst }
 
 /-- Boolean form of the guard implemented inside `parseNodeProperties`.
 Built-in handles need no declaration; every other handle must occur in the
@@ -190,32 +190,13 @@ def parserTagGuard (ps : L4YAML.TokenParser.ParseState) (handle : String) : Bool
   (handle == "") || (handle == "!") || (handle == "!!") ||
     ps.tagHandles.any (fun p => p.1 == handle)
 
-/-- Array-level bridge used by the parser projection: the executable
-`Array.any` test for a handle is extensionally the same as existence of a
-semantic declaration carrying that handle. -/
-lemma parser_declared_handle_exact
-    (ps : L4YAML.TokenParser.ParseState) (handle : String) :
-    ps.tagHandles.any (fun p => p.1 == handle) = true ↔
-      ∃ entry ∈ ps.tagHandles.toList, entry.1 = handle := by
-  simp only [Array.any_eq_true, beq_iff_eq]
-  constructor
-  · rintro ⟨i, hi, hname⟩
-    let entry := ps.tagHandles[i]
-    refine ⟨entry, ?_, ?_⟩
-    · exact Array.getElem_mem hi
-    · exact hname
-  · rintro ⟨entry, hmem, hname⟩
-    rw [Array.mem_iff_getElem] at hmem
-    obtain ⟨i, hi, heq⟩ := hmem
-    exact ⟨i, hi, by simpa [heq] using hname⟩
-
 /-- The parser's tag-handle decision agrees with the independent semantic
 specification for every parser state and handle. -/
 lemma parser_tag_guard_exact (ps : L4YAML.TokenParser.ParseState) (handle : String) :
     parserTagGuard ps handle = true ↔
       TagHandleAllowed (ofParserTags ps) handle := by
   simp [parserTagGuard, TagHandleAllowed, BuiltinTagHandle, ofParserTags,
-    parser_declared_handle_exact, or_assoc]
+    Array.mem_iff_getElem, or_assoc]
 
 end L4YAMLSerializationWellFormed
 
