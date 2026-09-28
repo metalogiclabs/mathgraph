@@ -234,7 +234,7 @@ lemma scanner_alias_guard_ext
     (s₁.definedAnchors.any (fun x => x == name) = true) ↔
       (s₂.definedAnchors.any (fun x => x == name) = true) := by
   rw [scanner_alias_guard_exact, scanner_alias_guard_exact]
-  exact congrArg (fun xs => name ∈ xs) hproj
+  simp [AliasAllowed, hproj]
 
 /-- For named-tag declaration acceptance, the parser's richer handle→prefix
 table can be quotiented to the list of handle names: tag prefixes do not affect
@@ -245,7 +245,7 @@ lemma parser_tag_guard_ext
     (handle : String) :
     parserTagGuard ps₁ handle = true ↔ parserTagGuard ps₂ handle = true := by
   rw [parser_tag_guard_exact, parser_tag_guard_exact]
-  exact congrArg (fun hs => BuiltinTagHandle handle ∨ handle ∈ hs) hproj
+  simp [TagHandleAllowed, hproj]
 
 end L4YAMLSerializationWellFormed
 
