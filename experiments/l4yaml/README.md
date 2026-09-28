@@ -1,74 +1,73 @@
-# L4YAML grammar-completeness parser-boundary probe
+# L4YAML grammar-completeness audit
 
-MathGraph public experiment against `nasa-jpl/L4YAML` commit
+Public MathGraph audit of `nasa-jpl/L4YAML`, pinned at
 `16562a74421f94cc0f8216eecf21f1ff58166fa7`.
 
-## Problem
+## Current terminal result
 
-The remaining capstone is the converse needed for:
+**NAMED_OBSTRUCTION: `L4YAML_CAPSTONE_LAYER_MISMATCH`**
+
+The advertised universal capstone
 
 ```lean
-(∃ docs, parseYaml input = .ok docs) ↔ InYamlLanguage input
+∀ input : String,
+  ((∃ docs, L4YAML.TokenParser.parseYaml input = .ok docs) ↔
+   L4YAML.Surface.InYamlLanguage input)
 ```
 
-Upstream has already removed `directiveDrop`. The remaining
-`SLYamlStream.scannerDrop` exists because `scan_strict_proof` is asked to
-turn *scanner success alone* into whole-YAML surface grammar evidence.
+is false at the pinned revision.
 
-But the scanner intentionally accepts/tokenizes some inputs that the parser
-rejects, including adjacent flow entries without required separators.
+This is proved in Lean by concrete surface-language witnesses that the
+executable pipeline rejects. The witnesses are independent of
+`SLYamlStream.scannerDrop`, so removing that constructor alone cannot repair
+the theorem.
 
-## Hypothesis
+See:
 
-The proof boundary is one layer too early.
+- [REPORT.md](./REPORT.md) — full technical audit and corrected contract
+- [NAMED_OBSTRUCTION.md](./NAMED_OBSTRUCTION.md) — terminal obstruction
+- [CapstoneObstruction.lean](./CapstoneObstruction.lean) — malformed directive + universal no-go
+- [SemanticObstruction.lean](./SemanticObstruction.lean) — unbound alias
+- [TagHandleObstruction.lean](./TagHandleObstruction.lean) — undeclared named tag handle
+- [BlockHeaderObstruction.lean](./BlockHeaderObstruction.lean) — surface block-header over-approximation
+- [CorrectedCapstone.lean](./CorrectedCapstone.lean) — exact executable factorization
+- [LanguageRelation.lean](./LanguageRelation.lean) — parser-language versus surface-language relation
+- [ParserBoundaryProbe.lean](./ParserBoundaryProbe.lean) — flow scanner/parser separator
+- [FlowContinuation.lean](./FlowContinuation.lean) — continuation algebra for flow reconstruction
+- [ExactNestedFlow.lean](./ExactNestedFlow.lean) — exact nested-flow witness without `scannerDrop`
 
-Keep scanner evidence lexical. For exact YAML membership, consume both:
+## Main findings
 
+The scanner is broader than the parser on adjacency-invalid flow syntax, but
+current `parse_strict_proof` discards its successful `parseStream` witness.
+That makes the scanner proof carry syntactic work the parser has already done.
+
+More importantly, the current surface predicate and executable load pipeline
+do not describe the same layer. Examples:
+
+```text
+%YAML .2
+---
 ```
-scanFiltered input = .ok tokens
-parseStream tokens = .ok docs
+
+is in the current surface language but rejected by the executable directive
+validation;
+
+```text
+*x
 ```
 
-Those witnesses are already available from every successful `parseYaml`
-through `parseYamlRaw_ok_decompose`; current `parse_strict_proof` extracts
-both and discards the `parseStream` witness.
+is a surface alias but rejected because there is no earlier `&x`; and
 
-## Decisive probe
+```text
+!h!x
+```
 
-`ParserBoundaryProbe.lean` kernel-checks the executable separator:
+is surface tag syntax but rejected because `!h!` was never declared.
 
-* `[[a][b]]`: scan yes / parse no
-* `[[a]b]`: scan yes / parse no
-* `["a""b"]`: scan yes / parse no
-* `{a: b: c}`: scan yes / parse no
-* `[a,b]`: scan yes / parse yes
+The corrected end state is therefore either a syntax-only capstone plus a
+separate serialization-validity theorem, or a load capstone whose
+specification explicitly combines exact surface syntax with stateful
+serialization well-formedness.
 
-It also proves that every full parse success retains the
-`scanFiltered + parseStream` witness.
-
-The second theorem goes one step farther: once a flow sequence already contains
-an item, any successful parser-loop result that grows the item array must have
-crossed an explicit `flowEntry` token. This identifies parser success as the
-missing adjacency distinction that `scannerDrop` currently hides.
-
-## Interpretation
-
-This rejects the design assumption that the scanner itself should be
-strengthened into an exact syntax recognizer. The next proof object should be a
-parser-guided surface reconstruction, with parser transitions providing the
-missing flow adjacency/separator structure and existing scanner `*_prod`
-lemmas providing character-span witnesses.
-
-This is an architectural experiment, not yet the final `parse_iff_grammar`
-proof.
-
-## Lineage
-
-The first public reproduction ran green in `heathsanchez/test`:
-https://github.com/heathsanchez/test/actions/runs/36361994375
-
-This MathGraph branch is the canonical continuation of that experiment.
-
-## Qualification
-
-This branch replays the pinned L4YAML build and kernel-check on Metalogic Labs infrastructure.
+No upstream PR has been created or submitted.
