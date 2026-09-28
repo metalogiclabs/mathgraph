@@ -37,19 +37,10 @@ theorem unbound_alias_is_in_surface :
   let s1 : SurfPos := ⟨['x'], 1⟩
   let s2 : SurfPos := ⟨[], 2⟩
 
-  have hx : GChar L4YAML.Surface.isNsAnchorChar s1 s2 := by
-    exact GChar.mk 'x' [] 1 (by
-      simp [L4YAML.Surface.isNsAnchorChar,
-        L4YAML.Surface.isNsChar,
-                L4YAML.CharPredicates.isLineBreakProp,
-        L4YAML.CharPredicates.isLineFeedProp,
-        L4YAML.CharPredicates.isCarriageReturnProp,
-        L4YAML.CharPredicates.isWhiteSpaceProp,
-        L4YAML.CharPredicates.isSpaceProp,
-        L4YAML.CharPredicates.isTabProp,
-        L4YAML.CharPredicates.isFlowIndicatorProp])
+  have hx : GChar isNsAnchorChar s1 s2 := by
+    exact GChar.mk 'x' [] 1 (by native_decide)
 
-  have hname : GPlus (GChar L4YAML.Surface.isNsAnchorChar) s1 s2 :=
+  have hname : GPlus (GChar isNsAnchorChar) s1 s2 :=
     GPlus.mk s1 s2 s2 hx (GStar.nil s2)
 
   have halias : SCNsAliasNode s0 s2 :=
