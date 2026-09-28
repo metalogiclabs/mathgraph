@@ -34,6 +34,23 @@ def InScannerLanguage (input : String) : Prop :=
   ∃ tokens : Array (Positioned YamlToken),
     Scanner.scanFiltered input = .ok tokens
 
+/-- The final Compose map is total, so it does not change the accepted
+    input language. Any acceptance mismatch with the surface specification is
+    already present in the raw scanner+parser pipeline. -/
+theorem parse_acceptance_iff_raw_acceptance (input : String) :
+    (∃ docs, TokenParser.parseYaml input = .ok docs) ↔
+    (∃ rawDocs, TokenParser.parseYamlRaw input = .ok rawDocs) := by
+  constructor
+  · rintro ⟨docs, h⟩
+    unfold TokenParser.parseYaml at h
+    split at h
+    · rename_i rawDocs hraw
+      exact ⟨rawDocs, hraw⟩
+    · contradiction
+  · rintro ⟨rawDocs, hraw⟩
+    exact ⟨rawDocs.map YamlDocument.compose,
+      L4YAML.Proofs.Composition.parseYaml_of_parseYamlRaw_ok input rawDocs hraw⟩
+
 /-- Full `parseYaml` acceptance is exactly scanner+parser acceptance.  No
     surface-grammar assumptions are needed here. -/
 theorem parse_iff_executable_language (input : String) :
