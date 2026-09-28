@@ -1,0 +1,93 @@
+name: Crystal Chess Residual Alternate Guard V18
+
+on:
+  push:
+    branches:
+      - crystal-chess-residual-alt-guard-v18
+    paths:
+      - "experiments/crystal_chess_residual_alt_guard_v18.py"
+      - ".github/workflows/crystal-chess-residual-alt-guard-v18.yml"
+      - "experiments/crystal_chess_residual_certificate_set_v17.py"
+      - "experiments/crystal_chess_verified_hybrid_search_v14.py"
+      - "experiments/crystal_chess_kppvk_complete_census_v12.py"
+      - "experiments/crystal_chess_goal_certificate_v3.py"
+      - "mathgraph/crystal.py"
+      - "tests/test_crystal.py"
+  workflow_dispatch:
+
+jobs:
+  residual-alternate-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install verifier dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Requalify Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Compile V18
+        run: |
+          python -m py_compile experiments/crystal_chess_residual_certificate_set_v17.py
+          python -m py_compile experiments/crystal_chess_residual_alt_guard_v18.py
+
+      - name: Download frozen V14 guard authority
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-verified-hybrid-search-v14
+          path: /tmp/v14-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36357299241
+
+      - name: Verify frozen V14 guard identity
+        run: |
+          set -euo pipefail
+          test -s /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz
+          test "$(gzip -dc /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz | sha256sum | awk '{print $1}')" = "10bb241dbadaa3b8229196ccf6e11587abd69554ff61802343451a4e691a7baa"
+
+      - name: Acquire exact five- and six-piece Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          w345="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw KPPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w345/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
+          test -s /tmp/syzygy/KPPPPvK.rtbw
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Acquire alternate guard only from V15 residual and test V16 residual
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v18
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v18/
+          cp /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz artifacts/crystal-chess-v18/
+          python experiments/crystal_chess_residual_alt_guard_v18.py \
+            --tablebase-dir /tmp/syzygy \
+            --guard /tmp/v14-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz \
+            --output artifacts/crystal-chess-v18/crystal_chess_residual_alt_guard_v18.json \
+            | tee artifacts/crystal-chess-v18/run.log
+          grep -Eq "CRYSTAL_CHESS_RESIDUAL_ALT_GUARD_V18=(WARRANTED_PROSPECTIVE_RESIDUAL_ALT_GUARD_TRANSFER|EXACT_RESIDUAL_ALT_GUARD_TRANSFER)" artifacts/crystal-chess-v18/run.log
+
+      - name: Upload V18 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-residual-alt-guard-v18
+          path: artifacts/crystal-chess-v18/
+          if-no-files-found: error
