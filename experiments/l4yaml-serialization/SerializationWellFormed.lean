@@ -278,6 +278,45 @@ lemma scanner_alias_guard_exact (s : L4YAML.Scanner.ScannerState) (name : String
       AliasAllowed (ofScannerAliases s) name := by
   simp [AliasAllowed, ofScannerAliases, Array.mem_iff_getElem]
 
+/-! ## Runtime bridge: parser alias guard
+
+The scanner rejects an undefined alias before tokenization, but the token parser
+also carries an anchor table and repeats the same membership condition for any
+alias token it receives.  This second bridge shows that both executable stages
+factor through the same independent semantic distinction.
+-/
+
+def ofParserAliases (ps : L4YAML.TokenParser.ParseState) : Env :=
+  { anchors := ps.anchors.toList.map Prod.fst }
+
+def parserAliasGuard (ps : L4YAML.TokenParser.ParseState) (name : String) : Bool :=
+  ps.anchors.any (fun p => p.1 == name)
+
+lemma parser_declared_anchor_exact
+    (ps : L4YAML.TokenParser.ParseState) (name : String) :
+    ps.anchors.any (fun p => p.1 == name) = true ↔
+      name ∈ ps.anchors.toList.map Prod.fst := by
+  constructor
+  · rw [Array.any_eq_true]
+    rintro ⟨i, hi, hname⟩
+    apply List.mem_map.mpr
+    exact ⟨ps.anchors[i], by simpa using Array.getElem_mem hi,
+      by simpa only [beq_iff_eq] using hname⟩
+  · intro h
+    rw [Array.any_eq_true]
+    obtain ⟨entry, hmem, hname⟩ := List.mem_map.mp h
+    have hmem' : entry ∈ ps.anchors := by simpa using hmem
+    rw [Array.mem_iff_getElem] at hmem'
+    obtain ⟨i, hi, heq⟩ := hmem'
+    exact ⟨i, hi, by simpa [heq, beq_iff_eq] using hname⟩
+
+lemma parser_alias_guard_exact
+    (ps : L4YAML.TokenParser.ParseState) (name : String) :
+    parserAliasGuard ps name = true ↔
+      AliasAllowed (ofParserAliases ps) name := by
+  simp only [parserAliasGuard, AliasAllowed, ofParserAliases]
+  exact parser_declared_anchor_exact ps name
+
 /-! ## Runtime bridge: parser tag-handle guard -/
 
 /-- Projection of exactly the tag-relevant part of parser state. -/
@@ -426,3 +465,5 @@ end L4YAMLSerializationWellFormed
 
 #print axioms L4YAMLSerializationWellFormed.checkFrom_envEquivalent
 #print axioms L4YAMLSerializationWellFormed.wellFormedFrom_envEquivalent
+
+#print axioms L4YAMLSerializationWellFormed.parser_alias_guard_exact
