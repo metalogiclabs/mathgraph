@@ -5,8 +5,8 @@
 
 ## Objective
 
-Construct the missing independent stateful specification requested by Nicolas
-Rouquette after the grammar-completeness audit:
+Construct the missing stateful specification requested after the
+grammar-completeness audit:
 
 ```text
 ExactSurfaceLanguage input
@@ -21,29 +21,110 @@ surface tightening:
 1. anchor definition / alias-use ordering;
 2. %TAG declaration / named tag-handle use.
 
-## v1 experiment
+## WARRANTED — v1 semantic core
 
-`SerializationWellFormed.lean` introduces an implementation-independent event
-semantics and semantic environment, then proves:
+`SerializationWellFormed.lean` now kernel-checks a small implementation-
+independent trace semantics with its own state:
 
-- a generalized checker ↔ declarative well-formedness theorem;
-- anchor definition/use and document-reset laws;
-- tag declaration/use and document-reset laws;
-- the scanner's alias guard agrees with the independent alias condition for
-  every scanner state/name;
-- the parser's tag-handle guard agrees with the independent tag condition for
-  every parser state/handle.
+```text
+anchors    : List String
+tagHandles : List String
+```
 
-The generalized results use no `native_decide`.  Axiom profiles are printed
-by the qualification run.
+The tag-prefix values carried by the real parser are intentionally erased.
+They affect tag resolution, but the declaration accept/reject guard depends
+only on the handle name.  This is the current minimum sufficient state for the
+two acceptance families.
 
-## Residual
+Generalized proofs (no `native_decide`):
 
-The next bridge is **input → semantic event trace**.  The important constraint is
-that this extractor must not simply call `scanFiltered`/`parseStream`, or the
+- independent checker ↔ declarative trace well-formedness;
+- anchor definition/use laws and document-reset laws;
+- tag declaration/use laws and document-reset laws;
+- scanner alias guard ↔ independent alias condition for every scanner state/name;
+- parser tag guard ↔ independent tag condition for every parser state/handle;
+- extensionality: any two runtime states with the same minimal projection make
+  the same acceptance decision.
+
+Qualification:
+https://github.com/metalogiclabs/mathgraph/actions/runs/36414025242
+
+Axiom profiles in that run:
+
+```text
+checkFrom_correct            [propext]
+scanner_alias_guard_exact    [propext, Quot.sound]
+parser_tag_guard_exact       [propext, Quot.sound]
+```
+
+No `sorryAx`, custom axiom, or `native_decide` supports the generalized
+claims.
+
+## WARRANTED — executable census
+
+`Census.lean` measures the stateful boundary on the same upstream pin.
+
+Alias family:
+
+```text
+*x                         scanner: undefinedAlias     load: undefinedAlias
+a: &x 1 / b: *x           scanner: ok                 load: ok
+a: *x / b: &x 1           scanner: undefinedAlias     load: undefinedAlias
+cross-document *x          scanner: undefinedAlias     load: undefinedAlias
+redefine in next document  scanner: ok                 load: ok
+```
+
+Tag-handle family:
+
+```text
+!h!x without %TAG          scanner: ok  load: undeclaredTagHandle
+declared !h!               scanner: ok  load: ok
+cross-document !h! reset   scanner: ok  load: undeclaredTagHandle
+!!str                      scanner: ok  load: ok
+!local                     scanner: ok  load: ok
+verbatim tag               scanner: ok  load: ok
+```
+
+This confirms the architectural split Nicolas identified: alias validity is
+enforced in the scanner, while named tag-handle validity is enforced later in
+the token parser.  A single independent semantic environment nevertheless
+accounts for both decisions.
+
+The census is fixed-input executable measurement only; no generalized theorem
+depends on it.
+
+## Highest-leverage residual
+
+The semantic core is **not yet the final predicate over `String`**.  The
+remaining bridge is:
+
+```text
+raw input
+  -> independently justified semantic event trace
+  -> SerializationWellFormed trace
+```
+
+The extractor must not simply call `scanFiltered` / `parseStream`, or the
 specification would collapse back into executable acceptance.
 
-The cheapest next experiment is to recover anchor-definition / alias-use events
-directly from source spans and recover %TAG declarations / named tag uses from
-the corresponding source productions, then prove agreement with the runtime
-state projections.
+The next experiment is therefore to identify the smallest source/surface
+witness sufficient to recover these four event kinds:
+
+```text
+defineAnchor
+useAlias
+declareTag
+useTag
+```
+
+plus document scope boundaries, and then prove its correspondence to the
+runtime state projections.
+
+## Status
+
+**REUSABLE:** independent event semantics + minimum sufficient state + runtime
+guard bridges.
+
+**UNKNOWN:** the smallest non-circular input→event extraction relation and the
+full `ExactSurfaceLanguage ∧ SerializationWellFormed ↔ InExecutableLanguage`
+composition.
