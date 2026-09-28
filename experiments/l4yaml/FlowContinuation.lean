@@ -29,17 +29,17 @@ namespace L4YAMLFlowContinuation
 
 open L4YAML.Surface
 
-abbrev FlowSeqK (n : Nat) (c : YamlContext) (start cur : SurfPos) : Prop :=
+abbrev FlowSeqK (n : Nat) (c : L4YAML.YamlContext) (start cur : SurfPos) : Prop :=
   ∀ finish, SFlowSeqEntries n c cur finish → SFlowSeqEntries n c start finish
 
-abbrev FlowMapK (n : Nat) (c : YamlContext) (start cur : SurfPos) : Prop :=
+abbrev FlowMapK (n : Nat) (c : L4YAML.YamlContext) (start cur : SurfPos) : Prop :=
   ∀ finish, SFlowMapEntries n c cur finish → SFlowMapEntries n c start finish
 
-lemma FlowSeqK.refl (n : Nat) (c : YamlContext) (s : SurfPos) :
+lemma FlowSeqK.refl (n : Nat) (c : L4YAML.YamlContext) (s : SurfPos) :
     FlowSeqK n c s s :=
   fun _ h => h
 
-lemma FlowMapK.refl (n : Nat) (c : YamlContext) (s : SurfPos) :
+lemma FlowMapK.refl (n : Nat) (c : L4YAML.YamlContext) (s : SurfPos) :
     FlowMapK n c s s :=
   fun _ h => h
 
@@ -48,7 +48,7 @@ Consume one non-final sequence entry plus its comma and post-comma separation,
 leaving a continuation waiting for the remaining entries.
 -/
 lemma FlowSeqK.step
-    {n : Nat} {c : YamlContext}
+    {n : Nat} {c : L4YAML.YamlContext}
     {start cur s1 s2 s3 next : SurfPos}
     (k : FlowSeqK n c start cur)
     (h_entry : SFlowSeqEntry n c cur s1)
@@ -63,7 +63,7 @@ lemma FlowSeqK.step
 
 /-- Close a sequence continuation with its final entry. -/
 lemma FlowSeqK.finish
-    {n : Nat} {c : YamlContext}
+    {n : Nat} {c : L4YAML.YamlContext}
     {start cur s1 finish : SurfPos}
     (k : FlowSeqK n c start cur)
     (h_entry : SFlowSeqEntry n c cur s1)
@@ -73,7 +73,7 @@ lemma FlowSeqK.finish
 
 /-- Close a sequence continuation with a YAML-permitted trailing comma. -/
 lemma FlowSeqK.finishTrailing
-    {n : Nat} {c : YamlContext}
+    {n : Nat} {c : L4YAML.YamlContext}
     {start cur s1 s2 s3 finish : SurfPos}
     (k : FlowSeqK n c start cur)
     (h_entry : SFlowSeqEntry n c cur s1)
@@ -87,7 +87,7 @@ lemma FlowSeqK.finishTrailing
 
 /-- Mapping analogue of `FlowSeqK.step`. -/
 lemma FlowMapK.step
-    {n : Nat} {c : YamlContext}
+    {n : Nat} {c : L4YAML.YamlContext}
     {start cur s1 s2 s3 next : SurfPos}
     (k : FlowMapK n c start cur)
     (h_entry : SFlowMapEntry n c cur s1)
@@ -102,7 +102,7 @@ lemma FlowMapK.step
 
 /-- Close a mapping continuation with its final entry. -/
 lemma FlowMapK.finish
-    {n : Nat} {c : YamlContext}
+    {n : Nat} {c : L4YAML.YamlContext}
     {start cur s1 finish : SurfPos}
     (k : FlowMapK n c start cur)
     (h_entry : SFlowMapEntry n c cur s1)
@@ -112,7 +112,7 @@ lemma FlowMapK.finish
 
 /-- Close a mapping continuation with a YAML-permitted trailing comma. -/
 lemma FlowMapK.finishTrailing
-    {n : Nat} {c : YamlContext}
+    {n : Nat} {c : L4YAML.YamlContext}
     {start cur s1 s2 s3 finish : SurfPos}
     (k : FlowMapK n c start cur)
     (h_entry : SFlowMapEntry n c cur s1)
