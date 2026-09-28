@@ -1,0 +1,142 @@
+name: Crystal Chess Continuation Stability V32
+
+on:
+  push:
+    branches:
+      - crystal-chess-search-continuation-stability-v32
+    paths:
+      - "experiments/crystal_chess_search_continuation_stability_v32.py"
+      - ".github/workflows/crystal-chess-search-continuation-stability-v32.yml"
+      - "experiments/crystal_chess_search_continuation_window_v31.py"
+      - "experiments/crystal_chess_search_continuation_v28.py"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_search_confirmation_v26.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  continuation-stability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_search_continuation_stability_v32.py
+
+      - name: Download frozen V25 guard
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-sufficiency-v25
+          path: /tmp/v25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36362896141
+
+      - name: Download V22 source corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Download V28 exposed corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-v28
+          path: /tmp/v28
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36368371744
+
+      - name: Download V29 exposed corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-margin-v29
+          path: /tmp/v29
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36368824668
+
+      - name: Download V30 exposed corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-relative-continuation-v30
+          path: /tmp/v30
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36385064153
+
+      - name: Download V31 exposed corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-window-v31
+          path: /tmp/v31
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36385673166
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Generate untouched seeds 20261005 and 20261006
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v32
+          python experiments/crystal_chess_normal_exposure_v22.py generate \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --book artifacts/crystal-chess-v32/fresh_a.epd \
+            --manifest artifacts/crystal-chess-v32/fresh_a_manifest.json \
+            --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261005
+          python experiments/crystal_chess_normal_exposure_v22.py generate \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --book artifacts/crystal-chess-v32/fresh_b.epd \
+            --manifest artifacts/crystal-chess-v32/fresh_b_manifest.json \
+            --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261006
+
+      - name: Test residual-earned stability guard prospectively
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_search_continuation_stability_v32.py \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --guard /tmp/v25/search_sufficiency_guard_v25.json.gz \
+            --v22-pgn /tmp/v22/match.pgn \
+            --v28-epd /tmp/v28/fresh_normal.epd \
+            --v29-epd /tmp/v29/fresh_normal.epd \
+            --v30-epd /tmp/v30/fresh_normal.epd \
+            --v31-epd-a /tmp/v31/fresh_a.epd \
+            --v31-epd-b /tmp/v31/fresh_b.epd \
+            --fresh-epd-a artifacts/crystal-chess-v32/fresh_a.epd \
+            --fresh-manifest-a artifacts/crystal-chess-v32/fresh_a_manifest.json \
+            --fresh-epd-b artifacts/crystal-chess-v32/fresh_b.epd \
+            --fresh-manifest-b artifacts/crystal-chess-v32/fresh_b_manifest.json \
+            --output artifacts/crystal-chess-v32/result.json \
+            | tee artifacts/crystal-chess-v32/run.log
+          grep -Eq "CRYSTAL_CHESS_SEARCH_CONTINUATION_STABILITY_V32=(WARRANTED_REPLICATED_NORMAL_SEARCH_CONTINUATION_STABILITY|FRESH_NORMAL_SEARCH_CONTINUATION_STABILITY_RESIDUAL)" artifacts/crystal-chess-v32/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v32/
+          cp /tmp/v25/search_sufficiency_guard_v25.json.gz artifacts/crystal-chess-v32/
+
+      - name: Upload V32 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-stability-v32
+          path: artifacts/crystal-chess-v32/
+          if-no-files-found: error
