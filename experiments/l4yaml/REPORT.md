@@ -176,9 +176,28 @@ and a second proof of the same universal negation using the unbound-alias
 counterexample.
 
 **Consolidated evidence:**  
-https://github.com/metalogiclabs/mathgraph/actions/runs/36367045472
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367733540
 
-### H. Exact executable factorization
+**Dedicated universal no-go gate:**  
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367703623
+
+### H. Strict language relation
+
+MathGraph combines upstream `parse_strict_proof` with the concrete
+counterexample to prove:
+
+```lean
+(∀ input, ParseLanguage input → InYamlLanguage input) ∧
+(∃ input, InYamlLanguage input ∧ ¬ ParseLanguage input)
+```
+
+So the current executable parse language is a **proper subset** of the current
+surface language.
+
+**Evidence:**  
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367643538
+
+### I. Exact executable factorization
 
 MathGraph also proves the exact theorem that *is* already true:
 
