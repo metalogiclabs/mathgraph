@@ -150,7 +150,7 @@ lemma named_tag_use_source_exact
     (hchars : ∀ c ∈ handleChars, isWordCharBool c = true) :
     namedTagUseAt ('!' :: (handleChars ++ '!' :: suffix)) =
       some (.useTag ("!" ++ String.ofList handleChars ++ "!"), suffix) := by
-  have hbang : isWordCharBool '!' = false := by native_decide
+  have hbang : isWordCharBool '!' = false := by decide
   simp [namedTagUseAt,
     spanWhile_append_stop isWordCharBool handleChars '!' suffix hchars hbang,
     hne]
@@ -163,7 +163,7 @@ lemma named_tag_declaration_source_exact
         ('%' :: 'T' :: 'A' :: 'G' :: ' ' :: '!' ::
           (handleChars ++ '!' :: tail)) =
       some (.declareTag ("!" ++ String.ofList handleChars ++ "!"), tail) := by
-  have hbang : isWordCharBool '!' = false := by native_decide
+  have hbang : isWordCharBool '!' = false := by decide
   simp [namedTagDeclarationAt, dropHSpace,
     spanWhile_append_stop isWordCharBool handleChars '!' tail hchars hbang,
     hne]
