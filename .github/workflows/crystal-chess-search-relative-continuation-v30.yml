@@ -65,7 +65,7 @@ jobs:
       - name: Download exposed V29 corpus
         uses: actions/download-artifact@v4
         with:
-          name: crystal-chess-continuation-margin-v29
+          name: crystal-chess-search-continuation-margin-v29
           path: /tmp/v29
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: metalogiclabs/mathgraph
