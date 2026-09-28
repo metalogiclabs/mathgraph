@@ -1,5 +1,5 @@
 import L4YAML.Surface.Document
-import L4YAML.Parser.TokenParser
+import L4YAML.Parser.Composition
 import L4YAML.Scanner.Scanner
 
 /-!
@@ -105,7 +105,7 @@ theorem nested_pair_exact_language : InYamlLanguage "[[],[]]" := by
     exact SSeparateLines.inline 0 s0 s0 (SSeparateInLine.startOfLine s0)
   have h_eof : SSLComments s7 s7 :=
     SSLComments.withComment s7 s7 s7
-      (SSBComment.noSep s7 s7 (SBComment.eof s7))
+      (SSBComment.noSep s7 s7 (SBComment.eof 7))
       (GStar.nil s7)
 
   have h_block : SBlockNode 0 .blockIn s0 s7 :=
