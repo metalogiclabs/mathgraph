@@ -3,7 +3,7 @@
 **Terminal form:** `NAMED_OBSTRUCTION`  
 **Status:** kernel-qualified  
 **Upstream pin:** `nasa-jpl/L4YAML@16562a74421f94cc0f8216eecf21f1ff58166fa7`  
-**Consolidated green gate:** https://github.com/metalogiclabs/mathgraph/actions/runs/36367045472
+**Consolidated green gate:** https://github.com/metalogiclabs/mathgraph/actions/runs/36367733540
 
 ## Claim blocked
 
@@ -72,6 +72,21 @@ survive the conceptual removal of the top-level `scannerDrop` escape hatch.
 
 The upstream Fix-A plan addresses a genuine flow-proof problem, but it does not
 repair the theorem contract.
+
+## Exact current language relation
+
+The strict-language gate proves that executable acceptance is a proper subset
+of the current surface language:
+
+```text
+ParseLanguage ⊂ InYamlLanguage
+```
+
+Evidence:
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367643538
+
+The dedicated universal no-go gate is also green:
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367703623
 
 ## Exact fact that is true
 
