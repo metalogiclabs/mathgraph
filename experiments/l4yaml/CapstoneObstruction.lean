@@ -2,7 +2,6 @@ import L4YAML.Surface.Document
 import L4YAML.Scanner.Scanner
 import L4YAML.Parser.TokenParser
 import L4YAML.Parser.Composition
-import L4YAML.Proofs.Coupling.CouplingBridge
 
 /-!
 # L4YAML capstone obstruction probe
@@ -30,7 +29,6 @@ namespace L4YAMLCapstoneObstruction
 
 open L4YAML
 open L4YAML.Surface
-open L4YAML.Proofs.CouplingBridge
 
 def parseAccepts (s : String) : Bool :=
   match L4YAML.TokenParser.parseYaml s with
