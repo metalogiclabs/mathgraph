@@ -27,14 +27,16 @@ lemma scanner_document_start_resets_aliases
 
 def tagTableOfDirectives (dirs : Array Directive) : Array (String × String) :=
   dirs.filterMap fun
-    | .tag handle prefix => some (handle, prefix)
+    | .tag handle tagPrefix => some (handle, tagPrefix)
     | _ => none
 
 lemma tryConsume_tagHandles
     (ps : L4YAML.TokenParser.ParseState) (tok : YamlToken) :
     (ps.tryConsume tok).2.tagHandles = ps.tagHandles := by
   unfold L4YAML.TokenParser.ParseState.tryConsume
-  split <;> simp [L4YAML.TokenParser.ParseState.advance]
+  split
+  · split <;> rfl
+  · rfl
 
 /-- On every successful document preparation, the parser's handle table is
 exactly the declarations parsed for that document.  Any handle table inherited
@@ -63,7 +65,7 @@ lemma prepareDocumentState_tagHandles_exact
   all_goals (simp only [Except.ok.injEq, Prod.mk.injEq] at h_ok)
   all_goals (
     obtain ⟨rfl, rfl⟩ := h_ok
-    exact h_tag)
+    simpa [tagTableOfDirectives] using h_tag)
 
 /-- The minimal semantic projection after successful document preparation
 therefore contains exactly the names declared in the current document. -/
