@@ -1,0 +1,168 @@
+name: Crystal Chess Certified Endgame Match V18
+
+on:
+  push:
+    branches:
+      - crystal-chess-endgame-match-v18
+    paths:
+      - "experiments/crystal_chess_stockfish_hybrid_uci_v17.py"
+      - "experiments/crystal_chess_endgame_match_v18.py"
+      - ".github/workflows/crystal-chess-endgame-match-v18.yml"
+  workflow_dispatch:
+
+jobs:
+  certified-endgame-match:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install match and packaging dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2" "pyinstaller>=6,<7"
+
+      - name: Compile V18 harness and standalone runtime
+        run: |
+          set -euo pipefail
+          python -m py_compile experiments/crystal_chess_stockfish_hybrid_uci_v17.py
+          python -m py_compile experiments/crystal_chess_endgame_match_v18.py
+
+      - name: Download frozen V17 runtime assets
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-stockfish-hybrid-uci-v17
+          path: /tmp/v17-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36360365229
+
+      - name: Verify V17 asset identities
+        run: |
+          set -euo pipefail
+          guard=/tmp/v17-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz
+          roles=/tmp/v17-artifact/crystal_chess_roles_v17.jsonl.gz
+          test -s "$guard"
+          test -s "$roles"
+          test "$(gzip -dc "$guard" | sha256sum | awk '{print $1}')" = "10bb241dbadaa3b8229196ccf6e11587abd69554ff61802343451a4e691a7baa"
+          test "$(gzip -dc "$roles" | sha256sum | awk '{print $1}')" = "028353c82c3fefdd7d9e36907916b9a1aec7c1c13da9a4b8710b4deef8298b99"
+
+      - name: Acquire exact Syzygy verifier authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          w345="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw KPPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w345/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
+          test -s /tmp/syzygy/KPPPPvK.rtbw
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/syzygy/SHA256SUMS
+
+      - name: Build pinned Stockfish
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Package self-contained Crystal UCI executable
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v18/package
+          pyinstaller --onefile --clean --name crystal-chess-v18 experiments/crystal_chess_stockfish_hybrid_uci_v17.py
+          cp dist/crystal-chess-v18 artifacts/crystal-chess-v18/package/
+          cp /tmp/v17-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz artifacts/crystal-chess-v18/package/
+          cp /tmp/v17-artifact/crystal_chess_roles_v17.jsonl.gz artifacts/crystal-chess-v18/package/
+          cat > artifacts/crystal-chess-v18/package/run-crystal-chess-v18 <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          here="$(cd "$(dirname "$0")" && pwd)"
+          : "${STOCKFISH:?Set STOCKFISH to the fallback Stockfish executable}"
+          exec "$here/crystal-chess-v18" \
+            --fallback "$STOCKFISH" \
+            --guard "$here/crystal_chess_verified_hybrid_guard_v14.jsonl.gz" \
+            --roles "$here/crystal_chess_roles_v17.jsonl.gz"
+          EOF
+          chmod +x artifacts/crystal-chess-v18/package/run-crystal-chess-v18
+
+      - name: Fastchess UCI compliance
+        env:
+          STOCKFISH: /tmp/stockfish/src/stockfish
+        run: |
+          set -euo pipefail
+          /tmp/fastchess/fastchess --compliance artifacts/crystal-chess-v18/package/run-crystal-chess-v18 \
+            | tee artifacts/crystal-chess-v18/uci-compliance.log
+
+      - name: Generate independently verified certified opening book
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_endgame_match_v18.py generate \
+            --guard /tmp/v17-artifact/crystal_chess_verified_hybrid_guard_v14.jsonl.gz \
+            --roles /tmp/v17-artifact/crystal_chess_roles_v17.jsonl.gz \
+            --tablebase-dir /tmp/syzygy \
+            --book artifacts/crystal-chess-v18/certified-openings.epd \
+            --manifest artifacts/crystal-chess-v18/book-manifest.json \
+            --per-family 50 \
+            --seed 20260928 \
+            | tee artifacts/crystal-chess-v18/book.log
+
+      - name: Run paired certified endgame match
+        env:
+          STOCKFISH: /tmp/stockfish/src/stockfish
+        run: |
+          set -euo pipefail
+          /tmp/fastchess/fastchess \
+            -engine cmd=artifacts/crystal-chess-v18/package/run-crystal-chess-v18 name=CrystalV18 option.Threads=1 option.Hash=16 \
+            -engine cmd=/tmp/stockfish/src/stockfish name=StockfishBaseline option.Threads=1 option.Hash=16 \
+            -each tc=0.3+0.003 timemargin=100 \
+            -rounds 150 -games 2 -concurrency 2 \
+            -openings file=artifacts/crystal-chess-v18/certified-openings.epd format=epd order=sequential \
+            -maxmoves 200 \
+            -pgnout file=artifacts/crystal-chess-v18/match.pgn notation=uci append=false nodes=true timeleft=true latency=true \
+            -log file=artifacts/crystal-chess-v18/fastchess.log level=info append=false engine=true \
+            -ratinginterval 50 -report penta=true \
+            | tee artifacts/crystal-chess-v18/match.stdout.log
+
+      - name: Analyse bounded match
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_endgame_match_v18.py analyse \
+            --pgn artifacts/crystal-chess-v18/match.pgn \
+            --crystal-name CrystalV18 \
+            --output artifacts/crystal-chess-v18/match-result.json \
+            | tee artifacts/crystal-chess-v18/analyse.log
+          shortcuts="$(grep -c 'Crystal certified' artifacts/crystal-chess-v18/fastchess.log || true)"
+          echo "crystal_shortcut_log_events=$shortcuts" | tee artifacts/crystal-chess-v18/shortcut-count.txt
+          test "$shortcuts" -gt 0
+
+      - name: Record pins
+        run: |
+          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v18/STOCKFISH_PIN.txt
+          printf '%s\n' "Disservin/fastchess@60d7a7a26c6b0582a15c112fb29a1829bef2adb3" > artifacts/crystal-chess-v18/FASTCHESS_PIN.txt
+          cp /tmp/syzygy/SHA256SUMS artifacts/crystal-chess-v18/
+
+      - name: Upload V18 match and runnable package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-certified-endgame-match-v18
+          path: artifacts/crystal-chess-v18/
+          if-no-files-found: error
