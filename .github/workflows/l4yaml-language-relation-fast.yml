@@ -41,5 +41,5 @@ jobs:
           cp experiments/l4yaml/CapstoneObstruction.lean upstream/CapstoneObstruction.lean
           cp experiments/l4yaml/LanguageRelation.lean upstream/LanguageRelation.lean
           cd upstream
-          lake env lean CapstoneObstruction.lean
+          lake env lean -o .lake/build/lib/lean/CapstoneObstruction.olean CapstoneObstruction.lean
           lake env lean LanguageRelation.lean
