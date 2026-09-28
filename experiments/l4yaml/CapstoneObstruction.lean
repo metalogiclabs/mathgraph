@@ -174,4 +174,15 @@ theorem parse_iff_grammar_current_statement_false :
   obtain ⟨docs, hdocs⟩ := h.mpr malformed_yaml_version_is_in_surface
   exact malformed_yaml_version_has_no_parse docs hdocs
 
+
+/-- The advertised universal capstone is false at the pinned upstream
+    revision.  This is stronger than reporting a failing example: it is a
+    kernel-checked negation of the universal theorem schema itself. -/
+theorem advertised_parse_iff_grammar_is_false :
+    ¬ (∀ input : String,
+      ((∃ docs, L4YAML.TokenParser.parseYaml input = .ok docs) ↔
+       InYamlLanguage input)) := by
+  intro h
+  exact parse_iff_grammar_current_statement_false (h "%YAML .2\n---")
+
 end L4YAMLCapstoneObstruction
