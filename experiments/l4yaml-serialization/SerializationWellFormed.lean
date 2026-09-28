@@ -222,6 +222,31 @@ lemma parser_tag_guard_exact (ps : L4YAML.TokenParser.ParseState) (handle : Stri
   rw [parser_declared_handle_exact]
   simp [or_assoc]
 
+
+/-! ## Minimum-sufficient-state consequences -/
+
+/-- For alias acceptance, every scanner field except the projected anchor-name
+environment is irrelevant. -/
+lemma scanner_alias_guard_ext
+    (s₁ s₂ : L4YAML.Scanner.ScannerState)
+    (hproj : (ofScannerAliases s₁).anchors = (ofScannerAliases s₂).anchors)
+    (name : String) :
+    (s₁.definedAnchors.any (fun x => x == name) = true) ↔
+      (s₂.definedAnchors.any (fun x => x == name) = true) := by
+  rw [scanner_alias_guard_exact, scanner_alias_guard_exact]
+  exact congrArg (fun xs => name ∈ xs) hproj
+
+/-- For named-tag declaration acceptance, the parser's richer handle→prefix
+table can be quotiented to the list of handle names: tag prefixes do not affect
+this accept/reject decision. -/
+lemma parser_tag_guard_ext
+    (ps₁ ps₂ : L4YAML.TokenParser.ParseState)
+    (hproj : (ofParserTags ps₁).tagHandles = (ofParserTags ps₂).tagHandles)
+    (handle : String) :
+    parserTagGuard ps₁ handle = true ↔ parserTagGuard ps₂ handle = true := by
+  rw [parser_tag_guard_exact, parser_tag_guard_exact]
+  exact congrArg (fun hs => BuiltinTagHandle handle ∨ handle ∈ hs) hproj
+
 end L4YAMLSerializationWellFormed
 
 #print axioms L4YAMLSerializationWellFormed.checkFrom_correct
