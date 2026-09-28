@@ -48,6 +48,7 @@ jobs:
           cp experiments/l4yaml-serialization/AnchorTiming.lean upstream/AnchorTiming.lean
           cp experiments/l4yaml-serialization/CommitTrace.lean upstream/CommitTrace.lean
           cp experiments/l4yaml-serialization/SurfaceEvents.lean upstream/SurfaceEvents.lean
+          cp experiments/l4yaml-serialization/AnchorRuntime.lean upstream/AnchorRuntime.lean
           cd upstream
           lake env lean -o .lake/build/lib/lean/SerializationWellFormed.olean SerializationWellFormed.lean
           lake env lean SourceEvents.lean
@@ -55,4 +56,5 @@ jobs:
           lake env lean AnchorTiming.lean
           lake env lean CommitTrace.lean
           lake env lean SurfaceEvents.lean
+          lake env lean AnchorRuntime.lean
           lake env lean Census.lean
