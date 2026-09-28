@@ -156,7 +156,7 @@ def candidate_bindings(
             out.append((anchor, other, role, move))
     return out
 
-ENGINE_NAME = "CrystalChess-Stockfish-Hybrid-V20"
+ENGINE_NAME = "CrystalChess-Stockfish-Hybrid-V21"
 ENGINE_AUTHOR = "Metalogic Labs"
 V14_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-verified-hybrid-search-v14"
@@ -170,8 +170,15 @@ V16_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-hybrid-guard-transfer-v16"
     "@80599fe6c9dd509a18119bcee6f52f91290d7b33"
 )
+V19_AUTHORITY = (
+    "metalogiclabs/mathgraph:crystal-chess-residual-ladder-transfer-v19"
+    "@5c2962265fcd2154e97a32b2ef7b40c72f2aee93"
+)
 V20_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-color-symmetry-v20"
+)
+V21_AUTHORITY = (
+    "metalogiclabs/mathgraph:crystal-chess-ladder-hybrid-uci-v21"
 )
 
 
@@ -185,20 +192,26 @@ def mirror_move(move: chess.Move) -> chess.Move:
     )
 
 
-def load_guard(path: Path) -> tuple[dict[str, object], set[tuple[object, ...]]]:
+def load_ladder(
+    path: Path,
+) -> tuple[dict[str, object], dict[str, set[tuple[object, ...]]]]:
+    tiers = {"pair": set(), "distance": set(), "relational": set()}
     with gzip.open(path, "rt", encoding="utf-8") as handle:
         header_line = handle.readline()
         if not header_line:
-            raise ValueError("empty V14 guard")
+            raise ValueError("empty residual ladder guard")
         header = json.loads(header_line)
-        signatures = {
-            tuple(json.loads(line)["signature"])
-            for line in handle
-            if line.strip()
-        }
-    if not signatures:
-        raise ValueError("no V14 signatures")
-    return header, signatures
+        for line in handle:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            tier = str(row["tier"])
+            if tier not in tiers:
+                raise ValueError(f"unexpected ladder tier {tier}")
+            tiers[tier].add(tuple(row["signature"]))
+    if not all(tiers.values()):
+        raise ValueError("residual ladder missing a tier")
+    return header, tiers
 
 
 def load_roles(path: Path) -> tuple[dict[str, object], dict[tuple[int, int, int, int], str]]:
@@ -218,40 +231,55 @@ def load_roles(path: Path) -> tuple[dict[str, object], dict[tuple[int, int, int,
     return header, roles
 
 
-def universal_pair_candidates(
+def admitted_relation(
+    board: chess.Board,
+    anchor: int,
+    other: int,
+    role: str,
+    guard_tiers: dict[str, set[tuple[object, ...]]],
+) -> str | None:
+    pair = signature(board, anchor, other, role, 1)
+    if pair in guard_tiers["pair"]:
+        return "pair"
+    distance = signature(board, anchor, other, role, 2)
+    if distance in guard_tiers["distance"]:
+        return "distance"
+    relational = signature(board, anchor, other, role, 3)
+    if relational in guard_tiers["relational"]:
+        return "relational"
+    return None
+
+
+def universal_ladder_candidates(
     board: chess.Board,
     pawns: tuple[int, ...],
     wk: int,
     bk: int,
     turn: bool,
     role_map: dict[tuple[int, int, int, int], str],
-    tier: int,
-    safe_signatures: set[tuple[object, ...]],
-) -> list[chess.Move]:
-    """Apply the frozen V14 pair contract against every other pawn."""
+    guard_tiers: dict[str, set[tuple[object, ...]]],
+) -> list[tuple[chess.Move, tuple[str, ...]]]:
+    """Require the frozen residual ladder to admit every anchor/other relation."""
     seen: set[chess.Move] = set()
-    out: list[chess.Move] = []
+    out: list[tuple[chess.Move, tuple[str, ...]]] = []
     for anchor in pawns:
         role = role_map[(wk, bk, anchor, int(turn))]
-        other0 = next(other for other in pawns if other != anchor)
-        bindings = candidate_bindings(
-            board, anchor, other0, wk, bk, turn, role_map
-        )
-        move = None
-        for b_anchor, _b_other, b_role, candidate in bindings:
-            if b_anchor == anchor and b_role == role:
-                move = candidate
-                break
+        move = parse_role_move(board, anchor, role)
         if move is None:
             continue
-        if all(
-            signature(board, anchor, other, role, tier) in safe_signatures
-            for other in pawns
-            if other != anchor
-        ):
-            if move not in seen:
-                seen.add(move)
-                out.append(move)
+        used: list[str] = []
+        ok = True
+        for other in pawns:
+            if other == anchor:
+                continue
+            tier = admitted_relation(board, anchor, other, role, guard_tiers)
+            if tier is None:
+                ok = False
+                break
+            used.append(tier)
+        if ok and move not in seen:
+            seen.add(move)
+            out.append((move, tuple(used)))
     return out
 
 
@@ -314,17 +342,13 @@ def pure_white_pawns_vs_black_king(board: chess.Board, pawn_count: int) -> bool:
 
 class CrystalOracle:
     def __init__(self, guard_path: Path, roles_path: Path):
-        self.guard_header, self.safe_signatures = load_guard(guard_path)
+        self.guard_header, self.guard_tiers = load_ladder(guard_path)
         self.roles_header, self.role_map = load_roles(roles_path)
-        self.tier = int(self.guard_header["tier_index"])
-        self.tier_name = str(self.guard_header["tier"])
-        if self.tier_name != TIER_NAMES[self.tier]:
-            raise ValueError("guard tier metadata mismatch")
 
     def _choose_white_canonical(
         self, board: chess.Board
     ) -> tuple[chess.Move, str] | None:
-        """Existing V14/V15/V16 oracle on its canonical White-pawn orientation."""
+        """V16/V19 residual ladder on the canonical White-pawn orientation."""
         if board.is_game_over(claim_draw=False):
             return None
 
@@ -341,9 +365,11 @@ class CrystalOracle:
             for anchor, other, role, move in candidate_bindings(
                 board, p0, p1, wk, bk, board.turn, self.role_map
             ):
-                sig = signature(board, anchor, other, role, self.tier)
-                if sig in self.safe_signatures:
-                    return move, "V14_KPPvK_pair8"
+                tier = admitted_relation(
+                    board, anchor, other, role, self.guard_tiers
+                )
+                if tier is not None:
+                    return move, f"V21_KPPvK_{tier}"
             return None
 
         if pure_white_pawns_vs_black_king(board, 3):
@@ -353,18 +379,12 @@ class CrystalOracle:
                 return None
             if not all(1 <= chess.square_rank(p) <= 3 for p in pawns):
                 return None
-            candidates = universal_pair_candidates(
-                board,
-                pawns,
-                wk,
-                bk,
-                board.turn,
-                self.role_map,
-                self.tier,
-                self.safe_signatures,
+            candidates = universal_ladder_candidates(
+                board, pawns, wk, bk, board.turn, self.role_map, self.guard_tiers
             )
             if candidates:
-                return candidates[0], "V15_KPPPvK_universal_pair"
+                move, tiers = candidates[0]
+                return move, "V21_KPPPvK_" + "+".join(tiers)
             return None
 
         if pure_white_pawns_vs_black_king(board, 4):
@@ -374,18 +394,12 @@ class CrystalOracle:
                 return None
             if not all(1 <= chess.square_rank(p) <= 3 for p in pawns):
                 return None
-            candidates = universal_pair_candidates(
-                board,
-                pawns,
-                wk,
-                bk,
-                board.turn,
-                self.role_map,
-                self.tier,
-                self.safe_signatures,
+            candidates = universal_ladder_candidates(
+                board, pawns, wk, bk, board.turn, self.role_map, self.guard_tiers
             )
             if candidates:
-                return candidates[0], "V16_KPPPPvK_universal_pair"
+                move, tiers = candidates[0]
+                return move, "V21_KPPPPvK_" + "+".join(tiers)
             return None
 
         return None
@@ -395,8 +409,6 @@ class CrystalOracle:
         if direct is not None:
             return direct
 
-        # Exact chess color symmetry: Board.mirror() flips ranks and colors.
-        # Reuse the already-qualified White-pawn oracle, then map the move back.
         mirrored = board.mirror()
         mirrored_choice = self._choose_white_canonical(mirrored)
         if mirrored_choice is None:
@@ -574,7 +586,7 @@ class HybridUCI:
                     move, authority = choice
                     self.emit(
                         "info string Crystal certified "
-                        f"{authority} {V14_AUTHORITY} {V15_AUTHORITY} {V16_AUTHORITY} {V20_AUTHORITY}"
+                        f"{authority} {V19_AUTHORITY} {V20_AUTHORITY} {V21_AUTHORITY}"
                     )
                     self.emit(
                         f"info depth 0 seldepth 0 nodes 0 time 0 pv {move.uci()}"
