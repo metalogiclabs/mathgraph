@@ -156,7 +156,7 @@ def candidate_bindings(
             out.append((anchor, other, role, move))
     return out
 
-ENGINE_NAME = "CrystalChess-Stockfish-Hybrid-V17"
+ENGINE_NAME = "CrystalChess-Stockfish-Hybrid-V20"
 ENGINE_AUTHOR = "Metalogic Labs"
 V14_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-verified-hybrid-search-v14"
@@ -170,6 +170,19 @@ V16_AUTHORITY = (
     "metalogiclabs/mathgraph:crystal-chess-hybrid-guard-transfer-v16"
     "@80599fe6c9dd509a18119bcee6f52f91290d7b33"
 )
+V20_AUTHORITY = (
+    "metalogiclabs/mathgraph:crystal-chess-color-symmetry-v20"
+)
+
+
+def mirror_move(move: chess.Move) -> chess.Move:
+    """Map a move through the same vertical/color mirror as Board.mirror()."""
+    return chess.Move(
+        chess.square_mirror(move.from_square),
+        chess.square_mirror(move.to_square),
+        promotion=move.promotion,
+        drop=move.drop,
+    )
 
 
 def load_guard(path: Path) -> tuple[dict[str, object], set[tuple[object, ...]]]:
@@ -308,7 +321,10 @@ class CrystalOracle:
         if self.tier_name != TIER_NAMES[self.tier]:
             raise ValueError("guard tier metadata mismatch")
 
-    def choose(self, board: chess.Board) -> tuple[chess.Move, str] | None:
+    def _choose_white_canonical(
+        self, board: chess.Board
+    ) -> tuple[chess.Move, str] | None:
+        """Existing V14/V15/V16 oracle on its canonical White-pawn orientation."""
         if board.is_game_over(claim_draw=False):
             return None
 
@@ -373,6 +389,26 @@ class CrystalOracle:
             return None
 
         return None
+
+    def choose(self, board: chess.Board) -> tuple[chess.Move, str] | None:
+        direct = self._choose_white_canonical(board)
+        if direct is not None:
+            return direct
+
+        # Exact chess color symmetry: Board.mirror() flips ranks and colors.
+        # Reuse the already-qualified White-pawn oracle, then map the move back.
+        mirrored = board.mirror()
+        mirrored_choice = self._choose_white_canonical(mirrored)
+        if mirrored_choice is None:
+            return None
+        move, authority = mirrored_choice
+        original_move = mirror_move(move)
+        if original_move not in board.legal_moves:
+            raise AssertionError(
+                ("color-mirror produced illegal move", board.fen(), move.uci())
+            )
+        return original_move, authority + "_COLOR_MIRROR"
+
 
 
 class FallbackEngine:
@@ -538,7 +574,7 @@ class HybridUCI:
                     move, authority = choice
                     self.emit(
                         "info string Crystal certified "
-                        f"{authority} {V14_AUTHORITY} {V15_AUTHORITY} {V16_AUTHORITY}"
+                        f"{authority} {V14_AUTHORITY} {V15_AUTHORITY} {V16_AUTHORITY} {V20_AUTHORITY}"
                     )
                     self.emit(
                         f"info depth 0 seldepth 0 nodes 0 time 0 pv {move.uci()}"
