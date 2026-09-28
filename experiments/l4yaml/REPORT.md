@@ -176,10 +176,10 @@ and a second proof of the same universal negation using the unbound-alias
 counterexample.
 
 **Consolidated evidence:**  
-https://github.com/metalogiclabs/mathgraph/actions/runs/36367733540
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367924903
 
 **Dedicated universal no-go gate:**  
-https://github.com/metalogiclabs/mathgraph/actions/runs/36367703623
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367924893
 
 ### H. Strict language relation
 
@@ -195,7 +195,7 @@ So the current executable parse language is a **proper subset** of the current
 surface language.
 
 **Evidence:**  
-https://github.com/metalogiclabs/mathgraph/actions/runs/36367643538
+https://github.com/metalogiclabs/mathgraph/actions/runs/36367733549
 
 ### I. Exact executable factorization
 
@@ -215,6 +215,17 @@ theorem parse_iff_executable_language (input : String) :
 This is not proposed as an independent YAML specification; it is a
 factorization theorem. It isolates the real missing bridge from specification
 to executable acceptance.
+
+The same file also proves:
+
+```lean
+theorem parse_acceptance_iff_raw_acceptance (input : String) :
+  (∃ docs, TokenParser.parseYaml input = .ok docs) ↔
+  (∃ rawDocs, TokenParser.parseYamlRaw input = .ok rawDocs)
+```
+
+so the total Compose step does not change the accepted input language. The
+surface mismatch is already present at the scanner + token-parser boundary.
 
 ## Acceptance audit
 
