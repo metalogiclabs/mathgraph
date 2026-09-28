@@ -47,14 +47,6 @@ lemma prepareDocumentState_tagHandles_exact
     (ps' : L4YAML.TokenParser.ParseState)
     (h_ok : L4YAML.TokenParser.prepareDocumentState ps = .ok (dirs, ps')) :
     ps'.tagHandles = tagTableOfDirectives dirs := by
-  have h_tag :
-      ({ (L4YAML.TokenParser.parseDirectives ps).2 with
-          tagHandles :=
-            tagTableOfDirectives (L4YAML.TokenParser.parseDirectives ps).1
-        }.tryConsume .documentStart).2.tagHandles =
-      tagTableOfDirectives (L4YAML.TokenParser.parseDirectives ps).1 := by
-    rw [tryConsume_tagHandles]
-    rfl
   unfold L4YAML.TokenParser.prepareDocumentState at h_ok
   simp only [bind, Except.bind] at h_ok
   all_goals (first | split at h_ok | skip)
@@ -64,8 +56,15 @@ lemma prepareDocumentState_tagHandles_exact
   all_goals (try contradiction)
   all_goals (simp only [Except.ok.injEq, Prod.mk.injEq] at h_ok)
   all_goals (
-    obtain ⟨rfl, rfl⟩ := h_ok
-    simpa [tagTableOfDirectives] using h_tag)
+    obtain ⟨hdirs, hstate⟩ := h_ok
+    subst dirs
+    subst ps'
+    simpa [tagTableOfDirectives] using
+      (tryConsume_tagHandles
+        ({ (L4YAML.TokenParser.parseDirectives ps).2 with
+            tagHandles :=
+              tagTableOfDirectives (L4YAML.TokenParser.parseDirectives ps).1 })
+        (.documentStart : YamlToken)))
 
 /-- The minimal semantic projection after successful document preparation
 therefore contains exactly the names declared in the current document. -/
