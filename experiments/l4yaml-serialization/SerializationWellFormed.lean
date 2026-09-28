@@ -202,14 +202,15 @@ lemma parser_declared_handle_exact
   · rw [Array.any_eq_true]
     rintro ⟨i, hi, hname⟩
     apply List.mem_map.mpr
-    exact ⟨ps.tagHandles[i], by simpa using Array.getElem_mem hi, hname⟩
+    exact ⟨ps.tagHandles[i], by simpa using Array.getElem_mem hi,
+      by simpa only [beq_iff_eq] using hname⟩
   · intro h
     rw [Array.any_eq_true]
     obtain ⟨entry, hmem, hname⟩ := List.mem_map.mp h
     have hmem' : entry ∈ ps.tagHandles := by simpa using hmem
     rw [Array.mem_iff_getElem] at hmem'
     obtain ⟨i, hi, heq⟩ := hmem'
-    exact ⟨i, hi, by simpa [heq] using hname⟩
+    exact ⟨i, hi, by simpa [heq, beq_iff_eq] using hname⟩
 
 /-- The parser's tag-handle decision agrees with the independent semantic
 specification for every parser state and handle. -/
