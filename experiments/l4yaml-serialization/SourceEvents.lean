@@ -32,14 +32,15 @@ open L4YAML.CharPredicates
 open L4YAML.Surface
 open L4YAMLSerializationWellFormed
 
-/-- Local decidability for the surface grammar's anchor-name character class. -/
-instance (c : Char) : Decidable (isNsAnchorChar c) := by
-  unfold isNsAnchorChar isNsChar
-  infer_instance
-
-/-- Boolean spelling of the surface grammar's anchor-name character class. -/
+/-- Boolean spelling of the surface grammar's anchor-name character class,
+defined independently from the surface Prop so source recognition is
+computable without adding a classical decidability instance. -/
 def isAnchorCharBool (c : Char) : Bool :=
-  decide (isNsAnchorChar c)
+  (!isLineBreakBool c) &&
+  (!isWhiteSpaceBool c) &&
+  isPrintableBool c &&
+  (c != '﻿') &&
+  (!isFlowIndicatorBool c)
 
 /-- Independent maximal-prefix splitter. -/
 def spanWhile (p : Char → Bool) : List Char → List Char × List Char
@@ -181,7 +182,7 @@ L4YAML surface-production witnesses.
 -/
 
 lemma gstar_gchar_of_all
-    (P : Char → Prop) [DecidablePred P]
+    (P : Char → Prop)
     (xs tail : List Char) (col : Nat)
     (h : ∀ c ∈ xs, P c) :
     GStar (GChar P)
@@ -209,7 +210,7 @@ lemma gstar_gchar_of_all
       convert hfull using 1 <;> simp <;> omega
 
 lemma gplus_gchar_of_cons
-    (P : Char → Prop) [DecidablePred P]
+    (P : Char → Prop)
     (c : Char) (cs tail : List Char) (col : Nat)
     (hc : P c) (hcs : ∀ d ∈ cs, P d) :
     GPlus (GChar P)
@@ -229,7 +230,9 @@ lemma gplus_gchar_of_cons
 
 lemma anchor_char_bool_true_iff (c : Char) :
     isAnchorCharBool c = true ↔ isNsAnchorChar c := by
-  simp [isAnchorCharBool]
+  simp [isAnchorCharBool, isNsAnchorChar, isNsChar,
+    isLineBreak_iff, isWhiteSpace_iff, isPrintable_iff,
+    isFlowIndicator_iff]
 
 lemma anchor_definition_surface
     (c : Char) (cs tail : List Char) (col : Nat)
