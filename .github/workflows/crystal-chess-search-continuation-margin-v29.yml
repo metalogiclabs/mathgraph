@@ -1,0 +1,109 @@
+name: Crystal Chess Continuation Margin V29
+
+on:
+  push:
+    branches:
+      - crystal-chess-search-continuation-margin-v29
+    paths:
+      - "experiments/crystal_chess_search_continuation_margin_v29.py"
+      - ".github/workflows/crystal-chess-search-continuation-margin-v29.yml"
+      - "experiments/crystal_chess_search_continuation_v28.py"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_search_confirmation_v26.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  continuation-margin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_search_continuation_margin_v29.py
+
+      - name: Download frozen V25 guard
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-sufficiency-v25
+          path: /tmp/v25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36362896141
+
+      - name: Download V22 source corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Download exposed V28 corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-v28
+          path: /tmp/v28
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36368371744
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Generate fresh target seed 20261001
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v29
+          python experiments/crystal_chess_normal_exposure_v22.py generate \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --book artifacts/crystal-chess-v29/fresh_normal.epd \
+            --manifest artifacts/crystal-chess-v29/fresh_manifest.json \
+            --openings 256 \
+            --plies 12 \
+            --depth 6 \
+            --multipv 4 \
+            --seed 20261001 \
+            | tee artifacts/crystal-chess-v29/generate.log
+          grep -q "CRYSTAL_CHESS_NORMAL_BOOK_V22=PASS" artifacts/crystal-chess-v29/generate.log
+
+      - name: Acquire second source residual separator and test prospectively
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_search_continuation_margin_v29.py \
+            --stockfish /tmp/stockfish/src/stockfish \
+            --guard /tmp/v25/search_sufficiency_guard_v25.json.gz \
+            --v22-pgn /tmp/v22/match.pgn \
+            --v28-epd /tmp/v28/fresh_normal.epd \
+            --fresh-epd artifacts/crystal-chess-v29/fresh_normal.epd \
+            --fresh-manifest artifacts/crystal-chess-v29/fresh_manifest.json \
+            --output artifacts/crystal-chess-v29/result.json \
+            | tee artifacts/crystal-chess-v29/run.log
+          grep -Eq "CRYSTAL_CHESS_SEARCH_CONTINUATION_MARGIN_V29=(WARRANTED_PROSPECTIVE_NORMAL_SEARCH_TWO_STAGE_CONTINUATION_GUARD|FRESH_NORMAL_SEARCH_TWO_STAGE_CONTINUATION_RESIDUAL|NO_SECOND_CONTINUATION_SEPARATOR)" artifacts/crystal-chess-v29/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v29/
+          cp /tmp/v25/search_sufficiency_guard_v25.json.gz artifacts/crystal-chess-v29/
+          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v29/STOCKFISH_PIN.txt
+
+      - name: Upload V29 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-margin-v29
+          path: artifacts/crystal-chess-v29/
+          if-no-files-found: error
