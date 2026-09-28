@@ -33,6 +33,7 @@ namespace L4YAMLParserBoundaryProbe
 open L4YAML.Surface
 open L4YAML.Scanner
 open L4YAML.Proofs.CouplingBridge
+open L4YAML.Proofs.ScalarProduction
 
 def scanAccepts (s : String) : Bool :=
   match L4YAML.Scanner.scan s with
