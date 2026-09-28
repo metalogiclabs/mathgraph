@@ -53,7 +53,7 @@ jobs:
           mkdir -p /tmp/syzygy
           w5="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
           w6="https://tablebase.lichess.ovh/tables/standard/6-wdl"
-          for f in KPPvK.rtbw KPPPvK.rtbw; do
+          for f in KPvK.rtbw KPPvK.rtbw KPPPvK.rtbw; do
             curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$w5/$f"
           done
           curl --fail --location --retry 5 --retry-delay 2 -o /tmp/syzygy/KPPPPvK.rtbw "$w6/KPPPPvK.rtbw"
