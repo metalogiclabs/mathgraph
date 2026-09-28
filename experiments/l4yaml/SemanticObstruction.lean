@@ -97,3 +97,5 @@ theorem parse_iff_grammar_semantic_obstruction :
 end L4YAMLSemanticObstruction
 
 -- qualification trigger
+
+#print axioms L4YAMLSemanticObstruction.parse_iff_grammar_semantic_obstruction
