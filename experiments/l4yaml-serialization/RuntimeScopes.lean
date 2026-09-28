@@ -56,9 +56,8 @@ lemma prepareDocumentState_tagHandles_exact
   all_goals (try contradiction)
   all_goals (simp only [Except.ok.injEq, Prod.mk.injEq] at h_ok)
   all_goals (
-    obtain ⟨hdirs, hstate⟩ := h_ok
-    subst dirs
-    subst ps'
+    obtain ⟨hdirs, rfl⟩ := h_ok
+    rw [← hdirs]
     simpa [tagTableOfDirectives] using
       (tryConsume_tagHandles
         ({ (L4YAML.TokenParser.parseDirectives ps).2 with
