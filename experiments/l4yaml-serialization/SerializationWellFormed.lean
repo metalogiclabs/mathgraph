@@ -162,6 +162,107 @@ lemma document_reset_forgets_custom_tag (env : Env) (handle : String)
   intro h
   simpa [WellFormedFrom, TagHandleAllowed, Env.reset, h_builtin] using h
 
+
+/-! ## Extensional semantic state
+
+The list representation is intentionally not semantically observable.  Only
+membership matters: order and duplicate definitions/declarations are erased.
+-/
+
+def EnvEquivalent (env₁ env₂ : Env) : Prop :=
+  (∀ name : String, name ∈ env₁.anchors ↔ name ∈ env₂.anchors) ∧
+  (∀ handle : String, handle ∈ env₁.tagHandles ↔ handle ∈ env₂.tagHandles)
+
+lemma envEquivalent_reset {env₁ env₂ : Env}
+    (_h : EnvEquivalent env₁ env₂) :
+    EnvEquivalent env₁.reset env₂.reset := by
+  simp [EnvEquivalent, Env.reset]
+
+lemma envEquivalent_defineAnchor {env₁ env₂ : Env}
+    (h : EnvEquivalent env₁ env₂) (name : String) :
+    EnvEquivalent
+      { env₁ with anchors := name :: env₁.anchors }
+      { env₂ with anchors := name :: env₂.anchors } := by
+  constructor
+  · intro x
+    simp only [List.mem_cons]
+    rw [h.1 x]
+  · exact h.2
+
+lemma envEquivalent_declareTag {env₁ env₂ : Env}
+    (h : EnvEquivalent env₁ env₂) (handle : String) :
+    EnvEquivalent
+      { env₁ with tagHandles := handle :: env₁.tagHandles }
+      { env₂ with tagHandles := handle :: env₂.tagHandles } := by
+  constructor
+  · exact h.1
+  · intro x
+    simp only [List.mem_cons]
+    rw [h.2 x]
+
+lemma aliasAllowed_equiv {env₁ env₂ : Env}
+    (h : EnvEquivalent env₁ env₂) (name : String) :
+    AliasAllowed env₁ name ↔ AliasAllowed env₂ name :=
+  h.1 name
+
+lemma tagHandleAllowed_equiv {env₁ env₂ : Env}
+    (h : EnvEquivalent env₁ env₂) (handle : String) :
+    TagHandleAllowed env₁ handle ↔ TagHandleAllowed env₂ handle := by
+  unfold TagHandleAllowed
+  constructor
+  · intro hx
+    rcases hx with hx | hx
+    · exact Or.inl hx
+    · exact Or.inr ((h.2 handle).mp hx)
+  · intro hx
+    rcases hx with hx | hx
+    · exact Or.inl hx
+    · exact Or.inr ((h.2 handle).mpr hx)
+
+/-- The independent checker factors through set-membership equivalence of
+semantic environments for every future event trace. -/
+lemma checkFrom_envEquivalent {env₁ env₂ : Env}
+    (h : EnvEquivalent env₁ env₂) (events : List Event) :
+    checkFrom env₁ events = checkFrom env₂ events := by
+  induction events generalizing env₁ env₂ with
+  | nil =>
+      rfl
+  | cons event rest ih =>
+      cases event with
+      | beginDocument =>
+          simpa [checkFrom] using ih (envEquivalent_reset h)
+      | endDocument =>
+          simpa [checkFrom] using ih (envEquivalent_reset h)
+      | defineAnchor name =>
+          simpa [checkFrom] using ih (envEquivalent_defineAnchor h name)
+      | useAlias name =>
+          have ha := aliasAllowed_equiv h name
+          by_cases h₁ : AliasAllowed env₁ name
+          · have h₂ : AliasAllowed env₂ name := ha.mp h₁
+            simpa [checkFrom, h₁, h₂] using ih h
+          · have h₂ : ¬ AliasAllowed env₂ name := by
+              intro hx
+              exact h₁ (ha.mpr hx)
+            simp [checkFrom, h₁, h₂]
+      | declareTag handle =>
+          simpa [checkFrom] using ih (envEquivalent_declareTag h handle)
+      | useTag handle =>
+          have ht := tagHandleAllowed_equiv h handle
+          by_cases h₁ : TagHandleAllowed env₁ handle
+          · have h₂ : TagHandleAllowed env₂ handle := ht.mp h₁
+            simpa [checkFrom, h₁, h₂] using ih h
+          · have h₂ : ¬ TagHandleAllowed env₂ handle := by
+              intro hx
+              exact h₁ (ht.mpr hx)
+            simp [checkFrom, h₁, h₂]
+
+/-- Declarative well-formedness itself therefore factors through exactly the
+same extensional state. -/
+lemma wellFormedFrom_envEquivalent {env₁ env₂ : Env}
+    (h : EnvEquivalent env₁ env₂) (events : List Event) :
+    WellFormedFrom env₁ events ↔ WellFormedFrom env₂ events := by
+  rw [← checkFrom_correct, ← checkFrom_correct, checkFrom_envEquivalent h events]
+
 /-! ## Runtime bridge: scanner alias guard -/
 
 /-- Projection of exactly the alias-relevant part of the scanner state into
@@ -322,3 +423,6 @@ end L4YAMLSerializationWellFormed
 
 #print axioms L4YAMLSerializationWellFormed.scanner_alias_guard_set_ext
 #print axioms L4YAMLSerializationWellFormed.parser_tag_guard_set_ext
+
+#print axioms L4YAMLSerializationWellFormed.checkFrom_envEquivalent
+#print axioms L4YAMLSerializationWellFormed.wellFormedFrom_envEquivalent
