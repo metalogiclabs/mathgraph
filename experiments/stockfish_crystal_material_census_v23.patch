@@ -1,5 +1,4 @@
 diff --git a/src/search.cpp b/src/search.cpp
-index 0000000..0000000 100644
 --- a/src/search.cpp
 +++ b/src/search.cpp
 @@ -29,6 +29,7 @@
