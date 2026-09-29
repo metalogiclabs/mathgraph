@@ -123,6 +123,43 @@ def _specs() -> dict[str, SufficientInterfaceSpec]:
             ("P(x)", "cons?(l)", "∀z, f(z)≥0"),
         ),
     )
+    # V2 extension: subtype/range erasure.  These are not SAME_MEANING
+    # claims unless the source subtype interpretation is carried explicitly.
+    # We therefore retain them as stronger real-valued interfaces plus typed
+    # Lean adapters for the corresponding source-shaped subtype statements.
+    add(
+        "FORALL (x: posreal): x + 1 > 1",
+        SufficientInterfaceSpec(
+            "interface.positive_add_one_gt_one@1",
+            "positive_add_one_gt_one_interface",
+            "(x : ℝ) : x > 0 → x + 1 > 1",
+            """by
+  intro hx
+  linarith""",
+            "source_posreal_from_interface",
+            "(x : {x : ℝ // 0 < x}) : (x : ℝ) + 1 > 1",
+            """by
+  exact positive_add_one_gt_one_interface (x : ℝ) x.2""",
+            ("PVS posreal subtype wrapper",),
+        ),
+    )
+    add(
+        "FORALL (y: nnreal): sqrt(y) + 1 >= 1",
+        SufficientInterfaceSpec(
+            "interface.sqrt_add_one_ge_one@1",
+            "sqrt_add_one_ge_one_interface",
+            "(y : ℝ) : Real.sqrt y + 1 ≥ 1",
+            """by
+  have h := Real.sqrt_nonneg y
+  linarith""",
+            "source_nnreal_sqrt_from_interface",
+            "(y : ℝ≥0) : Real.sqrt (y : ℝ) + 1 ≥ 1",
+            """by
+  exact sqrt_add_one_ge_one_interface (y : ℝ)""",
+            ("PVS nnreal subtype wrapper",),
+        ),
+    )
+
     return dict(rows)
 
 
