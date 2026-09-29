@@ -12,10 +12,13 @@ Single source change:
 - Rule: if `mainThread->tm.optimum() <= 64`, set `highBestMoveEffort = 1.0`
 - No evaluation, move ordering, pruning, NNUE, or search-depth logic is changed.
 
-Patch:
-- `stockfish-0a215d6c-crystal-v56.patch`
+Deterministic applier:
+- `apply.py`
 
-The patch was frozen after the V54 sign split and before V55/V56 replication. Do not tune the threshold during external testing.
+The applier is the same semantic transformation used by V56. Qualification reconstructs the resulting git diff and requires SHA-256:
+`7ee31f9f8fc69589be85358af7d9e0e736ee20c55704e8f344ff4bae93a35c98`.
+
+The rule was frozen after the V54 sign split and before V55/V56 replication. Do not tune the threshold during external testing.
 
 ## Evidence lineage
 
@@ -30,23 +33,29 @@ The patch was frozen after the V54 sign split and before V55/V56 replication. Do
 - V56 independent replication:
   - fast: +3.223 Elo / 2048 games
   - mid: -0.679 Elo / 2048 games
-  - slow: pending at the time this package was created.
+  - slow: pending at the time of this package revision.
 - V57 nominal CCRL Blitz `2+1`: in progress.
 - V58 Fishtest-style STC `10+0.1`: in progress.
 - V59 gate-exposure diagnostic: in progress.
 
-The candidate is therefore still experimental. This package exists to enable independent falsification, not to assert an official rating.
+The candidate is still experimental. This package exists to enable independent falsification, not to assert an official rating.
 
 ## Reproduce
+
+From this package directory:
 
 ```bash
 git clone https://github.com/official-stockfish/Stockfish.git
 cd Stockfish
 git checkout 0a215d6c9e48856ef630013b8ab8312941a59057
-git apply /path/to/stockfish-0a215d6c-crystal-v56.patch
+python /path/to/crystal-chess-v60/apply.py --search-cpp src/search.cpp
+git diff -- src/search.cpp > /tmp/crystal-v60.patch
+echo "7ee31f9f8fc69589be85358af7d9e0e736ee20c55704e8f344ff4bae93a35c98  /tmp/crystal-v60.patch" | sha256sum -c -
 make -C src -j2 build ARCH=x86-64
 src/stockfish bench 16 1 3 default depth
 ```
+
+Or run `./verify.sh` from the package directory.
 
 For an A/B test, build an unmodified copy from the same upstream commit and keep all UCI options, thread counts, hash size, opening pairs, and hardware identical.
 
