@@ -142,6 +142,8 @@ jobs:
           set -euo pipefail
           lake update
           grep -q 'db584cd6d46c92f209a44c0f1c829460d327499d' lake-manifest.json
+          cp .lake/packages/mathlib/lean-toolchain ./lean-toolchain
+          grep -q 'leanprover/lean4:v4.33.0' lean-toolchain
           lake exe cache get
 
       - name: Qualify all selected routes in isolated source slice
@@ -182,7 +184,7 @@ jobs:
               "route_count":6,
               "routes":s["routes"],
               "lean_checks":checks,
-              "qualifier":"Lean 4 kernel; isolated exact source slice; lake build plus direct lean check",
+              "qualifier":"Lean 4 kernel; isolated exact source slice; Mathlib fixed Lean v4.33.0; lake build plus direct lean check",
               "qualification_seconds":secs,
               "slice_file_count":s["slice_file_count"],
               "slice_source_bytes":s["slice_source_bytes"],
@@ -195,7 +197,7 @@ jobs:
               "revocation_boundary":[
                   "producer commit changes",
                   "resolved source bytes change",
-                  "Mathlib pin or bridge semantics change",
+                  "Mathlib pin, fixed toolchain, or bridge semantics change",
                   "consumer protected consequence changes",
                   "isolated qualification fails",
               ],
