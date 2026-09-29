@@ -1,0 +1,210 @@
+name: Crystal Frey Curve Operation Reconciliation V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'experiments/crystal_frey_curve_operation_v1/**'
+      - 'experiments/crystal_frey_package_reconciliation_v1/ViewBody.lean'
+      - '.github/workflows/crystal-frey-curve-operation-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-operations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare exact Frey curve operation bodies
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/frey-op
+          curl -fsSL -o /tmp/frey-op/anthropic.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2/Definitions/Def_FLTPrelim_FreyPackage.lean
+          curl -fsSL -o /tmp/frey-op/imperial.lean             https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/FreyCurve/Basic.lean
+          python - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+
+          m=json.loads(Path("experiments/crystal_frey_curve_operation_v1/manifest.json").read_text())
+          pins={x["corpus"]:x for x in m["sources"]}
+          files={"anthropic-flt":Path("/tmp/frey-op/anthropic.lean"),
+                 "imperial-flt":Path("/tmp/frey-op/imperial.lean")}
+
+          def blob_sha(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+
+          def clean(text):
+              text=re.sub(r"/-[\s\S]*?-/", " ", text)
+              text=re.sub(r"--[^\n]*", " ", text)
+              return re.sub(r"\s+"," ",text).strip()
+
+          def blocks(text):
+              s1=text.index("def freyCurveInt")
+              e1=text.index("def freyCurve (",s1)
+              s2=e1
+              e2=text.index("end FreyPackage",s2)
+              return clean(text[s1:e1]),clean(text[s2:e2])
+
+          normalized={}
+          for corpus,path in files.items():
+              data=path.read_bytes()
+              got=blob_sha(data)
+              assert got==pins[corpus]["definition_blob_sha"], (corpus,got,pins[corpus]["definition_blob_sha"])
+              normalized[corpus]=blocks(data.decode())
+              print("PIN_OK",corpus,got)
+
+          assert normalized["anthropic-flt"]==normalized["imperial-flt"], normalized
+          joined="\n".join(normalized["anthropic-flt"])
+          digest=hashlib.sha256(joined.encode()).hexdigest()
+          out={
+              "schema":"mathgraph.crystal-frey-curve-operation-schema.v1",
+              "status":"EXACT_OPERATION_SCHEMA_MATCH",
+              "semantic_digest":digest,
+              "operations":m["protected_operations"],
+              "normalized_operations":list(normalized["anthropic-flt"]),
+          }
+          Path("experiments/crystal_frey_curve_operation_v1/schema_result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"status":out["status"],"semantic_digest":digest},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frey-curve-operation-schema
+          path: experiments/crystal_frey_curve_operation_v1/schema_result.json
+
+  qualify-operations:
+    needs: compare-operations
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - corpus: anthropic-flt
+            mathlib: db584cd6d46c92f209a44c0f1c829460d327499d
+            toolchain: leanprover/lean4:v4.33.0
+            module: Definitions.Def_FLTPrelim_FreyPackage
+          - corpus: imperial-flt
+            mathlib: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+            toolchain: leanprover/lean4:v4.35.0-rc3
+            module: FLT.FreyCurve.Basic
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Construct operation micro-environment
+        env:
+          CORPUS: ${{ matrix.corpus }}
+          MATHLIB: ${{ matrix.mathlib }}
+          TOOLCHAIN: ${{ matrix.toolchain }}
+          MODULE: ${{ matrix.module }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/frey-op-$CORPUS"
+          mkdir -p "$ROOT"
+          printf '%s\n' "$TOOLCHAIN" > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<EOF
+          name = "crystal-frey-operation-$CORPUS"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "$MATHLIB"
+          EOF
+
+          if [ "$CORPUS" = "anthropic-flt" ]; then
+            mkdir -p "$ROOT/Definitions"
+            curl -fsSL -o "$ROOT/Definitions/Def_FLTPrelim_FreyPackage.lean"               https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2/Definitions/Def_FLTPrelim_FreyPackage.lean
+            cat >> "$ROOT/lakefile.toml" <<EOF
+          [[lean_lib]]
+          name = "Definitions"
+          EOF
+          else
+            mkdir -p "$ROOT/FLT/FreyCurve" "$ROOT/FLT/Basic"
+            curl -fsSL -o "$ROOT/FLT/FreyCurve/Basic.lean"               https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/FreyCurve/Basic.lean
+            curl -fsSL -o "$ROOT/FLT/FreyCurve/FreyPackage.lean"               https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/FreyCurve/FreyPackage.lean
+            curl -fsSL -o "$ROOT/FLT/Basic/Lemmas.lean"               https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/Basic/Lemmas.lean
+            cat >> "$ROOT/lakefile.toml" <<EOF
+          [[lean_lib]]
+          name = "FLT"
+          EOF
+          fi
+
+          {
+            printf 'import %s\n\n' "$MODULE"
+            cat experiments/crystal_frey_package_reconciliation_v1/ViewBody.lean
+            printf '\n'
+            cat experiments/crystal_frey_curve_operation_v1/OperationBody.lean
+          } > "$ROOT/Surface.lean"
+      - name: Verify source pins
+        env:
+          CORPUS: ${{ matrix.corpus }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/frey-op-$CORPUS"
+          python - "$ROOT" "$CORPUS" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); corpus=sys.argv[2]
+          m=json.loads(Path("experiments/crystal_frey_curve_operation_v1/manifest.json").read_text())
+          x=next(v for v in m["sources"] if v["corpus"]==corpus)
+          files=[{"path":x["definition_path"],"blob_sha":x["definition_blob_sha"]},*x.get("helper_files",[])]
+          for f in files:
+              data=(root/f["path"]).read_bytes()
+              got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert got==f["blob_sha"], (f["path"],got,f["blob_sha"])
+              print("PIN_OK",corpus,f["path"],got)
+          PY
+      - name: Qualify commuting operations
+        env:
+          CORPUS: ${{ matrix.corpus }}
+          MODULE: ${{ matrix.module }}
+        run: |
+          set -euo pipefail
+          cd "/tmp/frey-op-$CORPUS"
+          lake update
+          lake exe cache get
+          lake build "$MODULE"
+          lake env lean Surface.lean
+          printf '%s\n' "$CORPUS" > qualified_corpus.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frey-curve-operation-${{ matrix.corpus }}
+          path: /tmp/frey-op-${{ matrix.corpus }}/qualified_corpus.txt
+
+  promote:
+    needs: [compare-operations, qualify-operations]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote bounded Frey curve operation reconciliation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("experiments/crystal_frey_curve_operation_v1/manifest.json").read_text())
+          out={
+              "schema":"mathgraph.crystal-frey-curve-operation-result.v1",
+              "status":"WARRANTED_BOUNDED_OPERATION_RECONCILIATION",
+              "parent_candidate":m["parent_candidate"],
+              "corpora":[x["corpus"] for x in m["sources"]],
+              "operations":m["protected_operations"],
+              "qualification":"both exact project-local Frey curve constructors commute with the same canonical FreyPackage view in each pinned environment",
+              "not_claimed":[
+                  "equivalence of all downstream FreyCurve lemmas",
+                  "compiled proof-object transport across Lean versions"
+              ]
+          }
+          Path("experiments/crystal_frey_curve_operation_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-frey-curve-operation-v1
+          path: experiments/crystal_frey_curve_operation_v1/result.json
