@@ -29,7 +29,8 @@ def test_structure_extension_proposes_implication_route() -> None:
 theorem source {R : Type} (xs : List R) : RingTheory.Sequence.IsRegular R xs := by trivial
 """)
     consumer = (_pin("b", "consumer", "B.lean"), """
-def need {R : Type} (xs : List R) : Prop := Sequence.IsWeaklyRegular R xs
+theorem need {R : Type} (xs : List R)
+    (h : Sequence.IsWeaklyRegular R xs) : True := by trivial
 """)
     bridge = (_pin("mathlib", "bridge-library", "Bridge.lean"), """
 namespace RingTheory.Sequence
@@ -55,3 +56,18 @@ def test_unrelated_symbols_do_not_form_cross_corpus_candidate() -> None:
     b = (_pin("b", "consumer", "B.lean"), "theorem y : DifferentThing := by trivial\n")
     out = discover([a, b])
     assert not out["equivalence_candidates"]
+
+
+def test_ambient_typeclasses_do_not_dominate_consequence_matching() -> None:
+    a = (_pin("a", "producer", "A.lean"), """
+theorem a {R : Type} [AddCommGroup R] (n : Nat) :
+    FermatLastTheoremFor n := by trivial
+""")
+    b = (_pin("b", "consumer", "B.lean"), """
+theorem b {R : Type} [AddCommGroup R] (n : Nat) :
+    FermatLastTheoremFor n := by trivial
+""")
+    out = discover([a, b])
+    symbols = {x["canonical_symbol"] for x in out["equivalence_candidates"]}
+    assert "FermatLastTheoremFor" in symbols
+    assert "AddCommGroup" not in symbols
