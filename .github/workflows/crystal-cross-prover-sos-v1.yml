@@ -1,0 +1,161 @@
+name: Crystal Cross-Prover SOS Certificate V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-semantic-linker-v1
+    paths:
+      - 'evidence/crystal-cross-prover-cad-v1.json'
+      - 'experiments/crystal_cross_prover_cad_v1/**'
+      - 'mathgraph/cross_prover_sos_certificate.py'
+      - 'tests/test_cross_prover_sos_certificate.py'
+      - '.github/workflows/crystal-cross-prover-sos-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test exact certificate compiler
+        run: python -m pytest -q tests/test_cross_prover_sos_certificate.py
+      - name: Compile canonical claim to exact SOS certificate
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_sos_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_semantic_surface import load_manifest
+          from mathgraph.cross_prover_sos_certificate import (
+              compile_certificate_capability,
+              discover_linear_square_certificate,
+              render_lean_certificate_proof,
+              verify_certificate,
+          )
+
+          m=load_manifest("experiments/crystal_cross_prover_cad_v1/manifest.json")
+          authority=json.loads(Path("evidence/crystal-cross-prover-cad-v1.json").read_text())
+          assert authority["canonical_claim"]["id"]==m["canonical_claim"]["id"]
+          assert authority["pvs"]["commit"]==m["pvs"]["commit"]
+
+          claim=m["canonical_claim"]
+          cert=discover_linear_square_certificate(claim)
+          assert cert is not None
+          assert verify_certificate(claim,cert)
+          obj=compile_certificate_capability(claim,cert,authority)
+
+          cert_json={
+              "schema":"mathgraph.cross-prover-sos-certificate.v1",
+              "status":"CANDIDATE_PENDING_LEAN_CHECK",
+              "canonical_claim_id":claim["id"],
+              "certificate":cert.to_dict(),
+              "source_authority_run":authority["authority"]["run_id"],
+              "source_semantic_object":authority["compiled"]["semantic_object_id"],
+              "certificate_object_id":obj.id,
+          }
+          Path("artifacts/crystal_cross_prover_sos_v1/certificate.json").write_text(
+              json.dumps(cert_json,indent=2,sort_keys=True)+"\n"
+          )
+
+          proof=render_lean_certificate_proof(cert)
+          lean=f"""import Mathlib
+
+namespace CrystalCrossProverSOS
+
+theorem amgm2_from_compiled_certificate (x y : ℝ) :
+    x ^ 2 + y ^ 2 ≥ 2 * x * y := {proof}
+
+end CrystalCrossProverSOS
+"""
+          Path("artifacts/crystal_cross_prover_sos_v1/Surface.lean").write_text(lean)
+          print(json.dumps(cert_json,sort_keys=True))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check compiled consumer certificate
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-sos
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_sos_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-sos"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_v1/lean_surface.sha256"
+      - name: Promote bounded certificate transport
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from mathgraph.cross_prover_semantic_surface import load_manifest
+          from mathgraph.cross_prover_sos_certificate import (
+              compile_certificate_capability,
+              discover_linear_square_certificate,
+          )
+
+          m=load_manifest("experiments/crystal_cross_prover_cad_v1/manifest.json")
+          authority=json.loads(Path("evidence/crystal-cross-prover-cad-v1.json").read_text())
+          cert=discover_linear_square_certificate(m["canonical_claim"])
+          obj=compile_certificate_capability(m["canonical_claim"],cert,authority)
+          lean_sha=Path("artifacts/crystal_cross_prover_sos_v1/lean_surface.sha256").read_text().split()[0]
+
+          out={
+              "schema":"mathgraph.crystal-cross-prover-sos-result.v1",
+              "status":"WARRANTED_BOUNDED_CONSUMER_CERTIFICATE",
+              "source_cross_prover_authority":{
+                  "run_id":authority["authority"]["run_id"],
+                  "semantic_object_id":authority["compiled"]["semantic_object_id"],
+              },
+              "certificate":cert.to_dict(),
+              "certificate_object_id":obj.id,
+              "consumer":{
+                  "theorem":"CrystalCrossProverSOS.amgm2_from_compiled_certificate",
+                  "lean_surface_sha256":lean_sha,
+                  "toolchain":m["lean"]["toolchain"],
+                  "mathlib_commit":m["lean"]["mathlib_commit"],
+                  "proof_search_boundary":"only the compiled square certificate is supplied to nlinarith",
+              },
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "closed_unknown":"consumer reuse without an independently checkable certificate",
+              "remaining_unknowns":[
+                  "automatic certificate synthesis for arbitrary semialgebraic formulas",
+                  "universal PVS-to-Lean proof-object transport",
+                  "certificate minimization beyond this bounded quadratic family"
+              ],
+          }
+          Path("artifacts/crystal_cross_prover_sos_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-sos-v1
+          path: artifacts/crystal_cross_prover_sos_v1/
