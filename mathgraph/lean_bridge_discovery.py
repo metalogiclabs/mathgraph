@@ -366,6 +366,7 @@ def discover(
             continue
         equivalence_candidates.append({
             "kind": "shared_semantic_head",
+            "epistemic_kind": "shared_surface_head_only",
             "canonical_symbol": symbol,
             "corpora": corpora,
             "evidence": [
@@ -377,7 +378,7 @@ def discover(
                 }
                 for d in rows[:20]
             ],
-            "status": "CANDIDATE_REQUIRES_VERIFIER",
+            "status": "CANDIDATE_REQUIRES_ORIGIN_RESOLUTION_THEN_VERIFIER",
         })
 
     implication_candidates: list[dict[str, object]] = []
@@ -424,8 +425,10 @@ def discover(
     return {
         "schema": "mathgraph.lean-bridge-discovery.v1",
         "boundary": (
-            "Exact source pins and deterministic discovery only. "
-            "Candidates do not promote truth; Lean qualification is required."
+            "Exact source pins and deterministic surface-overlap discovery only. "
+            "A shared token is not semantic equivalence: resolve origin, namespace, "
+            "receiver and collisions before any Lean qualification. Candidates do "
+            "not promote truth."
         ),
         "declaration_count": len(declarations),
         "alias_rules": [x.to_dict() for x in alias_rules],
