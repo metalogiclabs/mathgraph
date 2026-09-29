@@ -1,0 +1,10 @@
+BoundaryAuditReject: THEORY
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  % This theorem is true, but variable-dependent division is outside the
+  % polynomial fragment accepted by (cad). The expected behavior is refusal:
+  % it must not silently treat x/x as an independent polynomial variable.
+  nonpoly_variable_denominator: THEOREM
+    FORALL (x: real): x /= 0 IMPLIES x/x = 1
+END BoundaryAuditReject
