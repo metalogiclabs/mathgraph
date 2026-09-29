@@ -1,0 +1,8 @@
+BoundaryAuditHidden: THEORY
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  sqplus1(x: real): real = x*x + 1
+
+  hidden_definition: THEOREM FORALL (x: real): sqplus1(x) > 0
+END BoundaryAuditHidden
