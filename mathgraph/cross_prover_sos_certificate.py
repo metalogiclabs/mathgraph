@@ -13,6 +13,8 @@ from fractions import Fraction
 from math import isqrt
 from typing import Any, Mapping
 
+from mathgraph.crystal import SemanticObject, canonical_bytes
+
 Monomial = tuple[int, int]
 Polynomial = dict[Monomial, Fraction]
 
@@ -156,3 +158,35 @@ def render_lean_certificate_proof(cert: LinearSquareCertificate) -> str:
   have hs : 0 ≤ (x - y) ^ 2 := sq_nonneg (x - y)
   nlinarith only [hs]
 """
+
+
+def compile_certificate_capability(
+    claim: Mapping[str, Any],
+    cert: LinearSquareCertificate,
+    source_authority: Mapping[str, Any],
+) -> SemanticObject:
+    if source_authority.get("status") != "WARRANTED_BOUNDED_CROSS_PROVER_SEMANTIC_LINK":
+        raise ValueError("consumer certificate requires warranted cross-prover source authority")
+    if not verify_certificate(claim, cert):
+        raise ValueError("invalid SOS certificate")
+    payload=canonical_bytes({
+        "canonical_claim":claim,
+        "certificate":cert.to_dict(),
+        "source_semantic_object":source_authority["compiled"]["semantic_object_id"],
+        "source_authority_run":source_authority["authority"]["run_id"],
+        "pvs_provenance":source_authority["pvs"],
+        "lean_consumer_boundary":{
+            "certificate_check":"square_nonnegative + normalized arithmetic only",
+            "proof_object_transport":False,
+        },
+    })
+    return SemanticObject(
+        "cross-prover.consumer-certificate@1",
+        1,
+        payload,
+        (
+            "logic.closed-proposition.truth@1",
+            "real.polynomial.amgm2@1",
+            "certificate.sum-of-squares@1",
+        ),
+    )
