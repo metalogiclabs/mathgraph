@@ -227,7 +227,8 @@ def _specs() -> dict[str,WitnessSpec]:
             """by
   refine ⟨(1 - x) / 2, ?_, ?_⟩
   · ring
-  · positivity""",
+  · have h : 0 ≤ ((1 - x) / 2) ^ 2 := sq_nonneg ((1 - x) / 2)
+    nlinarith""",
         ),
     )
     add(
