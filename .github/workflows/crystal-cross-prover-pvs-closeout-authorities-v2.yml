@@ -1,0 +1,107 @@
+name: Crystal Cross-Prover PVS Closeout Authorities V2
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-corpus-closeout-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-pvs-closeout-authorities-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo-authorities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and pin PVS environment
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay d_cubic and d_no_inverse
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pvs_closeout_v2
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_cubic:d_no_inverse             | tee "$GITHUB_WORKSPACE/artifacts/pvs_closeout_v2/demo.log"
+          grep -q 'Grand Totals: 2 proofs, 2 attempted, 2 succeeded'             "$GITHUB_WORKSPACE/artifacts/pvs_closeout_v2/demo.log"
+          if grep -Ei 'unfinished|untried|unchecked' "$GITHUB_WORKSPACE/artifacts/pvs_closeout_v2/demo.log"; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pvs-closeout-v2-demo
+          path: artifacts/pvs_closeout_v2/demo.log
+
+  star-authorities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and pin PVS environment
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay six cad_star_ex authorities
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/pvs_closeout_v2
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_star_ex.s_disc:s_alt_goal:s_alt_hyp:s_posreal:s_sqrtpos:s_two             | tee "$GITHUB_WORKSPACE/artifacts/pvs_closeout_v2/star.log"
+          grep -q 'Grand Totals: 6 proofs, 6 attempted, 6 succeeded'             "$GITHUB_WORKSPACE/artifacts/pvs_closeout_v2/star.log"
+          if grep -Ei 'unfinished|untried|unchecked' "$GITHUB_WORKSPACE/artifacts/pvs_closeout_v2/star.log"; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pvs-closeout-v2-star
+          path: artifacts/pvs_closeout_v2/star.log
+
+  qualify:
+    needs: [demo-authorities, star-authorities]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record eight-source authority set
+        run: |
+          cat > result.json <<'EOF'
+          {"status":"PVS_CLOSEOUT_EIGHT_AUTHORITIES_GREEN","source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb","demo":["d_cubic","d_no_inverse"],"star":["s_disc","s_alt_goal","s_alt_hyp","s_posreal","s_sqrtpos","s_two"],"d_meet_disposition":"SEPARATE_FRESH_PROOF_REQUIRED"}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pvs-closeout-v2-authority-set
+          path: result.json
