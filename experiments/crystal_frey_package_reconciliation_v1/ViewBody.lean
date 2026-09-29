@@ -69,3 +69,13 @@ theorem freyPackage_nonempty_iff :
     exact ⟨freyPackageToCrystal P⟩
   · rintro ⟨P⟩
     exact ⟨crystalToFreyPackage P⟩
+
+
+/-- The FLT proof-spine obstruction (no Frey package) is preserved by the same view. -/
+theorem freyPackage_isEmpty_iff :
+    IsEmpty FreyPackage ↔ IsEmpty CrystalFreyPackageView := by
+  constructor
+  · intro h
+    exact ⟨fun P => h.false (crystalToFreyPackage P)⟩
+  · intro h
+    exact ⟨fun P => h.false (freyPackageToCrystal P)⟩
