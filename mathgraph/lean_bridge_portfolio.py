@@ -8,6 +8,7 @@ def reconcile_bridge_portfolio(
     scout: Mapping[str, Any],
     directional: Mapping[str, Any],
     cross_version: Mapping[str, Any],
+    extra_equivalence_authorities=(),
 ) -> dict[str, Any]:
     if scout.get("status") != "CANDIDATE_SCOUT_ONLY":
         raise ValueError("candidate scout report required")
@@ -33,6 +34,24 @@ def reconcile_bridge_portfolio(
             "kind":"equivalence",
             "symbol":symbol,
             "status":"QUALIFIED_REUSABLE",
+        })
+
+    for authority in extra_equivalence_authorities:
+        if authority.get("status") not in {
+            "WARRANTED_BOUNDED_RECONCILIATION",
+            "WARRANTED_BOUNDED_CROSS_VERSION_INTERFACE",
+        }:
+            raise ValueError("extra equivalence authority is not warranted")
+        lineage=authority.get("scout_lineage",{})
+        cid=str(lineage.get("candidate_id",authority.get("candidate_id","")))
+        if not cid.startswith("equiv:") or cid not in all_set:
+            raise AssertionError(f"qualified equivalence missing from scout: {cid}")
+        qualified.add(cid)
+        rows.append({
+            "candidate_id":cid,
+            "kind":"equivalence",
+            "status":"QUALIFIED_REUSABLE",
+            "authority_status":authority["status"],
         })
 
     law=directional["bridge_law"]
@@ -82,11 +101,16 @@ def reconcile_bridge_portfolio(
         "trust_boundary":"Ledger only; qualification authority remains external.",
     }
 
-def reconcile_files(scout_path, directional_path, cross_version_path, out_path=None):
+def reconcile_files(
+    scout_path, directional_path, cross_version_path,
+    extra_equivalence_paths=(), out_path=None
+):
+    extras=[json.loads(Path(p).read_text()) for p in extra_equivalence_paths]
     result=reconcile_bridge_portfolio(
         json.loads(Path(scout_path).read_text()),
         json.loads(Path(directional_path).read_text()),
         json.loads(Path(cross_version_path).read_text()),
+        extras,
     )
     if out_path:
         Path(out_path).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
