@@ -212,6 +212,18 @@ def load_short_declaration_count_probe_files(
     return dict(by_symbol)
 
 
+def load_short_declaration_name_probe_files(
+    paths: Sequence[str | Path],
+) -> dict[str, dict[str, tuple[str, ...]]]:
+    by_symbol: dict[str, dict[str, tuple[str, ...]]] = defaultdict(dict)
+    for path in paths:
+        obj = json.loads(Path(path).read_text(encoding="utf-8"))
+        env = str(obj["environment"])
+        for symbol, names in obj.get("short_declaration_names", {}).items():
+            by_symbol[str(symbol)][env] = tuple(sorted(str(x) for x in names))
+    return dict(by_symbol)
+
+
 def _is_dependent_member_symbol(symbol: str) -> bool:
     if "." not in symbol:
         return False
@@ -224,6 +236,9 @@ def refine_origin_classification(
     *,
     short_declaration_presence_by_symbol: Mapping[str, Mapping[str, bool]],
     short_declaration_count_by_symbol: Mapping[str, Mapping[str, int]] | None = None,
+    short_declaration_names_by_symbol: Mapping[
+        str, Mapping[str, Sequence[str]]
+    ] | None = None,
 ) -> dict[str, Any]:
     rows = [dict(x) for x in classification["candidates"]]
 
@@ -238,6 +253,21 @@ def refine_origin_classification(
         )
         row["upstream_short_declaration_counts"] = short_counts
         max_short_count = max(short_counts.values(), default=0)
+        short_names = {
+            env: tuple(sorted(str(x) for x in names))
+            for env, names in (
+                (short_declaration_names_by_symbol or {}).get(symbol, {})
+            ).items()
+        }
+        row["upstream_short_declaration_names"] = {
+            env: list(names) for env, names in short_names.items()
+        }
+        common_full_names: set[str] = set()
+        if short_names and all(short_names.values()):
+            sets = [set(names) for names in short_names.values()]
+            if sets:
+                common_full_names = set.intersection(*sets)
+        row["upstream_common_full_names"] = sorted(common_full_names)
         local_defs = list(row.get("local_definitions", ()))
         local_full_names = sorted({
             str(x["declaration"]) for x in local_defs
@@ -262,7 +292,12 @@ def refine_origin_classification(
             continue
 
         if row["origin_class"] == "AMBIGUOUS" and short_all:
-            if max_short_count > 1:
+            if len(common_full_names) == 1:
+                resolved = next(iter(common_full_names))
+                row["origin_class"] = "SAME_UPSTREAM_RESOLVED_REFERENCE"
+                row["bridge_action"] = "NO_PROJECT_BRIDGE_NEEDED"
+                row["resolved_upstream_name"] = resolved
+            elif len(common_full_names) > 1 or max_short_count > 1:
                 row["origin_class"] = "UPSTREAM_SHORT_NAME_COLLISION"
                 row["bridge_action"] = "REJECT_SHORT_NAME_EQUIVALENCE_RESOLVE_FULL_NAME"
             elif _is_dependent_member_symbol(symbol):
@@ -291,6 +326,7 @@ def refine_origin_classification(
         "SAME_UPSTREAM",
         "SAME_UPSTREAM_NAMESPACE_REFERENCE",
         "SAME_UPSTREAM_DEPENDENT_REFERENCE",
+        "SAME_UPSTREAM_RESOLVED_REFERENCE",
         "UPSTREAM_DEPENDENT_MEMBER_REFERENCE",
     }
     collision_classes = {
