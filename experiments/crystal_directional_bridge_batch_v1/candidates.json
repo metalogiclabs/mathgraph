@@ -1,0 +1,62 @@
+{
+  "schema": "mathgraph.crystal-directional-bridge-batch.v1",
+  "scout_authority": {
+    "run_id": 36516714974,
+    "head_sha": "11aedc70ff539298bb0bcfcfc8f9e7ec43649a1a",
+    "artifact_id": 11011366736,
+    "artifact_digest": "sha256:cf8f2b474c70257029009d627cbab243b608784f89d6268c98d17bf0fe2b651b"
+  },
+  "target_interface": "RingTheory.Sequence.IsWeaklyRegular",
+  "consumer_surface": {
+    "corpus": "imperial-flt",
+    "repository": "ImperialCollegeLondon/FLT",
+    "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+    "path": "FLT/Patching/Utils/Depth.lean",
+    "blob_sha": "a6ffefe052980deefe73acc1fb802e9164fec8a2",
+    "declaration": "Module.length_le_depth"
+  },
+  "candidates": [
+    {
+      "rank": 1,
+      "producer": "AdicCompletion.exists_isRegular_pair_of_isIntegrallyClosed_of_ringKrullDim_eq_two",
+      "path": "Theorems/Thm_AdicCompletion_exists_isRegular_pair_of_isIntegrallyClosed_of_ringKrullDim_eq_two.lean",
+      "blob_sha": "c5737c95d1fafa820f50fb89f11a53543ba70fba",
+      "qualified_wrapper": "CrystalDirectionalBridgeBatch.adicCompletion_exists_weak_pair"
+    },
+    {
+      "rank": 2,
+      "producer": "IsIntegrallyClosed.exists_isRegular_pair_of_two_le_ringKrullDim",
+      "path": "Theorems/Thm_IsIntegrallyClosed_exists_isRegular_pair_of_two_le_ringKrullDim.lean",
+      "blob_sha": "0661cc8e745a9ce704857c82d6ab7b6532b117a5",
+      "qualified_wrapper": "CrystalDirectionalBridgeBatch.integrallyClosed_exists_weak_pair"
+    },
+    {
+      "rank": 3,
+      "producer": "IsLocalRing.exists_ofList_pair_eq_maximalIdeal_and_isRegular_of_isDiscreteValuationRing_quotient",
+      "path": "Theorems/Thm_IsLocalRing_exists_ofList_pair_eq_maximalIdeal_and_isRegular_of_isDiscreteValuationRing_quotient.lean",
+      "blob_sha": "aa039eebece09db4742b9328c046a0478909aada",
+      "qualified_wrapper": "CrystalDirectionalBridgeBatch.localRing_exists_weak_pair"
+    },
+    {
+      "rank": 4,
+      "producer": "IsLocalRing.isRegular_of_systemOfParameters",
+      "path": "Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean",
+      "blob_sha": "156b86e8484a7fc53225a3e87a5b14f4a7f4eb0a",
+      "qualified_wrapper": "CrystalDirectionalBridgeBatch.systemOfParameters_weak"
+    },
+    {
+      "rank": 5,
+      "producer": "MvPowerSeries.isRegular_C_cons_X",
+      "path": "Theorems/Thm_MvPowerSeries_isRegular_C_cons_X.lean",
+      "blob_sha": "3aa9723f54ab853add41c99c649569f0a8e0b05f",
+      "qualified_wrapper": "CrystalDirectionalBridgeBatch.mvPowerSeries_weak"
+    },
+    {
+      "rank": 6,
+      "producer": "RingTheory.Sequence.isRegular_pair_of_isSMulRegular_of_isReduced_of_forall_notMem_minimalPrimes",
+      "path": "Theorems/Thm_RingTheory_Sequence_isRegular_pair_of_isSMulRegular_of_isReduced_of_forall_notMem_minimalPrimes.lean",
+      "blob_sha": "52f28b67d5bd674ab18e8a8a6c6d3ac1625b77fc",
+      "qualified_wrapper": "CrystalDirectionalBridgeBatch.reduced_pair_weak"
+    }
+  ]
+}
