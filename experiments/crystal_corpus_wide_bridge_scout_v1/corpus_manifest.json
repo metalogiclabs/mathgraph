@@ -1,0 +1,51 @@
+{
+  "schema": "mathgraph.lean-corpus-bridge-scout.v1",
+  "corpora": [
+    {
+      "corpus": "anthropic-flt",
+      "role": "producer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "include_prefixes": [
+        "Theorems"
+      ]
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "role": "consumer",
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "include_prefixes": [
+        "Fermat"
+      ]
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "include_prefixes": [
+        "FLT"
+      ]
+    }
+  ],
+  "bridge_files": [
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/RingTheory/Regular/RegularSequence.lean",
+      "blob_sha": "9b58c8f23e80cfc958d9d395d84acb0929fe5c45"
+    },
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/NumberTheory/FLT/Basic.lean",
+      "blob_sha": "c21f4b48f7231a5782d0ea07442d963b0c6cc7f5"
+    }
+  ],
+  "top_k": 20
+}
