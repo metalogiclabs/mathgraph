@@ -41,25 +41,20 @@ jobs:
           cp -a /tmp/stockfish-base /tmp/stockfish-cand
           mkdir -p artifacts/crystal-chess-v55/{fast,mid,slow}
           python - <<'PY'
+          import re
           from pathlib import Path
           p=Path('/tmp/stockfish-cand/src/search.cpp')
           s=p.read_text()
-          old="""            double highBestMoveEffort = std::clamp(
-              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
-
-            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-          """
-          new="""            double highBestMoveEffort = std::clamp(
-              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
+          pat=r'''(            double highBestMoveEffort = std::clamp\(
+          \s*interpolate\(i64\(nodesEffort\), i64\(75800\), i64\(104510\), 0\.969, 0\.714\), 0\.693, 0\.838\);)'''
+          repl=r'''\1
 
             // Crystal V55: V54 residual-earned absolute clock-regime gate.
             if (mainThread->tm.optimum() <= 64)
-                highBestMoveEffort = 1.0;
-
-            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-          """
-          assert s.count(old)==1, ('V55 anchor drift',s.count(old))
-          p.write_text(s.replace(old,new,1))
+                highBestMoveEffort = 1.0;'''
+          s,n=re.subn(pat,repl,s,count=1)
+          assert n==1, ('V55 anchor drift',n)
+          p.write_text(s)
           PY
           git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v55/stockfish.patch
           test -s artifacts/crystal-chess-v55/stockfish.patch
