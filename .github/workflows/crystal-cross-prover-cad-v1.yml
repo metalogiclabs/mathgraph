@@ -1,4 +1,5 @@
 name: Crystal Cross-Prover CAD Semantic Linker V1
+# cross-prover qualification gate
 
 on:
   push:
