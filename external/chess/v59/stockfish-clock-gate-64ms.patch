@@ -1,0 +1,13 @@
+diff --git a/src/search.cpp b/src/search.cpp
+--- a/src/search.cpp
++++ b/src/search.cpp
+@@ -599,6 +599,10 @@
+             double highBestMoveEffort = std::clamp(
+               interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
+ 
++            // Avoid discounting time for high incumbent effort in very short local budgets.
++            if (mainThread->tm.optimum() <= 64)
++                highBestMoveEffort = 1.0;
++
+             double totalTime = mainThread->tm.optimum() * fallingEval * reduction
+                              * bestMoveInstability * highBestMoveEffort;
