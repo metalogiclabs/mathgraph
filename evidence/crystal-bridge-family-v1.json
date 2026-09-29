@@ -1,0 +1,51 @@
+{
+  "schema": "mathgraph.crystal-bridge-family-authority.v1",
+  "status": "REUSABLE",
+  "authority": {
+    "run_id": 36521079316,
+    "head_sha": "fb19dc84940613f18e522b4f86231a764199e107",
+    "artifact_id": 11012527156,
+    "artifact_digest": "sha256:6c20aec3f1b865dfb96b21cdc929b3e878f3d911a6077a40896dda9ffe2ed6e9"
+  },
+  "source_qualification": {
+    "run_id": 36520600540,
+    "artifact_id": 11013365544,
+    "artifact_digest": "sha256:32de829935209bf82ad3c0f19de3bcdcc24458561cfd63179090505794266d1b",
+    "qualified_producers": 6,
+    "rejected": 0,
+    "unknown": 0
+  },
+  "compiled": {
+    "interface_id": "lean.consequence.ring-theory.sequence.is-weakly-regular@1",
+    "law_object_id": "semantic:b29d5cb097b7b845014e0089caea059ae6dae8a3fdf02014ac008f6537e3099a",
+    "adapter_contract_id": "adapter:6062fcbdda146b8c6a50d84f1544bc7fc99ab7d9d4fdb3fdd45ce14ae530c660",
+    "producer_object_ids": [
+      "semantic:d31d33cb6c71c293eb4474b0fd303a1c020d36b380a62195cb3927426bab859f",
+      "semantic:2f0e14a764e762c84392508e75bfa8950bc7aa25a6ca790402b247fdb52bdbc0",
+      "semantic:a90884fd3c7a2aec05de0b7acc48155f5f61bdd79545e49885fb8e4807bac1a4",
+      "semantic:38ad0a99e5cc77187dd0992e361d38b733585d0bc7a050ba1831465bbbb968c8",
+      "semantic:983b57f7ebe23dd11221bc2ca0243c90b1b8217bec951fb7422fe0807e91a31c",
+      "semantic:1755345c6e30d40ad192834fa860a6c30fe8ccd84eebe26b594cc41c17ec61f4"
+    ],
+    "producer_count": 6,
+    "producer_identity_preserved": true,
+    "law_shared_once": true
+  },
+  "systems_law": {
+    "name": "verified consequence-law amortization",
+    "statement": "A single independently qualified consequence law can compile multiple distinct producer theorems into one protected consumer interface without quotienting away producer identity or provenance.",
+    "bounded_to": "the six pinned Anthropic IsRegular producers and the IsRegular.toIsWeaklyRegular consequence law"
+  },
+  "revocation_boundary": [
+    "directional qualification authority is revoked",
+    "source producer pins change",
+    "bridge law changes",
+    "consumer protected interface changes",
+    "family compiler no longer passes"
+  ],
+  "unknowns": [
+    "universal consequence-law discovery",
+    "arbitrary bridge synthesis",
+    "cross-version proof-object transport"
+  ]
+}
