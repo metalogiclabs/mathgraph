@@ -1,0 +1,44 @@
+name: Crystal Cross-Prover Closeout Probe V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-closeout-probe-v1
+    paths:
+      - 'experiments/crystal_cross_prover_closeout_probe_v1/**'
+      - '.github/workflows/crystal-cross-prover-closeout-probe-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean-closeout-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check all remaining true obligations and false controls
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-closeout-probe
+          mkdir -p "$ROOT"
+          cp experiments/crystal_cross_prover_closeout_probe_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-closeout-probe"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
