@@ -1,0 +1,61 @@
+name: TaskSAT Crystal Lean-Z3 commuting audit v4
+
+on:
+  push:
+    branches:
+      - tasksat-crystal-optional-zone-audit-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-semantics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch pinned TaskSAT
+        run: |
+          git clone https://github.com/nasa-jpl/tasksat.git /tmp/tasksat
+          git -C /tmp/tasksat checkout f9d6063b45967a3fea578c47f54806aadaafe1b0
+          test "$(git -C /tmp/tasksat rev-parse HEAD)" = "f9d6063b45967a3fea578c47f54806aadaafe1b0"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r /tmp/tasksat/requirements.txt
+
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build TaskSAT Lean validator
+        shell: bash
+        run: |
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd /tmp/tasksat/src/lean/TaskNetExec
+          lake build tasknet-validate
+          test -x .lake/build/bin/tasknet-validate
+
+      - name: Run Lean versus Python/Z3 semantic witnesses
+        shell: bash
+        run: |
+          export PATH="$HOME/.elan/bin:$PATH"
+          python experiments/tasksat_optional_zone_audit_v1/audit_v4_cross_semantics.py \
+            /tmp/tasksat /tmp/tasksat/src/lean/TaskNetExec/.lake/build/bin/tasknet-validate \
+            | tee tasksat_cross_semantics_v4.log
+          grep -q PASS_TASKSAT_LEAN_Z3_COMMUTING_FAILURE tasksat_cross_semantics_v4.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tasksat-cross-semantics-v4
+          path: |
+            tasksat_cross_semantics_v4_evidence.json
+            tasksat_cross_semantics_v4.log
