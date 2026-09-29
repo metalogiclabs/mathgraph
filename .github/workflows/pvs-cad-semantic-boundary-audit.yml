@@ -1,0 +1,79 @@
+name: PVS CAD Semantic Boundary Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [pvs-cad-semantic-boundary-audit-v1]
+    paths:
+      - 'experiments/pvs_cad/**'
+      - '.github/workflows/pvs-cad-semantic-boundary-audit.yml'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pin upstream pvs_cad
+        run: |
+          git clone https://github.com/j-tanner-slagel/pvs_cad.git /tmp/pvs_cad
+          cd /tmp/pvs_cad
+          git checkout 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          test "$(git rev-parse HEAD)" = "8750362e99c2ba0e9a0307dcaa39b9766c562feb"
+
+      - name: Install PVS 8.1 and NASALib
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/pvs-install
+          cd /tmp/pvs-install
+          python3 - <<'PY'
+          import json, urllib.request
+          releases=json.load(urllib.request.urlopen("https://api.github.com/repos/SRI-CSL/PVS/releases"))
+          rel=next(r for r in releases if r["tag_name"].startswith("v8.1"))
+          assets=rel["assets"]
+          for a in assets:
+              print(a["name"], a["browser_download_url"])
+          PY
+          URL=$(python3 - <<'PY'
+          import json, urllib.request
+          releases=json.load(urllib.request.urlopen("https://api.github.com/repos/SRI-CSL/PVS/releases"))
+          rel=next(r for r in releases if r["tag_name"].startswith("v8.1"))
+          cand=[a for a in rel["assets"] if "linux" in a["name"].lower() and ("x86_64" in a["name"].lower() or "amd64" in a["name"].lower())]
+          if not cand: raise SystemExit("No Linux x86_64 PVS 8.1 asset")
+          print(cand[0]["browser_download_url"])
+          PY
+          )
+          curl -L "$URL" -o pvs.tar.gz
+          mkdir pvs
+          tar -xzf pvs.tar.gz -C pvs --strip-components=1 || tar -xzf pvs.tar.gz -C pvs
+          echo "/tmp/pvs-install/pvs" >> "$GITHUB_PATH"
+          git clone --depth 1 https://github.com/nasa/pvslib.git /tmp/pvslib
+          echo "PVS_DIR=/tmp/pvs-install/pvs" >> "$GITHUB_ENV"
+          echo "NASALIB=/tmp/pvslib" >> "$GITHUB_ENV"
+
+      - name: Prepare isolated audit theory
+        run: |
+          cp -a /tmp/pvs_cad/cad /tmp/cad-audit
+          cp experiments/pvs_cad/BoundaryAudit.pvs /tmp/cad-audit/
+
+      - name: Typecheck audit
+        working-directory: /tmp/cad-audit
+        run: |
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/pvs_cad/cad"
+          proveit -t BoundaryAudit.pvs
+
+      - name: Execute boundary suite
+        working-directory: /tmp/cad-audit
+        run: |
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/pvs_cad/cad"
+          proveit -f BoundaryAudit.pvs | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"
+          if grep -E "unfinished|unproved|fewer subproofs|Error|ERROR" "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"; then
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pvs-cad-semantic-boundary-audit
+          path: experiments/pvs_cad/audit.log
