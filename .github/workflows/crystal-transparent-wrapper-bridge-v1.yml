@@ -1,0 +1,129 @@
+name: Crystal Transparent Wrapper Bridge V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-expansion-pfr-v1
+    paths:
+      - 'experiments/crystal_transparent_wrapper_bridge_v1/**'
+      - '.github/workflows/crystal-transparent-wrapper-bridge-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Construct common pinned qualification environment
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-transparent-wrapper
+          mkdir -p "$ROOT/PFR/ForMathlib/FiniteRange" "$ROOT/Definitions"
+          printf '%s\n' 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-transparent-wrapper-bridge"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "ec6a61cec0d8f9fda04453e9bb5761a79aa43a70"
+
+          [[lean_lib]]
+          name = "PFR"
+
+          [[lean_lib]]
+          name = "Definitions"
+          EOF
+
+          curl -fsSL -o "$ROOT/PFR/ForMathlib/FiniteRange/Defs.lean"             https://raw.githubusercontent.com/teorth/pfr/eb5557e9556a89a3418c4e8bdd717a5cf736c060/PFR/ForMathlib/FiniteRange/Defs.lean
+          curl -fsSL -o "$ROOT/Definitions/Def_RepTheory_TestFunctionAction.lean"             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2/Definitions/Def_RepTheory_TestFunctionAction.lean
+          cp experiments/crystal_transparent_wrapper_bridge_v1/Bridge.lean "$ROOT/Bridge.lean"
+          cp experiments/crystal_transparent_wrapper_bridge_v1/manifest.json "$ROOT/manifest.json"
+
+      - name: Verify exact source pins
+        working-directory: /tmp/crystal-transparent-wrapper
+        run: |
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          m=json.loads(Path("manifest.json").read_text())
+          for item in (m["source"],m["consumer"]):
+              data=Path(item["path"]).read_bytes()
+              got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert got==item["blob_sha"], (item["path"],got,item["blob_sha"])
+              print("PIN_OK",item["corpus"],item["path"],got)
+          PY
+
+      - name: Resolve Mathlib and cache
+        working-directory: /tmp/crystal-transparent-wrapper
+        run: |
+          set -euo pipefail
+          lake update
+          grep -q 'ec6a61cec0d8f9fda04453e9bb5761a79aa43a70' lake-manifest.json
+          lake exe cache get
+
+      - name: Build exact source modules
+        working-directory: /tmp/crystal-transparent-wrapper
+        run: |
+          set -euo pipefail
+          lake build             PFR.ForMathlib.FiniteRange.Defs             Definitions.Def_RepTheory_TestFunctionAction
+
+      - name: Qualify non-name structural bridge
+        working-directory: /tmp/crystal-transparent-wrapper
+        run: |
+          set -euo pipefail
+          START="$(date +%s)"
+          lake env lean Bridge.lean
+          END="$(date +%s)"
+          echo "$((END-START))" > qualification_seconds.txt
+          ! grep -InE '\b(sorry|admit|axiom)\b' Bridge.lean
+
+      - name: Emit bounded authority
+        working-directory: /tmp/crystal-transparent-wrapper
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("manifest.json").read_text())
+          seconds=int(Path("qualification_seconds.txt").read_text())
+          out={
+              "schema":"mathgraph.crystal-transparent-wrapper-bridge-result.v1",
+              "status":"WARRANTED_BOUNDED_REUSABLE",
+              "source":m["source"],
+              "consumer":m["consumer"],
+              "canonical_interface":m["canonical_interface"],
+              "qualification_environment":m["qualification_environment"],
+              "qualified_laws":[
+                  "FiniteRange X ↔ (Set.range X).Finite",
+                  "PFR FiniteRange premise feeds Anthropic finiteRangeIntegral_of_finite",
+                  "PFR constant-function FiniteRange instance feeds Anthropic consumer"
+              ],
+              "bridge_kind":"STRUCTURAL_TRANSPARENT_WRAPPER_DIFFERENT_NAME",
+              "qualification_seconds":seconds,
+              "source_proof_reformalized_loc":0,
+              "unknowns":[
+                  "automatic discovery of arbitrary differently-named semantic equivalences",
+                  "compiled proof-object transport between original PFR and Anthropic toolchains",
+                  "minimality of the canonical interface beyond this consumer consequence"
+              ]
+          }
+          Path("result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+          cp result.json "$GITHUB_WORKSPACE/experiments/crystal_transparent_wrapper_bridge_v1/result.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-transparent-wrapper-bridge-v1
+          path: experiments/crystal_transparent_wrapper_bridge_v1/result.json
