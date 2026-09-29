@@ -135,3 +135,70 @@ def test_multiple_upstream_short_definitions_reject_name_only_equivalence():
     assert row["origin_class"]=="UPSTREAM_SHORT_NAME_COLLISION"
     assert out["short_name_collision_count"]==1
     assert out["project_bridge_residual_count"]==0
+
+
+def test_unique_common_upstream_full_name_closes_namespace_residual():
+    from mathgraph.lean_bridge_origin import refine_origin_classification
+
+    base={
+        "candidates":[{
+            "symbol":"FiniteIndex",
+            "candidate_id":"equiv:FiniteIndex",
+            "origin_class":"AMBIGUOUS",
+            "bridge_action":"RESOLVE_ORIGIN_BEFORE_PROOF_SEARCH",
+            "local_definitions":[],
+            "already_qualified_reusable":False,
+        }]
+    }
+    presence={"FiniteIndex":{"a":True,"b":True,"c":True}}
+    counts={"FiniteIndex":{"a":2,"b":2,"c":2}}
+    names={"FiniteIndex":{
+        "a":["AddSubgroup.FiniteIndex","Subgroup.FiniteIndex"],
+        "b":["AddSubgroup.FiniteIndex","Subgroup.FiniteIndex"],
+        "c":["AddSubgroup.FiniteIndex","Subgroup.FiniteIndex"],
+    }}
+    out=refine_origin_classification(
+        base,
+        short_declaration_presence_by_symbol=presence,
+        short_declaration_count_by_symbol=counts,
+        short_declaration_names_by_symbol=names,
+    )
+    row=out["candidates"][0]
+    assert row["origin_class"]=="UPSTREAM_SHORT_NAME_COLLISION"
+    assert out["project_bridge_residual_count"]==0
+
+
+def test_single_exact_upstream_referent_is_not_a_bridge():
+    from mathgraph.lean_bridge_origin import refine_origin_classification
+
+    base={
+        "candidates":[{
+            "symbol":"AdeleRing",
+            "candidate_id":"equiv:AdeleRing",
+            "origin_class":"AMBIGUOUS",
+            "bridge_action":"RESOLVE_ORIGIN_BEFORE_PROOF_SEARCH",
+            "local_definitions":[],
+            "already_qualified_reusable":False,
+        }]
+    }
+    presence={"AdeleRing":{"a":False,"b":False,"c":False}}
+    short={"AdeleRing":{"a":True,"b":True,"c":True}}
+    counts={"AdeleRing":{"a":1,"b":1,"c":1}}
+    names={"AdeleRing":{
+        "a":["NumberField.AdeleRing"],
+        "b":["NumberField.AdeleRing"],
+        "c":["NumberField.AdeleRing"],
+    }}
+    # Exact-name presence is false because the scout emitted a short reference;
+    # the source environment nevertheless has one identical fully-qualified referent.
+    base["candidates"][0]["origin_class"]="AMBIGUOUS"
+    out=refine_origin_classification(
+        base,
+        short_declaration_presence_by_symbol=short,
+        short_declaration_count_by_symbol=counts,
+        short_declaration_names_by_symbol=names,
+    )
+    row=out["candidates"][0]
+    assert row["origin_class"]=="SAME_UPSTREAM_RESOLVED_REFERENCE"
+    assert row["resolved_upstream_name"]=="NumberField.AdeleRing"
+    assert out["no_project_bridge_needed_count"]==1
