@@ -118,18 +118,35 @@ def classify_report(
     upstream_presence_by_symbol: Mapping[str, Mapping[str, bool]],
     local_definition_evidence: Mapping[str, Sequence[LocalDefinitionEvidence]],
     qualified_candidate_ids: Sequence[str] = (),
+    environment_by_corpus: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     qualified = set(qualified_candidate_ids)
     rows: list[dict[str, Any]] = []
 
     for candidate in report["top_equivalence_candidates"]:
         symbol = str(candidate["canonical_symbol"])
+        corpora = tuple(str(x) for x in candidate.get("corpora", ()))
+        all_presence = dict(upstream_presence_by_symbol.get(symbol, {}))
+        if environment_by_corpus:
+            relevant_envs = tuple(
+                environment_by_corpus[c]
+                for c in corpora
+                if c in environment_by_corpus
+            )
+            presence = {
+                env: all_presence.get(env, False)
+                for env in relevant_envs
+            }
+        else:
+            relevant_envs = tuple(all_presence)
+            presence = all_presence
         row = classify_origin(
             symbol,
-            corpus_uses=candidate.get("corpora", ()),
-            upstream_presence=upstream_presence_by_symbol.get(symbol, {}),
+            corpus_uses=corpora,
+            upstream_presence=presence,
             local_definitions=local_definition_evidence.get(symbol, ()),
         )
+        row["upstream_environments"] = list(relevant_envs)
         row["scout_rank"] = candidate.get("rank")
         row["already_qualified_reusable"] = row["candidate_id"] in qualified
         rows.append(row)
@@ -244,20 +261,30 @@ def refine_origin_classification(
 
     for row in rows:
         symbol = str(row["symbol"])
-        short_presence = dict(
+        all_short_presence = dict(
             short_declaration_presence_by_symbol.get(symbol, {})
         )
+        relevant_envs = tuple(row.get("upstream_environments", all_short_presence))
+        short_presence = {
+            env: all_short_presence.get(env, False)
+            for env in relevant_envs
+        }
         short_all = bool(short_presence) and all(short_presence.values())
-        short_counts = dict(
+        all_short_counts = dict(
             (short_declaration_count_by_symbol or {}).get(symbol, {})
         )
+        short_counts = {
+            env: int(all_short_counts.get(env, 0))
+            for env in relevant_envs
+        }
         row["upstream_short_declaration_counts"] = short_counts
         max_short_count = max(short_counts.values(), default=0)
+        all_short_names = (
+            (short_declaration_names_by_symbol or {}).get(symbol, {})
+        )
         short_names = {
-            env: tuple(sorted(str(x) for x in names))
-            for env, names in (
-                (short_declaration_names_by_symbol or {}).get(symbol, {})
-            ).items()
+            env: tuple(sorted(str(x) for x in all_short_names.get(env, ())))
+            for env in relevant_envs
         }
         row["upstream_short_declaration_names"] = {
             env: list(names) for env, names in short_names.items()
