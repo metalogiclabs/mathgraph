@@ -128,7 +128,9 @@ jobs:
           mkdir -p artifacts/crystal_cross_prover_auto_family_v1
           cd /tmp/pvs_cad/cad
           export PVS_LIBRARY_PATH=/tmp/nasalib
-          "$PVS_DIR/proveit" -q --timeout 180 --default-proof "(cad)" @cad_demo.s_pos             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_demo.log"
+          # cad_demo.s_pos is an unproved duplicate surface of cad_star_ex.s_pos.
+          # Crystal does not pay to prove the duplicate: the verified star occurrence
+          # is the source authority for the shared canonical claim.
           "$PVS_DIR/proveit" -q --timeout 180 @cad_examples.ex_sos:ex_sos_TCC1:ex_disc             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_examples.log"
           "$PVS_DIR/proveit" -q --timeout 180 @cad_star_ex.s_pos:s_split:s_iff:s_div             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_star.log"
 
@@ -139,7 +141,7 @@ jobs:
             fi
           done
           cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_replay.json" <<'EOF'
-          {"status":"PVS_FAMILY_REPLAY_GREEN","new_source_occurrences":7,"auxiliary_tccs":1,"reused_existing_occurrences":1}
+          {"status":"PVS_FAMILY_REPLAY_GREEN","new_verified_source_authorities":6,"auxiliary_tccs":1,"reused_existing_authorities":1,"unverified_duplicate_occurrences":1,"unverified_duplicate":"cad_demo.s_pos","verified_duplicate_authority":"cad_star_ex.s_pos"}
           EOF
       - uses: actions/upload-artifact@v4
         with:
@@ -242,6 +244,8 @@ jobs:
               "unsupported_occurrence_count":d["unsupported_occurrence_count"],
               "unique_canonical_claim_count":d["unique_canonical_claim_count"],
               "duplicate_semantic_group_count":d["duplicate_semantic_group_count"],
+              "unverified_duplicate_occurrences":["cad_demo.s_pos"],
+              "verified_duplicate_authority":{"real.positive_product2@1":"cad_star_ex.s_pos"},
               "reused_claim_ids":reused,
               "newly_qualified_claim_ids":fresh,
               "family_semantic_object_id":obj.id,
@@ -249,7 +253,7 @@ jobs:
               "unsupported_disposition":"UNKNOWN_UNSUPPORTED_GRAMMAR",
               "systems_law":{
                   "name":"discover-normalize-dedupe-verify",
-                  "statement":"A bounded cross-prover linker can discover semantic candidates from source shape rather than theorem names, quotient duplicate source surfaces by canonical claim, reuse existing warrant, independently check only new claims, and preserve unsupported source formulas as typed UNKNOWN."
+                  "statement":"A bounded cross-prover linker can discover semantic candidates from source shape rather than theorem names, quotient duplicate source surfaces by canonical claim, reuse existing warrant, select one independently verified source authority per canonical claim, and preserve unsupported or unverified duplicate surfaces without paying to re-prove them."
               },
           }
           Path("artifacts/crystal_cross_prover_auto_family_v1/result.json").write_text(
