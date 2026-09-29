@@ -36,7 +36,7 @@ Suggested commit message:
     protocol screens. No board classifier or additional search heuristic is
     introduced.
 
-    Bench: <copy exact V59 BENCH_SIGNATURE value>
+    Bench: 1495562
 
 9. Push the branch to the Stockfish fork.
 10. On Fishtest, use that fork as the Test repository and the exact branch name.
