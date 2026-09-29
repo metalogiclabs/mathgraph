@@ -1,4 +1,5 @@
 from mathgraph.cross_prover_family_discovery import (
+    annotate_replayability,
     compile_family_bundle,
     discover_family,
     extract_pvs_lemmas,
