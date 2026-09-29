@@ -68,8 +68,8 @@ jobs:
         working-directory: /tmp/cad-audit
         run: |
           export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/pvs_cad/cad"
-          proveit -f BoundaryAudit.pvs | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"
-          if grep -E "unfinished|unproved|fewer subproofs|Error|ERROR" "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"; then
+          proveit -f BoundaryAudit.pvs -s "cad" | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"
+          if grep -E "unfinished|unproved|untried|Missed|fewer subproofs|Error|ERROR" "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"; then
             exit 1
           fi
 
