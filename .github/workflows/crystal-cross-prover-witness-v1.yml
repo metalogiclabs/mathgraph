@@ -1,0 +1,248 @@
+name: Crystal Cross-Prover Witness Family V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-witness-v1
+    paths:
+      - 'mathgraph/cross_prover_witness_certificate.py'
+      - 'tests/test_cross_prover_witness_certificate.py'
+      - 'mathgraph/cross_prover_residual_router.py'
+      - 'mathgraph/cross_prover_family_discovery.py'
+      - 'experiments/crystal_cross_prover_auto_family_v1/**'
+      - '.github/workflows/crystal-cross-prover-witness-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test witness compiler
+        run: python -m pytest -q tests/test_cross_prover_witness_certificate.py tests/test_cross_prover_residual_router.py tests/test_cross_prover_family_discovery.py
+      - name: Reconstruct exact residual and compile witness family
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/crystal_cross_prover_witness_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_demo.pvs cad_examples.pvs cad_star_ex.pvs; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family
+          from mathgraph.cross_prover_residual_router import route_discovery
+          from mathgraph.cross_prover_witness_certificate import (
+              discover_witness_batch, render_lean_witness_file,
+          )
+
+          family=discover_family({
+              "cad_demo":Path("/tmp/pvs-family/cad_demo.pvs").read_text(),
+              "cad_examples":Path("/tmp/pvs-family/cad_examples.pvs").read_text(),
+              "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.pvs").read_text(),
+          })
+          routing=route_discovery(family)
+          d=discover_witness_batch(routing)
+          assert d["input_witness_residual_count"]==13,d
+          assert d["matched_count"]==13,d
+          assert d["qualify_true_count"]==12,d
+          assert d["reject_false_count"]==1,d
+          assert d["unmatched_count"]==0,d
+
+          out=Path("artifacts/crystal_cross_prover_witness_v1")
+          out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          out.joinpath("Surface.lean").write_text(render_lean_witness_file(d))
+          print(json.dumps({
+              "input":d["input_witness_residual_count"],
+              "matched":d["matched_count"],
+              "qualify_true":d["qualify_true_count"],
+              "reject_false":d["reject_false_count"],
+              "unmatched":d["unmatched_count"],
+              "claims":[x["claim_id"] for x in d["matched"]],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-witness-discovery-v1
+          path: artifacts/crystal_cross_prover_witness_v1/
+
+  pvs-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+      - name: Pin NASALib and PVS CAD
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay twelve true sources plus exact negation authority
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_witness_v1
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+
+          "$PVS_DIR/proveit" -q --timeout 180             @cad_demo.d_cubic:d_cubic_TCC1:d_meet:d_no_inverse:d_between:d_cone:d_square:t_sqrt2             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_witness_v1/pvs_demo.log"
+
+          "$PVS_DIR/proveit" -q --timeout 180             @cad_examples.ex_above:ex_zero:ex_circle:ex_circle2:ex_line:ex_three             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_witness_v1/pvs_examples.log"
+
+          for log in "$GITHUB_WORKSPACE"/artifacts/crystal_cross_prover_witness_v1/pvs_*.log; do
+            grep -q "Grand Totals:" "$log"
+            if grep -Ei "unfinished|untried|unchecked" "$log"; then
+              exit 1
+            fi
+          done
+          cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_witness_v1/pvs_replay.json" <<'EOF'
+          {"status":"PVS_WITNESS_SOURCE_REPLAY_GREEN","true_source_claims":12,"false_source_claims":1,"false_source_authority":"cad_demo.d_no_inverse","auxiliary_tccs":1}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-witness-pvs-v1
+          path: artifacts/crystal_cross_prover_witness_v1/
+
+  lean-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-witness-discovery-v1
+          path: /tmp/witness
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check all thirteen witness/refutation certificates
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-witness
+          mkdir -p "$ROOT"
+          cp /tmp/witness/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-witness"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_witness_v1"
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_witness_v1/lean_surface.sha256"
+          cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_witness_v1/lean_replay.json" <<'EOF'
+          {"status":"LEAN_WITNESS_CERTIFICATE_REPLAY_GREEN","true_claims":12,"refuted_claims":1}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-witness-lean-v1
+          path: artifacts/crystal_cross_prover_witness_v1/
+
+  promote:
+    needs: [discover,pvs-replay,lean-replay]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-witness-discovery-v1
+          path: /tmp/witness
+      - name: Compile witness family and close dominant residual
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_witness_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from mathgraph.cross_prover_witness_certificate import compile_witness_bundle
+
+          d=json.loads(Path("/tmp/witness/discovery.json").read_text())
+          obj=compile_witness_bundle(
+              d,
+              evidence_refs=[
+                  f"github-run:{os.environ['RUN_ID']}:pvs-replay",
+                  f"github-run:{os.environ['RUN_ID']}:lean-replay",
+                  "github-run:36626725979:residual-router",
+              ],
+          )
+          out={
+              "schema":"mathgraph.crystal-cross-prover-witness-result.v1",
+              "status":"WARRANTED_BOUNDED_WITNESS_FAMILY",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "input_witness_residual_count":d["input_witness_residual_count"],
+              "qualified_true_count":d["qualify_true_count"],
+              "rejected_false_count":d["reject_false_count"],
+              "unmatched_count":d["unmatched_count"],
+              "semantic_object_id":obj.id,
+              "interfaces":list(obj.interfaces),
+              "closed_residual_class":"EXISTENTIAL_WITNESS",
+              "remaining_router_state":{
+                  "unsupported_before":26,
+                  "closed_now":13,
+                  "remaining":13,
+              },
+              "systems_law":{
+                  "name":"residual-earned certificate grammar",
+                  "statement":"After routing unsupported cross-prover formulas by consequence shape, Crystal can compile the dominant existential class into concrete witness or refutation certificates, independently replay native source authority, and close only that class without widening unrelated grammar."
+              },
+          }
+          Path("artifacts/crystal_cross_prover_witness_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-witness-v1
+          path: artifacts/crystal_cross_prover_witness_v1/result.json
