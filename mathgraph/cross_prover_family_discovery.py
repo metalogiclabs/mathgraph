@@ -274,6 +274,64 @@ def _specs() -> dict[str, ClaimSpec]:
         ),
     )
 
+    # V3: algebraic-root witness family.  These exact source meanings share
+    # one constructor: prove a radicand nonnegative, synthesize a real sqrt
+    # witness, then discharge the remaining polynomial identity independently.
+    add(
+        "FORALL (x: real): FORALL (y: real): EXISTS (z: real): z^2 = x^2 + y^2",
+        ClaimSpec(
+            "real.sum_squares_has_root@1",
+            "algebraic_root_witness",
+            "sum_squares_has_root",
+            "(x y : ℝ) : ∃ z : ℝ, z ^ 2 = x ^ 2 + y ^ 2",
+            """by
+  have h : 0 ≤ x ^ 2 + y ^ 2 := by positivity
+  refine ⟨Real.sqrt (x ^ 2 + y ^ 2), ?_⟩
+  exact Real.sq_sqrt h""",
+        ),
+    )
+    add(
+        "EXISTS (x: real): x^2 = 2",
+        ClaimSpec(
+            "real.sqrt_two_exists@1",
+            "algebraic_root_witness",
+            "sqrt_two_exists",
+            ": ∃ x : ℝ, x ^ 2 = 2",
+            """by
+  refine ⟨Real.sqrt 2, ?_⟩
+  exact Real.sq_sqrt (by norm_num)""",
+        ),
+    )
+    add(
+        "FORALL (x: real): EXISTS (y: real): x^2 + y^2 = 1 OR x^2 > 1",
+        ClaimSpec(
+            "real.circle_or_outside@1",
+            "algebraic_root_witness",
+            "circle_or_outside",
+            "(x : ℝ) : ∃ y : ℝ, x ^ 2 + y ^ 2 = 1 ∨ x ^ 2 > 1",
+            """by
+  by_cases h : x ^ 2 > 1
+  · exact ⟨0, Or.inr h⟩
+  · have hx : 0 ≤ 1 - x ^ 2 := by linarith
+    refine ⟨Real.sqrt (1 - x ^ 2), Or.inl ?_⟩
+    have hs : (Real.sqrt (1 - x ^ 2)) ^ 2 = 1 - x ^ 2 := Real.sq_sqrt hx
+    nlinarith""",
+        ),
+    )
+    add(
+        "FORALL (x: real): x > 0 IMPLIES EXISTS (y: real): y * y = x",
+        ClaimSpec(
+            "real.positive_has_square_root@1",
+            "algebraic_root_witness",
+            "positive_has_square_root",
+            "(x : ℝ) : x > 0 → ∃ y : ℝ, y * y = x",
+            """by
+  intro hx
+  refine ⟨Real.sqrt x, ?_⟩
+  simpa [pow_two] using Real.sq_sqrt hx.le""",
+        ),
+    )
+
     return dict(rows)
 
 
