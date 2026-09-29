@@ -1,0 +1,301 @@
+name: Crystal Cross-Prover Auto Family V2
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-auto-family-v2
+    paths:
+      - 'experiments/crystal_cross_prover_auto_family_v2/**'
+      - 'mathgraph/cross_prover_family_discovery.py'
+      - 'tests/test_cross_prover_family_discovery.py'
+      - '.github/workflows/crystal-cross-prover-auto-family-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test semantic discovery kernel
+        run: python -m pytest -q tests/test_cross_prover_family_discovery.py
+      - name: Discover V2 family from exact pinned PVS sources
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/crystal_cross_prover_auto_family_v2
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_demo.pvs cad_demo.prf cad_examples.pvs cad_examples.prf cad_star_ex.pvs cad_star_ex.prf; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family,render_lean_family
+
+          manifest=json.loads(Path("experiments/crystal_cross_prover_auto_family_v2/manifest.json").read_text())
+          by_path={}
+          for row in manifest["source"]["files"]:
+              by_path[Path(row["source_path"]).name]=row["source_blob_sha"]
+              by_path[Path(row["proof_path"]).name]=row["proof_blob_sha"]
+
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+
+          for name,want in by_path.items():
+              data=Path("/tmp/pvs-family",name).read_bytes()
+              got=git_blob(data)
+              assert got==want,(name,got,want)
+              print("PIN_OK",name,got)
+
+          sources={
+              "cad_demo":Path("/tmp/pvs-family/cad_demo.pvs").read_text(),
+              "cad_examples":Path("/tmp/pvs-family/cad_examples.pvs").read_text(),
+              "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.pvs").read_text(),
+          }
+          proofs={
+              "cad_demo":Path("/tmp/pvs-family/cad_demo.prf").read_text(),
+              "cad_examples":Path("/tmp/pvs-family/cad_examples.prf").read_text(),
+              "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.prf").read_text(),
+          }
+
+          d=discover_family(sources,proofs)
+          assert d["source_lemma_count"]==34,d
+          assert d["supported_occurrence_count"]==15,d
+          assert d["source_verified_occurrence_count"]==14,d
+          assert d["source_unverified_supported_occurrence_count"]==1,d
+          assert d["unsupported_occurrence_count"]==19,d
+          assert d["unique_canonical_claim_count"]==14,d
+          assert d["verified_unique_claim_count"]==14,d
+          assert d["duplicate_semantic_group_count"]==1,d
+
+          reused=set(manifest["reused_claim_ids"])
+          expected_fresh=set(manifest["new_constructor"]["new_claim_ids"])
+          supported={x["claim_id"] for x in d["unique_claims"]}
+          fresh=supported-reused
+          assert fresh==expected_fresh,(sorted(fresh),sorted(expected_fresh))
+          by_claim={x["claim_id"]:x for x in d["unique_claims"]}
+          assert all(by_claim[c]["certificate_schema"]=="explicit_witness" for c in fresh)
+
+          unsupported={
+              f"{x['theory']}.{x['formula']}":x["status"]
+              for x in d["unsupported_occurrences"]
+          }
+          for control in manifest["negative_controls"]:
+              assert unsupported.get(control)=="UNKNOWN_UNSUPPORTED_GRAMMAR",(control,unsupported.get(control))
+
+          unverified=[
+              x for x in d["supported_occurrences"]
+              if x["source_proof_status"]=="NO_PINNED_PROOF"
+          ]
+          assert len(unverified)==1,unverified
+          assert unverified[0]["theory"]=="cad_demo" and unverified[0]["formula"]=="s_pos",unverified
+
+          out=Path("artifacts/crystal_cross_prover_auto_family_v2")
+          out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          out.joinpath("Surface.lean").write_text(render_lean_family(d,skip_claim_ids=sorted(reused)))
+          print(json.dumps({
+              "source_lemmas":d["source_lemma_count"],
+              "supported_occurrences":d["supported_occurrence_count"],
+              "unique_claims":d["unique_canonical_claim_count"],
+              "reused_claims":len(reused),
+              "new_explicit_witness_claims":len(fresh),
+              "unsupported_remaining":d["unsupported_occurrence_count"],
+              "negative_controls_preserved":len(manifest["negative_controls"]),
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-auto-family-v2-discovery
+          path: artifacts/crystal_cross_prover_auto_family_v2/
+
+  pvs-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+          test -x "$PVS_DIR/proveit"
+      - name: Pin NASALib and PVS CAD
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay only seven newly discovered source authorities
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_auto_family_v2
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_between:d_square \
+            | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v2/pvs_demo.log"
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_examples.ex_above:ex_zero:ex_circle2:ex_line:ex_three \
+            | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v2/pvs_examples.log"
+          for log in "$GITHUB_WORKSPACE"/artifacts/crystal_cross_prover_auto_family_v2/pvs_*.log; do
+            grep -q "Grand Totals:" "$log"
+            if grep -Ei "unfinished|untried|unchecked" "$log"; then
+              exit 1
+            fi
+          done
+          cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v2/pvs_replay.json" <<'EOF'
+          {"status":"PVS_V2_NEW_AUTHORITIES_GREEN","new_verified_source_authorities":7,"reused_v1_canonical_claims":7}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-auto-family-v2-pvs
+          path: artifacts/crystal_cross_prover_auto_family_v2/
+
+  lean-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-auto-family-v2-discovery
+          path: /tmp/family
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check all seven newly compiled Lean consumers
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-family-v2-lean
+          mkdir -p "$ROOT"
+          cp /tmp/family/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-auto-family-v2"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v2"
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v2/lean_surface.sha256"
+          cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v2/lean_replay.json" <<'EOF'
+          {"status":"LEAN_V2_NEW_CONSUMERS_GREEN","new_unique_claims":7,"reused_v1_claims":7}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-auto-family-v2-lean
+          path: artifacts/crystal_cross_prover_auto_family_v2/
+
+  promote:
+    needs: [discover,pvs-replay,lean-replay]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-auto-family-v2-discovery
+          path: /tmp/discovery
+      - name: Promote V2 family only after both authority gates
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_auto_family_v2
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import compile_family_bundle
+
+          d=json.loads(Path("/tmp/discovery/discovery.json").read_text())
+          m=json.loads(Path("experiments/crystal_cross_prover_auto_family_v2/manifest.json").read_text())
+          reused=sorted(m["reused_claim_ids"])
+          fresh=sorted(m["new_constructor"]["new_claim_ids"])
+          obj=compile_family_bundle(
+              d,
+              reused_claim_ids=reused,
+              newly_qualified_claim_ids=fresh,
+              evidence_refs=[
+                  f"github-run:{os.environ['RUN_ID']}:pvs-replay",
+                  f"github-run:{os.environ['RUN_ID']}:lean-replay",
+                  "github-run:36631474676:promotion",
+              ],
+          )
+          unsupported={f"{x['theory']}.{x['formula']}":x["status"] for x in d["unsupported_occurrences"]}
+          controls={k:unsupported[k] for k in m["negative_controls"]}
+          out={
+              "schema":"mathgraph.crystal-cross-prover-auto-family-result.v2",
+              "status":"WARRANTED_BOUNDED_AUTOMATIC_CROSS_PROVER_FAMILY_V2",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "parent_warrant_run":36631474676,
+              "source_lemma_count":d["source_lemma_count"],
+              "supported_occurrence_count":d["supported_occurrence_count"],
+              "unique_canonical_claim_count":d["unique_canonical_claim_count"],
+              "reused_claim_count":len(reused),
+              "newly_qualified_claim_count":len(fresh),
+              "new_constructor":"explicit_witness",
+              "new_constructor_claim_count":len(fresh),
+              "unsupported_before":26,
+              "unsupported_after":d["unsupported_occurrence_count"],
+              "unsupported_reduction":26-d["unsupported_occurrence_count"],
+              "negative_controls":controls,
+              "source_occurrence_unknown":["cad_demo.s_pos"],
+              "source_unverified_disposition":"UNKNOWN_SOURCE_UNVERIFIED",
+              "unsupported_disposition":"UNKNOWN_UNSUPPORTED_GRAMMAR",
+              "family_semantic_object_id":obj.id,
+              "interfaces":list(obj.interfaces),
+              "systems_law":{
+                  "name":"explicit-witness semantic transport",
+                  "statement":"Distinct quantified semialgebraic source surfaces can share one transport constructor when Crystal can synthesize an explicit witness and the consumer independently checks the residual polynomial/order obligations."
+              },
+          }
+          assert out["unsupported_after"]==19,out
+          assert out["unsupported_reduction"]==7,out
+          Path("artifacts/crystal_cross_prover_auto_family_v2/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-auto-family-v2
+          path: artifacts/crystal_cross_prover_auto_family_v2/result.json
