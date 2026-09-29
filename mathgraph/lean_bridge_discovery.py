@@ -66,6 +66,8 @@ class LeanDeclaration:
     full_name: str
     statement: str
     symbols: tuple[str, ...]
+    premise_symbols: tuple[str, ...] = ()
+    conclusion_symbols: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -151,6 +153,51 @@ def semantic_symbol_key(token: str) -> str | None:
     return last
 
 
+def _last_top_level_colon(text: str) -> int | None:
+    depth = 0
+    last = None
+    pairs = {"(": ")", "[": "]", "{": "}"}
+    closes = set(pairs.values())
+    stack: list[str] = []
+    for i, ch in enumerate(text):
+        if ch in pairs:
+            stack.append(pairs[ch])
+            depth += 1
+        elif ch in closes and stack and ch == stack[-1]:
+            stack.pop()
+            depth -= 1
+        elif ch == ":" and depth == 0:
+            if i + 1 < len(text) and text[i + 1] == "=":
+                continue
+            last = i
+    return last
+
+
+def _semantic_symbols(text: str) -> tuple[str, ...]:
+    return tuple(sorted({
+        key
+        for tok in IDENT_RE.findall(text)
+        if (key := semantic_symbol_key(tok)) is not None
+    }))
+
+
+def split_premise_conclusion(statement: str, kind: str) -> tuple[str, str]:
+    before_value, sep, value = statement.partition(":=")
+    idx = _last_top_level_colon(before_value)
+    if idx is None:
+        premise = before_value
+        conclusion = value if sep and kind in {"def", "abbrev"} else before_value
+        return premise, conclusion
+
+    premise = before_value[:idx]
+    result_type = before_value[idx + 1:]
+    if sep and kind in {"def", "abbrev"}:
+        conclusion = result_type + " " + value
+    else:
+        conclusion = result_type
+    return premise, conclusion
+
+
 def extract_declarations(pin: SourcePin, text: str) -> list[LeanDeclaration]:
     lines = text.splitlines()
     namespace: list[str] = []
@@ -178,11 +225,10 @@ def extract_declarations(pin: SourcePin, text: str) -> list[LeanDeclaration]:
         kind, name = m.group("kind"), m.group("name")
         statement = _declaration_window(lines, i)
         full_name = _qualify(namespace, name)
-        symbols = sorted({
-            key
-            for tok in IDENT_RE.findall(statement)
-            if (key := semantic_symbol_key(tok)) is not None
-        })
+        symbols = _semantic_symbols(statement)
+        premise_text, conclusion_text = split_premise_conclusion(statement, kind)
+        premise_symbols = _semantic_symbols(premise_text)
+        conclusion_symbols = _semantic_symbols(conclusion_text)
         out.append(LeanDeclaration(
             corpus=pin.corpus,
             role=pin.role,
@@ -192,6 +238,8 @@ def extract_declarations(pin: SourcePin, text: str) -> list[LeanDeclaration]:
             full_name=full_name,
             statement=statement,
             symbols=tuple(symbols),
+            premise_symbols=premise_symbols,
+            conclusion_symbols=conclusion_symbols,
         ))
     return out
 
@@ -253,6 +301,18 @@ def _canonical_symbols(
     return {canonicalize_symbol(s, aliases) for s in declaration.symbols}
 
 
+def _canonical_premise_symbols(
+    declaration: LeanDeclaration, aliases: Mapping[str, str]
+) -> set[str]:
+    return {canonicalize_symbol(s, aliases) for s in declaration.premise_symbols}
+
+
+def _canonical_conclusion_symbols(
+    declaration: LeanDeclaration, aliases: Mapping[str, str]
+) -> set[str]:
+    return {canonicalize_symbol(s, aliases) for s in declaration.conclusion_symbols}
+
+
 def discover(
     source_texts: Sequence[tuple[SourcePin, str]],
 ) -> dict[str, object]:
@@ -268,7 +328,7 @@ def discover(
     for d in declarations:
         if d.role == "bridge-library":
             continue
-        for symbol in _canonical_symbols(d, alias_map):
+        for symbol in _canonical_conclusion_symbols(d, alias_map):
             by_symbol.setdefault(symbol, []).append(d)
 
     equivalence_candidates: list[dict[str, object]] = []
@@ -298,12 +358,12 @@ def discover(
         producers = [
             d for d in non_library
             if d.role == "producer"
-            and rule.source in _canonical_symbols(d, alias_map)
+            and rule.source in _canonical_conclusion_symbols(d, alias_map)
         ]
         consumers = [
             d for d in non_library
             if d.role == "consumer"
-            and rule.target in _canonical_symbols(d, alias_map)
+            and rule.target in _canonical_premise_symbols(d, alias_map)
         ]
         for p in producers:
             for c in consumers:
