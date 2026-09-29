@@ -50,8 +50,9 @@ jobs:
           python - <<'PY'
           import os
           import re
-          import selectors
+          import queue
           import subprocess
+          import threading
           import time
           from pathlib import Path
 
@@ -72,9 +73,16 @@ jobs:
               env=env,
           )
           assert p.stdin is not None and p.stdout is not None
-          sel = selectors.DefaultSelector()
-          sel.register(p.stdout, selectors.EVENT_READ)
           seen = []
+          lines = queue.Queue()
+
+          def reader() -> None:
+              for line in p.stdout:
+                  seen.append(line)
+                  lines.put(line)
+
+          reader_thread = threading.Thread(target=reader, daemon=True)
+          reader_thread.start()
 
           def send(cmd: str) -> None:
               p.stdin.write(cmd + "\n")
@@ -84,13 +92,10 @@ jobs:
               deadline = time.monotonic() + timeout
               while time.monotonic() < deadline:
                   remaining = max(0.0, deadline - time.monotonic())
-                  events = sel.select(min(0.25, remaining))
-                  if not events:
-                      continue
-                  line = p.stdout.readline()
-                  if not line:
+                  try:
+                      line = lines.get(timeout=remaining)
+                  except queue.Empty:
                       break
-                  seen.append(line)
                   if token in line:
                       return
               raise AssertionError(("preflight timeout", token, "".join(seen[-40:])))
@@ -106,6 +111,7 @@ jobs:
           wait_for("bestmove", 20)
           send("quit")
           p.wait(timeout=10)
+          reader_thread.join(timeout=1)
           transcript.write_text("".join(seen))
 
           text = log.read_text()
