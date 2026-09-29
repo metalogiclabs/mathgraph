@@ -1,0 +1,248 @@
+name: Crystal Chess Clock Gate Exposure V60
+
+on:
+  push:
+    branches:
+      - crystal-chess-clock-gate-exposure-v60
+    paths:
+      - ".github/workflows/crystal-chess-clock-gate-exposure-v60.yml"
+      - "experiments/crystal_chess_clock_gate_exposure_v60.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  exposure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_clock_gate_exposure_v60.py
+          python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
+
+      - name: Build baseline and exact V60 probe
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
+          git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
+          cp -a /tmp/stockfish-base /tmp/stockfish-cand
+          mkdir -p artifacts/crystal-chess-v60/{preflight,fast,mid,slow}
+          python experiments/crystal_chess_clock_gate_exposure_v60.py --search-cpp /tmp/stockfish-cand/src/search.cpp
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v60/stockfish-diagnostic.patch
+          make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
+
+      - name: Preflight exact observation channel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import re
+          import selectors
+          import subprocess
+          import time
+          from pathlib import Path
+
+          engine = "/tmp/stockfish-cand/src/stockfish"
+          log = Path("artifacts/crystal-chess-v60/preflight/crystal_tm.log").resolve()
+          transcript = Path("artifacts/crystal-chess-v60/preflight/uci.txt")
+          log.write_text("")
+
+          env = os.environ.copy()
+          env["CRYSTAL_TM_LOG"] = str(log)
+          p = subprocess.Popen(
+              [engine],
+              stdin=subprocess.PIPE,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,
+              text=True,
+              bufsize=1,
+              env=env,
+          )
+          assert p.stdin is not None and p.stdout is not None
+          sel = selectors.DefaultSelector()
+          sel.register(p.stdout, selectors.EVENT_READ)
+          seen = []
+
+          def send(cmd: str) -> None:
+              p.stdin.write(cmd + "\n")
+              p.stdin.flush()
+
+          def wait_for(token: str, timeout: float) -> None:
+              deadline = time.monotonic() + timeout
+              while time.monotonic() < deadline:
+                  remaining = max(0.0, deadline - time.monotonic())
+                  events = sel.select(min(0.25, remaining))
+                  if not events:
+                      continue
+                  line = p.stdout.readline()
+                  if not line:
+                      break
+                  seen.append(line)
+                  if token in line:
+                      return
+              raise AssertionError(("preflight timeout", token, "".join(seen[-40:])))
+
+          send("uci")
+          wait_for("uciok", 10)
+          send("isready")
+          wait_for("readyok", 10)
+          send("setoption name Threads value 1")
+          send("setoption name Hash value 16")
+          send("position startpos")
+          send("go wtime 1000 btime 1000 winc 10 binc 10")
+          wait_for("bestmove", 20)
+          send("quit")
+          p.wait(timeout=10)
+          transcript.write_text("".join(seen))
+
+          text = log.read_text()
+          rows = re.findall(r"^crystal_tm optimum (\d+) maximum (\d+) active ([01])$", text, re.M)
+          if not rows:
+              raise AssertionError(("V60 preflight produced no parseable gate row", text[:1000]))
+          for optimum, maximum, active in rows:
+              if int(active) != int(int(optimum) <= 64):
+                  raise AssertionError(("V60 preflight active mismatch", optimum, maximum, active))
+          print("CRYSTAL_CHESS_CLOCK_GATE_EXPOSURE_V60_PREFLIGHT=PASS")
+          print(rows[:8])
+          PY
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Generate fresh prospective books
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v60/fast/normal.epd --manifest artifacts/crystal-chess-v60/fast/manifest.json --openings 32 --plies 12 --depth 6 --multipv 4 --seed 20261118
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v60/mid/normal.epd --manifest artifacts/crystal-chess-v60/mid/manifest.json --openings 32 --plies 12 --depth 6 --multipv 4 --seed 20261119
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v60/slow/normal.epd --manifest artifacts/crystal-chess-v60/slow/manifest.json --openings 32 --plies 12 --depth 6 --multipv 4 --seed 20261120
+
+      - name: Measure fast exposure
+        run: |
+          set -euo pipefail
+          : > artifacts/crystal-chess-v60/fast/crystal_tm.log
+          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v60/fast/crystal_tm.log" /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV60 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=1+0.01 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v60/fast/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v60/fast/match.pgn -log file=artifacts/crystal-chess-v60/fast/trace.log level=trace > artifacts/crystal-chess-v60/fast/stdout.txt
+
+      - name: Measure mid exposure
+        run: |
+          set -euo pipefail
+          : > artifacts/crystal-chess-v60/mid/crystal_tm.log
+          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v60/mid/crystal_tm.log" /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV60 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=2+0.02 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v60/mid/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v60/mid/match.pgn -log file=artifacts/crystal-chess-v60/mid/trace.log level=trace > artifacts/crystal-chess-v60/mid/stdout.txt
+
+      - name: Measure slow exposure
+        run: |
+          set -euo pipefail
+          : > artifacts/crystal-chess-v60/slow/crystal_tm.log
+          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v60/slow/crystal_tm.log" /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV60 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=5+0.05 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v60/slow/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v60/slow/match.pgn -log file=artifacts/crystal-chess-v60/slow/trace.log level=trace > artifacts/crystal-chess-v60/slow/stdout.txt
+
+      - name: Summarize exact gate exposure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path("artifacts/crystal-chess-v60")
+          pattern = re.compile(r"^crystal_tm optimum (\d+) maximum (\d+) active ([01])$")
+          clocks = {"fast": "1+0.01", "mid": "2+0.02", "slow": "5+0.05"}
+
+          def percentile(values, q):
+              xs = sorted(values)
+              return xs[round((len(xs) - 1) * q)]
+
+          out = {
+              "schema": "crystal-chess-clock-gate-exposure-v60",
+              "threshold_ms": 64,
+              "games_per_clock": 64,
+              "clocks": {},
+          }
+
+          for label, tc in clocks.items():
+              log_path = root / label / "crystal_tm.log"
+              lines = [x for x in log_path.read_text(errors="replace").splitlines() if x]
+              rows = []
+              bad = []
+              for line in lines:
+                  m = pattern.fullmatch(line)
+                  if not m:
+                      bad.append(line)
+                      continue
+                  optimum, maximum, active = map(int, m.groups())
+                  if active != int(optimum <= 64):
+                      raise AssertionError((label, "active mismatch", optimum, maximum, active))
+                  rows.append((optimum, maximum, active))
+              if bad:
+                  raise AssertionError((label, "unparseable gate rows", bad[:5]))
+              if len(rows) < 100:
+                  raise AssertionError((label, "too few gate observations", len(rows)))
+
+              pgn_path = root / label / "match.pgn"
+              games = sum(1 for line in pgn_path.read_text(errors="replace").splitlines() if line.startswith("[Event "))
+              if games != 64:
+                  raise AssertionError((label, "wrong game count", games))
+
+              opt = [x[0] for x in rows]
+              maximum = [x[1] for x in rows]
+              active = sum(x[2] for x in rows)
+              bins = {
+                  "le_48": sum(x <= 48 for x in opt),
+                  "49_56": sum(49 <= x <= 56 for x in opt),
+                  "57_64": sum(57 <= x <= 64 for x in opt),
+                  "65_72": sum(65 <= x <= 72 for x in opt),
+                  "73_80": sum(73 <= x <= 80 for x in opt),
+                  "gt_80": sum(x > 80 for x in opt),
+              }
+
+              out["clocks"][label] = {
+                  "tc": tc,
+                  "games": games,
+                  "samples": len(rows),
+                  "active": active,
+                  "inactive": len(rows) - active,
+                  "active_fraction": active / len(rows),
+                  "optimum_ms": {
+                      "min": min(opt),
+                      "p10": percentile(opt, 0.10),
+                      "p25": percentile(opt, 0.25),
+                      "median": percentile(opt, 0.50),
+                      "p75": percentile(opt, 0.75),
+                      "p90": percentile(opt, 0.90),
+                      "max": max(opt),
+                  },
+                  "maximum_ms": {
+                      "min": min(maximum),
+                      "median": percentile(maximum, 0.50),
+                      "max": max(maximum),
+                  },
+                  "boundary_bins": bins,
+              }
+
+          (root / "summary.json").write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+          print("CRYSTAL_CHESS_CLOCK_GATE_EXPOSURE_V60=PASS")
+          print(json.dumps(out, sort_keys=True))
+          PY
+
+      - name: Upload V60 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-clock-gate-exposure-v60
+          path: artifacts/crystal-chess-v60/
+          if-no-files-found: error
