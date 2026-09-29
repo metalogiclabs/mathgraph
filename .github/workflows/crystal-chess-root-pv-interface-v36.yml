@@ -1,0 +1,135 @@
+name: Crystal Chess Root PV Interface V36
+
+on:
+  push:
+    branches:
+      - crystal-chess-root-pv-interface-v36
+    paths:
+      - "experiments/crystal_chess_root_pv_interface_v36.py"
+      - ".github/workflows/crystal-chess-root-pv-interface-v36.yml"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_search_confirmation_v26.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  root-pv-interface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_root_pv_interface_v36.py
+
+      - name: Download frozen V25 guard
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-sufficiency-v25
+          path: /tmp/v25
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36362896141
+
+      - name: Download V22 source corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Download exposed V28
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-v28
+          path: /tmp/v28
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36368371744
+
+      - name: Download exposed V29
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-margin-v29
+          path: /tmp/v29
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36368824668
+
+      - name: Download exposed V30
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-relative-continuation-v30
+          path: /tmp/v30
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36385064153
+
+      - name: Download exposed V31
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-window-v31
+          path: /tmp/v31
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36385673166
+
+      - name: Download exposed V32
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-continuation-stability-v32
+          path: /tmp/v32
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36386326389
+
+      - name: Download exposed V35
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-reply-effect-v35
+          path: /tmp/v35
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36502300143
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Generate untouched seeds 20261013 and 20261014
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v36
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish/src/stockfish             --book artifacts/crystal-chess-v36/fresh_a.epd             --manifest artifacts/crystal-chess-v36/fresh_a_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261013
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish/src/stockfish             --book artifacts/crystal-chess-v36/fresh_b.epd             --manifest artifacts/crystal-chess-v36/fresh_b_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261014
+
+      - name: Test minimum root-PV interface prospectively
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_root_pv_interface_v36.py             --stockfish /tmp/stockfish/src/stockfish             --guard /tmp/v25/search_sufficiency_guard_v25.json.gz             --v22-pgn /tmp/v22/match.pgn             --source-generation v28 --source-epd /tmp/v28/fresh_normal.epd             --source-generation v29 --source-epd /tmp/v29/fresh_normal.epd             --source-generation v30 --source-epd /tmp/v30/fresh_normal.epd             --source-generation v31a --source-epd /tmp/v31/fresh_a.epd             --source-generation v31b --source-epd /tmp/v31/fresh_b.epd             --source-generation v32a --source-epd /tmp/v32/fresh_a.epd             --source-generation v32b --source-epd /tmp/v32/fresh_b.epd             --source-generation v35a --source-epd /tmp/v35/fresh_a.epd             --source-generation v35b --source-epd /tmp/v35/fresh_b.epd             --fresh-epd-a artifacts/crystal-chess-v36/fresh_a.epd             --fresh-manifest-a artifacts/crystal-chess-v36/fresh_a_manifest.json             --fresh-epd-b artifacts/crystal-chess-v36/fresh_b.epd             --fresh-manifest-b artifacts/crystal-chess-v36/fresh_b_manifest.json             --output artifacts/crystal-chess-v36/result.json             | tee artifacts/crystal-chess-v36/run.log
+          grep -Eq "CRYSTAL_CHESS_ROOT_PV_INTERFACE_V36=(WARRANTED_REPLICATED_NORMAL_SEARCH_ROOT_PV_INTERFACE|FRESH_NORMAL_SEARCH_ROOT_PV_INTERFACE_RESIDUAL|ROOT_PV_INTERFACE_DOES_NOT_CLOSE_SOURCE)" artifacts/crystal-chess-v36/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v36/
+          cp /tmp/v25/search_sufficiency_guard_v25.json.gz artifacts/crystal-chess-v36/
+
+      - name: Upload V36 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-root-pv-interface-v36
+          path: artifacts/crystal-chess-v36/
+          if-no-files-found: error
