@@ -1,0 +1,167 @@
+name: Crystal Cross-Version FLT Interface V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'experiments/crystal_cross_version_flt_interface_v1/**'
+      - '.github/workflows/crystal-cross-version-flt-interface-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-equivalence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact FLT Basic files and compare semantic definitions
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/flt-surfaces
+          curl -fsSL -o /tmp/flt-surfaces/anthropic.lean             https://raw.githubusercontent.com/leanprover-community/mathlib4/db584cd6d46c92f209a44c0f1c829460d327499d/Mathlib/NumberTheory/FLT/Basic.lean
+          curl -fsSL -o /tmp/flt-surfaces/isomorphic.lean             https://raw.githubusercontent.com/leanprover-community/mathlib4/0531bb79fea20efc9ce6942db46b96be5a919400/Mathlib/NumberTheory/FLT/Basic.lean
+          curl -fsSL -o /tmp/flt-surfaces/imperial.lean             https://raw.githubusercontent.com/leanprover-community/mathlib4/3cb72cfd416d1b5ec4b930d67648ef036a5df24f/Mathlib/NumberTheory/FLT/Basic.lean
+          python - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+
+          manifest=json.loads(Path("experiments/crystal_cross_version_flt_interface_v1/manifest.json").read_text())
+          by={x["corpus"]:x for x in manifest["versions"]}
+          files={
+              "anthropic-flt":Path("/tmp/flt-surfaces/anthropic.lean"),
+              "isomorphic-fermat":Path("/tmp/flt-surfaces/isomorphic.lean"),
+              "imperial-flt":Path("/tmp/flt-surfaces/imperial.lean"),
+          }
+
+          def blob_sha(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+
+          def block(text,name):
+              start=text.index("def "+name)
+              end=text.find("\n\n",start)
+              if end < 0: end=len(text)
+              raw=text[start:end]
+              return re.sub(r"\s+"," ",raw).strip()
+
+          semantic={}
+          for corpus,path in files.items():
+              data=path.read_bytes()
+              got=blob_sha(data)
+              assert got==by[corpus]["basic_blob_sha"], (corpus,got,by[corpus]["basic_blob_sha"])
+              text=data.decode()
+              pieces=[block(text,n) for n in (
+                  "FermatLastTheoremWith",
+                  "FermatLastTheoremFor",
+                  "FermatLastTheorem",
+              )]
+              joined="\n".join(pieces)
+              digest=hashlib.sha256(joined.encode()).hexdigest()
+              semantic[corpus]={"digest":digest,"definitions":pieces,"blob_sha":got}
+              print("SURFACE",corpus,digest)
+
+          digests={x["digest"] for x in semantic.values()}
+          assert len(digests)==1, semantic
+          out={
+              "schema":"mathgraph.crystal-cross-version-flt-source-equivalence.v1",
+              "status":"SOURCE_EQUIVALENT",
+              "semantic_digest":next(iter(digests)),
+              "versions":semantic,
+          }
+          Path("source_equivalence.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"status":out["status"],"semantic_digest":out["semantic_digest"]},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flt-source-equivalence
+          path: source_equivalence.json
+
+  compile-surface:
+    needs: source-equivalence
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - corpus: anthropic-flt
+            mathlib: db584cd6d46c92f209a44c0f1c829460d327499d
+            toolchain: leanprover/lean4:v4.33.0
+          - corpus: isomorphic-fermat
+            mathlib: 0531bb79fea20efc9ce6942db46b96be5a919400
+            toolchain: leanprover/lean4:v4.31.0-rc1
+          - corpus: imperial-flt
+            mathlib: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+            toolchain: leanprover/lean4:v4.35.0-rc3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build canonical surface on ${{ matrix.corpus }}
+        env:
+          MATHLIB: ${{ matrix.mathlib }}
+          TOOLCHAIN: ${{ matrix.toolchain }}
+          CORPUS: ${{ matrix.corpus }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/flt-interface-$CORPUS"
+          mkdir -p "$ROOT"
+          cp experiments/crystal_cross_version_flt_interface_v1/Surface.lean "$ROOT/Surface.lean"
+          printf '%s\n' "$TOOLCHAIN" > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<EOF
+          name = "crystal-flt-interface"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "$MATHLIB"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          printf '%s\n' "$CORPUS" > qualified_corpus.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flt-interface-${{ matrix.corpus }}
+          path: /tmp/flt-interface-${{ matrix.corpus }}/qualified_corpus.txt
+
+  promote:
+    needs: [source-equivalence, compile-surface]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Emit cross-version qualification
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("experiments/crystal_cross_version_flt_interface_v1/manifest.json").read_text())
+          out={
+              "schema":"mathgraph.crystal-cross-version-flt-interface-result.v1",
+              "status":"WARRANTED_BOUNDED_CROSS_VERSION_INTERFACE",
+              "canonical_symbol":"FermatLastTheoremFor",
+              "corpora":[x["corpus"] for x in m["versions"]],
+              "version_count":len(m["versions"]),
+              "source_definition_equivalence":"exact normalized definition blocks agree",
+              "qualification":"canonical surface compiled independently under each pinned Lean/Mathlib pair",
+              "candidate_from_scout":m["candidate_from_scout"],
+              "unknowns":[
+                  "transport of arbitrary proof objects across these versions",
+                  "cross-version equivalence of unrelated theorem families",
+                  "automatic migration of implementation-specific APIs"
+              ]
+          }
+          Path("experiments/crystal_cross_version_flt_interface_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-version-flt-interface-v1
+          path: experiments/crystal_cross_version_flt_interface_v1/result.json
