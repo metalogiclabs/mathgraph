@@ -59,3 +59,53 @@ def test_report_separates_upstream_noise_from_real_bridge_residual():
     assert out["same_upstream_non_bridge_count"] == 1
     assert out["genuine_bridge_residual_count"] == 1
     assert out["genuine_bridge_residual"][0]["symbol"] == "Mystery"
+
+
+def test_refinement_routes_namespaced_upstream_and_rejects_collisions():
+    from mathgraph.lean_bridge_origin import refine_origin_classification
+
+    base = {
+        "candidates": [
+            {
+                "symbol":"FiniteIndex",
+                "candidate_id":"equiv:FiniteIndex",
+                "origin_class":"AMBIGUOUS",
+                "bridge_action":"RESOLVE_ORIGIN_BEFORE_PROOF_SEARCH",
+                "local_definitions":[],
+                "already_qualified_reusable":False,
+            },
+            {
+                "symbol":"v.IsReal",
+                "candidate_id":"equiv:v.IsReal",
+                "origin_class":"AMBIGUOUS",
+                "bridge_action":"RESOLVE_ORIGIN_BEFORE_PROOF_SEARCH",
+                "local_definitions":[],
+                "already_qualified_reusable":False,
+            },
+            {
+                "symbol":"HeckeAlgebra",
+                "candidate_id":"equiv:HeckeAlgebra",
+                "origin_class":"PROJECT_LOCAL_SHARED",
+                "bridge_action":"QUALIFY_PROJECT_LOCAL_RECONCILIATION",
+                "local_definitions":[
+                    {"declaration":"HeckePair.HeckeAlgebra"},
+                    {"declaration":"HeckeAlgebra"},
+                ],
+                "already_qualified_reusable":False,
+            },
+        ]
+    }
+    short = {
+        "FiniteIndex":{"a":True,"b":True,"c":True},
+        "v.IsReal":{"a":True,"b":True,"c":True},
+        "HeckeAlgebra":{"a":False,"b":False,"c":False},
+    }
+    out = refine_origin_classification(
+        base, short_declaration_presence_by_symbol=short
+    )
+    by = {x["symbol"]:x for x in out["candidates"]}
+    assert by["FiniteIndex"]["origin_class"] == "SAME_UPSTREAM_NAMESPACE_REFERENCE"
+    assert by["v.IsReal"]["origin_class"] == "SAME_UPSTREAM_DEPENDENT_REFERENCE"
+    assert by["HeckeAlgebra"]["origin_class"] == "SHORT_NAME_COLLISION"
+    assert out["project_bridge_residual_count"] == 0
+    assert out["short_name_collision_count"] == 1
