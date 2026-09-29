@@ -10,6 +10,44 @@ permissions:
   contents: read
 
 jobs:
+  causal_replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run exact causal replay
+        run: python experiments/buehler_graphene_causal_v1.py
+      - name: Validate causal evidence
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/buehler-graphene-causal-v1/result.json'
+          d=json.load(open(p))
+          assert d['source']['record_count']==132
+          assert d['promotion']['stage7_separator']=='WARRANTED_BOUNDED'
+          assert d['promotion']['tip_overlap_distinction']=='WARRANTED_BOUNDED'
+          assert d['promotion']['residual_driven_mechanism_revision']=='WARRANTED_BOUNDED'
+          assert d['promotion']['cross_potential_physical_robustness']=='UNKNOWN'
+          print(json.dumps({
+            'raw_sha256': d['source']['raw_sha256'],
+            'stage7_median_ape': d['stage7_preregistered_strength_prediction']['median_ape'],
+            'separator': d['separator'],
+            'overlap': d['overlap_refinement'],
+            'paper': {k:v for k,v in d['later_rule_vs_mechanism'].items() if k!='rows'},
+            'promotion': d['promotion'],
+            'next_residual': d['next_residual'],
+          },indent=2,sort_keys=True))
+          PY
+      - name: Upload causal evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: buehler-graphene-causal-v1-evidence
+          path: evidence/buehler-graphene-causal-v1
+          if-no-files-found: error
+
   exact_crystal:
     runs-on: ubuntu-latest
     timeout-minutes: 15
