@@ -1,0 +1,187 @@
+name: Crystal residual-first dependency discovery V1
+
+on:
+  push:
+    branches:
+      - crystal-residual-first-dependency-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Discover exact source-pinned dependency closure
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python experiments/crystal_real_theorem_reuse_v1/discover_dependency_closure.py \
+            --root-file experiments/crystal_real_theorem_reuse_v1/BatchConsumer.lean \
+            --dest /tmp/crystal-dep-source \
+            --report out/source-closure.json
+          cp experiments/crystal_real_theorem_reuse_v1/BatchConsumer.lean /tmp/crystal-dep-source/BatchConsumer.lean
+          cp -a /tmp/crystal-dep-source /tmp/crystal-dep-skew
+
+      - name: Consequential closure gate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          r=json.load(open("out/source-closure.json"))
+          assert r["status"] == "CLOSED", r
+          assert r["root_count"] == 8, r
+          assert r["internal_count"] == 17, r
+          assert r["external_imports"] == [
+              "Lean",
+              "Mathlib",
+              "Mathlib.RingTheory.Norm.Basic",
+          ], r
+          manual={
+              "P2M.Util",
+              "P2M.Sol.S_Algebra_norm_of_subsingleton",
+              "Theorems.Thm_Algebra_norm_of_subsingleton",
+          }
+          discovered=set(r["internal_modules"])
+          assert manual <= discovered
+          assert len(discovered-manual) == 14
+          print("MANUAL_BASELINE_INTERNAL_MODULES=3")
+          print("DISCOVERED_INTERNAL_MODULES=17")
+          print("RESIDUAL_MODULES_AUTOMATICALLY_CLOSED=14")
+          PY
+
+      - name: Configure source environment
+        run: |
+          set -euo pipefail
+          cat > /tmp/crystal-dep-source/lean-toolchain <<'EOF'
+          leanprover/lean4:v4.33.0
+          EOF
+          cat > /tmp/crystal-dep-source/lakefile.lean <<'EOF'
+          import Lake
+          open Lake DSL
+
+          package crystal_residual_first_source
+
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @
+            "db584cd6d46c92f209a44c0f1c829460d327499d"
+
+          lean_lib P2M where
+            globs := #[.submodules `P2M]
+
+          lean_lib Theorems where
+            globs := #[.submodules `Theorems]
+
+          lean_lib BatchConsumer where
+            roots := #[`BatchConsumer]
+          EOF
+
+      - name: Build frozen batch at source pin
+        working-directory: /tmp/crystal-dep-source
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build BatchConsumer
+          lake env lean BatchConsumer.lean
+          echo SOURCE_BATCH_VERIFIED=8/8
+
+      - name: Configure revision-skew environment without changing closure
+        run: |
+          set -euo pipefail
+          cat > /tmp/crystal-dep-skew/lean-toolchain <<'EOF'
+          leanprover/lean4:v4.31.0-rc1
+          EOF
+          cat > /tmp/crystal-dep-skew/lakefile.lean <<'EOF'
+          import Lake
+          open Lake DSL
+
+          package crystal_residual_first_skew
+
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @
+            "0531bb79fea20efc9ce6942db46b96be5a919400"
+
+          lean_lib P2M where
+            globs := #[.submodules `P2M]
+
+          lean_lib Theorems where
+            globs := #[.submodules `Theorems]
+
+          lean_lib BatchConsumer where
+            roots := #[`BatchConsumer]
+          EOF
+
+      - name: Build identical frozen closure under revision skew
+        working-directory: /tmp/crystal-dep-skew
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build BatchConsumer
+          lake env lean BatchConsumer.lean
+          echo SKEW_BATCH_VERIFIED=8/8
+
+      - name: Fail-closed UNKNOWN control
+        run: |
+          set -euo pipefail
+          {
+            echo 'import Theorems.Thm_DoesNotExist'
+            cat experiments/crystal_real_theorem_reuse_v1/BatchConsumer.lean
+          } > /tmp/NegativeConsumer.lean
+          set +e
+          python experiments/crystal_real_theorem_reuse_v1/discover_dependency_closure.py \
+            --root-file /tmp/NegativeConsumer.lean \
+            --dest /tmp/crystal-dep-negative \
+            --report out/negative-closure.json
+          code=$?
+          set -e
+          test "$code" -eq 2
+          python - <<'PY'
+          import json
+          r=json.load(open("out/negative-closure.json"))
+          assert r["status"] == "UNKNOWN", r
+          assert r["missing_internal_modules"] == ["Theorems.Thm_DoesNotExist"], r
+          print("NEGATIVE_CONTROL=FAIL_CLOSED_UNKNOWN")
+          PY
+
+      - name: Seal bounded evidence summary
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib
+          source=pathlib.Path("out/source-closure.json").read_bytes()
+          negative=pathlib.Path("out/negative-closure.json").read_bytes()
+          summary={
+            "schema":"crystal.residual-first-dependency-qualification@1",
+            "source_closure_sha256":hashlib.sha256(source).hexdigest(),
+            "negative_control_sha256":hashlib.sha256(negative).hexdigest(),
+            "protected_batch_theorems":8,
+            "discovered_internal_modules":17,
+            "manual_baseline_internal_modules":3,
+            "automatically_closed_residual_modules":14,
+            "source_environment":"Lean 4.33.0 / Mathlib db584cd6d46c92f209a44c0f1c829460d327499d",
+            "skew_environment":"Lean 4.31.0-rc1 / Mathlib 0531bb79fea20efc9ce6942db46b96be5a919400",
+            "negative_control":"UNKNOWN",
+          }
+          pathlib.Path("out/qualification-summary.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crystal-residual-first-dependency-v1
+          path: out/
+          if-no-files-found: error
