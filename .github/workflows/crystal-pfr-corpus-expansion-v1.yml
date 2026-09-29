@@ -1,0 +1,430 @@
+name: Crystal PFR Corpus Expansion V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-expansion-pfr-v1
+    paths:
+      - 'experiments/crystal_corpus_expansion_pfr_v1/**'
+      - 'mathgraph/lean_bridge_origin.py'
+      - 'mathgraph/lean_bridge_residual.py'
+      - 'mathgraph/lean_bridge_portfolio.py'
+      - 'mathgraph/lean_corpus_bridge_scout.py'
+      - 'mathgraph/lean_bridge_discovery.py'
+      - '.github/workflows/crystal-pfr-corpus-expansion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+
+      - name: Sparse checkout exact corpus surfaces
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/crystal-corpora
+          clone_sparse () {
+            repo="$1"; commit="$2"; dest="$3"; shift 3
+            git init "$dest"
+            git -C "$dest" remote add origin "https://github.com/$repo.git"
+            git -C "$dest" sparse-checkout init --cone
+            git -C "$dest" sparse-checkout set "$@"
+            git -C "$dest" fetch --depth=1 origin "$commit"
+            git -C "$dest" checkout --detach FETCH_HEAD
+            test "$(git -C "$dest" rev-parse HEAD)" = "$commit"
+          }
+
+          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-corpora/anthropic Theorems Definitions
+
+          clone_sparse isomorphic-ai/fermat             07b35d10984632caa14b1af26ec5dec2363ee920             /tmp/crystal-corpora/isomorphic Fermat
+
+          clone_sparse ImperialCollegeLondon/FLT             eb6df2b018f81920cd48dd510417f0b7790c305e             /tmp/crystal-corpora/imperial FLT
+
+          clone_sparse teorth/pfr             eb5557e9556a89a3418c4e8bdd717a5cf736c060             /tmp/crystal-corpora/pfr PFR
+
+      - name: Build four-corpus scout and qualification lineage
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_corpus_expansion_pfr_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.lean_bridge_discovery import SourcePin, fetch_pin
+          from mathgraph.lean_corpus_bridge_scout import build_scout_report, load_corpus_manifest
+          from mathgraph.lean_bridge_origin import collect_local_definition_evidence
+          from mathgraph.lean_bridge_portfolio import reconcile_bridge_portfolio
+
+          manifest=load_corpus_manifest(
+              "experiments/crystal_corpus_expansion_pfr_v1/corpus_manifest.json"
+          )
+          roots={
+              "anthropic-flt":"/tmp/crystal-corpora/anthropic",
+              "isomorphic-fermat":"/tmp/crystal-corpora/isomorphic",
+              "imperial-flt":"/tmp/crystal-corpora/imperial",
+              "teorth-pfr":"/tmp/crystal-corpora/pfr",
+          }
+
+          bridges=[]
+          for row in manifest.get("bridge_files",[]):
+              pin=SourcePin.from_mapping(row)
+              bridges.append((pin,fetch_pin(pin)))
+
+          report=build_scout_report(
+              corpus_roots=roots,
+              manifest=manifest,
+              bridge_texts=bridges,
+              top_k=manifest.get("top_k",2000),
+          )
+
+          directional=json.loads(Path("evidence/crystal-directional-bridge-batch-v2.json").read_text())
+          cross=json.loads(Path("evidence/crystal-cross-version-flt-interface-v1.json").read_text())
+          frey=json.loads(Path("evidence/crystal-frey-package-reconciliation-v1.json").read_text())
+
+          portfolio=reconcile_bridge_portfolio(report,directional,cross)
+          if frey["status"] == "WARRANTED_BOUNDED_RECONCILIATION":
+              cid=frey["scout_lineage"]["candidate_id"]
+              if cid in report["all_candidate_ids"] and cid not in portfolio["qualified_candidate_ids"]:
+                  portfolio["qualified_candidate_ids"].append(cid)
+
+          origin_manifest=json.loads(json.dumps(manifest))
+          overrides=origin_manifest.get("origin_scan_overrides",{})
+          for row in origin_manifest["corpora"]:
+              if row["corpus"] in overrides:
+                  row["include_prefixes"]=overrides[row["corpus"]]
+
+          symbols=[x["canonical_symbol"] for x in report["top_equivalence_candidates"]]
+          local=collect_local_definition_evidence(roots,origin_manifest,symbols)
+
+          payload={
+              "schema":"mathgraph.crystal-pfr-corpus-expansion-input.v1",
+              "manifest":manifest,
+              "report":report,
+              "portfolio":portfolio,
+              "symbols":symbols,
+              "qualified_candidate_ids":sorted(set(portfolio["qualified_candidate_ids"])),
+              "local_definition_evidence":{
+                  k:[x.to_dict() for x in v] for k,v in local.items()
+              },
+          }
+
+          Path("artifacts/crystal_corpus_expansion_pfr_v1/input.json").write_text(
+              json.dumps(payload,indent=2,sort_keys=True)+"\n"
+          )
+          Path("artifacts/crystal_corpus_expansion_pfr_v1/scout.json").write_text(
+              json.dumps(report,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "corpus_files":report["totals"]["corpus_file_count"],
+              "corpus_declarations":report["totals"]["corpus_declaration_count"],
+              "source_bytes":report["totals"]["corpus_source_bytes"],
+              "equivalence_candidates":report["totals"]["equivalence_candidate_count"],
+              "implication_candidates":report["totals"]["implication_candidate_count"],
+              "inherited_qualified_candidates":len(payload["qualified_candidate_ids"]),
+              "new_directional_unknowns":len(portfolio["directional_unknown_ids"]),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-pfr-expansion-input-v1
+          path: artifacts/crystal_corpus_expansion_pfr_v1/
+
+  probe-upstream:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: anthropic-mathlib
+            mathlib: db584cd6d46c92f209a44c0f1c829460d327499d
+            toolchain: leanprover/lean4:v4.33.0
+          - environment: isomorphic-mathlib
+            mathlib: 0531bb79fea20efc9ce6942db46b96be5a919400
+            toolchain: leanprover/lean4:v4.31.0-rc1
+          - environment: imperial-mathlib
+            mathlib: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+            toolchain: leanprover/lean4:v4.35.0-rc3
+          - environment: pfr-mathlib
+            mathlib: ec6a61cec0d8f9fda04453e9bb5761a79aa43a70
+            toolchain: leanprover/lean4:v4.35.0-rc3
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-pfr-expansion-input-v1
+          path: /tmp/pfr-input
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned Mathlib environment
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+          MATHLIB: ${{ matrix.mathlib }}
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/pfr-origin-$ENVIRONMENT"
+          mkdir -p "$ROOT"
+          printf '%s\n' "$TOOLCHAIN" > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<EOF
+          name = "crystal-pfr-origin-probe"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "$MATHLIB"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+
+      - name: Resolve exact Lean constant names
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/pfr-origin-$ENVIRONMENT"
+          python - "$ROOT" <<'PY'
+          import json,sys
+          from pathlib import Path
+
+          root=Path(sys.argv[1])
+          data=json.loads(Path("/tmp/pfr-input/input.json").read_text())
+          lines=[
+              "import Mathlib",
+              "open Lean Elab Command",
+              'syntax (name := crystalContains) "#crystal_contains " ident : command',
+              "elab_rules : command",
+              '  | `(#crystal_contains $id:ident) => do',
+              "      let env ← getEnv",
+              "      let n := id.getId",
+              '      logInfo m!"CRYSTAL_ORIGIN|{n}|{env.contains n}"',
+              "",
+          ]
+          for symbol in data["symbols"]:
+              lines.append(f"#crystal_contains {symbol}")
+
+          short_names=sorted({symbol.split(".")[-1] for symbol in data["symbols"]})
+          quoted=", ".join(json.dumps(x) for x in short_names)
+          lines.extend([
+              "",
+              "run_cmd do",
+              "  let env ← getEnv",
+              f"  let wanted : List String := [{quoted}]",
+              "  for (n, _) in env.constants.toList do",
+              "    if n.isStr then",
+              "      let short := n.getString!",
+              "      if wanted.contains short then",
+              '        logInfo m!"CRYSTAL_DECL|{short}|{n}"',
+              "",
+          ])
+          (root/"Probe.lean").write_text("\n".join(lines)+"\n")
+          PY
+
+          cd "$ROOT"
+          lake env lean Probe.lean 2>&1 | tee probe.log
+
+          python - "$ENVIRONMENT" <<'PY'
+          import json,re,sys
+          from collections import Counter
+          from pathlib import Path
+
+          env=sys.argv[1]
+          text=Path("probe.log").read_text()
+          data=json.loads(Path("/tmp/pfr-input/input.json").read_text())
+          wanted=data["symbols"]
+
+          pairs=re.findall(r"CRYSTAL_ORIGIN\|([^|\n]+)\|(true|false)",text)
+          presence={name:(value=="true") for name,value in pairs}
+          assert set(presence)==set(wanted), (len(presence),len(wanted),set(wanted)-set(presence))
+
+          decl_pairs=re.findall(r"CRYSTAL_DECL\|([^|\n]+)\|([^\n]+)",text)
+          exact_names={}
+          for short,full in decl_pairs:
+              exact_names.setdefault(short,set()).add(full.strip())
+          short_declaration_names={
+              symbol:sorted(exact_names.get(symbol.split(".")[-1],set()))
+              for symbol in wanted
+          }
+
+          decl_re=re.compile(r"\b(?:class|structure|def|abbrev|inductive)\s+([A-Za-z_][A-Za-z0-9_'.]*)\b")
+          block_comment=re.compile(r"/-[\s\S]*?-/")
+          declared_counts=Counter()
+          mathlib_root=Path(".lake/packages/mathlib/Mathlib")
+          for path in mathlib_root.rglob("*.lean"):
+              source=path.read_text(encoding="utf-8",errors="ignore")
+              source=block_comment.sub(" ",source)
+              source=re.sub(r"--[^\n]*"," ",source)
+              for name in decl_re.findall(source):
+                  declared_counts[name.split(".")[-1]] += 1
+
+          short_counts={
+              symbol:int(declared_counts[symbol.split(".")[-1]])
+              for symbol in wanted
+          }
+          short_presence={symbol:(short_counts[symbol] > 0) for symbol in wanted}
+
+          out={
+              "schema":"mathgraph.mathlib-origin-probe.v3",
+              "environment":env,
+              "presence":presence,
+              "short_declaration_presence":short_presence,
+              "short_declaration_count":short_counts,
+              "short_declaration_names":short_declaration_names,
+          }
+          Path(f"/tmp/{env}.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "environment":env,
+              "present":sum(presence.values()),
+              "absent":len(presence)-sum(presence.values()),
+              "short_present":sum(short_presence.values()),
+              "short_collisions":sum(1 for x in short_counts.values() if x>1),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pfr-origin-probe-${{ matrix.environment }}
+          path: /tmp/${{ matrix.environment }}.json
+
+  classify:
+    needs: [prepare, probe-upstream]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-pfr-expansion-input-v1
+          path: /tmp/pfr-input
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pfr-origin-probe-*
+          path: /tmp/pfr-probes
+          merge-multiple: true
+
+      - name: Compile exact four-corpus residual
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_corpus_expansion_pfr_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.lean_bridge_origin import (
+              LocalDefinitionEvidence,
+              classify_report,
+              load_probe_files,
+              load_short_declaration_probe_files,
+              load_short_declaration_count_probe_files,
+              load_short_declaration_name_probe_files,
+              refine_origin_classification,
+          )
+          from mathgraph.lean_bridge_residual import compile_origin_residual
+
+          data=json.loads(Path("/tmp/pfr-input/input.json").read_text())
+          probe_paths=sorted(Path("/tmp/pfr-probes").glob("*.json"))
+          assert len(probe_paths)==4, probe_paths
+
+          local={
+              symbol:[LocalDefinitionEvidence(**row) for row in rows]
+              for symbol,rows in data["local_definition_evidence"].items()
+          }
+          env_by_corpus={
+              x["corpus"]:x["environment"]
+              for x in data["manifest"]["mathlib_environments"]
+          }
+
+          origin=classify_report(
+              data["report"],
+              upstream_presence_by_symbol=load_probe_files(probe_paths),
+              local_definition_evidence=local,
+              qualified_candidate_ids=data["qualified_candidate_ids"],
+              environment_by_corpus=env_by_corpus,
+          )
+          refined=refine_origin_classification(
+              origin,
+              short_declaration_presence_by_symbol=load_short_declaration_probe_files(probe_paths),
+              short_declaration_count_by_symbol=load_short_declaration_count_probe_files(probe_paths),
+              short_declaration_names_by_symbol=load_short_declaration_name_probe_files(probe_paths),
+          )
+          equiv=compile_origin_residual(refined)
+
+          portfolio=data["portfolio"]
+          directional_total=data["report"]["totals"]["implication_candidate_count"]
+          directional_unknown=list(portfolio["directional_unknown_ids"])
+          directional_qualified=directional_total-len(directional_unknown)
+
+          combined={
+              "schema":"mathgraph.crystal-pfr-corpus-expansion-result.v1",
+              "status":"EXACT_ROUTING_STATE",
+              "corpora":[x["corpus"] for x in data["manifest"]["corpora"]],
+              "candidate_count":equiv["candidate_count"]+directional_total,
+              "equivalence_candidate_count":equiv["candidate_count"],
+              "directional_candidate_count":directional_total,
+              "qualified_reusable_count":equiv["reusable_count"]+directional_qualified,
+              "discharged_non_bridge_count":equiv["discharged_non_bridge_count"],
+              "rejected_false_candidate_count":equiv["rejected_false_candidate_count"],
+              "unknown_actionable_count":equiv["unknown_actionable_count"]+len(directional_unknown),
+              "unknown_actionable_equivalence":equiv["unknown_actionable"],
+              "unknown_actionable_directional_ids":directional_unknown,
+              "new_corpus":"teorth-pfr",
+              "new_corpus_commit":"eb5557e9556a89a3418c4e8bdd717a5cf736c060",
+              "parent_linker_object":data["manifest"]["parent_authority"]["linker_object"],
+              "next_action":"qualify only UNKNOWN_ACTIONABLE entries; if zero, expand boundary again",
+          }
+          assert combined["candidate_count"] == (
+              combined["qualified_reusable_count"]
+              + combined["discharged_non_bridge_count"]
+              + combined["rejected_false_candidate_count"]
+              + combined["unknown_actionable_count"]
+          ), combined
+
+          Path("artifacts/crystal_corpus_expansion_pfr_v1/origin.json").write_text(
+              json.dumps(refined,indent=2,sort_keys=True)+"\n"
+          )
+          Path("artifacts/crystal_corpus_expansion_pfr_v1/equivalence_residual.json").write_text(
+              json.dumps(equiv,indent=2,sort_keys=True)+"\n"
+          )
+          Path("artifacts/crystal_corpus_expansion_pfr_v1/result.json").write_text(
+              json.dumps(combined,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "candidate_count":combined["candidate_count"],
+              "equivalence_candidates":combined["equivalence_candidate_count"],
+              "directional_candidates":combined["directional_candidate_count"],
+              "qualified_reusable":combined["qualified_reusable_count"],
+              "discharged_non_bridge":combined["discharged_non_bridge_count"],
+              "rejected_false_candidate":combined["rejected_false_candidate_count"],
+              "unknown_actionable":combined["unknown_actionable_count"],
+              "unknown_equivalence_symbols":[x["symbol"] for x in combined["unknown_actionable_equivalence"]],
+              "unknown_directional_ids":combined["unknown_actionable_directional_ids"],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-pfr-corpus-expansion-v1
+          path: artifacts/crystal_corpus_expansion_pfr_v1/
