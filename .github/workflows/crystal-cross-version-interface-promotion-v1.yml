@@ -1,0 +1,50 @@
+name: Crystal Cross-Version Interface Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'mathgraph/lean_cross_version_interface_capability.py'
+      - 'tests/test_lean_cross_version_interface_capability.py'
+      - 'evidence/crystal-cross-version-flt-interface-v1.json'
+      - '.github/workflows/crystal-cross-version-interface-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-interface:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Check cross-version compiler
+        run: python -m pytest -q tests/test_lean_cross_version_interface_capability.py
+      - name: Compile three pinned versions to one canonical interface
+        run: |
+          mkdir -p artifacts/crystal_cross_version_interface_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.lean_cross_version_interface_capability import compile_authority_file
+
+          out = compile_authority_file(
+              "evidence/crystal-cross-version-flt-interface-v1.json",
+              out_path="artifacts/crystal_cross_version_interface_v1/capability.json",
+          )
+          out["status"] = "REUSABLE"
+          Path("artifacts/crystal_cross_version_interface_v1/capability.json").write_text(
+              json.dumps(out, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(out, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-version-interface-v1
+          path: artifacts/crystal_cross_version_interface_v1/capability.json
