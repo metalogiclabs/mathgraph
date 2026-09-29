@@ -143,3 +143,37 @@ def test_adapter_evidence_changes_contract_not_semantic_object_identity():
     )
     assert a.id != b.id
     assert obj.id == _future_object().id
+
+
+def test_cross_corpus_flt_surfaces_can_lower_to_one_semantic_interface():
+    from mathgraph.crystal import lower_semantic_object
+
+    interface = "number-theory.flt.fixed-exponent.nat@1"
+    source_a = SemanticObject(
+        "lean.theorem.surface@1", 1, b"anthropic-positive-nat", (interface,)
+    )
+    source_b = SemanticObject(
+        "lean.theorem.surface@1", 1, b"isomorphic-mathlib-nonzero-nat", (interface,)
+    )
+    target = SemanticObject(
+        "mathgraph.theorem.family@1", 1, b"FermatLastTheoremFor:Nat", (interface,)
+    )
+    adapter_a = AdapterContract(
+        "flt.anthropic-to-canonical", 1, "lean.anthropic", "mathgraph",
+        (interface,), assumption_refs=("lean:positive-iff-nonzero",)
+    )
+    adapter_b = AdapterContract(
+        "flt.isomorphic-to-canonical", 1, "lean.isomorphic", "mathgraph",
+        (interface,), assumption_refs=("lean:positive-iff-nonzero",)
+    )
+    lowered_a = lower_semantic_object(source_a, adapter_a, interface, lambda _: target)
+    lowered_b = lower_semantic_object(source_b, adapter_b, interface, lambda _: target)
+    assert isinstance(lowered_a, SemanticObject)
+    assert isinstance(lowered_b, SemanticObject)
+    assert source_a.id != source_b.id
+    assert lowered_a.id == lowered_b.id
+    rejected = lower_semantic_object(
+        source_a, adapter_a, "number-theory.flt.fixed-exponent.int@1", lambda _: target
+    )
+    assert isinstance(rejected, UnknownTranslation)
+    assert rejected.reason == "outside_preservation_contract"
