@@ -105,7 +105,33 @@ def test_refinement_routes_namespaced_upstream_and_rejects_collisions():
     )
     by = {x["symbol"]:x for x in out["candidates"]}
     assert by["FiniteIndex"]["origin_class"] == "SAME_UPSTREAM_NAMESPACE_REFERENCE"
-    assert by["v.IsReal"]["origin_class"] == "SAME_UPSTREAM_DEPENDENT_REFERENCE"
+    assert by["v.IsReal"]["origin_class"] == "UPSTREAM_DEPENDENT_MEMBER_REFERENCE"
     assert by["HeckeAlgebra"]["origin_class"] == "SHORT_NAME_COLLISION"
     assert out["project_bridge_residual_count"] == 0
     assert out["short_name_collision_count"] == 1
+
+
+def test_multiple_upstream_short_definitions_reject_name_only_equivalence():
+    from mathgraph.lean_bridge_origin import refine_origin_classification
+
+    base = {
+        "candidates":[{
+            "symbol":"LiesOver",
+            "candidate_id":"equiv:LiesOver",
+            "origin_class":"AMBIGUOUS",
+            "bridge_action":"RESOLVE_ORIGIN_BEFORE_PROOF_SEARCH",
+            "local_definitions":[],
+            "already_qualified_reusable":False,
+        }]
+    }
+    presence={"LiesOver":{"a":True,"b":True,"c":True}}
+    counts={"LiesOver":{"a":3,"b":3,"c":3}}
+    out=refine_origin_classification(
+        base,
+        short_declaration_presence_by_symbol=presence,
+        short_declaration_count_by_symbol=counts,
+    )
+    row=out["candidates"][0]
+    assert row["origin_class"]=="UPSTREAM_SHORT_NAME_COLLISION"
+    assert out["short_name_collision_count"]==1
+    assert out["project_bridge_residual_count"]==0
