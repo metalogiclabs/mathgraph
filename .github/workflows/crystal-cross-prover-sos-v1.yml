@@ -68,15 +68,14 @@ jobs:
           )
 
           proof=render_lean_certificate_proof(cert)
-          lean=f"""import Mathlib
-
-namespace CrystalCrossProverSOS
-
-theorem amgm2_from_compiled_certificate (x y : ℝ) :
-    x ^ 2 + y ^ 2 ≥ 2 * x * y := {proof}
-
-end CrystalCrossProverSOS
-"""
+          lean=(
+              "import Mathlib\n\n"
+              "namespace CrystalCrossProverSOS\n\n"
+              "theorem amgm2_from_compiled_certificate (x y : ℝ) :\n"
+              "    x ^ 2 + y ^ 2 ≥ 2 * x * y := "
+              + proof
+              + "\nend CrystalCrossProverSOS\n"
+          )
           Path("artifacts/crystal_cross_prover_sos_v1/Surface.lean").write_text(lean)
           print(json.dumps(cert_json,sort_keys=True))
           PY
