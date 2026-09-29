@@ -1,0 +1,60 @@
+name: Crystal Cross-Prover Refutation Probe V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-refutation-probe-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-refutation-probe-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10 lsof
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          echo "PVS_DIR=$(dirname "$PVS_BIN")" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$(dirname "$PVS_BIN")/nasalib"
+      - name: Start pinned PVS CLI
+        run: |
+          set -euo pipefail
+          export NASALIB=/tmp/nasalib
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          cd /tmp/pvs_cad
+          tools/cli/srv.sh cad_demo
+      - name: Probe false source formulas without promotion
+        run: |
+          set -euo pipefail
+          export NASALIB=/tmp/nasalib
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1"
+          cd /tmp/pvs_cad
+          tools/cli/pv.sh cad_demo d_inverse '(cad)' 12 | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/d_inverse.log"
+          tools/cli/pv.sh cad_demo t_amgm3 '(cad)' 12 | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/t_amgm3.log"
+          cat "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/d_inverse.log"
+          cat "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/t_amgm3.log"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-refutation-probe-v1
+          path: artifacts/crystal_cross_prover_refutation_probe_v1/
