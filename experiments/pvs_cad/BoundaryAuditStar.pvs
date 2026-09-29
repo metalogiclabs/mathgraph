@@ -1,0 +1,9 @@
+BoundaryAuditStar: THEORY
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  f: [real -> real]
+
+  abstracted_function_sound: THEOREM
+    FORALL (x: real): f(x) > x*x IMPLIES f(x) > -1
+END BoundaryAuditStar
