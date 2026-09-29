@@ -1,0 +1,223 @@
+name: Crystal Top-K Auto Slice Qualification V1
+
+on:
+  push:
+    branches:
+      - crystal-topk-auto-slice-qualification-v1
+    paths:
+      - 'mathgraph/lean_import_slice.py'
+      - 'mathgraph/lean_bridge_discovery.py'
+      - 'mathgraph/lean_corpus_bridge_scout.py'
+      - 'scripts/run_lean_import_slice.py'
+      - 'tests/test_lean_import_slice.py'
+      - 'experiments/crystal_topk_auto_slice_qualification_v1/**'
+      - '.github/workflows/crystal-topk-auto-slice-qualification-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-topk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+
+      - name: Test slice resolver and discovery semantics
+        run: |
+          python -m pytest -q             tests/test_lean_import_slice.py             tests/test_lean_bridge_discovery.py             tests/test_lean_corpus_bridge_scout.py
+
+      - name: Checkout exact corpus surfaces
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/crystal-topk
+
+          clone_sparse () {
+            repo="$1"; commit="$2"; dest="$3"; shift 3
+            git init "$dest"
+            git -C "$dest" remote add origin "https://github.com/$repo.git"
+            git -C "$dest" sparse-checkout init --cone
+            git -C "$dest" sparse-checkout set "$@"
+            git -C "$dest" fetch --depth=1 origin "$commit"
+            git -C "$dest" checkout --detach FETCH_HEAD
+            test "$(git -C "$dest" rev-parse HEAD)" = "$commit"
+          }
+
+          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-topk/anthropic Theorems P2M Definitions
+
+          clone_sparse isomorphic-ai/fermat             07b35d10984632caa14b1af26ec5dec2363ee920             /tmp/crystal-topk/isomorphic Fermat
+
+          clone_sparse ImperialCollegeLondon/FLT             eb6df2b018f81920cd48dd510417f0b7790c305e             /tmp/crystal-topk/imperial FLT
+
+      - name: Discover current top-k implication routes
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_topk_auto_slice_qualification_v1
+          python scripts/run_lean_corpus_bridge_scout.py             experiments/crystal_corpus_wide_bridge_scout_v1/corpus_manifest.json             --corpus-root anthropic-flt=/tmp/crystal-topk/anthropic             --corpus-root isomorphic-fermat=/tmp/crystal-topk/isomorphic             --corpus-root imperial-flt=/tmp/crystal-topk/imperial             --out artifacts/crystal_topk_auto_slice_qualification_v1/scout.json
+
+      - name: Select all qualified-shape producer routes and materialize exact import slice
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.lean_import_slice import materialize_slice
+
+          scout = json.loads(Path(
+              "artifacts/crystal_topk_auto_slice_qualification_v1/scout.json"
+          ).read_text())
+
+          routes = [
+              x for x in scout["top_implication_candidates"]
+              if x["source_symbol"] == "RingTheory.Sequence.IsRegular"
+              and x["target_symbol"] == "RingTheory.Sequence.IsWeaklyRegular"
+              and x["producer"]["corpus"] == "anthropic-flt"
+              and x["consumer"]["corpus"] == "imperial-flt"
+          ]
+          assert len(routes) == 6, routes
+          targets = [x["producer"]["file"] for x in routes]
+          assert len(set(targets)) == 6
+
+          report = materialize_slice(
+              "/tmp/crystal-topk/anthropic",
+              targets,
+              "/tmp/crystal-topk/slice",
+              extra_files=[(
+                  "experiments/crystal_topk_auto_slice_qualification_v1/FinalCheck.lean",
+                  "FinalCheck.lean",
+              )],
+          )
+
+          root = Path("/tmp/crystal-topk/anthropic")
+          full_files = [
+              p for prefix in ("Theorems","P2M","Definitions")
+              for p in (root/prefix).rglob("*.lean")
+          ]
+          full_bytes = sum(p.stat().st_size for p in full_files)
+
+          selection = {
+              "schema":"mathgraph.crystal-topk-auto-slice-selection.v1",
+              "status":"CANDIDATE_SELECTED_FOR_ISOLATED_QUALIFICATION",
+              "route_count":len(routes),
+              "routes":routes,
+              "targets":targets,
+              "slice_file_count":report["file_count"],
+              "slice_source_bytes":report["source_bytes"],
+              "producer_surface_file_count":len(full_files),
+              "producer_surface_source_bytes":full_bytes,
+              "slice_file_fraction":report["file_count"]/len(full_files),
+              "slice_byte_fraction":report["source_bytes"]/full_bytes,
+              "unresolved_local_candidates":report["unresolved_local_candidates"],
+          }
+          assert not selection["unresolved_local_candidates"]
+          Path(
+              "artifacts/crystal_topk_auto_slice_qualification_v1/selection.json"
+          ).write_text(json.dumps(selection,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "routes":selection["route_count"],
+              "slice_files":selection["slice_file_count"],
+              "slice_bytes":selection["slice_source_bytes"],
+              "full_files":selection["producer_surface_file_count"],
+              "full_bytes":selection["producer_surface_source_bytes"],
+              "slice_file_fraction":selection["slice_file_fraction"],
+              "slice_byte_fraction":selection["slice_byte_fraction"],
+          },sort_keys=True))
+          PY
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve exact Mathlib pin and restore cache
+        working-directory: /tmp/crystal-topk/slice
+        run: |
+          set -euo pipefail
+          lake update
+          grep -q 'db584cd6d46c92f209a44c0f1c829460d327499d' lake-manifest.json
+          lake exe cache get
+
+      - name: Qualify all selected routes in isolated source slice
+        working-directory: /tmp/crystal-topk/slice
+        run: |
+          set -euo pipefail
+          START="$(date +%s)"
+          lake build
+          lake env lean FinalCheck.lean
+          END="$(date +%s)"
+          echo "$((END-START))" > "$GITHUB_WORKSPACE/artifacts/crystal_topk_auto_slice_qualification_v1/qualification_seconds.txt"
+
+      - name: Promote exactly the six verified consequence routes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          base=Path("artifacts/crystal_topk_auto_slice_qualification_v1")
+          s=json.loads((base/"selection.json").read_text())
+          secs=int((base/"qualification_seconds.txt").read_text().strip())
+
+          checks=[
+              "crystal_weak_adic_pair",
+              "crystal_weak_integrally_closed_pair",
+              "crystal_weak_dvr_quotient_pair",
+              "crystal_weak_system_of_parameters",
+              "crystal_weak_mvPowerSeries",
+              "crystal_weak_regular_pair",
+          ]
+          assert len(checks)==s["route_count"]==6
+
+          promotion={
+              "schema":"mathgraph.crystal-topk-auto-slice-qualification.v1",
+              "status":"WARRANTED_TOPK_REUSE",
+              "selection_method":"automatic corpus-wide consequence discovery",
+              "source_slice_method":"automatic exact local-import transitive closure",
+              "route_count":6,
+              "routes":s["routes"],
+              "lean_checks":checks,
+              "qualifier":"Lean 4 kernel; isolated exact source slice; lake build plus direct lean check",
+              "qualification_seconds":secs,
+              "slice_file_count":s["slice_file_count"],
+              "slice_source_bytes":s["slice_source_bytes"],
+              "producer_surface_file_count":s["producer_surface_file_count"],
+              "producer_surface_source_bytes":s["producer_surface_source_bytes"],
+              "slice_file_fraction":s["slice_file_fraction"],
+              "slice_byte_fraction":s["slice_byte_fraction"],
+              "source_proof_reformalization_loc":0,
+              "protected_consequence":"RingTheory.Sequence.IsWeaklyRegular",
+              "revocation_boundary":[
+                  "producer commit changes",
+                  "resolved source bytes change",
+                  "Mathlib pin or bridge semantics change",
+                  "consumer protected consequence changes",
+                  "isolated qualification fails",
+              ],
+              "unknowns":[
+                  "automatic synthesis of arbitrary consequence adapters",
+                  "completeness of corpus-wide candidate discovery",
+                  "cross-version transport without a common qualifying environment",
+              ],
+          }
+          (base/"promotion.json").write_text(
+              json.dumps(promotion,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "status":promotion["status"],
+              "routes":promotion["route_count"],
+              "slice_files":promotion["slice_file_count"],
+              "slice_bytes":promotion["slice_source_bytes"],
+              "qualification_seconds":promotion["qualification_seconds"],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-topk-auto-slice-qualification-v1
+          path: artifacts/crystal_topk_auto_slice_qualification_v1/
