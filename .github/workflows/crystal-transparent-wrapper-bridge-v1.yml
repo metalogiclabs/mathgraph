@@ -1,4 +1,5 @@
 name: Crystal Transparent Wrapper Bridge V1
+# qualify structural bridge
 
 on:
   push:
