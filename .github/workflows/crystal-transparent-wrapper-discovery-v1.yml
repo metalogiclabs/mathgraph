@@ -94,7 +94,7 @@ jobs:
           if not hits:
               print("WRAPPERS", json.dumps([
                   x for x in out["wrappers"]
-                  if "FiniteRange" in x["wrapper"] or "FiniteRange" in x["full_name"]
+                  if "FiniteRange" in x["name"] or "FiniteRange" in x["full_name"]
               ], sort_keys=True))
               print("FINITE_RANGE_CANDIDATES", json.dumps([
                   x for x in out["candidates"]
