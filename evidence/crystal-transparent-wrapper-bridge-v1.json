@@ -1,0 +1,67 @@
+{
+  "schema": "mathgraph.crystal-transparent-wrapper-bridge-authority.v1",
+  "status": "WARRANTED_BOUNDED_REUSABLE",
+  "authority": {
+    "run_id": 36621922950,
+    "head_sha": "038de791228e7ca71888802fb372e92f1d842bf3",
+    "artifact_id": 11059205643,
+    "artifact_digest": "sha256:b3e2f4e2c9a2300196253ea60d43aa7667d990d166a543f4cd48e9ed9b553a3d"
+  },
+  "lineage": {
+    "parent_name_based_expansion_run": 36620986312,
+    "parent_name_based_state": {
+      "candidate_count": 85,
+      "unknown_actionable_count": 0
+    },
+    "separator": "a real different-name semantic transport exists outside the name-based candidate universe"
+  },
+  "source": {
+    "corpus": "teorth-pfr",
+    "commit": "eb5557e9556a89a3418c4e8bdd717a5cf736c060",
+    "path": "PFR/ForMathlib/FiniteRange/Defs.lean",
+    "blob_sha": "59cf0853e1dad3ae7f047c073448afb4f075046d",
+    "source_interface": "FiniteRange X"
+  },
+  "canonical_interface": {
+    "interface_id": "function.finite-range.set-range-finite@1",
+    "proposition": "(Set.range X).Finite",
+    "law": "FiniteRange X ↔ (Set.range X).Finite"
+  },
+  "consumer": {
+    "corpus": "anthropic-flt",
+    "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+    "path": "Definitions/Def_RepTheory_TestFunctionAction.lean",
+    "blob_sha": "156d6616de87c54897c9d05da3be29d85556d649",
+    "declaration": "TestFunctionAction.finiteRangeIntegral_of_finite",
+    "protected_premise": "(Set.range F).Finite"
+  },
+  "qualification": {
+    "environment": {
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3",
+      "mathlib_commit": "ec6a61cec0d8f9fda04453e9bb5761a79aa43a70"
+    },
+    "build_jobs": 1893,
+    "bridge_check_seconds": 3,
+    "source_proof_reformalized_loc": 0,
+    "qualified_laws": [
+      "FiniteRange X ↔ (Set.range X).Finite",
+      "PFR FiniteRange premise feeds Anthropic finiteRangeIntegral_of_finite",
+      "PFR constant-function FiniteRange instance feeds Anthropic consumer"
+    ]
+  },
+  "systems_law": {
+    "name": "semantic separators reopen candidate grammars",
+    "statement": "A zero residual is only relative to the candidate grammar. A verified different-name transport is a separator showing that the name-based scout quotient was too coarse; retain origin-first routing, but refine candidate generation with transparent semantic structure."
+  },
+  "rejected_claim": {
+    "claim": "zero UNKNOWN_ACTIONABLE under the exact-name scout means the four-corpus interoperability problem is closed",
+    "status": "REJECTED",
+    "reason": "FiniteRange and (Set.range X).Finite form a qualified cross-corpus bridge despite different source names, so the exact-name candidate grammar omitted a real reusable edge."
+  },
+  "next_residual": "mechanically discover transparent project-local wrappers and match their canonical field semantics to consumer premises before any LLM/theorem search",
+  "unknowns": [
+    "automatic discovery of arbitrary differently-named semantic equivalences",
+    "compiled proof-object transport between original PFR and Anthropic toolchains",
+    "minimality of the canonical interface beyond this consumer consequence"
+  ]
+}
