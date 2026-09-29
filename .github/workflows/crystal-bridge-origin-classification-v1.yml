@@ -197,6 +197,21 @@ jobs:
           ]
           for symbol in data["symbols"]:
               lines.append(f"#crystal_contains {symbol}")
+
+          short_names=sorted({symbol.split(".")[-1] for symbol in data["symbols"]})
+          quoted=", ".join(json.dumps(x) for x in short_names)
+          lines.extend([
+              "",
+              "run_cmd do",
+              "  let env ← getEnv",
+              f"  let wanted : List String := [{quoted}]",
+              "  for (n, _) in env.constants.toList do",
+              "    if n.isStr then",
+              "      let short := n.getString!",
+              "      if wanted.contains short then",
+              '        logInfo m!"CRYSTAL_DECL|{short}|{n}"',
+              "",
+          ])
           (root/"Probe.lean").write_text("\n".join(lines)+"\n")
           PY
           cd "$ROOT"
@@ -210,6 +225,15 @@ jobs:
           presence={name:(value=="true") for name,value in pairs}
           wanted=json.loads(Path("/tmp/origin-input/input.json").read_text())["symbols"]
           assert set(presence)==set(wanted), (len(presence),len(wanted),set(wanted)-set(presence))
+
+          decl_pairs=re.findall(r"CRYSTAL_DECL\|([^|\n]+)\|([^\n]+)",text)
+          exact_names={}
+          for short,full in decl_pairs:
+              exact_names.setdefault(short,set()).add(full.strip())
+          short_declaration_names={
+              symbol:sorted(exact_names.get(symbol.split(".")[-1],set()))
+              for symbol in wanted
+          }
 
           decl_re=re.compile(r"\b(?:class|structure|def|abbrev|inductive)\s+([A-Za-z_][A-Za-z0-9_'.]*)\b")
           block_comment=re.compile(r"/-[\s\S]*?-/")
@@ -237,6 +261,7 @@ jobs:
               "presence":presence,
               "short_declaration_presence":short_presence,
               "short_declaration_count":short_counts,
+              "short_declaration_names":short_declaration_names,
           }
           Path(f"/tmp/{env}.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
           print(json.dumps({
@@ -286,6 +311,7 @@ jobs:
               load_probe_files,
               load_short_declaration_probe_files,
               load_short_declaration_count_probe_files,
+              load_short_declaration_name_probe_files,
               refine_origin_classification,
           )
 
@@ -309,10 +335,12 @@ jobs:
 
           short_upstream=load_short_declaration_probe_files(probe_paths)
           short_counts=load_short_declaration_count_probe_files(probe_paths)
+          short_names=load_short_declaration_name_probe_files(probe_paths)
           refined=refine_origin_classification(
               out,
               short_declaration_presence_by_symbol=short_upstream,
               short_declaration_count_by_symbol=short_counts,
+              short_declaration_names_by_symbol=short_names,
           )
           Path("artifacts/crystal_bridge_origin_v1/classification_v2.json").write_text(
               json.dumps(refined,indent=2,sort_keys=True)+"\n"
