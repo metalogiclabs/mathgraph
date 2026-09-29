@@ -1,0 +1,33 @@
+{
+  "schema": "mathgraph.crystal-cross-version-flt-interface.v1",
+  "candidate_from_scout": {
+    "scout_run": 36516714974,
+    "canonical_symbol": "FermatLastTheoremFor",
+    "rank": 1,
+    "corpora": [
+      "anthropic-flt",
+      "imperial-flt",
+      "isomorphic-fermat"
+    ]
+  },
+  "versions": [
+    {
+      "corpus": "anthropic-flt",
+      "mathlib_commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "lean_toolchain": "leanprover/lean4:v4.33.0",
+      "basic_blob_sha": "c21f4b48f7231a5782d0ea07442d963b0c6cc7f5"
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "mathlib_commit": "0531bb79fea20efc9ce6942db46b96be5a919400",
+      "lean_toolchain": "leanprover/lean4:v4.31.0-rc1",
+      "basic_blob_sha": "5202059f5afca04b2c9d2f1b02ea9987324b9e81"
+    },
+    {
+      "corpus": "imperial-flt",
+      "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3",
+      "basic_blob_sha": "1cf236b0675269db120c6cdc6b2c97a25a2000b3"
+    }
+  ]
+}
