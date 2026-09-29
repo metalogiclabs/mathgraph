@@ -26,7 +26,7 @@ jobs:
       - name: Install MathGraph
         run: python -m pip install -e ".[all]"
       - name: Test origin classifier
-        run: python -m pytest -q tests/test_lean_bridge_origin.py
+        run: python -m pytest -q tests/test_lean_bridge_origin.py tests/test_lean_bridge_residual.py
 
       - name: Sparse checkout exact corpus surfaces
         run: |
@@ -348,6 +348,19 @@ jobs:
           assert refined["candidate_count"] == 76, refined
           assert refined["no_project_bridge_needed_count"] >= 57, refined
 
+          from mathgraph.lean_bridge_residual import compile_origin_residual
+          residual=compile_origin_residual(refined)
+          Path("artifacts/crystal_bridge_origin_v1/residual.json").write_text(
+              json.dumps(residual,indent=2,sort_keys=True)+"\n"
+          )
+          assert (
+              residual["candidate_count"]
+              == residual["reusable_count"]
+              + residual["discharged_non_bridge_count"]
+              + residual["rejected_false_candidate_count"]
+              + residual["unknown_actionable_count"]
+          ), residual
+
           summary={
               "status":refined["status"],
               "candidate_count":refined["candidate_count"],
@@ -359,6 +372,13 @@ jobs:
               "project_bridge_residual_count":refined["project_bridge_residual_count"],
               "project_bridge_residual_symbols":[x["symbol"] for x in refined["project_bridge_residual"]],
               "collision_symbols":[x["symbol"] for x in refined["short_name_collisions"]],
+              "exact_residual":{
+                  "reusable":residual["reusable_count"],
+                  "discharged_non_bridge":residual["discharged_non_bridge_count"],
+                  "rejected_false_candidate":residual["rejected_false_candidate_count"],
+                  "unknown_actionable":residual["unknown_actionable_count"],
+                  "unknown_actionable_symbols":[x["symbol"] for x in residual["unknown_actionable"]],
+              },
           }
           Path("artifacts/crystal_bridge_origin_v1/summary.json").write_text(
               json.dumps(summary,indent=2,sort_keys=True)+"\n"
