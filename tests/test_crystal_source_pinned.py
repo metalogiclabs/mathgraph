@@ -6,6 +6,11 @@ from pathlib import Path
 import urllib.request
 
 from mathgraph.crystal import (
+    AdapterContract,
+    SemanticObject,
+    UnknownTranslation,
+    canonical_bytes,
+    lower_semantic_object,
     ConsequentialState,
     Hyperedge,
     action_quotient,
@@ -266,3 +271,76 @@ def test_tla_peterson_refinement_is_the_same_future_relative_quotient():
     assert classes[("l0",)] == ("a0",)
     assert classes[("cs",)] == ("cs",)
     assert classes[("l2",)] == ("a4",)
+
+
+def test_real_flt_corpora_expose_distinct_surfaces_for_one_protected_interface():
+    anthropic = _fetch("anthropic_flt_surface")
+    isomorphic = _fetch("isomorphic_fermat_surface")
+    mathlib = _fetch("mathlib_flt_basic")
+
+    assert "theorem fermat_last_theorem (n : ℕ)" in anthropic
+    assert "(ha : 0 < a)" in anthropic
+    assert "(hb : 0 < b)" in anthropic
+    assert "(hc : 0 < c)" in anthropic
+
+    assert "abbrev HoldsAt (n : ℕ) : Prop := FermatLastTheoremFor n" in isomorphic
+    assert "def FermatLastTheoremFor (n : ℕ) : Prop := FermatLastTheoremWith ℕ n" in mathlib
+    assert "a ≠ 0 → b ≠ 0 → c ≠ 0" in mathlib
+
+    interface = "number-theory.flt.fixed-exponent.nat@1"
+    bad_interface = "number-theory.flt.fixed-exponent.int@1"
+
+    def source_object(name):
+        pin = PINS[name]
+        return SemanticObject(
+            "lean.theorem.surface@1",
+            1,
+            canonical_bytes({
+                "repository": pin["repository"],
+                "commit": pin["commit"],
+                "path": pin["path"],
+                "blob_sha": pin["blob_sha"],
+            }),
+            (interface,),
+        )
+
+    canonical = SemanticObject(
+        "mathgraph.theorem.family@1",
+        1,
+        canonical_bytes({
+            "family": "FermatLastTheoremFor",
+            "carrier": "Nat",
+            "surface_contract": "positive-Nat iff nonzero-Nat",
+            "mathlib_pin": PINS["mathlib_flt_basic"],
+        }),
+        (interface,),
+    )
+
+    a = source_object("anthropic_flt_surface")
+    b = source_object("isomorphic_fermat_surface")
+    ca = AdapterContract(
+        "flt.anthropic-to-canonical", 1,
+        "lean.anthropic.flt@1", "mathgraph.number-theory@1",
+        (interface,),
+        assumption_refs=("bridge:positive-nat-iff-nonzero-nat",),
+        evidence_refs=("source-pin:anthropic_flt_surface",),
+    )
+    cb = AdapterContract(
+        "flt.isomorphic-to-canonical", 1,
+        "lean.isomorphic.fermat@1", "mathgraph.number-theory@1",
+        (interface,),
+        assumption_refs=("bridge:positive-nat-iff-nonzero-nat",),
+        evidence_refs=("source-pin:isomorphic_fermat_surface",),
+    )
+
+    la = lower_semantic_object(a, ca, interface, lambda _: canonical)
+    lb = lower_semantic_object(b, cb, interface, lambda _: canonical)
+    assert isinstance(la, SemanticObject)
+    assert isinstance(lb, SemanticObject)
+    assert a.id != b.id
+    assert la.id == lb.id
+    assert la.to_bytes() == lb.to_bytes()
+
+    rejected = lower_semantic_object(a, ca, bad_interface, lambda _: canonical)
+    assert isinstance(rejected, UnknownTranslation)
+    assert rejected.reason == "outside_preservation_contract"
