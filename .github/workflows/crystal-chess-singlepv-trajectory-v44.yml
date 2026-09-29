@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "python-chess==1.999"
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
           python -m py_compile experiments/crystal_chess_singlepv_trajectory_v44.py
 
       - name: Download exact V43 residual
