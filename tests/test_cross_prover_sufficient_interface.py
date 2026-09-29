@@ -53,3 +53,30 @@ END Q
     assert "source_skip_from_interface" in lean
     assert "above_nonzero_square_positive_interface" in lean
     assert "source_mix_from_interface" in lean
+
+
+def test_type_range_projection_stays_in_sufficient_interface_relation():
+    sources={
+        "q": """
+Q: THEORY
+BEGIN
+a: LEMMA FORALL (x: posreal): x + 1 > 1
+b: LEMMA FORALL (y: nnreal): sqrt(y) + 1 >= 1
+END Q
+"""
+    }
+    proofs={"q": """(|Q|
+ (|a| 0)
+ (|b| 0)
+)
+"""}
+    out=discover_sufficient_interfaces(sources,proofs)
+    assert out["candidate_count"]==2
+    assert {x["interface_id"] for x in out["candidates"]}=={
+        "interface.positive_add_one_gt_one@1",
+        "interface.sqrt_add_one_ge_one@1",
+    }
+    assert all(x["relation_kind"]==RELATION_KIND for x in out["candidates"])
+    lean=render_lean_projection(out)
+    assert "source_posreal_from_interface" in lean
+    assert "source_nnreal_sqrt_from_interface" in lean
