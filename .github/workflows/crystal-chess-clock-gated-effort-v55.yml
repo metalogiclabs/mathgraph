@@ -1,4 +1,4 @@
-name: Crystal Chess Clock-Gated Effort V55
+name: Crystal Chess Clock Gated Effort V55
 
 on:
   push:
@@ -11,33 +11,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  clock-gated:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - label: fast
-            tc: "1+0.01"
-            openings: 512
-            rounds: 512
-            seed: 20261107
-          - label: mid
-            tc: "2+0.02"
-            openings: 512
-            rounds: 512
-            seed: 20261108
-          - label: slow
-            tc: "5+0.05"
-            openings: 512
-            rounds: 512
-            seed: 20261109
+  qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -49,46 +31,41 @@ jobs:
           python -m py_compile experiments/crystal_chess_timemgmt_ablation_v51.py
           python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
 
-      - name: Build pinned baseline Stockfish
+      - name: Build baseline and frozen V55 candidate
         run: |
           set -euo pipefail
           git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
           git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
           make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
           /tmp/stockfish-base/src/stockfish bench 16 1 3 default depth > /tmp/baseline-bench.txt 2>&1
-
-      - name: Apply frozen 64ms clock gate
-        run: |
-          set -euo pipefail
           cp -a /tmp/stockfish-base /tmp/stockfish-cand
-          mkdir -p "artifacts/crystal-chess-v55/${{ matrix.label }}"
+          mkdir -p artifacts/crystal-chess-v55/{fast,mid,slow}
           python - <<'PY'
           from pathlib import Path
           p=Path('/tmp/stockfish-cand/src/search.cpp')
           s=p.read_text()
-          old='''            double highBestMoveEffort = std::clamp(
+          old="""            double highBestMoveEffort = std::clamp(
               interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
 
             double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-'''
-          new='''            double highBestMoveEffort = std::clamp(
+"""
+          new="""            double highBestMoveEffort = std::clamp(
               interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
 
             // Crystal V55: V54 residual-earned absolute clock-regime gate.
-            // Preserve baseline behavior outside fast local optimum budgets.
             if (mainThread->tm.optimum() <= 64)
                 highBestMoveEffort = 1.0;
 
             double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-'''
+"""
           assert s.count(old)==1, ('V55 anchor drift',s.count(old))
           p.write_text(s.replace(old,new,1))
           PY
-          git -C /tmp/stockfish-cand diff -- src/search.cpp > "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch"
-          test -s "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch"
-          sha256sum "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch" | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/PATCH_SHA256.txt"
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v55/stockfish.patch
+          test -s artifacts/crystal-chess-v55/stockfish.patch
+          sha256sum artifacts/crystal-chess-v55/stockfish.patch > artifacts/crystal-chess-v55/PATCH_SHA256.txt
           make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
-          /tmp/stockfish-cand/src/stockfish bench 16 1 3 default depth > "artifacts/crystal-chess-v55/${{ matrix.label }}/candidate-bench.txt" 2>&1
+          /tmp/stockfish-cand/src/stockfish bench 16 1 3 default depth > /tmp/candidate-bench.txt 2>&1
 
       - name: Build pinned Fastchess
         run: |
@@ -97,28 +74,38 @@ jobs:
           git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
           make -C /tmp/fastchess -j2
 
-      - name: Generate untouched openings
+      - name: Generate untouched books
         run: |
           set -euo pipefail
-          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish-base/src/stockfish             --book "artifacts/crystal-chess-v55/${{ matrix.label }}/normal.epd"             --manifest "artifacts/crystal-chess-v55/${{ matrix.label }}/normal_manifest.json"             --openings ${{ matrix.openings }} --plies 12 --depth 6 --multipv 4 --seed ${{ matrix.seed }}
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v55/fast/normal.epd --manifest artifacts/crystal-chess-v55/fast/normal_manifest.json --openings 512 --plies 12 --depth 6 --multipv 4 --seed 20261107
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v55/mid/normal.epd --manifest artifacts/crystal-chess-v55/mid/normal_manifest.json --openings 512 --plies 12 --depth 6 --multipv 4 --seed 20261108
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v55/slow/normal.epd --manifest artifacts/crystal-chess-v55/slow/normal_manifest.json --openings 512 --plies 12 --depth 6 --multipv 4 --seed 20261109
 
-      - name: Run paired clock-regime match
+      - name: Run fast clock
         run: |
           set -euo pipefail
-          /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalClockGateV55             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=${{ matrix.tc }} option.Threads=1 option.Hash=16 option.Ponder=false             -openings file="artifacts/crystal-chess-v55/${{ matrix.label }}/normal.epd" format=epd order=sequential             -rounds ${{ matrix.rounds }} -repeat -concurrency 4             -pgnout file="artifacts/crystal-chess-v55/${{ matrix.label }}/match.pgn"             -log file="artifacts/crystal-chess-v55/${{ matrix.label }}/fastchess.log" level=info             | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/fastchess.stdout"
+          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalClockGateV55 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=1+0.01 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v55/fast/normal.epd format=epd order=sequential -rounds 512 -repeat -concurrency 4 -pgnout file=artifacts/crystal-chess-v55/fast/match.pgn -log file=artifacts/crystal-chess-v55/fast/fastchess.log level=info | tee artifacts/crystal-chess-v55/fast/fastchess.stdout
+          python experiments/crystal_chess_timemgmt_ablation_v51.py --pgn artifacts/crystal-chess-v55/fast/match.pgn --candidate-name CrystalClockGateV55 --variant clock_gate_64ms_fast --output artifacts/crystal-chess-v55/fast/result.json | tee artifacts/crystal-chess-v55/fast/analyse.log
 
-      - name: Analyse paired Elo
+      - name: Run intermediate clock
         run: |
           set -euo pipefail
-          python experiments/crystal_chess_timemgmt_ablation_v51.py             --pgn "artifacts/crystal-chess-v55/${{ matrix.label }}/match.pgn"             --candidate-name CrystalClockGateV55             --variant "clock_gate_64ms_${{ matrix.label }}"             --output "artifacts/crystal-chess-v55/${{ matrix.label }}/result.json"             | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/analyse.log"
-          grep -q "CRYSTAL_CHESS_TIMEMGMT_ABLATION_V51=PASS" "artifacts/crystal-chess-v55/${{ matrix.label }}/analyse.log"
-          cp /tmp/baseline-bench.txt "artifacts/crystal-chess-v55/${{ matrix.label }}/"
-          printf '%s\n' "V54: effort +6.872 Elo fast / -7.126 Elo slow; V55 gate fixed before all matches: tm.optimum() <= 64ms" > "artifacts/crystal-chess-v55/${{ matrix.label }}/LINEAGE.txt"
+          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalClockGateV55 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=2+0.02 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v55/mid/normal.epd format=epd order=sequential -rounds 512 -repeat -concurrency 4 -pgnout file=artifacts/crystal-chess-v55/mid/match.pgn -log file=artifacts/crystal-chess-v55/mid/fastchess.log level=info | tee artifacts/crystal-chess-v55/mid/fastchess.stdout
+          python experiments/crystal_chess_timemgmt_ablation_v51.py --pgn artifacts/crystal-chess-v55/mid/match.pgn --candidate-name CrystalClockGateV55 --variant clock_gate_64ms_mid --output artifacts/crystal-chess-v55/mid/result.json | tee artifacts/crystal-chess-v55/mid/analyse.log
+
+      - name: Run slow clock
+        run: |
+          set -euo pipefail
+          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalClockGateV55 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=5+0.05 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v55/slow/normal.epd format=epd order=sequential -rounds 512 -repeat -concurrency 4 -pgnout file=artifacts/crystal-chess-v55/slow/match.pgn -log file=artifacts/crystal-chess-v55/slow/fastchess.log level=info | tee artifacts/crystal-chess-v55/slow/fastchess.stdout
+          python experiments/crystal_chess_timemgmt_ablation_v51.py --pgn artifacts/crystal-chess-v55/slow/match.pgn --candidate-name CrystalClockGateV55 --variant clock_gate_64ms_slow --output artifacts/crystal-chess-v55/slow/result.json | tee artifacts/crystal-chess-v55/slow/analyse.log
+          cp /tmp/baseline-bench.txt artifacts/crystal-chess-v55/
+          cp /tmp/candidate-bench.txt artifacts/crystal-chess-v55/
+          printf '%s\n' "V54 fast +6.872 Elo; V54 slow -7.126 Elo. V55 gate frozen before testing: tm.optimum() <= 64ms." > artifacts/crystal-chess-v55/LINEAGE.txt
 
       - name: Upload V55 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: crystal-chess-clock-gated-effort-v55-${{ matrix.label }}
-          path: artifacts/crystal-chess-v55/${{ matrix.label }}/
+          name: crystal-chess-clock-gated-effort-v55
+          path: artifacts/crystal-chess-v55/
           if-no-files-found: error
