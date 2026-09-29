@@ -1,0 +1,66 @@
+{
+  "schema": "mathgraph.crystal-auto-bridge-authority.v1",
+  "status": "WARRANTED_BOUNDED_REUSABLE",
+  "authority": {
+    "workflow_run": 36513233235,
+    "head_sha": "8c9af10d40f6f17e9fa2344fb4822690556cec98",
+    "artifact_id": 11009257816,
+    "artifact_digest": "sha256:2fd4eac43876f48356f25c728839086ba5f24435b80b2c10658149392ec53aba"
+  },
+  "discovery": {
+    "method": "automatic from exact pinned Lean source",
+    "declaration_count": 88,
+    "alias_rule_count": 1,
+    "equivalence_candidate_count": 1,
+    "implication_rule_count": 1,
+    "implication_candidate_count": 4,
+    "three_corpus_equivalence": {
+      "canonical_symbol": "FermatLastTheoremFor",
+      "corpora": [
+        "anthropic-flt",
+        "isomorphic-fermat",
+        "imperial-flt"
+      ]
+    }
+  },
+  "selected_route": {
+    "source_symbol": "IsRegular",
+    "target_symbol": "IsWeaklyRegular",
+    "producer": {
+      "corpus": "anthropic-flt",
+      "declaration": "IsLocalRing.isRegular_of_systemOfParameters",
+      "file": "Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean"
+    },
+    "consumer": {
+      "corpus": "imperial-flt",
+      "declaration": "Module.length_le_depth",
+      "file": "FLT/Patching/Utils/Depth.lean"
+    },
+    "bridge_evidence": "mathlib:Mathlib/RingTheory/Regular/RegularSequence.lean:RingTheory.Sequence.IsRegular"
+  },
+  "qualification": {
+    "qualifier": "Lean 4 kernel via lake build plus direct lean check",
+    "qualified_consumer": "CrystalAnthropicConsumer.reused_systemOfParameters_as_weak",
+    "protected_consequence": "RingTheory.Sequence.IsWeaklyRegular R xs",
+    "source_proof_reformalized_loc": 0,
+    "qualification_seconds": 46,
+    "build_jobs": 8713
+  },
+  "lineage": {
+    "prior_real_reuse_run": 36510218408,
+    "source_theorem_proof_module_loc": 3240,
+    "source_theorem_proof_module_bytes": 141534
+  },
+  "revocation_boundary": [
+    "source blob pin changes",
+    "Mathlib bridge semantics change",
+    "consumer protected consequence changes",
+    "Lean qualification fails"
+  ],
+  "unknowns": [
+    "universal theorem canonicalization",
+    "automatic proof of arbitrary proposed bridges",
+    "cross-version transport without a common qualifying environment",
+    "completeness of candidate discovery"
+  ]
+}
