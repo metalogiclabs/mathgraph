@@ -273,6 +273,8 @@ jobs:
               "family_semantic_object_id":obj.id,
               "interfaces":list(obj.interfaces),
               "unsupported_disposition":"UNKNOWN_UNSUPPORTED_GRAMMAR",
+              "source_occurrence_unknown":["cad_demo.s_pos"],
+              "source_occurrence_policy":"at least one exact native-verifier replay per canonical claim; duplicate matched occurrences need not be re-proved",
               "source_unverified_disposition":"UNKNOWN_SOURCE_UNVERIFIED",
               "negative_lineage":{
                   "run_id":36625730315,
