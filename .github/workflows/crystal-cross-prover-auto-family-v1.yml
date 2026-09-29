@@ -60,14 +60,30 @@ jobs:
               "cad_examples":Path("/tmp/pvs-family/cad_examples.pvs").read_text(),
               "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.pvs").read_text(),
           }
-          d=discover_family(sources)
+          proofs={
+              "cad_demo":Path("/tmp/pvs-family/cad_demo.prf").read_text(),
+              "cad_examples":Path("/tmp/pvs-family/cad_examples.prf").read_text(),
+              "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.prf").read_text(),
+          }
+          d=discover_family(sources,proofs)
           assert d["supported_occurrence_count"]==8,d
+          assert d["source_verified_occurrence_count"]==7,d
+          assert d["source_unverified_supported_occurrence_count"]==1,d
           assert d["unique_canonical_claim_count"]==7,d
+          assert d["verified_unique_claim_count"]==7,d
           assert d["duplicate_semantic_group_count"]==1,d
           dup=d["duplicate_semantic_groups"][0]
           assert dup["claim_id"]=="real.positive_product2@1",dup
           assert dup["source_occurrence_count"]==2,dup
+          assert dup["source_authority_occurrence_count"]==1,dup
+          assert dup["source_unverified_occurrence_count"]==1,dup
           assert d["unsupported_occurrence_count"]>0,d
+          unverified=[
+              x for x in d["supported_occurrences"]
+              if x["source_proof_status"]=="NO_PINNED_PROOF"
+          ]
+          assert len(unverified)==1,unverified
+          assert unverified[0]["theory"]=="cad_demo" and unverified[0]["formula"]=="s_pos",unverified
 
           out=Path("artifacts/crystal_cross_prover_auto_family_v1")
           out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
@@ -76,8 +92,11 @@ jobs:
           print(json.dumps({
               "source_lemmas":d["source_lemma_count"],
               "supported_occurrences":d["supported_occurrence_count"],
+              "source_verified_occurrences":d["source_verified_occurrence_count"],
+              "source_unverified_supported_occurrences":d["source_unverified_supported_occurrence_count"],
               "unsupported_occurrences":d["unsupported_occurrence_count"],
               "unique_claims":d["unique_canonical_claim_count"],
+              "verified_unique_claims":d["verified_unique_claim_count"],
               "duplicates":d["duplicate_semantic_group_count"],
           },sort_keys=True))
           PY
@@ -241,8 +260,11 @@ jobs:
               "head_sha":os.environ["HEAD_SHA"],
               "source_lemma_count":d["source_lemma_count"],
               "supported_occurrence_count":d["supported_occurrence_count"],
+              "source_verified_occurrence_count":d["source_verified_occurrence_count"],
+              "source_unverified_supported_occurrence_count":d["source_unverified_supported_occurrence_count"],
               "unsupported_occurrence_count":d["unsupported_occurrence_count"],
               "unique_canonical_claim_count":d["unique_canonical_claim_count"],
+              "verified_unique_claim_count":d["verified_unique_claim_count"],
               "duplicate_semantic_group_count":d["duplicate_semantic_group_count"],
               "unverified_duplicate_occurrences":["cad_demo.s_pos"],
               "verified_duplicate_authority":{"real.positive_product2@1":"cad_star_ex.s_pos"},
@@ -251,6 +273,12 @@ jobs:
               "family_semantic_object_id":obj.id,
               "interfaces":list(obj.interfaces),
               "unsupported_disposition":"UNKNOWN_UNSUPPORTED_GRAMMAR",
+              "source_unverified_disposition":"UNKNOWN_SOURCE_UNVERIFIED",
+              "negative_lineage":{
+                  "run_id":36625730315,
+                  "failure":"cad_demo.s_pos has no pinned proof entry; replay correctly returned untried",
+                  "correction":"source grammar recognition is now separated from source proof authority; one unverified duplicate occurrence is retained as UNKNOWN_SOURCE_UNVERIFIED while the same canonical meaning is qualified from cad_star_ex.s_pos"
+              },
               "systems_law":{
                   "name":"discover-normalize-dedupe-verify",
                   "statement":"A bounded cross-prover linker can discover semantic candidates from source shape rather than theorem names, quotient duplicate source surfaces by canonical claim, reuse existing warrant, select one independently verified source authority per canonical claim, and preserve unsupported or unverified duplicate surfaces without paying to re-prove them."
