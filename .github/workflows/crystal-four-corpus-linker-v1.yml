@@ -7,9 +7,11 @@ on:
       - crystal-four-corpus-linker-v1
     paths:
       - 'mathgraph/lean_incremental_corpus_linker.py'
+      - 'mathgraph/lean_bridge_discovery.py'
       - 'mathgraph/lean_bridge_origin.py'
       - 'mathgraph/lean_bridge_residual.py'
       - 'tests/test_lean_incremental_corpus_linker.py'
+      - 'tests/test_lean_bridge_discovery.py'
       - 'tests/test_lean_bridge_origin.py'
       - 'tests/test_lean_bridge_residual.py'
       - 'experiments/crystal_four_corpus_linker_v1/**'
@@ -32,7 +34,11 @@ jobs:
         run: python -m pip install -e ".[all]"
       - name: Test incremental linker kernel
         run: |
-          python -m pytest -q             tests/test_lean_incremental_corpus_linker.py             tests/test_lean_bridge_origin.py             tests/test_lean_bridge_residual.py
+          python -m pytest -q \
+            tests/test_lean_incremental_corpus_linker.py \
+            tests/test_lean_bridge_discovery.py \
+            tests/test_lean_bridge_origin.py \
+            tests/test_lean_bridge_residual.py
 
       - name: Sparse checkout four exact corpora
         run: |
