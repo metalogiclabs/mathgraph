@@ -1,0 +1,130 @@
+name: Crystal Cross-Prover MSI Projection V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-msi-projection-v1
+    paths:
+      - 'mathgraph/cross_prover_sufficient_interface.py'
+      - 'tests/test_cross_prover_sufficient_interface.py'
+      - 'experiments/crystal_cross_prover_msi_projection_v1/**'
+      - '.github/workflows/crystal-cross-prover-msi-projection-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test typed projection boundary
+        run: python -m pytest -q tests/test_cross_prover_sufficient_interface.py
+      - name: Discover four pinned source projections
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/projection artifacts/crystal_cross_prover_msi_projection_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/projection/cad_star_ex.pvs "$BASE/cad_star_ex.pvs"
+          curl -fsSL -o /tmp/projection/cad_star_ex.prf "$BASE/cad_star_ex.prf"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from mathgraph.cross_prover_sufficient_interface import (
+              RELATION_KIND,
+              discover_sufficient_interfaces,
+              render_lean_projection,
+          )
+
+          m=json.loads(Path("experiments/crystal_cross_prover_msi_projection_v1/manifest.json").read_text())
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          src=Path("/tmp/projection/cad_star_ex.pvs").read_bytes()
+          prf=Path("/tmp/projection/cad_star_ex.prf").read_bytes()
+          assert git_blob(src)==m["source"]["source_blob_sha"]
+          assert git_blob(prf)==m["source"]["proof_blob_sha"]
+
+          d=discover_sufficient_interfaces(
+              {"cad_star_ex":src.decode()},
+              {"cad_star_ex":prf.decode()},
+          )
+          assert d["candidate_count"]==4,d
+          assert d["source_authority_candidate_count"]==4,d
+          assert d["relation_kind"]==RELATION_KIND
+          assert RELATION_KIND=="INTERFACE_IMPLIES_SOURCE_INSTANCE"
+          got={x["formula"] for x in d["candidates"]}
+          assert got==set(m["source_formulas"]),(got,m["source_formulas"])
+          assert all(x["source_proof_status"]=="PINNED_PROOF_PRESENT" for x in d["candidates"])
+
+          out=Path("artifacts/crystal_cross_prover_msi_projection_v1")
+          out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          out.joinpath("Surface.lean").write_text(render_lean_projection(d))
+          print(json.dumps({
+              "candidate_count":d["candidate_count"],
+              "relation_kind":d["relation_kind"],
+              "source_proof_file_entries":d["source_authority_candidate_count"],
+              "pvs_native_replay":"NOT_RUN",
+          },sort_keys=True))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check interfaces and source-shaped adapters
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-msi-projection
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_msi_projection_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-msi-projection"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_msi_projection_v1/lean_surface.sha256"
+      - name: Record candidate result without cross-prover promotion
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=json.loads(Path("artifacts/crystal_cross_prover_msi_projection_v1/discovery.json").read_text())
+          out={
+              "schema":"mathgraph.cross-prover-sufficient-interface-result.v1",
+              "status":"CANDIDATE_VERIFIED_LEAN_SUFFICIENT_INTERFACE_PROJECTION",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "relation_kind":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+              "candidate_count":d["candidate_count"],
+              "lean_interface_and_adapter_gate":"GREEN",
+              "pvs_native_replay":"NOT_RUN",
+              "promotion_status":"NOT_PROMOTED",
+              "boundary":"A stronger interface and its source-shaped Lean adapter are verified. Native PVS replay is still required before claiming a warranted cross-prover relation. This is not SAME_MEANING."
+          }
+          Path("artifacts/crystal_cross_prover_msi_projection_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-msi-projection-v1
+          path: artifacts/crystal_cross_prover_msi_projection_v1/
