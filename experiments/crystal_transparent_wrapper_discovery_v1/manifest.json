@@ -1,0 +1,56 @@
+{
+  "schema": "mathgraph.transparent-wrapper-discovery-manifest.v1",
+  "parent_separator_authority": {
+    "evidence": "evidence/crystal-transparent-wrapper-bridge-v1.json",
+    "qualification_run": 36621922950,
+    "capability_run": 36622520596
+  },
+  "corpora": [
+    {
+      "corpus": "teorth-pfr",
+      "role": "producer",
+      "repository": "teorth/pfr",
+      "commit": "eb5557e9556a89a3418c4e8bdd717a5cf736c060",
+      "include_prefixes": [
+        "PFR"
+      ]
+    },
+    {
+      "corpus": "anthropic-flt",
+      "role": "consumer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "include_prefixes": [
+        "Definitions",
+        "Theorems"
+      ]
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "role": "consumer",
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "include_prefixes": [
+        "Fermat"
+      ]
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "include_prefixes": [
+        "FLT"
+      ]
+    }
+  ],
+  "source_corpora": [
+    "teorth-pfr"
+  ],
+  "recovery_control": {
+    "wrapper": "FiniteRange",
+    "consumer_corpus": "anthropic-flt",
+    "consumer_declaration": "TestFunctionAction.finiteRangeIntegral_of_finite",
+    "canonical_fingerprint": "(Set.range□).Finite"
+  }
+}
