@@ -186,3 +186,138 @@ def load_probe_files(paths: Sequence[str | Path]) -> dict[str, dict[str, bool]]:
         for symbol, present in obj["presence"].items():
             by_symbol[str(symbol)][env] = bool(present)
     return dict(by_symbol)
+
+
+def load_short_declaration_probe_files(
+    paths: Sequence[str | Path],
+) -> dict[str, dict[str, bool]]:
+    by_symbol: dict[str, dict[str, bool]] = defaultdict(dict)
+    for path in paths:
+        obj = json.loads(Path(path).read_text(encoding="utf-8"))
+        env = str(obj["environment"])
+        for symbol, present in obj.get("short_declaration_presence", {}).items():
+            by_symbol[str(symbol)][env] = bool(present)
+    return dict(by_symbol)
+
+
+def _is_dependent_member_symbol(symbol: str) -> bool:
+    if "." not in symbol:
+        return False
+    first = symbol.split(".", 1)[0]
+    return first[:1].islower() or len(first) == 1
+
+
+def refine_origin_classification(
+    classification: Mapping[str, Any],
+    *,
+    short_declaration_presence_by_symbol: Mapping[str, Mapping[str, bool]],
+) -> dict[str, Any]:
+    rows = [dict(x) for x in classification["candidates"]]
+
+    for row in rows:
+        symbol = str(row["symbol"])
+        short_presence = dict(
+            short_declaration_presence_by_symbol.get(symbol, {})
+        )
+        short_all = bool(short_presence) and all(short_presence.values())
+        local_defs = list(row.get("local_definitions", ()))
+        local_full_names = sorted({
+            str(x["declaration"]) for x in local_defs
+        })
+
+        row["upstream_short_declaration_presence"] = short_presence
+
+        # A short-name match between different local constants is not an
+        # equivalence candidate. Reopen under the fully-qualified names instead.
+        if len(local_full_names) >= 2:
+            row["origin_class"] = "SHORT_NAME_COLLISION"
+            row["bridge_action"] = "REJECT_SHORT_NAME_EQUIVALENCE_REDISCOVER_FULL_NAMES"
+            row["collision_full_names"] = local_full_names
+            continue
+
+        # One project-local declaration plus a ubiquitous upstream declaration
+        # of the same short name is also unsafe to unify by spelling alone.
+        if len(local_full_names) == 1 and short_all:
+            row["origin_class"] = "MIXED_LOCAL_UPSTREAM_COLLISION"
+            row["bridge_action"] = "REJECT_SHORT_NAME_EQUIVALENCE_RESOLVE_FULL_NAME"
+            row["collision_full_names"] = local_full_names
+            continue
+
+        if row["origin_class"] == "AMBIGUOUS" and short_all:
+            if _is_dependent_member_symbol(symbol):
+                row["origin_class"] = "SAME_UPSTREAM_DEPENDENT_REFERENCE"
+                row["bridge_action"] = "NO_PROJECT_BRIDGE_NEEDED_RESOLVE_RECEIVER_IF_USED"
+            else:
+                row["origin_class"] = "SAME_UPSTREAM_NAMESPACE_REFERENCE"
+                row["bridge_action"] = "NO_PROJECT_BRIDGE_NEEDED_RESOLVE_NAMESPACE_IF_USED"
+            continue
+
+        if row["origin_class"] == "AMBIGUOUS" and any(short_presence.values()):
+            row["origin_class"] = "UPSTREAM_SHORTNAME_VERSION_SKEW"
+            row["bridge_action"] = "QUALIFY_VERSION_NAMESPACE_TRANSPORT_IF_NEEDED"
+
+    counts: dict[str, int] = defaultdict(int)
+    residual_counts: dict[str, int] = defaultdict(int)
+    qualified = []
+    for row in rows:
+        counts[row["origin_class"]] += 1
+        if row.get("already_qualified_reusable"):
+            qualified.append(row)
+        else:
+            residual_counts[row["origin_class"]] += 1
+
+    non_bridge_classes = {
+        "SAME_UPSTREAM",
+        "SAME_UPSTREAM_NAMESPACE_REFERENCE",
+        "SAME_UPSTREAM_DEPENDENT_REFERENCE",
+    }
+    collision_classes = {
+        "SHORT_NAME_COLLISION",
+        "MIXED_LOCAL_UPSTREAM_COLLISION",
+    }
+    project_bridge_classes = {
+        "PORTED_LINEAGE",
+        "PROJECT_LOCAL_SHARED",
+        "PROJECT_LOCAL_SINGLE",
+        "UPSTREAM_VERSION_SKEW",
+        "UPSTREAM_SHORTNAME_VERSION_SKEW",
+        "AMBIGUOUS",
+    }
+
+    non_bridge = [
+        x for x in rows
+        if not x.get("already_qualified_reusable")
+        and x["origin_class"] in non_bridge_classes
+    ]
+    collisions = [
+        x for x in rows
+        if not x.get("already_qualified_reusable")
+        and x["origin_class"] in collision_classes
+    ]
+    project_residual = [
+        x for x in rows
+        if not x.get("already_qualified_reusable")
+        and x["origin_class"] in project_bridge_classes
+    ]
+
+    return {
+        "schema": "mathgraph.lean-bridge-origin-classification.v2",
+        "status": "ORIGIN_REFINED_NOT_SEMANTIC_WARRANT",
+        "boundary": (
+            "This is routing and candidate-rejection evidence, not a proof of "
+            "cross-version semantic equality. Common upstream references require "
+            "no project-to-project bridge unless a downstream consequence needs "
+            "version-specific qualification."
+        ),
+        "candidate_count": len(rows),
+        "qualified_reusable_count": len(qualified),
+        "origin_counts": dict(sorted(counts.items())),
+        "residual_origin_counts": dict(sorted(residual_counts.items())),
+        "no_project_bridge_needed_count": len(non_bridge),
+        "short_name_collision_count": len(collisions),
+        "project_bridge_residual_count": len(project_residual),
+        "project_bridge_residual": project_residual,
+        "short_name_collisions": collisions,
+        "no_project_bridge_needed": non_bridge,
+        "candidates": rows,
+    }
