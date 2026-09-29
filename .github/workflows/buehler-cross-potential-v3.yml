@@ -1,0 +1,65 @@
+name: Crystal Buehler Cross Potential V3
+
+on:
+  push:
+    branches:
+      - crystal-buehler-cross-potential-v3
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  airebo_transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Ubuntu LAMMPS package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lammps
+          apt-cache policy lammps
+          lmp -h | head -5
+      - name: Fingerprint AIREBO potential
+        run: |
+          POT=/usr/share/lammps/potentials/CH.airebo
+          test -f "$POT"
+          echo "AIREBO_POTENTIAL=$POT" >> "$GITHUB_ENV"
+          sha256sum "$POT"
+      - name: Run extended exact-geometry alternate-potential test
+        run: python experiments/buehler_graphene_airebo_v3.py
+      - name: Validate decision object
+        if: always()
+        run: |
+          test -f evidence/buehler-graphene-cross-potential-v3/result.json
+          python - <<'PY'
+          import json
+          p='evidence/buehler-graphene-cross-potential-v3/result.json'
+          d=json.load(open(p))
+          print(json.dumps({
+            'promotion': d.get('promotion'),
+            'comparison': d.get('comparison'),
+            'censoring': d.get('censoring'),
+            'cases': [{
+              'name':x['name'],
+              'status':x.get('status'),
+              'peak_Nm':x.get('airebo_peak_strength_Nm'),
+              'peak_strain':x.get('airebo_peak_strain'),
+              'post_peak_drop':x.get('post_peak_drop_fraction'),
+              'peak_qualified':x.get('peak_qualified'),
+            } for x in d.get('cases',[])],
+          },indent=2,sort_keys=True))
+          assert d['source']['commit']=='401e5f1f2a7529d8370a75a9c6b403bf2b9679ab'
+          assert len(d['cases'])==3
+          PY
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buehler-graphene-cross-potential-v3-evidence
+          path: evidence/buehler-graphene-cross-potential-v3
+          if-no-files-found: error
