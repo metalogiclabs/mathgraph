@@ -1,0 +1,106 @@
+{
+  "schema": "mathgraph.crystal-directional-bridge-batch-authority.v2",
+  "status": "WARRANTED_BOUNDED_REUSABLE",
+  "authority": {
+    "run_id": 36520600540,
+    "head_sha": "748159288e323b1966c16bdd1d1e077e3f98745d",
+    "artifact_id": 11013365544,
+    "artifact_digest": "sha256:32de829935209bf82ad3c0f19de3bcdcc24458561cfd63179090505794266d1b"
+  },
+  "scout_lineage": {
+    "run_id": 36516714974,
+    "head_sha": "11aedc70ff539298bb0bcfcfc8f9e7ec43649a1a",
+    "directional_candidate_count": 6,
+    "total_unqualified_candidates": 82
+  },
+  "qualification": {
+    "producer_count": 6,
+    "qualified_count": 6,
+    "rejected_count": 0,
+    "unknown_count": 0,
+    "target_interface": "RingTheory.Sequence.IsWeaklyRegular",
+    "consumer_surface": {
+      "corpus": "imperial-flt",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "path": "FLT/Patching/Utils/Depth.lean",
+      "blob_sha": "a6ffefe052980deefe73acc1fb802e9164fec8a2",
+      "declaration": "Module.length_le_depth"
+    },
+    "source_environment": {
+      "corpus": "anthropic-flt",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "mathlib_commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "lean_toolchain": "leanprover/lean4:v4.33.0"
+    },
+    "build_jobs": 8733,
+    "bridge_check_seconds": 6
+  },
+  "bridge_law": {
+    "source_interface": "RingTheory.Sequence.IsRegular",
+    "target_interface": "RingTheory.Sequence.IsWeaklyRegular",
+    "witness": "RingTheory.Sequence.IsRegular.toIsWeaklyRegular",
+    "interpretation": "one verified consequence law amortized across six independently sourced producer theorems"
+  },
+  "promoted": [
+    {
+      "rank": 1,
+      "producer": "AdicCompletion.exists_isRegular_pair_of_isIntegrallyClosed_of_ringKrullDim_eq_two",
+      "blob_sha": "c5737c95d1fafa820f50fb89f11a53543ba70fba",
+      "wrapper": "CrystalDirectionalBridgeBatch.adicCompletion_exists_weak_pair"
+    },
+    {
+      "rank": 2,
+      "producer": "IsIntegrallyClosed.exists_isRegular_pair_of_two_le_ringKrullDim",
+      "blob_sha": "0661cc8e745a9ce704857c82d6ab7b6532b117a5",
+      "wrapper": "CrystalDirectionalBridgeBatch.integrallyClosed_exists_weak_pair"
+    },
+    {
+      "rank": 3,
+      "producer": "IsLocalRing.exists_ofList_pair_eq_maximalIdeal_and_isRegular_of_isDiscreteValuationRing_quotient",
+      "blob_sha": "aa039eebece09db4742b9328c046a0478909aada",
+      "wrapper": "CrystalDirectionalBridgeBatch.localRing_exists_weak_pair"
+    },
+    {
+      "rank": 4,
+      "producer": "IsLocalRing.isRegular_of_systemOfParameters",
+      "blob_sha": "156b86e8484a7fc53225a3e87a5b14f4a7f4eb0a",
+      "wrapper": "CrystalDirectionalBridgeBatch.systemOfParameters_weak"
+    },
+    {
+      "rank": 5,
+      "producer": "MvPowerSeries.isRegular_C_cons_X",
+      "blob_sha": "3aa9723f54ab853add41c99c649569f0a8e0b05f",
+      "wrapper": "CrystalDirectionalBridgeBatch.mvPowerSeries_weak"
+    },
+    {
+      "rank": 6,
+      "producer": "RingTheory.Sequence.isRegular_pair_of_isSMulRegular_of_isReduced_of_forall_notMem_minimalPrimes",
+      "blob_sha": "52f28b67d5bd674ab18e8a8a6c6d3ac1625b77fc",
+      "wrapper": "CrystalDirectionalBridgeBatch.reduced_pair_weak"
+    }
+  ],
+  "negative_lineage": [
+    {
+      "run_id": 36520357931,
+      "status": "REJECTED_INFRA_ROUTE",
+      "reason": "nested Lake dependency route failed at cache/toolchain boundary before mathematics"
+    },
+    {
+      "run_id": 36520455057,
+      "status": "SUPERSEDED_SUCCESS",
+      "reason": "sparse exact source environment plus Mathlib-compatible Lean closed the infrastructure residual"
+    }
+  ],
+  "revocation_boundary": [
+    "any producer blob pin changes",
+    "the IsRegular-to-IsWeaklyRegular bridge law changes",
+    "the protected consumer interface changes",
+    "the Imperial consumer surface pin changes",
+    "Lean qualification fails"
+  ],
+  "unknowns": [
+    "direct cross-version proof-object import into Imperial's newer environment",
+    "automatic synthesis beyond the qualified IsRegular-to-IsWeaklyRegular schema",
+    "remaining equivalence candidates outside separately qualified families"
+  ]
+}
