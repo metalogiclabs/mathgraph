@@ -1,0 +1,197 @@
+{
+  "schema": "mathgraph.crystal-origin-first-linker-authority.v1",
+  "status": "WARRANTED_BOUNDED_ROUTING_STATE",
+  "scope": {
+    "corpora": [
+      "anthropics/fermats-last-theorem@6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "isomorphic-ai/fermat@07b35d10984632caa14b1af26ec5dec2363ee920",
+      "ImperialCollegeLondon/FLT@eb6df2b018f81920cd48dd510417f0b7790c305e"
+    ],
+    "corpus_files": 30675,
+    "corpus_declarations": 38403,
+    "source_bytes": 285582759,
+    "naive_candidate_count": 82,
+    "equivalence_candidate_count": 76,
+    "directional_candidate_count": 6
+  },
+  "authority": {
+    "origin_run": 36602302467,
+    "origin_head_sha": "0e1855f8e80f0cee88674a6ae97d5b647e648d4f",
+    "origin_artifact_id": 11050211173,
+    "origin_artifact_digest": "sha256:5e14bedbe3920ed8a37f414614845792603747285a54ebe51cef92b5795103d2",
+    "directional_qualification_run": 36520600540,
+    "corpus_scout_run": 36523222164
+  },
+  "equivalence_partition": {
+    "candidate_count": 76,
+    "qualified_reusable_count": 3,
+    "discharged_non_bridge_count": 64,
+    "rejected_false_candidate_count": 9,
+    "unknown_actionable_count": 0,
+    "qualified": [
+      "FermatLastTheoremFor",
+      "FermatLastTheorem",
+      "FreyPackage"
+    ],
+    "same_upstream_resolved": [
+      [
+        "AdeleRing",
+        "NumberField.AdeleRing"
+      ],
+      [
+        "FiniteAdeleRing",
+        "IsDedekindDomain.FiniteAdeleRing"
+      ],
+      [
+        "HeightOneSpectrum",
+        "IsDedekindDomain.HeightOneSpectrum"
+      ],
+      [
+        "InfiniteAdeleRing",
+        "NumberField.InfiniteAdeleRing"
+      ],
+      [
+        "InfinitePlace",
+        "NumberField.InfinitePlace"
+      ],
+      [
+        "VariableChange",
+        "WeierstrassCurve.VariableChange"
+      ],
+      [
+        "MeasurePreserving",
+        "MeasureTheory.MeasurePreserving"
+      ],
+      [
+        "toFunctor.IsCorepresentable",
+        "CategoryTheory.Functor.IsCorepresentable"
+      ]
+    ],
+    "rejected_surface_collisions": [
+      {
+        "symbol": "FiniteIndex",
+        "reason": "multiple upstream referents",
+        "referents": [
+          "AddSubgroup.FiniteIndex",
+          "Subgroup.FiniteIndex"
+        ]
+      },
+      {
+        "symbol": "ResidueField",
+        "reason": "project-local/upstream short-name collision",
+        "local": [
+          "AlgebraicCurve.Place.ResidueField"
+        ],
+        "upstream": [
+          "Ideal.ResidueField",
+          "IsLocalRing.ResidueField",
+          "Valued.ResidueField"
+        ]
+      },
+      {
+        "symbol": "v.IsReal",
+        "reason": "multiple upstream dependent referents",
+        "referents": [
+          "NumberField.ComplexEmbedding.IsReal",
+          "NumberField.InfinitePlace.IsReal"
+        ]
+      },
+      {
+        "symbol": "LSeries",
+        "reason": "local and upstream short-name collision",
+        "local": [
+          "ArtinL.Abelian.LSeries",
+          "LSeries"
+        ],
+        "upstream": [
+          "LSeries",
+          "WeierstrassCurve.LSeries"
+        ]
+      },
+      {
+        "symbol": "ProjectiveLine",
+        "reason": "distinct project-local definitions",
+        "local": [
+          "Dickson.ProjectiveLine",
+          "ModularCurve.ProjectiveLine"
+        ]
+      },
+      {
+        "symbol": "HeckeAlgebra",
+        "reason": "distinct project-local definitions",
+        "local": [
+          "HeckeAlgebra",
+          "HeckePair.HeckeAlgebra"
+        ]
+      },
+      {
+        "symbol": "LiesOver",
+        "reason": "multiple upstream referents",
+        "referents": [
+          "AbsoluteValue.LiesOver",
+          "Ideal.LiesOver",
+          "NumberField.ComplexEmbedding.LiesOver"
+        ]
+      },
+      {
+        "symbol": "J.IsMaximal",
+        "reason": "multiple upstream dependent referents",
+        "referents": [
+          "FirstOrder.Language.Theory.IsMaximal",
+          "Ideal.IsMaximal",
+          "JordanHolderLattice.IsMaximal",
+          "Order.Ideal.IsMaximal"
+        ]
+      },
+      {
+        "symbol": "v.IsNontrivial",
+        "reason": "multiple upstream dependent referents",
+        "referents": [
+          "AbsoluteValue.IsNontrivial",
+          "Valuation.IsNontrivial",
+          "ValuativeRel.IsNontrivial"
+        ]
+      }
+    ]
+  },
+  "directional_partition": {
+    "candidate_count": 6,
+    "qualified_reusable_count": 6,
+    "unknown_actionable_count": 0,
+    "shared_law": "RingTheory.Sequence.IsRegular.toIsWeaklyRegular"
+  },
+  "combined_state": {
+    "candidate_count": 82,
+    "qualified_reusable_count": 9,
+    "discharged_non_bridge_count": 64,
+    "rejected_false_candidate_count": 9,
+    "unknown_actionable_count": 0
+  },
+  "systems_law": {
+    "name": "origin-before-equivalence",
+    "statement": "A shared surface name is not a semantic bridge obligation. Resolve the exact upstream/project-local referent and provenance first; shared upstream referents require no project bridge, distinct referents reject the name-only candidate, and only the remaining project-local semantic residual warrants proof search.",
+    "consequence": "The apparent 73 equivalence UNKNOWNs collapse to 64 non-bridge references plus 9 false name-collision candidates, leaving zero actionable bridge residuals in this bounded three-corpus experiment."
+  },
+  "negative_lineage": [
+    {
+      "prior_state": "73 UNKNOWN equivalence residuals",
+      "finding": "surface-name grouping conflated shared upstream references and namespace collisions with semantic uncertainty",
+      "correction": "query exact pinned Lean environments for full constant names before bridge proof search"
+    },
+    {
+      "run_id": 36598676574,
+      "finding": "first custom Lean environment probe failed at command antiquotation/elaboration",
+      "correction": "repaired probe and subsequently obtained exact environment results"
+    }
+  ],
+  "trust_boundary": {
+    "routing_is_not_semantic_equivalence": true,
+    "same_upstream_means": "no project-to-project bridge is required for the named referent; version-specific downstream consequences may still need qualification",
+    "rejected_collision_means": "the original short-name equivalence candidate was ill-posed, not that the distinct declarations are inequivalent in every possible sense",
+    "unknowns": [
+      "new corpora may introduce genuine project-local bridge residuals",
+      "arbitrary downstream proof-object transport across incompatible Lean versions",
+      "completeness of the source-level candidate generator outside this bounded corpus set"
+    ]
+  }
+}
