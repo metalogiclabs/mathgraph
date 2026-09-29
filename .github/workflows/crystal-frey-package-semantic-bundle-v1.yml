@@ -1,0 +1,46 @@
+name: Crystal FreyPackage Semantic Bundle V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'mathgraph/frey_package_semantic_bundle.py'
+      - 'tests/test_frey_package_semantic_bundle.py'
+      - 'evidence/crystal-frey-package-reconciliation-v1.json'
+      - 'evidence/crystal-frey-curve-operation-v1.json'
+      - '.github/workflows/crystal-frey-package-semantic-bundle-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Check semantic bundle
+        run: python -m pytest -q tests/test_frey_package_semantic_bundle.py
+      - name: Compile rich FreyPackage semantic waist
+        run: |
+          mkdir -p artifacts/crystal_frey_package_semantic_bundle_v1
+          python - <<'PY'
+          import json
+          from mathgraph.frey_package_semantic_bundle import compile_files
+          out=compile_files(
+              "evidence/crystal-frey-package-reconciliation-v1.json",
+              "evidence/crystal-frey-curve-operation-v1.json",
+              "artifacts/crystal_frey_package_semantic_bundle_v1/bundle.json",
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-frey-package-semantic-bundle-v1
+          path: artifacts/crystal_frey_package_semantic_bundle_v1/bundle.json
