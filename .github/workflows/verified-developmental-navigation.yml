@@ -25,5 +25,6 @@ jobs:
           lake env lean VerifiedDevelopmentalNavigation/PalomarSeed.lean
           lake env lean VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean
           lake env lean VerifiedDevelopmentalNavigation/Routing.lean
+          lake env lean VerifiedDevelopmentalNavigation/CrossCorpusConsumer.lean
 
 # cross-corpus consumer gate 2026-09-29
