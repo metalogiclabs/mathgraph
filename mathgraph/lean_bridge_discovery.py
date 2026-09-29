@@ -183,7 +183,11 @@ def _last_top_level_colon(text: str) -> int | None:
     return last
 
 
-def _semantic_symbols(text: str) -> tuple[str, ...]:
+def _semantic_symbols(
+    text: str,
+    *,
+    binder_heads: Mapping[str, str] | None = None,
+) -> tuple[str, ...]:
     # Resolve simple Lean dot-notation receivers before candidate grouping.
     # Example:
     #   (G : PDivisibleGroup R p h), G.HasDimension
@@ -191,12 +195,14 @@ def _semantic_symbols(text: str) -> tuple[str, ...]:
     #   (G : SimpleGraph V), G.HasDimension
     # becomes SimpleGraph.HasDimension.
     #
-    # This is intentionally syntactic and conservative: only an explicitly
-    # typed binder in the same declaration window can rewrite a receiver.
-    binder_heads = {
-        name: type_head
-        for name, type_head in BINDER_TYPE_HEAD_RE.findall(text)
-    }
+    # Binder context may come from the whole declaration even when `text`
+    # is only its conclusion. This prevents the conclusion splitter from
+    # erasing exactly the type information needed to resolve dot notation.
+    if binder_heads is None:
+        binder_heads = {
+            name: type_head
+            for name, type_head in BINDER_TYPE_HEAD_RE.findall(text)
+        }
     keys: set[str] = set()
     for tok in IDENT_RE.findall(text):
         resolved = tok
@@ -255,10 +261,18 @@ def extract_declarations(pin: SourcePin, text: str) -> list[LeanDeclaration]:
         kind, name = m.group("kind"), m.group("name")
         statement = _declaration_window(lines, i)
         full_name = _qualify(namespace, name)
-        symbols = _semantic_symbols(statement)
+        binder_heads = {
+            binder_name: type_head
+            for binder_name, type_head in BINDER_TYPE_HEAD_RE.findall(statement)
+        }
+        symbols = _semantic_symbols(statement, binder_heads=binder_heads)
         premise_text, conclusion_text = split_premise_conclusion(statement, kind)
-        premise_symbols = _semantic_symbols(premise_text)
-        conclusion_symbols = _semantic_symbols(conclusion_text)
+        premise_symbols = _semantic_symbols(
+            premise_text, binder_heads=binder_heads
+        )
+        conclusion_symbols = _semantic_symbols(
+            conclusion_text, binder_heads=binder_heads
+        )
         out.append(LeanDeclaration(
             corpus=pin.corpus,
             role=pin.role,
