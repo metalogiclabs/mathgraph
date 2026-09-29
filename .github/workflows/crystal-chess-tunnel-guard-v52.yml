@@ -6,12 +6,13 @@ on:
       - crystal-chess-tunnel-guard-v52
     paths:
       - "experiments/crystal_chess_tunnel_guard_v52.py"
+      - "experiments/crystal_chess_apply_tunnel_patch_v52.py"
       - ".github/workflows/crystal-chess-tunnel-guard-v52.yml"
       - "experiments/crystal_chess_normal_exposure_v22.py"
   workflow_dispatch:
 
 jobs:
-  tunnel-guard:
+  tunnel_guard:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
@@ -19,6 +20,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -28,6 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
           python -m py_compile experiments/crystal_chess_tunnel_guard_v52.py
+          python -m py_compile experiments/crystal_chess_apply_tunnel_patch_v52.py
           python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
 
       - name: Build pinned baseline Stockfish
@@ -38,40 +41,12 @@ jobs:
           make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
           /tmp/stockfish-base/src/stockfish bench 16 1 3 default depth > /tmp/baseline-bench.txt 2>&1
 
-      - name: Patch only residual-earned tunnel regime
+      - name: Patch residual-earned tunnel regime
         run: |
           set -euo pipefail
           cp -a /tmp/stockfish-base /tmp/stockfish-cand
           mkdir -p artifacts/crystal-chess-v52
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('/tmp/stockfish-cand/src/search.cpp')
-          s=p.read_text()
-          anchor='''            double highBestMoveEffort = std::clamp(
-              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
-
-            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-'''
-          replacement='''            double highBestMoveEffort = std::clamp(
-              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
-
-            // Crystal V52: V48/V50 residual-earned tunnel guard.
-            // Neutralize both "spend less" discounts only when the incumbent
-            // is simultaneously long-stable and monopolizing root effort.
-            if (nodesEffort >= 75800 && rootDepth - lastBestMoveDepth >= 5)
-            {
-                timeReduction       = 1.0;
-                highBestMoveEffort = 1.0;
-                reduction =
-                  (1.468 + mainThread->previousTimeReduction) / (2.284 * timeReduction);
-            }
-
-            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-'''
-          if anchor not in s:
-              raise SystemExit('V52 patch anchor not found')
-          p.write_text(s.replace(anchor,replacement,1))
-          PY
+          python experiments/crystal_chess_apply_tunnel_patch_v52.py --search-cpp /tmp/stockfish-cand/src/search.cpp
           git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v52/stockfish-tunnel-guard.patch
           test -s artifacts/crystal-chess-v52/stockfish-tunnel-guard.patch
           make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
@@ -87,17 +62,17 @@ jobs:
       - name: Generate untouched normal opening book
         run: |
           set -euo pipefail
-          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish-base/src/stockfish             --book artifacts/crystal-chess-v52/normal.epd             --manifest artifacts/crystal-chess-v52/normal_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261103
+          python experiments/crystal_chess_normal_exposure_v22.py generate --stockfish /tmp/stockfish-base/src/stockfish --book artifacts/crystal-chess-v52/normal.epd --manifest artifacts/crystal-chess-v52/normal_manifest.json --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261103
 
       - name: Run paired same-clock match
         run: |
           set -euo pipefail
-          /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalTunnelV52             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=1+0.01 option.Threads=1 option.Hash=16 option.Ponder=false             -openings file=artifacts/crystal-chess-v52/normal.epd format=epd order=sequential             -rounds 256 -repeat -concurrency 4             -pgnout file=artifacts/crystal-chess-v52/match.pgn             -log file=artifacts/crystal-chess-v52/fastchess.log level=info             | tee artifacts/crystal-chess-v52/fastchess.stdout
+          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalTunnelV52 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=1+0.01 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v52/normal.epd format=epd order=sequential -rounds 256 -repeat -concurrency 4 -pgnout file=artifacts/crystal-chess-v52/match.pgn -log file=artifacts/crystal-chess-v52/fastchess.log level=info | tee artifacts/crystal-chess-v52/fastchess.stdout
 
       - name: Analyse candidate Elo
         run: |
           set -euo pipefail
-          python experiments/crystal_chess_tunnel_guard_v52.py             --pgn artifacts/crystal-chess-v52/match.pgn             --candidate-name CrystalTunnelV52             --output artifacts/crystal-chess-v52/result.json             | tee artifacts/crystal-chess-v52/analyse.log
+          python experiments/crystal_chess_tunnel_guard_v52.py --pgn artifacts/crystal-chess-v52/match.pgn --candidate-name CrystalTunnelV52 --output artifacts/crystal-chess-v52/result.json | tee artifacts/crystal-chess-v52/analyse.log
           grep -q "CRYSTAL_CHESS_TUNNEL_GUARD_V52=PASS" artifacts/crystal-chess-v52/analyse.log
           cp /tmp/baseline-bench.txt artifacts/crystal-chess-v52/
           printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v52/STOCKFISH_PIN.txt
