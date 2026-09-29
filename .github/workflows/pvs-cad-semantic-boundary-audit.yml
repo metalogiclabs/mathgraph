@@ -61,19 +61,65 @@ jobs:
       - name: Typecheck audit
         working-directory: /tmp/cad-audit
         run: |
-          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/pvs_cad/cad"
-          proveit -t BoundaryAudit.pvs
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/cad-audit"
+          proveit -T BoundaryAudit.pvs
 
-      - name: Execute boundary suite
+      - name: Prove in-fragment boundary suite with cad
         working-directory: /tmp/cad-audit
         run: |
-          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/pvs_cad/cad"
-          proveit -f BoundaryAudit.pvs -s "cad" | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"
-          if grep -E "unfinished|unproved|untried|Missed|fewer subproofs|Error|ERROR" "$GITHUB_WORKSPACE/experiments/pvs_cad/audit.log"; then
+          set -euo pipefail
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/cad-audit"
+          proveit --default-proof "(cad)"             @BoundaryAudit.control_linear:control_quadratic:zero_poly_eq:repeated_root:strict_boundary:alternation:renamed_alternation             | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-core.log"
+          if grep -E "unfinished|unproved|untried|Missed|fewer subproofs|Error|ERROR" "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-core.log"; then
             exit 1
           fi
+
+      - name: Require out-of-fragment division to be rejected by cad
+        working-directory: /tmp/cad-audit
+        run: |
+          set -euo pipefail
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/cad-audit"
+          set +e
+          proveit --default-proof "(cad)"             @BoundaryAudit.nonpoly_variable_denominator             > "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-reject.log" 2>&1
+          rc=$?
+          set -e
+          cat "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-reject.log"
+          test "$rc" -ne 0
+          grep -E "not a Boolean combination|not a closed prenex formula|Missed|unfinished|untried"             "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-reject.log"
+
+      - name: Require hidden user definition not to bypass fragment guard
+        working-directory: /tmp/cad-audit
+        run: |
+          set -euo pipefail
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/cad-audit"
+          set +e
+          proveit --default-proof "(cad)"             @BoundaryAudit.hidden_definition             > "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-hidden-def.log" 2>&1
+          rc=$?
+          set -e
+          cat "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-hidden-def.log"
+          test "$rc" -ne 0
+          grep -E "not a Boolean combination|not a closed prenex formula|Missed|unfinished|untried"             "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-hidden-def.log"
+
+      - name: Prove conservative non-polynomial abstraction with cad-star
+        working-directory: /tmp/cad-audit
+        run: |
+          set -euo pipefail
+          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/cad-audit"
+          proveit --default-proof "(cad *)"             @BoundaryAudit.abstracted_function_sound             | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-star.log"
+          if grep -E "unfinished|unproved|untried|Missed|fewer subproofs|Error|ERROR" "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-star.log"; then
+            exit 1
+          fi
+
+      - name: Consolidate audit logs
+        run: |
+          cat experiments/pvs_cad/cad-core.log               experiments/pvs_cad/cad-reject.log               experiments/pvs_cad/cad-hidden-def.log               experiments/pvs_cad/cad-star.log               > experiments/pvs_cad/audit.log
 
       - uses: actions/upload-artifact@v4
         with:
           name: pvs-cad-semantic-boundary-audit
-          path: experiments/pvs_cad/audit.log
+          path: |
+            experiments/pvs_cad/audit.log
+            experiments/pvs_cad/cad-core.log
+            experiments/pvs_cad/cad-reject.log
+            experiments/pvs_cad/cad-hidden-def.log
+            experiments/pvs_cad/cad-star.log
