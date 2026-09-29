@@ -1,0 +1,34 @@
+{
+  "schema": "mathgraph.crystal-cross-prover-final-counterexample.v1",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "theory": "cad_demo",
+    "formula": "t_amgm3",
+    "source_path": "cad/cad_demo.pvs",
+    "source_blob_sha": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+    "surface": "FORALL (x: real): FORALL (y: real): x^2 + y^2 >= 3 * x * y"
+  },
+  "canonical_claim": {
+    "id": "real.amgm3_universal@1",
+    "truth_value": false,
+    "counterexample": {
+      "x": 1,
+      "y": 1
+    }
+  },
+  "pvs": {
+    "release": "pvs8.1.2",
+    "release_sha256": "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b",
+    "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa"
+  },
+  "lean": {
+    "toolchain": "leanprover/lean4:v4.35.0-rc3",
+    "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+  },
+  "lineage": {
+    "router_run": 36626725979,
+    "residual_class": "POLYNOMIAL_CERTIFICATE_GAP",
+    "residual_count": 1
+  }
+}
