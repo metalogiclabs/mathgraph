@@ -200,6 +200,18 @@ def load_short_declaration_probe_files(
     return dict(by_symbol)
 
 
+def load_short_declaration_count_probe_files(
+    paths: Sequence[str | Path],
+) -> dict[str, dict[str, int]]:
+    by_symbol: dict[str, dict[str, int]] = defaultdict(dict)
+    for path in paths:
+        obj = json.loads(Path(path).read_text(encoding="utf-8"))
+        env = str(obj["environment"])
+        for symbol, count in obj.get("short_declaration_count", {}).items():
+            by_symbol[str(symbol)][env] = int(count)
+    return dict(by_symbol)
+
+
 def _is_dependent_member_symbol(symbol: str) -> bool:
     if "." not in symbol:
         return False
@@ -211,6 +223,7 @@ def refine_origin_classification(
     classification: Mapping[str, Any],
     *,
     short_declaration_presence_by_symbol: Mapping[str, Mapping[str, bool]],
+    short_declaration_count_by_symbol: Mapping[str, Mapping[str, int]] | None = None,
 ) -> dict[str, Any]:
     rows = [dict(x) for x in classification["candidates"]]
 
@@ -220,6 +233,11 @@ def refine_origin_classification(
             short_declaration_presence_by_symbol.get(symbol, {})
         )
         short_all = bool(short_presence) and all(short_presence.values())
+        short_counts = dict(
+            (short_declaration_count_by_symbol or {}).get(symbol, {})
+        )
+        row["upstream_short_declaration_counts"] = short_counts
+        max_short_count = max(short_counts.values(), default=0)
         local_defs = list(row.get("local_definitions", ()))
         local_full_names = sorted({
             str(x["declaration"]) for x in local_defs
@@ -244,9 +262,12 @@ def refine_origin_classification(
             continue
 
         if row["origin_class"] == "AMBIGUOUS" and short_all:
-            if _is_dependent_member_symbol(symbol):
-                row["origin_class"] = "SAME_UPSTREAM_DEPENDENT_REFERENCE"
-                row["bridge_action"] = "NO_PROJECT_BRIDGE_NEEDED_RESOLVE_RECEIVER_IF_USED"
+            if max_short_count > 1:
+                row["origin_class"] = "UPSTREAM_SHORT_NAME_COLLISION"
+                row["bridge_action"] = "REJECT_SHORT_NAME_EQUIVALENCE_RESOLVE_FULL_NAME"
+            elif _is_dependent_member_symbol(symbol):
+                row["origin_class"] = "UPSTREAM_DEPENDENT_MEMBER_REFERENCE"
+                row["bridge_action"] = "RESOLVE_RECEIVER_BEFORE_ANY_BRIDGE_SEARCH"
             else:
                 row["origin_class"] = "SAME_UPSTREAM_NAMESPACE_REFERENCE"
                 row["bridge_action"] = "NO_PROJECT_BRIDGE_NEEDED_RESOLVE_NAMESPACE_IF_USED"
@@ -270,10 +291,12 @@ def refine_origin_classification(
         "SAME_UPSTREAM",
         "SAME_UPSTREAM_NAMESPACE_REFERENCE",
         "SAME_UPSTREAM_DEPENDENT_REFERENCE",
+        "UPSTREAM_DEPENDENT_MEMBER_REFERENCE",
     }
     collision_classes = {
         "SHORT_NAME_COLLISION",
         "MIXED_LOCAL_UPSTREAM_COLLISION",
+        "UPSTREAM_SHORT_NAME_COLLISION",
     }
     project_bridge_classes = {
         "PORTED_LINEAGE",
