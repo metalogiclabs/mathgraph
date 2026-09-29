@@ -1,0 +1,127 @@
+name: Crystal Chess Subsecond Effort V55
+
+on:
+  push:
+    branches:
+      - crystal-chess-subsecond-effort-v55
+    paths:
+      - ".github/workflows/crystal-chess-subsecond-effort-v55.yml"
+      - "experiments/crystal_chess_timemgmt_ablation_v51.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: fast
+            tc: "1+0.01"
+            openings: 1024
+            rounds: 1024
+            seed: 20261107
+          - label: medium
+            tc: "2+0.02"
+            openings: 512
+            rounds: 512
+            seed: 20261108
+          - label: slow
+            tc: "5+0.05"
+            openings: 512
+            rounds: 512
+            seed: 20261109
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_timemgmt_ablation_v51.py
+          python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
+
+      - name: Build pinned baseline Stockfish
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
+          git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
+          /tmp/stockfish-base/src/stockfish bench 16 1 3 default depth > /tmp/baseline-bench.txt 2>&1
+
+      - name: Apply residual-earned subsecond effort guard
+        run: |
+          set -euo pipefail
+          cp -a /tmp/stockfish-base /tmp/stockfish-cand
+          mkdir -p "artifacts/crystal-chess-v55/${{ matrix.label }}"
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/stockfish-cand/src/search.cpp')
+          s=p.read_text()
+          anchor="""            double highBestMoveEffort = std::clamp(
+              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
+
+            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
+"""
+          replacement="""            double highBestMoveEffort = std::clamp(
+              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
+
+            // Crystal V55: Stockfish itself treats <1 second remaining as a
+            // distinct time-management regime.  V54 showed the effort ablation
+            // changes sign between fast and slow clocks, so remove only this
+            // one effort discount inside Stockfish's existing subsecond regime.
+            if (limits.time[rootPos.side_to_move()] < 1000)
+                highBestMoveEffort = 1.0;
+
+            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
+"""
+          assert s.count(anchor)==1, ("V55 anchor drift", s.count(anchor))
+          p.write_text(s.replace(anchor,replacement,1))
+          PY
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch"
+          test -s "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch"
+          sha256sum "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch" | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/PATCH_SHA256.txt"
+          make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
+          /tmp/stockfish-cand/src/stockfish bench 16 1 3 default depth > "artifacts/crystal-chess-v55/${{ matrix.label }}/candidate-bench.txt" 2>&1
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Generate untouched openings
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish-base/src/stockfish             --book "artifacts/crystal-chess-v55/${{ matrix.label }}/normal.epd"             --manifest "artifacts/crystal-chess-v55/${{ matrix.label }}/normal_manifest.json"             --openings ${{ matrix.openings }} --plies 12 --depth 6 --multipv 4 --seed ${{ matrix.seed }}
+
+      - name: Run paired same-clock match
+        run: |
+          set -euo pipefail
+          /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalSubsecondV55             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=${{ matrix.tc }} option.Threads=1 option.Hash=16 option.Ponder=false             -openings file="artifacts/crystal-chess-v55/${{ matrix.label }}/normal.epd" format=epd order=sequential             -rounds ${{ matrix.rounds }} -repeat -concurrency 4             -pgnout file="artifacts/crystal-chess-v55/${{ matrix.label }}/match.pgn"             -log file="artifacts/crystal-chess-v55/${{ matrix.label }}/fastchess.log" level=info             | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/fastchess.stdout"
+
+      - name: Analyse Elo
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_timemgmt_ablation_v51.py             --pgn "artifacts/crystal-chess-v55/${{ matrix.label }}/match.pgn"             --candidate-name CrystalSubsecondV55             --variant subsecond-effort             --output "artifacts/crystal-chess-v55/${{ matrix.label }}/result.json"             | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/analyse.log"
+          grep -q "CRYSTAL_CHESS_TIMEMGMT_ABLATION_V51=PASS" "artifacts/crystal-chess-v55/${{ matrix.label }}/analyse.log"
+          cp /tmp/baseline-bench.txt "artifacts/crystal-chess-v55/${{ matrix.label }}/"
+          printf '%s\n' "V54 fast +6.872 Elo / 4096; V54 slow -7.126 Elo / 1024. V55 uses Stockfish's own <1000ms regime boundary, no fitted threshold." > "artifacts/crystal-chess-v55/${{ matrix.label }}/LINEAGE.txt"
+
+      - name: Upload V55 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-subsecond-effort-v55-${{ matrix.label }}
+          path: artifacts/crystal-chess-v55/${{ matrix.label }}/
+          if-no-files-found: error
