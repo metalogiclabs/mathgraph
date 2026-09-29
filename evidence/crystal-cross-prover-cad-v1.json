@@ -1,0 +1,60 @@
+{
+  "schema": "mathgraph.crystal-cross-prover-cad-authority.v1",
+  "status": "WARRANTED_BOUNDED_CROSS_PROVER_SEMANTIC_LINK",
+  "authority": {
+    "run_id": 36623438787,
+    "head_sha": "0685490160bc1209abc23c956d584410a58c5af7",
+    "result_artifact_id": 11059847812,
+    "result_artifact_digest": "sha256:be1f15e92900938d16548fb0706649385a60daa85db651f08b896882efa5eea3",
+    "source_artifact_id": 11059832115,
+    "source_artifact_digest": "sha256:0d7a30ed07dc2335f0e2767d0344fd58760af0e1fcafc02f9c5060941e2d1780",
+    "pvs_artifact_id": 11059288484,
+    "pvs_artifact_digest": "sha256:612e56e4274fc2b048e9a583808f8779d04b2515b4921901b5b686741631491d",
+    "lean_artifact_id": 11058493957,
+    "lean_artifact_digest": "sha256:5311d57edef8d5e2b4fa1d3fc424786bfd815f7bbc791e4f1a65ddf32f7a2fb2"
+  },
+  "canonical_claim": {
+    "id": "real.amgm2@1",
+    "surface_sha256": "7d06b4758c6cfdaf82e11f46ce8c312a67e28cf7d187760d660e9212165eedef"
+  },
+  "pvs": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "theory": "cad_demo",
+    "formula": "d_amgm",
+    "source_blob_sha": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+    "proof_blob_sha": "f2db4a2a6fd22f23b472e62c1cb0b18779799577",
+    "pvs_release": "pvs8.1.2",
+    "pvs_release_sha256": "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b",
+    "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa",
+    "replay": "2 proofs attempted, 2 succeeded; proveit proof time 0.01 s after source/typecheck setup"
+  },
+  "lean": {
+    "theorem": "CrystalCrossProverCAD.amgm2_real",
+    "toolchain": "leanprover/lean4:v4.35.0-rc3",
+    "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+    "surface_sha256": "dfee1451cfac1a99cd02fd29a827b7fae90e52bcd218d1aa82ab2b400ecceef9",
+    "status": "KERNEL_CHECKED"
+  },
+  "compiled": {
+    "semantic_object_id": "semantic:ca0ec34ccf2823e9c0105eea6b33ec84891ffe80db73d82c5305923c3573de6b",
+    "type_id": "cross-prover.verified-proposition@1",
+    "interfaces": [
+      "logic.closed-proposition.truth@1",
+      "provenance.cross-prover@1",
+      "real.polynomial.amgm2@1"
+    ]
+  },
+  "systems_law": {
+    "name": "prover-independent semantic waist",
+    "statement": "When independently verified prover surfaces are normalized to the same explicitly checked canonical proposition, Crystal may bind them to one provenance-preserving semantic object without identifying or translating their proof objects."
+  },
+  "boundary": {
+    "warranted": "exact AM-GM proposition surface plus successful PVS replay and independent Lean kernel check",
+    "unknowns": [
+      "universal PVS-to-Lean proof transport",
+      "automatic semantic alignment for arbitrary formulas",
+      "consumer reuse without a separately checkable certificate"
+    ]
+  }
+}
