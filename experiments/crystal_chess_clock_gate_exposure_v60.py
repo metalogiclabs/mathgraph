@@ -22,7 +22,7 @@ GATE_REPL = r"""\1
                     std::ofstream out(crystalLog, std::ios::app);
                     out << "crystal_tm optimum " << mainThread->tm.optimum()
                         << " maximum " << mainThread->tm.maximum()
-                        << " active " << int(mainThread->tm.optimum() <= 64) << '\n';
+                        << " active " << int(mainThread->tm.optimum() <= 64) << '\\n';
                 }
             }
 
