@@ -47,7 +47,7 @@ jobs:
           print("PINNED_ANTHROPIC_THEOREM_SOURCES_OK")
           PY
           cat > "$ROOT/lean-toolchain" <<'EOF'
-          leanprover/lean4:v4.33.1
+          leanprover/lean4:v4.33.0
           EOF
           cat > "$ROOT/lakefile.toml" <<'EOF'
           name = "crystal-real-theorem-reuse-v1"
