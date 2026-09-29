@@ -1,0 +1,105 @@
+{
+  "schema": "mathgraph.lean-corpus-bridge-scout.v2",
+  "parent_authority": {
+    "branch": "crystal-corpus-wide-bridge-scout-v1",
+    "head_sha": "b2b186e4019b1cef73431f9c296b37ff59c1d839",
+    "linker_object": "semantic:aef98c3a30a0a3c00be8196606546affd1636620c599e10dc0d023b9fb24edc0"
+  },
+  "corpora": [
+    {
+      "corpus": "anthropic-flt",
+      "role": "producer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "include_prefixes": [
+        "Theorems"
+      ]
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "role": "consumer",
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "include_prefixes": [
+        "Fermat"
+      ]
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "include_prefixes": [
+        "FLT"
+      ]
+    },
+    {
+      "corpus": "teorth-pfr",
+      "role": "consumer",
+      "repository": "teorth/pfr",
+      "commit": "eb5557e9556a89a3418c4e8bdd717a5cf736c060",
+      "include_prefixes": [
+        "PFR"
+      ]
+    }
+  ],
+  "origin_scan_overrides": {
+    "anthropic-flt": [
+      "Theorems",
+      "Definitions"
+    ],
+    "teorth-pfr": [
+      "PFR"
+    ]
+  },
+  "mathlib_environments": [
+    {
+      "corpus": "anthropic-flt",
+      "environment": "anthropic-mathlib",
+      "mathlib_commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "lean_toolchain": "leanprover/lean4:v4.33.0"
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "environment": "isomorphic-mathlib",
+      "mathlib_commit": "0531bb79fea20efc9ce6942db46b96be5a919400",
+      "lean_toolchain": "leanprover/lean4:v4.31.0-rc1"
+    },
+    {
+      "corpus": "imperial-flt",
+      "environment": "imperial-mathlib",
+      "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3"
+    },
+    {
+      "corpus": "teorth-pfr",
+      "environment": "pfr-mathlib",
+      "mathlib_commit": "ec6a61cec0d8f9fda04453e9bb5761a79aa43a70",
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3"
+    }
+  ],
+  "bridge_files": [
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/RingTheory/Regular/RegularSequence.lean",
+      "blob_sha": "9b58c8f23e80cfc958d9d395d84acb0929fe5c45"
+    },
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/NumberTheory/FLT/Basic.lean",
+      "blob_sha": "c21f4b48f7231a5782d0ea07442d963b0c6cc7f5"
+    }
+  ],
+  "inherited_qualified_candidate_ids": [
+    "equiv:FermatLastTheoremFor",
+    "equiv:FermatLastTheorem",
+    "equiv:FreyPackage"
+  ],
+  "top_k": 2000
+}
