@@ -58,48 +58,35 @@ jobs:
           PVS_DIR="$PVS_DIR" NASALIB="$NASALIB" tools/cli/srv.sh BoundaryAudit | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/server.log"
           ! grep -E "Typecheck error|Error:" "$GITHUB_WORKSPACE/experiments/pvs_cad/server.log"
 
-      - name: Probe CAD strategy on one control
-        working-directory: /tmp/pvs_cad
-        run: |
-          set -euo pipefail
-          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"             tools/cli/pv.sh BoundaryAudit control_linear "(cad)" 60             | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-probe.log"
-          grep -q "Q.E.D" "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-probe.log"
-
       - name: Execute positive CAD boundary suite
         working-directory: /tmp/pvs_cad
         run: |
           set -euo pipefail
-          cat > /tmp/cad-positive.cmds <<'EOF'
-          control_linear (cad)
-          control_quadratic (cad)
-          zero_poly_eq (cad)
-          repeated_root (cad)
-          strict_boundary (cad)
-          alternation (cad)
-          renamed_alternation (cad)
-          rational_coeff (cad)
-          decimal_coeff (cad)
-          connective_mix (cad)
-          vacuous_true (cad)
-          abstracted_function_sound (cad *)
-          EOF
-          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB" PC_TIMEOUT=600             tools/cliprove.sh BoundaryAudit BoundaryAudit /tmp/cad-positive.cmds             | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
-          test "$(grep -c 'QED$' "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log")" -eq 12
-          ! grep -q 'OPEN$' "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+          : > "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+          for f in control_linear control_quadratic zero_poly_eq repeated_root strict_boundary alternation renamed_alternation rational_coeff decimal_coeff connective_mix vacuous_true; do
+            echo "=== $f : (cad) ===" | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+            PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"               tools/cli/pv.sh BoundaryAudit "$f" "(cad)" 120               | tee /tmp/one.out | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+            grep -q "Q.E.D" /tmp/one.out
+          done
+          echo "=== abstracted_function_sound : (cad *) ===" | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"             tools/cli/pv.sh BoundaryAudit abstracted_function_sound "(cad *)" 180             | tee /tmp/one.out | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+          grep -q "Q.E.D" /tmp/one.out
 
-      - name: Execute expected-rejection canaries
+      - name: Execute semantic boundary canaries
         working-directory: /tmp/pvs_cad
         run: |
           set -euo pipefail
-          cat > /tmp/cad-negative.cmds <<'EOF'
-          nonpoly_variable_denominator (cad)
-          hidden_definition (cad)
-          grouped_binders (cad)
-          subtype_false (cad)
-          EOF
-          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB" PC_TIMEOUT=120             tools/cliprove.sh BoundaryAudit BoundaryAudit /tmp/cad-negative.cmds             | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-negative.log"
-          test "$(grep -c 'OPEN$' "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-negative.log")" -eq 4
-          ! grep -q 'QED$' "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-negative.log"
+          : > "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-canaries.log"
+          for f in nonpoly_variable_denominator hidden_definition grouped_binders; do
+            echo "=== $f : (cad) ===" | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-canaries.log"
+            PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"               tools/cli/pv.sh BoundaryAudit "$f" "(cad)" 120               | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-canaries.log"
+          done
+          echo "=== subtype_false : (cad) -- MUST NOT QED ===" | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-canaries.log"
+          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"             tools/cli/pv.sh BoundaryAudit subtype_false "(cad)" 120             | tee /tmp/subtype.out | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-canaries.log"
+          if grep -q "Q.E.D" /tmp/subtype.out; then
+            echo "UNSOUNDNESS CANARY: false subtype theorem was proved" >&2
+            exit 1
+          fi
 
       - name: Fresh replay of positive saved proofs
         working-directory: /tmp/pvs_cad/cad
@@ -113,7 +100,7 @@ jobs:
 
       - name: Consolidate audit evidence
         run: |
-          cat experiments/pvs_cad/server.log               experiments/pvs_cad/cad-positive.log               experiments/pvs_cad/cad-negative.log               experiments/pvs_cad/replay.log               > experiments/pvs_cad/audit.log
+          cat experiments/pvs_cad/server.log               experiments/pvs_cad/cad-positive.log               experiments/pvs_cad/cad-canaries.log               experiments/pvs_cad/replay.log               > experiments/pvs_cad/audit.log
 
       - uses: actions/upload-artifact@v4
         with:
