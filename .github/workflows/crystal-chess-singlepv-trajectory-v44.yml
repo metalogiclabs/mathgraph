@@ -1,0 +1,77 @@
+name: Crystal Chess SinglePV Trajectory V44
+
+on:
+  push:
+    branches:
+      - crystal-chess-singlepv-trajectory-v44
+    paths:
+      - "experiments/crystal_chess_singlepv_trajectory_v44.py"
+      - ".github/workflows/crystal-chess-singlepv-trajectory-v44.yml"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+  workflow_dispatch:
+
+jobs:
+  singlepv-trajectory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999"
+          python -m py_compile experiments/crystal_chess_singlepv_trajectory_v44.py
+
+      - name: Download exact V43 residual
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-residual-budget-ladder-v43
+          path: /tmp/v43
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36520938383
+
+      - name: Verify V43 residual identity
+        run: |
+          set -euo pipefail
+          test -s /tmp/v43/result.json
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/v43/result.json'))
+          assert p['schema']=='mathgraph.crystal-chess.residual-budget-ladder.v43'
+          rows=[r for r in p['rows'] if r['first_recovered_budget'] is None]
+          assert len(rows)==4
+          print('V43_SEARCH_MODE_RESIDUAL=PASS')
+          PY
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Run exact single-PV trajectory audit
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v44
+          python experiments/crystal_chess_singlepv_trajectory_v44.py             --stockfish /tmp/stockfish/src/stockfish             --v43-result /tmp/v43/result.json             --output artifacts/crystal-chess-v44/result.json             | tee artifacts/crystal-chess-v44/run.log
+          grep -Eq "CRYSTAL_CHESS_SINGLEPV_TRAJECTORY_V44=(SEARCH_MODE_RESIDUAL_RECOVERS_CHEAPLY_IN_SINGLEPV|SEARCH_MODE_RESIDUAL_RECOVERS_ONLY_LATE_IN_SINGLEPV|SEARCH_MODE_RESIDUAL_REQUIRES_FULL_100K_SINGLEPV)" artifacts/crystal-chess-v44/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v44/
+
+      - name: Upload V44 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-singlepv-trajectory-v44
+          path: artifacts/crystal-chess-v44/
+          if-no-files-found: error
