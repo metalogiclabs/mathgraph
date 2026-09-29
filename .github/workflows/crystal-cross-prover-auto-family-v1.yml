@@ -128,7 +128,7 @@ jobs:
           mkdir -p artifacts/crystal_cross_prover_auto_family_v1
           cd /tmp/pvs_cad/cad
           export PVS_LIBRARY_PATH=/tmp/nasalib
-          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.s_pos             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_demo.log"
+          "$PVS_DIR/proveit" -q --timeout 180 --default-proof "(cad)" @cad_demo.s_pos             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_demo.log"
           "$PVS_DIR/proveit" -q --timeout 180 @cad_examples.ex_sos:ex_sos_TCC1:ex_disc             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_examples.log"
           "$PVS_DIR/proveit" -q --timeout 180 @cad_star_ex.s_pos:s_split:s_iff:s_div             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_auto_family_v1/pvs_star.log"
 
