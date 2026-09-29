@@ -1,0 +1,215 @@
+name: Crystal FreyPackage Reconciliation V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'experiments/crystal_frey_package_reconciliation_v1/**'
+      - '.github/workflows/crystal-frey-package-reconciliation-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and compare exact project-local structures
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/frey-schema
+          curl -fsSL -o /tmp/frey-schema/anthropic.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2/Definitions/Def_FLTPrelim_FreyPackage.lean
+          curl -fsSL -o /tmp/frey-schema/imperial.lean             https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/FreyCurve/FreyPackage.lean
+          python - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+
+          m=json.loads(Path("experiments/crystal_frey_package_reconciliation_v1/manifest.json").read_text())
+          pins={x["corpus"]:x for x in m["sources"]}
+          paths={
+              "anthropic-flt":Path("/tmp/frey-schema/anthropic.lean"),
+              "imperial-flt":Path("/tmp/frey-schema/imperial.lean"),
+          }
+
+          def blob_sha(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+
+          def normalize_structure(text):
+              start=text.index("structure FreyPackage where")
+              end=text.index("namespace FreyPackage",start)
+              block=text[start:end]
+              block=re.sub(r"/-[\s\S]*?-/", " ", block)
+              return re.sub(r"\s+"," ",block).strip()
+
+          normalized={}
+          for corpus,path in paths.items():
+              data=path.read_bytes()
+              got=blob_sha(data)
+              assert got==pins[corpus]["blob_sha"], (corpus,got,pins[corpus]["blob_sha"])
+              text=data.decode()
+              normalized[corpus]=normalize_structure(text)
+              print("PIN_OK",corpus,got)
+
+          assert "Ported from the Imperial College London FLT formalization" in paths["anthropic-flt"].read_text()
+          values=set(normalized.values())
+          assert len(values)==1, normalized
+          schema=next(iter(values))
+          digest=hashlib.sha256(schema.encode()).hexdigest()
+          out={
+              "schema":"mathgraph.crystal-frey-package-schema-equivalence.v1",
+              "status":"EXACT_STRUCTURE_SCHEMA_MATCH",
+              "semantic_digest":digest,
+              "normalized_structure":schema,
+              "provenance_note":m["provenance_note"],
+              "source_blobs":{k:pins[k]["blob_sha"] for k in paths},
+          }
+          Path("experiments/crystal_frey_package_reconciliation_v1/schema_result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({"status":out["status"],"semantic_digest":digest},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frey-package-schema-equivalence
+          path: experiments/crystal_frey_package_reconciliation_v1/schema_result.json
+
+  qualify-roundtrip:
+    needs: compare-schema
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - corpus: anthropic-flt
+            mathlib: db584cd6d46c92f209a44c0f1c829460d327499d
+            toolchain: leanprover/lean4:v4.33.0
+            module: Definitions.Def_FLTPrelim_FreyPackage
+          - corpus: imperial-flt
+            mathlib: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+            toolchain: leanprover/lean4:v4.35.0-rc3
+            module: FLT.FreyCurve.FreyPackage
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Construct exact ${{ matrix.corpus }} micro-environment
+        env:
+          CORPUS: ${{ matrix.corpus }}
+          MATHLIB: ${{ matrix.mathlib }}
+          TOOLCHAIN: ${{ matrix.toolchain }}
+          MODULE: ${{ matrix.module }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/frey-$CORPUS"
+          mkdir -p "$ROOT"
+          printf '%s\n' "$TOOLCHAIN" > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<EOF
+          name = "crystal-frey-package-$CORPUS"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "$MATHLIB"
+          EOF
+
+          if [ "$CORPUS" = "anthropic-flt" ]; then
+            mkdir -p "$ROOT/Definitions"
+            curl -fsSL -o "$ROOT/Definitions/Def_FLTPrelim_FreyPackage.lean"               https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2/Definitions/Def_FLTPrelim_FreyPackage.lean
+            cat >> "$ROOT/lakefile.toml" <<EOF
+          [[lean_lib]]
+          name = "Definitions"
+          EOF
+          else
+            mkdir -p "$ROOT/FLT/FreyCurve" "$ROOT/FLT/Basic"
+            curl -fsSL -o "$ROOT/FLT/FreyCurve/FreyPackage.lean"               https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/FreyCurve/FreyPackage.lean
+            curl -fsSL -o "$ROOT/FLT/Basic/Lemmas.lean"               https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/Basic/Lemmas.lean
+            cat >> "$ROOT/lakefile.toml" <<EOF
+          [[lean_lib]]
+          name = "FLT"
+          EOF
+          fi
+
+          {
+            printf 'import %s\n\n' "$MODULE"
+            cat experiments/crystal_frey_package_reconciliation_v1/ViewBody.lean
+          } > "$ROOT/Surface.lean"
+      - name: Verify exact source pins
+        env:
+          CORPUS: ${{ matrix.corpus }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/frey-$CORPUS"
+          python - "$ROOT" "$CORPUS" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); corpus=sys.argv[2]
+          m=json.loads(Path("experiments/crystal_frey_package_reconciliation_v1/manifest.json").read_text())
+          item=next(x for x in m["sources"] if x["corpus"]==corpus)
+          files=[{"path":item["path"],"blob_sha":item["blob_sha"]},*item.get("helper_files",[])]
+          for f in files:
+              data=(root/f["path"]).read_bytes()
+              got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert got==f["blob_sha"], (f["path"],got,f["blob_sha"])
+              print("PIN_OK",corpus,f["path"],got)
+          PY
+      - name: Qualify canonical round-trip on ${{ matrix.corpus }}
+        env:
+          CORPUS: ${{ matrix.corpus }}
+          MODULE: ${{ matrix.module }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/frey-$CORPUS"
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake build "$MODULE"
+          lake env lean Surface.lean
+          printf '%s\n' "$CORPUS" > qualified_corpus.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frey-package-roundtrip-${{ matrix.corpus }}
+          path: /tmp/frey-${{ matrix.corpus }}/qualified_corpus.txt
+
+  promote:
+    needs: [compare-schema, qualify-roundtrip]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote bounded project-local reconciliation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("experiments/crystal_frey_package_reconciliation_v1/manifest.json").read_text())
+          out={
+              "schema":"mathgraph.crystal-frey-package-reconciliation-result.v1",
+              "status":"WARRANTED_BOUNDED_RECONCILIATION",
+              "candidate_id":"equiv:FreyPackage",
+              "corpora":[x["corpus"] for x in m["sources"]],
+              "qualification":"exact project-local structures map bijectively to the same canonical view in each pinned Lean/Mathlib environment",
+              "preserved_consequences":[
+                  "all FreyPackage data fields and proof fields",
+                  "Nonempty FreyPackage"
+              ],
+              "provenance_note":m["provenance_note"],
+              "not_claimed":[
+                  "independent invention of the two definitions",
+                  "transport of arbitrary compiled proof objects across Lean versions",
+                  "equivalence of downstream project-specific FreyPackage APIs"
+              ]
+          }
+          Path("experiments/crystal_frey_package_reconciliation_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-frey-package-reconciliation-v1
+          path: experiments/crystal_frey_package_reconciliation_v1/result.json
