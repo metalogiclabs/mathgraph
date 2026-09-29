@@ -1,4 +1,5 @@
 name: Crystal Transparent Wrapper Promotion V1
+# qualify compiled bridge capability
 
 on:
   push:
