@@ -1,0 +1,289 @@
+name: Crystal Bridge Origin Classification V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'mathgraph/lean_bridge_origin.py'
+      - 'tests/test_lean_bridge_origin.py'
+      - '.github/workflows/crystal-bridge-origin-classification-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test origin classifier
+        run: python -m pytest -q tests/test_lean_bridge_origin.py
+
+      - name: Sparse checkout exact corpus surfaces
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/crystal-corpora
+          clone_sparse () {
+            repo="$1"; commit="$2"; dest="$3"; shift 3
+            git init "$dest"
+            git -C "$dest" remote add origin "https://github.com/$repo.git"
+            git -C "$dest" sparse-checkout init --cone
+            git -C "$dest" sparse-checkout set "$@"
+            git -C "$dest" fetch --depth=1 origin "$commit"
+            git -C "$dest" checkout --detach FETCH_HEAD
+            test "$(git -C "$dest" rev-parse HEAD)" = "$commit"
+          }
+          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-corpora/anthropic Theorems
+          clone_sparse isomorphic-ai/fermat             07b35d10984632caa14b1af26ec5dec2363ee920             /tmp/crystal-corpora/isomorphic Fermat
+          clone_sparse ImperialCollegeLondon/FLT             eb6df2b018f81920cd48dd510417f0b7790c305e             /tmp/crystal-corpora/imperial FLT
+
+      - name: Build full equivalence-candidate origin input
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_bridge_origin_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.lean_bridge_discovery import SourcePin, fetch_pin
+          from mathgraph.lean_corpus_bridge_scout import build_scout_report, load_corpus_manifest
+          from mathgraph.lean_bridge_origin import collect_local_definition_evidence
+          from mathgraph.lean_bridge_portfolio import reconcile_bridge_portfolio
+
+          manifest=load_corpus_manifest(
+              "experiments/crystal_corpus_wide_bridge_scout_v1/corpus_manifest.json"
+          )
+          roots={
+              "anthropic-flt":"/tmp/crystal-corpora/anthropic",
+              "isomorphic-fermat":"/tmp/crystal-corpora/isomorphic",
+              "imperial-flt":"/tmp/crystal-corpora/imperial",
+          }
+          bridges=[]
+          for row in manifest.get("bridge_files",[]):
+              pin=SourcePin.from_mapping(row)
+              bridges.append((pin,fetch_pin(pin)))
+
+          report=build_scout_report(
+              corpus_roots=roots,
+              manifest=manifest,
+              bridge_texts=bridges,
+              top_k=1000,
+          )
+          assert len(report["top_equivalence_candidates"]) == 76, report["totals"]
+
+          directional=json.loads(Path("evidence/crystal-directional-bridge-batch-v2.json").read_text())
+          cross=json.loads(Path("evidence/crystal-cross-version-flt-interface-v1.json").read_text())
+          frey=json.loads(Path("evidence/crystal-frey-package-reconciliation-v1.json").read_text())
+
+          portfolio=reconcile_bridge_portfolio(report,directional,cross)
+          # FreyPackage has independent bounded reconciliation authority.
+          if frey["status"] == "WARRANTED_BOUNDED_RECONCILIATION":
+              cid=frey["scout_lineage"]["candidate_id"]
+              if cid not in portfolio["qualified_candidate_ids"]:
+                  portfolio["qualified_candidate_ids"].append(cid)
+
+          symbols=[x["canonical_symbol"] for x in report["top_equivalence_candidates"]]
+          local=collect_local_definition_evidence(roots,manifest,symbols)
+          payload={
+              "schema":"mathgraph.lean-bridge-origin-input.v1",
+              "report":report,
+              "qualified_candidate_ids":sorted(set(portfolio["qualified_candidate_ids"])),
+              "symbols":symbols,
+              "local_definition_evidence":{
+                  k:[x.to_dict() for x in v] for k,v in local.items()
+              },
+          }
+          Path("artifacts/crystal_bridge_origin_v1/input.json").write_text(
+              json.dumps(payload,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "equivalence_candidates":len(symbols),
+              "qualified_total":len(payload["qualified_candidate_ids"]),
+              "symbols_with_local_definitions":len(local),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-bridge-origin-input-v1
+          path: artifacts/crystal_bridge_origin_v1/input.json
+
+  probe-upstream:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: anthropic-mathlib
+            mathlib: db584cd6d46c92f209a44c0f1c829460d327499d
+            toolchain: leanprover/lean4:v4.33.0
+          - environment: isomorphic-mathlib
+            mathlib: 0531bb79fea20efc9ce6942db46b96be5a919400
+            toolchain: leanprover/lean4:v4.31.0-rc1
+          - environment: imperial-mathlib
+            mathlib: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+            toolchain: leanprover/lean4:v4.35.0-rc3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-bridge-origin-input-v1
+          path: /tmp/origin-input
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned Mathlib probe environment
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+          MATHLIB: ${{ matrix.mathlib }}
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/origin-$ENVIRONMENT"
+          mkdir -p "$ROOT"
+          printf '%s\n' "$TOOLCHAIN" > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<EOF
+          name = "crystal-origin-probe"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "$MATHLIB"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+
+      - name: Probe candidate names in pinned Mathlib
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/origin-$ENVIRONMENT"
+          python - "$ROOT" <<'PY'
+          import json,sys
+          from pathlib import Path
+
+          root=Path(sys.argv[1])
+          data=json.loads(Path("/tmp/origin-input/input.json").read_text())
+          lines=[
+              "import Mathlib",
+              "open Lean Elab Command",
+              'syntax (name := crystalContains) "#crystal_contains " ident : command',
+              "elab_rules : command",
+              '  | `(#crystal_contains $id:ident) => do',
+              "      let env ← getEnv",
+              '      logInfo m!"CRYSTAL_ORIGIN|{$id.getId}|{env.contains $id.getId}"',
+              "",
+          ]
+          for symbol in data["symbols"]:
+              lines.append(f"#crystal_contains {symbol}")
+          (root/"Probe.lean").write_text("\n".join(lines)+"\n")
+          PY
+          cd "$ROOT"
+          lake env lean Probe.lean 2>&1 | tee probe.log
+          python - "$ENVIRONMENT" <<'PY'
+          import json,re,sys
+          from pathlib import Path
+          env=sys.argv[1]
+          text=Path("probe.log").read_text()
+          pairs=re.findall(r"CRYSTAL_ORIGIN\|([^|\n]+)\|(true|false)",text)
+          presence={name:(value=="true") for name,value in pairs}
+          wanted=json.loads(Path("/tmp/origin-input/input.json").read_text())["symbols"]
+          assert set(presence)==set(wanted), (len(presence),len(wanted),set(wanted)-set(presence))
+          out={"schema":"mathgraph.mathlib-origin-probe.v1","environment":env,"presence":presence}
+          Path(f"/tmp/{env}.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "environment":env,
+              "present":sum(presence.values()),
+              "absent":len(presence)-sum(presence.values()),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: origin-probe-${{ matrix.environment }}
+          path: /tmp/${{ matrix.environment }}.json
+
+  classify:
+    needs: [prepare, probe-upstream]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-bridge-origin-input-v1
+          path: /tmp/origin-input
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: origin-probe-*
+          path: /tmp/origin-probes
+          merge-multiple: true
+
+      - name: Classify the residual before more proof search
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_bridge_origin_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.lean_bridge_origin import (
+              LocalDefinitionEvidence,
+              classify_report,
+              load_probe_files,
+          )
+
+          data=json.loads(Path("/tmp/origin-input/input.json").read_text())
+          probe_paths=sorted(Path("/tmp/origin-probes").glob("*.json"))
+          assert len(probe_paths)==3, probe_paths
+          upstream=load_probe_files(probe_paths)
+          local={
+              symbol:[LocalDefinitionEvidence(**row) for row in rows]
+              for symbol,rows in data["local_definition_evidence"].items()
+          }
+          out=classify_report(
+              data["report"],
+              upstream_presence_by_symbol=upstream,
+              local_definition_evidence=local,
+              qualified_candidate_ids=data["qualified_candidate_ids"],
+          )
+          Path("artifacts/crystal_bridge_origin_v1/classification.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          summary={
+              "status":out["status"],
+              "candidate_count":out["candidate_count"],
+              "origin_counts":out["origin_counts"],
+              "residual_origin_counts":out["residual_origin_counts"],
+              "same_upstream_non_bridge_count":out["same_upstream_non_bridge_count"],
+              "genuine_bridge_residual_count":out["genuine_bridge_residual_count"],
+              "genuine_bridge_symbols":[x["symbol"] for x in out["genuine_bridge_residual"]],
+          }
+          Path("artifacts/crystal_bridge_origin_v1/summary.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-bridge-origin-classification-v1
+          path: artifacts/crystal_bridge_origin_v1/
