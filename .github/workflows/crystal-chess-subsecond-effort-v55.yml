@@ -7,7 +7,8 @@ on:
     paths:
       - ".github/workflows/crystal-chess-subsecond-effort-v55.yml"
       - "experiments/crystal_chess_timemgmt_ablation_v51.py"
-      - "experiments/crystal_chess_normal_exposure_v22.py"\n      - "experiments/crystal_chess_apply_subsecond_effort_v55.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+      - "experiments/crystal_chess_apply_subsecond_effort_v55.py"
   workflow_dispatch:
 
 jobs:
