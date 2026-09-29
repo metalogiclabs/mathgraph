@@ -328,6 +328,11 @@ jobs:
               upstream_presence_by_symbol=upstream,
               local_definition_evidence=local,
               qualified_candidate_ids=data["qualified_candidate_ids"],
+              environment_by_corpus={
+                  "anthropic-flt":"anthropic-mathlib",
+                  "isomorphic-fermat":"isomorphic-mathlib",
+                  "imperial-flt":"imperial-mathlib",
+              },
           )
           Path("artifacts/crystal_bridge_origin_v1/classification.json").write_text(
               json.dumps(out,indent=2,sort_keys=True)+"\n"
