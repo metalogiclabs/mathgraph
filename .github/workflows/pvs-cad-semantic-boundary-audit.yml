@@ -58,6 +58,13 @@ jobs:
           PVS_DIR="$PVS_DIR" NASALIB="$NASALIB" tools/cli/srv.sh BoundaryAudit | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/server.log"
           ! grep -E "Typecheck error|Error:" "$GITHUB_WORKSPACE/experiments/pvs_cad/server.log"
 
+      - name: Probe CAD strategy on one control
+        working-directory: /tmp/pvs_cad
+        run: |
+          set -euo pipefail
+          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"             tools/cli/pv.sh BoundaryAudit control_linear "(cad)" 60             | tee "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-probe.log"
+          grep -q "Q.E.D" "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-probe.log"
+
       - name: Execute positive CAD boundary suite
         working-directory: /tmp/pvs_cad
         run: |
