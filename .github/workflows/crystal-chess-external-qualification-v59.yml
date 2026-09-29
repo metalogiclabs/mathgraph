@@ -19,24 +19,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone pinned current Stockfish master
+      - name: Clone pinned Stockfish master
         run: |
           set -euo pipefail
           git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
           git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
           test "$(git -C /tmp/stockfish rev-parse HEAD)" = "0a215d6c9e48856ef630013b8ab8312941a59057"
 
-      - name: Verify patch applies cleanly
+      - name: Apply and verify frozen patch
         run: |
           set -euo pipefail
-          git -C /tmp/stockfish apply --check "$GITHUB_WORKSPACE/external/chess/v59/stockfish-clock-gate-64ms.patch"
-          git -C /tmp/stockfish apply "$GITHUB_WORKSPACE/external/chess/v59/stockfish-clock-gate-64ms.patch"
+          patch="$GITHUB_WORKSPACE/external/chess/v59/stockfish-clock-gate-64ms.patch"
+          git -C /tmp/stockfish apply --check "$patch"
+          git -C /tmp/stockfish apply "$patch"
           git -C /tmp/stockfish diff --check
-          changed="$(git -C /tmp/stockfish diff --name-only)"
-          test "$changed" = "src/search.cpp"
+          test "$(git -C /tmp/stockfish diff --name-only)" = "src/search.cpp"
+          git -C /tmp/stockfish diff --numstat -- src/search.cpp | awk '$1==4 && $2==0 && $3=="src/search.cpp"{ok=1} END{exit ok?0:1}'
           git -C /tmp/stockfish diff -- src/search.cpp | tee /tmp/applied.patch
           grep -q "tm.optimum() <= 64" /tmp/applied.patch
-          test "$(git -C /tmp/stockfish diff --numstat -- src/search.cpp)" = 
 
       - name: Build baseline
         run: |
@@ -46,7 +46,7 @@ jobs:
           make -C /tmp/baseline/src -j2 build ARCH=x86-64
           /tmp/baseline/src/stockfish bench 16 1 3 default depth > /tmp/baseline.bench 2>&1
 
-      - name: Build candidate and check fixed-depth bench identity
+      - name: Build candidate and verify fixed-depth bench identity
         run: |
           set -euo pipefail
           make -C /tmp/stockfish/src -j2 build ARCH=x86-64
@@ -57,45 +57,7 @@ jobs:
           test -n "$base_nodes"
           test "$base_nodes" = "$cand_nodes"
 
-      - name: Seal package evidence
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/crystal-chess-v59
-          cp external/chess/v59/stockfish-clock-gate-64ms.patch artifacts/crystal-chess-v59/
-          cp external/chess/v59/README.md artifacts/crystal-chess-v59/
-          cp /tmp/baseline.bench artifacts/crystal-chess-v59/
-          cp /tmp/candidate.bench artifacts/crystal-chess-v59/
-          sha256sum artifacts/crystal-chess-v59/stockfish-clock-gate-64ms.patch > artifacts/crystal-chess-v59/PATCH_SHA256.txt
-          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > artifacts/crystal-chess-v59/STOCKFISH_PIN.txt
-          printf '%s\n' "CRYSTAL_CHESS_EXTERNAL_QUALIFICATION_V59=PASS" | tee artifacts/crystal-chess-v59/QUALIFICATION.txt
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: crystal-chess-external-qualification-v59
-          path: artifacts/crystal-chess-v59/
-          if-no-files-found: error
-4\t0\tsrc/search.cpp'
-
-      - name: Build baseline
-        run: |
-          set -euo pipefail
-          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/baseline
-          git -C /tmp/baseline checkout 0a215d6c9e48856ef630013b8ab8312941a59057
-          make -C /tmp/baseline/src -j2 build ARCH=x86-64
-          /tmp/baseline/src/stockfish bench 16 1 3 default depth > /tmp/baseline.bench 2>&1
-
-      - name: Build candidate and check fixed-depth bench identity
-        run: |
-          set -euo pipefail
-          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
-          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/candidate.bench 2>&1
-          base_nodes="$(grep -E 'Nodes searched' /tmp/baseline.bench | tail -1 | tr -dc '0-9')"
-          cand_nodes="$(grep -E 'Nodes searched' /tmp/candidate.bench | tail -1 | tr -dc '0-9')"
-          printf 'baseline_nodes=%s\ncandidate_nodes=%s\n' "$base_nodes" "$cand_nodes"
-          test -n "$base_nodes"
-          test "$base_nodes" = "$cand_nodes"
-
-      - name: Seal package evidence
+      - name: Seal qualification evidence
         run: |
           set -euo pipefail
           mkdir -p artifacts/crystal-chess-v59
