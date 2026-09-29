@@ -26,4 +26,4 @@ jobs:
           lake env lean VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean
           lake env lean VerifiedDevelopmentalNavigation/Routing.lean
 
-# cross-corpus bridge gate 2026-09-29
+# cross-corpus consumer gate 2026-09-29
