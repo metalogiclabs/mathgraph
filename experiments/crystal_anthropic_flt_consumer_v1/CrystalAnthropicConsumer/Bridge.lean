@@ -1,16 +1,15 @@
-import Mathlib.NumberTheory.FLT.Basic
+import Mathlib.RingTheory.Regular.RegularSequence
 
 namespace CrystalAnthropicConsumer
 
-def PositiveFLTFor (n : ℕ) : Prop :=
-  ∀ a b c : ℕ, 0 < a → 0 < b → 0 < c → a ^ n + b ^ n ≠ c ^ n
+/-- Crystal consequence-specific view: this consumer needs only weak regularity. -/
+def WeakRegularityView {R : Type*} [CommRing R] (xs : List R) : Prop :=
+  RingTheory.Sequence.IsWeaklyRegular R xs
 
-theorem positiveFLTFor_iff_mathlib (n : ℕ) :
-    PositiveFLTFor n ↔ FermatLastTheoremFor n := by
-  constructor
-  · intro h a b c ha hb hc
-    exact h a b c (Nat.pos_of_ne_zero ha) (Nat.pos_of_ne_zero hb) (Nat.pos_of_ne_zero hc)
-  · intro h a b c ha hb hc
-    exact h a b c (Nat.ne_of_gt ha) (Nat.ne_of_gt hb) (Nat.ne_of_gt hc)
+/-- Verified projection from the stronger source theorem interface. -/
+theorem regular_to_weak_view {R : Type*} [CommRing R] (xs : List R)
+    (h : RingTheory.Sequence.IsRegular R xs) :
+    WeakRegularityView xs :=
+  h.toIsWeaklyRegular
 
 end CrystalAnthropicConsumer
