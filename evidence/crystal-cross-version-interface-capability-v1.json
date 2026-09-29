@@ -1,0 +1,48 @@
+{
+  "schema": "mathgraph.crystal-cross-version-interface-capability-authority.v1",
+  "status": "REUSABLE",
+  "authority": {
+    "run_id": 36521456003,
+    "head_sha": "0459d1ba803ebd19d1e5a3c4a3597807f4259b94",
+    "artifact_id": 11013525997,
+    "artifact_digest": "sha256:8a94e16778ec9c4a0d10ce2a13108b020b2c627c2ffd0fe91e67485a2dbe42ed"
+  },
+  "qualification_lineage": {
+    "run_id": 36520980938,
+    "head_sha": "8e3f787a42ed55a6a1605c93483fb53d7618348c",
+    "semantic_digest": "90791b4e29df4b79febf079b824b6576d5837e0a01decdd49eeb569dbb16f7db",
+    "status": "WARRANTED_BOUNDED_CROSS_VERSION_INTERFACE"
+  },
+  "compiled": {
+    "interface_id": "lean.number-theory.fermat-last-theorem-for@1",
+    "canonical_object_id": "semantic:c250b60e174dba183124d60406e2201bd5d85491fa3ff43485e3fd483d696951",
+    "source_object_ids": [
+      "semantic:597b7e2b5f112981956ea48f7d91ef202218e83222a857e1fcf11a531abcd379",
+      "semantic:5f44560d18e46724c27fea4e8d7eeae31355931ade7cbcc74c89f0b11f02cf81",
+      "semantic:c5422c0fb035771f931e444284320bbde22e897943e949b1af3b2715c1965000"
+    ],
+    "adapter_contract_ids": [
+      "adapter:c90d961d2971bfe01dc0226006aaae0b44563848ee03d5e7365368cb77d2c3d6",
+      "adapter:6faa10023f33a3f85a12adc2e0a36a044d7a0077925df99b6da2f056b0f6d3cf",
+      "adapter:306061725478f40a81eb314756289251140d75e23015a0518cf29cb2312a8c11"
+    ],
+    "source_spaces": [
+      "lean.corpus.anthropic-flt.mathlib-db584cd6d46c.toolchain-v4.33.0@1",
+      "lean.corpus.isomorphic-fermat.mathlib-0531bb79fea2.toolchain-v4.31.0-rc1@1",
+      "lean.corpus.imperial-flt.mathlib-3cb72cfd416d.toolchain-v4.35.0-rc3@1"
+    ],
+    "target_space": "mathgraph.number-theory.flt@1",
+    "version_count": 3
+  },
+  "systems_law": {
+    "name": "version-invariant semantic waist",
+    "statement": "When the protected theorem interface has the same qualified semantic definition across independently pinned Lean/Mathlib environments, version-specific source objects may lower to one canonical semantic object while retaining version provenance.",
+    "bounded_to": "FermatLastTheoremFor/FermatLastTheorem across the three pinned FLT environments"
+  },
+  "fail_closed_boundary": "requests outside lean.number-theory.fermat-last-theorem-for@1 return typed UNKNOWN",
+  "unknowns": [
+    "transport of arbitrary compiled proof objects between Lean versions",
+    "cross-version equivalence of unrelated theorem families",
+    "automatic migration of implementation-specific APIs"
+  ]
+}
