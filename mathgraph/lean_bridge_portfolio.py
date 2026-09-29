@@ -20,13 +20,20 @@ def reconcile_bridge_portfolio(
     qualified=set()
     rows=[]
 
-    symbol=str(cross_version["candidate_lineage"]["canonical_symbol"])
-    hits=[x for x in scout["top_equivalence_candidates"] if x["canonical_symbol"]==symbol]
-    if len(hits)!=1:
-        raise AssertionError(f"equivalence match count for {symbol}: {len(hits)}")
-    cid=str(hits[0]["candidate_id"])
-    qualified.add(cid)
-    rows.append({"candidate_id":cid,"kind":"equivalence","status":"QUALIFIED_REUSABLE"})
+    lineage=cross_version["candidate_lineage"]
+    symbols=list(lineage.get("qualified_symbols",[lineage["canonical_symbol"]]))
+    all_set=set(all_ids)
+    for symbol in symbols:
+        cid=f"equiv:{symbol}"
+        if cid not in all_set:
+            raise AssertionError(f"qualified equivalence missing from scout: {cid}")
+        qualified.add(cid)
+        rows.append({
+            "candidate_id":cid,
+            "kind":"equivalence",
+            "symbol":symbol,
+            "status":"QUALIFIED_REUSABLE",
+        })
 
     law=directional["bridge_law"]
     consumer=directional["qualification"]["consumer_surface"]["declaration"]
