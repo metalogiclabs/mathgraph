@@ -195,7 +195,8 @@ jobs:
               "qualification":"exact project-local structures map bijectively to the same canonical view in each pinned Lean/Mathlib environment",
               "preserved_consequences":[
                   "all FreyPackage data fields and proof fields",
-                  "Nonempty FreyPackage"
+                  "Nonempty FreyPackage",
+                  "IsEmpty FreyPackage (the B3-shaped no-Frey-package obstruction)"
               ],
               "provenance_note":m["provenance_note"],
               "not_claimed":[
