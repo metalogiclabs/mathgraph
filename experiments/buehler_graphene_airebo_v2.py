@@ -177,7 +177,7 @@ def run_case(case, lmp: str, pot_path: Path):
     log = cdir / "lammps.log"
     with log.open("w") as lf:
         proc = subprocess.run(
-            [lmp, "-in", str(inp)],
+            [lmp, "-in", inp.name],
             cwd=cdir,
             stdout=lf,
             stderr=subprocess.STDOUT,
