@@ -20,6 +20,7 @@ DECL_RE = re.compile(
     r"(?P<name>[A-Za-z_][A-Za-z0-9_'.]*)\b"
 )
 NAMESPACE_RE = re.compile(r"^\s*namespace\s+([A-Za-z_][A-Za-z0-9_'.]*)\s*$")
+SECTION_RE = re.compile(r"^\s*section(?:\s+([A-Za-z_][A-Za-z0-9_'.]*))?\s*$")
 END_RE = re.compile(r"^\s*end(?:\s+([A-Za-z_][A-Za-z0-9_'.]*))?\s*$")
 IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_'.]*")
 ALIAS_RHS_RE = re.compile(r":=\s*([A-Za-z_][A-Za-z0-9_'.]*)")
@@ -207,24 +208,47 @@ def split_premise_conclusion(statement: str, kind: str) -> tuple[str, str]:
 def extract_declarations(pin: SourcePin, text: str) -> list[LeanDeclaration]:
     lines = text.splitlines()
     namespace: list[str] = []
+    scopes: list[tuple[str, str | None]] = []
     out: list[LeanDeclaration] = []
     for i, line in enumerate(lines):
         ns = NAMESPACE_RE.match(line)
         if ns:
-            namespace.append(ns.group(1))
+            name = ns.group(1)
+            namespace.append(name)
+            scopes.append(("namespace", name))
             continue
+
+        section = SECTION_RE.match(line)
+        if section:
+            scopes.append(("section", section.group(1)))
+            continue
+
         end = END_RE.match(line)
-        if end and namespace:
+        if end and scopes:
             wanted = end.group(1)
+            idx: int | None = None
             if wanted is None:
-                namespace.pop()
+                idx = len(scopes) - 1
             else:
-                # Conservative namespace unwinding.
-                while namespace:
-                    top = namespace.pop()
-                    if top == wanted or top.endswith("." + wanted):
+                for j in range(len(scopes) - 1, -1, -1):
+                    scope_name = scopes[j][1]
+                    if scope_name is not None and (
+                        scope_name == wanted or scope_name.endswith("." + wanted)
+                    ):
+                        idx = j
                         break
+            # An `end SectionName` that is not a namespace must not erase
+            # the enclosing namespace. Only unwind when the matching scope is
+            # actually known.
+            if idx is not None:
+                while len(scopes) > idx:
+                    scope_kind, scope_name = scopes.pop()
+                    if scope_kind == "namespace":
+                        if not namespace:
+                            raise AssertionError("namespace/scope stack drift")
+                        namespace.pop()
             continue
+
         m = DECL_RE.match(line)
         if not m:
             continue
