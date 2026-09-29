@@ -212,16 +212,21 @@ jobs:
 
           decl_re=re.compile(r"\\b(?:class|structure|def|abbrev|inductive)\\s+([A-Za-z_][A-Za-z0-9_'.]*)\\b")
           block_comment=re.compile(r"/-[\\s\\S]*?-/")
-          declared=set()
+          from collections import Counter
+          declared_counts=Counter()
           mathlib_root=Path(".lake/packages/mathlib/Mathlib")
           for path in mathlib_root.rglob("*.lean"):
               source=path.read_text(encoding="utf-8",errors="ignore")
               source=block_comment.sub(" ",source)
               source=re.sub(r"--[^\\n]*"," ",source)
               for name in decl_re.findall(source):
-                  declared.add(name.split(".")[-1])
+                  declared_counts[name.split(".")[-1]] += 1
+          short_counts={
+              symbol:int(declared_counts[symbol.split(".")[-1]])
+              for symbol in wanted
+          }
           short_presence={
-              symbol:(symbol.split(".")[-1] in declared)
+              symbol:(short_counts[symbol] > 0)
               for symbol in wanted
           }
 
@@ -230,6 +235,7 @@ jobs:
               "environment":env,
               "presence":presence,
               "short_declaration_presence":short_presence,
+              "short_declaration_count":short_counts,
           }
           Path(f"/tmp/{env}.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
           print(json.dumps({
@@ -237,6 +243,7 @@ jobs:
               "present":sum(presence.values()),
               "absent":len(presence)-sum(presence.values()),
               "short_declaration_present":sum(short_presence.values()),
+              "short_name_collisions":sum(1 for v in short_counts.values() if v > 1),
           },sort_keys=True))
           PY
 
@@ -277,6 +284,7 @@ jobs:
               classify_report,
               load_probe_files,
               load_short_declaration_probe_files,
+              load_short_declaration_count_probe_files,
               refine_origin_classification,
           )
 
@@ -299,9 +307,11 @@ jobs:
           )
 
           short_upstream=load_short_declaration_probe_files(probe_paths)
+          short_counts=load_short_declaration_count_probe_files(probe_paths)
           refined=refine_origin_classification(
               out,
               short_declaration_presence_by_symbol=short_upstream,
+              short_declaration_count_by_symbol=short_counts,
           )
           Path("artifacts/crystal_bridge_origin_v1/classification_v2.json").write_text(
               json.dumps(refined,indent=2,sort_keys=True)+"\n"
