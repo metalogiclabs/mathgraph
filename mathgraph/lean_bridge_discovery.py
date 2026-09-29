@@ -22,6 +22,10 @@ DECL_RE = re.compile(
 NAMESPACE_RE = re.compile(r"^\s*namespace\s+([A-Za-z_][A-Za-z0-9_'.]*)\s*$")
 END_RE = re.compile(r"^\s*end(?:\s+([A-Za-z_][A-Za-z0-9_'.]*))?\s*$")
 IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_'.]*")
+BINDER_TYPE_HEAD_RE = re.compile(
+    r"[({\[]\s*([A-Za-z_][A-Za-z0-9_']*)\s*:\s*"
+    r"([A-Z][A-Za-z0-9_'.]*)"
+)
 ALIAS_RHS_RE = re.compile(r":=\s*([A-Za-z_][A-Za-z0-9_'.]*)")
 EXTENDS_RE = re.compile(r"\bextends\s+([A-Za-z_][A-Za-z0-9_'.]*)")
 
@@ -180,11 +184,31 @@ def _last_top_level_colon(text: str) -> int | None:
 
 
 def _semantic_symbols(text: str) -> tuple[str, ...]:
-    return tuple(sorted({
-        key
-        for tok in IDENT_RE.findall(text)
-        if (key := semantic_symbol_key(tok)) is not None
-    }))
+    # Resolve simple Lean dot-notation receivers before candidate grouping.
+    # Example:
+    #   (G : PDivisibleGroup R p h), G.HasDimension
+    # becomes PDivisibleGroup.HasDimension, while
+    #   (G : SimpleGraph V), G.HasDimension
+    # becomes SimpleGraph.HasDimension.
+    #
+    # This is intentionally syntactic and conservative: only an explicitly
+    # typed binder in the same declaration window can rewrite a receiver.
+    binder_heads = {
+        name: type_head
+        for name, type_head in BINDER_TYPE_HEAD_RE.findall(text)
+    }
+    keys: set[str] = set()
+    for tok in IDENT_RE.findall(text):
+        resolved = tok
+        if "." in tok:
+            receiver, member = tok.split(".", 1)
+            type_head = binder_heads.get(receiver)
+            if type_head is not None and member and member[0].isupper():
+                resolved = f"{type_head}.{member}"
+        key = semantic_symbol_key(resolved)
+        if key is not None:
+            keys.add(key)
+    return tuple(sorted(keys))
 
 
 def split_premise_conclusion(statement: str, kind: str) -> tuple[str, str]:
