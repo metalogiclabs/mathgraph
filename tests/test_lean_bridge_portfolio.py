@@ -45,3 +45,15 @@ def test_missing_promoted_candidate_fails():
         pass
     else:
         raise AssertionError("missing qualification must fail closed")
+
+
+def test_one_authority_can_close_multiple_qualified_equivalence_interfaces():
+    scout,directional,cross=fixtures()
+    scout["all_candidate_ids"].append("equiv:FermatLastTheorem")
+    cross["candidate_lineage"]["qualified_symbols"]=[
+        "FermatLastTheoremFor",
+        "FermatLastTheorem",
+    ]
+    out=reconcile_bridge_portfolio(scout,directional,cross)
+    assert out["qualified_reusable_count"]==4
+    assert "equiv:FermatLastTheorem" in out["qualified_candidate_ids"]
