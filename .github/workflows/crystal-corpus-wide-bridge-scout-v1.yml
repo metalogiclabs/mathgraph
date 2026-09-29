@@ -1,0 +1,106 @@
+name: Crystal Corpus-Wide Bridge Scout V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'mathgraph/lean_corpus_bridge_scout.py'
+      - 'mathgraph/lean_bridge_discovery.py'
+      - 'scripts/run_lean_corpus_bridge_scout.py'
+      - 'tests/test_lean_corpus_bridge_scout.py'
+      - 'experiments/crystal_corpus_wide_bridge_scout_v1/**'
+      - '.github/workflows/crystal-corpus-wide-bridge-scout-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+
+      - name: Test corpus scout
+        run: python -m pytest -q tests/test_lean_corpus_bridge_scout.py tests/test_lean_bridge_discovery.py
+
+      - name: Sparse checkout exact corpus surfaces
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/crystal-corpora
+
+          clone_sparse () {
+            repo="$1"; commit="$2"; dest="$3"; shift 3
+            git init "$dest"
+            git -C "$dest" remote add origin "https://github.com/$repo.git"
+            git -C "$dest" sparse-checkout init --cone
+            git -C "$dest" sparse-checkout set "$@"
+            git -C "$dest" fetch --depth=1 origin "$commit"
+            git -C "$dest" checkout --detach FETCH_HEAD
+            test "$(git -C "$dest" rev-parse HEAD)" = "$commit"
+          }
+
+          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-corpora/anthropic Theorems
+
+          clone_sparse isomorphic-ai/fermat             07b35d10984632caa14b1af26ec5dec2363ee920             /tmp/crystal-corpora/isomorphic Fermat
+
+          clone_sparse ImperialCollegeLondon/FLT             eb6df2b018f81920cd48dd510417f0b7790c305e             /tmp/crystal-corpora/imperial FLT
+
+      - name: Run corpus-wide discovery
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_corpus_wide_bridge_scout_v1
+          python scripts/run_lean_corpus_bridge_scout.py             experiments/crystal_corpus_wide_bridge_scout_v1/corpus_manifest.json             --corpus-root anthropic-flt=/tmp/crystal-corpora/anthropic             --corpus-root isomorphic-fermat=/tmp/crystal-corpora/isomorphic             --corpus-root imperial-flt=/tmp/crystal-corpora/imperial             --out artifacts/crystal_corpus_wide_bridge_scout_v1/report.json
+
+      - name: Enforce bounded scout consequences
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p=Path("artifacts/crystal_corpus_wide_bridge_scout_v1/report.json")
+          d=json.loads(p.read_text())
+          t=d["totals"]
+          assert t["corpus_declaration_count"] > 88, t
+          assert t["unqualified_candidate_count"] > 0, t
+          assert d["default_disposition"] == "UNKNOWN_UNQUALIFIED"
+
+          flt=[
+              x for x in d["top_equivalence_candidates"]
+              if x["canonical_symbol"]=="FermatLastTheoremFor"
+          ]
+          assert flt, "corpus-wide scout lost FLT convergence"
+          assert {"anthropic-flt","isomorphic-fermat","imperial-flt"} <= set(flt[0]["corpora"])
+          assert flt[0]["qualification_status"]=="UNKNOWN_UNQUALIFIED"
+
+          summary={
+              "status":"CANDIDATE_SCOUT_ONLY",
+              "corpus_declarations":t["corpus_declaration_count"],
+              "corpus_files":t["corpus_file_count"],
+              "source_bytes":t["corpus_source_bytes"],
+              "aliases":t["alias_rule_count"],
+              "equivalence_candidates":t["equivalence_candidate_count"],
+              "implication_candidates":t["implication_candidate_count"],
+              "unqualified":t["unqualified_candidate_count"],
+              "flt_rank":flt[0]["rank"],
+              "flt_corpora":flt[0]["corpora"],
+          }
+          Path("artifacts/crystal_corpus_wide_bridge_scout_v1/summary.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-corpus-wide-bridge-scout-v1
+          path: artifacts/crystal_corpus_wide_bridge_scout_v1/
