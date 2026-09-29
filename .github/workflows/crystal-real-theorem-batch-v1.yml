@@ -6,8 +6,97 @@ on:
       - crystal-real-theorem-reuse-v1
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   batch:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Assemble frozen eight-theorem Anthropic corpus
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-real-batch
+          mkdir -p "$ROOT/P2M/Sol" "$ROOT/Theorems"
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import urllib.request
+
+          root = Path("/tmp/crystal-real-batch")
+          base = "https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2/"
+          files = {
+              "P2M/Util.lean": "0a73367f78bc165bb5d35e42ca14f5055252e7f6",
+              "P2M/Sol/S_Algebra_norm_of_subsingleton.lean": "44e3eb8ab5c40d75292a48512313952b67ed9e73",
+              "Theorems/Thm_Algebra_norm_of_subsingleton.lean": "110ae469fe7d3650a8c9d31f02f2b8fc8d7037b9",
+              "P2M/Sol/S_IsRegularLocalRing_isDomain.lean": "5060784191b53dd6e21234e748958f2342024be8",
+              "Theorems/Thm_IsRegularLocalRing_isDomain.lean": "bbecd9ef87461700ade82d4bda16003f21bf4be6",
+              "P2M/Sol/S_IsAddCyclic_of_squarefree_natCard.lean": "631efbd34e6aa03042244cc6a3cffb5cc46cab19",
+              "Theorems/Thm_IsAddCyclic_of_squarefree_natCard.lean": "a46389540e04c215a903f4de84fbbb1a08e52ad4",
+              "P2M/Sol/S_Field_nonempty_ringHom_complex_of_countable.lean": "2cfed5dfebf0932e19c0214465479f279f487055",
+              "Theorems/Thm_Field_nonempty_ringHom_complex_of_countable.lean": "38affb452e71787597aff4d677080f3292b91d53",
+              "P2M/Sol/S_IsAdicComplete_of_isNilpotent.lean": "423945ffadc8c34b9a1da41c617554f6fc50eb0e",
+              "Theorems/Thm_IsAdicComplete_of_isNilpotent.lean": "50bca5ee0d5f710487c5588d364dd242555a1b02",
+              "P2M/Sol/S_IsLocalRing_sq_eq_one_iff_of_isUnit_two.lean": "45d07de2b8ee1b22e7007cf8353e0db9916e4db3",
+              "Theorems/Thm_IsLocalRing_sq_eq_one_iff_of_isUnit_two.lean": "cd3bfd90f8a3baaba237d93a376e19c495941c37",
+              "P2M/Sol/S_HahnSeries_isAlgClosed_rat.lean": "9c1018d6c295bb54e16e2ae7ca25d9b780527362",
+              "Theorems/Thm_HahnSeries_isAlgClosed_rat.lean": "c70f585a812c23428cf71435ce9d83af6a0248af",
+              "P2M/Sol/S_CharacterModule_natCard_eq_of_finite.lean": "b13050aae88ad424991a39b1bb859096342869f0",
+              "Theorems/Thm_CharacterModule_natCard_eq_of_finite.lean": "b0aeda40a95fc8920ace575ec0320d968c19c039",
+          }
+          for rel, want in files.items():
+              req = urllib.request.Request(base + rel, headers={"User-Agent": "mathgraph-crystal-batch"})
+              data = urllib.request.urlopen(req, timeout=60).read()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              assert got == want, (rel, got, want)
+              p = root / rel
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_bytes(data)
+          print(f"PINNED_ANTHROPIC_BATCH_OK files={len(files)}")
+          PY
+          cp experiments/crystal_real_theorem_reuse_v1/BatchConsumer.lean "$ROOT/BatchConsumer.lean"
+          cat > "$ROOT/lean-toolchain" <<'EOF'
+          leanprover/lean4:v4.31.0-rc1
+          EOF
+          cat > "$ROOT/lakefile.lean" <<'EOF'
+          import Lake
+          open Lake DSL
+
+          package crystal_real_theorem_batch_v1
+
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @
+            "0531bb79fea20efc9ce6942db46b96be5a919400"
+
+          lean_lib P2M where
+            globs := #[.submodules `P2M]
+
+          lean_lib Theorems where
+            globs := #[.submodules `Theorems]
+
+          lean_lib BatchConsumer where
+            roots := #[`BatchConsumer]
+          EOF
+
+      - name: Hydrate frozen target environment
+        working-directory: /tmp/crystal-real-batch
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+
+      - name: Compile and expose frozen theorem batch
+        working-directory: /tmp/crystal-real-batch
+        run: |
+          set -euo pipefail
+          lake build BatchConsumer
+          lake env lean BatchConsumer.lean
+          echo BATCH_PORTABLE_THEOREMS=8/8
