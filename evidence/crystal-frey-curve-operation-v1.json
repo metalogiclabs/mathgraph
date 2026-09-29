@@ -1,0 +1,52 @@
+{
+  "schema": "mathgraph.crystal-frey-curve-operation-authority.v1",
+  "status": "WARRANTED_BOUNDED_OPERATION_RECONCILIATION",
+  "authority": {
+    "run_id": 36522850784,
+    "head_sha": "ca98b8d340894f4ad230bee2426ebadb0db969a6",
+    "result_artifact_id": 11012564482,
+    "result_artifact_digest": "sha256:c5f2173ffba71877c741cbdd6e56c8af4528714061e22591637fdbec163a552e",
+    "schema_artifact_id": 11013089753,
+    "schema_artifact_digest": "sha256:3df26cb18a98aa65d60e2b69cfe90acf843bc0b4c1d8599c07edb00aca74ce32",
+    "anthropic_artifact_id": 11013244624,
+    "anthropic_artifact_digest": "sha256:ec5ab4a18fa0e9b757ea7f825281ecb4990d0d7439fe394da48545f99cf5b952",
+    "imperial_artifact_id": 11012789153,
+    "imperial_artifact_digest": "sha256:545498584c7365fd7873b933e6d69d6970ec7d0b286251ac04a498d0e6886da9"
+  },
+  "parent_authority": "evidence/crystal-frey-package-reconciliation-v1.json",
+  "parent_candidate": "equiv:FreyPackage",
+  "operation_schema": {
+    "semantic_digest": "d509ea05c6868ab8b06949bfa3f5addde17bfafd20f3eb9ab68d83d6f6802210",
+    "exact_normalized_operation_match": true,
+    "operations": [
+      "FreyPackage.freyCurveInt",
+      "FreyPackage.freyCurve"
+    ],
+    "anthropic_source_blob": "db1cdbbec434a118a917b33580fc8c81c4fff221",
+    "imperial_source_blob": "eaaca84b85675f2e44ee5ca1f5c88824f627d48e"
+  },
+  "qualification": {
+    "anthropic_build_jobs": 1573,
+    "imperial_build_jobs": 3645,
+    "commuting_laws": [
+      "freyCurveInt_commutes",
+      "freyCurve_commutes"
+    ],
+    "canonical_view": "CrystalFreyPackageView"
+  },
+  "systems_law": {
+    "name": "semantic operation commuting",
+    "statement": "Once a project-local object is reconciled through a canonical view, shared operations can be promoted when their exact definitions agree and each source operation is independently proved to commute with the view.",
+    "bounded_to": "FreyPackage.freyCurveInt and FreyPackage.freyCurve in the two pinned FLT environments"
+  },
+  "revocation_boundary": [
+    "parent FreyPackage reconciliation revoked",
+    "either operation source blob changes",
+    "operation semantic digest changes",
+    "either commuting law fails"
+  ],
+  "unknowns": [
+    "equivalence of downstream FreyCurve lemmas",
+    "compiled proof-object transport across Lean versions"
+  ]
+}
