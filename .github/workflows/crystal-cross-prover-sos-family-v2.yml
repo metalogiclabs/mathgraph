@@ -1,0 +1,263 @@
+name: Crystal Cross-Prover SOS Family V2
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-semantic-linker-v1
+    paths:
+      - 'mathgraph/cross_prover_sos_certificate.py'
+      - 'tests/test_cross_prover_sos_family_v2.py'
+      - 'experiments/crystal_cross_prover_sos_family_v2/**'
+      - '.github/workflows/crystal-cross-prover-sos-family-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+
+      - name: Test bounded family compiler
+        run: python -m pytest -q tests/test_cross_prover_sos_family_v2.py
+
+      - name: Fetch exact PVS corpus and verify source surfaces
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs_cad artifacts/crystal_cross_prover_sos_family_v2
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+
+          python - <<'PY'
+          import hashlib,json,re
+          from pathlib import Path
+
+          m=json.loads(Path("experiments/crystal_cross_prover_sos_family_v2/manifest.json").read_text())
+          root=Path("/tmp/pvs_cad")
+          for path,want in m["source"]["files"].items():
+              data=(root/path).read_bytes()
+              got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert got==want,(path,got,want)
+
+          for case in m["cases"]:
+              text=(root/case["pvs"]["path"]).read_text()
+              expected=re.sub(r"\s+"," ",case["expected_surface"]).strip()
+              pat=rf"{re.escape(case['pvs']['formula'])}\s*:\s*LEMMA\s+([^\n]+)"
+              hit=re.search(pat,text)
+              assert hit,case["id"]
+              actual=re.sub(r"\s+"," ",hit.group(1)).strip()
+              assert actual==expected,(case["id"],actual,expected)
+
+          proof_demo=(root/"cad/cad_demo.prf").read_text()
+          proof_examples=(root/"cad/cad_examples.prf").read_text()
+          assert "(|d_amgm|" in proof_demo and "(CAD)" in proof_demo
+          assert "(|ex_sos|" in proof_examples and "(CAD)" in proof_examples
+          assert "(|t_amgm3|" not in proof_demo
+
+          out={
+              "schema":"mathgraph.cross-prover-sos-family-source-v2",
+              "status":"EXACT_SOURCE_SURFACES",
+              "source_commit":m["source"]["commit"],
+              "cases":[{"id":x["id"],"expected":x["expected"]} for x in m["cases"]],
+          }
+          Path("artifacts/crystal_cross_prover_sos_family_v2/source.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Install exact PVS 8.1.2 and NASALib
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+          curl -fL -o /tmp/pvs.tgz             https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/nasalib rev-parse HEAD)" = e426f69dc2680ad575491f93c5a51739ec8b25fa
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+
+      - name: Replay two positive PVS CAD proofs
+        run: |
+          set -euo pipefail
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          cd /tmp/pvs_cad/cad
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_amgm:d_amgm_TCC1             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/pvs_amgm.log"
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_examples.ex_sos:ex_sos_TCC1             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/pvs_sos.log"
+          grep -q "2 proofs, 2 attempted, 2 succeeded"             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/pvs_amgm.log"
+          grep -q "2 proofs, 2 attempted, 2 succeeded"             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/pvs_sos.log"
+
+      - name: Decide false control by pinned PVS CAD
+        run: |
+          set -euo pipefail
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          cat > /tmp/pvs_cad/cad/crystal_sos_control.pvs <<'EOF'
+          crystal_sos_control: THEORY
+          BEGIN
+            IMPORTING cad_decide5, mpoly_embed
+            not_amgm3: LEMMA NOT (
+              FORALL (x: real): FORALL (y: real):
+                x * x + y * y >= 3 * x * y
+            )
+          END crystal_sos_control
+          EOF
+          cd /tmp/pvs_cad/cad
+          "$PVS_DIR/proveit" -q --timeout 180 --default-proof "(cad)" crystal_sos_control.pvs             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/pvs_false_control.log"
+          grep -q "1 proofs, 1 attempted, 1 succeeded"             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/pvs_false_control.log"
+
+      - name: Compile exact SOS family
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_sos_certificate import (
+              discover_binary_quadratic_sos,
+              render_lean_sos_proof,
+              verify_sos_certificate,
+          )
+
+          m=json.loads(Path("experiments/crystal_cross_prover_sos_family_v2/manifest.json").read_text())
+          rows=[]
+          theorem_blocks=[]
+          for case in m["cases"]:
+              cert=discover_binary_quadratic_sos(case["claim"])
+              if case["expected"]=="TRUE":
+                  assert cert is not None,case["id"]
+                  assert verify_sos_certificate(case["claim"],cert)
+                  proof=render_lean_sos_proof(cert)
+                  theorem_name={
+                      "real.amgm2@1":"amgm2_from_sos",
+                      "real.sumSquares2@1":"sumSquares2_from_sos",
+                  }[case["id"]]
+                  expr={
+                      "real.amgm2@1":"x ^ 2 + y ^ 2 ≥ 2 * x * y",
+                      "real.sumSquares2@1":"x ^ 2 + y ^ 2 ≥ 0",
+                  }[case["id"]]
+                  theorem_blocks.append(
+                      f"theorem {theorem_name} (x y : ℝ) : {expr} := {proof}\n"
+                  )
+                  rows.append({"id":case["id"],"expected":"TRUE","certificate":cert.to_dict()})
+              else:
+                  assert cert is None,case["id"]
+                  rows.append({"id":case["id"],"expected":"FALSE","certificate":None})
+
+          theorem_blocks.append("""theorem amgm3_false_control :
+              ¬ (∀ x y : ℝ, x ^ 2 + y ^ 2 ≥ 3 * x * y) := by
+            intro h
+            have h11 := h 1 1
+            norm_num at h11
+          """)
+
+          lean="import Mathlib\n\nnamespace CrystalCrossProverSOSFamily\n\n"
+          lean+="\n".join(theorem_blocks)
+          lean+="\nend CrystalCrossProverSOSFamily\n"
+          Path("artifacts/crystal_cross_prover_sos_family_v2/Family.lean").write_text(lean)
+
+          out={
+              "schema":"mathgraph.cross-prover-sos-family-candidates.v2",
+              "status":"CANDIDATE_PENDING_LEAN",
+              "cases":rows,
+          }
+          Path("artifacts/crystal_cross_prover_sos_family_v2/candidates.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Kernel-check family certificates and negative control
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-sos-family-v2
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_sos_family_v2/Family.lean "$ROOT/Family.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-sos-family-v2"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Family.lean
+          sha256sum Family.lean >             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_sos_family_v2/lean_family.sha256"
+
+      - name: Promote bounded automatic certificate family
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          c=json.loads(Path("artifacts/crystal_cross_prover_sos_family_v2/candidates.json").read_text())
+          rows=c["cases"]
+          assert sum(x["expected"]=="TRUE" and x["certificate"] is not None for x in rows)==2
+          assert sum(x["expected"]=="FALSE" and x["certificate"] is None for x in rows)==1
+          out={
+              "schema":"mathgraph.crystal-cross-prover-sos-family-result.v2",
+              "status":"WARRANTED_BOUNDED_AUTOMATIC_CERTIFICATE_FAMILY",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "true_cases_certified":2,
+              "false_controls_rejected":1,
+              "cases":rows,
+              "pvs":{
+                  "positive_replays":2,
+                  "negative_control_decided":1,
+                  "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+              },
+              "lean":{
+                  "positive_certificates_checked":2,
+                  "negative_control_checked":1,
+                  "family_sha256":Path(
+                      "artifacts/crystal_cross_prover_sos_family_v2/lean_family.sha256"
+                  ).read_text().split()[0],
+              },
+              "systems_law":"For homogeneous binary quadratic real inequalities, exact rational PSD completion-of-square gives a mechanically checkable SOS certificate when the quadratic form is positive semidefinite and refuses an indefinite false control.",
+              "closed_unknown":"certificate synthesis beyond a handpicked single AM-GM proposition",
+              "remaining_unknowns":[
+                  "certificate synthesis for higher-degree or quantified semialgebraic formulas",
+                  "automatic extraction of a useful certificate from arbitrary CAD proof traces",
+                  "universal cross-prover proof-object transport"
+              ],
+          }
+          Path("artifacts/crystal_cross_prover_sos_family_v2/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-sos-family-v2
+          path: artifacts/crystal_cross_prover_sos_family_v2/
