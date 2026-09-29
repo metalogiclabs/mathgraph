@@ -1,0 +1,105 @@
+name: Crystal Cross-Prover MSI Projection Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-msi-projection-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-msi-projection-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pvs-replay-and-promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind promotion to exact green candidate blobs
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_sufficient_interface.py)" = 6d6ed4f1e574be8b073930c1b9331fb994137460
+          test "$(git hash-object tests/test_cross_prover_sufficient_interface.py)" = 56a45f3bb5f719afdcde5084d96a44cf554580fc
+          test "$(git hash-object experiments/crystal_cross_prover_msi_projection_v1/manifest.json)" = 5603b4b68517eb286db47f7f342e235cc7fa5712
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+          test -x "$PVS_DIR/proveit"
+      - name: Pin NASALib and PVS CAD
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Native-replay four projected source theorems
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_msi_projection_v1
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_star_ex.s_sqrt:s_fun:s_skip:s_mix \
+            | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_msi_projection_v1/pvs_projection.log"
+          grep -q "Grand Totals:" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_msi_projection_v1/pvs_projection.log"
+          if grep -Ei "unfinished|untried|unchecked" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_msi_projection_v1/pvs_projection.log"; then
+            exit 1
+          fi
+      - name: Promote typed sufficient-interface relation
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+              "schema":"mathgraph.cross-prover-sufficient-interface-result.v1",
+              "status":"WARRANTED_BOUNDED_CROSS_PROVER_SUFFICIENT_INTERFACE_PROJECTION",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "candidate_lean_run":36639770357,
+              "candidate_lean_head_sha":"513feda963e2cc0cca2b4528739c224739873795",
+              "candidate_blobs":{
+                  "module":"6d6ed4f1e574be8b073930c1b9331fb994137460",
+                  "tests":"56a45f3bb5f719afdcde5084d96a44cf554580fc",
+                  "manifest":"5603b4b68517eb286db47f7f342e235cc7fa5712"
+              },
+              "relation_kind":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+              "same_meaning":False,
+              "source_formulas":["s_sqrt","s_fun","s_skip","s_mix"],
+              "source_native_replay":"GREEN",
+              "lean_interface_and_adapter_gate":"GREEN",
+              "pvs_source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+              "msi_lineage_commit":"5d448c0ecc82ff3945d009963064ebbb67d2f308",
+              "boundary":"For four exact pinned PVS source shapes, the native source theorems replay and independently checked Lean stronger interfaces imply source-shaped Lean instances. This establishes a bounded typed sufficient-interface relation, not semantic equivalence and not a universal PVS-to-Lean translator."
+          }
+          Path("artifacts/crystal_cross_prover_msi_projection_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-msi-projection-promotion-v1
+          path: artifacts/crystal_cross_prover_msi_projection_v1/
