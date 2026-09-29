@@ -128,7 +128,7 @@ def write_input(path: Path, data_path: Path, pot_path: Path, geom):
     for eps in STRAINS[1:]:
         lx = lx0 * (1.0 + eps)
         lines += [
-            f"change_box all x final 0.0 {lx:.12f} remap x units box",
+            f"change_box all x final 0.0 {lx:.12f} remap units box",
             "fix bry all box/relax y 0.0 vmax 0.001",
             "minimize 1.0e-7 1.0e-5 1000 10000",
             "unfix bry",
