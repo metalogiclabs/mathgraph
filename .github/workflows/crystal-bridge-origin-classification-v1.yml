@@ -1,4 +1,5 @@
 name: Crystal Bridge Origin Classification V1
+# qualify origin refinement at current branch head
 
 on:
   push:
