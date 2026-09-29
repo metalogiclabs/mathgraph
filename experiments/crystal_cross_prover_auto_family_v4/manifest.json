@@ -1,0 +1,41 @@
+{
+  "schema":"mathgraph.crystal-cross-prover-auto-family.v4-candidate",
+  "parent_candidate":{
+    "run_id":36645655186,
+    "branch":"crystal-cross-prover-auto-family-v3",
+    "required_terminal_status":"WARRANTED_BOUNDED_AUTOMATIC_CROSS_PROVER_FAMILY_V3"
+  },
+  "parallel_warrant":{
+    "run_id":36640121901,
+    "relation_kind":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+    "count":4
+  },
+  "source":{
+    "repository":"j-tanner-slagel/pvs_cad",
+    "commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb"
+  },
+  "reused_claim_count":18,
+  "new_constructor":{
+    "name":"quantifier_witness_duality",
+    "new_claim_ids":[
+      "real.positive_quadratic_discriminant_negative@1",
+      "real.positive_scale_unbounded_above@1",
+      "real.sum_two_squares_parameter_nonnegative@1",
+      "real.unbounded_positive_product_forces_positive_factor@1",
+      "real.zero_has_no_multiplicative_inverse@1"
+    ]
+  },
+  "replay_targets":{
+    "cad_demo":["d_no_inverse"],
+    "cad_star_ex":["s_disc","s_alt_goal","s_alt_hyp","s_two"]
+  },
+  "negative_controls":["cad_demo.d_inverse","cad_demo.t_amgm3"],
+  "expected_if_new_gates_green":{
+    "supported_occurrences":24,
+    "unique_canonical_claims":23,
+    "raw_exact_unknowns":10,
+    "parallel_projection_relations":4,
+    "effective_unresolved_by_any_transport":6
+  },
+  "boundary":"New V4 gates can qualify the five new meanings locally, but family-level WARRANTED promotion also requires terminal V3 parent warrant."
+}
