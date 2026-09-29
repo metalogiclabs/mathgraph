@@ -1,0 +1,230 @@
+name: Crystal Cross-Prover Projection Family V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-projection-v1
+    paths:
+      - 'mathgraph/cross_prover_projection_certificate.py'
+      - 'tests/test_cross_prover_projection_certificate.py'
+      - 'mathgraph/cross_prover_residual_router.py'
+      - 'mathgraph/cross_prover_family_discovery.py'
+      - '.github/workflows/crystal-cross-prover-projection-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test projection compiler
+        run: python -m pytest -q tests/test_cross_prover_projection_certificate.py tests/test_cross_prover_residual_router.py tests/test_cross_prover_family_discovery.py
+      - name: Reconstruct exact routed residual and compile eleven projections
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/crystal_cross_prover_projection_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_demo.pvs cad_examples.pvs cad_star_ex.pvs; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family
+          from mathgraph.cross_prover_residual_router import route_discovery
+          from mathgraph.cross_prover_projection_certificate import (
+              discover_projection_batch, render_lean_projection_file,
+          )
+          family=discover_family({
+              "cad_demo":Path("/tmp/pvs-family/cad_demo.pvs").read_text(),
+              "cad_examples":Path("/tmp/pvs-family/cad_examples.pvs").read_text(),
+              "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.pvs").read_text(),
+          })
+          routing=route_discovery(family)
+          d=discover_projection_batch(routing)
+          assert d["input_target_count"]==11,d
+          assert d["matched_count"]==11,d
+          assert d["unmatched_count"]==0,d
+          out=Path("artifacts/crystal_cross_prover_projection_v1")
+          out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          out.joinpath("Surface.lean").write_text(render_lean_projection_file(d))
+          print(json.dumps({
+              "input":d["input_target_count"],
+              "matched":d["matched_count"],
+              "unmatched":d["unmatched_count"],
+              "claims":[x["claim_id"] for x in d["matched"]],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-projection-discovery-v1
+          path: artifacts/crystal_cross_prover_projection_v1/
+
+  pvs-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+      - name: Pin NASALib and PVS CAD
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay all eleven native projection authorities
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_projection_v1
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180             @cad_star_ex.s_sqrt:s_fun_TCC1:s_fun:s_disc:s_root:s_alt_goal:s_alt_hyp:s_posreal:s_sqrtpos:s_skip:s_mix:s_two             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1/pvs_replay.log"
+          grep -q "Grand Totals:" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1/pvs_replay.log"
+          if grep -Ei "unfinished|untried|unchecked" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1/pvs_replay.log"; then
+            exit 1
+          fi
+          cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1/pvs_replay.json" <<'EOF'
+          {"status":"PVS_PROJECTION_SOURCE_REPLAY_GREEN","source_claims":11,"auxiliary_tccs":1}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-projection-pvs-v1
+          path: artifacts/crystal_cross_prover_projection_v1/
+
+  lean-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-projection-discovery-v1
+          path: /tmp/projection
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check all eleven consumer projections
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-projection
+          mkdir -p "$ROOT"
+          cp /tmp/projection/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-projection"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1"
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1/lean_surface.sha256"
+          cat > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_projection_v1/lean_replay.json" <<'EOF'
+          {"status":"LEAN_PROJECTION_CERTIFICATE_REPLAY_GREEN","claims":11}
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-projection-lean-v1
+          path: artifacts/crystal_cross_prover_projection_v1/
+
+  promote:
+    needs: [discover,pvs-replay,lean-replay]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-projection-discovery-v1
+          path: /tmp/projection
+      - name: Compile qualified projection family
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_projection_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from mathgraph.cross_prover_projection_certificate import compile_projection_bundle
+          d=json.loads(Path("/tmp/projection/discovery.json").read_text())
+          obj=compile_projection_bundle(
+              d,
+              evidence_refs=[
+                  f"github-run:{os.environ['RUN_ID']}:pvs-replay",
+                  f"github-run:{os.environ['RUN_ID']}:lean-replay",
+                  "github-run:36626725979:residual-router",
+              ],
+          )
+          out={
+              "schema":"mathgraph.crystal-cross-prover-projection-result.v1",
+              "status":"WARRANTED_BOUNDED_PROJECTION_FAMILY",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "qualified_count":d["matched_count"],
+              "unmatched_count":d["unmatched_count"],
+              "semantic_object_id":obj.id,
+              "interfaces":list(obj.interfaces),
+              "closed_residual_classes":[
+                  "OPAQUE_OR_NONPOLYNOMIAL",
+                  "EXISTENTIAL_CONSEQUENT",
+                  "QUANTIFIED_PREMISE",
+                  "EXISTENTIAL_PREMISE",
+                  "SUBTYPE_RANGE"
+              ],
+              "systems_law":{
+                  "name":"consequence projection before syntax translation",
+                  "statement":"When a prover surface carries opaque or structurally rich context that is irrelevant to the protected consequence, compile the smallest independently checkable consequence projection instead of translating the whole source syntax."
+              }
+          }
+          Path("artifacts/crystal_cross_prover_projection_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-projection-v1
+          path: artifacts/crystal_cross_prover_projection_v1/result.json
