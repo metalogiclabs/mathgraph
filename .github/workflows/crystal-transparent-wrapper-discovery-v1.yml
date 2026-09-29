@@ -91,7 +91,24 @@ jobs:
               and row["consumer_declaration"]==control["consumer_declaration"]
               and row["fingerprint"]==control["canonical_fingerprint"]
           ]
-          assert hits, "failed to mechanically recover independently qualified FiniteRange bridge"
+          if not hits:
+              print("WRAPPERS", json.dumps([
+                  x for x in out["wrappers"]
+                  if "FiniteRange" in x["wrapper"] or "FiniteRange" in x["full_name"]
+              ], sort_keys=True))
+              print("FINITE_RANGE_CANDIDATES", json.dumps([
+                  x for x in out["candidates"]
+                  if "FiniteRange" in x["wrapper"]
+                  or "finiteRange" in x["consumer_declaration"]
+              ], sort_keys=True))
+              print("ANTHROPIC_FINITE_RANGE_DECLS", json.dumps([
+                  [x["consumer_declaration"],x["consumer_premise_type"],x["fingerprint"]]
+                  for x in out["candidates"]
+                  if x["consumer_corpus"]=="anthropic-flt"
+              ][:100], sort_keys=True))
+              raise AssertionError(
+                  "failed to mechanically recover independently qualified FiniteRange bridge"
+              )
 
           authority=json.loads(
               Path("evidence/crystal-transparent-wrapper-bridge-v1.json").read_text()
