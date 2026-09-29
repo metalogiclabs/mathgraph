@@ -1,0 +1,205 @@
+{
+  "schema": "mathgraph.crystal-cross-prover-sos-family.v2",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "files": {
+      "cad/cad_demo.pvs": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+      "cad/cad_demo.prf": "f2db4a2a6fd22f23b472e62c1cb0b18779799577",
+      "cad/cad_examples.pvs": "36a2070d67ce77e901f08a094fd02ba7d2738470",
+      "cad/cad_examples.prf": "fb6aac8f611768ff1a920f17d941e39ebb097fcc"
+    }
+  },
+  "pvs_environment": {
+    "release": "pvs8.1.2",
+    "release_sha256": "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b",
+    "nasalib_repository": "nasa/pvslib",
+    "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa"
+  },
+  "lean_environment": {
+    "toolchain": "leanprover/lean4:v4.35.0-rc3",
+    "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+  },
+  "cases": [
+    {
+      "id": "real.amgm2@1",
+      "expected": "TRUE",
+      "pvs": {
+        "theory": "cad_demo",
+        "formula": "d_amgm",
+        "path": "cad/cad_demo.pvs",
+        "proof_path": "cad/cad_demo.prf"
+      },
+      "expected_surface": "FORALL (x: real): FORALL (y: real): x^2 + y^2 >= 2 * x * y",
+      "claim": {
+        "id": "real.amgm2@1",
+        "binders": [
+          {
+            "name": "x",
+            "sort": "real"
+          },
+          {
+            "name": "y",
+            "sort": "real"
+          }
+        ],
+        "proposition": {
+          "op": "ge",
+          "left": {
+            "op": "add",
+            "args": [
+              {
+                "op": "pow",
+                "base": {
+                  "var": "x"
+                },
+                "exp": 2
+              },
+              {
+                "op": "pow",
+                "base": {
+                  "var": "y"
+                },
+                "exp": 2
+              }
+            ]
+          },
+          "right": {
+            "op": "mul",
+            "args": [
+              {
+                "const": 2
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "var": "x"
+                  },
+                  {
+                    "var": "y"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "real.sumSquares2@1",
+      "expected": "TRUE",
+      "pvs": {
+        "theory": "cad_examples",
+        "formula": "ex_sos",
+        "path": "cad/cad_examples.pvs",
+        "proof_path": "cad/cad_examples.prf"
+      },
+      "expected_surface": "FORALL (x: real): FORALL (y: real): x^2 + y^2 >= 0",
+      "claim": {
+        "id": "real.sumSquares2@1",
+        "binders": [
+          {
+            "name": "x",
+            "sort": "real"
+          },
+          {
+            "name": "y",
+            "sort": "real"
+          }
+        ],
+        "proposition": {
+          "op": "ge",
+          "left": {
+            "op": "add",
+            "args": [
+              {
+                "op": "pow",
+                "base": {
+                  "var": "x"
+                },
+                "exp": 2
+              },
+              {
+                "op": "pow",
+                "base": {
+                  "var": "y"
+                },
+                "exp": 2
+              }
+            ]
+          },
+          "right": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "real.amgm3.false-control@1",
+      "expected": "FALSE",
+      "pvs": {
+        "theory": "cad_demo",
+        "formula": "t_amgm3",
+        "path": "cad/cad_demo.pvs",
+        "proof_path": "cad/cad_demo.prf"
+      },
+      "expected_surface": "FORALL (x: real): FORALL (y: real): x^2 + y^2 >= 3 * x * y",
+      "claim": {
+        "id": "real.amgm3.false-control@1",
+        "binders": [
+          {
+            "name": "x",
+            "sort": "real"
+          },
+          {
+            "name": "y",
+            "sort": "real"
+          }
+        ],
+        "proposition": {
+          "op": "ge",
+          "left": {
+            "op": "add",
+            "args": [
+              {
+                "op": "pow",
+                "base": {
+                  "var": "x"
+                },
+                "exp": 2
+              },
+              {
+                "op": "pow",
+                "base": {
+                  "var": "y"
+                },
+                "exp": 2
+              }
+            ]
+          },
+          "right": {
+            "op": "mul",
+            "args": [
+              {
+                "const": 3
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "var": "x"
+                  },
+                  {
+                    "var": "y"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "promotion_rule": "Both true cases must receive exact rational SOS certificates and compile in Lean; the false control must receive no certificate and its negation must be decided by pinned PVS CAD."
+}
