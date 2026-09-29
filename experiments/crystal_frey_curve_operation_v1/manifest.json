@@ -1,0 +1,40 @@
+{
+  "schema": "mathgraph.crystal-frey-curve-operation-reconciliation.v1",
+  "parent_candidate": "equiv:FreyPackage",
+  "sources": [
+    {
+      "corpus": "anthropic-flt",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "mathlib_commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "lean_toolchain": "leanprover/lean4:v4.33.0",
+      "definition_path": "Definitions/Def_FLTPrelim_FreyPackage.lean",
+      "definition_blob_sha": "db1cdbbec434a118a917b33580fc8c81c4fff221",
+      "import_module": "Definitions.Def_FLTPrelim_FreyPackage"
+    },
+    {
+      "corpus": "imperial-flt",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3",
+      "definition_path": "FLT/FreyCurve/Basic.lean",
+      "definition_blob_sha": "eaaca84b85675f2e44ee5ca1f5c88824f627d48e",
+      "import_module": "FLT.FreyCurve.Basic",
+      "helper_files": [
+        {
+          "path": "FLT/FreyCurve/FreyPackage.lean",
+          "blob_sha": "490cba6dffb5f74b5ed16bcc15b8c41a523300df"
+        },
+        {
+          "path": "FLT/Basic/Lemmas.lean",
+          "blob_sha": "f055d97dd1fdcf91097afb3548227ec05cf04cea"
+        }
+      ]
+    }
+  ],
+  "protected_operations": [
+    "FreyPackage.freyCurveInt",
+    "FreyPackage.freyCurve"
+  ]
+}
