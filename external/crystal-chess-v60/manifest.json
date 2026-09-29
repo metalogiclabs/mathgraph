@@ -1,0 +1,24 @@
+{
+  "schema": "mathgraph.crystal-chess.external-package.v60",
+  "upstream_repository": "official-stockfish/Stockfish",
+  "upstream_commit": "0a215d6c9e48856ef630013b8ab8312941a59057",
+  "candidate_rule": "if (mainThread->tm.optimum() <= 64) highBestMoveEffort = 1.0",
+  "source_file": "src/search.cpp",
+  "source_artifact_patch_sha256": "7ee31f9f8fc69589be85358af7d9e0e736ee20c55704e8f344ff4bae93a35c98",
+  "evidence": {
+    "v54_run": 36552330714,
+    "v55_run": 36600708945,
+    "v56_run": 36617274049,
+    "v57_run": 36619875546,
+    "v58_run": 36623852778,
+    "v59_run": 36624620445
+  },
+  "frozen": true,
+  "retuning_after_v55": false,
+  "claim_boundary": {
+    "official_ccrl_rating": false,
+    "official_fishtest_result": false,
+    "official_tcec_result": false,
+    "stronger_than_stockfish_established": false
+  }
+}
