@@ -1,0 +1,417 @@
+name: Crystal Four-Corpus Incremental Linker V1
+
+on:
+  push:
+    branches:
+      - crystal-four-corpus-linker-v1
+    paths:
+      - 'mathgraph/lean_incremental_corpus_linker.py'
+      - 'mathgraph/lean_bridge_origin.py'
+      - 'mathgraph/lean_bridge_residual.py'
+      - 'tests/test_lean_incremental_corpus_linker.py'
+      - 'tests/test_lean_bridge_origin.py'
+      - 'tests/test_lean_bridge_residual.py'
+      - 'experiments/crystal_four_corpus_linker_v1/**'
+      - '.github/workflows/crystal-four-corpus-linker-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test incremental linker kernel
+        run: |
+          python -m pytest -q             tests/test_lean_incremental_corpus_linker.py             tests/test_lean_bridge_origin.py             tests/test_lean_bridge_residual.py
+
+      - name: Sparse checkout four exact corpora
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/crystal-four
+          clone_sparse () {
+            repo="$1"; commit="$2"; dest="$3"; shift 3
+            git init "$dest"
+            git -C "$dest" remote add origin "https://github.com/$repo.git"
+            git -C "$dest" sparse-checkout init --cone
+            git -C "$dest" sparse-checkout set "$@"
+            git -C "$dest" fetch --depth=1 origin "$commit"
+            git -C "$dest" checkout --detach FETCH_HEAD
+            test "$(git -C "$dest" rev-parse HEAD)" = "$commit"
+          }
+
+          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-four/anthropic Theorems Definitions
+
+          clone_sparse isomorphic-ai/fermat             07b35d10984632caa14b1af26ec5dec2363ee920             /tmp/crystal-four/isomorphic Fermat
+
+          clone_sparse ImperialCollegeLondon/FLT             eb6df2b018f81920cd48dd510417f0b7790c305e             /tmp/crystal-four/imperial FLT
+
+          clone_sparse google-deepmind/formal-conjectures             e04cc601840dd7a37f89b821a67f3a9e3c38d9c3             /tmp/crystal-four/formal-conjectures             FormalConjectures FormalConjecturesForMathlib
+
+      - name: Build only the new expansion frontier
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_four_corpus_linker_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.lean_bridge_discovery import SourcePin, fetch_pin
+          from mathgraph.lean_corpus_bridge_scout import build_scout_report
+          from mathgraph.lean_incremental_corpus_linker import (
+              equivalence_report,
+              extract_incremental_frontier,
+          )
+          from mathgraph.lean_bridge_origin import collect_local_definition_evidence
+
+          cfg=json.loads(Path("experiments/crystal_four_corpus_linker_v1/manifest.json").read_text())
+          roots={
+              "anthropic-flt":"/tmp/crystal-four/anthropic",
+              "isomorphic-fermat":"/tmp/crystal-four/isomorphic",
+              "imperial-flt":"/tmp/crystal-four/imperial",
+              "formal-conjectures":"/tmp/crystal-four/formal-conjectures",
+          }
+
+          bridges=[]
+          for row in cfg["bridge_files"]:
+              pin=SourcePin.from_mapping(row)
+              bridges.append((pin,fetch_pin(pin)))
+
+          report=build_scout_report(
+              corpus_roots=roots,
+              manifest=cfg,
+              bridge_texts=bridges,
+              top_k=10000,
+          )
+          frontier=extract_incremental_frontier(
+              report,
+              new_corpus="formal-conjectures",
+          )
+
+          origin_manifest=json.loads(json.dumps(cfg))
+          for row in origin_manifest["corpora"]:
+              if row["corpus"]=="anthropic-flt":
+                  row["include_prefixes"]=sorted(set([*row["include_prefixes"],"Definitions"]))
+
+          symbols=[
+              x["canonical_symbol"]
+              for x in frontier["equivalence_candidates"]
+          ]
+          local=collect_local_definition_evidence(
+              roots,origin_manifest,symbols
+          )
+
+          payload={
+              "schema":"mathgraph.four-corpus-frontier-input.v1",
+              "manifest":cfg,
+              "full_report_totals":report["totals"],
+              "frontier":frontier,
+              "equivalence_report":equivalence_report(frontier),
+              "symbols":symbols,
+              "local_definition_evidence":{
+                  k:[x.to_dict() for x in v]
+                  for k,v in local.items()
+              },
+          }
+          Path("artifacts/crystal_four_corpus_linker_v1/frontier_input.json").write_text(
+              json.dumps(payload,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "old_closed_candidates":cfg["parent_authority"]["closed_candidate_count"],
+              "four_corpus_files":report["totals"]["corpus_file_count"],
+              "four_corpus_declarations":report["totals"]["corpus_declaration_count"],
+              "four_corpus_source_bytes":report["totals"]["corpus_source_bytes"],
+              "new_equivalence_candidates":frontier["equivalence_candidate_count"],
+              "new_implication_candidates":frontier["implication_candidate_count"],
+              "new_candidate_frontier":frontier["candidate_count"],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-four-corpus-frontier-input-v1
+          path: artifacts/crystal_four_corpus_linker_v1/frontier_input.json
+
+  probe-origin:
+    needs: prepare-frontier
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: anthropic-mathlib
+            mathlib: db584cd6d46c92f209a44c0f1c829460d327499d
+            toolchain: leanprover/lean4:v4.33.0
+          - environment: isomorphic-mathlib
+            mathlib: 0531bb79fea20efc9ce6942db46b96be5a919400
+            toolchain: leanprover/lean4:v4.31.0-rc1
+          - environment: imperial-mathlib
+            mathlib: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+            toolchain: leanprover/lean4:v4.35.0-rc3
+          - environment: formal-conjectures-mathlib
+            mathlib: 0df444a360eaa60ab8c11dca51a86af692955474
+            toolchain: leanprover/lean4:v4.33.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-four-corpus-frontier-input-v1
+          path: /tmp/frontier
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build pinned Mathlib environment
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+          MATHLIB: ${{ matrix.mathlib }}
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/linker-origin-$ENVIRONMENT"
+          mkdir -p "$ROOT"
+          printf '%s\n' "$TOOLCHAIN" > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<EOF
+          name = "crystal-four-origin-probe"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "$MATHLIB"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+
+      - name: Resolve exact Lean names for frontier symbols
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: |
+          set -euo pipefail
+          ROOT="/tmp/linker-origin-$ENVIRONMENT"
+          python - "$ROOT" <<'PY'
+          import json,sys
+          from pathlib import Path
+
+          root=Path(sys.argv[1])
+          data=json.loads(Path("/tmp/frontier/frontier_input.json").read_text())
+          symbols=data["symbols"]
+          short_names=sorted({x.split(".")[-1] for x in symbols})
+          quoted=", ".join(json.dumps(x) for x in short_names)
+
+          lines=[
+              "import Mathlib",
+              "open Lean Elab Command",
+              'syntax (name := crystalContains) "#crystal_contains " ident : command',
+              "elab_rules : command",
+              '  | `(#crystal_contains $id:ident) => do',
+              "      let env ← getEnv",
+              "      let n := id.getId",
+              '      logInfo m!"CRYSTAL_ORIGIN|{n}|{env.contains n}"',
+              "",
+          ]
+          for symbol in symbols:
+              lines.append(f"#crystal_contains {symbol}")
+
+          lines.extend([
+              "",
+              "run_cmd do",
+              "  let env ← getEnv",
+              f"  let wanted : List String := [{quoted}]",
+              "  for (n, _) in env.constants.toList do",
+              "    if n.isStr then",
+              "      let short := n.getString!",
+              "      if wanted.contains short then",
+              '        logInfo m!"CRYSTAL_DECL|{short}|{n}"',
+          ])
+          (root/"Probe.lean").write_text("\n".join(lines)+"\n")
+          PY
+
+          cd "$ROOT"
+          lake env lean Probe.lean 2>&1 | tee probe.log
+          python - "$ENVIRONMENT" <<'PY'
+          import json,re,sys
+          from pathlib import Path
+
+          env=sys.argv[1]
+          data=json.loads(Path("/tmp/frontier/frontier_input.json").read_text())
+          wanted=data["symbols"]
+          text=Path("probe.log").read_text()
+
+          pairs=re.findall(r"CRYSTAL_ORIGIN\|([^|\n]+)\|(true|false)",text)
+          presence={name:(value=="true") for name,value in pairs}
+          assert set(presence)==set(wanted), (set(wanted)-set(presence))
+
+          decl_pairs=re.findall(r"CRYSTAL_DECL\|([^|\n]+)\|([^\n]+)",text)
+          exact={}
+          for short,full in decl_pairs:
+              exact.setdefault(short,set()).add(full.strip())
+
+          names={
+              symbol:sorted(exact.get(symbol.split(".")[-1],set()))
+              for symbol in wanted
+          }
+          counts={symbol:len(names[symbol]) for symbol in wanted}
+          short_presence={symbol:(counts[symbol]>0) for symbol in wanted}
+
+          out={
+              "schema":"mathgraph.four-corpus-origin-probe.v1",
+              "environment":env,
+              "presence":presence,
+              "short_declaration_presence":short_presence,
+              "short_declaration_count":counts,
+              "short_declaration_names":names,
+          }
+          Path(f"/tmp/{env}.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "environment":env,
+              "frontier_symbols":len(wanted),
+              "exact_present":sum(presence.values()),
+              "short_present":sum(short_presence.values()),
+              "short_collisions":sum(v>1 for v in counts.values()),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: four-origin-probe-${{ matrix.environment }}
+          path: /tmp/${{ matrix.environment }}.json
+
+  close-frontier:
+    needs: [prepare-frontier, probe-origin]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-four-corpus-frontier-input-v1
+          path: /tmp/frontier
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: four-origin-probe-*
+          path: /tmp/probes
+          merge-multiple: true
+
+      - name: Origin-first close the new frontier
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_four_corpus_linker_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.lean_bridge_origin import (
+              LocalDefinitionEvidence,
+              classify_report,
+              load_probe_files,
+              load_short_declaration_probe_files,
+              load_short_declaration_count_probe_files,
+              load_short_declaration_name_probe_files,
+              refine_origin_classification,
+          )
+          from mathgraph.lean_bridge_residual import compile_origin_residual
+
+          data=json.loads(Path("/tmp/frontier/frontier_input.json").read_text())
+          cfg=data["manifest"]
+          probe_paths=sorted(Path("/tmp/probes").glob("*.json"))
+          assert len(probe_paths)==4, probe_paths
+
+          local={
+              symbol:[LocalDefinitionEvidence(**row) for row in rows]
+              for symbol,rows in data["local_definition_evidence"].items()
+          }
+          env_by_corpus={
+              corpus:row["environment"]
+              for corpus,row in cfg["origin_environments"].items()
+          }
+
+          initial=classify_report(
+              data["equivalence_report"],
+              upstream_presence_by_symbol=load_probe_files(probe_paths),
+              local_definition_evidence=local,
+              qualified_candidate_ids=(),
+              environment_by_corpus=env_by_corpus,
+          )
+          refined=refine_origin_classification(
+              initial,
+              short_declaration_presence_by_symbol=
+                  load_short_declaration_probe_files(probe_paths),
+              short_declaration_count_by_symbol=
+                  load_short_declaration_count_probe_files(probe_paths),
+              short_declaration_names_by_symbol=
+                  load_short_declaration_name_probe_files(probe_paths),
+          )
+          eq_residual=compile_origin_residual(refined)
+
+          directional=list(data["frontier"]["implication_candidates"])
+          result={
+              "schema":"mathgraph.four-corpus-incremental-linker-result.v1",
+              "status":"INCREMENTAL_FRONTIER_CLASSIFIED",
+              "parent_semantic_object_id":
+                  cfg["parent_authority"]["semantic_object_id"],
+              "new_corpus":cfg["new_corpus"],
+              "full_report_totals":data["full_report_totals"],
+              "frontier":{
+                  "candidate_count":data["frontier"]["candidate_count"],
+                  "equivalence_candidate_count":
+                      data["frontier"]["equivalence_candidate_count"],
+                  "implication_candidate_count":
+                      data["frontier"]["implication_candidate_count"],
+              },
+              "equivalence_routing":eq_residual,
+              "directional_unknown_actionable":directional,
+              "unknown_actionable_count":
+                  eq_residual["unknown_actionable_count"] + len(directional),
+              "unknown_actionable_symbols":[
+                  x["symbol"] for x in eq_residual["unknown_actionable"]
+              ],
+              "next_action":(
+                  "qualify smallest directional/project-local residual"
+                  if eq_residual["unknown_actionable_count"] + len(directional)
+                  else "frontier closed; expand corpus boundary again"
+              ),
+              "boundary":(
+                  "No prior three-corpus candidate was reopened. "
+                  "Only relations touching formal-conjectures were classified."
+              ),
+          }
+          Path("artifacts/crystal_four_corpus_linker_v1/result.json").write_text(
+              json.dumps(result,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "four_corpus_files":result["full_report_totals"]["corpus_file_count"],
+              "four_corpus_declarations":result["full_report_totals"]["corpus_declaration_count"],
+              "new_frontier":result["frontier"]["candidate_count"],
+              "new_equivalence":result["frontier"]["equivalence_candidate_count"],
+              "new_directional":result["frontier"]["implication_candidate_count"],
+              "eq_discharged_non_bridge":eq_residual["discharged_non_bridge_count"],
+              "eq_rejected_false":eq_residual["rejected_false_candidate_count"],
+              "eq_unknown_actionable":eq_residual["unknown_actionable_count"],
+              "directional_unknown_actionable":len(directional),
+              "unknown_actionable_total":result["unknown_actionable_count"],
+              "unknown_actionable_symbols":result["unknown_actionable_symbols"],
+              "next_action":result["next_action"],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-four-corpus-linker-v1
+          path: artifacts/crystal_four_corpus_linker_v1/result.json
