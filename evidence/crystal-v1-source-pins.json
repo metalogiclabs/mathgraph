@@ -152,6 +152,24 @@
       "release": "v3.2.4",
       "asset": "prism-games-3.2.4-linux64-x86.tar.gz",
       "sha256": "11fb5c67d9897493588e0198d3c3fa3bbb28b4eee9b128b8d15f86b87fffec6b"
+    },
+    "anthropic_flt_surface": {
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "path": "Theorems/Thm_fermat_last_theorem.lean",
+      "blob_sha": "607108da0ddca3236e7704b6b152ae895a51df32"
+    },
+    "isomorphic_fermat_surface": {
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "path": "Fermat/Basic.lean",
+      "blob_sha": "2521683ff1bb2be9800f2b9073c57b07f40dc088"
+    },
+    "mathlib_flt_basic": {
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/NumberTheory/FLT/Basic.lean",
+      "blob_sha": "c21f4b48f7231a5782d0ea07442d963b0c6cc7f5"
     }
   }
 }
