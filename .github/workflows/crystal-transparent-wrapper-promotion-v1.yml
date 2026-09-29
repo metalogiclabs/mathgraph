@@ -1,0 +1,46 @@
+name: Crystal Transparent Wrapper Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-expansion-pfr-v1
+    paths:
+      - 'evidence/crystal-transparent-wrapper-bridge-v1.json'
+      - 'mathgraph/lean_transparent_wrapper_bridge.py'
+      - 'tests/test_lean_transparent_wrapper_bridge.py'
+      - '.github/workflows/crystal-transparent-wrapper-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-capability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Check different-name bridge compiler
+        run: python -m pytest -q tests/test_lean_transparent_wrapper_bridge.py
+      - name: Compile bridge into Crystal memory
+        run: |
+          mkdir -p artifacts/crystal_transparent_wrapper_bridge_v1
+          python - <<'PY'
+          import json
+          from mathgraph.lean_transparent_wrapper_bridge import compile_authority_file
+          out=compile_authority_file(
+              "evidence/crystal-transparent-wrapper-bridge-v1.json",
+              "artifacts/crystal_transparent_wrapper_bridge_v1/capability.json",
+          )
+          assert out["status"]=="REUSABLE"
+          assert out["interface_id"]=="function.finite-range.set-range-finite@1"
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-transparent-wrapper-capability-v1
+          path: artifacts/crystal_transparent_wrapper_bridge_v1/capability.json
