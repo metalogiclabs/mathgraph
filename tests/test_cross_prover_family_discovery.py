@@ -132,3 +132,33 @@ def test_replayability_is_distinct_from_semantic_discovery():
     assert amgm["replayable_occurrence_count"]==1
     order=next(x for x in annotated["unique_claims"] if x["claim_id"]=="real.order_split_zero@1")
     assert order["source_qualification_status"]=="UNKNOWN_NO_REPLAYABLE_SOURCE"
+
+
+def test_v2_explicit_witness_constructor_spans_quantifier_shapes():
+    src={
+        "q": """
+Q: THEORY
+BEGIN
+a: LEMMA FORALL (x: real): EXISTS (y: real): y > x
+b: LEMMA EXISTS (x: real): FORALL (y: real): x * y = 0
+c: LEMMA FORALL (x: real): FORALL (y: real): EXISTS (z: real): FORALL (w: real): w^2 + z > x + y
+END Q
+"""
+    }
+    prf={
+        "q": """(|Q|
+ (|a| 0)
+ (|b| 0)
+ (|c| 0)
+)
+"""
+    }
+    out=discover_family(src,prf)
+    assert out["supported_occurrence_count"]==3
+    assert out["unique_canonical_claim_count"]==3
+    assert out["verified_unique_claim_count"]==3
+    assert {x["certificate_schema"] for x in out["unique_claims"]}=={"explicit_witness"}
+    lean=render_lean_family(out)
+    assert "exists_above_real" in lean
+    assert "zero_annihilator_real" in lean
+    assert "square_shift_dominates" in lean
