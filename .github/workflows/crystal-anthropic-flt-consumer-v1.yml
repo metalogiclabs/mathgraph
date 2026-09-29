@@ -15,7 +15,7 @@ permissions:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -24,26 +24,49 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Resolve pinned consumer environment
+      - name: Resolve independently pinned Mathlib
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: |
           set -euo pipefail
           lake update
-          grep -q '6e837e75355538c7f80bab5b956861e86c4eacc2' lake-manifest.json
+          grep -q 'db584cd6d46c92f209a44c0f1c829460d327499d' lake-manifest.json
 
       - name: Restore Mathlib build cache
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: lake exe cache get
 
+      - name: Fetch exact Anthropic theorem slice
+        working-directory: experiments/crystal_anthropic_flt_consumer_v1
+        run: |
+          set -euo pipefail
+          COMMIT=6e837e75355538c7f80bab5b956861e86c4eacc2
+          mkdir -p Theorems P2M/Sol Definitions
+          curl -fsSL -o Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean
+          curl -fsSL -o P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean
+          curl -fsSL -o Definitions/Def_Patching_SystemTypes.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/Definitions/Def_Patching_SystemTypes.lean
+          curl -fsSL -o P2M/Util.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/P2M/Util.lean
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+            "Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean":"156b86e8484a7fc53225a3e87a5b14f4a7f4eb0a",
+            "P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean":"bfe8fa3c06aea15de9c4ba9388d3c787eafc55dd",
+            "Definitions/Def_Patching_SystemTypes.lean":"013e3b7dfa5db55021deb21f3ea7108f0c0ed9aa",
+            "P2M/Util.lean":"0a73367f78bc165bb5d35e42ca14f5055252e7f6",
+          }
+          for name, want in expected.items():
+              data=Path(name).read_bytes()
+              got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert got == want, (name,got,want)
+              print("PIN_OK", name, got)
+          PY
+
       - name: Measure imported theorem proof cost
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: |
           set -euo pipefail
-          FLT_DIR=".lake/packages/flt_e2e"
-          WRAP="$FLT_DIR/Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean"
-          PROOF="$FLT_DIR/P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean"
-          test -f "$WRAP"
-          test -f "$PROOF"
+          WRAP="Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean"
+          PROOF="P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean"
           wc -l "$WRAP" "$PROOF" | tee imported_theorem_loc.txt
           wc -c "$WRAP" "$PROOF" | tee imported_theorem_bytes.txt
           find CrystalAnthropicConsumer -name '*.lean' -type f -print0 | xargs -0 wc -l | tail -1 | tee consumer_lean_loc.txt
@@ -74,19 +97,18 @@ jobs:
           import json, re
           from pathlib import Path
 
-          def total_last(path):
+          def nth_total(path, line):
               s=Path(path).read_text().strip().splitlines()
-              return int(re.findall(r'\d+', s[-1])[0])
+              return int(re.findall(r'\d+', s[line])[0])
 
-          loc_lines=Path("imported_theorem_loc.txt").read_text().strip().splitlines()
-          proof_loc=int(re.findall(r'\d+', loc_lines[1])[0])
-          byte_lines=Path("imported_theorem_bytes.txt").read_text().strip().splitlines()
-          proof_bytes=int(re.findall(r'\d+', byte_lines[1])[0])
-          consumer_loc=total_last("consumer_lean_loc.txt")
+          proof_loc=nth_total("imported_theorem_loc.txt",1)
+          proof_bytes=nth_total("imported_theorem_bytes.txt",1)
+          consumer_loc=int(re.findall(r'\d+', Path("consumer_lean_loc.txt").read_text())[0])
 
           out={
             "schema":"mathgraph.crystal-anthropic-theorem-consumer.v1",
             "anthropic_commit":"6e837e75355538c7f80bab5b956861e86c4eacc2",
+            "mathlib_commit":"db584cd6d46c92f209a44c0f1c829460d327499d",
             "imported_theorem":"IsLocalRing.isRegular_of_systemOfParameters",
             "source_proof_module_loc":proof_loc,
             "source_proof_module_bytes":proof_bytes,
