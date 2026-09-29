@@ -1,0 +1,143 @@
+name: Crystal Cross-Prover Final Counterexample V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-final-counterexample-v1
+    paths:
+      - 'experiments/crystal_cross_prover_final_counterexample_v1/**'
+      - '.github/workflows/crystal-cross-prover-final-counterexample-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact pinned false source surface
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/cad_demo.pvs             https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad/cad_demo.pvs
+          python - <<'PY'
+          import hashlib,json,re
+          from pathlib import Path
+          m=json.loads(Path("experiments/crystal_cross_prover_final_counterexample_v1/manifest.json").read_text())
+          data=Path("/tmp/cad_demo.pvs").read_bytes()
+          got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          assert got==m["source"]["source_blob_sha"],(got,m["source"]["source_blob_sha"])
+          text=data.decode()
+          pat=re.compile(r"t_amgm3\s*:\s*LEMMA\s+(FORALL \(x: real\): FORALL \(y: real\): x\^2 \+ y\^2 >= 3 \* x \* y)")
+          mm=pat.search(text)
+          assert mm, "exact t_amgm3 surface not found"
+          assert re.sub(r"\s+"," ",mm.group(1)).strip()==m["source"]["surface"]
+          print("SOURCE_FALSE_CANDIDATE_PIN_OK",got)
+          PY
+
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+      - name: Pin NASALib and PVS CAD
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+          cp experiments/crystal_cross_prover_final_counterexample_v1/cross_prover_counterexample.pvs /tmp/pvs_cad/cad/
+          cp experiments/crystal_cross_prover_final_counterexample_v1/cross_prover_counterexample.prf /tmp/pvs_cad/cad/
+
+      - name: Native PVS kernel-check negation certificate
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_final_counterexample_v1
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cross_prover_counterexample.not_amgm3             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_final_counterexample_v1/pvs.log"
+          grep -q "Grand Totals:" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_final_counterexample_v1/pvs.log"
+          grep -Eq "1 proofs, 1 attempted, 1 succeeded|1 proof, 1 attempted, 1 succeeded"             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_final_counterexample_v1/pvs.log"
+          if grep -Ei "unfinished|untried|unchecked" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_final_counterexample_v1/pvs.log"; then
+            exit 1
+          fi
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Independent Lean kernel-check counterexample
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-final-counterexample
+          mkdir -p "$ROOT"
+          cp experiments/crystal_cross_prover_final_counterexample_v1/Counterexample.lean "$ROOT/Counterexample.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-final-counterexample"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Counterexample.lean
+
+      - name: Promote final false candidate
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          payload={
+              "schema":"mathgraph.crystal-cross-prover-final-counterexample-result.v1",
+              "status":"WARRANTED_BOUNDED_REJECTION",
+              "candidate_claim_id":"real.amgm3_universal@1",
+              "disposition":"REJECTED_FALSE",
+              "counterexample":{"x":1,"y":1,"lhs":2,"rhs":3},
+              "pvs_certificate":"cross_prover_counterexample.not_amgm3",
+              "lean_certificate":"CrystalCrossProverCounterexample.not_amgm3",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "router_lineage":{"run_id":36626725979,"class":"POLYNOMIAL_CERTIFICATE_GAP"},
+              "systems_law":{
+                  "name":"false candidates need refutation, not translation",
+                  "statement":"When a source surface is false, the cross-prover linker must compile a native-verifier-backed refutation/counterexample and reject the candidate rather than attempting to transport it as truth."
+              },
+          }
+          raw=json.dumps(payload,sort_keys=True,separators=(",",":")).encode()
+          payload["semantic_rejection_id"]="rejection:"+hashlib.sha256(raw).hexdigest()
+          out=Path("artifacts/crystal_cross_prover_final_counterexample_v1")
+          out.mkdir(parents=True,exist_ok=True)
+          out.joinpath("result.json").write_text(json.dumps(payload,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(payload,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-final-counterexample-v1
+          path: artifacts/crystal_cross_prover_final_counterexample_v1/
