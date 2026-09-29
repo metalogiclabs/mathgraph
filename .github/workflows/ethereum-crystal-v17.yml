@@ -44,13 +44,13 @@ jobs:
         env:
           CRYSTAL_BAL_CORPUS: /tmp/crystal-v17-heldout.rlpbin
         run: |
-          dotnet test src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c Release             --filter "FullyQualifiedName~CrystalBlockAccessListCrossClientTests"             --logger "console;verbosity=normal" | tee /tmp/crystal-v17-nethermind.txt
+          dotnet test --project src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c release -- --filter "FullyQualifiedName~CrystalBlockAccessListCrossClientTests" | tee /tmp/crystal-v17-nethermind.txt
           grep -q 'ETHEREUM_CRYSTAL_V17_NETHERMIND=PASS' /tmp/crystal-v17-nethermind.txt
           grep -q 'nethermind_final_state_projection_parity_all=true' /tmp/crystal-v17-nethermind.txt
       - name: Run Nethermind BAL decoder regression suite
         working-directory: /tmp/nethermind
         run: |
-          dotnet test src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c Release             --filter "FullyQualifiedName~BlockAccessListDecoderTests"
+          dotnet test --project src/Nethermind/Nethermind.Core.Test/Nethermind.Core.Test.csproj -c release -- --filter "FullyQualifiedName~BlockAccessListDecoderTests"
       - name: Upload V17 evidence
         uses: actions/upload-artifact@v4
         with:
