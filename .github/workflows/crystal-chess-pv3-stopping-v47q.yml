@@ -1,0 +1,118 @@
+name: Crystal Chess PV3 Stopping V47Q
+
+on:
+  push:
+    branches:
+      - crystal-chess-pv3-stopping-v47q
+    paths:
+      - "experiments/crystal_chess_pv3_stopping_v47q.py"
+      - ".github/workflows/crystal-chess-pv3-stopping-v47q.yml"
+      - "experiments/crystal_chess_progressive_hard_falsifier_v47h.py"
+      - "experiments/crystal_chess_progressive_stopping_v47.py"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_normal_certificate_set_v41.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  pv3-stopping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_pv3_stopping_v47q.py
+
+      - name: Download V47H earned-rule authority
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-progressive-hard-falsifier-v47h
+          path: /tmp/v47h
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36524410004
+
+      - name: Download V22 source corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Download exposed V35
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-reply-effect-v35
+          path: /tmp/v35
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36502300143
+
+      - name: Download exposed V36
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-root-pv-interface-v36
+          path: /tmp/v36
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36503091782
+
+      - name: Download exposed V37
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-root-reply-zeroing-v37
+          path: /tmp/v37
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36503878346
+
+      - name: Download exposed V39
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-sentinel-compiler-v39
+          path: /tmp/v39
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36505157227
+
+      - name: Build pinned Stockfish
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Generate untouched seeds 20261029 and 20261030
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v47q
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish/src/stockfish             --book artifacts/crystal-chess-v47q/fresh_a.epd             --manifest artifacts/crystal-chess-v47q/fresh_a_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261029
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish/src/stockfish             --book artifacts/crystal-chess-v47q/fresh_b.epd             --manifest artifacts/crystal-chess-v47q/fresh_b_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261030
+
+      - name: Qualify hard-earned PV3 stop rule
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_pv3_stopping_v47q.py             --stockfish /tmp/stockfish/src/stockfish             --v47h-result /tmp/v47h/result.json             --v22-pgn /tmp/v22/match.pgn             --source-generation v35a --source-epd /tmp/v35/fresh_a.epd             --source-generation v35b --source-epd /tmp/v35/fresh_b.epd             --source-generation v36a --source-epd /tmp/v36/fresh_a.epd             --source-generation v36b --source-epd /tmp/v36/fresh_b.epd             --source-generation v37a --source-epd /tmp/v37/fresh_a.epd             --source-generation v37b --source-epd /tmp/v37/fresh_b.epd             --source-generation v39a --source-epd /tmp/v39/fresh_a.epd             --source-generation v39b --source-epd /tmp/v39/fresh_b.epd             --fresh-epd-a artifacts/crystal-chess-v47q/fresh_a.epd             --fresh-manifest-a artifacts/crystal-chess-v47q/fresh_a_manifest.json             --fresh-epd-b artifacts/crystal-chess-v47q/fresh_b.epd             --fresh-manifest-b artifacts/crystal-chess-v47q/fresh_b_manifest.json             --output artifacts/crystal-chess-v47q/result.json             | tee artifacts/crystal-chess-v47q/run.log
+          grep -Eq "CRYSTAL_CHESS_PV3_STOPPING_V47Q=(WARRANTED_REPLICATED_PV3_PROGRESSIVE_STOPPING|FRESH_PV3_PROGRESSIVE_STOPPING_RESIDUAL|PV3_STOPPING_DOES_NOT_CLOSE_SOURCE)" artifacts/crystal-chess-v47q/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v47q/
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-pv3-stopping-v47q
+          path: artifacts/crystal-chess-v47q/
+          if-no-files-found: error
