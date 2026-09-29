@@ -75,8 +75,7 @@ jobs:
           assert len(sample)==512
           print('CRYSTAL_CHESS_V58_UHO_SAMPLE=PASS')
           PY
-          printf '%s
-' "official-stockfish/books@65815ccdbc7727cd4f6aee252ba8f67fb740e92f UHO_Lichess_4852_v1.epd.zip seed=20261114 sample=512" > artifacts/crystal-chess-v58/BOOK_PIN.txt
+          printf '%s\\n' "official-stockfish/books@65815ccdbc7727cd4f6aee252ba8f67fb740e92f UHO_Lichess_4852_v1.epd.zip seed=20261114 sample=512" > artifacts/crystal-chess-v58/BOOK_PIN.txt
 
       - name: Run Fishtest-style STC screen
         run: |
