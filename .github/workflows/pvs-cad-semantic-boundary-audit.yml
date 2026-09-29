@@ -31,7 +31,7 @@ jobs:
           python3 - <<'PY'
           import json, urllib.request
           releases=json.load(urllib.request.urlopen("https://api.github.com/repos/SRI-CSL/PVS/releases"))
-          rel=next(r for r in releases if r["tag_name"].startswith("v8.1"))
+          rel=next(r for r in releases if r["tag_name"].startswith("pvs8.1"))
           assets=rel["assets"]
           for a in assets:
               print(a["name"], a["browser_download_url"])
@@ -39,7 +39,7 @@ jobs:
           URL=$(python3 - <<'PY'
           import json, urllib.request
           releases=json.load(urllib.request.urlopen("https://api.github.com/repos/SRI-CSL/PVS/releases"))
-          rel=next(r for r in releases if r["tag_name"].startswith("v8.1"))
+          rel=next(r for r in releases if r["tag_name"].startswith("pvs8.1"))
           cand=[a for a in rel["assets"] if "linux" in a["name"].lower() and ("x86_64" in a["name"].lower() or "amd64" in a["name"].lower())]
           if not cand: raise SystemExit("No Linux x86_64 PVS 8.1 asset")
           print(cand[0]["browser_download_url"])
