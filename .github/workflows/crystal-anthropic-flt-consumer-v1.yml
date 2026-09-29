@@ -1,4 +1,4 @@
-name: Crystal Anthropic FLT Consumer V1
+name: Crystal Anthropic Corpus Consumer V1
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -35,13 +35,17 @@ jobs:
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: lake exe cache get
 
-      - name: Measure reused Anthropic source surface
+      - name: Measure imported theorem proof cost
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: |
           set -euo pipefail
           FLT_DIR=".lake/packages/flt_e2e"
-          test -d "$FLT_DIR"
-          find "$FLT_DIR" -name '*.lean' -type f -print0 | xargs -0 wc -l | tail -1 | tee anthropic_lean_loc.txt
+          WRAP="$FLT_DIR/Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean"
+          PROOF="$FLT_DIR/P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean"
+          test -f "$WRAP"
+          test -f "$PROOF"
+          wc -l "$WRAP" "$PROOF" | tee imported_theorem_loc.txt
+          wc -c "$WRAP" "$PROOF" | tee imported_theorem_bytes.txt
           find CrystalAnthropicConsumer -name '*.lean' -type f -print0 | xargs -0 wc -l | tail -1 | tee consumer_lean_loc.txt
 
       - name: Build imported theorem consumer
@@ -54,33 +58,43 @@ jobs:
           END="$(date +%s)"
           echo "$((END-START))" | tee build_seconds.txt
 
-      - name: Verify exact imported theorem and transport
+      - name: Verify exact import and consequence transport
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: |
           set -euo pipefail
-          grep -F 'import Theorems.Thm_fermat_last_theorem' CrystalAnthropicConsumer/Consumer.lean
-          grep -F 'exact fermat_last_theorem n hn a b c ha hb hc' CrystalAnthropicConsumer/Consumer.lean
-          grep -F '(positiveFLTFor_iff_mathlib n).mp' CrystalAnthropicConsumer/Consumer.lean
+          grep -F 'import Theorems.Thm_IsLocalRing_isRegular_of_systemOfParameters' CrystalAnthropicConsumer/Consumer.lean
+          grep -F 'IsLocalRing.isRegular_of_systemOfParameters' CrystalAnthropicConsumer/Consumer.lean
+          grep -F 'regular_to_weak_view' CrystalAnthropicConsumer/Consumer.lean
           ! grep -RInE '\b(sorry|admit|axiom)\b' CrystalAnthropicConsumer
 
-      - name: Emit reuse measurement
+      - name: Emit direct reuse measurement
         working-directory: experiments/crystal_anthropic_flt_consumer_v1
         run: |
           python - <<'PY'
           import json, re
           from pathlib import Path
-          def total(path):
-              s=Path(path).read_text().strip()
-              return int(re.findall(r'\d+', s)[-1])
+
+          def total_last(path):
+              s=Path(path).read_text().strip().splitlines()
+              return int(re.findall(r'\d+', s[-1])[0])
+
+          loc_lines=Path("imported_theorem_loc.txt").read_text().strip().splitlines()
+          proof_loc=int(re.findall(r'\d+', loc_lines[1])[0])
+          byte_lines=Path("imported_theorem_bytes.txt").read_text().strip().splitlines()
+          proof_bytes=int(re.findall(r'\d+', byte_lines[1])[0])
+          consumer_loc=total_last("consumer_lean_loc.txt")
+
           out={
-            "schema":"mathgraph.crystal-anthropic-flt-consumer.v1",
+            "schema":"mathgraph.crystal-anthropic-theorem-consumer.v1",
             "anthropic_commit":"6e837e75355538c7f80bab5b956861e86c4eacc2",
-            "anthropic_lean_loc_available":total("anthropic_lean_loc.txt"),
-            "local_consumer_lean_loc":total("consumer_lean_loc.txt"),
+            "imported_theorem":"IsLocalRing.isRegular_of_systemOfParameters",
+            "source_proof_module_loc":proof_loc,
+            "source_proof_module_bytes":proof_bytes,
+            "local_consumer_lean_loc":consumer_loc,
+            "local_reformalization_of_source_proof_loc":0,
+            "protected_consumer_consequence":"RingTheory.Sequence.IsWeaklyRegular R xs",
+            "bridge":"IsRegular.toIsWeaklyRegular",
             "build_seconds":int(Path("build_seconds.txt").read_text().strip()),
-            "imported_theorem":"fermat_last_theorem",
-            "transport_target":"FermatLastTheorem",
-            "local_reformalization_of_anthropic_proof":0,
             "status":"VERIFIED_REUSE"
           }
           Path("reuse_measurement.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
@@ -89,9 +103,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: crystal-anthropic-flt-consumer-v1
+          name: crystal-anthropic-theorem-consumer-v1
           path: |
             experiments/crystal_anthropic_flt_consumer_v1/reuse_measurement.json
-            experiments/crystal_anthropic_flt_consumer_v1/anthropic_lean_loc.txt
+            experiments/crystal_anthropic_flt_consumer_v1/imported_theorem_loc.txt
+            experiments/crystal_anthropic_flt_consumer_v1/imported_theorem_bytes.txt
             experiments/crystal_anthropic_flt_consumer_v1/consumer_lean_loc.txt
             experiments/crystal_anthropic_flt_consumer_v1/build_seconds.txt
