@@ -1,0 +1,17 @@
+import Theorems.Thm_Algebra_norm_of_subsingleton
+import Theorems.Thm_IsRegularLocalRing_isDomain
+import Theorems.Thm_IsAddCyclic_of_squarefree_natCard
+import Theorems.Thm_Field_nonempty_ringHom_complex_of_countable
+import Theorems.Thm_IsAdicComplete_of_isNilpotent
+import Theorems.Thm_IsLocalRing_sq_eq_one_iff_of_isUnit_two
+import Theorems.Thm_HahnSeries_isAlgClosed_rat
+import Theorems.Thm_CharacterModule_natCard_eq_of_finite
+
+#check Algebra.norm_of_subsingleton
+#check IsRegularLocalRing.isDomain
+#check IsAddCyclic.of_squarefree_natCard
+#check Field.nonempty_ringHom_complex_of_countable
+#check IsAdicComplete.of_isNilpotent
+#check IsLocalRing.sq_eq_one_iff_of_isUnit_two
+#check HahnSeries.isAlgClosed_rat
+#check CharacterModule.natCard_eq_of_finite
