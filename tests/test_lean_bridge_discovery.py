@@ -1,4 +1,4 @@
-from mathgraph.lean_bridge_discovery import SourcePin, discover
+from mathgraph.lean_bridge_discovery import SourcePin, discover, extract_declarations
 
 
 def _pin(corpus: str, role: str, path: str) -> SourcePin:
