@@ -1,0 +1,37 @@
+name: Crystal Bridge Capability Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-auto-bridge-discovery-v1
+    paths:
+      - 'mathgraph/lean_bridge_capability.py'
+      - 'scripts/compile_lean_bridge_capability.py'
+      - 'tests/test_lean_bridge_capability.py'
+      - 'evidence/crystal-auto-bridge-discovery-v1.json'
+      - '.github/workflows/crystal-bridge-capability-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-capability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Check promotion compiler
+        run: python -m pytest -q tests/test_lean_bridge_capability.py
+      - name: Compile warranted bridge into Crystal semantic memory
+        run: |
+          mkdir -p artifacts/crystal_bridge_capability_v1
+          python scripts/compile_lean_bridge_capability.py             evidence/crystal-auto-bridge-discovery-v1.json             --out artifacts/crystal_bridge_capability_v1/capability.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-bridge-capability-v1
+          path: artifacts/crystal_bridge_capability_v1/capability.json
