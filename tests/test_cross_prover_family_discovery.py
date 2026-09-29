@@ -162,3 +162,34 @@ END Q
     assert "exists_above_real" in lean
     assert "zero_annihilator_real" in lean
     assert "square_shift_dominates" in lean
+
+
+def test_v3_algebraic_root_constructor_spans_root_shapes():
+    src={
+        "q": """
+Q: THEORY
+BEGIN
+a: LEMMA EXISTS (x: real): x^2 = 2
+b: LEMMA FORALL (x: real): x > 0 IMPLIES EXISTS (y: real): y * y = x
+c: LEMMA FORALL (x: real): FORALL (y: real): EXISTS (z: real): z^2 = x^2 + y^2
+d: LEMMA FORALL (x: real): EXISTS (y: real): x^2 + y^2 = 1 OR x^2 > 1
+END Q
+"""
+    }
+    prf={"q": """(|Q|
+ (|a| 0)
+ (|b| 0)
+ (|c| 0)
+ (|d| 0)
+)
+"""}
+    out=discover_family(src,prf)
+    assert out["supported_occurrence_count"]==4
+    assert out["unique_canonical_claim_count"]==4
+    assert out["verified_unique_claim_count"]==4
+    assert {x["certificate_schema"] for x in out["unique_claims"]}=={"algebraic_root_witness"}
+    lean=render_lean_family(out)
+    assert "sqrt_two_exists" in lean
+    assert "positive_has_square_root" in lean
+    assert "sum_squares_has_root" in lean
+    assert "circle_or_outside" in lean
