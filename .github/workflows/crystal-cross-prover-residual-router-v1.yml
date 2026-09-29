@@ -1,0 +1,63 @@
+name: Crystal Cross-Prover Residual Router V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-auto-family-v1
+    paths:
+      - 'mathgraph/cross_prover_residual_router.py'
+      - 'tests/test_cross_prover_residual_router.py'
+      - '.github/workflows/crystal-cross-prover-residual-router-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test router
+        run: python -m pytest -q tests/test_cross_prover_family_discovery.py tests/test_cross_prover_residual_router.py
+      - name: Route exact pinned source residual
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/crystal_cross_prover_residual_router_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_demo.pvs cad_examples.pvs cad_star_ex.pvs; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family
+          from mathgraph.cross_prover_residual_router import route_discovery
+
+          d=discover_family({
+              "cad_demo":Path("/tmp/pvs-family/cad_demo.pvs").read_text(),
+              "cad_examples":Path("/tmp/pvs-family/cad_examples.pvs").read_text(),
+              "cad_star_ex":Path("/tmp/pvs-family/cad_star_ex.pvs").read_text(),
+          })
+          r=route_discovery(d)
+          assert r["unsupported_count"]==26,r
+          Path("artifacts/crystal_cross_prover_residual_router_v1/routing.json").write_text(
+              json.dumps(r,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "unsupported":r["unsupported_count"],
+              "counts":r["residual_counts"],
+              "dominant":r["dominant_residual_class"],
+              "dominant_count":r["dominant_residual_count"],
+              "next":r["next_experiment"],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-residual-router-v1
+          path: artifacts/crystal_cross_prover_residual_router_v1/routing.json
