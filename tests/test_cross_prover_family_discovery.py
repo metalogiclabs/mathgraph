@@ -16,7 +16,7 @@ T: THEORY
 BEGIN
 a1: LEMMA FORALL (x: real): FORALL (y: real): x^2 + y^2 >= 2 * x * y
 a2: LEMMA FORALL (x: real): FORALL (y: real): x > 0 AND y > 0 IMPLIES x * y > 0
-a3: LEMMA EXISTS (x: real): x^2 = 2
+a3: LEMMA EXISTS (x: real): x^3 = 2
 END T
 """,
         "b": """
