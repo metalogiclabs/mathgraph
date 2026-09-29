@@ -1,1 +1,6 @@
-cross corpus bridge demo
+Crystal cross-corpus bridge demo
+
+Reference replay against the current Crystal adapter primitives: PASS.
+Two distinct theorem-surface objects lowered to one canonical fixed-exponent-Nat object.
+Negative control outside the preservation interface returned typed UNKNOWN.
+Bridge.lean records the positivity/nonzero transport but is not yet compiler-qualified.
