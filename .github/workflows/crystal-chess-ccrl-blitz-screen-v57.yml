@@ -1,0 +1,100 @@
+name: Crystal Chess CCRL Blitz Screen V57
+
+on:
+  push:
+    branches:
+      - crystal-chess-ccrl-blitz-screen-v57
+    paths:
+      - ".github/workflows/crystal-chess-ccrl-blitz-screen-v57.yml"
+      - "experiments/crystal_chess_apply_clock_gate_v56.py"
+      - "experiments/crystal_chess_timemgmt_ablation_v51.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  ccrl-blitz-screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_apply_clock_gate_v56.py
+          python -m py_compile experiments/crystal_chess_timemgmt_ablation_v51.py
+          python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
+
+      - name: Build pinned Stockfish baseline
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
+          git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
+          /tmp/stockfish-base/src/stockfish bench 16 1 3 default depth > /tmp/baseline-bench.txt 2>&1
+
+      - name: Build frozen Crystal V57 candidate
+        run: |
+          set -euo pipefail
+          cp -a /tmp/stockfish-base /tmp/stockfish-cand
+          mkdir -p artifacts/crystal-chess-v57
+          python experiments/crystal_chess_apply_clock_gate_v56.py --search-cpp /tmp/stockfish-cand/src/search.cpp
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v57/stockfish.patch
+          test -s artifacts/crystal-chess-v57/stockfish.patch
+          sha256sum artifacts/crystal-chess-v57/stockfish.patch > artifacts/crystal-chess-v57/PATCH_SHA256.txt
+          make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
+          /tmp/stockfish-cand/src/stockfish bench 16 1 3 default depth > /tmp/candidate-bench.txt 2>&1
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Generate prospective generic opening book
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish-base/src/stockfish             --book artifacts/crystal-chess-v57/ccrl_blitz.epd             --manifest artifacts/crystal-chess-v57/ccrl_blitz_manifest.json             --openings 160 --plies 12 --depth 6 --multipv 4 --seed 20261113
+
+      - name: Run nominal CCRL Blitz protocol screen
+        run: |
+          set -euo pipefail
+          /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalClockGateV57             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=2+1 option.Threads=1 option.Hash=256 option.Ponder=false             -openings file=artifacts/crystal-chess-v57/ccrl_blitz.epd format=epd order=sequential             -rounds 160 -repeat -concurrency 4             -pgnout file=artifacts/crystal-chess-v57/match.pgn             -log file=artifacts/crystal-chess-v57/fastchess.log level=info             | tee artifacts/crystal-chess-v57/fastchess.stdout
+
+      - name: Analyse paired Elo
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_timemgmt_ablation_v51.py             --pgn artifacts/crystal-chess-v57/match.pgn             --candidate-name CrystalClockGateV57             --variant ccrl_blitz_nominal_2plus1             --output artifacts/crystal-chess-v57/result.json             | tee artifacts/crystal-chess-v57/analyse.log
+          grep -q "CRYSTAL_CHESS_TIMEMGMT_ABLATION_V51=PASS" artifacts/crystal-chess-v57/analyse.log
+          cp /tmp/baseline-bench.txt artifacts/crystal-chess-v57/
+          cp /tmp/candidate-bench.txt artifacts/crystal-chess-v57/
+          cat > artifacts/crystal-chess-v57/PROTOCOL.txt <<'EOF'
+          Prospective CCRL-Blitz-like screen only.
+          Time control: nominal 2 minutes + 1 second increment.
+          Threads: 1 per engine.
+          Hash: 256 MB per engine.
+          Ponder: off.
+          Generic identical opening book, 12 plies maximum generated before the match.
+          160 opening pairs / 320 games.
+          No endgame tablebases configured.
+          GitHub runner is NOT calibrated to CCRL's Intel i7-4770K reference using Stockfish 10,
+          so this is not an official CCRL rating or a hardware-normalized CCRL result.
+          Candidate patch is frozen from V55/V56 with no retuning.
+          EOF
+
+      - name: Upload V57 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-ccrl-blitz-screen-v57
+          path: artifacts/crystal-chess-v57/
+          if-no-files-found: error
