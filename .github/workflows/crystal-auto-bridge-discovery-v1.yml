@@ -1,0 +1,170 @@
+name: Crystal Auto Bridge Discovery V1
+
+on:
+  push:
+    branches:
+      - crystal-auto-bridge-discovery-v1
+    paths:
+      - 'mathgraph/lean_bridge_discovery.py'
+      - 'scripts/run_lean_bridge_discovery.py'
+      - 'tests/test_lean_bridge_discovery.py'
+      - 'experiments/crystal_auto_bridge_discovery_v1/**'
+      - 'experiments/crystal_anthropic_flt_consumer_v1/**'
+      - '.github/workflows/crystal-auto-bridge-discovery-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover-and-qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+
+      - name: Test discovery kernel
+        run: python -m pytest -q tests/test_lean_bridge_discovery.py
+
+      - name: Discover bridges from exact source pins
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_auto_bridge_discovery_v1
+          python scripts/run_lean_bridge_discovery.py             experiments/crystal_auto_bridge_discovery_v1/source_manifest.json             --out artifacts/crystal_auto_bridge_discovery_v1/discovery.json
+
+      - name: Require three-corpus FLT convergence and Anthropic-to-Imperial consequence route
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path("artifacts/crystal_auto_bridge_discovery_v1/discovery.json")
+          d = json.loads(p.read_text())
+
+          eq = [
+              x for x in d["equivalence_candidates"]
+              if x["canonical_symbol"] == "FermatLastTheoremFor"
+              and {"anthropic-flt","isomorphic-fermat","imperial-flt"} <= set(x["corpora"])
+          ]
+          assert eq, "missing three-corpus FermatLastTheoremFor convergence"
+
+          imp = [
+              x for x in d["implication_candidates"]
+              if x["source_symbol"] == "IsRegular"
+              and x["target_symbol"] == "IsWeaklyRegular"
+              and x["producer"]["corpus"] == "anthropic-flt"
+              and x["consumer"]["corpus"] == "imperial-flt"
+          ]
+          assert imp, "missing Anthropic IsRegular -> Imperial IsWeaklyRegular route"
+
+          selected = {
+              "schema": "mathgraph.crystal-auto-bridge-selection.v1",
+              "equivalence_candidate": eq[0],
+              "implication_candidate": imp[0],
+              "selection_policy": "deterministic exact-symbol/verified-library-edge match",
+              "status": "CANDIDATE_SELECTED_FOR_QUALIFICATION"
+          }
+          Path("artifacts/crystal_auto_bridge_discovery_v1/selected_candidate.json").write_text(
+              json.dumps(selected, indent=2, sort_keys=True) + "\n"
+          )
+          print("AUTO_DISCOVERY_SELECTED", imp[0]["producer"], "->", imp[0]["consumer"])
+          PY
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve pinned Mathlib and restore cache
+        working-directory: experiments/crystal_anthropic_flt_consumer_v1
+        run: |
+          set -euo pipefail
+          lake update
+          grep -q 'db584cd6d46c92f209a44c0f1c829460d327499d' lake-manifest.json
+          lake exe cache get
+
+      - name: Fetch and verify exact Anthropic theorem slice
+        working-directory: experiments/crystal_anthropic_flt_consumer_v1
+        run: |
+          set -euo pipefail
+          COMMIT=6e837e75355538c7f80bab5b956861e86c4eacc2
+          mkdir -p Theorems P2M/Sol Definitions
+          curl -fsSL -o Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean
+          curl -fsSL -o P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean
+          curl -fsSL -o Definitions/Def_Patching_SystemTypes.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/Definitions/Def_Patching_SystemTypes.lean
+          curl -fsSL -o P2M/Util.lean             https://raw.githubusercontent.com/anthropics/fermats-last-theorem/$COMMIT/P2M/Util.lean
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          expected = {
+            "Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean":"156b86e8484a7fc53225a3e87a5b14f4a7f4eb0a",
+            "P2M/Sol/S_IsLocalRing_isRegular_of_systemOfParameters.lean":"bfe8fa3c06aea15de9c4ba9388d3c787eafc55dd",
+            "Definitions/Def_Patching_SystemTypes.lean":"013e3b7dfa5db55021deb21f3ea7108f0c0ed9aa",
+            "P2M/Util.lean":"0a73367f78bc165bb5d35e42ca14f5055252e7f6",
+          }
+          for name, want in expected.items():
+              data = Path(name).read_bytes()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              assert got == want, (name, got, want)
+              print("PIN_OK", name, got)
+          PY
+
+      - name: Qualify selected semantic route in Lean
+        working-directory: experiments/crystal_anthropic_flt_consumer_v1
+        run: |
+          set -euo pipefail
+          START="$(date +%s)"
+          lake build CrystalAnthropicConsumer
+          lake env lean CrystalAnthropicConsumer/Consumer.lean
+          END="$(date +%s)"
+          echo "$((END-START))" > ../../artifacts/crystal_auto_bridge_discovery_v1/qualification_seconds.txt
+          ! grep -RInE '\b(sorry|admit|axiom)\b' CrystalAnthropicConsumer
+
+      - name: Promote bounded capability
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          sel = json.loads(Path("artifacts/crystal_auto_bridge_discovery_v1/selected_candidate.json").read_text())
+          seconds = int(Path("artifacts/crystal_auto_bridge_discovery_v1/qualification_seconds.txt").read_text())
+          promotion = {
+              "schema": "mathgraph.crystal-auto-bridge-promotion.v1",
+              "status": "WARRANTED_BOUNDED_REUSABLE",
+              "discovery": "automatic from exact pinned source",
+              "selected_route": sel["implication_candidate"],
+              "qualifier": "Lean 4 kernel via lake build + direct lean check",
+              "qualified_consumer": "CrystalAnthropicConsumer.reused_systemOfParameters_as_weak",
+              "qualification_seconds": seconds,
+              "source_theorem": "IsLocalRing.isRegular_of_systemOfParameters",
+              "source_proof_reformalized_loc": 0,
+              "protected_consequence": "RingTheory.Sequence.IsWeaklyRegular R xs",
+              "revocation_boundary": [
+                  "source blob pin changes",
+                  "Mathlib bridge semantics change",
+                  "consumer protected consequence changes",
+                  "Lean qualification fails"
+              ],
+              "unknowns": [
+                  "universal theorem canonicalization",
+                  "automatic proof of arbitrary proposed bridges",
+                  "cross-version transport without a common qualifying environment"
+              ]
+          }
+          Path("artifacts/crystal_auto_bridge_discovery_v1/promotion.json").write_text(
+              json.dumps(promotion, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(promotion, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-auto-bridge-discovery-v1
+          path: artifacts/crystal_auto_bridge_discovery_v1/
