@@ -1,0 +1,60 @@
+name: Crystal Buehler Cross Potential V2
+
+on:
+  push:
+    branches:
+      - crystal-buehler-cross-potential-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  airebo_transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install LAMMPS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lammps
+          apt-cache policy lammps | tee /tmp/lammps-policy.txt
+          (command -v lmp || command -v lammps)
+          (lmp -h || lammps -h) | head -30
+      - name: Locate and fingerprint AIREBO potential
+        run: |
+          POT="$(find /usr -type f -name CH.airebo 2>/dev/null | head -1)"
+          test -n "$POT"
+          echo "AIREBO_POTENTIAL=$POT" >> "$GITHUB_ENV"
+          echo "potential=$POT"
+          sha256sum "$POT"
+      - name: Run exact-geometry alternate-potential test
+        run: python experiments/buehler_graphene_airebo_v2.py
+      - name: Validate decision object
+        if: always()
+        run: |
+          test -f evidence/buehler-graphene-cross-potential-v2/result.json
+          python - <<'PY'
+          import json
+          p='evidence/buehler-graphene-cross-potential-v2/result.json'
+          d=json.load(open(p))
+          print(json.dumps({
+            'promotion':d.get('promotion'),
+            'comparison':d.get('comparison'),
+            'alternate_physics':d.get('alternate_physics'),
+            'case_statuses':{x['name']:x.get('status') for x in d.get('cases',[])},
+          },indent=2,sort_keys=True))
+          assert d['source']['commit']=='401e5f1f2a7529d8370a75a9c6b403bf2b9679ab'
+          assert len(d['cases'])==3
+          PY
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buehler-graphene-cross-potential-v2-evidence
+          path: evidence/buehler-graphene-cross-potential-v2
+          if-no-files-found: error
