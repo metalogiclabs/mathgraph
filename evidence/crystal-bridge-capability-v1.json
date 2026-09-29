@@ -1,0 +1,66 @@
+{
+  "schema": "mathgraph.crystal-bridge-capability-authority.v1",
+  "status": "REUSABLE",
+  "capability": {
+    "type_id": "lean.verified-bridge-capability@1",
+    "contract_version": 1,
+    "semantic_object_id": "semantic:8e5851f2733eab2459f9eb5c82abb468424a6186d5143404e88e24ef42db0748",
+    "adapter_contract_id": "adapter:2e21c11aec8188e93056a1e96cb116fd00da7de0cc5fbb339aa91c6ada2781d4",
+    "interface_id": "lean.consequence.is-weakly-regular@1",
+    "source_space": "lean.corpus.anthropic-flt@1",
+    "target_space": "lean.corpus.imperial-flt@1",
+    "protected_consequence": "RingTheory.Sequence.IsWeaklyRegular R xs"
+  },
+  "qualification_authority": {
+    "discovery_and_lean_run": 36513233235,
+    "discovery_head_sha": "8c9af10d40f6f17e9fa2344fb4822690556cec98",
+    "discovery_artifact_id": 11009257816,
+    "discovery_artifact_digest": "sha256:2fd4eac43876f48356f25c728839086ba5f24435b80b2c10658149392ec53aba",
+    "capability_compilation_run": 36513582132,
+    "capability_head_sha": "b9feb4cfba27b1233a27cd2c2c41a50e00c98dc9",
+    "capability_artifact_id": 11009302901,
+    "capability_artifact_digest": "sha256:60d8034aecedb3e17edd34e2f8d5534018bfb77be0505201867ef3bc5b2b95e2"
+  },
+  "discovery": {
+    "exact_pinned_declarations_scanned": 88,
+    "transparent_alias_rules": 1,
+    "cross_corpus_equivalence_candidates": 1,
+    "verified_library_implication_rules": 1,
+    "implication_candidates": 4,
+    "three_corpus_convergence": {
+      "canonical_symbol": "FermatLastTheoremFor",
+      "corpora": [
+        "anthropic-flt",
+        "isomorphic-fermat",
+        "imperial-flt"
+      ]
+    },
+    "selected_route": {
+      "producer": "anthropic-flt:IsLocalRing.isRegular_of_systemOfParameters",
+      "bridge": "Mathlib RingTheory.Sequence.IsRegular extends IsWeaklyRegular",
+      "consumer": "imperial-flt:Module.length_le_depth"
+    }
+  },
+  "reuse_measurement": {
+    "imported_source_proof_module_loc": 3240,
+    "imported_source_proof_module_bytes": 141534,
+    "local_source_proof_reformalization_loc": 0,
+    "lean_build_jobs": 8713,
+    "automatic_qualification_seconds": 46
+  },
+  "epistemic_contract": {
+    "out_of_contract_requests": "typed UNKNOWN",
+    "revocation_boundary": [
+      "source blob pin changes",
+      "Mathlib bridge semantics change",
+      "consumer protected consequence changes",
+      "Lean qualification fails"
+    ],
+    "unknowns": [
+      "universal theorem canonicalization",
+      "automatic proof of arbitrary proposed bridges",
+      "cross-version transport without a common qualifying environment",
+      "completeness of candidate discovery"
+    ]
+  }
+}
