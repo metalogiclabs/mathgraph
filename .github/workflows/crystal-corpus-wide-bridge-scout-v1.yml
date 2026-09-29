@@ -14,6 +14,7 @@ on:
       - 'tests/test_lean_bridge_portfolio.py'
       - 'evidence/crystal-directional-bridge-batch-v2.json'
       - 'evidence/crystal-cross-version-flt-interface-v1.json'
+      - 'evidence/crystal-frey-package-reconciliation-v1.json'
       - 'experiments/crystal_corpus_wide_bridge_scout_v1/**'
       - '.github/workflows/crystal-corpus-wide-bridge-scout-v1.yml'
   workflow_dispatch:
@@ -113,13 +114,16 @@ jobs:
               "artifacts/crystal_corpus_wide_bridge_scout_v1/report.json",
               "evidence/crystal-directional-bridge-batch-v2.json",
               "evidence/crystal-cross-version-flt-interface-v1.json",
+              extra_equivalence_paths=(
+                  "evidence/crystal-frey-package-reconciliation-v1.json",
+              ),
               out_path="artifacts/crystal_corpus_wide_bridge_scout_v1/portfolio.json",
           )
           assert out["candidate_total"] == 82, out
-          assert out["qualified_reusable_count"] == 8, out
-          assert out["unknown_unqualified_count"] == 74, out
+          assert out["qualified_reusable_count"] == 9, out
+          assert out["unknown_unqualified_count"] == 73, out
           assert out["directional_unknown_count"] == 0, out
-          assert out["equivalence_unknown_count"] == 74, out
+          assert out["equivalence_unknown_count"] == 73, out
           print(out)
           PY
 
