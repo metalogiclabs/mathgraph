@@ -1,0 +1,77 @@
+{
+  "schema": "mathgraph.lean-bridge-discovery.v1",
+  "sources": [
+    {
+      "corpus": "anthropic-flt",
+      "role": "producer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "path": "Theorems/Thm_fermat_last_theorem.lean",
+      "blob_sha": "607108da0ddca3236e7704b6b152ae895a51df32"
+    },
+    {
+      "corpus": "anthropic-flt",
+      "role": "producer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "path": "Theorems/Thm_FreyPackage_fermatLastTheoremFor_of_five_le.lean",
+      "blob_sha": "359a03a8a93f5d09f2815233fcfb64569bbcff9d"
+    },
+    {
+      "corpus": "anthropic-flt",
+      "role": "producer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "path": "Theorems/Thm_IsLocalRing_isRegular_of_systemOfParameters.lean",
+      "blob_sha": "156b86e8484a7fc53225a3e87a5b14f4a7f4eb0a"
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "role": "consumer",
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "path": "Fermat/Basic.lean",
+      "blob_sha": "2521683ff1bb2be9800f2b9073c57b07f40dc088"
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "role": "consumer",
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "path": "Fermat/Cases.lean",
+      "blob_sha": "8511f6509b11e591a32413331562093f127579b8"
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "path": "FLT/Proof.lean",
+      "blob_sha": "8543a9c5fc956330a2b8073bd908201fbed376c1"
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "path": "FLT/Basic/Lemmas.lean",
+      "blob_sha": "f055d97dd1fdcf91097afb3548227ec05cf04cea"
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "path": "FLT/Patching/Utils/Depth.lean",
+      "blob_sha": "a6ffefe052980deefe73acc1fb802e9164fec8a2"
+    },
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/RingTheory/Regular/RegularSequence.lean",
+      "blob_sha": "9b58c8f23e80cfc958d9d395d84acb0929fe5c45"
+    }
+  ]
+}
