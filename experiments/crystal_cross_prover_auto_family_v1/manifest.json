@@ -41,9 +41,7 @@
     "real.amgm2@1": "evidence/crystal-cross-prover-cad-v1.json"
   },
   "replay_targets": {
-    "cad_demo": [
-      "s_pos"
-    ],
+    "cad_demo": [],
     "cad_examples": [
       "ex_sos",
       "ex_sos_TCC1",
@@ -67,5 +65,12 @@
       "quadratic_implication"
     ],
     "unknown": "any lemma outside the supported grammar remains UNKNOWN_UNSUPPORTED_GRAMMAR"
+  },
+  "source_occurrence_policy": {
+    "qualification_unit": "canonical_claim",
+    "rule": "A canonical claim is source-qualified when at least one exact discovered PVS occurrence for that claim replays under the pinned PVS environment. Additional matched occurrences remain SOURCE_OCCURRENCE_UNKNOWN until replayed; they do not force re-proving an already qualified semantic claim.",
+    "known_unreplayed_occurrences": [
+      "cad_demo.s_pos"
+    ]
   }
 }
