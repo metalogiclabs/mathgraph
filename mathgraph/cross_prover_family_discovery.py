@@ -274,6 +274,57 @@ def discover_family(
     }
 
 
+def annotate_replayability(
+    discovery: Mapping[str, Any],
+    proof_texts: Mapping[str, str],
+) -> dict[str, Any]:
+    out=json.loads(json.dumps(discovery))
+    proof_names: dict[str,set[str]]={}
+    for theory,text in proof_texts.items():
+        proof_names[theory]=set(
+            re.findall(r"\(\|([A-Za-z_]\w*)\|\s+\d",text)
+        )
+
+    by_claim: dict[str,list[dict[str,Any]]]=defaultdict(list)
+    replayable_total=0
+    unreplayable_total=0
+    for row in out["supported_occurrences"]:
+        present=row["formula"] in proof_names.get(row["theory"],set())
+        row["source_proof_present"]=present
+        row["source_evidence_status"]=(
+            "REPLAYABLE_SOURCE_AUTHORITY"
+            if present else
+            "UNKNOWN_UNREPLAYABLE_SOURCE_OCCURRENCE"
+        )
+        if present:
+            replayable_total+=1
+        else:
+            unreplayable_total+=1
+        by_claim[row["claim_id"]].append(row)
+
+    for claim in out["unique_claims"]:
+        rows=by_claim[claim["claim_id"]]
+        claim["replayable_occurrence_count"]=sum(
+            1 for x in rows if x["source_proof_present"]
+        )
+        claim["unreplayable_occurrence_count"]=sum(
+            1 for x in rows if not x["source_proof_present"]
+        )
+        claim["source_qualification_status"]=(
+            "QUALIFIABLE_FROM_REPLAYABLE_SOURCE"
+            if claim["replayable_occurrence_count"]>0 else
+            "UNKNOWN_NO_REPLAYABLE_SOURCE"
+        )
+
+    out["replayable_supported_occurrence_count"]=replayable_total
+    out["unreplayable_supported_occurrence_count"]=unreplayable_total
+    out["qualifiable_unique_claim_count"]=sum(
+        1 for x in out["unique_claims"]
+        if x["replayable_occurrence_count"]>0
+    )
+    return out
+
+
 def render_lean_family(
     discovery: Mapping[str,Any],
     *,
