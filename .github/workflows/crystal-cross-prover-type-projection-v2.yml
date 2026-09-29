@@ -1,0 +1,141 @@
+name: Crystal Cross-Prover Type Projection V2
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-type-projection-v2
+    paths:
+      - 'mathgraph/cross_prover_sufficient_interface.py'
+      - 'tests/test_cross_prover_sufficient_interface.py'
+      - '.github/workflows/crystal-cross-prover-type-projection-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Test projection layer
+        run: python -m pytest -q tests/test_cross_prover_sufficient_interface.py
+      - name: Discover only new type-range projections
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/proj artifacts/crystal_cross_prover_type_projection_v2
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/proj/cad_star_ex.pvs "$BASE/cad_star_ex.pvs"
+          curl -fsSL -o /tmp/proj/cad_star_ex.prf "$BASE/cad_star_ex.prf"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_sufficient_interface import discover_sufficient_interfaces,render_lean_projection
+          d=discover_sufficient_interfaces(
+              {"cad_star_ex":Path("/tmp/proj/cad_star_ex.pvs").read_text()},
+              {"cad_star_ex":Path("/tmp/proj/cad_star_ex.prf").read_text()},
+          )
+          rows=[x for x in d["candidates"] if x["formula"] in {"s_posreal","s_sqrtpos"}]
+          assert len(rows)==2,rows
+          assert all(x["source_proof_status"]=="PINNED_PROOF_PRESENT" for x in rows)
+          small={**d,"candidates":rows,"candidate_count":2,"source_authority_candidate_count":2}
+          out=Path("artifacts/crystal_cross_prover_type_projection_v2")
+          out.joinpath("discovery.json").write_text(json.dumps(small,indent=2,sort_keys=True)+"\n")
+          out.joinpath("Surface.lean").write_text(render_lean_projection(small))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check two interfaces and adapters
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-type-proj-v2
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_type_projection_v2/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-type-projection-v2"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+
+  pvs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Pin and replay source theorems
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_star_ex.s_posreal:s_sqrtpos | tee /tmp/pvs_type_projection.log
+          grep -q "Grand Totals:" /tmp/pvs_type_projection.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/pvs_type_projection.log; then exit 1; fi
+
+  promote:
+    needs: [discover-lean,pvs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote type-range projection extension
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_type_projection_v2
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-sufficient-interface-result.v2",
+            "status":"WARRANTED_BOUNDED_CROSS_PROVER_TYPE_RANGE_PROJECTION_V2",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "parent_projection_warrant_run":36640121901,
+            "relation_kind":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+            "same_meaning":False,
+            "new_source_formulas":["s_posreal","s_sqrtpos"],
+            "new_relation_count":2,
+            "pvs_native_replay":"GREEN",
+            "lean_interface_and_adapter_gate":"GREEN",
+            "boundary":"PVS subtype/range surfaces are transported through stronger real-valued interfaces plus typed adapters; they are not promoted as exact semantic identity."
+          }
+          Path("artifacts/crystal_cross_prover_type_projection_v2/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-type-projection-v2
+          path: artifacts/crystal_cross_prover_type_projection_v2/result.json
