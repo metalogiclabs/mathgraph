@@ -43,8 +43,8 @@ end RingTheory.Sequence
     out = discover([producer, consumer, bridge])
     hits = [
         x for x in out["implication_candidates"]
-        if x["source_symbol"] == "IsRegular"
-        and x["target_symbol"] == "IsWeaklyRegular"
+        if x["source_symbol"] == "RingTheory.Sequence.IsRegular"
+        and x["target_symbol"] == "RingTheory.Sequence.IsWeaklyRegular"
     ]
     assert hits
     assert hits[0]["producer"]["corpus"] == "a"
@@ -71,3 +71,23 @@ theorem b {R : Type} [AddCommGroup R] (n : Nat) :
     symbols = {x["canonical_symbol"] for x in out["equivalence_candidates"]}
     assert "FermatLastTheoremFor" in symbols
     assert "AddCommGroup" not in symbols
+
+
+def test_namespace_collision_does_not_create_false_implication() -> None:
+    producer = (_pin("a", "producer", "A.lean"), """
+theorem source {R : Type} (x : R) : Foo.IsRegular x := by trivial
+""")
+    consumer = (_pin("b", "consumer", "B.lean"), """
+theorem need {R : Type} (xs : List R)
+    (h : Sequence.IsWeaklyRegular R xs) : True := by trivial
+""")
+    bridge = (_pin("mathlib", "bridge-library", "Bridge.lean"), """
+namespace RingTheory.Sequence
+structure IsWeaklyRegular (rs : List R) : Prop where
+  x : True
+structure IsRegular (rs : List R) : Prop extends IsWeaklyRegular R rs where
+  y : True
+end RingTheory.Sequence
+""")
+    out = discover([producer, consumer, bridge])
+    assert not out["implication_candidates"]
