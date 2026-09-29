@@ -9,6 +9,7 @@ on:
       - 'mathgraph/lean_bridge_discovery.py'
       - 'scripts/run_lean_corpus_bridge_scout.py'
       - 'tests/test_lean_corpus_bridge_scout.py'
+      - 'tests/test_lean_bridge_discovery.py'
       - 'experiments/crystal_corpus_wide_bridge_scout_v1/**'
       - '.github/workflows/crystal-corpus-wide-bridge-scout-v1.yml'
   workflow_dispatch:
