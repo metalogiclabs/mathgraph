@@ -206,7 +206,7 @@ public class CrystalBlockAccessListCrossClientTests
             int sink = 0;
             for (int rep = 0; rep < 20; rep++)
                 foreach (byte[] raw in records)
-                    sink ^= Rlp.Decode<ReadOnlyBlockAccessList>(raw)!.AccountChanges.Length;
+                    sink ^= Rlp.Decode<ReadOnlyBlockAccessList>(raw)!.AccountChanges.Count;
             sw.Stop(); GC.KeepAlive(sink); fullTimes.Add(sw.Elapsed.TotalSeconds);
 
             sw.Restart(); sink = 0;
