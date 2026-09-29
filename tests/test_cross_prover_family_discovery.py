@@ -193,3 +193,37 @@ END Q
     assert "positive_has_square_root" in lean
     assert "sum_squares_has_root" in lean
     assert "circle_or_outside" in lean
+
+
+def test_v4_quantifier_witness_duality_spans_polarities():
+    src={
+        "q": """
+Q: THEORY
+BEGIN
+a: LEMMA NOT (FORALL (x: real): EXISTS (y: real): x * y = 1)
+b: LEMMA FORALL (b, c: real): (FORALL (z: real): z^2 + b * z + c > 0) IMPLIES b^2 < 4 * c
+c: LEMMA FORALL (a: real): a > 0 IMPLIES (FORALL (z: real): EXISTS (w: real): w * a > z)
+d: LEMMA FORALL (c: real): (FORALL (z: real): EXISTS (w: real): w > z AND w * c > 1) IMPLIES c > 0
+e: LEMMA FORALL (a: real): (EXISTS (u, v: real): u * u + v * v = a) IMPLIES a >= 0
+END Q
+"""
+    }
+    prf={"q": """(|Q|
+ (|a| 0)
+ (|b| 0)
+ (|c| 0)
+ (|d| 0)
+ (|e| 0)
+)
+"""}
+    out=discover_family(src,prf)
+    assert out["supported_occurrence_count"]==5
+    assert out["unique_canonical_claim_count"]==5
+    assert out["verified_unique_claim_count"]==5
+    assert {x["certificate_schema"] for x in out["unique_claims"]}=={"quantifier_witness_duality"}
+    lean=render_lean_family(out)
+    assert "zero_has_no_multiplicative_inverse" in lean
+    assert "positive_quadratic_discriminant_negative" in lean
+    assert "positive_scale_unbounded_above" in lean
+    assert "unbounded_positive_product_forces_positive_factor" in lean
+    assert "sum_two_squares_parameter_nonnegative" in lean
