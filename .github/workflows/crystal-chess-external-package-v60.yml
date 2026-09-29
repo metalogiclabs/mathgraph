@@ -19,22 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify clean application and reconstructed diff
+      - name: Reproduce authoritative V56 diff
         run: |
           set -euo pipefail
           git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
           git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
-          git -C /tmp/stockfish apply --check "$GITHUB_WORKSPACE/external/crystal-chess-v60/stockfish-0a215d6c-crystal-v56.patch"
-          git -C /tmp/stockfish apply "$GITHUB_WORKSPACE/external/crystal-chess-v60/stockfish-0a215d6c-crystal-v56.patch"
+          python external/crystal-chess-v60/apply.py --search-cpp /tmp/stockfish/src/search.cpp
           git -C /tmp/stockfish diff -- src/search.cpp > /tmp/reproduced.patch
-          diff -u "$GITHUB_WORKSPACE/external/crystal-chess-v60/stockfish-0a215d6c-crystal-v56.patch" /tmp/reproduced.patch
-          sha256sum "$GITHUB_WORKSPACE/external/crystal-chess-v60/stockfish-0a215d6c-crystal-v56.patch"
+          echo "7ee31f9f8fc69589be85358af7d9e0e736ee20c55704e8f344ff4bae93a35c98  /tmp/reproduced.patch" | sha256sum -c -
+          cp /tmp/reproduced.patch external/crystal-chess-v60/reproduced.patch
 
       - name: Build and bench frozen external candidate
         run: |
           set -euo pipefail
           make -C /tmp/stockfish/src -j2 build ARCH=x86-64
-          /tmp/stockfish/src/stockfish bench 16 1 3 default depth | tee /tmp/bench.txt
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth | tee external/crystal-chess-v60/bench.txt
           grep -F 'if (mainThread->tm.optimum() <= 64)' /tmp/stockfish/src/search.cpp
           grep -F 'highBestMoveEffort = 1.0;' /tmp/stockfish/src/search.cpp
           echo "CRYSTAL_CHESS_EXTERNAL_PACKAGE_V60=PASS"
