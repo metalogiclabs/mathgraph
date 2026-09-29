@@ -141,6 +141,8 @@ def semantic_symbol_key(token: str) -> str | None:
     token = token.strip(".'")
     if not token:
         return None
+    if token.startswith("_root_."):
+        token = token[len("_root_."):]
     last = token.split(".")[-1]
     if last in COMMON_SYMBOLS:
         return None
@@ -150,7 +152,11 @@ def semantic_symbol_key(token: str) -> str | None:
     upper_count = sum(ch.isupper() for ch in last)
     if not last[0].isupper() or upper_count < 2:
         return None
-    return last
+    # Bare Is* predicates are too namespace-sensitive to identify safely from
+    # source text alone. Qualified/partially-qualified uses remain admissible.
+    if "." not in token and last.startswith("Is"):
+        return None
+    return token
 
 
 def _last_top_level_colon(text: str) -> int | None:
@@ -253,7 +259,7 @@ def discover_aliases(declarations: Sequence[LeanDeclaration]) -> list[AliasRule]
         if not rhs:
             continue
         target = semantic_symbol_key(rhs.group(1))
-        alias = semantic_symbol_key(d.full_name) or semantic_symbol_key(d.name)
+        alias = semantic_symbol_key(d.name)
         if alias and target and alias != target:
             out.append(AliasRule(
                 corpus=d.corpus,
@@ -267,9 +273,16 @@ def discover_aliases(declarations: Sequence[LeanDeclaration]) -> list[AliasRule]
 def canonicalize_symbol(symbol: str, aliases: Mapping[str, str]) -> str:
     seen: set[str] = set()
     cur = symbol
-    while cur in aliases and cur not in seen:
+    while cur not in seen:
         seen.add(cur)
-        cur = aliases[cur]
+        if cur in aliases:
+            cur = aliases[cur]
+            continue
+        short = cur.split(".")[-1]
+        if short in aliases:
+            cur = aliases[short]
+            continue
+        break
     return cur
 
 
@@ -280,11 +293,16 @@ def discover_implications(
     for d in declarations:
         if d.kind != "structure":
             continue
-        source = semantic_symbol_key(d.full_name) or semantic_symbol_key(d.name)
+        source = d.full_name
         ext = EXTENDS_RE.search(d.statement)
         if not source or not ext:
             continue
-        target = semantic_symbol_key(ext.group(1))
+        raw_target = ext.group(1).strip(".'")
+        if "." in raw_target:
+            target = raw_target
+        else:
+            namespace = source.rsplit(".", 1)[0] if "." in source else ""
+            target = f"{namespace}.{raw_target}" if namespace else raw_target
         if target and source != target:
             out.append(ImplicationRule(
                 source=source,
@@ -311,6 +329,16 @@ def _canonical_conclusion_symbols(
     declaration: LeanDeclaration, aliases: Mapping[str, str]
 ) -> set[str]:
     return {canonicalize_symbol(s, aliases) for s in declaration.conclusion_symbols}
+
+
+def _symbol_matches(candidate: str, required: str) -> bool:
+    if candidate == required:
+        return True
+    # Accept a unique namespace suffix only when source text supplied at least
+    # one namespace component. Bare generic names are intentionally rejected.
+    if "." in candidate and required.endswith("." + candidate):
+        return True
+    return False
 
 
 def discover(
@@ -358,12 +386,18 @@ def discover(
         producers = [
             d for d in non_library
             if d.role == "producer"
-            and rule.source in _canonical_conclusion_symbols(d, alias_map)
+            and any(
+                _symbol_matches(symbol, rule.source)
+                for symbol in _canonical_conclusion_symbols(d, alias_map)
+            )
         ]
         consumers = [
             d for d in non_library
             if d.role == "consumer"
-            and rule.target in _canonical_premise_symbols(d, alias_map)
+            and any(
+                _symbol_matches(symbol, rule.target)
+                for symbol in _canonical_premise_symbols(d, alias_map)
+            )
         ]
         for p in producers:
             for c in consumers:
