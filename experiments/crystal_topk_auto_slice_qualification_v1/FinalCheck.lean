@@ -8,6 +8,8 @@ import Theorems.Thm_RingTheory_Sequence_isRegular_pair_of_isSMulRegular_of_isRed
 open IsLocalRing RingTheory
 open scoped AdicCompletion.GaloisAction
 
+universe u
+
 theorem crystal_weak_adic_pair
     {O : Type} [CommRing O] [IsRegularLocalRing O]
     (hdimO : ringKrullDim O = 2)
