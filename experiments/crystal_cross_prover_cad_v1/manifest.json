@@ -1,0 +1,84 @@
+{
+  "schema": "mathgraph.crystal-cross-prover-cad-v1",
+  "objective": "Expand the semantic-linker boundary beyond Lean by linking one exact PVS CAD theorem to an independently kernel-checked Lean consumer through a canonical polynomial proposition.",
+  "canonical_claim": {
+    "id": "real.amgm2@1",
+    "binders": [
+      {
+        "name": "x",
+        "sort": "real"
+      },
+      {
+        "name": "y",
+        "sort": "real"
+      }
+    ],
+    "proposition": {
+      "op": "ge",
+      "left": {
+        "op": "add",
+        "args": [
+          {
+            "op": "pow",
+            "base": {
+              "var": "x"
+            },
+            "exp": 2
+          },
+          {
+            "op": "pow",
+            "base": {
+              "var": "y"
+            },
+            "exp": 2
+          }
+        ]
+      },
+      "right": {
+        "op": "mul",
+        "args": [
+          {
+            "const": 2
+          },
+          {
+            "op": "mul",
+            "args": [
+              {
+                "var": "x"
+              },
+              {
+                "var": "y"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "pvs": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "theory": "cad_demo",
+    "formula": "d_amgm",
+    "source_path": "cad/cad_demo.pvs",
+    "source_blob_sha": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+    "proof_path": "cad/cad_demo.prf",
+    "proof_blob_sha": "f2db4a2a6fd22f23b472e62c1cb0b18779799577",
+    "proof_step": "(cad)",
+    "pvs_release": "pvs8.1.2",
+    "pvs_release_commit": "4c6366183dccb85a785320ea4734a4feb8f476be",
+    "pvs_linux_x86_64_sha256": "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b",
+    "nasalib_repository": "nasa/pvslib",
+    "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa"
+  },
+  "lean": {
+    "toolchain": "leanprover/lean4:v4.35.0-rc3",
+    "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+  },
+  "trust_boundary": {
+    "source_match": "The PVS theorem statement must exactly match the canonical renderer after whitespace normalization.",
+    "pvs_replay": "PVS proveit must replay the pinned d_amgm proof under the pinned PVS/NASALib environment.",
+    "lean_replay": "The canonical claim is rendered independently into Lean and checked by Lean/Mathlib.",
+    "non_claim": "This does not transport a PVS proof object into Lean or establish a universal PVS↔Lean translator."
+  }
+}
