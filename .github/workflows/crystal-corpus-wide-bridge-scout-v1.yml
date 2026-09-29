@@ -116,10 +116,10 @@ jobs:
               out_path="artifacts/crystal_corpus_wide_bridge_scout_v1/portfolio.json",
           )
           assert out["candidate_total"] == 82, out
-          assert out["qualified_reusable_count"] == 7, out
-          assert out["unknown_unqualified_count"] == 75, out
+          assert out["qualified_reusable_count"] == 8, out
+          assert out["unknown_unqualified_count"] == 74, out
           assert out["directional_unknown_count"] == 0, out
-          assert out["equivalence_unknown_count"] == 75, out
+          assert out["equivalence_unknown_count"] == 74, out
           print(out)
           PY
 
