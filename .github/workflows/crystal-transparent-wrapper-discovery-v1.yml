@@ -7,6 +7,8 @@ on:
     paths:
       - 'mathgraph/lean_transparent_wrapper_discovery.py'
       - 'tests/test_lean_transparent_wrapper_discovery.py'
+      - 'mathgraph/lean_bridge_discovery.py'
+      - 'tests/test_lean_bridge_discovery.py'
       - 'experiments/crystal_transparent_wrapper_discovery_v1/**'
       - 'evidence/crystal-transparent-wrapper-bridge-v1.json'
       - '.github/workflows/crystal-transparent-wrapper-discovery-v1.yml'
@@ -30,7 +32,7 @@ jobs:
         run: python -m pip install -e ".[all]"
 
       - name: Test discovery grammar
-        run: python -m pytest -q tests/test_lean_transparent_wrapper_discovery.py
+        run: python -m pytest -q tests/test_lean_transparent_wrapper_discovery.py tests/test_lean_bridge_discovery.py
 
       - name: Sparse checkout exact corpus surfaces
         run: |
