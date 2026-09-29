@@ -69,7 +69,7 @@ jobs:
             grep -q "Q.E.D" /tmp/one.out
           done
           echo "=== abstracted_function_sound : (cad *) ===" | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
-          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"             tools/cli/pv.sh BoundaryAudit abstracted_function_sound "(cad *)" 180             | tee /tmp/one.out | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
+          PVS_DIR="$PVS_DIR" NASALIB="$NASALIB"             tools/cli/pv.sh BoundaryAudit abstracted_function_sound "(then (skeep) (cad *))" 180             | tee /tmp/one.out | tee -a "$GITHUB_WORKSPACE/experiments/pvs_cad/cad-positive.log"
           grep -q "Q.E.D" /tmp/one.out
 
       - name: Execute semantic boundary canaries
