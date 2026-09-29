@@ -1,0 +1,25 @@
+{
+  "schema": "mathgraph.crystal-transparent-wrapper-capability-authority.v1",
+  "status": "REUSABLE",
+  "authority": {
+    "qualification_run": 36621922950,
+    "qualification_head_sha": "038de791228e7ca71888802fb372e92f1d842bf3",
+    "qualification_artifact_id": 11059205643,
+    "qualification_artifact_digest": "sha256:b3e2f4e2c9a2300196253ea60d43aa7667d990d166a543f4cd48e9ed9b553a3d",
+    "compilation_run": 36622520596,
+    "compilation_head_sha": "f965fb3b47ec146a64a01b8e335e283ac4913885",
+    "compilation_artifact_id": 11059640957,
+    "compilation_artifact_digest": "sha256:8fbf6b8d566c25e4ea75ce7aab5e42cfe4cc7b09eaeb2b68a1b3444ccf5fd7f2"
+  },
+  "compiled": {
+    "interface_id": "function.finite-range.set-range-finite@1",
+    "source_object_id": "semantic:842f02c9276b34eb1d6d9670d24a76cd7d0c8a528ec6f6353b1155c19620c00e",
+    "canonical_object_id": "semantic:97f11e363ee52031272561b768fdf8ea11a8ba5e72b6dfee835873b51e697dd4",
+    "source_to_canonical_adapter_id": "adapter:6ef4cc7872a5f47ac24046843ee5fc6db19772ddca252b381fd2a6d9ff9befb9",
+    "canonical_to_consumer_adapter_id": "adapter:ec636923f081cd7364a1ddcdb6669f516fe9388c84d426c20cefb2d2b2d77645",
+    "composed_adapter_id": "adapter:48eebadd299bfb52eaf3920020741d34296216ccb56ec71244eacd6d451b8738"
+  },
+  "law": "PFR FiniteRange X ↔ (Set.range X).Finite ↦ Anthropic finiteRangeIntegral_of_finite",
+  "systems_consequence": "The exact-name scout's zero actionable residual was grammar-relative. This qualified differently-named bridge is a witnessed separator that requires candidate-grammar refinement.",
+  "next_residual": "mechanically discover transparent project-local wrappers and match alpha-normalized field propositions to consumer premises"
+}
