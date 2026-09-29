@@ -59,21 +59,8 @@ jobs:
           from pathlib import Path
           p=Path('/tmp/stockfish/src/search.cpp')
           s=p.read_text()
-          anchor='''        for (auto&& th : threads)
-          {
-              totBestMoveChanges += th->worker->bestMoveChanges;
-              th->worker->bestMoveChanges = 0;
-          }
-
-          // Do we have time for the next iteration? Can we stop searching now?
-          '''
-          insert='''        for (auto&& th : threads)
-          {
-              totBestMoveChanges += th->worker->bestMoveChanges;
-              th->worker->bestMoveChanges = 0;
-          }
-
-          if (limits.nodes && !rootMoves.empty() && !rootMoves[0].pv.empty())
+          anchor='        // Do we have time for the next iteration? Can we stop searching now?'
+          insert='''        if (limits.nodes && !rootMoves.empty() && !rootMoves[0].pv.empty())
           {
               u64 crystalTraceNodes = threads.nodes_searched();
               u64 crystalEffortPct =
@@ -96,8 +83,7 @@ jobs:
                         << sync_endl;
           }
 
-          // Do we have time for the next iteration? Can we stop searching now?
-          '''
+          // Do we have time for the next iteration? Can we stop searching now?'''
           if anchor not in s:
               raise SystemExit('instrumentation anchor not found')
           p.write_text(s.replace(anchor,insert,1))
