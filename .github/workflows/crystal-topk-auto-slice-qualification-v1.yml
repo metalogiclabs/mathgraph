@@ -140,10 +140,10 @@ jobs:
         working-directory: /tmp/crystal-topk/slice
         run: |
           set -euo pipefail
+          printf 'leanprover/lean4:v4.33.0\n' > lean-toolchain
           lake update
           grep -q 'db584cd6d46c92f209a44c0f1c829460d327499d' lake-manifest.json
-          cp .lake/packages/mathlib/lean-toolchain ./lean-toolchain
-          grep -q 'leanprover/lean4:v4.33.0' lean-toolchain
+          cmp lean-toolchain .lake/packages/mathlib/lean-toolchain
           lake exe cache get
 
       - name: Qualify all selected routes in isolated source slice
