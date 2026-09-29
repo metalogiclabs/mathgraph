@@ -37,6 +37,20 @@ def normalize_surface(surface: str) -> str:
     return _norm_ws(s)
 
 
+def extract_pvs_proved_formulas(proof_text: str) -> set[str]:
+    """Return top-level formula names that have entries in a pinned PVS .prf file.
+
+    PVS proof files indent top-level formula entries by exactly one space.
+    Nested proof branches use deeper indentation and often contain suffixes
+    such as '-0'.  Presence here is source-authority routing metadata; the
+    workflow still replays the selected proofs under PVS before promotion.
+    """
+    return set(re.findall(
+        r"(?m)^ \(\|([A-Za-z_][A-Za-z0-9_]*(?:_TCC\d+)?)\|\s+\d",
+        proof_text,
+    ))
+
+
 def extract_pvs_lemmas(source: str) -> list[tuple[str,str]]:
     # Remove line comments before locating declarations.
     clean="\n".join(line.split("%",1)[0] for line in source.splitlines())
@@ -168,10 +182,17 @@ def _specs() -> dict[str, ClaimSpec]:
 SPECS=_specs()
 
 
-def discover_family(sources: Mapping[str,str]) -> dict[str, Any]:
+def discover_family(
+    sources: Mapping[str,str],
+    proofs: Mapping[str,str] | None = None,
+) -> dict[str, Any]:
     occurrences=[]
     unsupported=[]
     by_claim: dict[str,list[dict[str,Any]]]=defaultdict(list)
+    proved_by_theory = {
+        theory: extract_pvs_proved_formulas(text)
+        for theory,text in (proofs or {}).items()
+    }
 
     for theory,source in sorted(sources.items()):
         for formula,surface in extract_pvs_lemmas(source):
@@ -186,10 +207,18 @@ def discover_family(sources: Mapping[str,str]) -> dict[str, Any]:
                 row["status"]="UNKNOWN_UNSUPPORTED_GRAMMAR"
                 unsupported.append(row)
                 continue
+            proof_status = None
+            if proofs is not None:
+                proof_status = (
+                    "PINNED_PROOF_PRESENT"
+                    if formula in proved_by_theory.get(theory,set())
+                    else "NO_PINNED_PROOF"
+                )
             row.update({
                 "status":"CANDIDATE_SUPPORTED_GRAMMAR",
                 "claim_id":spec.claim_id,
                 "certificate_schema":spec.certificate_schema,
+                "source_proof_status":proof_status,
             })
             occurrences.append(row)
             by_claim[spec.claim_id].append(row)
@@ -197,22 +226,45 @@ def discover_family(sources: Mapping[str,str]) -> dict[str, Any]:
     unique=[]
     for claim_id in sorted(by_claim):
         spec=next(x for x in SPECS.values() if x.claim_id==claim_id)
+        claim_rows=by_claim[claim_id]
+        authoritative=[
+            x for x in claim_rows
+            if x.get("source_proof_status") in (None,"PINNED_PROOF_PRESENT")
+        ]
         unique.append({
             **spec.to_dict(),
-            "source_occurrence_count":len(by_claim[claim_id]),
-            "source_occurrences":by_claim[claim_id],
+            "source_occurrence_count":len(claim_rows),
+            "source_authority_occurrence_count":len(authoritative),
+            "source_unverified_occurrence_count":len(claim_rows)-len(authoritative),
+            "source_occurrences":claim_rows,
+            "source_authority_status":(
+                "SOURCE_AUTHORITY_AVAILABLE"
+                if authoritative
+                else "UNKNOWN_SOURCE_UNVERIFIED"
+            ),
         })
 
     duplicate_groups=[
         row for row in unique if row["source_occurrence_count"]>1
     ]
+    source_verified_occurrences=sum(
+        1 for x in occurrences
+        if x.get("source_proof_status") in (None,"PINNED_PROOF_PRESENT")
+    )
+    source_unverified_supported_occurrences=len(occurrences)-source_verified_occurrences
+    verified_unique_claims=sum(
+        1 for x in unique if x["source_authority_status"]=="SOURCE_AUTHORITY_AVAILABLE"
+    )
     return {
         "schema":"mathgraph.cross-prover-auto-family-discovery.v1",
         "status":"CANDIDATE_DISCOVERY_ONLY",
         "source_lemma_count":len(occurrences)+len(unsupported),
         "supported_occurrence_count":len(occurrences),
+        "source_verified_occurrence_count":source_verified_occurrences,
+        "source_unverified_supported_occurrence_count":source_unverified_supported_occurrences,
         "unsupported_occurrence_count":len(unsupported),
         "unique_canonical_claim_count":len(unique),
+        "verified_unique_claim_count":verified_unique_claims,
         "duplicate_semantic_group_count":len(duplicate_groups),
         "supported_occurrences":occurrences,
         "unsupported_occurrences":unsupported,
@@ -238,6 +290,8 @@ def render_lean_family(
         claim_id=str(row["claim_id"])
         if claim_id in skip:
             continue
+        if row.get("source_authority_status")=="UNKNOWN_SOURCE_UNVERIFIED":
+            continue
         spec=next(x for x in SPECS.values() if x.claim_id==claim_id)
         chunks.extend([
             f"theorem {spec.theorem_name} {spec.lean_statement} := {spec.lean_proof}",
@@ -256,7 +310,12 @@ def compile_family_bundle(
 ) -> SemanticObject:
     reused=set(reused_claim_ids)
     fresh=set(newly_qualified_claim_ids)
-    supported={str(x["claim_id"]) for x in discovery["unique_claims"]}
+    supported={
+        str(x["claim_id"])
+        for x in discovery["unique_claims"]
+        if x.get("source_authority_status","SOURCE_AUTHORITY_AVAILABLE")
+            =="SOURCE_AUTHORITY_AVAILABLE"
+    }
     if reused | fresh != supported or reused & fresh:
         raise ValueError({
             "supported":sorted(supported),
@@ -267,8 +326,17 @@ def compile_family_bundle(
         "discovery":{
             "source_lemma_count":discovery["source_lemma_count"],
             "supported_occurrence_count":discovery["supported_occurrence_count"],
+            "source_verified_occurrence_count":discovery.get(
+                "source_verified_occurrence_count",discovery["supported_occurrence_count"]
+            ),
+            "source_unverified_supported_occurrence_count":discovery.get(
+                "source_unverified_supported_occurrence_count",0
+            ),
             "unsupported_occurrence_count":discovery["unsupported_occurrence_count"],
             "unique_canonical_claim_count":discovery["unique_canonical_claim_count"],
+            "verified_unique_claim_count":discovery.get(
+                "verified_unique_claim_count",discovery["unique_canonical_claim_count"]
+            ),
             "duplicate_semantic_groups":discovery["duplicate_semantic_groups"],
         },
         "reused_claim_ids":sorted(reused),
