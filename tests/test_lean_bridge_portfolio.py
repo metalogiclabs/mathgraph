@@ -57,3 +57,16 @@ def test_one_authority_can_close_multiple_qualified_equivalence_interfaces():
     out=reconcile_bridge_portfolio(scout,directional,cross)
     assert out["qualified_reusable_count"]==4
     assert "equiv:FermatLastTheorem" in out["qualified_candidate_ids"]
+
+
+def test_extra_warranted_equivalence_candidate_closes_exact_residual():
+    scout,directional,cross=fixtures()
+    scout["all_candidate_ids"].append("equiv:FreyPackage")
+    extra={
+        "status":"WARRANTED_BOUNDED_RECONCILIATION",
+        "scout_lineage":{"candidate_id":"equiv:FreyPackage"},
+    }
+    out=reconcile_bridge_portfolio(scout,directional,cross,[extra])
+    assert out["qualified_reusable_count"]==4
+    assert out["unknown_unqualified_count"]==1
+    assert "equiv:FreyPackage" in out["qualified_candidate_ids"]
