@@ -193,3 +193,43 @@ END Q
     assert "positive_has_square_root" in lean
     assert "sum_squares_has_root" in lean
     assert "circle_or_outside" in lean
+
+
+def test_closeout_exact_family_is_shape_driven_and_qualifiable():
+    src={
+        "q": """
+Q: THEORY
+BEGIN
+r1: LEMMA FORALL (c: real): EXISTS (x: real): x^3 - 3 * x + c = 0
+r2: LEMMA EXISTS (x: real): EXISTS (y: real): x^2 + y^2 = 1 AND y = x^2
+r3: LEMMA NOT (FORALL (x: real): EXISTS (y: real): x * y = 1)
+r4: LEMMA FORALL (b, c: real): (FORALL (z: real): z^2 + b * z + c > 0) IMPLIES b^2 < 4 * c
+r5: LEMMA FORALL (a: real): a > 0 IMPLIES (FORALL (z: real): EXISTS (w: real): w * a > z)
+r6: LEMMA FORALL (c: real): (FORALL (z: real): EXISTS (w: real): w > z AND w * c > 1) IMPLIES c > 0
+r7: LEMMA FORALL (a: real): (EXISTS (u, v: real): u * u + v * v = a) IMPLIES a >= 0
+END Q
+"""
+    }
+    prf={"q": """(|Q|
+ (|r1| 0)
+ (|r2| 0)
+ (|r3| 0)
+ (|r4| 0)
+ (|r5| 0)
+ (|r6| 0)
+ (|r7| 0)
+)
+"""}
+    out=discover_family(src,prf)
+    assert out["supported_occurrence_count"]==7
+    assert out["unique_canonical_claim_count"]==7
+    assert out["verified_unique_claim_count"]==7
+    assert out["unsupported_occurrence_count"]==0
+    lean=render_lean_family(out)
+    assert "depressed_cubic_has_root" in lean
+    assert "parabola_unit_circle_intersection" in lean
+    assert "zero_has_no_inverse" in lean
+    assert "positive_quadratic_discriminant_negative" in lean
+    assert "positive_scaling_unbounded" in lean
+    assert "unbounded_product_witness_implies_positive" in lean
+    assert "existential_sum_squares_nonnegative" in lean
