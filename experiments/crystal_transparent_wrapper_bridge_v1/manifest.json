@@ -1,0 +1,30 @@
+{
+  "schema": "mathgraph.crystal-transparent-wrapper-bridge.v1",
+  "parent_expansion": {
+    "run_id": 36620986312,
+    "branch": "crystal-corpus-expansion-pfr-v1",
+    "pfr_added_equivalence_candidates": 3,
+    "pfr_added_actionable_candidates": 0
+  },
+  "source": {
+    "corpus": "teorth-pfr",
+    "repository": "teorth/pfr",
+    "commit": "eb5557e9556a89a3418c4e8bdd717a5cf736c060",
+    "path": "PFR/ForMathlib/FiniteRange/Defs.lean",
+    "blob_sha": "59cf0853e1dad3ae7f047c073448afb4f075046d",
+    "symbol": "FiniteRange"
+  },
+  "consumer": {
+    "corpus": "anthropic-flt",
+    "repository": "anthropics/fermats-last-theorem",
+    "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+    "path": "Definitions/Def_RepTheory_TestFunctionAction.lean",
+    "blob_sha": "156d6616de87c54897c9d05da3be29d85556d649",
+    "declaration": "TestFunctionAction.finiteRangeIntegral_of_finite"
+  },
+  "qualification_environment": {
+    "lean_toolchain": "leanprover/lean4:v4.35.0-rc3",
+    "mathlib_commit": "ec6a61cec0d8f9fda04453e9bb5761a79aa43a70"
+  },
+  "canonical_interface": "function.finite-range.set-range-finite@1"
+}
