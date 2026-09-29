@@ -332,6 +332,80 @@ def _specs() -> dict[str, ClaimSpec]:
         ),
     )
 
+    # V4: quantifier-witness duality.  These exact source meanings share
+    # one proof-construction law: follow quantifier polarity.  Consume a witness
+    # supplied by an existential hypothesis, instantiate a universal hypothesis
+    # at a decisive point, or synthesize the witness demanded by the goal.
+    add(
+        "NOT (FORALL (x: real): EXISTS (y: real): x * y = 1)",
+        ClaimSpec(
+            "real.zero_has_no_multiplicative_inverse@1",
+            "quantifier_witness_duality",
+            "zero_has_no_multiplicative_inverse",
+            ": ¬ (∀ x : ℝ, ∃ y : ℝ, x * y = 1)",
+            """by
+  intro h
+  obtain ⟨y, hy⟩ := h 0
+  norm_num at hy""",
+        ),
+    )
+    add(
+        "FORALL (b: real): FORALL (c: real): (FORALL (z: real): z^2 + b * z + c > 0) IMPLIES b^2 < 4 * c",
+        ClaimSpec(
+            "real.positive_quadratic_discriminant_negative@1",
+            "quantifier_witness_duality",
+            "positive_quadratic_discriminant_negative",
+            "(b c : ℝ) : (∀ z : ℝ, z ^ 2 + b * z + c > 0) → b ^ 2 < 4 * c",
+            """by
+  intro h
+  have hz := h (-b / 2)
+  nlinarith""",
+        ),
+    )
+    add(
+        "FORALL (a: real): a > 0 IMPLIES (FORALL (z: real): EXISTS (w: real): w * a > z)",
+        ClaimSpec(
+            "real.positive_scale_unbounded_above@1",
+            "quantifier_witness_duality",
+            "positive_scale_unbounded_above",
+            "(a : ℝ) : a > 0 → ∀ z : ℝ, ∃ w : ℝ, w * a > z",
+            """by
+  intro ha z
+  have hane : a ≠ 0 := ne_of_gt ha
+  refine ⟨z / a + 1, ?_⟩
+  rw [add_mul, div_mul_cancel₀ z hane, one_mul]
+  linarith""",
+        ),
+    )
+    add(
+        "FORALL (c: real): (FORALL (z: real): EXISTS (w: real): w > z AND w * c > 1) IMPLIES c > 0",
+        ClaimSpec(
+            "real.unbounded_positive_product_forces_positive_factor@1",
+            "quantifier_witness_duality",
+            "unbounded_positive_product_forces_positive_factor",
+            "(c : ℝ) : (∀ z : ℝ, ∃ w : ℝ, w > z ∧ w * c > 1) → c > 0",
+            """by
+  intro h
+  by_contra hc
+  have hc0 : c ≤ 0 := le_of_not_gt hc
+  obtain ⟨w, hw, hwc⟩ := h 0
+  have hmul : w * c ≤ 0 := mul_nonpos_of_nonneg_of_nonpos (le_of_lt hw) hc0
+  linarith""",
+        ),
+    )
+    add(
+        "FORALL (a: real): (EXISTS (u: real): EXISTS (v: real): u * u + v * v = a) IMPLIES a >= 0",
+        ClaimSpec(
+            "real.sum_two_squares_parameter_nonnegative@1",
+            "quantifier_witness_duality",
+            "sum_two_squares_parameter_nonnegative",
+            "(a : ℝ) : (∃ u v : ℝ, u * u + v * v = a) → a ≥ 0",
+            """by
+  rintro ⟨u, v, rfl⟩
+  nlinarith [sq_nonneg u, sq_nonneg v]""",
+        ),
+    )
+
     return dict(rows)
 
 
