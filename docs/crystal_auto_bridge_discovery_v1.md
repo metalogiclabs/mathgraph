@@ -1,6 +1,6 @@
 # Crystal Automatic Lean Bridge Discovery V1
 
-Status: bounded candidate pipeline; promotion requires the workflow qualification gate.
+Status: WARRANTED / REUSABLE on the declared three-corpus boundary.
 
 ## Objective
 
@@ -87,3 +87,29 @@ Still UNKNOWN:
 The next scaling experiment is corpus-wide declaration export plus top-k
 candidate qualification, while preserving typed UNKNOWN for every unqualified
 route.
+
+
+## Qualified authority
+
+The end-to-end automatic discovery and Lean qualification gate is GitHub Actions
+run `36513233235` at head
+`8c9af10d40f6f17e9fa2344fb4822690556cec98`.
+
+It scanned 88 pinned declarations, learned one transparent alias, found one
+three-corpus semantic-head convergence and four implication candidates, then
+selected and qualified the Anthropic `IsRegular` to Imperial
+`IsWeaklyRegular` route. Lean completed 8,713 build jobs successfully.
+The promoted discovery artifact is `11009257816`, digest
+`sha256:2fd4eac43876f48356f25c728839086ba5f24435b80b2c10658149392ec53aba`.
+
+The warranted route was then compiled into Crystal semantic memory by run
+`36513582132`, producing:
+
+- semantic object: `semantic:8e5851f2733eab2459f9eb5c82abb468424a6186d5143404e88e24ef42db0748`
+- adapter contract: `adapter:2e21c11aec8188e93056a1e96cb116fd00da7de0cc5fbb339aa91c6ada2781d4`
+- interface: `lean.consequence.is-weakly-regular@1`
+- capability artifact: `11009302901`
+- artifact digest: `sha256:60d8034aecedb3e17edd34e2f8d5534018bfb77be0505201867ef3bc5b2b95e2`
+
+The compiler rejects unwarranted candidates and the resulting adapter returns
+typed UNKNOWN outside its qualified consequence boundary.
