@@ -1,0 +1,13 @@
+name: Crystal automatic theorem transport V1
+
+on:
+  push:
+    branches:
+      - crystal-real-theorem-reuse-v1
+  workflow_dispatch:
+
+jobs:
+  auto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
