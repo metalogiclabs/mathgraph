@@ -3,6 +3,7 @@ from pathlib import Path
 
 from mathgraph.cross_prover_sos_certificate import (
     claim_difference,
+    compile_certificate_capability,
     discover_linear_square_certificate,
     render_lean_certificate_proof,
     verify_certificate,
@@ -42,3 +43,27 @@ def test_certificate_renders_closed_lean_check_not_search_prompt():
     proof=render_lean_certificate_proof(cert)
     assert "sq_nonneg" in proof
     assert "nlinarith" in proof
+
+
+def test_warranted_source_compiles_to_certificate_capability():
+    m=json.loads(MANIFEST.read_text())
+    claim=m["canonical_claim"]
+    cert=discover_linear_square_certificate(claim)
+    authority=json.loads(Path("evidence/crystal-cross-prover-cad-v1.json").read_text())
+    obj=compile_certificate_capability(claim,cert,authority)
+    assert obj.id.startswith("semantic:")
+    assert "certificate.sum-of-squares@1" in obj.interfaces
+
+
+def test_unwarranted_source_cannot_promote_certificate():
+    m=json.loads(MANIFEST.read_text())
+    claim=m["canonical_claim"]
+    cert=discover_linear_square_certificate(claim)
+    authority=json.loads(Path("evidence/crystal-cross-prover-cad-v1.json").read_text())
+    authority["status"]="CANDIDATE"
+    try:
+        compile_certificate_capability(claim,cert,authority)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unwarranted source must fail closed")
