@@ -1,0 +1,23 @@
+{
+  "protocol":"ETHEREUM_CRYSTAL_V17_NETHERMIND_CROSS_CLIENT",
+  "epistemic_state":"WARRANTED_REUSABLE",
+  "authority":{
+    "run_id":36502416400,
+    "job_id":109196097263,
+    "artifact_id":11005958772,
+    "artifact_sha256":"36509bbba8af6f3c6e868c9692b7332a69a58723630aed2d378293c9fada80ea"
+  },
+  "nethermind_commit":"62e29468020c5770a78594e84a07a8a328759e93",
+  "heldout_records":1112,
+  "semantic_projection_parity_all":true,
+  "native_bal_decoder_tests":{"passed":46,"failed":0},
+  "benchmark":{
+    "full_decode_median_s":0.116897200,
+    "compact_apply_decode_median_s":0.438569300,
+    "full_over_compact":0.266542141,
+    "compact_slowdown_vs_full_approx":3.751752
+  },
+  "performance_verdict":"REJECT compact generic C# parser as an optimization for Nethermind at this boundary",
+  "reusable_claim":"the frozen final-state consequence transfers exactly; implementation benefit is client-specific",
+  "unknowns":["live-node end-to-end impact in Nethermind","whether a Nethermind-native consequence view can outperform its existing decoder","upstream merge suitability"]
+}
