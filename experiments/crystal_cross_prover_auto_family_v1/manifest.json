@@ -1,0 +1,71 @@
+{
+  "schema": "mathgraph.crystal-cross-prover-auto-family.v1",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "files": [
+      {
+        "theory": "cad_demo",
+        "source_path": "cad/cad_demo.pvs",
+        "source_blob_sha": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+        "proof_path": "cad/cad_demo.prf",
+        "proof_blob_sha": "f2db4a2a6fd22f23b472e62c1cb0b18779799577"
+      },
+      {
+        "theory": "cad_examples",
+        "source_path": "cad/cad_examples.pvs",
+        "source_blob_sha": "36a2070d67ce77e901f08a094fd02ba7d2738470",
+        "proof_path": "cad/cad_examples.prf",
+        "proof_blob_sha": "fb6aac8f611768ff1a920f17d941e39ebb097fcc"
+      },
+      {
+        "theory": "cad_star_ex",
+        "source_path": "cad/cad_star_ex.pvs",
+        "source_blob_sha": "988021b508653ebf6da1ab8aab50905ec77ccd3b",
+        "proof_path": "cad/cad_star_ex.prf",
+        "proof_blob_sha": "96915e3de48733a6402d47bae20e99003faca13b"
+      }
+    ]
+  },
+  "pvs": {
+    "release": "pvs8.1.2",
+    "release_sha256": "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b",
+    "nasalib_repository": "nasa/pvslib",
+    "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa"
+  },
+  "lean": {
+    "toolchain": "leanprover/lean4:v4.35.0-rc3",
+    "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+  },
+  "reused_authorities": {
+    "real.amgm2@1": "evidence/crystal-cross-prover-cad-v1.json"
+  },
+  "replay_targets": {
+    "cad_demo": [
+      "s_pos"
+    ],
+    "cad_examples": [
+      "ex_sos",
+      "ex_sos_TCC1",
+      "ex_disc"
+    ],
+    "cad_star_ex": [
+      "s_pos",
+      "s_split",
+      "s_iff",
+      "s_div"
+    ]
+  },
+  "boundary": {
+    "discovery": "shape-based recognizer over exact pinned PVS lemma surfaces; theorem names are not used to assign semantics",
+    "supported_certificate_schemas": [
+      "sum_of_squares",
+      "positive_product",
+      "linear_order_split",
+      "algebraic_normalization_and_square_nonnegative",
+      "ring_identity_and_square_nonnegative",
+      "quadratic_implication"
+    ],
+    "unknown": "any lemma outside the supported grammar remains UNKNOWN_UNSUPPORTED_GRAMMAR"
+  }
+}
