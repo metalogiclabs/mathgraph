@@ -1,0 +1,105 @@
+name: Crystal Chess Fishtest STC Screen V58
+
+on:
+  push:
+    branches:
+      - crystal-chess-fishtest-stc-v58
+    paths:
+      - ".github/workflows/crystal-chess-fishtest-stc-v58.yml"
+      - "experiments/crystal_chess_apply_clock_gate_v56.py"
+      - "experiments/crystal_chess_timemgmt_ablation_v51.py"
+  workflow_dispatch:
+
+jobs:
+  fishtest-stc-screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999"
+          python -m py_compile experiments/crystal_chess_apply_clock_gate_v56.py
+          python -m py_compile experiments/crystal_chess_timemgmt_ablation_v51.py
+
+      - name: Build pinned Stockfish baseline and frozen candidate
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
+          git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
+          cp -a /tmp/stockfish-base /tmp/stockfish-cand
+          mkdir -p artifacts/crystal-chess-v58
+          python experiments/crystal_chess_apply_clock_gate_v56.py --search-cpp /tmp/stockfish-cand/src/search.cpp
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v58/stockfish.patch
+          test -s artifacts/crystal-chess-v58/stockfish.patch
+          sha256sum artifacts/crystal-chess-v58/stockfish.patch > artifacts/crystal-chess-v58/PATCH_SHA256.txt
+          make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
+          /tmp/stockfish-base/src/stockfish bench 16 1 3 default depth > artifacts/crystal-chess-v58/baseline-bench.txt 2>&1
+          /tmp/stockfish-cand/src/stockfish bench 16 1 3 default depth > artifacts/crystal-chess-v58/candidate-bench.txt 2>&1
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Pin current official Stockfish UHO book
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/books.git /tmp/books
+          git -C /tmp/books checkout 65815ccdbc7727cd4f6aee252ba8f67fb740e92f
+          unzip -p /tmp/books/UHO_Lichess_4852_v1.epd.zip > /tmp/uho.epd
+          python - <<'PY'
+          import random
+          from pathlib import Path
+          rng=random.Random(20261114)
+          sample=[]
+          for i,line in enumerate(Path('/tmp/uho.epd').open()):
+              if i < 512:
+                  sample.append(line)
+              else:
+                  j=rng.randrange(i+1)
+                  if j < 512:
+                      sample[j]=line
+          Path('artifacts/crystal-chess-v58/uho_sample.epd').write_text(''.join(sample))
+          assert len(sample)==512
+          print('CRYSTAL_CHESS_V58_UHO_SAMPLE=PASS')
+          PY
+          printf '%s
+' "official-stockfish/books@65815ccdbc7727cd4f6aee252ba8f67fb740e92f UHO_Lichess_4852_v1.epd.zip seed=20261114 sample=512" > artifacts/crystal-chess-v58/BOOK_PIN.txt
+
+      - name: Run Fishtest-style STC screen
+        run: |
+          set -euo pipefail
+          /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalClockGateV58             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=10+0.1 option.Threads=1 option.Hash=16 option.Ponder=false             -openings file=artifacts/crystal-chess-v58/uho_sample.epd format=epd order=sequential             -rounds 512 -repeat -concurrency 4             -pgnout file=artifacts/crystal-chess-v58/match.pgn             -log file=artifacts/crystal-chess-v58/fastchess.log level=info             | tee artifacts/crystal-chess-v58/fastchess.stdout
+
+      - name: Analyse paired Elo
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_timemgmt_ablation_v51.py             --pgn artifacts/crystal-chess-v58/match.pgn             --candidate-name CrystalClockGateV58             --variant fishtest_stc_10plus0.1             --output artifacts/crystal-chess-v58/result.json             | tee artifacts/crystal-chess-v58/analyse.log
+          grep -q "CRYSTAL_CHESS_TIMEMGMT_ABLATION_V51=PASS" artifacts/crystal-chess-v58/analyse.log
+          cat > artifacts/crystal-chess-v58/PROTOCOL.txt <<'EOF'
+          Fishtest-style pre-screen only, not an official Fishtest SPRT.
+          STC 10+0.1, 1 thread, 16 MB hash, ponder off.
+          Official current UHO_Lichess_4852_v1 book pinned from official-stockfish/books.
+          512 opening pairs / 1024 games.
+          Frozen V55/V56 64 ms gate, no retuning.
+          EOF
+
+      - name: Upload V58 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-fishtest-stc-v58
+          path: artifacts/crystal-chess-v58/
+          if-no-files-found: error
