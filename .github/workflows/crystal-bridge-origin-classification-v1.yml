@@ -190,7 +190,8 @@ jobs:
               "elab_rules : command",
               '  | `(#crystal_contains $id:ident) => do',
               "      let env ← getEnv",
-              '      logInfo m!"CRYSTAL_ORIGIN|{$id.getId}|{env.contains $id.getId}"',
+              "      let n := id.getId",
+              '      logInfo m!"CRYSTAL_ORIGIN|{n}|{env.contains n}"',
               "",
           ]
           for symbol in data["symbols"]:
