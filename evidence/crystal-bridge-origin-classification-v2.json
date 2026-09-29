@@ -1,0 +1,122 @@
+{
+  "schema": "mathgraph.crystal-bridge-origin-classification.v2",
+  "status": "WARRANTED_BOUNDED_ROUTING",
+  "authority": {
+    "run_id": 36601845341,
+    "head_sha": "ef80ad48a02ad2e2f0fb533e89c5545c4885b047",
+    "classification_artifact_id": 11049442064,
+    "classification_artifact_digest": "sha256:c813eb77e1e9868e0799a4b2961642fca82ed56fb507212ba9ab968d84dfc073",
+    "input_artifact_id": 11048654914,
+    "input_artifact_digest": "sha256:6af1e8cafe7b87b47347af5d131414806ff1d9372822bd513f7b26b89cbdf826",
+    "probe_artifacts": {
+      "anthropic-mathlib": {
+        "id": 11050300446,
+        "digest": "sha256:8c0d6f8918639ea1485232396611d41dea2bb6c15aae10acbad546808c39df2d"
+      },
+      "isomorphic-mathlib": {
+        "id": 11050090834,
+        "digest": "sha256:f81ccdb8ea607a0861e82a8d2a9fac61e4aa0db4e6bf342465f750242bad5857"
+      },
+      "imperial-mathlib": {
+        "id": 11050680041,
+        "digest": "sha256:ab5964899aed451790a074ff0683464bffc18bfea47c171bf4dc76ee9da0f8bd"
+      }
+    }
+  },
+  "scout_lineage": {
+    "original_scout_run": 36523222164,
+    "corpus_files": 30675,
+    "declarations": 38403,
+    "source_bytes": 285582759,
+    "candidate_total": 82,
+    "equivalence_surface_candidates": 76,
+    "directional_candidates": 6
+  },
+  "result": {
+    "equivalence_surface_candidates": 76,
+    "already_qualified_reusable": 3,
+    "no_project_bridge_needed": 64,
+    "rejected_short_name_collisions": 9,
+    "actionable_project_bridge_residual": 0,
+    "no_project_bridge_breakdown": {
+      "exact_same_upstream": 58,
+      "namespaced_upstream_reference": 7,
+      "dependent_upstream_member_reference": 1
+    },
+    "collision_breakdown": {
+      "mixed_local_upstream_collision": 1,
+      "project_local_short_name_collision": 3,
+      "upstream_short_name_collision": 5
+    },
+    "collision_symbols": [
+      "FiniteIndex",
+      "ResidueField",
+      "v.IsReal",
+      "LSeries",
+      "ProjectiveLine",
+      "HeckeAlgebra",
+      "LiesOver",
+      "J.IsMaximal",
+      "v.IsNontrivial"
+    ],
+    "uniquely_namespaced_upstream_symbols": [
+      "AdeleRing",
+      "FiniteAdeleRing",
+      "HeightOneSpectrum",
+      "InfiniteAdeleRing",
+      "InfinitePlace",
+      "VariableChange",
+      "MeasurePreserving"
+    ],
+    "dependent_upstream_member_symbols": [
+      "toFunctor.IsCorepresentable"
+    ],
+    "already_qualified_equivalence_symbols": [
+      "FermatLastTheoremFor",
+      "FermatLastTheorem",
+      "FreyPackage"
+    ]
+  },
+  "systems_law": {
+    "name": "origin-before-equivalence",
+    "statement": "A shared surface token is not a proof obligation. Resolve source origin, namespace/receiver identity, and short-name collisions before semantic qualification. Only surviving project-local distinctions should consume prover effort.",
+    "consequence": "On the pinned three-corpus FLT scout, the apparent 73-equivalence UNKNOWN residual contains zero surviving project-to-project bridge obligations after origin resolution."
+  },
+  "epistemic_boundary": {
+    "warranted": [
+      "exact-name presence was checked in all three pinned Mathlib environments",
+      "short declaration multiplicity was checked in all three pinned Mathlib source trees",
+      "project-local definitions were scanned on exact pinned corpus sources",
+      "candidate routing/collision rejection is deterministic under these pins"
+    ],
+    "not_warranted": [
+      "SAME_UPSTREAM alone does not prove cross-version definitional equality",
+      "collision rejection does not prove the colliding objects are semantically unrelated",
+      "arbitrary proof-object transport across Lean versions",
+      "completeness outside the scanned three-corpus boundary"
+    ]
+  },
+  "negative_lineage": [
+    {
+      "run_id": 36598676574,
+      "result": "FAILED_INFRA_PROBE",
+      "finding": "first Lean environment probe macro interpolated an identifier expression incorrectly"
+    },
+    {
+      "run_id": 36600887864,
+      "result": "FAILED_ASSERTION_WITH_USEFUL_SEPARATOR",
+      "finding": "source declaration regex was over-escaped, yielding zero short-name declarations and exposing the need to test the probe itself"
+    },
+    {
+      "run_id": 36601845341,
+      "result": "SUCCESS",
+      "correction": "fixed source regex; all three environments report 71/76 short declaration names present and 12 multiply-declared short names before candidate-specific refinement"
+    }
+  ],
+  "revocation_boundary": [
+    "any pinned corpus or Mathlib source changes",
+    "declaration extraction or namespace rules change",
+    "qualified candidate set changes",
+    "origin probe no longer reproduces"
+  ]
+}
