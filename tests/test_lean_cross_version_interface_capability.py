@@ -22,18 +22,22 @@ def test_three_version_sources_lower_to_one_canonical_semantic_object() -> None:
     assert len(capability.adapters) == 3
     assert len({x.id for x in capability.source_objects}) == 3
 
-    lowered = []
-    for source, adapter in zip(capability.source_objects, capability.adapters):
-        result = lower_semantic_object(
-            source,
-            adapter,
-            capability.interface_id,
-            lambda _: capability.canonical_object,
-        )
-        assert isinstance(result, SemanticObject)
-        lowered.append(result.id)
-
-    assert lowered == [capability.canonical_object.id] * 3
+    assert capability.interface_ids == (
+        "lean.number-theory.fermat-last-theorem-for@1",
+        "lean.number-theory.fermat-last-theorem@1",
+    )
+    for interface_id in capability.interface_ids:
+        lowered = []
+        for source, adapter in zip(capability.source_objects, capability.adapters):
+            result = lower_semantic_object(
+                source,
+                adapter,
+                interface_id,
+                lambda _: capability.canonical_object,
+            )
+            assert isinstance(result, SemanticObject)
+            lowered.append(result.id)
+        assert lowered == [capability.canonical_object.id] * 3
 
 
 def test_cross_version_interface_fails_closed_outside_qualified_surface() -> None:
