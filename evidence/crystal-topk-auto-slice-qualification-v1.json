@@ -1,0 +1,55 @@
+{
+  "schema": "mathgraph.crystal-topk-auto-slice-authority.v1",
+  "status": "WARRANTED_TOPK_REUSE",
+  "authority": {
+    "workflow_run": 36517745675,
+    "head_sha": "c4e6d5480bf2a284b11099fd69817092c0557173",
+    "artifact_id": 11012180908,
+    "artifact_digest": "sha256:ec1c83d30eb9f4746cd880f836c020958112798d1782167c9d73222b820a9d30"
+  },
+  "corpus_scan_authority": {
+    "workflow_run": 36516714974,
+    "artifact_id": 11011366736,
+    "artifact_digest": "sha256:05a689ecfc60dbf0ca122df9689e4c873c977becacb7b1caa25f8a36a3783ad7",
+    "declaration_count": 38403,
+    "file_count": 30675,
+    "source_bytes": 285582759,
+    "equivalence_candidates": 122,
+    "implication_candidates": 6,
+    "flt_rank": 1
+  },
+  "qualification": {
+    "route_count": 6,
+    "protected_consequence": "RingTheory.Sequence.IsWeaklyRegular",
+    "slice_file_count": 28,
+    "slice_source_bytes": 290310,
+    "producer_surface_file_count": 60474,
+    "producer_surface_source_bytes": 1170619677,
+    "slice_file_fraction": 0.0004630088963852234,
+    "slice_byte_fraction": 0.0002479968564546861,
+    "source_proof_reformalization_loc": 0,
+    "qualification_seconds": 95,
+    "lean_build_jobs": 8735,
+    "qualifier": "Lean 4 kernel; isolated exact source slice; Mathlib fixed Lean v4.33.0; lake build plus direct lean check"
+  },
+  "routes": [
+    "AdicCompletion.exists_isRegular_pair_of_isIntegrallyClosed_of_ringKrullDim_eq_two",
+    "IsIntegrallyClosed.exists_isRegular_pair_of_two_le_ringKrullDim",
+    "IsLocalRing.exists_ofList_pair_eq_maximalIdeal_and_isRegular_of_isDiscreteValuationRing_quotient",
+    "IsLocalRing.isRegular_of_systemOfParameters",
+    "MvPowerSeries.isRegular_C_cons_X",
+    "RingTheory.Sequence.isRegular_pair_of_isSMulRegular_of_isReduced_of_forall_notMem_minimalPrimes"
+  ],
+  "revocation_boundary": [
+    "producer commit changes",
+    "resolved source bytes change",
+    "Mathlib pin, fixed toolchain, or bridge semantics change",
+    "consumer protected consequence changes",
+    "isolated qualification fails"
+  ],
+  "unknowns": [
+    "automatic synthesis of arbitrary consequence adapters",
+    "completeness of corpus-wide candidate discovery",
+    "cross-version transport without a common qualifying environment"
+  ]
+}
