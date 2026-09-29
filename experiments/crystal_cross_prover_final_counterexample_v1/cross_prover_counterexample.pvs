@@ -1,0 +1,9 @@
+cross_prover_counterexample: THEORY
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+
+  not_amgm3: LEMMA NOT (
+    FORALL (x: real):
+      FORALL (y: real):
+        x^2 + y^2 >= 3 * x * y)
+END cross_prover_counterexample
