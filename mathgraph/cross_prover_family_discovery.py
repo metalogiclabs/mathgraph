@@ -332,6 +332,145 @@ def _specs() -> dict[str, ClaimSpec]:
         ),
     )
 
+    # Corpus closeout: seven remaining true exact meanings.
+    add(
+        "FORALL (c: real): EXISTS (x: real): x^3 - 3 * x + c = 0",
+        ClaimSpec(
+            "real.depressed_cubic_has_root@1",
+            "intermediate_value_root",
+            "depressed_cubic_has_root",
+            "(c : ℝ) : ∃ x : ℝ, x ^ 3 - 3 * x + c = 0",
+            """by
+  let M : ℝ := |c| + 2
+  let f : ℝ → ℝ := fun x => x ^ 3 - 3 * x + c
+  have hM2 : 2 ≤ M := by
+    dsimp [M]
+    have h := abs_nonneg c
+    linarith
+  have hM0 : 0 ≤ M := by linarith
+  have hquad : 0 ≤ M ^ 2 - 4 := by
+    nlinarith
+  have hprod : 0 ≤ M * (M ^ 2 - 4) := mul_nonneg hM0 hquad
+  have hgrowth : M ≤ M ^ 3 - 3 * M := by
+    nlinarith [hprod]
+  have hc_hi : c ≤ |c| := le_abs_self c
+  have hc_lo : -|c| ≤ c := neg_abs_le c
+  have hleft : f (-M) ≤ 0 := by
+    dsimp [f]
+    nlinarith [hgrowth, hc_hi]
+  have hright : 0 ≤ f M := by
+    dsimp [f]
+    nlinarith [hgrowth, hc_lo]
+  have hcont : Continuous f := by
+    fun_prop
+  obtain ⟨x, hxmem, hx0⟩ :=
+    intermediate_value_Icc (by linarith : -M ≤ M) hcont.continuousOn
+      (show (0 : ℝ) ∈ Set.Icc (f (-M)) (f M) by exact ⟨hleft, hright⟩)
+  refine ⟨x, ?_⟩
+  simpa [f] using hx0""",
+        ),
+    )
+    add(
+        "EXISTS (x: real): EXISTS (y: real): x^2 + y^2 = 1 AND y = x^2",
+        ClaimSpec(
+            "real.parabola_unit_circle_intersection@1",
+            "algebraic_root_witness",
+            "parabola_unit_circle_intersection",
+            ": ∃ x : ℝ, ∃ y : ℝ, x ^ 2 + y ^ 2 = 1 ∧ y = x ^ 2",
+            """by
+  let y : ℝ := (Real.sqrt 5 - 1) / 2
+  have hs5 : (Real.sqrt 5) ^ 2 = 5 := Real.sq_sqrt (by norm_num)
+  have hs5_nonneg : 0 ≤ Real.sqrt 5 := Real.sqrt_nonneg 5
+  have hs5_ge_one : 1 ≤ Real.sqrt 5 := by
+    nlinarith
+  have hy0 : 0 ≤ y := by
+    dsimp [y]
+    linarith
+  have hyquad : y ^ 2 + y = 1 := by
+    dsimp [y]
+    nlinarith
+  let x : ℝ := Real.sqrt y
+  have hx2 : x ^ 2 = y := by
+    dsimp [x]
+    exact Real.sq_sqrt hy0
+  refine ⟨x, y, ?_, ?_⟩
+  · nlinarith
+  · exact hx2.symm""",
+        ),
+    )
+    add(
+        "NOT (FORALL (x: real): EXISTS (y: real): x * y = 1)",
+        ClaimSpec(
+            "real.zero_has_no_inverse@1",
+            "counter_witness",
+            "zero_has_no_inverse",
+            ": ¬ (∀ x : ℝ, ∃ y : ℝ, x * y = 1)",
+            """by
+  intro h
+  rcases h 0 with ⟨y, hy⟩
+  norm_num at hy""",
+        ),
+    )
+    add(
+        "FORALL (b: real): FORALL (c: real): (FORALL (z: real): z^2 + b * z + c > 0) IMPLIES b^2 < 4 * c",
+        ClaimSpec(
+            "real.positive_quadratic_discriminant_negative@1",
+            "quantified_hypothesis_elimination",
+            "positive_quadratic_discriminant_negative",
+            "(b c : ℝ) : (∀ z : ℝ, z ^ 2 + b * z + c > 0) → b ^ 2 < 4 * c",
+            """by
+  intro h
+  have hz := h (-b / 2)
+  nlinarith [sq_nonneg b]""",
+        ),
+    )
+    add(
+        "FORALL (a: real): a > 0 IMPLIES (FORALL (z: real): EXISTS (w: real): w * a > z)",
+        ClaimSpec(
+            "real.positive_scaling_unbounded@1",
+            "explicit_witness",
+            "positive_scaling_unbounded",
+            "(a : ℝ) : a > 0 → ∀ z : ℝ, ∃ w : ℝ, w * a > z",
+            """by
+  intro ha z
+  refine ⟨z / a + 1, ?_⟩
+  have hane : a ≠ 0 := ne_of_gt ha
+  have hmul : (z / a + 1) * a = z + a := by
+    field_simp [hane]
+  rw [hmul]
+  linarith""",
+        ),
+    )
+    add(
+        "FORALL (c: real): (FORALL (z: real): EXISTS (w: real): w > z AND w * c > 1) IMPLIES c > 0",
+        ClaimSpec(
+            "real.unbounded_product_witness_implies_positive@1",
+            "quantified_hypothesis_elimination",
+            "unbounded_product_witness_implies_positive",
+            "(c : ℝ) : (∀ z : ℝ, ∃ w : ℝ, w > z ∧ w * c > 1) → c > 0",
+            """by
+  intro h
+  obtain ⟨w, hw0, hwc⟩ := h 0
+  by_contra hc
+  have hc0 : c ≤ 0 := le_of_not_gt hc
+  have hw_nonneg : 0 ≤ w := le_of_lt hw0
+  have hprod : w * c ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hw_nonneg hc0
+  linarith""",
+        ),
+    )
+    add(
+        "FORALL (a: real): (EXISTS (u, v: real): u * u + v * v = a) IMPLIES a >= 0",
+        ClaimSpec(
+            "real.existential_sum_squares_nonnegative@1",
+            "quantified_hypothesis_elimination",
+            "existential_sum_squares_nonnegative",
+            "(a : ℝ) : (∃ u v : ℝ, u * u + v * v = a) → a ≥ 0",
+            """by
+  rintro ⟨u, v, huv⟩
+  nlinarith [sq_nonneg u, sq_nonneg v]""",
+        ),
+    )
+
     return dict(rows)
 
 
