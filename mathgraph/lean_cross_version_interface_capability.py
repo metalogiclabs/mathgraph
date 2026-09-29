@@ -25,12 +25,17 @@ class CrossVersionInterfaceCapability:
     canonical_object: SemanticObject
     source_objects: tuple[SemanticObject, ...]
     adapters: tuple[AdapterContract, ...]
-    interface_id: str
+    interface_ids: tuple[str, ...]
+
+    @property
+    def interface_id(self) -> str:
+        return self.interface_ids[0]
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema": "mathgraph.compiled-cross-version-lean-interface.v1",
             "interface_id": self.interface_id,
+            "interface_ids": list(self.interface_ids),
             "canonical_object_id": self.canonical_object.id,
             "source_object_ids": [x.id for x in self.source_objects],
             "adapter_contract_ids": [x.id for x in self.adapters],
@@ -50,7 +55,10 @@ def compile_cross_version_interface(
     qualifications = list(authority["qualifications"])
     auth = dict(authority["authority"])
 
-    interface_id = "lean.number-theory.fermat-last-theorem-for@1"
+    interface_ids = (
+        "lean.number-theory.fermat-last-theorem-for@1",
+        "lean.number-theory.fermat-last-theorem@1",
+    )
     target_space = "mathgraph.number-theory.flt@1"
 
     canonical_object = SemanticObject(
@@ -65,7 +73,7 @@ def compile_cross_version_interface(
             "authority_head_sha": auth["head_sha"],
             "revocation_boundary": list(authority.get("revocation_boundary", ())),
         }),
-        (interface_id,),
+        interface_ids,
     )
 
     source_objects = []
@@ -88,14 +96,14 @@ def compile_cross_version_interface(
                 "qualification_artifact_id": item["artifact_id"],
                 "qualification_artifact_digest": item["artifact_digest"],
             }),
-            (interface_id,),
+            interface_ids,
         ))
         adapters.append(AdapterContract(
             f"flt-cross-version:{corpus}-to-canonical",
             1,
             source_space,
             target_space,
-            (interface_id,),
+            interface_ids,
             assumption_refs=(
                 f"semantic-digest:{semantic['digest']}",
                 f"source-blob:{item['basic_blob_sha']}",
@@ -111,7 +119,7 @@ def compile_cross_version_interface(
         canonical_object=canonical_object,
         source_objects=tuple(source_objects),
         adapters=tuple(adapters),
-        interface_id=interface_id,
+        interface_ids=interface_ids,
     )
 
 
