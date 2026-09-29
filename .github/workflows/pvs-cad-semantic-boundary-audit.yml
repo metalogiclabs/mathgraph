@@ -58,12 +58,6 @@ jobs:
           cp -a /tmp/pvs_cad/cad /tmp/cad-audit
           cp experiments/pvs_cad/BoundaryAudit.pvs /tmp/cad-audit/
 
-      - name: Typecheck audit
-        working-directory: /tmp/cad-audit
-        run: |
-          export PVS_LIBRARY_PATH="/tmp/pvslib:/tmp/cad-audit"
-          proveit -T BoundaryAudit.pvs
-
       - name: Prove in-fragment boundary suite with cad
         working-directory: /tmp/cad-audit
         run: |
