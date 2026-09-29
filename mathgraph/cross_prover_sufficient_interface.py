@@ -153,7 +153,7 @@ def _specs() -> dict[str, SufficientInterfaceSpec]:
   have h := Real.sqrt_nonneg y
   linarith""",
             "source_nnreal_sqrt_from_interface",
-            "(y : ℝ≥0) : Real.sqrt (y : ℝ) + 1 ≥ 1",
+            "(y : NNReal) : Real.sqrt (y : ℝ) + 1 ≥ 1",
             """by
   exact sqrt_add_one_ge_one_interface (y : ℝ)""",
             ("PVS nnreal subtype wrapper",),
