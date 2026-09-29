@@ -202,3 +202,29 @@ def test_single_exact_upstream_referent_is_not_a_bridge():
     assert row["origin_class"]=="SAME_UPSTREAM_RESOLVED_REFERENCE"
     assert row["resolved_upstream_name"]=="NumberField.AdeleRing"
     assert out["no_project_bridge_needed_count"]==1
+
+
+def test_origin_scope_ignores_nonparticipant_mathlib_environment():
+    report={
+        "top_equivalence_candidates":[{
+            "canonical_symbol":"SharedThing",
+            "corpora":["a","c"],
+            "rank":1,
+        }]
+    }
+    upstream={
+        "SharedThing":{
+            "env-a":True,
+            "env-b":False,
+            "env-c":True,
+        }
+    }
+    out=classify_report(
+        report,
+        upstream_presence_by_symbol=upstream,
+        local_definition_evidence={},
+        environment_by_corpus={"a":"env-a","b":"env-b","c":"env-c"},
+    )
+    row=out["candidates"][0]
+    assert row["origin_class"]=="SAME_UPSTREAM"
+    assert row["upstream_environments"]==["env-a","env-c"]
