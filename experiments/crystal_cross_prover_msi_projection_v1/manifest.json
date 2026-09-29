@@ -1,0 +1,26 @@
+{
+  "schema": "mathgraph.cross-prover-sufficient-interface.v1",
+  "objective": "Test a typed stronger-interface relation without weakening exact same-meaning semantics.",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "theory": "cad_star_ex",
+    "source_path": "cad/cad_star_ex.pvs",
+    "source_blob_sha": "988021b508653ebf6da1ab8aab50905ec77ccd3b",
+    "proof_path": "cad/cad_star_ex.prf",
+    "proof_blob_sha": "96915e3de48733a6402d47bae20e99003faca13b"
+  },
+  "relation_kind": "INTERFACE_IMPLIES_SOURCE_INSTANCE",
+  "source_formulas": ["s_sqrt","s_fun","s_skip","s_mix"],
+  "authority_boundary": {
+    "current": "CANDIDATE",
+    "lean_gate": "interface theorem and source-shaped adapter must kernel-check",
+    "pvs_gate": "native replay required before any cross-prover promotion",
+    "forbidden_claim": "projection is not semantic equivalence"
+  },
+  "msi_lineage": {
+    "repository": "heathsanchez/Minimal-Sufficient-Interface",
+    "commit": "5d448c0ecc82ff3945d009963064ebbb67d2f308",
+    "principle": "verified interface compilation preserves typed capability/provenance distinctions"
+  }
+}
