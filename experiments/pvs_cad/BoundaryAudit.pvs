@@ -7,7 +7,8 @@ BEGIN
   control_quadratic: THEOREM FORALL (a: real):
     FORALL (b: real):
       FORALL (c: real):
-        a /= 0 AND b^2 >= 4*a*c IMPLIES EXISTS (x: real): a*x^2+b*x+c=0
+        EXISTS (x: real):
+          a /= 0 AND b^2 >= 4*a*c IMPLIES a*x^2+b*x+c=0
   zero_poly_eq: THEOREM FORALL (x: real): 0*x = 0
   repeated_root: THEOREM FORALL (x: real): (x-1)^2 >= 0
   strict_boundary: THEOREM FORALL (x: real): NOT (x > 0 AND x < 0)
