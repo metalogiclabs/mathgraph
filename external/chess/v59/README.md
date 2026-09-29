@@ -66,3 +66,5 @@ Do not promote the candidate to "stronger than Stockfish" unless:
 - and preferably an official Fishtest STC/LTC SPRT reaches pass.
 
 If any of those reverses materially, the failing protocol is the next residual. Do not tune the 64 ms threshold using the held-out result that falsified it.
+
+Qualification trigger: verify the frozen package with the latest semantic verifier; no candidate change.
