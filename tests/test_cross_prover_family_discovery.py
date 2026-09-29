@@ -113,3 +113,21 @@ def test_unique_claim_without_pinned_source_proof_stays_out_of_consumer_family()
     assert order["source_authority_status"]=="UNKNOWN_SOURCE_UNVERIFIED"
     lean=render_lean_family(out)
     assert "order_split_zero" not in lean
+
+
+def test_replayability_is_distinct_from_semantic_discovery():
+    out=discover_family(sources())
+    annotated=annotate_replayability(
+        out,
+        {
+            "a":"(|T| (|a1| 0 (|a1-0| \"\" 1 (\"\" (CAD) NIL NIL) NIL NIL)))",
+            "b":"(|U| (|b1| 0 (|b1-0| \"\" 1 (\"\" (CAD) NIL NIL) NIL NIL)))",
+        },
+    )
+    assert annotated["replayable_supported_occurrence_count"]==2
+    assert annotated["unreplayable_supported_occurrence_count"]==2
+    assert annotated["qualifiable_unique_claim_count"]==2
+    amgm=next(x for x in annotated["unique_claims"] if x["claim_id"]=="real.amgm2@1")
+    assert amgm["replayable_occurrence_count"]==1
+    order=next(x for x in annotated["unique_claims"] if x["claim_id"]=="real.order_split_zero@1")
+    assert order["source_qualification_status"]=="UNKNOWN_NO_REPLAYABLE_SOURCE"
