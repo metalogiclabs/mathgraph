@@ -176,6 +176,104 @@ def _specs() -> dict[str, ClaimSpec]:
   nlinarith [sq_nonneg y]""",
         ),
     )
+    # V2: one reusable constructor, explicit witness synthesis.
+    # The surfaces below differ materially in quantifier prefix and matrix shape,
+    # but all transport by supplying a closed witness term and checking the
+    # residual polynomial/order obligations independently in Lean.
+    add(
+        "FORALL (x: real): FORALL (y: real): EXISTS (z: real): x < y IMPLIES (x < z AND z < y)",
+        ClaimSpec(
+            "real.dense_between@1",
+            "explicit_witness",
+            "dense_between_real",
+            "(x y : ℝ) : ∃ z : ℝ, x < y → (x < z ∧ z < y)",
+            """by
+  refine ⟨(x + y) / 2, ?_⟩
+  intro h
+  constructor <;> linarith""",
+        ),
+    )
+    add(
+        "FORALL (x: real): FORALL (y: real): EXISTS (z: real): FORALL (w: real): w^2 + z > x + y",
+        ClaimSpec(
+            "real.square_shift_dominates@1",
+            "explicit_witness",
+            "square_shift_dominates",
+            "(x y : ℝ) : ∃ z : ℝ, ∀ w : ℝ, w ^ 2 + z > x + y",
+            """by
+  refine ⟨x + y + 1, ?_⟩
+  intro w
+  nlinarith [sq_nonneg w]""",
+        ),
+    )
+    add(
+        "FORALL (x: real): EXISTS (y: real): y > x",
+        ClaimSpec(
+            "real.unbounded_above@1",
+            "explicit_witness",
+            "exists_above_real",
+            "(x : ℝ) : ∃ y : ℝ, y > x",
+            """by
+  exact ⟨x + 1, by linarith⟩""",
+        ),
+    )
+    add(
+        "EXISTS (x: real): FORALL (y: real): x * y = 0",
+        ClaimSpec(
+            "real.zero_annihilator@1",
+            "explicit_witness",
+            "zero_annihilator_real",
+            ": ∃ x : ℝ, ∀ y : ℝ, x * y = 0",
+            """by
+  refine ⟨0, ?_⟩
+  intro y
+  ring""",
+        ),
+    )
+    add(
+        "EXISTS (x: real): FORALL (y: real): x^2 + y^2 > 1",
+        ClaimSpec(
+            "real.circle_vertical_miss@1",
+            "explicit_witness",
+            "circle_vertical_miss",
+            ": ∃ x : ℝ, ∀ y : ℝ, x ^ 2 + y ^ 2 > 1",
+            """by
+  refine ⟨2, ?_⟩
+  intro y
+  nlinarith [sq_nonneg y]""",
+        ),
+    )
+    add(
+        "FORALL (x: real): EXISTS (y: real): x + 2 * y = 1 AND y * y >= 0",
+        ClaimSpec(
+            "real.affine_line_witness@1",
+            "explicit_witness",
+            "affine_line_witness",
+            "(x : ℝ) : ∃ y : ℝ, x + 2 * y = 1 ∧ y * y ≥ 0",
+            """by
+  refine ⟨(1 - x) / 2, ?_⟩
+  constructor
+  · ring
+  · nlinarith [sq_nonneg ((1 - x) / 2)]""",
+        ),
+    )
+    add(
+        "FORALL (x: real): FORALL (y: real): EXISTS (z: real): z > x AND z > y",
+        ClaimSpec(
+            "real.common_upper_bound2@1",
+            "explicit_witness",
+            "common_upper_bound2",
+            "(x y : ℝ) : ∃ z : ℝ, z > x ∧ z > y",
+            """by
+  refine ⟨max x y + 1, ?_⟩
+  constructor
+  · have h := le_max_left x y
+    linarith
+  · have h := le_max_right x y
+    linarith""",
+        ),
+    )
+
     return dict(rows)
 
 
