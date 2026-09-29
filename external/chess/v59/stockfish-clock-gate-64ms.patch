@@ -1,7 +1,7 @@
 diff --git a/src/search.cpp b/src/search.cpp
 --- a/src/search.cpp
 +++ b/src/search.cpp
-@@ -599,6 +599,10 @@
+@@ -599,5 +599,9 @@
              double highBestMoveEffort = std::clamp(
                interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
  
