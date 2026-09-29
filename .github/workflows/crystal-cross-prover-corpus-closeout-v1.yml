@@ -1,0 +1,185 @@
+name: Crystal Cross-Prover Corpus Closeout V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-corpus-closeout-v1
+    paths:
+      - 'mathgraph/cross_prover_family_discovery.py'
+      - 'mathgraph/cross_prover_sufficient_interface.py'
+      - 'mathgraph/cross_prover_negative_controls.py'
+      - 'tests/test_cross_prover_family_discovery.py'
+      - 'tests/test_cross_prover_sufficient_interface.py'
+      - 'tests/test_cross_prover_negative_controls.py'
+      - 'experiments/crystal_cross_prover_corpus_closeout_v1/**'
+      - '.github/workflows/crystal-cross-prover-corpus-closeout-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  partition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test all cross-prover routing layers
+        run: |
+          python -m pytest -q             tests/test_cross_prover_family_discovery.py             tests/test_cross_prover_sufficient_interface.py             tests/test_cross_prover_negative_controls.py
+      - name: Build exhaustive 34-lemma partition
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/crystal_cross_prover_corpus_closeout_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_demo.pvs cad_demo.prf cad_examples.pvs cad_examples.prf cad_star_ex.pvs cad_star_ex.prf; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import (
+              discover_family, extract_pvs_lemmas, render_lean_family,
+          )
+          from mathgraph.cross_prover_sufficient_interface import (
+              discover_sufficient_interfaces, render_lean_projection,
+          )
+          from mathgraph.cross_prover_negative_controls import (
+              discover_negative_controls, render_lean_negative_controls,
+          )
+
+          manifest=json.loads(Path("experiments/crystal_cross_prover_corpus_closeout_v1/manifest.json").read_text())
+          pins={}
+          for row in manifest["source"]["files"]:
+              pins[Path(row["source_path"]).name]=row["source_blob_sha"]
+              pins[Path(row["proof_path"]).name]=row["proof_blob_sha"]
+
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+
+          for name,want in pins.items():
+              data=Path("/tmp/pvs-family",name).read_bytes()
+              got=git_blob(data)
+              assert got==want,(name,got,want)
+
+          theories=("cad_demo","cad_examples","cad_star_ex")
+          sources={k:Path("/tmp/pvs-family",f"{k}.pvs").read_text() for k in theories}
+          proofs={k:Path("/tmp/pvs-family",f"{k}.prf").read_text() for k in theories}
+
+          exact=discover_family(sources,proofs)
+          projection=discover_sufficient_interfaces(sources,proofs)
+          negative=discover_negative_controls(sources)
+
+          expected=manifest["expected_partition"]
+          assert exact["source_lemma_count"]==expected["source_lemma_count"],exact
+          assert exact["supported_occurrence_count"]==expected["exact_semantic_occurrences"],exact
+          assert exact["unique_canonical_claim_count"]==expected["exact_unique_claims"],exact
+          assert exact["verified_unique_claim_count"]==expected["exact_unique_claims"],exact
+          assert exact["unsupported_occurrence_count"]==8,exact
+          assert projection["candidate_count"]==expected["sufficient_interface_occurrences"],projection
+          assert projection["source_authority_candidate_count"]==expected["sufficient_interface_occurrences"],projection
+          assert negative["negative_count"]==expected["verified_countermodel_rejections"],negative
+
+          all_keys={
+              f"{theory}.{formula}"
+              for theory,source in sources.items()
+              for formula,_ in extract_pvs_lemmas(source)
+          }
+          exact_keys={f"{x['theory']}.{x['formula']}" for x in exact["supported_occurrences"]}
+          projection_keys={f"{x['theory']}.{x['formula']}" for x in projection["candidates"]}
+          negative_keys={f"{x['theory']}.{x['formula']}" for x in negative["negative_controls"]}
+
+          assert exact_keys.isdisjoint(projection_keys)
+          assert exact_keys.isdisjoint(negative_keys)
+          assert projection_keys.isdisjoint(negative_keys)
+          classified=exact_keys|projection_keys|negative_keys
+          unknown=all_keys-classified
+          assert len(all_keys)==34,sorted(all_keys)
+          assert classified==all_keys,{"unknown":sorted(unknown),"classified":len(classified)}
+          assert not unknown
+
+          supported_ids={x["claim_id"] for x in exact["unique_claims"]}
+          reused=set(manifest["reused_exact_claim_ids"])
+          fresh=set(manifest["new_exact_claim_ids"])
+          assert supported_ids==reused|fresh,(sorted(supported_ids),sorted(reused|fresh))
+          projection_ids={x["interface_id"] for x in projection["candidates"]}
+          expected_projection=set(manifest["existing_projection_interface_ids"])|set(manifest["new_projection_interface_ids"])
+          assert projection_ids==expected_projection,(sorted(projection_ids),sorted(expected_projection))
+          negative_ids={x["control_id"] for x in negative["negative_controls"]}
+          assert negative_ids==set(manifest["negative_control_ids"])
+
+          outdir=Path("artifacts/crystal_cross_prover_corpus_closeout_v1")
+          outdir.joinpath("exact.json").write_text(json.dumps(exact,indent=2,sort_keys=True)+"\n")
+          outdir.joinpath("projection.json").write_text(json.dumps(projection,indent=2,sort_keys=True)+"\n")
+          outdir.joinpath("negative.json").write_text(json.dumps(negative,indent=2,sort_keys=True)+"\n")
+          outdir.joinpath("Exact.lean").write_text(render_lean_family(exact,skip_claim_ids=sorted(reused)))
+          outdir.joinpath("Projection.lean").write_text(render_lean_projection(projection))
+          outdir.joinpath("Negative.lean").write_text(render_lean_negative_controls(negative))
+          result={
+              "schema":"mathgraph.cross-prover-corpus-partition.v1",
+              "status":"CANDIDATE_EXHAUSTIVE_PARTITION",
+              "source_lemmas":len(all_keys),
+              "exact_semantic_occurrences":len(exact_keys),
+              "exact_unique_claims":exact["unique_canonical_claim_count"],
+              "sufficient_interface_occurrences":len(projection_keys),
+              "verified_countermodel_rejections":len(negative_keys),
+              "unknown":len(unknown),
+              "partition_disjoint":True,
+              "partition_exhaustive":True,
+          }
+          outdir.joinpath("partition.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-corpus-partition-v1
+          path: artifacts/crystal_cross_prover_corpus_closeout_v1/
+
+  lean:
+    needs: partition
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cross-prover-corpus-partition-v1
+          path: /tmp/corpus
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check exact, projection, and negative surfaces
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-cross-prover-corpus-closeout
+          mkdir -p "$ROOT"
+          cp /tmp/corpus/Exact.lean "$ROOT/Exact.lean"
+          cp /tmp/corpus/Projection.lean "$ROOT/Projection.lean"
+          cp /tmp/corpus/Negative.lean "$ROOT/Negative.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-corpus-closeout"
+          version = "0.1.0"
+
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Exact.lean
+          lake env lean Projection.lean
+          lake env lean Negative.lean
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_corpus_closeout_v1"
+          sha256sum Exact.lean Projection.lean Negative.lean             > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_corpus_closeout_v1/lean_surfaces.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-prover-corpus-lean-v1
+          path: artifacts/crystal_cross_prover_corpus_closeout_v1/
