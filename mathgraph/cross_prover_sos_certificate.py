@@ -154,5 +154,5 @@ def render_lean_certificate_proof(cert: LinearSquareCertificate) -> str:
         raise ValueError("V1 Lean renderer supports only the discovered AM-GM certificate")
     return """by
   have hs : 0 ≤ (x - y) ^ 2 := sq_nonneg (x - y)
-  nlinarith
+  nlinarith only [hs]
 """
