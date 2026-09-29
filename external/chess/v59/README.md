@@ -67,4 +67,4 @@ Do not promote the candidate to "stronger than Stockfish" unless:
 
 If any of those reverses materially, the failing protocol is the next residual. Do not tune the 64 ms threshold using the held-out result that falsified it.
 
-Qualification trigger: verify the frozen package with the latest semantic verifier; no candidate change.
+Qualification trigger: verify the frozen package with the clean rewritten verifier; no candidate change.
