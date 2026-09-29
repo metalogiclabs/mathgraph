@@ -394,7 +394,7 @@ def _specs() -> dict[str, ClaimSpec]:
         ),
     )
     add(
-        "FORALL (a: real): (EXISTS (u: real): EXISTS (v: real): u * u + v * v = a) IMPLIES a >= 0",
+        "FORALL (a: real): (EXISTS (u, v: real): u * u + v * v = a) IMPLIES a >= 0",
         ClaimSpec(
             "real.sum_two_squares_parameter_nonnegative@1",
             "quantifier_witness_duality",
