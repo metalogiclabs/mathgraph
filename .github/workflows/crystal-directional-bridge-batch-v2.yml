@@ -1,0 +1,139 @@
+name: Crystal Directional Bridge Batch V2
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'experiments/crystal_directional_bridge_batch_v1/CrystalDirectionalBridgeBatch.lean'
+      - 'experiments/crystal_directional_bridge_batch_v1/candidates.json'
+      - '.github/workflows/crystal-directional-bridge-batch-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-six-sparse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Sparse checkout exact Anthropic proof environment
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/flt-e2e
+          git init /tmp/flt-e2e
+          git -C /tmp/flt-e2e remote add origin https://github.com/anthropics/fermats-last-theorem.git
+          git -C /tmp/flt-e2e sparse-checkout init --cone
+          git -C /tmp/flt-e2e sparse-checkout set Theorems P2M Definitions
+          git -C /tmp/flt-e2e fetch --depth=1 origin 6e837e75355538c7f80bab5b956861e86c4eacc2
+          git -C /tmp/flt-e2e checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/flt-e2e rev-parse HEAD)" =             "6e837e75355538c7f80bab5b956861e86c4eacc2"
+          cp experiments/crystal_directional_bridge_batch_v1/CrystalDirectionalBridgeBatch.lean             /tmp/flt-e2e/CrystalDirectionalBridgeBatch.lean
+          cp experiments/crystal_directional_bridge_batch_v1/candidates.json             /tmp/flt-e2e/crystal_candidates.json
+
+      - name: Resolve Mathlib and restore cache
+        working-directory: /tmp/flt-e2e
+        run: |
+          set -euo pipefail
+          lake update
+          grep -q 'db584cd6d46c92f209a44c0f1c829460d327499d' lake-manifest.json
+          lake exe cache get
+
+      - name: Verify exact producer and consumer pins
+        working-directory: /tmp/flt-e2e
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          manifest=json.loads(Path("crystal_candidates.json").read_text())
+          for item in manifest["candidates"]:
+              data=Path(item["path"]).read_bytes()
+              got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert got == item["blob_sha"], (item["path"],got,item["blob_sha"])
+              print("PRODUCER_PIN_OK",item["rank"],got)
+          PY
+          curl -fsSL -o /tmp/Depth.lean             https://raw.githubusercontent.com/ImperialCollegeLondon/FLT/eb6df2b018f81920cd48dd510417f0b7790c305e/FLT/Patching/Utils/Depth.lean
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          m=json.loads(Path("crystal_candidates.json").read_text())
+          data=Path("/tmp/Depth.lean").read_bytes()
+          got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          assert got == m["consumer_surface"]["blob_sha"]
+          text=data.decode()
+          assert "lemma Module.length_le_depth" in text
+          assert "Sequence.IsWeaklyRegular M s" in text
+          print("CONSUMER_PIN_OK",got)
+          PY
+
+      - name: Build six exact producer modules
+        working-directory: /tmp/flt-e2e
+        run: |
+          set -euo pipefail
+          lake build             Theorems.Thm_AdicCompletion_exists_isRegular_pair_of_isIntegrallyClosed_of_ringKrullDim_eq_two             Theorems.Thm_IsIntegrallyClosed_exists_isRegular_pair_of_two_le_ringKrullDim             Theorems.Thm_IsLocalRing_exists_ofList_pair_eq_maximalIdeal_and_isRegular_of_isDiscreteValuationRing_quotient             Theorems.Thm_IsLocalRing_isRegular_of_systemOfParameters             Theorems.Thm_MvPowerSeries_isRegular_C_cons_X             Theorems.Thm_RingTheory_Sequence_isRegular_pair_of_isSMulRegular_of_isReduced_of_forall_notMem_minimalPrimes
+
+      - name: Qualify all six interface transports
+        working-directory: /tmp/flt-e2e
+        run: |
+          set -euo pipefail
+          START="$(date +%s)"
+          lake env lean CrystalDirectionalBridgeBatch.lean
+          END="$(date +%s)"
+          echo "$((END-START))" > qualification_seconds.txt
+          ! grep -InE '\b(sorry|admit|axiom)\b' CrystalDirectionalBridgeBatch.lean
+
+      - name: Emit six promotions
+        working-directory: /tmp/flt-e2e
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("crystal_candidates.json").read_text())
+          seconds=int(Path("qualification_seconds.txt").read_text())
+          promoted=[{
+              **x,
+              "target_interface":m["target_interface"],
+              "consumer_surface":m["consumer_surface"]["declaration"],
+              "status":"WARRANTED_BOUNDED_INTERFACE_REUSE",
+          } for x in m["candidates"]]
+          out={
+              "schema":"mathgraph.crystal-directional-bridge-batch-result.v2",
+              "status":"WARRANTED_BOUNDED_REUSABLE",
+              "qualified_count":len(promoted),
+              "rejected_count":0,
+              "unknown_count":0,
+              "qualification_seconds":seconds,
+              "qualifier":"Lean 4 kernel over exact pinned Anthropic modules",
+              "consumer_surface_pin":m["consumer_surface"],
+              "scout_authority":m["scout_authority"],
+              "promoted":promoted,
+              "unknowns":[
+                "direct cross-version import into Imperial's newer Lean/Mathlib environment",
+                "automatic synthesis outside this verified IsRegular-to-IsWeaklyRegular schema",
+                "the 76 equivalence candidates remain unqualified"
+              ]
+          }
+          Path("batch_result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "status":out["status"],
+              "qualified":out["qualified_count"],
+              "rejected":out["rejected_count"],
+              "unknown":out["unknown_count"],
+              "seconds":seconds
+          },sort_keys=True))
+          PY
+          cp batch_result.json "$GITHUB_WORKSPACE/experiments/crystal_directional_bridge_batch_v1/batch_result_v2.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-directional-bridge-batch-v2
+          path: experiments/crystal_directional_bridge_batch_v1/batch_result_v2.json
