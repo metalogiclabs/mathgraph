@@ -1,0 +1,70 @@
+{
+  "schema": "mathgraph.crystal-frey-package-reconciliation-authority.v1",
+  "status": "WARRANTED_BOUNDED_RECONCILIATION",
+  "authority": {
+    "run_id": 36522687546,
+    "head_sha": "1947b2febb958b74cd09cf3a49cb29eb8cdd8542",
+    "result_artifact_id": 11013598020,
+    "result_artifact_digest": "sha256:6dafb4ad8d5fda73c0d3b4bc05cb3f8f5bdba2faa9f97d726cc78338a0a94d2",
+    "schema_artifact_id": 11012519120,
+    "schema_artifact_digest": "sha256:e7eaa49cfead9f4cf3ba57ba91110bef3515f3a54a2e4802cdca9ad211d59d24",
+    "anthropic_roundtrip_artifact_id": 11013139547,
+    "anthropic_roundtrip_artifact_digest": "sha256:f155d5601ac573e0ceecc409065f247072187cefe8b7d18c7c7ca75da30a7a1f",
+    "imperial_roundtrip_artifact_id": 11013264173,
+    "imperial_roundtrip_artifact_digest": "sha256:2a374defd0020c4aafaf13e3c0084c5354b93c2f68425cd5df4c24d982268ec9"
+  },
+  "scout_lineage": {
+    "run_id": 36521922174,
+    "candidate_id": "equiv:FreyPackage",
+    "prior_status": "UNKNOWN_UNQUALIFIED"
+  },
+  "schema_equivalence": {
+    "semantic_digest": "2d9bbaa3e7b001d0d62d6d6353bbc229a7c9d29f6cac6a29500739e8888afe25",
+    "anthropic_blob_sha": "db1cdbbec434a118a917b33580fc8c81c4fff221",
+    "imperial_blob_sha": "490cba6dffb5f74b5ed16bcc15b8c41a523300df",
+    "exact_normalized_structure_match": true
+  },
+  "environments": [
+    {
+      "corpus": "anthropic-flt",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "mathlib_commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "lean_toolchain": "leanprover/lean4:v4.33.0",
+      "build_jobs": 1573,
+      "status": "LEAN_GREEN"
+    },
+    {
+      "corpus": "imperial-flt",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3",
+      "build_jobs": 3644,
+      "status": "LEAN_GREEN"
+    }
+  ],
+  "canonical_view": {
+    "name": "CrystalFreyPackageView",
+    "roundtrip_bijection": true,
+    "preserved_consequences": [
+      "all 13 FreyPackage data/proof fields",
+      "Nonempty FreyPackage",
+      "IsEmpty FreyPackage (the B3-shaped no-Frey-package obstruction)"
+    ]
+  },
+  "provenance_note": "Anthropic's exact source header states this definition was ported from the Imperial College London FLT formalization. This warrants cross-corpus/version preservation, not independent invention.",
+  "systems_law": {
+    "name": "project-local semantic waist",
+    "statement": "A project-local formal object can remain semantically stable across divergent Lean/Mathlib environments and be factored through a canonical verified view while preserving proof-spine consequences.",
+    "bounded_to": "the two pinned FreyPackage definitions and the checked canonical round-trip"
+  },
+  "revocation_boundary": [
+    "either FreyPackage source blob changes",
+    "canonical view fields change",
+    "round-trip qualification fails",
+    "protected consequence set changes without requalification"
+  ],
+  "unknowns": [
+    "equivalence of downstream project-specific FreyPackage APIs not yet qualified",
+    "compiled proof-object transport across Lean versions"
+  ]
+}
