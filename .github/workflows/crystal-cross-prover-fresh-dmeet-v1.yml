@@ -1,0 +1,83 @@
+name: Crystal Cross-Prover Fresh PVS d_meet V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-corpus-closeout-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-fresh-dmeet-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-pvs-d-meet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10 lsof python3-venv
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+          test -x "$PVS_DIR/proveit"
+      - name: Pin NASALib and pvs_cad
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Set up native pvs_cad CLI
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad
+          export PVS_DIR="$PVS_DIR"
+          export NASALIB=/tmp/nasalib
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          tools/setup.sh
+          tools/cli/srv.sh cad_demo | tee /tmp/dmeet_server.log
+      - name: Prove d_meet fresh with native cad strategy
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_fresh_dmeet_v1
+          cd /tmp/pvs_cad
+          export PVS_DIR="$PVS_DIR"
+          export NASALIB=/tmp/nasalib
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          tools/cli/pv.sh cad_demo d_meet '(cad)' 60             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_dmeet_v1/fresh_cad.log"
+          grep -Eq 'Q\.E\.D\.|Proof complete|Proof finished'             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_dmeet_v1/fresh_cad.log"
+      - name: Replay freshly saved d_meet proof
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_meet             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_dmeet_v1/replay.log"
+          grep -q 'Grand Totals: 1 proofs, 1 attempted, 1 succeeded'             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_dmeet_v1/replay.log"
+          if grep -Ei 'unfinished|untried|unchecked'             "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_dmeet_v1/replay.log"; then
+            exit 1
+          fi
+          cp cad_demo.prf "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_dmeet_v1/cad_demo.fresh.prf"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-fresh-dmeet-v1
+          path: artifacts/crystal_cross_prover_fresh_dmeet_v1/
