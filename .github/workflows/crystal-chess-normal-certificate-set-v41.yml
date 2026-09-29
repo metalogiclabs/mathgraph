@@ -1,0 +1,108 @@
+name: Crystal Chess Normal Certificate Set V41
+
+on:
+  push:
+    branches:
+      - crystal-chess-normal-certificate-set-v41
+    paths:
+      - "experiments/crystal_chess_normal_certificate_set_v41.py"
+      - ".github/workflows/crystal-chess-normal-certificate-set-v41.yml"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+      - "experiments/crystal_chess_search_confirmation_v26.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  normal-certificate-set:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_normal_certificate_set_v41.py
+
+      - name: Download V22 source corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-normal-exposure-v22
+          path: /tmp/v22
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36361812786
+
+      - name: Download exposed V35
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-search-reply-effect-v35
+          path: /tmp/v35
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36502300143
+
+      - name: Download exposed V36
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-root-pv-interface-v36
+          path: /tmp/v36
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36503091782
+
+      - name: Download exposed V37
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-root-reply-zeroing-v37
+          path: /tmp/v37
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36503878346
+
+      - name: Download exposed V39
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-sentinel-compiler-v39
+          path: /tmp/v39
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36505157227
+
+      - name: Build pinned Stockfish authority
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > /tmp/stockfish-bench.txt 2>&1
+
+      - name: Generate untouched seeds 20261021 and 20261022
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v41
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish/src/stockfish             --book artifacts/crystal-chess-v41/fresh_a.epd             --manifest artifacts/crystal-chess-v41/fresh_a_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261021
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish/src/stockfish             --book artifacts/crystal-chess-v41/fresh_b.epd             --manifest artifacts/crystal-chess-v41/fresh_b_manifest.json             --openings 256 --plies 12 --depth 6 --multipv 4 --seed 20261022
+
+      - name: Qualify root certificate set prospectively
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_normal_certificate_set_v41.py             --stockfish /tmp/stockfish/src/stockfish             --v22-pgn /tmp/v22/match.pgn             --source-generation v35a --source-epd /tmp/v35/fresh_a.epd             --source-generation v35b --source-epd /tmp/v35/fresh_b.epd             --source-generation v36a --source-epd /tmp/v36/fresh_a.epd             --source-generation v36b --source-epd /tmp/v36/fresh_b.epd             --source-generation v37a --source-epd /tmp/v37/fresh_a.epd             --source-generation v37b --source-epd /tmp/v37/fresh_b.epd             --source-generation v39a --source-epd /tmp/v39/fresh_a.epd             --source-generation v39b --source-epd /tmp/v39/fresh_b.epd             --fresh-epd-a artifacts/crystal-chess-v41/fresh_a.epd             --fresh-manifest-a artifacts/crystal-chess-v41/fresh_a_manifest.json             --fresh-epd-b artifacts/crystal-chess-v41/fresh_b.epd             --fresh-manifest-b artifacts/crystal-chess-v41/fresh_b_manifest.json             --output artifacts/crystal-chess-v41/result.json             | tee artifacts/crystal-chess-v41/run.log
+          grep -Eq "CRYSTAL_CHESS_NORMAL_CERTIFICATE_SET_V41=(WARRANTED_REPLICATED_NORMAL_SEARCH_CERTIFICATE_SET|FRESH_NORMAL_CERTIFICATE_SET_RESIDUAL|NO_ZERO_MISS_NORMAL_CERTIFICATE_SET)" artifacts/crystal-chess-v41/run.log
+          cp /tmp/stockfish-bench.txt artifacts/crystal-chess-v41/
+
+      - name: Upload V41 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-normal-certificate-set-v41
+          path: artifacts/crystal-chess-v41/
+          if-no-files-found: error
