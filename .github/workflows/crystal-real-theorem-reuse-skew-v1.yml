@@ -6,8 +6,80 @@ on:
       - crystal-real-theorem-reuse-v1
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   skew:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Assemble exact Anthropic theorem in Isomorphic-era environment
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-real-reuse-skew
+          mkdir -p "$ROOT/P2M/Sol" "$ROOT/Theorems"
+          BASE=https://raw.githubusercontent.com/anthropics/fermats-last-theorem/6e837e75355538c7f80bab5b956861e86c4eacc2
+          curl -fsSL "$BASE/P2M/Util.lean" -o "$ROOT/P2M/Util.lean"
+          curl -fsSL "$BASE/P2M/Sol/S_Algebra_norm_of_subsingleton.lean" -o "$ROOT/P2M/Sol/S_Algebra_norm_of_subsingleton.lean"
+          curl -fsSL "$BASE/Theorems/Thm_Algebra_norm_of_subsingleton.lean" -o "$ROOT/Theorems/Thm_Algebra_norm_of_subsingleton.lean"
+          cp experiments/crystal_real_theorem_reuse_v1/Consumer.lean "$ROOT/Consumer.lean"
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root = Path("/tmp/crystal-real-reuse-skew")
+          expected = {
+              "P2M/Util.lean": "0a73367f78bc165bb5d35e42ca14f5055252e7f6",
+              "P2M/Sol/S_Algebra_norm_of_subsingleton.lean": "44e3eb8ab5c40d75292a48512313952b67ed9e73",
+              "Theorems/Thm_Algebra_norm_of_subsingleton.lean": "110ae469fe7d3650a8c9d31f02f2b8fc8d7037b9",
+          }
+          for rel, want in expected.items():
+              data = (root / rel).read_bytes()
+              got = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              assert got == want, (rel, got, want)
+          print("PINNED_ANTHROPIC_THEOREM_SOURCES_OK")
+          PY
+          cat > "$ROOT/lean-toolchain" <<'EOF'
+          leanprover/lean4:v4.31.0-rc1
+          EOF
+          cat > "$ROOT/lakefile.lean" <<'EOF'
+          import Lake
+          open Lake DSL
+
+          package crystal_real_theorem_reuse_skew_v1
+
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @
+            "0531bb79fea20efc9ce6942db46b96be5a919400"
+
+          lean_lib P2M where
+            globs := #[.submodules `P2M]
+
+          lean_lib Theorems where
+            globs := #[.submodules `Theorems]
+
+          lean_lib Consumer where
+            roots := #[`Consumer]
+          EOF
+
+      - name: Hydrate Isomorphic-era Mathlib environment
+        working-directory: /tmp/crystal-real-reuse-skew
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+
+      - name: Test exact external theorem across revision skew
+        working-directory: /tmp/crystal-real-reuse-skew
+        run: |
+          set -euo pipefail
+          lake build Consumer
+          lake env lean Consumer.lean
+          echo CROSS_REVISION_EXTERNAL_THEOREM_REUSE_VERIFIED
