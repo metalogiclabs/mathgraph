@@ -10,6 +10,10 @@ on:
       - 'scripts/run_lean_corpus_bridge_scout.py'
       - 'tests/test_lean_corpus_bridge_scout.py'
       - 'tests/test_lean_bridge_discovery.py'
+      - 'mathgraph/lean_bridge_portfolio.py'
+      - 'tests/test_lean_bridge_portfolio.py'
+      - 'evidence/crystal-directional-bridge-batch-v2.json'
+      - 'evidence/crystal-cross-version-flt-interface-v1.json'
       - 'experiments/crystal_corpus_wide_bridge_scout_v1/**'
       - '.github/workflows/crystal-corpus-wide-bridge-scout-v1.yml'
   workflow_dispatch:
@@ -32,7 +36,7 @@ jobs:
         run: python -m pip install -e ".[all]"
 
       - name: Test corpus scout
-        run: python -m pytest -q tests/test_lean_corpus_bridge_scout.py tests/test_lean_bridge_discovery.py
+        run: python -m pytest -q tests/test_lean_corpus_bridge_scout.py tests/test_lean_bridge_discovery.py tests/test_lean_bridge_portfolio.py
 
       - name: Sparse checkout exact corpus surfaces
         run: |
@@ -99,6 +103,24 @@ jobs:
               json.dumps(summary,indent=2,sort_keys=True)+"\n"
           )
           print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - name: Subtract warranted capabilities and expose exact residual
+        run: |
+          python - <<'PY'
+          from mathgraph.lean_bridge_portfolio import reconcile_files
+          out=reconcile_files(
+              "artifacts/crystal_corpus_wide_bridge_scout_v1/report.json",
+              "evidence/crystal-directional-bridge-batch-v2.json",
+              "evidence/crystal-cross-version-flt-interface-v1.json",
+              out_path="artifacts/crystal_corpus_wide_bridge_scout_v1/portfolio.json",
+          )
+          assert out["candidate_total"] == 82, out
+          assert out["qualified_reusable_count"] == 7, out
+          assert out["unknown_unqualified_count"] == 75, out
+          assert out["directional_unknown_count"] == 0, out
+          assert out["equivalence_unknown_count"] == 75, out
+          print(out)
           PY
 
       - uses: actions/upload-artifact@v4
