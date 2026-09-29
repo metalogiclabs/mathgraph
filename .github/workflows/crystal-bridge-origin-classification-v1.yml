@@ -209,12 +209,34 @@ jobs:
           presence={name:(value=="true") for name,value in pairs}
           wanted=json.loads(Path("/tmp/origin-input/input.json").read_text())["symbols"]
           assert set(presence)==set(wanted), (len(presence),len(wanted),set(wanted)-set(presence))
-          out={"schema":"mathgraph.mathlib-origin-probe.v1","environment":env,"presence":presence}
+
+          decl_re=re.compile(r"\\b(?:class|structure|def|abbrev|inductive)\\s+([A-Za-z_][A-Za-z0-9_'.]*)\\b")
+          block_comment=re.compile(r"/-[\\s\\S]*?-/")
+          declared=set()
+          mathlib_root=Path(".lake/packages/mathlib/Mathlib")
+          for path in mathlib_root.rglob("*.lean"):
+              source=path.read_text(encoding="utf-8",errors="ignore")
+              source=block_comment.sub(" ",source)
+              source=re.sub(r"--[^\\n]*"," ",source)
+              for name in decl_re.findall(source):
+                  declared.add(name.split(".")[-1])
+          short_presence={
+              symbol:(symbol.split(".")[-1] in declared)
+              for symbol in wanted
+          }
+
+          out={
+              "schema":"mathgraph.mathlib-origin-probe.v2",
+              "environment":env,
+              "presence":presence,
+              "short_declaration_presence":short_presence,
+          }
           Path(f"/tmp/{env}.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
           print(json.dumps({
               "environment":env,
               "present":sum(presence.values()),
               "absent":len(presence)-sum(presence.values()),
+              "short_declaration_present":sum(short_presence.values()),
           },sort_keys=True))
           PY
 
@@ -254,6 +276,8 @@ jobs:
               LocalDefinitionEvidence,
               classify_report,
               load_probe_files,
+              load_short_declaration_probe_files,
+              refine_origin_classification,
           )
 
           data=json.loads(Path("/tmp/origin-input/input.json").read_text())
@@ -273,14 +297,29 @@ jobs:
           Path("artifacts/crystal_bridge_origin_v1/classification.json").write_text(
               json.dumps(out,indent=2,sort_keys=True)+"\n"
           )
+
+          short_upstream=load_short_declaration_probe_files(probe_paths)
+          refined=refine_origin_classification(
+              out,
+              short_declaration_presence_by_symbol=short_upstream,
+          )
+          Path("artifacts/crystal_bridge_origin_v1/classification_v2.json").write_text(
+              json.dumps(refined,indent=2,sort_keys=True)+"\n"
+          )
+          assert refined["candidate_count"] == 76, refined
+          assert refined["no_project_bridge_needed_count"] >= 57, refined
+
           summary={
-              "status":out["status"],
-              "candidate_count":out["candidate_count"],
-              "origin_counts":out["origin_counts"],
-              "residual_origin_counts":out["residual_origin_counts"],
-              "same_upstream_non_bridge_count":out["same_upstream_non_bridge_count"],
-              "genuine_bridge_residual_count":out["genuine_bridge_residual_count"],
-              "genuine_bridge_symbols":[x["symbol"] for x in out["genuine_bridge_residual"]],
+              "status":refined["status"],
+              "candidate_count":refined["candidate_count"],
+              "qualified_reusable_count":refined["qualified_reusable_count"],
+              "origin_counts":refined["origin_counts"],
+              "residual_origin_counts":refined["residual_origin_counts"],
+              "no_project_bridge_needed_count":refined["no_project_bridge_needed_count"],
+              "short_name_collision_count":refined["short_name_collision_count"],
+              "project_bridge_residual_count":refined["project_bridge_residual_count"],
+              "project_bridge_residual_symbols":[x["symbol"] for x in refined["project_bridge_residual"]],
+              "collision_symbols":[x["symbol"] for x in refined["short_name_collisions"]],
           }
           Path("artifacts/crystal_bridge_origin_v1/summary.json").write_text(
               json.dumps(summary,indent=2,sort_keys=True)+"\n"
