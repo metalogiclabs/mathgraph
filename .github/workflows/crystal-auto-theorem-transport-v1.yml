@@ -6,8 +6,200 @@ on:
       - crystal-real-theorem-reuse-v1
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   auto:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Discover and materialize minimum-dependency theorem cards
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-auto-transport
+          mkdir -p "$ROOT"
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import re
+          import urllib.request
+
+          repo = "anthropics/fermats-last-theorem"
+          commit = "6e837e75355538c7f80bab5b956861e86c4eacc2"
+          tree_sha = "443edf11d3610bc14f267534862c19124f2cb7a4"
+          target_count = 24
+          max_wrapper_bytes = 1400
+          max_solution_bytes = 6000
+          root = Path("/tmp/crystal-auto-transport")
+          token = os.environ.get("GH_TOKEN", "")
+
+          def request(url):
+              headers = {"User-Agent": "mathgraph-crystal-auto-transport"}
+              if token:
+                  headers["Authorization"] = f"Bearer {token}"
+              return urllib.request.urlopen(
+                  urllib.request.Request(url, headers=headers), timeout=60
+              ).read()
+
+          tree = json.loads(request(
+              f"https://api.github.com/repos/{repo}/git/trees/{tree_sha}?recursive=1"
+          ))
+          by_path = {item["path"]: item for item in tree["tree"] if item["type"] == "blob"}
+
+          def raw(path):
+              data = request(
+                  f"https://raw.githubusercontent.com/{repo}/{commit}/{path}"
+              )
+              want = by_path[path]["sha"]
+              got = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              assert got == want, (path, got, want)
+              return data
+
+          util = raw("P2M/Util.lean")
+          util_path = root / "P2M/Util.lean"
+          util_path.parent.mkdir(parents=True, exist_ok=True)
+          util_path.write_bytes(util)
+
+          wrappers = sorted(
+              (
+                  item for item in tree["tree"]
+                  if item["type"] == "blob"
+                  and item["path"].startswith("Theorems/Thm_")
+                  and item["path"].endswith(".lean")
+                  and item.get("size", 10**9) <= max_wrapper_bytes
+              ),
+              key=lambda x: (x.get("size", 0), x["path"]),
+          )
+
+          selected = []
+          scanned = 0
+          for item in wrappers:
+              if len(selected) >= target_count:
+                  break
+              scanned += 1
+              path = item["path"]
+              wrapper = raw(path)
+              text = wrapper.decode("utf-8")
+              imports = re.findall(r"^import\s+([^\s]+)", text, flags=re.M)
+              sols = [imp for imp in imports if imp.startswith("P2M.Sol.S_")]
+              if len(sols) != 1:
+                  continue
+              sol_path = sols[0].replace(".", "/") + ".lean"
+              sol_item = by_path.get(sol_path)
+              if sol_item is None or sol_item.get("size", 10**9) > max_solution_bytes:
+                  continue
+              solution = raw(sol_path)
+              sol_text = solution.decode("utf-8")
+              sol_imports = re.findall(r"^import\s+([^\s]+)", sol_text, flags=re.M)
+              if not all(
+                  imp == "P2M.Util" or imp == "Mathlib" or imp.startswith("Mathlib.")
+                  for imp in sol_imports
+              ):
+                  continue
+
+              for rel, data in ((path, wrapper), (sol_path, solution)):
+                  out = root / rel
+                  out.parent.mkdir(parents=True, exist_ok=True)
+                  out.write_bytes(data)
+
+              selected.append({
+                  "module": path[:-5].replace("/", "."),
+                  "wrapper_path": path,
+                  "wrapper_blob": item["sha"],
+                  "wrapper_bytes": item.get("size"),
+                  "solution_path": sol_path,
+                  "solution_blob": sol_item["sha"],
+                  "solution_bytes": sol_item.get("size"),
+                  "solution_imports": sol_imports,
+              })
+
+          assert len(selected) == target_count, (len(selected), target_count, scanned)
+
+          consumer = "\n".join(f"import {row['module']}" for row in selected) + "\n"
+          (root / "AutoConsumer.lean").write_text(consumer, encoding="utf-8")
+
+          manifest = {
+              "schema": "mathgraph.crystal-auto-theorem-transport-v1",
+              "source": {"repository": repo, "commit": commit, "tree": tree_sha},
+              "selection": {
+                  "rule": "smallest theorem wrapper first; exactly one local P2M.Sol import; solution imports only Mathlib/P2M.Util",
+                  "target_count": target_count,
+                  "max_wrapper_bytes": max_wrapper_bytes,
+                  "max_solution_bytes": max_solution_bytes,
+                  "scanned_wrappers": scanned,
+              },
+              "target_environment": {
+                  "lean": "v4.31.0-rc1",
+                  "mathlib": "0531bb79fea20efc9ce6942db46b96be5a919400",
+              },
+              "selected": selected,
+          }
+          (root / "selected_manifest.json").write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(f"AUTO_SELECTED_THEOREMS={len(selected)} scanned={scanned}")
+          for row in selected:
+              print(
+                  "AUTO_CARD "
+                  + row["module"]
+                  + f" wrapper={row['wrapper_bytes']} solution={row['solution_bytes']}"
+              )
+          PY
+
+          cat > "$ROOT/lean-toolchain" <<'EOF'
+          leanprover/lean4:v4.31.0-rc1
+          EOF
+          cat > "$ROOT/lakefile.lean" <<'EOF'
+          import Lake
+          open Lake DSL
+
+          package crystal_auto_theorem_transport_v1
+
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @
+            "0531bb79fea20efc9ce6942db46b96be5a919400"
+
+          lean_lib P2M where
+            globs := #[.submodules `P2M]
+
+          lean_lib Theorems where
+            globs := #[.submodules `Theorems]
+
+          lean_lib AutoConsumer where
+            roots := #[`AutoConsumer]
+          EOF
+
+      - name: Hydrate target environment
+        working-directory: /tmp/crystal-auto-transport
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+
+      - name: Compile automatically selected theorem cards
+        working-directory: /tmp/crystal-auto-transport
+        run: |
+          set -euo pipefail
+          lake build AutoConsumer
+          lake env lean AutoConsumer.lean
+          echo AUTO_PORTABLE_THEOREMS=24/24
+
+      - name: Upload frozen selection manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-auto-theorem-transport-v1-manifest
+          path: /tmp/crystal-auto-transport/selected_manifest.json
