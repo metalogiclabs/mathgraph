@@ -1,0 +1,79 @@
+{
+  "schema": "mathgraph.crystal-cross-version-flt-interface-authority.v1",
+  "status": "WARRANTED_BOUNDED_CROSS_VERSION_INTERFACE",
+  "authority": {
+    "run_id": 36520980938,
+    "head_sha": "8e3f787a42ed55a6a1605c93483fb53d7618348c",
+    "result_artifact_id": 11012981891,
+    "result_artifact_digest": "sha256:e340c1da32a4c50afb47e1010966a7d75770bbe08c9b5f535914325aeca73d13",
+    "source_equivalence_artifact_id": 11012621907,
+    "source_equivalence_artifact_digest": "sha256:9edcbcdcd6a832bf8157e5323c95712af03b896580d95518f21027385ae9fb53"
+  },
+  "candidate_lineage": {
+    "scout_run": 36516714974,
+    "rank": 1,
+    "canonical_symbol": "FermatLastTheoremFor",
+    "corpora": [
+      "anthropic-flt",
+      "isomorphic-fermat",
+      "imperial-flt"
+    ]
+  },
+  "semantic_surface": {
+    "digest": "90791b4e29df4b79febf079b824b6576d5837e0a01decdd49eeb569dbb16f7db",
+    "definitions": [
+      "FermatLastTheoremWith",
+      "FermatLastTheoremFor",
+      "FermatLastTheorem"
+    ],
+    "normalized_definition_blocks_exactly_equal": true
+  },
+  "qualifications": [
+    {
+      "corpus": "anthropic-flt",
+      "mathlib_commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "lean_toolchain": "leanprover/lean4:v4.33.0",
+      "basic_blob_sha": "c21f4b48f7231a5782d0ea07442d963b0c6cc7f5",
+      "artifact_id": 11013520360,
+      "artifact_digest": "sha256:f367df2cd3b0473d290c0606b544ad0ba1a7f4f2336f34f5601f4cb56b1abeaf",
+      "status": "LEAN_GREEN"
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "mathlib_commit": "0531bb79fea20efc9ce6942db46b96be5a919400",
+      "lean_toolchain": "leanprover/lean4:v4.31.0-rc1",
+      "basic_blob_sha": "5202059f5afca04b2c9d2f1b02ea9987324b9e81",
+      "artifact_id": 11013430577,
+      "artifact_digest": "sha256:b8b6ab3cf3fe771e155e2a7dd5817cd1307f904eb1121836234c8e078f2ecfb0",
+      "status": "LEAN_GREEN"
+    },
+    {
+      "corpus": "imperial-flt",
+      "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+      "lean_toolchain": "leanprover/lean4:v4.35.0-rc3",
+      "basic_blob_sha": "1cf236b0675269db120c6cdc6b2c97a25a2000b3",
+      "artifact_id": 11013126534,
+      "artifact_digest": "sha256:958c0be250d8c76cfc5c7d6fd16d2ed4fb543c1f63387180be82f3a11f5a7a78",
+      "status": "LEAN_GREEN"
+    }
+  ],
+  "bounded_claim": "The canonical FermatLastTheoremFor/FermatLastTheorem semantic surface is stable and independently Lean-checkable across these three pinned Lean/Mathlib environments.",
+  "negative_lineage": [
+    {
+      "run_id": 36520773085,
+      "status": "SUPERSEDED",
+      "reason": "initial canonical surface had a syntax error; source-equivalence evidence was already green"
+    }
+  ],
+  "revocation_boundary": [
+    "any pinned Mathlib Basic blob changes",
+    "normalized FLT definitions diverge",
+    "canonical surface fails under any pinned toolchain",
+    "protected interface changes"
+  ],
+  "unknowns": [
+    "transport of arbitrary compiled proof objects between toolchains",
+    "cross-version equivalence of unrelated theorem families",
+    "automatic migration of implementation-specific APIs"
+  ]
+}
