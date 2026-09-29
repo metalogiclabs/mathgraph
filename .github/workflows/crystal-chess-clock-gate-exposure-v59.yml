@@ -59,19 +59,19 @@ jobs:
       - name: Measure fast exposure
         run: |
           set -euo pipefail
-          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV59 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=1+0.01 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v59/fast/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v59/fast/match.pgn -log file=artifacts/crystal-chess-v59/fast/trace.log level=trace > artifacts/crystal-chess-v59/fast/stdout.txt
+          : > artifacts/crystal-chess-v59/fast/crystal_tm.log\n          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v59/fast/crystal_tm.log" /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV59 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=1+0.01 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v59/fast/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v59/fast/match.pgn -log file=artifacts/crystal-chess-v59/fast/trace.log level=trace > artifacts/crystal-chess-v59/fast/stdout.txt
           grep "crystal_tm" artifacts/crystal-chess-v59/fast/trace.log > artifacts/crystal-chess-v59/fast/crystal_tm.log || true
 
       - name: Measure mid exposure
         run: |
           set -euo pipefail
-          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV59 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=2+0.02 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v59/mid/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v59/mid/match.pgn -log file=artifacts/crystal-chess-v59/mid/trace.log level=trace > artifacts/crystal-chess-v59/mid/stdout.txt
+          : > artifacts/crystal-chess-v59/mid/crystal_tm.log\n          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v59/mid/crystal_tm.log" /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV59 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=2+0.02 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v59/mid/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v59/mid/match.pgn -log file=artifacts/crystal-chess-v59/mid/trace.log level=trace > artifacts/crystal-chess-v59/mid/stdout.txt
           grep "crystal_tm" artifacts/crystal-chess-v59/mid/trace.log > artifacts/crystal-chess-v59/mid/crystal_tm.log || true
 
       - name: Measure slow exposure
         run: |
           set -euo pipefail
-          /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV59 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=5+0.05 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v59/slow/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v59/slow/match.pgn -log file=artifacts/crystal-chess-v59/slow/trace.log level=trace > artifacts/crystal-chess-v59/slow/stdout.txt
+          : > artifacts/crystal-chess-v59/slow/crystal_tm.log\n          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v59/slow/crystal_tm.log" /tmp/fastchess/fastchess -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV59 -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline -each tc=5+0.05 option.Threads=1 option.Hash=16 option.Ponder=false -openings file=artifacts/crystal-chess-v59/slow/normal.epd format=epd order=sequential -rounds 32 -repeat -concurrency 1 -pgnout file=artifacts/crystal-chess-v59/slow/match.pgn -log file=artifacts/crystal-chess-v59/slow/trace.log level=trace > artifacts/crystal-chess-v59/slow/stdout.txt
           grep "crystal_tm" artifacts/crystal-chess-v59/slow/trace.log > artifacts/crystal-chess-v59/slow/crystal_tm.log || true
 
       - name: Summarize gate exposure
