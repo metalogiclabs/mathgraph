@@ -1,4 +1,5 @@
 name: Crystal PFR Corpus Expansion V1
+# qualify four-corpus expansion
 
 on:
   push:
