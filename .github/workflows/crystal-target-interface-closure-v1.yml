@@ -1,0 +1,266 @@
+name: Crystal target-interface closure V1
+
+on:
+  push:
+    branches:
+      - crystal-target-interface-closure-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Assemble target environment and exact source utility
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-target-interface
+          mkdir -p "$ROOT/P2M" "$ROOT/out"
+          cat > "$ROOT/lean-toolchain" <<'EOF'
+          leanprover/lean4:v4.31.0-rc1
+          EOF
+          cat > "$ROOT/lakefile.lean" <<'EOF'
+          import Lake
+          open Lake DSL
+
+          package crystal_target_interface_closure_v1
+
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @
+            "0531bb79fea20efc9ce6942db46b96be5a919400"
+          EOF
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, urllib.request
+
+          repo = "anthropics/fermats-last-theorem"
+          commit = "6e837e75355538c7f80bab5b956861e86c4eacc2"
+          tree_sha = "443edf11d3610bc14f267534862c19124f2cb7a4"
+          token = os.environ.get("GH_TOKEN", "")
+          headers = {"User-Agent": "mathgraph-crystal-target-interface"}
+          if token:
+              headers["Authorization"] = f"Bearer {token}"
+
+          def get(url):
+              return urllib.request.urlopen(
+                  urllib.request.Request(url, headers=headers), timeout=60
+              ).read()
+
+          tree = json.loads(get(
+              f"https://api.github.com/repos/{repo}/git/trees/{tree_sha}?recursive=1"
+          ))
+          by_path = {x["path"]: x for x in tree["tree"] if x["type"] == "blob"}
+          path = "P2M/Util.lean"
+          data = get(f"https://raw.githubusercontent.com/{repo}/{commit}/{path}")
+          got = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+          assert got == by_path[path]["sha"], (got, by_path[path]["sha"])
+          Path("/tmp/crystal-target-interface/P2M/Util.lean").write_bytes(data)
+          PY
+
+      - name: Hydrate target Mathlib
+        working-directory: /tmp/crystal-target-interface
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+
+      - name: Qualify source closure plus target-interface closure
+        working-directory: /tmp/crystal-target-interface
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import urllib.request
+
+          repo = "anthropics/fermats-last-theorem"
+          commit = "6e837e75355538c7f80bab5b956861e86c4eacc2"
+          tree_sha = "443edf11d3610bc14f267534862c19124f2cb7a4"
+          target_count = 24
+          max_wrapper_bytes = 1400
+          max_solution_bytes = 6000
+          root = Path("/tmp/crystal-target-interface")
+          buildlib = root / ".lake/build/lib/lean"
+          buildlib.mkdir(parents=True, exist_ok=True)
+          token = os.environ.get("GH_TOKEN", "")
+
+          def request(url):
+              headers = {"User-Agent": "mathgraph-crystal-target-interface"}
+              if token:
+                  headers["Authorization"] = f"Bearer {token}"
+              return urllib.request.urlopen(
+                  urllib.request.Request(url, headers=headers), timeout=60
+              ).read()
+
+          tree = json.loads(request(
+              f"https://api.github.com/repos/{repo}/git/trees/{tree_sha}?recursive=1"
+          ))
+          by_path = {x["path"]: x for x in tree["tree"] if x["type"] == "blob"}
+
+          def raw(path):
+              data = request(f"https://raw.githubusercontent.com/{repo}/{commit}/{path}")
+              got = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              want = by_path[path]["sha"]
+              assert got == want, (path, got, want)
+              return data
+
+          def compile_one(src_path):
+              src = root / src_path
+              out = buildlib / (src_path[:-5] + ".olean")
+              out.parent.mkdir(parents=True, exist_ok=True)
+              p = subprocess.run(
+                  ["lake", "env", "lean", str(src), "-o", str(out)],
+                  cwd=root,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+              )
+              return p.returncode == 0, p.stdout[-12000:]
+
+          ok, log = compile_one("P2M/Util.lean")
+          assert ok, log
+
+          wrappers = sorted(
+              (
+                  item for item in tree["tree"]
+                  if item["type"] == "blob"
+                  and item["path"].startswith("Theorems/Thm_")
+                  and item["path"].endswith(".lean")
+                  and item.get("size", 10**9) <= max_wrapper_bytes
+              ),
+              key=lambda x: (x.get("size", 0), x["path"]),
+          )
+
+          selected = []
+          rejected = []
+          scanned = 0
+
+          for item in wrappers:
+              if len(selected) >= target_count:
+                  break
+              scanned += 1
+              wrapper_path = item["path"]
+              wrapper = raw(wrapper_path)
+              wrapper_text = wrapper.decode("utf-8")
+              wrapper_imports = re.findall(r"^import\s+([^\s]+)", wrapper_text, flags=re.M)
+              sol_imports = [x for x in wrapper_imports if x.startswith("P2M.Sol.S_")]
+              if len(sol_imports) != 1:
+                  continue
+              if not all(
+                  x == sol_imports[0] or x == "Mathlib" or x.startswith("Mathlib.")
+                  for x in wrapper_imports
+              ):
+                  continue
+
+              sol_path = sol_imports[0].replace(".", "/") + ".lean"
+              sol_item = by_path.get(sol_path)
+              if sol_item is None or sol_item.get("size", 10**9) > max_solution_bytes:
+                  continue
+              solution = raw(sol_path)
+              solution_text = solution.decode("utf-8")
+              solution_imports = re.findall(r"^import\s+([^\s]+)", solution_text, flags=re.M)
+              if not all(
+                  x == "P2M.Util" or x == "Mathlib" or x.startswith("Mathlib.")
+                  for x in solution_imports
+              ):
+                  continue
+
+              for rel, data in ((sol_path, solution), (wrapper_path, wrapper)):
+                  out = root / rel
+                  out.parent.mkdir(parents=True, exist_ok=True)
+                  out.write_bytes(data)
+
+              sol_ok, sol_log = compile_one(sol_path)
+              if not sol_ok:
+                  rejected.append({
+                      "module": wrapper_path[:-5].replace("/", "."),
+                      "wrapper_path": wrapper_path,
+                      "solution_path": sol_path,
+                      "reason": "target_interface_mismatch",
+                      "stage": "solution",
+                      "log_tail": sol_log,
+                  })
+                  continue
+
+              wrapper_ok, wrapper_log = compile_one(wrapper_path)
+              if not wrapper_ok:
+                  rejected.append({
+                      "module": wrapper_path[:-5].replace("/", "."),
+                      "wrapper_path": wrapper_path,
+                      "solution_path": sol_path,
+                      "reason": "target_interface_mismatch",
+                      "stage": "wrapper",
+                      "log_tail": wrapper_log,
+                  })
+                  continue
+
+              selected.append({
+                  "module": wrapper_path[:-5].replace("/", "."),
+                  "wrapper_path": wrapper_path,
+                  "wrapper_blob": item["sha"],
+                  "solution_path": sol_path,
+                  "solution_blob": sol_item["sha"],
+              })
+
+          separator = next(
+              (r for r in rejected if "S_Algebra_trdeg_quotient_lt" in r["solution_path"]),
+              None,
+          )
+          assert separator is not None, rejected
+          assert "trdeg_lt_aleph0_of_finiteType" in separator["log_tail"], separator
+          assert len(selected) == target_count, (len(selected), scanned, len(rejected))
+
+          consumer = "\n".join(f"import {r['module']}" for r in selected) + "\n"
+          (root / "QualifiedConsumer.lean").write_text(consumer, encoding="utf-8")
+          consumer_ok, consumer_log = compile_one("QualifiedConsumer.lean")
+          assert consumer_ok, consumer_log
+
+          manifest = {
+              "schema": "mathgraph.crystal-target-interface-closure-v1",
+              "source": {"repository": repo, "commit": commit, "tree": tree_sha},
+              "target": {
+                  "lean": "v4.31.0-rc1",
+                  "mathlib": "0531bb79fea20efc9ce6942db46b96be5a919400",
+              },
+              "selection_rule": {
+                  "source_closure": "small wrapper; exactly one local P2M.Sol dependency; solution imports only P2M.Util/Mathlib",
+                  "target_closure": "solution and wrapper must compile unchanged at target pin",
+                  "target_count": target_count,
+              },
+              "scanned": scanned,
+              "selected": selected,
+              "rejected": rejected,
+              "first_preserved_separator": separator,
+          }
+          (root / "out/result.json").write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          print(f"TARGET_INTERFACE_QUALIFIED={len(selected)}/{target_count}")
+          print(f"REJECTED_AS_UNKNOWN={len(rejected)}")
+          print("FIRST_SEPARATOR=" + separator["solution_path"])
+          print("FIRST_SEPARATOR_REASON=target_interface_mismatch")
+          PY
+
+      - name: Seal result
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crystal-target-interface-closure-v1
+          path: /tmp/crystal-target-interface/out/result.json
+          if-no-files-found: error
