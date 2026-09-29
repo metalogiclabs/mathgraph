@@ -91,3 +91,35 @@ end RingTheory.Sequence
 """)
     out = discover([producer, consumer, bridge])
     assert not out["implication_candidates"]
+
+
+def test_typed_dot_receivers_do_not_create_false_cross_domain_bridge() -> None:
+    anthropic = (_pin("anthropic", "producer", "A.lean"), """
+theorem source {R : Type} (G : PDivisibleGroup R p h) :
+    ∃ n : Nat, G.HasDimension n := by trivial
+""")
+    conjectures = (_pin("conjectures", "consumer", "B.lean"), """
+theorem target (n : Nat) (G : SimpleGraph (Fin n)) :
+    G.HasDimension 4 := by trivial
+""")
+    out = discover([anthropic, conjectures])
+    symbols = {x["canonical_symbol"] for x in out["equivalence_candidates"]}
+    assert "G.HasDimension" not in symbols
+    assert "PDivisibleGroup.HasDimension" not in symbols
+    assert "SimpleGraph.HasDimension" not in symbols
+
+
+def test_typed_dot_receiver_resolution_preserves_same_type_overlap() -> None:
+    a = (_pin("a", "producer", "A.lean"), """
+theorem source (G : SimpleGraph V) : G.HasDimension 4 := by trivial
+""")
+    b = (_pin("b", "consumer", "B.lean"), """
+theorem target (G : SimpleGraph W) : G.HasDimension 5 := by trivial
+""")
+    out = discover([a, b])
+    hits = [
+        x for x in out["equivalence_candidates"]
+        if x["canonical_symbol"] == "SimpleGraph.HasDimension"
+    ]
+    assert hits
+    assert hits[0]["corpora"] == ["a", "b"]
