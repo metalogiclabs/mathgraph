@@ -35,7 +35,24 @@ theorem d_cubic_consumer (c : ℝ) : ∃ x : ℝ, x ^ 3 - 3 * x + c = 0 := by
 
 theorem d_meet_consumer :
     ∃ x : ℝ, ∃ y : ℝ, x ^ 2 + y ^ 2 = 1 ∧ y = x ^ 2 := by
-  exact ⟨0, 1, by norm_num⟩
+  let y : ℝ := (Real.sqrt 5 - 1) / 2
+  have hs5 : (Real.sqrt 5) ^ 2 = 5 := Real.sq_sqrt (by norm_num)
+  have hs5_nonneg : 0 ≤ Real.sqrt 5 := Real.sqrt_nonneg 5
+  have hs5_ge_one : 1 ≤ Real.sqrt 5 := by
+    nlinarith
+  have hy0 : 0 ≤ y := by
+    dsimp [y]
+    linarith
+  have hyquad : y ^ 2 + y = 1 := by
+    dsimp [y]
+    nlinarith
+  let x : ℝ := Real.sqrt y
+  have hx2 : x ^ 2 = y := by
+    dsimp [x]
+    exact Real.sq_sqrt hy0
+  refine ⟨x, y, ?_, ?_⟩
+  · nlinarith
+  · exact hx2.symm
 
 theorem d_no_inverse_consumer :
     ¬ (∀ x : ℝ, ∃ y : ℝ, x * y = 1) := by
