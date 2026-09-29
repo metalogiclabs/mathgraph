@@ -1,0 +1,3 @@
+(|cross_prover_counterexample|
+ (|not_amgm3| 0
+  (|not_amgm3-0| "" 0 ("" (CAD) NIL NIL) NIL SHOSTAK)))
