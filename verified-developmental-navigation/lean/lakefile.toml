@@ -4,3 +4,4 @@ defaultTargets = ["VerifiedDevelopmentalNavigation"]
 
 [[lean_lib]]
 name = "VerifiedDevelopmentalNavigation"
+globs = ["VerifiedDevelopmentalNavigation", "VerifiedDevelopmentalNavigation.+"]
