@@ -1,0 +1,17 @@
+BoundaryAudit: THEORY
+BEGIN
+  IMPORTING cad_decide5, mpoly_embed
+  control_linear: THEOREM FORALL (x: real): x * x >= 0
+  control_quadratic: THEOREM FORALL (a,b,c: real):
+    a /= 0 AND b^2 >= 4*a*c IMPLIES EXISTS (x: real): a*x^2+b*x+c=0
+  zero_poly_eq: THEOREM FORALL (x: real): 0*x = 0
+  repeated_root: THEOREM FORALL (x: real): (x-1)^2 >= 0
+  strict_boundary: THEOREM NOT (EXISTS (x: real): x > 0 AND x < 0)
+  sqplus1(x: real): real = x*x + 1
+  hidden_definition: THEOREM FORALL (x: real): sqplus1(x) > 0
+  alternation: THEOREM FORALL (x: real): EXISTS (y: real): y > x
+  renamed_alternation: THEOREM FORALL (u: real): EXISTS (v: real): v > u
+  nonpoly_variable_denominator: THEOREM FORALL (x: real): x /= 0 IMPLIES x/x = 1
+  f: [real -> real]
+  abstracted_function_sound: THEOREM FORALL (x: real): f(x) > x*x IMPLIES f(x) > -1
+END BoundaryAudit
