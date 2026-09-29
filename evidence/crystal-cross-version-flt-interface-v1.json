@@ -17,7 +17,12 @@
       "anthropic-flt",
       "isomorphic-fermat",
       "imperial-flt"
-    ]
+    ],
+    "qualified_symbols": [
+      "FermatLastTheoremFor",
+      "FermatLastTheorem"
+    ],
+    "note": "The same three-version qualification checked both the fixed-exponent and global FLT surfaces; reuse both consequences without another qualification run."
   },
   "semantic_surface": {
     "digest": "90791b4e29df4b79febf079b824b6576d5837e0a01decdd49eeb569dbb16f7db",
