@@ -38,6 +38,7 @@ jobs:
           test "$(git -C /tmp/flt-e2e rev-parse HEAD)" =             "6e837e75355538c7f80bab5b956861e86c4eacc2"
           cp experiments/crystal_directional_bridge_batch_v1/CrystalDirectionalBridgeBatch.lean             /tmp/flt-e2e/CrystalDirectionalBridgeBatch.lean
           cp experiments/crystal_directional_bridge_batch_v1/candidates.json             /tmp/flt-e2e/crystal_candidates.json
+          echo 'leanprover/lean4:v4.33.0' > /tmp/flt-e2e/lean-toolchain
 
       - name: Resolve Mathlib and restore cache
         working-directory: /tmp/flt-e2e
