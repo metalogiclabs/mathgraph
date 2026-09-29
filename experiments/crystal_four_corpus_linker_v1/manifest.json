@@ -6,7 +6,8 @@
     "closed_candidate_count": 82,
     "unknown_actionable_count": 0,
     "semantic_object_id": "semantic:aef98c3a30a0a3c00be8196606546affd1636620c599e10dc0d023b9fb24edc0",
-    "promotion_run": 36603583607
+    "promotion_run": 36603583607,
+    "reuse_policy": "Frozen three-corpus linker authority is not reopened. Only candidate relations whose evidence touches formal-conjectures enter the new frontier."
   },
   "new_corpus": {
     "corpus": "formal-conjectures",
@@ -18,7 +19,8 @@
       "FormalConjecturesForMathlib"
     ],
     "lean_toolchain": "leanprover/lean4:v4.33.1",
-    "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474"
+    "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474",
+    "trust_boundary": "Formal Conjectures is primarily a statement corpus and may contain sorry. V1 uses it only for exact source-pinned declaration/origin discovery. No conjecture is treated as proved; any semantic promotion requires separate verifier-backed evidence."
   },
   "corpora": [
     {
