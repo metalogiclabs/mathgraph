@@ -1,0 +1,74 @@
+name: Crystal Cross-Prover PVS Closeout Probe V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-closeout-probe-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-pvs-closeout-probe-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pvs-closeout-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+      - name: Pin NASALib and pvs_cad
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay nine remaining true source theorems
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_closeout_probe_v1
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_cubic:d_meet:d_no_inverse             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_demo_true.log"
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_star_ex.s_disc:s_alt_goal:s_alt_hyp:s_posreal:s_sqrtpos:s_two             | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_star_true.log"
+          for log in "$GITHUB_WORKSPACE"/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_*_true.log; do
+            grep -q "Grand Totals:" "$log"
+            if grep -Ei "unfinished|untried|unchecked" "$log"; then exit 1; fi
+          done
+      - name: Record negative-control source behavior
+        run: |
+          set +e
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_inverse             > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_d_inverse_negative.log" 2>&1
+          echo $? > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_d_inverse_exit.txt"
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.t_amgm3             > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_t_amgm3_negative.log" 2>&1
+          echo $? > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_closeout_probe_v1/pvs_t_amgm3_exit.txt"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-pvs-closeout-probe-v1
+          path: artifacts/crystal_cross_prover_closeout_probe_v1/
