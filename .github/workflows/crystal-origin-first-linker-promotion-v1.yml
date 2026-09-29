@@ -1,0 +1,49 @@
+name: Crystal Origin-First Linker Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'evidence/crystal-origin-first-linker-v1.json'
+      - 'mathgraph/lean_semantic_linker_state.py'
+      - 'tests/test_lean_semantic_linker_state.py'
+      - '.github/workflows/crystal-origin-first-linker-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-linker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Check closed linker state
+        run: python -m pytest -q tests/test_lean_semantic_linker_state.py
+      - name: Compile origin-first linker state
+        run: |
+          mkdir -p artifacts/crystal_origin_first_linker_v1
+          python - <<'PY'
+          import json
+          from mathgraph.lean_semantic_linker_state import compile_authority_file
+          out=compile_authority_file(
+              "evidence/crystal-origin-first-linker-v1.json",
+              "artifacts/crystal_origin_first_linker_v1/linker_state.json",
+          )
+          assert out["candidate_count"]==82
+          assert out["qualified_reusable_count"]==9
+          assert out["discharged_non_bridge_count"]==64
+          assert out["rejected_false_candidate_count"]==9
+          assert out["unknown_actionable_count"]==0
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-origin-first-linker-v1
+          path: artifacts/crystal_origin_first_linker_v1/linker_state.json
