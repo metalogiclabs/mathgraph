@@ -113,7 +113,7 @@ def write_input(path: Path, data_path: Path, pot_path: Path, geom):
         f"pair_coeff * * {pot_path.resolve()} C",
         "neighbor 2.0 bin",
         "neigh_modify delay 0 every 1 check yes",
-        "min_style fire",
+        "min_style cg",
         "min_modify dmax 0.05",
         "thermo 250",
         "thermo_style custom step atoms pe pxx pyy lx ly",
@@ -240,7 +240,7 @@ def main():
             "potential_sha256": sha256(pot_bytes),
             "pair_style": "airebo 3.0 1 1",
             "boundary": "p p f",
-            "protocol": "0 K AQS; x engineering strain 0..0.35 in 0.01 steps; FIRE minimization; y box-relax to zero pressure",
+            "protocol": "0 K AQS; x engineering strain 0..0.35 in 0.01 steps; conjugate-gradient minimization; y box-relax to zero pressure",
         },
         "preregistered_transfer_criterion": {
             "law": "at fixed 20deg staggered slit-row geometry, no-overlap peak strength exceeds each overlap peak strength",
