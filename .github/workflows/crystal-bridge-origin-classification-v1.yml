@@ -211,15 +211,15 @@ jobs:
           wanted=json.loads(Path("/tmp/origin-input/input.json").read_text())["symbols"]
           assert set(presence)==set(wanted), (len(presence),len(wanted),set(wanted)-set(presence))
 
-          decl_re=re.compile(r"\\b(?:class|structure|def|abbrev|inductive)\\s+([A-Za-z_][A-Za-z0-9_'.]*)\\b")
-          block_comment=re.compile(r"/-[\\s\\S]*?-/")
+          decl_re=re.compile(r"\b(?:class|structure|def|abbrev|inductive)\s+([A-Za-z_][A-Za-z0-9_'.]*)\b")
+          block_comment=re.compile(r"/-[\s\S]*?-/")
           from collections import Counter
           declared_counts=Counter()
           mathlib_root=Path(".lake/packages/mathlib/Mathlib")
           for path in mathlib_root.rglob("*.lean"):
               source=path.read_text(encoding="utf-8",errors="ignore")
               source=block_comment.sub(" ",source)
-              source=re.sub(r"--[^\\n]*"," ",source)
+              source=re.sub(r"--[^\n]*"," ",source)
               for name in decl_re.findall(source):
                   declared_counts[name.split(".")[-1]] += 1
           short_counts={
