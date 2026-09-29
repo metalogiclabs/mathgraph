@@ -1,0 +1,130 @@
+name: Crystal Chess Root Internal Trace V50
+
+on:
+  push:
+    branches:
+      - crystal-chess-root-internal-trace-v50
+    paths:
+      - "experiments/crystal_chess_root_internal_trace_v50.py"
+      - ".github/workflows/crystal-chess-root-internal-trace-v50.yml"
+      - "experiments/crystal_chess_search_sufficiency_v25.py"
+  workflow_dispatch:
+
+jobs:
+  root-internal-trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_root_internal_trace_v50.py
+
+      - name: Download exact V47 residual
+        uses: actions/download-artifact@v4
+        with:
+          name: crystal-chess-progressive-stopping-v47
+          path: /tmp/v47
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36523379587
+
+      - name: Verify exact 11-state residual
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/v47/result.json'))
+          assert p['schema']=='mathgraph.crystal-chess.progressive-stopping.v47'
+          assert len(p['source']['rules']['last3_move_pv3']['mismatch_examples'])==11
+          print('V47_EXACT_11_STATE_RESIDUAL=PASS')
+          PY
+
+      - name: Acquire and instrument pinned Stockfish
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal-chess-v50
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish
+          git -C /tmp/stockfish checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/stockfish/src/search.cpp')
+          s=p.read_text()
+          anchor='''        for (auto&& th : threads)
+          {
+              totBestMoveChanges += th->worker->bestMoveChanges;
+              th->worker->bestMoveChanges = 0;
+          }
+
+          // Do we have time for the next iteration? Can we stop searching now?
+          '''
+          insert='''        for (auto&& th : threads)
+          {
+              totBestMoveChanges += th->worker->bestMoveChanges;
+              th->worker->bestMoveChanges = 0;
+          }
+
+          if (limits.nodes && !rootMoves.empty() && !rootMoves[0].pv.empty())
+          {
+              u64 crystalTraceNodes = threads.nodes_searched();
+              u64 crystalEffortPct =
+                rootMoves[0].effort * 100000 / std::max(u64(1), u64(nodes));
+              sync_cout << "info string crystal_root"
+                        << " depth " << int(rootDepth)
+                        << " nodes " << crystalTraceNodes
+                        << " best " << UCIEngine::move(rootMoves[0].pv[0], rootPos.is_chess960())
+                        << " score " << int(rootMoves[0].score)
+                        << " avg " << int(rootMoves[0].averageScore)
+                        << " prev " << int(rootMoves[0].previousScore)
+                        << " mss " << int(rootMoves[0].meanSquaredScore)
+                        << " effort " << rootMoves[0].effort
+                        << " effortpct " << crystalEffortPct
+                        << " bestAge " << int(rootDepth - lastBestMoveDepth)
+                        << " changes " << totBestMoveChanges
+                        << " searchAgain " << searchAgainCounter
+                        << " failHighRec " << failHighRecovery
+                        << " inexact " << int(rootMoves[0].is_inexact())
+                        << sync_endl;
+          }
+
+          // Do we have time for the next iteration? Can we stop searching now?
+          '''
+          if anchor not in s:
+              raise SystemExit('instrumentation anchor not found')
+          p.write_text(s.replace(anchor,insert,1))
+          PY
+          git -C /tmp/stockfish diff -- src/search.cpp > artifacts/crystal-chess-v50/stockfish-root-trace.patch
+          test -s artifacts/crystal-chess-v50/stockfish-root-trace.patch
+
+      - name: Build instrumented pinned Stockfish
+        run: |
+          set -euo pipefail
+          make -C /tmp/stockfish/src -j2 build ARCH=x86-64
+          /tmp/stockfish/src/stockfish bench 16 1 3 default depth > artifacts/crystal-chess-v50/stockfish-bench.txt 2>&1
+
+      - name: Capture internal root state
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_root_internal_trace_v50.py             --stockfish /tmp/stockfish/src/stockfish             --v47-result /tmp/v47/result.json             --output artifacts/crystal-chess-v50/result.json             | tee artifacts/crystal-chess-v50/run.log
+          grep -q "CRYSTAL_CHESS_ROOT_INTERNAL_TRACE_V50=ROOT_INTERNAL_TRACE_COMPLETE" artifacts/crystal-chess-v50/run.log
+
+      - name: Record authority
+        run: |
+          printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057 + diagnostic-only root trace patch" > artifacts/crystal-chess-v50/STOCKFISH_PIN.txt
+
+      - name: Upload V50 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-root-internal-trace-v50
+          path: artifacts/crystal-chess-v50/
+          if-no-files-found: error
