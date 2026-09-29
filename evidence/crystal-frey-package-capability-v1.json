@@ -1,0 +1,42 @@
+{
+  "schema": "mathgraph.crystal-frey-package-capability-authority.v1",
+  "status": "REUSABLE",
+  "authority": {
+    "run_id": 36523007062,
+    "head_sha": "4d8144560bfbf51e2f460c617b78674c9b5fc2b5",
+    "artifact_id": 11013389478,
+    "artifact_digest": "sha256:f8190b01f1808e7574f55549f666c80c92d66be1ac34a2945ec88f9d171711b7"
+  },
+  "qualification_lineage": {
+    "run_id": 36522687546,
+    "status": "WARRANTED_BOUNDED_RECONCILIATION",
+    "schema_digest": "2d9bbaa3e7b001d0d62d6d6353bbc229a7c9d29f6cac6a29500739e8888afe25"
+  },
+  "compiled": {
+    "canonical_object_id": "semantic:e3505e93e2ae119f6682dc48e0104aef750799df4713c5801899d02466af76e6",
+    "source_object_ids": [
+      "semantic:4cf4413955f3382f5f9d00d446328c9e84286469f1f9aec549f2c1354e16e9c4",
+      "semantic:c9bb5b21d538a70609fc2fe88fe1d85a5cb6fcf16c1cc2b3613d70b6a9810ec7"
+    ],
+    "adapter_contract_ids": [
+      "adapter:8b53e7a316796084aac36a379d1674b135fa83c28d1282c0f9b3dae4531a3cc2",
+      "adapter:2fbc73f5cbc9881aff4595410fc9f41814b6ccbe2b9d4f09babafcbb541139df"
+    ],
+    "interface_ids": [
+      "lean.number-theory.frey-package.schema@1",
+      "lean.number-theory.frey-package.nonempty@1",
+      "lean.number-theory.frey-package.is-empty@1"
+    ],
+    "source_count": 2,
+    "target_space": "mathgraph.number-theory.frey-package@1"
+  },
+  "systems_law": {
+    "name": "project-local semantic waist",
+    "statement": "Version-specific project-local formal objects can retain distinct provenance while lowering to one content-addressed canonical object for independently qualified protected consequences."
+  },
+  "fail_closed_boundary": "unqualified downstream FreyPackage APIs return typed UNKNOWN",
+  "unknowns": [
+    "downstream FreyPackage APIs beyond the qualified schema/nonempty/is-empty boundary",
+    "compiled proof-object transport across Lean versions"
+  ]
+}
