@@ -91,3 +91,17 @@ end RingTheory.Sequence
 """)
     out = discover([producer, consumer, bridge])
     assert not out["implication_candidates"]
+
+
+def test_named_section_end_does_not_erase_enclosing_namespace() -> None:
+    pin = _pin("a", "producer", "A.lean")
+    out = extract_declarations(pin, """
+namespace Outer
+section Inner
+theorem inside : StrongThing := by trivial
+end Inner
+theorem after : StrongThing := by trivial
+end Outer
+""")
+    names=[x.full_name for x in out]
+    assert names==["Outer.inside","Outer.after"]
