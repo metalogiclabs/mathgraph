@@ -49,5 +49,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: buehler-physical-loop-v1-evidence
-          path: evidence/buehler-physical-loop-v1
+          path: |\n            evidence/buehler-physical-loop-v1\n            evidence/buehler-graphene-exact-v1
           if-no-files-found: error
