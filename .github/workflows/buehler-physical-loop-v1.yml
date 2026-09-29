@@ -10,48 +10,40 @@ permissions:
   contents: read
 
 jobs:
-  fast_agent:
+  exact_crystal:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install fast probe dependencies
-        run: python -m pip install --disable-pip-version-check numpy huggingface_hub
-      - name: Inspect exact graphene agent provenance
-        run: python experiments/buehler_graphene_agent_fast.py
-      - name: Upload fast evidence
-        if: always()
+      - name: Install bounded analysis dependencies
+        run: python -m pip install --disable-pip-version-check numpy pandas scikit-learn
+      - name: Run exact source-pinned graphene experiment
+        run: python experiments/buehler_graphene_crystal_v1.py
+      - name: Validate evidence object
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/buehler-graphene-crystal-v1/result.json'
+          d=json.load(open(p))
+          assert d['source']['commit']=='401e5f1f2a7529d8370a75a9c6b403bf2b9679ab'
+          assert d['source']['record_count']==132
+          assert d['counts']['stage7_holdout']==12
+          assert d['overall_status']=='COMPLETE_BOUNDED_EXPERIMENT'
+          print(json.dumps({
+            'raw_sha256':d['source']['raw_sha256'],
+            'counts':d['counts'],
+            'chosen':d['stage7_qualification']['chosen_features'],
+            'stage7_passed':d['stage7_qualification']['passed'],
+            'promotion':d['promotion'],
+            'next_residual':d['next_residual'],
+          },indent=2,sort_keys=True))
+          PY
+      - name: Upload exact evidence
         uses: actions/upload-artifact@v4
         with:
-          name: buehler-graphene-fast-v1-evidence
-          path: evidence/buehler-graphene-fast-v1
-          if-no-files-found: error
-
-  replay:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install analysis dependencies
-        run: python -m pip install --disable-pip-version-check numpy pandas scikit-learn pyarrow huggingface_hub
-      - name: Probe exact graphene sources
-        run: python experiments/buehler_graphene_exact_probe.py
-      - name: Mine exact graphene schemas
-        run: python experiments/buehler_graphene_schema_mine.py
-      - name: Run source-gated proxy control
-        run: python experiments/buehler_physical_loop_v1.py
-      - name: Upload evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: buehler-physical-loop-v1-evidence
-          path: |
-            evidence/buehler-physical-loop-v1
-            evidence/buehler-graphene-exact-v1
+          name: buehler-graphene-crystal-v1-evidence
+          path: evidence/buehler-graphene-crystal-v1
           if-no-files-found: error
