@@ -218,11 +218,16 @@ public class CrystalBlockAccessListCrossClientTests
 
         double fullMedian = Median(fullTimes);
         double compactMedian = Median(compactTimes);
-        Console.WriteLine("ETHEREUM_CRYSTAL_V17_NETHERMIND=PASS");
-        Console.WriteLine($"records={records.Length}");
-        Console.WriteLine("nethermind_final_state_projection_parity_all=true");
-        Console.WriteLine($"full_decode_median_s={fullMedian:F9}");
-        Console.WriteLine($"compact_apply_decode_median_s={compactMedian:F9}");
-        Console.WriteLine($"speedup_vs_full={fullMedian / compactMedian:F9}");
+        string result = string.Join(Environment.NewLine,
+            "ETHEREUM_CRYSTAL_V17_NETHERMIND=PASS",
+            $"records={records.Length}",
+            "nethermind_final_state_projection_parity_all=true",
+            $"full_decode_median_s={fullMedian:F9}",
+            $"compact_apply_decode_median_s={compactMedian:F9}",
+            $"speedup_vs_full={fullMedian / compactMedian:F9}");
+        Console.WriteLine(result);
+        TestContext.Progress.WriteLine(result);
+        string? resultPath = Environment.GetEnvironmentVariable("CRYSTAL_V17_RESULT");
+        if (!string.IsNullOrEmpty(resultPath)) File.WriteAllText(resultPath, result);
     }
 }
