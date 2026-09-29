@@ -41,7 +41,7 @@ jobs:
             git -C "$dest" checkout --detach FETCH_HEAD
             test "$(git -C "$dest" rev-parse HEAD)" = "$commit"
           }
-          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-corpora/anthropic Theorems
+          clone_sparse anthropics/fermats-last-theorem             6e837e75355538c7f80bab5b956861e86c4eacc2             /tmp/crystal-corpora/anthropic Theorems Definitions
           clone_sparse isomorphic-ai/fermat             07b35d10984632caa14b1af26ec5dec2363ee920             /tmp/crystal-corpora/isomorphic Fermat
           clone_sparse ImperialCollegeLondon/FLT             eb6df2b018f81920cd48dd510417f0b7790c305e             /tmp/crystal-corpora/imperial FLT
 
@@ -91,7 +91,11 @@ jobs:
                   portfolio["qualified_candidate_ids"].append(cid)
 
           symbols=[x["canonical_symbol"] for x in report["top_equivalence_candidates"]]
-          local=collect_local_definition_evidence(roots,manifest,symbols)
+          origin_manifest=json.loads(json.dumps(manifest))
+          for row in origin_manifest["corpora"]:
+              if row["corpus"]=="anthropic-flt":
+                  row["include_prefixes"]=sorted(set([*row["include_prefixes"],"Definitions"]))
+          local=collect_local_definition_evidence(roots,origin_manifest,symbols)
           payload={
               "schema":"mathgraph.lean-bridge-origin-input.v1",
               "report":report,
