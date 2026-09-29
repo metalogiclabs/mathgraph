@@ -1,0 +1,103 @@
+{
+  "schema": "mathgraph.incremental-four-corpus-linker.v1",
+  "parent_authority": {
+    "evidence": "evidence/crystal-origin-first-linker-v1.json",
+    "status": "WARRANTED_BOUNDED_ROUTING_STATE",
+    "closed_candidate_count": 82,
+    "unknown_actionable_count": 0,
+    "semantic_object_id": "semantic:aef98c3a30a0a3c00be8196606546affd1636620c599e10dc0d023b9fb24edc0",
+    "promotion_run": 36603583607
+  },
+  "new_corpus": {
+    "corpus": "formal-conjectures",
+    "role": "consumer",
+    "repository": "google-deepmind/formal-conjectures",
+    "commit": "e04cc601840dd7a37f89b821a67f3a9e3c38d9c3",
+    "include_prefixes": [
+      "FormalConjectures",
+      "FormalConjecturesForMathlib"
+    ],
+    "lean_toolchain": "leanprover/lean4:v4.33.1",
+    "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474"
+  },
+  "corpora": [
+    {
+      "corpus": "anthropic-flt",
+      "role": "producer",
+      "repository": "anthropics/fermats-last-theorem",
+      "commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+      "include_prefixes": [
+        "Theorems"
+      ]
+    },
+    {
+      "corpus": "isomorphic-fermat",
+      "role": "consumer",
+      "repository": "isomorphic-ai/fermat",
+      "commit": "07b35d10984632caa14b1af26ec5dec2363ee920",
+      "include_prefixes": [
+        "Fermat"
+      ]
+    },
+    {
+      "corpus": "imperial-flt",
+      "role": "consumer",
+      "repository": "ImperialCollegeLondon/FLT",
+      "commit": "eb6df2b018f81920cd48dd510417f0b7790c305e",
+      "include_prefixes": [
+        "FLT"
+      ]
+    },
+    {
+      "corpus": "formal-conjectures",
+      "role": "consumer",
+      "repository": "google-deepmind/formal-conjectures",
+      "commit": "e04cc601840dd7a37f89b821a67f3a9e3c38d9c3",
+      "include_prefixes": [
+        "FormalConjectures",
+        "FormalConjecturesForMathlib"
+      ]
+    }
+  ],
+  "bridge_files": [
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/RingTheory/Regular/RegularSequence.lean",
+      "blob_sha": "9b58c8f23e80cfc958d9d395d84acb0929fe5c45"
+    },
+    {
+      "corpus": "mathlib",
+      "role": "bridge-library",
+      "repository": "leanprover-community/mathlib4",
+      "commit": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "path": "Mathlib/NumberTheory/FLT/Basic.lean",
+      "blob_sha": "c21f4b48f7231a5782d0ea07442d963b0c6cc7f5"
+    }
+  ],
+  "origin_environments": {
+    "anthropic-flt": {
+      "environment": "anthropic-mathlib",
+      "mathlib": "db584cd6d46c92f209a44c0f1c829460d327499d",
+      "toolchain": "leanprover/lean4:v4.33.0"
+    },
+    "isomorphic-fermat": {
+      "environment": "isomorphic-mathlib",
+      "mathlib": "0531bb79fea20efc9ce6942db46b96be5a919400",
+      "toolchain": "leanprover/lean4:v4.31.0-rc1"
+    },
+    "imperial-flt": {
+      "environment": "imperial-mathlib",
+      "mathlib": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+      "toolchain": "leanprover/lean4:v4.35.0-rc3"
+    },
+    "formal-conjectures": {
+      "environment": "formal-conjectures-mathlib",
+      "mathlib": "0df444a360eaa60ab8c11dca51a86af692955474",
+      "toolchain": "leanprover/lean4:v4.33.1"
+    }
+  },
+  "epistemic_policy": "Only candidates touching formal-conjectures are reopened. Origin is resolved before theorem search. Shared-upstream references are discharged, short-name collisions are rejected, and only remaining project-local/version residuals become UNKNOWN_ACTIONABLE."
+}
