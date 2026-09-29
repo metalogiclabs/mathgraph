@@ -1,0 +1,51 @@
+name: Crystal Bridge Family Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-corpus-wide-bridge-scout-v1
+    paths:
+      - 'mathgraph/lean_bridge_family_capability.py'
+      - 'tests/test_lean_bridge_family_capability.py'
+      - 'evidence/crystal-directional-bridge-batch-v2.json'
+      - '.github/workflows/crystal-bridge-family-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-family:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Check family compiler
+        run: python -m pytest -q tests/test_lean_bridge_family_capability.py
+      - name: Compile six producers behind one semantic law
+        run: |
+          mkdir -p artifacts/crystal_bridge_family_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.lean_bridge_family_capability import compile_bridge_family
+
+          authority=json.loads(Path("evidence/crystal-directional-bridge-batch-v2.json").read_text())
+          family=compile_bridge_family(authority)
+          out=family.to_dict()
+          out["status"]="REUSABLE"
+          out["producer_names"]=[x["producer"] for x in authority["promoted"]]
+          out["interpretation"]="six distinct producer theorems share one verified consumer-facing consequence law"
+          Path("artifacts/crystal_bridge_family_v1/family.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-bridge-family-v1
+          path: artifacts/crystal_bridge_family_v1/family.json
