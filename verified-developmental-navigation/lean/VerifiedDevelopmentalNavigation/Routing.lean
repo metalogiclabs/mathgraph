@@ -127,4 +127,34 @@ theorem extension_closes_probe_obstruction
 
 end DecisionProblem
 
+
+/-!
+# Cross-corpus semantic surface bridge
+
+The smallest current interoperability residual is not theorem discovery but
+surface mismatch. This generic lemma isolates one common case: over Nat,
+strict positivity and nonzeroness are equivalent premise interfaces.
+-/
+
+def PositiveNat3Surface (C : Nat → Nat → Nat → Prop) : Prop :=
+  ∀ a b c : Nat, 0 < a → 0 < b → 0 < c → C a b c
+
+def NonzeroNat3Surface (C : Nat → Nat → Nat → Prop) : Prop :=
+  ∀ a b c : Nat, a ≠ 0 → b ≠ 0 → c ≠ 0 → C a b c
+
+theorem positiveNat3Surface_iff_nonzeroNat3Surface
+    (C : Nat → Nat → Nat → Prop) :
+    PositiveNat3Surface C ↔ NonzeroNat3Surface C := by
+  constructor
+  · intro h a b c ha hb hc
+    exact h a b c
+      (Nat.pos_of_ne_zero ha)
+      (Nat.pos_of_ne_zero hb)
+      (Nat.pos_of_ne_zero hc)
+  · intro h a b c ha hb hc
+    exact h a b c
+      (Nat.ne_of_gt ha)
+      (Nat.ne_of_gt hb)
+      (Nat.ne_of_gt hc)
+
 end VerifiedDevelopmentalNavigation
