@@ -7,7 +7,7 @@ on:
     paths:
       - ".github/workflows/crystal-chess-subsecond-effort-v55.yml"
       - "experiments/crystal_chess_timemgmt_ablation_v51.py"
-      - "experiments/crystal_chess_normal_exposure_v22.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"\n      - "experiments/crystal_chess_apply_subsecond_effort_v55.py"
   workflow_dispatch:
 
 jobs:
@@ -58,26 +58,7 @@ jobs:
           set -euo pipefail
           cp -a /tmp/stockfish-base /tmp/stockfish-cand
           mkdir -p "artifacts/crystal-chess-v55/${{ matrix.label }}"
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('/tmp/stockfish-cand/src/search.cpp')
-          s=p.read_text()
-          anchor="""            double highBestMoveEffort = std::clamp(
-              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
-
-            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-"""
-          replacement="""            double highBestMoveEffort = std::clamp(
-              interpolate(i64(nodesEffort), i64(75800), i64(104510), 0.969, 0.714), 0.693, 0.838);
-
-            if (limits.time[rootPos.side_to_move()] < 1000)
-                highBestMoveEffort = 1.0;
-
-            double totalTime = mainThread->tm.optimum() * fallingEval * reduction
-"""
-          assert s.count(anchor)==1, ("V55 anchor drift", s.count(anchor))
-          p.write_text(s.replace(anchor,replacement,1))
-          PY
+          python experiments/crystal_chess_apply_subsecond_effort_v55.py --search-cpp /tmp/stockfish-cand/src/search.cpp
           git -C /tmp/stockfish-cand diff -- src/search.cpp > "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch"
           test -s "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch"
           sha256sum "artifacts/crystal-chess-v55/${{ matrix.label }}/stockfish.patch" | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/PATCH_SHA256.txt"
@@ -107,7 +88,7 @@ jobs:
           python experiments/crystal_chess_timemgmt_ablation_v51.py             --pgn "artifacts/crystal-chess-v55/${{ matrix.label }}/match.pgn"             --candidate-name CrystalSubsecondV55             --variant subsecond-effort             --output "artifacts/crystal-chess-v55/${{ matrix.label }}/result.json"             | tee "artifacts/crystal-chess-v55/${{ matrix.label }}/analyse.log"
           grep -q "CRYSTAL_CHESS_TIMEMGMT_ABLATION_V51=PASS" "artifacts/crystal-chess-v55/${{ matrix.label }}/analyse.log"
           cp /tmp/baseline-bench.txt "artifacts/crystal-chess-v55/${{ matrix.label }}/"
-          printf '%s\n' "V54 fast +6.872 Elo / 4096 and slow -7.126 Elo / 1024. V55 uses Stockfish's existing <1000ms regime boundary; no fitted threshold." > "artifacts/crystal-chess-v55/${{ matrix.label }}/LINEAGE.txt"
+          printf '%s\n' "V54 fast +6.872 Elo / 4096 and slow -7.126 Elo / 1024. V55 uses the engine-defined subsecond regime boundary." > "artifacts/crystal-chess-v55/${{ matrix.label }}/LINEAGE.txt"
           printf '%s\n' "official-stockfish/Stockfish@0a215d6c9e48856ef630013b8ab8312941a59057" > "artifacts/crystal-chess-v55/${{ matrix.label }}/STOCKFISH_PIN.txt"
           printf '%s\n' "Disservin/fastchess@60d7a7a26c6b0582a15c112fb29a1829bef2adb3" > "artifacts/crystal-chess-v55/${{ matrix.label }}/FASTCHESS_PIN.txt"
 
