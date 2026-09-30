@@ -134,7 +134,7 @@ jobs:
             "lean_consumers":"2/2 GREEN",
             "native_pvs_source_authority":"2/2 GREEN",
             "new_constructor_schema_count":0,
-            "theorem_names_used_as_selector_inputs":false,
+            "theorem_names_used_as_selector_inputs":False,
             "systems_law":{
               "name":"structural_constructor_selection_generalizes_with_restraint",
               "statement":"With selector and semantic-boundary code frozen before a four-family external batch was opened, all 26 prover-internal surfaces remained typed UNKNOWN while both closed object-level claims were routed to previously warranted constructor classes and independently verified in Lean and PVS."
