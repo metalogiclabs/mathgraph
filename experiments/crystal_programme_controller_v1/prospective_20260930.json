@@ -1,0 +1,73 @@
+{
+  "schema": "mathgraph.crystal-programme-prospective-v1",
+  "frozen_at": "2026-09-30T13:30:00+13:00",
+  "controller_authority": "3eac441741c7753241327911b661eb13966cace4",
+  "residuals": [
+    {
+      "campaign": "tasksat",
+      "protected_objective": "Python/Z3 execution semantics commute with pinned Lean TaskNetExec for state, cumulative, rate, and temporal consequences",
+      "residual_id": "inclusion-sensitive-zone-carrier",
+      "residual_kind": "semantic-carrier",
+      "evidence_refs": ["ros:2026-09-30-morning-reconcile", "tasksat:v4-current-separators"]
+    },
+    {
+      "campaign": "collatz",
+      "protected_objective": "establish V48 origin-relative eventual macro progress for every lawful no-OrdinaryExit path",
+      "residual_id": "origin-relative-progress-bridge",
+      "residual_kind": "universal-invariant",
+      "evidence_refs": ["ros:collatz-v53-closeout-audit", "run:36646755493"]
+    },
+    {
+      "campaign": "chess",
+      "protected_objective": "promote candidate search reduction only with replicated positive playing-strength evidence",
+      "residual_id": "v56-v57-replication",
+      "residual_kind": "replication",
+      "evidence_refs": ["run:36617274049", "ros:2026-09-30-morning-reconcile"]
+    },
+    {
+      "campaign": "cross-prover",
+      "protected_objective": "extend automatic semantic linking beyond the closed pinned 82-candidate universe without theorem-name routing",
+      "residual_id": "fresh-corpus-grammar",
+      "residual_kind": "grammar-extension",
+      "evidence_refs": ["run:36603583607", "ros:cross-prover-closeout"]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "tasksat-shadow-inclusion-carrier",
+      "campaign": "tasksat",
+      "residual_id": "inclusion-sensitive-zone-carrier",
+      "experiment_kind": "differential-oracle",
+      "expected_contraction": 8.0,
+      "cost": 2.0,
+      "evidence_refs": ["ros:tasksat-smallest-next-experiment"]
+    },
+    {
+      "experiment_id": "collatz-symbolic-origin-rank-bridge",
+      "campaign": "collatz",
+      "residual_id": "origin-relative-progress-bridge",
+      "experiment_kind": "symbolic-proof-search",
+      "expected_contraction": 10.0,
+      "cost": 8.0,
+      "evidence_refs": ["ros:collatz-highest-leverage-residual"]
+    },
+    {
+      "experiment_id": "chess-finish-running-replications",
+      "campaign": "chess",
+      "residual_id": "v56-v57-replication",
+      "experiment_kind": "replication",
+      "expected_contraction": 3.0,
+      "cost": 3.0,
+      "evidence_refs": ["ros:chess-v56-v57-in-progress"]
+    },
+    {
+      "experiment_id": "cross-prover-enlarge-corpus",
+      "campaign": "cross-prover",
+      "residual_id": "fresh-corpus-grammar",
+      "experiment_kind": "corpus-expansion",
+      "expected_contraction": 4.0,
+      "cost": 4.0,
+      "evidence_refs": ["ros:cross-prover-next-experiment"]
+    }
+  ]
+}
