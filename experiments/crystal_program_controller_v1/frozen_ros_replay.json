@@ -1,0 +1,328 @@
+{
+  "schema": "mathgraph.crystal-program-controller-replay.v1",
+  "boundary": "Frozen methodological replay only. Numeric contraction/cost inputs are normalized advisory replay inputs, not empirical forecasts and not scientific authority.",
+  "cases": [
+    {
+      "case_id": "arc-applicability-binding",
+      "expected_selected": "arc-derive-minimum-binding",
+      "outcome_ref": "github-run:36292473732",
+      "state": {
+        "campaign_id": "arc",
+        "objective": "Reduce probe mass without regressing the frozen public catalogue.",
+        "compressed_state_ref": "github-run:36292473732:developmental-composition",
+        "residual_id": "arc.applicability_binding_genesis",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36292473732", "github-run:36286262339"],
+        "required_invariants": ["no_regression_catalogue", "support_revocation"],
+        "live_capability_refs": ["arc.developmental_composition@1"],
+        "retained_negative_tags": ["whole_game_identity", "literal_role_binding"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "arc-tune-game-worlds",
+          "campaign_id": "arc",
+          "description": "Keep tuning whole historical games as hypothesis objects.",
+          "targets_residual": "arc.applicability_binding_genesis",
+          "mode": "SEARCH",
+          "expected_contraction": 0.90,
+          "cost_units": 1.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:frozen-catalogue-replay",
+          "estimate_evidence_refs": ["github-run:36286262339"],
+          "preserves_invariants": ["no_regression_catalogue", "support_revocation"],
+          "mechanism_tags": ["whole_game_identity"]
+        },
+        {
+          "candidate_id": "arc-derive-minimum-binding",
+          "campaign_id": "arc",
+          "description": "Derive the minimum verified applicability/test transformer from positive lineage and near misses.",
+          "targets_residual": "arc.applicability_binding_genesis",
+          "mode": "REFINE",
+          "expected_contraction": 0.55,
+          "cost_units": 2.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:frozen-catalogue-prospective-replay",
+          "estimate_evidence_refs": ["github-run:36292473732"],
+          "preserves_invariants": ["no_regression_catalogue", "support_revocation"],
+          "separator_refs": ["github-run:36286262339", "github-run:36292473732"]
+        }
+      ]
+    },
+    {
+      "case_id": "chess-residual-ladder",
+      "expected_selected": "chess-refine-exact-residual",
+      "outcome_ref": "github-run:36359443246",
+      "state": {
+        "campaign_id": "chess",
+        "objective": "Remove Stockfish work only on zero-error certified states.",
+        "compressed_state_ref": "ros:crystal-chess-v14-pair-guard",
+        "residual_id": "chess.kppvk_pair_residual",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["ros:crystal-chess-v14-pair-guard"],
+        "required_invariants": ["zero_shortcut_error", "fallback_identity"],
+        "live_capability_refs": ["chess.pair_guard@v14"],
+        "retained_negative_tags": ["reprove_closed_pair_guard"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "chess-repeat-pair-proof",
+          "campaign_id": "chess",
+          "description": "Spend another campaign reproving the already-qualified pair guard.",
+          "targets_residual": "chess.kppvk_pair_residual",
+          "mode": "SEARCH",
+          "expected_contraction": 0.85,
+          "cost_units": 1.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:tablebase-replay",
+          "estimate_evidence_refs": ["ros:crystal-chess-v14-pair-guard"],
+          "preserves_invariants": ["zero_shortcut_error", "fallback_identity"],
+          "mechanism_tags": ["reprove_closed_pair_guard"]
+        },
+        {
+          "candidate_id": "chess-refine-exact-residual",
+          "campaign_id": "chess",
+          "description": "Add only safe distance and relational classes on the surviving exact pair residual.",
+          "targets_residual": "chess.kppvk_pair_residual",
+          "mode": "REFINE",
+          "expected_contraction": 0.60,
+          "cost_units": 1.5,
+          "verification_grade": "OFFICIAL",
+          "verification_plan_ref": "plan:complete-tablebase-census",
+          "estimate_evidence_refs": ["ros:crystal-chess-v14-pair-guard"],
+          "preserves_invariants": ["zero_shortcut_error", "fallback_identity"],
+          "separator_refs": ["residual:kppvk-v14"]
+        }
+      ]
+    },
+    {
+      "case_id": "ethereum-client-specific-realization",
+      "expected_selected": "ethereum-transfer-consequence-benchmark-native",
+      "outcome_ref": "github-run:36502416400",
+      "state": {
+        "campaign_id": "ethereum",
+        "objective": "Reuse the verified BAL consequence without assuming one client implementation strategy.",
+        "compressed_state_ref": "github-run:36357032694:reth-transfer",
+        "residual_id": "ethereum.client_specific_realization",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36357032694", "github-run:36358745584"],
+        "required_invariants": ["exact_final_state", "native_regression_green"],
+        "live_capability_refs": ["ethereum.compact_final_state@1"],
+        "retained_negative_tags": ["assume_mechanism_transfer"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "ethereum-copy-geth-mechanism",
+          "campaign_id": "ethereum",
+          "description": "Assume the geth compact implementation is the optimization recipe for every client.",
+          "targets_residual": "ethereum.client_specific_realization",
+          "mode": "REUSE",
+          "expected_contraction": 0.90,
+          "cost_units": 0.8,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:client-regression",
+          "estimate_evidence_refs": ["github-run:36358745584"],
+          "preserves_invariants": ["exact_final_state", "native_regression_green"],
+          "capability_refs": ["ethereum.compact_final_state@1"],
+          "mechanism_tags": ["assume_mechanism_transfer"]
+        },
+        {
+          "candidate_id": "ethereum-transfer-consequence-benchmark-native",
+          "campaign_id": "ethereum",
+          "description": "Transfer only the semantic consequence, then benchmark the client's native realization.",
+          "targets_residual": "ethereum.client_specific_realization",
+          "mode": "VERIFY",
+          "expected_contraction": 0.50,
+          "cost_units": 1.2,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:heldout-bal-native-benchmark",
+          "estimate_evidence_refs": ["github-run:36357032694"],
+          "preserves_invariants": ["exact_final_state", "native_regression_green"]
+        }
+      ]
+    },
+    {
+      "case_id": "acc-official-cost-native",
+      "expected_selected": "acc-charge-every-proposal-in-official-moves",
+      "outcome_ref": "github-run:36649127665",
+      "state": {
+        "campaign_id": "acc",
+        "objective": "Produce verifier-clean strict record wins on the live singleton frontier.",
+        "compressed_state_ref": "github-run:36649127665:nielsen-harvest-negative",
+        "residual_id": "acc.official_cost_native_proposal",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36649127665", "github-run:36648412519"],
+        "required_invariants": ["official_verifier_cost", "no_quota_without_strict_win"],
+        "live_capability_refs": ["acc.nielsen_basis_view@1", "acc.proof_atlas@1"],
+        "retained_negative_tags": ["free_basis_transport", "blind_radius_growth"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "acc-widen-mixed-nielsen",
+          "campaign_id": "acc",
+          "description": "Widen the mixed Nielsen solver while keeping canonicalisation and basis return effectively free.",
+          "targets_residual": "acc.official_cost_native_proposal",
+          "mode": "SEARCH",
+          "expected_contraction": 0.95,
+          "cost_units": 1.0,
+          "verification_grade": "OFFICIAL",
+          "verification_plan_ref": "plan:official-verifier",
+          "estimate_evidence_refs": ["github-run:36649127665"],
+          "preserves_invariants": ["official_verifier_cost", "no_quota_without_strict_win"],
+          "mechanism_tags": ["free_basis_transport"]
+        },
+        {
+          "candidate_id": "acc-charge-every-proposal-in-official-moves",
+          "campaign_id": "acc",
+          "description": "Use Nielsen basis only as a proposal view and charge every macro immediately in official verifier moves.",
+          "targets_residual": "acc.official_cost_native_proposal",
+          "mode": "REFINE",
+          "expected_contraction": 0.45,
+          "cost_units": 2.0,
+          "verification_grade": "OFFICIAL",
+          "verification_plan_ref": "plan:official-verifier-before-publication",
+          "estimate_evidence_refs": ["github-run:36649127665"],
+          "preserves_invariants": ["official_verifier_cost", "no_quota_without_strict_win"],
+          "separator_refs": ["github-run:36649127665"]
+        }
+      ]
+    },
+    {
+      "case_id": "collatz-full-live-rank",
+      "expected_selected": "collatz-build-source-relative-rank-bridge",
+      "outcome_ref": "ros:collatz-v51-v52-closeout",
+      "state": {
+        "campaign_id": "collatz",
+        "objective": "Close the V48 QED socket without promoting bounded evidence to universality.",
+        "compressed_state_ref": "ros:collatz-v51-signed-budget",
+        "residual_id": "collatz.full_live_rank_transport",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["ros:collatz-v51-signed-budget", "ros:collatz-v53-closeout-audit"],
+        "required_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+        "live_capability_refs": ["collatz.affine_budget@v51", "collatz.qed_socket@v48"],
+        "retained_negative_tags": ["cumulative_macro_budget", "bounded_recharge_horizon"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "collatz-batch-more-returns",
+          "campaign_id": "collatz",
+          "description": "Search for a positive cumulative macro budget by batching more returns.",
+          "targets_residual": "collatz.full_live_rank_transport",
+          "mode": "SEARCH",
+          "expected_contraction": 0.80,
+          "cost_units": 1.0,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:lean-plus-exact-replay",
+          "estimate_evidence_refs": ["ros:collatz-v51-signed-budget"],
+          "preserves_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+          "mechanism_tags": ["cumulative_macro_budget"]
+        },
+        {
+          "candidate_id": "collatz-build-source-relative-rank-bridge",
+          "campaign_id": "collatz",
+          "description": "Construct the source-relative full-live rank/transport bridge into the existing V48 socket.",
+          "targets_residual": "collatz.full_live_rank_transport",
+          "mode": "REFINE",
+          "expected_contraction": 0.25,
+          "cost_units": 3.0,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:lean-kernel-plus-prospective-exact-family",
+          "estimate_evidence_refs": ["ros:collatz-v51-signed-budget", "ros:collatz-v53-closeout-audit"],
+          "preserves_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+          "separator_refs": ["ros:collatz-v51-macro-batching-negative", "ros:collatz-v53-local-descent-counterexample"]
+        }
+      ]
+    },
+    {
+      "case_id": "cross-prover-target-interface",
+      "expected_selected": "cross-prover-add-target-interface-closure",
+      "outcome_ref": "github-run:36509778856",
+      "state": {
+        "campaign_id": "cross-prover",
+        "objective": "Transport source-pinned theorem meaning across repository and revision boundaries without silent repair.",
+        "compressed_state_ref": "github-run:36509778856:first-auto-transport-separator",
+        "residual_id": "cross_prover.target_interface_closure",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36509778856"],
+        "required_invariants": ["source_pinned", "unchanged_theorem_body", "fail_closed_unknown"],
+        "live_capability_refs": ["cross_prover.semantic_adapter@1"],
+        "retained_negative_tags": ["source_closure_only"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "cross-prover-broaden-low-dependency-scan",
+          "campaign_id": "cross-prover",
+          "description": "Select more small source dependency cards without checking the target interface.",
+          "targets_residual": "cross_prover.target_interface_closure",
+          "mode": "SEARCH",
+          "expected_contraction": 0.90,
+          "cost_units": 0.9,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:lean-target-compile",
+          "estimate_evidence_refs": ["github-run:36509778856"],
+          "preserves_invariants": ["source_pinned", "unchanged_theorem_body", "fail_closed_unknown"],
+          "mechanism_tags": ["source_closure_only"]
+        },
+        {
+          "candidate_id": "cross-prover-add-target-interface-closure",
+          "campaign_id": "cross-prover",
+          "description": "Admit a theorem card only when both source closure and unchanged target-interface compile closure hold.",
+          "targets_residual": "cross_prover.target_interface_closure",
+          "mode": "REFINE",
+          "expected_contraction": 0.70,
+          "cost_units": 1.3,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:unchanged-target-compile-plus-separator-preservation",
+          "estimate_evidence_refs": ["github-run:36509778856"],
+          "preserves_invariants": ["source_pinned", "unchanged_theorem_body", "fail_closed_unknown"],
+          "separator_refs": ["github-run:36509778856:P2M.Sol.S_Algebra_trdeg_quotient_lt"]
+        }
+      ]
+    },
+    {
+      "case_id": "nucleus-reuse-before-probe",
+      "expected_selected": "nucleus-recompute-33-case-quotient",
+      "outcome_ref": "github-run:36627307769",
+      "state": {
+        "campaign_id": "nucleus",
+        "objective": "Increase independent native coverage with zero wrong verdicts.",
+        "compressed_state_ref": "github-run:36627307769:160-of-193",
+        "residual_id": "nucleus.fresh_33_case_quotient",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36627307769"],
+        "required_invariants": ["zero_wrong", "independent_authority"],
+        "live_capability_refs": ["nucleus.independent33@1"],
+        "retained_negative_tags": ["probe_before_reclosure"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "nucleus-probe-all-33",
+          "campaign_id": "nucleus",
+          "description": "Start fresh probes over all 33 residuals before recomputing the quotient and reusing existing laws.",
+          "targets_residual": "nucleus.fresh_33_case_quotient",
+          "mode": "SEARCH",
+          "expected_contraction": 0.90,
+          "cost_units": 1.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:full-193-causal-gate",
+          "estimate_evidence_refs": ["github-run:36627307769"],
+          "preserves_invariants": ["zero_wrong", "independent_authority"],
+          "mechanism_tags": ["probe_before_reclosure"]
+        },
+        {
+          "candidate_id": "nucleus-recompute-33-case-quotient",
+          "campaign_id": "nucleus",
+          "description": "Reclose the new 33-case frontier under the current independent capability bank before any probe.",
+          "targets_residual": "nucleus.fresh_33_case_quotient",
+          "mode": "REUSE",
+          "expected_contraction": 0.50,
+          "cost_units": 0.8,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:frozen-193-differential-reclosure",
+          "estimate_evidence_refs": ["github-run:36627307769"],
+          "preserves_invariants": ["zero_wrong", "independent_authority"],
+          "capability_refs": ["nucleus.independent33@1"]
+        }
+      ]
+    }
+  ]
+}
