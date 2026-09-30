@@ -1,0 +1,186 @@
+name: ethereum-crystal-v19-authenticated-catchup
+on:
+  push:
+    branches: [ethereum-crystal-v19-authenticated-catchup]
+  workflow_dispatch:
+
+jobs:
+  authenticated-catchup-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+
+      - name: Generate frozen held-out BAL corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v19-fixtures
+          uv run fill --from Amsterdam --until Amsterdam --output=/tmp/eels-v19-fixtures --skip-index --no-html -n 2 tests/amsterdam/eip7928_block_level_access_lists
+
+      - name: Export exact V19 corpus
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py /tmp/eels-v19-fixtures /tmp/crystal-v19-heldout.rlpbin
+          sha256sum /tmp/crystal-v19-heldout.rlpbin | tee /tmp/crystal-v19-heldout.sha256
+          test "$(python - <<'PY'
+          import struct
+          b=open('/tmp/crystal-v19-heldout.rlpbin','rb').read()
+          print(struct.unpack('<I', b[4:8])[0])
+          PY
+          )" = "1112"
+
+      - name: Prepare stock and Crystal geth trees
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth-stock
+          cd /tmp/geth-stock
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cd /tmp
+          cp -a geth-stock geth
+
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v19/crystal_authenticated_catchup_test.go" /tmp/geth-stock/eth/protocols/snap/crystal_authenticated_catchup_test.go
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v19/crystal_authenticated_catchup_test.go" /tmp/geth/eth/protocols/snap/crystal_authenticated_catchup_test.go
+
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder.go" /tmp/geth/core/types/bal/crystal_apply_decoder.go
+          python "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/patch_geth.py"
+
+          gofmt -w /tmp/geth-stock/eth/protocols/snap/crystal_authenticated_catchup_test.go
+          gofmt -w /tmp/geth/core/types/bal/crystal_apply_decoder.go /tmp/geth/eth/protocols/snap/syncv2.go /tmp/geth/eth/protocols/snap/crystal_authenticated_catchup_test.go
+
+          cd /tmp/geth-stock
+          git diff --check
+          git diff > /tmp/crystal-v19-stock-harness.patch
+          cd /tmp/geth
+          git diff --check
+          git diff > /tmp/crystal-v19-crystal.patch
+
+      - name: Compile exact stock and Crystal snap test binaries
+        run: |
+          cd /tmp/geth-stock
+          go test -c -o /tmp/geth-v19-stock.test ./eth/protocols/snap
+          cd /tmp/geth
+          go test ./core/types/bal -count=1
+          go test -c -o /tmp/geth-v19-crystal.test ./eth/protocols/snap
+          sha256sum /tmp/geth-v19-stock.test /tmp/geth-v19-crystal.test | tee /tmp/crystal-v19-binaries.sha256
+
+      - name: Run seven alternating paired authenticated catch-up trials
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v19-heldout.rlpbin
+        run: |
+          : > /tmp/crystal-v19-test.txt
+          for i in 0 1 2 3 4 5 6; do
+            if [ $((i % 2)) -eq 0 ]; then
+              arms="stock crystal"
+            else
+              arms="crystal stock"
+            fi
+            for arm in $arms; do
+              echo "=== trial=$i arm=$arm ===" | tee -a /tmp/crystal-v19-test.txt
+              CRYSTAL_V19_ARM="$arm" \
+              CRYSTAL_V19_RESULT="/tmp/crystal-v19-$arm-$i.json" \
+              "/tmp/geth-v19-$arm.test" -test.run '^TestCrystalV19AuthenticatedCatchUp$' -test.count=1 -test.v \
+                | tee -a /tmp/crystal-v19-test.txt
+            done
+          done
+          test "$(grep -c 'ETHEREUM_CRYSTAL_V19_AUTHENTICATED_CATCHUP=PASS' /tmp/crystal-v19-test.txt)" = "14"
+
+      - name: Exact parity and performance summary
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import statistics
+
+          rows = {"stock": [], "crystal": []}
+          for i in range(7):
+              for arm in rows:
+                  p = f"/tmp/crystal-v19-{arm}-{i}.json"
+                  d = json.load(open(p))
+                  assert d["Protocol"] == "ETHEREUM_CRYSTAL_V19_AUTHENTICATED_CATCHUP"
+                  assert d["Arm"] == arm
+                  assert d["Records"] == 1112
+                  assert d["AccessListRequests"] > 0
+                  rows[arm].append(d)
+
+          digests = {d["FinalDigest"] for arm in rows for d in rows[arm]}
+          pivots = {d["FinalPivotHash"] for arm in rows for d in rows[arm]}
+          assert len(digests) == 1, digests
+          assert len(pivots) == 1, pivots
+
+          for i in range(7):
+              assert rows["stock"][i]["AccessListRequests"] == rows["crystal"][i]["AccessListRequests"]
+
+          stock_apply = [d["ApplyNS"] for d in rows["stock"]]
+          crystal_apply = [d["ApplyNS"] for d in rows["crystal"]]
+          stock_durable = [d["DurableNS"] for d in rows["stock"]]
+          crystal_durable = [d["DurableNS"] for d in rows["crystal"]]
+
+          sa = statistics.median(stock_apply)
+          ca = statistics.median(crystal_apply)
+          sd = statistics.median(stock_durable)
+          cd = statistics.median(crystal_durable)
+
+          summary = {
+              "protocol": "ETHEREUM_CRYSTAL_V19_AUTHENTICATED_CATCHUP_AB",
+              "geth_pin": "920c07774c65ebb3023536f85df642c44478b540",
+              "trials": 7,
+              "records_per_trial": 1112,
+              "final_digest": next(iter(digests)),
+              "final_pivot_hash": next(iter(pivots)),
+              "stock_apply_median_ns": sa,
+              "crystal_apply_median_ns": ca,
+              "apply_speedup": sa / ca,
+              "stock_durable_median_ns": sd,
+              "crystal_durable_median_ns": cd,
+              "durable_speedup": sd / cd,
+              "paired_apply_ratios": [rows["stock"][i]["ApplyNS"] / rows["crystal"][i]["ApplyNS"] for i in range(7)],
+              "paired_durable_ratios": [rows["stock"][i]["DurableNS"] / rows["crystal"][i]["DurableNS"] for i in range(7)],
+              "access_list_requests": [rows["stock"][i]["AccessListRequests"] for i in range(7)],
+              "claim_boundary": rows["crystal"][0]["ClaimBoundary"],
+              "performance_direction_precommitted": False,
+          }
+          with open("/tmp/crystal-v19-summary.json", "w") as f:
+              json.dump(summary, f, indent=2)
+              f.write(chr(10))
+
+          print(json.dumps(summary, indent=2))
+          print(
+              "CRYSTAL_V19_SUMMARY",
+              f"apply_speedup={summary['apply_speedup']:.6f}",
+              f"durable_speedup={summary['durable_speedup']:.6f}",
+              f"digest={summary['final_digest']}",
+              f"pivot={summary['final_pivot_hash']}",
+          )
+          PY
+
+      - name: Upload V19 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v19-authenticated-catchup
+          path: |
+            /tmp/crystal-v19-summary.json
+            /tmp/crystal-v19-*.json
+            /tmp/crystal-v19-test.txt
+            /tmp/crystal-v19-heldout.sha256
+            /tmp/crystal-v19-binaries.sha256
+            /tmp/crystal-v19-stock-harness.patch
+            /tmp/crystal-v19-crystal.patch
+
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V19_AUTHENTICATED_CATCHUP_AB=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "PERFORMANCE_DIRECTION_NOT_PRECOMMITTED=true"
+          echo "NO_SOCKET_OR_MAINNET_CLAIM=true"
+          echo "NO_UPSTREAM_PR_CREATED=true"
