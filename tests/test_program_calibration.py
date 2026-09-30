@@ -15,7 +15,7 @@ from mathgraph.program_calibration import (
 
 
 LEDGER = Path(
-    "experiments/crystal_program_calibration_v2/completed_v1_measurements.json"
+    "experiments/crystal_program_calibration_v2/completed_measurements_v2.json"
 )
 
 
@@ -43,6 +43,10 @@ def test_corrected_job_wall_measurements_match_frozen_contract():
     assert records["nucleus"].wall_seconds == 32
     assert records["nucleus"].contraction_fraction == 1.0
     assert records["nucleus"].utility_per_second == pytest.approx(0.03125)
+
+    assert records["ethereum"].wall_seconds == 189
+    assert records["ethereum"].contraction_fraction == 1.0
+    assert records["ethereum"].utility_per_second == pytest.approx(1 / 189)
 
     assert records["cross-prover"].wall_seconds == 376
     assert records["cross-prover"].contraction_fraction == 0.0
