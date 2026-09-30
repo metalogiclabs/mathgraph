@@ -1,0 +1,141 @@
+name: Crystal Cross-Prover Batch Refutation V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-refutation-probe-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-batch-refutation-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel-check exact Lean negations
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          ROOT=/tmp/refute-lean
+          mkdir -p "$ROOT"
+          cat > "$ROOT/Surface.lean" <<'EOF'
+          import Mathlib
+
+          theorem refute_inverse :
+              ¬ (∀ x : ℝ, ∃ y : ℝ, x * y = 1) := by
+            intro h
+            obtain ⟨y, hy⟩ := h 0
+            norm_num at hy
+
+          theorem refute_amgm3 :
+              ¬ (∀ x y : ℝ, x ^ 2 + y ^ 2 ≥ 3 * x * y) := by
+            intro h
+            have h11 := h 1 1
+            norm_num at h11
+          EOF
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-refutations"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+
+      - name: Install exact PVS and source environment
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+
+      - name: Replay exact PVS negations in batch
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          cat > crystal_refute.pvs <<'EOF'
+          crystal_refute: THEORY
+          BEGIN
+            IMPORTING cad_decide5, mpoly_embed
+            inverse_false: LEMMA NOT (FORALL (x: real): EXISTS (y: real): x * y = 1)
+            amgm3_false: LEMMA NOT (FORALL (x: real): FORALL (y: real):
+              x^2 + y^2 >= 3 * x * y)
+          END crystal_refute
+          EOF
+          cat > crystal_refute.prf <<'EOF'
+          (|crystal_refute|
+           (|inverse_false| 0
+            (|inverse_false-0| "" 1 ("" (CAD) NIL NIL) NIL SHOSTAK))
+           (|amgm3_false| 0
+            (|amgm3_false-0| "" 1 ("" (CAD) NIL NIL) NIL SHOSTAK))
+          )
+          EOF
+          "$PVS_DIR/proveit" -q --timeout 180 @crystal_refute.inverse_false:amgm3_false | tee /tmp/refute.log
+          grep -q "Grand Totals: 2 proofs, 2 attempted, 2 succeeded" /tmp/refute.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/refute.log; then exit 1; fi
+
+      - name: Record bounded refutations
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_refutations_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-refutations.v1",
+            "status":"WARRANTED_BOUNDED_CROSS_PROVER_REFUTATIONS",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "relation_kind":"SOURCE_FORMULA_REFUTED",
+            "refutations":[
+              {
+                "source":"cad_demo.d_inverse",
+                "canonical_negation":"¬ ∀x:ℝ, ∃y:ℝ, x*y=1",
+                "lean_counterexample":"x=0",
+                "pvs_negation_replay":"GREEN"
+              },
+              {
+                "source":"cad_demo.t_amgm3",
+                "canonical_negation":"¬ ∀x y:ℝ, x²+y²≥3xy",
+                "lean_counterexample":"x=y=1",
+                "pvs_negation_replay":"GREEN"
+              }
+            ],
+            "boundary":"These source formulas are REJECTED by exact negation proofs in both PVS and Lean. They are not failed theorem replays or unsupported UNKNOWNs."
+          }
+          Path("artifacts/crystal_cross_prover_refutations_v1/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-refutations-v1
+          path: artifacts/crystal_cross_prover_refutations_v1/result.json
