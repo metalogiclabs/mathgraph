@@ -1,0 +1,243 @@
+name: Cross-Prover Fresh Route Calibration V1
+
+on:
+  push:
+    branches: [crystal-cross-prover-fresh-route-calibration-v1]
+    paths:
+      - ".github/workflows/crystal-cross-prover-fresh-route-calibration-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CALIBRATION_CONTRACT: metalogiclabs/mathgraph@2d59a95ab6c28c1a1814863ab9becaaba9c83356
+  PVS_CAD_SHA: 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+  PVS_SOURCE_BLOB: 6bd0293c12bfb8c0c0b7164640cc5bcd0f23390b
+  PVS_PROOF_BLOB: 705461b90a656369ca9ced9384ce254f8b61a0ee
+  NASALIB_SHA: e426f69dc2680ad575491f93c5a51739ec8b25fa
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MathGraph and pin frozen route code
+        run: |
+          set -euo pipefail
+          python -m pip install -e ".[all]"
+          test "$(git hash-object mathgraph/cross_prover_family_discovery.py)" = 7e637fcd39c7df814b6e414aae93b50312257a58
+          test "$(git hash-object mathgraph/cross_prover_consequence_search.py)" = b278376f7ddad4f2b6bd05bebdd06eb9daa88f51
+
+      - name: Install exact PVS and source dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin "$NASALIB_SHA"
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin "$PVS_CAD_SHA"
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = "$PVS_CAD_SHA"
+          test "$(git -C /tmp/pvs_cad hash-object cad/alg_bis_ex.pvs)" = "$PVS_SOURCE_BLOB"
+          test "$(git -C /tmp/pvs_cad hash-object cad/alg_bis_ex.prf)" = "$PVS_PROOF_BLOB"
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+
+      - name: Freeze fresh atoms and apply unchanged exact/route grammars
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_fresh_route_calibration_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import (
+              SPECS,discover_family,extract_pvs_lemmas,extract_pvs_proved_formulas,render_lean_family
+          )
+          from mathgraph.cross_prover_consequence_search import discover_consequence_routes,render_lean_adapters
+
+          source=Path("/tmp/pvs_cad/cad/alg_bis_ex.pvs").read_text()
+          proof=Path("/tmp/pvs_cad/cad/alg_bis_ex.prf").read_text()
+          sources={"alg_bis_ex":source}
+          proofs={"alg_bis_ex":proof}
+          lemmas=extract_pvs_lemmas(source)
+          proof_names=extract_pvs_proved_formulas(proof)
+          atom_names=[name for name,_ in lemmas]
+          assert atom_names, "fresh theory has no LEMMA atoms"
+
+          exact=discover_family(sources,proofs)
+          available=sorted({spec.claim_id for spec in SPECS.values()})
+          routed=discover_consequence_routes(sources,available_claim_ids=available)
+
+          exact_rows={x["formula"]:x for x in exact["supported_occurrences"]}
+          route_rows={x["formula"]:x for x in routed["routes"]}
+          unresolved_rows={x["formula"]:x for x in routed["unresolved"]}
+          ambiguous_rows={x["formula"]:x for x in routed["ambiguous"]}
+
+          atoms=[]
+          credited=0
+          child_counts={}
+          for name,surface in lemmas:
+              if name not in proof_names:
+                  child="source-unverified"
+                  credit=False
+                  next_action="obtain native source authority before semantic routing"
+              elif name in exact_rows:
+                  child="exact-supported-meaning"
+                  credit=True
+                  next_action="terminal exact semantic reuse after native PVS and Lean checks"
+              elif name in route_rows:
+                  child="automatic-consequence-route"
+                  credit=True
+                  next_action="terminal consequence reuse after native PVS and Lean adapter checks"
+              elif name in ambiguous_rows:
+                  child="unknown-ambiguous-route"
+                  credit=False
+                  next_action="separate competing route prerequisites with one formula-shape witness"
+              else:
+                  row=unresolved_rows.get(name,{})
+                  if row.get("status")=="UNKNOWN_MISSING_PREREQUISITE":
+                      child="unknown-missing-prerequisite"
+                      next_action="qualify missing prerequisite claim before re-routing"
+                  else:
+                      child="unknown-no-route"
+                      next_action="derive the minimum new constructor from this exact alpha surface"
+                  credit=False
+              child_counts[child]=child_counts.get(child,0)+1
+              credited += int(credit)
+              atoms.append({
+                  "atom":name,
+                  "parent_residual":"independent-route-grammar-generalization",
+                  "child_residual":child,
+                  "credited":credit,
+                  "next_action":next_action,
+                  "source_proof_present":name in proof_names,
+              })
+
+          replay=[name for name in atom_names if name in proof_names]
+          assert replay, "no proof-bearing fresh atoms"
+          Path("/tmp/pvs-target").write_text("@alg_bis_ex."+":".join(replay)+"\n")
+
+          exact_lean=render_lean_family(exact)
+          exact_sources=set(exact_rows)
+          filtered_routes=[x for x in routed["routes"] if x["formula"] not in exact_sources and x["formula"] in proof_names]
+          routed_filtered=dict(routed)
+          routed_filtered["routes"]=filtered_routes
+          route_lean=render_lean_adapters(routed_filtered)
+          def without_import(text):
+              return "\n".join(x for x in text.splitlines() if x.strip()!="import Mathlib")
+          Path("/tmp/Surface.lean").write_text(
+              "import Mathlib\n\n"+without_import(exact_lean)+"\n"+without_import(route_lean)+"\n"
+          )
+
+          result={
+              "schema":"mathgraph.cross-prover-fresh-route-calibration.v1",
+              "calibration_contract":os.environ["CALIBRATION_CONTRACT"],
+              "source_repository":"j-tanner-slagel/pvs_cad",
+              "source_commit":os.environ["PVS_CAD_SHA"],
+              "source_file":"cad/alg_bis_ex.pvs",
+              "parent_residual":"independent-route-grammar-generalization",
+              "frozen_atoms":len(atoms),
+              "credited_atoms_pre_verification":credited,
+              "child_counts":child_counts,
+              "atoms":atoms,
+              "replay_targets":replay,
+              "exact_supported_count":child_counts.get("exact-supported-meaning",0),
+              "automatic_route_count":child_counts.get("automatic-consequence-route",0),
+              "native_pvs_gate":"PENDING",
+              "lean_gate":"PENDING",
+              "boundary":"Fresh family chosen before body inspection by frozen filename rule. Frozen V5 exact grammar and five consequence routes are unchanged."
+          }
+          out=Path("artifacts/crystal_cross_prover_fresh_route_calibration_v1/result.json")
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "frozen_atoms":len(atoms),
+              "credited_pre_verification":credited,
+              "child_counts":child_counts,
+              "replay_targets":replay,
+          },sort_keys=True))
+          PY
+
+      - name: Native PVS replay of every proof-bearing fresh atom
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          TARGET="$(cat /tmp/pvs-target)"
+          "$PVS_DIR/proveit" -q --timeout 180 "$TARGET" | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_route_calibration_v1/pvs.log"
+          grep -q "Grand Totals:" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_route_calibration_v1/pvs.log"
+          if grep -Ei "unfinished|untried|unchecked" "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_route_calibration_v1/pvs.log"; then
+            exit 1
+          fi
+
+      - name: Kernel-check all generated exact/reuse consumers
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          ROOT=/tmp/fresh-route-lean
+          mkdir -p "$ROOT"
+          cp /tmp/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "fresh-route-calibration"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+
+      - name: Seal shared-metric result
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("artifacts/crystal_cross_prover_fresh_route_calibration_v1/result.json")
+          d=json.loads(p.read_text())
+          d["native_pvs_gate"]="GREEN"
+          d["lean_gate"]="GREEN"
+          d["credited_atoms"]=d.pop("credited_atoms_pre_verification")
+          d["contraction_fraction"]=d["credited_atoms"]/d["frozen_atoms"]
+          d["run_id"]=int(os.environ["RUN_ID"])
+          d["head_sha"]=os.environ["HEAD_SHA"]
+          d["status"]="WARRANTED_BOUNDED_FRESH_ROUTE_CALIBRATION"
+          p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "frozen_atoms":d["frozen_atoms"],
+              "credited_atoms":d["credited_atoms"],
+              "contraction_fraction":d["contraction_fraction"],
+              "child_counts":d["child_counts"],
+              "status":d["status"],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-prover-fresh-route-calibration-v1
+          path: artifacts/crystal_cross_prover_fresh_route_calibration_v1/
+          if-no-files-found: error
