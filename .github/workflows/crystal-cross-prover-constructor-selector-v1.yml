@@ -1,0 +1,79 @@
+name: Crystal Cross-Prover Constructor Selector V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-constructor-selector-v1
+    paths:
+      - 'mathgraph/cross_prover_constructor_selector.py'
+      - 'tests/test_cross_prover_constructor_selector.py'
+      - '.github/workflows/crystal-cross-prover-constructor-selector-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Test bounded selector and ablations
+        run: python -m pytest -q tests/test_cross_prover_constructor_selector.py
+      - name: Evaluate selector on sealed heldout2 meanings
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/heldout2 artifacts/crystal_cross_prover_constructor_selector_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/heldout2/cad_examples2.pvs "$BASE/cad_examples2.pvs"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import extract_pvs_lemmas
+          from mathgraph.cross_prover_constructor_selector import select_constructor_schema
+
+          data=Path("/tmp/heldout2/cad_examples2.pvs").read_bytes()
+          got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          assert got=="5e943e67140d88aa94eef4241b418951f7ba3130",got
+          src=data.decode()
+          surfaces=dict(extract_pvs_lemmas(src))
+          expected={
+            "ex_quad":"explicit_witness",
+            "ex_disc2":"quadratic_implication",
+            "ex_quartic":"sum_of_squares",
+            "ex_ell":"explicit_witness",
+            "ex_two":"algebraic_root_witness",
+          }
+          selected={}
+          for formula,want in expected.items():
+              out=select_constructor_schema(surfaces[formula])
+              assert out["status"]=="CANDIDATE_CONSTRUCTOR_SELECTION",(formula,out)
+              assert out["schema"]==want,(formula,out,want)
+              selected[formula]=out
+
+          out={
+            "schema":"mathgraph.cross-prover-constructor-selector-result.v1",
+            "status":"CANDIDATE_BOUNDED_STRUCTURAL_CONSTRUCTOR_SELECTION",
+            "source_file":"cad/cad_examples2.pvs",
+            "evaluated_new_meanings":5,
+            "correct_schema_selections":5,
+            "selection_accuracy_on_evaluated_residuals":1.0,
+            "selected":selected,
+            "theorem_names_used_as_selector_inputs":false,
+            "new_constructor_schema_count":0,
+            "causal_control":"each selected schema ablation returns UNKNOWN_MISSING_CONSTRUCTOR",
+            "boundary":"The structural rules were designed after cad_examples2 residual analysis. This validates deterministic selection on that family and fail-closed schema ablation, not independent generalization."
+          }
+          Path("artifacts/crystal_cross_prover_constructor_selector_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-constructor-selector-v1
+          path: artifacts/crystal_cross_prover_constructor_selector_v1/result.json
