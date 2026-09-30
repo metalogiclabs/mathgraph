@@ -1,0 +1,46 @@
+{
+  "schema": "mathgraph.crystal-program-controller-shared-calibration.ethereum-extension.v2",
+  "parent_calibration_head": "4ceaa342452efe19857c134b2618a8c12e5ca69c",
+  "parent_calibration_run": 36653502907,
+  "measurement_boundary": {
+    "contraction_basis": "prospective_typed_residual_occurrence_contraction_fraction.v2",
+    "cost_basis": "github_actions_job_wall_seconds.v1",
+    "unchanged_from_parent": true
+  },
+  "sample": {
+    "campaign": "ethereum",
+    "candidate_id": "ethereum-v22-complete-trie-cpu-replication",
+    "source_run": 36653763668,
+    "source_head": "1c14f5c2cf0e8653bb30a77abd985dccab611492",
+    "source_job": 109693493535,
+    "source_artifact": 11070828938,
+    "source_artifact_digest": "sha256:2bb6002c1634cac45d26ddb290f93953781df39b22fcdaf7352ae879a1df8683",
+    "prospective_freeze_surface": ".github/workflows/ethereum-crystal-v22.yml",
+    "selected_residual": "completed-state-performance-classification",
+    "occurrences_before": 1,
+    "occurrences_after": 0,
+    "typed_residual_occurrences_contracted": 1,
+    "contraction_fraction": 1.0,
+    "job_wall_seconds": 189,
+    "contraction_per_second": 0.005291005291005291,
+    "terminal_classification": "WARRANTED_PERFORMANCE",
+    "protected_result": {
+      "cpu_median_ratio": 1.025429812960514,
+      "positive_pairs": 18,
+      "pair_count": 21,
+      "bootstrap_95_low": 1.01133,
+      "bootstrap_95_high": 1.036984
+    },
+    "verification": "42/42 arms preserve exact DB digest, pivot, final state root, root-chain digest and request-count parity; classification rule was committed before run outcome.",
+    "epistemic_result": "WARRANTED_BOUNDED_PROSPECTIVE_RESIDUAL_CONTRACTION"
+  },
+  "decision": {
+    "completed_observed_order": [
+      "nucleus",
+      "ethereum",
+      "cross-prover"
+    ],
+    "selected_current_campaign_id": null,
+    "reason": "The Ethereum action can join the completed-action comparison because the corrected V2 metric existed before V22 and V22's workflow froze its one residual occurrence and terminal classification rule before execution. This still supplies no forecast for any campaign's next action."
+  }
+}
