@@ -1,0 +1,48 @@
+name: Crystal Programme Controller V1
+
+on:
+  push:
+    branches:
+      - crystal-program-controller-v1
+    paths:
+      - 'mathgraph/research_controller.py'
+      - 'tests/test_research_controller.py'
+      - 'scripts/run_crystal_program_controller_replay.py'
+      - 'experiments/crystal_program_controller_v1/**'
+      - '.github/workflows/crystal-program-controller-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+
+      - name: Recheck inherited Crystal microkernel
+        run: python -m pytest -q tests/test_crystal.py
+
+      - name: Qualify programme controller invariants
+        run: python -m pytest -q tests/test_research_controller.py
+
+      - name: Run frozen cross-project replay with causal ablations
+        run: |
+          python scripts/run_crystal_program_controller_replay.py
+          cat artifacts/crystal_program_controller_v1/replay_result.json
+
+      - name: Upload controller evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-program-controller-v1
+          path: artifacts/crystal_program_controller_v1/replay_result.json
+          if-no-files-found: error
