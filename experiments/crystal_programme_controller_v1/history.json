@@ -1,0 +1,41 @@
+{
+  "schema": "mathgraph.crystal-programme-controller-history-v1",
+  "cases": [
+    {
+      "name": "arc-whole-game-identity-negative",
+      "residual": {"campaign": "arc", "protected_objective": "reduce probes without regression", "residual_id": "cross-game-reuse", "residual_kind": "applicability", "evidence_refs": ["ros:arc-9886-observations"]},
+      "experiments": [
+        {"experiment_id": "retune-whole-game-worlds", "expected_contraction": 100, "cost": 1, "repeats_superseded_route": true},
+        {"experiment_id": "factor-causal-law-fragments", "expected_contraction": 3, "cost": 2}
+      ],
+      "expected": "factor-causal-law-fragments"
+    },
+    {
+      "name": "chess-residual-only-refinement",
+      "residual": {"campaign": "chess", "protected_objective": "zero-error search elimination", "residual_id": "pair-residual", "residual_kind": "coverage", "evidence_refs": ["run:36359443246"]},
+      "experiments": [
+        {"experiment_id": "reprove-pair-law", "expected_contraction": 20, "cost": 1, "repeats_superseded_route": true},
+        {"experiment_id": "safe-distance-on-residual", "expected_contraction": 4, "cost": 2}
+      ],
+      "expected": "safe-distance-on-residual"
+    },
+    {
+      "name": "theorem-transport-first-separator",
+      "residual": {"campaign": "theorem-transport", "protected_objective": "unchanged cross-revision theorem reuse", "residual_id": "target-interface", "residual_kind": "interface", "evidence_refs": ["run:36509778856"]},
+      "experiments": [
+        {"experiment_id": "patch-failed-trdeg-theorem", "expected_contraction": 50, "cost": 1, "requires_unearned_distinction": true},
+        {"experiment_id": "test-target-interface-closure", "expected_contraction": 3, "cost": 2}
+      ],
+      "expected": "test-target-interface-closure"
+    },
+    {
+      "name": "ethereum-do-not-repeat-implementation-recipe",
+      "residual": {"campaign": "ethereum", "protected_objective": "portable exact final-state consequence", "residual_id": "client-transfer", "residual_kind": "implementation-boundary", "evidence_refs": ["ros:reth-cross-client"]},
+      "experiments": [
+        {"experiment_id": "force-geth-double-decode-mechanism", "expected_contraction": 20, "cost": 1, "requires_unearned_distinction": true},
+        {"experiment_id": "transfer-consequence-not-mechanism", "expected_contraction": 2, "cost": 2}
+      ],
+      "expected": "transfer-consequence-not-mechanism"
+    }
+  ]
+}
