@@ -1,0 +1,25 @@
+{
+  "schema": "mathgraph.cross-prover-heldout5-sgn-selector-qualification.v1",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "source_file": "cad/sgn_examples.pvs",
+    "source_blob_sha": "4276c496560e8afa18ab9901855ad978894fe0eb",
+    "proof_file": "cad/sgn_examples.prf",
+    "proof_blob_sha": "54d393c4a6093bbe927aa875561bd520c8cd8d0c"
+  },
+  "frozen_batch_run": 36652376018,
+  "selector_candidate_run": 36652128524,
+  "selected": {
+    "sgn_examples.g1": "explicit_witness",
+    "sgn_examples.g2": "quantifier_witness_duality"
+  },
+  "batch_totals": {
+    "source_lemmas": 28,
+    "object_level_claims": 2,
+    "typed_unknown": 26,
+    "selected_object_level_claims": 2
+  },
+  "new_constructor_schema_count": 0,
+  "boundary": "The selector and semantic boundary were frozen before the four-family example batch was opened. This qualification tests only the two independently selected object-level claims. The other 26 batch lemmas remain typed UNKNOWN."
+}
