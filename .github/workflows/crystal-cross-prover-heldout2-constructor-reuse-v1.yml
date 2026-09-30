@@ -1,0 +1,97 @@
+name: Crystal Cross-Prover Heldout2 Constructor Reuse V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout2-constructor-reuse-v1
+    paths:
+      - 'experiments/crystal_cross_prover_heldout2_constructor_reuse_v1/**'
+      - '.github/workflows/crystal-cross-prover-heldout2-constructor-reuse-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Verify constructor classes predate heldout2
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import SPECS
+          m=json.loads(Path("experiments/crystal_cross_prover_heldout2_constructor_reuse_v1/manifest.json").read_text())
+          known={spec.certificate_schema for spec in SPECS.values()}
+          used={row["constructor_schema"] for row in m["new_meanings"]}
+          assert m["new_constructor_schema_count"]==0,m
+          assert used.issubset(known),(used,known)
+          assert used==set(m["preexisting_constructor_schemas"]),(used,m["preexisting_constructor_schemas"])
+          print("PREEXISTING_CONSTRUCTORS_ONLY",sorted(used))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check five unseen meanings
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-heldout2-constructor-reuse
+          mkdir -p "$ROOT"
+          cp experiments/crystal_cross_prover_heldout2_constructor_reuse_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-heldout2-constructor-reuse"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_heldout2_constructor_reuse_v1"
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_heldout2_constructor_reuse_v1/lean_surface.sha256"
+      - name: Record candidate
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          m=json.loads(Path("experiments/crystal_cross_prover_heldout2_constructor_reuse_v1/manifest.json").read_text())
+          out={
+              "schema":"mathgraph.cross-prover-heldout2-constructor-reuse-result.v1",
+              "status":"CANDIDATE_HELDOUT2_EXISTING_CONSTRUCTOR_REUSE",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "source_file":"cad/cad_examples2.pvs",
+              "new_meanings_checked":5,
+              "lean_consumers":"5/5 GREEN",
+              "constructor_schemas":sorted({x["constructor_schema"] for x in m["new_meanings"]}),
+              "new_constructor_schema_count":0,
+              "parent_constructor_authority_run":36649171836,
+              "sealed_baseline_measurement_run":36650465741,
+              "representation_repair_candidate_run":36650702457,
+              "native_pvs_source_authority":"PENDING_HELDOUT2_RUN",
+              "boundary":m["boundary"]
+          }
+          p=Path("artifacts/crystal_cross_prover_heldout2_constructor_reuse_v1")
+          p.mkdir(parents=True,exist_ok=True)
+          p.joinpath("result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout2-constructor-reuse-v1
+          path: artifacts/crystal_cross_prover_heldout2_constructor_reuse_v1/
