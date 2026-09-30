@@ -1,0 +1,185 @@
+{
+  "schema": "mathgraph.crystal-live-program-snapshot.v2",
+  "snapshot_time_utc": "2026-09-30T01:05:00Z",
+  "calibration_epoch": "programme-calibration-20260930-v1",
+  "boundary": "Durable GitHub evidence supersedes stale ROS prose. Candidate contraction/cost fields remain campaign-local admissibility sentinels; cross-campaign continuation uses only fresh calibration_records.json.",
+  "expected_calibrated_status": "HOLD_PARTIAL_CALIBRATION",
+  "expected_missing_calibration_campaigns": ["acc", "collatz"],
+  "campaigns": [
+    {
+      "state": {
+        "campaign_id": "acc",
+        "objective": "Increase verifier-clean ownership of current ACC records toward rank 1.",
+        "compressed_state_ref": "github-run:36649127665",
+        "residual_id": "acc.official_cost_native_search",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36648412519", "github-run:36649127665"],
+        "required_invariants": ["official_verifier_cost", "strict_record_win_before_quota"],
+        "live_capability_refs": ["acc.proof_atlas@1", "acc.nielsen_proposal_view@1"],
+        "retained_negative_tags": ["fixed_basis_harvest", "free_basis_transport", "widen_mixed_nielsen"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "acc-official-cost-native-proposal-search",
+          "campaign_id": "acc",
+          "description": "Use Nielsen basis only as a proposal/view dimension, transport every macro immediately into frozen official moves, charge exact verifier cost, and retain Proof Atlas only as an exit oracle.",
+          "targets_residual": "acc.official_cost_native_search",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "OFFICIAL",
+          "verification_plan_ref": "plan:strict-live-record-win-before-publication",
+          "estimate_evidence_refs": ["github-run:36649127665"],
+          "preserves_invariants": ["official_verifier_cost", "strict_record_win_before_quota"],
+          "separator_refs": ["github-run:36648412519", "github-run:36649127665"]
+        }
+      ]
+    },
+    {
+      "state": {
+        "campaign_id": "collatz",
+        "objective": "Close the existing Lean Collatz socket only through universal source-coherent exit/progress evidence.",
+        "compressed_state_ref": "github-run:36650922251",
+        "residual_id": "collatz.universal_exit_or_source_coherent_progress",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36650922251", "github-run:36646230370"],
+        "required_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+        "live_capability_refs": ["collatz.qed_socket@v48", "collatz.affine_budget@v51"],
+        "retained_negative_tags": ["local_progress_implies_origin_progress", "finite_return_bank_as_qed", "cumulative_macro_budget"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "collatz-source-coherent-exit-bridge",
+          "campaign_id": "collatz",
+          "description": "Prove universal OrdinaryExit totality or an all-depth source-coherent progress transport into the existing V48 socket; otherwise emit the exact protected obstruction.",
+          "targets_residual": "collatz.universal_exit_or_source_coherent_progress",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:lean-kernel-plus-exact-source-family",
+          "estimate_evidence_refs": ["github-run:36650922251"],
+          "preserves_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+          "separator_refs": ["github-run:36650922251"]
+        }
+      ]
+    },
+    {
+      "state": {
+        "campaign_id": "nucleus",
+        "objective": "Increase independent native Lean-kernel coverage with zero wrong verdicts.",
+        "compressed_state_ref": "github-run:36652387720",
+        "residual_id": "nucleus.const_vs_const_neutral_9",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36651339523", "github-run:36652387720"],
+        "required_invariants": ["zero_wrong", "independent_authority", "preserve_other_residual_classes"],
+        "live_capability_refs": ["nucleus.independent30@1", "nucleus.neutral_head_quotient@1"],
+        "retained_negative_tags": ["full_delta_pi_exposure", "generic_application_function_type"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "nucleus-rigid-constant-lineage-spine-audit",
+          "campaign_id": "nucleus",
+          "description": "Audit the nine const-vs-const neutral mismatches by rigid constant origin, level arguments, spine shape and dependency closure; admit only an earned conversion/refutation rule and reclose all 193 cases.",
+          "targets_residual": "nucleus.const_vs_const_neutral_9",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:full-frozen-193-differential-reclosure",
+          "estimate_evidence_refs": ["github-run:36652387720"],
+          "preserves_invariants": ["zero_wrong", "independent_authority", "preserve_other_residual_classes"],
+          "separator_refs": ["github-run:36652387720"]
+        }
+      ]
+    },
+    {
+      "state": {
+        "campaign_id": "cross-prover",
+        "objective": "Generalize automatic semantic routing while preserving proof-system/domain boundaries and typed UNKNOWN.",
+        "compressed_state_ref": "github-run:36652664976",
+        "residual_id": "cross_prover.source_domain_router_after_alg_bis_ex",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36650789774", "github-run:36652664976"],
+        "required_invariants": ["formula_shape_routing", "native_source_authority", "lean_consumer_check", "typed_unknown"],
+        "live_capability_refs": ["cross_prover.auto_consequence_routing@v1"],
+        "retained_negative_tags": ["universal_five_route_grammar", "theorem_name_routing"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "cross-prover-source-domain-gate",
+          "campaign_id": "cross-prover",
+          "description": "Earn the minimum source-domain gate that separates real-arithmetic theorem surfaces from CAD-internal ok2c/dec2c obligations before invoking the frozen semantic route grammar; preserve unsupported domains as UNKNOWN.",
+          "targets_residual": "cross_prover.source_domain_router_after_alg_bis_ex",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:prior-positive-families-plus-fresh-alg-bis-control",
+          "estimate_evidence_refs": ["github-run:36652664976"],
+          "preserves_invariants": ["formula_shape_routing", "native_source_authority", "lean_consumer_check", "typed_unknown"],
+          "separator_refs": ["github-run:36652664976"]
+        }
+      ]
+    },
+    {
+      "state": {
+        "campaign_id": "arc",
+        "objective": "Transport earned ARC progress only when applicability/support are qualified.",
+        "compressed_state_ref": "github-run:36293720465",
+        "residual_id": "arc.applicability_binding_genesis",
+        "residual_status": "CLOSED",
+        "residual_evidence_refs": ["github-run:36293720465"],
+        "required_invariants": ["no_regression_catalogue", "support_revocation", "near_miss_refusal"],
+        "live_capability_refs": ["arc.applicability_bindings@1"],
+        "retained_negative_tags": ["whole_game_identity", "literal_origin_role_binding"]
+      },
+      "candidates": []
+    },
+    {
+      "state": {
+        "campaign_id": "ethereum",
+        "objective": "Determine whether Crystal's compact consequence survives complete trie catch-up before paying for whole-node/socket noise.",
+        "compressed_state_ref": "github-run:36652713089",
+        "residual_id": "ethereum.complete_trie_catchup",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36652030884", "github-run:36652629125", "github-run:36652713089"],
+        "required_invariants": ["exact_final_state", "authenticated_catchup", "pebble_parity"],
+        "live_capability_refs": ["ethereum.compact_final_state@1"],
+        "retained_negative_tags": ["retune_decoder_before_transport_gate"],
+        "blocker_refs": ["pending:github-run:36653221176"]
+      },
+      "candidates": []
+    },
+    {
+      "state": {
+        "campaign_id": "chess",
+        "objective": "Establish whether the frozen Crystal clock gate improves real Stockfish strength under external-like controls.",
+        "compressed_state_ref": "ros:crystal-chess-v56-v60",
+        "residual_id": "chess.external_strength_replication",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36617274049", "github-run:36629386182"],
+        "required_invariants": ["frozen_64ms_rule", "paired_external_controls"],
+        "live_capability_refs": ["chess.clock_gate@64ms"],
+        "retained_negative_tags": ["retune_before_external_gate"],
+        "blocker_refs": ["pending:v56_slow", "pending:v57_ccrl_like", "pending:v58_fishtest_style"]
+      },
+      "candidates": []
+    },
+    {
+      "state": {
+        "campaign_id": "tasksat-cad",
+        "objective": "Resolve TaskSAT semantic authority before patching the execution carrier.",
+        "compressed_state_ref": "github-run:36631502126",
+        "residual_id": "tasksat.specification_authority",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36631502126"],
+        "required_invariants": ["ten_of_ten_pvs_cad_qed", "exact_numeric_witnesses"],
+        "live_capability_refs": ["tasksat.assignment_semantics@closeout"],
+        "retained_negative_tags": ["more_cad_inside_closed_boundary"],
+        "blocker_refs": ["external_authority:tasksat_mexec_authors"]
+      },
+      "candidates": []
+    }
+  ]
+}
