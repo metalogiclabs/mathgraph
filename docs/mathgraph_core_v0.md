@@ -73,3 +73,33 @@ references. The adapter quotients recognized source occurrences by canonical
 claim ID, keeps unsupported surfaces as `Unknown`, and requires explicit
 source/target claim IDs plus verifier authority before adding an implication.
 Recognition by itself never creates a warrant.
+
+
+## Discovery loop integration
+
+Core V0 remains the semantic/evidential kernel; objective choice and attention
+policy stay outside it. `discovery_candidate_sources.candidates_from_core_v0_graph`
+round-trips and closes a copy of the graph, binds the resulting frontier to the
+SHA-256 digest of that exact closed `.mg` snapshot, and emits only unresolved
+subjects as advisory `DiscoveryCandidate` records.
+
+Resolved `WARRANTED`, `REJECTED`, and `SUPERSEDED` subjects do not re-enter
+the attention queue. Unsupported grammar residuals descend to representation
+repair, revoked evidence descends to replay, conflicts descend to trust audit,
+and otherwise-unwarranted semantic objects or relations descend to an explicit
+verifier-contact boundary.
+
+The scheduler still cannot promote truth. A selected continuation must return
+through a verifier adapter and be admitted as a Core V0 warrant before it can
+change durable semantic state. This gives the bounded loop:
+
+```text
+generate -> normalize -> verify -> admit -> close
+   ^                                  |
+   |                                  v
+DiscoveryScheduler <- unresolved Core V0 frontier
+```
+
+The intended compounding invariant is: once closure can warrant a consequence,
+that consequence disappears from future advisory attention until its support is
+revoked or conflicted.
