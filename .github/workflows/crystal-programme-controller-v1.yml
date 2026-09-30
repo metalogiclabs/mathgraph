@@ -19,7 +19,7 @@ jobs:
       - name: Unit policy gates
         run: python -m pytest tests/test_programme_controller.py -q
       - name: Frozen historical replay
-        run: python experiments/crystal_programme_controller_v1/run.py
+        run: python -m experiments.crystal_programme_controller_v1.run
       - name: Assert controller boundaries
         run: |
           python - <<'PY'
