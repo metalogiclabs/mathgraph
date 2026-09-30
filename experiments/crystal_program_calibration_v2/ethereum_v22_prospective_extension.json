@@ -1,0 +1,42 @@
+{
+  "schema": "mathgraph.crystal-program-calibration-extension.v2",
+  "parent_contract": "metalogiclabs/mathgraph:crystal-program-calibration-v1@2d59a95ab6c28c1a1814863ab9becaaba9c83356",
+  "frozen_before_outcome": true,
+  "purpose": "Extend the already-frozen shared metric to one additional live campaign without changing metric semantics.",
+  "metric": {
+    "contraction_basis": "verified_residual_atom_sharpening_fraction.v1",
+    "cost_basis": "github_hosted_job_wall_seconds.v1",
+    "utility": "credited_atoms / frozen_atoms / wall_seconds",
+    "unchanged_from_parent": true
+  },
+  "admitted_campaign": {
+    "campaign_id": "ethereum",
+    "candidate_commit": "1c14f5c2cf0e8653bb30a77abd985dccab611492",
+    "candidate_run": 36653763668,
+    "candidate_status_at_freeze": "IN_PROGRESS",
+    "parent_authority": "metalogiclabs/mathgraph:ethereum-crystal-v21-complete-trie-catchup@6550cf74a57e85e728f326f27b90b9f43fe1ac7d",
+    "parent_run": 36653221176,
+    "parent_residual": "replicate V21 unchanged over 21 fresh-process pairs using V20 frozen CPU criterion",
+    "frozen_atoms": [
+      "ethereum.v21-completed-state-cpu-replication"
+    ],
+    "credit_rule": "1 iff V22 completes its predeclared 21-pair gate with exact protected state/root parity and yields a verifier-backed terminal performance classification under the workflow's frozen rule; 0 on execution failure, parity regression, or missing classification",
+    "protected_invariants": [
+      "unchanged_v21_semantics",
+      "exact_final_db_digest_parity",
+      "exact_final_pivot_parity",
+      "exact_final_state_root_parity",
+      "exact_root_chain_digest_parity",
+      "paired_request_count_parity"
+    ],
+    "verification_boundary": "21 fresh-process alternating stock/Crystal pairs; unchanged V21 implementation; classification rule frozen in candidate workflow before execution outcome",
+    "workflow_path": ".github/workflows/ethereum-crystal-v22.yml",
+    "workflow_acceptance_rule": "WARRANTED_PERFORMANCE iff median apply CPU ratio > 1, >=14/21 pairs favor Crystal, bootstrap 95% lower bound > 1; NARROWS iff median > 1 otherwise; REJECTS_DIRECTION iff median <= 1"
+  },
+  "anti_leakage": [
+    "no result-dependent atom split",
+    "no metric change",
+    "no performance direction required for atom credit; a verifier-backed negative classification is still a sharpened residual",
+    "any protected semantic regression invalidates credit"
+  ]
+}
