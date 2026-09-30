@@ -1,0 +1,47 @@
+{
+  "schema": "mathgraph.crystal-program-calibration-ledger.v2",
+  "contract_ref": "metalogiclabs/mathgraph:crystal-program-calibration-v1@2d59a95ab6c28c1a1814863ab9becaaba9c83356",
+  "correction": "V1 prose used GitHub workflow-run elapsed time. The frozen contract explicitly requires the declared qualification job's completed_at minus started_at, so V2 uses raw job timestamps.",
+  "records": [
+    {
+      "campaign_id": "nucleus",
+      "action_id": "nucleus-neutral-head-kind-quotient-v1",
+      "prospective_freeze_ref": "crystal-program-calibration-v1#campaign:nucleus",
+      "frozen_atoms": 17,
+      "credited_atoms": 17,
+      "job_started_at": "2026-09-30T00:52:23Z",
+      "job_completed_at": "2026-09-30T00:52:55Z",
+      "invariants_preserved": true,
+      "evidence_refs": [
+        "github-run:36652387720",
+        "github-job:109689261465",
+        "github-artifact:11070479718",
+        "sha256:dd7cef176d098fa32ba45abc1422dd049549dea4adf562bdfc7a84c105066bf4"
+      ]
+    },
+    {
+      "campaign_id": "cross-prover",
+      "action_id": "cross-prover-fresh-route-grammar-v1",
+      "prospective_freeze_ref": "crystal-program-calibration-v1#campaign:cross-prover",
+      "frozen_atoms": 6,
+      "credited_atoms": 0,
+      "job_started_at": "2026-09-30T00:55:54Z",
+      "job_completed_at": "2026-09-30T01:02:10Z",
+      "invariants_preserved": true,
+      "evidence_refs": [
+        "github-run:36652664976",
+        "github-job:109690111569",
+        "github-artifact:11071007567",
+        "sha256:afefbb0d16a805468414956128e0a142f2d616ae36eed5cfc71d3e1b0a0945e9"
+      ]
+    }
+  ],
+  "expected": {
+    "nucleus_wall_seconds": 32,
+    "nucleus_utility_per_second": 0.03125,
+    "cross_prover_wall_seconds": 376,
+    "cross_prover_utility_per_second": 0.0,
+    "best_observed_completed_action": "nucleus-neutral-head-kind-quotient-v1"
+  },
+  "boundary": "Completed-action comparison only. These records do not predict current next-action utility and may not be attached to a different live action."
+}
