@@ -1,0 +1,102 @@
+name: Crystal Cross-Prover Auto Consequence Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout-auto-consequence-v3
+    paths:
+      - '.github/workflows/crystal-cross-prover-auto-consequence-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind to exact green route-search code
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_consequence_search.py)" = b278376f7ddad4f2b6bd05bebdd06eb9daa88f51
+          test "$(git hash-object tests/test_cross_prover_consequence_search.py)" = 7c1308fc1a0018746efb5fc10ec898f8eaa17aa1
+      - name: Verify candidate and native source authority runs
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+
+          def jobs(run_id):
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/{run_id}/jobs?per_page=100",
+                  headers={
+                      "Authorization":f"Bearer {os.environ['GH_TOKEN']}",
+                      "Accept":"application/vnd.github+json",
+                  },
+              )
+              return json.load(urllib.request.urlopen(req))["jobs"]
+
+          candidate=jobs(36650257340)
+          cj=next(x for x in candidate if x["name"]=="discover-lean")
+          assert cj["conclusion"]=="success",cj
+          step=next(x for x in cj["steps"] if x["name"]=="Kernel-check automatically selected adapters")
+          assert step["conclusion"]=="success",step
+
+          authority=jobs(36650038542)
+          pvs=[x for x in authority if x["name"].startswith("pvs (")]
+          assert len(pvs)==2,pvs
+          assert all(x["conclusion"]=="success" for x in pvs),pvs
+          promotion=next(x for x in authority if x["name"]=="promote")
+          assert promotion["conclusion"]=="success",promotion
+
+          print("CANDIDATE_ROUTE_SEARCH_GREEN",cj["id"])
+          print("SOURCE_AUTHORITY_GREEN",[x["id"] for x in pvs])
+          PY
+      - name: Promote bounded automatic consequence routing
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_auto_consequence_promotion_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-auto-consequence-routing-result.v1",
+            "status":"WARRANTED_BOUNDED_AUTOMATIC_CONSEQUENCE_ROUTING_V1",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "candidate_route_run":36650257340,
+            "native_source_authority_run":36650038542,
+            "parent_exact_family_run":36649171836,
+            "relation_kind":"WARRANTED_CLAIMS_IMPLY_SOURCE_INSTANCE",
+            "source_lemmas":11,
+            "frozen_exact_reuses":3,
+            "automatic_consequence_routes":5,
+            "new_exact_residuals":3,
+            "route_ids":[
+              "add_nonnegative_square@1",
+              "compose_root_circle@1",
+              "iterate_upper_bound@1",
+              "lift_unbounded_sum@1",
+              "specialize_zero_square_shift@1"
+            ],
+            "causal_controls":{
+              "all_prerequisite_ablations":"ROUTE_REMOVED",
+              "sham_claim_set_routed_occurrences":0
+            },
+            "lean_generated_adapter_gate":"GREEN",
+            "native_pvs_source_gate":"8/8 GREEN",
+            "boundary":"The five route constructors were specified after residual analysis of cad_examples3/cad_examples4, then route selection was automated from alpha-normalized formula shape and prerequisite claim availability. This warrants bounded automatic routing and causal prerequisite dependence on that source family, not independent held-out generalization of the route grammar."
+          }
+          Path("artifacts/crystal_cross_prover_auto_consequence_promotion_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-auto-consequence-promotion-v1
+          path: artifacts/crystal_cross_prover_auto_consequence_promotion_v1/result.json
