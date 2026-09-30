@@ -1,0 +1,66 @@
+name: Crystal Cross-Prover Type Projection V2 Reuse Promotion
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-type-projection-v2
+    paths:
+      - '.github/workflows/crystal-cross-prover-type-projection-v2-promote.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify immutable cross-run authorities
+        run: |
+          set -euo pipefail
+          curl -fsSL https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/36647652459/jobs -o /tmp/pvs.json
+          curl -fsSL https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/36647887432/jobs -o /tmp/lean.json
+          python - <<'PY'
+          import json
+          p=json.load(open("/tmp/pvs.json"))
+          l=json.load(open("/tmp/lean.json"))
+          pj=next(x for x in p["jobs"] if x["name"]=="pvs")
+          lj=next(x for x in l["jobs"] if x["name"]=="discover-lean")
+          assert pj["conclusion"]=="success",pj
+          assert lj["conclusion"]=="success",lj
+          print("PVS_AUTHORITY_REUSED",pj["id"])
+          print("LEAN_CORRECTION_GREEN",lj["id"])
+          PY
+          test "$(git hash-object mathgraph/cross_prover_sufficient_interface.py)" = fc4f059818aacf3129c188d1c826e4a897d5d63e
+      - name: Promote without repaying unchanged PVS authority
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_type_projection_v2
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-sufficient-interface-result.v2",
+            "status":"WARRANTED_BOUNDED_CROSS_PROVER_TYPE_RANGE_PROJECTION_V2",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "parent_projection_warrant_run":36640121901,
+            "relation_kind":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+            "same_meaning":False,
+            "new_source_formulas":["s_posreal","s_sqrtpos"],
+            "new_relation_count":2,
+            "pvs_authority":{"run_id":36647652459,"job":"pvs","status":"GREEN_REUSED"},
+            "lean_authority":{"run_id":36647887432,"job":"discover-lean","status":"GREEN_CORRECTED"},
+            "requalification_policy":"Only the changed Lean adapter side was requalified; unchanged pinned PVS source authority was reused.",
+            "boundary":"Subtype/range semantics cross through stronger real-valued interfaces and typed adapters, not exact semantic identity."
+          }
+          Path("artifacts/crystal_cross_prover_type_projection_v2/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-type-projection-v2-reuse-promotion
+          path: artifacts/crystal_cross_prover_type_projection_v2/result.json
