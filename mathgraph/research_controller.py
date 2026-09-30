@@ -1,11 +1,11 @@
 """Programme-level Crystal research controller.
 
-This module is intentionally small and advisory.  It does not create scientific
-authority, prove claims, or execute domain actions.  It selects the next
+This module is intentionally small and advisory. It does not create scientific
+authority, prove claims, or execute domain actions. It selects the next
 *eligible* experiment only after a campaign exposes a named residual from a
 compressed warranted state.
 
-The hard invariant is:
+Hard invariant:
 
     no residual localization -> no action
 
@@ -18,14 +18,19 @@ Eligibility is fail-closed:
 * an independent-or-stronger verification boundary must be planned; and
 * the contraction estimate must itself carry evidence references.
 
-Among eligible actions the controller maximizes declared expected verified
-residual contraction per unit cost.  Those estimates remain advisory inputs;
-only the downstream verifier can promote a result.
+Within one campaign, eligible actions are ordered by declared expected verified
+residual contraction per unit cost. Across campaigns, scalar comparison is
+allowed only when the selected actions explicitly share the same non-local
+contraction and cost bases. Otherwise the portfolio decision is HOLD rather
+than fabricating cross-domain utility.
+
+All estimates are advisory inputs. Only the downstream verifier can promote a
+scientific result.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Iterable, Sequence
 
@@ -82,6 +87,7 @@ class CampaignState:
     required_invariants: tuple[str, ...] = ()
     live_capability_refs: tuple[str, ...] = ()
     retained_negative_tags: tuple[str, ...] = ()
+    blocker_refs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.campaign_id:
@@ -96,6 +102,7 @@ class CampaignState:
             and bool(self.compressed_state_ref)
             and bool(self.residual_id)
             and bool(self.residual_evidence_refs)
+            and not self.blocker_refs
         )
 
 
@@ -116,6 +123,8 @@ class CandidateExperiment:
     separator_refs: tuple[str, ...] = ()
     mechanism_tags: tuple[str, ...] = ()
     assumptions: tuple[str, ...] = ()
+    contraction_basis: str = "campaign_local"
+    cost_basis: str = "campaign_local"
 
     def __post_init__(self) -> None:
         if not self.candidate_id or not self.campaign_id:
@@ -126,6 +135,8 @@ class CandidateExperiment:
             raise ValueError("expected_contraction must be in [0,1]")
         if self.cost_units <= 0:
             raise ValueError("cost_units must be positive")
+        if not self.contraction_basis or not self.cost_basis:
+            raise ValueError("comparison bases must be non-empty")
 
     @property
     def score(self) -> float:
@@ -134,6 +145,14 @@ class CandidateExperiment:
             * _VERIFICATION_WEIGHT[self.verification_grade]
             / self.cost_units
         )
+
+    @property
+    def comparison_key(self) -> tuple[str, str]:
+        return self.contraction_basis, self.cost_basis
+
+    @property
+    def portfolio_comparable(self) -> bool:
+        return self.comparison_key != ("campaign_local", "campaign_local")
 
 
 @dataclass(frozen=True)
@@ -209,6 +228,8 @@ def assess_candidate(state: CampaignState, candidate: CandidateExperiment) -> Ca
 
     if not state.action_ready:
         reasons.append("campaign_not_residual_localized")
+    if state.blocker_refs:
+        reasons.append("campaign_blocked:" + ",".join(state.blocker_refs))
     if candidate.campaign_id != state.campaign_id:
         reasons.append("wrong_campaign")
     if candidate.targets_residual != state.residual_id:
@@ -265,6 +286,11 @@ def decide_campaign(
     assessments = tuple(assess_candidate(state, c) for c in scoped)
 
     if not state.action_ready:
+        blocker = (
+            " Campaign blockers: " + ", ".join(state.blocker_refs) + "."
+            if state.blocker_refs
+            else ""
+        )
         return CampaignDecision(
             campaign_id=state.campaign_id,
             status="HOLD",
@@ -274,7 +300,8 @@ def decide_campaign(
             assessments=assessments,
             rationale=(
                 "No action: campaign lacks a named residual from a compressed "
-                "warranted state with residual evidence."
+                "warranted state with residual evidence, or has an unresolved "
+                "external blocker." + blocker
             ),
         )
 
@@ -313,8 +340,8 @@ def decide_campaign(
         assessments=assessments,
         rationale=(
             "Selected the eligible proposal with maximum declared expected "
-            "verified residual contraction per unit cost. Promotion still "
-            "depends on its downstream verifier."
+            "verified residual contraction per unit cost inside this campaign. "
+            "Promotion still depends on its downstream verifier."
         ),
     )
 
@@ -336,6 +363,32 @@ def decide_portfolio(
             rationale="No campaign currently has an eligible residual-first action.",
         )
 
+    by_id = {c.candidate_id: c for c in candidates}
+    selected_candidates = [
+        by_id[d.selected_candidate_id]
+        for d in acting
+        if d.selected_candidate_id is not None
+    ]
+
+    if len(selected_candidates) > 1:
+        bases = {c.comparison_key for c in selected_candidates}
+        if (
+            len(bases) != 1
+            or any(not c.portfolio_comparable for c in selected_candidates)
+        ):
+            return PortfolioDecision(
+                status="HOLD_INCOMPARABLE",
+                selected_campaign_id=None,
+                selected_candidate_id=None,
+                selected_score=0.0,
+                campaign_decisions=decisions,
+                rationale=(
+                    "Campaign-local actions exist, but their contraction/cost "
+                    "bases are not one explicitly shared non-local scale. "
+                    "Refusing to fabricate a cross-domain ranking."
+                ),
+            )
+
     selected = max(
         acting,
         key=lambda d: (
@@ -352,7 +405,7 @@ def decide_portfolio(
         campaign_decisions=decisions,
         rationale=(
             "Programme choice is the best campaign-local eligible action under "
-            "the same verified-contraction-per-cost rule."
+            "one explicitly shared contraction/cost basis."
         ),
     )
 
@@ -368,6 +421,7 @@ def campaign_state_from_dict(data: dict) -> CampaignState:
         required_invariants=tuple(data.get("required_invariants", ())),
         live_capability_refs=tuple(data.get("live_capability_refs", ())),
         retained_negative_tags=tuple(data.get("retained_negative_tags", ())),
+        blocker_refs=tuple(data.get("blocker_refs", ())),
     )
 
 
@@ -388,6 +442,8 @@ def candidate_from_dict(data: dict) -> CandidateExperiment:
         separator_refs=tuple(data.get("separator_refs", ())),
         mechanism_tags=tuple(data.get("mechanism_tags", ())),
         assumptions=tuple(data.get("assumptions", ())),
+        contraction_basis=str(data.get("contraction_basis", "campaign_local")),
+        cost_basis=str(data.get("cost_basis", "campaign_local")),
     )
 
 
