@@ -1,0 +1,129 @@
+name: MathGraph Core V0 Cross-Run Reuse V1
+
+on:
+  push:
+    branches:
+      - mathgraph-core-v0-kernel
+    paths:
+      - '.github/workflows/mathgraph-core-v0-cross-run-reuse-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reuse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+
+      - name: Download exact prior warranted graph artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: core-v0-scheduler-selected-family-compounding-v1
+          path: /tmp/prior
+          github-token: ${{ github.token }}
+          repository: metalogiclabs/mathgraph
+          run-id: 36667558103
+
+      - name: Reuse persisted semantic state with zero verifier contact
+        env:
+          HEAD_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core_v0_cross_run_reuse_v1
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from mathgraph.core_v0 import CoreGraph, Status
+          from mathgraph.discovery_candidate_sources import candidates_from_core_v0_graph
+          from mathgraph.discovery_scheduler import allocate_attention, make_policy
+
+          root = Path("/tmp/prior")
+          graph_path = next(root.rglob("round2.mg"))
+          result_path = next(root.rglob("result.json"))
+          prior = json.loads(result_path.read_text())
+          raw = graph_path.read_bytes()
+
+          assert prior["status"] == (
+              "WARRANTED_BOUNDED_SCHEDULER_SELECTED_REAL_VERIFIER_FAMILY_LOOP_V1"
+          )
+          assert prior["run_id"] == 36667558103
+          assert prior["round1_candidate_count"] == 25
+          assert prior["round2_candidate_count"] == 24
+          assert prior["contacts_avoided_vs_verify_all"] == 24
+
+          graph = CoreGraph.from_mg(raw)
+          # Exact durable-state check: the persisted bytes are already canonical.
+          assert graph.to_mg() == raw
+
+          warranted = prior["selected_object_id"]
+          assert graph.status_of(warranted) is Status.WARRANTED
+
+          candidates = candidates_from_core_v0_graph(
+              graph,
+              source_ref="core-v0-cross-run-reuse-v1",
+          )
+          ranked, selected, invalid = allocate_attention(
+              candidates,
+              make_policy(mode="frontier", beta=1.0),
+              top_k=1,
+          )
+
+          assert not invalid, invalid
+          assert len(candidates) == 24
+          residual_ids = {candidate.residual_cluster for candidate in candidates}
+          assert warranted not in residual_ids
+          assert len(selected) == 1
+          assert selected[0].residual_cluster != warranted
+
+          result = {
+              "schema": "mathgraph.core-v0-cross-run-reuse.v1",
+              "status": "WARRANTED_BOUNDED_CROSS_RUN_REUSE_WITH_ZERO_REVERIFICATION_V1",
+              "run_id": int(os.environ["RUN_ID"]),
+              "head_sha": os.environ["HEAD_SHA"],
+              "upstream_run_id": 36667558103,
+              "upstream_artifact_id": 11076877242,
+              "upstream_artifact_digest": (
+                  "sha256:73b40c9303695a1b06e4d3088871bedb22833c4bd3beaf172180574e23fe579b"
+              ),
+              "persisted_warrant_id": prior["warrant_id"],
+              "persisted_warranted_object_id": warranted,
+              "frontier_count": len(candidates),
+              "next_selected_object_id": selected[0].residual_cluster,
+              "pvs_contacts_this_run": 0,
+              "lean_contacts_this_run": 0,
+              "persisted_object_reentered_attention": False,
+              "canonical_roundtrip_exact": True,
+              "boundary": (
+                  "This demonstrates cross-run reuse of one persisted Core V0 .mg graph "
+                  "from the exact upstream family episode. No PVS or Lean verifier is "
+                  "invoked in this run. It does not warrant any of the remaining 24 "
+                  "objects or claim optimal scheduling."
+              ),
+          }
+
+          out = Path("artifacts/core_v0_cross_run_reuse_v1")
+          out.joinpath("result.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n"
+          )
+          out.joinpath("next_selected.json").write_text(
+              json.dumps(selected[0].to_dict(), indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(result, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-cross-run-reuse-v1
+          path: artifacts/core_v0_cross_run_reuse_v1/
