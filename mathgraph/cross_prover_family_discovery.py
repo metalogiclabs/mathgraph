@@ -406,6 +406,78 @@ def _specs() -> dict[str, ClaimSpec]:
         ),
     )
 
+    # V5: final true source surfaces use two genuinely distinct mechanisms.
+    add(
+        "EXISTS (x: real): EXISTS (y: real): x^2 + y^2 = 1 AND y = x^2",
+        ClaimSpec(
+            "real.parabola_meets_unit_circle@1",
+            "composed_algebraic_witness",
+            "parabola_meets_unit_circle",
+            ": ∃ x y : ℝ, x ^ 2 + y ^ 2 = 1 ∧ y = x ^ 2",
+            """by
+  let s : ℝ := Real.sqrt 5
+  let y : ℝ := (s - 1) / 2
+  have hs0 : 0 ≤ s := by
+    dsimp [s]
+    exact Real.sqrt_nonneg 5
+  have hs2 : s ^ 2 = 5 := by
+    dsimp [s]
+    exact Real.sq_sqrt (by norm_num)
+  have hs1 : 1 ≤ s := by
+    nlinarith
+  have hy0 : 0 ≤ y := by
+    dsimp [y]
+    linarith
+  have hyq : y ^ 2 + y = 1 := by
+    dsimp [y]
+    nlinarith
+  refine ⟨Real.sqrt y, y, ?_, ?_⟩
+  · have hx2 : (Real.sqrt y) ^ 2 = y := Real.sq_sqrt hy0
+    nlinarith
+  · exact (Real.sq_sqrt hy0).symm""",
+        ),
+    )
+    add(
+        "FORALL (c: real): EXISTS (x: real): x^3 - 3 * x + c = 0",
+        ClaimSpec(
+            "real.depressed_cubic_has_root@1",
+            "bounded_intermediate_value",
+            "every_depressed_cubic_has_real_root",
+            "(c : ℝ) : ∃ x : ℝ, x ^ 3 - 3 * x + c = 0",
+            """by
+  let R : ℝ := |c| + 4
+  let f : ℝ → ℝ := fun x => x ^ 3 - 3 * x + c
+  have hR4 : 4 ≤ R := by
+    dsimp [R]
+    linarith [abs_nonneg c]
+  have hR0 : 0 ≤ R := by linarith
+  have hR2 : 4 ≤ R ^ 2 := by
+    nlinarith [sq_nonneg (R - 4)]
+  have hquad : 0 ≤ R ^ 2 - 4 := by linarith
+  have hmul : 0 ≤ R * (R ^ 2 - 4) := mul_nonneg hR0 hquad
+  have hc_up : c ≤ R - 4 := by
+    dsimp [R]
+    simpa using le_abs_self c
+  have hc_down : -c ≤ R - 4 := by
+    dsimp [R]
+    simpa using neg_le_abs c
+  have hleft : f (-R) ≤ 0 := by
+    dsimp [f]
+    nlinarith
+  have hright : 0 ≤ f R := by
+    dsimp [f]
+    nlinarith
+  have horder : -R ≤ R := by linarith
+  have hf : Continuous f := by
+    fun_prop
+  have hz : 0 ∈ f '' Set.Icc (-R) R :=
+    intermediate_value_Icc horder hf.continuousOn ⟨hleft, hright⟩
+  rcases hz with ⟨x, -, hx⟩
+  refine ⟨x, ?_⟩
+  simpa [f] using hx""",
+        ),
+    )
+
     return dict(rows)
 
 
