@@ -63,7 +63,7 @@ jobs:
             "correct_schema_selections":5,
             "selection_accuracy_on_evaluated_residuals":1.0,
             "selected":selected,
-            "theorem_names_used_as_selector_inputs":false,
+            "theorem_names_used_as_selector_inputs":False,
             "new_constructor_schema_count":0,
             "causal_control":"each selected schema ablation returns UNKNOWN_MISSING_CONSTRUCTOR",
             "boundary":"The structural rules were designed after cad_examples2 residual analysis. This validates deterministic selection on that family and fail-closed schema ablation, not independent generalization."
