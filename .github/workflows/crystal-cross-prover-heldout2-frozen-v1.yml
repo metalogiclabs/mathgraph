@@ -1,0 +1,172 @@
+name: Crystal Cross-Prover Heldout2 Frozen V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout2-frozen-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout2-frozen-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze recognizer and consequence search
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_family_discovery.py)" = 7e637fcd39c7df814b6e414aae93b50312257a58
+          test "$(git hash-object mathgraph/cross_prover_consequence_search.py)" = b278376f7ddad4f2b6bd05bebdd06eb9daa88f51
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Fetch sealed held-out2 source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/heldout2 artifacts/crystal_cross_prover_heldout2_frozen_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/heldout2/cad_examples2.pvs "$BASE/cad_examples2.pvs"
+          curl -fsSL -o /tmp/heldout2/cad_examples2.prf "$BASE/cad_examples2.prf"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "cad_examples2.pvs":"5e943e67140d88aa94eef4241b418951f7ba3130",
+            "cad_examples2.prf":"7338b3d5818f6eb9c2817e04ca8758f55d0c5999",
+          }
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              got=git_blob(Path("/tmp/heldout2",name).read_bytes())
+              assert got==want,(name,got,want)
+              print("PIN_OK",name,got)
+          PY
+      - name: Measure frozen transport coverage
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import SPECS,discover_family,extract_pvs_lemmas
+          from mathgraph.cross_prover_consequence_search import discover_consequence_routes
+
+          src=Path("/tmp/heldout2/cad_examples2.pvs").read_text()
+          prf=Path("/tmp/heldout2/cad_examples2.prf").read_text()
+          sources={"cad_examples2":src}
+          proofs={"cad_examples2":prf}
+          available=sorted({spec.claim_id for spec in SPECS.values()})
+          assert len(available)==25,len(available)
+
+          exact=discover_family(sources,proofs)
+          routes=discover_consequence_routes(sources,available_claim_ids=available)
+
+          all_sources={f"cad_examples2.{name}" for name,_ in extract_pvs_lemmas(src)}
+          assert len(all_sources)==9,all_sources
+          exact_sources={f"{x['theory']}.{x['formula']}" for x in exact["supported_occurrences"]}
+          route_sources={f"{x['theory']}.{x['formula']}" for x in routes["routes"]}
+          assert exact_sources.isdisjoint(route_sources),(exact_sources,route_sources)
+          recognized=exact_sources|route_sources
+          unresolved=all_sources-recognized
+
+          out={
+            "schema":"mathgraph.cross-prover-heldout2-frozen-measurement.v1",
+            "status":"CANDIDATE_FROZEN_HELDOUT2_MEASUREMENT",
+            "source_repository":"j-tanner-slagel/pvs_cad",
+            "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+            "source_file":"cad/cad_examples2.pvs",
+            "source_lemma_count":9,
+            "frozen_exact_claim_registry_size":len(available),
+            "exact_reused_occurrences":len(exact_sources),
+            "automatic_consequence_route_occurrences":len(route_sources),
+            "total_frozen_transport_occurrences":len(recognized),
+            "coverage":len(recognized)/9,
+            "exact_sources":sorted(exact_sources),
+            "route_sources":sorted(route_sources),
+            "unresolved_sources":sorted(unresolved),
+            "boundary":"No grammar, route constructor, theorem mapping, or semantic claim was added after opening cad_examples2."
+          }
+          Path("artifacts/crystal_cross_prover_heldout2_frozen_v1/discovery.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout2-frozen-discovery-v1
+          path: artifacts/crystal_cross_prover_heldout2_frozen_v1/discovery.json
+
+  pvs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay all sealed held-out2 source theorems
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180             @cad_examples2.ex_cubic:ex_quad:ex_amgm:ex_disc2:ex_meet:ex_quartic:ex_ell:ex_two:ex_hyp             | tee /tmp/heldout2.log
+          grep -q "Grand Totals: 9 proofs, 9 attempted, 9 succeeded" /tmp/heldout2.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/heldout2.log; then exit 1; fi
+
+  record:
+    needs: [discover,pvs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout2-frozen-discovery-v1
+          path: /tmp/discovery
+      - name: Record warranted frozen measurement
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_heldout2_frozen_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out=json.loads(Path("/tmp/discovery/discovery.json").read_text())
+          out.update({
+              "status":"WARRANTED_BOUNDED_FROZEN_HELDOUT2_MEASUREMENT_V1",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "native_pvs_source_authority":"9/9 GREEN",
+          })
+          Path("artifacts/crystal_cross_prover_heldout2_frozen_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout2-frozen-v1
+          path: artifacts/crystal_cross_prover_heldout2_frozen_v1/result.json
