@@ -1,0 +1,106 @@
+name: Crystal Cross-Prover Alpha Normalization V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-alpha-normalization-v1
+    paths:
+      - 'mathgraph/cross_prover_semantic_normalization.py'
+      - 'tests/test_cross_prover_semantic_normalization.py'
+      - '.github/workflows/crystal-cross-prover-alpha-normalization-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Test representation-only normalization
+        run: python -m pytest -q tests/test_cross_prover_semantic_normalization.py
+      - name: Reopen exact sealed held-out2 bytes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/heldout2 artifacts/crystal_cross_prover_alpha_normalization_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/heldout2/cad_examples2.pvs "$BASE/cad_examples2.pvs"
+          curl -fsSL -o /tmp/heldout2/cad_examples2.prf "$BASE/cad_examples2.prf"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "cad_examples2.pvs":"5e943e67140d88aa94eef4241b418951f7ba3130",
+            "cad_examples2.prf":"7338b3d5818f6eb9c2817e04ca8758f55d0c5999",
+          }
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              got=git_blob(Path("/tmp/heldout2",name).read_bytes())
+              assert got==want,(name,got,want)
+          PY
+      - name: Measure normalization-only gain
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family
+          from mathgraph.cross_prover_semantic_normalization import discover_normalized_exact_reuse
+
+          src=Path("/tmp/heldout2/cad_examples2.pvs").read_text()
+          prf=Path("/tmp/heldout2/cad_examples2.prf").read_text()
+          sources={"cad_examples2":src}
+          proofs={"cad_examples2":prf}
+
+          baseline=discover_family(sources,proofs)
+          assert baseline["supported_occurrence_count"]==2,baseline
+          repaired=discover_normalized_exact_reuse(sources,proofs)
+          assert repaired["source_lemma_count"]==9,repaired
+          assert repaired["registry_collision_count"]==0,repaired
+          assert repaired["ambiguous_occurrence_count"]==0,repaired
+          assert repaired["matched_occurrence_count"]==4,repaired
+
+          baseline_map={x["formula"]:x["claim_id"] for x in baseline["supported_occurrences"]}
+          repaired_map={x["formula"]:x["claim_id"] for x in repaired["matched"]}
+          gained=set(repaired_map)-set(baseline_map)
+          assert gained=={"ex_cubic","ex_hyp"},gained
+          assert repaired_map["ex_cubic"]=="real.depressed_cubic_has_root@1"
+          assert repaired_map["ex_hyp"]=="real.zero_has_no_multiplicative_inverse@1"
+          assert all(
+              x["source_proof_status"]=="PINNED_PROOF_PRESENT"
+              for x in repaired["matched"]
+          )
+
+          out={
+            "schema":"mathgraph.cross-prover-alpha-normalization-result.v1",
+            "status":"CANDIDATE_REPRESENTATION_ONLY_HELDOUT2_GAIN",
+            "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+            "source_file":"cad/cad_examples2.pvs",
+            "baseline_exact_reuse":2,
+            "normalized_exact_reuse":4,
+            "coverage_before":2/9,
+            "coverage_after":4/9,
+            "new_semantic_claims":0,
+            "new_proof_schemas":0,
+            "registry_collision_count":0,
+            "gained_sources":sorted(f"cad_examples2.{x}" for x in gained),
+            "gained_claims":{x:repaired_map[x] for x in sorted(gained)},
+            "parent_exact_warrant_run":36649171836,
+            "sealed_baseline_measurement_run":36650465741,
+            "boundary":"Only representation normalization changed. No semantic claim, theorem-specific mapping, proof schema, or consequence constructor was added."
+          }
+          Path("artifacts/crystal_cross_prover_alpha_normalization_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-alpha-normalization-v1
+          path: artifacts/crystal_cross_prover_alpha_normalization_v1/result.json
