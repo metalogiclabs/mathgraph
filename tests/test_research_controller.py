@@ -235,7 +235,85 @@ def test_separator_ablation_blocks_refinement_when_no_other_route_is_live():
     assert checked >= 5
 
 
-def test_portfolio_controller_compares_only_normalized_eligible_scores():
+def test_explicit_blocker_forces_hold():
+    state = CampaignState(
+        campaign_id="x",
+        objective="protected objective",
+        compressed_state_ref="state:1",
+        residual_id="r",
+        residual_status=ResidualStatus.UNKNOWN,
+        residual_evidence_refs=("evidence:r",),
+        blocker_refs=("pending:external-gate",),
+    )
+    candidate = CandidateExperiment(
+        candidate_id="tempting",
+        campaign_id="x",
+        description="retune while prerequisite gate is pending",
+        targets_residual="r",
+        mode=ActionMode.SEARCH,
+        expected_contraction=1.0,
+        cost_units=0.1,
+        verification_grade=VerificationGrade.OFFICIAL,
+        verification_plan_ref="official",
+        estimate_evidence_refs=("estimate",),
+    )
+    decision = decide_campaign(state, [candidate])
+    assert decision.status == "HOLD"
+    assert "pending:external-gate" in decision.rationale
+
+
+def test_portfolio_refuses_incomparable_campaign_local_scores():
+    a = CampaignState(
+        campaign_id="a",
+        objective="a",
+        compressed_state_ref="state:a",
+        residual_id="ra",
+        residual_status=ResidualStatus.UNKNOWN,
+        residual_evidence_refs=("ea",),
+    )
+    b = CampaignState(
+        campaign_id="b",
+        objective="b",
+        compressed_state_ref="state:b",
+        residual_id="rb",
+        residual_status=ResidualStatus.UNKNOWN,
+        residual_evidence_refs=("eb",),
+    )
+    ca = CandidateExperiment(
+        candidate_id="ca",
+        campaign_id="a",
+        description="a local candidate",
+        targets_residual="ra",
+        mode=ActionMode.VERIFY,
+        expected_contraction=0.9,
+        cost_units=0.1,
+        verification_grade=VerificationGrade.OFFICIAL,
+        verification_plan_ref="va",
+        estimate_evidence_refs=("xa",),
+        contraction_basis="fraction_of_a_residual",
+        cost_basis="a_compute_units",
+    )
+    cb = CandidateExperiment(
+        candidate_id="cb",
+        campaign_id="b",
+        description="b local candidate",
+        targets_residual="rb",
+        mode=ActionMode.VERIFY,
+        expected_contraction=0.1,
+        cost_units=10.0,
+        verification_grade=VerificationGrade.INDEPENDENT,
+        verification_plan_ref="vb",
+        estimate_evidence_refs=("xb",),
+        contraction_basis="fraction_of_b_residual",
+        cost_basis="b_compute_units",
+    )
+    decision = decide_portfolio([a, b], [ca, cb])
+    assert decision.status == "HOLD_INCOMPARABLE"
+    assert decision.selected_campaign_id is None
+    assert "Refusing to fabricate" in decision.rationale
+
+
+def test_portfolio_compares_only_one_explicit_shared_scale():
     a = CampaignState(
         campaign_id="a",
         objective="a",
@@ -263,6 +341,8 @@ def test_portfolio_controller_compares_only_normalized_eligible_scores():
         verification_grade=VerificationGrade.INDEPENDENT,
         verification_plan_ref="va",
         estimate_evidence_refs=("xa",),
+        contraction_basis="prospective_verified_obligations_fraction.v1",
+        cost_basis="measured_runner_minutes.v1",
     )
     cb = CandidateExperiment(
         candidate_id="cb",
@@ -275,6 +355,8 @@ def test_portfolio_controller_compares_only_normalized_eligible_scores():
         verification_grade=VerificationGrade.INDEPENDENT,
         verification_plan_ref="vb",
         estimate_evidence_refs=("xb",),
+        contraction_basis="prospective_verified_obligations_fraction.v1",
+        cost_basis="measured_runner_minutes.v1",
     )
     decision = decide_portfolio([a, b], [ca, cb])
     assert decision.status == "ACT"
