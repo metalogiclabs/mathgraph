@@ -1,0 +1,26 @@
+name: Crystal Programme Prospective Selection V1
+on:
+  push:
+    branches: [crystal-programme-controller-v1]
+    paths:
+      - experiments/crystal_programme_controller_v1/prospective_20260930.json
+      - experiments/crystal_programme_controller_v1/select_prospective.py
+      - .github/workflows/crystal-programme-prospective-selection-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pandas
+      - name: Select one experiment from frozen snapshot
+        run: python -m experiments.crystal_programme_controller_v1.select_prospective
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-programme-prospective-selection-v1
+          path: experiments/crystal_programme_controller_v1/PROSPECTIVE_SELECTION.json
