@@ -1,0 +1,70 @@
+name: Crystal Chess V63 Fork Equivalence
+
+on:
+  push:
+    branches:
+      - crystal-chess-compiled-band-gate-v63
+    paths:
+      - ".github/workflows/crystal-chess-v63-fork-equivalence.yml"
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct generated candidate
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/generated
+          git -C /tmp/generated checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          python experiments/crystal_chess_apply_compiled_band_gate_v63.py --search-cpp /tmp/generated/src/search.cpp
+          git -C /tmp/generated diff -- src/search.cpp > /tmp/generated.patch
+          test -s /tmp/generated.patch
+
+      - name: Fetch exact external fork candidate
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --branch crystal-compiled-band-gate-v63 https://github.com/metalogiclabs/Stockfish.git /tmp/fork
+          test "$(git -C /tmp/fork rev-parse HEAD)" = "a0d3b0330d98b74df30d80a8b87c26b7b52ddae7"
+          git -C /tmp/fork diff 0a215d6c9e48856ef630013b8ab8312941a59057..HEAD -- src/search.cpp > /tmp/fork.patch
+          test -s /tmp/fork.patch
+
+      - name: Prove generated/fork patch identity
+        run: |
+          set -euo pipefail
+          cmp /tmp/generated.patch /tmp/fork.patch
+          mkdir -p evidence/crystal-chess-v63-fork
+          cp /tmp/generated.patch evidence/crystal-chess-v63-fork/generated.patch
+          cp /tmp/fork.patch evidence/crystal-chess-v63-fork/fork.patch
+          sha256sum /tmp/fork.patch | tee evidence/crystal-chess-v63-fork/PATCH_SHA256.txt
+          {
+            echo "base_commit=0a215d6c9e48856ef630013b8ab8312941a59057"
+            echo "fork_repository=https://github.com/metalogiclabs/Stockfish"
+            echo "fork_branch=crystal-compiled-band-gate-v63"
+            echo "fork_commit=a0d3b0330d98b74df30d80a8b87c26b7b52ddae7"
+            echo "predicate=optimum<=16 OR 33<=optimum<=64"
+            echo "generated_patch_equals_fork_patch=true"
+          } > evidence/crystal-chess-v63-fork/manifest.txt
+
+      - name: Build and bench fork
+        run: |
+          set -euo pipefail
+          make -C /tmp/fork/src -j2 build ARCH=x86-64
+          /tmp/fork/src/stockfish bench 2>&1 | tee evidence/crystal-chess-v63-fork/bench.txt
+          SIGNATURE="$(grep 'Nodes searched  :' evidence/crystal-chess-v63-fork/bench.txt | awk '{print $4}')"
+          test -n "$SIGNATURE"
+          echo "$SIGNATURE" | tee evidence/crystal-chess-v63-fork/bench_signature.txt
+          echo "CRYSTAL_CHESS_V63_FORK_EQUIVALENCE=PASS"
+
+      - name: Upload equivalence evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-v63-fork-equivalence
+          path: evidence/crystal-chess-v63-fork/
+          if-no-files-found: error
