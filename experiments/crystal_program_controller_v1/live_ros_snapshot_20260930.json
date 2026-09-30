@@ -1,0 +1,214 @@
+{
+  "schema": "mathgraph.crystal-live-program-snapshot.v1",
+  "snapshot_time_utc": "2026-09-30T00:38:00Z",
+  "boundary": "Live programme control snapshot reconstructed from canonical ROS plus newer GitHub evidence where it supersedes ROS. Actionable campaigns intentionally contain one predeclared residual-first candidate. Numeric contraction/cost values are sentinel campaign-local admissibility units only and MUST NOT be interpreted as forecasts or compared across campaigns.",
+  "expected_portfolio_status": "HOLD_INCOMPARABLE",
+  "campaigns": [
+    {
+      "expected_status": "ACT",
+      "state": {
+        "campaign_id": "acc",
+        "objective": "Increase verifier-clean ownership of current ACC records toward rank 1.",
+        "compressed_state_ref": "github-run:36649127665",
+        "residual_id": "acc.official_cost_native_search",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36648412519", "github-run:36649127665"],
+        "required_invariants": ["official_verifier_cost", "strict_record_win_before_quota"],
+        "live_capability_refs": ["acc.proof_atlas@1", "acc.nielsen_proposal_view@1"],
+        "retained_negative_tags": ["fixed_basis_harvest", "free_basis_transport", "widen_mixed_nielsen"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "acc-official-cost-native-proposal-search",
+          "campaign_id": "acc",
+          "description": "Use Nielsen basis only as a proposal/view dimension, transport every macro immediately into frozen official moves, charge exact verifier cost, and retain Proof Atlas only as an exit oracle.",
+          "targets_residual": "acc.official_cost_native_search",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "OFFICIAL",
+          "verification_plan_ref": "plan:strict-live-record-win-before-publication",
+          "estimate_evidence_refs": ["github-run:36649127665"],
+          "preserves_invariants": ["official_verifier_cost", "strict_record_win_before_quota"],
+          "separator_refs": ["github-run:36648412519", "github-run:36649127665"],
+          "contraction_basis": "admissibility_only.acc",
+          "cost_basis": "one_predeclared_gate.acc"
+        }
+      ]
+    },
+    {
+      "expected_status": "ACT",
+      "state": {
+        "campaign_id": "collatz",
+        "objective": "Close the V48 Collatz QED socket without promoting bounded evidence to universality.",
+        "compressed_state_ref": "ros:collatz-v51-v53-closeout",
+        "residual_id": "collatz.full_live_source_relative_rank_transport",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["ros:collatz-v51-signed-budget", "ros:collatz-v53-closeout"],
+        "required_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+        "live_capability_refs": ["collatz.qed_socket@v48", "collatz.affine_budget@v51"],
+        "retained_negative_tags": ["cumulative_macro_budget", "finite_recharge_horizon", "source_free_pruned_graph_as_qed"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "collatz-full-live-rank-transport",
+          "campaign_id": "collatz",
+          "description": "Construct the source-relative full-live rank/transport bridge into the existing V48 eventual-progress-or-exit socket, or emit the exact recurrent protected obstruction.",
+          "targets_residual": "collatz.full_live_source_relative_rank_transport",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:lean-kernel-plus-prospective-exact-family",
+          "estimate_evidence_refs": ["ros:collatz-v51-signed-budget", "ros:collatz-v53-closeout"],
+          "preserves_invariants": ["exact_arithmetic", "v48_qed_socket", "no_bounded_to_universal_promotion"],
+          "separator_refs": ["ros:collatz-v51-macro-batching-negative", "ros:collatz-v53-progress-boundary-correction"],
+          "contraction_basis": "admissibility_only.collatz",
+          "cost_basis": "one_predeclared_gate.collatz"
+        }
+      ]
+    },
+    {
+      "expected_status": "ACT",
+      "state": {
+        "campaign_id": "nucleus",
+        "objective": "Increase independent native Lean-kernel coverage with zero wrong verdicts.",
+        "compressed_state_ref": "github-run:36638671203",
+        "residual_id": "nucleus.application_function_type_11",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36638427344", "github-run:36638671203", "github-run:36638881532"],
+        "required_invariants": ["zero_wrong", "independent_authority", "preserve_other_residual_classes"],
+        "live_capability_refs": ["nucleus.independent30@1"],
+        "retained_negative_tags": ["full_delta_pi_exposure", "expose_function_type_harder"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "nucleus-trace-inferred-function-type-dependency",
+          "campaign_id": "nucleus",
+          "description": "Trace inferred function-type normal form and dependency at the application call site across all 11 cases, classify exact non-Pi witnesses, then admit only the smallest dependency-closed rule forced by that quotient.",
+          "targets_residual": "nucleus.application_function_type_11",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:full-frozen-193-differential-reclosure",
+          "estimate_evidence_refs": ["github-run:36638671203", "github-run:36638881532"],
+          "preserves_invariants": ["zero_wrong", "independent_authority", "preserve_other_residual_classes"],
+          "separator_refs": ["github-run:36638881532"],
+          "contraction_basis": "admissibility_only.nucleus",
+          "cost_basis": "one_predeclared_gate.nucleus"
+        }
+      ]
+    },
+    {
+      "expected_status": "ACT",
+      "state": {
+        "campaign_id": "arc",
+        "objective": "Reduce ARC exploration by transporting earned progress capabilities without losing applicability or support discipline.",
+        "compressed_state_ref": "github-run:36292473732",
+        "residual_id": "arc.applicability_binding_genesis",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36286262339", "github-run:36292473732"],
+        "required_invariants": ["no_regression_catalogue", "support_revocation", "near_miss_refusal"],
+        "live_capability_refs": ["arc.developmental_composition@1"],
+        "retained_negative_tags": ["whole_game_identity", "literal_origin_role_binding"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "arc-minimum-applicability-transformer",
+          "campaign_id": "arc",
+          "description": "Freeze the composition engine and 17 progress transports; derive the minimum applicability/test transformer from positive lineage and cross-game near misses, then replay prospectively on the frozen catalogue.",
+          "targets_residual": "arc.applicability_binding_genesis",
+          "mode": "REFINE",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "INDEPENDENT",
+          "verification_plan_ref": "plan:frozen-public-catalogue-prospective-replay",
+          "estimate_evidence_refs": ["github-run:36292473732"],
+          "preserves_invariants": ["no_regression_catalogue", "support_revocation", "near_miss_refusal"],
+          "separator_refs": ["github-run:36286262339", "github-run:36292473732"],
+          "contraction_basis": "admissibility_only.arc",
+          "cost_basis": "one_predeclared_gate.arc"
+        }
+      ]
+    },
+    {
+      "expected_status": "ACT",
+      "state": {
+        "campaign_id": "cross-prover",
+        "objective": "Generalize automatic semantic consequence routing without theorem-name routing or proof-object translation.",
+        "compressed_state_ref": "github-run:36650789774",
+        "residual_id": "cross_prover.independent_route_grammar_generalization",
+        "residual_status": "UNKNOWN",
+        "residual_evidence_refs": ["github-run:36650257340", "github-run:36650789774"],
+        "required_invariants": ["formula_shape_routing", "native_source_authority", "lean_consumer_check", "typed_unknown"],
+        "live_capability_refs": ["cross_prover.auto_consequence_routing@v1"],
+        "retained_negative_tags": ["theorem_name_routing", "claim_universal_route_grammar"]
+      },
+      "candidates": [
+        {
+          "candidate_id": "cross-prover-fresh-family-route-grammar-test",
+          "campaign_id": "cross-prover",
+          "description": "Freeze the five promoted route constructors and test them unchanged on an independently selected fresh source family; preserve the first unsupported meaning as UNKNOWN/separator.",
+          "targets_residual": "cross_prover.independent_route_grammar_generalization",
+          "mode": "VERIFY",
+          "expected_contraction": 1.0,
+          "cost_units": 1.0,
+          "verification_grade": "KERNEL",
+          "verification_plan_ref": "plan:fresh-native-source-plus-generated-lean-consumers",
+          "estimate_evidence_refs": ["github-run:36650789774"],
+          "preserves_invariants": ["formula_shape_routing", "native_source_authority", "lean_consumer_check", "typed_unknown"],
+          "contraction_basis": "admissibility_only.cross_prover",
+          "cost_basis": "one_predeclared_gate.cross_prover"
+        }
+      ]
+    },
+    {
+      "expected_status": "HOLD",
+      "state": {
+        "campaign_id": "chess",
+        "objective": "Establish whether the frozen Crystal clock gate improves real Stockfish strength under external-like controls.",
+        "compressed_state_ref": "ros:crystal-chess-v56-v60",
+        "residual_id": "chess.external_strength_replication",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36617274049", "github-run:36629386182"],
+        "required_invariants": ["frozen_64ms_rule", "paired_external_controls"],
+        "live_capability_refs": ["chess.clock_gate@64ms"],
+        "retained_negative_tags": ["retune_before_external_gate"],
+        "blocker_refs": ["pending:v56_slow", "pending:v57_ccrl_like", "pending:v58_fishtest_style"]
+      },
+      "candidates": []
+    },
+    {
+      "expected_status": "HOLD",
+      "state": {
+        "campaign_id": "tasksat-cad",
+        "objective": "Resolve TaskSAT assignment semantics against the authoritative specification.",
+        "compressed_state_ref": "github-run:36631502126",
+        "residual_id": "tasksat.specification_authority",
+        "residual_status": "OPEN",
+        "residual_evidence_refs": ["github-run:36631502126"],
+        "required_invariants": ["ten_of_ten_pvs_cad_qed", "exact_numeric_witnesses"],
+        "live_capability_refs": ["tasksat.assignment_semantics@closeout"],
+        "retained_negative_tags": ["more_cad_inside_closed_boundary"],
+        "blocker_refs": ["external_authority:tasksat_mexec_authors"]
+      },
+      "candidates": []
+    },
+    {
+      "expected_status": "HOLD",
+      "state": {
+        "campaign_id": "ethereum",
+        "objective": "Real geth integration followed by cross-client semantic replication.",
+        "compressed_state_ref": "github-run:36502416400",
+        "residual_id": "ethereum.original_replication_objective",
+        "residual_status": "CLOSED",
+        "residual_evidence_refs": ["github-run:36358745584", "github-run:36357032694", "github-run:36502416400"],
+        "required_invariants": ["exact_final_state"],
+        "live_capability_refs": ["ethereum.compact_final_state@1"],
+        "retained_negative_tags": ["generic_nethermind_compact_optimization"]
+      },
+      "candidates": []
+    }
+  ]
+}
