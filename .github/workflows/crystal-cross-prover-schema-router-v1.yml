@@ -1,0 +1,89 @@
+name: Crystal Cross-Prover Schema Router V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-schema-router-v1
+    paths:
+      - 'mathgraph/cross_prover_schema_router.py'
+      - 'tests/test_cross_prover_schema_router.py'
+      - '.github/workflows/crystal-cross-prover-schema-router-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test alpha-normalized structural router
+        run: python -m pytest -q tests/test_cross_prover_schema_router.py
+      - name: Route exact held-out residuals without theorem names
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/heldout artifacts/crystal_cross_prover_schema_router_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_examples3.pvs cad_examples4.pvs; do
+            curl -fsSL -o "/tmp/heldout/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import extract_pvs_lemmas,SPECS
+          from mathgraph.cross_prover_schema_router import route_surface
+
+          expected_unsupported={
+            "cad_examples3":{
+              "t_between","t_sqrt","t_shift","t_sos","t_sphere"
+            },
+            "cad_examples4":{
+              "e4_above","e4_between","e4_sum"
+            },
+          }
+          rows=[]
+          for theory in ("cad_examples3","cad_examples4"):
+              src=Path("/tmp/heldout",f"{theory}.pvs").read_text()
+              for formula,surface in extract_pvs_lemmas(src):
+                  if surface in SPECS:
+                      continue
+                  route=route_surface(surface)
+                  if formula in expected_unsupported[theory]:
+                      assert route is not None,(theory,formula,surface)
+                      rows.append({
+                        "theory":theory,
+                        "formula":formula,
+                        "normalized_surface":surface,
+                        **route.to_dict(),
+                      })
+          assert len(rows)==8,rows
+          kinds={}
+          for x in rows:
+              kinds[x["route_kind"]]=kinds.get(x["route_kind"],0)+1
+          assert kinds=={"DERIVED_CONSEQUENCE":5,"NEW_EXACT_SCHEMA":3},kinds
+          out={
+            "schema":"mathgraph.cross-prover-schema-router-result.v1",
+            "status":"CANDIDATE_STRUCTURAL_ROUTER",
+            "heldout_residual_count":8,
+            "routed_count":8,
+            "derived_consequence_count":5,
+            "new_exact_schema_count":3,
+            "route_kinds":kinds,
+            "routes":rows,
+            "authority_boundary":"Routing is structural candidate evidence only. Source PVS replay and Lean mechanism proofs remain separate authorities.",
+          }
+          Path("artifacts/crystal_cross_prover_schema_router_v1/result.json").write_text(
+            json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-schema-router-v1
+          path: artifacts/crystal_cross_prover_schema_router_v1/result.json
