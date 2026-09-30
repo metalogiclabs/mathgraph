@@ -1,0 +1,229 @@
+name: Crystal Chess Exact External Clock Exposure V62
+
+on:
+  push:
+    branches:
+      - crystal-chess-exact-clock-exposure-v62
+    paths:
+      - ".github/workflows/crystal-chess-exact-clock-exposure-v62.yml"
+      - "experiments/crystal_chess_clock_gate_exposure_v59.py"
+      - "experiments/crystal_chess_normal_exposure_v22.py"
+  workflow_dispatch:
+
+jobs:
+  ccrl-exposure:
+    name: nominal CCRL Blitz 2+1 exposure
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install book-generation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "python-chess==1.999" "numpy>=2,<3" "scikit-learn>=1.5,<2"
+          python -m py_compile experiments/crystal_chess_clock_gate_exposure_v59.py
+          python -m py_compile experiments/crystal_chess_normal_exposure_v22.py
+
+      - name: Build pinned baseline and instrumented frozen candidate
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
+          git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
+          cp -a /tmp/stockfish-base /tmp/stockfish-cand
+          mkdir -p artifacts/crystal-chess-v62/ccrl
+          python experiments/crystal_chess_clock_gate_exposure_v59.py --search-cpp /tmp/stockfish-cand/src/search.cpp
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v62/ccrl/stockfish-diagnostic.patch
+          make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Recreate V57 prospective opening protocol
+        run: |
+          set -euo pipefail
+          python experiments/crystal_chess_normal_exposure_v22.py generate             --stockfish /tmp/stockfish-base/src/stockfish             --book artifacts/crystal-chess-v62/ccrl/ccrl_blitz.epd             --manifest artifacts/crystal-chess-v62/ccrl/ccrl_blitz_manifest.json             --openings 8 --plies 12 --depth 6 --multipv 4 --seed 20261113
+
+      - name: Measure exact nominal CCRL 2+1 exposure
+        run: |
+          set -euo pipefail
+          : > artifacts/crystal-chess-v62/ccrl/crystal_tm.log
+          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v62/ccrl/crystal_tm.log"           /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV62             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=2+1 option.Threads=1 option.Hash=256 option.Ponder=false             -openings file=artifacts/crystal-chess-v62/ccrl/ccrl_blitz.epd format=epd order=sequential             -rounds 8 -repeat -concurrency 1             -pgnout file=artifacts/crystal-chess-v62/ccrl/match.pgn             -log file=artifacts/crystal-chess-v62/ccrl/fastchess.log level=info             > artifacts/crystal-chess-v62/ccrl/fastchess.stdout
+
+      - name: Summarize nominal CCRL exposure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          p = Path("artifacts/crystal-chess-v62/ccrl/crystal_tm.log")
+          rows = []
+          for line in p.read_text(errors="replace").splitlines():
+              m = re.search(r"crystal_tm optimum (\d+) maximum (\d+) active (\d+)", line)
+              if m:
+                  rows.append(tuple(map(int, m.groups())))
+          if not rows:
+              raise AssertionError("no CCRL exposure rows")
+          opt = sorted(x[0] for x in rows)
+          active = sum(x[2] for x in rows)
+          out = {
+              "protocol": "nominal_ccrl_blitz_2plus1",
+              "samples": len(rows),
+              "active": active,
+              "active_fraction": active / len(rows),
+              "optimum_min": opt[0],
+              "optimum_median": opt[len(opt)//2],
+              "optimum_max": opt[-1],
+          }
+          Path("artifacts/crystal-chess-v62/ccrl/result.json").write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+          print("CRYSTAL_CHESS_V62_CCRL_EXPOSURE=PASS")
+          print(json.dumps(out, sort_keys=True))
+          PY
+          cat > artifacts/crystal-chess-v62/ccrl/LINEAGE.txt <<'EOF'
+          Scientific role: exposure diagnostic only; not an Elo test.
+          Frozen rule: if tm.optimum() <= 64 ms, force highBestMoveEffort = 1.0.
+          Candidate lineage: V55/V56 frozen gate.
+          V57 strength evidence: run 36619875546, nominal CCRL Blitz 2+1.
+          V59 mechanism evidence: run 36645752384.
+          Stockfish pin: 0a215d6c9e48856ef630013b8ab8312941a59057.
+          Fastchess pin: 60d7a7a26c6b0582a15c112fb29a1829bef2adb3.
+          This run reproduces V57's clock, threads, hash, ponder setting, generator, and seed,
+          but uses 8 opening pairs because the estimand is per-search gate exposure, not Elo.
+          EOF
+
+      - name: Upload CCRL V62 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-v62-ccrl-exposure
+          path: artifacts/crystal-chess-v62/ccrl/
+          if-no-files-found: error
+
+  fishtest-exposure:
+    name: Fishtest-style STC 10+0.1 exposure
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check instrumentation source
+        run: |
+          python -m py_compile experiments/crystal_chess_clock_gate_exposure_v59.py
+
+      - name: Build pinned baseline and instrumented frozen candidate
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/Stockfish.git /tmp/stockfish-base
+          git -C /tmp/stockfish-base checkout 0a215d6c9e48856ef630013b8ab8312941a59057
+          make -C /tmp/stockfish-base/src -j2 build ARCH=x86-64
+          cp -a /tmp/stockfish-base /tmp/stockfish-cand
+          mkdir -p artifacts/crystal-chess-v62/fishtest
+          python experiments/crystal_chess_clock_gate_exposure_v59.py --search-cpp /tmp/stockfish-cand/src/search.cpp
+          git -C /tmp/stockfish-cand diff -- src/search.cpp > artifacts/crystal-chess-v62/fishtest/stockfish-diagnostic.patch
+          make -C /tmp/stockfish-cand/src -j2 build ARCH=x86-64
+
+      - name: Build pinned Fastchess
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/Disservin/fastchess.git /tmp/fastchess
+          git -C /tmp/fastchess checkout 60d7a7a26c6b0582a15c112fb29a1829bef2adb3
+          make -C /tmp/fastchess -j2
+
+      - name: Recreate a subset of the exact V58 official UHO sample
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/official-stockfish/books.git /tmp/books
+          git -C /tmp/books checkout 65815ccdbc7727cd4f6aee252ba8f67fb740e92f
+          unzip -p /tmp/books/UHO_Lichess_4852_v1.epd.zip > /tmp/uho.epd
+          python - <<'PY'
+          import random
+          from pathlib import Path
+          rng = random.Random(20261114)
+          sample = []
+          for i, line in enumerate(Path("/tmp/uho.epd").open()):
+              if i < 512:
+                  sample.append(line)
+              else:
+                  j = rng.randrange(i + 1)
+                  if j < 512:
+                      sample[j] = line
+          assert len(sample) == 512
+          Path("artifacts/crystal-chess-v62/fishtest/uho_v58_first16.epd").write_text("".join(sample[:16]))
+          Path("artifacts/crystal-chess-v62/fishtest/BOOK_PIN.txt").write_text(
+              "official-stockfish/books@65815ccdbc7727cd4f6aee252ba8f67fb740e92f "
+              "UHO_Lichess_4852_v1.epd.zip seed=20261114 V58 reservoir=512 subset=first16\n"
+          )
+          print("CRYSTAL_CHESS_V62_UHO_SUBSET=PASS")
+          PY
+
+      - name: Measure exact Fishtest-style STC 10+0.1 exposure
+        run: |
+          set -euo pipefail
+          : > artifacts/crystal-chess-v62/fishtest/crystal_tm.log
+          CRYSTAL_TM_LOG="$PWD/artifacts/crystal-chess-v62/fishtest/crystal_tm.log"           /tmp/fastchess/fastchess             -engine cmd=/tmp/stockfish-cand/src/stockfish name=CrystalV62             -engine cmd=/tmp/stockfish-base/src/stockfish name=StockfishBaseline             -each tc=10+0.1 option.Threads=1 option.Hash=16 option.Ponder=false             -openings file=artifacts/crystal-chess-v62/fishtest/uho_v58_first16.epd format=epd order=sequential             -rounds 16 -repeat -concurrency 1             -pgnout file=artifacts/crystal-chess-v62/fishtest/match.pgn             -log file=artifacts/crystal-chess-v62/fishtest/fastchess.log level=info             > artifacts/crystal-chess-v62/fishtest/fastchess.stdout
+
+      - name: Summarize Fishtest-style exposure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          p = Path("artifacts/crystal-chess-v62/fishtest/crystal_tm.log")
+          rows = []
+          for line in p.read_text(errors="replace").splitlines():
+              m = re.search(r"crystal_tm optimum (\d+) maximum (\d+) active (\d+)", line)
+              if m:
+                  rows.append(tuple(map(int, m.groups())))
+          if not rows:
+              raise AssertionError("no Fishtest exposure rows")
+          opt = sorted(x[0] for x in rows)
+          active = sum(x[2] for x in rows)
+          out = {
+              "protocol": "fishtest_style_stc_10plus0.1",
+              "samples": len(rows),
+              "active": active,
+              "active_fraction": active / len(rows),
+              "optimum_min": opt[0],
+              "optimum_median": opt[len(opt)//2],
+              "optimum_max": opt[-1],
+          }
+          Path("artifacts/crystal-chess-v62/fishtest/result.json").write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+          print("CRYSTAL_CHESS_V62_FISHTEST_EXPOSURE=PASS")
+          print(json.dumps(out, sort_keys=True))
+          PY
+          cat > artifacts/crystal-chess-v62/fishtest/LINEAGE.txt <<'EOF'
+          Scientific role: exposure diagnostic only; not an Elo test.
+          Frozen rule: if tm.optimum() <= 64 ms, force highBestMoveEffort = 1.0.
+          Candidate lineage: V55/V56 frozen gate.
+          V58 strength evidence: run 36623852778, Fishtest-style STC 10+0.1.
+          V59 mechanism evidence: run 36645752384.
+          Stockfish pin: 0a215d6c9e48856ef630013b8ab8312941a59057.
+          Fastchess pin: 60d7a7a26c6b0582a15c112fb29a1829bef2adb3.
+          Book pin: official-stockfish/books@65815ccdbc7727cd4f6aee252ba8f67fb740e92f.
+          This run uses the first 16 entries of the exact 512-position V58 reservoir sample.
+          EOF
+
+      - name: Upload Fishtest V62 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-v62-fishtest-exposure
+          path: artifacts/crystal-chess-v62/fishtest/
+          if-no-files-found: error
