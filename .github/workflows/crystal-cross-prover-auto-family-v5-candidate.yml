@@ -1,0 +1,99 @@
+name: Crystal Cross-Prover Auto Family V5 Candidate
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-auto-family-v5
+    paths:
+      - 'mathgraph/cross_prover_family_discovery.py'
+      - 'tests/test_cross_prover_family_discovery.py'
+      - '.github/workflows/crystal-cross-prover-auto-family-v5-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Test discovery kernel
+        run: python -m pytest -q tests/test_cross_prover_family_discovery.py
+      - name: Discover full V5 candidate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/crystal_cross_prover_auto_family_v5
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_demo.pvs cad_demo.prf cad_examples.pvs cad_examples.prf cad_star_ex.pvs cad_star_ex.prf; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family,render_lean_family
+          sources={k:Path("/tmp/pvs-family",f"{k}.pvs").read_text() for k in ("cad_demo","cad_examples","cad_star_ex")}
+          proofs={k:Path("/tmp/pvs-family",f"{k}.prf").read_text() for k in ("cad_demo","cad_examples","cad_star_ex")}
+          d=discover_family(sources,proofs)
+          assert d["source_lemma_count"]==34,d
+          assert d["supported_occurrence_count"]==26,d
+          assert d["source_verified_occurrence_count"]==25,d
+          assert d["source_unverified_supported_occurrence_count"]==1,d
+          assert d["unsupported_occurrence_count"]==8,d
+          assert d["unique_canonical_claim_count"]==25,d
+          assert d["verified_unique_claim_count"]==25,d
+          unsupported={f"{x['theory']}.{x['formula']}":x["status"] for x in d["unsupported_occurrences"]}
+          expected={
+            "cad_demo.d_inverse","cad_demo.t_amgm3",
+            "cad_star_ex.s_sqrt","cad_star_ex.s_fun","cad_star_ex.s_skip","cad_star_ex.s_mix",
+            "cad_star_ex.s_posreal","cad_star_ex.s_sqrtpos",
+          }
+          assert set(unsupported)==expected,(set(unsupported),expected)
+          schemas={"composed_algebraic_witness","bounded_intermediate_value"}
+          new=[x["claim_id"] for x in d["unique_claims"] if x["certificate_schema"] in schemas]
+          assert len(new)==2,new
+          skip=sorted(x["claim_id"] for x in d["unique_claims"] if x["certificate_schema"] not in schemas)
+          out=Path("artifacts/crystal_cross_prover_auto_family_v5")
+          out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          out.joinpath("Surface.lean").write_text(render_lean_family(d,skip_claim_ids=skip))
+          print(json.dumps({
+            "exact_canonical_claims":25,
+            "exact_supported_occurrences":26,
+            "exact_unknown_occurrences":8,
+            "warranted_projection_occurrences":6,
+            "false_controls_remaining":2,
+            "unresolved_true_occurrences_if_authorities_green":0
+          },sort_keys=True))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check final two exact consumers
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-v5-lean
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_auto_family_v5/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-cross-prover-v5"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-auto-family-v5-candidate
+          path: artifacts/crystal_cross_prover_auto_family_v5/
