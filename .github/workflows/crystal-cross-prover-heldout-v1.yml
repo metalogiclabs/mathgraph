@@ -1,0 +1,189 @@
+name: Crystal Cross-Prover Heldout V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze V5 recognizer
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_family_discovery.py)" = 7e637fcd39c7df814b6e414aae93b50312257a58
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Discover held-out source family without grammar changes
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/heldout artifacts/crystal_cross_prover_heldout_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_examples3.pvs cad_examples3.prf cad_examples4.pvs cad_examples4.prf; do
+            curl -fsSL -o "/tmp/heldout/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family
+
+          sources={
+            "cad_examples3":Path("/tmp/heldout/cad_examples3.pvs").read_text(),
+            "cad_examples4":Path("/tmp/heldout/cad_examples4.pvs").read_text(),
+          }
+          proofs={
+            "cad_examples3":Path("/tmp/heldout/cad_examples3.prf").read_text(),
+            "cad_examples4":Path("/tmp/heldout/cad_examples4.prf").read_text(),
+          }
+          d=discover_family(sources,proofs)
+          assert d["source_lemma_count"]==11,d
+          assert d["supported_occurrence_count"]==3,d
+          assert d["source_verified_occurrence_count"]==3,d
+          assert d["source_unverified_supported_occurrence_count"]==0,d
+          assert d["unique_canonical_claim_count"]==3,d
+          assert d["unsupported_occurrence_count"]==8,d
+          got={(x["theory"],x["formula"],x["claim_id"]) for x in d["supported_occurrences"]}
+          expected={
+            ("cad_examples3","t_above","real.common_upper_bound2@1"),
+            ("cad_examples3","t_cone","real.sum_squares_has_root@1"),
+            ("cad_examples4","e4_square","real.square_shift_dominates@1"),
+          }
+          assert got==expected,(got,expected)
+          out=Path("artifacts/crystal_cross_prover_heldout_v1")
+          out.joinpath("discovery.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          summary={
+            "schema":"mathgraph.cross-prover-heldout-discovery.v1",
+            "status":"CANDIDATE_FROZEN_GRAMMAR_HELDOUT",
+            "source_lemma_count":11,
+            "exact_reused_occurrences":3,
+            "exact_reused_canonical_claims":3,
+            "unsupported_occurrences":8,
+            "coverage":3/11,
+            "recognized":[
+              {"source":"cad_examples3.t_above","claim":"real.common_upper_bound2@1"},
+              {"source":"cad_examples3.t_cone","claim":"real.sum_squares_has_root@1"},
+              {"source":"cad_examples4.e4_square","claim":"real.square_shift_dominates@1"},
+            ],
+            "boundary":"Frozen V5 recognizer; no new grammar or theorem-specific mapping admitted."
+          }
+          out.joinpath("summary.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,sort_keys=True))
+          print("UNSUPPORTED")
+          for x in d["unsupported_occurrences"]:
+              print(x["theory"],x["formula"],"::",x["normalized_surface"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout-v1-discovery
+          path: artifacts/crystal_cross_prover_heldout_v1/
+
+  pvs-replay:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay only recognized held-out source occurrences
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_examples3.t_above:t_cone | tee /tmp/ex3.log
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_examples4.e4_square | tee /tmp/ex4.log
+          grep -q "Grand Totals: 2 proofs, 2 attempted, 2 succeeded" /tmp/ex3.log
+          grep -q "Grand Totals: 1 proofs, 1 attempted, 1 succeeded" /tmp/ex4.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/ex3.log /tmp/ex4.log; then exit 1; fi
+
+  promote-reuse:
+    needs: [discover,pvs-replay]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout-v1-discovery
+          path: /tmp/heldout
+      - name: Compile held-out object using zero new semantic qualifications
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_heldout_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import compile_family_bundle
+          d=json.loads(Path("/tmp/heldout/discovery.json").read_text())
+          reused=sorted(x["claim_id"] for x in d["unique_claims"])
+          assert reused==[
+            "real.common_upper_bound2@1",
+            "real.square_shift_dominates@1",
+            "real.sum_squares_has_root@1",
+          ],reused
+          obj=compile_family_bundle(
+            d,
+            reused_claim_ids=reused,
+            newly_qualified_claim_ids=[],
+            evidence_refs=[
+              "github-run:36649171836:v5-bounded-closure",
+              f"github-run:{os.environ['RUN_ID']}:heldout-pvs-replay",
+            ],
+          )
+          out={
+            "schema":"mathgraph.cross-prover-heldout-reuse-result.v1",
+            "status":"WARRANTED_BOUNDED_HELDOUT_EXACT_REUSE",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "heldout_source_lemmas":11,
+            "recognized_exact_occurrences":3,
+            "reused_existing_canonical_claims":3,
+            "new_semantic_qualifications":0,
+            "unknown_unsupported_occurrences":8,
+            "exact_coverage_fraction":3/11,
+            "heldout_semantic_object_id":obj.id,
+            "systems_result":"Frozen V5 exact-surface recognizer reuses prior warrant correctly on held-out duplicates, but covers only 3/11 fresh source surfaces; the remaining residual requires schema abstraction rather than more authority replay."
+          }
+          Path("artifacts/crystal_cross_prover_heldout_v1/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout-v1
+          path: artifacts/crystal_cross_prover_heldout_v1/result.json
