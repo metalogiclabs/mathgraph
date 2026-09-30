@@ -88,6 +88,8 @@ jobs:
           import hashlib,json,os
           from pathlib import Path
           from mathgraph.cross_prover_family_discovery import discover_family,compile_family_bundle
+          from mathgraph.core_v0 import Grammar,Status
+          from mathgraph.core_v0_family_adapter import replay_family
 
           pins={
             "cad_demo.pvs":"90a3d14afff0fc023c2053b7635b05b93dfa5429",
@@ -219,10 +221,63 @@ jobs:
             },
             "boundary":"This closes only the 34 pinned lemma surfaces from the three declared pvs_cad source files. It is not a universal PVS parser, universal proof translator, or completeness claim beyond the supported source snapshot.",
           }
+
+          # Replay the same discovery result into the prover-agnostic kernel.
+          # Projection endpoints are explicit adapter inputs; theorem names
+          # alone must never manufacture IMPLIES relations.
+          core_replay=replay_family(
+            d,
+            grammar=Grammar(
+              "pvs-cad-bounded-claim-and-interface-ir",
+              "1",
+              "sha256:cross-prover-bounded-family-and-interface-ir-v1",
+            ),
+            source_digests={
+              "cad_demo":pins["cad_demo.pvs"],
+              "cad_examples":pins["cad_examples.pvs"],
+              "cad_star_ex":pins["cad_star_ex.pvs"],
+            },
+            verified_claim_authorities={
+              row["claim_id"]:[
+                "github-run:36648459392:v4-promotion",
+                "github-run:36648331218:v5-discovery-lean",
+                "github-run:36647829062:hard-pair-pvs-lean",
+              ]
+              for row in d["unique_claims"]
+              if row["source_authority_status"]=="SOURCE_AUTHORITY_AVAILABLE"
+            },
+            refuted_source_authorities={
+              "cad_demo.d_inverse":["github-run:36649006912:refutation-promotion","github-run:36648207056:false-cad-probe"],
+              "cad_demo.t_amgm3":["github-run:36649006912:refutation-promotion","github-run:36648207056:false-cad-probe"],
+            },
+            implication_authorities={
+              row["source_occurrence"]:row
+              for row in json.loads(Path("experiments/crystal_cross_prover_bounded_closure_v1/core_v0_projection_map.json").read_text())["relations"]
+            },
+            repository="j-tanner-slagel/pvs_cad",
+            commit="8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+          )
+          core_summary={
+            "schema":"mathgraph.core-v0-cross-prover-replay.v1",
+            "status":"WARRANTED_BOUNDED_CORE_REPLAY_WITH_SIX_TYPED_IMPLICATIONS",
+            "partition":core_replay.partition,
+            "object_count":len(core_replay.graph.objects),
+            "unknown_count":len(core_replay.graph.unknowns),
+            "rejected_source_unknowns":sorted(
+              name for name,unknown in core_replay.unknown_by_source.items()
+              if core_replay.graph.status_of(unknown.id) is Status.REJECTED
+            ),
+            "projection_relation":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+            "projection_mapping":"experiments/crystal_cross_prover_bounded_closure_v1/core_v0_projection_map.json",
+            "projection_same_meaning":False,
+          }
           outdir.joinpath("v5_result.json").write_text(json.dumps(v5,indent=2,sort_keys=True)+"\n")
           outdir.joinpath("bounded_closure_result.json").write_text(json.dumps(closure,indent=2,sort_keys=True)+"\n")
+          outdir.joinpath("core_v0_family.mg").write_bytes(core_replay.graph.to_mg())
+          outdir.joinpath("core_v0_replay.json").write_text(json.dumps(core_summary,indent=2,sort_keys=True)+"\n")
           print(json.dumps(v5,sort_keys=True))
           print(json.dumps(closure,sort_keys=True))
+          print(json.dumps(core_summary,sort_keys=True))
           PY
 
       - uses: actions/upload-artifact@v4

@@ -1,0 +1,68 @@
+{
+  "schema": "mathgraph.core-v0-pvs-cad-interface-projections.v1",
+  "source_repository": "j-tanner-slagel/pvs_cad",
+  "source_commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+  "relation_kind": "IMPLIES",
+  "authority_artifacts": {
+    "base_projection": {
+      "run_id": 36640121901,
+      "artifact_id": 11066331772,
+      "status": "WARRANTED_BOUNDED_CROSS_PROVER_SUFFICIENT_INTERFACE_PROJECTION"
+    },
+    "type_range_projection": {
+      "run_id": 36648156480,
+      "artifact_id": 11069016645,
+      "status": "WARRANTED_BOUNDED_CROSS_PROVER_TYPE_RANGE_PROJECTION_V2"
+    }
+  },
+  "relations": [
+    {
+      "source_occurrence": "cad_star_ex.s_sqrt",
+      "source_claim_id": "interface.square_identity_gt_one@1",
+      "target_claim_id": "pvs-source-instance:cad_star_ex.s_sqrt",
+      "source_normal_form": {"language": "lean-proposition-v1", "statement": "(a x : ℝ) : a * a = x ∧ a > 1 → x > 1"},
+      "target_normal_form": {"language": "lean-proposition-v1", "statement": "(x a : ℝ) : a = Real.sqrt x ∧ a * a = x ∧ a > 1 → x > 1"},
+      "authority_refs": ["github-run:36640121901:pvs-native-replay", "github-run:36640121901:lean-interface-and-adapter"]
+    },
+    {
+      "source_occurrence": "cad_star_ex.s_fun",
+      "source_claim_id": "interface.above_square_gt_neg_one@1",
+      "target_claim_id": "pvs-source-instance:cad_star_ex.s_fun",
+      "source_normal_form": {"language": "lean-proposition-v1", "statement": "(x u : ℝ) : u > x ^ 2 → u > -1"},
+      "target_normal_form": {"language": "lean-proposition-v1", "statement": "(f : ℝ → ℝ) (x : ℝ) (l : List ℝ) : f x > x ^ 2 ∧ x ∈ l ∧ l.length = 3 → f x > -1"},
+      "authority_refs": ["github-run:36640121901:pvs-native-replay", "github-run:36640121901:lean-interface-and-adapter"]
+    },
+    {
+      "source_occurrence": "cad_star_ex.s_skip",
+      "source_claim_id": "interface.gt_two_gt_one@1",
+      "target_claim_id": "pvs-source-instance:cad_star_ex.s_skip",
+      "source_normal_form": {"language": "lean-proposition-v1", "statement": "(x : ℝ) : x > 2 → x > 1"},
+      "target_normal_form": {"language": "lean-proposition-v1", "statement": "(g : ℝ → ℝ) (x : ℝ) : (∀ z : ℝ, g z ≤ 1) ∧ (x > 0 → ∃ z : ℝ, z * z = x) ∧ x > 2 → x > 1"},
+      "authority_refs": ["github-run:36640121901:pvs-native-replay", "github-run:36640121901:lean-interface-and-adapter"]
+    },
+    {
+      "source_occurrence": "cad_star_ex.s_mix",
+      "source_claim_id": "interface.above_nonzero_square_positive@1",
+      "target_claim_id": "pvs-source-instance:cad_star_ex.s_mix",
+      "source_normal_form": {"language": "lean-proposition-v1", "statement": "(x u : ℝ) : u > x ^ 2 ∧ x ≠ 0 → u > 0"},
+      "target_normal_form": {"language": "lean-proposition-v1", "statement": "(P : ℝ → Prop) (Q : List ℝ → Prop) (f : ℝ → ℝ) (x : ℝ) (l : List ℝ) : P x ∧ Q l ∧ (∀ z : ℝ, f z ≥ 0) ∧ f x > x ^ 2 ∧ x ≠ 0 → f x > 0"},
+      "authority_refs": ["github-run:36640121901:pvs-native-replay", "github-run:36640121901:lean-interface-and-adapter"]
+    },
+    {
+      "source_occurrence": "cad_star_ex.s_posreal",
+      "source_claim_id": "interface.positive_add_one_gt_one@1",
+      "target_claim_id": "pvs-source-instance:cad_star_ex.s_posreal",
+      "source_normal_form": {"language": "lean-proposition-v1", "statement": "(x : ℝ) : x > 0 → x + 1 > 1"},
+      "target_normal_form": {"language": "lean-proposition-v1", "statement": "(x : {x : ℝ // 0 < x}) : (x : ℝ) + 1 > 1"},
+      "authority_refs": ["github-run:36648156480:pvs-replay-reused-36647652459", "github-run:36648156480:lean-adapter-36647887432"]
+    },
+    {
+      "source_occurrence": "cad_star_ex.s_sqrtpos",
+      "source_claim_id": "interface.sqrt_add_one_ge_one@1",
+      "target_claim_id": "pvs-source-instance:cad_star_ex.s_sqrtpos",
+      "source_normal_form": {"language": "lean-proposition-v1", "statement": "(y : ℝ) : Real.sqrt y + 1 ≥ 1"},
+      "target_normal_form": {"language": "lean-proposition-v1", "statement": "(y : NNReal) : Real.sqrt (y : ℝ) + 1 ≥ 1"},
+      "authority_refs": ["github-run:36648156480:pvs-replay-reused-36647652459", "github-run:36648156480:lean-adapter-36647887432"]
+    }
+  ]
+}
