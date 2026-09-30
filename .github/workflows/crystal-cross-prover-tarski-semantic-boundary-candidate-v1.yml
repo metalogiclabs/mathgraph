@@ -1,0 +1,124 @@
+name: Crystal Cross-Prover Tarski Semantic Boundary Candidate V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-tarski-semantic-boundary-v1
+    paths:
+      - 'mathgraph/cross_prover_surface_boundary.py'
+      - 'tests/test_cross_prover_surface_boundary.py'
+      - 'experiments/crystal_cross_prover_tarski_semantic_boundary_v1/**'
+      - '.github/workflows/crystal-cross-prover-tarski-semantic-boundary-candidate-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Test typed surface boundary
+        run: python -m pytest -q tests/test_cross_prover_surface_boundary.py
+      - name: Fetch and classify sealed Tarski source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tarski artifacts/crystal_cross_prover_tarski_semantic_boundary_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/tarski/tarski_examples.pvs "$BASE/tarski_examples.pvs"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import SPECS
+          from mathgraph.cross_prover_surface_boundary import classify_source_family
+
+          m=json.loads(Path("experiments/crystal_cross_prover_tarski_semantic_boundary_v1/manifest.json").read_text())
+          data=Path("/tmp/tarski/tarski_examples.pvs").read_bytes()
+          got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          assert got==m["source"]["source_blob_sha"],(got,m["source"]["source_blob_sha"])
+
+          d=classify_source_family({"tarski_examples":data.decode()})
+          assert d["source_lemma_count"]==8,d
+          assert d["object_level_count"]==2,d
+          assert d["typed_unknown_count"]==6,d
+          obj={f"{x['theory']}.{x['formula']}" for x in d["object_level"]}
+          unk={f"{x['theory']}.{x['formula']}" for x in d["typed_unknown"]}
+          assert obj==set(m["expected_object_level_sources"]),(obj,m["expected_object_level_sources"])
+          assert unk==set(m["expected_typed_unknown_sources"]),(unk,m["expected_typed_unknown_sources"])
+
+          known={spec.certificate_schema for spec in SPECS.values()}
+          used=set(m["object_level_constructor_assignments"].values())
+          assert m["new_constructor_schema_count"]==0
+          assert used.issubset(known),(used,known)
+
+          Path("artifacts/crystal_cross_prover_tarski_semantic_boundary_v1/partition.json").write_text(
+              json.dumps(d,indent=2,sort_keys=True)+"\n"
+          )
+          print("OBJECT_LEVEL",sorted(obj))
+          print("TYPED_UNKNOWN",sorted(unk))
+          print("PREEXISTING_CONSTRUCTORS_ONLY",sorted(used))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check two object-level consumers
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-tarski-semantic-boundary
+          mkdir -p "$ROOT"
+          cp experiments/crystal_cross_prover_tarski_semantic_boundary_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-tarski-semantic-boundary"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_tarski_semantic_boundary_v1/lean_surface.sha256"
+      - name: Record candidate
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          m=json.loads(Path("experiments/crystal_cross_prover_tarski_semantic_boundary_v1/manifest.json").read_text())
+          out={
+              "schema":"mathgraph.cross-prover-tarski-semantic-boundary-result.v1",
+              "status":"CANDIDATE_TARSKI_SEMANTIC_BOUNDARY_AND_CONSTRUCTOR_REUSE",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "sealed_baseline_run":36651263148,
+              "source_lemma_count":8,
+              "object_level_real_claims":2,
+              "typed_unknown_prover_internal":6,
+              "object_level_sources":m["expected_object_level_sources"],
+              "typed_unknown_sources":m["expected_typed_unknown_sources"],
+              "object_level_consumers":"2/2 LEAN GREEN",
+              "reused_constructor_schemas":sorted(set(m["object_level_constructor_assignments"].values())),
+              "new_constructor_schema_count":0,
+              "native_pvs_source_authority":"REUSE_PENDING_PROMOTION",
+              "boundary":m["boundary"]
+          }
+          p=Path("artifacts/crystal_cross_prover_tarski_semantic_boundary_v1")
+          p.joinpath("result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-tarski-semantic-boundary-candidate-v1
+          path: artifacts/crystal_cross_prover_tarski_semantic_boundary_v1/
