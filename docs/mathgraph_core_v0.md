@@ -91,7 +91,17 @@ verifier-contact boundary.
 
 The scheduler still cannot promote truth. A selected continuation must return
 through a verifier adapter and be admitted as a Core V0 warrant before it can
-change durable semantic state. This gives the bounded loop:
+change durable semantic state.
+
+Scheduler ranking metadata is also outside the evidence boundary. Attention
+probabilities, taste scores, costs, and other policy values may use floating
+point, but Core V0 canonical evidence deliberately rejects floats. A verifier
+adapter must therefore project a selected continuation into the smallest
+authority-relevant envelope: semantic subject identity, exact source identity,
+verifier result, qualification boundary, and support digests. The policy that
+selected a target is routing provenance, not evidence that the target is true.
+
+This gives the bounded loop:
 
 ```text
 generate -> normalize -> verify -> admit -> close
