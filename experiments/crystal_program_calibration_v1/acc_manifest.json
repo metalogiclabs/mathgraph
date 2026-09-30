@@ -1,0 +1,71 @@
+{
+  "schema": "mathgraph.crystal-program-acc-calibration.v1",
+  "calibration_epoch": "programme-calibration-20260930-v1",
+  "shared_contract": "metalogiclabs/mathgraph@2d59a95ab6c28c1a1814863ab9becaaba9c83356",
+  "campaign_id": "acc",
+  "authority_before": {
+    "branch_head": "heathsanchez/test@aa59722ab62c83a427a9bc9e8a41293d82d1b6af",
+    "run_id": 36649127665,
+    "pool_artifact_id": 11069354331,
+    "pool_artifact_digest": "sha256:48b822a40924198728ef629fb90fe2a84d0a21b14cfda61bf1115f9ac6268fd2",
+    "freeze_artifact_id": 11069049382,
+    "freeze_artifact_digest": "sha256:72e941d2e7081fbbc310395c4cd0578c23f0f54fb76097ec9e4fab9ec648f4be"
+  },
+  "parent_residual": "acc.official_cost_native_search",
+  "frozen_atom_rule": {
+    "universe": "the 2213 rows in the pinned acc-official-bestfirst-pool results.json",
+    "selection": "sort rows by sha256(challenge_id) ascending and take first 64",
+    "count": 64,
+    "outcome_blind": "challenge_id only; no live_best, solved, official_ok, path length or cost field may enter selection"
+  },
+  "experiment": "acc-official-cost-driver-quotient-v1",
+  "mechanism": {
+    "solver": "unchanged Avi161/ACSolverX hfcascade Nielsen search at commit 5ae1bd8eda6d80dfbea51680636f825da19fb802, budget 1000",
+    "decoder": "unchanged public certificate_decoder followed by the existing official ac-r2-v1 compiler",
+    "new_observation_only": "count elementary op kinds before compilation and exact official expansion due to SWAP macro"
+  },
+  "predeclared_child_taxonomy": [
+    {
+      "id": "public-route-unsolved",
+      "predicate": "hfcascade does not solve the selected atom",
+      "next_action": "cost-native search still requires a connectivity proposal for this atom"
+    },
+    {
+      "id": "official-transport-invalid",
+      "predicate": "public route solves but compiled official path fails pinned official verifier",
+      "next_action": "repair transport/decoder semantics before cost optimization"
+    },
+    {
+      "id": "swap-expansion-dominant",
+      "predicate": "official SWAP expansion accounts for strictly more than half of max(1, official_length-live_best)",
+      "next_action": "eliminate or amortize basis-return/swap transport in the official-cost-native proposal language"
+    },
+    {
+      "id": "conjugation-dominant",
+      "predicate": "official path verifies, swap expansion is not dominant, and decoded conjugate operations are the unique largest elementary op family",
+      "next_action": "make conjugator transport a first-class charged proposal coordinate"
+    },
+    {
+      "id": "multiply-dominant",
+      "predicate": "official path verifies, swap expansion is not dominant, and decoded multiply operations are the unique largest elementary op family",
+      "next_action": "bias cost-native proposals toward direct official multiply structure"
+    },
+    {
+      "id": "invert-dominant",
+      "predicate": "official path verifies, swap expansion is not dominant, and decoded invert operations are the unique largest elementary op family",
+      "next_action": "collapse avoidable inversion churn in the official-cost proposal graph"
+    },
+    {
+      "id": "mixed-elementary-cost",
+      "predicate": "official path verifies but no single predeclared elementary family is uniquely dominant",
+      "next_action": "retain mixed exact cost vector; do not invent a scalar mechanism"
+    }
+  ],
+  "credit_rule": "one frozen atom is credited iff it receives exactly one predeclared child class, that class has the stated executable next action, the unchanged public route/decoder is replayed when applicable, and any official-valid classification is backed by the pinned official verifier",
+  "verification_boundary": {
+    "official_repo": "SAIRcompetition/Andrews-Curtis@99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "public_solver": "Avi161/ACSolverX@5ae1bd8eda6d80dfbea51680636f825da19fb802",
+    "no_submission": true,
+    "no_search_retuning": true
+  }
+}
