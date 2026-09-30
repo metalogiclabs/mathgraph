@@ -169,99 +169,45 @@ jobs:
       - name: Replay every frozen source obligation natively
         run: |
           set -euo pipefail
-          COUNT="$(cat /tmp/fresh/count.txt)"
           python - <<'PY'
-          from pathlib import Path
-          names=Path("/tmp/fresh/targets.txt").read_text().split(":")
-          assert len(names)==int(Path("/tmp/fresh/count.txt").read_text())
-          rows=[]
-          for i in range(0,len(names),4):
-              chunk=names[i:i+4]
-              rows.append(f"{len(chunk)}\t{':'.join(chunk)}")
-          Path("/tmp/fresh/batches.tsv").write_text("\n".join(rows)+"\n")
+          import os
+          import pathlib
+          import re
+          import subprocess
+
+          names=pathlib.Path("/tmp/fresh/targets.txt").read_text().split(":")
+          expected=int(pathlib.Path("/tmp/fresh/count.txt").read_text())
+          assert len(names)==expected,(len(names),expected)
+          pvs_dir=os.environ["PVS_DIR"]
+          theory=os.environ["THEORY"]
+          env=os.environ.copy()
+          env["PVS_LIBRARY_PATH"]="/tmp/nasalib"
+          logs=[]
+          done=0
+          for offset in range(0,len(names),4):
+              chunk=names[offset:offset+4]
+              selector=f"@{theory}.{':'.join(chunk)}"
+              p=subprocess.run(
+                  [f"{pvs_dir}/proveit","-q","--timeout","180",selector],
+                  cwd="/tmp/pvs_cad/cad",
+                  env=env,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+                  text=True,
+                  timeout=900,
+              )
+              print(p.stdout)
+              assert p.returncode==0,(selector,p.returncode,p.stdout[-4000:])
+              n=len(chunk)
+              marker=f"Grand Totals: {n} proofs, {n} attempted, {n} succeeded"
+              assert marker in p.stdout,(selector,marker,p.stdout[-4000:])
+              assert not re.search(r"unfinished|untried|unchecked",p.stdout,re.I),p.stdout[-4000:]
+              logs.append(p.stdout)
+              done += n
+          assert done==expected,(done,expected)
+          pathlib.Path("/tmp/fresh/pvs-replay.log").write_text("\n".join(logs))
+          print(f"FRESH_PVS_REPLAY={done}/{expected}")
           PY
-          cd /tmp/pvs_cad/cad
-          export PVS_LIBRARY_PATH=/tmp/nasalib
-          : > /tmp/fresh/pvs-replay.log
-          DONE=0
-          while IFS=
-      - name: Install Lean target environment
-        run: |
-          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
-      - name: Kernel-check every automatically generated route adapter
-        run: |
-          set -euo pipefail
-          ROOT=/tmp/fresh-lean
-          mkdir -p "$ROOT"
-          cp artifacts/crystal_cross_prover_fresh_family_calibration_v1/Surface.lean "$ROOT/Surface.lean"
-          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
-          cat > "$ROOT/lakefile.toml" <<'EOF'
-          name = "crystal-fresh-family-calibration-v1"
-          version = "0.1.0"
-          [[require]]
-          name = "mathlib"
-          git = "https://github.com/leanprover-community/mathlib4.git"
-          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
-          EOF
-          cd "$ROOT"
-          lake update
-          lake exe cache get
-          lake env lean Surface.lean
-          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_family_calibration_v1/lean_surface.sha256"
-
-      - name: Seal common prospective measurement
-        env:
-          RUN_ID: ${{ github.run_id }}
-          HEAD_SHA: ${{ github.sha }}
-        run: |
-          python - <<'PY'
-          import json,os
-          from pathlib import Path
-          d=json.loads(Path(
-            "artifacts/crystal_cross_prover_fresh_family_calibration_v1/obligations.json"
-          ).read_text())
-          total=d["obligation_count"]
-          closed=d["routed_occurrence_count"]
-          result={
-            "schema":"mathgraph.shared-prospective-measurement.v1",
-            "campaign":"cross-prover",
-            "run_id":int(os.environ["RUN_ID"]),
-            "head_sha":os.environ["HEAD_SHA"],
-            "contraction_basis":"prospective_verified_obligations_fraction.v1",
-            "cost_basis":"github_actions_job_wall_seconds.v1",
-            "obligations_total":total,
-            "obligations_closed":closed,
-            "verified_obligations_fraction":closed/total,
-            "native_source_gate":f"{total}/{total} PVS GREEN",
-            "lean_adapter_gate":"GREEN",
-            "unsupported_obligations":total-closed,
-            "unsupported_status":"UNKNOWN",
-            "route_ids":d["route_ids"],
-            "boundary":"Fresh source family was selected and hash-frozen before content read. Five promoted route constructors were applied unchanged by formula shape and live prerequisite IDs only. Unsupported source lemmas remain UNKNOWN."
-          }
-          out=Path("artifacts/crystal_cross_prover_fresh_family_calibration_v1/result.json")
-          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(result,sort_keys=True))
-          PY
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: crystal-cross-prover-fresh-family-calibration-v1
-          path: artifacts/crystal_cross_prover_fresh_family_calibration_v1/
-          if-no-files-found: error
-\t' read -r N TARGETS; do
-            test -n "$TARGETS"
-            "$PVS_DIR/proveit" -q --timeout 180 "@$THEORY.$TARGETS" | tee /tmp/fresh/batch.log
-            grep -q "Grand Totals: $N proofs, $N attempted, $N succeeded" /tmp/fresh/batch.log
-            if grep -Ei "unfinished|untried|unchecked" /tmp/fresh/batch.log; then exit 1; fi
-            cat /tmp/fresh/batch.log >> /tmp/fresh/pvs-replay.log
-            DONE=$((DONE + N))
-          done < /tmp/fresh/batches.tsv
-          test "$DONE" -eq "$COUNT"
-          echo "FRESH_PVS_REPLAY=$DONE/$COUNT"
           cp /tmp/fresh/pvs-replay.log "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_family_calibration_v1/pvs-replay.log"
 
       - name: Install Lean target environment
