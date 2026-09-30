@@ -1,0 +1,121 @@
+name: Crystal Cross-Prover Auto Family V4 Parallel Promotion
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-auto-family-v4
+    paths:
+      - '.github/workflows/crystal-cross-prover-auto-family-v4-parallel-promote.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pvs:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - theory: cad_demo
+            formula: d_no_inverse
+          - theory: cad_star_ex
+            formula: s_disc
+          - theory: cad_star_ex
+            formula: s_alt_goal
+          - theory: cad_star_ex
+            formula: s_alt_hyp
+          - theory: cad_star_ex
+            formula: s_two
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay one new authority
+        env:
+          THEORY: ${{ matrix.theory }}
+          FORMULA: ${{ matrix.formula }}
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 "@$THEORY.$FORMULA" | tee /tmp/replay.log
+          grep -q "Grand Totals: 1 proofs, 1 attempted, 1 succeeded" /tmp/replay.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/replay.log; then exit 1; fi
+
+  promote:
+    needs: pvs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reuse green parent and Lean authorities
+        run: |
+          set -euo pipefail
+          curl -fsSL https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/36645655186/jobs -o /tmp/v3.json
+          curl -fsSL https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/36647445768/jobs -o /tmp/v4base.json
+          python - <<'PY'
+          import json
+          v3=json.load(open("/tmp/v3.json"))["jobs"]
+          v4=json.load(open("/tmp/v4base.json"))["jobs"]
+          assert next(x for x in v3 if x["name"]=="promote")["conclusion"]=="success"
+          assert next(x for x in v4 if x["name"]=="discover")["conclusion"]=="success"
+          assert next(x for x in v4 if x["name"]=="lean-new")["conclusion"]=="success"
+          print("V3_PARENT_WARRANT_GREEN")
+          print("V4_DISCOVERY_AND_LEAN_REUSED")
+          PY
+      - name: Promote V4 exact family
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_auto_family_v4
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.crystal-cross-prover-auto-family-result.v4",
+            "status":"WARRANTED_BOUNDED_AUTOMATIC_CROSS_PROVER_FAMILY_V4",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "parent_warrant_run":36645655186,
+            "reused_discovery_lean_run":36647445768,
+            "new_constructor":"quantifier_witness_duality",
+            "new_claim_count":5,
+            "new_pvs_authorities":"5/5 GREEN PARALLEL",
+            "new_lean_consumers":"5/5 GREEN REUSED",
+            "exact_supported_occurrences":24,
+            "exact_canonical_claims":23,
+            "raw_exact_unknown_occurrences":10,
+            "parallel_warranted_projection_occurrences":6,
+            "effective_unresolved_occurrences":4,
+            "effective_unresolved":["cad_demo.d_cubic","cad_demo.d_meet","cad_demo.d_inverse","cad_demo.t_amgm3"]
+          }
+          Path("artifacts/crystal_cross_prover_auto_family_v4/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-auto-family-v4
+          path: artifacts/crystal_cross_prover_auto_family_v4/result.json
