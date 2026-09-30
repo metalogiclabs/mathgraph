@@ -452,3 +452,228 @@ def partition_candidates(
     campaign_id: str,
 ) -> tuple[CandidateExperiment, ...]:
     return tuple(c for c in candidates if c.campaign_id == campaign_id)
+
+
+@dataclass(frozen=True)
+class CalibrationRecord:
+    """Observed verifier-backed reward for one immediately preceding pilot.
+
+    A record may guide at most the next continuation decision for the same
+    campaign, and only when resulting_state_ref exactly matches the current
+    compressed campaign state. This prevents stale historical performance
+    from silently becoming a forecast for a different residual.
+    """
+
+    calibration_id: str
+    calibration_epoch: str
+    campaign_id: str
+    pilot_residual_id: str
+    pilot_candidate_id: str
+    resulting_state_ref: str
+    contraction_basis: str
+    cost_basis: str
+    frozen_atoms: int
+    credited_atoms: int
+    wall_seconds: float
+    evidence_refs: tuple[str, ...]
+    invariants_preserved: bool = True
+
+    def __post_init__(self) -> None:
+        if not self.calibration_id or not self.calibration_epoch:
+            raise ValueError("calibration id/epoch must be non-empty")
+        if not self.campaign_id or not self.resulting_state_ref:
+            raise ValueError("campaign/resulting state must be non-empty")
+        if self.frozen_atoms <= 0:
+            raise ValueError("frozen_atoms must be positive")
+        if not 0 <= self.credited_atoms <= self.frozen_atoms:
+            raise ValueError("credited_atoms must be in [0,frozen_atoms]")
+        if self.wall_seconds <= 0:
+            raise ValueError("wall_seconds must be positive")
+        if not self.evidence_refs:
+            raise ValueError("calibration evidence must be non-empty")
+        if not self.contraction_basis or not self.cost_basis:
+            raise ValueError("calibration bases must be non-empty")
+
+    @property
+    def contraction_fraction(self) -> float:
+        return self.credited_atoms / self.frozen_atoms
+
+    @property
+    def observed_score(self) -> float:
+        return self.contraction_fraction / self.wall_seconds
+
+    @property
+    def comparison_key(self) -> tuple[str, str]:
+        return self.contraction_basis, self.cost_basis
+
+    def to_dict(self) -> dict:
+        return {
+            "calibration_id": self.calibration_id,
+            "calibration_epoch": self.calibration_epoch,
+            "campaign_id": self.campaign_id,
+            "pilot_residual_id": self.pilot_residual_id,
+            "pilot_candidate_id": self.pilot_candidate_id,
+            "resulting_state_ref": self.resulting_state_ref,
+            "contraction_basis": self.contraction_basis,
+            "cost_basis": self.cost_basis,
+            "frozen_atoms": self.frozen_atoms,
+            "credited_atoms": self.credited_atoms,
+            "contraction_fraction": self.contraction_fraction,
+            "wall_seconds": self.wall_seconds,
+            "observed_score": self.observed_score,
+            "evidence_refs": list(self.evidence_refs),
+            "invariants_preserved": self.invariants_preserved,
+        }
+
+
+@dataclass(frozen=True)
+class CalibratedContinuationDecision:
+    status: str
+    selected_campaign_id: str | None
+    selected_candidate_id: str | None
+    selected_observed_score: float
+    campaign_decisions: tuple[CampaignDecision, ...]
+    calibration_records: tuple[CalibrationRecord, ...]
+    missing_campaign_ids: tuple[str, ...]
+    rationale: str
+
+    @property
+    def id(self) -> str:
+        return content_id(self.to_dict(), prefix="calibrated-continuation")
+
+    def to_dict(self) -> dict:
+        return {
+            "status": self.status,
+            "selected_campaign_id": self.selected_campaign_id,
+            "selected_candidate_id": self.selected_candidate_id,
+            "selected_observed_score": self.selected_observed_score,
+            "campaign_decisions": [x.to_dict() for x in self.campaign_decisions],
+            "calibration_records": [x.to_dict() for x in self.calibration_records],
+            "missing_campaign_ids": list(self.missing_campaign_ids),
+            "rationale": self.rationale,
+        }
+
+
+def decide_calibrated_continuation(
+    states: Sequence[CampaignState],
+    candidates: Sequence[CandidateExperiment],
+    calibrations: Sequence[CalibrationRecord],
+    *,
+    calibration_epoch: str,
+) -> CalibratedContinuationDecision:
+    """Allocate one continuation slot from fresh observed pilot rewards.
+
+    A campaign pilot can guide one continuation slot only when its resulting
+    state is exactly the campaign's current compressed state. Missing or stale
+    calibration forces HOLD. The observed score is a policy signal, not
+    scientific authority and not a proof of global optimality.
+    """
+
+    decisions = tuple(decide_campaign(state, candidates) for state in states)
+    acting = [d for d in decisions if d.status == "ACT"]
+    if not acting:
+        return CalibratedContinuationDecision(
+            status="HOLD",
+            selected_campaign_id=None,
+            selected_candidate_id=None,
+            selected_observed_score=0.0,
+            campaign_decisions=decisions,
+            calibration_records=(),
+            missing_campaign_ids=(),
+            rationale="No campaign currently has an eligible continuation action.",
+        )
+
+    state_by_campaign = {s.campaign_id: s for s in states}
+    fresh = [
+        r for r in calibrations
+        if r.calibration_epoch == calibration_epoch and r.invariants_preserved
+    ]
+    matched: list[CalibrationRecord] = []
+    missing: list[str] = []
+    for decision in acting:
+        state = state_by_campaign[decision.campaign_id]
+        rows = [
+            r for r in fresh
+            if r.campaign_id == decision.campaign_id
+            and r.resulting_state_ref == state.compressed_state_ref
+        ]
+        if len(rows) != 1:
+            missing.append(decision.campaign_id)
+        else:
+            matched.append(rows[0])
+
+    if missing:
+        return CalibratedContinuationDecision(
+            status="HOLD_PARTIAL_CALIBRATION",
+            selected_campaign_id=None,
+            selected_candidate_id=None,
+            selected_observed_score=0.0,
+            campaign_decisions=decisions,
+            calibration_records=tuple(matched),
+            missing_campaign_ids=tuple(sorted(missing)),
+            rationale=(
+                "At least one live campaign lacks exactly one fresh calibration "
+                "record whose resulting state equals its current compressed state. "
+                "Refusing to transfer stale or absent pilot reward into a programme ranking."
+            ),
+        )
+
+    bases = {r.comparison_key for r in matched}
+    if len(bases) != 1:
+        return CalibratedContinuationDecision(
+            status="HOLD_INCOMPARABLE",
+            selected_campaign_id=None,
+            selected_candidate_id=None,
+            selected_observed_score=0.0,
+            campaign_decisions=decisions,
+            calibration_records=tuple(matched),
+            missing_campaign_ids=(),
+            rationale=(
+                "Fresh pilot records exist for all live campaigns but do not share "
+                "one exact observed contraction/cost basis."
+            ),
+        )
+
+    by_campaign = {r.campaign_id: r for r in matched}
+    selected = max(
+        acting,
+        key=lambda d: (
+            by_campaign[d.campaign_id].observed_score,
+            d.campaign_id,
+            d.selected_candidate_id or "",
+        ),
+    )
+    record = by_campaign[selected.campaign_id]
+    return CalibratedContinuationDecision(
+        status="ACT_CONTINUATION",
+        selected_campaign_id=selected.campaign_id,
+        selected_candidate_id=selected.selected_candidate_id,
+        selected_observed_score=record.observed_score,
+        campaign_decisions=decisions,
+        calibration_records=tuple(matched),
+        missing_campaign_ids=(),
+        rationale=(
+            "Allocated one continuation slot to the campaign with the highest "
+            "fresh observed verified-residual contraction per hosted wall-second "
+            "under one shared basis. This is an explicit one-step policy signal, "
+            "not proof of global scientific optimality."
+        ),
+    )
+
+
+def calibration_from_dict(data: dict) -> CalibrationRecord:
+    return CalibrationRecord(
+        calibration_id=str(data["calibration_id"]),
+        calibration_epoch=str(data["calibration_epoch"]),
+        campaign_id=str(data["campaign_id"]),
+        pilot_residual_id=str(data["pilot_residual_id"]),
+        pilot_candidate_id=str(data["pilot_candidate_id"]),
+        resulting_state_ref=str(data["resulting_state_ref"]),
+        contraction_basis=str(data["contraction_basis"]),
+        cost_basis=str(data["cost_basis"]),
+        frozen_atoms=int(data["frozen_atoms"]),
+        credited_atoms=int(data["credited_atoms"]),
+        wall_seconds=float(data["wall_seconds"]),
+        evidence_refs=tuple(data.get("evidence_refs", ())),
+        invariants_preserved=bool(data.get("invariants_preserved", True)),
+    )
