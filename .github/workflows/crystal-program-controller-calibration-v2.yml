@@ -1,0 +1,92 @@
+name: Crystal Programme Controller Shared Calibration V2
+
+on:
+  push:
+    branches: [crystal-program-controller-calibration-v1]
+    paths:
+      - 'experiments/crystal_program_controller_v1/shared_calibration_v2.json'
+      - 'scripts/run_crystal_shared_calibration_v2.py'
+      - '.github/workflows/crystal-program-controller-calibration-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Rebind V2 calibration to exact source authorities
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json,os,urllib.request
+          from pathlib import Path
+          cfg=json.loads(Path(
+            "experiments/crystal_program_controller_v1/shared_calibration_v2.json"
+          ).read_text())
+
+          def api(url):
+              req=urllib.request.Request(
+                url,
+                headers={
+                  "Authorization":f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept":"application/vnd.github+json",
+                  "User-Agent":"crystal-program-controller-calibration-v2",
+                },
+              )
+              return json.load(urllib.request.urlopen(req,timeout=60))
+
+          repos={"nucleus":"heathsanchez/test","cross-prover":"metalogiclabs/mathgraph"}
+          for row in cfg["samples"]:
+              repo=repos[row["campaign"]]
+              run_id=row["source_run"]
+              run=api(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+              assert run["conclusion"]=="success",(repo,run_id,run["conclusion"])
+              assert run["head_sha"]==row["source_head"],(repo,run_id,run["head_sha"])
+              jobs=api(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100")["jobs"]
+              assert len(jobs)==1,(repo,run_id,len(jobs))
+              job=jobs[0]
+              start=dt.datetime.fromisoformat(job["started_at"].replace("Z","+00:00"))
+              end=dt.datetime.fromisoformat(job["completed_at"].replace("Z","+00:00"))
+              wall=int((end-start).total_seconds())
+              assert wall==row["job_wall_seconds"],(repo,run_id,wall,row["job_wall_seconds"])
+              arts=api(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts")["artifacts"]
+              art=next(a for a in arts if a["id"]==row["source_artifact"])
+              assert art["digest"]==row["source_artifact_digest"],(
+                repo,run_id,art["digest"],row["source_artifact_digest"]
+              )
+              print("V2_CALIBRATION_SOURCE_OK",row["campaign"],run_id,wall,art["id"])
+          PY
+
+      - name: Compute corrected calibrated programme state
+        run: python scripts/run_crystal_shared_calibration_v2.py
+
+      - name: Assert common measurement without forecast overreach
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open("artifacts/crystal_program_controller_v1/shared_calibration_decision_v2.json"))
+          assert p["status"]=="COMMON_MEASUREMENT_EARNED_NO_NEW_GLOBAL_PICK",p
+          assert p["observed_best_sample"]=="nucleus",p
+          assert p["rates"]["nucleus"]>0,p
+          assert p["rates"]["cross-prover"]==0,p
+          assert p["selected_current_campaign_id"] is None,p
+          print("CRYSTAL_SHARED_CALIBRATION_V2=PASS COMMON_MEASUREMENT_EARNED_NO_NEW_GLOBAL_PICK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-program-controller-shared-calibration-v2
+          path: |
+            experiments/crystal_program_controller_v1/shared_calibration_v2.json
+            artifacts/crystal_program_controller_v1/shared_calibration_decision_v2.json
+          if-no-files-found: error
