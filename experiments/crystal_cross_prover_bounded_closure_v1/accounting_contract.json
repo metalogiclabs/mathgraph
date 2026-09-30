@@ -1,0 +1,33 @@
+{
+  "schema": "mathgraph.cross-prover-bounded-source-accounting.v1",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "source_lemma_count": 34
+  },
+  "target_partition": {
+    "exact_true_source_occurrences": 26,
+    "exact_true_canonical_meanings": 25,
+    "sufficient_interface_true_occurrences": 6,
+    "refuted_false_occurrences": 2
+  },
+  "occurrence_level_exception": {
+    "source": "cad_demo.s_pos",
+    "status": "UNKNOWN_SOURCE_UNVERIFIED",
+    "canonical_meaning": "real.positive_product2@1",
+    "canonical_meaning_status": "WARRANTED_FROM_INDEPENDENT_DUPLICATE_AUTHORITY",
+    "authority": "cad_star_ex.s_pos"
+  },
+  "required_warrants": {
+    "exact_family_v3": 36645655186,
+    "exact_family_v4": "PENDING",
+    "exact_family_v5_consumer_candidate": 36648331218,
+    "hard_pair_native_authority": 36647829062,
+    "sufficient_interface_projection_v1": 36640121901,
+    "type_range_projection_v2": 36648156480,
+    "false_source_cad_probe": 36648207056,
+    "lean_negations": "PENDING"
+  },
+  "invariant": "26 exact TRUE source occurrences + 6 sufficient-interface TRUE source occurrences + 2 REJECTED false source occurrences = 34 source lemmas. Occurrence-level source authority is tracked separately from canonical-meaning warrant, so the unproved duplicate does not become falsely source-verified.",
+  "promotion_boundary": "This file is a target accounting contract, not a final result. Final bounded closure requires every listed pending authority to become green and a verifier-backed closure artifact to check the partition without overlap or omission."
+}
