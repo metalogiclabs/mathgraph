@@ -1,0 +1,152 @@
+name: Crystal Cross-Prover Heldout5 Selector Qualification V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout5-sgn-selector-qualification-v1
+    paths:
+      - 'experiments/crystal_cross_prover_heldout5_sgn_selector_v1/**'
+      - '.github/workflows/crystal-cross-prover-heldout5-sgn-selector-qualification-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind frozen selector and external measurement
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_constructor_selector.py)" = 74ebafe25f2f1d8dd5ffc406299e14b5fed22158
+          test "$(git hash-object mathgraph/cross_prover_surface_boundary.py)" = e65beb94749b5ae2915e97345949e94e1da1d3c2
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check externally selected consumers
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-heldout5-sgn-selector
+          mkdir -p "$ROOT"
+          cp experiments/crystal_cross_prover_heldout5_sgn_selector_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-heldout5-sgn-selector"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+
+  pvs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad hash-object cad/sgn_examples.pvs)" = 4276c496560e8afa18ab9901855ad978894fe0eb
+          test "$(git -C /tmp/pvs_cad hash-object cad/sgn_examples.prf)" = 54d393c4a6093bbe927aa875561bd520c8cd8d0c
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay externally selected source claims
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @sgn_examples.g1:g2 | tee /tmp/sgn.log
+          grep -q "Grand Totals: 2 proofs, 2 attempted, 2 succeeded" /tmp/sgn.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/sgn.log; then exit 1; fi
+
+  promote:
+    needs: [lean,pvs]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frozen batch measurement
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          req=urllib.request.Request(
+              "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/36652376018/jobs?per_page=100",
+              headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"},
+          )
+          jobs=json.load(urllib.request.urlopen(req))["jobs"]
+          job=next(x for x in jobs if x["name"]=="measure")
+          assert job["conclusion"]=="success",job
+          print("FROZEN_BATCH_GREEN",job["id"])
+          PY
+      - name: Promote independent selector generalization
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_heldout5_sgn_selector_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-heldout5-selector-generalization.v1",
+            "status":"WARRANTED_BOUNDED_INDEPENDENT_CONSTRUCTOR_SELECTION_V1",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "selector_candidate_run":36652128524,
+            "frozen_external_batch_run":36652376018,
+            "source_file":"cad/sgn_examples.pvs",
+            "external_batch_source_lemmas":28,
+            "external_batch_typed_unknown":26,
+            "external_batch_object_level_claims":2,
+            "externally_selected_claims":2,
+            "object_level_selection_coverage":1.0,
+            "selected":{
+              "sgn_examples.g1":"explicit_witness",
+              "sgn_examples.g2":"quantifier_witness_duality"
+            },
+            "lean_consumers":"2/2 GREEN",
+            "native_pvs_source_authority":"2/2 GREEN",
+            "new_constructor_schema_count":0,
+            "theorem_names_used_as_selector_inputs":false,
+            "systems_law":{
+              "name":"structural_constructor_selection_generalizes_with_restraint",
+              "statement":"With selector and semantic-boundary code frozen before a four-family external batch was opened, all 26 prover-internal surfaces remained typed UNKNOWN while both closed object-level claims were routed to previously warranted constructor classes and independently verified in Lean and PVS."
+            },
+            "boundary":"This warrants independent constructor-class selection on the complete four-family held-out batch only. The selector chooses a constructor class; it does not yet synthesize the Lean proof term or claim universal schema-selection completeness."
+          }
+          Path("artifacts/crystal_cross_prover_heldout5_sgn_selector_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout5-sgn-selector-v1
+          path: artifacts/crystal_cross_prover_heldout5_sgn_selector_v1/result.json
