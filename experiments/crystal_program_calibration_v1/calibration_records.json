@@ -1,0 +1,46 @@
+{
+  "schema": "mathgraph.crystal-program-calibration-records.v1",
+  "calibration_epoch": "programme-calibration-20260930-v1",
+  "contraction_basis": "verified_residual_atom_sharpening_fraction.v1",
+  "cost_basis": "github_hosted_job_wall_seconds.v1",
+  "records": [
+    {
+      "calibration_id": "nucleus-neutral-head-kind-quotient-v1",
+      "calibration_epoch": "programme-calibration-20260930-v1",
+      "campaign_id": "nucleus",
+      "pilot_residual_id": "nucleus.distinct_neutral_heads_17",
+      "pilot_candidate_id": "nucleus-neutral-head-kind-quotient-v1",
+      "resulting_state_ref": "github-run:36652387720",
+      "contraction_basis": "verified_residual_atom_sharpening_fraction.v1",
+      "cost_basis": "github_hosted_job_wall_seconds.v1",
+      "frozen_atoms": 17,
+      "credited_atoms": 17,
+      "wall_seconds": 36,
+      "evidence_refs": [
+        "github-run:36652387720",
+        "github-artifact:11070479718",
+        "sha256:dd7cef176d098fa32ba45abc1422dd049549dea4adf562bdfc7a84c105066bf4"
+      ],
+      "invariants_preserved": true
+    },
+    {
+      "calibration_id": "cross-prover-fresh-route-calibration-v1",
+      "calibration_epoch": "programme-calibration-20260930-v1",
+      "campaign_id": "cross-prover",
+      "pilot_residual_id": "cross_prover.independent_route_grammar_generalization",
+      "pilot_candidate_id": "cross-prover-fresh-route-grammar-v1",
+      "resulting_state_ref": "github-run:36652664976",
+      "contraction_basis": "verified_residual_atom_sharpening_fraction.v1",
+      "cost_basis": "github_hosted_job_wall_seconds.v1",
+      "frozen_atoms": 6,
+      "credited_atoms": 0,
+      "wall_seconds": 378,
+      "evidence_refs": [
+        "github-run:36652664976",
+        "github-artifact:11071007567",
+        "sha256:afefbb0d16a805468414956128e0a142f2d616ae36eed5cfc71d3e1b0a0945e9"
+      ],
+      "invariants_preserved": true
+    }
+  ]
+}
