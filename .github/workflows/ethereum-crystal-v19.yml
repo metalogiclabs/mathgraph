@@ -1,0 +1,145 @@
+name: ethereum-crystal-v19-geth-catchup-orchestration
+on:
+  push:
+    branches: [ethereum-crystal-v19-geth-catchup-orchestration]
+  workflow_dispatch:
+
+jobs:
+  catchup-orchestration-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+
+      - name: Generate official Amsterdam BAL corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v19-fixtures
+          uv run fill --from Amsterdam --until Amsterdam --output=/tmp/eels-v19-fixtures --skip-index --no-html -n 2 tests/amsterdam/eip7928_block_level_access_lists
+
+      - name: Export frozen held-out BAL RLP
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py /tmp/eels-v19-fixtures /tmp/crystal-v19-heldout.rlpbin
+          sha256sum /tmp/crystal-v19-heldout.rlpbin | tee /tmp/crystal-v19-heldout.sha256
+
+      - name: Prepare full geth arm
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth-full
+          cd /tmp/geth-full
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v19/crystal_catchup_orchestration_test.go" eth/protocols/snap/crystal_v19_catchup_orchestration_test.go
+          gofmt -w eth/protocols/snap/crystal_v19_catchup_orchestration_test.go
+          git diff --check
+          git diff > /tmp/crystal-v19-full.patch
+
+      - name: Prepare compact geth arm
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder.go" core/types/bal/crystal_apply_decoder.go
+          python "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/patch_geth.py"
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v19/crystal_catchup_orchestration_test.go" eth/protocols/snap/crystal_v19_catchup_orchestration_test.go
+          gofmt -w core/types/bal/crystal_apply_decoder.go eth/protocols/snap/syncv2.go eth/protocols/snap/crystal_v19_catchup_orchestration_test.go
+          git diff --check
+          git diff > /tmp/crystal-v19-compact.patch
+
+      - name: Compile both arms
+        run: |
+          cd /tmp/geth-full
+          go test ./eth/protocols/snap -run '^$' -count=1
+          cd /tmp/geth
+          go test ./core/types/bal -count=1
+          go test ./eth/protocols/snap -run '^$' -count=1
+
+      - name: Run paired catch-up orchestration gate
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v19-heldout.rlpbin
+        run: |
+          rm -f /tmp/crystal-v19-full-*.json /tmp/crystal-v19-compact-*.json /tmp/crystal-v19-test.txt /tmp/crystal-v19-result.json
+          run_arm() {
+            arm="$1"
+            trial="$2"
+            if [ "$arm" = "full" ]; then
+              dir=/tmp/geth-full
+            else
+              dir=/tmp/geth
+            fi
+            (
+              cd "$dir"
+              CRYSTAL_V19_ARM="$arm" \
+              CRYSTAL_V19_TRIAL="$trial" \
+              CRYSTAL_V19_RESULT="/tmp/crystal-v19-$arm-$trial.json" \
+              go test ./eth/protocols/snap -run '^TestCrystalV19CatchUpOrchestration$' -count=1 -v
+            ) | tee -a /tmp/crystal-v19-test.txt
+          }
+          for trial in 0 1 2 3 4 5 6; do
+            if [ $((trial % 2)) -eq 0 ]; then
+              run_arm full "$trial"
+              run_arm compact "$trial"
+            else
+              run_arm compact "$trial"
+              run_arm full "$trial"
+            fi
+          done
+          python experiments/ethereum_crystal_v19/summarize.py /tmp/crystal-v19-result.json /tmp/crystal-v19-full-*.json /tmp/crystal-v19-compact-*.json | tee /tmp/crystal-v19-summary.txt
+          grep -q 'ETHEREUM_CRYSTAL_V19_CATCHUP_ORCHESTRATION=PASS' /tmp/crystal-v19-test.txt
+          cat /tmp/crystal-v19-result.json
+
+      - name: Validate scientific boundary
+        run: |
+          python - <<'PY'
+          import json
+          d = json.load(open("/tmp/crystal-v19-result.json"))
+          assert d["protocol"] == "ETHEREUM_CRYSTAL_V19_GETH_CATCHUP_ORCHESTRATION"
+          assert d["records"] == 1112
+          assert d["seed_records"] == 556
+          assert d["measured_records"] == 556
+          assert d["trials_per_arm"] == 7
+          assert len(d["observations"]) == 14
+          assert d["final_digest"]
+          assert d["target_hash"]
+          assert d["performance_direction_precommitted"] is False
+          assert all(x["AccessListRequests"] > 0 for x in d["observations"])
+          print("V19_BOUNDARY_OK")
+          print("catchup_speedup", d["catchup_speedup"])
+          print("durable_speedup", d["durable_speedup"])
+          print("positive_catchup_pairs", d["positive_catchup_pairs"])
+          print("positive_durable_pairs", d["positive_durable_pairs"])
+          PY
+
+      - name: Upload V19 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v19-geth-catchup-orchestration
+          path: |
+            /tmp/crystal-v19-result.json
+            /tmp/crystal-v19-summary.txt
+            /tmp/crystal-v19-test.txt
+            /tmp/crystal-v19-full.patch
+            /tmp/crystal-v19-compact.patch
+            /tmp/crystal-v19-heldout.sha256
+            /tmp/crystal-v19-full-*.json
+            /tmp/crystal-v19-compact-*.json
+
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V19_GETH_CATCHUP_ORCHESTRATION=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "AUTHENTICITY_FULL_DECODE_COMMON_TO_BOTH_ARMS=true"
+          echo "PERFORMANCE_DIRECTION_NOT_PRECOMMITTED=true"
+          echo "NO_UPSTREAM_PR_CREATED=true"
