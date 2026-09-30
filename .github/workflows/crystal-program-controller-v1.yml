@@ -8,6 +8,7 @@ on:
       - 'mathgraph/research_controller.py'
       - 'tests/test_research_controller.py'
       - 'scripts/run_crystal_program_controller_replay.py'
+      - 'scripts/run_crystal_live_program_snapshot.py'
       - 'experiments/crystal_program_controller_v1/**'
       - '.github/workflows/crystal-program-controller-v1.yml'
   workflow_dispatch:
@@ -40,9 +41,16 @@ jobs:
           python scripts/run_crystal_program_controller_replay.py
           cat artifacts/crystal_program_controller_v1/replay_result.json
 
+      - name: Run live ROS programme snapshot
+        run: |
+          python scripts/run_crystal_live_program_snapshot.py
+          cat artifacts/crystal_program_controller_v1/live_decision.json
+
       - name: Upload controller evidence
         uses: actions/upload-artifact@v4
         with:
           name: crystal-program-controller-v1
-          path: artifacts/crystal_program_controller_v1/replay_result.json
+          path: |
+            artifacts/crystal_program_controller_v1/replay_result.json
+            artifacts/crystal_program_controller_v1/live_decision.json
           if-no-files-found: error
