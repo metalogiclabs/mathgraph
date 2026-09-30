@@ -1,0 +1,168 @@
+name: Crystal Cross-Prover Corpus Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-corpus-closeout-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-corpus-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bind promotion to exact qualified code blobs
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_family_discovery.py)" = 1c1fc387872f5ea3e17ba4d506a22f14283df8e0
+          test "$(git hash-object mathgraph/cross_prover_sufficient_interface.py)" = 7792c4d24633a95c4cc0ee2d75d78859b97b1246
+          test "$(git hash-object mathgraph/cross_prover_negative_controls.py)" = d6940f335e2c6e8517b29bf8a07411fe8d4d8118
+          test "$(git hash-object tests/test_cross_prover_family_discovery.py)" = 61f80398b7776394d23add293794c62d381f726f
+          test "$(git hash-object tests/test_cross_prover_sufficient_interface.py)" = 3720c544bf92dfd2299fb23ec548c72aed7cf14d
+          test "$(git hash-object tests/test_cross_prover_negative_controls.py)" = e7da8bec53bee069f30380e0668998bf453b05de
+          test "$(git hash-object experiments/crystal_cross_prover_corpus_closeout_v1/manifest.json)" = 5a0760a92abc8f53b5d669b084bdfdb0aa9a0242
+          test "$(git hash-object .github/workflows/crystal-cross-prover-corpus-closeout-v1.yml)" = 5df485a2a56298e1df19bd7c71868c2e5c81e2de
+          test "$(git hash-object .github/workflows/crystal-cross-prover-fresh-dmeet-v1.yml)" = 6263e8c4c372c8e57805d7584affdc51719e6483
+          test "$(git hash-object .github/workflows/crystal-cross-prover-pvs-closeout-authorities-v2.yml)" = afaf6fec38a543e06359f3cdc2cdbb3bdf74590b
+
+      - name: Require every declared evidence run to be completed green
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          runs={
+              "exact_v1":36631474676,
+              "exact_v2":36638968224,
+              "exact_v3":36645655186,
+              "sufficient_interface_v1":36640121901,
+              "corpus_partition_and_lean":36646874065,
+              "pvs_closeout_eight":36647877332,
+              "fresh_dmeet":36647806603,
+          }
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          evidence={}
+          for label,run_id in runs.items():
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/runs/{run_id}",
+                  headers={
+                      "Authorization":f"Bearer {token}",
+                      "Accept":"application/vnd.github+json",
+                      "X-GitHub-Api-Version":"2022-11-28",
+                  },
+              )
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  data=json.load(r)
+              assert data["status"]=="completed",(label,data["status"])
+              assert data["conclusion"]=="success",(label,data["conclusion"])
+              evidence[label]={
+                  "run_id":run_id,
+                  "name":data["name"],
+                  "head_sha":data["head_sha"],
+                  "conclusion":data["conclusion"],
+                  "html_url":data["html_url"],
+              }
+          with open("/tmp/evidence_runs.json","w") as f:
+              json.dump(evidence,f,indent=2,sort_keys=True)
+          print(json.dumps(evidence,sort_keys=True))
+          PY
+
+      - name: Promote exhaustive bounded corpus classification
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/crystal_cross_prover_corpus_closeout_v1
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+
+          evidence=json.loads(Path("/tmp/evidence_runs.json").read_text())
+          out={
+              "schema":"mathgraph.crystal-cross-prover-corpus-classification.v1",
+              "status":"WARRANTED_BOUNDED_CROSS_PROVER_CORPUS_CLASSIFICATION_V1",
+              "promotion_run_id":int(os.environ["RUN_ID"]),
+              "promotion_head_sha":os.environ["HEAD_SHA"],
+              "source":{
+                  "repository":"j-tanner-slagel/pvs_cad",
+                  "commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+                  "source_lemma_count":34,
+              },
+              "transport_partition":{
+                  "exact_semantic_occurrences":26,
+                  "exact_unique_canonical_claims":25,
+                  "sufficient_interface_occurrences":6,
+                  "verified_countermodel_rejections":2,
+                  "unclassified_transport_occurrences":0,
+                  "pairwise_disjoint":True,
+                  "exhaustive":True,
+              },
+              "source_authority":{
+                  "native_pvs_proved_true_occurrences":31,
+                  "source_occurrence_unknown_count":1,
+                  "source_occurrence_unknown":["cad_demo.s_pos"],
+                  "source_occurrence_unknown_disposition":"UNKNOWN_SOURCE_UNVERIFIED",
+                  "canonical_meaning_authority_for_unknown_occurrence":{
+                      "claim_id":"real.positive_product2@1",
+                      "verified_source_occurrence":"cad_star_ex.s_pos",
+                  },
+                  "rejected_false_source_occurrences":[
+                      "cad_demo.d_inverse",
+                      "cad_demo.t_amgm3",
+                  ],
+              },
+              "relation_types":{
+                  "exact":"SAME_MEANING",
+                  "directional":"INTERFACE_IMPLIES_SOURCE_INSTANCE",
+                  "negative":"REJECTED_BY_VERIFIED_COUNTERMODEL",
+              },
+              "fresh_source_repair":{
+                  "formula":"cad_demo.d_meet",
+                  "reason":"pinned .prf contained postponed branches",
+                  "native_strategy":"(cad)",
+                  "fresh_proof_run":36647806603,
+                  "fresh_replay":"GREEN",
+              },
+              "negative_lineage":{
+                  "initial_auto_family_pvs_failure_run":36625730315,
+                  "lesson":"formula recognition, source occurrence proof authority, and canonical-claim warrant are distinct; proof-file presence alone is not authority",
+                  "preserved_occurrence_unknown":"cad_demo.s_pos",
+              },
+              "systems_law":{
+                  "name":"typed_cross_prover_trichotomy",
+                  "statement":"For this bounded corpus, prover-independent reuse is obtained without forcing proof-object translation: exact propositions quotient by canonical meaning; prover-specific context may be discharged through a verified stronger sufficient interface; false source surfaces are terminally rejected by independent countermodels. Occurrence-level source authority remains separate from claim-level semantic warrant.",
+              },
+              "evidence_runs":evidence,
+              "boundary":{
+                  "scope":"the exact pinned 34-lemma pvs_cad corpus only",
+                  "not_claimed":[
+                      "universal PVS parser",
+                      "unrestricted automatic theorem translation",
+                      "proof-object translation between PVS and Lean",
+                      "semantic equivalence for sufficient-interface projections",
+                      "native source proof for cad_demo.s_pos",
+                  ],
+                  "discovery_rule":"semantic routing is assigned from normalized formula shape, not theorem names",
+              },
+          }
+          payload=json.dumps(out,sort_keys=True,separators=(",",":")).encode()
+          out["classification_id"]="classification:"+hashlib.sha256(payload).hexdigest()
+          Path("artifacts/crystal_cross_prover_corpus_closeout_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-corpus-classification-v1
+          path: artifacts/crystal_cross_prover_corpus_closeout_v1/result.json
