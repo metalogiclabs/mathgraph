@@ -1,0 +1,214 @@
+name: ethereum-crystal-v20-cpu-replication
+on:
+  push:
+    branches: [ethereum-crystal-v20-cpu-replication]
+  workflow_dispatch:
+
+jobs:
+  cpu-replication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+
+      - name: Generate frozen held-out BAL corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v20-fixtures
+          uv run fill --from Amsterdam --until Amsterdam --output=/tmp/eels-v20-fixtures --skip-index --no-html -n 2 tests/amsterdam/eip7928_block_level_access_lists
+
+      - name: Export exact V20 corpus
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py /tmp/eels-v20-fixtures /tmp/crystal-v20-heldout.rlpbin
+          sha256sum /tmp/crystal-v20-heldout.rlpbin | tee /tmp/crystal-v20-heldout.sha256
+
+      - name: Prepare stock and Crystal geth trees
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth-stock
+          cd /tmp/geth-stock
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cd /tmp
+          cp -a geth-stock geth
+
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v20/crystal_authenticated_catchup_cpu_test.go" /tmp/geth-stock/eth/protocols/snap/crystal_authenticated_catchup_cpu_test.go
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v20/crystal_authenticated_catchup_cpu_test.go" /tmp/geth/eth/protocols/snap/crystal_authenticated_catchup_cpu_test.go
+
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder.go" /tmp/geth/core/types/bal/crystal_apply_decoder.go
+          python "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/patch_geth.py"
+
+          gofmt -w /tmp/geth-stock/eth/protocols/snap/crystal_authenticated_catchup_cpu_test.go
+          gofmt -w /tmp/geth/core/types/bal/crystal_apply_decoder.go /tmp/geth/eth/protocols/snap/syncv2.go /tmp/geth/eth/protocols/snap/crystal_authenticated_catchup_cpu_test.go
+
+          cd /tmp/geth-stock
+          git diff --check
+          git diff > /tmp/crystal-v20-stock-harness.patch
+          cd /tmp/geth
+          git diff --check
+          git diff > /tmp/crystal-v20-crystal.patch
+
+      - name: Compile exact stock and Crystal test binaries
+        run: |
+          cd /tmp/geth-stock
+          go test -c -o /tmp/geth-v20-stock.test ./eth/protocols/snap
+          cd /tmp/geth
+          go test ./core/types/bal -count=1
+          go test -c -o /tmp/geth-v20-crystal.test ./eth/protocols/snap
+          sha256sum /tmp/geth-v20-stock.test /tmp/geth-v20-crystal.test | tee /tmp/crystal-v20-binaries.sha256
+
+      - name: Run 21 alternating paired CPU-time trials
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v20-heldout.rlpbin
+        run: |
+          : > /tmp/crystal-v20-test.txt
+          for i in $(seq 0 20); do
+            if [ $((i % 2)) -eq 0 ]; then
+              arms="stock crystal"
+            else
+              arms="crystal stock"
+            fi
+            for arm in $arms; do
+              echo "=== trial=$i arm=$arm ===" | tee -a /tmp/crystal-v20-test.txt
+              CRYSTAL_V20_ARM="$arm" \
+              CRYSTAL_V20_RESULT="/tmp/crystal-v20-$arm-$i.json" \
+              "/tmp/geth-v20-$arm.test" -test.run '^TestCrystalV20AuthenticatedCatchUp$' -test.count=1 -test.v \
+                | tee -a /tmp/crystal-v20-test.txt
+            done
+          done
+          test "$(grep -c 'ETHEREUM_CRYSTAL_V20_CPU_REPLICATION=PASS' /tmp/crystal-v20-test.txt)" = "42"
+
+      - name: Exact parity and prospective CPU classification
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          import random
+          import statistics
+
+          trials = 21
+          rows = {"stock": [], "crystal": []}
+          for i in range(trials):
+              for arm in rows:
+                  d = json.load(open(f"/tmp/crystal-v20-{arm}-{i}.json"))
+                  assert d["Protocol"] == "ETHEREUM_CRYSTAL_V20_CPU_REPLICATION"
+                  assert d["Arm"] == arm
+                  assert d["Records"] == 1112
+                  assert d["AccessListRequests"] > 0
+                  assert d["ApplyCPUNS"] > 0
+                  rows[arm].append(d)
+
+          digests = {d["FinalDigest"] for arm in rows for d in rows[arm]}
+          pivots = {d["FinalPivotHash"] for arm in rows for d in rows[arm]}
+          assert len(digests) == 1, digests
+          assert len(pivots) == 1, pivots
+          for i in range(trials):
+              assert rows["stock"][i]["AccessListRequests"] == rows["crystal"][i]["AccessListRequests"]
+
+          apply_cpu_ratios = [
+              rows["stock"][i]["ApplyCPUNS"] / rows["crystal"][i]["ApplyCPUNS"]
+              for i in range(trials)
+          ]
+          durable_cpu_ratios = [
+              rows["stock"][i]["DurableCPUNS"] / rows["crystal"][i]["DurableCPUNS"]
+              for i in range(trials)
+          ]
+          apply_wall_ratios = [
+              rows["stock"][i]["ApplyNS"] / rows["crystal"][i]["ApplyNS"]
+              for i in range(trials)
+          ]
+          durable_wall_ratios = [
+              rows["stock"][i]["DurableNS"] / rows["crystal"][i]["DurableNS"]
+              for i in range(trials)
+          ]
+
+          logs = [math.log(x) for x in apply_cpu_ratios]
+          rng = random.Random(20260930)
+          boots = []
+          for _ in range(20000):
+              sample = [logs[rng.randrange(trials)] for __ in range(trials)]
+              boots.append(math.exp(statistics.median(sample)))
+          boots.sort()
+          ci_low = boots[int(0.025 * len(boots))]
+          ci_high = boots[int(0.975 * len(boots)) - 1]
+
+          cpu_median = statistics.median(apply_cpu_ratios)
+          cpu_positive = sum(x > 1.0 for x in apply_cpu_ratios)
+          if cpu_median > 1.0 and cpu_positive >= 14 and ci_low > 1.0:
+              classification = "WARRANTED_PERFORMANCE"
+          elif cpu_median > 1.0:
+              classification = "NARROWS"
+          else:
+              classification = "REJECTS_DIRECTION"
+
+          summary = {
+              "protocol": "ETHEREUM_CRYSTAL_V20_CPU_REPLICATION_AB",
+              "geth_pin": "920c07774c65ebb3023536f85df642c44478b540",
+              "trials": trials,
+              "records_per_trial": 1112,
+              "final_digest": next(iter(digests)),
+              "final_pivot_hash": next(iter(pivots)),
+              "classification": classification,
+              "primary_apply_cpu_paired_median_ratio": cpu_median,
+              "primary_apply_cpu_positive_pairs": cpu_positive,
+              "primary_apply_cpu_bootstrap_95": [ci_low, ci_high],
+              "durable_cpu_paired_median_ratio": statistics.median(durable_cpu_ratios),
+              "apply_wall_paired_median_ratio": statistics.median(apply_wall_ratios),
+              "durable_wall_paired_median_ratio": statistics.median(durable_wall_ratios),
+              "stock_apply_cpu_median_ns": statistics.median([d["ApplyCPUNS"] for d in rows["stock"]]),
+              "crystal_apply_cpu_median_ns": statistics.median([d["ApplyCPUNS"] for d in rows["crystal"]]),
+              "stock_apply_wall_median_ns": statistics.median([d["ApplyNS"] for d in rows["stock"]]),
+              "crystal_apply_wall_median_ns": statistics.median([d["ApplyNS"] for d in rows["crystal"]]),
+              "apply_cpu_ratios": apply_cpu_ratios,
+              "durable_cpu_ratios": durable_cpu_ratios,
+              "apply_wall_ratios": apply_wall_ratios,
+              "durable_wall_ratios": durable_wall_ratios,
+              "access_list_requests": [rows["stock"][i]["AccessListRequests"] for i in range(trials)],
+              "claim_boundary": rows["crystal"][0]["ClaimBoundary"],
+              "prospective_rule": "WARRANTED_PERFORMANCE iff paired median apply CPU ratio >1, >=14/21 pairs favor Crystal, and deterministic paired bootstrap 95% lower bound >1; NARROWS if median >1 otherwise; REJECTS_DIRECTION if median <=1",
+          }
+          with open("/tmp/crystal-v20-summary.json", "w") as f:
+              json.dump(summary, f, indent=2)
+              f.write(chr(10))
+          print(json.dumps(summary, indent=2))
+          print(
+              "CRYSTAL_V20_SUMMARY",
+              f"classification={classification}",
+              f"cpu_median_ratio={cpu_median:.6f}",
+              f"cpu_positive={cpu_positive}/21",
+              f"cpu_ci=[{ci_low:.6f},{ci_high:.6f}]",
+              f"wall_median_ratio={summary['apply_wall_paired_median_ratio']:.6f}",
+          )
+          PY
+
+      - name: Upload V20 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v20-cpu-replication
+          path: |
+            /tmp/crystal-v20-summary.json
+            /tmp/crystal-v20-*.json
+            /tmp/crystal-v20-test.txt
+            /tmp/crystal-v20-heldout.sha256
+            /tmp/crystal-v20-binaries.sha256
+            /tmp/crystal-v20-stock-harness.patch
+            /tmp/crystal-v20-crystal.patch
+
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V20_CPU_REPLICATION=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "PROSPECTIVE_CLASSIFICATION_IN_ARTIFACT=true"
+          echo "NO_SOCKET_OR_MAINNET_CLAIM=true"
+          echo "NO_UPSTREAM_PR_CREATED=true"
