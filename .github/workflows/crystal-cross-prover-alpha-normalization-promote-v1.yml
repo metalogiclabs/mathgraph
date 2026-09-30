@@ -1,0 +1,91 @@
+name: Crystal Cross-Prover Alpha Normalization Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-alpha-normalization-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-alpha-normalization-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind exact normalization code
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_semantic_normalization.py)" = a3f0cef621e090c6c17fd3d380403bf6fd3cbd31
+          test "$(git hash-object tests/test_cross_prover_semantic_normalization.py)" = 734e660c82d0eb7fbba2b5ae86236b68e7c02555
+      - name: Verify normalization candidate and sealed source authority
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          def jobs(run_id):
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/{run_id}/jobs?per_page=100",
+                  headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"},
+              )
+              return json.load(urllib.request.urlopen(req))["jobs"]
+          cand=jobs(36650702457)
+          cj=next(x for x in cand if x["name"]=="normalize")
+          assert cj["conclusion"]=="success",cj
+          pvs=jobs(36650465741)
+          pj=next(x for x in pvs if x["name"]=="pvs")
+          assert pj["conclusion"]=="success",pj
+          step=next(x for x in pj["steps"] if x["name"]=="Replay all sealed held-out2 source theorems")
+          assert step["conclusion"]=="success",step
+          print("NORMALIZATION_CANDIDATE_GREEN",cj["id"])
+          print("SEALED_SOURCE_AUTHORITY_GREEN",pj["id"])
+          PY
+      - name: Promote representation-only semantic normalization
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_alpha_normalization_promotion_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-alpha-normalization-promotion.v1",
+            "status":"WARRANTED_REPRESENTATION_ONLY_SEMANTIC_NORMALIZATION_V1",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "candidate_run":36650702457,
+            "sealed_source_authority_run":36650465741,
+            "parent_exact_warrant_run":36649171836,
+            "source_file":"cad/cad_examples2.pvs",
+            "source_authority":"9/9 PVS GREEN",
+            "baseline_exact_reuse":2,
+            "normalized_exact_reuse":4,
+            "coverage_before":2/9,
+            "coverage_after":4/9,
+            "gained_sources":[
+              "cad_examples2.ex_cubic",
+              "cad_examples2.ex_hyp"
+            ],
+            "gained_claims":{
+              "cad_examples2.ex_cubic":"real.depressed_cubic_has_root@1",
+              "cad_examples2.ex_hyp":"real.zero_has_no_multiplicative_inverse@1"
+            },
+            "new_semantic_claims":0,
+            "new_proof_schemas":0,
+            "registry_collision_count":0,
+            "boundary":"Only alpha-normalization of bound variables and redundant top-level NOT parentheses was added. No theorem schema, claim, consequence route, or proof constructor changed."
+          }
+          Path("artifacts/crystal_cross_prover_alpha_normalization_promotion_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-alpha-normalization-promotion-v1
+          path: artifacts/crystal_cross_prover_alpha_normalization_promotion_v1/result.json
