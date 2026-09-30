@@ -1,6 +1,11 @@
 name: Crystal Cross-Prover Bounded Closure V1
 
 on:
+  push:
+    branches:
+      - crystal-cross-prover-auto-family-v5
+    paths:
+      - '.github/workflows/crystal-cross-prover-bounded-closure-v1.yml'
   workflow_dispatch:
 
 permissions:
