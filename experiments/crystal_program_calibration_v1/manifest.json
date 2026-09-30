@@ -1,0 +1,84 @@
+{
+  "schema": "mathgraph.crystal-program-shared-calibration.v1",
+  "frozen_at_utc": "2026-09-30T00:50:00Z",
+  "parent_controller_authority": "3e288e9232fa20f66f625c11cd78c5c640aa0b40",
+  "purpose": "Earn one cross-campaign measurement basis before any portfolio ranking.",
+  "metric": {
+    "contraction_basis": "verified_residual_atom_sharpening_fraction.v1",
+    "atom_credit": "1 iff a frozen parent-residual atom is moved by independent-or-stronger evidence to a terminal state or a strictly more specific typed child residual with protected invariants preserved; otherwise 0",
+    "aggregation": "credited_atoms / frozen_atoms",
+    "cost_basis": "github_hosted_job_wall_seconds.v1",
+    "cost_rule": "completed_at - started_at for the single declared qualification job; include setup/build/fetch/verification overhead",
+    "utility": "contraction_fraction / wall_seconds",
+    "prohibitions": [
+      "no domain-specific impact weights",
+      "no post-outcome atom redefinition",
+      "no credit for label changes without an executable narrower next action",
+      "no credit if protected invariants regress"
+    ]
+  },
+  "campaigns": [
+    {
+      "campaign_id": "nucleus",
+      "authority_before": "heathsanchez/test@nucleus-crystal-app-function-normalform-v1:d3d6669b4ad136b8ca37601039c049f3d7ededd1",
+      "run_before": 36651339523,
+      "parent_residual": "distinct-neutral-heads",
+      "frozen_atoms": [
+        "init-prelude",
+        "perf/args-before-unfold",
+        "perf/folded-constant-first",
+        "perf/folded-constant-last",
+        "perf/magma-list-deep-n21",
+        "perf/magma-list-deep-n36",
+        "perf/magma-list-pair-n21",
+        "perf/magma-list-pair-n7",
+        "tutorial/082_RBTree.id_spec",
+        "tutorial/099_ruleK",
+        "tutorial/112_structEta",
+        "tutorial/124_accRecReduction",
+        "perf/refute-cheap-first",
+        "tutorial/100_ruleKbad",
+        "tutorial/101_ruleKAcc",
+        "tutorial/105_proofIrrelevanceBad",
+        "tutorial/125_accRecNoEta"
+      ],
+      "experiment": "nucleus-neutral-head-kind-quotient-v1",
+      "predeclared_child_taxonomy": [
+        "free-vs-free",
+        "free-vs-const",
+        "const-vs-free",
+        "const-vs-const",
+        "projection-involved",
+        "other-neutral-shape"
+      ],
+      "verification_boundary": "full frozen 193-case reclosure; no ACCEPT/REJECT regression; each credited atom must have an observed neutral-head witness and one child class"
+    },
+    {
+      "campaign_id": "cross-prover",
+      "authority_before": "metalogiclabs/mathgraph@crystal-cross-prover-heldout-auto-consequence-v3:91bf6d4a98856ed484517a4019ca57330266a3c7",
+      "run_before": 36650789774,
+      "parent_residual": "independent-route-grammar-generalization",
+      "fresh_source_selection_rule": "lexicographically first *_ex.pvs with a matching .prf at pinned pvs_cad commit, excluding all previously used cad_demo/cad_examples/cad_star_ex/cad_examples3/cad_examples4 families",
+      "fresh_source": {
+        "repository": "j-tanner-slagel/pvs_cad",
+        "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+        "pvs_path": "cad/alg_bis_ex.pvs",
+        "pvs_blob": "6bd0293c12bfb8c0c0b7164640cc5bcd0f23390b",
+        "prf_path": "cad/alg_bis_ex.prf",
+        "prf_blob": "705461b90a656369ca9ced9384ce254f8b61a0ee"
+      },
+      "experiment": "cross-prover-fresh-route-grammar-v1",
+      "atom_definition": "each top-level LEMMA occurrence in the frozen fresh PVS theory",
+      "predeclared_child_taxonomy": [
+        "exact-supported-meaning",
+        "automatic-consequence-route",
+        "unknown-no-route",
+        "unknown-missing-prerequisite",
+        "unknown-ambiguous-route",
+        "source-unverified"
+      ],
+      "verification_boundary": "frozen V5 exact recognizer + frozen five consequence routes; source proof presence pinned; any routed adapter Lean-kernel checked; unsupported formulas remain typed UNKNOWN"
+    }
+  ],
+  "portfolio_rule_after_measurement": "Only if both campaign results satisfy this exact shared basis may their measured utilities be compared. Otherwise remain HOLD_INCOMPARABLE."
+}
