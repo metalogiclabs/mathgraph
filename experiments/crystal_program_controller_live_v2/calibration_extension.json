@@ -1,0 +1,75 @@
+{
+  "schema": "mathgraph.crystal-program-controller-live-calibration-extension.v2",
+  "parent_calibration_authority": "metalogiclabs/mathgraph:crystal-program-controller-calibration-v1@4ceaa342452efe19857c134b2618a8c12e5ca69c",
+  "parent_calibration_run": 36653502907,
+  "measurement_boundary": {
+    "contraction_basis": "prospective_typed_residual_occurrence_contraction_fraction.v2",
+    "cost_basis": "github_actions_job_wall_seconds.v1",
+    "unchanged_from_parent": true
+  },
+  "completed_extension": {
+    "campaign": "ethereum",
+    "candidate_id": "ethereum-v22-complete-trie-cpu-replication",
+    "candidate_commit": "1c14f5c2cf0e8653bb30a77abd985dccab611492",
+    "candidate_commit_time": "2026-09-30T01:09:26Z",
+    "source_run": 36653763668,
+    "source_job": 109693493535,
+    "source_artifact": 11070828938,
+    "source_artifact_digest": "sha256:2bb6002c1634cac45d26ddb290f93953781df39b22fcdaf7352ae879a1df8683",
+    "selected_residual": "completed-state-performance-classification",
+    "prospective_freeze": "The V22 workflow itself freezes one completed-state performance uncertainty before execution: unchanged V21 semantics, 21 alternating fresh-process pairs, exact parity invariants, and a three-way CPU classification rule.",
+    "occurrences_before": 1,
+    "occurrences_after": 0,
+    "typed_residual_occurrences_contracted": 1,
+    "classification": "WARRANTED_PERFORMANCE",
+    "protected_invariants": [
+      "unchanged_v21_semantics",
+      "exact_final_db_digest_parity",
+      "exact_final_pivot_parity",
+      "exact_final_state_root_parity",
+      "exact_root_chain_digest_parity",
+      "paired_request_count_parity"
+    ],
+    "job_started_at": "2026-09-30T01:09:32Z",
+    "job_completed_at": "2026-09-30T01:12:41Z",
+    "job_wall_seconds": 189,
+    "contraction_fraction": 1.0,
+    "contraction_per_second": 0.005291005291005291,
+    "outcome": {
+      "cpu_median_ratio": 1.025429812960514,
+      "positive_pairs": "18/21",
+      "bootstrap_95": [1.01133, 1.036984]
+    },
+    "chronology_requirement": "Parent V2 metric must be green before candidate commit; candidate workflow commit must precede source run outcome."
+  },
+  "prospective_next_sample": {
+    "campaign": "nucleus",
+    "candidate_id": "nucleus-stuck-recursor-projection-v1",
+    "candidate_code_head": "cb4bbeca42a6ebe1a79be324d79ceca25b343ac4",
+    "source_authority": "heathsanchez/test:nucleus-crystal-independent-30-v1@98f87d9e66fb97987427d68180f51a653d626fdb",
+    "diagnostic_authority_run": 36653742519,
+    "selected_residual": "projection-constructor-mismatch",
+    "frozen_occurrences": [
+      "perf/magma-list-deep-n21",
+      "perf/magma-list-deep-n36",
+      "perf/magma-list-pair-n21",
+      "perf/magma-list-pair-n7"
+    ],
+    "occurrences_before": 4,
+    "credit_rule": "Each frozen occurrence counts as contracted iff full 193-case independent reclosure remains zero-wrong and the exact case no longer terminates at projection-constructor-mismatch, instead reaching either a terminal verdict or a strictly more specific typed residual. No credit for untyped/renamed UNKNOWN.",
+    "protected_invariants": [
+      "full_193_case_reclosure",
+      "zero_wrong",
+      "zero_regressions",
+      "authority_cases_outside_frozen_four_unchanged"
+    ],
+    "status_at_freeze": "CANDIDATE_UNQUALIFIED",
+    "qualification_required": true
+  },
+  "anti_leakage": [
+    "metric semantics unchanged from parent V2",
+    "Ethereum atom is accepted only because its workflow froze the residual/classification before outcome and after parent V2 metric existed",
+    "Nucleus four-case set frozen before qualification",
+    "past campaign productivity is not a forecast for a different current action"
+  ]
+}
