@@ -1,0 +1,91 @@
+name: Crystal Cross-Prover Tarski Semantic Boundary Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-tarski-semantic-boundary-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-tarski-semantic-boundary-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind exact green candidate
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_surface_boundary.py)" = e65beb94749b5ae2915e97345949e94e1da1d3c2
+          test "$(git hash-object tests/test_cross_prover_surface_boundary.py)" = 62ffa257a98136e8700983699a285f1f9395ffab
+          test "$(git hash-object experiments/crystal_cross_prover_tarski_semantic_boundary_v1/manifest.json)" = d0e439ea2babb0d0b100703b4fb03fe8a89b5619
+          test "$(git hash-object experiments/crystal_cross_prover_tarski_semantic_boundary_v1/Surface.lean)" = fde20a4a67d5a2ea176e78e4f5970f3edc9f9fb9
+      - name: Verify candidate and sealed source authority
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          def jobs(run_id):
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/{run_id}/jobs?per_page=100",
+                  headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"},
+              )
+              return json.load(urllib.request.urlopen(req))["jobs"]
+          cand=next(x for x in jobs(36651669955) if x["name"]=="qualify")
+          assert cand["conclusion"]=="success",cand
+          lean=next(x for x in cand["steps"] if x["name"]=="Kernel-check two object-level consumers")
+          assert lean["conclusion"]=="success",lean
+          pvs=next(x for x in jobs(36651263148) if x["name"]=="pvs")
+          assert pvs["conclusion"]=="success",pvs
+          replay=next(x for x in pvs["steps"] if x["name"]=="Replay sealed Tarski source authorities")
+          assert replay["conclusion"]=="success",replay
+          print("CANDIDATE_GREEN",cand["id"])
+          print("SOURCE_AUTHORITY_GREEN",pvs["id"])
+          PY
+      - name: Promote typed semantic boundary
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_tarski_semantic_boundary_promotion_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-tarski-semantic-boundary-promotion.v1",
+            "status":"WARRANTED_BOUNDED_TARSKI_SEMANTIC_BOUNDARY_V1",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "candidate_run":36651669955,
+            "sealed_source_authority_run":36651263148,
+            "source_lemma_count":8,
+            "object_level_real_claims":2,
+            "typed_unknown_prover_internal":6,
+            "object_level_sources":["tarski_examples.e6","tarski_examples.e8"],
+            "typed_unknown_sources":[
+              "tarski_examples.e1","tarski_examples.e2","tarski_examples.e3",
+              "tarski_examples.e4","tarski_examples.e5","tarski_examples.e7"
+            ],
+            "object_level_consumers":"2/2 LEAN GREEN",
+            "native_pvs_source_authority":"8 source lemmas + 1 TCC GREEN",
+            "reused_constructor_schemas":["explicit_witness","quantifier_witness_duality"],
+            "new_constructor_schema_count":0,
+            "systems_law":{
+              "name":"typed_semantic_boundary_before_transport",
+              "statement":"On this sealed family, a theorem-name-independent closed-real-arithmetic boundary isolates the two object-level claims from six prover-internal surfaces. The two mathematical claims use only previously warranted constructor classes; the internal surfaces remain typed UNKNOWN."
+            },
+            "boundary":"This warrants the bounded surface partition and two consumers on tarski_examples only. It does not translate prover-internal tq/tok2/meval/mpol statements or claim a universal object-language classifier."
+          }
+          Path("artifacts/crystal_cross_prover_tarski_semantic_boundary_promotion_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-tarski-semantic-boundary-promotion-v1
+          path: artifacts/crystal_cross_prover_tarski_semantic_boundary_promotion_v1/result.json
