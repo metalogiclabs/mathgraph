@@ -27,7 +27,7 @@ jobs:
       - name: Verify chronology, identity, wall cost, and V22 result
         run: |
           python - <<'PY'
-          import base64,datetime as dt,io,json,os,urllib.request,zipfile
+          import base64,datetime as dt,json,os,subprocess,urllib.request
           from pathlib import Path
 
           repo="metalogiclabs/mathgraph"
@@ -100,14 +100,14 @@ jobs:
           assert "len(root_chains) == 1" in source
           assert "PROSPECTIVE_CLASSIFICATION_IN_ARTIFACT=true" in source
 
-          blob=api(
-            f"https://api.github.com/repos/{repo}/actions/artifacts/{sample['source_artifact']}/zip",
-            raw=True,
-          )
-          z=zipfile.ZipFile(io.BytesIO(blob))
-          names=z.namelist()
-          result_name=next(x for x in names if x.endswith("crystal-v22-summary.json"))
-          result=json.loads(z.read(result_name))
+          outdir=Path("/tmp/v22-calibration-artifact")
+          subprocess.run([
+            "gh","run","download",str(sample["source_run"]),
+            "-R",repo,"-n",art["name"],"-D",str(outdir)
+          ],check=True)
+          matches=list(outdir.rglob("crystal-v22-summary.json"))
+          assert len(matches)==1,matches
+          result=json.loads(matches[0].read_text())
           assert result["classification"]==sample["terminal_classification"],result
           assert result["trials"]==21,result
           assert result["primary_apply_cpu_positive_pairs"]==18,result
