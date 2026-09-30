@@ -1,0 +1,198 @@
+name: Crystal Cross-Prover Heldout Auto Consequence V3
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout-auto-consequence-v3
+    paths:
+      - 'mathgraph/cross_prover_consequence_search.py'
+      - 'tests/test_cross_prover_consequence_search.py'
+      - '.github/workflows/crystal-cross-prover-heldout-auto-consequence-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Test consequence route search and controls
+        run: python -m pytest -q tests/test_cross_prover_consequence_search.py
+      - name: Fetch exact held-out source snapshot
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/heldout artifacts/crystal_cross_prover_heldout_auto_consequence_v3
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in cad_examples3.pvs cad_examples3.prf cad_examples4.pvs cad_examples4.prf; do
+            curl -fsSL -o "/tmp/heldout/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "cad_examples3.pvs":"c542b8dcdf2dde5e89f250ef62de855721834448",
+            "cad_examples3.prf":"fc94c6ff8980b085bea9121e462c06161673ebf3",
+            "cad_examples4.pvs":"57539eff2fc9782d9355ce00ee702e508f2fe391",
+            "cad_examples4.prf":"92afa0f6e770a1b8145726a7c16477786ea417df",
+          }
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              got=git_blob(Path("/tmp/heldout",name).read_bytes())
+              assert got==want,(name,got,want)
+              print("PIN_OK",name,got)
+          PY
+      - name: Discover automatic consequence routes on unseen formulas
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import SPECS,discover_family
+          from mathgraph.cross_prover_consequence_search import (
+              RELATION_KIND,
+              discover_consequence_routes,
+              render_lean_adapters,
+          )
+
+          sources={
+              "cad_examples3":Path("/tmp/heldout/cad_examples3.pvs").read_text(),
+              "cad_examples4":Path("/tmp/heldout/cad_examples4.pvs").read_text(),
+          }
+          proofs={
+              "cad_examples3":Path("/tmp/heldout/cad_examples3.prf").read_text(),
+              "cad_examples4":Path("/tmp/heldout/cad_examples4.prf").read_text(),
+          }
+          available=sorted({spec.claim_id for spec in SPECS.values()})
+          assert len(available)==25,len(available)
+
+          exact=discover_family(sources,proofs)
+          assert exact["source_lemma_count"]==11,exact
+          assert exact["supported_occurrence_count"]==3,exact
+          assert exact["unique_canonical_claim_count"]==3,exact
+          exact_sources={f"{x['theory']}.{x['formula']}" for x in exact["supported_occurrences"]}
+
+          routed=discover_consequence_routes(sources,available_claim_ids=available)
+          assert routed["relation_kind"]==RELATION_KIND
+          assert routed["source_lemma_count"]==11,routed
+          assert routed["routed_occurrence_count"]==5,routed
+          assert routed["ambiguous_occurrence_count"]==0,routed
+          route_sources={f"{x['theory']}.{x['formula']}" for x in routed["routes"]}
+          assert exact_sources.isdisjoint(route_sources)
+          expected_routes={
+              "cad_examples3.t_shift",
+              "cad_examples3.t_sos",
+              "cad_examples3.t_sphere",
+              "cad_examples4.e4_above",
+              "cad_examples4.e4_sum",
+          }
+          assert route_sources==expected_routes,(route_sources,expected_routes)
+
+          all_sources={
+              f"{theory}.{formula}"
+              for theory,src in sources.items()
+              for formula,_ in __import__("mathgraph.cross_prover_family_discovery",fromlist=["extract_pvs_lemmas"]).extract_pvs_lemmas(src)
+          }
+          remaining=all_sources-exact_sources-route_sources
+          assert remaining=={
+              "cad_examples3.t_between",
+              "cad_examples3.t_sqrt",
+              "cad_examples4.e4_between",
+          },remaining
+
+          # Exact prerequisite ablation on the real held-out sources.
+          ablations={}
+          for row in routed["routes"]:
+              source=f"{row['theory']}.{row['formula']}"
+              for claim in row["prerequisite_claim_ids"]:
+                  d=discover_consequence_routes(
+                      sources,
+                      available_claim_ids=[x for x in available if x!=claim],
+                  )
+                  still={f"{x['theory']}.{x['formula']}" for x in d["routes"]}
+                  assert source not in still,(source,claim)
+                  ablations[f"{source}|{claim}"]="ROUTE_REMOVED"
+
+          sham=discover_consequence_routes(
+              sources,
+              available_claim_ids=[f"sham.claim.{i}@1" for i in range(25)],
+          )
+          assert sham["routed_occurrence_count"]==0,sham
+
+          outdir=Path("artifacts/crystal_cross_prover_heldout_auto_consequence_v3")
+          outdir.joinpath("routes.json").write_text(json.dumps(routed,indent=2,sort_keys=True)+"\n")
+          outdir.joinpath("Surface.lean").write_text(render_lean_adapters(routed))
+          result={
+              "schema":"mathgraph.cross-prover-heldout-auto-consequence-result.v3",
+              "status":"CANDIDATE_AUTOMATIC_HELDOUT_CONSEQUENCE_ROUTES",
+              "source_repository":"j-tanner-slagel/pvs_cad",
+              "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+              "heldout_source_lemmas":11,
+              "frozen_exact_reuses":3,
+              "automatic_consequence_routes":5,
+              "new_exact_residuals":3,
+              "route_relation_kind":RELATION_KIND,
+              "route_ids":sorted(x["route_id"] for x in routed["routes"]),
+              "ablation_checks":ablations,
+              "sham_routed_occurrences":0,
+              "boundary":"The V5 exact claim registry is frozen. Five unseen formulas are routed by alpha-normalized formula shape plus prerequisite canonical claim availability; source theorem names do not select routes. Native source replay and Lean adapter verification remain separate authority gates."
+          }
+          outdir.joinpath("discovery_result.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check automatically selected adapters
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-heldout-auto-consequence-v3
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_heldout_auto_consequence_v3/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-heldout-auto-consequence-v3"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_heldout_auto_consequence_v3/lean_surface.sha256"
+      - name: Record candidate authority boundary
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("artifacts/crystal_cross_prover_heldout_auto_consequence_v3/discovery_result.json")
+          out=json.loads(p.read_text())
+          out.update({
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "lean_adapter_gate":"GREEN",
+              "native_pvs_authority":"PENDING_REUSE_OR_REPLAY",
+              "promotion_status":"NOT_PROMOTED",
+          })
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout-auto-consequence-v3
+          path: artifacts/crystal_cross_prover_heldout_auto_consequence_v3/
