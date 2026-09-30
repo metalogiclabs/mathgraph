@@ -1,0 +1,52 @@
+{
+  "schema": "mathgraph.crystal-program-controller-shared-calibration.v1",
+  "status": "WARRANTED_BOUNDED_COMMON_MEASUREMENT_HOLD",
+  "measurement_boundary": {
+    "contraction_basis": "prospective_verified_obligations_fraction.v1",
+    "cost_basis": "github_actions_job_wall_seconds.v1",
+    "definition": "A predeclared obligation counts as closed only after the candidate's declared independent/native verification boundary is green. Cost is the full GitHub Actions job wall time from started_at to completed_at."
+  },
+  "samples": [
+    {
+      "campaign": "nucleus",
+      "candidate_id": "nucleus-trace-inferred-function-type-dependency",
+      "source_run": 36651674686,
+      "source_head": "5d200ffc64caab1998bede5b7f715bb4e6867ba9",
+      "source_artifact": 11071035685,
+      "source_artifact_digest": "sha256:8b840dc807251ef651ebbfd3e8aaec6c25a0ac57b33b46f4934af5d600af2bdb",
+      "obligations_total": 11,
+      "obligations_closed": 0,
+      "verified_obligations_fraction": 0.0,
+      "job_wall_seconds": 65,
+      "verified_contraction_per_second": 0.0,
+      "verification": "193/193 frozen Arena verdict parity; zero wrong",
+      "separator": "10/11 recurse to residual:application-function-type; 1/11 to residual:distinct-neutral-heads",
+      "epistemic_result": "WARRANTED_NEGATIVE_FOR_PROPOSED_NORMAL_FORM_LAYER"
+    },
+    {
+      "campaign": "cross-prover",
+      "candidate_id": "cross-prover-fresh-family-route-grammar-test",
+      "source_run": 36652610095,
+      "source_head": "3e6c4ca8c28250ec8ec5c78f793dea750fb43bf6",
+      "source_artifact": 11071710638,
+      "source_artifact_digest": "sha256:e7ed77a99c5f4d24d23aec01fb88990e421a721651b372649047e540e92524e3",
+      "source_family": "j-tanner-slagel/pvs_cad@8750362e99c2ba0e9a0307dcaa39b9766c562feb:cad/alg_examples",
+      "source_blind_freeze_commit": "10f8178ba3e5571983725d7dc05ecba2fb5ea305",
+      "obligations_total": 32,
+      "obligations_closed": 0,
+      "verified_obligations_fraction": 0.0,
+      "job_wall_seconds": 316,
+      "verified_contraction_per_second": 0.0,
+      "verification": "32/32 native PVS proofs green; generated Lean adapter gate green; all unsupported remain UNKNOWN",
+      "separator": "zero of the five frozen promoted consequence-route constructors applies to the source-blind alg_examples family",
+      "epistemic_result": "WARRANTED_NEGATIVE_FOR_UNCHANGED_ROUTE_GRAMMAR_TRANSFER"
+    }
+  ],
+  "decision": {
+    "status": "HOLD_ZERO_CALIBRATED_CONTRACTION",
+    "selected_campaign_id": null,
+    "selected_candidate_id": null,
+    "reason": "The two campaigns now share an earned prospective contraction/cost basis, but both observed candidate classes have zero verified contraction. Selecting either would fabricate benefit not supported by calibration."
+  },
+  "promotion_boundary": "The shared measurement boundary is warranted only for these two prospectively frozen experiment classes. It does not make all programme candidates cross-domain comparable and does not establish predictive ranking quality."
+}
