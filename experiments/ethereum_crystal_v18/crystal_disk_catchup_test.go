@@ -365,8 +365,7 @@ func TestCrystalDiskBackedCatchupAB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	blob = append(blob, '
-')
+	blob = append(blob, byte(10))
 	resultPath := os.Getenv("CRYSTAL_V18_RESULT")
 	if resultPath == "" {
 		t.Fatal("CRYSTAL_V18_RESULT not set")
