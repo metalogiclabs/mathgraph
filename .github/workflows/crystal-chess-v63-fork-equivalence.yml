@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           git clone --filter=blob:none --branch crystal-compiled-band-gate-v63 https://github.com/metalogiclabs/Stockfish.git /tmp/fork
-          test "$(git -C /tmp/fork rev-parse HEAD)" = "a0d3b0330d98b74df30d80a8b87c26b7b52ddae7"
+          test "$(git -C /tmp/fork rev-parse HEAD)" = "9b8a5ba9277b2e40cb7cbf167a1822c6202a55aa"
           git -C /tmp/fork diff 0a215d6c9e48856ef630013b8ab8312941a59057..HEAD -- src/search.cpp > /tmp/fork.patch
           test -s /tmp/fork.patch
 
@@ -47,7 +47,7 @@ jobs:
             echo "base_commit=0a215d6c9e48856ef630013b8ab8312941a59057"
             echo "fork_repository=https://github.com/metalogiclabs/Stockfish"
             echo "fork_branch=crystal-compiled-band-gate-v63"
-            echo "fork_commit=a0d3b0330d98b74df30d80a8b87c26b7b52ddae7"
+            echo "fork_commit=9b8a5ba9277b2e40cb7cbf167a1822c6202a55aa"
             echo "predicate=optimum<=16 OR 33<=optimum<=64"
             echo "generated_patch_equals_fork_patch=true"
           } > evidence/crystal-chess-v63-fork/manifest.txt
