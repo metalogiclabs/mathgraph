@@ -1,0 +1,69 @@
+{
+  "schema": "mathgraph.crystal-program-calibration-ledger.v2",
+  "contract_ref": "metalogiclabs/mathgraph:crystal-program-calibration-v1@2d59a95ab6c28c1a1814863ab9becaaba9c83356",
+  "correction": "Use raw declared qualification-job completed_at minus started_at, exactly as the frozen V1 contract states.",
+  "records": [
+    {
+      "campaign_id": "nucleus",
+      "action_id": "nucleus-neutral-head-kind-quotient-v1",
+      "prospective_freeze_ref": "crystal-program-calibration-v1#campaign:nucleus",
+      "frozen_atoms": 17,
+      "credited_atoms": 17,
+      "job_started_at": "2026-09-30T00:52:23Z",
+      "job_completed_at": "2026-09-30T00:52:55Z",
+      "invariants_preserved": true,
+      "evidence_refs": [
+        "github-run:36652387720",
+        "github-job:109689261465",
+        "github-artifact:11070479718",
+        "sha256:dd7cef176d098fa32ba45abc1422dd049549dea4adf562bdfc7a84c105066bf4"
+      ]
+    },
+    {
+      "campaign_id": "ethereum",
+      "action_id": "ethereum-v22-complete-trie-cpu-replication",
+      "prospective_freeze_ref": "metalogiclabs/mathgraph:crystal-program-controller-v2@86cd67cd60b781213ab5eb66a672c0dce8bbb518:experiments/crystal_program_calibration_v2/ethereum_v22_prospective_extension.json",
+      "frozen_atoms": 1,
+      "credited_atoms": 1,
+      "job_started_at": "2026-09-30T01:09:32Z",
+      "job_completed_at": "2026-09-30T01:12:41Z",
+      "invariants_preserved": true,
+      "evidence_refs": [
+        "github-run:36653763668",
+        "github-job:109693493535",
+        "github-artifact:11070828938",
+        "sha256:2bb6002c1634cac45d26ddb290f93953781df39b22fcdaf7352ae879a1df8683",
+        "classification:WARRANTED_PERFORMANCE",
+        "cpu-median-ratio:1.025429812960514",
+        "cpu-positive-pairs:18/21",
+        "cpu-bootstrap-95:[1.011330,1.036984]"
+      ]
+    },
+    {
+      "campaign_id": "cross-prover",
+      "action_id": "cross-prover-fresh-route-grammar-v1",
+      "prospective_freeze_ref": "crystal-program-calibration-v1#campaign:cross-prover",
+      "frozen_atoms": 6,
+      "credited_atoms": 0,
+      "job_started_at": "2026-09-30T00:55:54Z",
+      "job_completed_at": "2026-09-30T01:02:10Z",
+      "invariants_preserved": true,
+      "evidence_refs": [
+        "github-run:36652664976",
+        "github-job:109690111569",
+        "github-artifact:11071007567",
+        "sha256:afefbb0d16a805468414956128e0a142f2d616ae36eed5cfc71d3e1b0a0945e9"
+      ]
+    }
+  ],
+  "expected": {
+    "nucleus_wall_seconds": 32,
+    "nucleus_utility_per_second": 0.03125,
+    "ethereum_wall_seconds": 189,
+    "ethereum_utility_per_second": 0.005291005291005291,
+    "cross_prover_wall_seconds": 376,
+    "cross_prover_utility_per_second": 0.0,
+    "best_observed_completed_action": "nucleus-neutral-head-kind-quotient-v1"
+  },
+  "boundary": "Retrospective comparison of completed prospectively frozen actions only. These utilities are not forecasts for each campaign's next action."
+}
