@@ -1,0 +1,166 @@
+name: Crystal Cross-Prover Heldout3 Tarski Frozen V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout3-tarski-frozen-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout3-tarski-frozen-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Fetch sealed Tarski source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tarski artifacts/crystal_cross_prover_heldout3_tarski_frozen_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/tarski/tarski_examples.pvs "$BASE/tarski_examples.pvs"
+          curl -fsSL -o /tmp/tarski/tarski_examples.prf "$BASE/tarski_examples.prf"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "tarski_examples.pvs":"e200f88f661441227f6c863e8879f1888f8c94d3",
+            "tarski_examples.prf":"558aced79d062dc6fa648ba8ed1e7bebbd806c3c",
+          }
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              got=git_blob(Path("/tmp/tarski",name).read_bytes())
+              assert got==want,(name,got,want)
+              print("PIN_OK",name,got)
+          PY
+      - name: Measure frozen normalized and consequence coverage
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import SPECS,extract_pvs_lemmas
+          from mathgraph.cross_prover_semantic_normalization import discover_normalized_exact_reuse
+          from mathgraph.cross_prover_consequence_search import discover_consequence_routes
+
+          src=Path("/tmp/tarski/tarski_examples.pvs").read_text()
+          prf=Path("/tmp/tarski/tarski_examples.prf").read_text()
+          sources={"tarski_examples":src}
+          proofs={"tarski_examples":prf}
+          available=sorted({spec.claim_id for spec in SPECS.values()})
+          assert len(available)==25,len(available)
+
+          exact=discover_normalized_exact_reuse(sources,proofs)
+          routes=discover_consequence_routes(sources,available_claim_ids=available)
+          all_sources={f"tarski_examples.{name}" for name,_ in extract_pvs_lemmas(src)}
+          assert len(all_sources)==8,all_sources
+          exact_sources={f"{x['theory']}.{x['formula']}" for x in exact["matched"]}
+          route_sources={f"{x['theory']}.{x['formula']}" for x in routes["routes"]}
+          assert exact_sources.isdisjoint(route_sources)
+          recognized=exact_sources|route_sources
+          unresolved=all_sources-recognized
+
+          out={
+            "schema":"mathgraph.cross-prover-heldout3-tarski-frozen-measurement.v1",
+            "status":"CANDIDATE_FROZEN_TARSKI_MEASUREMENT",
+            "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+            "source_file":"cad/tarski_examples.pvs",
+            "source_lemma_count":8,
+            "normalized_exact_reuse":len(exact_sources),
+            "automatic_consequence_routes":len(route_sources),
+            "total_frozen_transport_occurrences":len(recognized),
+            "coverage":len(recognized)/8,
+            "exact_sources":sorted(exact_sources),
+            "route_sources":sorted(route_sources),
+            "unresolved_sources":sorted(unresolved),
+            "registry_collision_count":exact["registry_collision_count"],
+            "boundary":"No semantic claim, normalization rule, route constructor, or proof schema was added after sealing tarski_examples. Prover-internal formulas are expected to remain UNKNOWN unless the frozen semantic machinery genuinely recognizes them."
+          }
+          Path("artifacts/crystal_cross_prover_heldout3_tarski_frozen_v1/discovery.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout3-tarski-discovery-v1
+          path: artifacts/crystal_cross_prover_heldout3_tarski_frozen_v1/discovery.json
+
+  pvs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay sealed Tarski source authorities
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180             @tarski_examples.e1:e2:e3:e4_TCC1:e4:e5:e6:e7:e8             | tee /tmp/tarski.log
+          grep -q "Grand Totals: 9 proofs, 9 attempted, 9 succeeded" /tmp/tarski.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/tarski.log; then exit 1; fi
+
+  record:
+    needs: [discover,pvs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout3-tarski-discovery-v1
+          path: /tmp/discovery
+      - name: Record warranted frozen measurement
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_heldout3_tarski_frozen_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out=json.loads(Path("/tmp/discovery/discovery.json").read_text())
+          out.update({
+              "status":"WARRANTED_BOUNDED_FROZEN_TARSKI_MEASUREMENT_V1",
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "native_pvs_authority":"8 source lemmas + 1 TCC GREEN",
+          })
+          Path("artifacts/crystal_cross_prover_heldout3_tarski_frozen_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout3-tarski-frozen-v1
+          path: artifacts/crystal_cross_prover_heldout3_tarski_frozen_v1/result.json
