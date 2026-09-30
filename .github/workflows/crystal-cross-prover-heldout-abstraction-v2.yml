@@ -1,0 +1,210 @@
+name: Crystal Cross-Prover Heldout Abstraction V2
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout-abstraction-v2
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout-abstraction-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Write consequence adapters and three new exact claims
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/heldout-abstraction-v2
+          mkdir -p "$ROOT"
+          cat > "$ROOT/Surface.lean" <<'EOF'
+          import Mathlib
+
+          namespace CrystalHeldoutAbstractionV2
+
+          theorem t_shift_from_square_shift
+              (base : ∀ x y : ℝ, ∃ z : ℝ, ∀ w : ℝ, w ^ 2 + z > x + y) :
+              ∀ x : ℝ, ∃ y : ℝ, ∀ z : ℝ, z * z + y > x := by
+            intro x
+            obtain ⟨y, hy⟩ := base x 0
+            refine ⟨y, ?_⟩
+            intro z
+            simpa [pow_two] using hy z
+
+          theorem t_sos_from_amgm2
+              (base : ∀ x y : ℝ, x ^ 2 + y ^ 2 ≥ 2 * x * y) :
+              ∀ x y z : ℝ, x ^ 2 + y ^ 2 + z ^ 2 ≥ 2 * x * y := by
+            intro x y z
+            nlinarith [base x y, sq_nonneg z]
+
+          theorem t_sphere_from_root_and_circle
+              (root : ∀ x y : ℝ, ∃ r : ℝ, r ^ 2 = x ^ 2 + y ^ 2)
+              (circle : ∀ r : ℝ, ∃ z : ℝ, r ^ 2 + z ^ 2 = 1 ∨ r ^ 2 > 1) :
+              ∀ x y : ℝ, ∃ z : ℝ,
+                x ^ 2 + y ^ 2 + z ^ 2 = 1 ∨ x ^ 2 + y ^ 2 > 1 := by
+            intro x y
+            obtain ⟨r, hr⟩ := root x y
+            obtain ⟨z, hz⟩ := circle r
+            refine ⟨z, ?_⟩
+            rcases hz with hz | hz
+            · left
+              nlinarith
+            · right
+              nlinarith
+
+          theorem e4_above_from_upper2
+              (base : ∀ x y : ℝ, ∃ z : ℝ, z > x ∧ z > y) :
+              ∀ x y z : ℝ, ∃ w : ℝ, w > x ∧ w > y ∧ w > z := by
+            intro x y z
+            obtain ⟨a, hax, hay⟩ := base x y
+            obtain ⟨w, hwa, hwz⟩ := base a z
+            refine ⟨w, ?_, ?_, hwz⟩
+            · exact lt_trans hax hwa
+            · exact lt_trans hay hwa
+
+          theorem e4_sum_from_unbounded_above
+              (base : ∀ t : ℝ, ∃ w : ℝ, w > t) :
+              ∀ x : ℝ, ∃ y : ℝ, ∀ z : ℝ, ∃ w : ℝ, w > x + y + z := by
+            intro x
+            refine ⟨0, ?_⟩
+            intro z
+            obtain ⟨w, hw⟩ := base (x + 0 + z)
+            exact ⟨w, by simpa using hw⟩
+
+          theorem t_between_impossible :
+              (∀ x y : ℝ, ∃ z : ℝ, z > x ∧ z < y) → False := by
+            intro h
+            obtain ⟨z, hz1, hz2⟩ := h 0 0
+            linarith
+
+          theorem t_sqrt_impossible :
+              (∃ x : ℝ, ∀ y : ℝ, ∃ z : ℝ, z * z = y - x) → False := by
+            rintro ⟨x, h⟩
+            obtain ⟨z, hz⟩ := h (x - 1)
+            nlinarith [sq_nonneg z]
+
+          theorem e4_between_impossible :
+              (∀ x y z : ℝ, ∃ w : ℝ, w > x ∧ w > y ∧ w < z) → False := by
+            intro h
+            obtain ⟨w, hwx, hwy, hwz⟩ := h 0 0 0
+            linarith
+
+          end CrystalHeldoutAbstractionV2
+          EOF
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-heldout-abstraction-v2"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+      - name: Kernel-check held-out abstraction
+        run: |
+          set -euo pipefail
+          cd /tmp/heldout-abstraction-v2
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+
+  pvs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned held-out source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay all eight held-out residual source authorities
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180             @cad_examples3.t_between:t_sqrt:t_shift:t_sos:t_sphere | tee /tmp/ex3.log
+          "$PVS_DIR/proveit" -q --timeout 180             @cad_examples4.e4_above:e4_between:e4_sum | tee /tmp/ex4.log
+          grep -q "Grand Totals: 5 proofs, 5 attempted, 5 succeeded" /tmp/ex3.log
+          grep -q "Grand Totals: 3 proofs, 3 attempted, 3 succeeded" /tmp/ex4.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/ex3.log /tmp/ex4.log; then exit 1; fi
+
+  promote:
+    needs: [lean,pvs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Promote compressed held-out explanation
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_heldout_abstraction_v2
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-heldout-abstraction-result.v2",
+            "status":"WARRANTED_BOUNDED_HELDOUT_ABSTRACTION_V2",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "parent_exact_family_run":36649171836,
+            "heldout_discovery_run":36649392149,
+            "heldout_source_lemma_count":11,
+            "already_exact_reused_occurrences":3,
+            "residual_occurrences_before":8,
+            "derived_consequence_reuses":5,
+            "new_exact_canonical_meanings":3,
+            "residual_occurrences_after":0,
+            "new_relation_kind":"WARRANTED_CLAIMS_IMPLY_SOURCE_INSTANCE",
+            "new_exact_schema":"adversarial_quantifier_refutation",
+            "derived_dependencies":{
+              "cad_examples3.t_shift":["real.square_shift_dominates@1"],
+              "cad_examples3.t_sos":["real.amgm2@1"],
+              "cad_examples3.t_sphere":["real.sum_squares_has_root@1","real.circle_or_outside@1"],
+              "cad_examples4.e4_above":["real.common_upper_bound2@1"],
+              "cad_examples4.e4_sum":["real.unbounded_above@1"]
+            },
+            "new_exact_sources":[
+              "cad_examples3.t_between",
+              "cad_examples3.t_sqrt",
+              "cad_examples4.e4_between"
+            ],
+            "semantic_acquisition_compression":"8 residual source lemmas require only 3 new exact meanings; 5 are certified consequences of prior warrant.",
+            "boundary":"This is a bounded held-out result on cad_examples3/cad_examples4. The adapters are verified implications from named previously warranted claim interfaces; automatic structural recognition of these consequence patterns is not yet established."
+          }
+          Path("artifacts/crystal_cross_prover_heldout_abstraction_v2/result.json").write_text(
+            json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout-abstraction-v2
+          path: artifacts/crystal_cross_prover_heldout_abstraction_v2/result.json
