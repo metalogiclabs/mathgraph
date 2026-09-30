@@ -1,0 +1,99 @@
+name: Crystal Cross-Prover Heldout4 Pos Frozen V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout4-pos-frozen-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout4-pos-frozen-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind frozen selector and semantic boundary
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_constructor_selector.py)" = 74ebafe25f2f1d8dd5ffc406299e14b5fed22158
+          test "$(git hash-object mathgraph/cross_prover_surface_boundary.py)" = e65beb94749b5ae2915e97345949e94e1da1d3c2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Open sealed source only after selector freeze
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pos artifacts/crystal_cross_prover_heldout4_pos_frozen_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/pos/pos_examples.pvs "$BASE/pos_examples.pvs"
+          curl -fsSL -o /tmp/pos/pos_examples.prf "$BASE/pos_examples.prf"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "pos_examples.pvs":"d7c28f1beb553ca38d59e594289655d9ebebca1f",
+            "pos_examples.prf":"04602bbc3fbe12a0e212fe6647dd1efc326095e2",
+          }
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              got=git_blob(Path("/tmp/pos",name).read_bytes())
+              assert got==want,(name,got,want)
+              print("PIN_OK",name,got)
+          PY
+      - name: Measure typed boundary and frozen constructor selection
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import extract_pvs_lemmas
+          from mathgraph.cross_prover_surface_boundary import classify_source_family
+          from mathgraph.cross_prover_constructor_selector import select_constructor_schema
+
+          src=Path("/tmp/pos/pos_examples.pvs").read_text()
+          family=classify_source_family({"pos_examples":src})
+          selected=[]
+          unresolved=[]
+          for row in family["object_level"]:
+              out=select_constructor_schema(row["normalized_surface"])
+              item={
+                  "source":f"pos_examples.{row['formula']}",
+                  "selection":out,
+              }
+              if out["status"]=="CANDIDATE_CONSTRUCTOR_SELECTION":
+                  selected.append(item)
+              else:
+                  unresolved.append(item)
+
+          all_lemmas=extract_pvs_lemmas(src)
+          out={
+            "schema":"mathgraph.cross-prover-heldout4-pos-frozen-measurement.v1",
+            "status":"CANDIDATE_FROZEN_POS_MEASUREMENT",
+            "source_repository":"j-tanner-slagel/pvs_cad",
+            "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+            "source_file":"cad/pos_examples.pvs",
+            "source_lemma_count":len(all_lemmas),
+            "object_level_count":family["object_level_count"],
+            "typed_unknown_count":family["typed_unknown_count"],
+            "constructor_selected_count":len(selected),
+            "object_level_unselected_count":len(unresolved),
+            "selected":selected,
+            "object_level_unselected":unresolved,
+            "typed_unknown_sources":[f"pos_examples.{x['formula']}" for x in family["typed_unknown"]],
+            "coverage_of_all_source_lemmas":len(selected)/len(all_lemmas) if all_lemmas else 0.0,
+            "coverage_of_object_level_claims":len(selected)/family["object_level_count"] if family["object_level_count"] else 0.0,
+            "boundary":"Selector and semantic-boundary code were frozen before pos_examples content was opened. Selection is constructor-class routing only; no proof or source-authority claim is made by this measurement."
+          }
+          p=Path("artifacts/crystal_cross_prover_heldout4_pos_frozen_v1")
+          p.joinpath("result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout4-pos-frozen-v1
+          path: artifacts/crystal_cross_prover_heldout4_pos_frozen_v1/result.json
