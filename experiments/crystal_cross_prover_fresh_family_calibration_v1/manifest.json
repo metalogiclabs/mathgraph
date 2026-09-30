@@ -1,0 +1,34 @@
+{
+  "schema": "mathgraph.cross-prover-fresh-family-calibration.v1",
+  "frozen_before_source_read": true,
+  "selection_rule": "From pinned j-tanner-slagel/pvs_cad tree, choose the lexicographically first *_examples source/proof pair that is not referenced anywhere in the current metalogiclabs/mathgraph repository by basename. Do not inspect source contents before freezing.",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "theory": "alg_examples",
+    "pvs_path": "cad/alg_examples.pvs",
+    "pvs_blob_sha": "568c16084589ad62d873c7953c30bbb546b5d1ad",
+    "prf_path": "cad/alg_examples.prf",
+    "prf_blob_sha": "60f53f7163089bdc4d7e2ab4d99aa67ea1d783ce"
+  },
+  "frozen_route_authority": {
+    "head_sha": "91bf6d4a98856ed484517a4019ca57330266a3c7",
+    "promotion_run": 36650789774,
+    "route_ids": [
+      "add_nonnegative_square@1",
+      "compose_root_circle@1",
+      "iterate_upper_bound@1",
+      "lift_unbounded_sum@1",
+      "specialize_zero_square_shift@1"
+    ]
+  },
+  "shared_measurement": {
+    "contraction_basis": "prospective_verified_obligations_fraction.v1",
+    "obligation_definition": "Every LEMMA declaration parsed from the frozen source blob is one obligation. A source obligation is closed by this experiment only if an unchanged frozen route matches it, all route prerequisites are live, the native PVS proof replays successfully, and the generated Lean adapter gate is green. Unsupported formulas remain UNKNOWN.",
+    "cost_basis": "github_actions_job_wall_seconds.v1",
+    "nucleus_calibration_run": 36651674686,
+    "nucleus_obligations": 11,
+    "nucleus_closed": 0,
+    "nucleus_job_wall_seconds": 65
+  }
+}
