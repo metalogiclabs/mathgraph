@@ -117,8 +117,8 @@ def main() -> int:
     assert localization_holds == total, (localization_holds, total)
     assert negative_memory_changes == total, (negative_memory_changes, total)
     assert refinement_separator_checks >= 5, refinement_separator_checks
-    assert refinement_separator_ablation_blocks == refinement_separator_checks, (
-        refinement_separator_ablation_blocks,
+    assert refinement_separator_blocks == refinement_separator_checks, (
+        refinement_separator_blocks,
         refinement_separator_checks,
     )
 
@@ -127,7 +127,7 @@ def main() -> int:
         f"cases={passed}/{total} "
         f"localization_hold={localization_holds}/{total} "
         f"negative_memory_causal={negative_memory_changes}/{total} "
-        f"separator_blocks={refinement_separator_ablation_blocks}/"
+        f"separator_blocks={refinement_separator_blocks}/"
         f"{refinement_separator_checks}"
     )
     print(out)
