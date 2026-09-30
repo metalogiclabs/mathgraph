@@ -1,0 +1,134 @@
+name: Crystal Cross-Prover Heldout5 Example Batch V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout5-example-batch-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout5-example-batch-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind frozen selector and boundary
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph/cross_prover_constructor_selector.py)" = 74ebafe25f2f1d8dd5ffc406299e14b5fed22158
+          test "$(git hash-object mathgraph/cross_prover_surface_boundary.py)" = e65beb94749b5ae2915e97345949e94e1da1d3c2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Open complete sealed example batch
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/batch artifacts/crystal_cross_prover_heldout5_example_batch_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          for f in alg_strategy_examples.pvs alg_strategy_examples.prf mpoly_examples.pvs mpoly_examples.prf mpoly_mono_examples.pvs mpoly_mono_examples.prf sgn_examples.pvs sgn_examples.prf; do
+            curl -fsSL -o "/tmp/batch/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "alg_strategy_examples.pvs":"3723305f13ace375dc1f4158e80ad16c1e56c0a7",
+            "alg_strategy_examples.prf":"d84d80cbfd3194ff99d9c16ca991945111cf168e",
+            "mpoly_examples.pvs":"64ac0d03fb75cf5d72d3a1fb885156ab5a96b967",
+            "mpoly_examples.prf":"ed2b0ffd9cf27156a644e052b840e72c7125ff10",
+            "mpoly_mono_examples.pvs":"88c81ef4a839bf67465080fcb300b937831c0241",
+            "mpoly_mono_examples.prf":"37857a983b85cd3280e78f5bcb8a0ba28a7df465",
+            "sgn_examples.pvs":"4276c496560e8afa18ab9901855ad978894fe0eb",
+            "sgn_examples.prf":"54d393c4a6093bbe927aa875561bd520c8cd8d0c",
+          }
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              data=Path("/tmp/batch",name).read_bytes()
+              got=git_blob(data)
+              assert got==want,(name,got,want)
+              print("PIN_OK",name,got)
+          PY
+      - name: Measure entire frozen batch
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import extract_pvs_lemmas
+          from mathgraph.cross_prover_surface_boundary import classify_source_family
+          from mathgraph.cross_prover_constructor_selector import select_constructor_schema
+
+          bases=["alg_strategy_examples","mpoly_examples","mpoly_mono_examples","sgn_examples"]
+          per_file={}
+          totals={
+              "source_lemmas":0,
+              "object_level":0,
+              "typed_unknown":0,
+              "constructor_selected":0,
+              "object_level_unselected":0,
+          }
+          all_selected=[]
+          all_unselected=[]
+          for base in bases:
+              src=Path("/tmp/batch",f"{base}.pvs").read_text()
+              lemmas=extract_pvs_lemmas(src)
+              family=classify_source_family({base:src})
+              selected=[]
+              unselected=[]
+              for row in family["object_level"]:
+                  pick=select_constructor_schema(row["normalized_surface"])
+                  item={"source":f"{base}.{row['formula']}","selection":pick}
+                  if pick["status"]=="CANDIDATE_CONSTRUCTOR_SELECTION":
+                      selected.append(item)
+                      all_selected.append(item)
+                  else:
+                      unselected.append(item)
+                      all_unselected.append(item)
+              per_file[base]={
+                  "source_lemmas":len(lemmas),
+                  "object_level":family["object_level_count"],
+                  "typed_unknown":family["typed_unknown_count"],
+                  "constructor_selected":len(selected),
+                  "object_level_unselected":len(unselected),
+                  "selected":selected,
+                  "unselected":unselected,
+              }
+              totals["source_lemmas"]+=len(lemmas)
+              totals["object_level"]+=family["object_level_count"]
+              totals["typed_unknown"]+=family["typed_unknown_count"]
+              totals["constructor_selected"]+=len(selected)
+              totals["object_level_unselected"]+=len(unselected)
+
+          out={
+              "schema":"mathgraph.cross-prover-heldout5-example-batch.v1",
+              "status":"CANDIDATE_FROZEN_EXAMPLE_BATCH_MEASUREMENT",
+              "source_repository":"j-tanner-slagel/pvs_cad",
+              "source_commit":"8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+              "files":bases,
+              "totals":totals,
+              "per_file":per_file,
+              "selected":all_selected,
+              "object_level_unselected":all_unselected,
+              "object_level_selection_coverage":(
+                  totals["constructor_selected"]/totals["object_level"]
+                  if totals["object_level"] else 0.0
+              ),
+              "all_source_selection_coverage":(
+                  totals["constructor_selected"]/totals["source_lemmas"]
+                  if totals["source_lemmas"] else 0.0
+              ),
+              "boundary":"All four untouched example families were committed as one batch before any content inspection. Selector and semantic-boundary code were frozen beforehand. This measurement reports the full batch; no family is dropped based on outcome."
+          }
+          p=Path("artifacts/crystal_cross_prover_heldout5_example_batch_v1")
+          p.joinpath("result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout5-example-batch-v1
+          path: artifacts/crystal_cross_prover_heldout5_example_batch_v1/result.json
