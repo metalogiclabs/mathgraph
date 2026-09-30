@@ -1,0 +1,171 @@
+name: ethereum-crystal-v21-complete-trie-catchup
+on:
+  push:
+    branches: [ethereum-crystal-v21-complete-trie-catchup]
+  workflow_dispatch:
+
+jobs:
+  complete-trie-catchup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned EELS
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/execution-specs.git /tmp/eels
+          cd /tmp/eels
+          git checkout 84e7d2c266e3319fc3882e72f379282bb1c40f2d
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install EELS workspace
+        working-directory: /tmp/eels
+        run: uv sync --group test
+
+      - name: Generate frozen held-out BAL corpus
+        working-directory: /tmp/eels
+        run: |
+          rm -rf /tmp/eels-v21-fixtures
+          uv run fill --from Amsterdam --until Amsterdam --output=/tmp/eels-v21-fixtures --skip-index --no-html -n 2 tests/amsterdam/eip7928_block_level_access_lists
+
+      - name: Export exact V21 corpus
+        run: |
+          uv run --project /tmp/eels python experiments/ethereum_crystal_v10/export_heldout_rlp.py /tmp/eels-v21-fixtures /tmp/crystal-v21-heldout.rlpbin
+          sha256sum /tmp/crystal-v21-heldout.rlpbin | tee /tmp/crystal-v21-heldout.sha256
+
+      - name: Prepare stock and Crystal geth trees
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth-stock
+          cd /tmp/geth-stock
+          git checkout 920c07774c65ebb3023536f85df642c44478b540
+          test "$(git rev-parse HEAD)" = "920c07774c65ebb3023536f85df642c44478b540"
+          cd /tmp
+          cp -a geth-stock geth
+
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v21/crystal_complete_trie_catchup_test.go" /tmp/geth-stock/eth/protocols/snap/crystal_complete_trie_catchup_test.go
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v21/crystal_complete_trie_catchup_test.go" /tmp/geth/eth/protocols/snap/crystal_complete_trie_catchup_test.go
+
+          cp "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/crystal_apply_decoder.go" /tmp/geth/core/types/bal/crystal_apply_decoder.go
+          python "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v13/patch_geth.py"
+
+          gofmt -w /tmp/geth-stock/eth/protocols/snap/crystal_complete_trie_catchup_test.go
+          gofmt -w /tmp/geth/core/types/bal/crystal_apply_decoder.go /tmp/geth/eth/protocols/snap/syncv2.go /tmp/geth/eth/protocols/snap/crystal_complete_trie_catchup_test.go
+
+          cd /tmp/geth-stock
+          git diff --check
+          git diff > /tmp/crystal-v21-stock-harness.patch
+          cd /tmp/geth
+          git diff --check
+          git diff > /tmp/crystal-v21-crystal.patch
+
+      - name: Compile stock and Crystal snap test binaries
+        run: |
+          cd /tmp/geth-stock
+          go test -c -o /tmp/geth-v21-stock.test ./eth/protocols/snap
+          cd /tmp/geth
+          go test ./core/types/bal -count=1
+          go test -c -o /tmp/geth-v21-crystal.test ./eth/protocols/snap
+          sha256sum /tmp/geth-v21-stock.test /tmp/geth-v21-crystal.test | tee /tmp/crystal-v21-binaries.sha256
+
+      - name: Run three alternating complete-trie pairs
+        env:
+          CRYSTAL_BAL_CORPUS: /tmp/crystal-v21-heldout.rlpbin
+        run: |
+          : > /tmp/crystal-v21-test.txt
+          for i in 0 1 2; do
+            if [ $((i % 2)) -eq 0 ]; then
+              arms="stock crystal"
+            else
+              arms="crystal stock"
+            fi
+            for arm in $arms; do
+              echo "=== trial=$i arm=$arm ===" | tee -a /tmp/crystal-v21-test.txt
+              CRYSTAL_V21_ARM="$arm" \
+              CRYSTAL_V21_RESULT="/tmp/crystal-v21-$arm-$i.json" \
+              "/tmp/geth-v21-$arm.test" -test.run '^TestCrystalV21CompleteTrieCatchUp$' -test.count=1 -test.v \
+                | tee -a /tmp/crystal-v21-test.txt
+            done
+          done
+          test "$(grep -c 'ETHEREUM_CRYSTAL_V21_COMPLETE_TRIE_CATCHUP=PASS' /tmp/crystal-v21-test.txt)" = "6"
+
+      - name: Exact root-chain parity summary
+        run: |
+          python - <<'PY'
+          import json
+          import statistics
+
+          rows = {"stock": [], "crystal": []}
+          for i in range(3):
+              for arm in rows:
+                  d = json.load(open(f"/tmp/crystal-v21-{arm}-{i}.json"))
+                  assert d["Protocol"] == "ETHEREUM_CRYSTAL_V21_COMPLETE_TRIE_CATCHUP"
+                  assert d["Arm"] == arm
+                  assert d["Records"] == 1112
+                  assert d["AccessListRequests"] > 0
+                  rows[arm].append(d)
+
+          digests = {d["FinalDigest"] for arm in rows for d in rows[arm]}
+          pivots = {d["FinalPivotHash"] for arm in rows for d in rows[arm]}
+          roots = {d["FinalStateRoot"] for arm in rows for d in rows[arm]}
+          root_chains = {d["RootChainDigest"] for arm in rows for d in rows[arm]}
+          assert len(digests) == 1, digests
+          assert len(pivots) == 1, pivots
+          assert len(roots) == 1, roots
+          assert len(root_chains) == 1, root_chains
+          for i in range(3):
+              assert rows["stock"][i]["AccessListRequests"] == rows["crystal"][i]["AccessListRequests"]
+
+          cpu_ratios = [rows["stock"][i]["ApplyCPUNS"] / rows["crystal"][i]["ApplyCPUNS"] for i in range(3)]
+          wall_ratios = [rows["stock"][i]["ApplyNS"] / rows["crystal"][i]["ApplyNS"] for i in range(3)]
+          summary = {
+              "protocol": "ETHEREUM_CRYSTAL_V21_COMPLETE_TRIE_CATCHUP_AB",
+              "geth_pin": "920c07774c65ebb3023536f85df642c44478b540",
+              "trials": 3,
+              "records_per_trial": 1112,
+              "final_digest": next(iter(digests)),
+              "final_pivot_hash": next(iter(pivots)),
+              "final_state_root": next(iter(roots)),
+              "root_chain_digest": next(iter(root_chains)),
+              "access_list_requests": [rows["stock"][i]["AccessListRequests"] for i in range(3)],
+              "apply_cpu_paired_ratios_observational": cpu_ratios,
+              "apply_cpu_paired_median_ratio_observational": statistics.median(cpu_ratios),
+              "apply_wall_paired_ratios_observational": wall_ratios,
+              "apply_wall_paired_median_ratio_observational": statistics.median(wall_ratios),
+              "performance_status": "OBSERVATIONAL_ONLY",
+              "semantic_status": "WARRANTED_IF_GREEN",
+              "claim_boundary": rows["crystal"][0]["ClaimBoundary"],
+          }
+          with open("/tmp/crystal-v21-summary.json", "w") as f:
+              json.dump(summary, f, indent=2)
+              f.write(chr(10))
+          print(json.dumps(summary, indent=2))
+          print(
+              "CRYSTAL_V21_SUMMARY",
+              f"root={summary['final_state_root']}",
+              f"root_chain={summary['root_chain_digest']}",
+              f"cpu_ratio_observational={summary['apply_cpu_paired_median_ratio_observational']:.6f}",
+              f"wall_ratio_observational={summary['apply_wall_paired_median_ratio_observational']:.6f}",
+          )
+          PY
+
+      - name: Upload V21 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v21-complete-trie-catchup
+          path: |
+            /tmp/crystal-v21-summary.json
+            /tmp/crystal-v21-*.json
+            /tmp/crystal-v21-test.txt
+            /tmp/crystal-v21-heldout.sha256
+            /tmp/crystal-v21-binaries.sha256
+            /tmp/crystal-v21-stock-harness.patch
+            /tmp/crystal-v21-crystal.patch
+
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V21_COMPLETE_TRIE_CATCHUP=PASS"
+          echo "GETH_PIN=920c07774c65ebb3023536f85df642c44478b540"
+          echo "EVERY_BLOCK_ROOT_CHECKED_BY_GETH=true"
+          echo "PERFORMANCE_OBSERVATIONAL_ONLY=true"
+          echo "NO_SOCKET_OR_MAINNET_CLAIM=true"
