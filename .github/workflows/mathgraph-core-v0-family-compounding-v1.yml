@@ -402,11 +402,29 @@ jobs:
           graph.add_support(pvs_support)
           graph.add_support(lean_support)
 
+          # Scheduler scores/probabilities are advisory policy metadata and may
+          # contain floats. They are deliberately excluded from canonical
+          # verifier evidence. Only the authority-relevant selected target and
+          # its exact source identity cross into the Core V0 receipt.
+          canonical_selection = {
+              "schema": selection["schema"],
+              "status": selection["status"],
+              "round1_candidate_count": selection["round1_candidate_count"],
+              "selected_object_id": selection["selected_object_id"],
+              "selected_claim_id": selection["selected_claim_id"],
+              "certificate_schema": selection["certificate_schema"],
+              "theory": selection["theory"],
+              "formula": selection["formula"],
+              "source_surface_sha256": selection["source_surface_sha256"],
+              "source_blob_sha": selection["source_blob_sha"],
+              "verify_all_baseline_contacts": selection["verify_all_baseline_contacts"],
+              "scheduler_contacts": selection["scheduler_contacts"],
+          }
           payload = {
               "schema": "mathgraph.core-v0-family-selected-dual-evidence.v1",
               "run_id": run_id,
               "head_sha": os.environ["HEAD_SHA"],
-              "selection": selection,
+              "selection": canonical_selection,
               "pvs": pvs,
               "lean": lean,
           }
