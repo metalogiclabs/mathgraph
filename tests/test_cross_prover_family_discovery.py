@@ -227,3 +227,29 @@ END Q
     assert "positive_scale_unbounded_above" in lean
     assert "unbounded_positive_product_forces_positive_factor" in lean
     assert "sum_two_squares_parameter_nonnegative" in lean
+
+
+def test_v5_final_true_pair_has_distinct_mechanisms():
+    src={
+        "q": """
+Q: THEORY
+BEGIN
+a: LEMMA EXISTS (x: real): EXISTS (y: real): x^2 + y^2 = 1 AND y = x^2
+b: LEMMA FORALL (c: real): EXISTS (x: real): x^3 - 3 * x + c = 0
+END Q
+"""
+    }
+    prf={"q": """(|Q|
+ (|a| 0)
+ (|b| 0)
+)
+"""}
+    out=discover_family(src,prf)
+    assert out["supported_occurrence_count"]==2
+    assert out["unique_canonical_claim_count"]==2
+    schemas={x["claim_id"]:x["certificate_schema"] for x in out["unique_claims"]}
+    assert schemas["real.parabola_meets_unit_circle@1"]=="composed_algebraic_witness"
+    assert schemas["real.depressed_cubic_has_root@1"]=="bounded_intermediate_value"
+    lean=render_lean_family(out)
+    assert "parabola_meets_unit_circle" in lean
+    assert "every_depressed_cubic_has_real_root" in lean
