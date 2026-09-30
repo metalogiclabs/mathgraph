@@ -1,0 +1,28 @@
+name: Crystal Programme Prospective Round 1
+on:
+  push:
+    branches: [crystal-programme-controller-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install repository runtime dependency
+        run: python -m pip install pandas
+      - name: Select exactly one frozen prospective experiment
+        run: python -m experiments.crystal_programme_controller_v1.select_round1
+      - name: Seal selection
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-programme-prospective-round1
+          path: |
+            experiments/crystal_programme_controller_v1/prospective_round1.json
+            experiments/crystal_programme_controller_v1/SELECTION.json
+          if-no-files-found: error
