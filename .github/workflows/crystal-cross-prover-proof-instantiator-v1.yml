@@ -1,0 +1,115 @@
+name: Crystal Cross-Prover Proof Instantiator V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-proof-instantiator-v1
+    paths:
+      - 'mathgraph/cross_prover_proof_instantiator.py'
+      - 'tests/test_cross_prover_proof_instantiator.py'
+      - '.github/workflows/crystal-cross-prover-proof-instantiator-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[all]"
+      - name: Test automatic instantiator
+        run: python -m pytest -q tests/test_cross_prover_proof_instantiator.py
+      - name: Generate consumers from exact pinned sgn source
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sgn artifacts/crystal_cross_prover_proof_instantiator_v1
+          BASE=https://raw.githubusercontent.com/j-tanner-slagel/pvs_cad/8750362e99c2ba0e9a0307dcaa39b9766c562feb/cad
+          curl -fsSL -o /tmp/sgn/sgn_examples.pvs "$BASE/sgn_examples.pvs"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import extract_pvs_lemmas
+          from mathgraph.cross_prover_proof_instantiator import instantiate_consumer,render_generated_consumers
+
+          data=Path("/tmp/sgn/sgn_examples.pvs").read_bytes()
+          got=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          assert got=="4276c496560e8afa18ab9901855ad978894fe0eb",got
+          surfaces=dict(extract_pvs_lemmas(data.decode()))
+          rows=[
+              instantiate_consumer("sgn_g1",surfaces["g1"]),
+              instantiate_consumer("sgn_g2",surfaces["g2"]),
+          ]
+          assert all(x["status"]=="CANDIDATE_GENERATED_CONSUMER" for x in rows),rows
+          assert [x["schema"] for x in rows]==["explicit_witness","quantifier_witness_duality"],rows
+
+          outdir=Path("artifacts/crystal_cross_prover_proof_instantiator_v1")
+          outdir.joinpath("Surface.lean").write_text(render_generated_consumers(rows))
+          result={
+              "schema":"mathgraph.cross-prover-proof-instantiator-result.v1",
+              "status":"CANDIDATE_AUTOMATIC_PROOF_INSTANTIATION",
+              "source_file":"cad/sgn_examples.pvs",
+              "source_formulas":["g1","g2"],
+              "generated_consumers":2,
+              "schemas":[x["schema"] for x in rows],
+              "synthesis":[x["synthesis"] for x in rows],
+              "new_constructor_schema_count":0,
+              "theorem_names_used_for_selection":False,
+              "boundary":"The V1 automatic proof templates were written after sgn_examples was opened. This is bounded proof-instantiation evidence, not independent generalization. Lean kernel checking is still required."
+          }
+          outdir.joinpath("result.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check generated consumers
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/crystal-proof-instantiator-v1
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_proof_instantiator_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-proof-instantiator-v1"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_proof_instantiator_v1/lean_surface.sha256"
+      - name: Record Lean gate
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=Path("artifacts/crystal_cross_prover_proof_instantiator_v1/result.json")
+          out=json.loads(p.read_text())
+          out.update({
+              "run_id":int(os.environ["RUN_ID"]),
+              "head_sha":os.environ["HEAD_SHA"],
+              "lean_generated_consumers":"2/2 GREEN",
+              "promotion_status":"NOT_PROMOTED",
+              "selector_authority":"PENDING_OR_EXTERNAL",
+          })
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-proof-instantiator-v1
+          path: artifacts/crystal_cross_prover_proof_instantiator_v1/
