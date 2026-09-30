@@ -1,0 +1,34 @@
+name: MathGraph Core V0 Base Failure Diagnostic
+
+on:
+  push:
+    branches:
+      - mathgraph-core-v0-kernel
+    paths:
+      - '.github/workflows/mathgraph-core-v0-base-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  base-failures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Checkout exact PR base
+        run: |
+          set -euo pipefail
+          git checkout --detach 3e6c4ca8c28250ec8ec5c78f793dea750fb43bf6
+          test "$(git rev-parse HEAD)" = 3e6c4ca8c28250ec8ec5c78f793dea750fb43bf6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install base MathGraph
+        run: python -m pip install -e '.[all]'
+      - name: Replay only the 12 head-suite failures on the base commit
+        run: |
+          python -m pytest -q             tests/test_mathlib_module_verification.py::test_failed_diagnostics_and_fallback             tests/test_sorrydb_v4_3_8_streaming_reality_ledger.py::test_summary_records_artifact_counts             tests/test_sorrydb_v4_3_8_streaming_reality_ledger.py::test_runner_summaries_validate             tests/test_sorrydb_v4_4_11_hydrated_backfill_after_cache_accepted_ledger.py::test_artifact_files_exist             tests/test_sorrydb_v4_4_14_source_cleanliness_replay_restoration_ledger.py::test_script_is_deterministic             tests/test_sorrydb_v4_4_1_mined_queue_reality_ledger.py::test_summary_records_artifact_counts             tests/test_sorrydb_v4_4_1_mined_queue_reality_ledger.py::test_runner_summary_records_queue_completed             tests/test_sorrydb_v4_4_22_local_bounded_discovery.py::test_script_is_deterministic             tests/test_sorrydb_v4_4_23_replay_or_obstruction_queue.py::test_script_is_deterministic             tests/test_sorrydb_v4_4_24_control_replay_approval_gate.py::test_script_is_deterministic             tests/test_sorrydb_v4_4_24_control_replay_approval_gate.py::test_gate_counts_and_policy             tests/test_sorrydb_v4_4_8_hydrated_backfill_reality_ledger.py::test_artifacts_are_present

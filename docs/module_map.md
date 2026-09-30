@@ -32,6 +32,9 @@ modules.
 
 ## Claim And Semantic Boundaries
 
+- `core_v0.py`: content-addressed semantic graph kernel for normalized objects, typed relations, warrants, supports, status, grammars, closure, and revocation
+- `core_v0_family_adapter.py`: bounded adapters that bind externally verified authority into Core V0 without importing prover policy into the kernel
+- `discovery_candidate_sources.py`: advisory projection from unresolved Core V0 state and other evidence sources into scheduler-ready verifier-contact candidates
 - `kernel.py`: compact claim acceptance kernel
 - `verification.py`: certificate verification helpers
 - `domain_claims.py`: domain claim IR and adapters

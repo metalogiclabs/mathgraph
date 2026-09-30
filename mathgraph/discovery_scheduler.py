@@ -17,6 +17,7 @@ from typing import Any, Mapping, Sequence
 
 ALLOWED_DESCENSION_TARGETS = {
     "finite_countermodel_attempt",
+    "verifier_contact",
     "lean_verifier_contact_candidate",
     "lean_digest_repair",
     "obstruction_naming_attempt",

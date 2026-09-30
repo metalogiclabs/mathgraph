@@ -44,6 +44,7 @@ No descension target, no attention.
 Allowed descension targets:
 
 - `finite_countermodel_attempt`
+- `verifier_contact`
 - `lean_verifier_contact_candidate`
 - `obstruction_naming_attempt`
 - `constructor_synthesis_attempt`

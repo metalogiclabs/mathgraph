@@ -1,0 +1,415 @@
+name: MathGraph Core V0 Real Verifier Loop V1
+
+on:
+  push:
+    branches:
+      - mathgraph-core-v0-kernel
+    paths:
+      - 'mathgraph/core_v0.py'
+      - 'mathgraph/discovery_candidate_sources.py'
+      - 'mathgraph/discovery_scheduler.py'
+      - 'experiments/crystal_cross_prover_cad_v1/manifest.json'
+      - 'mathgraph/cross_prover_semantic_surface.py'
+      - '.github/workflows/mathgraph-core-v0-real-verifier-loop-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_REPO: j-tanner-slagel/pvs_cad
+  SOURCE_COMMIT: 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+  NASALIB_COMMIT: e426f69dc2680ad575491f93c5a51739ec8b25fa
+  MATHLIB_COMMIT: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+      - name: Materialize round-one Core V0 frontier
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core_v0_real_verifier_loop_v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from mathgraph.core_v0 import CoreGraph, Grammar, normalize
+          from mathgraph.cross_prover_semantic_surface import (
+              load_manifest,
+              render_lean_expression,
+              render_pvs_claim,
+          )
+          from mathgraph.discovery_candidate_sources import candidates_from_core_v0_graph
+          from mathgraph.discovery_scheduler import allocate_attention, make_policy
+
+          manifest = load_manifest("experiments/crystal_cross_prover_cad_v1/manifest.json")
+          claim = manifest["canonical_claim"]
+          binder_index = {binder["name"]: index for index, binder in enumerate(claim["binders"])}
+
+          def alpha_normalize(value):
+              if isinstance(value, dict):
+                  if set(value) == {"var"}:
+                      return {"bound": binder_index[value["var"]]}
+                  return {key: alpha_normalize(item) for key, item in value.items()}
+              if isinstance(value, list):
+                  return [alpha_normalize(item) for item in value]
+              return value
+
+          normal_form = {
+              "binders": [binder["sort"] for binder in claim["binders"]],
+              "proposition": alpha_normalize(claim["proposition"]),
+          }
+          grammar = Grammar(
+              "math.claim-ast",
+              "1",
+              "sha256:claim-ast-v1",
+          )
+          pvs_obj = normalize(render_pvs_claim(manifest), grammar, lambda _: normal_form)
+          lean_obj = normalize(render_lean_expression(manifest), grammar, lambda _: normal_form)
+          assert pvs_obj.id == lean_obj.id
+
+          graph = CoreGraph(grammars=[grammar], objects=[pvs_obj])
+          candidates = candidates_from_core_v0_graph(
+              graph,
+              source_ref="core-v0-real-verifier-loop-v1:round1",
+          )
+          ranked, selected, invalid = allocate_attention(
+              candidates,
+              make_policy(mode="frontier", beta=1.0),
+              top_k=1,
+          )
+          assert not invalid, invalid
+          assert len(candidates) == 1, len(candidates)
+          assert len(selected) == 1, len(selected)
+          assert selected[0].residual_cluster == pvs_obj.id
+          assert selected[0].descension_target == "verifier_contact"
+          assert selected[0].advisory_only and not selected[0].can_promote_truth
+
+          out = Path("artifacts/core_v0_real_verifier_loop_v1")
+          out.joinpath("round1.mg").write_bytes(graph.to_mg())
+          out.joinpath("round1.json").write_text(
+              json.dumps(
+                  {
+                      "schema": "mathgraph.core-v0-real-verifier-loop-round1.v1",
+                      "status": "ADVISORY_VERIFIER_CONTACT_SELECTED",
+                      "canonical_claim_id": claim["id"],
+                      "object_id": pvs_obj.id,
+                      "candidate_count": len(candidates),
+                      "selected": selected[0].to_dict(),
+                      "pvs_surface": render_pvs_claim(manifest),
+                      "lean_surface": render_lean_expression(manifest),
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n"
+          )
+          print(json.dumps({"object_id": pvs_obj.id, "round1_candidates": len(candidates)}, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-real-loop-round1
+          path: artifacts/core_v0_real_verifier_loop_v1/
+
+  pvs:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz             https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+          test -x "$PVS_DIR/proveit"
+      - name: Pin NASALib and PVS CAD source
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin "$NASALIB_COMMIT"
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/nasalib rev-parse HEAD)" = "$NASALIB_COMMIT"
+
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/$SOURCE_REPO.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git -C /tmp/pvs_cad hash-object cad/cad_demo.pvs)" = 90a3d14afff0fc023c2053b7635b05b93dfa5429
+          test "$(git -C /tmp/pvs_cad hash-object cad/cad_demo.prf)" = f2db4a2a6fd22f23b472e62c1cb0b18779799577
+
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+          echo "PVS_LIBRARY_PATH=/tmp/nasalib" >> "$GITHUB_ENV"
+      - name: Current-run PVS replay
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core_v0_real_verifier_loop_v1
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 @cad_demo.d_amgm:d_amgm_TCC1             | tee "$GITHUB_WORKSPACE/artifacts/core_v0_real_verifier_loop_v1/pvs.log"
+          grep -q "Grand Totals:" "$GITHUB_WORKSPACE/artifacts/core_v0_real_verifier_loop_v1/pvs.log"
+          if grep -Ei "unfinished|untried|unchecked" "$GITHUB_WORKSPACE/artifacts/core_v0_real_verifier_loop_v1/pvs.log"; then
+            exit 1
+          fi
+          cd "$GITHUB_WORKSPACE"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = {
+              "status": "PVS_REPLAY_GREEN",
+              "run_id": int(os.environ["RUN_ID"]),
+              "verifier": "PVS 8.1.2",
+              "theory": "cad_demo",
+              "formula": "d_amgm",
+              "source_commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+              "source_blob_sha": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+              "proof_blob_sha": "f2db4a2a6fd22f23b472e62c1cb0b18779799577",
+              "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa",
+          }
+          Path("artifacts/core_v0_real_verifier_loop_v1/pvs.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-real-loop-pvs
+          path: artifacts/core_v0_real_verifier_loop_v1/
+
+  lean:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Current-run Lean kernel check
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/core-v0-real-loop-lean
+          mkdir -p "$ROOT" artifacts/core_v0_real_verifier_loop_v1
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "core-v0-real-verifier-loop-v1"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          python - <<'PY'
+          from pathlib import Path
+          from mathgraph.cross_prover_semantic_surface import load_manifest, render_lean_file
+          manifest = load_manifest("experiments/crystal_cross_prover_cad_v1/manifest.json")
+          Path("/tmp/core-v0-real-loop-lean/Surface.lean").write_text(render_lean_file(manifest))
+          PY
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          SURFACE_SHA="$(sha256sum Surface.lean | awk '{print $1}')"
+          cp Surface.lean "$GITHUB_WORKSPACE/artifacts/core_v0_real_verifier_loop_v1/Surface.lean"
+          cd "$GITHUB_WORKSPACE"
+          SURFACE_SHA="$SURFACE_SHA" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = {
+              "status": "LEAN_KERNEL_GREEN",
+              "run_id": int(os.environ["RUN_ID"]),
+              "verifier": "Lean 4 v4.35.0-rc3",
+              "theorem": "CrystalCrossProverCAD.amgm2_real",
+              "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+              "surface_sha256": os.environ["SURFACE_SHA"],
+          }
+          Path("artifacts/core_v0_real_verifier_loop_v1/lean.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-real-loop-lean
+          path: artifacts/core_v0_real_verifier_loop_v1/
+
+  close:
+    needs: [prepare, pvs, lean]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-real-loop-round1
+          path: /tmp/round1
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-real-loop-pvs
+          path: /tmp/pvs
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-real-loop-lean
+          path: /tmp/lean
+      - name: Admit dual current-run authority and reclose frontier
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core_v0_real_verifier_loop_v1
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from mathgraph.core_v0 import (
+              CoreGraph,
+              EvidenceReceipt,
+              Status,
+              Support,
+              verify,
+          )
+          from mathgraph.discovery_candidate_sources import candidates_from_core_v0_graph
+          from mathgraph.discovery_scheduler import allocate_attention, make_policy
+
+          round1 = json.loads(Path("/tmp/round1/round1.json").read_text())
+          graph = CoreGraph.from_mg(Path("/tmp/round1/round1.mg").read_bytes())
+          pvs = json.loads(Path("/tmp/pvs/pvs.json").read_text())
+          lean = json.loads(Path("/tmp/lean/lean.json").read_text())
+          run_id = int(os.environ["RUN_ID"])
+          assert pvs["run_id"] == run_id
+          assert lean["run_id"] == run_id
+          assert pvs["status"] == "PVS_REPLAY_GREEN"
+          assert lean["status"] == "LEAN_KERNEL_GREEN"
+
+          object_id = round1["object_id"]
+          candidate = graph.objects[object_id]
+          assert graph.status_of(object_id) is Status.UNKNOWN
+
+          pvs_support = Support(
+              source_ref=(
+                  "pvs:j-tanner-slagel/pvs_cad@8750362e99c2ba0e9a0307dcaa39b9766c562feb"
+                  "#cad_demo.d_amgm"
+              ),
+              source_digest=(
+                  "sha256:" + hashlib.sha256(
+                      (
+                          pvs["source_blob_sha"] + ":" + pvs["proof_blob_sha"] + ":" +
+                          pvs["nasalib_commit"]
+                      ).encode()
+                  ).hexdigest()
+              ),
+          )
+          lean_support = Support(
+              source_ref=(
+                  "lean:generated:CrystalCrossProverCAD.amgm2_real"
+                  "@mathlib:3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+              ),
+              source_digest="sha256:" + lean["surface_sha256"],
+          )
+          graph.add_support(pvs_support)
+          graph.add_support(lean_support)
+
+          evidence_payload = {
+              "schema": "mathgraph.core-v0-dual-current-run-evidence.v1",
+              "run_id": run_id,
+              "head_sha": os.environ["HEAD_SHA"],
+              "canonical_claim_id": round1["canonical_claim_id"],
+              "object_id": object_id,
+              "pvs": pvs,
+              "lean": lean,
+          }
+          receipt = EvidenceReceipt.for_candidate(
+              candidate,
+              verifier="PVS-8.1.2+Lean-4.35.0-rc3",
+              support_ids=(pvs_support.id, lean_support.id),
+              boundary="dual-independent-current-run-cross-prover-v1",
+              payload=evidence_payload,
+              outcome=Status.WARRANTED,
+          )
+          warrant = verify(candidate, receipt)
+          graph.admit(warrant)
+          graph.close()
+          assert graph.status_of(object_id) is Status.WARRANTED
+
+          round2_candidates = candidates_from_core_v0_graph(
+              graph,
+              source_ref="core-v0-real-verifier-loop-v1:round2",
+          )
+          ranked2, selected2, invalid2 = allocate_attention(
+              round2_candidates,
+              make_policy(mode="frontier", beta=1.0),
+              top_k=1,
+          )
+          assert not invalid2, invalid2
+          assert object_id not in {candidate.residual_cluster for candidate in round2_candidates}
+          assert len(round2_candidates) < round1["candidate_count"]
+
+          result = {
+              "schema": "mathgraph.core-v0-real-verifier-compounding-loop.v1",
+              "status": "WARRANTED_BOUNDED_REAL_VERIFIER_COMPOUNDING_LOOP_V1",
+              "run_id": run_id,
+              "head_sha": os.environ["HEAD_SHA"],
+              "canonical_claim_id": round1["canonical_claim_id"],
+              "object_id": object_id,
+              "round1_candidate_count": round1["candidate_count"],
+              "round2_candidate_count": len(round2_candidates),
+              "frontier_contraction": round1["candidate_count"] - len(round2_candidates),
+              "scheduler_selected_descension": round1["selected"]["descension_target"],
+              "pvs_current_run_green": True,
+              "lean_current_run_green": True,
+              "warrant_id": warrant.id,
+              "support_ids": [pvs_support.id, lean_support.id],
+              "round2_selected_count": len(selected2),
+              "boundary": (
+                  "This warrants only the pinned real.amgm2@1 semantic object under the "
+                  "declared claim grammar, exact PVS source/proof pins, PVS 8.1.2 + pinned "
+                  "NASALib, and the independently generated Lean consumer under pinned "
+                  "Lean/Mathlib. It does not claim universal PVS↔Lean translation or "
+                  "autonomous theorem discovery."
+              ),
+          }
+          out = Path("artifacts/core_v0_real_verifier_loop_v1")
+          out.joinpath("round2.mg").write_bytes(graph.to_mg())
+          out.joinpath("result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-real-verifier-compounding-loop-v1
+          path: artifacts/core_v0_real_verifier_loop_v1/

@@ -8,11 +8,13 @@ truth; it only creates testable descension targets for the scheduler.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from mathgraph.core_v0 import CoreGraph, Relation, Status
 from mathgraph.discovery_scheduler import DiscoveryCandidate, validate_candidate
 from mathgraph.evidence_packs import EvidencePackError, load_evidence_pack
 
@@ -89,6 +91,92 @@ def collect_discovery_candidates_from_sources(
         warnings=tuple(warnings),
         source_counts=counts,
     )
+
+
+
+def candidates_from_core_v0_graph(
+    graph: CoreGraph,
+    *,
+    source_ref: str = "mathgraph-core-v0",
+) -> list[DiscoveryCandidate]:
+    """Emit advisory scheduler candidates from an exact closed Core V0 snapshot.
+
+    The adapter closes a round-tripped copy, so it never mutates the caller's
+    graph. Subjects already resolved as WARRANTED, REJECTED, or SUPERSEDED are
+    omitted. The remaining frontier is bound to the SHA-256 digest of the
+    closed .mg snapshot that produced it.
+
+    This is routing only: it cannot create warrants or promote truth.
+    """
+
+    if not isinstance(graph, CoreGraph):
+        raise TypeError("graph must be a CoreGraph")
+
+    closed = CoreGraph.from_mg(graph.to_mg())
+    closed.close()
+    snapshot = closed.to_mg()
+    snapshot_ref = f"{source_ref}@sha256:{hashlib.sha256(snapshot).hexdigest()}"
+
+    subjects: list[tuple[str, str, object]] = []
+    subjects.extend(("object", subject_id, subject) for subject_id, subject in closed.objects.items())
+    subjects.extend(("relation", subject_id, subject) for subject_id, subject in closed.relations.items())
+    subjects.extend(("unknown", subject_id, subject) for subject_id, subject in closed.unknowns.items())
+
+    candidates: list[DiscoveryCandidate] = []
+    resolved = {Status.WARRANTED, Status.REJECTED, Status.SUPERSEDED}
+    for subject_kind, subject_id, subject in sorted(subjects, key=lambda row: (row[0], row[1])):
+        status = closed.status_of(subject_id)
+        if status in resolved:
+            continue
+
+        if status is Status.CONFLICTED:
+            descension_target = "trust_audit"
+            suggested_route = "inspect conflicting active warrants and support lineage"
+            candidate_type = "core_v0_conflict_candidate"
+        elif status is Status.REVOKED:
+            descension_target = "evidence_replay"
+            suggested_route = "replay or replace revoked support"
+            candidate_type = "core_v0_revoked_candidate"
+        elif subject_kind == "unknown":
+            descension_target = "representation_repair"
+            suggested_route = "expand or repair the normalization grammar, or contact an external verifier"
+            candidate_type = "core_v0_unknown_grammar_candidate"
+        else:
+            descension_target = "verifier_contact"
+            suggested_route = "contact an external verifier through an explicit adapter boundary"
+            if subject_kind == "relation" and isinstance(subject, Relation):
+                candidate_type = f"core_v0_{subject.kind.value.lower()}_candidate"
+            else:
+                candidate_type = "core_v0_object_candidate"
+
+        candidates.append(
+            DiscoveryCandidate(
+                candidate_id=f"core_v0_{subject_kind}_{subject_id.replace(':', '_')}",
+                candidate_type=candidate_type,
+                source="mathgraph_core_v0",
+                source_kind="core_v0_graph",
+                source_ref=snapshot_ref,
+                title=f"Core V0 {subject_kind} residual",
+                description=(
+                    f"{subject_kind} {subject_id} remains {status.value} after deterministic "
+                    "Core V0 closure."
+                ),
+                mode_hint="frontier",
+                residual_cluster=subject_id,
+                basin=subject_kind,
+                suggested_route=suggested_route,
+                descension_target=descension_target,
+                trust_status=f"core_v0_{status.value.lower()}",
+                notes=(
+                    "Derived from an exact content-addressed Core V0 snapshot. "
+                    "Advisory routing only; verification must return through an explicit "
+                    "verifier boundary before MathGraph can admit a warrant."
+                ),
+                advisory_only=True,
+                can_promote_truth=False,
+            )
+        )
+    return candidates
 
 
 def candidates_from_evidence_packs(evidence_root: str | Path) -> tuple[list[DiscoveryCandidate], list[dict[str, Any]], list[str]]:
