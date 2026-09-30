@@ -1,0 +1,31 @@
+name: TaskSAT Shadow Inclusion Carrier V1
+on:
+  push:
+    branches: [crystal-programme-controller-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen selected experiment
+        run: python experiments/tasksat_shadow_inclusion_carrier_v1/run.py
+      - name: Assert prospective contraction
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open("experiments/tasksat_shadow_inclusion_carrier_v1/RESULT.json"))
+          assert p["exact_matches"] == p["enumerated_inclusion_worlds"] == 16, p
+          assert p["separators_closed"] == p["separators_total"] == 4, p
+          assert len(p["consequence_classes"]) == 4, p
+          print("PROSPECTIVE_RESIDUAL_CONTRACTION",p["status"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tasksat-shadow-inclusion-carrier-v1
+          path: experiments/tasksat_shadow_inclusion_carrier_v1/RESULT.json
