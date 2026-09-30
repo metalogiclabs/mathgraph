@@ -1,0 +1,42 @@
+name: Crystal Programme Calibration V1
+
+on:
+  push:
+    branches: [crystal-program-calibration-v1]
+    paths:
+      - "mathgraph/research_controller.py"
+      - "tests/test_research_controller.py"
+      - "tests/test_research_controller_calibration.py"
+      - "experiments/crystal_program_calibration_v1/**"
+      - ".github/workflows/crystal-program-calibration-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Controller regression and calibration gates
+        run: |
+          python -m pytest -q tests/test_research_controller.py tests/test_research_controller_calibration.py
+      - name: Evaluate refreshed live calibrated portfolio
+        run: python -m experiments.crystal_program_calibration_v1.run_live_calibration
+      - name: Seal live calibrated decision
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-program-calibration-v1
+          path: |
+            experiments/crystal_program_calibration_v1/manifest.json
+            experiments/crystal_program_calibration_v1/calibration_records.json
+            experiments/crystal_program_calibration_v1/live_ros_snapshot_v2.json
+            experiments/crystal_program_calibration_v1/LIVE_CALIBRATED_DECISION.json
+          if-no-files-found: error
