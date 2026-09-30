@@ -29,7 +29,8 @@ jobs:
       - name: Install frozen MathGraph route authority
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD~1)" = 10f8178ba3e5571983725d7dc05ecba2fb5ea305
+          test -f experiments/crystal_cross_prover_fresh_family_calibration_v1/manifest.json
+          grep -q 568c16084589ad62d873c7953c30bbb546b5d1ad experiments/crystal_cross_prover_fresh_family_calibration_v1/manifest.json
           test "$(git hash-object mathgraph/cross_prover_consequence_search.py)" = b278376f7ddad4f2b6bd05bebdd06eb9daa88f51
           python -m pip install -e ".[all]"
 
