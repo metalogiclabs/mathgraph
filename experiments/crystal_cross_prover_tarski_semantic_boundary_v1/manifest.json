@@ -1,0 +1,30 @@
+{
+  "schema": "mathgraph.cross-prover-tarski-semantic-boundary.v1",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "source_file": "cad/tarski_examples.pvs",
+    "source_blob_sha": "e200f88f661441227f6c863e8879f1888f8c94d3",
+    "proof_file": "cad/tarski_examples.prf",
+    "proof_blob_sha": "558aced79d062dc6fa648ba8ed1e7bebbd806c3c"
+  },
+  "sealed_baseline_run": 36651263148,
+  "expected_object_level_sources": [
+    "tarski_examples.e6",
+    "tarski_examples.e8"
+  ],
+  "expected_typed_unknown_sources": [
+    "tarski_examples.e1",
+    "tarski_examples.e2",
+    "tarski_examples.e3",
+    "tarski_examples.e4",
+    "tarski_examples.e5",
+    "tarski_examples.e7"
+  ],
+  "object_level_constructor_assignments": {
+    "tarski_examples.e6": "explicit_witness",
+    "tarski_examples.e8": "quantifier_witness_duality"
+  },
+  "new_constructor_schema_count": 0,
+  "boundary": "The object-level/prover-internal partition is automatic from closed real-arithmetic surface vocabulary. Constructor assignment and proof instantiation for e6/e8 are supplied after residual analysis. Prover-internal UNKNOWNs are preserved."
+}
