@@ -1,0 +1,33 @@
+name: Crystal Programme Controller V1
+on:
+  push:
+    branches: [crystal-programme-controller-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Unit policy gates
+        run: python -m unittest discover -s tests -p 'test_programme_controller.py' -v
+      - name: Frozen historical replay
+        run: python experiments/crystal_programme_controller_v1/run.py
+      - name: Assert controller boundaries
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open("experiments/crystal_programme_controller_v1/RESULT.json"))
+          assert p["passed"] == p["total"] == 4, p
+          print("CRYSTAL_PROGRAMME_CONTROLLER_RETROSPECTIVE", p["passed"], "/", p["total"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crystal-programme-controller-v1
+          path: experiments/crystal_programme_controller_v1/RESULT.json
+          if-no-files-found: error
