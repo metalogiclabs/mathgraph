@@ -1,0 +1,134 @@
+name: Crystal Cross-Prover Heldout Abstraction V2 Parallel
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout-abstraction-v2
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout-abstraction-v2-parallel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pvs:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - theory: cad_examples3
+            target: t_between:t_sqrt:t_shift:t_sos:t_sphere
+            count: 5
+          - theory: cad_examples4
+            target: e4_above:e4_between:e4_sum
+            count: 3
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS and pinned source
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+      - name: Replay held-out residual group
+        env:
+          THEORY: ${{ matrix.theory }}
+          TARGET: ${{ matrix.target }}
+          COUNT: ${{ matrix.count }}
+        run: |
+          set -euo pipefail
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 "@$THEORY.$TARGET" | tee /tmp/replay.log
+          grep -q "Grand Totals: $COUNT proofs, $COUNT attempted, $COUNT succeeded" /tmp/replay.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/replay.log; then exit 1; fi
+
+  promote:
+    needs: pvs
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reuse green held-out Lean abstraction authority
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,urllib.request
+          req=urllib.request.Request(
+            "https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/36649659971/jobs?per_page=100",
+            headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"},
+          )
+          jobs=json.load(urllib.request.urlopen(req))["jobs"]
+          lean=next(x for x in jobs if x["name"]=="lean")
+          assert lean["conclusion"]=="success",lean
+          print("LEAN_ABSTRACTION_REUSED",lean["id"])
+          PY
+      - name: Promote compressed held-out explanation
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_heldout_abstraction_v2
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-heldout-abstraction-result.v2",
+            "status":"WARRANTED_BOUNDED_HELDOUT_ABSTRACTION_V2",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "parent_exact_family_run":36649171836,
+            "heldout_discovery_run":36649392149,
+            "lean_abstraction_run":36649659971,
+            "heldout_source_lemma_count":11,
+            "already_exact_reused_occurrences":3,
+            "residual_occurrences_before":8,
+            "derived_consequence_reuses":5,
+            "new_exact_canonical_meanings":3,
+            "residual_occurrences_after":0,
+            "new_relation_kind":"WARRANTED_CLAIMS_IMPLY_SOURCE_INSTANCE",
+            "new_exact_schema":"adversarial_quantifier_refutation",
+            "derived_dependencies":{
+              "cad_examples3.t_shift":["real.square_shift_dominates@1"],
+              "cad_examples3.t_sos":["real.amgm2@1"],
+              "cad_examples3.t_sphere":["real.sum_squares_has_root@1","real.circle_or_outside@1"],
+              "cad_examples4.e4_above":["real.common_upper_bound2@1"],
+              "cad_examples4.e4_sum":["real.unbounded_above@1"]
+            },
+            "new_exact_sources":[
+              "cad_examples3.t_between",
+              "cad_examples3.t_sqrt",
+              "cad_examples4.e4_between"
+            ],
+            "semantic_acquisition_compression":"8 residual source lemmas require only 3 new exact meanings; 5 are certified consequences of prior warrant.",
+            "boundary":"Bounded held-out result on cad_examples3/cad_examples4. Automatic structural recognition of these consequence patterns is still UNKNOWN."
+          }
+          Path("artifacts/crystal_cross_prover_heldout_abstraction_v2/result.json").write_text(
+            json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout-abstraction-v2-parallel
+          path: artifacts/crystal_cross_prover_heldout_abstraction_v2/result.json
