@@ -21,6 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git curl ca-certificates libgmp10 lsof
+          python -m pip install 'websockets<16'
           curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
           echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
           mkdir -p /tmp/pvs-dist
@@ -54,6 +55,8 @@ jobs:
           tools/cli/pv.sh cad_demo t_amgm3 '(cad)' 12 | tee "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/t_amgm3.log"
           cat "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/d_inverse.log"
           cat "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/t_amgm3.log"
+          grep -qi 'FALSE' "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/d_inverse.log"
+          grep -qi 'FALSE' "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_refutation_probe_v1/t_amgm3.log"
       - uses: actions/upload-artifact@v4
         with:
           name: crystal-cross-prover-refutation-probe-v1
