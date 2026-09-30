@@ -1,0 +1,49 @@
+{
+  "schema": "mathgraph.crystal-live-calibration.nucleus-projection-congruence-freeze.v1",
+  "measurement_boundary": {
+    "contraction_basis": "prospective_typed_residual_occurrence_contraction_fraction.v2",
+    "cost_basis": "github_actions_job_wall_seconds.v1"
+  },
+  "semantic_parent": {
+    "head": "6a129656ae84ef4448d52c0c4a164ccfe24e4ca4",
+    "qualification_run": 36654690171,
+    "qualification_artifact": 11071214260,
+    "qualification_digest": "sha256:e9346c4e2745360345e2aedb46cc38d930ce11e89a2a9e73a2fa9ba56dcd768c"
+  },
+  "diagnostic_lineage": [
+    {
+      "run": 36655228695,
+      "result": "PROJECTION_PAIR_SPLIT_2",
+      "meaning": "two presentation families, but left/right projection type, index, structure-head constant and outer spine shape coincide within every atom"
+    },
+    {
+      "run": 36655382543,
+      "result": "ENVIRONMENT_PROVENANCE_ISOLATED",
+      "meaning": "all closure ExprIds coincide left/right; all projection heads become byte-shape-equal after environment-ID erasure; every observed left/right environment delta is +8"
+    }
+  ],
+  "candidate": {
+    "campaign": "nucleus",
+    "candidate_id": "nucleus-projection-congruence-v1",
+    "selected_residual": "projection-involved-neutral-heads/environment-provenance",
+    "frozen_occurrences": [
+      "perf/magma-list-deep-n21",
+      "perf/magma-list-deep-n36",
+      "perf/magma-list-pair-n21",
+      "perf/magma-list-pair-n7"
+    ],
+    "occurrences_before": 4,
+    "earned_change": "For neutral projections with equal type_name and field index, compare the underlying neutral structures through the existing conversion work queue and then compare both structure and outer spines, instead of requiring derived Rust structural equality of the boxed Neutral value.",
+    "reason": "Current structural equality reaches Closure equality, whose EnvFrame equality is frame-ID identity. The frozen separator shows identical expressions under distinct environment identities; projection congruence should be decided by conversion, not allocator provenance.",
+    "credit_rule": "An atom contracts only if the parent projection-involved/environment-provenance residual disappears into a terminal verdict or a strictly more specific typed residual, with full 193-case zero-wrong differential reclosure.",
+    "protected_invariants": [
+      "full_193_case_reclosure",
+      "zero_wrong",
+      "no_accept_or_reject_regression",
+      "no special-casing of the four test names",
+      "same projection type and field index required"
+    ],
+    "status_at_freeze": "PROSPECTIVE_UNRUN"
+  },
+  "boundary": "This freeze earns only a projection-congruence candidate. It does not assert that the +8 environments are equal, and it does not authorize globally erasing EnvFrame identity."
+}
