@@ -1,0 +1,478 @@
+name: MathGraph Core V0 Scheduler-Selected Family Loop V1
+
+on:
+  push:
+    branches:
+      - mathgraph-core-v0-kernel
+    paths:
+      - 'mathgraph/core_v0.py'
+      - 'mathgraph/discovery_candidate_sources.py'
+      - 'mathgraph/discovery_scheduler.py'
+      - 'mathgraph/cross_prover_family_discovery.py'
+      - '.github/workflows/mathgraph-core-v0-family-compounding-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_REPO: j-tanner-slagel/pvs_cad
+  SOURCE_COMMIT: 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+  NASALIB_COMMIT: e426f69dc2680ad575491f93c5a51739ec8b25fa
+  MATHLIB_COMMIT: 3cb72cfd416d1b5ec4b930d67648ef036a5df24f
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+      - name: Build 25-object unwarranted family and let scheduler choose one
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family artifacts/core_v0_family_compounding_v1
+          BASE=https://raw.githubusercontent.com/$SOURCE_REPO/$SOURCE_COMMIT/cad
+          for f in cad_demo.pvs cad_demo.prf cad_examples.pvs cad_examples.prf cad_star_ex.pvs cad_star_ex.prf; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          from mathgraph.core_v0 import CoreGraph, Grammar, Object, normalize
+          from mathgraph.cross_prover_family_discovery import discover_family
+          from mathgraph.discovery_candidate_sources import candidates_from_core_v0_graph
+          from mathgraph.discovery_scheduler import allocate_attention, make_policy
+
+          pins = {
+              "cad_demo": "90a3d14afff0fc023c2053b7635b05b93dfa5429",
+              "cad_examples": "36a2070d67ce77e901f08a094fd02ba7d2738470",
+              "cad_star_ex": "988021b508653ebf6da1ab8aab50905ec77ccd3b",
+          }
+
+          def git_blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+
+          for theory, want in pins.items():
+              got = git_blob(Path("/tmp/pvs-family", f"{theory}.pvs").read_bytes())
+              assert got == want, (theory, got, want)
+
+          theories = ("cad_demo", "cad_examples", "cad_star_ex")
+          sources = {
+              theory: Path("/tmp/pvs-family", f"{theory}.pvs").read_text()
+              for theory in theories
+          }
+          proofs = {
+              theory: Path("/tmp/pvs-family", f"{theory}.prf").read_text()
+              for theory in theories
+          }
+          discovery = discover_family(sources, proofs)
+          assert discovery["unique_canonical_claim_count"] == 25
+          assert discovery["verified_unique_claim_count"] == 25
+
+          grammar = Grammar(
+              "pvs-cad-bounded-claim-and-interface-ir",
+              "1",
+              "sha256:cross-prover-bounded-family-and-interface-ir-v1",
+          )
+          graph = CoreGraph(grammars=[grammar])
+          row_by_object = {}
+          for row in discovery["unique_claims"]:
+              assert row["source_authority_status"] == "SOURCE_AUTHORITY_AVAILABLE"
+              obj = normalize(
+                  row["claim_id"],
+                  grammar,
+                  lambda _, row=row: {
+                      "canonical_claim_id": row["claim_id"],
+                      "schema": row["certificate_schema"],
+                  },
+              )
+              assert isinstance(obj, Object)
+              graph.add_candidate(obj)
+              row_by_object[obj.id] = row
+
+          candidates = candidates_from_core_v0_graph(
+              graph,
+              source_ref="core-v0-family-compounding-v1:round1",
+          )
+          ranked, selected, invalid = allocate_attention(
+              candidates,
+              make_policy(mode="frontier", beta=1.0),
+              top_k=1,
+          )
+          assert not invalid, invalid
+          assert len(candidates) == 25, len(candidates)
+          assert len(selected) == 1
+          selected_candidate = selected[0]
+          selected_row = row_by_object[selected_candidate.residual_cluster]
+          authoritative = next(
+              occurrence
+              for occurrence in selected_row["source_occurrences"]
+              if occurrence.get("source_proof_status") == "PINNED_PROOF_PRESENT"
+          )
+
+          out = Path("artifacts/core_v0_family_compounding_v1")
+          out.joinpath("round1.mg").write_bytes(graph.to_mg())
+          out.joinpath("selection.json").write_text(
+              json.dumps(
+                  {
+                      "schema": "mathgraph.core-v0-family-selection.v1",
+                      "status": "SCHEDULER_SELECTED_ONE_OF_25",
+                      "round1_candidate_count": len(candidates),
+                      "selected_object_id": selected_candidate.residual_cluster,
+                      "selected_claim_id": selected_row["claim_id"],
+                      "certificate_schema": selected_row["certificate_schema"],
+                      "theory": authoritative["theory"],
+                      "formula": authoritative["formula"],
+                      "source_surface_sha256": authoritative["surface_sha256"],
+                      "source_blob_sha": pins[authoritative["theory"]],
+                      "selected_candidate": selected_candidate.to_dict(),
+                      "verify_all_baseline_contacts": len(candidates),
+                      "scheduler_contacts": 1,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n"
+          )
+          print(json.dumps({
+              "round1_candidates": len(candidates),
+              "selected_claim_id": selected_row["claim_id"],
+              "selected_object_id": selected_candidate.residual_cluster,
+              "selected_source": f"{authoritative['theory']}.{authoritative['formula']}",
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-family-round1
+          path: artifacts/core_v0_family_compounding_v1/
+
+  pvs:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-family-round1
+          path: /tmp/selection
+      - name: Install PVS runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+      - name: Install exact PVS 8.1.2
+        run: |
+          set -euo pipefail
+          curl -fL -o /tmp/pvs.tgz             https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          test -n "$PVS_BIN"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          "$PVS_BIN" --version
+          test -x "$PVS_DIR/proveit"
+      - name: Pin NASALib and exact PVS CAD source
+        run: |
+          set -euo pipefail
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin "$NASALIB_COMMIT"
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/nasalib rev-parse HEAD)" = "$NASALIB_COMMIT"
+
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/$SOURCE_REPO.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/pvs_cad rev-parse HEAD)" = "$SOURCE_COMMIT"
+
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+          echo "PVS_LIBRARY_PATH=/tmp/nasalib" >> "$GITHUB_ENV"
+      - name: Replay only the scheduler-selected PVS theorem
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core_v0_family_compounding_v1
+          THEORY="$(python -c 'import json; print(json.load(open("/tmp/selection/selection.json"))["theory"])')"
+          FORMULA="$(python -c 'import json; print(json.load(open("/tmp/selection/selection.json"))["formula"])')"
+          CLAIM_ID="$(python -c 'import json; print(json.load(open("/tmp/selection/selection.json"))["selected_claim_id"])')"
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 "@$THEORY.$FORMULA"             | tee "$GITHUB_WORKSPACE/artifacts/core_v0_family_compounding_v1/pvs.log"
+          grep -q "Grand Totals: 1 proofs, 1 attempted, 1 succeeded"             "$GITHUB_WORKSPACE/artifacts/core_v0_family_compounding_v1/pvs.log"
+          if grep -Ei "unfinished|untried|unchecked" "$GITHUB_WORKSPACE/artifacts/core_v0_family_compounding_v1/pvs.log"; then
+            exit 1
+          fi
+          cd "$GITHUB_WORKSPACE"
+          THEORY="$THEORY" FORMULA="$FORMULA" CLAIM_ID="$CLAIM_ID" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/core_v0_family_compounding_v1/pvs.json").write_text(
+              json.dumps(
+                  {
+                      "status": "PVS_SELECTED_REPLAY_GREEN",
+                      "run_id": int(os.environ["RUN_ID"]),
+                      "claim_id": os.environ["CLAIM_ID"],
+                      "theory": os.environ["THEORY"],
+                      "formula": os.environ["FORMULA"],
+                      "verifier": "PVS 8.1.2",
+                      "source_commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+                      "nasalib_commit": "e426f69dc2680ad575491f93c5a51739ec8b25fa",
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n"
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-family-pvs
+          path: artifacts/core_v0_family_compounding_v1/
+
+  lean:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-family-round1
+          path: /tmp/selection
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+      - name: Fetch frozen family and render only scheduler-selected Lean consumer
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pvs-family /tmp/core-v0-family-lean artifacts/core_v0_family_compounding_v1
+          BASE=https://raw.githubusercontent.com/$SOURCE_REPO/$SOURCE_COMMIT/cad
+          for f in cad_demo.pvs cad_demo.prf cad_examples.pvs cad_examples.prf cad_star_ex.pvs cad_star_ex.prf; do
+            curl -fsSL -o "/tmp/pvs-family/$f" "$BASE/$f"
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import discover_family, render_lean_family
+
+          selection = json.loads(Path("/tmp/selection/selection.json").read_text())
+          theories = ("cad_demo", "cad_examples", "cad_star_ex")
+          sources = {t: Path("/tmp/pvs-family", f"{t}.pvs").read_text() for t in theories}
+          proofs = {t: Path("/tmp/pvs-family", f"{t}.prf").read_text() for t in theories}
+          discovery = discover_family(sources, proofs)
+          selected = selection["selected_claim_id"]
+          all_claims = {row["claim_id"] for row in discovery["unique_claims"]}
+          assert selected in all_claims
+          skip = sorted(all_claims - {selected})
+          surface = render_lean_family(discovery, skip_claim_ids=skip)
+          Path("/tmp/core-v0-family-lean/Surface.lean").write_text(surface)
+          assert surface.count("\ntheorem ") == 1, surface
+          PY
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check only the scheduler-selected Lean consumer
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/core-v0-family-lean
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "core-v0-family-compounding-v1"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          SURFACE_SHA="$(sha256sum Surface.lean | awk '{print $1}')"
+          cp Surface.lean "$GITHUB_WORKSPACE/artifacts/core_v0_family_compounding_v1/Surface.lean"
+          cd "$GITHUB_WORKSPACE"
+          CLAIM_ID="$(python -c 'import json; print(json.load(open("/tmp/selection/selection.json"))["selected_claim_id"])')"
+          SURFACE_SHA="$SURFACE_SHA" CLAIM_ID="$CLAIM_ID" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("artifacts/core_v0_family_compounding_v1/lean.json").write_text(
+              json.dumps(
+                  {
+                      "status": "LEAN_SELECTED_KERNEL_GREEN",
+                      "run_id": int(os.environ["RUN_ID"]),
+                      "claim_id": os.environ["CLAIM_ID"],
+                      "verifier": "Lean 4 v4.35.0-rc3",
+                      "mathlib_commit": "3cb72cfd416d1b5ec4b930d67648ef036a5df24f",
+                      "surface_sha256": os.environ["SURFACE_SHA"],
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n"
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-family-lean
+          path: artifacts/core_v0_family_compounding_v1/
+
+  close:
+    needs: [prepare, pvs, lean]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install MathGraph
+        run: python -m pip install -e '.[all]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-family-round1
+          path: /tmp/round1
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-family-pvs
+          path: /tmp/pvs
+      - uses: actions/download-artifact@v4
+        with:
+          name: core-v0-family-lean
+          path: /tmp/lean
+      - name: Admit selected dual authority and prove family frontier contracts
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core_v0_family_compounding_v1
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from mathgraph.core_v0 import CoreGraph, EvidenceReceipt, Status, Support, verify
+          from mathgraph.discovery_candidate_sources import candidates_from_core_v0_graph
+          from mathgraph.discovery_scheduler import allocate_attention, make_policy
+
+          selection = json.loads(Path("/tmp/round1/selection.json").read_text())
+          pvs = json.loads(Path("/tmp/pvs/pvs.json").read_text())
+          lean = json.loads(Path("/tmp/lean/lean.json").read_text())
+          graph = CoreGraph.from_mg(Path("/tmp/round1/round1.mg").read_bytes())
+          run_id = int(os.environ["RUN_ID"])
+
+          assert pvs["run_id"] == run_id
+          assert lean["run_id"] == run_id
+          assert pvs["claim_id"] == selection["selected_claim_id"]
+          assert lean["claim_id"] == selection["selected_claim_id"]
+          assert pvs["status"] == "PVS_SELECTED_REPLAY_GREEN"
+          assert lean["status"] == "LEAN_SELECTED_KERNEL_GREEN"
+
+          object_id = selection["selected_object_id"]
+          subject = graph.objects[object_id]
+          assert graph.status_of(object_id) is Status.UNKNOWN
+
+          pvs_support = Support(
+              source_ref=(
+                  f"pvs:{selection['theory']}.{selection['formula']}"
+                  "@8750362e99c2ba0e9a0307dcaa39b9766c562feb"
+              ),
+              source_digest="gitblob:" + selection["source_blob_sha"],
+          )
+          lean_support = Support(
+              source_ref=(
+                  f"lean:selected:{selection['selected_claim_id']}"
+                  "@mathlib:3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+              ),
+              source_digest="sha256:" + lean["surface_sha256"],
+          )
+          graph.add_support(pvs_support)
+          graph.add_support(lean_support)
+
+          payload = {
+              "schema": "mathgraph.core-v0-family-selected-dual-evidence.v1",
+              "run_id": run_id,
+              "head_sha": os.environ["HEAD_SHA"],
+              "selection": selection,
+              "pvs": pvs,
+              "lean": lean,
+          }
+          receipt = EvidenceReceipt.for_candidate(
+              subject,
+              verifier="PVS-8.1.2+Lean-4.35.0-rc3",
+              support_ids=(pvs_support.id, lean_support.id),
+              boundary="scheduler-selected-dual-independent-current-run-family-v1",
+              payload=payload,
+              outcome=Status.WARRANTED,
+          )
+          warrant = verify(subject, receipt)
+          graph.admit(warrant)
+          graph.close()
+          assert graph.status_of(object_id) is Status.WARRANTED
+
+          round2 = candidates_from_core_v0_graph(
+              graph,
+              source_ref="core-v0-family-compounding-v1:round2",
+          )
+          ranked2, selected2, invalid2 = allocate_attention(
+              round2,
+              make_policy(mode="frontier", beta=1.0),
+              top_k=1,
+          )
+          assert not invalid2, invalid2
+          assert len(round2) == selection["round1_candidate_count"] - 1
+          assert object_id not in {candidate.residual_cluster for candidate in round2}
+          assert len(selected2) == 1
+          assert selected2[0].residual_cluster != object_id
+
+          result = {
+              "schema": "mathgraph.core-v0-scheduler-selected-family-compounding.v1",
+              "status": "WARRANTED_BOUNDED_SCHEDULER_SELECTED_REAL_VERIFIER_FAMILY_LOOP_V1",
+              "run_id": run_id,
+              "head_sha": os.environ["HEAD_SHA"],
+              "round1_candidate_count": selection["round1_candidate_count"],
+              "round2_candidate_count": len(round2),
+              "frontier_contraction": selection["round1_candidate_count"] - len(round2),
+              "selected_claim_id": selection["selected_claim_id"],
+              "selected_object_id": object_id,
+              "next_selected_object_id": selected2[0].residual_cluster,
+              "scheduler_contacts": 1,
+              "verify_all_baseline_contacts": selection["verify_all_baseline_contacts"],
+              "contacts_avoided_vs_verify_all": (
+                  selection["verify_all_baseline_contacts"] - selection["scheduler_contacts"]
+              ),
+              "selected_object_rechecked_round2": False,
+              "pvs_current_run_green": True,
+              "lean_current_run_green": True,
+              "warrant_id": warrant.id,
+              "support_ids": [pvs_support.id, lean_support.id],
+              "boundary": (
+                  "This is a one-step bounded family episode over the 25 supported canonical "
+                  "claims discovered from the three pinned pvs_cad source files. The scheduler "
+                  "selected one unresolved semantic object; only that object received current-run "
+                  "PVS and Lean verification. The result does not claim optimal scheduling, "
+                  "universal proof translation, or verification of the remaining 24 candidates."
+              ),
+          }
+          out = Path("artifacts/core_v0_family_compounding_v1")
+          out.joinpath("round2.mg").write_bytes(graph.to_mg())
+          out.joinpath("result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-v0-scheduler-selected-family-compounding-v1
+          path: artifacts/core_v0_family_compounding_v1/
