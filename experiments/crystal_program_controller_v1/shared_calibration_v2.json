@@ -1,0 +1,64 @@
+{
+  "schema": "mathgraph.crystal-program-controller-shared-calibration.v2",
+  "supersedes": {
+    "schema": "mathgraph.crystal-program-controller-shared-calibration.v1",
+    "run": 36653228588,
+    "reason": "V1 incorrectly defined Nucleus contraction as elimination of UNKNOWN. The protected candidate objective was residual localization: all 11 application-function-type occurrences were eliminated and replaced by strictly sharper typed residuals under verdict-identical reclosure."
+  },
+  "status": "CANDIDATE_COMMON_MEASUREMENT_V2",
+  "measurement_boundary": {
+    "contraction_basis": "prospective_typed_residual_occurrence_contraction_fraction.v2",
+    "cost_basis": "github_actions_job_wall_seconds.v1",
+    "definition": "A prospectively frozen occurrence of the selected residual counts as contracted iff independent verification shows that occurrence is either resolved or the selected residual label is eliminated and replaced by a strictly more specific typed residual, while the protected verdict/invariant boundary remains green. Rewording without typed refinement does not count."
+  },
+  "samples": [
+    {
+      "campaign": "nucleus",
+      "candidate_id": "nucleus-trace-inferred-function-type-dependency",
+      "source_run": 36651339523,
+      "source_head": "d3d6669b4ad136b8ca37601039c049f3d7ededd1",
+      "source_artifact": 11071010782,
+      "source_artifact_digest": "sha256:03d9ca122fb67a866a12c4b2f5d66b812f2fd3f78caa3c0cbb725e651cf5ec44",
+      "selected_residual": "application-function-type",
+      "occurrences_before": 11,
+      "occurrences_after": 0,
+      "typed_residual_occurrences_contracted": 11,
+      "contraction_fraction": 1.0,
+      "total_residual_before": 30,
+      "total_residual_after": 30,
+      "job_wall_seconds": 29,
+      "contraction_per_second": 0.034482758620689655,
+      "verification": "Exact 30-case authority preserved; post-run quotient has 17 distinct-neutral-heads, 7 conversion-exposure, 1 type-inference-budget, 1 unresolved-sort-level-during-reduction, 4 untraced.",
+      "separator": "The 11-case downstream application-function-type class was diagnostic masking. Ten occurrences refine into neutral/conversion roots; perf/app-lam isolates as a resource/type-inference-budget root.",
+      "epistemic_result": "WARRANTED_BOUNDED_RESIDUAL_LOCALIZATION"
+    },
+    {
+      "campaign": "cross-prover",
+      "candidate_id": "cross-prover-fresh-family-route-grammar-test",
+      "source_run": 36652610095,
+      "source_head": "3e6c4ca8c28250ec8ec5c78f793dea750fb43bf6",
+      "source_artifact": 11071710638,
+      "source_artifact_digest": "sha256:e7ed77a99c5f4d24d23aec01fb88990e421a721651b372649047e540e92524e3",
+      "source_family": "j-tanner-slagel/pvs_cad@8750362e99c2ba0e9a0307dcaa39b9766c562feb:cad/alg_examples",
+      "source_blind_freeze_commit": "10f8178ba3e5571983725d7dc05ecba2fb5ea305",
+      "selected_residual": "unsupported-by-frozen-five-route-grammar",
+      "occurrences_before": 32,
+      "occurrences_after": 32,
+      "typed_residual_occurrences_contracted": 0,
+      "contraction_fraction": 0.0,
+      "job_wall_seconds": 316,
+      "contraction_per_second": 0.0,
+      "verification": "32/32 native PVS source proofs green; unchanged five-route discovery has no applicable route; Lean adapter gate green; unsupported meanings remain typed UNKNOWN.",
+      "separator": "The five promoted consequence-route constructors do not transfer unchanged to the source-blind alg_examples family.",
+      "epistemic_result": "WARRANTED_NEGATIVE_FOR_UNCHANGED_ROUTE_GRAMMAR_TRANSFER"
+    }
+  ],
+  "decision": {
+    "status": "COMMON_MEASUREMENT_EARNED_NO_NEW_GLOBAL_PICK",
+    "observed_best_sample": "nucleus",
+    "selected_current_campaign_id": null,
+    "selected_current_candidate_id": null,
+    "reason": "The corrected shared basis distinguishes these completed prospective experiments, but neither observation supplies an evidence-backed contraction estimate for a different current candidate. Reusing the observed winner as a forecast would overgeneralize across changed residuals."
+  },
+  "promotion_boundary": "The V2 shared metric is warranted for reporting these two prospectively frozen experiment outcomes. Predictive programme-wide ranking of new candidates remains UNKNOWN until their expected contraction on this same basis is grounded by qualified lineage or further calibration."
+}
