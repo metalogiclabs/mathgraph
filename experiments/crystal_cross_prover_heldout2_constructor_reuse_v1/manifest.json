@@ -1,0 +1,43 @@
+{
+  "schema": "mathgraph.cross-prover-heldout2-constructor-reuse.v1",
+  "objective": "Test whether all genuinely new cad_examples2 meanings can be discharged using only proof-constructor classes warranted before cad_examples2 was opened.",
+  "source": {
+    "repository": "j-tanner-slagel/pvs_cad",
+    "commit": "8750362e99c2ba0e9a0307dcaa39b9766c562feb",
+    "file": "cad/cad_examples2.pvs",
+    "blob_sha": "5e943e67140d88aa94eef4241b418951f7ba3130"
+  },
+  "parent_constructor_authority_run": 36649171836,
+  "sealed_baseline_measurement_run": 36650465741,
+  "representation_repair_candidate_run": 36650702457,
+  "new_meanings": [
+    {
+      "source": "cad_examples2.ex_quad",
+      "constructor_schema": "explicit_witness"
+    },
+    {
+      "source": "cad_examples2.ex_disc2",
+      "constructor_schema": "quadratic_implication"
+    },
+    {
+      "source": "cad_examples2.ex_quartic",
+      "constructor_schema": "sum_of_squares"
+    },
+    {
+      "source": "cad_examples2.ex_ell",
+      "constructor_schema": "explicit_witness"
+    },
+    {
+      "source": "cad_examples2.ex_two",
+      "constructor_schema": "algebraic_root_witness"
+    }
+  ],
+  "preexisting_constructor_schemas": [
+    "explicit_witness",
+    "quadratic_implication",
+    "sum_of_squares",
+    "algebraic_root_witness"
+  ],
+  "new_constructor_schema_count": 0,
+  "boundary": "Schema assignment and witness instantiation are supplied for this experiment. A green result shows constructor-vocabulary sufficiency for these five unseen meanings, not automatic constructor selection or proof synthesis."
+}
