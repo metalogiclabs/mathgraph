@@ -1,0 +1,139 @@
+{
+  "schema": "mathgraph.crystal-programme-prospective-round1-v1",
+  "frozen_at_ros": "2026-09-30T00:26:06Z",
+  "scoring_rubric": {
+    "expected_contraction": "count of currently named protected residual items directly addressable by the single experiment; no credit for speculative downstream benefit",
+    "cost": {
+      "1": "reuse/read-only or already-built capability",
+      "2": "single-repository bounded qualification plus reclosure",
+      "4": "multi-stage or cross-repository bounded gate",
+      "8": "large search or universal-style residual attack"
+    }
+  },
+  "residuals": [
+    {
+      "campaign": "nucleus",
+      "protected_objective": "reduce the current 30-case Lean-kernel residual with zero wrong verdicts and full protected reclosure",
+      "residual_id": "application-function-type-11",
+      "residual_kind": "semantic-normal-form",
+      "evidence_refs": ["ros:nucleus-dogwood-2026-09-30", "authority:98f87d9e66fb97987427d68180f51a653d626fdb", "run:36638671203"]
+    },
+    {
+      "campaign": "arc",
+      "protected_objective": "reduce probe mass without regression using earned cross-form applicability",
+      "residual_id": "applicability-binding-17",
+      "residual_kind": "binding-genesis",
+      "evidence_refs": ["run:36292473732", "ros:arc-developmental-composition"]
+    },
+    {
+      "campaign": "acc",
+      "protected_objective": "produce verifier-clean strict record wins on the live singleton frontier",
+      "residual_id": "official-cost-native-basis-view",
+      "residual_kind": "search-cost-semantics",
+      "evidence_refs": ["run:36648412519", "run:36649127665"]
+    },
+    {
+      "campaign": "collatz",
+      "protected_objective": "exclude infinite ordinary-positive zero-tail no-exit execution or emit an exact recurrent protected cell",
+      "residual_id": "full-live-rank-phase",
+      "residual_kind": "universal-progress",
+      "evidence_refs": ["ros:collatz-v51-v53", "run:36639583244"]
+    },
+    {
+      "campaign": "pfr-linker",
+      "protected_objective": "recover different-name theorem candidates using only earned transparent-wrapper grammar",
+      "residual_id": "transparent-prop-wrapper",
+      "residual_kind": "candidate-generation",
+      "evidence_refs": ["run:36622520596", "run:36620986312"]
+    },
+    {
+      "campaign": "l4yaml",
+      "protected_objective": "close exact load-language equivalence at the pinned upstream surface",
+      "residual_id": "upstream-surface-exactness",
+      "residual_kind": "integration",
+      "evidence_refs": ["run:36471883837"]
+    },
+    {
+      "campaign": "chess",
+      "protected_objective": "determine whether the frozen 64ms gate transfers beyond fast clocks",
+      "residual_id": "clock-transfer",
+      "residual_kind": "pending-prospective-gates",
+      "evidence_refs": ["run:36617274049", "run:36629386182"]
+    },
+    {
+      "campaign": "cross-prover",
+      "protected_objective": "close held-out eight-source residual as five consequence reuses plus three new meanings",
+      "residual_id": "heldout-eight",
+      "residual_kind": "pending-prospective-gate",
+      "evidence_refs": ["run:36649392149", "run:36649659971"]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "nucleus-inferred-function-type-normal-form",
+      "campaign": "nucleus",
+      "residual_id": "application-function-type-11",
+      "experiment_kind": "bounded-differential-reclosure",
+      "expected_contraction": 11,
+      "cost": 2
+    },
+    {
+      "experiment_id": "arc-minimum-applicability-transformer",
+      "campaign": "arc",
+      "residual_id": "applicability-binding-17",
+      "experiment_kind": "heldout-binding-requalification",
+      "expected_contraction": 17,
+      "cost": 4
+    },
+    {
+      "experiment_id": "acc-official-cost-native-nielsen-view",
+      "campaign": "acc",
+      "residual_id": "official-cost-native-basis-view",
+      "experiment_kind": "verifier-cost-native-search",
+      "expected_contraction": 1,
+      "cost": 8
+    },
+    {
+      "experiment_id": "collatz-full-live-rank-bridge",
+      "campaign": "collatz",
+      "residual_id": "full-live-rank-phase",
+      "experiment_kind": "universal-rank-or-recurrent-cell",
+      "expected_contraction": 1,
+      "cost": 8
+    },
+    {
+      "experiment_id": "pfr-transparent-wrapper-miner",
+      "campaign": "pfr-linker",
+      "residual_id": "transparent-prop-wrapper",
+      "experiment_kind": "mechanical-candidate-generation",
+      "expected_contraction": 1,
+      "cost": 2
+    },
+    {
+      "experiment_id": "l4yaml-upstream-surface-capstone",
+      "campaign": "l4yaml",
+      "residual_id": "upstream-surface-exactness",
+      "experiment_kind": "pinned-integration-equivalence",
+      "expected_contraction": 1,
+      "cost": 4
+    },
+    {
+      "experiment_id": "chess-wait-for-frozen-gates",
+      "campaign": "chess",
+      "residual_id": "clock-transfer",
+      "experiment_kind": "pending-result",
+      "expected_contraction": 3,
+      "cost": 1,
+      "executable": false
+    },
+    {
+      "experiment_id": "cross-prover-wait-for-heldout-gate",
+      "campaign": "cross-prover",
+      "residual_id": "heldout-eight",
+      "experiment_kind": "pending-result",
+      "expected_contraction": 8,
+      "cost": 1,
+      "executable": false
+    }
+  ]
+}
