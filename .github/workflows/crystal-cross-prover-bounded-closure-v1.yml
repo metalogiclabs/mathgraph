@@ -55,6 +55,7 @@ jobs:
           evidence["hard_pair_pvs"]=require_job(36647829062,"pvs")["id"]
           evidence["projection_v1"]=require_job(36640121901,"pvs-replay-and-promote")["id"]
           evidence["projection_type_v2"]=require_job(36648156480,"promote")["id"]
+          evidence["refutation_promotion"]=require_job(36649006912,"promote")["id"]
           evidence["false_cad_probe"]=require_job(36648207056,"probe")["id"]
           evidence["lean_negations_job"],_ = require_step(
               36648693445,"refute","Kernel-check exact Lean negations"
@@ -149,6 +150,7 @@ jobs:
                 "github-run:36647829062:hard-pair-pvs-lean",
                 "github-run:36640121901:sufficient-interface-v1",
                 "github-run:36648156480:type-range-projection-v2",
+                "github-run:36649006912:refutation-promotion",
                 "github-run:36648207056:false-cad-probe",
                 "github-run:36648693445:lean-negations",
               ],
@@ -206,6 +208,7 @@ jobs:
               "hard_pair":36647829062,
               "projection_v1":36640121901,
               "projection_type_v2":36648156480,
+              "refutation_promotion":36649006912,
               "false_cad_probe":36648207056,
               "lean_negations":36648693445,
             },
