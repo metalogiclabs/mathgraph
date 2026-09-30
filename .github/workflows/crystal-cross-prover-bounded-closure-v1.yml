@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - crystal-cross-prover-auto-family-v5
+      - mathgraph-core-v0-kernel
     paths:
       - '.github/workflows/crystal-cross-prover-bounded-closure-v1.yml'
   workflow_dispatch:
