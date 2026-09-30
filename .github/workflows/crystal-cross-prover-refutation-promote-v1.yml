@@ -1,0 +1,86 @@
+name: Crystal Cross-Prover Refutation Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-refutation-probe-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-refutation-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify native CAD and Lean refutation authorities
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,urllib.request
+          repo="metalogiclabs/mathgraph"
+          token=os.environ["GH_TOKEN"]
+          def jobs(run_id):
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100",
+                  headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json"},
+              )
+              return json.load(urllib.request.urlopen(req))["jobs"]
+          cad=next(x for x in jobs(36648207056) if x["name"]=="probe")
+          assert cad["conclusion"]=="success",cad
+          cstep=next(x for x in cad["steps"] if x["name"]=="Probe false source formulas without promotion")
+          assert cstep["conclusion"]=="success",cstep
+          lean=next(x for x in jobs(36648693445) if x["name"]=="refute")
+          lstep=next(x for x in lean["steps"] if x["name"]=="Kernel-check exact Lean negations")
+          assert lstep["conclusion"]=="success",lstep
+          print("CAD_FALSE_AUTHORITY_GREEN",cad["id"])
+          print("LEAN_NEGATIONS_GREEN",lean["id"])
+          PY
+
+      - name: Promote two bounded source refutations
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_refutations_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-refutations.v1",
+            "status":"WARRANTED_BOUNDED_CROSS_PROVER_REFUTATIONS",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "relation_kind":"SOURCE_FORMULA_REFUTED",
+            "pvs_false_authority_run":36648207056,
+            "lean_negation_authority_run":36648693445,
+            "refutations":[
+              {
+                "source":"cad_demo.d_inverse",
+                "source_status":"REJECTED",
+                "pvs_verdict":"FALSE",
+                "lean_counterexample":"x=0"
+              },
+              {
+                "source":"cad_demo.t_amgm3",
+                "source_status":"REJECTED",
+                "pvs_verdict":"FALSE",
+                "lean_counterexample":"x=y=1"
+              }
+            ],
+            "boundary":"The two exact pinned source formulas are refuted in both verifier environments. This is a typed refutation relation, not a failed TRUE translation and not UNKNOWN."
+          }
+          Path("artifacts/crystal_cross_prover_refutations_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-refutations-v1
+          path: artifacts/crystal_cross_prover_refutations_v1/result.json
