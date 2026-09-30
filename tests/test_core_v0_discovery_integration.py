@@ -139,3 +139,44 @@ def test_core_v0_candidate_extraction_is_deterministic() -> None:
     second = [candidate.to_dict() for candidate in candidates_from_core_v0_graph(graph)]
 
     assert first == second
+
+
+def test_verifier_result_compounds_into_a_smaller_next_frontier() -> None:
+    grammar = _grammar()
+    premise = normalize("premise", grammar, lambda _: {"atom": "premise"})
+    consequence = normalize("consequence", grammar, lambda _: {"atom": "consequence"})
+    implication = Relation(
+        RelationKind.IMPLIES,
+        (premise.id,),
+        (consequence.id,),
+    )
+    graph = CoreGraph(
+        grammars=[grammar],
+        objects=[premise, consequence],
+        relations=[implication],
+    )
+    _admit(graph, premise, "premise")
+
+    # Round 1: the implication itself is the verifier-contact residual.
+    round_one = candidates_from_core_v0_graph(graph)
+    ranked, selected, invalid = allocate_attention(
+        round_one,
+        make_policy(mode="frontier", beta=1.0),
+        top_k=10,
+    )
+    assert not invalid
+    selected_by_subject = {candidate.residual_cluster: candidate for candidate in selected}
+    assert implication.id in selected_by_subject
+    assert consequence.id in {candidate.residual_cluster for candidate in ranked}
+
+    # External verification returns through the existing Core V0 authority boundary.
+    _admit(graph, implication, "verified-implication")
+
+    # Round 2: closure transports the warranted premise across the newly warranted
+    # implication, so both the verified edge and its consequence leave the frontier.
+    round_two = candidates_from_core_v0_graph(graph)
+    round_two_ids = {candidate.residual_cluster for candidate in round_two}
+
+    assert implication.id not in round_two_ids
+    assert consequence.id not in round_two_ids
+    assert len(round_two) < len(round_one)
