@@ -1,0 +1,108 @@
+name: Crystal Cross-Prover Heldout2 Constructor Reuse Promotion V1
+
+on:
+  push:
+    branches:
+      - crystal-cross-prover-heldout2-constructor-reuse-v1
+    paths:
+      - '.github/workflows/crystal-cross-prover-heldout2-constructor-reuse-promote-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bind exact green constructor-reuse artifacts
+        run: |
+          set -euo pipefail
+          test "$(git hash-object experiments/crystal_cross_prover_heldout2_constructor_reuse_v1/manifest.json)" = 7d011424944c9138499837fa915211424a9c661b
+          test "$(git hash-object experiments/crystal_cross_prover_heldout2_constructor_reuse_v1/Surface.lean)" = 613deb1cfeea2967999728178c48478d9af94c5d
+      - name: Verify all prerequisite authority runs
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          def jobs(run_id):
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/{run_id}/jobs?per_page=100",
+                  headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json"},
+              )
+              return json.load(urllib.request.urlopen(req))["jobs"]
+
+          parent=jobs(36649171836)
+          assert all(x["conclusion"]=="success" for x in parent),parent
+
+          source=jobs(36650465741)
+          pvs=next(x for x in source if x["name"]=="pvs")
+          assert pvs["conclusion"]=="success",pvs
+          pvs_step=next(x for x in pvs["steps"] if x["name"]=="Replay all sealed held-out2 source theorems")
+          assert pvs_step["conclusion"]=="success",pvs_step
+
+          norm=jobs(36651089541)
+          assert all(x["conclusion"]=="success" for x in norm),norm
+
+          candidate=jobs(36651015693)
+          lean=next(x for x in candidate if x["name"]=="lean")
+          assert lean["conclusion"]=="success",lean
+          k=next(x for x in lean["steps"] if x["name"]=="Kernel-check five unseen meanings")
+          assert k["conclusion"]=="success",k
+
+          print("SOURCE_AUTHORITY",pvs["id"])
+          print("NORMALIZATION_AUTHORITY",norm[0]["id"])
+          print("CONSTRUCTOR_REUSE_LEAN",lean["id"])
+          PY
+      - name: Promote heldout2 constructor-vocabulary sufficiency
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p artifacts/crystal_cross_prover_heldout2_constructor_reuse_promotion_v1
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out={
+            "schema":"mathgraph.cross-prover-heldout2-constructor-reuse-promotion.v1",
+            "status":"WARRANTED_BOUNDED_HELDOUT2_EXISTING_CONSTRUCTOR_REUSE_V1",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "source_file":"cad/cad_examples2.pvs",
+            "source_lemma_count":9,
+            "native_pvs_source_authority":"9/9 GREEN",
+            "baseline_frozen_reuse":2,
+            "representation_normalized_reuse":4,
+            "new_exact_meanings":5,
+            "new_meaning_lean_consumers":"5/5 GREEN",
+            "new_constructor_schema_count":0,
+            "reused_constructor_schemas":[
+              "algebraic_root_witness",
+              "explicit_witness",
+              "quadratic_implication",
+              "sum_of_squares"
+            ],
+            "occurrence_level_residual_after":0,
+            "evidence_runs":{
+              "parent_constructor_authority":36649171836,
+              "sealed_source_authority":36650465741,
+              "representation_normalization":36651089541,
+              "new_meaning_consumers":36651015693
+            },
+            "systems_law":{
+              "name":"constructor_vocabulary_compounding",
+              "statement":"On this sealed second held-out family, representation normalization recovers four prior meanings and every remaining true source meaning admits an independently kernel-checked consumer using only constructor classes warranted before the family was opened; no new constructor class is required."
+            },
+            "boundary":"The five schema assignments and witness instantiations were supplied after residual analysis. This warrants constructor-vocabulary sufficiency and zero new constructor classes on cad_examples2, not automatic schema selection or automatic proof synthesis."
+          }
+          Path("artifacts/crystal_cross_prover_heldout2_constructor_reuse_promotion_v1/result.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal-cross-prover-heldout2-constructor-reuse-promotion-v1
+          path: artifacts/crystal_cross_prover_heldout2_constructor_reuse_promotion_v1/result.json
