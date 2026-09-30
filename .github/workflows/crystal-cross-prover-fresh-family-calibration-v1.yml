@@ -1,0 +1,246 @@
+name: Crystal Cross-Prover Fresh Family Calibration V1
+
+on:
+  push:
+    branches: [crystal-cross-prover-fresh-family-calibration-v1]
+    paths:
+      - 'experiments/crystal_cross_prover_fresh_family_calibration_v1/**'
+      - '.github/workflows/crystal-cross-prover-fresh-family-calibration-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SOURCE_REPO: j-tanner-slagel/pvs_cad
+      SOURCE_COMMIT: 8750362e99c2ba0e9a0307dcaa39b9766c562feb
+      THEORY: alg_examples
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frozen MathGraph route authority
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD~1)" = 10f8178ba3e5571983725d7dc05ecba2fb5ea305
+          test "$(git hash-object mathgraph/cross_prover_consequence_search.py)" = b278376f7ddad4f2b6bd05bebdd06eb9daa88f51
+          python -m pip install -e ".[all]"
+
+      - name: Materialize exact source-blind frozen family
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fresh artifacts/crystal_cross_prover_fresh_family_calibration_v1
+          BASE="https://raw.githubusercontent.com/$SOURCE_REPO/$SOURCE_COMMIT/cad"
+          curl -fsSL "$BASE/alg_examples.pvs" -o /tmp/fresh/alg_examples.pvs
+          curl -fsSL "$BASE/alg_examples.prf" -o /tmp/fresh/alg_examples.prf
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          pins={
+            "alg_examples.pvs":"568c16084589ad62d873c7953c30bbb546b5d1ad",
+            "alg_examples.prf":"60f53f7163089bdc4d7e2ab4d99aa67ea1d783ce",
+          }
+          def blob(data):
+              return hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+          for name,want in pins.items():
+              got=blob(Path("/tmp/fresh",name).read_bytes())
+              assert got==want,(name,got,want)
+              print("FROZEN_SOURCE_PIN_OK",name,got)
+          PY
+
+      - name: Apply unchanged five-route grammar and freeze obligations
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph.cross_prover_family_discovery import (
+              SPECS,
+              extract_pvs_lemmas,
+              extract_pvs_proved_formulas,
+          )
+          from mathgraph.cross_prover_consequence_search import (
+              ROUTES,
+              discover_consequence_routes,
+              render_lean_adapters,
+          )
+
+          source=Path("/tmp/fresh/alg_examples.pvs").read_text()
+          proof=Path("/tmp/fresh/alg_examples.prf").read_text()
+          lemmas=extract_pvs_lemmas(source)
+          assert lemmas, "fresh source exposes no LEMMA obligations"
+          names=[name for name,_ in lemmas]
+          proof_entries=extract_pvs_proved_formulas(proof)
+          missing_metadata=sorted(set(names)-proof_entries)
+
+          available=sorted({spec.claim_id for spec in SPECS.values()})
+          routed=discover_consequence_routes(
+              {"alg_examples":source},
+              available_claim_ids=available,
+          )
+          assert routed["source_lemma_count"]==len(lemmas), routed
+          assert routed["ambiguous_occurrence_count"]==0, routed
+          frozen_ids={
+            "add_nonnegative_square@1",
+            "compose_root_circle@1",
+            "iterate_upper_bound@1",
+            "lift_unbounded_sum@1",
+            "specialize_zero_square_shift@1",
+          }
+          assert {r.route_id for r in ROUTES}==frozen_ids
+          used={row["route_id"] for row in routed["routes"]}
+          assert used <= frozen_ids, used
+
+          # Causal controls on any route that fires.
+          ablations={}
+          for row in routed["routes"]:
+              source_id=f"{row['theory']}.{row['formula']}"
+              for claim in row["prerequisite_claim_ids"]:
+                  d=discover_consequence_routes(
+                      {"alg_examples":source},
+                      available_claim_ids=[x for x in available if x!=claim],
+                  )
+                  still={f"{x['theory']}.{x['formula']}" for x in d["routes"]}
+                  assert source_id not in still,(source_id,claim)
+                  ablations[f"{source_id}|{claim}"]="ROUTE_REMOVED"
+
+          sham=discover_consequence_routes(
+              {"alg_examples":source},
+              available_claim_ids=[f"sham.claim.{i}@1" for i in range(len(available))],
+          )
+          assert sham["routed_occurrence_count"]==0, sham
+
+          outdir=Path("artifacts/crystal_cross_prover_fresh_family_calibration_v1")
+          outdir.joinpath("Surface.lean").write_text(render_lean_adapters(routed))
+          outdir.joinpath("route_discovery.json").write_text(
+              json.dumps(routed,indent=2,sort_keys=True)+"\n"
+          )
+          obligation={
+              "schema":"mathgraph.cross-prover-fresh-family-obligations.v1",
+              "source_hash_frozen_before_read":True,
+              "theory":"alg_examples",
+              "obligation_count":len(lemmas),
+              "obligation_names":names,
+              "proof_metadata_missing":missing_metadata,
+              "routed_occurrence_count":routed["routed_occurrence_count"],
+              "unresolved_occurrence_count":routed["unresolved_occurrence_count"],
+              "route_ids":sorted(used),
+              "prerequisite_ablations":ablations,
+              "sham_routed_occurrences":0,
+          }
+          outdir.joinpath("obligations.json").write_text(
+              json.dumps(obligation,indent=2,sort_keys=True)+"\n"
+          )
+          Path("/tmp/fresh/targets.txt").write_text(":".join(names))
+          Path("/tmp/fresh/count.txt").write_text(str(len(names)))
+          print(json.dumps(obligation,sort_keys=True))
+          PY
+
+      - name: Install exact PVS source authority
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y git curl ca-certificates libgmp10
+          curl -fL -o /tmp/pvs.tgz https://github.com/SRI-CSL/PVS/releases/download/pvs8.1.2/pvs-linux-x86_64.tgz
+          echo "5b7d859feff90fc7e566c669a36aaea0254e762c7a723260cf5fd7e1721fcf1b  /tmp/pvs.tgz" | sha256sum -c -
+          mkdir -p /tmp/pvs-dist
+          tar -xzf /tmp/pvs.tgz -C /tmp/pvs-dist
+          PVS_BIN="$(find /tmp/pvs-dist -maxdepth 3 -type f -name pvs -perm -u+x | head -1)"
+          PVS_DIR="$(dirname "$PVS_BIN")"
+          echo "PVS_DIR=$PVS_DIR" >> "$GITHUB_ENV"
+          git init /tmp/nasalib
+          git -C /tmp/nasalib remote add origin https://github.com/nasa/pvslib.git
+          git -C /tmp/nasalib fetch --depth=1 origin e426f69dc2680ad575491f93c5a51739ec8b25fa
+          git -C /tmp/nasalib checkout --detach FETCH_HEAD
+          git init /tmp/pvs_cad
+          git -C /tmp/pvs_cad remote add origin https://github.com/j-tanner-slagel/pvs_cad.git
+          git -C /tmp/pvs_cad fetch --depth=1 origin "$SOURCE_COMMIT"
+          git -C /tmp/pvs_cad checkout --detach FETCH_HEAD
+          ln -sfn /tmp/nasalib "$PVS_DIR/nasalib"
+
+      - name: Replay every frozen source obligation natively
+        run: |
+          set -euo pipefail
+          COUNT="$(cat /tmp/fresh/count.txt)"
+          TARGETS="$(cat /tmp/fresh/targets.txt)"
+          cd /tmp/pvs_cad/cad
+          export PVS_LIBRARY_PATH=/tmp/nasalib
+          "$PVS_DIR/proveit" -q --timeout 180 "@$THEORY.$TARGETS" | tee /tmp/fresh/pvs-replay.log
+          grep -q "Grand Totals: $COUNT proofs, $COUNT attempted, $COUNT succeeded" /tmp/fresh/pvs-replay.log
+          if grep -Ei "unfinished|untried|unchecked" /tmp/fresh/pvs-replay.log; then exit 1; fi
+          cp /tmp/fresh/pvs-replay.log "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_family_calibration_v1/pvs-replay.log"
+
+      - name: Install Lean target environment
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Kernel-check every automatically generated route adapter
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/fresh-lean
+          mkdir -p "$ROOT"
+          cp artifacts/crystal_cross_prover_fresh_family_calibration_v1/Surface.lean "$ROOT/Surface.lean"
+          echo 'leanprover/lean4:v4.35.0-rc3' > "$ROOT/lean-toolchain"
+          cat > "$ROOT/lakefile.toml" <<'EOF'
+          name = "crystal-fresh-family-calibration-v1"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "3cb72cfd416d1b5ec4b930d67648ef036a5df24f"
+          EOF
+          cd "$ROOT"
+          lake update
+          lake exe cache get
+          lake env lean Surface.lean
+          sha256sum Surface.lean > "$GITHUB_WORKSPACE/artifacts/crystal_cross_prover_fresh_family_calibration_v1/lean_surface.sha256"
+
+      - name: Seal common prospective measurement
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=json.loads(Path(
+            "artifacts/crystal_cross_prover_fresh_family_calibration_v1/obligations.json"
+          ).read_text())
+          total=d["obligation_count"]
+          closed=d["routed_occurrence_count"]
+          result={
+            "schema":"mathgraph.shared-prospective-measurement.v1",
+            "campaign":"cross-prover",
+            "run_id":int(os.environ["RUN_ID"]),
+            "head_sha":os.environ["HEAD_SHA"],
+            "contraction_basis":"prospective_verified_obligations_fraction.v1",
+            "cost_basis":"github_actions_job_wall_seconds.v1",
+            "obligations_total":total,
+            "obligations_closed":closed,
+            "verified_obligations_fraction":closed/total,
+            "native_source_gate":f"{total}/{total} PVS GREEN",
+            "lean_adapter_gate":"GREEN",
+            "unsupported_obligations":total-closed,
+            "unsupported_status":"UNKNOWN",
+            "route_ids":d["route_ids"],
+            "boundary":"Fresh source family was selected and hash-frozen before content read. Five promoted route constructors were applied unchanged by formula shape and live prerequisite IDs only. Unsupported source lemmas remain UNKNOWN."
+          }
+          out=Path("artifacts/crystal_cross_prover_fresh_family_calibration_v1/result.json")
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: crystal-cross-prover-fresh-family-calibration-v1
+          path: artifacts/crystal_cross_prover_fresh_family_calibration_v1/
+          if-no-files-found: error
