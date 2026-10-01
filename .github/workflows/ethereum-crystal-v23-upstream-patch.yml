@@ -1,0 +1,43 @@
+name: ethereum-crystal-v23-upstream-patch-qualification
+on:
+  push:
+    branches: [ethereum-crystal-v23-current-geth]
+  workflow_dispatch:
+
+jobs:
+  qualify-upstream-patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned current geth
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout c9a2bc73c847319a8faa57de59e42c0efc420682
+          test "$(git rev-parse HEAD)" = "c9a2bc73c847319a8faa57de59e42c0efc420682"
+
+      - name: Apply upstream candidate
+        run: |
+          cp experiments/ethereum_crystal_v23/upstream/apply_decode.go /tmp/geth/core/types/bal/apply_decode.go
+          cp experiments/ethereum_crystal_v23/upstream/apply_decode_test.go /tmp/geth/core/types/bal/apply_decode_test.go
+          cd /tmp/geth
+          git apply "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v23/upstream/syncv2.patch"
+          gofmt -w core/types/bal/apply_decode.go core/types/bal/apply_decode_test.go eth/protocols/snap/syncv2.go
+          go install golang.org/x/tools/cmd/goimports@v0.49.0
+          "$(go env GOPATH)/bin/goimports" -w core/types/bal/apply_decode.go core/types/bal/apply_decode_test.go eth/protocols/snap/syncv2.go
+          git diff --check
+          git diff -- core/types/bal/apply_decode.go core/types/bal/apply_decode_test.go eth/protocols/snap/syncv2.go | tee /tmp/upstream.patch
+
+      - name: Run targeted upstream tests
+        working-directory: /tmp/geth
+        run: |
+          go test ./core/types/bal -count=1
+          go test ./eth/protocols/snap -count=1
+
+      - name: Seal
+        run: |
+          sha256sum /tmp/upstream.patch
+          echo "ETHEREUM_CRYSTAL_V23_UPSTREAM_PATCH=PASS"
+          echo "GETH_PIN=c9a2bc73c847319a8faa57de59e42c0efc420682"

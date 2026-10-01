@@ -1,0 +1,50 @@
+diff --git a/eth/protocols/snap/syncv2.go b/eth/protocols/snap/syncv2.go
+--- a/eth/protocols/snap/syncv2.go
++++ b/eth/protocols/snap/syncv2.go
+@@ -916,27 +916,29 @@
+ 			default:
+ 			}
+ 			num := start + uint64(i)
+ 			hash := winHashes[i]
+ 
+-			// Decode the raw RLP into a BAL.
+-			var (
+-				b         bal.BlockAccessList
+-				batch     = s.db.NewBatch()
+-				nextPivot = headers[hash]
+-				tries     *stateTrie
+-			)
+-			if err := rlp.DecodeBytes(raw, &b); err != nil {
+-				return fmt.Errorf("failed to decode BAL for block %d: %v", num, err)
+-			}
+-			if withTrie {
+-				tries, err = s.openStateTrie(parent.Root, batch)
+-				if err != nil {
+-					return err
+-				}
+-			}
+-			root, err := s.applyAccessList(&b, batch, tries)
++			// Decode only the final-state consequences consumed by applyAccessList.
++			// The raw BAL has already been fully decoded and hash-verified at the
++			// peer-response boundary.
++			b, err := bal.DecodeApplyRLP(raw)
++			if err != nil {
++				return fmt.Errorf("failed to decode BAL apply view for block %d: %v", num, err)
++			}
++			var (
++				batch     = s.db.NewBatch()
++				nextPivot = headers[hash]
++				tries     *stateTrie
++			)
++			if withTrie {
++				tries, err = s.openStateTrie(parent.Root, batch)
++				if err != nil {
++					return err
++				}
++			}
++			root, err := s.applyAccessList(b, batch, tries)
+ 			if err != nil {
+ 				return fmt.Errorf("BAL application failed for block %d: %v", num, err)
+ 			}
+ 			// With the tries maintained, the post-block root must reproduce
+ 			// the header's. Nothing of a mismatching block is persisted, the
