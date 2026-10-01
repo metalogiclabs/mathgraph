@@ -35,7 +35,13 @@ jobs:
       - name: Capture exact upstream patch
         working-directory: /tmp/geth
         run: |
+          # Mark the two new files as intent-to-add so the patch is a complete,
+          # directly applicable upstream diff rather than only the tracked edit.
+          git add -N core/types/bal/bal_apply.go core/types/bal/bal_apply_test.go
           git diff --binary > /tmp/crystal-v23-upstream.patch
+          grep -q '^diff --git a/core/types/bal/bal_apply.go b/core/types/bal/bal_apply.go' /tmp/crystal-v23-upstream.patch
+          grep -q '^diff --git a/core/types/bal/bal_apply_test.go b/core/types/bal/bal_apply_test.go' /tmp/crystal-v23-upstream.patch
+          grep -q '^diff --git a/eth/protocols/snap/syncv2.go b/eth/protocols/snap/syncv2.go' /tmp/crystal-v23-upstream.patch
           sha256sum /tmp/crystal-v23-upstream.patch | tee /tmp/crystal-v23-upstream.patch.sha256
       - uses: actions/upload-artifact@v4
         with:
