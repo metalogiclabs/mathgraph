@@ -1,0 +1,50 @@
+name: ethereum-crystal-v23-upstream-package
+on:
+  push:
+    branches: [ethereum-crystal-v23-upstream-package]
+  workflow_dispatch:
+
+jobs:
+  qualify-upstream-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout qualified geth master
+        run: |
+          git clone --filter=blob:none https://github.com/ethereum/go-ethereum.git /tmp/geth
+          cd /tmp/geth
+          git checkout c9a2bc73c847319a8faa57de59e42c0efc420682
+          test "$(git rev-parse HEAD)" = "c9a2bc73c847319a8faa57de59e42c0efc420682"
+      - name: Overlay upstream candidate
+        run: |
+          cp experiments/ethereum_crystal_v23/upstream/bal_apply.go /tmp/geth/core/types/bal/bal_apply.go
+          cp experiments/ethereum_crystal_v23/upstream/bal_apply_test.go /tmp/geth/core/types/bal/bal_apply_test.go
+          cd /tmp/geth
+          git apply "$GITHUB_WORKSPACE/experiments/ethereum_crystal_v23/upstream/syncv2.patch"
+          gofmt -w core/types/bal/bal_apply.go core/types/bal/bal_apply_test.go eth/protocols/snap/syncv2.go
+          git diff --check
+      - name: Run target tests
+        working-directory: /tmp/geth
+        run: |
+          go test ./core/types/bal ./eth/protocols/snap -count=1
+      - name: Run decoder benchmark
+        working-directory: /tmp/geth
+        run: |
+          go test ./core/types/bal -run '^$' -bench '^BenchmarkDecodeApplyRLP$' -benchmem -count=5 | tee /tmp/crystal-v23-upstream-bench.txt
+      - name: Capture exact upstream patch
+        working-directory: /tmp/geth
+        run: |
+          git diff --binary > /tmp/crystal-v23-upstream.patch
+          sha256sum /tmp/crystal-v23-upstream.patch | tee /tmp/crystal-v23-upstream.patch.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ethereum-crystal-v23-upstream-package
+          path: |
+            /tmp/crystal-v23-upstream.patch
+            /tmp/crystal-v23-upstream.patch.sha256
+            /tmp/crystal-v23-upstream-bench.txt
+      - name: Seal
+        run: |
+          echo "ETHEREUM_CRYSTAL_V23_UPSTREAM_PACKAGE=PASS"
+          echo "GETH_PIN=c9a2bc73c847319a8faa57de59e42c0efc420682"
