@@ -1,0 +1,35 @@
+name: OpenAI math evidence audit v1
+
+on:
+  push:
+    branches:
+      - openai-math-evidence-audit-v1-20261009
+    paths:
+      - "experiments/openai_math_audit_v1/**"
+      - ".github/workflows/openai-math-evidence-audit-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-source-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout MathGraph audit implementation
+        uses: actions/checkout@v4
+      - name: Offline negative controls
+        run: python3 -m unittest discover -s experiments/openai_math_audit_v1 -p test_audit.py -v
+      - name: Authenticate fixed OpenAI source blobs and declared interfaces
+        run: |
+          python3 experiments/openai_math_audit_v1/audit.py \
+            --output experiments/openai_math_audit_v1/openai-math-audit-report.json
+      - name: Preserve structured audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-math-pinned-source-evidence
+          path: experiments/openai_math_audit_v1/openai-math-audit-report.json
+          if-no-files-found: warn
+          retention-days: 30
