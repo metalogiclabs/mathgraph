@@ -167,7 +167,7 @@ def run_audit(from_dir: pathlib.Path | None) -> tuple[dict, bool]:
               "The source paper states the same headline equality; this is NOT full semantic equivalence")
         check("paper_model_documented",
               "polynomial-time randomized machine" in model and
-              "work space" in model and
+              re.search(r"work\s+space", model) is not None and
               "randomized machine" in intro,
               "Paper includes a concrete time/space machine model; faithful Lean mapping remains UNKNOWN")
 
