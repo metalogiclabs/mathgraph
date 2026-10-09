@@ -61,14 +61,13 @@ theorem coefficient_seminorm_bound_three
     hb (h3.mul_left (3 ^ (p + 3) * C))
   simpa only [coeffSeminorm, tsum_mul_left] using h
 
-variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P] [FiniteDimensional ℝ P]
+variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P]
 
 /-- Four-loss inverse bound for the *actual* smooth periodic source family,
     conditional only on the explicitly identified summable lattice weight.
 
     This is the pointwise derivativeWord estimate, not yet the paper's
     supremum norm statement for all multiindices <= m. -/
-omit [FiniteDimensional ℝ P] in
 theorem inverse_four_loss_of_summable_third
     (h3 : SummableThirdLattice)
     (d : Direction) {f : Source P}
