@@ -30,7 +30,7 @@ jobs:
           python -m compileall -q experiments/wattbot2026
           python experiments/wattbot2026/verified_lesson.py
           python experiments/wattbot2026/derivation_router_probe.py --self-test
-      - name: Official scorer on frozen 63 TRAIN: three versus historical two lessons
+      - name: "Official scorer on frozen 63 TRAIN: three versus historical two lessons"
         shell: bash
         run: |
           set -euo pipefail
