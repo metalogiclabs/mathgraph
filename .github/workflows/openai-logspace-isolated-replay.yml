@@ -96,8 +96,38 @@ jobs:
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
           lake env leanchecker OAI.Computability.Logspace.Equality
+      - name: Check main theorem's transitive axiom list in loaded Lean environment
+        shell: bash
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cat > AuditTheoremAxioms.lean <<'LEAN'
+          import OAI.Computability.Logspace.Equality
+          #print axioms OAI.ExactDerandomization.exact_logarithmic_space_derandomization
+          LEAN
+          lake env lean AuditTheoremAxioms.lean | tee axiom-output.txt
+          python3 - <<'PY'
+          import re
+          t=open('axiom-output.txt', encoding='utf-8').read()
+          m=re.search(r"depends on axioms:\\s*\\[([^\\]]*)\\]",t)
+          if not m:
+              raise SystemExit("UNKNOWN_AX_REQUEST: did not find Lean axiom output")
+          used={x.strip() for x in m.group(1).split(',') if x.strip()}
+          permitted={'propext','Quot.sound','Classical.choice'}
+          if not used <= permitted:
+              raise SystemExit(f"UNPERMITTED_AXIOMS: {sorted(used-permitted)}")
+          print('MAIN_THEOREM_AXIOMS_WITHIN_PERMITTED_SET', sorted(used))
+          PY
+      - name: Archive Logspace theorem-axiom inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-logspace-axiom-inspection
+          path: isolated/axiom-output.txt
+          if-no-files-found: warn
       - name: Preserve exact verdict boundary
         if: always()
         run: |
           echo "This is a minimal-source independent Lean build/Leanchecker run, NOT Comparator."
-          echo "Paper-to-formal-statement equivalence and transitive axiom audit require separate qualification."
+          echo "Paper-to-formal-statement equivalence and challenge/solution Comparator checking require separate qualification."
