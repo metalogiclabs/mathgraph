@@ -134,6 +134,9 @@ jobs:
           #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeTracks_injective
           #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeTracks_blank_outside
           #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeTracks_writeAll_commutes
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.lowerAction_write_bit
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.lowerAction_group_move
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.copyHeadMovement_commutes
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
