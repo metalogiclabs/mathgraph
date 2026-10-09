@@ -26,6 +26,7 @@ import pandas as pd
 
 import full_reader as base
 from value_anchor import repaired_by_value, self_test as literal_anchor_self_test
+from arithmetic_witness import try_arithmetic_witness, self_test as arithmetic_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -102,6 +103,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 def self_test():
     literal_anchor_self_test()
+    arithmetic_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -218,6 +220,10 @@ def run(archive):
             "strict_then_raw_model_refs":[],
             "strict_then_unique_literal":[],
             "strict_literal_then_unverified_source":[],
+            "strict_then_arithmetic_only":[],
+            "strict_then_arithmetic_then_unverified":[],
+            "strict_literal_then_arithmetic_only":[],
+            "strict_literal_arithmetic_then_unverified":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -264,6 +270,31 @@ def run(archive):
             modes["strict_literal_then_unverified_source"].append(
                 candidate_after_literal)
 
+            arithmetic=None
+            arithmetic_reason="PRIOR_WARRANTED_SOURCE_CANDIDATE"
+            if strict is None and usable(response):
+                arithmetic,arithmetic_reason=try_arithmetic_witness(
+                    response,{"id":ident,"question":question},
+                    passages,docs_by_id[ident])
+            diagnosis["arithmetic_"+arithmetic_reason]+=1
+            if arithmetic is not None:
+                diagnosis["new_arithmetic_literal_certificates"]+=1
+            raw_fallback=raw_variant(row,response,numeric,passages,"selected")
+            modes["strict_then_arithmetic_only"].append(
+                dict(strict) if strict is not None else
+                dict(arithmetic) if arithmetic is not None else dict(numeric))
+            modes["strict_then_arithmetic_then_unverified"].append(
+                dict(strict) if strict is not None else
+                dict(arithmetic) if arithmetic is not None else raw_fallback)
+            modes["strict_literal_then_arithmetic_only"].append(
+                dict(strict) if strict is not None else
+                dict(literal) if literal is not None else
+                dict(arithmetic) if arithmetic is not None else dict(numeric))
+            modes["strict_literal_arithmetic_then_unverified"].append(
+                dict(strict) if strict is not None else
+                dict(literal) if literal is not None else
+                dict(arithmetic) if arithmetic is not None else raw_fallback)
+
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
             def official(rows):
@@ -287,6 +318,16 @@ def run(archive):
             scores.get("strict_literal_then_unverified_source",0)
             - scores.get("strict_then_unique_literal",0),8),
     }
+    arithmetic_pairwise={
+        "arithmetic_only_minus_strict":round(
+            scores["strict_then_arithmetic_only"]-comparison,8),
+        "arithmetic_unverified_minus_unverified":round(
+            scores["strict_then_arithmetic_then_unverified"]
+            -scores["strict_then_raw_model_refs"],8),
+        "full_tiered_minus_unverified":round(
+            scores["strict_literal_arithmetic_then_unverified"]
+            -scores["strict_then_raw_model_refs"],8),
+    }
     result={
        "status":"EXPLORATORY_CANDIDATE",
        "scope":"Same 63 historic TRAIN questions and same LLM responses for all arms",
@@ -300,17 +341,19 @@ def run(archive):
        "score_delta_vs_same_run_baseline":improvements,
        "invalid_modes":invalid,
        "pairwise_same_response_comparisons":pairwise,
+       "arithmetic_same_response_deltas":arithmetic_pairwise,
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"Tiered epistemic states: exact page-quote checked > source-unique "
-                  "numeric literal checked > unverified model value/source candidate > "
-                  "numeric fallback. None proves scientific semantic entailment. "
-                  "Same model responses scored by official TRAIN Score.py only; "
-                  "no hidden TEST labels or Kaggle submission.",
+       "boundary":"Tiered states: exact page-quotation and two-operand Fraction "
+                  "identity are mechanically checked with literal source operands; "
+                  "semantic relevance of operands and scientific implication "
+                  "remain CANDIDATE. Provisional model source references are never "
+                  "relabelled as verified. Same 63 TRAIN responses scored by pinned "
+                  "official Score.py; no hidden TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_TIERED_VALUE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_ARITHMETIC_WITNESS_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
