@@ -43,6 +43,12 @@ def main():
     print("WATTBOT_LIVE_MODEL_PRICE_CANDIDATES="+json.dumps({
         "model_count":len(selected),
         "models":selected[:MAX_PRINT],
+        "strong_model_spotlight":[m for m in selected if any(
+            token in m["id"] for token in (
+                "openai/gpt-6","google/gemini-3.8-flash",
+                "google/gemini-3.7-flash","google/gemini-3.6-flash",
+                "google/gemini-3.5-flash","google/gemini-3.1-pro",
+                "claude-sonnet-5.5","claude-opus-5.5","gpt-5.6-high"))],
         "boundary":"Public catalog only. Model quality unknown until frozen scored probe; no tokens purchased."
     },sort_keys=True))
 
