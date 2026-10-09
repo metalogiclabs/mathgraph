@@ -3,7 +3,7 @@
 
 In all arms, two examples originate ONLY from 182 development TRAIN questions,
 with target 63 holdout excluded by hash. The original examples' answer values
-and numeric literals in their explanations are withheld in this treatment,
+and answer-bearing explanations are withheld in this treatment,
 while retaining the question, type and output-unit structure. The same six
 PDF evidence passages and current question remain unchanged.
 
@@ -52,8 +52,10 @@ def mask_worked_values(compiled):
         shape=value_shape(original)
         shapes.append(shape)
         example["worked_answer_value"]=shape+"__LABEL_WITHHELD"
-        example["worked_explanation"]=NUMBERS.sub(
-            "VALUE_WITHHELD",str(example.get("worked_explanation","")))
+        # Gold explanations can restate text, ranges, numbers or labels.
+        # Withhold the entire answer-bearing explanation; retaining even
+        # nonnumeric prose would leak exact categorical answers.
+        example["worked_explanation"]="EXPLANATION_WITHHELD"
         if original and (original in example["worked_answer_value"] or
                          original in example["worked_explanation"]):
             raise RuntimeError("Development worked-answer literal leaked into treatment")
