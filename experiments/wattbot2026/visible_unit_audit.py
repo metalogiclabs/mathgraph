@@ -36,9 +36,12 @@ def norm_unit(unit):
 def provided(unit):
     return norm_unit(unit) not in BLANK
 
-def gold_type(value):
+def gold_is_na(flag):
+    return str(flag or "").strip().casefold() in ("true","1","1.0","yes")
+
+def gold_type(value, is_na=False):
     s=str(value).strip()
-    if s.casefold() in BLANK:
+    if is_na or s.casefold() in BLANK:
         return "gold_unanswerable"
     try:
         as_fraction(s)
@@ -50,7 +53,7 @@ def summarize(labelled,visible_units):
     groups=Counter()
     for _,r in labelled.iterrows():
         units=provided(r["answer_unit"])
-        kind=gold_type(r["answer_value"])
+        kind=gold_type(r["answer_value"],gold_is_na(r["is_NA"]))
         groups[("known_unit" if units else "blank_unit",kind)]+=1
     known={t:int(n) for (u,t),n in groups.items() if u=="known_unit"}
     unknown={t:int(n) for (u,t),n in groups.items() if u=="blank_unit"}
@@ -74,6 +77,8 @@ def self_test():
     assert gold_type("10.5")=="answerable_single_number"
     assert gold_type("is_blank")=="gold_unanswerable"
     assert gold_type("False")=="answerable_other"
+    assert gold_is_na(True) and gold_is_na("1") and not gold_is_na(False)
+    assert gold_type("n/a",True)=="gold_unanswerable"
     assert EXPECTED_SCORER_SHA256==EXPECTED["Score.py"]
     print("WATTBOT_VISIBLE_UNIT_AUDIT_SELF_TEST=PASS",flush=True)
 
@@ -89,6 +94,8 @@ def run(archive):
                          keep_default_na=False,dtype={"id":str})
     if (len(train),len(test))!=(EXPECTED_TRAIN,EXPECTED_TEST):
         raise RuntimeError("Frozen train/test sizes changed")
+    if "is_NA" not in train:
+        raise RuntimeError("TRAIN authority is_NA flag absent")
     if "answer_unit" not in train or "answer_unit" not in test:
         raise RuntimeError("Official visible unit field absent")
     if train["id"].duplicated().any() or test["id"].duplicated().any():
@@ -102,6 +109,8 @@ def run(archive):
     result={
       "authority":"Pinned official Kaggle TEST-visible answer_unit only; TRAIN gold solely for retrospective audit",
       "train_sha256":EXPECTED["train_QA.csv"],
+      "train_flagged_unanswerable":sum(gold_is_na(x) for x in train["is_NA"]),
+      "reused_holdout_flagged_unanswerable":sum(gold_is_na(x) for x in hold["is_NA"]),
       "test_sha256":EXPECTED["test_Q.csv"],
       "test_rows":len(test),
       "test_with_visible_known_unit":test_known,
