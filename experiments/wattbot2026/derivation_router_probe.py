@@ -333,7 +333,8 @@ def run(archive):
        "full_gold_worked_values_minus_masked_values":round(
            official["full_worked_answers_provisional"]-
            official["masked_worked_answers_provisional"],8),
-       "matched_question_pages_and_model_responses":True,
+       "same_initial_model_responses_and_source_pages":True,
+       "second_model_responses_paired":False,
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
