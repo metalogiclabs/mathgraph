@@ -12,7 +12,7 @@ variable {α : Type} [Fintype α] [DecidableEq α]
 
 /-- One-hot encoding uses a number of Boolean cells fixed by the alphabet,
 not by the input length. -/
-def encodeSymbol (a : α) : Fin (Fintype.card α) → Bool :=
+noncomputable def encodeSymbol (a : α) : Fin (Fintype.card α) → Bool :=
   fun i => decide (i = Fintype.equivFin α a)
 
 /-- Every finite symbol can be recovered uniquely from its Boolean block. -/
@@ -54,7 +54,7 @@ theorem tape_cell_equal_of_bit_blocks_equal
 
 /-- For a designated tape blank, use an all-zero block, not a one-hot blank.
     This is necessary to preserve infinite untouched blank tape regions. -/
-def encodeSymbolWithBlank (blank a : α) (i : Fin (Fintype.card α)) : Bool :=
+noncomputable def encodeSymbolWithBlank (blank a : α) (i : Fin (Fintype.card α)) : Bool :=
   decide (a ≠ blank ∧ i = Fintype.equivFin α a)
 
 theorem encodeBlank_is_zero (blank : α) :
@@ -111,7 +111,7 @@ theorem encodeBlankWorkTapes_injective (w : ℕ) (blank : α) :
 /-- Convert w finite-alphabet tapes into a fixed number w·|α| of Boolean
     tapes, using one Boolean track per alphabet symbol. The number of tracks
     is constant for any fixed source machine, independent of input length. -/
-def encodeWorkTapesAsBoolean {w : ℕ} (blank : α)
+noncomputable def encodeWorkTapesAsBoolean {w : ℕ} (blank : α)
     (tape : Fin w → ℤ → α) :
     Fin (w * Fintype.card α) → ℤ → Bool :=
   fun j z =>
