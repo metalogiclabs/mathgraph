@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/wattbot-dev-answer-type.yml'
       - 'experiments/wattbot2026/dev_answer_type_compiler.py'
+      - 'experiments/wattbot2026/verified_lesson.py'
 jobs:
   source-independent-answer-form:
     runs-on: ubuntu-latest
