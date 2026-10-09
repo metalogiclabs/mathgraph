@@ -109,4 +109,23 @@ theorem initial_data_write_commutes (b : Bool) :
     · have hnat : z.toNat ≠ 0 := by omega
       simp [Function.update, extendWork, hz, hzero, hnat]
 
+/-- In the fused version, the very first target transition consumes the
+same coin and enters precisely the encoded state of the source's first step.
+This checks both initially-halting and actively-transitioning machines. -/
+theorem first_step_control_commutes (M : LeftMachine q h)
+    (x : Word) (coin : Bool) :
+    ((compileFused M).step x coin ((compileFused M).initial x.length)).state =
+      activeState
+        (LeftBoundedMachine.step M x coin
+          (LeftBoundedMachine.initial M x.length)).state := by
+  cases ho : M.output M.initialState with
+  | some b =>
+      simp [Machine.step, LeftBoundedMachine.step,
+        Machine.initial, LeftBoundedMachine.initial, compileFused,
+        decodeActive, activeState, startupState, ho]
+  | none =>
+      simp [Machine.step, LeftBoundedMachine.step,
+        Machine.initial, LeftBoundedMachine.initial, compileFused,
+        decodeActive, activeState, startupState, ho]
+
 end Metalogic.OpenAIMath.LeftWallFusedCompiler
