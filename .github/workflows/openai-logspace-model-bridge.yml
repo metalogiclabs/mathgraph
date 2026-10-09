@@ -272,6 +272,7 @@ jobs:
           #print axioms Metalogic.OpenAIMath.LeftWallFusedCompiler.origin_marker_from_blank
           #print axioms Metalogic.OpenAIMath.LeftWallFusedCompiler.initial_data_write_commutes
           #print axioms Metalogic.OpenAIMath.LeftWallFusedCompiler.first_step_control_commutes
+          #print axioms Metalogic.OpenAIMath.LeftWallFusedCompiler.first_step_origin_marker
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
