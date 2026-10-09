@@ -56,7 +56,8 @@ def audit(official_zip):
             if hasattr(error,"response") and error.response is not None:
                 entry["http_status"]=error.response.status_code
         outcomes.append(entry)
-    manifest=hashlib.sha256("\n".join(digests).encode()).hexdigest()
+    # Match the historical full_reader certificate's literal backslash+n separator.
+    manifest=hashlib.sha256("\\n".join(digests).encode()).hexdigest()
     print("WATTBOT_REPORT_PIN_AUDIT="+json.dumps({
         "official_metadata_pin":OFFICIAL_METADATA_SHA256,
         "reference_manifest":PREVIOUS_MANIFEST,
