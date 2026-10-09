@@ -142,4 +142,39 @@ theorem first_halt_lt_card_of_faithful_encoding
   simp only [Fintype.card_fin] at hcard
   omega
 
+
+/-- Every OAI work-head movement changes its integer position by at most one. -/
+theorem direction_move_unit_bounds (d : Direction) (z : ℤ) :
+    d.move z ≤ z + 1 ∧ z ≤ d.move z + 1 := by
+  cases d <;> simp [Direction.move] <;> omega
+
+/-- The concrete work-head transition preserves the adjacent-step bounds,
+including when execution has already halted. -/
+theorem machine_step_workhead_unit_bounds
+    {q w h : ℕ} (M : Machine q w h) (x : Word) (b : Bool)
+    (c : Configuration q w h x.length) (k : Fin w) :
+    (M.step x b c).workPos k ≤ c.workPos k + 1 ∧
+      c.workPos k ≤ (M.step x b c).workPos k + 1 := by
+  cases ho : M.output c.state with
+  | some answer =>
+      simp [Machine.step, ho]
+  | none =>
+      dsimp [Machine.step, ho]
+      exact direction_move_unit_bounds
+        ((M.transition c.state (fun j => readInput x (c.inputPos j))
+          (fun j => c.work j (c.workPos j)) b).workMove k) (c.workPos k)
+
+/-- OAI's cardinality of visited work sites is monotonically nondecreasing,
+independently of whether the machine halts. -/
+theorem spaceThrough_monotone
+    {q w h : ℕ} (M : Machine q w h) (x : Word) (coins : CoinTape)
+    {u v : ℕ} (huv : u ≤ v) :
+    M.spaceThrough x coins u ≤ M.spaceThrough x coins v := by
+  unfold Machine.spaceThrough
+  apply Finset.sum_le_sum
+  intro k _
+  apply Finset.card_le_card
+  apply Finset.image_mono
+  exact Finset.range_mono (by omega)
+
 end Metalogic.OpenAIMath.FiniteEnvelope
