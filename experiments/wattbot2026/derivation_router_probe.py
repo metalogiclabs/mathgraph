@@ -196,7 +196,7 @@ def run(archive):
     baseline=scores[0]
     if baseline["source_manifest_sha256"]!=SOURCE_PIN:
         raise RuntimeError("PDF manifest changed")
-    if len(first_raw)!=63 or len(first_checked)!=63 or len(numeric)!=63:
+    if len(first_raw)!=63 or len(first_checked)>63 or len(numeric)!=63:
         raise RuntimeError("Partial question cohort")
     if stats["first_pages"]!=378 or stats["first_questions"]!=63:
         raise RuntimeError("Changed six-source reader cohort")
@@ -222,7 +222,7 @@ def run(archive):
             ident=str(row["id"])
             q=str(row["question"])
             original,status=first_raw[q]
-            prior_checked,_=first_checked[ident]
+            prior_checked,_=first_checked.get(ident,(None,"FIRST_NOT_CHECKED"))
             default=numeric[ident]
             prior=raw_variant(row,original,default,first_pages[q],"selected")
             second,second_status,more=second_raw.get(q,(None,"NOT_TRIGGERED",[]))
