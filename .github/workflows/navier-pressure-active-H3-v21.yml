@@ -1,0 +1,124 @@
+name: Active canonical pressure Fourier H3 V21
+on:
+  push:
+    branches: [navier-pressure-active-H3-v21]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/ActivePressureH3.lean'
+      - '.github/workflows/navier-pressure-active-H3-v21.yml'
+  pull_request:
+    branches: [navier-pressure-harmonic-criterion-v20]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/ActivePressureH3.lean'
+      - '.github/workflows/navier-pressure-active-H3-v21.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: active-pressure-H3-v21-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-real-pressure-pair-H3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin candidate and OpenAI source
+        run: |
+          set -euo pipefail
+          mkdir -p .pressure-H3-env pressure-v21-evidence
+          git rev-parse HEAD | tee pressure-v21-evidence/head-sha.txt
+          cp experiments/navier_stokes_semantic_bridge_v1/ActivePressureH3.lean .pressure-H3-env/ActivePressureH3.lean
+          cp .pressure-H3-env/ActivePressureH3.lean pressure-v21-evidence/ActivePressureH3.lean
+          sha256sum .pressure-H3-env/ActivePressureH3.lean > pressure-v21-evidence/source-sha256.txt
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .pressure-H3-env/lean-toolchain
+          cat > .pressure-H3-env/lakefile.toml <<'EOF'
+          name = "mathgraph_active_pressure_h3_v21"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "ActivePressureH3"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .pressure-H3-env/.lake
+            .pressure-H3-env/lake-manifest.json
+          key: active-pressure-H3-v21-lean434rc2-original-f9e8bc5
+          save-always: true
+      - name: Install exact Lean
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify source pressure-test Fourier weights and Riesz bound
+        working-directory: .pressure-H3-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'theorem integrable_inverse_weight_sq' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/PressureTestBounds.lean
+          grep -q 'theorem norm_l1_pair_le_of_bound' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/PressureFunctionals.lean
+          grep -q 'theorem norm_rieszTest_le_integral' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/RieszSymbolRegularity.lean .lake/packages/NavierStokesAndEuler/NavierStokes/R3/RieszLinearityDecay.lean .lake/packages/NavierStokesAndEuler/NavierStokes/R3/RieszTestOperators.lean
+          cp lake-manifest.json ../pressure-v21-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v21-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check real active pressure H3 bound
+        working-directory: .pressure-H3-env
+        run: |
+          set -euo pipefail
+          lake build ActivePressureH3 2>&1 | tee ../pressure-v21-evidence/build.log
+          lake env lean -DwarningAsError=true ActivePressureH3.lean 2>&1 | tee ../pressure-v21-evidence/axioms.log
+      - name: Seal explicit source and admission limitations
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('pressure-v21-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          prefix='MathGraph.ActivePressureH3.'
+          expect={prefix+n for n in (
+            'integral_fourier_norm_le_H3','active_pressurePair_H3_bound',
+            'active_pressurePairLinear_has_H3_certificate')}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,a in rows:
+            assert n not in seen,n
+            used={s.strip() for s in a.split(',') if s.strip()}
+            assert used<={'propext','Classical.choice','Quot.sound'},(n,sorted(used))
+            seen[n]=sorted(used)
+          assert set(seen)==expect,sorted(set(seen).symmetric_difference(expect))
+          out={
+            'schema':'mathgraph.real-comparison-pressure-H3-v21',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'OpenAI_original':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'ACTUAL_REAL_COMPARISON_PRESSURE_PAIR_LINEAR_H3_BOUND',
+            'active_comparison_H3_certificate_derived':True,
+            'old_pressureL1_H3_bound_derived':False,
+            'actual_old_vs_comparison_all_test_equivalence':False,
+            'source_NL_contract_approved':False,
+            'manuscript_B_only_flux_estimate_proved':False,
+            'production_unchanged':True,
+            'axioms':seen,
+            'files_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()},
+          }
+          (root/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: active-pressure-H3-v21
+          path: pressure-v21-evidence/
+          if-no-files-found: error
