@@ -1,0 +1,31 @@
+name: WattBot V4 recovered-answer provenance and transport preflight
+on:
+  push:
+    branches: [wattbot-answer-recovery-v4]
+    paths:
+      - '.github/workflows/wattbot-v4-preflight.yml'
+      - 'experiments/wattbot2026/submit_full_reader.py'
+      - 'experiments/wattbot2026/submission_gate.py'
+jobs:
+  v4-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install local verification dependencies without credentials
+        run: python -m pip install pandas numpy requests pymupdf pytest
+      - name: Verify source distinction and fail-closed CSV contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/submit_full_reader.py --self-test
+          python -m pytest -q experiments/wattbot2026/tests/test_submission_gate.py experiments/wattbot2026/tests/test_query_window.py
+      - name: No Kaggle/API calls at preflight
+        run: echo "No scientific entailment claimed for candidate recovery."
