@@ -1,7 +1,7 @@
 name: WattBot complete reader submission preflight
 on:
   push:
-    branches: [wattbot-full-window-v1]
+    branches: [wattbot-full-window-v1, wattbot-complete-submit-v3]
     paths:
       - 'experiments/wattbot2026/submit_full_reader.py'
       - 'experiments/wattbot2026/cached_pdf.py'
