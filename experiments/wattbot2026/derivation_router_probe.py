@@ -25,10 +25,11 @@ import tempfile
 import zipfile
 
 import pandas as pd
+import requests
 
 import full_reader as base
 from answer_value_residual_probe import raw_variant, usable
-from verified_lesson import illustrate, self_test as lessons_self_test
+from verified_lesson import (illustrate, task_type, self_test as lessons_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -39,8 +40,12 @@ PIN = {
   "train_QA.csv":"9cbc25a9cb6133e1ef833fad6eb7fe43f9b72c1533b39d3b1ae94b3172407dca",
 }
 SOURCE_PIN="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a9"
-SECONDARY_RESERVE_USD=.16
+SECONDARY_RESERVE_USD=.85
 SECONDARY_TOP_K=10
+SOL_MODEL="openai/gpt-6-sol"
+SOL_TYPES=frozenset(("Math","CrossPaper"))
+SOL_PROMPT_RATE_CEILING=.000002
+SOL_COMPLETION_RATE_CEILING=.00001
 
 INTENT_RE = re.compile(
     r"\b(?:calculate|compute|derive|estimate\s+the\s+(?:difference|ratio)|"
@@ -78,6 +83,22 @@ def derivation_question(question):
     return bool(INTENT_RE.search(str(question or "")))
 
 
+def get_sol_pricing():
+    response=requests.get("https://openrouter.ai/api/v1/models",timeout=(8,30))
+    response.raise_for_status()
+    matches=[model for model in response.json().get("data",[])
+             if model.get("id")==SOL_MODEL]
+    if len(matches)!=1:
+        raise RuntimeError("GPT-6 Sol unavailable or ambiguous")
+    pricing=matches[0].get("pricing") or {}
+    p=float(pricing.get("prompt","nan"))
+    c=float(pricing.get("completion","nan"))
+    if not (0<=p<=SOL_PROMPT_RATE_CEILING
+            and 0<=c<=SOL_COMPLETION_RATE_CEILING):
+        raise RuntimeError("GPT-6 Sol live pricing exceeds frozen scope")
+    return {"prompt":p,"completion":c}
+
+
 def self_test():
     lessons_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
@@ -89,7 +110,10 @@ def self_test():
     assert not derivation_question("What was the reported electricity consumption?")
     assert not derivation_question("What was the publication year?")
     assert SECONDARY_RESERVE_USD>base.MAX_BUDGET_USD
-    print("WATTBOT_DERIVATION_ROUTER_SELF_TEST=PASS")
+    assert task_type("What percent increase was observed?")=="Math"
+    assert task_type("Compare both studies' energy.")=="CrossPaper"
+    assert task_type("What was the reported value?") not in SOL_TYPES
+    print("WATTBOT_TYPED_SOL_LESSON_SELF_TEST=PASS")
 
 
 def run(archive):
@@ -104,6 +128,7 @@ def run(archive):
                 if not is_holdout(str(item["id"]))]
         if len(worked)!=182:
             raise RuntimeError("Development example universe changed")
+    sol_rate=get_sol_pricing()
     original_passages=base.passages_for
     original_model=base.call_reader
     original_numeric=base.build_candidate
@@ -152,14 +177,24 @@ def run(archive):
                              "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
                              for i,p in enumerate(expanded)]},
                         ensure_ascii=False,separators=(",",":"))
+        question_type=task_type(question)
+        use_sol=question_type in SOL_TYPES
+        rate=sol_rate if use_sol else price
         charge=base.conservative_charge(
-            base.SYSTEM+wire,price,base.MAX_OUTPUT_TOKENS)
+            base.SYSTEM+wire,rate,base.MAX_OUTPUT_TOKENS)
         if extra[0]+charge>SECONDARY_RESERVE_USD:
             stats["extra_cost_guard"]+=1
             return response,status,bound,actual
-        later,reason,reserve,reported=original_model(key,enriched,expanded,price)
+        prior_model=base.MODEL
+        try:
+            base.MODEL=SOL_MODEL if use_sol else prior_model
+            later,reason,reserve,reported=original_model(
+                key,enriched,expanded,rate)
+        finally:
+            base.MODEL=prior_model
         extra[0]+=reserve
         extra[1]+=reported
+        stats["sol_tasks" if use_sol else "flashlite_tasks"]+=1
         if abs(charge-reserve) > 0.00000001:
             raise RuntimeError("Second-pass cost calculation diverges")
         second_raw[question]=(later,reason,expanded)
@@ -274,15 +309,16 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
+    print("WATTBOT_TYPED_SOL_LESSON_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
-       "model_call_routing":"Two same-task worked examples from development TRAIN; "
-         "selected by question text and development type flags only. No target "
-         "holdout answer, reference or flag used as a demonstration.",
-       "only_router":"Two-example developmental formatting/reasoning transfer "
-         "on every question with identical pinned six-page context",
+       "model_call_routing":"Question-only task_type selects GPT-6 Sol for "
+         "Math or CrossPaper; same Flash-Lite model elsewhere. Two worked "
+         "examples from 182 development TRAIN, no target holdout label.",
+       "only_router":"Question-only typed model specialization (Math/CrossPaper "
+         "versus Quote/Table/Figure) with identical six pinned PDF excerpts "
+         "and two development-only lesson exemplars",
        "score_arms":official,
        "strict_baseline":official["first_strict"],
        "provisional_baseline":official["first_provisional"],
@@ -293,12 +329,13 @@ def run(archive):
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Exact same first and second six-page source evidence; "
-         "two development TRAIN worked answer conventions inform only second "
-         "response. No holdout gold, reference, answer or label in exemplars. "
-         "Verbatim PDF quotations are provenance rather than scientific "
-         "entailment. Paired reused TRAIN qualification only; no TEST "
-         "inference or Kaggle submission."
+       "boundary":"One baseline Flash-Lite model response per question, "
+         "same six pinned PDF snippets for every second model. Type classifier "
+         "uses question wording and 182 development labels only, never target "
+         "holdout answer/reference. Independent exact-page source check "
+         "certifies literal provenance, NOT scientific semantic entailment. "
+         "Only reused 63 TRAIN questions scored after output freeze; "
+         "no protected TEST inference or Kaggle submission."
     },sort_keys=True),flush=True)
 
 
