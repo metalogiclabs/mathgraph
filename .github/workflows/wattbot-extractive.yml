@@ -1,0 +1,40 @@
+name: WattBot CPU extractive-answer candidate
+on:
+  push:
+    branches: [wattbot-2026-extractive-v1]
+    paths:
+      - 'experiments/wattbot2026/extractive_probe.py'
+      - '.github/workflows/wattbot-extractive.yml'
+jobs:
+  extractive-holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only, pinned QA dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers==4.46.3' 'huggingface_hub<1.0' pandas kaggle requests pymupdf
+      - name: Test deterministic workflow invariants
+        run: python experiments/wattbot2026/extractive_probe.py --self-test
+      - name: Evaluate literal-span predictions with pinned WattBot official scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/extractive_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Keep private evaluation data ephemeral
+        run: echo "No licensed competition rows, PDF bytes, model answers or source quotations uploaded as artifacts."
