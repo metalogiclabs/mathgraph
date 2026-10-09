@@ -1,0 +1,33 @@
+name: WattBot bounded arXiv PDF access probe
+on:
+  push:
+    branches: [wattbot-2026-v1]
+    paths:
+      - 'experiments/wattbot2026/pdf_probe.py'
+      - '.github/workflows/wattbot-pdf-probe.yml'
+jobs:
+  bounded-pdf-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle requests pymupdf
+      - run: python experiments/wattbot2026/pdf_probe.py --self-test
+      - name: Probe maximum four pinned arXiv PDFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/pdf_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" --max-docs 4
+      - name: Protect pinned source documents
+        run: echo "No PDF bytes, question rows or licensed data retained outside ephemeral runner."
