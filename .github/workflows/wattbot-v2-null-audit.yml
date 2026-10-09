@@ -25,6 +25,6 @@ jobs:
           mkdir -p "$RUNNER_TEMP/wattbot_v2"
           kaggle competitions submission-download 56996090 -p "$RUNNER_TEMP/wattbot_v2" -q
           python experiments/wattbot2026/audit_submission_nulls.py \
-            --submission "$RUNNER_TEMP/wattbot_v2/mathgraph_v2.csv"
+            --submission "$RUNNER_TEMP/wattbot_v2"
       - name: Preserve competition privacy
         run: echo "Ephemeral submission is never logged, uploaded or committed; counts only."
