@@ -4,11 +4,13 @@ on:
     branches: [navier-stokes-semantic-bridge-v1]
     paths:
       - 'experiments/navier_stokes_semantic_bridge_v1/ParametricFourLoss.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/FullJetFourLoss.lean'
       - '.github/workflows/navier-stokes-parameter-four-loss-v7.yml'
   pull_request:
     branches: [main]
     paths:
       - 'experiments/navier_stokes_semantic_bridge_v1/ParametricFourLoss.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/FullJetFourLoss.lean'
       - '.github/workflows/navier-stokes-parameter-four-loss-v7.yml'
   workflow_dispatch:
 
@@ -36,9 +38,10 @@ jobs:
           test "$(git hash-object $ROOT/FourLossBridge.lean)" = "9021aec2be1ebfa907461337b03ba3d8c5ce1fd4"
           test "$(git hash-object $ROOT/ThirdLattice.lean)" = "c88f17f097b90f8b0a57182a3dcdc45d7c9e215c"
           test "$(git hash-object $ROOT/FourLossUnconditional.lean)" = "766d4abeb26df5c4f052a6295ad8109d2e769956"
-          cp $ROOT/{FourLossBridge,ThirdLattice,FourLossUnconditional,ParametricFourLoss}.lean .four-loss-env/
+          cp $ROOT/{FourLossBridge,ThirdLattice,FourLossUnconditional,ParametricFourLoss,FullJetFourLoss}.lean .four-loss-env/
+          cp $ROOT/FullJetFourLoss.lean four-loss-v7-evidence/FullJetFourLoss.lean
           cp $ROOT/ParametricFourLoss.lean four-loss-v7-evidence/ParametricFourLoss.lean
-          sha256sum .four-loss-env/{FourLossBridge,ThirdLattice,FourLossUnconditional,ParametricFourLoss}.lean > four-loss-v7-evidence/lean-sources.sha256
+          sha256sum .four-loss-env/{FourLossBridge,ThirdLattice,FourLossUnconditional,ParametricFourLoss,FullJetFourLoss}.lean > four-loss-v7-evidence/lean-sources.sha256
           printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .four-loss-env/lean-toolchain
           cat > .four-loss-env/lakefile.toml <<'EOF'
           name = "mathgraph_actual_mixedjet_four_loss_v7"
@@ -55,6 +58,8 @@ jobs:
           name = "FourLossUnconditional"
           [[lean_lib]]
           name = "ParametricFourLoss"
+          [[lean_lib]]
+          name = "FullJetFourLoss"
           EOF
       - uses: actions/cache@v4
         with:
@@ -82,8 +87,9 @@ jobs:
         working-directory: .four-loss-env
         run: |
           set -euo pipefail
-          lake build ParametricFourLoss 2>&1 | tee ../four-loss-v7-evidence/build.log
+          lake build ParametricFourLoss FullJetFourLoss 2>&1 | tee ../four-loss-v7-evidence/build.log
           lake env lean -DwarningAsError=true ParametricFourLoss.lean 2>&1 | tee ../four-loss-v7-evidence/axioms.log
+          lake env lean -DwarningAsError=true FullJetFourLoss.lean 2>&1 | tee ../four-loss-v7-evidence/fulljet-axioms.log
       - name: Check theorem boundary and axioms
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -93,10 +99,15 @@ jobs:
           from pathlib import Path
           root=Path('four-loss-v7-evidence')
           assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
-          log=(root/'axioms.log').read_text()
+          log=(root/'axioms.log').read_text() + '\n' + (root/'fulljet-axioms.log').read_text()
           expected={
             'MathGraph.ParametricFourLoss.fourLossConstant_nonneg',
             'MathGraph.ParametricFourLoss.mixedJet_inverse_bound_four',
+            'MathGraph.FullJetFourLoss.coefficient_moment_bound_three',
+            'MathGraph.FullJetFourLoss.multiplierJetConstantThree_nonneg',
+            'MathGraph.FullJetFourLoss.norm_jet_applyMultiplier_le_three',
+            'MathGraph.FullJetFourLoss.applyMultiplier_finiteJets_three',
+            'MathGraph.FullJetFourLoss.inverse_finiteJets_four',
           }
           rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
           rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
@@ -116,7 +127,7 @@ jobs:
             'input_torus_jet_loss':4,
             'extra_summability_hypothesis':False,
             'source_NL_interpretation_approved':False,
-            'original_full_JetBound_Cm_statement':'UNKNOWN',
+            'original_full_JetBound_Cm_statement':'FORMAL_JETBOUND_N_PLUS_FOUR_KERNEL_CHECKED_SOURCE_NL_UNKNOWN',
             'full_Navier_Stokes_claim':'UNKNOWN',
             'production_admission_changed':False,
             'theorem_axioms':seen,
