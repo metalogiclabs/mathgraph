@@ -26,7 +26,7 @@ jobs:
           leanchecker: true
           leanchecker-args: "WeilSignProbe"
           axiom-audit: true
-          axiom-audit-root: Metalogic.OpenAIMath.WeilSign
+          axiom-audit-root: WeilSignProbe
           axiom-audit-allow: propext,Classical.choice,Quot.sound
           use-mathlib-cache: false
           use-github-cache: false
