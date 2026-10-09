@@ -1,0 +1,56 @@
+name: WattBot V4 source-value-repaired exact-window submission
+on:
+  push:
+    branches: [wattbot-value-repaired-submit-v4]
+    paths:
+      - 'experiments/wattbot2026/value_anchor.py'
+      - 'experiments/wattbot2026/submit_value_repair_v4.py'
+      - '.github/workflows/wattbot-submit-value-v4.yml'
+permissions:
+  contents: read
+jobs:
+  value-repaired-v4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned official competition and source dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf pytest
+      - name: Verify unchanged corpus, model, source-value repair, zero-null transport
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/submit_value_repair_v4.py --self-test
+          python -m pytest -q experiments/wattbot2026/tests/test_submission_gate.py experiments/wattbot2026/tests/test_query_window.py
+      - name: Generate protected TEST candidates from officially pinned source data
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_value_repair_v4.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_value_repaired_v4.csv"
+          python experiments/wattbot2026/submission_gate.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --submission "$RUNNER_TEMP/wattbot/mathgraph_value_repaired_v4.csv"
+      - name: Submit only qualified, nonnull, frozen CSV to Kaggle server
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/wattbot/mathgraph_value_repaired_v4.csv"
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_value_repaired_v4.csv" \
+            -m "MathGraph V4 full corpus exact-window verified-value repair; source ${GITHUB_SHA:0:12}"
+      - name: Query official submission receipt without inferring score
+        run: |
+          kaggle competitions submissions -c WattBot2026
+          echo "A submission receipt is not a COMPLETE Kaggle public score."
+      - name: Scientific and licensing boundary
+        run: echo "No protected labels, predictions, raw scientific PDFs, prompts or credentials are uploaded to GitHub artifacts."
