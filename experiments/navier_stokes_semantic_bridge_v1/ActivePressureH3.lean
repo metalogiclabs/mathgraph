@@ -39,7 +39,7 @@ theorem integral_fourier_norm_le_H3 (ψ : ComplexTest) :
     (FourierTransform.fourierCLE ℂ ComplexTest ψ).continuous.aestronglyMeasurable
   have hw : Integrable (fun ξ : Space =>
       (1 + ‖ξ‖ ^ 2) ^ 3 * ‖f ξ‖ ^ 2) volume :=
-    FourierSobolevWeights.integrable_fourierHNormSq_three ψ
+    NavierStokesR3.FourierSobolevWeights.integrable_fourierHNormSq_three ψ
   let a : Space → ℝ := fun ξ => (1 + ‖ξ‖ ^ 2)⁻¹
   let b : Space → ℝ := fun ξ => (1 + ‖ξ‖ ^ 2) * ‖f ξ‖
   have ha : AEStronglyMeasurable a volume := by
