@@ -161,6 +161,7 @@ jobs:
           #print axioms Metalogic.OpenAIMath.WindowEncoding.encode_faithful_under_window
           #print axioms Metalogic.OpenAIMath.SpaceTimeBound.finite_code_faithful_of_spaceThrough
           #print axioms Metalogic.OpenAIMath.SpaceTimeBound.deterministic_first_halt_lt_space_envelope
+          #print axioms Metalogic.OpenAIMath.SpaceTimeBound.deterministic_LogSpace_first_halt_lt_explicit_code
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbol_injective
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbol_true_iff
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapes_injective
