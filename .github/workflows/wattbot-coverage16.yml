@@ -1,0 +1,37 @@
+name: WattBot 16-paper bounded coverage transfer
+on:
+  push:
+    branches: [wattbot-2026-coverage16-v1]
+    paths:
+      - 'experiments/wattbot2026/coverage_probe.py'
+      - '.github/workflows/wattbot-coverage16.yml'
+jobs:
+  coverage16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded corpus pilot dependencies
+        run: python -m pip install kaggle requests pymupdf
+      - name: Execute source URL and split self-tests
+        run: |
+          python experiments/wattbot2026/pdf_probe.py --self-test
+          python experiments/wattbot2026/coverage_probe.py --self-test
+      - name: Compare four, eight and sixteen pinned PDFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/coverage_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Preserve evidence and dataset boundary
+        run: echo "Only aggregate metrics logged; no licensed data, source PDFs, predictions, or protected labels uploaded."
