@@ -2,6 +2,8 @@ name: Navier-Stokes semantic correspondence (bounded)
 on:
   push:
     branches: [navier-stokes-semantic-bridge-v1]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
