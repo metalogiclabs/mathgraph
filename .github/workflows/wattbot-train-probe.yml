@@ -1,0 +1,33 @@
+name: WattBot 2026 official train retrieval probe
+on:
+  push:
+    branches: [wattbot-2026-v1]
+    paths:
+      - 'experiments/wattbot2026/train_probe.py'
+      - '.github/workflows/wattbot-train-probe.yml'
+jobs:
+  metadata-retrieval:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python experiments/wattbot2026/train_probe.py --self-test
+      - run: python -m pip install kaggle
+      - name: Run bounded source-recall benchmark against official 2026 training data
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/train_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Retain only aggregate metrics
+        run: |
+          echo "No licensed source documents, labelled rows or test predictions are stored in git or artifacts."
