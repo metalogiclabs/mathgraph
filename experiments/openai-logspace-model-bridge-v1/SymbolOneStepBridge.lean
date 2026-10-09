@@ -51,7 +51,6 @@ theorem source_step_commutes
         simpa [compileMachine, encodeConfiguration] using ho
       rw [Machine.step]
       simp only [houtput]
-      simp only [encodeConfiguration] at haction ⊢
       have haction' :
           (compileMachine codec M).transition
             (encodeConfiguration codec c).state
