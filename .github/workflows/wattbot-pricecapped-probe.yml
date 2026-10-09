@@ -1,0 +1,40 @@
+name: WattBot price-capped Qwen development test
+on:
+  push:
+    branches: [wattbot-2026-pricecapped-v1]
+    paths:
+      - 'experiments/wattbot2026/free_llm_probe.py'
+      - '.github/workflows/wattbot-pricecapped-probe.yml'
+jobs:
+  capped-six:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen bounded code validation
+        run: |
+          python -m py_compile experiments/wattbot2026/free_llm_probe.py
+          grep -q 'MAX_EXPERIMENT_COST_USD = 0.01' experiments/wattbot2026/free_llm_probe.py
+          grep -q 'MAX_REQUESTS = 6' experiments/wattbot2026/free_llm_probe.py
+      - run: pip install kaggle pandas numpy requests pymupdf
+      - name: Compare capped evidence-grounded six-question candidates to official scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/free_llm_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Restricted use boundary
+        run: |
+          echo "Non-recurring single development diagnostic, max 6 requests, preflight listed prices and USD 0.01 upper bound."
+          echo "No question text, source PDFs, prompts, outputs or protected labels published as artifacts."
