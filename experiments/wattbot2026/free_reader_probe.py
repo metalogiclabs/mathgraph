@@ -32,7 +32,10 @@ from score_ablation import load_score, blank_submission
 from train_probe import parse_refs
 from wattbot import chunks_from_pages, ranked, norm
 
-MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+MODEL = "google/gemini-2.5-flash-lite"
+MAX_ESTIMATED_USD = 0.02
+MAX_PROMPT_USD_PER_TOKEN = 0.0000001
+MAX_COMPLETION_USD_PER_TOKEN = 0.0000004
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 CALL_LIMIT = 8
 CONTEXT_CHUNKS = 6
@@ -103,6 +106,7 @@ def request_free_reader(key, question, passages):
     ]
     payload={
         "model": MODEL,"messages":messages,
+        "response_format":{"type":"json_object"},
         "max_tokens":450,"temperature":0.0,
         "stream":False
     }
@@ -128,8 +132,8 @@ def request_free_reader(key, question, passages):
     answer=parse_answer(content)
     usage=body.get("usage") or {}
     cost=usage.get("cost",None)
-    if isinstance(cost,(int,float)) and cost > 0:
-        raise RuntimeError("No-paid-spend invariant violated; abort")
+    if isinstance(cost,(int,float)) and cost > MAX_ESTIMATED_USD:
+        raise RuntimeError("Reported cost exceeds configured experiment cap")
     return answer, "OK" if answer else "INVALID_JSON", {
         "input_tokens":usage.get("prompt_tokens"),
         "output_tokens":usage.get("completion_tokens"),
@@ -137,10 +141,26 @@ def request_free_reader(key, question, passages):
     }
 
 
+def verify_price_ceiling():
+    response=requests.get("https://openrouter.ai/api/v1/models",timeout=(8,25))
+    response.raise_for_status()
+    model=next((x for x in response.json().get("data",[]) if x.get("id")==MODEL),None)
+    if model is None:
+        raise RuntimeError("Pinned OpenRouter model not in current catalog")
+    pricing=model.get("pricing") or {}
+    prompt=float(pricing.get("prompt","nan"))
+    completion=float(pricing.get("completion","nan"))
+    if not (0 <= prompt <= MAX_PROMPT_USD_PER_TOKEN and
+            0 <= completion <= MAX_COMPLETION_USD_PER_TOKEN):
+        raise RuntimeError("Live pricing exceeds frozen model ceiling")
+    return {"prompt":prompt,"completion":completion}
+
+
 def run(official_zip):
     key=os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY not configured; no calls made")
+    price=verify_price_ceiling()
     with zipfile.ZipFile(official_zip) as z:
         train=pd.read_csv(io.BytesIO(z.read("train_QA.csv")),
                           keep_default_na=False,dtype={"id":str})
@@ -158,6 +178,7 @@ def run(official_zip):
         quotes=0
         downloaded={}
         usage_cost=[]
+        estimated_spent=0.0
         with tempfile.TemporaryDirectory(prefix="wattbot_free_reader_") as td:
             folder=Path(td)
             cache={}
@@ -181,6 +202,12 @@ def run(official_zip):
                 if not passages:
                     statuses["NO_PASSAGES"]+=1
                     continue
+                # Conservative pre-call budget: at most one token per character.
+                estimate=(len(question)+len(passages)+len(SYSTEM_PROMPT)+1000)*price["prompt"] + 450*price["completion"]
+                if estimated_spent + estimate > MAX_ESTIMATED_USD:
+                    statuses["PRECALL_BUDGET_ABORT"]+=1
+                    break
+                estimated_spent += estimate
                 response,status,usage=request_free_reader(key,question,passages)
                 statuses[status]+=1
                 if usage and isinstance(usage.get("cost_observed"),(int,float)):
@@ -210,7 +237,7 @@ def run(official_zip):
             def score(frame):
                 return round(float(score_fn(solution.copy(deep=True),
                             frame.copy(deep=True),row_id_column_name="id",verbose=False)),8)
-            print("WATTBOT_FREE_READER_DEV_PROBE="+json.dumps({
+            print("WATTBOT_FLASHLITE_READER_DEV_PROBE="+json.dumps({
                 "selected_dev_rows":len(ids),
                 "selected_types":dict(Counter(k for _,_,k in ids)),
                 "downloaded_distinct_pdfs":len(downloaded),
@@ -218,11 +245,14 @@ def run(official_zip):
                 "status_counts":dict(statuses),
                 "quote_anchored_rows":quotes,
                 "reported_api_cost_sum":round(sum(usage_cost),8),
+                "estimated_cost_ceiling_usd":MAX_ESTIMATED_USD,
+                "estimated_budget_committed_usd":round(estimated_spent,8),
+                "model_pricing_per_token":price,
                 "blank_control_score":score(initial),
                 "model_answer_only_score":score(values),
                 "oracle_source_plus_model_answer_score":score(oracle),
                 "only_page_anchored_outputs_score":score(grounded),
-                "boundary":"Development subset with gold source selection; NON-deployable, no hidden labels, no paid model fallback",
+                "boundary":"Development subset with gold source selection; NON-deployable, no hidden labels, no alternate model fallback",
             },sort_keys=True),flush=True)
 
 
@@ -230,8 +260,9 @@ def self_test():
     assert parse_answer('{"answer_value":"42","answer_unit":"MWh"}')["answer_value"]=="42"
     assert parse_answer("bad") is None
     assert CALL_LIMIT==8
-    assert ":free" in MODEL
-    print("FREE_READER_SELF_TEST=PASS")
+    assert MODEL=="google/gemini-2.5-flash-lite"
+    assert MAX_ESTIMATED_USD==0.02
+    print("FLASHLITE_READER_SELF_TEST=PASS")
 
 
 if __name__=="__main__":
