@@ -43,6 +43,20 @@ def usable_model_output(raw):
         "","is_blank","unknown","na","n/a","nan","none","null")
 
 
+def select_two_read_candidate(first,status1,second,status2):
+    """Preserve a first-reader refusal only when the lesson has no answer.
+
+    This is a model-output selection rule, NOT an absence-of-evidence proof.
+    """
+    if status2=="OK" and usable_model_output(second):
+        return second,"lesson"
+    if status1=="OK" and usable_model_output(first):
+        return first,"first"
+    if explicit_model_refusal(first):
+        return first,"first_refusal"
+    return None,"numeric_fallback"
+
+
 def git_blob(path):
     raw=Path(path).read_bytes()
     return hashlib.sha1(b"blob "+str(len(raw)).encode()+bytes([0])+raw).hexdigest()
@@ -61,6 +75,18 @@ def self_test():
     assert MAX_TOTAL_RESERVED_USD<=1.0
     assert usable_model_output({"answer_value":"0"})
     assert not usable_model_output({"answer_value":"is_blank"})
+    result,name=select_two_read_candidate(
+        {"answer_value":"is_blank"},"OK",{"answer_value":"17"},"OK")
+    assert name=="lesson" and result["answer_value"]=="17"
+    result,name=select_two_read_candidate(
+        {"answer_value":"0"},"OK",{"answer_value":"is_blank"},"OK")
+    assert name=="first" and result["answer_value"]=="0"
+    result,name=select_two_read_candidate(
+        {"answer_value":"is_blank"},"OK",None,"INVALID_JSON")
+    assert name=="first_refusal" and result["answer_value"]=="is_blank"
+    result,name=select_two_read_candidate(
+        None,"INVALID_JSON",{"answer_value":"is_blank"},"OK")
+    assert name=="numeric_fallback" and result is None
     print("WATTBOT_V5_VERIFIED_LESSON_SELF_TEST=PASS",flush=True)
 
 
@@ -146,18 +172,9 @@ def run(archive,out):
         counters["first_"+status1]+=1
         counters["lesson_"+status2]+=1
 
-        if status2=="OK" and usable_model_output(second):
-            selected=second
-            counters["selected_lesson"]+=1
-        elif status1=="OK" and usable_model_output(first):
-            selected=first
-            counters["selected_first"]+=1
-        elif explicit_model_refusal(first):
-            selected=first
-            counters["preserved_first_refusal"]+=1
-        else:
-            selected=None
-            counters["selected_numeric_fallback"]+=1
+        selected,choice=select_two_read_candidate(
+            first,status1,second,status2)
+        counters["selected_"+choice]+=1
         return selected,("OK" if selected is not None else "INVALID_JSON"),(
             bound1+bound2),cost1+cost2
 
