@@ -22,7 +22,7 @@ namespace MathGraph.FourLossBridge
 open Set
 open NavierStokes.TorusInverse
 open NavierStokes.SmoothFamilyTorusInverse
-open scoped BigOperators
+open scoped Topology ContDiff BigOperators
 
 /-- The exact missing two-dimensional lattice-summability obligation. -/
 def SummableThirdLattice : Prop :=
