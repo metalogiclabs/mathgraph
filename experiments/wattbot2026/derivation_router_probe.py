@@ -29,6 +29,9 @@ import pandas as pd
 import full_reader as base
 from answer_value_residual_probe import raw_variant, usable
 from verified_lesson import illustrate, self_test as lessons_self_test
+from abstention_boundary import (explicit_model_refusal, refusal_row,
+                                 self_test as abstention_self_test)
+from citation_refinement import (retarget, self_test as citation_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -80,6 +83,8 @@ def derivation_question(question):
 
 def self_test():
     lessons_self_test()
+    abstention_self_test()
+    citation_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
     assert base.MODEL=="google/gemini-2.5-flash-lite"
@@ -222,6 +227,13 @@ def run(archive):
           "second_verified_prefer_on_intent",
           "second_provisional_prefer_on_intent",
           "second_agreement_only",
+          "lesson_provisional",
+          "lesson_preserve_explicit_blank",
+          "lesson_preserve_first_explicit_blank",
+          "lesson_second_verified_if_available",
+          "lesson_quote_reroute",
+          "lesson_quote_and_explicit_blank",
+          "lesson_first_verified_else_second_provisional",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -264,6 +276,38 @@ def run(archive):
             arms["second_agreement_only"].append(
                 second_provisional if same_value else first_provisional)
 
+            # All policies below share EXACTLY the same model replies and
+            # source pages. A verified quotation and a model candidate are
+            # kept as different warrant classes; the official TRAIN scorer
+            # decides whether preserving an answer or citation helps.
+            lesson=(second_provisional if usable(second) else first_provisional)
+            explicit_second=explicit_model_refusal(second)
+            explicit_first=explicit_model_refusal(original)
+            if explicit_second: stats["lesson_explicit_refusal"]+=1
+            if explicit_first: stats["first_explicit_refusal"]+=1
+            no_quote=not usable(second) or later_checked is None
+            lesson_blank=(refusal_row(row,"worked-example reader explicitly abstained")
+                          if explicit_second else lesson)
+            first_blank=(refusal_row(row,"first reader explicitly abstained")
+                         if explicit_first and not usable(second) else lesson)
+            source_quotient=(retarget(lesson,second,q,more,"quote")
+                             if usable(second) and no_quote else lesson)
+            if source_quotient["answer_value"]!=lesson["answer_value"]:
+                raise RuntimeError("Citation-only source policy altered a model answer")
+            if source_quotient["ref_id"]!=lesson["ref_id"]:
+                stats["source_quotient_reroute"]+=1
+            arms["lesson_provisional"].append(lesson)
+            arms["lesson_preserve_explicit_blank"].append(lesson_blank)
+            arms["lesson_preserve_first_explicit_blank"].append(first_blank)
+            arms["lesson_second_verified_if_available"].append(
+                dict(later_checked) if later_checked is not None else lesson)
+            arms["lesson_quote_reroute"].append(source_quotient)
+            arms["lesson_quote_and_explicit_blank"].append(
+                refusal_row(row,"worked-example reader explicitly abstained")
+                if explicit_second else source_quotient)
+            arms["lesson_first_verified_else_second_provisional"].append(
+                dict(prior_checked) if prior_checked is not None else lesson)
+
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
             official={}
@@ -274,7 +318,7 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
+    print("WATTBOT_COMPOSED_LESSON_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
@@ -289,16 +333,20 @@ def run(archive):
        "deltas_vs_first_provisional":{
            k:round(v-official["first_provisional"],8)
            for k,v in official.items()},
+       "lesson_policy_delta_vs_same_second_model":{
+           k:round(v-official["lesson_provisional"],8)
+           for k,v in official.items() if k.startswith("lesson_")},
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Exact same first and second six-page source evidence; "
-         "two development TRAIN worked answer conventions inform only second "
-         "response. No holdout gold, reference, answer or label in exemplars. "
-         "Verbatim PDF quotations are provenance rather than scientific "
-         "entailment. Paired reused TRAIN qualification only; no TEST "
-         "inference or Kaggle submission."
+       "boundary":"Each policy reuses the same first and developmental-lesson "
+         "second model responses and SAME six pinned PDF pages. Exemplars "
+         "are drawn only from 182 development TRAIN rows (never 63 holdout "
+         "or hidden TEST); official Score.py is run only after answers freeze. "
+         "An explicit refusal means uncertainty, NOT a proof of global "
+         "scientific absence. Provisional citations are not proof of "
+         "source entailment. No Kaggle TEST inference or submission."
     },sort_keys=True),flush=True)
 
 
