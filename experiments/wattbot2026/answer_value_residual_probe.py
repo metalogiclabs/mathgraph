@@ -25,6 +25,8 @@ import zipfile
 import pandas as pd
 
 import full_reader as base
+from answer_type_normalization import (
+    normalize_answer, rewrite_row, self_test as type_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -100,6 +102,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 
 def self_test():
+    type_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -212,6 +215,11 @@ def run(archive):
             "strict_then_raw_no_refs":[],
             "strict_then_raw_numeric_refs":[],
             "strict_then_raw_model_refs":[],
+            "strict_then_typed_provisional":[],
+            "typed_all_including_verified":[],
+            "typed_preserve_pair_as_range":[],
+            "typed_pair_first":[],
+            "typed_pair_last":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -237,6 +245,22 @@ def run(archive):
                 strict_mode="strict_then_"+("raw_model_refs" if key=="selected"
                               else "raw_numeric_refs" if key=="numeric" else "raw_no_refs")
                 modes[strict_mode].append(dict(strict) if strict is not None else candidate)
+            raw_mode=raw_variant(row,response,numeric,passages,"selected")
+            strict_or_raw=(dict(strict) if strict is not None else raw_mode)
+            typed_raw=rewrite_row(raw_mode,question,"typed")
+            diagnosis["raw_answer_type_changed"]+=int(
+                typed_raw["answer_value"]!=raw_mode["answer_value"])
+            for key,policy in (
+                ("typed_preserve_pair_as_range","preserve_range"),
+                ("typed_pair_first","first"),
+                ("typed_pair_last","last"),
+            ):
+                typed=rewrite_row(raw_mode,question,policy)
+                modes[key].append(dict(strict) if strict is not None else typed)
+            modes["strict_then_typed_provisional"].append(
+                dict(strict) if strict is not None else typed_raw)
+            modes["typed_all_including_verified"].append(
+                rewrite_row(strict_or_raw,question,"typed"))
 
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
@@ -253,6 +277,11 @@ def run(archive):
                     invalid[name]=type(err).__name__
     comparison=baseline["scores"]["reader_then_numeric_fallback"]
     improvements={k:round(v-comparison,8) for k,v in scores.items()}
+    typed_gains={
+        key:round(value-scores["strict_then_raw_model_refs"],8)
+        for key,value in scores.items()
+        if key.startswith("typed_") or key.startswith("strict_then_typed")}
+
     result={
        "status":"EXPLORATORY_CANDIDATE",
        "scope":"Same 63 historic TRAIN questions and same LLM responses for all arms",
@@ -264,16 +293,22 @@ def run(archive):
        "historical_window_run":HISTORICAL_WINDOW_RUN,
        "alternative_scores":scores,
        "score_delta_vs_same_run_baseline":improvements,
+       "type_only_deltas_vs_first_provisional":typed_gains,
        "invalid_modes":invalid,
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"All alternatives are unverified LLM answers. Model-supplied citation indices "
-                  "are provisional, NOT exact-quote proof; neither alternative is promoted to "
-                  "scientific fact. No protected TEST labels or Kaggle submission.",
+       "boundary":"Identical primary model responses, source associations "
+                  "and PDF quotations in every arm; only answer_value string "
+                  "syntax changes by source-question wording, with NO access "
+                  "to target gold bands, answer shapes or labels. A declared "
+                  "reported range differs from a scalar graded under an "
+                  "unpublished numeric tolerance band. Syntax repair cannot "
+                  "prove a scientific fact; train Score.py applied after output "
+                  "freeze; no TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_VALUE_RESIDUAL_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_TYPED_ANSWER_VALUE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
