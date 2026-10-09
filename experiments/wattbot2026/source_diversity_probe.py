@@ -50,7 +50,7 @@ def choose_pages(hits, policy, k=K):
         counts[ref] += 1
     if len(result) < k:
         selected = {id(x) for x in result}
-        result.extend(p for p in pdf_hits if id(p) not in selected)[:k-len(result)]
+        result.extend([p for p in pdf_hits if id(p) not in selected][:k - len(result)])
     assert len(result) == min(k, len(pdf_hits))
     assert len({id(x) for x in result}) == len(result)
     assert all(x in pdf_hits for x in result)
