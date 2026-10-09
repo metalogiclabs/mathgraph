@@ -25,6 +25,9 @@ jobs:
           build: true
           leanchecker: true
           leanchecker-args: "WeilSignProbe"
+          axiom-audit: true
+          axiom-audit-root: Metalogic.OpenAIMath.WeilSign
+          axiom-audit-allow: propext,Classical.choice,Quot.sound
           use-mathlib-cache: false
           use-github-cache: false
       - name: Record epistemic boundary
