@@ -1,0 +1,61 @@
+name: WattBot V4 answer-value recovery Kaggle qualification and submission
+on:
+  push:
+    branches: [wattbot-answer-recovery-v4]
+    paths:
+      - '.github/workflows/wattbot-v4-submit.yml'
+jobs:
+  recovered-v4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned reader and competition dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf pytest
+      - name: Synthetic candidate/provenance distinction and null transport qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/submit_full_reader.py --self-test
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Generate all pinned-corpus answers with VERIFIED vs CANDIDATE boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_full_reader.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_answer_recovery_v4.csv" \
+            --policy window
+          python experiments/wattbot2026/submission_gate.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --submission "$RUNNER_TEMP/wattbot/mathgraph_answer_recovery_v4.csv"
+      - name: Submit only complete null-safe V4 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/wattbot/mathgraph_answer_recovery_v4.csv"
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_answer_recovery_v4.csv" \
+            -m "MathGraph V4: preserve answer values as unverified candidates; strict literal-page proof stays separate; commit ${GITHUB_SHA:0:12}"
+      - name: Record Kaggle status and reference ID
+        run: kaggle competitions submissions -c WattBot2026
+      - name: Evidence boundary
+        run: |
+          echo "TRAIN same-response ablation 37973895790 scored 0.61058201 versus 0.50899471."
+          echo "No Kaggle TEST labels, manual answers, or hardcoded question rows."
+          echo "Non-anchored model answers marked CANDIDATE, not verified scientific entailment."
+          echo "Private corpus and predictions are never logged or uploaded as artifacts."
