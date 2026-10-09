@@ -1,4 +1,4 @@
-name: WattBot V3 full-corpus verified-reader submission
+name: WattBot V3 full-corpus exact-window verified submission
 on:
   push:
     branches: [wattbot-full-corpus-public-v3]
@@ -8,7 +8,7 @@ permissions:
   contents: read
 concurrency:
   group: wattbot-v3-full-corpus-single-submission
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   qualify-and-submit:
     runs-on: ubuntu-latest
@@ -33,8 +33,9 @@ jobs:
           python experiments/wattbot2026/report_loader.py
           python experiments/wattbot2026/full_reader.py --self-test
           python experiments/wattbot2026/submit_full_reader.py --self-test
+          python experiments/wattbot2026/full_window_probe.py --self-test
           python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py experiments/wattbot2026/tests/test_cached_pdf.py
-      - name: Lock to prior independently scored full-corpus prefix policy
+      - name: Lock to green full-corpus exact-window qualification #37968840780
         shell: bash
         run: |
           set -euo pipefail
@@ -46,7 +47,12 @@ jobs:
           actual=hashlib.sha1(b'blob '+str(len(blob)).encode()+b'\0'+blob).hexdigest()
           expected='4e1350ef72a44a333862dec23c737a2262ab99bc'
           if actual!=expected: sys.exit('Reader changed; stop before model calls')
-          print('WATTBOT_V3_FROZEN_POLICY=prefix_full_corpus; full_reader_git_blob='+actual)
+          query=pathlib.Path('experiments/wattbot2026/query_window.py')
+          data=query.read_bytes()
+          query_blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          if query_blob!='8b3e37e4e1b0ebd36bb157ec73f8d51354e5cdf7':
+            sys.exit('Query window code changed; stop before model calls')
+          print('WATTBOT_V3_FROZEN_POLICY=window_full_corpus; full_reader_git_blob='+actual)
           PY
       - name: Download official authorized WattBot data (no public artifacts)
         shell: bash
@@ -63,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           python experiments/wattbot2026/submit_full_reader.py \
-            --policy prefix \
+            --policy window \
             --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
             --out "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv"
           python experiments/wattbot2026/submission_gate.py \
@@ -76,7 +82,7 @@ jobs:
           kaggle competitions submission-limits -c WattBot2026
           kaggle competitions submit -c WattBot2026 \
             -f "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv" \
-            -m "MathGraph V3 pinned full corpus prefix reader and citation gate ${GITHUB_SHA:0:12}"
+            -m "MathGraph V3 pinned full corpus exact window reader and citation gate ${GITHUB_SHA:0:12}"
           kaggle competitions submissions -c WattBot2026
       - name: Preserve verification boundary
         run: |
