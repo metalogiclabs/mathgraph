@@ -60,11 +60,11 @@ theorem compiled_spaceThrough_eq
           unfold Machine.spaceThrough
           exact Finset.sum_congr rfl (fun j _ => hj j)
     _ = ∑ p : Fin w × Fin K, f p.1 := by
-          exact (Equiv.sum_comp e.symm (fun p : Fin w × Fin K => f p.1)).symm
+          exact Equiv.sum_comp e.symm (fun p : Fin w × Fin K => f p.1)
     _ = ∑ k : Fin w, ∑ i : Fin K, f k := by
           rw [Fintype.sum_prod_type]
     _ = ∑ k : Fin w, K * f k := by
-          simp [Finset.sum_const, nsmul_eq_mul]
+          simp [Finset.sum_const]
     _ = K * (∑ k : Fin w, f k) := by
           rw [Finset.mul_sum]
     _ = K * sourceSpaceThrough M codec.blank x coins t := rfl
