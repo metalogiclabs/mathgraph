@@ -33,7 +33,7 @@ from wattbot import ranked, chunks_from_pages, verify_candidate, norm
 
 MAX_REQUESTS = 6
 MAX_PDFS = 8
-MODEL = "qwen/qwen3.8-27b:free"
+MODEL = "cohere/north-mini-code:free"
 MAX_MODEL_TOKENS = 1600
 MAX_EXCERPT_CHARS = 1400
 MAX_CONTEXTS = 4
