@@ -4,6 +4,7 @@ on:
     branches: [wattbot-source-diversity-v1]
     paths:
       - 'experiments/wattbot2026/source_diversity_probe.py'
+      - 'experiments/wattbot2026/submit_full_reader.py'
       - '.github/workflows/wattbot-source-diversity.yml'
   workflow_dispatch:
 permissions:
