@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Tiny free-LLM, page-grounded WattBot diagnostic. Development questions ONLY.
+"""Price-capped exact-model, page-grounded WattBot diagnostic. DEV questions ONLY.
 
-Maximum 6 free OpenRouter calls, no test labels, no Kaggle submission.
+Maximum 6 paid OpenRouter calls with a hard $0.01 budget, no test labels, no Kaggle submission.
 Predictions are generated from question plus pinned retrieved paper excerpts;
 gold labels are accessible only to official Score.py and development selection.
 No raw question, model output, paper text or credential written to CI logs.
@@ -32,8 +32,11 @@ from numeric_answer_probe import build_candidate
 from wattbot import ranked, chunks_from_pages, verify_candidate, norm
 
 MAX_REQUESTS = 6
+MAX_EXPERIMENT_COST_USD = 0.01
+MAX_PROMPT_TOKENS_CONSERVATIVE = 6000
+spent_usd = 0.0
 MAX_PDFS = 8
-MODEL = "cohere/north-mini-code:free"
+MODEL = "qwen/qwen3.5-flash"
 MAX_MODEL_TOKENS = 1600
 MAX_EXCERPT_CHARS = 1400
 MAX_CONTEXTS = 4
@@ -101,8 +104,10 @@ def generate(question, contexts, key):
         usage=obj.get("usage") or {}
         cost=usage.get("cost",0)
         reply=((obj.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
-        if cost is not None and float(cost)>0:
-            raise ValueError("Unexpected nonzero cost on free-model route; stop immediately")
+        global spent_usd
+        spent_usd += float(cost or 0)
+        if spent_usd > MAX_EXPERIMENT_COST_USD:
+            raise ValueError("Hard cost cap reached: stop further requests")
         return parse_json_response(reply),{"http_status":200,
             "reply_present":bool(reply),"cost":cost,
             "completion_tokens":usage.get("completion_tokens",0),
@@ -151,6 +156,30 @@ def run(official_zip):
     key=os.environ.get("OPENROUTER_API_KEY","")
     if not key:
         raise ValueError("Missing model credential")
+    # Preflight the currently available exact model and refuse costly routes.
+    catalog = requests.get("https://openrouter.ai/api/v1/models",
+        headers={"Authorization":"Bearer "+key},timeout=25)
+    catalog.raise_for_status()
+    offered = [m for m in catalog.json().get("data",[]) if m.get("id")==MODEL]
+    if len(offered)!=1:
+        raise ValueError("Pinned low-cost model unavailable; no inference attempted")
+    pricing=offered[0].get("pricing") or {}
+    prompt_price=float(pricing["prompt"])
+    completion_price=float(pricing["completion"])
+    if prompt_price<0 or completion_price<0:
+        raise ValueError("Unusable model pricing")
+    maximum = MAX_REQUESTS*(MAX_PROMPT_TOKENS_CONSERVATIVE*prompt_price+
+                           MAX_MODEL_TOKENS*completion_price)
+    if maximum > MAX_EXPERIMENT_COST_USD:
+        raise ValueError("Refuse inference: worst-case listed price exceeds $0.01")
+    print("WATTBOT_PRICECAP_PREFLIGHT="+json.dumps({
+       "model":MODEL,"listed_prompt_per_million_usd":round(prompt_price*1e6,5),
+       "listed_completion_per_million_usd":round(completion_price*1e6,5),
+       "conservative_max_usd":round(maximum,6),
+       "hard_stop_usd":MAX_EXPERIMENT_COST_USD,
+       "max_calls":MAX_REQUESTS,
+       "note":"Single six-question DEVELOPMENT diagnostic, not production or recurring spend"
+    },sort_keys=True),flush=True)
     with zipfile.ZipFile(official_zip) as z:
         metadata=load_csv(z,"metadata.csv")
         train=pd.read_csv(io.BytesIO(z.read("train_QA.csv")),keep_default_na=False,dtype={"id":str})
@@ -202,13 +231,14 @@ def run(official_zip):
             def score(df):
                 return round(float(scorer(sample.copy(deep=True),df.copy(deep=True),
                          row_id_column_name="id",verbose=False)),8)
-            print("WATTBOT_FREE_LLM_TRAIN_PILOT="+json.dumps({
+            print("WATTBOT_PRICECAPPED_LLM_TRAIN_PILOT="+json.dumps({
               "development_sample_rows":len(sample),
               "pdf_budget":MAX_PDFS,
               "model_requested":MODEL,
               "models_returned":dict(models),
               "number_of_api_requests":len(costs),
               "api_reported_cost_total":round(sum(costs),8),
+              "hard_cost_cap_usd":MAX_EXPERIMENT_COST_USD,
               "admitted_nonblank_predictions":int((predictions["answer_value"]!="is_blank").sum()),
               "outcomes":dict(outcomes),
               "official_sample_blank":score(baseline),
