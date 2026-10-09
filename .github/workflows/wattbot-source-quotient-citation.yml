@@ -1,0 +1,46 @@
+name: WattBot same-answer source quotient citation policy
+on:
+  push:
+    branches: [wattbot-source-quotient-citation-v1]
+    paths:
+      - 'experiments/wattbot2026/citation_refinement.py'
+      - 'experiments/wattbot2026/answer_value_residual_probe.py'
+      - '.github/workflows/wattbot-source-quotient-citation.yml'
+jobs:
+  citation-quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned scorer and authorized PDF dependencies
+        run: python -m pip install kaggle requests pandas numpy pymupdf
+      - name: Verify no answer value altered and source choices stay unverified
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/citation_refinement.py
+          python experiments/wattbot2026/answer_value_residual_probe.py --self-test
+      - name: Compare citation-only output on same frozen TRAIN model answers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/answer_value_residual_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: |
+          echo "Same answer values, 63 reused TRAIN responses; official Score.py."
+          echo "Provisional source association does NOT warrant scientific entailment."
+          echo "No protected TEST labels, Kaggle submissions, raw answer or source artifacts."
