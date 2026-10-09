@@ -6,7 +6,7 @@ on:
       - 'experiments/navier_stokes_semantic_bridge_v1/PressureSchwartzTranspose.lean'
       - '.github/workflows/navier-stokes-pressure-schwartz-v16.yml'
   pull_request:
-    branches: [main]
+    branches: [navier-stokes-semantic-bridge-v1]
     paths:
       - 'experiments/navier_stokes_semantic_bridge_v1/PressureSchwartzTranspose.lean'
       - '.github/workflows/navier-stokes-pressure-schwartz-v16.yml'
