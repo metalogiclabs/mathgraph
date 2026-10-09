@@ -1,0 +1,43 @@
+name: WattBot scientific model frozen full-corpus qualification
+on:
+  push:
+    branches: [wattbot-scientific-reader-v1]
+    paths:
+      - '.github/workflows/wattbot-scientific-reader.yml'
+jobs:
+  model-ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official PDF and scorer dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Control scientific model experiment (no paid calls)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/scientific_model_probe.py --self-test
+      - name: Compare stronger model on same 63 TRAIN holdout with official scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/scientific_model_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence and budget boundary
+        run: |
+          echo "No protected TEST inference or Kaggle submission in this experiment."
+          echo "No source PDFs or private question content uploaded as artifacts."
+          echo "Model price and conservative total spending are guarded; historical model comparator is NOT paired."
