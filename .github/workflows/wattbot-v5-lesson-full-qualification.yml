@@ -1,0 +1,51 @@
+name: WattBot V5 full protected-question generation qualification NO SUBMISSION
+on:
+  push:
+    branches: [wattbot-verified-lesson-submit-v5]
+    paths:
+      - '.github/workflows/wattbot-v5-lesson-full-qualification.yml'
+jobs:
+  complete-v5-predictions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact source, model and official CSV dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf pytest
+      - name: Fail closed on changed pins, missing split protection or CSV transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/submit_verified_lesson_v5.py --self-test
+          python -m pytest -q \
+            experiments/wattbot2026/tests/test_query_window.py \
+            experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Generate all 317 TEST responses with qualified source-frozen V5 reader
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_verified_lesson_v5.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_lesson_v5.csv"
+          python experiments/wattbot2026/submission_gate.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --submission "$RUNNER_TEMP/wattbot/mathgraph_lesson_v5.csv"
+      - name: Protect all TEST predictions and preserve submission quota
+        run: |
+          echo "No kaggle competitions submit command is present in this workflow."
+          echo "No test predictions/PDF files/answer artifacts are uploaded to Actions."
+          echo "Only aggregates, immutable source hashes and model price evidence logged."
+          echo "Do not count this workflow as a scored Kaggle result."
