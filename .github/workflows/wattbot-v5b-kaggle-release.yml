@@ -53,6 +53,20 @@ jobs:
           python -m pytest -q \
             experiments/wattbot2026/tests/test_query_window.py \
             experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Require a live Kaggle team submission allowance before model spending
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          a=KaggleApi()
+          a.authenticate()
+          q=a.competition_get_submission_limits("WattBot2026")
+          left=int(q.num_allowed_now)
+          print("WATTBOT_V5B_OFFICIAL_QUOTA_PRE_INFERENCE="+str(left),flush=True)
+          if left < 1:
+              raise SystemExit("No official Kaggle submission slots remaining; do not infer V5b")
+          PY
       - name: Generate full 317-question two-reader candidate from pinned corpus
         shell: bash
         run: |
@@ -70,6 +84,16 @@ jobs:
         run: |
           set -euo pipefail
           test -s "$RUNNER_TEMP/wattbot/mathgraph_v5b_two_reader.csv"
+          python - <<'PY'
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          a=KaggleApi()
+          a.authenticate()
+          q=a.competition_get_submission_limits("WattBot2026")
+          left=int(q.num_allowed_now)
+          print("WATTBOT_V5B_OFFICIAL_QUOTA_PRE_SUBMIT="+str(left),flush=True)
+          if left < 1:
+              raise SystemExit("Kaggle slot unavailable after candidate generation; do not submit")
+          PY
           kaggle competitions submit -c WattBot2026 \
             -f "$RUNNER_TEMP/wattbot/mathgraph_v5b_two_reader.csv" \
             -m "MathGraph V5b: DEV-only typed lessons and first-reader refusal preserving, source-verified V4 pipeline; ${GITHUB_SHA:0:12}"
