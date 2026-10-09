@@ -1,0 +1,39 @@
+name: WattBot exact official answer-value shape authority
+on:
+  push:
+    branches: [wattbot-score-contract-types-v1]
+    paths:
+      - '.github/workflows/wattbot-score-contract-types.yml'
+      - 'experiments/wattbot2026/score_type_contract.py'
+jobs:
+  official-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install lightweight official scorer dependencies
+        run: python -m pip install kaggle pandas numpy
+      - name: Qualify exact range/tolerance/NA typing logic
+        run: python experiments/wattbot2026/score_type_contract.py --self-test
+      - name: Audit pinned official TRAIN labels and TEST question-side unit counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/score_type_contract.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Privacy boundary
+        run: |
+          echo "No scientific PDFs downloaded; no LLM calls or Kaggle submission."
+          echo "TRAIN-only answer shape aggregates and authorized test question-side units."
+          echo "No protected TEST answer/citation inspection or individual gold rows in logs."
