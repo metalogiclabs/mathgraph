@@ -226,8 +226,6 @@ def run(archive):
     if (len(first_raw)!=63 or len(first_checked)>63 or len(numeric)!=63
             or len(second_raw)!=63 or len(typed_second_raw)!=63):
         raise RuntimeError("Incomplete paired original/typed lesson replies")
-    if False:
-        raise RuntimeError("Partial question cohort")
     if stats["first_pages"]!=378 or stats["first_questions"]!=63:
         raise RuntimeError("Changed six-source reader cohort")
     if extra[0]>SECONDARY_RESERVE_USD:
