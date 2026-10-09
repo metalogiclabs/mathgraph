@@ -1,0 +1,40 @@
+name: WattBot free Gemma evidence QA pilot
+on:
+  push:
+    branches: [wattbot-type-gated-qa-v1]
+    paths:
+      - 'experiments/wattbot2026/free_llm_probe.py'
+      - '.github/workflows/wattbot-free-llm-pilot.yml'
+jobs:
+  capped-zero-priced-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install 'kaggle>=2.2,<2.3' 'pandas>=2' 'requests>=2' 'pymupdf>=1.24'
+      - name: Pure synthetic self-tests
+        run: python experiments/wattbot2026/free_llm_probe.py --self-test
+      - name: Independently verify zero token pricing and synthetic model response
+        run: python experiments/wattbot2026/free_llm_probe.py --smoke
+      - name: Capped train-subset evidence QA against pinned official scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/free_llm_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Licensing and cost boundary
+        run: |
+          echo "Never log secrets, per-question predictions, private CSV data, source PDFs, or LLM prompts."
+          echo "Only confirmed free endpoint and bounded synthetic/train-question evaluation; never use paid API routing."
