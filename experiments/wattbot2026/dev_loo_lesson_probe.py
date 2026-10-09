@@ -27,6 +27,8 @@ import pandas as pd
 
 import full_reader as base
 from answer_value_residual_probe import raw_variant
+from abstention_boundary import (explicit_model_refusal, refusal_row,
+                                 self_test as abstention_self_test)
 from holdout_probe import is_holdout as original_split
 from query_window import window_passages
 from score_ablation import load_score
@@ -48,6 +50,7 @@ def git_blob(raw):
 
 def self_test():
     lesson_self_test()
+    abstention_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.MAX_REQUESTS==63 and base.SOURCE_BUDGET==114
     assert base.K==6 and base.MAX_EXCERPT==1100
@@ -217,6 +220,8 @@ def run(archive):
         "lesson_provisional",
         "lesson_when_first_invalid",
         "lesson_else_first_explicit_blank",
+        "lesson_true_explicit_blank",
+        "lesson_release_first_blank",
     )}
     for _,row in blank.iterrows():
         q=str(row["question"])
@@ -244,6 +249,29 @@ def run(archive):
                      str(b.get("answer_value","")).strip().casefold() in
                      ("","is_blank","na","n/a","unknown","none","nan","null")))
             else b_value if bstat=="OK" else a_value)
+        # This arm is the actual refusal-preservation consequence: unlike
+        # the legacy comparison above, it does not silently replace the
+        # first model's explicit refusal with an arbitrary numeric fallback.
+        both_no_answer=explicit_model_refusal(a) and not (
+            bstat=="OK" and isinstance(b,dict) and
+            str(b.get("answer_value","")).strip().casefold() not in
+            ("","is_blank","na","n/a","unknown","none","nan","null"))
+        if both_no_answer:
+            status["both_readers_no_usable_value"]+=1
+        preserved=refusal_row(row,
+            "First reader explicitly abstained and lesson returned no supported value")
+        true_abstain=(preserved if both_no_answer else
+            b_value if bstat=="OK" and isinstance(b,dict) and
+                str(b.get("answer_value","")).strip().casefold() not in
+                ("","is_blank","na","n/a","unknown","none","nan","null")
+            else a_value)
+        rows["lesson_true_explicit_blank"].append(true_abstain)
+        rows["lesson_release_first_blank"].append(
+            preserved if both_no_answer else
+            b_value if bstat=="OK" and isinstance(b,dict) and
+                 str(b.get("answer_value","")).strip().casefold() not in
+                 ("","is_blank","na","n/a","unknown","none","nan","null")
+            else a_value)
 
     with zipfile.ZipFile(archive) as z:
         with tempfile.TemporaryDirectory(prefix="wattbot_devloo_score_") as tmp:
@@ -264,6 +292,11 @@ def run(archive):
         "scores":results,
         "paired_lesson_minus_first":round(
             results["lesson_provisional"]-results["first_provisional"],8),
+        "true_explicit_refusal_minus_lesson":round(
+            results["lesson_true_explicit_blank"]-results["lesson_provisional"],8),
+        "legacy_refusal_arm_semantics":"Prior lesson_else_first_explicit_blank "
+            "reused numeric fallback and did NOT preserve is_blank; only "
+            "lesson_true_explicit_blank tests real refusal preservation.",
         "first_model_usd":base_result["observed_api_usd"],
         "lesson_model_usd":round(extra[1],7),
         "first_conservative_reserved_usd":base_result["max_reserved_usd"],
@@ -273,7 +306,9 @@ def run(archive):
                    "are checked. The experiment cross-validates exemplar transfer "
                    "under prechosen source membership/order, NOT fully fresh source "
                    "discovery and NOT independent Kaggle TEST/leaderboard proof. "
-                   "No protected TEST answers, citations or submissions."
+                   "No protected TEST answers, citations or submissions. "
+                   "True explicit is_blank generates all-empty source fields; "
+                   "numeric fallback is not evidence of answerability."
     },sort_keys=True),flush=True)
 
 
