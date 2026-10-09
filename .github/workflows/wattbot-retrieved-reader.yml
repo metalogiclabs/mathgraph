@@ -1,0 +1,37 @@
+name: WattBot retrieved Flash-Lite QA holdout
+on:
+  push:
+    branches: [wattbot-reader-holdout-v1]
+    paths:
+      - 'experiments/wattbot2026/retrieved_reader_probe.py'
+      - '.github/workflows/wattbot-retrieved-reader.yml'
+jobs:
+  retrieved-reader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned-data reader dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Synthetic citation and provenance controls
+        run: python experiments/wattbot2026/retrieved_reader_probe.py --self-test
+      - name: Evaluate 24-source reader and numeric fallback with official training scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENROUTER_API_KEY"
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/retrieved_reader_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: |
+          echo "No training rows, model text or PDF bytes are logged or uploaded."
+          echo "Only a reused TRAIN holdout score: never claim official Kaggle score or verified science."
