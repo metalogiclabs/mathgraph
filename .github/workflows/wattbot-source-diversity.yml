@@ -1,0 +1,42 @@
+name: WattBot source-diversity TRAIN-only audit
+on:
+  push:
+    branches: [wattbot-source-diversity-v1]
+    paths:
+      - 'experiments/wattbot2026/source_diversity_probe.py'
+      - '.github/workflows/wattbot-source-diversity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retrieval-ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned scientific extraction and Kaggle tools
+        run: python -m pip install kaggle requests pandas numpy pymupdf pytest
+      - name: Synthetic source-identity and quota tests
+        run: python experiments/wattbot2026/source_diversity_probe.py --self-test
+      - name: Download official labelled TRAIN corpus contract
+        run: |
+          set -euo pipefail
+          if [[ -z "${KAGGLE_API_TOKEN}" ]]; then
+            echo "::error::Authenticated Kaggle competition access is required."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+      - name: Score paired source-retrieval outcomes without model calls
+        run: |
+          set -euo pipefail
+          python experiments/wattbot2026/source_diversity_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: echo "No hidden TEST labels, no model calls, no Kaggle submission, and no research PDFs/artifacts are published."
