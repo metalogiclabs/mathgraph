@@ -1,0 +1,30 @@
+name: WattBot model request reproducibility on synthetic cases
+on:
+  push:
+    branches: [wattbot-seeded-reproducibility-v1]
+    paths:
+      - '.github/workflows/wattbot-seeded-reproducibility.yml'
+      - 'experiments/wattbot2026/seeded_repro_probe.py'
+jobs:
+  synthetic-seed-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    permissions:
+      contents: read
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      WATTBOT_RUN_SYNTHETIC_SEEDED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded model transport
+        run: python -m pip install requests pandas numpy pymupdf
+      - name: Validate source model and synthetic-only scope
+        run: python experiments/wattbot2026/seeded_repro_probe.py
+      - name: Exact evidence boundary
+        run: |
+          echo "No Kaggle API, protected TEST, scientific PDF, user-data payload or submission."
+          echo "Synthetic sampling checks are NOT proof of bit-exact competition repeatability."
+          echo "15 model calls with conservative USD 0.019 total reservation hard cap."
