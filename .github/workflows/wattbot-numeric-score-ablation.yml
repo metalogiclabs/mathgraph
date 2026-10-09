@@ -1,0 +1,32 @@
+name: WattBot numeric 8-vs-24 paper score ablation
+on:
+  push:
+    branches: [wattbot-2026-holdout-v1]
+    paths:
+      - 'experiments/wattbot2026/numeric_score_ablation.py'
+      - '.github/workflows/wattbot-numeric-score-ablation.yml'
+jobs:
+  paired-numeric-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install kaggle pandas numpy requests pymupdf
+      - name: Score identical candidate method at 8 and 24 source papers with answer/ref ablations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/numeric_score_ablation.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: echo "No training records or paper bytes uploaded; experiments run entirely in ephemeral CI."
