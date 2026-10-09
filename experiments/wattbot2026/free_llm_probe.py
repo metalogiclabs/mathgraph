@@ -35,7 +35,8 @@ COST_CAP_USD=float(os.environ.get("WATTBOT_COST_CAP_USD","0"))
 PRICE_IN=0.0
 PRICE_OUT=0.0
 SPENT_REPORTED_USD=0.0
-MAX_PROMPT_BYTES=12000
+MAX_PROMPT_BYTES=11500
+MAX_OUTPUT_TOKENS=650
 MAX_QUESTIONS=12
 SOURCE_BUDGET=24
 SALT="wattbot-gemma-free-small-pilot-v1"
@@ -60,7 +61,7 @@ def require_bounded_price() -> None:
     if not (0 <= PRICE_IN <= 2e-6 and 0 <= PRICE_OUT <= 2e-6):
         raise RuntimeError("Model pricing outside strict per-token gate")
     # Worst-case prompt reserved conservatively as one token per UTF8 byte.
-    worst=(MAX_QUESTIONS+1)*(MAX_PROMPT_BYTES*PRICE_IN+1050*PRICE_OUT)*1.1
+    worst=(MAX_QUESTIONS+1)*(MAX_PROMPT_BYTES*PRICE_IN+MAX_OUTPUT_TOKENS*PRICE_OUT)*1.1
     if worst > COST_CAP_USD:
         raise RuntimeError(f"Reserved worst-case cost {worst:.5f} exceeds budget")
     print("WATTBOT_BOUNDED_PRICING_CHECK="+json.dumps({
@@ -72,7 +73,7 @@ def require_bounded_price() -> None:
         "max_requests":MAX_QUESTIONS+1
     },sort_keys=True),flush=True)
 
-def query_model(key:str, system:str, user:str, max_tokens:int=1050):
+def query_model(key:str, system:str, user:str, max_tokens:int=MAX_OUTPUT_TOKENS):
     global SPENT_REPORTED_USD
     if not key:
         return None, {"error":"credential_unavailable"}
