@@ -23,6 +23,8 @@ jobs:
           lake-package-directory: experiments/openai-math-sign-v1
           auto-config: false
           build: true
+          leanchecker: true
+          leanchecker-args: "WeilSignProbe"
           use-mathlib-cache: false
           use-github-cache: false
       - name: Record epistemic boundary
