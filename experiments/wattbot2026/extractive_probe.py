@@ -2,7 +2,7 @@
 """First WattBot extractive answer candidate; ONLY sourced PDFs, not test labels.
 
 Fixed prior 182/63 train-only split. Source selection uses development labels
-only; answer generation uses questions and eight public PDFs. Holdout gold
+only; answer generation uses questions and twenty-four public PDFs. Holdout gold
 labels are supplied ONLY to pinned official Score.py after predictions freeze.
 This holdout was previously inspected by other experiments, so this is a
 candidate benchmark, not an untouched global test.
@@ -36,7 +36,7 @@ COLUMNS = ["id","question","answer","answer_value","answer_unit",
            "ref_id","ref_url","supporting_materials","explanation"]
 
 
-def sources_from_development(train, docs, max_docs=8):
+def sources_from_development(train, docs, max_docs=24):
     dev = train[~train["id"].astype(str).map(is_holdout)]
     counts = Counter(ref for refs in dev["ref_id"].map(parse_refs) for ref in refs)
     options = [d for d in counts if d in docs
@@ -73,13 +73,13 @@ def run(official_zip):
         metadata = pd.read_csv(io.BytesIO(z.read("metadata.csv")),
                                keep_default_na=False,dtype={"id":str})
         docs = {str(d["id"]):d for d in metadata.to_dict("records")}
-        selected = sources_from_development(train,docs,8)
+        selected = sources_from_development(train,docs,24)
         held = train[train["id"].map(is_holdout)].copy()
-        assert len(held) > 0 and len(selected)==8
+        assert len(held) > 0 and len(selected)==24
         print("EXTRACTIVE_BOUNDARY="+json.dumps({
             "n_dev":int(len(train)-len(held)), "n_holdout":int(len(held)),
             "source_count":len(selected),"selection":"development labels only",
-            "predictions":"question text + pinned eight PDFs only",
+            "predictions":"question text + pinned twenty-four PDFs only",
             "threshold":THRESHOLD,
             "warning":"Previously inspected holdout, candidate not pristine evaluation",
         },sort_keys=True))
