@@ -19,7 +19,23 @@ jobs:
         with:
           python-version: '3.11'
       - name: Regression test protected contract logic and legacy false confidence
-        run: python -m unittest discover -s tests -p 'test_semantic_correspondence.py' -v
+        run: |
+          python - <<'PY'
+          # Explicitly load the two scoped modules without importing the
+          # monolithic optional-dependency MathGraph package initializer.
+          import sys
+          import types
+          import unittest
+          from pathlib import Path
+          pkg = types.ModuleType("mathgraph")
+          pkg.__path__ = [str(Path("mathgraph").resolve())]
+          sys.modules["mathgraph"] = pkg
+          suite = unittest.defaultTestLoader.discover(
+              "tests", pattern="test_semantic_correspondence.py"
+          )
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          raise SystemExit(0 if result.wasSuccessful() else 1)
+          PY
       - name: Fetch exact pinned upstream Lean blobs
         run: |
           set -euo pipefail
