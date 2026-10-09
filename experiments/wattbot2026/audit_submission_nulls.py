@@ -8,13 +8,29 @@ import argparse
 from collections import Counter
 import csv
 import json
+import io
+import zipfile
 from pathlib import Path
 
 COLUMNS=("id","question","answer","answer_value","answer_unit",
          "ref_id","ref_url","supporting_materials","explanation")
 
 def run(path):
-    with Path(path).open(encoding="utf-8-sig",newline="") as f:
+    root=Path(path)
+    if root.is_dir():
+        files=[p for p in root.rglob("*") if p.is_file()]
+        if len(files)!=1:
+            raise RuntimeError("Expected exactly one downloaded submission file, saw "+str(len(files)))
+        root=files[0]
+    if zipfile.is_zipfile(root):
+        with zipfile.ZipFile(root) as archive:
+            csvs=[n for n in archive.namelist() if n.lower().endswith(".csv")]
+            if len(csvs)!=1:
+                raise RuntimeError("Unexpected CSV member count in downloaded submission")
+            decoded=archive.read(csvs[0]).decode("utf-8-sig")
+    else:
+        decoded=root.read_text(encoding="utf-8-sig")
+    with io.StringIO(decoded,newline="") as f:
         r=csv.DictReader(f)
         fields=r.fieldnames
         if fields!=list(COLUMNS):
