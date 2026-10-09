@@ -1,0 +1,48 @@
+name: WattBot first reproducible MathGraph submission
+on:
+  push:
+    branches: [wattbot-2026-submission-v1]
+    paths:
+      - 'experiments/wattbot2026/submit_numeric.py'
+      - '.github/workflows/wattbot-submit-v1.yml'
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Download frozen official competition data
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+      - name: Prepare checked source-anchored test predictions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/wattbot2026/submit_numeric.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_test.csv"
+      - name: Submit the frozen baseline to WattBot
+        shell: bash
+        run: |
+          set -euo pipefail
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_test.csv" \
+            -m "MathGraph evidence-anchored numeric baseline source commit ${GITHUB_SHA:0:12}"
+      - name: Show submission status, not private predictions
+        shell: bash
+        run: |
+          kaggle competitions submissions -c WattBot2026 || true
+          echo "Submission bytes remain on ephemeral runner only; code and CI head SHA are published."
