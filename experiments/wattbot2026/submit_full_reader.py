@@ -30,7 +30,7 @@ from submission_gate import validate_submission
 from wattbot import chunks_from_pages, ranked
 from holdout_probe import is_holdout
 from numeric_answer_probe import build_candidate
-from pdf_probe import download_one
+from cached_pdf import cached_download
 from report_loader import download_report
 from train_probe import parse_refs
 
@@ -78,11 +78,14 @@ def corpus(train,sources,folder):
     chunks=[]
     arxiv_digests=[]
     arxiv_errors=Counter()
+    cache_counts=Counter()
+    cache_root=Path(os.environ['WATTBOT_PDF_CACHE']) if os.environ.get('WATTBOT_PDF_CACHE') else None
     for i,ref in enumerate(selected):
         if i:time.sleep(3.1)
         path=folder/("arxiv_"+str(i)+".pdf")
         try:
-            digest,_=download_one(str(docs[ref]["url"]),path)
+            digest,_,reused=cached_download(str(docs[ref]["url"]),path,cache_root)
+            cache_counts["hit" if reused else "miss"]+=1
             found=chunks_from_pages(ref,str(docs[ref]["url"]),path)
             if not found:
                 raise ValueError("Source PDF has no extractable text")
@@ -123,6 +126,7 @@ def corpus(train,sources,folder):
                      for d in docs.values()]
     return docs, metadata_chunks+chunks, {
         "arxiv_attempted":len(selected),"arxiv_failures":dict(arxiv_errors),
+        "arxiv_cached_pdf_reuse":dict(cache_counts),
         "reports_attempted":len(reports),"report_failures":dict(report_errors),
         "source_page_chunks":len(chunks),"arxiv_sha256":arxiv_manifest,
         "reports_sha256":report_manifest,
