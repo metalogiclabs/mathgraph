@@ -158,9 +158,9 @@ def run(official_zip: str, max_docs: int = 8) -> None:
 def self_test() -> None:
     assert is_holdout("example-id") == is_holdout("example-id")
     assert isinstance(is_holdout("example-id"), bool)
-    assert source_rank("123 electricity", [{"ref_id":"a", "text":"123 electricity"},
-                                           {"ref_id":"a", "text":"electricity"},
-                                           {"ref_id":"b", "text":"123"}], 2) == {"a","b"}
+    assert source_rank("123 electricity", [{"ref_id":"a", "page":1, "text":"123 electricity"},
+                                           {"ref_id":"a", "page":2, "text":"electricity"},
+                                           {"ref_id":"b", "page":1, "text":"123"}], 2) == {"a","b"}
     print("HOLDOUT_SELF_TEST=PASS")
 
 
