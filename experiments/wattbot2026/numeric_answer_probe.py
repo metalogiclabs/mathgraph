@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import re
+import requests
 from pathlib import Path
 import tempfile
 import time
@@ -29,7 +30,6 @@ from wattbot import (NUM_RE, as_fraction, chunks_from_pages, norm, ranked,
                      tokens, verify_candidate)
 
 STOP = set("a an the is was what how much many in of for from to by on and or are were which estimated report their its according as at during with using does did this that per about than total compared difference percent percentage".split())
-UNIT_RE = re.compile(r"^\\s*(%|percent|MWh|GWh|TWh|kWh|kg|Mt|MW|GW|liters?|gallons?|years?|hours?|tonnes?|tons?|gCO2e|kgCO2e|tCO2e|CO2e)\\b?", re.I)
 # The original regex above is deliberately replaced below: % is nonword.
 UNIT_RE = re.compile(r"^\s*(%|percent(?:age)?|MWh|GWh|TWh|kWh|kg|Mt|MW|GW|liters?|gallons?|years?|hours?|tonnes?|tons?|gCO2e|kgCO2e|tCO2e|CO2e)(?=\W|$)", re.I)
 
@@ -121,7 +121,7 @@ def run(official_zip, max_docs=24):
                         raise ValueError("No PDF text")
                     chunks.extend(page_chunks)
                     valid.append(ref)
-                except (ValueError,RuntimeError,OSError) as e:
+                except (requests.RequestException,ValueError,RuntimeError,OSError) as e:
                     # Any missing source stays UNKNOWN, never substituted.
                     print("PAPER_FETCH_FAILURE_TYPE="+type(e).__name__)
             # Every source's metadata is searchable even if its PDF is not.
