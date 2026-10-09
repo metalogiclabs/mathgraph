@@ -28,6 +28,9 @@ on:
       - 'experiments/openai-logspace-model-bridge-v1/LeftWallSimulation.lean'
       - 'experiments/openai-logspace-model-bridge-v1/LeftWallActiveStep.lean'
       - 'experiments/openai-logspace-model-bridge-v1/LeftWallFullRun.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/LeftWallSpace.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/LeftWallBootstrapInduction.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/LeftWallComplete.lean'
       - '.github/workflows/openai-logspace-model-bridge.yml'
   workflow_dispatch:
 
@@ -85,6 +88,9 @@ jobs:
           cp experiments/openai-logspace-model-bridge-v1/LeftWallSimulation.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/LeftWallActiveStep.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/LeftWallFullRun.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/LeftWallSpace.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/LeftWallBootstrapInduction.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/LeftWallComplete.lean isolated/
           cp upstream/lean/lean-toolchain isolated/lean-toolchain
           test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
           cat > isolated/lakefile.lean <<'LAKE'
@@ -119,6 +125,9 @@ jobs:
           lean_lib LeftWallSimulation
           lean_lib LeftWallActiveStep
           lean_lib LeftWallFullRun
+          lean_lib LeftWallSpace
+          lean_lib LeftWallBootstrapInduction
+          lean_lib LeftWallComplete
           lean_lib OAI
           LAKE
           printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
@@ -147,8 +156,8 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
-          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSimulation LeftWallActiveStep LeftWallFullRun
-          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSimulation LeftWallActiveStep LeftWallFullRun
+          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSimulation LeftWallActiveStep LeftWallFullRun LeftWallSpace LeftWallBootstrapInduction LeftWallComplete
+          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSimulation LeftWallActiveStep LeftWallFullRun LeftWallSpace LeftWallBootstrapInduction LeftWallComplete
           cat > AxiomCheck.lean <<'LEAN'
           import ModelSemantics
           import FiniteEnvelope
@@ -175,6 +184,9 @@ jobs:
           import LeftWallSimulation
           import LeftWallActiveStep
           import LeftWallFullRun
+          import LeftWallSpace
+          import LeftWallBootstrapInduction
+          import LeftWallComplete
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_step_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
@@ -290,6 +302,12 @@ jobs:
           #print axioms Metalogic.OpenAIMath.LeftWallActiveStep.active_step_commutes
           #print axioms Metalogic.OpenAIMath.LeftWallFullRun.positive_clock_full_run
           #print axioms Metalogic.OpenAIMath.LeftWallFullRun.positive_clock_output_commutes
+          #print axioms Metalogic.OpenAIMath.LeftWallSpace.compiled_space_eq_two_of_head_simulation
+          #print axioms Metalogic.OpenAIMath.LeftWallBootstrapInduction.positive_clock_acceptance_equal
+          #print axioms Metalogic.OpenAIMath.LeftWallComplete.all_time_workhead_match
+          #print axioms Metalogic.OpenAIMath.LeftWallComplete.exact_two_track_space
+          #print axioms Metalogic.OpenAIMath.LeftWallComplete.compiled_LogSpace_of_left
+          #print axioms Metalogic.OpenAIMath.LeftWallComplete.exact_positive_clock_probability
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
