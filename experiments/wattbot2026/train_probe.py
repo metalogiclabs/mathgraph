@@ -15,6 +15,7 @@ import json
 import math
 import re
 import zipfile
+from urllib.parse import urlparse
 
 TOKEN = re.compile(r"[a-z]+|\d+(?:\.\d+)?", re.I)
 NA = {"", "is_blank", "nan", "none", "null", "[]", "n/a", "na"}
@@ -110,6 +111,8 @@ def summarize(path):
             "unknown_ref_total": sum(len(set(ids)-known) for _, ids in unresolved),
             "gold_ref_lengths": dict(Counter(str(len(ids)) for ids in gold.values())),
             "metadata_types": dict(Counter(str(d.get("type", "")).strip() for d in meta)),
+            "source_host_domains": dict(Counter(urlparse(d.get("url", "")).hostname or "(invalid)" for d in meta)),
+            "direct_pdf_urls": sum(urlparse(d.get("url", "")).path.lower().endswith(".pdf") for d in meta),
             "flags": flags,
         }, sort_keys=True))
         print("SCORER_AST=" + json.dumps(scorer_shape(z.read("Score.py")), sort_keys=True))
