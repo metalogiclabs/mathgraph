@@ -1,0 +1,36 @@
+name: WattBot complete-pinned-corpus RAG qualification
+on:
+  push:
+    branches: [wattbot-complete-rag-v1]
+    paths:
+      - 'experiments/wattbot2026/flashlite_rag_probe.py'
+      - '.github/workflows/wattbot-complete-rag.yml'
+jobs:
+  complete-source-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Verify report-source security and grounded reader policy
+        run: |
+          python experiments/wattbot2026/report_loader.py
+          python experiments/wattbot2026/flashlite_rag_probe.py --self-test
+      - name: Compare fixed arXiv24 control with complete arXiv+report evidence corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENROUTER_API_KEY"
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/flashlite_rag_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence and copyright boundary
+        run: echo "Only exact metadata-pinned source URLs, bounded GET pacing; no answer rows, PDF bytes or model output retained."
