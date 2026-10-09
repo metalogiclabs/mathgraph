@@ -83,6 +83,8 @@ jobs:
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
           #print axioms Metalogic.OpenAIMath.ModelSemantics.run_depends_only_on_coin_prefix
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_run_is_stable
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_repeat_propagates
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
