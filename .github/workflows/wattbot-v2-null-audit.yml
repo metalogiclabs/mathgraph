@@ -1,0 +1,30 @@
+name: WattBot exact failed V2 CSV null inspection
+on:
+  push:
+    branches: [wattbot-submission-error-v2]
+    paths:
+      - 'experiments/wattbot2026/audit_submission_nulls.py'
+      - '.github/workflows/wattbot-v2-null-audit.yml'
+jobs:
+  frozen-upload-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install SHA-pinned official Kaggle CLI
+        run: python -m pip install 'git+https://github.com/Kaggle/kaggle-cli.git@9c57dd74c29904c40ff7879eed33644be89d2e2f'
+      - name: Download only the user-owned failed V2 submission
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot_v2"
+          kaggle competitions submission-download 56996090 -p "$RUNNER_TEMP/wattbot_v2" -q
+          python experiments/wattbot2026/audit_submission_nulls.py \
+            --submission "$RUNNER_TEMP/wattbot_v2/mathgraph_v2.csv"
+      - name: Preserve competition privacy
+        run: echo "Ephemeral submission is never logged, uploaded or committed; counts only."
