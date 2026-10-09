@@ -36,11 +36,19 @@ jobs:
         run: |
           set -euo pipefail
           python3 experiments/upstream_triad_20261010/probe.py linux | tee linux.log
+      - name: Minimal source patch versus protected Linux models
+        run: |
+          set -euo pipefail
+          python3 experiments/upstream_triad_20261010/linux_patch_probe.py | tee linux_patch.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: upstream-triad-linux
-          path: linux.log
+          path: |
+            linux.log
+            linux_patch.log
+            linux-rvgen-determinism.patch
+            linux-ambiguous-mutant.dot
   lean:
     runs-on: ubuntu-24.04
     timeout-minutes: 16
