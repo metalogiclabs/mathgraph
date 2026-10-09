@@ -50,6 +50,18 @@ def make_question(item):
     return {"id":str(item["id"]),"question":str(item["question"])}
 
 
+def normalize_unscored_unit(row):
+    """Avoid default pandas/Kaggle null parsing for non-scored unit sentinels.
+
+    This is only transport repair. Never modify answer_value or citations.
+    """
+    updated = dict(row)
+    unit = str(updated.get("answer_unit", "") or "").strip()
+    if unit.casefold() in ("", "na", "n/a", "nan", "none", "null"):
+        updated["answer_unit"] = "is_blank"
+    return updated
+
+
 def pinned_data(archive):
     with zipfile.ZipFile(archive) as z:
         for name, expected in EXPECTED.items():
@@ -183,6 +195,7 @@ def predict_rows(tests,docs,index,policy,key,rate):
                     selected=checked
         else:
             status["NO_PASSAGES"]+=1
+        selected = normalize_unscored_unit(selected)
         if not selected.get("explanation") or not selected.get("answer_value"):
             raise ValueError("Unqualified candidate has a blank required field")
         predictions.append(selected)
@@ -238,6 +251,10 @@ def self_test():
     assert base.MODEL=="google/gemini-2.5-flash-lite"
     question=make_question({"id":"sample","question":"What energy was used?"})
     assert question=={"id":"sample","question":"What energy was used?"}
+    repaired = normalize_unscored_unit({"answer_value":"12","ref_id":"['a']","answer_unit":"NA"})
+    assert repaired["answer_unit"] == "is_blank"
+    assert repaired["answer_value"] == "12" and repaired["ref_id"] == "['a']"
+    assert normalize_unscored_unit({"answer_unit":"MWh"})["answer_unit"] == "MWh"
     print("WATTBOT_FULL_TEST_SELF_TEST=PASS")
 
 
