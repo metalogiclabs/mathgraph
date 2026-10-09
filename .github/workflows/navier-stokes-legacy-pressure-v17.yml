@@ -1,0 +1,134 @@
+name: Legacy canonical pressure polynomial V17
+on:
+  push:
+    branches: [navier-stokes-pressure-legacy-v17]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/LegacyCanonicalPressure.lean'
+      - '.github/workflows/navier-stokes-legacy-pressure-v17.yml'
+  pull_request:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/LegacyCanonicalPressure.lean'
+      - '.github/workflows/navier-stokes-legacy-pressure-v17.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: legacy-pressure-v17-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  legacy-canonical-B-dependent-bound:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Freeze original V11/V15 source and current candidate
+        run: |
+          set -euo pipefail
+          mkdir -p .legacy-pressure-env pressure-v17-evidence
+          git rev-parse HEAD | tee pressure-v17-evidence/head-sha.txt
+          ROOT=experiments/navier_stokes_semantic_bridge_v1
+          test "$(git hash-object "$ROOT/PressureGaussianLimit.lean")" = '4235fbf5625714a6bff5660423886def603d611b'
+          test "$(git hash-object "$ROOT/PressureScalarPairingLimit.lean")" = '2d350d5fd3f6f53ffde9454f39ea095db94426db'
+          cp "$ROOT/PressureGaussianLimit.lean" .legacy-pressure-env/PressureGaussianLimit.lean
+          cp "$ROOT/PressureScalarPairingLimit.lean" .legacy-pressure-env/PressureScalarPairingLimit.lean
+          cp "$ROOT/LegacyCanonicalPressure.lean" .legacy-pressure-env/LegacyCanonicalPressure.lean
+          cp .legacy-pressure-env/LegacyCanonicalPressure.lean pressure-v17-evidence/LegacyCanonicalPressure.lean
+          sha256sum .legacy-pressure-env/{PressureGaussianLimit,PressureScalarPairingLimit,LegacyCanonicalPressure}.lean > pressure-v17-evidence/sources.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .legacy-pressure-env/lean-toolchain
+          cat > .legacy-pressure-env/lakefile.toml <<'EOF'
+          name = "mathgraph_legacy_pressure_bound_v17"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureGaussianLimit"
+          [[lean_lib]]
+          name = "PressureScalarPairingLimit"
+          [[lean_lib]]
+          name = "LegacyCanonicalPressure"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .legacy-pressure-env/.lake
+            .legacy-pressure-env/lake-manifest.json
+          key: legacy-pressure-v17-lean434rc2-upstream-f9e8bc5
+      - name: Install original Lean 4
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify original upstream and legacy stress theorem
+        working-directory: .legacy-pressure-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'theorem regularized_flux_bound' .lake/packages/NavierStokesAndEuler/NavierStokes/R3StressPressureEstimate.lean
+          grep -q 'theorem rawBound_le' .lake/packages/NavierStokesAndEuler/NavierStokes/R3StressPressureEstimate.lean
+          cp lake-manifest.json ../pressure-v17-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v17-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel check actual legacy canonical pressure inequality
+        working-directory: .legacy-pressure-env
+        run: |
+          set -euo pipefail
+          lake build LegacyCanonicalPressure 2>&1 | tee ../pressure-v17-evidence/build.log
+          lake env lean -DwarningAsError=true LegacyCanonicalPressure.lean 2>&1 | tee ../pressure-v17-evidence/axioms.log
+      - name: Audit exact head, theorem axiom boundary and claims
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('pressure-v17-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          expected={'MathGraph.LegacyCanonicalPressure.'+x for x in
+             ('legacy_canonical_weighted_stress_bound',
+              'legacy_canonical_weighted_polynomial_bound')}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,a in rows:
+            assert n not in seen,n
+            used={s.strip() for s in a.split(',') if s.strip()}
+            assert used <= {'propext','Classical.choice','Quot.sound'},(n,sorted(used))
+            seen[n]=sorted(used)
+          assert set(seen)==expected,('unexpected theorem',sorted(expected.symmetric_difference(set(seen))))
+          result={
+            'schema':'mathgraph.legacy-canonical-pressure-polynomial-v17',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'upstream_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'LEGACY_CANONICAL_WEIGHTED_RIESZ_PRESSURE_SCALAR_INTEGRAL',
+            'source_lemma':'R3StressPressureEstimate.regularized_flux_bound',
+            'gaussian_uniform_bound_derived_not_assumed':True,
+            'source_input_assumptions_preserved':True,
+            'bounded_by_original_rawBound':True,
+            'bounded_by_coefficient_div_R_times_B_three_halves_plus_B_plus_one':True,
+            'extra_U_Linfty_L6_L2_assumptions_present':True,
+            'original_B_only_equation_10_19_matched':False,
+            'physical_pressurePair_identification_proved':False,
+            'source_NL_interpretation_approved':False,
+            'production_gate_unchanged':True,
+            'axiom_audit':seen,
+            'files_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          }
+          (root/'result.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: legacy-canonical-pressure-v17
+          path: pressure-v17-evidence/
+          if-no-files-found: error
