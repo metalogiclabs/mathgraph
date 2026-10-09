@@ -21,6 +21,7 @@ import fitz
 import requests
 
 from train_probe import load_csv, parse_refs, score_metadata
+from wattbot import chunks_from_pages, ranked
 
 ARXIV = "arxiv.org"
 USER_AGENT = "MathGraph-WattBot2026-Research/0.1 (noncommercial evaluation; limited requests)"
@@ -101,6 +102,7 @@ def pilot(zip_path: str, max_docs: int) -> None:
     successful = []
     failures = Counter()
     sha = []
+    pdf_chunks = []
     with TemporaryDirectory(prefix="wattbot_pdf_probe_") as folder:
         for i, doc_id in enumerate(selected):
             if i:
@@ -109,6 +111,7 @@ def pilot(zip_path: str, max_docs: int) -> None:
                 path = Path(folder)/f"{i}.pdf"
                 digest, summary = download_one(docs[doc_id]["url"],path)
                 successful.append(doc_id)
+                pdf_chunks.extend(chunks_from_pages(doc_id,docs[doc_id]['url'],path))
                 sha.append({"sha256":digest,"size_bytes":path.stat().st_size,
                             "info":summary})
             except (requests.RequestException, ValueError, RuntimeError, OSError) as e:
@@ -127,6 +130,55 @@ def pilot(zip_path: str, max_docs: int) -> None:
             "training_questions_with_any_downloaded_gold_source":with_some,
             "training_questions_with_all_gold_sources_downloaded":with_all,
             "training_questions_total":len(train)},sort_keys=True))
+
+        # Matched comparison on rows whose ALL gold refs are in the four-paper
+        # pilot. The denominator is conditional and selection was train-driven,
+        # so these figures are NOT overall corpus retrieval scores.
+        matched = [(row, refs[i]) for i, row in enumerate(train)
+                   if refs[i] and set(refs[i]) <= observed]
+        pseudo_meta = [
+            {"ref_id": d["id"], "url": d["url"], "page": 0,
+             "text": " ".join(str(d.get(k,"") or "") for k in
+                              ("title","citation","year","venue"))}
+            for d in meta
+        ]
+        # Hybrid has metadata coverage for ALL 122 sources, unlike the
+        # PDF-only truncated index; the 4 PDF texts supplement metadata.
+        hybrid = pseudo_meta + pdf_chunks
+        metrics = {}
+        for k in (1,3,8):
+            base_hit = hybrid_hit = base_complete = hybrid_complete = 0
+            for question, correct in matched:
+                expected = set(correct)
+                base = set(score_metadata(question["question"],meta,k))
+                hits = ranked(question["question"],hybrid,min(len(hybrid),200))
+                # Collapse multiple page chunks to unique source references.
+                seen = []
+                for hit in hits:
+                    if hit["ref_id"] not in seen:
+                        seen.append(hit["ref_id"])
+                    if len(seen) >= k:
+                        break
+                got = set(seen)
+                base_hit += bool(base & expected)
+                hybrid_hit += bool(got & expected)
+                base_complete += expected <= base
+                hybrid_complete += expected <= got
+            n = len(matched)
+            metrics[str(k)] = {
+                "matched_questions":n,
+                "metadata_any":round(base_hit/n,4) if n else None,
+                "hybrid_any":round(hybrid_hit/n,4) if n else None,
+                "metadata_all":round(base_complete/n,4) if n else None,
+                "hybrid_all":round(hybrid_complete/n,4) if n else None,
+            }
+        print("FOUR_PDF_HYBRID_MATCHED_DIAGNOSTIC="+json.dumps({
+            "selection_basis":"four most cited arXiv sources in training labels",
+            "metadata_source_count":len(meta),
+            "real_pdf_chunk_count":len(pdf_chunks),
+            "scores_by_source_rank":metrics,
+            "warning":"Train-selected conditional diagnostic, NOT global recall or official score",
+        },sort_keys=True))
 
 
 def self_test():
