@@ -1,7 +1,7 @@
-name: WattBot zero-priced scientific source-reader pilot
+name: WattBot capped Flash-Lite scientific source reader
 on:
   push:
-    branches: [wattbot-free-reader-v1]
+    branches: [wattbot-flashlite-reader-v1]
     paths:
       - 'experiments/wattbot2026/free_reader_probe.py'
       - '.github/workflows/wattbot-free-reader.yml'
@@ -23,7 +23,7 @@ jobs:
         run: python -m pip install kaggle pandas numpy requests pymupdf
       - name: Synthetic JSON and cost-policy controls
         run: python experiments/wattbot2026/free_reader_probe.py --self-test
-      - name: Run source-reader on eight development questions using the free endpoint only
+      - name: Run source-reader on eight development questions using the fixed-price model under US$0.02 estimated cap
         shell: bash
         run: |
           set -euo pipefail
@@ -35,4 +35,4 @@ jobs:
           kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
           python experiments/wattbot2026/free_reader_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
       - name: Declare evidence boundary
-        run: echo "At most eight free-only LLM calls on TRAIN development questions, no test data or labels in prompts; only aggregate scores logged."
+        run: echo "At most eight price-capped LLM calls on TRAIN development questions, no test data or labels in prompts; only aggregate scores logged. Budget checked before each request."
