@@ -98,3 +98,21 @@ The declared current main-theorem status is still UNKNOWN_INDEPENDENT_LEAN_REPLA
 **WARRANTED_BOUNDED_ISOLATED_LEAN_MODULE_CHECK:** the actual imported solution module compiles and its export environment is accepted by Leanchecker's checked boundary in this isolated environment. This is stronger than source scanning but does **not** establish that Comparator accepts the solution relative to the challenge, nor that the paper's formulation is semantically identical. An explicit target-theorem axiom query is added under [source commit f17a0ef](https://github.com/metalogiclabs/mathgraph/commit/f17a0ef85fc4922923c14e1c74010aef0000e755) and requires its own green qualification before axiom policy is promoted.
 
 **Sandboxed Comparator failure lineage:** [run 37868000488](https://github.com/metalogiclabs/mathgraph/actions/runs/37868000488) failed before judging due to missing Git inside the Ubuntu container after a Mathlib metadata refresh. The [corrective run 37868310604](https://github.com/metalogiclabs/mathgraph/actions/runs/37868310604) is separate; only an explicit Comparator exit zero can qualify challenge/solution correspondence.
+
+## Paper-to-formal-model correspondence ledger (CANDIDATE, not established)
+
+The manuscript source compared is the pinned `build/sections/introduction.tex` and `model.tex`; the challenge-side definitions are at `lean/ComparatorChallenges/LogspaceEquality.lean`. The following dimension-by-dimension matches are **inspection candidates**, not proofs of equivalent mathematical notions:
+
+| Protected dimension | Paper's stated model | Exact challenge definition | Status / residual |
+| --- | --- | --- | --- |
+| Finite program | Finite control, finite work tapes and input heads | `Machine q w h`, `Fin (q+1)`, transitions over finite scanned-symbol domains | CANDIDATE; finite-table encoding and standard-model simulation unproved |
+| Input and boundaries | Endmarked read-only input; head kept between markers | `readInput`, `Fin (x.length+2)` and `Direction.moveInput` | CANDIDATE; edge cases and standard boundary conventions need an equivalence proof |
+| Randomness | Fresh independent fair coin bits | `CoinTape := ℕ → Bool`; `run x coins`; uniform finite `Fin t → Bool` sum over `2^t` tapes | CANDIDATE; coincidence with paper's probability law needs a formal bridge |
+| Halting and time | Polynomial worst-case time on every random tape | `HaltsBy` universally quantifies over tapes at `polynomialClock c k n` | CANDIDATE; encode all allowed machine conventions |
+| Space | All visited writable cells count, even blank; simultaneous registers charged | `spaceThrough` cardinality of visited work-head positions, summed over heads | CANDIDATE; an exact representation/simulation theorem remains absent |
+| L | Deterministic O(log(n+2)) space decider | `L` as existential coin-independent `Machine.Deterministic` with `LogSpace` and `Decides` | CANDIDATE; finite-table and uniformity correspondence unproved |
+| RL | One-sided polynomial-time bounded error; no-instance acceptance zero and yes at least one half | `RL` with `acceptanceProbability=0` on no and ≥1/2 on yes | CANDIDATE; quantitative constants match |
+| BPL | Two-sided probability at most one third on no, at least two thirds on yes | `BPL` with exactly these rational inequalities | CANDIDATE; quantitative constants match |
+| Main theorem | `L=RL=BPL` | `L = RL ∧ RL = BPL` under these Lean definitions | Only **formal proposition's surface** matches; mathematical theorem correspondence UNKNOWN |
+
+The dependency and formalization gate does not establish that this chosen finite-machine encoding is extensionally equivalent to the conventional complexity classes. Even a successful Comparator verdict should warrant the theorem **in these formal definitions** first. To promote the broader paper claim, supply independent definitions or a machine-model equivalence/compilation proof, including uniformity and visited-cell accounting. An unusually strong result should not be marketed without this second step.
