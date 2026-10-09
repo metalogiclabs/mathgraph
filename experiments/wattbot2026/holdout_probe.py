@@ -5,7 +5,7 @@ Evidence boundary: Kaggle official 2026 train labels; never test labels.
 The split is fixed from question IDs before selecting sources. Earlier
 exploratory whole-training analyses mean this is NOT an untouched global
 competition holdout; it is a new prospective comparison for this variant.
-Downloads are constrained to eight pinned arXiv papers and kept ephemeral.
+Downloads are constrained to up to twenty-four pinned arXiv papers and kept ephemeral.
 """
 from __future__ import annotations
 
@@ -101,8 +101,8 @@ def evaluate(rows: list[dict], metadata: list[dict],
 
 
 def run(official_zip: str, max_docs: int = 8) -> None:
-    if max_docs != 8:
-        raise ValueError("This matched experiment requires exactly eight attempted PDFs.")
+    if max_docs not in (8, 24):
+        raise ValueError("Allowed prospective acquisition budgets: 8 or 24 PDFs.")
     with zipfile.ZipFile(official_zip) as z:
         meta = load_csv(z, "metadata.csv")
         train = load_csv(z, "train_QA.csv")
@@ -118,7 +118,7 @@ def run(official_zip: str, max_docs: int = 8) -> None:
          and (urlparse(metadata[doc_id]["url"]).hostname or "").lower() in ARXIV_HOSTS),
         key=lambda doc_id: (-refs[doc_id], doc_id)
     )
-    selected = source_list[:8]
+    selected = source_list[:max_docs]
     print("HOLDOUT_BOUNDARY=" + json.dumps({
         "salt_sha256": hashlib.sha256(SALT.encode()).hexdigest(),
         "dev_rows": len(dev), "holdout_rows": len(hold),
@@ -132,7 +132,7 @@ def run(official_zip: str, max_docs: int = 8) -> None:
     with tempfile.TemporaryDirectory(prefix="mathgraph_wattbot_holdout_") as folder:
         for i, doc_id in enumerate(selected):
             if i:
-                time.sleep(2)
+                time.sleep(3.1)
             path = Path(folder) / f"source_{i}.pdf"
             try:
                 digest, _ = download_one(metadata[doc_id]["url"], path)
@@ -149,7 +149,9 @@ def run(official_zip: str, max_docs: int = 8) -> None:
         "failure_types": dict(failure_types),
         "pdf_checksum_manifest_sha256": hashlib.sha256("\n".join(digests).encode()).hexdigest(),
     }, sort_keys=True))
-    for n in (4, 8):
+    for n in (4, 8, 16, 24):
+        if n > max_docs:
+            continue
         selected_group = selected[:n]
         print("HOLDOUT_RETRIEVAL_"+str(n)+"_PAPERS="+json.dumps(
             evaluate(hold, meta, downloaded, selected_group), sort_keys=True))
@@ -167,11 +169,12 @@ def self_test() -> None:
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--official-zip")
+    p.add_argument("--max-docs", type=int, default=8)
     p.add_argument("--self-test", action="store_true")
     a = p.parse_args()
     if a.self_test:
         self_test()
     elif a.official_zip:
-        run(a.official_zip)
+        run(a.official_zip, a.max_docs)
     else:
         p.error("Provide --official-zip or --self-test")
