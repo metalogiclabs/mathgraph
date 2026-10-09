@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install lightweight official scorer dependencies
-        run: python -m pip install kaggle pandas numpy
+        run: python -m pip install kaggle pandas numpy pymupdf requests
       - name: Qualify exact range/tolerance/NA typing logic
         run: python experiments/wattbot2026/score_type_contract.py --self-test
       - name: Audit pinned official TRAIN labels and TEST question-side unit counts
