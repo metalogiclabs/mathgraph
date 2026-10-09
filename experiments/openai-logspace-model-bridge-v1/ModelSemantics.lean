@@ -66,4 +66,45 @@ theorem run_depends_only_on_coin_prefix
         M.step x (b t) (M.run x b t)
       rw [ih p, hprefix t (Nat.lt_succ_self t)]
 
+
+/-- Once a machine reaches an output-bearing state its complete configuration persists. -/
+theorem halted_run_is_stable
+    (M : Machine q w h) (x : Word) (coins : CoinTape) (t k : ℕ)
+    (out : Bool) (halt : M.output (M.run x coins t).state = some out) :
+    M.run x coins (t + k) = M.run x coins t := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+      calc
+        M.run x coins (t + (k + 1)) =
+            M.step x (coins (t + k)) (M.run x coins (t + k)) := by
+              rw [Nat.add_succ]
+              rfl
+        _ = M.step x (coins (t + k)) (M.run x coins t) := by rw [ih]
+        _ = M.run x coins t :=
+              halted_step_is_fixed M x (coins (t + k)) (M.run x coins t) out halt
+
+/-- Deterministic executions that reach the same full configuration have
+    identical future configurations, independent of the coin positions. -/
+theorem deterministic_repeat_propagates
+    (M : Machine q w h) (hd : M.Deterministic) (x : Word)
+    (coins : CoinTape) (t u k : ℕ)
+    (same : M.run x coins t = M.run x coins u) :
+    M.run x coins (t + k) = M.run x coins (u + k) := by
+  induction k with
+  | zero => simpa using same
+  | succ k ih =>
+      calc
+        M.run x coins (t + (k + 1)) =
+            M.step x (coins (t + k)) (M.run x coins (t + k)) := by
+              rw [Nat.add_succ]
+              rfl
+        _ = M.step x (coins (t + k)) (M.run x coins (u + k)) := by rw [ih]
+        _ = M.step x (coins (u + k)) (M.run x coins (u + k)) :=
+              deterministic_step_coin_irrelevant M hd x
+                (coins (t + k)) (coins (u + k)) (M.run x coins (u + k))
+        _ = M.run x coins (u + (k + 1)) := by
+              rw [Nat.add_succ]
+              rfl
+
 end Metalogic.OpenAIMath.ModelSemantics
