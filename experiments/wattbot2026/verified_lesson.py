@@ -129,6 +129,11 @@ def self_test():
         "Table":"True","answer_value":"23","answer_unit":"MWh",
         "explanation":"Table row was read."},
     ]
+    # The synthetic fixture IDs must be genuinely on the DEVELOPMENT side
+    # of the official hash split; refuse to weaken that invariant for tests.
+    for row in sample:
+        while is_holdout(str(row["id"])):
+            row["id"]+="_dev"
     chosen=examples_for("What was the percent decrease?",sample)
     assert len(chosen)==2 and chosen[0]["id"]=="d1"
     text=illustrate("What was the percent decrease?",sample)
