@@ -1,0 +1,57 @@
+name: WattBot bounded OpenRouter capability smoke
+on:
+  push:
+    branches: [wattbot-2026-llm-v1]
+    paths:
+      - '.github/workflows/wattbot-openrouter-smoke.yml'
+jobs:
+  synthetic-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query free model on a synthetic prompt only
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request, urllib.error
+          key=os.environ.get("OPENROUTER_API_KEY","")
+          if not key: raise SystemExit("OPENROUTER_KEY_UNAVAILABLE")
+          payload={
+            "model":"openrouter/free",
+            "messages":[
+              {"role":"system","content":"Return a JSON object only, no other text."},
+              {"role":"user","content":"Synthetic arithmetic sanity check: 6 times 7 is what integer? JSON field value."}],
+            "temperature":0,
+            "max_tokens":64,
+          }
+          request=urllib.request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=json.dumps(payload).encode(),
+            headers={"Authorization":"Bearer "+key,
+                     "Content-Type":"application/json",
+                     "HTTP-Referer":"https://github.com/metalogiclabs/mathgraph",
+                     "X-Title":"MathGraph WattBot bounded synthetic smoke"},
+            method="POST")
+          try:
+            with urllib.request.urlopen(request, timeout=32) as response:
+              data=json.load(response)
+              reply=((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+              print("OPENROUTER_SYNTHETIC_SMOKE="+json.dumps({
+                  "http_status":response.status,
+                  "model":data.get("model","unknown"),
+                  "response_present":bool(reply),
+                  "answered_42":'"42"' in str(reply) or ':42' in str(reply.replace(" ","")) or '42' in str(reply),
+                  "usage_tokens":(data.get("usage") or {}).get("total_tokens"),
+                  "cost":(data.get("usage") or {}).get("cost"),
+                  "boundary":"Synthetic prompt only, free routed model, no Kaggle data, no paid route requested"
+              },sort_keys=True))
+              if not reply: raise SystemExit("No model response available")
+          except urllib.error.HTTPError as e:
+            print("OPENROUTER_SMOKE_HTTP_STATUS="+str(e.code))
+            raise SystemExit(1)
+          PY
