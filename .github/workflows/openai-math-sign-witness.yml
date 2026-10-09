@@ -1,0 +1,31 @@
+name: OpenAI math independent sign witness (Lean 4.34.1)
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/openai-math-sign-v1/**'
+      - '.github/workflows/openai-math-sign-witness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kernel-witness:
+    name: Lean kernel verifies corrected count conditional on sign premise
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile isolated Lean 4.34.1 arithmetic witness
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/openai-math-sign-v1
+          auto-config: false
+          build: true
+          use-mathlib-cache: false
+          use-github-cache: false
+      - name: Record epistemic boundary
+        run: |
+          echo "VERIFIED_CONDITIONAL_SIGN_ARITHMETIC_ONLY"
+          echo "Does NOT independently verify the orientation sign or the withdrawn geometric proof."
