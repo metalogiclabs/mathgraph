@@ -80,4 +80,27 @@ theorem configuration_ext_of_window
   cases hwork
   rfl
 
+
+/-- Unvisited work-tape cells remain blank in the exact OAI machine.
+    A space-radius bound truncates memory only after proving displacement. -/
+theorem unvisited_work_cell_is_blank
+    {q w h : ℕ} (M : Machine q w h)
+    (x : Word) (coins : CoinTape) (k : Fin w) (z : ℤ) (t : ℕ) :
+    (∀ u, u < t → (M.run x coins u).workPos k ≠ z) →
+      (M.run x coins t).work k z = false := by
+  induction t with
+  | zero =>
+      intro _
+      rfl
+  | succ t ih =>
+      intro hn
+      have hearlier : (M.run x coins t).work k z = false :=
+        ih (by
+          intro u hu
+          exact hn u (Nat.lt_trans hu (Nat.lt_succ_self t)))
+      have hpos : (M.run x coins t).workPos k ≠ z :=
+        hn t (Nat.lt_succ_self t)
+      change (M.step x (coins t) (M.run x coins t)).work k z = false
+      simp [Machine.step, hearlier, hpos, Ne.symm hpos]
+
 end Metalogic.OpenAIMath.FiniteEnvelope
