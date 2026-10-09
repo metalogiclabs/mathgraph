@@ -214,6 +214,10 @@ def run(archive):
         return response,status,bound,actual
 
     def save_numeric(question,hits,docs):
+        # Numeric fallback is evaluated for every question, even when the
+        # first model returns invalid JSON and try_checked is never called.
+        # Capture original document authority here for both model controls.
+        docs_by_id[question["id"]]=docs
         item=original_numeric(question,hits,docs)
         if question["id"] not in numeric:
             numeric[question["id"]]=item
