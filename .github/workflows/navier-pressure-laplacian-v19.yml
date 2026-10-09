@@ -50,6 +50,7 @@ jobs:
             .laplacian-env/.lake
             .laplacian-env/lake-manifest.json
           key: pressure-laplacian-v19-lean434rc2-openai-f9e8bc5
+          save-always: true
       - name: Install source-pinned Lean
         run: |
           set -euo pipefail
