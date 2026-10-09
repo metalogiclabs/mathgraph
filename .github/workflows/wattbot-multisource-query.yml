@@ -1,0 +1,44 @@
+name: WattBot question-only multi-source retrieval consequence audit
+on:
+  push:
+    branches: [wattbot-multisource-query-v1]
+    paths:
+      - '.github/workflows/wattbot-multisource-query.yml'
+      - 'experiments/wattbot2026/multisource_query_probe.py'
+jobs:
+  evidence-retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned PDF evidence and question retrieval
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Verify cross-paper decomposed source selection without labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/multisource_query_probe.py --self-test
+      - name: Audit DEV then reused TRAIN holdout citation coverage on 122-source registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/multisource_query_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Warranted future
+        run: |
+          echo "Only question wording creates source decomposition queries."
+          echo "TRAIN gold source IDs used exclusively after frozen retrieval for aggregate recall."
+          echo "No protected TEST answer/citation labels, no model calls, no Kaggle submissions."
+          echo "Source coverage measures retrieval, not answer correctness or entailment."
