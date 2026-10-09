@@ -25,6 +25,7 @@ import zipfile
 import pandas as pd
 
 import full_reader as base
+from value_anchor import repaired_by_value, self_test as literal_anchor_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -100,6 +101,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 
 def self_test():
+    literal_anchor_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -141,6 +143,7 @@ def run(archive):
     passage_map = {}
     numeric_map = {}
     checked_map = {}
+    docs_by_id = {}
     counters = Counter()
     def windowed(question, chunks):
         original, hits = original_passages(question, chunks)
@@ -170,6 +173,7 @@ def run(archive):
     def record_checked(raw, question, passages, docs):
         candidate, status=original_check(raw,question,passages,docs)
         checked_map[question["id"]]=(candidate,status)
+        docs_by_id[question["id"]]=docs
         return candidate,status
 
     captured=io.StringIO()
@@ -212,6 +216,8 @@ def run(archive):
             "strict_then_raw_no_refs":[],
             "strict_then_raw_numeric_refs":[],
             "strict_then_raw_model_refs":[],
+            "strict_then_unique_literal":[],
+            "strict_literal_then_unverified_source":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -238,6 +244,26 @@ def run(archive):
                               else "raw_numeric_refs" if key=="numeric" else "raw_no_refs")
                 modes[strict_mode].append(dict(strict) if strict is not None else candidate)
 
+            literal=None
+            literal_reason="STRICT_ALREADY_ANCHORED"
+            if strict is None and usable(response):
+                literal,literal_reason=repaired_by_value(
+                    response,{"id":ident,"question":question},
+                    passages,docs_by_id[ident],check)
+            diagnosis["literal_"+literal_reason]+=1
+            if literal is not None:
+                diagnosis["new_unique_literal_sources"]+=1
+            if strict is not None:
+                diagnosis["strict_source_admitted"]+=1
+            literal_only=(dict(strict) if strict is not None else
+                          dict(literal) if literal is not None else dict(numeric))
+            candidate_after_literal=(dict(strict) if strict is not None else
+                                     dict(literal) if literal is not None else
+                                     raw_variant(row,response,numeric,passages,"selected"))
+            modes["strict_then_unique_literal"].append(literal_only)
+            modes["strict_literal_then_unverified_source"].append(
+                candidate_after_literal)
+
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
             def official(rows):
@@ -253,6 +279,14 @@ def run(archive):
                     invalid[name]=type(err).__name__
     comparison=baseline["scores"]["reader_then_numeric_fallback"]
     improvements={k:round(v-comparison,8) for k,v in scores.items()}
+    pairwise={
+        "tiered_minus_raw_recovery":round(
+            scores.get("strict_literal_then_unverified_source",0)
+            - scores.get("strict_then_raw_model_refs",0),8),
+        "tiered_minus_unique_literal_only":round(
+            scores.get("strict_literal_then_unverified_source",0)
+            - scores.get("strict_then_unique_literal",0),8),
+    }
     result={
        "status":"EXPLORATORY_CANDIDATE",
        "scope":"Same 63 historic TRAIN questions and same LLM responses for all arms",
@@ -265,15 +299,18 @@ def run(archive):
        "alternative_scores":scores,
        "score_delta_vs_same_run_baseline":improvements,
        "invalid_modes":invalid,
+       "pairwise_same_response_comparisons":pairwise,
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"All alternatives are unverified LLM answers. Model-supplied citation indices "
-                  "are provisional, NOT exact-quote proof; neither alternative is promoted to "
-                  "scientific fact. No protected TEST labels or Kaggle submission.",
+       "boundary":"Tiered epistemic states: exact page-quote checked > source-unique "
+                  "numeric literal checked > unverified model value/source candidate > "
+                  "numeric fallback. None proves scientific semantic entailment. "
+                  "Same model responses scored by official TRAIN Score.py only; "
+                  "no hidden TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_VALUE_RESIDUAL_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_TIERED_VALUE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
