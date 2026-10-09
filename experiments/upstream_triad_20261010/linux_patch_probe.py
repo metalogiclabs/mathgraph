@@ -45,7 +45,7 @@ def main():
     anchor = '            matrix[states_dict[src]][events_dict[event]] = dst'
     replacement = '''            if matrix[states_dict[src]][events_dict[event]] != self.invalid_state_str:
                 raise AutomataError(
-                    f"Non-deterministic transition for event {event} in state {src}")
+                    f"Duplicate transition for event {event} in state {src}")
 ''' + anchor
     assert source.count(anchor) == 1, "upstream source changed"
     fixed = source.replace(anchor, replacement)
@@ -89,7 +89,7 @@ def main():
         try:
             patched.Automata(str(root/'mutant.dot'))
         except patched.AutomataError as e:
-            assert 'Non-deterministic transition' in str(e)
+            assert 'Duplicate transition' in str(e)
             print('PATCHED_RVGEN_REJECTED_MUTANT',str(e))
         else:
             raise AssertionError('patched rvgen still accepted contradictory transitions')
