@@ -1,0 +1,48 @@
+name: WattBot explicit abstention versus numeric fallback calibration
+on:
+  push:
+    branches: [wattbot-abstention-boundary-v1]
+    paths:
+      - '.github/workflows/wattbot-abstention-boundary.yml'
+      - 'experiments/wattbot2026/abstention_boundary.py'
+      - 'experiments/wattbot2026/answer_value_residual_probe.py'
+jobs:
+  abstention-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents:
+        read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen official scorer and source reader dependencies
+        run: python -m pip install kaggle requests pandas numpy pymupdf
+      - name: Refusal authority and empty citation contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/abstention_boundary.py
+          python experiments/wattbot2026/answer_value_residual_probe.py --self-test
+      - name: Compare explicit model abstention against unsupported numeric completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/answer_value_residual_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Refusal evidence boundary
+        run: |
+          echo "Same 63 previously inspected TRAIN model responses across every policy."
+          echo "Output abstention uses is_blank for all evidence fields, no invented citations."
+          echo "BM25 thresholds based on unlabeled retrieval scores, no answer labels used in inference."
+          echo "No protected TEST answers or Kaggle submission; model cannot certify absence."
