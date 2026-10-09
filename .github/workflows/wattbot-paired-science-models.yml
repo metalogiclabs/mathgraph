@@ -1,0 +1,46 @@
+name: WattBot paired Sol versus FlashLite on exact learned science prompts
+on:
+  push:
+    branches: [wattbot-paired-science-models-v1]
+    paths:
+      - '.github/workflows/wattbot-paired-science-models.yml'
+      - 'experiments/wattbot2026/derivation_router_probe.py'
+jobs:
+  paired-math-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install immutable scorer and source PDF dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests
+      - name: Qualify source blobs, math task type and leakage refusal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/derivation_router_probe.py --self-test
+      - name: Compare exactly matched Sol and FlashLite prompts on 63 frozen TRAIN
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/derivation_router_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Warranted future boundary
+        run: |
+          echo "SAME initial FlashLite answer, same second prompt and PDF page bytes for model comparison."
+          echo "Only question-derived Math/CrossPaper task type routed to Sol+Flash comparison."
+          echo "Additional conservative reservation capped USD 0.85; no Kaggle TEST or submission."
+          echo "Quoted PDF provenance does not establish scientific answer entailment."
