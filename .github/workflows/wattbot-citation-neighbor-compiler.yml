@@ -1,0 +1,46 @@
+name: WattBot development-trained source consequence compiler
+on:
+  push:
+    branches: [wattbot-citation-neighbor-compiler-v1]
+    paths:
+      - '.github/workflows/wattbot-citation-neighbor-compiler.yml'
+      - 'experiments/wattbot2026/citation_lesson_probe.py'
+jobs:
+  citation-neighbour-compiler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official pinned scorer and PDF dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Qualify finite query/source lesson compiler and original ranker equivalence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/citation_lesson_probe.py --self-test
+          python experiments/wattbot2026/source_refinement_probe.py --self-test
+      - name: Score development LOO source predictions, then frozen 63 TRAIN holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/citation_lesson_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Source and answer warrant boundary
+        run: |
+          echo "Only 182 development TRAIN source labels train source relation model."
+          echo "Development recall leave-one-target-out; selected policy freezes before 63 holdout evaluation."
+          echo "All six page excerpts from independently pinned PDF corpus; no source fabrication."
+          echo "Source coverage is NOT scientific entailment or answer correctness."
+          echo "No TEST answers/citations read, no LLM calls, no Kaggle submission."
