@@ -23,7 +23,7 @@ open Set Filter MeasureTheory ContinuousLinearMap TemperedDistribution
 open NavierStokes.ProblemStatement
 open NavierStokesR3.Comparison
 open NavierStokesR3.HarmonicTestFunctionals
-open scoped Topology SchwartzMap ContDiff FourierTransform BigOperators
+open scoped Topology SchwartzMap ContDiff FourierTransform BigOperators Laplacian LineDeriv
 
 /-- The harmonic-test Laplacian agrees with the genuine Schwartz Laplacian,
 not just by equating unverified human-readable names. -/
@@ -65,13 +65,13 @@ theorem actual_old_and_comparison_pressure_agree_on_laplacian_tests
     (g : Space → ℝ) (hg : Integrable g volume)
     (i j : Fin 3) (ψ : ComplexTest) :
     (NavierStokes.R3PressureFourier.pressureL1 i j
-      (Complex.ofRealCLM.integrable_comp hg).memLp.toLp
-        (fun x : Space => (g x : ℂ)))
+      ((memLp_one_iff_integrable.mpr (Complex.ofRealCLM.integrable_comp hg)).toLp
+        (fun x : Space => (g x : ℂ))))
       (laplacianCLM ψ) =
       pressurePair i j g (laplacianCLM ψ) := by
   let fg : Space → ℂ := fun x => (g x : ℂ)
   have hgc : Integrable fg volume := Complex.ofRealCLM.integrable_comp hg
-  have hl1 : MemLp fg 1 volume := hgc.memLp
+  have hl1 : MemLp fg 1 volume := memLp_one_iff_integrable.mpr hgc
   have hinput : (hl1.toLp fg : Space → ℂ) =ᵐ[volume] fg := hl1.coeFn_toLp
   conv_lhs => rw [source_and_comparison_test_laplacians_agree]
   rw [old_pressure_poisson_laplacian_test]
