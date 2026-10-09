@@ -159,10 +159,10 @@ theorem machine_step_workhead_unit_bounds
   | some answer =>
       simp [Machine.step, ho]
   | none =>
-      dsimp [Machine.step, ho]
-      exact direction_move_unit_bounds
+      simpa [Machine.step, ho] using
+        (direction_move_unit_bounds
         ((M.transition c.state (fun j => readInput x (c.inputPos j))
-          (fun j => c.work j (c.workPos j)) b).workMove k) (c.workPos k)
+          (fun j => c.work j (c.workPos j)) b).workMove k) (c.workPos k))
 
 /-- OAI's cardinality of visited work sites is monotonically nondecreasing,
 independently of whether the machine halts. -/
