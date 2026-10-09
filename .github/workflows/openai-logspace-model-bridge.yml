@@ -16,6 +16,7 @@ on:
       - 'experiments/openai-logspace-model-bridge-v1/SymbolRunBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/SymbolOneStepBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/SymbolFullRunBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolResourceBridge.lean'
       - '.github/workflows/openai-logspace-model-bridge.yml'
   workflow_dispatch:
 
@@ -61,6 +62,7 @@ jobs:
           cp experiments/openai-logspace-model-bridge-v1/SymbolRunBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/SymbolOneStepBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/SymbolFullRunBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolResourceBridge.lean isolated/
           cp upstream/lean/lean-toolchain isolated/lean-toolchain
           test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
           cat > isolated/lakefile.lean <<'LAKE'
@@ -83,6 +85,7 @@ jobs:
           lean_lib SymbolRunBridge
           lean_lib SymbolOneStepBridge
           lean_lib SymbolFullRunBridge
+          lean_lib SymbolResourceBridge
           lean_lib OAI
           LAKE
           printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
@@ -111,8 +114,8 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
-          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
-          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
+          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge
+          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge
           cat > AxiomCheck.lean <<'LEAN'
           import ModelSemantics
           import FiniteEnvelope
@@ -127,6 +130,7 @@ jobs:
           import SymbolRunBridge
           import SymbolOneStepBridge
           import SymbolFullRunBridge
+          import SymbolResourceBridge
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_step_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
@@ -183,6 +187,12 @@ jobs:
           #print axioms Metalogic.OpenAIMath.SymbolRunBridge.run_commutes_of_initial_and_step
           #print axioms Metalogic.OpenAIMath.SymbolOneStepBridge.source_step_commutes
           #print axioms Metalogic.OpenAIMath.SymbolFullRunBridge.compiled_run_commutes
+          #print axioms Metalogic.OpenAIMath.SymbolResourceBridge.compiled_workhead_eq_source
+          #print axioms Metalogic.OpenAIMath.SymbolResourceBridge.compiled_spaceThrough_eq
+          #print axioms Metalogic.OpenAIMath.SymbolResourceBridge.compiled_LogSpace_of_source
+          #print axioms Metalogic.OpenAIMath.SymbolResourceBridge.compiled_deterministic_of_source
+          #print axioms Metalogic.OpenAIMath.SymbolResourceBridge.compiled_output_eq_source
+          #print axioms Metalogic.OpenAIMath.SymbolResourceBridge.compiled_decides_of_source
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
