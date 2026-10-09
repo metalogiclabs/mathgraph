@@ -12,6 +12,16 @@ class WindowTests(unittest.TestCase):
         self.assertEqual(got['text'], text[got['start']:got['end']])
         self.assertLessEqual(len(got['text']), 1100)
 
+    def test_equal_relevance_must_not_crop_adjacent_number(self):
+        # Legacy earliest-prefix tiebreak includes "energy used" but cuts 100 MWh.
+        # This preserves the exact source substring and the complete number.
+        text = 'context ' * 136 + 'energy used 100 MWh.'
+        got = query_window('What energy used?', text, 1100)
+        self.assertIn('energy used 100 MWh', got['text'])
+        self.assertGreater(got['start'], 0)
+        self.assertEqual(got['text'], text[got['start']:got['end']])
+        self.assertLessEqual(len(got['text']), 1100)
+
     def test_middle_evidence_not_lost(self):
         text = 'Routine introduction. ' * 70 + ' Cooling water consumption was 73 litres.' + ' Historical appendix. ' * 70
         got = query_window('What was the cooling water consumption?', text, 400)
