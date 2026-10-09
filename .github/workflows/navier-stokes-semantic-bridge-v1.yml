@@ -77,9 +77,21 @@ jobs:
           Path('semantic-correspondence-result.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
           print(json.dumps(d,sort_keys=True))
           PY
+      - name: Kernel-check bounded assumption-direction separator
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.24.0
+          "$HOME/.elan/bin/lean" --version
+          "$HOME/.elan/bin/lean" experiments/navier_stokes_semantic_bridge_v1/DerivativeScope.lean
+          sha256sum experiments/navier_stokes_semantic_bridge_v1/DerivativeScope.lean > lean-derivative-scope.sha256
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: semantic-correspondence-v1
-          path: semantic-correspondence-result.json
+          path: |
+            semantic-correspondence-result.json
+            lean-derivative-scope.sha256
           if-no-files-found: warn
