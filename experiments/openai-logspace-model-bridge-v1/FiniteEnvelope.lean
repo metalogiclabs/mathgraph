@@ -101,7 +101,10 @@ theorem unvisited_work_cell_is_blank
       have hpos : (M.run x coins t).workPos k ≠ z :=
         hn t (Nat.lt_succ_self t)
       change (M.step x (coins t) (M.run x coins t)).work k z = false
-      simp [Machine.step, hearlier, hpos, Ne.symm hpos]
+      unfold Machine.step
+      split
+      · exact hearlier
+      · simpa [Function.update, hpos, Ne.symm hpos] using hearlier
 
 
 /-- If a finite code uniquely represents every configuration occurring up to
