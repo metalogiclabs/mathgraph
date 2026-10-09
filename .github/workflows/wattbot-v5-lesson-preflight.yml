@@ -1,0 +1,49 @@
+name: WattBot V5 development lesson candidate preflight no submission
+on:
+  push:
+    branches: [wattbot-verified-lesson-submit-v5]
+    paths:
+      - '.github/workflows/wattbot-v5-lesson-preflight.yml'
+      - 'experiments/wattbot2026/submit_verified_lesson_v5.py'
+      - 'experiments/wattbot2026/verified_lesson.py'
+jobs:
+  lesson-release-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded pinned-source qualification dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests pytest
+      - name: Verify exact source and developmental lesson source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/submit_full_reader.py --self-test
+          python experiments/wattbot2026/submit_verified_lesson_v5.py --self-test
+          python -m pytest -q \
+            experiments/wattbot2026/tests/test_query_window.py \
+            experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Check 182 development lesson bank and all 317 authorized question features
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 \
+            -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_verified_lesson_v5.py \
+            --preflight-official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: No quota or model spending
+        run: |
+          echo "Preflight only: no model calls, Kaggle submissions, or test answer access."
+          echo "Scientific source page authority unchanged. Model candidate score on TEST unknown."
