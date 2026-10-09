@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """WattBot exact-URL arXiv corpus coverage and evidence retrieval experiment.
 
-Downloads at most 48 pinned arXiv sources, one by one, >=3.1s spacing, only
+Downloads at most 114 pinned arXiv sources, one by one, >=3.1s spacing, only
 from official metadata. No arbitrary arXiv crawling; no licensed PDF bytes in
 git/artifacts. Evaluate source recall on the SAME previously inspected 62-row
 answerable training holdout. No test label access and no submission.
@@ -28,8 +28,8 @@ from pdf_probe import download_one
 from train_probe import parse_refs
 from wattbot import chunks_from_pages
 
-DEFAULT_CAP=48
-CAPS=(0,24,48)
+DEFAULT_CAP=114
+CAPS=(0,24,48,80,114)
 
 def source_ranking(index:list[dict], questions:list[str], k:int=8):
     """Return unique source ranks using maximum source-chunk word TF-IDF."""
@@ -86,7 +86,7 @@ def measure(metadata,held, chunks_by_ref,source_prefix):
 
 def main(zip_path,max_docs):
     if max_docs!=DEFAULT_CAP:
-        raise ValueError("Fixed experiment only accepts exactly 48 attempted URLs")
+        raise ValueError("Fixed experiment only accepts exactly 114 attempted URLs")
     with zipfile.ZipFile(zip_path) as z:
         metadata=pd.read_csv(io.BytesIO(z.read("metadata.csv")),
                              keep_default_na=False,dtype={"id":str}).to_dict("records")
@@ -114,7 +114,7 @@ def main(zip_path,max_docs):
     chunks={}
     errors=Counter()
     digests=[]
-    with tempfile.TemporaryDirectory(prefix="wattbot_corpus48_") as td:
+    with tempfile.TemporaryDirectory(prefix="wattbot_corpus114_") as td:
         for i,ref in enumerate(selected):
             if i:time.sleep(3.1)
             path=Path(td)/f"source_{i}.pdf"
@@ -129,7 +129,7 @@ def main(zip_path,max_docs):
             except Exception as e:
                 # No fabricated substitute; named acquisition failures remain.
                 errors[type(e).__name__]+=1
-            if i in (23,47):
+            if i in (23,47,79,113):
                 print("WATTBOT_DOWNLOAD_PROGRESS="+json.dumps({
                     "attempted":i+1,"valid":len(chunks),
                     "failure_types":dict(errors)},sort_keys=True),flush=True)
@@ -137,7 +137,7 @@ def main(zip_path,max_docs):
         for budget in CAPS:
             prefix=[ref for ref in selected[:budget] if ref in chunks]
             stages[str(budget)]=measure(metadata,held,chunks,prefix)
-        print("WATTBOT_48_PDF_SOURCE_COVERAGE="+json.dumps({
+        print("WATTBOT_FULL_PDF_SOURCE_COVERAGE="+json.dumps({
             "attempted":max_docs,"valid":len(chunks),
             "errors":dict(errors),
             "hashes_manifest_sha256":hashlib.sha256(
