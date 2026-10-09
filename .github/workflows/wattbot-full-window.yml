@@ -1,0 +1,45 @@
+name: WattBot complete-corpus exact-window qualification
+on:
+  push:
+    branches: [wattbot-full-window-v1]
+    paths:
+      - 'experiments/wattbot2026/full_window_probe.py'
+      - 'experiments/wattbot2026/query_window.py'
+      - 'experiments/wattbot2026/tests/test_query_window.py'
+      - '.github/workflows/wattbot-full-window.yml'
+jobs:
+  qualified-window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen reader testing dependencies
+        run: python -m pip install kaggle requests pandas pymupdf pytest
+      - name: Synthetic provenance, source integrity and excerpt tests
+        run: |
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py
+          python experiments/wattbot2026/report_loader.py
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/full_window_probe.py --self-test
+      - name: Score full-corpus question-centred excerpt candidate against official TRAIN holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/full_window_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: |
+          echo "Only aggregate training-subset results; no Kaggle TEST labels used."
+          echo "Scientific PDF bytes, prompts and private CSV never uploaded as artifacts."
+          echo "A model quotation is provenance, not independently established entailment."
