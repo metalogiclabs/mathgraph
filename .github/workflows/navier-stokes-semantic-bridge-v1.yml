@@ -52,7 +52,7 @@ jobs:
              'flux_blob_sha':'542377decf40306a50ce2170783de99a384b8d41',
              'upstream_decl_checks':'PASS',
              'pdf_reference':'arxiv:2610.08144v1',
-             'pdf_extract_semantics':'EXTERNALLY_REVIEWED_MANUAL_NOT_MACHINE_CERTIFIED',
+             'pdf_extract_semantics':'MANUAL_SOURCE_EXTRACTION_NOT_MACHINE_CERTIFIED',
              'proves_source_paper':False,
              'proves_mathematical_implication':False,
              'can_promote_truth':False}
