@@ -1,0 +1,83 @@
+name: WattBot V5b evidence-gated official Kaggle release
+on:
+  workflow_dispatch:
+    inputs:
+      submit_to_kaggle:
+        description: "Confirm quota available and submit qualified V5b"
+        required: true
+        type: boolean
+        default: false
+  push:
+    branches: [wattbot-verified-lesson-two-read-v5b]
+    paths:
+      - '.github/workflows/wattbot-v5b-kaggle-release.yml'
+jobs:
+  v5b-official-kaggle:
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.submit_to_kaggle) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[WATTBOT_V5B_SUBMIT]')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned benchmark, model and PDF reader dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests pytest
+      - name: Require SUCCESS on prior complete V5b no-submission run
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import requests
+          url="https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/37994161213"
+          response=requests.get(url,timeout=(5,20))
+          response.raise_for_status()
+          info=response.json()
+          if info.get("status")!="completed" or info.get("conclusion")!="success":
+              raise SystemExit("V5b complete 317-question qualification has not succeeded")
+          print("WATTBOT_V5B_PREVIOUS_SOURCE_QUALIFICATION=PASS")
+          PY
+      - name: Fail closed on lesson/source pins and exact CSV contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/submit_verified_lesson_v5.py --self-test
+          python -m pytest -q \
+            experiments/wattbot2026/tests/test_query_window.py \
+            experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Generate full 317-question two-reader candidate from pinned corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_verified_lesson_v5.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_v5b_two_reader.csv"
+          python experiments/wattbot2026/submission_gate.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --submission "$RUNNER_TEMP/wattbot/mathgraph_v5b_two_reader.csv"
+      - name: Submit only when all source, budget, dataset and null gates pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/wattbot/mathgraph_v5b_two_reader.csv"
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_v5b_two_reader.csv" \
+            -m "MathGraph V5b: DEV-only typed lessons and first-reader refusal preserving, source-verified V4 pipeline; ${GITHUB_SHA:0:12}"
+      - name: Independently read Kaggle submission status
+        run: kaggle competitions submissions -c WattBot2026
+      - name: Scientific and score authority
+        run: |
+          echo "V5b TRAIN exact release-policy qualification 37989697422 was 0.70873016."
+          echo "TRAIN scorer is not public Kaggle; only complete accepted Kaggle score is authority."
+          echo "Original and compiled lesson model replies remain CANDIDATE absent scientific entailment."
+          echo "No hidden TEST labels, no raw PDF/prediction upload artifacts."
