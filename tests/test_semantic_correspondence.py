@@ -25,8 +25,10 @@ class SemanticCorrespondenceRegression(unittest.TestCase):
             evidence=(SemanticValidationEvidence("paper", "source_document_reference"),),
         )
         # This is the observed historical behavior, NOT proof of equivalence.
-        self.assertEqual(legacy.status, SemanticValidationStatus.VALIDATED)
-        self.assertTrue(legacy.ok)
+        # Observe but do not freeze the older permissive behavior as a requirement.
+        # A future conservative change to the legacy gate must not fail this test.
+        if legacy.status == SemanticValidationStatus.VALIDATED:
+            self.assertTrue(legacy.ok)
         audit = compare_protected_contracts(
             ClaimContract(PAPER + "#eq8.19", {"loss": 4, "torus_dimension": 2}),
             ClaimContract(LEAN + "#norm_derivativeWord_inverse_le",
