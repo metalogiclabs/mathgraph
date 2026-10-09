@@ -101,8 +101,8 @@ def evaluate(rows: list[dict], metadata: list[dict],
 
 
 def run(official_zip: str, max_docs: int = 16) -> None:
-    if max_docs not in (8, 24):
-        raise ValueError("Allowed prospective acquisition budgets: 8 or 24 PDFs.")
+    if max_docs != 16:
+        raise ValueError("This coverage experiment requires 16 pinned PDFs.")
     with zipfile.ZipFile(official_zip) as z:
         meta = load_csv(z, "metadata.csv")
         train = load_csv(z, "train_QA.csv")
@@ -150,7 +150,7 @@ def run(official_zip: str, max_docs: int = 16) -> None:
         "failure_types": dict(failure_types),
         "pdf_checksum_manifest_sha256": hashlib.sha256("\n".join(digests).encode()).hexdigest(),
     }, sort_keys=True))
-    for n in (4, 8, 16, 24):
+    for n in (4, 8, 16):
         if n > max_docs:
             continue
         selected_group = selected[:n]
@@ -170,7 +170,7 @@ def self_test() -> None:
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--official-zip")
-    p.add_argument("--max-docs", type=int, default=8)
+    p.add_argument("--max-docs", type=int, default=16)
     p.add_argument("--self-test", action="store_true")
     a = p.parse_args()
     if a.self_test:
