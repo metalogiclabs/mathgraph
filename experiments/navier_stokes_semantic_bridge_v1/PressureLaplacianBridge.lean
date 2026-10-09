@@ -73,10 +73,10 @@ theorem actual_old_and_comparison_pressure_agree_on_laplacian_tests
   have hgc : Integrable fg volume := Complex.ofRealCLM.integrable_comp hg
   have hl1 : MemLp fg 1 volume := hgc.memLp
   have hinput : (hl1.toLp fg : Space → ℂ) =ᵐ[volume] fg := hl1.coeFn_toLp
-  rw [source_and_comparison_test_laplacians_agree]
+  conv_lhs => rw [source_and_comparison_test_laplacians_agree]
   rw [old_pressure_poisson_laplacian_test]
   rw [NavierStokesR3.RieszTestOperators.pressurePair_laplacianCLM]
-  rw [← comparison_test_partials_commute i j ψ]
+  rw [comparison_test_partials_commute i j ψ]
   congr 1
   rw [Lp.toTemperedDistribution_apply]
   apply integral_congr_ae
