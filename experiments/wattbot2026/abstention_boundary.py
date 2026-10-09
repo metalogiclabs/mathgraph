@@ -82,11 +82,11 @@ def self_test():
     assert explicit_model_refusal(raw)
     assert not explicit_model_refusal({"answer_value":"0"})
     assert retrieval_threshold([4,1,3,2,5],.4)==2
-    assert policy_row("model_explicit",blank,numeric,9.,thresholds)["ref_id"]=="is_blank"
-    assert policy_row("model_explicit_weak40",blank,numeric,9.,thresholds)==numeric
-    assert policy_row("explicit_or_weak5",blank,numeric,9.,thresholds)["answer_value"]=="is_blank"
-    assert policy_row("weak_retrieval5",blank,numeric,9.,thresholds)==numeric
-    assert policy_row("never_blank",blank,numeric,0.,thresholds)==numeric
+    assert policy_row("model_explicit",blank,numeric,raw,9.,thresholds)["ref_id"]=="is_blank"
+    assert policy_row("model_explicit_weak40",blank,numeric,raw,9.,thresholds)==numeric
+    assert policy_row("explicit_or_weak5",blank,numeric,raw,9.,thresholds)["answer_value"]=="is_blank"
+    assert policy_row("weak_retrieval5",blank,numeric,raw,9.,thresholds)==numeric
+    assert policy_row("never_blank",blank,numeric,raw,0.,thresholds)==numeric
     d=refusal_row(blank,"closed without invented citations")
     assert all(d[k]=="is_blank" for k in (
         "answer_value","ref_id","ref_url","supporting_materials"))
