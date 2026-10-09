@@ -1,0 +1,76 @@
+name: Semantic presupposition bridge V2
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean'
+      - '.github/workflows/navier-stokes-presupposition-v2.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean'
+      - '.github/workflows/navier-stokes-presupposition-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: presupposition-v2-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mathematical-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Record exact checkout and source
+        run: |
+          set -euo pipefail
+          mkdir -p presupposition-evidence .presupposition-env
+          git rev-parse HEAD | tee presupposition-evidence/head-sha.txt
+          cp experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean .presupposition-env/Presupposition.lean
+          cp .presupposition-env/Presupposition.lean presupposition-evidence/Presupposition.lean
+          sha256sum .presupposition-env/Presupposition.lean > presupposition-evidence/source.sha256
+          printf '%s\n' 'leanprover/lean4:v4.24.0' > .presupposition-env/lean-toolchain
+          cat > .presupposition-env/lakefile.toml <<'EOF'
+          name = "semantic_presupposition_v2"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "f897ebcf72cd16f89ab4577d0c826cd14afaafc7"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .presupposition-env/.lake
+            .presupposition-env/lake-manifest.json
+          key: presupposition-v2-lean424-mathlib-f897ebcf72cd16f89ab4577d0c826cd14afaafc7
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare pinned mathlib cache
+        working-directory: .presupposition-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = 'f897ebcf72cd16f89ab4577d0c826cd14afaafc7'
+          lake exe cache get
+          cp lake-manifest.json ../presupposition-evidence/lake-manifest.json
+          lake env lean --version | tee ../presupposition-evidence/lean-version.txt
+      - name: Kernel-check exact paper code and source contract
+        working-directory: .presupposition-env
+        run: |
+          set -euo pipefail
+          lake env lean -DwarningAsError=true -o Presupposition.olean Presupposition.lean 2>&1 | tee ../presupposition-evidence/lean-proof.log
+          cp Presupposition.olean ../presupposition-evidence/Presupposition.olean
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semantic-presupposition-v2
+          path: presupposition-evidence/
+          if-no-files-found: error
