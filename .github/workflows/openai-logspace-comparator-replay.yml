@@ -1,0 +1,141 @@
+name: OpenAI Logspace sandboxed Comparator replay
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/openai-logspace-comparator-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comparator:
+    name: Exact Logspace challenge-versus-solution Comparator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      LEAN_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fetch immutable OpenAI challenge and solution sources
+        uses: actions/checkout@v4
+        with:
+          repository: openai/math
+          ref: fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb
+          path: upstream
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            lean/OAI/Computability/Logspace/
+            lean/ComparatorChallenges/LogspaceEquality.lean
+            lean/ComparatorChallenges/LogspaceEquality.json
+            lean/lean-toolchain
+      - name: Fetch pinned Lean 4.34-family Comparator source
+        uses: actions/checkout@v4
+        with:
+          repository: leanprover/comparator
+          ref: d03acab154d269c06e60e4de7e4cc85deebff94b
+          path: comparator
+          persist-credentials: false
+      - name: Extract minimal trusted challenge interface + exact solution imports
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p isolated/OAI/Computability isolated/ComparatorChallenges
+          cp -a upstream/lean/OAI/Computability/Logspace isolated/OAI/Computability/
+          cp upstream/lean/ComparatorChallenges/LogspaceEquality.{lean,json} isolated/ComparatorChallenges/
+          cp upstream/lean/lean-toolchain isolated/lean-toolchain
+          test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
+          test "$(find isolated/OAI/Computability/Logspace -maxdepth 1 -name '*.lean' | wc -l)" -eq 39
+          cat > isolated/lakefile.lean <<'LAKE'
+          import Lake
+          open Lake DSL
+          package OAI where
+            leanOptions := #[⟨`autoImplicit, false⟩]
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @ "d13f23b723b8a846827a245b89c10fc7d3f11612"
+          @[default_target] lean_lib OAI
+          lean_lib ComparatorChallenges
+          LAKE
+          echo '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
+          python3 - <<'PY'
+          import json
+          m=json.load(open('comparator/lake-manifest.json'))
+          p=[x for x in m['packages'] if x['name']=='lean4export']
+          assert len(p)==1 and p[0]['rev']=='076e8e57707e813375e8f9da8bf989799ace9680'
+          assert open('comparator/lean-toolchain').read().strip()=='leanprover/lean4:v4.34.0'
+          print('SOURCE_PINS_CONFIRMED')
+          PY
+          echo 'leanprover/lean4:v4.34.1' > comparator/lean-toolchain
+      - name: Install pinned Lean toolchain without compiling adversarial solution
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: isolated
+          auto-config: false
+          build: false
+          use-github-cache: false
+          use-mathlib-cache: false
+      - name: Pin and install Mathlib cache BEFORE solution compilation
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake update
+          python3 - <<'PY'
+          import json
+          p=[p for p in json.load(open('lake-manifest.json'))['packages'] if p['name']=='mathlib']
+          assert len(p)==1 and p[0]['rev']=='d13f23b723b8a846827a245b89c10fc7d3f11612'
+          print('MATHLIB_REVISION_CHECKED')
+          PY
+          lake exe cache get
+      - name: Build trusted pinned Comparator and exporter against exact Lean
+        working-directory: comparator
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build comparator lean4export
+          test -x .lake/build/bin/comparator
+          test -x .lake/packages/lean4export/.lake/build/bin/lean4export
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.x'
+      - name: Build pinned Landrun sandbox
+        run: |
+          set -euo pipefail
+          mkdir -p audit-tools
+          GOBIN="$PWD/audit-tools" go install github.com/zouuup/landrun/cmd/landrun@811cfff51ceaf3d9843708aa6d22e9b84ccac8b4
+          test -x audit-tools/landrun
+          echo LANDRUN_SOURCE_PIN=811cfff51ceaf3d9843708aa6d22e9b84ccac8b4
+      - name: Sandboxed Comparator execution — the real theorem gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          printf '%s\n' 'Do not run the solution before comparator: Comparator checks challenge and solution in separate sandboxes.'
+          printf '%s\n' 'Docker has no network, no privileges, no host sockets or secrets, read-only host toolchains, limited process/memory budget.'
+          timeout 2300s docker run --rm \
+            --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --memory 12g --pids-limit 512 \
+            --tmpfs /tmp:rw,exec,size=2g \
+            --user "$(id -u):$(id -g)" \
+            --mount type=bind,src="$PWD/isolated",dst=/audited \
+            --mount type=bind,src="$PWD/comparator",dst=/comparator,readonly \
+            --mount type=bind,src="$PWD/audit-tools/landrun",dst=/usr/local/bin/landrun,readonly \
+            --mount type=bind,src="$HOME/.elan",dst=/home/runner/.elan,readonly \
+            --env HOME=/home/runner \
+            --env LEAN_NUM_THREADS=2 \
+            --env COMPARATOR_LANDRUN=/usr/local/bin/landrun \
+            --env COMPARATOR_LEAN4EXPORT=/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export \
+            --env PATH=/home/runner/.elan/bin:/usr/local/bin:/usr/bin:/bin \
+            --workdir /audited ubuntu:24.04 \
+            /bin/bash -c 'set -euo pipefail; lake env /comparator/.lake/build/bin/comparator ComparatorChallenges/LogspaceEquality.json'
+          echo "COMPARATOR_EXIT_ZERO_SOURCE_AND_DECLARATION_CHECK"
+      - name: Retain bounded status even on failure
+        if: always()
+        run: |
+          echo "Only Comparator exit 0 warrants the pinned formal challenge/solution proof under this containerized trust boundary."
+          echo "Main paper-semantic correspondence remains an independent UNKNOWN."
