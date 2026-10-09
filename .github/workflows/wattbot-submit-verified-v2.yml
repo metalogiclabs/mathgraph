@@ -1,0 +1,46 @@
+name: WattBot V2 verified-evidence Kaggle submission
+on:
+  push:
+    branches: [wattbot-verified-submission-v2]
+    paths:
+      - 'experiments/wattbot2026/submit_verified_reader.py'
+      - '.github/workflows/wattbot-submit-verified-v2.yml'
+jobs:
+  qualify-then-submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact-evidence adapter dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Run independent page-quotation checks before API calls
+        run: python experiments/wattbot2026/retrieved_reader_probe.py --self-test
+      - name: Generate all 317 protected-test rows under US$0.45 ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENROUTER_API_KEY"
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_verified_reader.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_verified_v2.csv"
+      - name: Send only qualified candidate to official Kaggle competition
+        shell: bash
+        run: |
+          set -euo pipefail
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_verified_v2.csv" \
+            -m "MathGraph V2 independently anchored citations and numeric fallback: ${GITHUB_SHA:0:12}"
+      - name: Display Kaggle authority and submission ID
+        run: kaggle competitions submissions -c WattBot2026
+      - name: Preserve provenance without protected answers
+        run: echo "No test labels, prediction rows, PDF bytes or model transcripts appear in GitHub artifacts."
