@@ -64,7 +64,7 @@ theorem source_step_commutes
               (fun k => c.work k (c.workPos k)) coin) := by
         simpa only [encodeConfiguration] using haction
       rw [haction']
-      simp only [sourceStep, ho]
+      simp only [sourceStep, ho, encodeConfiguration]
       congr 1
       simpa [lowerAction, encodeTracks] using hwork
 
