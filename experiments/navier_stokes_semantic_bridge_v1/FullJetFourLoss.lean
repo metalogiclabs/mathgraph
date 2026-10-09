@@ -24,6 +24,7 @@ open Set Filter MeasureTheory
 open NavierStokes
 open NavierStokes.TorusInverse
 open NavierStokes.SmoothFamilyTorusInverse
+open NavierStokes.ParametricTorusInverse (PolynomialGrowth multiplierX multiplierY)
 open scoped Topology ContDiff BigOperators
 
 variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P]
@@ -60,7 +61,10 @@ noncomputable def multiplierJetConstantThree : ℕ → ℕ → ℝ
 
 theorem multiplierJetConstantThree_nonneg (n l : ℕ) : 0 ≤ multiplierJetConstantThree (P := P) n l := by
   induction n generalizing l with
-  | zero => unfold multiplierJetConstantThree; positivity
+  | zero =>
+      unfold multiplierJetConstantThree
+      exact mul_nonneg (by positivity)
+        (tsum_nonneg (fun k => inv_nonneg.mpr (pow_nonneg (weight_pos k).le _)))
   | succ n ih =>
       rw [multiplierJetConstantThree]
       exact add_nonneg (mul_nonneg (Finset.sum_nonneg fun i hi => by positivity) (ih l))
