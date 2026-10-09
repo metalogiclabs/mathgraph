@@ -95,6 +95,44 @@ def main():
             print('PATCHED_RVGEN_REJECTED_MUTANT',str(e))
         else:
             raise AssertionError('patched rvgen still accepted contradictory transitions')
+        # Edge case: the matrix's empty-cell sentinel is also a legal
+        # syntactic DOT state name. The previous sentinel-based patch can
+        # silently accept a collision when this destination is visited first.
+        sentinel = base.replace('state_b', 'INVALID_STATE')
+        bad_label = '"state_a" -> "INVALID_STATE" [ label = "event_1" ];'
+        assert sentinel.count(bad_label) == 1
+        sentinel = sentinel.replace(
+            bad_label, '"state_a" -> "INVALID_STATE" [ label = "event_2" ];')
+        reserved_path = root / 'sentinel_mutant.dot'
+        reserved_path.write_text(sentinel)
+        model = orig.Automata(str(reserved_path))
+        offenders = [tr for tr in model.transitions
+                     if str(tr.src) == 'state_a' and str(tr.event) == 'event_2']
+        assert len(offenders) == 2
+        offenders.sort(key=lambda tr: 0 if str(tr.dst) == 'INVALID_STATE' else 1)
+        previous_guard = (
+            '            if matrix[states_dict[src]][events_dict[event]] != self.invalid_state_str:\n'
+            '                raise AutomataError("duplicate")\n' + anchor)
+        legacy_source = source.replace(anchor, previous_guard)
+        legacy_path = root / 'legacy.py'
+        legacy_path.write_text(legacy_source)
+        legacy = load_module('rvgen_legacy_guard', legacy_path)
+        legacy_obj = object.__new__(legacy.Automata)
+        legacy_obj.__dict__.update(model.__dict__)
+        legacy_obj.transitions = [
+            tr for tr in model.transitions
+            if not (str(tr.src) == 'state_a' and str(tr.event) == 'event_2')
+        ] + offenders
+        # Demonstrate an actual pre-fix false negative under a deterministic
+        # ordering, independently of the process's hash randomisation.
+        legacy.Automata._Automata__create_matrix(legacy_obj)
+        try:
+            patched.Automata(str(reserved_path))
+        except patched.AutomataError as e:
+            assert 'Duplicate transition' in str(e)
+        else:
+            raise AssertionError('independent occupancy guard missed sentinel collision')
+        print('LINUX_SENTINEL_COUNTEREXAMPLE old_guard_accepted, seen_guard_rejected')
         print('LINUX_PATCH_QUALIFIED', {
             'upstream_sha': LINUX_SHA,
             'baseline_fixture_count': len(FIXTURES),
