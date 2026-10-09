@@ -1,7 +1,7 @@
-name: WattBot evidence-checked numeric answer pilot
+name: WattBot numeric answer-vs-citation controls
 on:
   push:
-    branches: [wattbot-2026-holdout-v1]
+    branches: [wattbot-2026-numeric-components-v1]
     paths:
       - 'experiments/wattbot2026/numeric_answer_probe.py'
       - '.github/workflows/wattbot-numeric-answer-probe.yml'
