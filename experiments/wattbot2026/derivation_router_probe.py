@@ -138,6 +138,7 @@ def run(archive):
     first_raw={}
     first_pages={}
     second_raw={}
+    flash_counterfactual={}
     first_checked={}
     numeric={}
     docs_by_id={}
@@ -182,14 +183,25 @@ def run(archive):
         rate=sol_rate if use_sol else price
         charge=base.conservative_charge(
             base.SYSTEM+wire,rate,base.MAX_OUTPUT_TOKENS)
-        if extra[0]+charge>SECONDARY_RESERVE_USD:
-            stats["extra_cost_guard"]+=1
-            return response,status,bound,actual
+        control_charge=(base.conservative_charge(
+            base.SYSTEM+wire,price,base.MAX_OUTPUT_TOKENS) if use_sol else 0.)
+        if extra[0]+charge+control_charge>SECONDARY_RESERVE_USD:
+            raise RuntimeError("Paired science-reader reservation ceiling exceeded")
         prior_model=base.MODEL
         try:
             base.MODEL=SOL_MODEL if use_sol else prior_model
             later,reason,reserve,reported=original_model(
                 key,enriched,expanded,rate)
+            if use_sol:
+                base.MODEL=prior_model
+                alternate,alt_status,alt_bound,alt_reported=original_model(
+                    key,enriched,expanded,price)
+                if abs(control_charge-alt_bound)>1e-8:
+                    raise RuntimeError("Flash-Lite control price mismatch")
+                flash_counterfactual[question]=(alternate,alt_status,expanded)
+                extra[0]+=alt_bound
+                extra[1]+=alt_reported
+                stats["flash_control_"+alt_status]+=1
         finally:
             base.MODEL=prior_model
         extra[0]+=reserve
@@ -257,6 +269,10 @@ def run(archive):
           "second_verified_prefer_on_intent",
           "second_provisional_prefer_on_intent",
           "second_agreement_only",
+          "same_prompt_flashlite_control_provisional",
+          "same_prompt_flashlite_control_quoted",
+          "sol_routed_provisional",
+          "sol_routed_strict",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -298,6 +314,28 @@ def run(archive):
             if same_value:stats["answer_value_agreement"]+=1
             arms["second_agreement_only"].append(
                 second_provisional if same_value else first_provisional)
+            # For Math/CrossPaper, a Flash-Lite control saw precisely the
+            # same six pages and lesson prompt as the Sol second model.
+            # For all other questions, control == existing Flash-Lite
+            # second result; this yields a SAME-RUN paired model comparison.
+            counter,ctrl_status,ctrl_pages=flash_counterfactual.get(
+                q,(second,second_status,more))
+            ctrl_provisional=raw_variant(
+                row,counter,prior,ctrl_pages,"selected")
+            ctrl_verified,ctrl_check=original_checker(
+                counter,{"id":ident,"question":q},ctrl_pages,docs_by_id[ident])
+            if q in flash_counterfactual:
+                stats["control_"+ctrl_check]+=1
+            arms["same_prompt_flashlite_control_provisional"].append(
+                ctrl_provisional if usable(counter) else first_provisional)
+            arms["same_prompt_flashlite_control_quoted"].append(
+                dict(ctrl_verified) if ctrl_verified is not None else
+                ctrl_provisional if usable(counter) else first_provisional)
+            arms["sol_routed_provisional"].append(
+                second_provisional if usable(second) else first_provisional)
+            arms["sol_routed_strict"].append(
+                dict(later_checked) if later_checked is not None else
+                second_provisional if usable(second) else first_provisional)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
@@ -309,7 +347,7 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_TYPED_SOL_LESSON_HOLDOUT="+json.dumps({
+    print("WATTBOT_PAIRED_SCIENCE_MODELS_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
@@ -325,17 +363,26 @@ def run(archive):
        "deltas_vs_first_provisional":{
            k:round(v-official["first_provisional"],8)
            for k,v in official.items()},
+       "paired_model_same_prompt_deltas":{
+           "Sol_minus_FlashLite_provisional":round(
+               official["sol_routed_provisional"]-
+               official["same_prompt_flashlite_control_provisional"],8),
+           "Sol_minus_FlashLite_quoted":round(
+               official["sol_routed_strict"]-
+               official["same_prompt_flashlite_control_quoted"],8)},
+       "paired_task_count":len(flash_counterfactual),
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"One baseline Flash-Lite model response per question, "
-         "same six pinned PDF snippets for every second model. Type classifier "
-         "uses question wording and 182 development labels only, never target "
-         "holdout answer/reference. Independent exact-page source check "
-         "certifies literal provenance, NOT scientific semantic entailment. "
-         "Only reused 63 TRAIN questions scored after output freeze; "
-         "no protected TEST inference or Kaggle submission."
+       "boundary":"Sol and Flash-Lite counterfactual models receive EXACTLY "
+         "the same lesson-formatted prompt and six pinned PDF page snippets "
+         "on question-only Math/CrossPaper route. Both use the same first "
+         "Flash-Lite response for every question. Only 182 development TRAIN "
+         "worked examples enter the prompt; 63 target TRAIN labels used "
+         "after freezing responses by pinned official Score.py. "
+         "Page quotations certify source occurrence, NOT semantic entailment. "
+         "No protected TEST or Kaggle submission; fail-closed model cap .85."
     },sort_keys=True),flush=True)
 
 
