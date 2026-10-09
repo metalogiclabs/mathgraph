@@ -1,6 +1,10 @@
 name: WattBot 2026 official data intake
 on:
   workflow_dispatch:
+  push:
+    branches: [wattbot-2026-v1]
+    paths:
+      - '.github/workflows/wattbot-official-intake.yml'
 jobs:
   kaggle-intake:
     runs-on: ubuntu-latest
