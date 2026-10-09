@@ -1,0 +1,40 @@
+name: WattBot free-model grounded DEV probe
+on:
+  push:
+    branches: [wattbot-2026-llm-v1]
+    paths:
+      - 'experiments/wattbot2026/free_llm_probe.py'
+      - '.github/workflows/wattbot-free-llm-probe.yml'
+jobs:
+  bounded-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source syntax and boundedness validation
+        run: |
+          python -m py_compile experiments/wattbot2026/free_llm_probe.py
+          grep -q 'MAX_REQUESTS = 6' experiments/wattbot2026/free_llm_probe.py
+          grep -q ':free' experiments/wattbot2026/free_llm_probe.py
+      - run: pip install kaggle pandas numpy requests pymupdf
+      - name: Run capped free-model-only development evaluation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/free_llm_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Privacy and claims boundary
+        run: |
+          echo "No model payloads, prompts, paper text, predictions or licensed data uploaded."
+          echo "Six dev-selected training examples; free inference only; no test labels or leaderboard claim."
