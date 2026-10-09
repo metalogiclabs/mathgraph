@@ -107,4 +107,37 @@ theorem encodeBlankWorkTapes_injective (w : ℕ) (blank : α) :
   funext i
   exact congrFun (congrFun (congrFun heq k) z) i
 
+
+/-- Convert w finite-alphabet tapes into a fixed number w·|α| of Boolean
+    tapes, using one Boolean track per alphabet symbol. The number of tracks
+    is constant for any fixed source machine, independent of input length. -/
+def encodeWorkTapesAsBoolean {w : ℕ} (blank : α)
+    (tape : Fin w → ℤ → α) :
+    Fin (w * Fintype.card α) → ℤ → Bool :=
+  fun j z =>
+    let pair := (finProdFinEquiv (m := w) (n := Fintype.card α)).symm j
+    encodeSymbolWithBlank blank (tape pair.1 z) pair.2
+
+/-- No information is lost by the constant-number-of-Boolean-tracks map. -/
+theorem encodeWorkTapesAsBoolean_injective
+    (w : ℕ) (blank : α) :
+    Function.Injective (encodeWorkTapesAsBoolean (w := w) blank) := by
+  intro tape other heq
+  funext k z
+  apply encodeSymbolWithBlank_injective blank
+  funext i
+  have hbit := congrFun
+    (congrFun heq ((finProdFinEquiv (m := w) (n := Fintype.card α)) (k, i))) z
+  simpa [encodeWorkTapesAsBoolean] using hbit
+
+/-- An initially blank exterior stays represented by all-false Boolean bits,
+    without introducing infinite nonblank support on additional tracks. -/
+theorem encodeWorkTapesAsBoolean_blank_outside
+    {w : ℕ} (blank : α) (tape : Fin w → ℤ → α) (s : ℕ)
+    (hblank : ∀ k z, (s : ℤ) < |z| → tape k z = blank)
+    (j : Fin (w * Fintype.card α)) (z : ℤ)
+    (hz : (s : ℤ) < |z|) :
+    encodeWorkTapesAsBoolean blank tape j z = false := by
+  simp [encodeWorkTapesAsBoolean, hblank _ z hz, encodeSymbolWithBlank]
+
 end Metalogic.OpenAIMath.AlphabetBridge
