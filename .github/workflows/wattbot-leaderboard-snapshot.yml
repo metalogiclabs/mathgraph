@@ -20,7 +20,7 @@ jobs:
           python-version: '3.11'
       - run: pip install kaggle
       - name: Official submission score
-        run: kaggle competitions submission 56994417
+        run: kaggle competitions submissions -c WattBot2026
       - name: Current publicly ranked top teams
         run: kaggle competitions leaderboard WattBot2026 --show
       - name: Authenticated rank for entered competitions
