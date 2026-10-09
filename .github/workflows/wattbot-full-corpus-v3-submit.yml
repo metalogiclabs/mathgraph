@@ -1,0 +1,85 @@
+name: WattBot V3 full-corpus verified-reader submission
+on:
+  push:
+    branches: [wattbot-full-corpus-public-v3]
+    paths:
+      - '.github/workflows/wattbot-full-corpus-v3-submit.yml'
+permissions:
+  contents: read
+concurrency:
+  group: wattbot-v3-full-corpus-single-submission
+  cancel-in-progress: false
+jobs:
+  qualify-and-submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin dependencies for ephemeral Kaggle source qualification
+        run: python -m pip install kaggle pandas numpy requests pymupdf pytest
+      - name: Qualify code, source-excerpt and all-column CSV transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/report_loader.py
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/submit_full_reader.py --self-test
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py experiments/wattbot2026/tests/test_cached_pdf.py
+      - name: Lock to prior independently scored full-corpus prefix policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, pathlib, sys
+          root=pathlib.Path('experiments/wattbot2026')
+          path=root/'full_reader.py'
+          blob=path.read_bytes()
+          actual=hashlib.sha1(b'blob '+str(len(blob)).encode()+b'\0'+blob).hexdigest()
+          expected='4e1350ef72a44a333862dec23c737a2262ab99bc'
+          if actual!=expected: sys.exit('Reader changed; stop before model calls')
+          print('WATTBOT_V3_FROZEN_POLICY=prefix_full_corpus; full_reader_git_blob='+actual)
+          PY
+      - name: Download official authorized WattBot data (no public artifacts)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KAGGLE_API_TOKEN}" || -z "${OPENROUTER_API_KEY}" ]]; then
+            echo "::error::Missing required Kaggle or OpenRouter Actions secret"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+      - name: Generate and check all 317 protected-test candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/wattbot2026/submit_full_reader.py \
+            --policy prefix \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv"
+          python experiments/wattbot2026/submission_gate.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --submission "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv"
+      - name: Submit to authoritative Kaggle server only after all gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          kaggle competitions submission-limits -c WattBot2026
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv" \
+            -m "MathGraph V3 pinned full corpus prefix reader and citation gate ${GITHUB_SHA:0:12}"
+          kaggle competitions submissions -c WattBot2026
+      - name: Preserve verification boundary
+        run: |
+          echo "Source/model transport verified locally; Kaggle alone decides external score."
+          echo "No licensed PDFs, prompts, private question rows or answer CSV uploaded as artifacts."
+          echo "No protected hidden test labels inspected, and no leaderboard rank claimed until scored."
