@@ -1,0 +1,35 @@
+name: WattBot authorized TEST answer_unit sufficiency audit
+on:
+  push:
+    branches: [wattbot-visible-unit-audit-v1]
+    paths:
+      - 'experiments/wattbot2026/visible_unit_audit.py'
+      - '.github/workflows/wattbot-visible-unit-audit.yml'
+permissions:
+  contents: read
+jobs:
+  contract-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned official dataset inspection dependencies
+        run: python -m pip install kaggle pandas numpy
+      - name: Visible field contract and numerical type synthetic tests
+        run: python experiments/wattbot2026/visible_unit_audit.py --self-test
+      - name: Read authorized competition TRAIN labels and TEST input units only
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/visible_unit_audit.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Protected-test and interpretation boundary
+        run: echo "No TEST answer labels, model calls, scientific source downloads, answer guesses, or Kaggle submission."
