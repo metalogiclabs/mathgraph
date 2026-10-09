@@ -1,0 +1,51 @@
+name: WattBot V2 Flash-Lite public qualification
+on:
+  push:
+    branches: [wattbot-flashlite-submission-v2]
+    paths:
+      - 'experiments/wattbot2026/submit_flashlite_v2.py'
+      - '.github/workflows/wattbot-submit-flashlite-v2.yml'
+jobs:
+  v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 56
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      HF_HUB_DISABLE_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned evaluation dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Synthetic contract and spending controls
+        run: python experiments/wattbot2026/submit_flashlite_v2.py --self-test
+      - name: Prepare bounded source-grounded test candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$OPENROUTER_API_KEY" ]]; then
+            echo "::error::OpenRouter API token is not configured"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_flashlite_v2.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
+            --out "$RUNNER_TEMP/wattbot/mathgraph_v2.csv"
+      - name: Submit only if all bounded tests and candidate checks succeeded
+        shell: bash
+        run: |
+          set -euo pipefail
+          kaggle competitions submit -c WattBot2026 \
+            -f "$RUNNER_TEMP/wattbot/mathgraph_v2.csv" \
+            -m "MathGraph 24-PDF pinned Flash-Lite RAG+numeric fallback V2 source ${GITHUB_SHA:0:12}"
+      - name: Confirm server receipt separately from scoring
+        shell: bash
+        run: |
+          kaggle competitions submissions -c WattBot2026 || true
+          echo "Candidate and licensed source files retained only on ephemeral runner."
