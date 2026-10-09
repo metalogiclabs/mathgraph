@@ -32,7 +32,7 @@ BASELINE_CORPUS_SHA256 = "4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380
 
 
 def git_blob(data: bytes) -> str:
-    return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
+    return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
 
 
 def self_test():
