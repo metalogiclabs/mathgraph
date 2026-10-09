@@ -81,26 +81,40 @@ def features(q):
 
 
 def bayes(train,q,alpha):
-    # Bernoulli document-level frequencies with strict per-target exclusion.
+    """Finite multinomial Bayes with smoothing across a common vocabulary.
+
+    Each development target is removed before this is fitted; unlike the
+    earlier incomplete Bernoulli formula, the denominator accounts for the
+    shared whole-vocabulary size instead of rewarding tiny rare classes
+    merely because a token has never been seen.
+    """
     records=[(shape(item["answer_value"]),features(item["question"]))
              for item in train]
     records=[(klass,f) for klass,f in records if klass in CLASSES]
     count=Counter(k for k,_ in records)
-    postings=defaultdict(Counter)
+    perclass=defaultdict(Counter)
+    vocab=set()
     for klass,f in records:
-        for token in f:postings[token][klass]+=1
-    f=features(q)
+        perclass[klass].update(f)
+        vocab.update(f.keys())
+    vocab_n=max(1,len(vocab))
+    sizes={cls:sum(perclass[cls].values()) for cls in CLASSES}
+    input_features=features(q)
+    # Only tokens learned from development contribute evidence.
+    observed={t:min(3,n) for t,n in input_features.items() if t in vocab}
     scores={}
     n=len(records)
     for klass in CLASSES:
-        prior=math.log((count[klass]+.3)/(n+.9))
+        prior=math.log((count[klass]+.5)/(n+len(CLASSES)*.5))
+        denom=sizes[klass]+alpha*vocab_n
         total=prior
-        for term,weight in f.items():
-            p=(postings[term][klass]+alpha)/(count[klass]+2*alpha)
-            total+=min(3,weight)*math.log(p)
+        for term,frequency in observed.items():
+            probability=(perclass[klass][term]+alpha)/denom
+            total+=frequency*math.log(probability)
         scores[klass]=total
     best=max(CLASSES,key=lambda k:(scores[k],-CLASSES.index(k)))
-    shifted={k:math.exp(scores[k]-max(scores.values())) for k in CLASSES}
+    upper=max(scores.values())
+    shifted={k:math.exp(scores[k]-upper) for k in CLASSES}
     confidence=shifted[best]/sum(shifted.values())
     return best,confidence
 
