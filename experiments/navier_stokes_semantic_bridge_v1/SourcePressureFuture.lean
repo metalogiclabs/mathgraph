@@ -80,16 +80,18 @@ theorem source_envelope_le_gradient_shift {R A B S M : ℝ}
   have hMdiv : M / R ≤ M := div_le_self hM hR
   have hBinner : B ≤ S * (A + M) := by
     apply hSob.trans
-    exact mul_le_mul_of_nonneg_left (add_le_add_left hMdiv A) hS
+    exact mul_le_mul_of_nonneg_left (add_le_add_right hMdiv A) hS
   have hq : B + 1 ≤ Q * (A + 1) := by
-    apply (add_le_add_right hBinner 1).trans
+    apply (add_le_add_left hBinner 1).trans
     dsimp [Q]
     nlinarith [mul_nonneg (mul_nonneg hS hM) hA]
   have hpow : (B + 1) ^ (7 / 4 : ℝ) ≤ Q ^ (7 / 4 : ℝ) *
       (A + 1) ^ (7 / 4 : ℝ) := by
-    have h := Real.rpow_le_rpow (by linarith : 0 ≤ B + 1) hq (by norm_num)
-    rw [Real.mul_rpow hQ hA1] at h
-    exact h
+    have hraw : (B + 1) ^ (7 / 4 : ℝ) ≤
+        (Q * (A + 1)) ^ (7 / 4 : ℝ) :=
+      Real.rpow_le_rpow (by linarith : 0 ≤ B + 1) hq (by norm_num)
+    rw [Real.mul_rpow hQ hA1] at hraw
+    exact hraw
   have hscaled := mul_le_mul_of_nonneg_left hpow
     (show 0 ≤ 2 / R by positivity)
   calc
@@ -158,7 +160,7 @@ theorem exists_source_pressure_energy_rate
       C₁ / R * (B ^ (3 / 2 : ℝ) + B + A + 1) := by
     apply mul_le_mul_of_nonneg_left _ (div_nonneg hC₁ hRpos.le)
     linarith
-  have hfirst := hterms.trans (habs₁ R hR A hA B hB hSob)
+  have hfirst := hterms.trans (habs₁ R A B hR hA hB hSob)
   have hsecond := habs₂ R hR A hA B hB hSob
   have hDrewrite :
       2 * (C₀ + D₁ + D₂) / R =
