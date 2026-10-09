@@ -251,7 +251,8 @@ def predict_rows(tests,docs,index,policy,key,rate):
                 else:
                     unverified=recover_candidate_unanchored(
                         response,question,passages,numeric)
-                    if unverified["answer_value"]!=numeric["answer_value"]:
+                    if unverified.get("explanation","").startswith(
+                            "CANDIDATE_UNVERIFIED"):
                         selected=unverified
                         status["UNVERIFIED_ANSWER_VALUE_RETAINED"]+=1
                     else:
