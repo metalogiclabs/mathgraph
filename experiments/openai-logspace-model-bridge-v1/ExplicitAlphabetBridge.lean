@@ -1,4 +1,4 @@
-import Mathlib
+import FiniteEnvelope
 
 /-!
 Executable finite-alphabet to Boolean-track encoding, parameterized by an
@@ -104,5 +104,57 @@ theorem encodeTracks_writeAll_commutes (e : α ≃ Fin K) (blank : α)
   funext j z
   simp only [encodeTracks, writeAllSource, writeAllEncoded]
   split_ifs <;> rfl
+
+
+/-- An independent finite-work-alphabet machine action, with the same
+    finite-control, input and head movement dimensions as OAI's action. -/
+structure SymbolAction (q w h : ℕ) where
+  nextState : Fin (q + 1)
+  write : Fin w → α
+  workMove : Fin w → OAI.ExactDerandomization.Direction
+  inputMove : Fin h → OAI.ExactDerandomization.Direction
+
+/-- Compile one finite-symbol action to OAI's Boolean-work-tape action,
+    duplicating each work-head movement across its K binary tracks. -/
+def lowerAction (e : α ≃ Fin K) (blank : α)
+    {q w h : ℕ} (a : SymbolAction (α := α) q w h) :
+    OAI.ExactDerandomization.Action q (w * K) h where
+  nextState := a.nextState
+  write := fun j =>
+    let pair := (finProdFinEquiv (m := w) (n := K)).symm j
+    encodeSymbol e blank (a.write pair.1) pair.2
+  workMove := fun j =>
+    let pair := (finProdFinEquiv (m := w) (n := K)).symm j
+    a.workMove pair.1
+  inputMove := a.inputMove
+
+/-- Every output bit of the compiled write action equals the corresponding
+    bit of the original finite-symbol write instruction. -/
+theorem lowerAction_write_bit (e : α ≃ Fin K) (blank : α)
+    {q w h : ℕ} (a : SymbolAction (α := α) q w h)
+    (k : Fin w) (i : Fin K) :
+    (lowerAction e blank a).write
+      (finProdFinEquiv (m := w) (n := K) (k, i)) =
+        encodeSymbol e blank (a.write k) i := by
+  simp [lowerAction]
+
+/-- All Boolean tracks for a source work head carry its same direction. -/
+theorem lowerAction_group_move (e : α ≃ Fin K) (blank : α)
+    {q w h : ℕ} (a : SymbolAction (α := α) q w h)
+    (k : Fin w) (i : Fin K) :
+    (lowerAction e blank a).workMove
+      (finProdFinEquiv (m := w) (n := K) (k, i)) = a.workMove k := by
+  simp [lowerAction]
+
+/-- A lockstep Boolean-head copy commutes with the unit movement rule. -/
+theorem copyHeadMovement_commutes {w : ℕ}
+    (head : Fin w → ℤ) (movement : Fin w → OAI.ExactDerandomization.Direction) :
+    (fun j : Fin (w * K) =>
+      let pair := (finProdFinEquiv (m := w) (n := K)).symm j
+      (movement pair.1).move (head pair.1)) =
+    (fun j : Fin (w * K) =>
+      let pair := (finProdFinEquiv (m := w) (n := K)).symm j
+      ((fun k => (movement k).move (head k)) pair.1)) := by
+  rfl
 
 end Metalogic.OpenAIMath.ExplicitAlphabetBridge
