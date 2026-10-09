@@ -25,6 +25,7 @@ import zipfile
 import pandas as pd
 
 import full_reader as base
+from citation_refinement import retarget, self_test as citation_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -100,6 +101,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 
 def self_test():
+    citation_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -212,6 +214,11 @@ def run(archive):
             "strict_then_raw_no_refs":[],
             "strict_then_raw_numeric_refs":[],
             "strict_then_raw_model_refs":[],
+            "strict_then_raw_top1_refs":[],
+            "strict_then_raw_literal_refs":[],
+            "strict_then_raw_quote_refs":[],
+            "strict_then_raw_dual_refs":[],
+            "strict_then_raw_hybrid_refs":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -237,6 +244,20 @@ def run(archive):
                 strict_mode="strict_then_"+("raw_model_refs" if key=="selected"
                               else "raw_numeric_refs" if key=="numeric" else "raw_no_refs")
                 modes[strict_mode].append(dict(strict) if strict is not None else candidate)
+            original=raw_variant(row,response,numeric,passages,"selected")
+            for policy,name in (
+                ("top1","strict_then_raw_top1_refs"),
+                ("literal","strict_then_raw_literal_refs"),
+                ("quote","strict_then_raw_quote_refs"),
+                ("dual","strict_then_raw_dual_refs"),
+                ("hybrid","strict_then_raw_hybrid_refs"),
+            ):
+                proposal=retarget(original,response,question,passages,policy)
+                diagnosis[policy+"_source_changed"]+=int(
+                    proposal["ref_id"]!=original["ref_id"])
+                if proposal["answer_value"]!=original["answer_value"]:
+                    raise RuntimeError("Source-only policy changed an answer value")
+                modes[name].append(dict(strict) if strict is not None else proposal)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
@@ -253,6 +274,11 @@ def run(archive):
                     invalid[name]=type(err).__name__
     comparison=baseline["scores"]["reader_then_numeric_fallback"]
     improvements={k:round(v-comparison,8) for k,v in scores.items()}
+    source_only_delta={k:round(v-scores["strict_then_raw_model_refs"],8)
+                       for k,v in scores.items() if k.startswith("strict_then_raw_")
+                       and k not in ("strict_then_raw_model_refs",
+                                     "strict_then_raw_numeric_refs",
+                                     "strict_then_raw_no_refs")}
     result={
        "status":"EXPLORATORY_CANDIDATE",
        "scope":"Same 63 historic TRAIN questions and same LLM responses for all arms",
@@ -264,16 +290,20 @@ def run(archive):
        "historical_window_run":HISTORICAL_WINDOW_RUN,
        "alternative_scores":scores,
        "score_delta_vs_same_run_baseline":improvements,
+       "source_policy_deltas_vs_same_raw_model_source":source_only_delta,
        "invalid_modes":invalid,
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"All alternatives are unverified LLM answers. Model-supplied citation indices "
-                  "are provisional, NOT exact-quote proof; neither alternative is promoted to "
-                  "scientific fact. No protected TEST labels or Kaggle submission.",
+       "boundary":"Same model response AND answer_value across citation-only "
+                  "policies. Independent literal/quote overlap can suggest a source "
+                  "but does not certify semantic entailment. The original page "
+                  "quotation verifier retains authority for strict policies. "
+                  "TRAIN scorer used only after outputs are frozen; no hidden "
+                  "TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_VALUE_RESIDUAL_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_SOURCE_QUOTIENT_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
