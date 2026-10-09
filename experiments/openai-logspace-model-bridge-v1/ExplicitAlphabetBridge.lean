@@ -73,4 +73,36 @@ theorem encodeTracks_blank_outside (e : α ≃ Fin K) (blank : α) {w : ℕ}
     encodeTracks (w := w) e blank tape j z = false := by
   simp [encodeTracks, hblank _ z hz, encodeSymbol]
 
+
+/-- A simultaneous write updates one symbol at the current position of
+    every source work head. -/
+def writeAllSource {w : ℕ} (tape : Fin w → ℤ → α)
+    (head : Fin w → ℤ) (write : Fin w → α) :
+    Fin w → ℤ → α :=
+  fun k z => if z = head k then write k else tape k z
+
+/-- The corresponding binary-track update writes the symbol block's bit
+    on each track with the same source head coordinate. -/
+def writeAllEncoded (e : α ≃ Fin K) (blank : α) {w : ℕ}
+    (bits : Fin (w * K) → ℤ → Bool)
+    (head : Fin w → ℤ) (write : Fin w → α) :
+    Fin (w * K) → ℤ → Bool :=
+  fun j z =>
+    let pair := (finProdFinEquiv (m := w) (n := K)).symm j
+    if z = head pair.1 then
+      encodeSymbol e blank (write pair.1) pair.2
+    else bits j z
+
+/-- The complete simultaneous OAI-style write step COMMUTES exactly with
+    finite-symbol encoding. This is an effective local simulation law;
+    state transitions, head movements, coin bits and halting are separate. -/
+theorem encodeTracks_writeAll_commutes (e : α ≃ Fin K) (blank : α)
+    {w : ℕ} (tape : Fin w → ℤ → α)
+    (head : Fin w → ℤ) (write : Fin w → α) :
+    encodeTracks e blank (writeAllSource tape head write) =
+      writeAllEncoded e blank (encodeTracks e blank tape) head write := by
+  funext j z
+  simp only [encodeTracks, writeAllSource, writeAllEncoded]
+  split_ifs <;> rfl
+
 end Metalogic.OpenAIMath.ExplicitAlphabetBridge
