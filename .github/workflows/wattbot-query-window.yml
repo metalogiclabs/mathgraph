@@ -1,0 +1,59 @@
+name: WattBot exact query-window qualification
+on:
+  push:
+    branches: [wattbot-query-window-v1]
+    paths:
+      - 'experiments/wattbot2026/query_window.py'
+      - 'experiments/wattbot2026/query_window_probe.py'
+      - 'experiments/wattbot2026/tests/test_query_window.py'
+      - '.github/workflows/wattbot-query-window.yml'
+permissions:
+  contents: read
+concurrency:
+  group: wattbot-query-window-v1
+  cancel-in-progress: false
+jobs:
+  official-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle==2.2.4
+      - name: Read actual Kaggle scores and rank without resubmitting
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          kaggle competitions submissions -c WattBot2026
+          kaggle competitions leaderboard WattBot2026 --show
+          kaggle competitions list --group entered -s WattBot2026 -v
+  window-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independent exact-substring regression checks
+        run: python -m unittest discover -s experiments/wattbot2026/tests -p test_query_window.py -v
+      - run: python -m pip install kaggle==2.2.4 pandas numpy requests pymupdf
+      - name: Verify inherited page-quote checker
+        run: python experiments/wattbot2026/retrieved_reader_probe.py --self-test
+      - name: Download authorized official snapshot
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+      - name: Change only excerpt start under existing USD 0.12 ceiling
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u experiments/wattbot2026/query_window_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: echo 'Reused TRAIN split only; historical model comparator, no Kaggle submission, no corpus or predictions published.'
