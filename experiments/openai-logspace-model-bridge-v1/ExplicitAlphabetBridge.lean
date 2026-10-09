@@ -136,11 +136,10 @@ theorem lowerAction_write_bit (e : α ≃ Fin K) (blank : α)
     (lowerAction e blank a).write
       (finProdFinEquiv (m := w) (n := K) (k, i)) =
         encodeSymbol e blank (a.write k) i := by
-  have hpair :
-      (finProdFinEquiv (m := w) (n := K)).symm
-        (finProdFinEquiv (k, i)) = (k, i) :=
-    Equiv.symm_apply_apply _ _
-  simpa [lowerAction, hpair]
+  exact congrArg
+    (fun pair : Fin w × Fin K =>
+      encodeSymbol e blank (a.write pair.1) pair.2)
+    ((finProdFinEquiv (m := w) (n := K)).left_inv (k, i))
 
 /-- All Boolean tracks for a source work head carry its same direction. -/
 theorem lowerAction_group_move (e : α ≃ Fin K) (blank : α)
@@ -148,11 +147,9 @@ theorem lowerAction_group_move (e : α ≃ Fin K) (blank : α)
     (k : Fin w) (i : Fin K) :
     (lowerAction e blank a).workMove
       (finProdFinEquiv (m := w) (n := K) (k, i)) = a.workMove k := by
-  have hpair :
-      (finProdFinEquiv (m := w) (n := K)).symm
-        (finProdFinEquiv (k, i)) = (k, i) :=
-    Equiv.symm_apply_apply _ _
-  simpa [lowerAction, hpair]
+  exact congrArg
+    (fun pair : Fin w × Fin K => a.workMove pair.1)
+    ((finProdFinEquiv (m := w) (n := K)).left_inv (k, i))
 
 /-- A lockstep Boolean-head copy commutes with the unit movement rule. -/
 theorem copyHeadMovement_commutes {w : ℕ}
