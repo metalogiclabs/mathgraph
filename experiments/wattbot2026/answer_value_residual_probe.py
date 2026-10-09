@@ -26,6 +26,7 @@ import pandas as pd
 
 import full_reader as base
 from value_anchor import repaired_by_value, self_test as literal_anchor_self_test
+from unit_aware_numeric_probe import candidate as unit_candidate, self_test as unit_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -102,6 +103,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 def self_test():
     literal_anchor_self_test()
+    unit_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -135,6 +137,14 @@ def run(archive):
         if hashlib.sha256(z.read("Score.py")).hexdigest()!=SCORER_SHA:
             raise RuntimeError("Official Score.py changed")
 
+    with zipfile.ZipFile(archive) as z:
+        train_unit_frame=pd.read_csv(io.BytesIO(z.read("train_QA.csv")),
+            keep_default_na=False,dtype={"id":str})
+        unit_by_id={str(r["id"]):str(r["answer_unit"])
+                    for r in train_unit_frame.to_dict("records")}
+        if len(unit_by_id)!=245:
+            raise RuntimeError("Unit map differs from frozen official TRAIN inputs")
+
     original_passages = base.passages_for
     original_reader = base.call_reader
     original_numeric = base.build_candidate
@@ -142,6 +152,7 @@ def run(archive):
     response_map = {}
     passage_map = {}
     numeric_map = {}
+    unit_numeric_map = {}
     checked_map = {}
     docs_by_id = {}
     counters = Counter()
@@ -167,8 +178,13 @@ def run(archive):
     def record_numeric(question, hits, docs):
         result=original_numeric(question,hits,docs)
         # First call is all-pinned-corpus numeric, later calls are controls.
-        if question["id"] not in numeric_map:
-            numeric_map[question["id"]]=result
+        ident=question["id"]
+        if ident not in numeric_map:
+            numeric_map[ident]=result
+            augmented=dict(question,answer_unit=unit_by_id[ident])
+            unit_numeric_map[ident]=unit_candidate(augmented,hits,docs,"unit_bonus")
+            if unit_numeric_map[ident]["id"]!=result["id"]:
+                raise RuntimeError("Question/source unit-policy row mismatch")
         return result
     def record_checked(raw, question, passages, docs):
         candidate, status=original_check(raw,question,passages,docs)
@@ -218,6 +234,9 @@ def run(archive):
             "strict_then_raw_model_refs":[],
             "strict_then_unique_literal":[],
             "strict_literal_then_unverified_source":[],
+            "strict_then_unit_numeric":[],
+            "strict_then_unverified_unit_numeric":[],
+            "tiered_unit_numeric":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -228,6 +247,7 @@ def run(archive):
             response, api_status = response_map[question]
             passages=passage_map[question]
             numeric=numeric_map[ident]
+            numeric_unit=unit_numeric_map[ident]
             strict,check=checked_map.get(ident,(None,"NOT_ADMITTED"))
             diagnosis[api_status]+=1
             diagnosis[check]+=1
@@ -263,6 +283,16 @@ def run(archive):
             modes["strict_then_unique_literal"].append(literal_only)
             modes["strict_literal_then_unverified_source"].append(
                 candidate_after_literal)
+            unit_raw=raw_variant(row,response,numeric_unit,passages,"selected")
+            modes["strict_then_unit_numeric"].append(
+                dict(strict) if strict is not None else dict(numeric_unit))
+            modes["strict_then_unverified_unit_numeric"].append(
+                dict(strict) if strict is not None else unit_raw)
+            modes["tiered_unit_numeric"].append(
+                dict(strict) if strict is not None else
+                dict(literal) if literal is not None else unit_raw)
+            diagnosis["fallback_values_changed"]+=int(
+                numeric_unit["answer_value"]!=numeric["answer_value"])
 
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
@@ -279,6 +309,16 @@ def run(archive):
                     invalid[name]=type(err).__name__
     comparison=baseline["scores"]["reader_then_numeric_fallback"]
     improvements={k:round(v-comparison,8) for k,v in scores.items()}
+    unit_pairwise={
+      "strict_unit_vs_strict":round(
+        scores.get("strict_then_unit_numeric",0)-comparison,8),
+      "raw_recovery_unit_vs_original":round(
+        scores.get("strict_then_unverified_unit_numeric",0)
+        -scores.get("strict_then_raw_model_refs",0),8),
+      "tiered_unit_vs_original":round(
+        scores.get("tiered_unit_numeric",0)
+        -scores.get("strict_literal_then_unverified_source",0),8),
+    }
     pairwise={
         "tiered_minus_raw_recovery":round(
             scores.get("strict_literal_then_unverified_source",0)
@@ -300,6 +340,8 @@ def run(archive):
        "score_delta_vs_same_run_baseline":improvements,
        "invalid_modes":invalid,
        "pairwise_same_response_comparisons":pairwise,
+       "unit_numeric_paired_deltas":unit_pairwise,
+       "unit_policy":"unit_bonus selected from TRAIN development in run 37975057839",
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
@@ -310,7 +352,7 @@ def run(archive):
                   "Same model responses scored by official TRAIN Score.py only; "
                   "no hidden TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_TIERED_VALUE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_COMPILED_UNIT_FALLBACK_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
