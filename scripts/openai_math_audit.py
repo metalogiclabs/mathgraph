@@ -17,7 +17,7 @@ WITHDRAWALS = {
     "hodge_k3": (PREFIX + "The-rational-Hodge-conjecture-for-products-of-K3-surfaces-October-4-2026/README.md", "7d0be5e083c7dd0cb8fa330498cb40c9ce059e27"),
 }
 LOGSPACE = {
-    "challenge": ("lean/ComparatorChallenges/LogspaceEquality.lean", "692a4bdc0de7de093d83abdcb7a2bb1ccb7a2bb1ccb7a2bb1ccb7d476b"),
+    "challenge": ("lean/ComparatorChallenges/LogspaceEquality.lean", "692a4bdc0de7de093d83abdcb7a2bb1ccb7d476b"),
     "comparator": ("lean/ComparatorChallenges/LogspaceEquality.json", "06ca6c6af3ecbe3b426f36b54c7ec9b4e319d117"),
     "solution": ("lean/OAI/Computability/Logspace/Equality.lean", "5397fc4cc54b4aefd0898108746b1f301c5c2ce7"),
 }
