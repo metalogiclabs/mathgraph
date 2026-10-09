@@ -1,4 +1,4 @@
-import OAI.Computability.Logspace.Deterministic
+import ModelSemantics
 
 /-!
 # Finite configuration envelope for the pinned OAI Logspace machine
@@ -102,5 +102,41 @@ theorem unvisited_work_cell_is_blank
         hn t (Nat.lt_succ_self t)
       change (M.step x (coins t) (M.run x coins t)).work k z = false
       simp [Machine.step, hearlier, hpos, Ne.symm hpos]
+
+
+/-- If a finite code uniquely represents every configuration occurring up to
+    the first deterministic halt, the halting time is bounded by the number
+    of possible codes. No encoding adequacy is assumed without proof. -/
+theorem first_halt_lt_card_of_faithful_encoding
+    {q w h : ℕ} {α : Type} [Fintype α]
+    (M : Machine q w h) (hd : M.Deterministic)
+    (x : Word) (coins : CoinTape) (H : ℕ) (answer : Bool)
+    (halt : M.output (M.run x coins H).state = some answer)
+    (before : ∀ j, j < H → M.output (M.run x coins j).state = none)
+    (encode : Configuration q w h x.length → α)
+    (faithful : ∀ t u, t ≤ H → u ≤ H →
+      encode (M.run x coins t) = encode (M.run x coins u) →
+      M.run x coins t = M.run x coins u) :
+    H < Fintype.card α := by
+  let f : Fin (H + 1) → α := fun i => encode (M.run x coins i.val)
+  have hinj : Function.Injective f := by
+    intro a b heq
+    have heqc : M.run x coins a.val = M.run x coins b.val :=
+      faithful a.val b.val (by omega) (by omega) heq
+    by_cases hab : a.val < b.val
+    · have hno :=
+        ModelSemantics.no_configuration_repeat_before_first_halt
+          M hd x coins H answer halt before a.val b.val hab (by omega)
+      exact False.elim (hno heqc)
+    by_cases hba : b.val < a.val
+    · have hno :=
+        ModelSemantics.no_configuration_repeat_before_first_halt
+          M hd x coins H answer halt before b.val a.val hba (by omega)
+      exact False.elim (hno heqc.symm)
+    apply Fin.ext
+    omega
+  have hcard := Fintype.card_le_of_injective f hinj
+  simp only [Fintype.card_fin] at hcard
+  omega
 
 end Metalogic.OpenAIMath.FiniteEnvelope
