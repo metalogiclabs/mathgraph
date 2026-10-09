@@ -77,6 +77,39 @@ def derivation_question(question):
     return bool(INTENT_RE.search(str(question or "")))
 
 
+def source_identity_context(pages,docs):
+    """Official source metadata is reference DATA, not quotation evidence."""
+    indices={}
+    for i,page in enumerate(pages):
+        ident=str(page["ref_id"])
+        indices.setdefault(ident,[]).append(i)
+    registry=[]
+    for ident,positions in indices.items():
+        if ident not in docs:
+            raise RuntimeError("Retrieved source missing from official registry")
+        d=docs[ident]
+        if str(d.get("url",""))!=str(pages[positions[0]]["url"]):
+            raise RuntimeError("Source URL differs from pinned metadata")
+        registry.append({
+            "ref_id":ident,
+            "passage_indices":positions,
+            "title":str(d.get("title",""))[:220],
+            "year":str(d.get("year",""))[:24],
+            "type":str(d.get("type",""))[:44],
+            "venue":str(d.get("venue",""))[:120],
+        })
+    return ("\n\nOFFICIAL DOCUMENT IDENTITY REGISTRY (reference data only, "
+            "NOT a PDF quotation):\n"
+            +json.dumps(registry,ensure_ascii=False,separators=(",",":"))
+            +"\nEach passage still carries its original source index and "
+             "unaltered PDF text. Use document title, year and source type to "
+             "resolve which study or organization the question asks about; "
+             "do not conflate different experimental conditions or years. "
+             "Do not treat metadata as a scientific measurement or quote. "
+             "Supporting quotes must be literal substrings of the accompanying "
+             "PDF passages. Attribute company-reported claims as claims.")
+
+
 def self_test():
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
@@ -87,7 +120,14 @@ def self_test():
     assert not derivation_question("What was the reported electricity consumption?")
     assert not derivation_question("What was the publication year?")
     assert SECONDARY_RESERVE_USD>base.MAX_BUDGET_USD
-    print("WATTBOT_DERIVATION_ROUTER_SELF_TEST=PASS")
+    src={"ref_id":"x","url":"https://arxiv.org/abs/2601.11111",
+         "page":4,"text":"Current observed study value."}
+    registry={"x":{"url":src["url"],"title":"Energy of GPT model",
+                    "year":"2025","type":"paper","venue":"IEEE"}}
+    block=source_identity_context([src,dict(src,page=5)],registry)
+    assert "Energy of GPT model" in block and '"passage_indices":[0,1]' in block
+    assert "NOT a PDF quotation" in block
+    print("WATTBOT_SOURCE_IDENTITY_READER_SELF_TEST=PASS")
 
 
 def run(archive):
@@ -108,6 +148,7 @@ def run(archive):
     first_checked={}
     numeric={}
     docs_by_id={}
+    official_docs={}
     stats=Counter()
     extra=[0.0,0.0]
 
@@ -131,17 +172,16 @@ def run(archive):
             raise RuntimeError("First response duplicated")
         first_raw[question]=(response,status)
         first_pages[question]=list(passages)
-        if not derivation_question(question):
-            stats["plain_question"]+=1
-            return response,status,bound,actual
-        stats["derivation_question"]+=1
-        hits=ranked_by_question[question]
-        selected=[p for p in hits if p["page"]>0][:SECONDARY_TOP_K]
-        if len(selected)!=SECONDARY_TOP_K:
-            stats["insufficient_additional_pages"]+=1
-            return response,status,bound,actual
-        expanded=window_passages(question,selected,base.MAX_EXCERPT)
-        enriched=question+"\n"+SECOND_INSTRUCTION
+        stats["identity_registry_attempted"]+=1
+        # Hold both the exact same K6 source page bytes AND the original
+        # question fixed. Only official title/year/source-type side information
+        # is added as separate DATA; it is not passed as a PDF quotation.
+        expanded=list(passages)
+        if len(expanded)!=base.K:
+            raise RuntimeError("Source identity experiment changed evidence depth")
+        if not official_docs:
+            raise RuntimeError("Official metadata not captured before reader call")
+        enriched=question+source_identity_context(expanded,official_docs)
         wire=json.dumps({"question":enriched,
                          "passages":[{"source_index":i,"ref_id":p["ref_id"],
                              "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
@@ -162,6 +202,8 @@ def run(archive):
         return response,status,bound,actual
 
     def save_numeric(question,hits,docs):
+        if not official_docs:
+            official_docs.update(docs)
         item=original_numeric(question,hits,docs)
         if question["id"] not in numeric:
             numeric[question["id"]]=item
@@ -269,12 +311,14 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_DERIVATION_ROUTER_HOLDOUT="+json.dumps({
+    print("WATTBOT_SOURCE_IDENTITY_READER_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
-       "model_call_routing":"Question text only; no labels, ID or test answer used",
-       "only_router":"quantitative or multi-source question syntax",
+       "model_call_routing":"Official public title/year/source type only; "
+         "same questions and six untouched PDF snippets, no target gold labels",
+       "only_router":"Source identity registry present only in second call; "
+         "exact original source text and citation authority unchanged",
        "score_arms":official,
        "strict_baseline":official["first_strict"],
        "provisional_baseline":official["first_provisional"],
@@ -285,10 +329,11 @@ def run(archive):
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"All outputs are scientific CANDIDATES. A quoted source fragment "
-                  "proves occurrence, not its semantic support. Question-only "
-                  "routing and identical first replies enable paired TRAIN "
-                  "comparisons; no private TEST inference or Kaggle submission."
+       "boundary":"Two responses see identical evidence pages and questions; "
+         "only official document identity metadata differs, and metadata is "
+         "never permitted as a source-page quote or scientific measurement. "
+         "Model source attribution and values remain CANDIDATE until independently "
+         "checked. No gold TRAIN answers in prompt, no TEST, no Kaggle submission."
     },sort_keys=True),flush=True)
 
 
