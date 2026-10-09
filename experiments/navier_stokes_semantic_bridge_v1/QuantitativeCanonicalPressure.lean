@@ -42,10 +42,10 @@ theorem canonical_weighted_pressure_integral_bound
     (h : Space → ℂ) (hh : MemLp h 2 volume) :
     ‖∫ x : Space,
        (weightedPressure hφ i j g hw hg₂ : Space → ℂ) x * h x‖ ≤
-      (NavierStokes.R3WeightedLp.lpNorm
+      (MeasureTheory.lpNorm
          (fun x => powerCutoff φ x * g x) 2 volume +
         NavierStokes.R3PressureCutoff.errorBound R L φ g) *
-        NavierStokes.R3WeightedLp.lpNorm h 2 volume := by
+        MeasureTheory.lpNorm h 2 volume := by
   apply uniform_gaussian_flux_pairing_bound_passes_to_canonical
     hφ hφg i j g hw hg₂ h hh
   intro n
