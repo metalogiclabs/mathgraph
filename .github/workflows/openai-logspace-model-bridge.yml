@@ -26,6 +26,7 @@ on:
       - 'experiments/openai-logspace-model-bridge-v1/LeftWallCompiler.lean'
       - 'experiments/openai-logspace-model-bridge-v1/LeftWallFusedCompiler.lean'
       - 'experiments/openai-logspace-model-bridge-v1/LeftWallSpace.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/LeftWallBootstrapInduction.lean'
       - '.github/workflows/openai-logspace-model-bridge.yml'
   workflow_dispatch:
 
@@ -81,6 +82,7 @@ jobs:
           cp experiments/openai-logspace-model-bridge-v1/LeftWallCompiler.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/LeftWallFusedCompiler.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/LeftWallSpace.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/LeftWallBootstrapInduction.lean isolated/
           cp upstream/lean/lean-toolchain isolated/lean-toolchain
           test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
           cat > isolated/lakefile.lean <<'LAKE'
@@ -113,6 +115,7 @@ jobs:
           lean_lib LeftWallCompiler
           lean_lib LeftWallFusedCompiler
           lean_lib LeftWallSpace
+          lean_lib LeftWallBootstrapInduction
           lean_lib OAI
           LAKE
           printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
@@ -141,8 +144,8 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
-          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSpace
-          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSpace
+          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSpace LeftWallBootstrapInduction
+          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge SymbolResourceBridge SymbolProbabilityBridge SymbolReverseBridge SymbolReverseConsequences BooleanClassBridge BooleanProbabilisticClassBridge LeftBoundedMachine LeftWallCompiler LeftWallFusedCompiler LeftWallSpace LeftWallBootstrapInduction
           cat > AxiomCheck.lean <<'LEAN'
           import ModelSemantics
           import FiniteEnvelope
@@ -167,6 +170,7 @@ jobs:
           import LeftWallCompiler
           import LeftWallFusedCompiler
           import LeftWallSpace
+          import LeftWallBootstrapInduction
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_step_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
@@ -279,6 +283,8 @@ jobs:
           #print axioms Metalogic.OpenAIMath.LeftWallFusedCompiler.first_step_origin_marker
           #print axioms Metalogic.OpenAIMath.LeftWallSpace.nat_cast_visited_card
           #print axioms Metalogic.OpenAIMath.LeftWallSpace.compiled_space_eq_two_of_head_simulation
+          #print axioms Metalogic.OpenAIMath.LeftWallBootstrapInduction.run_succ_commutes_of_first_and_active
+          #print axioms Metalogic.OpenAIMath.LeftWallBootstrapInduction.positive_clock_acceptance_equal
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
