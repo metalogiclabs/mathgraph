@@ -117,7 +117,6 @@ theorem norm_jet_applyMultiplier_le_three (n l : ℕ) {m : Frequency → ℂ}
         · have hi := h.fixedPartial hf (parameterBasis i, (0 : Plane))
           convert! hi using 1
           omega
-        · exact hmg
       have hmx : ∀ k, ‖multiplierX m k‖ ≤ (‖omega‖ * B) * weight k ^ (l + 1) := by
         intro k
         rw [multiplierX, norm_mul]
