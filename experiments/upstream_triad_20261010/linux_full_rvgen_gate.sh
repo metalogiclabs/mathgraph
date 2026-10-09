@@ -46,15 +46,18 @@ python3 - <<'PY'
 from pathlib import Path
 file=Path("rvgen/automata.py")
 src=file.read_text()
-anchor="            matrix[states_dict[src]][events_dict[event]] = dst"
+anchor="        transitions.sort(key=lambda t : (t.src, t.event))\n        return transitions"
 assert src.count(anchor)==1
-marker="        for transition in self.transitions:\n            src, dst = transition.src, transition.dst\n            event = transition.event\n"
-assert src.count(marker)==1
-guard=('            if (src, event) in seen:\n'
-       '                raise AutomataError(\n'
-       '                    f"Duplicate transition for event {event} in state {src}")\n'
-       '            seen.add((src, event))\n')
-file.write_text(src.replace(marker, "        seen = set()\n"+marker).replace(anchor, guard+anchor))
+replacement='''        transitions.sort(key=lambda t : (t.src, t.event))
+        previous_key = None
+        for transition in transitions:
+            key = (transition.src, transition.event)
+            if key == previous_key:
+                raise AutomataError(
+                    f"Duplicate transition for event {transition.event} in state {transition.src}")
+            previous_key = key
+        return transitions'''
+file.write_text(src.replace(anchor, replacement))
 t=Path("tests/rvgen_monitor.t")
 orig=t.read_text()
 sentinel="\ntest_end\n"
