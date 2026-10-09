@@ -43,12 +43,14 @@ def load_module(module_name, filename):
 def main():
     source = fetch(AUTOMATA_PATH)
     anchor = '            matrix[states_dict[src]][events_dict[event]] = dst'
-    replacement = '''            if matrix[states_dict[src]][events_dict[event]] != self.invalid_state_str:
+    marker = '        for transition in self.transitions:\n            src, dst = transition.src, transition.dst\n            event = transition.event\n'
+    replacement = '''            if (src, event) in seen:
                 raise AutomataError(
                     f"Duplicate transition for event {event} in state {src}")
+            seen.add((src, event))
 ''' + anchor
-    assert source.count(anchor) == 1, "upstream source changed"
-    fixed = source.replace(anchor, replacement)
+    assert source.count(anchor) == 1 and source.count(marker) == 1, "upstream source changed"
+    fixed = source.replace(marker, "        seen = set()\n" + marker).replace(anchor, replacement)
     diff = ''.join(difflib.unified_diff(
         source.splitlines(keepends=True), fixed.splitlines(keepends=True),
         fromfile='a/tools/verification/rvgen/rvgen/automata.py',
