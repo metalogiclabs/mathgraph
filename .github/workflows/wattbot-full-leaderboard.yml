@@ -1,0 +1,60 @@
+name: WattBot full public leaderboard audit
+on:
+  push:
+    branches: [wattbot-type-gated-qa-v1]
+    paths:
+      - '.github/workflows/wattbot-full-leaderboard.yml'
+jobs:
+  public-leaderboard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install kaggle
+      - name: Fetch official leaderboard and reconcile top vs current rank
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lb"
+          kaggle competitions leaderboard WattBot2026 --download --path "$RUNNER_TEMP/lb"
+          python - "$RUNNER_TEMP/lb" <<'PY'
+          import csv, json, pathlib, sys
+          folder=pathlib.Path(sys.argv[1])
+          paths=list(folder.glob('*.csv'))
+          files=[]
+          for path in paths:
+              with path.open(newline='',encoding='utf-8-sig') as stream:
+                  dr=csv.DictReader(stream)
+                  items=list(dr)
+                  files.append((path.name,dr.fieldnames,items))
+          print('WATTBOT_PUBLIC_LEADERBOARD_FILES='+json.dumps([{'name':name,
+                 'rows':len(items),'columns':fields} for name,fields,items in files],sort_keys=True))
+          for name,fields,items in files:
+              if not items:continue
+              score_fields=[f for f in fields if 'score' in f.lower()]
+              rank_fields=[f for f in fields if 'rank' in f.lower()]
+              name_fields=[f for f in fields if 'team' in f.lower() and 'name' in f.lower()]
+              if score_fields:
+                  scores=[]
+                  for item in items:
+                      try:scores.append(float(item[score_fields[0]]))
+                      except (ValueError,TypeError,KeyError):pass
+                  print('WATTBOT_PUBLIC_SCORE_DISTRIBUTION='+json.dumps({
+                      'rows':len(items),'scores_parsed':len(scores),
+                      'top_score':max(scores) if scores else None,
+                      'minimum_score':min(scores) if scores else None,
+                      'distinct_scores':len(set(scores)),
+                      'mathgraph_matches':[
+                          {'team_name':item.get(name_fields[0]),'rank':item.get(rank_fields[0]) if rank_fields else None,
+                           'score':item.get(score_fields[0])}
+                          for item in items if name_fields and 'Heath Sanchez' in str(item.get(name_fields[0],''))]
+                  },sort_keys=True))
+          PY
