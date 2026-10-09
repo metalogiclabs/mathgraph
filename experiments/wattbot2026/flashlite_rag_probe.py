@@ -38,7 +38,7 @@ from score_ablation import load_score, blank_submission
 from train_probe import parse_refs
 from wattbot import chunks_from_pages, ranked, norm
 
-SOURCE_BUDGET = 24
+SOURCE_BUDGET = 114
 CONTEXT_CHUNKS = 6
 MAX_CALLS = 63
 MAX_ESTIMATED_USD = 0.08
@@ -118,9 +118,10 @@ def run(official_zip:str):
         docs={str(d["id"]):d for d in meta.to_dict("records")}
         selected=source_list(dev,docs)
         if len(selected)!=SOURCE_BUDGET:
-            raise ValueError("Frozen document count not available")
+            raise ValueError("Official corpus did not expose exactly 114 pinned arXiv sources")
         hashes=[]
         pdf_chunks=[]
+        prefix_24_chunks=[]
         with tempfile.TemporaryDirectory(prefix="wattbot_lite_rag_") as td:
             folder=Path(td)
             for i,ref in enumerate(selected):
@@ -131,11 +132,13 @@ def run(official_zip:str):
                 if not rows:
                     raise ValueError("No text in pinned public paper")
                 pdf_chunks.extend(rows)
+                if i<24:
+                    prefix_24_chunks.extend(rows)
                 hashes.append(sha)
             # Archive the arXiv-only control before adding the separate
             # officially pinned report sources; this prevents retrospective
             # substitution of source evidence for any control arm.
-            arxiv_chunks=list(pdf_chunks)
+            arxiv_chunks=list(prefix_24_chunks)
             report_rows=[d for d in meta.to_dict("records")
                          if str(d.get("type","")).strip().lower()=="report"]
             if len(report_rows)!=8:
@@ -242,6 +245,7 @@ def run(official_zip:str):
                 },
                 "dev_rows":len(dev),"holdout_rows":len(hold),
                 "pinned_source_pdfs":len(selected),"pdf_chunks":len(pdf_chunks),
+                "arxiv_prefix_control_pdfs":24,
                 "report_source_types":dict(report_types),
                 "report_failures":dict(report_errors),
                 "report_digest_manifest_sha256":hashlib.sha256(
@@ -257,13 +261,13 @@ def run(official_zip:str):
                     "conservative_precommitted_usd":round(budget_committed,6),
                     "reported_api_cost_sum_usd":round(sum(observed_costs),6),
                 },
-                "boundary":"Previously inspected official TRAIN holdout; no test labels in prompts; source selection DEV-only; models not scientific truth.",
+                "boundary":"All 114 pinned arXiv papers + accessible report documents; reused TRAIN holdout, not leaderboard, model text is candidate only.",
             }
             print("WATTBOT_FLASHLITE_RAG_HOLDOUT="+json.dumps(result,sort_keys=True),flush=True)
 
 
 def self_test():
-    assert SOURCE_BUDGET==24
+    assert SOURCE_BUDGET==114
     assert CONTEXT_CHUNKS==6
     assert MAX_ESTIMATED_USD==0.08
     chunk={"ref_id":"doc","page":2,"url":"https://arxiv.org/pdf/2601.12345",
