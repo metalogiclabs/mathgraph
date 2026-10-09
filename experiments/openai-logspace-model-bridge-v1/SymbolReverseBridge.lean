@@ -59,16 +59,10 @@ theorem source_step_eq_OAI
       simp [sourceStep, Machine.step, fromOAIMachine,
         asSourceConfiguration, ho]
   | none =>
-      apply SymbolConfiguration.ext
-      · simp [sourceStep, Machine.step, fromOAIMachine,
-          asSourceConfiguration, ho]
-      · simp [sourceStep, Machine.step, fromOAIMachine,
-          asSourceConfiguration, ho]
-      · simp [sourceStep, Machine.step, fromOAIMachine,
-          asSourceConfiguration, ho]
-      · funext k z
-        simp [sourceStep, Machine.step, fromOAIMachine,
-          asSourceConfiguration, writeAllSource, Function.update, ho]
+      cases c with
+      | mk state inputPos workPos work =>
+          simp [sourceStep, Machine.step, fromOAIMachine,
+            asSourceConfiguration, writeAllSource, Function.update, ho]
 
 /-- Exact Boolean-source execution agrees with the pinned OpenAI run at
 every clock, input and coin stream, including the complete work tapes. -/
@@ -95,10 +89,13 @@ theorem source_spaceThrough_eq_OAI
   unfold sourceSpaceThrough Machine.spaceThrough
   apply Finset.sum_congr rfl
   intro k _
-  congr 1
-  funext u
-  have hr := source_run_eq_OAI M x coins u
-  exact congrArg (fun c : SymbolConfiguration Bool q w h x.length =>
-    c.workPos k) hr
+  have hfun :
+      (fun u : ℕ => (sourceRun (fromOAIMachine M) false x coins u).workPos k) =
+      (fun u : ℕ => (M.run x coins u).workPos k) := by
+    funext u
+    have hr := source_run_eq_OAI M x coins u
+    exact congrArg
+      (fun c : SymbolConfiguration Bool q w h x.length => c.workPos k) hr
+  rw [hfun]
 
 end Metalogic.OpenAIMath.SymbolReverseBridge
