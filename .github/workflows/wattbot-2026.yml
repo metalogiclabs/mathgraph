@@ -1,0 +1,21 @@
+name: WattBot 2026 bounded qualification
+on:
+  push:
+    branches: [wattbot-2026-v1]
+    paths:
+      - 'experiments/wattbot2026/**'
+      - '.github/workflows/wattbot-2026.yml'
+  pull_request:
+    paths:
+      - 'experiments/wattbot2026/**'
+      - '.github/workflows/wattbot-2026.yml'
+jobs:
+  local-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pytest pymupdf
+      - run: python -m pytest -q experiments/wattbot2026/tests/test_wattbot.py
