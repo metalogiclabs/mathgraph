@@ -66,6 +66,5 @@ theorem source_step_commutes
       rw [haction']
       simp only [sourceStep, ho, encodeConfiguration]
       congr 1
-      simpa [lowerAction, encodeTracks] using hwork
 
 end Metalogic.OpenAIMath.SymbolOneStepBridge
