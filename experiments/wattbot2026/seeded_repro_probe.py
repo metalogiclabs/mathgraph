@@ -42,13 +42,14 @@ def git_blob(raw):
     return hashlib.sha1(b"blob "+str(len(raw)).encode()+bytes([0])+raw).hexdigest()
 
 def seed_for(q):
-    return int(hashlib.sha256(("metalogic-wattbot-fixed-v1|"+q).encode()).hexdigest()[:8],16)
+    return int(hashlib.sha256(("metalogic-wattbot-fixed-v1|"+q).encode()).hexdigest()[:8],16) & 0x7fffffff
 
 def self_test():
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.MODEL=="google/gemini-2.5-flash-lite"
     assert base.MAX_OUTPUT_TOKENS==650
     assert len(FIXTURES)==3 and len({seed_for(x["question"]) for x in FIXTURES})==3
+    assert all(0 <= seed_for(x["question"]) <= 2147483647 for x in FIXTURES)
     print("WATTBOT_SEEDED_REPRODUCIBILITY_SELF_TEST=PASS")
 
 def run():
