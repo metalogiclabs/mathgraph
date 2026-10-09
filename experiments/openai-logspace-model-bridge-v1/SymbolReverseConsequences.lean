@@ -45,7 +45,7 @@ theorem reverse_deterministic
       ({ nextState := a.nextState
          write := a.write
          workMove := a.workMove
-         inputMove := a.inputMove } : ExplicitAlphabetBridge.SymbolAction q w h))
+         inputMove := a.inputMove } : ExplicitAlphabetBridge.SymbolAction (α := Bool) q w h))
     (hd st inp bits)
 
 theorem reverse_output_eq
