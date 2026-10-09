@@ -1,4 +1,4 @@
-name: WattBot free Gemma evidence QA pilot
+name: WattBot capped DeepSeek scientific QA pilot
 on:
   push:
     branches: [wattbot-type-gated-qa-v1]
@@ -16,6 +16,8 @@ jobs:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      WATTBOT_MODEL: deepseek/deepseek-v4-flash
+      WATTBOT_COST_CAP_USD: '0.02'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,9 +27,9 @@ jobs:
         run: python -m pip install 'kaggle>=2.2,<2.3' 'pandas>=2' 'requests>=2' 'pymupdf>=1.24'
       - name: Pure synthetic self-tests
         run: python experiments/wattbot2026/free_llm_probe.py --self-test
-      - name: Independently verify zero token pricing and synthetic model response
+      - name: Pin pricing, enforce spend cap, and smoke-check exact model
         run: python experiments/wattbot2026/free_llm_probe.py --smoke
-      - name: Capped train-subset evidence QA against pinned official scorer
+      - name: Budget-bounded train-subset evidence QA using official scorer
         shell: bash
         run: |
           set -euo pipefail
@@ -37,4 +39,4 @@ jobs:
       - name: Licensing and cost boundary
         run: |
           echo "Never log secrets, per-question predictions, private CSV data, source PDFs, or LLM prompts."
-          echo "Only confirmed free endpoint and bounded synthetic/train-question evaluation; never use paid API routing."
+          echo "Only a verified low-cost endpoint with explicit per-process 0.02 USD guard is permitted; never submit to Kaggle from this workflow."
