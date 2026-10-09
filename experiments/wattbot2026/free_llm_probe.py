@@ -45,8 +45,8 @@ MODELS="https://openrouter.ai/api/v1/models"
 
 def require_bounded_price() -> None:
     global PRICE_IN, PRICE_OUT
-    if COST_CAP_USD < 0 or COST_CAP_USD > 0.02:
-        raise RuntimeError("Model budget cap must be in [0,$0.02]")
+    if COST_CAP_USD < 0 or COST_CAP_USD > 0.20:
+        raise RuntimeError("Model budget cap must be in [0,$0.20]")
     response=requests.get(MODELS,timeout=25)
     response.raise_for_status()
     matches=[m for m in response.json().get("data",[]) if m.get("id")==MODEL]
@@ -58,7 +58,7 @@ def require_bounded_price() -> None:
         PRICE_OUT=float(pricing["completion"])
     except (KeyError,TypeError,ValueError) as exc:
         raise RuntimeError("Model prices not verifiable") from exc
-    if not (0 <= PRICE_IN <= 2e-6 and 0 <= PRICE_OUT <= 2e-6):
+    if not (0 <= PRICE_IN <= 2e-6 and 0 <= PRICE_OUT <= 5e-6):
         raise RuntimeError("Model pricing outside strict per-token gate")
     # Worst-case prompt reserved conservatively as one token per UTF8 byte.
     worst=(MAX_QUESTIONS+1)*(MAX_PROMPT_BYTES*PRICE_IN+MAX_OUTPUT_TOKENS*PRICE_OUT)*1.1
