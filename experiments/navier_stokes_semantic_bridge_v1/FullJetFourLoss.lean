@@ -113,10 +113,10 @@ theorem norm_jet_applyMultiplier_le_three (n l : ℕ) {m : Frequency → ℂ}
             multiplierJetConstantThree (P := P) n l * B *
               (‖(parameterBasis i, (0 : Plane))‖ * C) := by
         intro i
-        apply ih l hB hm (hG i) (hPG i) (mul_nonneg (norm_nonneg _) hC)
-        · have hi := h.fixedPartial hf (parameterBasis i, (0 : Plane))
-          convert! hi using 1
-          omega
+        refine ih l hB hm (hG i) (hPG i) (mul_nonneg (norm_nonneg _) hC) ?_ hmg
+        have hi := h.fixedPartial hf (parameterBasis i, (0 : Plane))
+        convert! hi using 1
+        omega
       have hmx : ∀ k, ‖multiplierX m k‖ ≤ (‖omega‖ * B) * weight k ^ (l + 1) := by
         intro k
         rw [multiplierX, norm_mul]
