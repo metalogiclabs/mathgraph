@@ -1,0 +1,37 @@
+name: WattBot V5 compiled verified lessons — no-submission release preflight
+on:
+  push:
+    branches: [wattbot-verified-lessons-submit-v5]
+    paths:
+      - '.github/workflows/wattbot-v5-lessons-preflight.yml'
+      - 'experiments/wattbot2026/submit_verified_lessons_v5.py'
+      - 'experiments/wattbot2026/verified_lesson.py'
+jobs:
+  candidate-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install local verification dependencies; no Kaggle or OpenRouter credentials
+        run: python -m pip install pandas numpy requests pymupdf pytest
+      - name: Assert V4 exact source and V5 development-only lesson contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/submit_full_reader.py --self-test
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/submit_verified_lessons_v5.py --self-test
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Science, cost and release boundary
+        run: |
+          echo "Full source/reader input code SHA pinned, two DEV-only lessons are not source evidence."
+          echo "Exact source-page quotes verified by V4; unsupported answers remain CANDIDATE."
+          echo "Enriched API token charges guarded before each model request and capped at USD 0.65."
+          echo "Only synthetic test and local checksum gates. NO Kaggle protected TEST inference, submission, or model spending."
