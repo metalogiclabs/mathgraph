@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install kaggle pandas numpy requests pymupdf
+      - run: pip install kaggle pandas numpy requests pymupdf scikit-learn
       - name: Score identical candidate method at 8 and 24 source papers with answer/ref ablations
         shell: bash
         run: |
