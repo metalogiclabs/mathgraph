@@ -109,10 +109,15 @@ jobs:
           python3 - <<'PY'
           import re
           t=open('axiom-output.txt', encoding='utf-8').read()
-          m=re.search(r"depends on axioms:\\s*\\[([^\\]]*)\\]",t)
-          if not m:
-              raise SystemExit("UNKNOWN_AX_REQUEST: did not find Lean axiom output")
-          used={x.strip() for x in m.group(1).split(',') if x.strip()}
+          marker = 'depends on axioms: ['
+          index = t.find(marker)
+          if index < 0:
+              raise SystemExit('UNKNOWN_AX_REQUEST: did not find Lean axiom output')
+          remainder = t[index + len(marker):]
+          close = remainder.find(']')
+          if close < 0:
+              raise SystemExit('UNKNOWN_AX_REQUEST: truncated axiom list')
+          used={x.strip() for x in remainder[:close].split(',') if x.strip()}
           permitted={'propext','Quot.sound','Classical.choice'}
           if not used <= permitted:
               raise SystemExit(f"UNPERMITTED_AXIOMS: {sorted(used-permitted)}")
