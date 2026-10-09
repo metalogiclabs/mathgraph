@@ -1,14 +1,14 @@
-name: WattBot 48-source pinned corpus expansion
+name: WattBot complete 114-arXiv pinned corpus audit
 on:
   push:
-    branches: [wattbot-corpus-expansion-v1]
+    branches: [wattbot-full-corpus-v1]
     paths:
       - 'experiments/wattbot2026/corpus_expansion_probe.py'
       - '.github/workflows/wattbot-corpus-48.yml'
 jobs:
   measure-coverage:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
     env:
@@ -22,7 +22,7 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install kaggle pandas numpy scipy scikit-learn requests pymupdf
       - run: python experiments/wattbot2026/corpus_expansion_probe.py --self-test
-      - name: Run 0-vs-24-vs-48 source retrieval diagnostic
+      - name: Evaluate 0/24/48/80/114 source prefixes on pinned arXiv corpus
         shell: bash
         run: |
           set -euo pipefail
