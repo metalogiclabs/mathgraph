@@ -18,6 +18,7 @@ import tempfile
 import time
 from urllib.parse import urlparse
 import zipfile
+import requests
 
 from pdf_probe import download_one
 from train_probe import load_csv, parse_refs, score_metadata
@@ -140,7 +141,7 @@ def run(official_zip: str, max_docs: int = 8) -> None:
                     raise ValueError("No extractable PDF text")
                 downloaded[doc_id] = chunks
                 digests.append(digest)
-            except (RuntimeError, OSError, ValueError, Exception) as exc:
+            except (requests.RequestException, RuntimeError, OSError, ValueError) as exc:
                 failure_types[type(exc).__name__] += 1
     print("PAPER_ACQUISITION=" + json.dumps({
         "attempted": len(selected),
