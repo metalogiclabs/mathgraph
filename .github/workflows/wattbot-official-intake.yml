@@ -1,0 +1,51 @@
+name: WattBot 2026 official data intake
+on:
+  workflow_dispatch:
+jobs:
+  kaggle-intake:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate Kaggle authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KAGGLE_API_TOKEN}" && ( -z "${KAGGLE_USERNAME}" || -z "${KAGGLE_KEY}" ) ]]; then
+            echo "::error::Configure KAGGLE_API_TOKEN or both KAGGLE_USERNAME and KAGGLE_KEY as repository Actions secrets"
+            exit 1
+          fi
+      - name: Install official Kaggle CLI
+        run: python -m pip install --upgrade kaggle
+      - name: Download competition files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot"
+          python - "$RUNNER_TEMP/wattbot" <<'PY'
+          import hashlib, json, pathlib, sys, zipfile
+          root = pathlib.Path(sys.argv[1])
+          manifest = []
+          for file in sorted(root.iterdir()):
+              manifest.append({"file": file.name, "bytes": file.stat().st_size,
+                               "sha256": hashlib.sha256(file.read_bytes()).hexdigest()})
+              if file.suffix.lower() == ".zip":
+                  with zipfile.ZipFile(file) as z:
+                      manifest[-1]["members"] = sorted(z.namelist())
+          print(json.dumps(manifest, indent=2))
+          if not manifest:
+              raise SystemExit("No official competition files downloaded")
+          PY
+      - name: Preserve restricted data boundary
+        run: |
+          echo "Official dataset was downloaded on an ephemeral runner."
+          echo "No competition data or source PDFs are uploaded as artifacts or committed."
