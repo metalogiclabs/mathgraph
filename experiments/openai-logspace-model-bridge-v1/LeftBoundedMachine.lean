@@ -12,6 +12,8 @@ namespace Metalogic.OpenAIMath.LeftBoundedMachine
 
 open OAI.ExactDerandomization
 
+variable {q h n : ℕ}
+
 structure LeftAction (q h : ℕ) where
   nextState : Fin (q + 1)
   write : Bool
@@ -85,8 +87,18 @@ def guardedMove (d : Direction) (atBoundary : Bool) : Direction :=
 theorem guardedMove_correct (d : Direction) (z : ℕ) :
     (guardedMove d (marker (z : ℤ))).move (z : ℤ) =
       (moveNat d z : ℤ) := by
-  cases d <;> cases z <;>
-    simp [guardedMove, marker, moveNat, Direction.move] <;> omega
+  cases d with
+  | left =>
+      by_cases hz : z = 0
+      · subst z
+        simp [guardedMove, marker, moveNat, Direction.move]
+      · have hpositive : 0 < z := by omega
+        have hmarker : marker (z : ℤ) = false := by
+          simp [marker, hz]
+        simp [guardedMove, hmarker, moveNat, Direction.move]
+        omega
+  | stay => simp [guardedMove, moveNat, Direction.move]
+  | right => simp [guardedMove, moveNat, Direction.move]
 
 theorem marker_nat_zero_iff (z : ℕ) :
     marker (z : ℤ) = true ↔ z = 0 := by
