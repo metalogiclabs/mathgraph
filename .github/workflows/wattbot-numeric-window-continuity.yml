@@ -1,0 +1,45 @@
+name: WattBot numeric-span exact-window verification
+on:
+  push:
+    branches: [wattbot-numeric-window-continuity-v1]
+    paths:
+      - 'experiments/wattbot2026/query_window.py'
+      - 'experiments/wattbot2026/tests/test_query_window.py'
+      - '.github/workflows/wattbot-numeric-window-continuity.yml'
+jobs:
+  numeric-span-window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact PDF and official score dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf pytest
+      - name: Qualify unchanged source identities and numeric boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/full_window_probe.py --self-test
+      - name: Score numeric-continuity intervention on frozen TRAIN holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/full_window_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: |
+          echo "Only exact-string windows changed, source identities/order kept."
+          echo "Historical comparator is 0.49708995 from run 37968840780."
+          echo "Reused TRAIN holdout only, no Kaggle TEST/submission, no answer-label prompt."
