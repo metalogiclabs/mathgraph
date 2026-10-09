@@ -1,4 +1,4 @@
-name: WattBot V3 full-corpus exact-window verified submission
+name: WattBot V3 duplicate supersession guard
 on:
   push:
     branches: [wattbot-full-corpus-public-v3]
@@ -10,82 +10,13 @@ concurrency:
   group: wattbot-v3-full-corpus-single-submission
   cancel-in-progress: true
 jobs:
-  qualify-and-submit:
+  no-duplicate-submission:
     runs-on: ubuntu-latest
-    timeout-minutes: 65
-    env:
-      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Pin dependencies for ephemeral Kaggle source qualification
-        run: python -m pip install kaggle pandas numpy requests pymupdf pytest
-      - name: Qualify code, source-excerpt and all-column CSV transport
-        shell: bash
+      - name: Preserve causal lineage and avoid duplicate Kaggle uploads
         run: |
-          set -euo pipefail
-          python -m compileall -q experiments/wattbot2026
-          python experiments/wattbot2026/report_loader.py
-          python experiments/wattbot2026/full_reader.py --self-test
-          python experiments/wattbot2026/submit_full_reader.py --self-test
-          python experiments/wattbot2026/full_window_probe.py --self-test
-          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py experiments/wattbot2026/tests/test_cached_pdf.py
-      - name: Lock to green full-corpus exact-window qualification #37968840780
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import hashlib, pathlib, sys
-          root=pathlib.Path('experiments/wattbot2026')
-          path=root/'full_reader.py'
-          blob=path.read_bytes()
-          actual=hashlib.sha1(b'blob '+str(len(blob)).encode()+b'\0'+blob).hexdigest()
-          expected='4e1350ef72a44a333862dec23c737a2262ab99bc'
-          if actual!=expected: sys.exit('Reader changed; stop before model calls')
-          query=pathlib.Path('experiments/wattbot2026/query_window.py')
-          data=query.read_bytes()
-          query_blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
-          if query_blob!='8b3e37e4e1b0ebd36bb157ec73f8d51354e5cdf7':
-            sys.exit('Query window code changed; stop before model calls')
-          print('WATTBOT_V3_FROZEN_POLICY=window_full_corpus; full_reader_git_blob='+actual)
-          PY
-      - name: Download official authorized WattBot data (no public artifacts)
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -z "${KAGGLE_API_TOKEN}" || -z "${OPENROUTER_API_KEY}" ]]; then
-            echo "::error::Missing required Kaggle or OpenRouter Actions secret"
-            exit 1
-          fi
-          mkdir -p "$RUNNER_TEMP/wattbot"
-          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
-      - name: Generate and check all 317 protected-test candidates
-        shell: bash
-        run: |
-          set -euo pipefail
-          python experiments/wattbot2026/submit_full_reader.py \
-            --policy window \
-            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
-            --out "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv"
-          python experiments/wattbot2026/submission_gate.py \
-            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip" \
-            --submission "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv"
-      - name: Submit to authoritative Kaggle server only after all gates
-        shell: bash
-        run: |
-          set -euo pipefail
-          kaggle competitions submission-limits -c WattBot2026
-          kaggle competitions submit -c WattBot2026 \
-            -f "$RUNNER_TEMP/wattbot/mathgraph_full_corpus_v3.csv" \
-            -m "MathGraph V3 pinned full corpus exact window reader and citation gate ${GITHUB_SHA:0:12}"
-          kaggle competitions submissions -c WattBot2026
-      - name: Preserve verification boundary
-        run: |
-          echo "Source/model transport verified locally; Kaggle alone decides external score."
-          echo "No licensed PDFs, prompts, private question rows or answer CSV uploaded as artifacts."
-          echo "No protected hidden test labels inspected, and no leaderboard rank claimed until scored."
+          echo "SUPERSEDED: earlier runs 37970373027 and 37970501410 on this branch."
+          echo "Equivalent independently authored V3 source-window upload is already underway:"
+          echo "https://github.com/metalogiclabs/mathgraph/actions/runs/37970521510"
+          echo "Do not submit this duplicate branch. Do not spend any model API budget."
+          echo "External Kaggle score and ranking remain authoritative and unknown for V3."
