@@ -1,0 +1,103 @@
+name: OpenAI Logspace isolated theorem replay
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/openai-logspace-isolated-replay.yml'
+      - 'docs/openai-math-evidence-audit-v1.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-replay:
+    name: Isolated 39-module source proof compilation + independent Leanchecker
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      LEAN_NUM_THREADS: '2'
+    steps:
+      - name: Checkout MathGraph without retained credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout exact upstream Logspace source only
+        uses: actions/checkout@v4
+        with:
+          repository: openai/math
+          ref: fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb
+          path: upstream
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            lean/OAI/Computability/Logspace/
+            lean/ComparatorChallenges/LogspaceEquality.lean
+            lean/ComparatorChallenges/LogspaceEquality.json
+            lean/lean-toolchain
+      - name: Prepare minimal Mathlib-only Lake package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p isolated/OAI/Computability isolated/ComparatorChallenges
+          cp -a upstream/lean/OAI/Computability/Logspace isolated/OAI/Computability/
+          cp upstream/lean/ComparatorChallenges/LogspaceEquality.lean isolated/ComparatorChallenges/
+          cp upstream/lean/ComparatorChallenges/LogspaceEquality.json isolated/ComparatorChallenges/
+          cp upstream/lean/lean-toolchain isolated/lean-toolchain
+          test "$(cat isolated/lean-toolchain)" = 'leanprover/lean4:v4.34.1'
+          test "$(find isolated/OAI/Computability/Logspace -maxdepth 1 -name '*.lean' | wc -l)" -eq 39
+          cat > isolated/lakefile.lean <<'LAKE'
+          import Lake
+          open Lake DSL
+          package OAI where
+            leanOptions := #[⟨`autoImplicit, false⟩]
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @ "d13f23b723b8a846827a245b89c10fc7d3f11612"
+          @[default_target] lean_lib OAI
+          lean_lib ComparatorChallenges
+          LAKE
+          printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
+      - name: Install Lean 4.34.1 without building
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: isolated
+          auto-config: false
+          build: false
+          use-mathlib-cache: false
+          use-github-cache: false
+      - name: Resolve exact Mathlib dependencies and retrieve pinned cache
+        shell: bash
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --version
+          lake --version
+          lake update
+          python3 - <<'PY'
+          import json
+          manifest=json.load(open('lake-manifest.json'))
+          matching=[p for p in manifest['packages'] if p['name']=='mathlib']
+          assert len(matching)==1 and matching[0]['rev']=='d13f23b723b8a846827a245b89c10fc7d3f11612', matching
+          print('PINNED_MATHLIB_VERIFIED',matching[0]['rev'])
+          PY
+          lake exe cache get
+      - name: Compile exact Logspace solution module
+        shell: bash
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build OAI.Computability.Logspace.Equality
+      - name: Independent Leanchecker replay of Logspace solution
+        shell: bash
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake env leanchecker OAI.Computability.Logspace.Equality
+      - name: Preserve exact verdict boundary
+        if: always()
+        run: |
+          echo "This is a minimal-source independent Lean build/Leanchecker run, NOT Comparator."
+          echo "Paper-to-formal-statement equivalence and transitive axiom audit require separate qualification."
