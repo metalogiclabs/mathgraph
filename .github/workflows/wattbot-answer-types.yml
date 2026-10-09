@@ -1,0 +1,29 @@
+name: WattBot answer-type train profile
+on:
+  push:
+    branches: [wattbot-2026-holdout-v1]
+    paths:
+      - 'experiments/wattbot2026/answer_types.py'
+      - '.github/workflows/wattbot-answer-types.yml'
+jobs:
+  train-profile:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install kaggle
+      - name: Audit answer types on labelled training data without publishing records
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/answer_types.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
