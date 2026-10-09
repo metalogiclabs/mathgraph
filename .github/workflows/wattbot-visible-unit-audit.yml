@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install pinned official dataset inspection dependencies
-        run: python -m pip install kaggle pandas numpy
+        run: python -m pip install kaggle pandas numpy pymupdf
       - name: Visible field contract and numerical type synthetic tests
         run: python experiments/wattbot2026/visible_unit_audit.py --self-test
       - name: Read authorized competition TRAIN labels and TEST input units only
