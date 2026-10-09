@@ -1,0 +1,47 @@
+name: WattBot free-model live catalog audit
+on:
+  push:
+    branches: [wattbot-2026-llm-v1]
+    paths:
+      - '.github/workflows/wattbot-live-model-catalog.yml'
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query live authenticated model catalog without inference
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          key=os.environ.get("OPENROUTER_API_KEY")
+          if not key:raise SystemExit("No credential configured")
+          req=urllib.request.Request("https://openrouter.ai/api/v1/models",
+               headers={"Authorization":"Bearer "+key,"Accept":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as response:
+            data=json.load(response)["data"]
+          choices=[]
+          for m in data:
+            id=m.get("id","")
+            pricing=m.get("pricing") or {}
+            try:
+              free=(float(pricing.get("prompt","1"))==0 and
+                    float(pricing.get("completion","1"))==0)
+            except (ValueError,TypeError):free=False
+            if free and id.endswith(":free"):
+              choices.append({"id":id,"context_length":m.get("context_length"),
+                               "output_modalities":(m.get("architecture") or {}).get("output_modalities",[])})
+          choices.sort(key=lambda x:x["id"])
+          print("OPENROUTER_LIVE_FREE_MODELS="+json.dumps({
+             "count":len(choices),"models":choices[:55],
+             "qwen38_present":any(x["id"]=="qwen/qwen3.8-27b:free" for x in choices),
+             "gemma4_present":any(x["id"]=="google/gemma-4-31b-it:free" for x in choices),
+             "note":"Pricing and model availability at execution instant only; no inference or charged tokens"
+          },sort_keys=True))
+          if not choices:raise SystemExit("No free priced models visible")
+          PY
