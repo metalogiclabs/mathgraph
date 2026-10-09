@@ -83,4 +83,54 @@ theorem oai_head_visits_negative_intermediate
   · exact hgoal
   · exact hzero
 
+
+/-- The absolute displacement of a work head is strictly smaller than
+    the number of distinct positions it has visited (including position 0). -/
+theorem oai_head_natAbs_lt_visited_card
+    {q w h : ℕ} (M : Machine q w h) (x : Word)
+    (coins : CoinTape) (k : Fin w) (t : ℕ) :
+    ((M.run x coins t).workPos k).natAbs <
+      ((Finset.range (t + 1)).image
+        (fun u => (M.run x coins u).workPos k)).card := by
+  classical
+  let p : ℤ := (M.run x coins t).workPos k
+  let seen : Finset ℤ :=
+    (Finset.range (t + 1)).image
+      (fun u => (M.run x coins u).workPos k)
+  change p.natAbs < seen.card
+  have hsub : Finset.uIcc (0 : ℤ) p ⊆ seen := by
+    intro z hz
+    rcases le_total (0 : ℤ) p with hp | hp
+    · have hbounds : (0 : ℤ) ≤ z ∧ z ≤ p := by
+        simpa [Finset.mem_uIcc, min_eq_left hp, max_eq_right hp] using hz
+      obtain ⟨u,hu,heq⟩ :=
+        oai_head_visits_positive_intermediate M x coins k t z hbounds.1 hbounds.2
+      exact Finset.mem_image.mpr ⟨u, Finset.mem_range.mpr (by omega), heq⟩
+    · have hbounds : p ≤ z ∧ z ≤ (0 : ℤ) := by
+        simpa [Finset.mem_uIcc, min_eq_right hp, max_eq_left hp] using hz
+      obtain ⟨u,hu,heq⟩ :=
+        oai_head_visits_negative_intermediate M x coins k t z hbounds.1 hbounds.2
+      exact Finset.mem_image.mpr ⟨u, Finset.mem_range.mpr (by omega), heq⟩
+  have hcount := Finset.card_le_card hsub
+  rw [Int.card_uIcc] at hcount
+  simp only [sub_zero] at hcount
+  exact Nat.lt_of_succ_le hcount
+
+/-- Each work-head radius is strictly bounded by OpenAI's own summed
+    spaceThrough measure; this is the missing resource-bound bridge. -/
+theorem oai_head_natAbs_lt_spaceThrough
+    {q w h : ℕ} (M : Machine q w h) (x : Word)
+    (coins : CoinTape) (k : Fin w) (t : ℕ) :
+    ((M.run x coins t).workPos k).natAbs <
+      M.spaceThrough x coins t := by
+  classical
+  have hvisited := oai_head_natAbs_lt_visited_card M x coins k t
+  have hsum :
+      ((Finset.range (t + 1)).image
+        (fun u => (M.run x coins u).workPos k)).card ≤
+        M.spaceThrough x coins t := by
+    unfold Machine.spaceThrough
+    exact Finset.single_le_sum (fun j _ => Nat.zero_le _) (Finset.mem_univ k)
+  omega
+
 end Metalogic.OpenAIMath.VisitedRadius
