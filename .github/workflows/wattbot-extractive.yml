@@ -1,7 +1,7 @@
-name: WattBot CPU extractive-answer candidate
+name: WattBot 24-PDF extractive answer scaling
 on:
   push:
-    branches: [wattbot-2026-extractive-v1]
+    branches: [wattbot-2026-extractive24-v1]
     paths:
       - 'experiments/wattbot2026/extractive_probe.py'
       - '.github/workflows/wattbot-extractive.yml'
