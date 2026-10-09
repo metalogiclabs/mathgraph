@@ -7,7 +7,7 @@ This reverse embedding uses the actual Bool alphabet and copies the exact
 OpenAI transition table. The two configuration types are independently
 defined structures; their transition functions and runs must be checked
 rather than assumed identical.
--/-
+-/
 
 namespace Metalogic.OpenAIMath.SymbolReverseBridge
 
