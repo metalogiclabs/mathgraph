@@ -9,6 +9,7 @@ import math
 import re
 
 TOKEN = re.compile(r"[\w]+(?:[.-][\w]+)*", re.UNICODE)
+NUMBER = re.compile(r"(?<![\\w.])[-+]?\\d[\\d,]*(?:\\.\\d+)?%?(?![\\w.])")
 STOP = frozenset(('a an the is was what how much many in of for from to by on '
                  'and or are were which their its according as at during with '
                  'using does did this that per about than').split())
@@ -33,13 +34,30 @@ def query_window(question: str, text: str, limit: int = 1100) -> dict:
     for left, right, _ in occurrences:
         # Centre relevant words, preserving neighbours (including numeric values).
         starts.add(max(0, min(last, (left + right) // 2 - limit // 2)))
+    values = [(m.start(), m.end()) for m in NUMBER.finditer(text)]
     def score(start: int) -> tuple:
-        found = Counter(t for left, right, t in occurrences
-                        if start <= left and right <= start + limit)
-        # Cover distinct question terms; repeated boilerplate has diminishing value.
+        relevant_spans = [(left, right, t) for left, right, t in occurrences
+                          if start <= left and right <= start + limit]
+        found = Counter(t for _, _, t in relevant_spans)
+        # Keep original lexical relevance as PRIMARY objective; do not trade
+        # away even one relevance distinction merely to chase numbers.
         relevance = sum(weights[t] * (1 + 0.1 * math.log1p(n - 1))
                         for t, n in found.items())
-        return relevance, -start  # Exact ties retain the original prefix.
+        # SECONDARY: preserve complete values beside matched question terms.
+        # The prior earliest-prefix tiebreak could include "energy used" but
+        # truncate the adjoining "100 MWh" at the 1100-character boundary.
+        adjacent = []
+        for nl, nr in values:
+            if not (start <= nl and nr <= start + limit):
+                continue
+            distances = [max(0, left - nr, nl - right)
+                         for left, right, _ in relevant_spans]
+            if distances:
+                near = min(distances)
+                if near <= 90:
+                    adjacent.append(1.0 / (1.0 + near / 30.0))
+        complete_nearby_values = sum(sorted(adjacent, reverse=True)[:3])
+        return relevance, complete_nearby_values, -start
     start = max(sorted(starts), key=score)
     end = min(len(text), start + limit)
     return {'text': text[start:end], 'start': start, 'end': end}
