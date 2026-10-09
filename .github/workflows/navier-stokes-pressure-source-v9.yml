@@ -32,6 +32,10 @@ jobs:
             'https://raw.githubusercontent.com/openai/NavierStokesAndEuler/f9e8bc5/NavierStokes/R3/PressureFlux.lean' \
             -o /tmp/PressureFlux.lean
           test "$(git hash-object /tmp/PressureFlux.lean)" = '542377decf40306a50ce2170783de99a384b8d41'
+          if ! command -v pdftotext >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq poppler-utils
+          fi
           pdftotext -layout /tmp/navier-primary.pdf /tmp/navier-primary.txt
       - name: Extract exact equation 10.19 and pressure theorem authority, without certifying their equivalence
         env:
