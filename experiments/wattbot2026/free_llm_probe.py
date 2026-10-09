@@ -220,7 +220,7 @@ def smoke(key):
     if not ok:raise RuntimeError("Budgeted model synthetic JSON smoke failed")
 
 def evaluate(zip_path,key):
-    require_zero_price()
+    require_bounded_price()
     with zipfile.ZipFile(zip_path) as z:
         meta=pd.read_csv(io.BytesIO(z.read("metadata.csv")),keep_default_na=False,dtype={"id":str})
         train=pd.read_csv(io.BytesIO(z.read("train_QA.csv")),keep_default_na=False,dtype={"id":str})
