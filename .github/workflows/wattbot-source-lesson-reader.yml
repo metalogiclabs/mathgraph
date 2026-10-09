@@ -1,0 +1,48 @@
+name: WattBot source-trained reader with paired compiled lesson answers
+on:
+  push:
+    branches: [wattbot-citation-neighbor-compiler-v1]
+    paths:
+      - '.github/workflows/wattbot-source-lesson-reader.yml'
+      - 'experiments/wattbot2026/source_lesson_reader_ablation.py'
+jobs:
+  source-consequence-reader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official scorer, pinned PDF and source-model dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests
+      - name: Verify target-excluded source lessons, original reader and exact PDF evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/citation_lesson_probe.py --self-test
+          python experiments/wattbot2026/source_lesson_reader_ablation.py --self-test
+      - name: Score identical learned-lesson questions under baseline versus source-compiled six pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/source_lesson_reader_ablation.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Scientific and spending boundary
+        run: |
+          echo "Source-trained K6 policy frozen by dev leave-one-out prior run 37997556865."
+          echo "Only 63 reused TRAIN holdout questions scored, same model and two DEV lessons."
+          echo "Official scorer receives predictions AFTER all model calls freeze."
+          echo "First and additional model conservative reservations independently <= USD .12 each."
+          echo "No protected TEST answers/citations or Kaggle submission."
