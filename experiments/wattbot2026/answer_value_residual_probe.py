@@ -25,6 +25,8 @@ import zipfile
 import pandas as pd
 
 import full_reader as base
+from abstention_boundary import (explicit_model_refusal, retrieval_threshold,
+                                 policy_row, self_test as abstention_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -100,6 +102,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 
 def self_test():
+    abstention_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -139,11 +142,13 @@ def run(archive):
     original_check = base.try_checked
     response_map = {}
     passage_map = {}
+    retrieval_top_score = {}
     numeric_map = {}
     checked_map = {}
     counters = Counter()
     def windowed(question, chunks):
         original, hits = original_passages(question, chunks)
+        retrieval_top_score[question] = float(hits[0].get("score",0.)) if hits else 0.
         pages = window_passages(question, original, base.MAX_EXCERPT)
         counters["questions"] += 1
         counters["pages"] += len(pages)
@@ -205,6 +210,13 @@ def run(archive):
         hold=train[train["id"].map(is_holdout)].reset_index(drop=True)
         blank=base.blank_submission(hold).reset_index(drop=True)
         original_columns=list(blank.columns)
+        retrieval_values=[retrieval_top_score[q] for q in
+                          hold["question"].astype(str).tolist()]
+        thresholds={name:retrieval_threshold(retrieval_values,frac)
+                    for name,frac in (("p05",.05),("p10",.10),("p40",.40))}
+        abstention_policies=(
+          "model_explicit","model_explicit_weak40","model_explicit_weak10",
+          "weak_retrieval5","weak_retrieval10","explicit_or_weak5")
         modes={
             "raw_no_refs":[],
             "raw_numeric_refs":[],
@@ -212,6 +224,8 @@ def run(archive):
             "strict_then_raw_no_refs":[],
             "strict_then_raw_numeric_refs":[],
             "strict_then_raw_model_refs":[],
+            "strict_then_explicit_refusal":[],
+            **{"provisional_"+name:[] for name in abstention_policies},
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -227,6 +241,7 @@ def run(archive):
             diagnosis[check]+=1
             diagnosis["usable_raw"]+=int(usable(response))
             diagnosis["rescued_unanchored"]+=int(usable(response) and strict is None)
+            diagnosis["model_explicit_refusal"]+=int(explicit_model_refusal(response))
             for mode,key in (
                 ("raw_no_refs","none"),
                 ("raw_numeric_refs","numeric"),
@@ -237,6 +252,18 @@ def run(archive):
                 strict_mode="strict_then_"+("raw_model_refs" if key=="selected"
                               else "raw_numeric_refs" if key=="numeric" else "raw_no_refs")
                 modes[strict_mode].append(dict(strict) if strict is not None else candidate)
+            strict_row=dict(strict) if strict is not None else dict(numeric)
+            provisional_row=raw_variant(row,response,numeric,passages,"selected")
+            score_val=retrieval_top_score[question]
+            modes["strict_then_explicit_refusal"].append(
+                policy_row("model_explicit",row,strict_row,
+                           response,score_val,thresholds))
+            for policy in abstention_policies:
+                candidate=policy_row(policy,row,provisional_row,
+                                     response,score_val,thresholds)
+                diagnosis["abstained_"+policy]+=int(
+                    candidate["answer_value"]=="is_blank")
+                modes["provisional_"+policy].append(candidate)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
@@ -253,6 +280,11 @@ def run(archive):
                     invalid[name]=type(err).__name__
     comparison=baseline["scores"]["reader_then_numeric_fallback"]
     improvements={k:round(v-comparison,8) for k,v in scores.items()}
+    paired_abstention_effects={
+       k:round(v-scores["strict_then_raw_model_refs"],8)
+       for k,v in scores.items()
+       if k.startswith("provisional_")
+    }
     result={
        "status":"EXPLORATORY_CANDIDATE",
        "scope":"Same 63 historic TRAIN questions and same LLM responses for all arms",
@@ -264,16 +296,25 @@ def run(archive):
        "historical_window_run":HISTORICAL_WINDOW_RUN,
        "alternative_scores":scores,
        "score_delta_vs_same_run_baseline":improvements,
+       "source_score_quantiles_without_labels":thresholds,
+       "train_holdout_NA_count_postscoring":int(sum(
+           str(x).strip().casefold() in ("is_blank","na","n/a","nan","none")
+           for x in hold["answer_value"])),
+       "abstention_paired_vs_original_provisional":paired_abstention_effects,
        "invalid_modes":invalid,
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"All alternatives are unverified LLM answers. Model-supplied citation indices "
-                  "are provisional, NOT exact-quote proof; neither alternative is promoted to "
-                  "scientific fact. No protected TEST labels or Kaggle submission.",
+       "boundary":"All options score identical first model responses on previously "
+                  "inspected TRAIN questions. Explicit is_blank and low retrieval "
+                  "scores are separate kinds of UNKNOWN, not certified absence of "
+                  "scientific evidence. Quantiles use unlabeled question retrieval "
+                  "scores only. Any refusal carries empty evidence columns; "
+                  "official Score.py applied after predictions freeze. "
+                  "No protected TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_VALUE_RESIDUAL_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_ABSTENTION_BOUNDARY_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
