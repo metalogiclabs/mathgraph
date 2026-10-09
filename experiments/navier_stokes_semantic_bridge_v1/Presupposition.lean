@@ -71,7 +71,7 @@ theorem source_no_root_false (n : Nat) : ¬ SourceNoRoot n := by
 theorem paper_no_root_false (n : Nat) : ¬ PaperCode.B_e n := by
   intro hn
   have h := hn n 0
-  simpa [PaperCode.p_e] using h
+  simp [PaperCode.p_e] at h
 
 theorem source_predicate_matches (n : Nat) :
     SourceNoRoot n ↔ PaperCode.B_e n := by
@@ -155,7 +155,6 @@ theorem three_value_is_quarter : totalizedValue ({3} : Set Nat) = (1 / 4 : Rat) 
 
 end MathGraph.Presupposition
 
-set_option pp.width 10000
 #print axioms PaperCode.example_3_1
 #print axioms MathGraph.Presupposition.minimum_spec_iff_nonempty
 #print axioms MathGraph.Presupposition.minimum_spec_iff_value
