@@ -56,9 +56,13 @@ def mask_worked_values(compiled):
         # Withhold the entire answer-bearing explanation; retaining even
         # nonnumeric prose would leak exact categorical answers.
         example["worked_explanation"]="EXPLANATION_WITHHELD"
-        if original and (original in example["worked_answer_value"] or
-                         original in example["worked_explanation"]):
-            raise RuntimeError("Development worked-answer literal leaked into treatment")
+        # Exact placeholder equality is a stronger invariant than substring
+        # checks: short categorical answers such as "A" are naturally found
+        # inside the static word LABEL_WITHHELD without leaking the answer.
+        if (example["worked_answer_value"] !=
+                shape+"__LABEL_WITHHELD" or
+            example["worked_explanation"]!="EXPLANATION_WITHHELD"):
+            raise RuntimeError("Worked-answer masking template was modified")
     result=PREFIX+json.dumps(examples,ensure_ascii=False,separators=(",",":"))+SEPARATOR+suffix
     if "TRAIN DEVELOPMENT ONLY" not in result or "NOT evidence" not in result:
         raise RuntimeError("Evidence boundary changed")
