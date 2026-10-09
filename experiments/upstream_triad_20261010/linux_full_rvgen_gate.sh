@@ -50,22 +50,21 @@ anchor="            matrix[states_dict[src]][events_dict[event]] = dst"
 assert src.count(anchor)==1
 guard=('            if matrix[states_dict[src]][events_dict[event]] != self.invalid_state_str:\n'
        '                raise AutomataError(\n'
-       '                    f"Non-deterministic transition for event {event} in state {src}")\n')
+       '                    f"Duplicate transition for event {event} in state {src}")\n')
 file.write_text(src.replace(anchor,guard+anchor))
 t=Path("tests/rvgen_monitor.t")
 orig=t.read_text()
 sentinel="\ntest_end\n"
 assert orig.count(sentinel)==1
-additional='''
-# A single state/event must not have conflicting destinations even when
-# a hybrid automaton supplies a guard for one of the transitions.
+additional='''# Only one transition per source state/event is representable in rvgen's
+# generated table, even if one of the transitions has a hybrid guard.
 check "reject conflicting deterministic automaton transitions" \\
-    "$RVGEN monitor -c da -s tests/specs/test_nondeterministic_da.dot -t per_cpu" 1 \\
-    "Non-deterministic transition for event event_2 in state state_a" "Traceback"
+	"$RVGEN monitor -c da -s tests/specs/test_nondeterministic_da.dot -t per_cpu" 1 \\
+	"Duplicate transition for event event_2 in state state_a" "Traceback"
 
 check "reject conflicting guarded hybrid transitions" \\
-    "$RVGEN monitor -c ha -s tests/specs/test_nondeterministic_ha.dot -t per_task" 1 \\
-    "Non-deterministic transition for event event2 in state S2" "Traceback"
+	"$RVGEN monitor -c ha -s tests/specs/test_nondeterministic_ha.dot -t per_task" 1 \\
+	"Duplicate transition for event event2 in state S2" "Traceback"
 '''
 t.write_text(orig.replace(sentinel, "\n"+additional+sentinel))
 PY
