@@ -1,0 +1,36 @@
+name: WattBot prospectively split 4-vs-8 PDF holdout
+on:
+  push:
+    branches: [wattbot-2026-holdout-v1]
+    paths:
+      - 'experiments/wattbot2026/holdout_probe.py'
+      - '.github/workflows/wattbot-holdout-probe.yml'
+jobs:
+  holdout-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle requests pymupdf
+      - name: Verify frozen split and source scoring on synthetic fixture
+        run: python experiments/wattbot2026/holdout_probe.py --self-test
+      - name: Run dev-selected four/eight paper paired holdout experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/holdout_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: |
+          echo "Log only aggregates. No source documents or training rows in artifacts."
+          echo "Previous exploratory all-training diagnostics touched the labels, so this split is a prospective comparison, not a pristine blind benchmark."
