@@ -37,7 +37,8 @@ SOURCE_MANIFEST="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a
 MAX_Q=3
 K=6
 TERM_SPLIT=re.compile(r"\b(?:whereas|while|but|another|in contrast|as opposed to|versus|vs\.?|compared with|compared to)\b",re.I)
-CROSS=re.compile(r"\b(?:both|two|multiple|different)\s+(?:studies|papers|reports)\b|"
+CROSS=re.compile(r"\bone\s+(?:study|paper|report)\b.*\b(?:another|other)\b|"
+    r"\b(?:both|two|multiple|different)\s+(?:studies|papers|reports)\b|"
     r"\b(?:compare|comparison|reconcile|reconciliation|contradict|difference)\b|"
     r"\b(?:household[-\s]?years?|per\s+household)\b|"
     r"\b(?:across|between)\s+(?:the\s+)?(?:two|both|multiple)\s+"
