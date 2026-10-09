@@ -34,7 +34,7 @@ from wattbot import as_fraction, ranked, verify_candidate
 OFFICIAL_SCORE_PIN = "e5050458932b7a3fc0f4040303d3ae7c0459a786cf0efbb52c2f1ac338bbd075"
 BASELINE_HOLDOUT_NUMERIC = 0.25846561
 POLICIES = ("baseline", "unit_bonus", "unit_first", "unit_strict", "unit_convert")
-NA = frozenset(("","is_blank","na","n/a","none","null","nan"))
+NA = frozenset(("","is_blank","isblank","na","n/a","none","null","nan"))
 
 ALIASES = {
     "%":"percent","percentage":"percent","percent":"percent",
