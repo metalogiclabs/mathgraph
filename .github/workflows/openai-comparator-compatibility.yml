@@ -1,0 +1,60 @@
+name: Comparator 4.34 compatibility preflight
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/openai-comparator-compatibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comparator-compatibility:
+    name: Pin and build comparator + lean4export for OAI Lean 4.34.1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout pinned Comparator 4.34-family implementation
+        uses: actions/checkout@v4
+        with:
+          repository: leanprover/comparator
+          ref: d03acab154d269c06e60e4de7e4cc85deebff94b
+          path: comparator
+          persist-credentials: false
+      - name: Check locked export dependency and patch-only toolchain compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          m=json.load(open('comparator/lake-manifest.json'))
+          p=[x for x in m['packages'] if x['name']=='lean4export']
+          assert len(p)==1 and p[0]['rev']=='076e8e57707e813375e8f9da8bf989799ace9680',p
+          assert open('comparator/lean-toolchain').read().strip()=='leanprover/lean4:v4.34.0'
+          print('COMPARATOR_SOURCE_AND_EXPORT_PINS_VALID')
+          PY
+          printf 'leanprover/lean4:v4.34.1\n' > comparator/lean-toolchain
+      - name: Compile pinned comparator under OAI Lean version
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: comparator
+          auto-config: false
+          build: true
+          use-mathlib-cache: false
+          use-github-cache: false
+      - name: Verify comparator and exporter binaries exist
+        shell: bash
+        working-directory: comparator
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --version
+          lake build comparator lean4export
+          test -x .lake/build/bin/comparator
+          test -x .lake/packages/lean4export/.lake/build/bin/lean4export
+          echo COMPATIBLE_TOOLCHAIN_BUILD_ONLY
+          echo NOT_YET_LOGSPACE_THEOREM_REPLAY
