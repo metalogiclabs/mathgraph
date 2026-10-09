@@ -1,0 +1,47 @@
+name: WattBot development leave-one-out lesson generalization
+on:
+  push:
+    branches: [wattbot-development-loo-v1]
+    paths:
+      - '.github/workflows/wattbot-dev-loo-lesson.yml'
+      - 'experiments/wattbot2026/dev_loo_lesson_probe.py'
+jobs:
+  out-of-fold-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official frozen evaluator and scientific PDF parser
+        run: python -m pip install kaggle pandas numpy pymupdf requests
+      - name: Verify fixed reader and developmental holdout exclusion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/dev_loo_lesson_probe.py --self-test
+      - name: Test 182 development questions against target-excluded two-example lesson bank
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/dev_loo_lesson_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Warrant boundaries
+        run: |
+          echo "Every target development row excluded from own lesson memory; no target gold in prompt."
+          echo "Frozen 114 arXiv + seven accessible reports source registry already trained on dev citation counts."
+          echo "This is out-of-fold lesson transfer, not pristine source selection or Kaggle TEST."
+          echo "No outputs/copyrighted PDF artifacts exported, no Kaggle submission."
+          echo "Primary conservative reserved <=USD .46; lesson conservative reserved <=USD .58."
