@@ -1,0 +1,42 @@
+name: WattBot GPT-6 Luna full-corpus controlled TRAIN qualification
+on:
+  push:
+    branches: [wattbot-gpt6-full-window-v1]
+    paths:
+      - 'experiments/wattbot2026/gpt6_full_window_probe.py'
+      - '.github/workflows/wattbot-gpt6-full-window.yml'
+permissions:
+  contents: read
+jobs:
+  controlled-train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official scorer and exact-public-source extraction dependencies
+        run: python -m pip install kaggle requests pandas numpy pymupdf pytest
+      - name: Verify frozen source policy and alternate-model price caps
+        run: python experiments/wattbot2026/gpt6_full_window_probe.py --self-test
+      - name: Download official pin-checked TRAIN-only competition contract
+        run: |
+          set -euo pipefail
+          if [[ -z "${KAGGLE_API_TOKEN}" || -z "${OPENROUTER_API_KEY}" ]]; then
+            echo "::error::Missing approved official-data or model access."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+      - name: Run matched full-corpus GPT-6 Luna official TRAIN scorer experiment
+        run: |
+          set -euo pipefail
+          python experiments/wattbot2026/gpt6_full_window_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Research boundary
+        run: echo "Only aggregate TRAIN scores. No TEST labels, no Kaggle upload, no copyrighted corpus artifact."
