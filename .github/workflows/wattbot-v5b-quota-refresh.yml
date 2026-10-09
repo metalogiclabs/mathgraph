@@ -1,0 +1,47 @@
+name: WattBot V5b current release quota recheck
+on:
+  push:
+    branches: [wattbot-v5b-quota-refresh-v1]
+    paths:
+      - '.github/workflows/wattbot-v5b-quota-refresh.yml'
+jobs:
+  official-quota:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official Kaggle client
+        run: python -m pip install kaggle
+      - name: Read current daily quota without submitting
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          import json
+          api=KaggleApi()
+          api.authenticate()
+          limits=api.competition_get_submission_limits("WattBot2026")
+          print("WATTBOT_KAGGLE_LIMITS="+json.dumps({
+              "used_today":int(limits.num_today),
+              "used_total":int(limits.num_total),
+              "remaining_today":int(limits.num_allowed_now),
+              "limited_by_total":bool(limits.limited_by_total),
+              "scope":"Authenticated Kaggle exact team submission quota, no submit",
+          },sort_keys=True),flush=True)
+          PY
+      - name: Read complete MathGraph leaderboard and submission rows
+        run: |
+          kaggle competitions submissions -c WattBot2026
+          kaggle competitions leaderboard WattBot2026 --show
+      - name: Preserve quota
+        run: echo "Read only. No model inference, Kaggle TEST, CSV generation, or submission."
