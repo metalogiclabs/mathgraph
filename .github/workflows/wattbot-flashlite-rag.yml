@@ -1,0 +1,41 @@
+name: WattBot capped Flash-Lite RAG holdout qualification
+on:
+  push:
+    branches: [wattbot-flashlite-rag-v1]
+    paths:
+      - 'experiments/wattbot2026/flashlite_rag_probe.py'
+      - '.github/workflows/wattbot-flashlite-rag.yml'
+jobs:
+  heldout-answer-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install documented source-extraction dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Test literal-page provenance and cost limits
+        run: python experiments/wattbot2026/flashlite_rag_probe.py --self-test
+      - name: Compare 24-PDF numeric and LLM reader with the official scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$OPENROUTER_API_KEY" ]]; then
+            echo "::error::Existing OpenRouter secret not present; no requests made"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/flashlite_rag_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Constrain claims and artifact movement
+        run: |
+          echo "Previously inspected 63 training-holdout questions; no test labels or test input in API prompts."
+          echo "Model price checked against public pricing. Conservative preflight aggregate budget below USD 0.08."
+          echo "No licensed CSV/PDF bytes, prediction rows or prompt contents retained as CI artifacts."
