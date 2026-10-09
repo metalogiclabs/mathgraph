@@ -1,0 +1,33 @@
+name: WattBot pinned 48-source retrieval audit
+on:
+  push:
+    branches: [wattbot-broader-corpus-v1]
+    paths:
+      - 'experiments/wattbot2026/broader_corpus_probe.py'
+      - '.github/workflows/wattbot-broader-corpus.yml'
+jobs:
+  pinned-48:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare corpus evaluator
+        run: python -m pip install kaggle pandas numpy requests pymupdf scikit-learn
+      - name: Synthetic sparse-ranking control
+        run: python experiments/wattbot2026/broader_corpus_probe.py --self-test
+      - name: Evaluate source recall with 24 and 48 explicit pinned source papers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/broader_corpus_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Bounded-data boundary
+        run: echo "No Kaggle training rows, paper text, source files, or predictions are retained; aggregates only."
