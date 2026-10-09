@@ -1,0 +1,41 @@
+name: WattBot value-literal accessibility and missing-evidence diagnosis
+on:
+  push:
+    branches: [wattbot-answer-accessibility-v1]
+    paths:
+      - 'experiments/wattbot2026/answer_accessibility_probe.py'
+      - '.github/workflows/wattbot-answer-accessibility.yml'
+jobs:
+  extractive-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official data and PDF libraries
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Synthetic exact-number/list accessibility tests
+        run: |
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/answer_accessibility_probe.py --self-test
+      - name: Diagnose TRAIN evidence and numeric-reasoning residuals
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/answer_accessibility_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Boundary
+        run: |
+          echo "Only aggregate TRAIN label diagnostics, no TEST answer inspection."
+          echo "Literal occurrence is NOT semantic proof; absence does not imply unanswerable."
+          echo "No LLM API calls, Kaggle submissions or copyrighted answer/PDF artifacts."
