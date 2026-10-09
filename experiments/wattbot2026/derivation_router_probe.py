@@ -32,6 +32,8 @@ from verified_lesson import illustrate, self_test as lessons_self_test
 from abstention_boundary import (explicit_model_refusal, refusal_row,
                                  self_test as abstention_self_test)
 from citation_refinement import (retarget, self_test as citation_self_test)
+from submit_full_reader import (recover_candidate_unanchored,
+                                self_test as canonical_v4_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -85,6 +87,7 @@ def self_test():
     lessons_self_test()
     abstention_self_test()
     citation_self_test()
+    canonical_v4_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
     assert base.MODEL=="google/gemini-2.5-flash-lite"
@@ -234,6 +237,10 @@ def run(archive):
           "lesson_quote_reroute",
           "lesson_quote_and_explicit_blank",
           "lesson_first_verified_else_second_provisional",
+          "release_original_v4_decision",
+          "release_original_v4_preserve_first_blank",
+          "release_lesson_only_v4_decision",
+          "release_first_blank_second_verified_v4",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -308,6 +315,32 @@ def run(archive):
             arms["lesson_first_verified_else_second_provisional"].append(
                 dict(prior_checked) if prior_checked is not None else lesson)
 
+            # Reconstruct the ACTUAL TEST V4 release semantics with the
+            # exact already-scored canonical recovery implementation; this
+            # protects against mistaking TRAIN raw_variant score for the
+            # behavior of the real 317-row generator.
+            qdict={"id":ident,"question":q}
+            release_lesson=(
+                dict(later_checked) if later_checked is not None else
+                recover_candidate_unanchored(second,qdict,more,default)
+                if usable(second) else dict(default))
+            release_primary=(
+                dict(prior_checked) if prior_checked is not None else
+                recover_candidate_unanchored(original,qdict,first_pages[q],default)
+                if usable(original) else dict(default))
+            arms["release_lesson_only_v4_decision"].append(release_lesson)
+            arms["release_original_v4_decision"].append(
+                release_lesson if usable(second) else release_primary)
+            arms["release_original_v4_preserve_first_blank"].append(
+                refusal_row(row,"First reader explicit is_blank and lesson did not answer")
+                if explicit_first and not usable(second) else
+                release_lesson if usable(second) else release_primary)
+            arms["release_first_blank_second_verified_v4"].append(
+                refusal_row(row,"First reader explicit is_blank and lesson did not answer")
+                if explicit_first and not usable(second) else
+                dict(later_checked) if later_checked is not None else
+                release_lesson if usable(second) else release_primary)
+
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
             official={}
@@ -318,7 +351,7 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_COMPOSED_LESSON_HOLDOUT="+json.dumps({
+    print("WATTBOT_LESSON_RELEASE_POLICY_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
@@ -336,17 +369,20 @@ def run(archive):
        "lesson_policy_delta_vs_same_second_model":{
            k:round(v-official["lesson_provisional"],8)
            for k,v in official.items() if k.startswith("lesson_")},
+       "exact_V4_release_policy_score_deltas":{
+           k:round(v-official["lesson_provisional"],8)
+           for k,v in official.items() if k.startswith("release_")},
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Each policy reuses the same first and developmental-lesson "
-         "second model responses and SAME six pinned PDF pages. Exemplars "
-         "are drawn only from 182 development TRAIN rows (never 63 holdout "
-         "or hidden TEST); official Score.py is run only after answers freeze. "
-         "An explicit refusal means uncertainty, NOT a proof of global "
-         "scientific absence. Provisional citations are not proof of "
-         "source entailment. No Kaggle TEST inference or submission."
+       "boundary":"Scoring arms use exactly identical initial and compiled-lesson "
+         "model responses plus same pinned PDF pages. Canonical V4 retrieval/ "
+         "quote-checked/provisional-value release function is source-pinned "
+         "and applied unmodified. Training comparator uses previously inspected "
+         "63 TRAIN holdout with 182 development worked lessons excluding "
+         "target answers. Explicit is_blank is a model refusal rather than "
+         "global scientific proof. No protected TEST answer labels or submission."
     },sort_keys=True),flush=True)
 
 
