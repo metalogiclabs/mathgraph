@@ -85,7 +85,7 @@ def linux():
             groups = collections.defaultdict(set)
             counts = collections.Counter()
             for transition in aut.transitions:
-                k = (transition.src, transition.event)
+                k = (str(transition.src), str(transition.event))
                 groups[k].add(transition.dst)
                 counts[k] += 1
             return {str(k): {'count': counts[k], 'destinations': sorted(group)}
