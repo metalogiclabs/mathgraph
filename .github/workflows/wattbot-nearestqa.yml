@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: python -m pip install kaggle pandas numpy scikit-learn
+      - run: python -m pip install kaggle pandas numpy scikit-learn pymupdf requests
       - run: python experiments/wattbot2026/nearestqa_probe.py --self-test
       - name: Frozen train-only grid and official scorer
         shell: bash
