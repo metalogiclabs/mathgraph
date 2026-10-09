@@ -214,7 +214,7 @@ def self_test():
 def smoke(key):
     require_bounded_price()
     out,meta=query_model(key,"Return only valid JSON.",
-        "Synthetic arithmetic: six times seven? Return JSON {\"answer_value\":\"42\"}.",750)
+        "Synthetic arithmetic: six times seven? Return JSON {\"answer_value\":\"42\"}.",MAX_OUTPUT_TOKENS)
     ok=isinstance(out,dict) and str(out.get("answer_value"))=="42"
     print("WATTBOT_BOUNDED_MODEL_SMOKE="+json.dumps({
         "model":MODEL,"synthetic_answer_correct":ok,**meta}),flush=True)
