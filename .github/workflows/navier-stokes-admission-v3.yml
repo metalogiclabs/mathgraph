@@ -77,6 +77,7 @@ jobs:
           set -euo pipefail
           lake build Presupposition
           lake env lean -DwarningAsError=true -o ScopedAdmission.olean ScopedAdmission.lean 2>&1 | tee ../source-admission-v3-evidence/lean-proof.log
+          lake build ScopedAdmission
           cp ScopedAdmission.olean ../source-admission-v3-evidence/ScopedAdmission.olean
       - name: Reject fabricated value-only admission
         working-directory: .presupposition-env
@@ -93,6 +94,7 @@ jobs:
             echo 'ERROR: paper identity unexpectedly admitted without source witness'
             exit 1
           fi
+          cat ../source-admission-v3-evidence/illegal-admission.log
           grep -qi 'type mismatch' ../source-admission-v3-evidence/illegal-admission.log
           grep -q 'Admission' ../source-admission-v3-evidence/illegal-admission.log
           cp IllegalAdmission.lean ../source-admission-v3-evidence/IllegalAdmission.lean
