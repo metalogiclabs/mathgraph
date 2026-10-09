@@ -51,8 +51,9 @@ theorem source_step_commutes
         simpa [compileMachine, encodeConfiguration] using ho
       rw [Machine.step]
       simp only [houtput]
+      simp only [encodeConfiguration] at haction ⊢
       rw [haction]
-      simp only [sourceStep, ho, encodeConfiguration]
+      simp only [sourceStep, ho]
       congr 1
       simpa [lowerAction, encodeTracks] using hwork
 
