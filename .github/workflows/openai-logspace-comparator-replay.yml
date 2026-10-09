@@ -120,6 +120,18 @@ jobs:
           FROM ubuntu:24.04
           RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
           DOCKER
+          python3 - <<'PY'
+          import json
+          p='isolated/ComparatorChallenges/LogspaceEquality.json'
+          data=json.load(open(p))
+          original=data.get('definition_names', [])
+          assert len(original) >= 15 and 'OAI.ExactDerandomization.L' in original, original
+          data['definition_names'] = []
+          with open('isolated/ComparatorChallenges/LogspaceEqualityStrict.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          print('STRICT_SEMANTIC_COMPARISON_REQUIRES_IDENTICAL_REFERENCED_DEFINITION_BODIES')
+          print('REMOVED_DEFINITION_HOLE_EXEMPTIONS', len(original))
+          PY
           docker build --tag mathgraph-comparator-sandbox:20261009 audit-tools
           timeout 2300s docker run --rm \
             --network none --read-only --cap-drop ALL \
@@ -138,10 +150,10 @@ jobs:
             --env COMPARATOR_LEAN4EXPORT="$PWD/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export" \
             --env PATH="$HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin" \
             --workdir "$PWD/isolated" mathgraph-comparator-sandbox:20261009 \
-            /bin/bash -c 'set -euo pipefail; lake env "$COMPARATOR_BIN" ComparatorChallenges/LogspaceEquality.json'
-          echo "COMPARATOR_EXIT_ZERO_SOURCE_AND_DECLARATION_CHECK"
+            /bin/bash -c 'set -euo pipefail; lake env "$COMPARATOR_BIN" ComparatorChallenges/LogspaceEquality.json; echo DEFAULT_COMPARATOR_ACCEPTED; lake env "$COMPARATOR_BIN" ComparatorChallenges/LogspaceEqualityStrict.json; echo STRICT_DEFINITION_IDENTITY_ACCEPTED'
+          echo "COMPARATOR_DEFAULT_AND_STRICT_DEFINITION_IDENTITIES_BOTH_PASSED"
       - name: Retain bounded status even on failure
         if: always()
         run: |
-          echo "Only Comparator exit 0 warrants the pinned formal challenge/solution proof under this containerized trust boundary."
+          echo "Default and strict Comparators are distinct verdicts. The strict config removes publisher-declared definition holes and demands unchanged referenced definition bodies."
           echo "Main paper-semantic correspondence remains an independent UNKNOWN."
