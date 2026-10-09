@@ -4,6 +4,7 @@ on:
     branches: [wattbot-source-distinction-v1]
     paths:
       - 'experiments/wattbot2026/source_refinement_probe.py'
+      - 'experiments/wattbot2026/submit_full_reader.py'
       - '.github/workflows/wattbot-source-distinction.yml'
 jobs:
   citation-retrieval:
