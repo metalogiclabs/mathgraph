@@ -48,11 +48,10 @@ MAX_OUTPUT_TOKENS = 450
 def source_list(dev: pd.DataFrame, docs: dict[str,dict]) -> list[str]:
     counts=Counter(r for refs in dev["ref_id"].map(parse_refs) for r in refs)
     selected=[
-        ref for ref in counts
-        if ref in docs and
-        (urlparse(str(docs[ref]["url"])).hostname or "").lower() in ARXIV_HOSTS
+        ref for ref,row in docs.items()
+        if (urlparse(str(row["url"])).hostname or "").lower() in ARXIV_HOSTS
     ]
-    selected.sort(key=lambda d:(-counts[d],d))
+    selected.sort(key=lambda d:(-counts.get(d,0),d))
     return selected[:SOURCE_BUDGET]
 
 
@@ -124,17 +123,24 @@ def run(official_zip:str):
         prefix_24_chunks=[]
         with tempfile.TemporaryDirectory(prefix="wattbot_lite_rag_") as td:
             folder=Path(td)
+            arxiv_errors=Counter()
+            arxiv_valid=0
             for i,ref in enumerate(selected):
                 if i:time.sleep(3.1)
                 path=folder/f"ref_{i}.pdf"
-                sha,_=download_one(str(docs[ref]["url"]),path)
-                rows=chunks_from_pages(ref,str(docs[ref]["url"]),path)
-                if not rows:
-                    raise ValueError("No text in pinned public paper")
-                pdf_chunks.extend(rows)
-                if i<24:
-                    prefix_24_chunks.extend(rows)
-                hashes.append(sha)
+                try:
+                    sha,_=download_one(str(docs[ref]["url"]),path)
+                    rows=chunks_from_pages(ref,str(docs[ref]["url"]),path)
+                    if not rows:
+                        raise ValueError("No extractable text in pinned arXiv PDF")
+                    pdf_chunks.extend(rows)
+                    arxiv_valid+=1
+                    if i<24:
+                        prefix_24_chunks.extend(rows)
+                    hashes.append(sha)
+                except (requests.RequestException,ValueError,RuntimeError,OSError) as err:
+                    arxiv_errors[type(err).__name__]+=1
+                    hashes.append("UNKNOWN")
             # Archive the arXiv-only control before adding the separate
             # officially pinned report sources; this prevents retrospective
             # substitution of source evidence for any control arm.
@@ -246,6 +252,8 @@ def run(official_zip:str):
                 "dev_rows":len(dev),"holdout_rows":len(hold),
                 "pinned_source_pdfs":len(selected),"pdf_chunks":len(pdf_chunks),
                 "arxiv_prefix_control_pdfs":24,
+                "arxiv_downloaded_valid_pdfs":arxiv_valid,
+                "arxiv_source_errors":dict(arxiv_errors),
                 "report_source_types":dict(report_types),
                 "report_failures":dict(report_errors),
                 "report_digest_manifest_sha256":hashlib.sha256(
