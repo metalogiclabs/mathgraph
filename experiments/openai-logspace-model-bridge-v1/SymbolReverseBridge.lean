@@ -62,7 +62,11 @@ theorem source_step_eq_OAI
       cases c with
       | mk state inputPos workPos work =>
           simp [sourceStep, Machine.step, fromOAIMachine,
-            asSourceConfiguration, writeAllSource, Function.update, ho]
+            asSourceConfiguration, ho]
+          funext k z
+          by_cases hz : z = workPos k
+          · simp [writeAllSource, Function.update, hz, eq_comm]
+          · simp [writeAllSource, Function.update, hz, Ne.symm hz, eq_comm]
 
 /-- Exact Boolean-source execution agrees with the pinned OpenAI run at
 every clock, input and coin stream, including the complete work tapes. -/
