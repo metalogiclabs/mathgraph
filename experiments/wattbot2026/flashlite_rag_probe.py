@@ -32,6 +32,7 @@ from free_reader_probe import (
 )
 from holdout_probe import is_holdout, ARXIV_HOSTS
 from pdf_probe import download_one
+from report_loader import download_report
 from numeric_answer_probe import build_candidate
 from score_ablation import load_score, blank_submission
 from train_probe import parse_refs
@@ -131,17 +132,40 @@ def run(official_zip:str):
                     raise ValueError("No text in pinned public paper")
                 pdf_chunks.extend(rows)
                 hashes.append(sha)
+            # Archive the arXiv-only control before adding the separate
+            # officially pinned report sources; this prevents retrospective
+            # substitution of source evidence for any control arm.
+            arxiv_chunks=list(pdf_chunks)
+            report_rows=[d for d in meta.to_dict("records")
+                         if str(d.get("type","")).strip().lower()=="report"]
+            if len(report_rows)!=8:
+                raise ValueError("Pinned report authority changed; requalify source registry")
+            report_types=Counter()
+            report_errors=Counter()
+            report_hashes=[]
+            for i,d in enumerate(report_rows):
+                if i:time.sleep(2)
+                try:
+                    report=download_report(str(d["id"]),str(d["url"]))
+                    pdf_chunks.extend(report["chunks"])
+                    report_types[report["kind"]]+=1
+                    report_hashes.append(report["sha256"])
+                except (requests.RequestException,ValueError,RuntimeError) as err:
+                    report_errors[type(err).__name__]+=1
+                    report_hashes.append("UNKNOWN")
             meta_chunks=[{"ref_id":d["id"],"url":d["url"],"page":0,
                           "text":" ".join(str(d.get(k,"") or "") for k in
                                          ("title","citation","year","venue"))}
                          for d in meta.to_dict("records")]
             numeric_index=meta_chunks+pdf_chunks
+            arxiv_index=meta_chunks+arxiv_chunks
             initial=blank_submission(hold).reset_index(drop=True)
             model_values=[]
             model_anchored=[]
             model_strict=[]
             model_fallback=[]
             numeric_rows=[]
+            numeric_24_control=[]
             status_counts=Counter()
             anchored=0
             model_answers=0
@@ -155,6 +179,9 @@ def run(official_zip:str):
                 numeric=build_candidate(
                     {"id":str(item["id"]),"question":q},corpus_hits,docs)
                 numeric_rows.append(numeric)
+                old_hits=ranked(q,arxiv_index,min(100,len(arxiv_index)))
+                numeric_24_control.append(build_candidate(
+                    {"id":str(item["id"]),"question":q},old_hits,docs))
                 pages,prompt=passages_for_question(q,pdf_chunks)
                 candidate_pages+=len(pages)
                 answer_value=dict(original)
@@ -206,7 +233,8 @@ def run(official_zip:str):
             result={
                 "scores":{
                     "all_abstain":official(initial),
-                    "numeric_24_baseline":official(numeric_rows),
+                    "numeric_24_arxiv_control":official(numeric_24_control),
+                    "numeric_plus_reports":official(numeric_rows),
                     "llm_answer_only":official(model_values),
                     "llm_page_anchored_refs":official(model_anchored),
                     "llm_strict_abstain_without_anchor":official(model_strict),
@@ -214,6 +242,10 @@ def run(official_zip:str):
                 },
                 "dev_rows":len(dev),"holdout_rows":len(hold),
                 "pinned_source_pdfs":len(selected),"pdf_chunks":len(pdf_chunks),
+                "report_source_types":dict(report_types),
+                "report_failures":dict(report_errors),
+                "report_digest_manifest_sha256":hashlib.sha256(
+                    "\\n".join(report_hashes).encode()).hexdigest(),
                 "pages_in_prompts":candidate_pages,
                 "source_manifest_sha256":hashlib.sha256(
                     "\n".join(hashes).encode()).hexdigest(),
