@@ -26,15 +26,25 @@ jobs:
           mkdir -p "$RUNNER_TEMP/lb"
           kaggle competitions leaderboard WattBot2026 --download --path "$RUNNER_TEMP/lb"
           python - "$RUNNER_TEMP/lb" <<'PY'
-          import csv, json, pathlib, sys
+          import csv, io, json, pathlib, sys, zipfile
           folder=pathlib.Path(sys.argv[1])
-          paths=list(folder.glob('*.csv'))
           files=[]
-          for path in paths:
-              with path.open(newline='',encoding='utf-8-sig') as stream:
-                  dr=csv.DictReader(stream)
-                  items=list(dr)
-                  files.append((path.name,dr.fieldnames,items))
+          payloads=[]
+          for path in folder.iterdir():
+              if path.suffix.lower()=='.csv':
+                  payloads.append((path.name,path.read_bytes()))
+              if path.suffix.lower()=='.zip':
+                  with zipfile.ZipFile(path) as archive:
+                      for member in archive.namelist():
+                          if member.lower().endswith('.csv'):
+                              payloads.append((path.name+'::'+member,archive.read(member)))
+          for name,data in payloads:
+              stream=io.StringIO(data.decode('utf-8-sig'))
+              reader=csv.DictReader(stream)
+              items=list(reader)
+              files.append((name,reader.fieldnames,items))
+          print('WATTBOT_DOWNLOADED_LEADERBOARD_ARCHIVE='+json.dumps(
+              [{'name':x.name,'bytes':x.stat().st_size} for x in folder.iterdir()]))
           print('WATTBOT_PUBLIC_LEADERBOARD_FILES='+json.dumps([{'name':name,
                  'rows':len(items),'columns':fields} for name,fields,items in files],sort_keys=True))
           for name,fields,items in files:
