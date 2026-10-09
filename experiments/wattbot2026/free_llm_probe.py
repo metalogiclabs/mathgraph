@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""WattBot zero-priced model pilot, candidate only.
+"""WattBot budget-constrained model pilot, candidate only.
 
-One explicitly pinned :free model, verified zero prompt AND completion pricing
-immediately before use. Maximum 12 holdout questions and 13 inference requests
-including synthetic smoke. The 63-question train holdout has been seen before:
-no untouched-test or competition-score claim permitted. Gold rows used only
-by the official scorer AFTER candidate prediction.
+One explicitly pinned model, pricing checked before use. Maximum 12 holdout
+questions plus synthetic smoke, and an explicit hard model-spend ceiling. The
+63-row training holdout was previously inspected: NOT pristine/leaderboard.
+Gold labels feed only the official scorer AFTER candidates freeze.
 """
 from __future__ import annotations
 import argparse
@@ -14,6 +13,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import os
 import re
 import tempfile
 import time
@@ -30,32 +30,58 @@ from score_ablation import blank_submission, load_score
 from train_probe import parse_refs
 from wattbot import chunks_from_pages, ranked, norm
 
-MODEL="google/gemma-4-31b-it:free"
+MODEL=os.environ.get("WATTBOT_MODEL","google/gemma-4-31b-it:free")
+COST_CAP_USD=float(os.environ.get("WATTBOT_COST_CAP_USD","0"))
+PRICE_IN=0.0
+PRICE_OUT=0.0
+SPENT_REPORTED_USD=0.0
+MAX_PROMPT_BYTES=12000
 MAX_QUESTIONS=12
 SOURCE_BUDGET=24
 SALT="wattbot-gemma-free-small-pilot-v1"
 URI="https://openrouter.ai/api/v1/chat/completions"
 MODELS="https://openrouter.ai/api/v1/models"
 
-def require_zero_price() -> None:
-    r=requests.get(MODELS,timeout=25)
-    r.raise_for_status()
-    candidates=[m for m in r.json().get("data",[]) if m.get("id")==MODEL]
-    if len(candidates)!=1 or not MODEL.endswith(":free"):
-        raise RuntimeError("Chosen model not available as pinned free endpoint")
-    price=candidates[0].get("pricing") or {}
-    for field in ("prompt","completion"):
-        try: amount=float(price[field])
-        except (ValueError,TypeError,KeyError) as e:
-            raise RuntimeError("Free model price cannot be independently verified") from e
-        if amount!=0.0:
-            raise RuntimeError("Nonzero price is forbidden")
-    print("WATTBOT_FREE_PRICING_CHECK="+json.dumps({
-        "model":MODEL, "prompt_price":0, "completion_price":0,
-        "max_requests":MAX_QUESTIONS+1,
-        "boundary":"No paid model calls authorized"}),flush=True)
+def require_bounded_price() -> None:
+    global PRICE_IN, PRICE_OUT
+    if COST_CAP_USD < 0 or COST_CAP_USD > 0.02:
+        raise RuntimeError("Model budget cap must be in [0,$0.02]")
+    response=requests.get(MODELS,timeout=25)
+    response.raise_for_status()
+    matches=[m for m in response.json().get("data",[]) if m.get("id")==MODEL]
+    if len(matches)!=1:
+        raise RuntimeError("Exact model ID unavailable")
+    pricing=matches[0].get("pricing") or {}
+    try:
+        PRICE_IN=float(pricing["prompt"])
+        PRICE_OUT=float(pricing["completion"])
+    except (KeyError,TypeError,ValueError) as exc:
+        raise RuntimeError("Model prices not verifiable") from exc
+    if not (0 <= PRICE_IN <= 2e-6 and 0 <= PRICE_OUT <= 2e-6):
+        raise RuntimeError("Model pricing outside strict per-token gate")
+    # Worst-case prompt reserved conservatively as one token per UTF8 byte.
+    worst=(MAX_QUESTIONS+1)*(MAX_PROMPT_BYTES*PRICE_IN+1050*PRICE_OUT)*1.1
+    if worst > COST_CAP_USD:
+        raise RuntimeError(f"Reserved worst-case cost {worst:.5f} exceeds budget")
+    print("WATTBOT_BOUNDED_PRICING_CHECK="+json.dumps({
+        "model":MODEL,
+        "unit_price_input_usd":PRICE_IN,
+        "unit_price_output_usd":PRICE_OUT,
+        "hard_spend_cap_usd":COST_CAP_USD,
+        "worst_case_reserved_usd":round(worst,6),
+        "max_requests":MAX_QUESTIONS+1
+    },sort_keys=True),flush=True)
 
 def query_model(key:str, system:str, user:str, max_tokens:int=1050):
+    global SPENT_REPORTED_USD
+    if not key:
+        return None, {"error":"credential_unavailable"}
+    prompt_bytes=len((system+"\n"+user).encode("utf-8"))
+    if prompt_bytes>MAX_PROMPT_BYTES:
+        return None, {"error":"prompt_byte_cap"}
+    reservation=prompt_bytes*PRICE_IN+max_tokens*PRICE_OUT
+    if SPENT_REPORTED_USD+reservation*1.1>COST_CAP_USD:
+        return None, {"error":"budget_reservation_exceeded"}
     payload={
         "model":MODEL,"temperature":0,"max_tokens":max_tokens,
         "response_format":{"type":"json_object"},
@@ -66,7 +92,7 @@ def query_model(key:str, system:str, user:str, max_tokens:int=1050):
         "Authorization":"Bearer "+key,
         "Content-Type":"application/json",
         "HTTP-Referer":"https://github.com/metalogiclabs/mathgraph",
-        "X-Title":"MathGraph WattBot free scientific QA pilot"
+        "X-Title":"MathGraph WattBot bounded scientific QA pilot"
     }
     try:
         resp=requests.post(URI,json=payload,headers=headers,timeout=(10,100))
@@ -81,8 +107,13 @@ def query_model(key:str, system:str, user:str, max_tokens:int=1050):
             return None,{"error":"model_mismatch"}
         used=data.get("usage") or {}
         cost=used.get("cost")
-        if cost not in (None,0,0.0,"0","0.0"):
-            raise RuntimeError("Model request reported nonzero cost")
+        observed_cost=float(cost) if cost is not None else reservation*1.1
+        if observed_cost<0:
+            raise RuntimeError("Negative reported inference cost")
+        SPENT_REPORTED_USD+=observed_cost
+        if SPENT_REPORTED_USD>COST_CAP_USD:
+            raise RuntimeError("Reported spend exceeded configured cap; stop")
+
         choices=data.get("choices") or []
         message=choices[0].get("message") or {} if choices else {}
         content=message.get("content")
@@ -177,16 +208,16 @@ def self_test():
     x=convert_prediction("q",{"answer_value":"42","ref_ids":["X"]},p,b)
     assert x["answer_value"]=="42" and x["ref_id"]=="['X']"
     assert b["answer_value"]=="is_blank"
-    print("WATTBOT_FREE_PILOT_SELF_TEST=PASS")
+    print("WATTBOT_BOUNDED_PILOT_SELF_TEST=PASS")
 
 def smoke(key):
-    require_zero_price()
+    require_bounded_price()
     out,meta=query_model(key,"Return only valid JSON.",
         "Synthetic arithmetic: six times seven? Return JSON {\"answer_value\":\"42\"}.",750)
     ok=isinstance(out,dict) and str(out.get("answer_value"))=="42"
-    print("WATTBOT_FREE_MODEL_SMOKE="+json.dumps({
+    print("WATTBOT_BOUNDED_MODEL_SMOKE="+json.dumps({
         "model":MODEL,"synthetic_answer_correct":ok,**meta}),flush=True)
-    if not ok:raise RuntimeError("Free model synthetic JSON smoke failed")
+    if not ok:raise RuntimeError("Budgeted model synthetic JSON smoke failed")
 
 def evaluate(zip_path,key):
     require_zero_price()
@@ -253,18 +284,20 @@ def evaluate(zip_path,key):
                 "numeric":scored(pd.DataFrame(numeric,columns=cols)),
                 "llm":scored(pd.DataFrame(llm,columns=cols)),
                 "llm_then_numeric_fallback":scored(pd.DataFrame(hybrid,columns=cols))}
-            print("WATTBOT_ZERO_COST_LLM_PILOT="+json.dumps({
+            print("WATTBOT_BOUNDED_MODEL_PILOT="+json.dumps({
                 "selected_holdout_rows":len(subset),
                 "dev_rows":len(dev),"source_pdf_count":len(selected),
                 "pdf_chunks":len(pdfs),
                 "model":MODEL,"attempted_model_requests":len(questions),
+                "budget_cap_usd":COST_CAP_USD,
+                "reported_or_reserved_spend_usd":round(SPENT_REPORTED_USD,6),
                 "responses_with_valid_json":responses,
                 "admitted_citation_anchored_answer_candidates":inferred,
                 "error_counts":dict(errors),
                 "official_train_subset_scores":results,
-                "source_manifest_sha256":hashlib.sha256(
+                "source_id_manifest_sha256":hashlib.sha256(
                     ("\n".join(selected)).encode()).hexdigest(),
-                "boundary":"Previously examined train subset; FREE model only; answer correctness and true semantic entailment unknown until official score; no test submission"
+                "boundary":"Previously inspected train subset, configured hard budget; semantic entailment unverified; not Kaggle test submission"
             },sort_keys=True),flush=True)
             if responses==0:
                 raise RuntimeError("No model answer returned, not a qualified QA result")
