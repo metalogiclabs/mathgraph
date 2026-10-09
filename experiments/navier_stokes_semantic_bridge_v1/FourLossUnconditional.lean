@@ -21,11 +21,10 @@ open NavierStokes.TorusInverse
 open NavierStokes.SmoothFamilyTorusInverse
 open scoped Topology ContDiff BigOperators
 
-variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P] [FiniteDimensional ℝ P]
+variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P]
 
 /-- Actual source-pinned torus inverse, four input derivatives above output
     derivative-word order; no imported lattice-summability hypothesis. -/
-omit [FiniteDimensional ℝ P] in
 theorem actual_inverse_four_loss
     (d : Direction) {f : Source P}
     (hf : ContDiff ℝ ∞ f) (hp : Periodic f)
