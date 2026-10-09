@@ -1,0 +1,38 @@
+name: WattBot zero-priced scientific source-reader pilot
+on:
+  push:
+    branches: [wattbot-free-reader-v1]
+    paths:
+      - 'experiments/wattbot2026/free_reader_probe.py'
+      - '.github/workflows/wattbot-free-reader.yml'
+jobs:
+  reader-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded evaluation dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Synthetic JSON and cost-policy controls
+        run: python experiments/wattbot2026/free_reader_probe.py --self-test
+      - name: Run source-reader on eight development questions using the free endpoint only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$OPENROUTER_API_KEY" ]]; then
+            echo "::error::Missing existing OpenRouter secret; no requests made"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/free_reader_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Declare evidence boundary
+        run: echo "At most eight free-only LLM calls on TRAIN development questions, no test data or labels in prompts; only aggregate scores logged."
