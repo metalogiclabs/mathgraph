@@ -1,7 +1,7 @@
-name: WattBot complete 63-question DeepSeek holdout qualification
+name: WattBot complete 63-question GPT-6 Luna holdout qualification
 on:
   push:
-    branches: [wattbot-deepseek-holdout-v1]
+    branches: [wattbot-gpt6-holdout-v1]
     paths:
       - 'experiments/wattbot2026/free_llm_probe.py'
       - '.github/workflows/wattbot-free-llm-pilot.yml'
@@ -16,8 +16,8 @@ jobs:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
       KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      WATTBOT_MODEL: deepseek/deepseek-v4-flash
-      WATTBOT_COST_CAP_USD: '0.08'
+      WATTBOT_MODEL: openai/gpt-6-luna
+      WATTBOT_COST_CAP_USD: '0.12'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -39,4 +39,4 @@ jobs:
       - name: Licensing and cost boundary
         run: |
           echo "Never log secrets, per-question predictions, private CSV data, source PDFs, or LLM prompts."
-          echo "Only a verified low-cost endpoint with explicit per-process 0.08 USD guard is permitted; never submit to Kaggle from this workflow."
+          echo "Only a verified low-cost endpoint with explicit per-process 0.12 USD guard is permitted; never submit to Kaggle from this workflow."
