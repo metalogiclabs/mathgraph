@@ -84,10 +84,13 @@ theorem actual_old_and_comparison_pressure_agree_on_laplacian_tests
   rw [Lp.toTemperedDistribution_apply]
   apply integral_congr_ae
   filter_upwards [hinput] with x hx
-  change (hl1.toLp fg : Space → ℂ) x *
-      (partialCLM j (partialCLM i ψ)) x =
-      fg x * (partialCLM j (partialCLM i ψ)) x
-  exact congrArg (fun z : ℂ => z * (partialCLM j (partialCLM i ψ)) x) hx
+  simp only [smul_eq_mul]
+  calc
+    (partialCLM j (partialCLM i ψ)) x *
+        (hl1.toLp fg : Space → ℂ) x =
+          (hl1.toLp fg : Space → ℂ) x *
+          (partialCLM j (partialCLM i ψ)) x := mul_comm _ _
+    _ = fg x * (partialCLM j (partialCLM i ψ)) x := by rw [hx]
 
 end MathGraph.PressureLaplacianBridge
 
