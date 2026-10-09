@@ -256,6 +256,10 @@ jobs:
           #print axioms Metalogic.OpenAIMath.LeftWallCompiler.encode_marker_read
           #print axioms Metalogic.OpenAIMath.LeftWallCompiler.marker_rewrite_id
           #print axioms Metalogic.OpenAIMath.LeftWallCompiler.encoded_head_motion
+          #print axioms Metalogic.OpenAIMath.LeftWallCompiler.bootstrap_marker_written
+          #print axioms Metalogic.OpenAIMath.LeftWallCompiler.bootstrap_enters_active_state
+          #print axioms Metalogic.OpenAIMath.LeftWallCompiler.bootstrap_heads_at_origin
+          #print axioms Metalogic.OpenAIMath.LeftWallCompiler.extendWork_update
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
