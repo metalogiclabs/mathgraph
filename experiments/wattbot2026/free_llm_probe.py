@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """WattBot budget-constrained model pilot, candidate only.
 
-One explicitly pinned model, pricing checked before use. Maximum 12 holdout
+One explicitly pinned model, pricing checked before use. Maximum 63 holdout
 questions plus synthetic smoke, and an explicit hard model-spend ceiling. The
 63-row training holdout was previously inspected: NOT pristine/leaderboard.
 Gold labels feed only the official scorer AFTER candidates freeze.
@@ -37,7 +37,7 @@ PRICE_OUT=0.0
 SPENT_REPORTED_USD=0.0
 MAX_PROMPT_BYTES=11500
 MAX_OUTPUT_TOKENS=650
-MAX_QUESTIONS=12
+MAX_QUESTIONS=63
 SOURCE_BUDGET=24
 SALT="wattbot-gemma-free-small-pilot-v1"
 URI="https://openrouter.ai/api/v1/chat/completions"
@@ -45,8 +45,8 @@ MODELS="https://openrouter.ai/api/v1/models"
 
 def require_bounded_price() -> None:
     global PRICE_IN, PRICE_OUT
-    if COST_CAP_USD < 0 or COST_CAP_USD > 0.02:
-        raise RuntimeError("Model budget cap must be in [0,$0.02]")
+    if COST_CAP_USD < 0 or COST_CAP_USD > 0.08:
+        raise RuntimeError("Model budget cap must be in [0,$0.08]")
     response=requests.get(MODELS,timeout=25)
     response.raise_for_status()
     matches=[m for m in response.json().get("data",[]) if m.get("id")==MODEL]
@@ -202,7 +202,7 @@ def render_question(question,docs):
 def self_test():
     rows=[{"id":"q"+str(i),"question":"foo"} for i in range(15)]
     df=pd.DataFrame(rows)
-    assert len(sample_holdout(df))==12
+    assert len(sample_holdout(df))==len(df)
     assert normalize_value(["A","B"])=="['A', 'B']"
     b={"answer_value":"is_blank","ref_id":"is_blank"}
     p=[{"ref_id":"X","page":1,"url":"https://arxiv.org/pdf/1","text":"abc"}]
