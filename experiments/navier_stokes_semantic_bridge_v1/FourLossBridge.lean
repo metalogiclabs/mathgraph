@@ -68,6 +68,7 @@ variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P] [FiniteDimensiona
 
     This is the pointwise derivativeWord estimate, not yet the paper's
     supremum norm statement for all multiindices <= m. -/
+omit [FiniteDimensional ℝ P] in
 theorem inverse_four_loss_of_summable_third
     (h3 : SummableThirdLattice)
     (d : Direction) {f : Source P}
