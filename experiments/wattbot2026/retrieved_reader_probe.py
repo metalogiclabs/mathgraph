@@ -132,6 +132,25 @@ def try_checked(generated, question, passages, docs):
         quotes=[generated.get("supporting_quote","")]
     if not picks or len(picks)!=len(quotes) or len(picks)>3:
         return None, "BAD_PROVENANCE_SHAPE"
+    # Independent verifier can locate the claimed quotation itself. A model's
+    # absent or wrong source_index is not a reason to throw away uniquely
+    # anchored evidence; it is not authority to invent a source either.
+    resolved=[]
+    for idx,quote in zip(picks,quotes):
+        literal=str(quote or "").strip()
+        if len(literal)<12:
+            return None, "QUOTATION_TOO_SHORT"
+        matches=[i for i,p in enumerate(passages)
+                 if norm(literal) in norm(p["text"][:MAX_EXCERPT])]
+        if type(idx) is int and idx in matches:
+            resolved.append(idx)
+        elif len({passages[i]["ref_id"] for i in matches})==1 and matches:
+            resolved.append(matches[0])
+        elif not matches:
+            return None, "QUOTATION_NOT_ANCHORED"
+        else:
+            return None, "AMBIGUOUS_QUOTATION_SOURCE"
+    picks=resolved
     ev=[]
     refs=[]
     for idx, quote in zip(picks,quotes):
@@ -291,6 +310,19 @@ def self_test():
         "source_index":0,"supporting_quote":"the authors proved nonexistent words",
     },question,sample,docs)
     assert wrong is None and reason=="QUOTATION_NOT_ANCHORED"
+    inferred,inf_reason=try_checked({
+        "answer":"1287 MWh","answer_value":"1287","answer_unit":"MWh",
+        "supporting_quote":"paper used 1287 MWh",
+    },question,sample,docs)
+    assert inferred is not None and inf_reason=="PAGE_QUOTE_VERIFIED"
+    # The same quote across different papers must NOT be auto-attributed.
+    another=dict(sample[0],ref_id="p2",url="https://arxiv.org/abs/2401.00002")
+    amb_docs={"p1":docs["p1"],"p2":{"url":another["url"]}}
+    ambiguous,why=try_checked({
+        "answer":"1287 MWh","answer_value":"1287","answer_unit":"MWh",
+        "supporting_quote":"paper used 1287 MWh",
+    },question,[sample[0],another],amb_docs)
+    assert ambiguous is None and why=="AMBIGUOUS_QUOTATION_SOURCE"
     print("RETRIEVED_READER_SELF_TEST=PASS")
 
 if __name__=="__main__":
