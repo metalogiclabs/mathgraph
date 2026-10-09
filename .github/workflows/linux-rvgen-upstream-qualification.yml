@@ -1,0 +1,37 @@
+name: Linux rvgen upstream full golden qualification
+on:
+  push:
+    branches: [upstream-triad-llvm-linux-lean-20261010]
+    paths:
+      - '.github/workflows/linux-rvgen-upstream-qualification.yml'
+      - 'experiments/upstream_triad_20261010/linux_full_rvgen_gate.sh'
+      - 'experiments/upstream_triad_20261010/linux_patch_probe.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rvgen-full:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned rvgen parser dependency and TAP tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bsdextrautils
+          python3 -m pip install --user --break-system-packages lark==1.2.2
+          git --version
+          prove --version | head -n 2
+      - name: Exact-upstream-head baseline then patched rvgen golden test suite
+        run: |
+          set -euo pipefail
+          bash experiments/upstream_triad_20261010/linux_full_rvgen_gate.sh 2>&1 | tee linux-rvgen-full-console.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-rvgen-full-upstream-qualification
+          path: |
+            linux-rvgen-full-console.log
+            experiments/upstream_triad_20261010/linux_upstream_out/
+          if-no-files-found: warn
