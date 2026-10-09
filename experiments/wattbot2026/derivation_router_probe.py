@@ -29,6 +29,7 @@ import pandas as pd
 import full_reader as base
 from answer_value_residual_probe import raw_variant, usable
 from verified_lesson import illustrate, self_test as lessons_self_test
+from lesson_value_mask import (mask_worked_values, self_test as mask_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -39,7 +40,7 @@ PIN = {
   "train_QA.csv":"9cbc25a9cb6133e1ef833fad6eb7fe43f9b72c1533b39d3b1ae94b3172407dca",
 }
 SOURCE_PIN="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a9"
-SECONDARY_RESERVE_USD=.16
+SECONDARY_RESERVE_USD=.26
 SECONDARY_TOP_K=10
 
 INTENT_RE = re.compile(
@@ -80,6 +81,7 @@ def derivation_question(question):
 
 def self_test():
     lessons_self_test()
+    mask_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
     assert base.MODEL=="google/gemini-2.5-flash-lite"
@@ -113,6 +115,7 @@ def run(archive):
     first_raw={}
     first_pages={}
     second_raw={}
+    masked_second_raw={}
     first_checked={}
     numeric={}
     docs_by_id={}
@@ -152,18 +155,33 @@ def run(archive):
                              "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
                              for i,p in enumerate(expanded)]},
                         ensure_ascii=False,separators=(",",":"))
+        # The full-memory and masked-value model calls see precisely the
+        # same question and six PDF sources, differing only in whether worked
+        # example target values are visible. Reserve BOTH calls in advance.
+        neutral=question+mask_worked_values(illustrate(question,worked))
+        neutral_wire=json.dumps({"question":neutral,
+                         "passages":[{"source_index":i,"ref_id":p["ref_id"],
+                             "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
+                             for i,p in enumerate(expanded)]},
+                        ensure_ascii=False,separators=(",",":"))
         charge=base.conservative_charge(
             base.SYSTEM+wire,price,base.MAX_OUTPUT_TOKENS)
-        if extra[0]+charge>SECONDARY_RESERVE_USD:
-            stats["extra_cost_guard"]+=1
-            return response,status,bound,actual
+        neutral_charge=base.conservative_charge(
+            base.SYSTEM+neutral_wire,price,base.MAX_OUTPUT_TOKENS)
+        if extra[0]+charge+neutral_charge>SECONDARY_RESERVE_USD:
+            raise RuntimeError("Paired lesson-memory budget exceeded before calls")
         later,reason,reserve,reported=original_model(key,enriched,expanded,price)
-        extra[0]+=reserve
-        extra[1]+=reported
-        if abs(charge-reserve) > 0.00000001:
-            raise RuntimeError("Second-pass cost calculation diverges")
+        neutral_result,neutral_status,neutral_reserved,neutral_cost=original_model(
+            key,neutral,expanded,price)
+        extra[0]+=reserve+neutral_reserved
+        extra[1]+=reported+neutral_cost
+        if (abs(charge-reserve)>0.00000001 or
+            abs(neutral_charge-neutral_reserved)>0.00000001):
+            raise RuntimeError("Independent model cost accounting diverged")
         second_raw[question]=(later,reason,expanded)
+        masked_second_raw[question]=(neutral_result,neutral_status,expanded)
         stats["second_"+reason]+=1
+        stats["masked_"+neutral_status]+=1
         return response,status,bound,actual
 
     def save_numeric(question,hits,docs):
@@ -222,6 +240,10 @@ def run(archive):
           "second_verified_prefer_on_intent",
           "second_provisional_prefer_on_intent",
           "second_agreement_only",
+          "masked_worked_answers_provisional",
+          "full_worked_answers_provisional",
+          "masked_worked_answers_quoted",
+          "full_worked_answers_quoted",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -264,6 +286,25 @@ def run(archive):
             arms["second_agreement_only"].append(
                 second_provisional if same_value else first_provisional)
 
+            raw_mask,masked_status,mask_pages=masked_second_raw.get(
+                q,(None,"MISSING",[]))
+            masked_provisional=raw_variant(
+                row,raw_mask,prior,mask_pages,"selected")
+            masked_check,why=original_checker(
+                raw_mask,{"id":ident,"question":q},mask_pages,
+                docs_by_id[ident])
+            stats["masked_check_"+why]+=1
+            arms["masked_worked_answers_provisional"].append(
+                masked_provisional if usable(raw_mask) else first_provisional)
+            arms["full_worked_answers_provisional"].append(
+                second_provisional if usable(second) else first_provisional)
+            arms["masked_worked_answers_quoted"].append(
+                dict(masked_check) if masked_check is not None else
+                masked_provisional if usable(raw_mask) else first_provisional)
+            arms["full_worked_answers_quoted"].append(
+                dict(later_checked) if later_checked is not None else
+                second_provisional if usable(second) else first_provisional)
+
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
             official={}
@@ -274,7 +315,7 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
+    print("WATTBOT_LESSON_CAUSAL_VALUES_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
@@ -289,16 +330,22 @@ def run(archive):
        "deltas_vs_first_provisional":{
            k:round(v-official["first_provisional"],8)
            for k,v in official.items()},
+       "full_gold_worked_values_minus_masked_values":round(
+           official["full_worked_answers_provisional"]-
+           official["masked_worked_answers_provisional"],8),
+       "matched_question_pages_and_model_responses":True,
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Exact same first and second six-page source evidence; "
-         "two development TRAIN worked answer conventions inform only second "
-         "response. No holdout gold, reference, answer or label in exemplars. "
-         "Verbatim PDF quotations are provenance rather than scientific "
-         "entailment. Paired reused TRAIN qualification only; no TEST "
-         "inference or Kaggle submission."
+       "boundary":"Two same-topic development TRAIN lessons are compiled "
+         "both with and without worked answer-value literals. Current-question "
+         "text and exact six source excerpts are identical across arms. "
+         "Same initial response, separate full/masked second responses "
+         "from same model. Target TRAIN answers/citations excluded from prompts "
+         "and scored only after predictions freeze. Scientific entailment "
+         "remains unknown; no protected TEST inference, Kaggle submission, "
+         "or leaked labeled responses."
     },sort_keys=True),flush=True)
 
 
