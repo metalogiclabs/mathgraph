@@ -99,6 +99,11 @@ for kind, fixture, monitor in (
 print('LINUX_RVGEN_ALL_64_HASH_SEEDS_REJECT_AMBIGUITY')
 PY
 git -C "$TREE" status --short | tee "$OUT/git-status.txt"
+# Derive recipients from the pinned upstream MAINTAINERS database.
+perl "$TREE/scripts/get_maintainer.pl" --no-git --no-git-fallback --no-rolestats \
+  "$OUT/linux-rvgen-reject-ambiguous-transitions.patch" \
+  | tee "$OUT/get-maintainer.txt"
+grep -q 'linux-trace-kernel@vger.kernel.org' "$OUT/get-maintainer.txt"
 if [ -f "$TREE/scripts/checkpatch.pl" ]; then
   perl "$TREE/scripts/checkpatch.pl" --no-tree --terse --ignore=FILE_PATH_CHANGES "$OUT/linux-rvgen-reject-ambiguous-transitions.patch" 2>&1 | tee "$OUT/checkpatch.log"
 else
