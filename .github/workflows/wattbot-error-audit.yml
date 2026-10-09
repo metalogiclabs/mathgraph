@@ -1,0 +1,47 @@
+name: WattBot submission error audit
+on:
+  push:
+    branches: [wattbot-query-window-v1]
+    paths: ['.github/workflows/wattbot-error-audit.yml']
+permissions:
+  contents: read
+jobs:
+  server-error:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle==2.2.4
+      - name: Read submission error fields only, never prediction files
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          python - <<'PY'
+          import inspect, json
+          from kaggle.api.kaggle_api_extended import KaggleApi
+          api = KaggleApi()
+          api.authenticate()
+          response = api.competition_submissions('WattBot2026')
+          rows = response if isinstance(response, list) else getattr(response, 'submissions', [])
+          results = []
+          allowed = ('ref','id','status','public_score','publicScore','error_description',
+                     'errorDescription','error_message','errorMessage','error','message')
+          for row in rows[:10]:
+              fields = {}
+              for name in allowed:
+                  value = row.get(name) if isinstance(row,dict) else getattr(row,name,None)
+                  if value is not None and not callable(value):
+                      fields[name] = str(value)[:2000]
+              fields['available_error_fields'] = [name for name in dir(row)
+                  if ('error' in name.lower() or 'status' in name.lower()) and not name.startswith('_')]
+              results.append(fields)
+          print('WATTBOT_SERVER_SUBMISSION_DIAGNOSTIC=' + json.dumps(results,sort_keys=True))
+          print('SINGLE_SUBMISSION_READ_METHODS=' + json.dumps([name for name in dir(api)
+                if name.startswith(('competition_get_submission','competition_submission_status'))]))
+          if not rows:
+              raise SystemExit('No submission metadata returned; error cause remains UNKNOWN')
+          PY
