@@ -118,7 +118,6 @@ def evaluate(cohort, chunks):
             "gold_all_in_top6":int(bool(refs) and refs <= {x["ref_id"] for x in top6}),
             "gold_all_in_top10":int(bool(refs) and refs <= {x["ref_id"] for x in top10}),
             "literal_in_gold_full":int(any(present(k,expected,x["text"]) for x in goldpages)),
-            "literal_in_any_full":int(any(present(k,expected,x["text"]) for x in chunks if x["page"]>0)),
             "literal_in_top100":int(any(present(k,expected,x["text"]) for x in top)),
             "literal_in_top6_full":int(any(present(k,expected,x["text"]) for x in top6)),
             "literal_in_top6_window":int(any(present(k,expected,x["text"]) for x in windows6)),
