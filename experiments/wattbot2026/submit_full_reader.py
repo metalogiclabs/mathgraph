@@ -117,7 +117,7 @@ def corpus(train,sources,folder):
         except (requests.RequestException,OSError,RuntimeError,ValueError) as exc:
             report_errors[type(exc).__name__]+=1
             report_digests.append("UNKNOWN")
-    report_manifest=hashlib.sha256("\n".join(report_digests).encode()).hexdigest()
+    # Historical full_reader pin hashes a LITERAL backslash+n separator.\n    # Use exactly that declared encoding, not a newline; otherwise SHA differs.\n    report_manifest=hashlib.sha256("\\n".join(report_digests).encode()).hexdigest()
     if report_manifest!=REPORT_MANIFEST:
         raise RuntimeError("Pinned report bytes or failed report pattern changed; requalify")
     metadata_chunks=[{"ref_id":d["id"],"url":d["url"],"page":0,
