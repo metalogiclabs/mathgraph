@@ -79,6 +79,22 @@ def derivation_question(question):
     return bool(INTENT_RE.search(str(question or "")))
 
 
+def arbiter_needed(primary,first_status,learned,second_status):
+    """Witness a genuine answer disagreement, without consulting labels."""
+    if first_status!="OK" or second_status!="OK":
+        return False
+    def present(raw):
+        if not isinstance(raw,dict):return None
+        value=str(raw.get("answer_value","")).strip()
+        if not value or value.casefold() in (
+                "is_blank","unknown","na","n/a","nan","null","none"):
+            return None
+        return value
+    first=present(primary)
+    second=present(learned)
+    return first is not None and second is not None and first!=second
+
+
 def self_test():
     lessons_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
@@ -90,6 +106,15 @@ def self_test():
     assert not derivation_question("What was the reported electricity consumption?")
     assert not derivation_question("What was the publication year?")
     assert SECONDARY_RESERVE_USD>base.MAX_BUDGET_USD
+    assert arbiter_needed({"answer_value":"0"},"OK",
+                          {"answer_value":"17"},"OK")
+    assert not arbiter_needed({"answer_value":"13"},"OK",
+                              {"answer_value":"13"},"OK")
+    assert not arbiter_needed({"answer_value":"is_blank"},"OK",
+                              {"answer_value":"13"},"OK")
+    assert not arbiter_needed(None,"INVALID_JSON",
+                              {"answer_value":"13"},"OK")
+    assert TERTIARY_RESERVE_USD<=.12
     print("WATTBOT_DERIVATION_ROUTER_SELF_TEST=PASS")
 
 
@@ -172,10 +197,7 @@ def run(archive):
         # NEW question-relative consequence test over the SAME six pages.
         primary=str((response or {}).get("answer_value","")).strip()
         learned=str((later or {}).get("answer_value","")).strip()
-        if (status=="OK" and reason=="OK"
-            and primary and learned and primary!=learned
-            and primary.casefold() not in ("is_blank","unknown","nan")
-            and learned.casefold() not in ("is_blank","unknown","nan")):
+        if arbiter_needed(response,status,later,reason):
             stats["disagreement_detected"]+=1
             comparison=(
                 question+"\n\nINDEPENDENT SCIENTIFIC ARBITRATION. "
