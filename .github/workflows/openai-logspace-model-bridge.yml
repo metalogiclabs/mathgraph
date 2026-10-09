@@ -122,6 +122,8 @@ jobs:
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeNonblank_true_at_index
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbolWithBlank_injective
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeBlankWorkTapes_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapesAsBoolean_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapesAsBoolean_blank_outside
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
