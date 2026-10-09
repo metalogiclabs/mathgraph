@@ -1,0 +1,49 @@
+name: WattBot typed versus original compiled development lessons
+on:
+  push:
+    branches: [wattbot-typed-lessons-paired-v1]
+    paths:
+      - '.github/workflows/wattbot-typed-lessons-paired.yml'
+      - 'experiments/wattbot2026/verified_lesson.py'
+      - 'experiments/wattbot2026/verified_lesson_baseline.py'
+      - 'experiments/wattbot2026/derivation_router_probe.py'
+jobs:
+  typed-exemplar-paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned official score and PDF parser dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Verify protected DEV/HOLDOUT split and exact output-type distinction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson_baseline.py
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/derivation_router_probe.py --self-test
+      - name: Compare original and type-corrected DEV examples using paired first responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/derivation_router_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Epistemic and cost boundary
+        run: |
+          echo "Original first replies unchanged, original versus typed DEV-only exemplars."
+          echo "A training scorer tolerance band is not a reported scientific range."
+          echo "No target 63-row holdout labels in prompts, no TEST labels or Kaggle submission."
+          echo "Conservative extra model reserve for both second passes limited to USD 0.24."
