@@ -23,10 +23,10 @@ import requests
 import full_reader as base
 from query_window import window_passages
 
-MODEL = "google/gemini-3.8-flash"
-MAX_RATE_PROMPT = 0.00000075
-MAX_RATE_COMPLETION = 0.00000375
-MAX_RESERVED_USD = 0.95
+MODEL = "openai/gpt-6-sol"
+MAX_RATE_PROMPT = 0.000002
+MAX_RATE_COMPLETION = 0.00001
+MAX_RESERVED_USD = 1.55
 BASE_READER_GIT_BLOB = "4e1350ef72a44a333862dec23c737a2262ab99bc"
 OFFICIAL_SHAS = {
     "Score.py": "e5050458932b7a3fc0f4040303d3ae7c0459a786cf0efbb52c2f1ac338bbd075",
@@ -75,7 +75,7 @@ def self_test():
     assert s["text"] == sample["text"][s["excerpt_start"]:s["excerpt_end"]]
     assert (s["ref_id"], s["page"], s["url"]) == (
         sample["ref_id"], sample["page"], sample["url"])
-    print("WATTBOT_SCIENTIFIC_MODEL_ABLATION_SELF_TEST=PASS")
+    print("WATTBOT_GPT6_SOL_SELF_TEST=PASS")
 
 
 def run(archive):
@@ -154,7 +154,7 @@ def run(archive):
         "boundary": "TRAIN labels only after predictions via official scorer; citations checked "
                     "as literal page quotations, not semantic entailment. No Kaggle TEST or submission.",
     }
-    print("WATTBOT_SCIENTIFIC_READER_HOLDOUT="+json.dumps(answer,sort_keys=True),flush=True)
+    print("WATTBOT_GPT6_SOL_SCIENTIFIC_HOLDOUT="+json.dumps(answer,sort_keys=True),flush=True)
 
 
 if __name__ == "__main__":
