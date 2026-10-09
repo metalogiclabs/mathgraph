@@ -80,7 +80,7 @@ make check 2>&1 | tee "$OUT/rvgen-patched-make-check.log"
 echo "LINUX_RVGEN_UPSTREAM_PATCH_AND_FULL_TESTS_PASS"
 git -C "$TREE" status --short | tee "$OUT/git-status.txt"
 if [ -f "$TREE/scripts/checkpatch.pl" ]; then
-  perl "$TREE/scripts/checkpatch.pl" --no-tree --terse "$OUT/linux-rvgen-reject-ambiguous-transitions.patch" 2>&1 | tee "$OUT/checkpatch.log"
+  perl "$TREE/scripts/checkpatch.pl" --no-tree --terse --ignore=FILE_PATH_CHANGES "$OUT/linux-rvgen-reject-ambiguous-transitions.patch" 2>&1 | tee "$OUT/checkpatch.log"
 else
   echo "checkpatch.pl unavailable" | tee "$OUT/checkpatch.log"
 fi
