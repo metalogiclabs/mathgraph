@@ -71,11 +71,12 @@ def linux():
         baseline.write_bytes(upstream_dot)
         mutant = root/'test_da_ambiguous.dot'
         original = upstream_dot.decode('utf-8')
-        last_brace = original.rfind('}')
-        assert last_brace >= 0
-        mutant.write_text(original[:last_brace] +
-            '    "state_a" -> "state_b" [ label = "event_2" ];\n' +
-            original[last_brace:])
+        old_edge = '"state_a" -> "state_b" [ label = "event_1" ];'
+        new_edge = '"state_a" -> "state_b" [ label = "event_2" ];'
+        assert original.count(old_edge) == 1, 'pinned fixture changed'
+        # Change a DISTINCT edge, rather than adding a repeated source/destination
+        # edge that the DOT parser intentionally stores as one pair.
+        mutant.write_text(original.replace(old_edge, new_edge))
         sys.path.insert(0, str(root))
         from rvgen.automata import Automata, AutomataError
         good = Automata(str(baseline))
