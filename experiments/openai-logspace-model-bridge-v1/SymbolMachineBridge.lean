@@ -74,11 +74,10 @@ theorem decodeTrackReads_encoded (codec : AlphabetCodec α K)
           (finProdFinEquiv (m := w) (n := K) (k, i))) =
       encodeSymbol codec.indices codec.blank (read k) := by
     funext i
-    have hpair :
-        (finProdFinEquiv (m := w) (n := K)).symm
-          (finProdFinEquiv (m := w) (n := K) (k, i)) = (k, i) :=
-      Equiv.symm_apply_apply _ _
-    simpa [hpair]
+    exact congrArg
+      (fun pair : Fin w × Fin K =>
+        encodeSymbol codec.indices codec.blank (read pair.1) pair.2)
+      ((finProdFinEquiv (m := w) (n := K)).left_inv (k, i))
   rw [hbits]
   exact codec.decode_roundtrip (read k)
 
