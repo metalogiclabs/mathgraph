@@ -40,7 +40,7 @@ HISTORICAL_COMPARATOR_RUN_ID = 37968840780
 
 def git_blob(data: bytes) -> str:
     return hashlib.sha1(
-        b"blob " + str(len(data)).encode("ascii") + b"\\0" + data
+        b"blob " + str(len(data)).encode("ascii") + bytes([0]) + data
     ).hexdigest()
 
 
