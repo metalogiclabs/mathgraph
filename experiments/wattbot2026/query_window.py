@@ -9,7 +9,7 @@ import math
 import re
 
 TOKEN = re.compile(r"[\w]+(?:[.-][\w]+)*", re.UNICODE)
-NUMBER = re.compile(r"(?<![\\w.])[-+]?\\d[\\d,]*(?:\\.\\d+)?%?(?![\\w.])")
+NUMBER = re.compile(r"(?<![\w.])[-+]?\d[\d,]*(?:\.\d+)?%?(?![\w.])")
 STOP = frozenset(('a an the is was what how much many in of for from to by on '
                  'and or are were which their its according as at during with '
                  'using does did this that per about than').split())
