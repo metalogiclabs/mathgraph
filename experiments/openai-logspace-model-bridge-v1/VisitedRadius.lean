@@ -130,7 +130,13 @@ theorem oai_head_natAbs_lt_spaceThrough
         (fun u => (M.run x coins u).workPos k)).card ≤
         M.spaceThrough x coins t := by
     unfold Machine.spaceThrough
-    exact Finset.single_le_sum (fun j _ => Nat.zero_le _) (Finset.mem_univ k)
+    simpa using
+      (Finset.single_le_sum
+        (s := (Finset.univ : Finset (Fin w)))
+        (f := fun j : Fin w =>
+          ((Finset.range (t + 1)).image
+            (fun u => (M.run x coins u).workPos j)).card)
+        (fun j _ => Nat.zero_le _) (Finset.mem_univ k))
   omega
 
 end Metalogic.OpenAIMath.VisitedRadius
