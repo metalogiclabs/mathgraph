@@ -52,7 +52,19 @@ theorem source_step_commutes
       rw [Machine.step]
       simp only [houtput]
       simp only [encodeConfiguration] at haction ⊢
-      rw [haction]
+      have haction' :
+          (compileMachine codec M).transition
+            (encodeConfiguration codec c).state
+            (fun j => readInput x ((encodeConfiguration codec c).inputPos j))
+            (fun j : Fin (w * K) =>
+              (encodeConfiguration codec c).work j
+                ((encodeConfiguration codec c).workPos j)) coin =
+          lowerAction codec.indices codec.blank
+            (M.transition c.state
+              (fun j => readInput x (c.inputPos j))
+              (fun k => c.work k (c.workPos k)) coin) := by
+        simpa only [encodeConfiguration] using haction
+      rw [haction']
       simp only [sourceStep, ho]
       congr 1
       simpa [lowerAction, encodeTracks] using hwork
