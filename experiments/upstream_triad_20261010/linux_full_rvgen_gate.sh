@@ -11,7 +11,7 @@ mkdir -p "$TREE"
 git -C "$TREE" init -q
 git -C "$TREE" remote add origin https://github.com/torvalds/linux.git
 git -C "$TREE" sparse-checkout init --cone
-git -C "$TREE" sparse-checkout set tools/verification/rvgen tools/verification/tests scripts
+git -C "$TREE" sparse-checkout set tools/verification/rvgen tools/verification/tests kernel/trace/rv scripts
 git -C "$TREE" -c protocol.version=2 fetch --depth=1 --filter=blob:none origin "$LINUX_SHA"
 git -C "$TREE" checkout --detach --force FETCH_HEAD
 test "$(git -C "$TREE" rev-parse HEAD)" = "$LINUX_SHA"
