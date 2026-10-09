@@ -1,0 +1,33 @@
+name: WattBot nearest-question transfer evaluation
+on:
+  push:
+    branches: [wattbot-nearestqa-v1]
+    paths:
+      - 'experiments/wattbot2026/nearestqa_probe.py'
+      - '.github/workflows/wattbot-nearestqa.yml'
+jobs:
+  nearest-answer-holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install kaggle pandas numpy scikit-learn
+      - run: python experiments/wattbot2026/nearestqa_probe.py --self-test
+      - name: Frozen train-only grid and official scorer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/nearestqa_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence boundary
+        run: echo "No protected test labels; no private competition CSV, trained model, or predictions uploaded."
