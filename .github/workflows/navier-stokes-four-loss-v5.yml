@@ -67,7 +67,7 @@ jobs:
         working-directory: .four-loss-env
         run: |
           set -euo pipefail
-          lake -j 4 build FourLossBridge 2>&1 | tee ../four-loss-v5-evidence/build.log
+          lake build FourLossBridge 2>&1 | tee ../four-loss-v5-evidence/build.log
           lake env lean -DwarningAsError=true FourLossBridge.lean 2>&1 | tee ../four-loss-v5-evidence/theorems.log
       - name: Exact-head qualification, axiom check and scoped result
         env:
