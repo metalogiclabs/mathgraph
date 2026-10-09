@@ -23,6 +23,7 @@ import tempfile
 import zipfile
 
 import pandas as pd
+import requests
 
 import full_reader as base
 from holdout_probe import is_holdout
@@ -35,6 +36,12 @@ TRAIN_SHA = "9cbc25a9cb6133e1ef833fad6eb7fe43f9b72c1533b39d3b1ae94b3172407dca"
 SCORER_SHA = "e5050458932b7a3fc0f4040303d3ae7c0459a786cf0efbb52c2f1ac338bbd075"
 HISTORICAL_WINDOW_SCORE = .49708995
 HISTORICAL_WINDOW_RUN = 37968840780
+SOL_MODEL = "openai/gpt-6-sol"
+SOL_MAX_PROMPT_USD = 0.000002
+SOL_MAX_COMPLETION_USD = 0.000010
+SOL_MAX_RESERVED_USD = 1.55
+SOL_HISTORICAL_STRICT_SCORE = 0.59603175
+SOL_HISTORICAL_RUN = 37977963680
 BLANK = {"is_blank", "unknown", "na", "n/a", "nan", "null", "none", ""}
 
 
@@ -125,8 +132,22 @@ def self_test():
     print("WATTBOT_VALUE_RESIDUAL_SELF_TEST=PASS")
 
 
-def run(archive):
-    self_test()
+def verify_sol_price():
+    response=requests.get("https://openrouter.ai/api/v1/models",timeout=(8,30))
+    response.raise_for_status()
+    found=[m for m in response.json().get("data",[]) if m.get("id")==SOL_MODEL]
+    if len(found)!=1:
+        raise RuntimeError("GPT-6 Sol unavailable or ambiguous; no requests")
+    rates=found[0].get("pricing") or {}
+    p=float(rates.get("prompt","nan"))
+    c=float(rates.get("completion","nan"))
+    if not (0 <= p <= SOL_MAX_PROMPT_USD and
+            0 <= c <= SOL_MAX_COMPLETION_USD):
+        raise RuntimeError("GPT-6 Sol live price no longer qualifies; fail closed")
+    return {"prompt":p,"completion":c}
+
+
+def run_scoped(archive):
     with zipfile.ZipFile(archive) as z:
         if hashlib.sha256(z.read("train_QA.csv")).hexdigest()!=TRAIN_SHA:
             raise RuntimeError("Official TRAIN data changed")
@@ -262,6 +283,9 @@ def run(archive):
        "same_run_baseline":comparison,
        "historical_window_baseline":HISTORICAL_WINDOW_SCORE,
        "historical_window_run":HISTORICAL_WINDOW_RUN,
+       "historical_GPT6_Sol_strict_score":SOL_HISTORICAL_STRICT_SCORE,
+       "historical_GPT6_Sol_strict_run":SOL_HISTORICAL_RUN,
+       "model_price_ceiling_usd":SOL_MAX_RESERVED_USD,
        "alternative_scores":scores,
        "score_delta_vs_same_run_baseline":improvements,
        "invalid_modes":invalid,
@@ -269,11 +293,30 @@ def run(archive):
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"All alternatives are unverified LLM answers. Model-supplied citation indices "
-                  "are provisional, NOT exact-quote proof; neither alternative is promoted to "
-                  "scientific fact. No protected TEST labels or Kaggle submission.",
+       "boundary":"One GPT-6 Sol response per TRAIN question and SAME responses "
+                  "evaluated by every policy. Original page-quotation verifier "
+                  "retains its independent status, while provisional answer "
+                  "values/source associations remain CANDIDATE, never scientific "
+                  "warrant. Historical Flash-Lite scores are NOT paired controls. "
+                  "No protected TEST labels, Kaggle submission, or response artifacts.",
     }
-    print("WATTBOT_VALUE_RESIDUAL_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_GPT6_SOL_CANDIDATE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+
+
+def run(archive):
+    self_test()
+    original_model=base.MODEL
+    original_budget=base.MAX_BUDGET_USD
+    original_pricing=base.verify_price_ceiling
+    try:
+        base.MODEL=SOL_MODEL
+        base.MAX_BUDGET_USD=SOL_MAX_RESERVED_USD
+        base.verify_price_ceiling=verify_sol_price
+        run_scoped(archive)
+    finally:
+        base.MODEL=original_model
+        base.MAX_BUDGET_USD=original_budget
+        base.verify_price_ceiling=original_pricing
 
 
 if __name__=="__main__":
