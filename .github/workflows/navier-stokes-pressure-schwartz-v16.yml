@@ -1,0 +1,128 @@
+name: Physical Schwartz pressure transpose V16
+on:
+  push:
+    branches: [navier-pressure-pairing-v15]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureSchwartzTranspose.lean'
+      - '.github/workflows/navier-stokes-pressure-schwartz-v16.yml'
+  pull_request:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureSchwartzTranspose.lean'
+      - '.github/workflows/navier-stokes-pressure-schwartz-v16.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pressure-schwartz-v16-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  symbol-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin exact original pressure interface
+        run: |
+          set -euo pipefail
+          mkdir -p .pressure-symbol-env pressure-v16-evidence
+          git rev-parse HEAD | tee pressure-v16-evidence/head-sha.txt
+          ROOT=experiments/navier_stokes_semantic_bridge_v1
+          test "$(git hash-object "$ROOT/PressureSymbolBridge.lean")" = 'ad4c12b11c1e74fd413d2a4aa92410359fc76e14'
+          cp "$ROOT/PressureSymbolBridge.lean" .pressure-symbol-env/PressureSymbolBridge.lean
+          cp "$ROOT/PressureSchwartzTranspose.lean" .pressure-symbol-env/PressureSchwartzTranspose.lean
+          cp .pressure-symbol-env/PressureSchwartzTranspose.lean pressure-v16-evidence/PressureSchwartzTranspose.lean
+          sha256sum .pressure-symbol-env/{PressureSymbolBridge,PressureSchwartzTranspose}.lean > pressure-v16-evidence/source.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .pressure-symbol-env/lean-toolchain
+          cat > .pressure-symbol-env/lakefile.toml <<'EOF'
+          name = "mathgraph_pressure_schwartz_v16"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureSymbolBridge"
+          [[lean_lib]]
+          name = "PressureSchwartzTranspose"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .pressure-symbol-env/.lake
+            .pressure-symbol-env/lake-manifest.json
+          key: openai-four-loss-v6-lean434rc2-mathlib-pinned-f9e8bc5
+          save-always: true
+      - name: Install upstream Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve pinned OpenAI pressure modules
+        working-directory: .pressure-symbol-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'def rieszSymbol (i j : Fin 3)' .lake/packages/NavierStokesAndEuler/NavierStokes/R3PressureFourier.lean
+          grep -q 'def rieszTest (i j : Fin 3)' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/ComparisonFourierSetup.lean
+          cp lake-manifest.json ../pressure-v16-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v16-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check genuine pressurePair transpose against upstream self-adjoint Riesz
+        working-directory: .pressure-symbol-env
+        run: |
+          set -euo pipefail
+          lake build PressureSchwartzTranspose 2>&1 | tee ../pressure-v16-evidence/build.log
+          lake env lean -DwarningAsError=true PressureSchwartzTranspose.lean 2>&1 | tee ../pressure-v16-evidence/axioms.log
+      - name: Seal exact source, axioms, and non-implication limits
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,os,re
+          from pathlib import Path
+          root=Path('pressure-v16-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          prefix='MathGraph.PressureSchwartzTranspose.'
+          expected={prefix+n for n in ('comparison_pressurePair_transpose_on_Schwartz','comparison_pressurePair_transpose_uses_canonical_symbol')}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,a in rows:
+            assert n not in seen,n
+            used={s.strip() for s in a.split(',') if s.strip()}
+            assert used<={'propext','Classical.choice','Quot.sound'},(n,sorted(used))
+            seen[n]=sorted(used)
+          assert set(seen)==expected,('unexpected theorem',sorted(expected.symmetric_difference(set(seen))))
+          d={
+            'schema':'mathgraph.physical-schwartz-pressure-transpose-v16',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'actual_OpenAI_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'V13_symbol_source_blob':'ad4c12b11c1e74fd413d2a4aa92410359fc76e14',
+            'physical_comparison_pressurePair_transpose_on_Schwartz':True,
+            'canonical_multiplier_in_transpose_integrand':True,
+            'source_real_Schwartz_representative_is_explicit_premise':True,
+            'R3PressureFourier_pressureL1_distribution_duality_proved':False,
+            'physical_flux_general_bound_proved':False,
+            'source_10_19_estimate_proved':False,
+            'paper_prose_semantics_approved':False,
+            'production_admission_unchanged':True,
+            'axiom_audit':seen,
+            'file_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()},
+          }
+          (root/'result.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(d,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: physical-pressure-schwartz-v16
+          path: pressure-v16-evidence/
+          if-no-files-found: error
