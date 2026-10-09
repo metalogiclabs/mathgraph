@@ -1,0 +1,49 @@
+name: WattBot V5b two-reader lesson and explicit refusal preflight
+on:
+  push:
+    branches: [wattbot-verified-lesson-two-read-v5b]
+    paths:
+      - '.github/workflows/wattbot-v5b-two-read-preflight.yml'
+      - 'experiments/wattbot2026/submit_verified_lesson_v5.py'
+      - 'experiments/wattbot2026/abstention_boundary.py'
+jobs:
+  v5b-scope-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned score and model transport dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests pytest
+      - name: Qualify explicit is_blank, reader hashes and full source CSV gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/abstention_boundary.py
+          python experiments/wattbot2026/submit_full_reader.py --self-test
+          python experiments/wattbot2026/submit_verified_lesson_v5.py --self-test
+          python -m pytest -q \
+            experiments/wattbot2026/tests/test_query_window.py \
+            experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Verify 317 official question-side tasks against 182 permitted lesson examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/submit_verified_lesson_v5.py \
+            --preflight-official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Preserve next Kaggle quota
+        run: |
+          echo "No model API request, Kaggle submit or test prediction artifact."
+          echo "Double-call budget is independently calculated before requests in production."
+          echo "An explicit first-reader is_blank is protected if lessons cannot supply evidence."
