@@ -101,7 +101,9 @@ theorem encoded_head_motion (c : LeftConfiguration q h n)
         ((encode c).work (1 : Fin 2) ((encode c).workPos 1))).move
         ((encode c).workPos 0) =
       (moveNat d c.workPos : ℤ) := by
-  simpa only [encode_marker_read] using guardedMove_correct d c.workPos
+  change (guardedMove d (marker (c.workPos : ℤ))).move
+    (c.workPos : ℤ) = (moveNat d c.workPos : ℤ)
+  exact guardedMove_correct d c.workPos
 
 /-- The OAI target initializes its marker in one physical transition,
 even though the native source machine starts with an all-blank Nat tape. -/
@@ -110,21 +112,21 @@ theorem bootstrap_marker_written (M : LeftMachine q h)
     ((compile M).step x coin ((compile M).initial x.length)).work
       (1 : Fin 2) (0 : ℤ) = true := by
   simp [Machine.step, Machine.initial, compile,
-    decodeActive_startup, startupState, Function.update]
+    decodeActive, startupState, activeState, Function.update]
 
 theorem bootstrap_enters_active_state (M : LeftMachine q h)
     (x : Word) (coin : Bool) :
     ((compile M).step x coin ((compile M).initial x.length)).state =
       activeState M.initialState := by
   simp [Machine.step, Machine.initial, compile,
-    decodeActive_startup, startupState]
+    decodeActive, startupState, activeState, Direction.move]
 
 theorem bootstrap_heads_at_origin (M : LeftMachine q h)
     (x : Word) (coin : Bool) (j : Fin 2) :
     ((compile M).step x coin ((compile M).initial x.length)).workPos j =
       (0 : ℤ) := by
   simp [Machine.step, Machine.initial, compile,
-    decodeActive_startup, startupState, Direction.move]
+    decodeActive, startupState, activeState, Direction.move]
 
 /-- Extend-source-write commutation is the essential tape-frame condition:
 a source write on Nat equals a target write on the nonnegative Int half-tape. -/
