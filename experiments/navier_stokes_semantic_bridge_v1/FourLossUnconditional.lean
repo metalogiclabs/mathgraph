@@ -25,6 +25,7 @@ variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P] [FiniteDimensiona
 
 /-- Actual source-pinned torus inverse, four input derivatives above output
     derivative-word order; no imported lattice-summability hypothesis. -/
+omit [FiniteDimensional ℝ P] in
 theorem actual_inverse_four_loss
     (d : Direction) {f : Source P}
     (hf : ContDiff ℝ ∞ f) (hp : Periodic f)
