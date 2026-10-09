@@ -1,0 +1,45 @@
+name: WattBot verifier-triggered second-pass evidence expansion
+on:
+  push:
+    branches: [wattbot-residual-second-pass-v1]
+    paths:
+      - 'experiments/wattbot2026/residual_second_pass_probe.py'
+      - '.github/workflows/wattbot-residual-second-pass.yml'
+jobs:
+  minimal-verifier-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install scientific pinned source/score dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Qualify source pages and exact quotation verifier without model calls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/residual_second_pass_probe.py --self-test
+      - name: Score minimal K10 second pass against identical baseline LLM outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/residual_second_pass_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: No external Kaggle release
+        run: |
+          echo "TRAIN paired causal score only; no TEST labels or submission."
+          echo "Secondary model spending reserved under $0.16."
+          echo "Original quote verifier must admit any second-pass result."
