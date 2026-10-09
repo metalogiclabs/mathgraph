@@ -1,0 +1,125 @@
+name: Physical pressure-flux zero control V14
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureZeroControl.lean'
+      - '.github/workflows/navier-stokes-pressure-zero-v14.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureZeroControl.lean'
+      - '.github/workflows/navier-stokes-pressure-zero-v14.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-physical-zero-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin upstream definition, previous V10 and candidate
+        run: |
+          set -euo pipefail
+          mkdir -p .pressure-env pressure-v14-evidence
+          git rev-parse HEAD | tee pressure-v14-evidence/head-sha.txt
+          ROOT=experiments/navier_stokes_semantic_bridge_v1
+          test "$(git hash-object "$ROOT/PressureEnvelopeObstruction.lean")" = '9c7d5352fbf5cecd45042e468a33f9a66f508488'
+          cp "$ROOT/PressureEnvelopeObstruction.lean" .pressure-env/PressureEnvelopeObstruction.lean
+          cp "$ROOT/PressureZeroControl.lean" .pressure-env/PressureZeroControl.lean
+          cp .pressure-env/PressureZeroControl.lean pressure-v14-evidence/PressureZeroControl.lean
+          sha256sum .pressure-env/{PressureEnvelopeObstruction,PressureZeroControl}.lean > pressure-v14-evidence/sources.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .pressure-env/lean-toolchain
+          cat > .pressure-env/lakefile.toml <<'EOF'
+          name = "mathgraph_physical_pressure_zero_v14"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureEnvelopeObstruction"
+          [[lean_lib]]
+          name = "PressureZeroControl"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .pressure-env/.lake
+            .pressure-env/lake-manifest.json
+          key: openai-four-loss-v6-lean434rc2-mathlib-pinned-f9e8bc5
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify real OpenAI pressure-flux scope
+        working-directory: .pressure-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          test "$(git hash-object .lake/packages/NavierStokesAndEuler/NavierStokes/R3/PressureFlux.lean)" = '542377decf40306a50ce2170783de99a384b8d41'
+          grep -q 'theorem exists_uniform_actual_pressure_flux_bound' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/PressureFlux.lean
+          cp lake-manifest.json ../pressure-v14-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v14-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check physical zero flux and coarse bound diagnostics
+        working-directory: .pressure-env
+        run: |
+          set -euo pipefail
+          lake build PressureZeroControl 2>&1 | tee ../pressure-v14-evidence/build.log
+          lake env lean -DwarningAsError=true PressureZeroControl.lean 2>&1 | tee ../pressure-v14-evidence/axioms.log
+      - name: Audit theorem dependencies and forbid source truth promotion
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          from pathlib import Path
+          root=Path('pressure-v14-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          expected={'MathGraph.PressureZeroControl.'+x for x in (
+             'actual_pressure_flux_zero_of_equal_velocity_slice',
+             'numerical_upper_envelopes_differ_at_zero',
+             'formal_envelope_can_be_positive_at_zero_data')}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]", log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms", log)]
+          seen={}
+          for n,a in rows:
+            assert n not in seen
+            used={x.strip() for x in a.split(',') if x.strip()}
+            assert used <= {'propext','Classical.choice','Quot.sound'},(n,used)
+            seen[n]=sorted(used)
+          assert set(seen)==expected,(set(seen),expected)
+          record={
+            'schema':'mathgraph.physical-pressure-zero-observer-v14',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'upstream_commit':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'EXACT_PHYSICAL_PRESSURE_FLUX_INTEGRAL_AT_EQUAL_VELOCITY_SLICE',
+            'physical_zero_witness':'LEAN_KERNEL_CHECKED',
+            'coarse_formal_envelope_positive_at_zero_data':True,
+            'manuscript_flux_10_19_proved':False,
+            'manuscript_flux_10_19_refuted':False,
+            'source_contract_approved':False,
+            'production_admission_changed':False,
+            'axiom_audit':seen,
+            'files_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                            for p in sorted(root.iterdir()) if p.is_file()}
+          }
+          (root/'result.json').write_text(json.dumps(record,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(record,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: physical-pressure-zero-v14
+          path: pressure-v14-evidence/
+          if-no-files-found: error
