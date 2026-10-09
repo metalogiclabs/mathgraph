@@ -67,7 +67,10 @@ def compare_protected_contracts(
     )
     mismatches = tuple(
         key for key in keys
-        if key not in missing and source.dimensions[key] != formal.dimensions[key]
+        if key not in missing and (
+            type(source.dimensions[key]) is not type(formal.dimensions[key])
+            or source.dimensions[key] != formal.dimensions[key]
+        )
     )
     if mismatches:
         status = ContractStatus.DIVERGENT
