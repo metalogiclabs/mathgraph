@@ -93,6 +93,7 @@ jobs:
           #print axioms Metalogic.OpenAIMath.FiniteEnvelope.envelope_finite
           #print axioms Metalogic.OpenAIMath.FiniteEnvelope.envelope_card
           #print axioms Metalogic.OpenAIMath.FiniteEnvelope.configuration_ext_of_window
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.unvisited_work_cell_is_blank
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
