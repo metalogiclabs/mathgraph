@@ -29,6 +29,7 @@ import pandas as pd
 import full_reader as base
 from answer_value_residual_probe import raw_variant, usable
 from verified_lesson import illustrate, self_test as lessons_self_test
+from answer_shape import repair_row, self_test as shape_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -80,6 +81,7 @@ def derivation_question(question):
 
 def self_test():
     lessons_self_test()
+    shape_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
     assert base.MODEL=="google/gemini-2.5-flash-lite"
@@ -222,6 +224,10 @@ def run(archive):
           "second_verified_prefer_on_intent",
           "second_provisional_prefer_on_intent",
           "second_agreement_only",
+          "lesson_scalar_cleanup",
+          "lesson_range_only",
+          "lesson_collapse_band",
+          "lesson_all",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -263,6 +269,21 @@ def run(archive):
             if same_value:stats["answer_value_agreement"]+=1
             arms["second_agreement_only"].append(
                 second_provisional if same_value else first_provisional)
+            lesson=second_provisional if usable(second) else first_provisional
+            for policy,name in (
+                ("scalar_cleanup","lesson_scalar_cleanup"),
+                ("range_only","lesson_range_only"),
+                ("collapse_band","lesson_collapse_band"),
+                ("all","lesson_all"),
+            ):
+                adjusted=repair_row(lesson,q,policy)
+                stats["shape_changed_"+policy]+=int(
+                    adjusted["answer_value"]!=lesson["answer_value"])
+                # No source/citation/provenance field may be modified.
+                for key in ("ref_id","ref_url","supporting_materials","answer_unit"):
+                    if adjusted[key]!=lesson[key]:
+                        raise RuntimeError("Shape policy changed evidence or units")
+                arms[name].append(adjusted)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
@@ -274,7 +295,7 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
+    print("WATTBOT_ANSWER_SHAPE_LESSON_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
@@ -289,16 +310,21 @@ def run(archive):
        "deltas_vs_first_provisional":{
            k:round(v-official["first_provisional"],8)
            for k,v in official.items()},
+       "shape_deltas_vs_original_lesson":{
+           k:round(v-official["second_provisional_prefer_on_intent"],8)
+           for k,v in official.items() if k.startswith("lesson_")},
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Exact same first and second six-page source evidence; "
-         "two development TRAIN worked answer conventions inform only second "
-         "response. No holdout gold, reference, answer or label in exemplars. "
-         "Verbatim PDF quotations are provenance rather than scientific "
-         "entailment. Paired reused TRAIN qualification only; no TEST "
-         "inference or Kaggle submission."
+       "boundary":"Exact same first and second six-page source evidence "
+         "and model responses. Development TRAIN only supplies prior worked "
+         "examples; 63 target TRAIN holdout labels used solely after predictions. "
+         "The compiler changes numeric answer_value REPRESENTATION only, "
+         "never evidence or scientific measurement. Ranges explicitly requested "
+         "retain both endpoints; tolerance-band lists return scalar midpoint "
+         "only if a model itself proposed two numeric bounds. "
+         "No protected TEST answers or Kaggle submission."
     },sort_keys=True),flush=True)
 
 
