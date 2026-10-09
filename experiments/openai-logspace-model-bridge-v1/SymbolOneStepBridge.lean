@@ -46,8 +46,13 @@ theorem source_step_commutes
   | some answer =>
       simp [sourceStep, Machine.step, encodeConfiguration, compileMachine, ho]
   | none =>
-      simp only [sourceStep, ho, Machine.step, encodeConfiguration]
-      simp only [haction]
+      have houtput :
+          (compileMachine codec M).output (encodeConfiguration codec c).state = none := by
+        simpa [compileMachine, encodeConfiguration] using ho
+      rw [Machine.step]
+      simp only [houtput]
+      rw [haction]
+      simp only [sourceStep, ho, encodeConfiguration]
       congr 1
       simpa [lowerAction, encodeTracks] using hwork
 
