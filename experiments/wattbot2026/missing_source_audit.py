@@ -75,6 +75,7 @@ def run(archive):
     counts=Counter()
     original_pdf=reader.cached_download
     original_report=reader.download_report
+    original_extract=reader.chunks_from_pages
 
     def instrument_pdf(url,destination,cache_root):
         try:
@@ -88,6 +89,29 @@ def run(archive):
             counts["arxiv_failed"]+=1
             return_exception=exc
             raise return_exception
+
+    def instrument_extract(ref,url,pdf_path):
+        try:
+            chunks=original_extract(ref,url,pdf_path)
+            if not chunks:
+                failed.append({
+                    "source_kind":"arxiv_pdf",
+                    "source_ids":[str(ref)],
+                    "official_url":str(url),
+                    "failure":{"exception":"EMPTY_EXTRACTED_SOURCE_TEXT",
+                               "http_status":None},
+                })
+                counts["arxiv_failed"]+=1
+            return chunks
+        except (requests.RequestException,OSError,RuntimeError,ValueError) as exc:
+            failed.append({
+                "source_kind":"arxiv_pdf",
+                "source_ids":[str(ref)],
+                "official_url":str(url),
+                "failure":obstruction_status(exc),
+            })
+            counts["arxiv_failed"]+=1
+            raise
 
     def instrument_report(ref,url):
         try:
@@ -103,11 +127,13 @@ def run(archive):
     try:
         reader.cached_download=instrument_pdf
         reader.download_report=instrument_report
+        reader.chunks_from_pages=instrument_extract
         with tempfile.TemporaryDirectory(prefix="wattbot_source_obstruction_") as root:
             docmap,index,manifest=reader.corpus(train,sources,Path(root))
     finally:
         reader.cached_download=original_pdf
         reader.download_report=original_report
+        reader.chunks_from_pages=original_extract
 
     if (manifest["arxiv_sha256"]!=ARXIV_MANIFEST or
         manifest["reports_sha256"]!=REPORT_MANIFEST or
