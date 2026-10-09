@@ -42,7 +42,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 def parse_json_response(text):
     t = str(text or "").strip()
-    match = re.search(r"\\{[\\s\\S]*\\}",t)
+    match = re.search(r"\{[\s\S]*\}",t)
     if not match:
         return None
     try:
@@ -56,7 +56,7 @@ def numeric_value(v):
     if not isinstance(v,(int,float,str)) or isinstance(v,bool):
         return None
     raw=str(v).strip().replace(",","")
-    if len(raw)>45 or not re.fullmatch(r"-?\\d+(?:\\.\\d+)?", raw):
+    if len(raw)>45 or not re.fullmatch(r"-?\d+(?:\.\d+)?", raw):
         return None
     try:
         if not Decimal(raw).is_finite():
@@ -128,7 +128,7 @@ def model_candidate(question, hits, docs, key):
         return verify_candidate(blank,question,docs,hits),dict(stats,reason="metadata_not_page")
     excerpt=source["text"][:MAX_EXCERPT_CHARS]
     # Literal grounding is independent of the LLM's assertion.
-    observed={m.group().replace(",","") for m in re.finditer(r"(?<![\\w.])\\d[\\d,]*(?:\\.\\d+)?(?![\\w.])",excerpt)}
+    observed={m.group().replace(",","") for m in re.finditer(r"(?<![\w.])\d[\d,]*(?:\.\d+)?(?![\w.])",excerpt)}
     if value not in observed:
         return verify_candidate(blank,question,docs,hits),dict(stats,reason="number_not_in_quote")
     candidate={"id":question["id"],"answer":str(answer.get("answer") or value)[:150],
