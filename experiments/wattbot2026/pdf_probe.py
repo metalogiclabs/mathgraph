@@ -185,6 +185,61 @@ def pilot(zip_path: str, max_docs: int) -> None:
             "boundary":"Train-derived document selection; not holdout, answer accuracy or official WattBot score",
         }, sort_keys=True))
 
+        # A protected-future policy: RERANK ONLY the metadata top-eight set.
+        # By construction, recall@8 is identical to metadata for every row.
+        # The question is whether local PDF evidence improves rank@1/@3.
+        reorders = {name:[] for name in ("all","fully_covered","partially_covered","none_covered")}
+        for i, q in enumerate(train):
+            expected = set(refs[i])
+            if not expected:
+                continue
+            baseline = score_metadata(q["question"],meta,8)
+            pdf_hits = ranked(q["question"],pdf_chunks,min(len(pdf_chunks),200))
+            pdf_ids = []
+            for h in pdf_hits:
+                if h["ref_id"] not in pdf_ids:
+                    pdf_ids.append(h["ref_id"])
+            # Rank-only fusion; any source outside baseline is excluded.
+            # Strength is a predeclared finite grid, not a selected winner.
+            reranked = {}
+            for alpha in (0.25,0.5,1.0,2.0):
+                def rank_score(d):
+                    p = baseline.index(d) + 1
+                    base = 1.0 / (60 + p)
+                    extra = (alpha / (60 + pdf_ids.index(d) + 1)
+                             if d in pdf_ids else 0)
+                    return base + extra
+                reranked[str(alpha)] = sorted(baseline,
+                    key=lambda d:(-rank_score(d),baseline.index(d)))
+                assert set(reranked[str(alpha)]) == set(baseline)
+            if expected <= observed:
+                cat = "fully_covered"
+            elif expected & observed:
+                cat = "partially_covered"
+            else:
+                cat = "none_covered"
+            for bucket in ("all",cat):
+                reorders[bucket].append((expected,baseline,reranked))
+        summaries = {}
+        for name,records in reorders.items():
+            n = len(records)
+            by_alpha = {}
+            for alpha in ("0.25","0.5","1.0","2.0"):
+                by_alpha[alpha] = {
+                    "top1_any":round(sum(bool(exp & set(ranks[alpha][:1]))
+                                           for exp,_,ranks in records)/n,4) if n else None,
+                    "top3_any":round(sum(bool(exp & set(ranks[alpha][:3]))
+                                           for exp,_,ranks in records)/n,4) if n else None,
+                    "top8_preserved":all(set(meta8)==set(ranks[alpha])
+                                           for _,meta8,ranks in records),
+                }
+            summaries[name]={"n":n, "grid":by_alpha}
+        print("TOP8_PROTECTED_RERANK_DIAGNOSTIC="+json.dumps({
+            "source_universe":len(meta), "pdf_sources":len(successful),
+            "strata":summaries,
+            "boundary":"Train-selected exploratory grid, no chosen weight or heldout proof",
+        },sort_keys=True))
+
 
 def self_test():
     assert pinned_pdf_url("https://arxiv.org/abs/2601.01234") == "https://arxiv.org/pdf/2601.01234"
