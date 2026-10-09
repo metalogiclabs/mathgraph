@@ -1,0 +1,46 @@
+name: WattBot 2026 dataset schema audit
+on:
+  push:
+    branches: [wattbot-2026-v1]
+    paths:
+      - '.github/workflows/wattbot-schema-audit.yml'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install kaggle
+      - name: Download and inspect schema without disclosing protected data
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python - "$RUNNER_TEMP/wattbot/WattBot2026.zip" <<'PY'
+          import csv, hashlib, io, json, sys, zipfile
+          path=sys.argv[1]
+          with zipfile.ZipFile(path) as z:
+              result={}
+              for name in sorted(z.namelist()):
+                  data=z.read(name)
+                  record={"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()}
+                  if name.endswith(".csv"):
+                      reader=csv.DictReader(io.StringIO(data.decode("utf-8-sig")))
+                      rows=list(reader)
+                      record.update(rows=len(rows),columns=reader.fieldnames)
+                      if name=="metadata.csv":
+                          record["source_count"]=len(rows)
+                  if name=="Score.py":
+                      record["line_count"]=len(data.decode("utf-8").splitlines())
+                  result[name]=record
+              print("WATTBOT_OFFICIAL_SCHEMA_AUDIT="+json.dumps(result,sort_keys=True))
+          PY
