@@ -1,0 +1,121 @@
+name: Minimal harmonic pressure criterion V20
+on:
+  push:
+    branches: [navier-pressure-harmonic-criterion-v20]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureHarmonicCriterion.lean'
+      - '.github/workflows/navier-pressure-harmonic-v20.yml'
+  pull_request:
+    branches: [navier-pressure-laplacian-v19]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureHarmonicCriterion.lean'
+      - '.github/workflows/navier-pressure-harmonic-v20.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pressure-harmonic-v20-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  exact-protected-future:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Freeze immutable source and OpenAI revision
+        run: |
+          set -euo pipefail
+          mkdir -p .harmonic-env pressure-v20-evidence
+          git rev-parse HEAD | tee pressure-v20-evidence/head-sha.txt
+          cp experiments/navier_stokes_semantic_bridge_v1/PressureHarmonicCriterion.lean .harmonic-env/PressureHarmonicCriterion.lean
+          cp .harmonic-env/PressureHarmonicCriterion.lean pressure-v20-evidence/PressureHarmonicCriterion.lean
+          sha256sum .harmonic-env/PressureHarmonicCriterion.lean > pressure-v20-evidence/source-sha256.txt
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .harmonic-env/lean-toolchain
+          cat > .harmonic-env/lakefile.toml <<'EOF'
+          name = "mathgraph_pressure_harmonic_criterion_v20"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureHarmonicCriterion"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .harmonic-env/.lake
+            .harmonic-env/lake-manifest.json
+          key: pressure-harmonic-v20-lean434rc2-openai-f9e8bc5
+      - name: Install original Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify harmonic uniqueness authority
+        working-directory: .harmonic-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'theorem eq_zero_of_harmonic' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/HarmonicTestFunctionals.lean
+          cp lake-manifest.json ../pressure-v20-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v20-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check scoped all-test harmonic uniqueness criterion
+        working-directory: .harmonic-env
+        run: |
+          set -euo pipefail
+          lake build PressureHarmonicCriterion 2>&1 | tee ../pressure-v20-evidence/build.log
+          lake env lean -DwarningAsError=true PressureHarmonicCriterion.lean 2>&1 | tee ../pressure-v20-evidence/axioms.log
+      - name: Confirm axiom limits and protected scope
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('pressure-v20-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          prefix='MathGraph.PressureHarmonicCriterion.'
+          expected={prefix+n for n in (
+            'all_tests_agree_of_protected_laplacian_and_bound',
+            'all_tests_agree_of_individual_bounds')}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,axioms in rows:
+            assert n not in seen,n
+            used={a.strip() for a in axioms.split(',') if a.strip()}
+            assert used <= {'propext','Classical.choice','Quot.sound'},(n,used)
+            seen[n]=sorted(used)
+          assert set(seen)==expected,sorted(set(seen).symmetric_difference(expected))
+          out={
+            'schema':'mathgraph.protected-pressure-laplacian-plus-H3-criterion-v20',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'original_OpenAI_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'GENERIC_TWO_COMPLEX_LINEAR_SCHWARTZ_PRESSURE_FUNCTIONALS',
+            'all_test_conclusion':'CONDITIONAL_ON_LAPLACIAN_EQUALITY_AND_H3_BOUND',
+            'actual_old_pressure_H3_bound_derived':False,
+            'actual_comparison_pressure_H3_bound_derived':False,
+            'source_B_only_flux_bound':False,
+            'prose_equivalence':False,
+            'production_admission_changed':False,
+            'axioms':seen,
+            'evidence_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          }
+          (root/'result.json').write_text(json.dumps(out,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pressure-harmonic-criterion-v20
+          path: pressure-v20-evidence/
+          if-no-files-found: error
