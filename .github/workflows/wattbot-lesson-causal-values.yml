@@ -1,0 +1,47 @@
+name: WattBot causal worked-answer value masking under fixed PDF lessons
+on:
+  push:
+    branches: [wattbot-lesson-causal-values-v1]
+    paths:
+      - '.github/workflows/wattbot-lesson-causal-values.yml'
+      - 'experiments/wattbot2026/lesson_value_mask.py'
+      - 'experiments/wattbot2026/derivation_router_probe.py'
+jobs:
+  value-causal-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install independently pinned official scoring and source dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Qualify masked worked-answer values and independent source boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/lesson_value_mask.py
+          python experiments/wattbot2026/derivation_router_probe.py --self-test
+      - name: Compare full worked answers against value-masked lessons on same six PDF passages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/derivation_router_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Exact cost and privacy boundary
+        run: |
+          echo "First model responses identical across full and masked second lesson arms."
+          echo "Second model gets same question and six PDF pages, but different worked answer values."
+          echo "Extra conservative model spending bounded USD 0.26; no hidden TEST data."
+          echo "Official frozen TRAIN scorer only; no Kaggle submission or answer artifact."
