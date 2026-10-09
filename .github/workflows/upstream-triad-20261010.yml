@@ -1,0 +1,85 @@
+name: Upstream triad bounded feasibility tests (LLVM Linux Lean)
+on:
+  push:
+    branches:
+      - upstream-triad-llvm-linux-lean-20261010
+    paths:
+      - '.github/workflows/upstream-triad-20261010.yml'
+      - 'experiments/upstream_triad_20261010/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  llvm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clang executable finite-domain cross-module proof boundary
+        run: |
+          set -euo pipefail
+          clang --version | head -n 2
+          python3 experiments/upstream_triad_20261010/probe.py llvm | tee llvm.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-triad-llvm
+          path: llvm.log
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install upstream rvgen parser dependency
+        run: python3 -m pip install --user --break-system-packages lark==1.2.2
+      - name: Pinned Linux rvgen ambiguous-event mutation and hash-seed replay
+        run: |
+          set -euo pipefail
+          python3 experiments/upstream_triad_20261010/probe.py linux | tee linux.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-triad-linux
+          path: linux.log
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean kernel baseline
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.34.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Expected positive eta and negative partial recursor baseline
+        run: |
+          set -euo pipefail
+          lean --version | tee lean-version.log
+          lean experiments/upstream_triad_20261010/lean_positive.lean > lean-positive.log 2>&1
+          echo "LEAN_POSITIVE_ETA_PASS" | tee -a lean-positive.log
+          for witness in lean_partial_punit lean_partial_prod; do
+            set +e
+            lean "experiments/upstream_triad_20261010/$witness.lean" > "$witness.log" 2>&1
+            status=$?
+            set -e
+            cat "$witness.log"
+            if [ "$status" -eq 0 ]; then
+              echo "UNEXPECTED_ACCEPT: $witness; baseline boundary changed" >&2
+              exit 1
+            fi
+            if ! grep -q 'error:' "$witness.log"; then
+              echo "FAILED_FOR_WRONG_REASON: $witness" >&2
+              exit 1
+            fi
+            echo "LEAN_EXPECTED_BASELINE_REJECT $witness" | tee -a "$witness.log"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-triad-lean
+          path: |
+            lean-version.log
+            lean-positive.log
+            lean_partial_punit.log
+            lean_partial_prod.log
