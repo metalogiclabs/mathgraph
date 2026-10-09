@@ -1,0 +1,35 @@
+name: WattBot CSV null regression qualification
+on:
+  push:
+    branches: [wattbot-query-window-v1]
+    paths:
+      - 'experiments/wattbot2026/submission_gate.py'
+      - 'experiments/wattbot2026/tests/test_submission_gate.py'
+      - '.github/workflows/wattbot-csv-gate.yml'
+permissions:
+  contents: read
+jobs:
+  csv-gate-and-rank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pandas==3.0.6 kaggle==2.2.4
+      - name: Test CSV null regression and exact-substring boundaries
+        run: |
+          python -m unittest discover -s experiments/wattbot2026/tests -p test_submission_gate.py -v
+          python -m unittest discover -s experiments/wattbot2026/tests -p test_query_window.py -v
+      - name: Read actual rank and scores without uploading anything
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+        run: |
+          kaggle competitions submissions -c WattBot2026
+          kaggle competitions leaderboard WattBot2026 --show
+          kaggle competitions list --group entered -s WattBot2026 -v
+      - name: Integration boundary
+        run: |
+          echo 'This gate is qualified for the next submission; no prior failed entry is silently resubmitted.'
+          echo 'Before a future upload, run submission_gate.py --submission CSV --official-zip ZIP on the exact bytes to be uploaded.'
