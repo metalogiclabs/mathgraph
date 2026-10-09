@@ -68,6 +68,71 @@ jobs:
           set -euo pipefail
           lake env lean -DwarningAsError=true -o Presupposition.olean Presupposition.lean 2>&1 | tee ../presupposition-evidence/lean-proof.log
           cp Presupposition.olean ../presupposition-evidence/Presupposition.olean
+      - name: Reject a source-witness proof made only from the paper identity
+        working-directory: .presupposition-env
+        run: |
+          set -euo pipefail
+          cp Presupposition.lean IllegalPromotion.lean
+          cat >> IllegalPromotion.lean <<'EOF'
+          theorem attempted_illegal_promotion :
+              MathGraph.Presupposition.SourceClaim PaperCode.r_e := by
+            exact PaperCode.example_3_1
+          EOF
+          if lake env lean -DwarningAsError=true IllegalPromotion.lean > ../presupposition-evidence/promotion-negative.log 2>&1; then
+            echo 'ERROR: illegal source promotion unexpectedly accepted'
+            exit 1
+          fi
+          grep -qi 'type mismatch' ../presupposition-evidence/promotion-negative.log
+          grep -q 'SourceClaim' ../presupposition-evidence/promotion-negative.log
+          grep -q 'example_3_1' ../presupposition-evidence/promotion-negative.log
+          cp IllegalPromotion.lean ../presupposition-evidence/IllegalPromotion.lean
+          echo 'FALSE_SOURCE_PROMOTION_REJECTED_FOR_TYPE_MISMATCH'
+      - name: Audit named theorem axioms and seal exact evidence
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          from pathlib import Path
+          root = Path('presupposition-evidence')
+          log = (root / 'lean-proof.log').read_text()
+          prefix = 'MathGraph.Presupposition.'
+          names = ['minimum_spec_iff_nonempty', 'minimum_spec_iff_value',
+                   'source_predicate_matches', 'paper_minimum_is_zero',
+                   'paper_value_is_one', 'paper_identity_and_missing_source',
+                   'identity_does_not_supply_source_witness', 'empty_spec_invalid',
+                   'zero_spec_valid', 'empty_and_zero_same_value',
+                   'no_value_only_definedness_rule', 'three_value_is_quarter']
+          expected = {'PaperCode.example_3_1'} | {prefix + x for x in names}
+          rows = re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]", log)
+          rows += [(name, '') for name in re.findall(r"'([^']+)' does not depend on any axioms", log)]
+          seen = {}
+          allowed = {'propext', 'Classical.choice', 'Quot.sound'}
+          for name, axioms in rows:
+              assert name not in seen, ('duplicate axiom entry', name)
+              used = {x.strip() for x in axioms.split(',') if x.strip()}
+              assert used <= allowed, ('unapproved axiom', name, sorted(used - allowed))
+              seen[name] = sorted(used)
+          assert set(seen) == expected, ('missing or extra declarations', sorted(set(seen) ^ expected))
+          head = (root / 'head-sha.txt').read_text().strip()
+          assert head == os.environ['EXPECTED_SOURCE_SHA'], ('checkout drift', head)
+          hashes = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                    for p in sorted(root.iterdir()) if p.is_file()}
+          result = {'schema': 'mathgraph.semantic-presupposition-v2',
+                    'head_sha': head, 'run_id': int(os.environ['GITHUB_RUN_ID']),
+                    'lean_version': (root / 'lean-version.txt').read_text().strip(),
+                    'mathlib_commit': 'f897ebcf72cd16f89ab4577d0c826cd14afaafc7',
+                    'source_reference': 'arxiv:2610.08144v1 page 15',
+                    'source_pdf_sha256_recorded_at_intake': '3282e2c4103b955d635173749e7bf887fef7af7dd39e1abdb750b951030c538b',
+                    'axiom_audit': seen, 'file_sha256': hashes,
+                    'false_source_promotion': 'REJECTED_TYPE_MISMATCH',
+                    'verification': 'LEAN_KERNEL_CHECKED_RELATIVE_TO_EXPLICIT_SOURCE_SPEC',
+                    'independent_natural_language_signoff': False,
+                    'production_admission_changed': False,
+                    'proves_navier_stokes': False}
+          (root / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, sort_keys=True))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
