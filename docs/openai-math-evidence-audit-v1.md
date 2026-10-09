@@ -66,9 +66,19 @@ workflow openai-math-sign-witness.yml. It proves the arithmetic
 implication that, **assuming** each reverse stabilization trace
 contributes -1, a starting signed count -m with m>0 becomes -2m,
 which is nonzero. It separately confirms why the obsolete +1
-assumption would cancel. Its status remains **UNKNOWN_KERNEL_REPLAY**
-until its own dedicated Lean CI gate succeeds.
+assumption would cancel. **WARRANTED_CONDITIONAL_SIGN_ARITHMETIC** at source commit 6329b71aaa09d7ff203ee4a15d070a52cc961c0c, [CI run 37864060265](https://github.com/metalogiclabs/mathgraph/actions/runs/37864060265), success: pinned Lean 4.34.1 build, bundled Leanchecker replay of WeilSignProbe, and axiom-audit of six declarations (permitted propext, Classical.choice, Quot.sound). The geometric orientation sign premise is still external and unproved here.
 
 The sign/orientation premise itself is external to this tiny arithmetic
 formalization. The sign proof must never be promoted as an independently
 verified refutation of the original geometric theorem.
+
+## Verification lineage and residual
+
+1. [Expanded source audit run 37863542916](https://github.com/metalogiclabs/mathgraph/actions/runs/37863542916): 12 offline falsifier tests plus 11 exact upstream Git blob pins, paper/model textual preflight, and Lean/Mathlib version locks. This is *not* a Lean theorem check.
+2. [Conditional arithmetic Lean build run 37863822633](https://github.com/metalogiclabs/mathgraph/actions/runs/37863822633): first green for the three sign-arithmetic theorems.
+3. [Leanchecker run 37863912345](https://github.com/metalogiclabs/mathgraph/actions/runs/37863912345): explicit replay of the small checked environment, green.
+4. [Axiom-audit qualification run 37864060265](https://github.com/metalogiclabs/mathgraph/actions/runs/37864060265): green, six declarations audited, no axioms beyond permitted list. This supersedes earlier weaker sign runs as the current independent arithmetic authority.
+
+The previous failed axiom-audit attempt used a theorem namespace instead of the compiled Lean module prefix; preserve that configuration failure in CI lineage without misidentifying it as a mathematical counterexample.
+
+Still UNKNOWN: full OpenAI Logspace Comparator replay; all imported definition and axiom checking under the OAI project; formal-versus-paper semantic correspondence; and independent proof of the geometric cusp-orientation sign. Do not promote a theorem beyond its verified boundary.
