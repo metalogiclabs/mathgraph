@@ -23,6 +23,7 @@ namespace MathGraph.PressureGaussianLimit
 open Set Filter MeasureTheory
 open NavierStokes.ProblemStatement
 open NavierStokes.R3PressureFourier
+open NavierStokes.R3PressureCommutator (Cutoff weightedNorm)
 open NavierStokes.R3PressureCutoff
 open NavierStokes.R3RieszApproximation
 open scoped Topology ENNReal
