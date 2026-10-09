@@ -1,0 +1,27 @@
+name: WattBot official leaderboard snapshot
+on:
+  push:
+    branches: [wattbot-2026-submission-v1]
+    paths:
+      - '.github/workflows/wattbot-leaderboard-snapshot.yml'
+jobs:
+  public-rank:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install kaggle
+      - name: Official submission score
+        run: kaggle competitions submission 56994417
+      - name: Current publicly ranked top teams
+        run: kaggle competitions leaderboard WattBot2026 --show
+      - name: Authenticated rank for entered competitions
+        run: kaggle competitions list --group entered -s WattBot2026 -v
