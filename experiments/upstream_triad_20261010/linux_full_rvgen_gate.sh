@@ -101,7 +101,7 @@ PY
 git -C "$TREE" status --short | tee "$OUT/git-status.txt"
 # Derive recipients from the pinned upstream MAINTAINERS database.
 ( cd "$TREE" &&
-  perl scripts/get_maintainer.pl --no-git --no-git-fallback --no-rolestats \
+  perl scripts/get_maintainer.pl --no-tree --no-git --no-git-fallback --no-rolestats \
     "$OUT/linux-rvgen-reject-ambiguous-transitions.patch" ) \
   | tee "$OUT/get-maintainer.txt"
 grep -q 'linux-trace-kernel@vger.kernel.org' "$OUT/get-maintainer.txt"
