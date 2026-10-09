@@ -10,6 +10,7 @@ on:
       - 'experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/SymbolStepBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolStepSimulation.lean'
       - '.github/workflows/openai-logspace-model-bridge.yml'
   workflow_dispatch:
 
@@ -49,6 +50,7 @@ jobs:
           cp experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/SymbolStepBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolStepSimulation.lean isolated/
           cp upstream/lean/lean-toolchain isolated/lean-toolchain
           test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
           cat > isolated/lakefile.lean <<'LAKE'
@@ -65,6 +67,7 @@ jobs:
           lean_lib ExplicitAlphabetBridge
           lean_lib SymbolMachineBridge
           lean_lib SymbolStepBridge
+          lean_lib SymbolStepSimulation
           lean_lib OAI
           LAKE
           printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
@@ -93,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
-          lake build ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge
+          lake build ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation
           lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge
           cat > AxiomCheck.lean <<'LEAN'
           import ModelSemantics
@@ -103,6 +106,7 @@ jobs:
           import ExplicitAlphabetBridge
           import SymbolMachineBridge
           import SymbolStepBridge
+          import SymbolStepSimulation
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_step_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
@@ -151,6 +155,8 @@ jobs:
           #print axioms Metalogic.OpenAIMath.SymbolStepBridge.encoded_configuration_reads
           #print axioms Metalogic.OpenAIMath.SymbolStepBridge.decode_encoded_configuration_reads
           #print axioms Metalogic.OpenAIMath.SymbolStepBridge.compileMachine_transition_encoded
+          #print axioms Metalogic.OpenAIMath.SymbolStepSimulation.initial_commutes
+          #print axioms Metalogic.OpenAIMath.SymbolStepSimulation.write_commutes_with_OAI_update
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
