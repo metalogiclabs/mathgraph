@@ -1,0 +1,33 @@
+name: OpenAI math pinned evidence audit
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/openai_math_audit.py'
+      - 'tests/test_openai_math_audit.py'
+      - 'docs/openai-math-evidence-audit-v1.md'
+      - '.github/workflows/openai-math-evidence-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-evidence:
+    name: Pinned source replay (not Lean verification)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline falsifier controls
+        env:
+          PYTHONPATH: scripts
+        run: python3 -m unittest discover -s tests -p 'test_openai_math_audit.py' -v
+      - name: Pinned upstream source audit
+        run: python3 scripts/openai_math_audit.py --output openai-math-audit.json
+      - name: Archive bounded audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-math-pinned-source-audit
+          path: openai-math-audit.json
+          if-no-files-found: error
