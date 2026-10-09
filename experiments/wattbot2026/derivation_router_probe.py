@@ -40,6 +40,7 @@ PIN = {
 }
 SOURCE_PIN="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a9"
 SECONDARY_RESERVE_USD=.16
+TERTIARY_RESERVE_USD=.12
 SECONDARY_TOP_K=10
 
 INTENT_RE = re.compile(
@@ -113,11 +114,13 @@ def run(archive):
     first_raw={}
     first_pages={}
     second_raw={}
+    critic_raw={}
     first_checked={}
     numeric={}
     docs_by_id={}
     stats=Counter()
     extra=[0.0,0.0]
+    critic_cost=[0.0,0.0]
 
     def windowed(question, chunks):
         passages,hits=original_passages(question,chunks)
@@ -164,6 +167,48 @@ def run(archive):
             raise RuntimeError("Second-pass cost calculation diverges")
         second_raw[question]=(later,reason,expanded)
         stats["second_"+reason]+=1
+        # No hidden gold label or citation is present in this decision.
+        # When two independently generated answer values disagree, form a
+        # NEW question-relative consequence test over the SAME six pages.
+        primary=str((response or {}).get("answer_value","")).strip()
+        learned=str((later or {}).get("answer_value","")).strip()
+        if (status=="OK" and reason=="OK"
+            and primary and learned and primary!=learned
+            and primary.casefold() not in ("is_blank","unknown","nan")
+            and learned.casefold() not in ("is_blank","unknown","nan")):
+            stats["disagreement_detected"]+=1
+            comparison=(
+                question+"\n\nINDEPENDENT SCIENTIFIC ARBITRATION. "
+                "Two candidate answer_values were proposed by separate reads "
+                "of the same provided evidence: answer_A="
+                +json.dumps(primary)+", answer_B="+json.dumps(learned)+". "
+                "Both are unverified candidates. Decide which, if either, "
+                "is supported by these literal passages. Independently check "
+                "scientific context, compatible units, arithmetic and the "
+                "required source documents; do NOT copy either value merely "
+                "because it is present in the prompt. Return a corrected "
+                "answer_value, source_index or source_indices and a verbatim "
+                "supporting_quote that occurs in the supplied evidence. "
+                "If neither can be supported, return answer_value is_blank."
+            )
+            wire=json.dumps({"question":comparison,"passages":[
+                  {"source_index":i,"ref_id":p["ref_id"],
+                   "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
+                  for i,p in enumerate(expanded)]},
+                separators=(",",":"),ensure_ascii=False)
+            reserve_critic=base.conservative_charge(
+                base.SYSTEM+wire,price,base.MAX_OUTPUT_TOKENS)
+            if critic_cost[0]+reserve_critic>TERTIARY_RESERVE_USD:
+                stats["critic_budget_exhausted"]+=1
+            else:
+                adjudicated,why,bound,price_paid=original_model(
+                    key,comparison,expanded,price)
+                if abs(bound-reserve_critic)>1e-8:
+                    raise RuntimeError("Arbiter model reservation differs from precheck")
+                critic_raw[question]=(adjudicated,why,expanded)
+                critic_cost[0]+=bound
+                critic_cost[1]+=price_paid
+                stats["critic_"+why]+=1
         return response,status,bound,actual
 
     def save_numeric(question,hits,docs):
@@ -205,8 +250,8 @@ def run(archive):
         raise RuntimeError("Partial question cohort")
     if stats["first_pages"]!=378 or stats["first_questions"]!=63:
         raise RuntimeError("Changed six-source reader cohort")
-    if extra[0]>SECONDARY_RESERVE_USD:
-        raise RuntimeError("Additional spend exceeded reserved cap")
+    if extra[0]>SECONDARY_RESERVE_USD or critic_cost[0]>TERTIARY_RESERVE_USD:
+        raise RuntimeError("Second or independent arbiter cost exceeded pinned cap")
 
     with zipfile.ZipFile(archive) as z:
         train=pd.read_csv(io.BytesIO(z.read("train_QA.csv")),
@@ -222,6 +267,10 @@ def run(archive):
           "second_verified_prefer_on_intent",
           "second_provisional_prefer_on_intent",
           "second_agreement_only",
+          "critic_raw_on_disagreement",
+          "critic_independent_quote_only",
+          "critic_vote_previous_value",
+          "critic_independent_quote_or_first_verified",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -263,6 +312,36 @@ def run(archive):
             if same_value:stats["answer_value_agreement"]+=1
             arms["second_agreement_only"].append(
                 second_provisional if same_value else first_provisional)
+            provisional=second_provisional if usable(second) else first_provisional
+            judge,judge_status,judge_pages=critic_raw.get(
+                q,(None,"NOT_ELIGIBLE",[]))
+            judge_provisional=raw_variant(
+                row,judge,provisional,judge_pages,"selected")
+            judge_checked,judge_reason=original_checker(
+                judge,{"id":ident,"question":q},judge_pages,docs_by_id[ident])
+            if q in critic_raw:
+                stats["critic_check_"+judge_reason]+=1
+            if judge_checked is not None:
+                stats["critic_page_anchored"]+=1
+            # A model's agreement with either candidate remains evidence of
+            # internal consistency, NOT a scientific truth certificate.
+            checked_value=str((judge or {}).get("answer_value","")).strip()
+            primary=str((original or {}).get("answer_value","")).strip()
+            lesson_value=str((second or {}).get("answer_value","")).strip()
+            voted=(first_provisional if usable(original) and
+                   checked_value==primary else provisional)
+            if usable(judge) and checked_value==lesson_value:
+                voted=provisional
+            raw_if_valid=(judge_provisional if usable(judge)
+                          else provisional)
+            anchored_if_any=(dict(judge_checked) if judge_checked is not None
+                             else provisional)
+            arms["critic_raw_on_disagreement"].append(raw_if_valid)
+            arms["critic_independent_quote_only"].append(anchored_if_any)
+            arms["critic_vote_previous_value"].append(voted)
+            arms["critic_independent_quote_or_first_verified"].append(
+                dict(prior_checked) if prior_checked is not None
+                else anchored_if_any)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
@@ -274,7 +353,7 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
+    print("WATTBOT_LESSON_DISAGREEMENT_ARBITER="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
@@ -289,16 +368,23 @@ def run(archive):
        "deltas_vs_first_provisional":{
            k:round(v-official["first_provisional"],8)
            for k,v in official.items()},
+       "critic_same_response_deltas_vs_lesson":{
+           k:round(v-official["second_provisional_prefer_on_intent"],8)
+           for k,v in official.items() if k.startswith("critic_")},
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Exact same first and second six-page source evidence; "
-         "two development TRAIN worked answer conventions inform only second "
-         "response. No holdout gold, reference, answer or label in exemplars. "
-         "Verbatim PDF quotations are provenance rather than scientific "
-         "entailment. Paired reused TRAIN qualification only; no TEST "
-         "inference or Kaggle submission."
+       "critic_reserved_usd":round(critic_cost[0],7),
+       "critic_reported_usd":round(critic_cost[1],7),
+       "boundary":"Same Flash-Lite first and two-development-example second "
+         "answers in every policy arm; disagreement-triggered third reader "
+         "uses only those candidate answers and the identical six pinned PDF "
+         "passages. None sees heldout gold target answers, citations or labels. "
+         "Independent page quote check establishes literal provenance, not "
+         "scientific semantic entailment. Reused TRAIN scorer only; no protected "
+         "TEST or Kaggle submission. Secondary and arbiter costs separately "
+         "reserved and fail-closed."
     },sort_keys=True),flush=True)
 
 
