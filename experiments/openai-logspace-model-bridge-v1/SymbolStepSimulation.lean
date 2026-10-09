@@ -55,7 +55,7 @@ theorem initial_commutes (codec : AlphabetCodec α K)
     Function.update operation at the corresponding copied work-head. -/
 theorem write_commutes_with_OAI_update
     (codec : AlphabetCodec α K)
-    (c : SymbolConfiguration α q w h (0))
+    {n : ℕ} (c : SymbolConfiguration α q w h n)
     (write : Fin w → α) :
     encodeTracks codec.indices codec.blank
         (writeAllSource c.work c.workPos write) =
