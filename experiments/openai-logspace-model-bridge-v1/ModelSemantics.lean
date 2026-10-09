@@ -22,9 +22,12 @@ theorem deterministic_step_coin_irrelevant
       M.transition s i t b₁ = M.transition s i t b₂ := by
     change ∀ s i t, M.transition s i t false = M.transition s i t true at hd
     cases b₁ <;> cases b₂ <;> simp [hd]
+  have hsame :=
+    heq c.state (fun j => readInput x (c.inputPos j))
+      (fun k => c.work k (c.workPos k)) u v
   unfold Machine.step
   cases ho : M.output c.state with
-  | none => simp [ho, heq]
+  | none => simp [ho, hsame]
   | some val => simp [ho]
 
 /-- Coin-sequence choices do not change a deterministic machine's execution. -/
@@ -52,15 +55,15 @@ theorem halted_step_is_fixed
 theorem run_depends_only_on_coin_prefix
     (M : Machine q w h) (x : Word)
     (a b : CoinTape) (t : ℕ)
-    (prefix : ∀ i, i < t → a i = b i) :
+    (hprefix : ∀ i, i < t → a i = b i) :
     M.run x a t = M.run x b t := by
   induction t with
   | zero => rfl
   | succ t ih =>
       have p : ∀ i, i < t → a i = b i :=
-        fun i hi => prefix i (Nat.lt_trans hi (Nat.lt_succ_self t))
+        fun i hi => hprefix i (Nat.lt_trans hi (Nat.lt_succ_self t))
       change M.step x (a t) (M.run x a t) =
         M.step x (b t) (M.run x b t)
-      rw [ih p, prefix t (Nat.lt_succ_self t)]
+      rw [ih p, hprefix t (Nat.lt_succ_self t)]
 
 end Metalogic.OpenAIMath.ModelSemantics
