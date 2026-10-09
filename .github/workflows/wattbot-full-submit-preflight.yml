@@ -4,6 +4,7 @@ on:
     branches: [wattbot-full-window-v1]
     paths:
       - 'experiments/wattbot2026/submit_full_reader.py'
+      - 'experiments/wattbot2026/cached_pdf.py'
       - 'experiments/wattbot2026/submission_gate.py'
       - 'experiments/wattbot2026/tests/test_submission_gate.py'
       - '.github/workflows/wattbot-full-submit-preflight.yml'
@@ -26,6 +27,6 @@ jobs:
           python experiments/wattbot2026/report_loader.py
           python experiments/wattbot2026/full_reader.py --self-test
           python experiments/wattbot2026/submit_full_reader.py --self-test
-          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py experiments/wattbot2026/tests/test_cached_pdf.py
       - name: No unqualified Kaggle submission
         run: echo "This CI checks code and provenance/transport fixtures ONLY; no Kaggle answers generated and no secrets used."
