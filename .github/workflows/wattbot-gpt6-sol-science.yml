@@ -1,0 +1,46 @@
+name: WattBot GPT-6 Sol scientific reasoning frozen TRAIN pilot
+on:
+  push:
+    branches: [wattbot-gpt6-sol-science-v1]
+    paths:
+      - 'experiments/wattbot2026/scientific_model_probe.py'
+      - '.github/workflows/wattbot-gpt6-sol-science.yml'
+jobs:
+  sol-scientific:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official scientific corpus and evaluator dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Verify pinned source blob, exact page evidence and budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/scientific_model_probe.py --self-test
+      - name: Score powerful reader on same 63 pinned TRAIN questions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/scientific_model_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evaluation and cost boundary
+        run: |
+          echo "Live model ID and per-token prices must pass strict preflight."
+          echo "Conservative model-cost reservation max US$1.55 total."
+          echo "Reused TRAIN 63 only: no protected TEST answers or Kaggle submission."
+          echo "Historical comparator not same-response paired."
