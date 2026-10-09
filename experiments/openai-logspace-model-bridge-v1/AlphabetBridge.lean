@@ -51,4 +51,60 @@ theorem tape_cell_equal_of_bit_blocks_equal
   funext i
   exact h i
 
+
+/-- For a designated tape blank, use an all-zero block, not a one-hot blank.
+    This is necessary to preserve infinite untouched blank tape regions. -/
+def encodeSymbolWithBlank (blank a : α) (i : Fin (Fintype.card α)) : Bool :=
+  decide (a ≠ blank ∧ i = Fintype.equivFin α a)
+
+theorem encodeBlank_is_zero (blank : α) :
+    encodeSymbolWithBlank blank blank = fun _ => false := by
+  funext i
+  simp [encodeSymbolWithBlank]
+
+theorem encodeNonblank_true_at_index
+    (blank a : α) (ha : a ≠ blank) :
+    encodeSymbolWithBlank blank a (Fintype.equivFin α a) = true := by
+  simp [encodeSymbolWithBlank, ha]
+
+theorem encodeSymbolWithBlank_injective (blank : α) :
+    Function.Injective (encodeSymbolWithBlank (α := α) blank) := by
+  intro a b heq
+  by_cases ha : a = blank
+  · subst a
+    by_cases hb : b = blank
+    · exact hb.symm
+    · have hpoint := congrArg
+        (fun f : Fin (Fintype.card α) → Bool =>
+          f (Fintype.equivFin α b)) heq
+      have hfalse : False := by
+        simpa [encodeSymbolWithBlank, hb] using hpoint
+      exact hfalse.elim
+  · by_cases hb : b = blank
+    · subst b
+      have hpoint := congrArg
+        (fun f : Fin (Fintype.card α) → Bool =>
+          f (Fintype.equivFin α a)) heq
+      have hfalse : False := by
+        simpa [encodeSymbolWithBlank, ha] using hpoint
+      exact hfalse.elim
+    · have hpoint := congrArg
+        (fun f : Fin (Fintype.card α) → Bool =>
+          f (Fintype.equivFin α a)) heq
+      have hindex : Fintype.equivFin α a = Fintype.equivFin α b := by
+        simpa [encodeSymbolWithBlank, ha, hb] using hpoint
+      exact (Fintype.equivFin α).injective hindex
+
+/-- Changing a finite-symbol tape's blank default into an all-zero
+    Boolean-block tape retains equality and distinguishability of cells. -/
+theorem encodeBlankWorkTapes_injective (w : ℕ) (blank : α) :
+    Function.Injective
+      (fun tape : Fin w → ℤ → α =>
+        fun k z i => encodeSymbolWithBlank blank (tape k z) i) := by
+  intro tape other heq
+  funext k z
+  apply encodeSymbolWithBlank_injective blank
+  funext i
+  exact congrFun (congrFun (congrFun heq k) z) i
+
 end Metalogic.OpenAIMath.AlphabetBridge
