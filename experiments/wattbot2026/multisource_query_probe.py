@@ -174,13 +174,13 @@ def self_test():
        "url":"https://arxiv.org/abs/2601.00001"},
       {"ref_id":"beta","page":1,"text":"older GPU lower power drawing intertoken latency",
        "url":"https://arxiv.org/abs/2601.00002"},
-      {"ref_id":"gamma","page":1,"text":"households consume electrical energy in MWh yearly",
+      {"ref_id":"gamma","page":1,"text":"Household study: consume electrical power energy in MWh yearly",
        "url":"https://arxiv.org/abs/2601.00003"},
-      {"ref_id":"delta","page":1,"text":"environmental lifecycle studies on AI energy",
+      {"ref_id":"delta","page":1,"text":"Environmental lifecycle study reports AI power energy",
        "url":"https://arxiv.org/abs/2601.00004"},
       {"ref_id":"epsilon","page":1,"text":"electricity power consumption in data centers",
        "url":"https://arxiv.org/abs/2601.00005"},
-      {"ref_id":"zeta","page":1,"text":"system carbon and water accounting",
+      {"ref_id":"zeta","page":1,"text":"Other study reports system power carbon and water accounting",
        "url":"https://arxiv.org/abs/2601.00006"},
     ]
     q="One study finds a GPU efficient while another reports lower power at strict latency"
