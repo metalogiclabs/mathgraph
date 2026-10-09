@@ -1,0 +1,35 @@
+name: WattBot dev-trained numeric evidence ranker
+on:
+  push:
+    branches: [wattbot-numeric-ranker-v1]
+    paths:
+      - 'experiments/wattbot2026/numeric_ranker_probe.py'
+      - '.github/workflows/wattbot-numeric-ranker.yml'
+jobs:
+  numeric-ranker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded numeric-ranking dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf scikit-learn
+      - name: Synthetic ranking/number handling controls
+        run: python experiments/wattbot2026/numeric_ranker_probe.py --self-test
+      - name: Train numeric ranker on development split and score frozen holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/numeric_ranker_probe.py --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Retain bounded evidence only
+        run: echo "Logs show aggregate counts/scores only; no licensed files, model predictions, PDF bytes or row labels archived."
