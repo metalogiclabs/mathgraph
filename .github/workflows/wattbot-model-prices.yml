@@ -1,0 +1,19 @@
+name: WattBot live scientific model pricing audit
+on:
+  push:
+    branches: [wattbot-model-pricing-v1]
+    paths:
+      - 'experiments/wattbot2026/reader_model_catalog.py'
+      - '.github/workflows/wattbot-model-prices.yml'
+jobs:
+  public-model-prices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify current public prices and model availability (no inference)
+        run: python experiments/wattbot2026/reader_model_catalog.py
