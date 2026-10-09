@@ -38,13 +38,13 @@ theorem pack_unpackWork (work : ℕ → Bool) :
 /-- The canonical zigzag sends +n to 2n and -n-1 to 2n+1. -/
 theorem tapePosition_ofNat (n : ℕ) :
     tapePosition (Int.ofNat n) = 2 * n := by
-  simp [tapePosition, Equiv.intEquivNat, Equiv.intEquivNatSumNat,
-    Equiv.natSumNatEquivNat_apply]
+  change Equiv.natSumNatEquivNat (Sum.inl n) = 2 * n
+  simp [Equiv.natSumNatEquivNat_apply]
 
 theorem tapePosition_negSucc (n : ℕ) :
     tapePosition (Int.negSucc n) = 2 * n + 1 := by
-  simp [tapePosition, Equiv.intEquivNat, Equiv.intEquivNatSumNat,
-    Equiv.natSumNatEquivNat_apply]
+  change Equiv.natSumNatEquivNat (Sum.inr n) = 2 * n + 1
+  simp [Equiv.natSumNatEquivNat_apply]
 
 /-- Every signed coordinate of absolute value at most s occupies a
 nonnegative address at most 2s+1. Quantitative resource overhead is explicit. -/
