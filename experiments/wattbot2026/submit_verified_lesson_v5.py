@@ -37,6 +37,12 @@ MAX_TOTAL_RESERVED_USD=1.0
 MAX_EVALUATION_ROWS=317
 
 
+def usable_model_output(raw):
+    return isinstance(raw,dict) and str(
+        raw.get("answer_value","")).strip().casefold() not in (
+        "","is_blank","unknown","na","n/a","nan","none","null")
+
+
 def git_blob(path):
     raw=Path(path).read_bytes()
     return hashlib.sha1(b"blob "+str(len(raw)).encode()+bytes([0])+raw).hexdigest()
@@ -53,6 +59,8 @@ def self_test():
     assert git_blob(v4.__file__)==V4_GENERATOR_BLOB
     assert MAX_TOTAL_RESERVED_USD>.337436
     assert MAX_TOTAL_RESERVED_USD<=1.0
+    assert usable_model_output({"answer_value":"0"})
+    assert not usable_model_output({"answer_value":"is_blank"})
     print("WATTBOT_V5_VERIFIED_LESSON_SELF_TEST=PASS",flush=True)
 
 
@@ -138,11 +146,10 @@ def run(archive,out):
         counters["first_"+status1]+=1
         counters["lesson_"+status2]+=1
 
-        from answer_value_residual_probe import usable
-        if status2=="OK" and usable(second):
+        if status2=="OK" and usable_model_output(second):
             selected=second
             counters["selected_lesson"]+=1
-        elif status1=="OK" and usable(first):
+        elif status1=="OK" and usable_model_output(first):
             selected=first
             counters["selected_first"]+=1
         elif explicit_model_refusal(first):
