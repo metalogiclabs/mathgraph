@@ -48,11 +48,11 @@ theorem first_step_commutes
     | some b =>
         simp [Machine.step, LeftBoundedMachine.step,
           Machine.initial, LeftBoundedMachine.initial, compileFused,
-          decodeActive, startupState, encode, ho]
+          decodeActive, startupState, encode, Direction.moveInput, ho]
     | none =>
         simp [Machine.step, LeftBoundedMachine.step,
           Machine.initial, LeftBoundedMachine.initial, compileFused,
-          decodeActive, startupState, encode, ho]
+          decodeActive, startupState, encode, Direction.moveInput, ho]
   · funext j
     cases ho : M.output M.initialState with
     | some b =>
@@ -83,7 +83,7 @@ theorem first_step_commutes
               (initial_data_write_commutes
                 ((M.transition M.initialState
                   (fun k => readInput x (⟨0, by omega⟩ : Fin (x.length + 2)))
-                  false coin).write)).symm z
+                  false coin).write)) z
     · cases ho : M.output M.initialState with
       | some b =>
           simpa [Machine.step, LeftBoundedMachine.step,
