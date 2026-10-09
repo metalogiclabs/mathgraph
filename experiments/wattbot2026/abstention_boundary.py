@@ -16,8 +16,8 @@ NA={"", "is_blank", "n/a", "na", "nan", "none", "null", "unknown"}
 
 
 def explicit_model_refusal(raw):
-    return (isinstance(raw,dict) and
-            str(raw.get("answer_value","")).strip().casefold() in NA)
+    return (isinstance(raw,dict) and "answer_value" in raw and
+            str(raw["answer_value"]).strip().casefold() in NA)
 
 
 def retrieval_threshold(scores, fraction):
