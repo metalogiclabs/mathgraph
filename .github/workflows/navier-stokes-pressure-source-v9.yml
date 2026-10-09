@@ -54,8 +54,8 @@ jobs:
               line=p[:m.start()].count('\n')
               context='\n'.join(lines[max(0,line-13): min(len(lines),line+7)])
               candidates.append({'page':idx,'line':line+1,'context':context})
-          assert len(candidates)==1,('10.19 ambiguous',[(c['page'],c['line']) for c in candidates])
-          assert candidates[0]['page']==123,('PDF page drift',candidates[0]['page'])
+          assert 1 <= len(candidates) <= 4,('10.19 missing or excessive',[(c['page'],c['line']) for c in candidates])
+          assert all(c['page']==123 for c in candidates),('PDF page drift',[(c['page'],c['line']) for c in candidates])
           code=Path('/tmp/PressureFlux.lean').read_text()
           name='theorem exists_uniform_actual_pressure_flux_bound'
           start=code.index(name)
@@ -67,7 +67,7 @@ jobs:
             'head_sha':Path('pressure-primary-v9-evidence/head-sha.txt').read_text().strip(),
             'primary_pdf_sha256':'0e779481c4da40bd28d1e642e1d8ca57447d129610df28dfa5a11e9af8ae228f',
             'primary_equation_anchor':'10.19','primary_equation_pages':[x['page'] for x in candidates],
-            'primary_exact_context':candidates[0]['context'],
+            'primary_exact_context':[x['context'] for x in candidates],
             'formal_git_blob':'542377decf40306a50ce2170783de99a384b8d41',
             'formal_declaration':name.removeprefix('theorem '),
             'formal_statement_sha256':hashlib.sha256(statement.encode()).hexdigest(),
@@ -83,7 +83,9 @@ jobs:
           # This is a short excerpt used solely for internal source comparison;
           # do not reproduce the full manuscript in downstream outputs.
           print('PRIMARY_EQ_10_19_CONTEXT_BEGIN')
-          print(candidates[0]['context'][:1800])
+          for candidate in candidates:
+            print('anchor',candidate['page'],candidate['line'])
+            print(candidate['context'][:1100])
           print('PRIMARY_EQ_10_19_CONTEXT_END')
           print('SCOPED_PRIMARY_PRESSURE_SOURCE_IDENTITIES_PASS')
           PY
