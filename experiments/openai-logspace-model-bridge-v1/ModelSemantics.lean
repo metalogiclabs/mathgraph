@@ -107,4 +107,26 @@ theorem deterministic_repeat_propagates
               rw [Nat.add_succ]
               rfl
 
+
+/-- A deterministic run that first halts at time H cannot revisit its exact
+    configuration at two distinct times t<u≤H. Repetition would force a
+    halted configuration before H, contradicting first halting. -/
+theorem no_configuration_repeat_before_first_halt
+    (M : Machine q w h) (hd : M.Deterministic) (x : Word)
+    (coins : CoinTape) (H : ℕ) (answer : Bool)
+    (halt : M.output (M.run x coins H).state = some answer)
+    (before : ∀ j, j < H → M.output (M.run x coins j).state = none)
+    (t u : ℕ) (htu : t < u) (hu : u ≤ H) :
+    M.run x coins t ≠ M.run x coins u := by
+  intro hsame
+  let k := H - u
+  have hu_eq : u + k = H := by dsimp [k]; omega
+  have ht_lt : t + k < H := by dsimp [k]; omega
+  have hshift :=
+    deterministic_repeat_propagates M hd x coins t u k hsame
+  rw [hu_eq] at hshift
+  have hn := before (t + k) ht_lt
+  rw [hshift, halt] at hn
+  contradiction
+
 end Metalogic.OpenAIMath.ModelSemantics
