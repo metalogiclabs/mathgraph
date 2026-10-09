@@ -6,6 +6,8 @@ on:
       - 'experiments/openai-logspace-model-bridge-v1/ModelSemantics.lean'
       - 'experiments/openai-logspace-model-bridge-v1/FiniteEnvelope.lean'
       - 'experiments/openai-logspace-model-bridge-v1/VisitedRadius.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/WindowEncoding.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SpaceTimeBound.lean'
       - 'experiments/openai-logspace-model-bridge-v1/AlphabetBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean'
@@ -49,6 +51,8 @@ jobs:
           cp experiments/openai-logspace-model-bridge-v1/ModelSemantics.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/FiniteEnvelope.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/VisitedRadius.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/WindowEncoding.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SpaceTimeBound.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/AlphabetBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean isolated/
@@ -69,6 +73,8 @@ jobs:
           @[default_target] lean_lib ModelSemantics
           lean_lib FiniteEnvelope
           lean_lib VisitedRadius
+          lean_lib WindowEncoding
+          lean_lib SpaceTimeBound
           lean_lib AlphabetBridge
           lean_lib ExplicitAlphabetBridge
           lean_lib SymbolMachineBridge
@@ -105,12 +111,14 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
-          lake build ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
-          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
+          lake build ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
+          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius WindowEncoding SpaceTimeBound AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
           cat > AxiomCheck.lean <<'LEAN'
           import ModelSemantics
           import FiniteEnvelope
           import VisitedRadius
+          import WindowEncoding
+          import SpaceTimeBound
           import AlphabetBridge
           import ExplicitAlphabetBridge
           import SymbolMachineBridge
@@ -142,6 +150,9 @@ jobs:
           #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_head_natAbs_lt_spaceThrough
           #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_workhead_inside_space_window
           #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_tape_blank_outside_space_window
+          #print axioms Metalogic.OpenAIMath.WindowEncoding.encode_faithful_under_window
+          #print axioms Metalogic.OpenAIMath.SpaceTimeBound.finite_code_faithful_of_spaceThrough
+          #print axioms Metalogic.OpenAIMath.SpaceTimeBound.deterministic_first_halt_lt_space_envelope
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbol_injective
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbol_true_iff
           #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapes_injective
