@@ -18,8 +18,6 @@ import json
 import math
 from pathlib import Path
 import re
-import subprocess
-import sys
 
 COLUMNS = (
     "id", "question", "answer", "answer_value", "answer_unit", "ref_id",
@@ -293,8 +291,26 @@ def main(argv: list[str] | None = None) -> None:
     elif a.command == "assemble":
         assemble(a.questions, a.metadata, a.chunks, a.candidates, a.out)
     else:
-        subprocess.run([sys.executable, a.official_scorer,
-                        a.train_ground_truth, a.train_predictions], check=True)
+        # Score.py exposes score(solution, submission, row_id_column_name, verbose).
+        # Passing CSV positional args to Score.py does not call that function.
+        import importlib.util
+        import pandas as pd
+        scorer_bytes = Path(a.official_scorer).read_bytes()
+        from official_score_probe import EXPECTED as PINNED_SCORE_HASH
+        digest = hashlib.sha256(scorer_bytes).hexdigest()
+        if digest != PINNED_SCORE_HASH:
+            raise ValueError(f"Official Score.py changed: {digest}; audit before running")
+        spec = importlib.util.spec_from_file_location("wattbot_official_score", a.official_scorer)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("Could not load official scorer")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        solution = pd.read_csv(a.train_ground_truth, keep_default_na=False)
+        submission = pd.read_csv(a.train_predictions, keep_default_na=False)
+        if set(solution["id"].astype(str)) != set(submission["id"].astype(str)):
+            raise ValueError("Train prediction IDs must match official train IDs")
+        result = module.score(solution, submission, row_id_column_name="id", verbose=False)
+        print(f"OFFICIAL_WATTBOT_TRAIN_SCORE={float(result):.12f} scorer_sha256={digest}")
 
 
 if __name__ == "__main__":
