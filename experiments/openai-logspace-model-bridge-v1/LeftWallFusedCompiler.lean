@@ -128,4 +128,18 @@ theorem first_step_control_commutes (M : LeftMachine q h)
         Machine.initial, LeftBoundedMachine.initial, compileFused,
         decodeActive, activeState, startupState, ho]
 
+/-- The fused first source step is accompanied by a permanently initialized
+origin marker, whether or not the source was initially halting. -/
+theorem first_step_origin_marker (M : LeftMachine q h)
+    (x : Word) (coin : Bool) :
+    ((compileFused M).step x coin ((compileFused M).initial x.length)).work
+      (1 : Fin 2) 0 = true := by
+  cases ho : M.output M.initialState with
+  | some b =>
+      simp [Machine.step, Machine.initial, compileFused,
+        decodeActive, startupState, activeState, Function.update, ho]
+  | none =>
+      simp [Machine.step, Machine.initial, compileFused,
+        decodeActive, startupState, activeState, Function.update, ho]
+
 end Metalogic.OpenAIMath.LeftWallFusedCompiler
