@@ -139,4 +139,45 @@ theorem oai_head_natAbs_lt_spaceThrough
         (fun j _ => Nat.zero_le _) (Finset.mem_univ k))
   omega
 
+
+/-- A bound on the exact OAI space measure bounds work-head position at the
+    same time. The signed bounds follow from the independently proved
+    cardinality/absolute-displacement inequality. -/
+theorem oai_workhead_inside_space_window
+    {q w h : ℕ} (M : Machine q w h) (x : Word) (coins : CoinTape)
+    (t s : ℕ) (hspace : M.spaceThrough x coins t ≤ s) (k : Fin w) :
+    -(s : ℤ) < (M.run x coins t).workPos k ∧
+      (M.run x coins t).workPos k < (s : ℤ) := by
+  have hrad := oai_head_natAbs_lt_spaceThrough M x coins k t
+  have hnat : ((M.run x coins t).workPos k).natAbs < s :=
+    lt_of_lt_of_le hrad hspace
+  have habs : |(M.run x coins t).workPos k| < (s : ℤ) := by
+    rw [Int.abs_eq_natAbs]
+    exact_mod_cast hnat
+  exact abs_lt.mp habs
+
+/-- Because the OAI work tape starts blank and writes only at the head, any
+    spaceThrough bound yields a blank exterior to the corresponding window. -/
+theorem oai_tape_blank_outside_space_window
+    {q w h : ℕ} (M : Machine q w h) (x : Word) (coins : CoinTape)
+    (t s : ℕ) (hspace : M.spaceThrough x coins t ≤ s)
+    (k : Fin w) (z : ℤ)
+    (houtside : z < -(s : ℤ) ∨ (s : ℤ) < z) :
+    (M.run x coins t).work k z = false := by
+  apply FiniteEnvelope.unvisited_work_cell_is_blank
+  intro u hu heq
+  have hmono : M.spaceThrough x coins u ≤ M.spaceThrough x coins t :=
+    FiniteEnvelope.spaceThrough_monotone M x coins (Nat.le_of_lt hu)
+  have hrad := oai_head_natAbs_lt_spaceThrough M x coins k u
+  rw [heq] at hrad
+  have hnat : z.natAbs < s :=
+    lt_of_lt_of_le hrad (le_trans hmono hspace)
+  have habs : |z| < (s : ℤ) := by
+    rw [Int.abs_eq_natAbs]
+    exact_mod_cast hnat
+  have hin := abs_lt.mp habs
+  rcases houtside with hlo | hhi
+  · exact (not_lt_of_ge hin.1.le hlo).elim
+  · exact (not_lt_of_ge hin.2.le hhi).elim
+
 end Metalogic.OpenAIMath.VisitedRadius
