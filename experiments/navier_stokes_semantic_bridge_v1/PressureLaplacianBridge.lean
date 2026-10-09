@@ -30,8 +30,11 @@ not just by equating unverified human-readable names. -/
 theorem source_and_comparison_test_laplacians_agree
     (ψ : ComplexTest) :
     laplacianCLM ψ = Δ ψ := by
-  rw [← SchwartzMap.laplacianCLM_eq (𝕜 := ℂ) ψ]
-  rfl
+  rw [SchwartzMap.laplacian_eq_sum (EuclideanSpace.basisFun (Fin 3) ℝ) ψ]
+  simp [laplacianCLM, partialCLM,
+    NavierStokes.ProblemStatement.coordinateVector,
+    EuclideanSpace.basisFun_apply,
+    LineDeriv.lineDerivOpCLM_apply]
 
 /-- Mixed partials have the same protected observation in either order.
 We prove this via the ORIGINAL Fourier multipliers and injectivity, rather
@@ -54,9 +57,9 @@ theorem old_pressure_poisson_laplacian_test
       - (f : 𝓢'(Space, ℂ)) (partialCLM j (partialCLM i ψ)) := by
   have h := congrArg (fun F : 𝓢'(Space, ℂ) => F ψ)
     (NavierStokes.R3PressureFourier.pressureL1_poisson i j f)
-  simpa only [TemperedDistribution.laplacian_apply_apply,
+  simpa [TemperedDistribution.laplacian_apply_apply,
     TemperedDistribution.lineDerivOp_apply_apply,
-    partialCLM, LineDeriv.lineDerivOpCLM_apply, map_neg, neg_neg] using h
+    partialCLM, LineDeriv.lineDerivOpCLM_apply] using h
 
 /-- Entire Laplacian-test input transport: actual integrable real stress g,
 its explicit complex L1 realization and the full Schwartz test. No spectral
@@ -81,7 +84,10 @@ theorem actual_old_and_comparison_pressure_agree_on_laplacian_tests
   rw [Lp.toTemperedDistribution_apply]
   apply integral_congr_ae
   filter_upwards [hinput] with x hx
-  simp only [hx, smul_eq_mul, mul_comm]
+  change (hl1.toLp fg : Space → ℂ) x *
+      (partialCLM j (partialCLM i ψ)) x =
+      fg x * (partialCLM j (partialCLM i ψ)) x
+  exact congrArg (fun z : ℂ => z * (partialCLM j (partialCLM i ψ)) x) hx
 
 end MathGraph.PressureLaplacianBridge
 
