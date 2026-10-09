@@ -8,6 +8,7 @@ on:
       - 'experiments/openai-logspace-model-bridge-v1/VisitedRadius.lean'
       - 'experiments/openai-logspace-model-bridge-v1/AlphabetBridge.lean'
       - 'experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean'
       - '.github/workflows/openai-logspace-model-bridge.yml'
   workflow_dispatch:
 
@@ -45,6 +46,7 @@ jobs:
           cp experiments/openai-logspace-model-bridge-v1/VisitedRadius.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/AlphabetBridge.lean isolated/
           cp experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean isolated/
           cp upstream/lean/lean-toolchain isolated/lean-toolchain
           test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
           cat > isolated/lakefile.lean <<'LAKE'
@@ -59,6 +61,7 @@ jobs:
           lean_lib VisitedRadius
           lean_lib AlphabetBridge
           lean_lib ExplicitAlphabetBridge
+          lean_lib SymbolMachineBridge
           lean_lib OAI
           LAKE
           printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
@@ -87,14 +90,15 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
-          lake build ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge
-          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge
+          lake build ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge
+          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge
           cat > AxiomCheck.lean <<'LEAN'
           import ModelSemantics
           import FiniteEnvelope
           import VisitedRadius
           import AlphabetBridge
           import ExplicitAlphabetBridge
+          import SymbolMachineBridge
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_step_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
@@ -137,6 +141,9 @@ jobs:
           #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.lowerAction_write_bit
           #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.lowerAction_group_move
           #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.copyHeadMovement_commutes
+          #print axioms Metalogic.OpenAIMath.SymbolMachineBridge.compileMachine_initialState
+          #print axioms Metalogic.OpenAIMath.SymbolMachineBridge.compileMachine_output
+          #print axioms Metalogic.OpenAIMath.SymbolMachineBridge.decodeTrackReads_encoded
           LEAN
           lake env lean AxiomCheck.lean | tee axioms.txt
           ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
