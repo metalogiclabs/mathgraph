@@ -8,6 +8,8 @@ for the live question. They are not treated as a source of ground truth
 about a new scientific claim. No handwritten per-question answer mapping.
 """
 from __future__ import annotations
+import ast
+from decimal import Decimal, InvalidOperation
 import hashlib
 import math
 import re
@@ -84,15 +86,59 @@ def examples_for(question, dev_rows, max_examples=2):
     return [item for _,item in options[:max_examples]]
 
 
+def compile_answer_convention(value):
+    """Map a development grading allowance to one valid scalar witness.
+
+    This operates ONLY on training development examples. A tolerance band
+    [low,high] is an evaluation interval for one scalar answer, NOT the
+    output that a new scientific question should copy. In contrast an
+    actual tuple (low,high) is a reported two-endpoint range.
+
+    Values and units are never introduced into a target QUESTION from
+    a held-out or protected TEST row.
+    """
+    raw=str(value or "").strip()
+    if raw.startswith("[") and raw.endswith("]"):
+        try:
+            parsed=ast.literal_eval(raw)
+        except (SyntaxError,ValueError,TypeError,MemoryError):
+            parsed=None
+        if isinstance(parsed,list) and len(parsed)==2:
+            try:
+                first=Decimal(str(parsed[0]))
+                second=Decimal(str(parsed[1]))
+            except (InvalidOperation,ValueError,TypeError):
+                first=second=None
+            if (first is not None and second is not None and
+                    first.is_finite() and second.is_finite() and first<=second):
+                scalar=(first+second)/Decimal(2)
+                return "scalar_scored_under_tolerance_band",format(scalar.normalize(),"f")
+    if raw.startswith("(") and raw.endswith(")"):
+        try:
+            parsed=ast.literal_eval(raw)
+        except (SyntaxError,ValueError,TypeError,MemoryError):
+            parsed=None
+        if isinstance(parsed,tuple) and len(parsed)==2:
+            try:
+                a,b=Decimal(str(parsed[0])),Decimal(str(parsed[1]))
+            except (InvalidOperation,ValueError,TypeError):
+                a=b=None
+            if a is not None and b is not None and a.is_finite() and b.is_finite():
+                return "reported_range_with_two_endpoints",raw
+    return "scalar_or_categorical_exact",raw
+
+
 def illustrate(question, dev_rows):
     selections=examples_for(question,dev_rows)
     if len(selections)!=2:
         raise RuntimeError("Too few development-only worked examples")
     demo=[]
     for row in selections:
+        value_kind,formatted=compile_answer_convention(row["answer_value"])
         demo.append({
             "worked_question":str(row["question"])[:230],
-            "worked_answer_value":str(row["answer_value"])[:100],
+            "worked_answer_kind":value_kind,
+            "worked_answer_value":formatted[:100],
             "worked_answer_unit":str(row.get("answer_unit","is_blank"))[:50],
             "worked_explanation":str(row.get("explanation",""))[:280],
         })
@@ -105,8 +151,13 @@ def illustrate(question, dev_rows):
          "the current question. Never copy a worked answer value, paper, "
          "or supporting citation into the current answer. Use only the "
          "current question's separately supplied source passages. "
-         "Apply the same output convention: exact scalar, correct range "
-         "format, normalized units, or is_blank where evidence is absent. "
+         "A training [low,high] number pair is a SCORING TOLERANCE for a "
+         "single derived scalar, not an answer to imitate verbatim; "
+         "the example gives a canonical scalar witness in that allowance. "
+         "An actual source-reported two-endpoint range is different and "
+         "uses tuple (low,high) output. Preserve that distinction. "
+         "Apply the same output convention: exact scalar, actual reported "
+         "range only when asked, normalized units, or is_blank. "
          "If deriving a number, name its actual current-source inputs and "
          "carry out the arithmetic. Return independent verbatim supporting "
          "quotes for the current question; no invented precision."
@@ -114,6 +165,14 @@ def illustrate(question, dev_rows):
 
 
 def self_test():
+    assert compile_answer_convention("[116,122]")==(
+        "scalar_scored_under_tolerance_band","119")
+    assert compile_answer_convention("[0.8,1.2]")==(
+        "scalar_scored_under_tolerance_band","1")
+    assert compile_answer_convention("(14,29)")==(
+        "reported_range_with_two_endpoints","(14,29)")
+    assert compile_answer_convention("['solar','wind']")==(
+        "scalar_or_categorical_exact","['solar','wind']")
     assert task_type("Compare both studies' carbon impact.")=="CrossPaper"
     assert task_type("What ratio of water use to electricity?")=="Math"
     assert task_type("What does Figure 3 plot?")=="Figure"
@@ -140,7 +199,7 @@ def self_test():
     assert "TRAIN DEVELOPMENT ONLY" in text
     assert "NOT evidence" in text
     assert "19.6" in text
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_SELF_TEST=PASS")
+    print("WATTBOT_TYPED_LESSON_COMPILER_SELF_TEST=PASS")
 
 
 if __name__=="__main__":
