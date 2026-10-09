@@ -89,6 +89,7 @@ jobs:
           #print axioms Metalogic.OpenAIMath.ModelSemantics.run_depends_only_on_coin_prefix
           #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_run_is_stable
           #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_repeat_propagates
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.no_configuration_repeat_before_first_halt
           #print axioms Metalogic.OpenAIMath.FiniteEnvelope.envelope_finite
           #print axioms Metalogic.OpenAIMath.FiniteEnvelope.envelope_card
           #print axioms Metalogic.OpenAIMath.FiniteEnvelope.configuration_ext_of_window
