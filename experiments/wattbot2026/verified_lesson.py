@@ -54,10 +54,10 @@ def similarity(a,b):
     return len(aa&bb)/math.sqrt(len(aa)*len(bb))
 
 
-def examples_for(question, dev_rows, max_examples=2):
+def examples_for(question, dev_rows, max_examples=3):
     """Query-only deterministic selector over allowed development demonstrations."""
-    if not 0<max_examples<=2:
-        raise ValueError("Bounded exemplar count is 1..2")
+    if not 0<max_examples<=3:
+        raise ValueError("Bounded exemplar count is 1..3")
     target=task_type(question)
     options=[]
     qnorm=" ".join(str(question).casefold().split())
@@ -86,7 +86,7 @@ def examples_for(question, dev_rows, max_examples=2):
 
 def illustrate(question, dev_rows):
     selections=examples_for(question,dev_rows)
-    if len(selections)!=2:
+    if len(selections)!=3:
         raise RuntimeError("Too few development-only worked examples")
     demo=[]
     for row in selections:
@@ -135,12 +135,12 @@ def self_test():
         while is_holdout(str(row["id"])):
             row["id"]+="_dev"
     chosen=examples_for("What was the percent decrease?",sample)
-    assert len(chosen)==2 and chosen[0]["id"]=="d1"
+    assert len(chosen)==3 and chosen[0]["id"]=="d1"
     text=illustrate("What was the percent decrease?",sample)
     assert "TRAIN DEVELOPMENT ONLY" in text
     assert "NOT evidence" in text
     assert "19.6" in text
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_SELF_TEST=PASS")
+    print("WATTBOT_VERIFIED_LESSON_ARITY3_SELF_TEST=PASS")
 
 
 if __name__=="__main__":
