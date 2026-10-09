@@ -32,6 +32,10 @@ from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
 from answer_value_residual_probe import raw_variant, usable
+from abstention_boundary import (explicit_model_refusal, refusal_row,
+                                 self_test as abstention_self_test)
+from citation_refinement import (retarget,
+                                 self_test as citation_self_test)
 
 READER_BLOB="4e1350ef72a44a333862dec23c737a2262ab99bc"
 SOURCE_SHA="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a9"
@@ -51,6 +55,8 @@ def git_blob(raw):
 
 
 def self_test():
+    abstention_self_test()
+    citation_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==READER_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100
     assert base.MAX_REQUESTS==63 and base.MAX_BUDGET_USD==.12
@@ -195,6 +201,9 @@ def run(official_zip):
             "second_strict",
             "second_verified_else_first_provisional",
             "second_provisional_else_first_provisional",
+            "first_provisional_explicit_blank",
+            "second_verified_provisional_explicit_blank",
+            "second_verified_explicit_blank_quote_ref",
         )}
         for _,item in blank.iterrows():
             source_id=str(item["id"])
@@ -224,6 +233,26 @@ def run(official_zip):
             arms["second_provisional_else_first_provisional"].append(
                 dict(first) if first is not None else
                 dict(second) if second is not None else later_provisional)
+
+            explicit=explicit_model_refusal(raw)
+            if explicit:stats["original_explicit_blank"]+=1
+            proposed=refusal_row(item,"original model explicitly returned is_blank") if explicit else original_provisional
+            with_verified=(
+                dict(first) if first is not None else
+                dict(second) if second is not None else proposed)
+            arms["first_provisional_explicit_blank"].append(
+                dict(first) if first is not None else proposed)
+            arms["second_verified_provisional_explicit_blank"].append(with_verified)
+            refined=(retarget(with_verified,raw,str(item["question"]),
+                              first_passages[source_id],"quote")
+                     if first is None and second is None and
+                        not explicit and usable(raw)
+                     else with_verified)
+            stats["quote_provisional_ref_swaps"]+=int(
+                refined["ref_id"]!=with_verified["ref_id"])
+            if refined["answer_value"]!=with_verified["answer_value"]:
+                raise RuntimeError("Citation-only policy changed protected answer value")
+            arms["second_verified_explicit_blank_quote_ref"].append(refined)
         with tempfile.TemporaryDirectory(prefix="wattbot_rescue_score_") as temp:
             scorer=load_score(z,temp)
             result_scores={}
@@ -235,7 +264,7 @@ def run(official_zip):
     improved=score["scores"]["reader_then_numeric_fallback"]
     if abs(improved-result_scores["second_strict"])>0.00000002:
         raise RuntimeError("Reconstructed second-pass strict score diverges")
-    print("WATTBOT_SECOND_PASS_PROVISIONAL="+json.dumps({
+    print("WATTBOT_COMPOSED_WARRANTED_FUTURE="+json.dumps({
        "scope":"Same original 63 TRAIN first-pass responses; official pinned scorer",
        "baseline_same_run":initial,
        "second_pass_qualified":improved,
@@ -247,6 +276,12 @@ def run(official_zip):
        "second_raw_gain_vs_first_provisional":round(
            result_scores["second_provisional_else_first_provisional"]
            -result_scores["first_provisional"],8),
+       "composed_minus_first_provisional":round(
+           result_scores["second_verified_explicit_blank_quote_ref"]
+           -result_scores["first_provisional"],8),
+       "composed_minus_second_verified":round(
+           result_scores["second_verified_explicit_blank_quote_ref"]
+           -result_scores["second_verified_else_first_provisional"],8),
        "primary_model":"google/gemini-2.5-flash-lite",
        "intervention":"Only source quote failures receive a second K10 source view",
        "historical_unpaired_run":COMPARATOR_RUN,
@@ -255,12 +290,13 @@ def run(official_zip):
        "secondary_reported_usd":round(cost[1],7),
        "primary_reported_usd":score["observed_api_usd"],
        "source_manifest_sha256":SOURCE_SHA,
-       "boundary":"One identical first-pass TRAIN response per question and "
-                  "all variants scored with pinned Score.py after outputs freeze. "
-                  "A second pass may produce a new answer; independent PDF quote "
-                  "verification does not entail scientific correctness. "
-                  "Provisional source associations remain CANDIDATE. "
-                  "No protected TEST labels or Kaggle submission.",
+       "boundary":"One same first-pass response and optional triggered second "
+                  "response for all policy arms. Composed rule: honor explicit "
+                  "is_blank, preserve original verified answers, accept second "
+                  "answers only if original PDF quote checker qualifies them, "
+                  "then propose source rerouting solely for still-unverified "
+                  "values. Quote occurrence is not semantic entailment; "
+                  "no holdout labels in policy, no protected TEST submission.",
     },sort_keys=True),flush=True)
 
 if __name__=="__main__":
