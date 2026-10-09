@@ -141,14 +141,30 @@ def run(official_zip, max_docs=24):
             blanks=blank_submission(hold)
             score=lambda frame:float(score_fn(hold.copy(deep=True),
                             frame.copy(deep=True),row_id_column_name="id",verbose=False))
-            result={"holdout_rows":len(hold),"dev_rows":len(dev),
-                    "selected_sources":len(sources),"retrieved_valid_pdfs":len(valid),
-                    "pdf_chunks":len(chunks),"admitted_numeric_candidates":admitted,
-                    "abstentions":len(hold)-admitted,
-                    "official_train_holdout_blank_score":round(score(blanks),8),
-                    "official_train_holdout_numeric_score":round(score(predicted),8),
-                    "claim_boundary":"Numeric literals plus pinned page provenance only, not semantic entailment or leaderboard score."}
-            print("WATTBOT_GROUNDED_NUMERIC_PILOT="+json.dumps(result,sort_keys=True))
+            # Frozen component controls isolate answer correctness from
+            # citation matching. A provenance-anchored number is not entailed.
+            answer_only=predicted.copy(deep=True)
+            citation_only=predicted.copy(deep=True)
+            for c in ("ref_id","ref_url","supporting_materials"):
+                answer_only[c]="is_blank"
+            citation_only["answer"]="Unable to determine numeric answer."
+            for c in ("answer_value","answer_unit"):
+                citation_only[c]="is_blank"
+            arms={
+                "all_blank":blanks,
+                "numeric_answer_only":answer_only,
+                "predicted_citations_only":citation_only,
+                "numeric_answer_plus_citations":predicted,
+            }
+            scores={k:round(score(v),8) for k,v in arms.items()}
+            print("WATTBOT_NUMERIC_COMPONENT_SEPARATION="+json.dumps({
+                "holdout_rows":len(hold),"dev_rows":len(dev),
+                "selected_sources":len(sources),"retrieved_valid_pdfs":len(valid),
+                "pdf_chunks":len(chunks),"admitted_numeric_candidates":admitted,
+                "scores":scores,
+                "boundary":"Frozen 24-source heuristic; previously inspected train holdout; no test labels or independent semantic proof.",
+                "interpretation":"Only isolated numeric-answer gain over all-blank counts as evidence of answer correctness.",
+            },sort_keys=True))
 
 
 if __name__ == "__main__":
