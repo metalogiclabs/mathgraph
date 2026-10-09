@@ -41,3 +41,34 @@ lake env comparator ComparatorChallenges/LogspaceEquality.json
 Capture toolchain pins, full command, exit code, logs, declarations checked, imported axioms, and the formal definitions compared against the paper. Do not claim that this external replay has happened until an independently pinned run is green. Independently assess the topological sign derivation before treating OpenAI's withdrawal notice as a mathematical refutation.
 
 Promotion: source-reported withdrawn proofs remain not disproven statements; logspace remains UNKNOWN until independently checked; preserve failed checks and exact provenance.
+
+## Expanded source/model and build-pinning preflight
+
+Source gate v2 also pins two Logspace LaTeX source sections (introduction and model),
+the original Lean toolchain file, Lake manifest, and Lake package declaration,
+all by Git blob identity at the same immutable upstream commit. It checks the
+published model's fresh independent coin bits, time/space bounds, probability
+thresholds, and a bounded subset of challenge-side class-definition tokens.
+This is a **TEXTUAL_MODEL_CORRESPONDENCE_CANDIDATE_NOT_PROOF**.
+It does not establish full mathematical equivalence of paper and formal definitions.
+
+The actual pinned build is Lean 4.34.1 with Mathlib at
+d13f23b723b8a846827a245b89c10fc7d3f11612. The current Comparator
+repository head ca04cfc72b550331658ec314bf47685281bfd4bf targets
+Lean 4.35.0-rc4. A replay must establish compatible versions and must
+not silently run lake update, which may change locked dependencies.
+
+## Isolated conditional sign proof
+
+See experiments/openai-math-sign-v1/WeilSignProbe.lean with its
+own lean-toolchain (Lean 4.34.1), minimal Lake project and CI
+workflow openai-math-sign-witness.yml. It proves the arithmetic
+implication that, **assuming** each reverse stabilization trace
+contributes -1, a starting signed count -m with m>0 becomes -2m,
+which is nonzero. It separately confirms why the obsolete +1
+assumption would cancel. Its status remains **UNKNOWN_KERNEL_REPLAY**
+until its own dedicated Lean CI gate succeeds.
+
+The sign/orientation premise itself is external to this tiny arithmetic
+formalization. The sign proof must never be promoted as an independently
+verified refutation of the original geometric theorem.
