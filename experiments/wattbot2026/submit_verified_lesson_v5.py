@@ -27,11 +27,13 @@ import full_reader as base
 import submit_full_reader as v4
 from holdout_probe import is_holdout
 from verified_lesson import illustrate, self_test as lessons_self_test
+from abstention_boundary import (explicit_model_refusal, refusal_row,
+                                 self_test as abstention_self_test)
 
 READER_BLOB="4e1350ef72a44a333862dec23c737a2262ab99bc"
 LESSON_BLOB="99189ba7c9be96909279f9fc5e5590dc6f317772"
 V4_GENERATOR_BLOB="509da00a860c403c71f484de481aa4458dc0c954"
-MAX_TOTAL_RESERVED_USD=.75
+MAX_TOTAL_RESERVED_USD=1.0
 MAX_EVALUATION_ROWS=317
 
 
@@ -42,6 +44,7 @@ def git_blob(path):
 
 def self_test():
     lessons_self_test()
+    abstention_self_test()
     v4.self_test()
     assert base.MODEL=="google/gemini-2.5-flash-lite"
     assert base.K==6 and base.MAX_EXCERPT==1100
@@ -49,7 +52,7 @@ def self_test():
     assert git_blob(Path(__file__).with_name("verified_lesson.py"))==LESSON_BLOB
     assert git_blob(v4.__file__)==V4_GENERATOR_BLOB
     assert MAX_TOTAL_RESERVED_USD>.337436
-    assert MAX_TOTAL_RESERVED_USD<1.
+    assert MAX_TOTAL_RESERVED_USD<=1.0
     print("WATTBOT_V5_VERIFIED_LESSON_SELF_TEST=PASS",flush=True)
 
 
@@ -95,48 +98,94 @@ def inspect_official_questions(archive):
 def run(archive,out):
     self_test()
     examples=inspect_official_questions(archive)
-    # Ensure original V4 preflight and exact-source quote validator run unchanged.
     previous_model=base.call_reader
+    previous_checker=base.try_checked
     previous_budget=v4.MAX_API_COST_USD
     counters=Counter()
     reserve=[0.,0.]
-    def learned_reader(key,question,passages,rate):
+
+    def two_read_model(key,question,passages,rate):
         if len(passages)!=base.K:
-            raise RuntimeError("Reader source-page budget changed")
+            raise RuntimeError("Pinned six-page source scope changed")
         enriched=question+illustrate(question,examples)
-        prompt=json.dumps({
-            "question":enriched,
-            "passages":[{"source_index":i,"ref_id":p["ref_id"],
-                "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
-                for i,p in enumerate(passages)]},
-            ensure_ascii=False,separators=(",",":"))
-        charge=base.conservative_charge(
-            base.SYSTEM+prompt,rate,base.MAX_OUTPUT_TOKENS)
-        if reserve[0]+charge>MAX_TOTAL_RESERVED_USD:
-            raise RuntimeError("Conservative model price budget exceeded before call")
-        response,status,bound,observed=previous_model(
-            key,enriched,passages,rate)
-        if abs(bound-charge)>1e-9:
-            raise RuntimeError("Model charge differs from independently calculated reservation")
-        reserve[0]+=bound
-        reserve[1]+=observed
-        counters["requests"]+=1
-        counters[status]+=1
-        return response,status,bound,observed
+        def source_prompt(text):
+            return json.dumps({
+                "question":text,
+                "passages":[{"source_index":i,"ref_id":p["ref_id"],
+                    "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
+                    for i,p in enumerate(passages)]},
+                ensure_ascii=False,separators=(",",":"))
+        q1=source_prompt(question)
+        q2=source_prompt(enriched)
+        charge1=base.conservative_charge(
+            base.SYSTEM+q1,rate,base.MAX_OUTPUT_TOKENS)
+        charge2=base.conservative_charge(
+            base.SYSTEM+q2,rate,base.MAX_OUTPUT_TOKENS)
+        if reserve[0]+charge1+charge2>MAX_TOTAL_RESERVED_USD:
+            raise RuntimeError("Two-read model cost cap breached BEFORE either call")
+        first,status1,bound1,cost1=previous_model(key,question,passages,rate)
+        if status1 in ("HTTP_401","HTTP_403","HTTP_429","PROVIDER_ERROR"):
+            raise RuntimeError("First reader provider authorization/rate failure")
+        second,status2,bound2,cost2=previous_model(key,enriched,passages,rate)
+        if status2 in ("HTTP_401","HTTP_403","HTTP_429","PROVIDER_ERROR"):
+            raise RuntimeError("Lesson reader provider authorization/rate failure")
+        if (abs(bound1-charge1)>1e-9 or abs(bound2-charge2)>1e-9):
+            raise RuntimeError("Conservative model-price accounting diverged")
+        reserve[0]+=bound1+bound2
+        reserve[1]+=cost1+cost2
+        counters["questions"]+=1
+        counters["model_requests"]+=2
+        counters["first_"+status1]+=1
+        counters["lesson_"+status2]+=1
+
+        from answer_value_residual_probe import usable
+        if status2=="OK" and usable(second):
+            selected=second
+            counters["selected_lesson"]+=1
+        elif status1=="OK" and usable(first):
+            selected=first
+            counters["selected_first"]+=1
+        elif explicit_model_refusal(first):
+            selected=first
+            counters["preserved_first_refusal"]+=1
+        else:
+            selected=None
+            counters["selected_numeric_fallback"]+=1
+        return selected,("OK" if selected is not None else "INVALID_JSON"),(
+            bound1+bound2),cost1+cost2
+
+    def checked_with_explicit_refusal(raw,question,passages,docs):
+        if explicit_model_refusal(raw):
+            template={
+                "id":question["id"],"question":question["question"],
+                "answer":"is_blank","answer_value":"is_blank",
+                "answer_unit":"is_blank","ref_id":"is_blank",
+                "ref_url":"is_blank","supporting_materials":"is_blank",
+                "explanation":"Model explicitly abstained."
+            }
+            return refusal_row(template,
+                "First reader explicitly refused and verified development "
+                "lesson produced no supported answer"),"EXPLICIT_MODEL_REFUSAL"
+        return previous_checker(raw,question,passages,docs)
+
     try:
-        base.call_reader=learned_reader
+        base.call_reader=two_read_model
+        base.try_checked=checked_with_explicit_refusal
         v4.MAX_API_COST_USD=MAX_TOTAL_RESERVED_USD
-        # Previously qualified V4 source/quote/provisional-value and CSV
-        # transport logic; no protected TEST labels or output publication.
+        # The independently qualified V4 PDF source pin, quote gate, raw
+        # candidate and 317-row CSV transport decisions remain unchanged.
         v4.run(archive,out,policy="window")
     finally:
         base.call_reader=previous_model
+        base.try_checked=previous_checker
         v4.MAX_API_COST_USD=previous_budget
-    if counters["requests"]!=MAX_EVALUATION_ROWS:
-        raise RuntimeError("Incomplete 317-row model qualification")
+    if counters["questions"]!=MAX_EVALUATION_ROWS:
+        raise RuntimeError("Incomplete 317-row dual-reader qualification")
+    if counters["model_requests"]!=2*MAX_EVALUATION_ROWS:
+        raise RuntimeError("Every test row requires exactly two model responses")
     if reserve[0]>MAX_TOTAL_RESERVED_USD:
-        raise RuntimeError("Exceeded the source-model spending ceiling")
-    print("WATTBOT_V5_VERIFIED_LESSON_TEST_READY="+json.dumps({
+        raise RuntimeError("Two-read source-model spending ceiling exceeded")
+    print("WATTBOT_V5B_TWO_READ_TEST_READY="+json.dumps({
         "status":"TRANSPORT_QUALIFIED_ONLY",
         "inference":dict(counters),
         "reserve_ceiling_usd":MAX_TOTAL_RESERVED_USD,
@@ -146,12 +195,14 @@ def run(archive,out):
         "source_reader_blob":READER_BLOB,
         "lesson_source_blob":LESSON_BLOB,
         "v4_generator_blob":V4_GENERATOR_BLOB,
-        "qualifying_train_run":37985937618,
-        "same_response_train_score_candidate":.69074074,
+        "lesson_train_qualifier":37985937618,
+        "first_refusal_train_qualifier":37987958320,
         "Kaggle_TEST_score":"UNKNOWN (no Kaggle submission)",
-        "science_boundary":"Exact page quotations retain independently checked provenance. "
-          "All model answer values remain scientific candidates. No trained "
-          "lesson comes from target holdout or protected TEST answers.",
+        "science_boundary":"Exact page quotations retain independent "
+          "provenance checking. First explicit refusals remain UNKNOWN "
+          "unless a learned reader supplies a new answer. All unverified "
+          "model values and model-indexed source identities remain "
+          "CANDIDATES; no hidden TEST labels used.",
     },sort_keys=True),flush=True)
 
 
