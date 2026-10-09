@@ -46,7 +46,7 @@ theorem gaussian_tendsto_canonical_pressure_distribution
       (weightedPressure hφ i j g hw hg₂)).comp
         (regularized_weighted_pressure_tendsto hφ i j g hw hg₂)
   have hid := weightedPressure_distribution hφ hφg i j g hw hg₂
-  simpa only [Function.comp_def, hid] using hlim
+  simpa only [Function.comp_def, Lp.toTemperedDistributionCLM_apply, hid] using hlim
 
 /-- Proof-carrying canonical cutoff pressure admission: uniform finite
     Gaussian bounds + verified distribution identification yield a bounded
