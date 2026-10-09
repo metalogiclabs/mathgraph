@@ -1,10 +1,9 @@
 name: OpenAI Logspace isolated theorem replay
 
 on:
-  pull_request:
+  push:
     paths:
       - '.github/workflows/openai-logspace-isolated-replay.yml'
-      - 'docs/openai-math-evidence-audit-v1.md'
   workflow_dispatch:
 
 permissions:
