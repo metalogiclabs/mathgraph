@@ -48,8 +48,8 @@ def validate_url(url):
     p=urlparse(url)
     if p.scheme!="https" or (p.hostname or "").lower() not in ALLOWED_HOSTS:
         raise ValueError("disallowed_scheme_or_source_host")
-    if p.username or p.password or p.port:
-        raise ValueError("untrusted_url_auth_or_port")
+    if p.username or p.password or p.port not in (None,443):
+        raise ValueError("untrusted_url_auth_or_nonstandard_port")
     return p.hostname
 
 def load_one(url):
@@ -123,6 +123,8 @@ def run(archive):
     outcomes=[]
     errors=Counter()
     digests=[]
+    recovered=set()
+    failure_indices=[]
     for i,r in enumerate(reports):
         if i:time.sleep(2)
         try:
@@ -130,9 +132,15 @@ def run(archive):
             result=load_one(r["url"])
             outcomes.append({"type":result["type"],"bytes":result["bytes"],
                              "pages":result["pages"],"chars":result["chars"]})
+            recovered.add(r["id"])
             digests.append(result["sha256"])
         except (requests.RequestException,ValueError,RuntimeError,fitz.FileDataError) as exc:
-            errors[type(exc).__name__+":"+(str(exc)[:48] if isinstance(exc,(ValueError,RuntimeError)) else "")]+=1
+            if isinstance(exc,requests.HTTPError):
+                category="HTTP_"+str(getattr(exc.response,"status_code","UNKNOWN"))
+            else:
+                category=type(exc).__name__+":"+(str(exc)[:48] if isinstance(exc,(ValueError,RuntimeError)) else "")
+            errors[category]+=1
+            failure_indices.append(i)
             digests.append("UNKNOWN")
     print("WATTBOT_PINNED_REPORT_AUDIT="+json.dumps({
         "attempted":len(reports),"valid":len(outcomes),
@@ -141,12 +149,16 @@ def run(archive):
         "total_pages":sum(o["pages"] for o in outcomes),
         "errors":dict(errors),
         "train_question_rows_citing_any_report":quoted,
+        "train_question_rows_with_any_accessible_report":sum(bool(x&recovered) for x in refsets),
+        "train_question_rows_with_all_cited_reports_accessible":sum(bool(x&known) and (x&known)<=recovered for x in refsets),
+        "failed_report_ordinals":failure_indices,
         "manifest_sha256":hashlib.sha256("\n".join(digests).encode()).hexdigest(),
         "scope":"eight official pinned URLs only; HTTP status and format tests do not prove accuracy",
     },sort_keys=True),flush=True)
 
 def self_test():
     assert validate_url("https://www.gao.gov/some-report")=="www.gao.gov"
+    assert validate_url("https://www.gao.gov:443/some-report")=="www.gao.gov"
     try:
         validate_url("http://127.0.0.1/internal")
         raise AssertionError("unexpected unsafe URL accepted")
