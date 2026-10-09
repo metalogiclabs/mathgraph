@@ -26,6 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
           python experiments/wattbot2026/report_loader.py
           python experiments/wattbot2026/full_reader.py --self-test
           python experiments/wattbot2026/full_window_probe.py --self-test
