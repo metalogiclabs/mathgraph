@@ -103,4 +103,42 @@ theorem encoded_head_motion (c : LeftConfiguration q h n)
       (moveNat d c.workPos : ℤ) := by
   simpa only [encode_marker_read] using guardedMove_correct d c.workPos
 
+/-- The OAI target initializes its marker in one physical transition,
+even though the native source machine starts with an all-blank Nat tape. -/
+theorem bootstrap_marker_written (M : LeftMachine q h)
+    (x : Word) (coin : Bool) :
+    ((compile M).step x coin ((compile M).initial x.length)).work
+      (1 : Fin 2) (0 : ℤ) = true := by
+  simp [Machine.step, Machine.initial, compile,
+    decodeActive_startup, startupState, Function.update]
+
+theorem bootstrap_enters_active_state (M : LeftMachine q h)
+    (x : Word) (coin : Bool) :
+    ((compile M).step x coin ((compile M).initial x.length)).state =
+      activeState M.initialState := by
+  simp [Machine.step, Machine.initial, compile,
+    decodeActive_startup, startupState]
+
+theorem bootstrap_heads_at_origin (M : LeftMachine q h)
+    (x : Word) (coin : Bool) (j : Fin 2) :
+    ((compile M).step x coin ((compile M).initial x.length)).workPos j =
+      (0 : ℤ) := by
+  simp [Machine.step, Machine.initial, compile,
+    decodeActive_startup, startupState, Direction.move]
+
+/-- Extend-source-write commutation is the essential tape-frame condition:
+a source write on Nat equals a target write on the nonnegative Int half-tape. -/
+theorem extendWork_update (f : ℕ → Bool) (p : ℕ) (b : Bool) :
+    extendWork (Function.update f p b) =
+      Function.update (extendWork f) (p : ℤ) b := by
+  funext z
+  by_cases hn : z < 0
+  · have hne : z ≠ (p : ℤ) := by omega
+    simp [extendWork, Function.update, hn, hne]
+  · by_cases heq : z = (p : ℤ)
+    · subst z
+      simp [extendWork, Function.update]
+    · have hnat : z.toNat ≠ p := by omega
+      simp [extendWork, Function.update, hn, heq, hnat]
+
 end Metalogic.OpenAIMath.LeftWallCompiler
