@@ -19,7 +19,7 @@ namespace MathGraph.FourLossComplete
 open Set
 open NavierStokes.TorusInverse
 open NavierStokes.SmoothFamilyTorusInverse
-open scoped BigOperators
+open scoped Topology ContDiff BigOperators
 
 variable {P : Type} [NormedAddCommGroup P] [NormedSpace ℝ P] [FiniteDimensional ℝ P]
 
