@@ -84,4 +84,29 @@ theorem fused_bootstrap_move_correct (d : Direction) :
       (moveNat d 0 : ℤ) := by
   cases d <;> decide
 
+/-- The marker track is created from the uniformly blank OAI tape by
+writing true at the initial coordinate zero. -/
+theorem origin_marker_from_blank :
+    Function.update (fun _ : ℤ => false) 0 true = marker := by
+  funext z
+  by_cases hz : z = 0
+  · subst z
+    simp [Function.update, marker]
+  · simp [Function.update, marker, hz]
+
+/-- The fused bootstrap data write is precisely the source's Nat-tape
+write transported to its nonnegative Int representation. -/
+theorem initial_data_write_commutes (b : Bool) :
+    Function.update (fun _ : ℤ => false) 0 b =
+      extendWork (Function.update (fun _ : ℕ => false) 0 b) := by
+  funext z
+  by_cases hz : z < 0
+  · have hn : z ≠ 0 := by omega
+    simp [Function.update, extendWork, hz, hn]
+  · by_cases hzero : z = 0
+    · subst z
+      simp [Function.update, extendWork]
+    · have hnat : z.toNat ≠ 0 := by omega
+      simp [Function.update, extendWork, hz, hzero, hnat]
+
 end Metalogic.OpenAIMath.LeftWallFusedCompiler
