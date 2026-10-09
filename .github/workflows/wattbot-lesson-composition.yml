@@ -1,0 +1,52 @@
+name: WattBot compile verified lessons into consequence preserving V5
+on:
+  push:
+    branches: [wattbot-lesson-composition-v1]
+    paths:
+      - '.github/workflows/wattbot-lesson-composition.yml'
+      - 'experiments/wattbot2026/derivation_router_probe.py'
+      - 'experiments/wattbot2026/verified_lesson.py'
+      - 'experiments/wattbot2026/abstention_boundary.py'
+      - 'experiments/wattbot2026/citation_refinement.py'
+jobs:
+  consequence-composition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned official-score and evidence dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests
+      - name: Qualify independent refusal, provenance and development split guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/abstention_boundary.py
+          python experiments/wattbot2026/citation_refinement.py
+          python experiments/wattbot2026/derivation_router_probe.py --self-test
+      - name: Score composed lesson policies against the SAME second responses on TRAIN
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/derivation_router_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Explicit external authority boundary
+        run: |
+          echo "Source corpus, six question windows and pinned official scorer unchanged."
+          echo "Two worked examples per question from development TRAIN; target holdout excluded."
+          echo "First and second reader answers frozen for identical same-response arms."
+          echo "Raw source proposals, model refusals and page-verified quotes stay separate statuses."
+          echo "Additional model reservation capped USD 0.16; no Kaggle TEST or submission."
