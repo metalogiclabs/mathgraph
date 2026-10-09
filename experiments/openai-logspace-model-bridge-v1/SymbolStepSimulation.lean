@@ -43,13 +43,8 @@ theorem initial_commutes (codec : AlphabetCodec α K)
     (M : SymbolMachine α q w h) (n : ℕ) :
     encodeConfiguration codec (sourceInitial M codec.blank n) =
       (compileMachine codec M).initial n := by
-  apply Configuration.ext
-  · rfl
-  · rfl
-  · rfl
-  · funext j z
-    simp [encodeConfiguration, sourceInitial, encodeTracks, encodeSymbol,
-      Machine.initial]
+  simp [encodeConfiguration, sourceInitial, Machine.initial,
+    compileMachine, encodeTracks, encodeSymbol]
 
 /-- Encoding a source-symbol write gives exactly the Boolean-target
     Function.update operation at the corresponding copied work-head. -/
