@@ -93,6 +93,16 @@ class SemanticCorrespondenceRegression(unittest.TestCase):
         self.assertEqual(audit.missing_dimensions, ("bound",))
         self.assertFalse(audit.can_promote_truth)
 
+    def test_boolean_integer_coercion_cannot_merge_meanings(self):
+        audit = compare_protected_contracts(
+            ClaimContract("source", {"exists": True}),
+            ClaimContract("formal", {"exists": 1}),
+            ("exists",),
+        )
+        self.assertEqual(audit.status, ContractStatus.DIVERGENT)
+        self.assertEqual(audit.mismatches, ("exists",))
+        self.assertFalse(audit.can_promote_truth)
+
     def test_scope_cannot_be_empty(self):
         with self.assertRaises(ValueError):
             compare_protected_contracts(
