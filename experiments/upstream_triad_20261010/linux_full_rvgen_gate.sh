@@ -80,6 +80,24 @@ python3 "$ROOT/experiments/upstream_triad_20261010/linux_patch_probe.py" > "$OUT
 # Full official golden suite plus our two error cases.
 make check 2>&1 | tee "$OUT/rvgen-patched-make-check.log"
 echo "LINUX_RVGEN_UPSTREAM_PATCH_AND_FULL_TESTS_PASS"
+# Check the rejection result is independent of hash-table iteration order.
+python3 - <<'PY'
+import os
+import subprocess
+import sys
+for kind, fixture, monitor in (
+    ('da', 'test_nondeterministic_da.dot', 'per_cpu'),
+    ('ha', 'test_nondeterministic_ha.dot', 'per_task'),
+):
+    for seed in range(32):
+        env = dict(os.environ, PYTHONHASHSEED=str(seed))
+        cmd = [sys.executable, '../rvgen', 'monitor', '-c', kind,
+               '-s', 'tests/specs/' + fixture, '-t', monitor]
+        p = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        assert p.returncode == 1 and 'Duplicate transition' in p.stderr, (
+            kind, seed, p.returncode, p.stdout, p.stderr)
+print('LINUX_RVGEN_ALL_64_HASH_SEEDS_REJECT_AMBIGUITY')
+PY
 git -C "$TREE" status --short | tee "$OUT/git-status.txt"
 if [ -f "$TREE/scripts/checkpatch.pl" ]; then
   perl "$TREE/scripts/checkpatch.pl" --no-tree --terse --ignore=FILE_PATH_CHANGES "$OUT/linux-rvgen-reject-ambiguous-transitions.patch" 2>&1 | tee "$OUT/checkpatch.log"
