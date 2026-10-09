@@ -1,0 +1,26 @@
+name: WattBot Kaggle V2 submission error diagnostic
+on:
+  push:
+    branches: [wattbot-submission-error-v2]
+    paths: ['.github/workflows/wattbot-v2-error-details.yml']
+jobs:
+  official-error:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install pinned upstream official Kaggle CLI diagnostics
+        run: python -m pip install 'git+https://github.com/Kaggle/kaggle-cli.git@9c57dd74c29904c40ff7879eed33644be89d2e2f'
+      - name: Report CLI diagnostic command availability
+        run: |
+          kaggle --version
+          kaggle competitions --help
+      - name: Fetch official server-side error for V2 submission 56996090
+        run: kaggle competitions submission 56996090
+      - name: Recheck incumbent score and rank
+        run: kaggle competitions submissions WattBot2026
