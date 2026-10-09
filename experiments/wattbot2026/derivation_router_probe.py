@@ -28,7 +28,8 @@ import pandas as pd
 
 import full_reader as base
 from answer_value_residual_probe import raw_variant, usable
-from verified_lesson import illustrate, self_test as lessons_self_test
+from verified_lesson import illustrate as typed_illustrate, self_test as typed_self_test
+from verified_lesson_baseline import illustrate as original_illustrate, self_test as original_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -39,7 +40,7 @@ PIN = {
   "train_QA.csv":"9cbc25a9cb6133e1ef833fad6eb7fe43f9b72c1533b39d3b1ae94b3172407dca",
 }
 SOURCE_PIN="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a9"
-SECONDARY_RESERVE_USD=.16
+SECONDARY_RESERVE_USD=.24
 SECONDARY_TOP_K=10
 
 INTENT_RE = re.compile(
@@ -79,7 +80,8 @@ def derivation_question(question):
 
 
 def self_test():
-    lessons_self_test()
+    original_self_test()
+    typed_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
     assert base.MODEL=="google/gemini-2.5-flash-lite"
@@ -113,6 +115,7 @@ def run(archive):
     first_raw={}
     first_pages={}
     second_raw={}
+    typed_second_raw={}
     first_checked={}
     numeric={}
     docs_by_id={}
@@ -146,7 +149,7 @@ def run(archive):
         expanded=list(passages)
         if len(expanded)!=base.K:
             raise RuntimeError("Lesson policy changed source depth")
-        enriched=question+illustrate(question,worked)
+        enriched=question+original_illustrate(question,worked)
         wire=json.dumps({"question":enriched,
                          "passages":[{"source_index":i,"ref_id":p["ref_id"],
                              "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
@@ -164,6 +167,25 @@ def run(archive):
             raise RuntimeError("Second-pass cost calculation diverges")
         second_raw[question]=(later,reason,expanded)
         stats["second_"+reason]+=1
+
+        typed_enriched=question+typed_illustrate(question,worked)
+        typed_wire=json.dumps({"question":typed_enriched,
+                      "passages":[{"source_index":i,"ref_id":p["ref_id"],
+                         "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
+                         for i,p in enumerate(expanded)]},
+                         ensure_ascii=False,separators=(",",":"))
+        typed_charge=base.conservative_charge(
+            base.SYSTEM+typed_wire,price,base.MAX_OUTPUT_TOKENS)
+        if extra[0]+typed_charge>SECONDARY_RESERVE_USD:
+            raise RuntimeError("Typed lesson paired qualification exceeds declared reserve")
+        typed_result,typed_status,typed_reserve,typed_spent=original_model(
+            key,typed_enriched,expanded,price)
+        if abs(typed_charge-typed_reserve)>0.00000001:
+            raise RuntimeError("Typed model pricing estimate diverged")
+        extra[0]+=typed_reserve
+        extra[1]+=typed_spent
+        typed_second_raw[question]=(typed_result,typed_status,expanded)
+        stats["typed_second_"+typed_status]+=1
         return response,status,bound,actual
 
     def save_numeric(question,hits,docs):
@@ -201,7 +223,10 @@ def run(archive):
     baseline=scores[0]
     if baseline["source_manifest_sha256"]!=SOURCE_PIN:
         raise RuntimeError("PDF manifest changed")
-    if len(first_raw)!=63 or len(first_checked)>63 or len(numeric)!=63:
+    if (len(first_raw)!=63 or len(first_checked)>63 or len(numeric)!=63
+            or len(second_raw)!=63 or len(typed_second_raw)!=63):
+        raise RuntimeError("Incomplete paired original/typed lesson replies")
+    if False:
         raise RuntimeError("Partial question cohort")
     if stats["first_pages"]!=378 or stats["first_questions"]!=63:
         raise RuntimeError("Changed six-source reader cohort")
@@ -222,6 +247,10 @@ def run(archive):
           "second_verified_prefer_on_intent",
           "second_provisional_prefer_on_intent",
           "second_agreement_only",
+          "typed_second_provisional_prefer_on_intent",
+          "typed_second_provisional_when_first_unverified",
+          "typed_second_verified_prefer_on_intent",
+          "typed_second_verified_when_first_unverified",
         )}
         for _,row in blank.iterrows():
             ident=str(row["id"])
@@ -232,6 +261,13 @@ def run(archive):
             prior=raw_variant(row,original,default,first_pages[q],"selected")
             second,second_status,more=second_raw.get(q,(None,"NOT_TRIGGERED",[]))
             second_provisional=raw_variant(row,second,prior,more,"selected")
+            typed,typed_status,typed_pages=typed_second_raw.get(
+                q,(None,"NOT_TRIGGERED",[]))
+            typed_provisional=raw_variant(
+                row,typed,prior,typed_pages,"selected")
+            typed_checked,typed_check=original_checker(
+                typed,{"id":ident,"question":q},typed_pages,docs_by_id[ident])
+            stats["typed_second_check_"+typed_check]+=1
             later_checked,reason=original_checker(
                 second,{"id":ident,"question":q},more,docs_by_id[ident])
             if second is not None:
@@ -263,6 +299,17 @@ def run(archive):
             if same_value:stats["answer_value_agreement"]+=1
             arms["second_agreement_only"].append(
                 second_provisional if same_value else first_provisional)
+            arms["typed_second_provisional_prefer_on_intent"].append(
+                typed_provisional if usable(typed) else first_provisional)
+            arms["typed_second_provisional_when_first_unverified"].append(
+                dict(prior_checked) if prior_checked is not None else
+                dict(typed_checked) if typed_checked is not None else typed_provisional)
+            arms["typed_second_verified_prefer_on_intent"].append(
+                dict(typed_checked) if typed_checked is not None else first_strict)
+            arms["typed_second_verified_when_first_unverified"].append(
+                dict(prior_checked) if prior_checked is not None else
+                dict(typed_checked) if typed_checked is not None else dict(default))
+            stats["typed_second_anchored"]+=int(typed_checked is not None)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_derivation_route_") as tmp:
             scorer=load_score(z,tmp)
@@ -274,31 +321,40 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
+    print("WATTBOT_TYPED_LESSON_PAIRED_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
-       "model_call_routing":"Two same-task worked examples from development TRAIN; "
-         "selected by question text and development type flags only. No target "
-         "holdout answer, reference or flag used as a demonstration.",
-       "only_router":"Two-example developmental formatting/reasoning transfer "
-         "on every question with identical pinned six-page context",
+       "model_call_routing":"Original two DEV TRAIN worked examples versus "
+         "type-compiled two DEV examples with tolerance band recast into "
+         "canonical scalar. No target holdout answer, citation or flag "
+         "ever used in prompts.",
+       "only_router":"Two DEV-only lesson variants on same question, same "
+         "six source pages, identical original first responses.",
        "score_arms":official,
        "strict_baseline":official["first_strict"],
        "provisional_baseline":official["first_provisional"],
        "deltas_vs_first_provisional":{
            k:round(v-official["first_provisional"],8)
            for k,v in official.items()},
+       "typed_minus_original_lesson":{
+         "provisional":round(
+           official["typed_second_provisional_prefer_on_intent"]
+           -official["second_provisional_prefer_on_intent"],8),
+         "when_unverified":round(
+           official["typed_second_provisional_when_first_unverified"]
+           -official["second_provisional_when_first_unverified"],8)},
        "counters":dict(stats),
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"Exact same first and second six-page source evidence; "
-         "two development TRAIN worked answer conventions inform only second "
-         "response. No holdout gold, reference, answer or label in exemplars. "
-         "Verbatim PDF quotations are provenance rather than scientific "
-         "entailment. Paired reused TRAIN qualification only; no TEST "
-         "inference or Kaggle submission."
+       "boundary":"Identical first responses and same six PDF passages for "
+         "both second readers. Original and type-compiled examples each derive "
+         "exclusively from 182 development TRAIN rows. Scoring tolerance "
+         "bands are compressed to valid scalar witnesses only in typed "
+         "DEVELOPMENT examples; actual reported ranges stay two-endpoint tuples. "
+         "No protected holdout/test labels in prompts, Kaggle submission, "
+         "or scientific semantic entailment claims."
     },sort_keys=True),flush=True)
 
 
