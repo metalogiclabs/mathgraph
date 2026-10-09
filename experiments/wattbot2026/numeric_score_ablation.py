@@ -18,6 +18,9 @@ import zipfile
 
 import pandas as pd
 import requests
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from answer_types import kind
 
 from holdout_probe import is_holdout, ARXIV_HOSTS
 from pdf_probe import download_one
@@ -40,6 +43,12 @@ def run(official_zip):
         eligible=[ref for ref in counts if ref in docs
                   and (urlparse(docs[ref]["url"]).hostname or "").lower() in ARXIV_HOSTS]
         eligible.sort(key=lambda x:(-counts[x],x))
+        tfidf=TfidfVectorizer(analyzer="char_wb",ngram_range=(2,5),min_df=2,max_features=40000)
+        mtrain=tfidf.fit_transform(dev["question"].astype(str).tolist())
+        router=LogisticRegression(class_weight="balanced",max_iter=1500,C=1.0,random_state=2026)
+        router.fit(mtrain,dev["answer_value"].map(kind).tolist())
+        predicted_types=router.predict(tfidf.transform(held["question"].astype(str).tolist())).tolist()
+        scalar_mask=[label=="number" for label in predicted_types]
         selected=eligible[:24]
         with tempfile.TemporaryDirectory(prefix="wattbot_ablate_") as folder:
             score_fn=load_score(z,folder)
@@ -78,7 +87,19 @@ def run(official_zip):
                     value_only[col]="is_blank"
                 for col in ("answer","answer_value","answer_unit"):
                     citation_only[col]="is_blank"
+                gated_cites=preds.copy(deep=True)
+                gated_blank=preds.copy(deep=True)
+                for row_idx, keep_scalar in enumerate(scalar_mask):
+                    if not keep_scalar:
+                        for col in ("answer","answer_value","answer_unit"):
+                            gated_cites.at[row_idx,col]="is_blank"
+                            gated_blank.at[row_idx,col]="is_blank"
+                        for col in ("ref_id","ref_url","supporting_materials"):
+                            gated_blank.at[row_idx,col]="is_blank"
                 experiments[f"pdf_{n}"]={
+                    "scalar_routed_rows":int(sum(scalar_mask)),
+                    "score_type_gated_keep_citations":official(gated_cites),
+                    "score_type_gated_abstain":official(gated_blank),
                     "pdfs_downloaded":sum(ref in chunks_by_ref for ref in selected[:n]),
                     "nonblank_value_candidates":int((preds["answer_value"]!="is_blank").sum()),
                     "score_complete_candidate":official(preds),
