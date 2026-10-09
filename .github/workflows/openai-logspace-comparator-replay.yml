@@ -1,7 +1,7 @@
 name: OpenAI Logspace sandboxed Comparator replay
 
 on:
-  pull_request:
+  push:
     paths:
       - '.github/workflows/openai-logspace-comparator-replay.yml'
   workflow_dispatch:
@@ -116,23 +116,29 @@ jobs:
           mkdir -p output
           printf '%s\n' 'Do not run the solution before comparator: Comparator checks challenge and solution in separate sandboxes.'
           printf '%s\n' 'Docker has no network, no privileges, no host sockets or secrets, read-only host toolchains, limited process/memory budget.'
+          cat > audit-tools/Dockerfile <<'DOCKER'
+          FROM ubuntu:24.04
+          RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+          DOCKER
+          docker build --tag mathgraph-comparator-sandbox:20261009 audit-tools
           timeout 2300s docker run --rm \
             --network none --read-only --cap-drop ALL \
             --security-opt no-new-privileges \
             --memory 12g --pids-limit 512 \
             --tmpfs /tmp:rw,exec,size=2g \
             --user "$(id -u):$(id -g)" \
-            --mount type=bind,src="$PWD/isolated",dst=/audited \
-            --mount type=bind,src="$PWD/comparator",dst=/comparator,readonly \
+            --mount type=bind,src="$PWD/isolated",dst="$PWD/isolated" \
+            --mount type=bind,src="$PWD/comparator",dst="$PWD/comparator",readonly \
             --mount type=bind,src="$PWD/audit-tools/landrun",dst=/usr/local/bin/landrun,readonly \
-            --mount type=bind,src="$HOME/.elan",dst=/home/runner/.elan,readonly \
-            --env HOME=/home/runner \
+            --mount type=bind,src="$HOME/.elan",dst="$HOME/.elan",readonly \
+            --env HOME="$HOME" \
             --env LEAN_NUM_THREADS=2 \
             --env COMPARATOR_LANDRUN=/usr/local/bin/landrun \
-            --env COMPARATOR_LEAN4EXPORT=/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export \
-            --env PATH=/home/runner/.elan/bin:/usr/local/bin:/usr/bin:/bin \
-            --workdir /audited ubuntu:24.04 \
-            /bin/bash -c 'set -euo pipefail; lake env /comparator/.lake/build/bin/comparator ComparatorChallenges/LogspaceEquality.json'
+            --env COMPARATOR_BIN="$PWD/comparator/.lake/build/bin/comparator" \
+            --env COMPARATOR_LEAN4EXPORT="$PWD/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export" \
+            --env PATH="$HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin" \
+            --workdir "$PWD/isolated" mathgraph-comparator-sandbox:20261009 \
+            /bin/bash -c 'set -euo pipefail; lake env "$COMPARATOR_BIN" ComparatorChallenges/LogspaceEquality.json'
           echo "COMPARATOR_EXIT_ZERO_SOURCE_AND_DECLARATION_CHECK"
       - name: Retain bounded status even on failure
         if: always()
