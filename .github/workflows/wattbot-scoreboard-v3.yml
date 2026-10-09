@@ -1,0 +1,31 @@
+name: WattBot V3 Kaggle post-scoring authority
+on:
+  push:
+    branches: [wattbot-complete-submit-v3]
+    paths:
+      - '.github/workflows/wattbot-scoreboard-v3.yml'
+jobs:
+  official-kaggle-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install authenticated Kaggle CLI
+        run: python -m pip install kaggle
+      - name: Read exact official V3 submission score or pending state
+        run: kaggle competitions submissions -c WattBot2026
+      - name: Read official public leaderboard authority
+        run: kaggle competitions leaderboard WattBot2026 --show
+      - name: Read authenticated placement
+        run: kaggle competitions list --group entered -s WattBot2026 -v
+      - name: Boundary
+        run: echo "Read-only Kaggle authority; no model calls, code changes to V3 model, or submission."
