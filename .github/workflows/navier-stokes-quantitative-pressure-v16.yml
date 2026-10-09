@@ -1,0 +1,125 @@
+name: Quantitative canonical Riesz pressure bound V16
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/QuantitativeCanonicalPressure.lean'
+      - '.github/workflows/navier-stokes-quantitative-pressure-v16.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/QuantitativeCanonicalPressure.lean'
+      - '.github/workflows/navier-stokes-quantitative-pressure-v16.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quantitative-canonical-v16-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-canonical-integral-estimate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Freeze exact V11/V15 sources and V16 proof
+        run: |
+          set -euo pipefail
+          mkdir -p .pressure-bound-env pressure-v16-evidence
+          git rev-parse HEAD | tee pressure-v16-evidence/head-sha.txt
+          ROOT=experiments/navier_stokes_semantic_bridge_v1
+          test "$(git hash-object "$ROOT/PressureGaussianLimit.lean")" = '4235fbf5625714a6bff5660423886def603d611b'
+          test "$(git hash-object "$ROOT/PressureScalarPairingLimit.lean")" = '2d350d5fd3f6f53ffde9454f39ea095db94426db'
+          cp "$ROOT/PressureGaussianLimit.lean" .pressure-bound-env/PressureGaussianLimit.lean
+          cp "$ROOT/PressureScalarPairingLimit.lean" .pressure-bound-env/PressureScalarPairingLimit.lean
+          cp "$ROOT/QuantitativeCanonicalPressure.lean" .pressure-bound-env/QuantitativeCanonicalPressure.lean
+          cp .pressure-bound-env/QuantitativeCanonicalPressure.lean pressure-v16-evidence/QuantitativeCanonicalPressure.lean
+          sha256sum .pressure-bound-env/{PressureGaussianLimit,PressureScalarPairingLimit,QuantitativeCanonicalPressure}.lean > pressure-v16-evidence/source-sha256.txt
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .pressure-bound-env/lean-toolchain
+          cat > .pressure-bound-env/lakefile.toml <<'EOF'
+          name = "mathgraph_canonical_pressure_bound_v16"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureGaussianLimit"
+          [[lean_lib]]
+          name = "PressureScalarPairingLimit"
+          [[lean_lib]]
+          name = "QuantitativeCanonicalPressure"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .pressure-bound-env/.lake
+            .pressure-bound-env/lake-manifest.json
+          key: pressure-quantitative-v16-lean434rc2-f9e8bc5
+      - name: Install exact original Lean
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify exact OpenAI pressure and all-source pins
+        working-directory: .pressure-bound-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'theorem regularized_flux_le' .lake/packages/NavierStokesAndEuler/NavierStokes/R3PressureFlux.lean
+          cp lake-manifest.json ../pressure-v16-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v16-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel check actual quantitative pressure pairing estimate
+        working-directory: .pressure-bound-env
+        run: |
+          set -euo pipefail
+          lake build QuantitativeCanonicalPressure 2>&1 | tee ../pressure-v16-evidence/build.log
+          lake env lean -DwarningAsError=true QuantitativeCanonicalPressure.lean 2>&1 | tee ../pressure-v16-evidence/axioms.log
+      - name: Check theorem authority, axioms and scope
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('pressure-v16-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          name='MathGraph.QuantitativeCanonicalPressure.canonical_weighted_pressure_integral_bound'
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]", log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          assert len(rows)==1 and rows[0][0]==name,rows
+          axioms={s.strip() for s in rows[0][1].split(',') if s.strip()}
+          assert axioms<={'propext','Classical.choice','Quot.sound'},axioms
+          d={
+            'schema':'mathgraph.canonical-pressure-real-numeric-integral-bound-v16',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'upstream_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'v15_exact_source_git_blob':'2d350d5fd3f6f53ffde9454f39ea095db94426db',
+            'scope':'ACTUAL_CANONICAL_WEIGHTED_PRESSURE_PAIRING_WITH_ANY_L2_TEST',
+            'uniform_gaussian_bound_is_derived_from_original_R3PressureFlux_regularized_flux_le':True,
+            'new_free_uniform_gaussian_bound_premise':False,
+            'requires_declared_cutoff_and_L1_L3over2_L2_integrability':True,
+            'physical_comparison_pressurePair_identification':False,
+            'original_manuscript_B_only_10_19':False,
+            'source_NL_approved':False,
+            'production_admission_unchanged':True,
+            'axioms':sorted(axioms),
+            'files_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()},
+          }
+          (root/'result.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(d,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-pressure-integral-bound-v16
+          path: pressure-v16-evidence/
+          if-no-files-found: error

@@ -1,0 +1,132 @@
+name: Gaussian-to-canonical pressure pairing V15
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureScalarPairingLimit.lean'
+      - '.github/workflows/navier-stokes-scalar-pair-limit-v15.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureScalarPairingLimit.lean'
+      - '.github/workflows/navier-stokes-scalar-pair-limit-v15.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gaussian-pairing-v15-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  genuine-pressure-scalar-limit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin exact V11 source and new scalar test
+        run: |
+          set -euo pipefail
+          mkdir -p .pressure-l2-env pressure-v15-evidence
+          git rev-parse HEAD | tee pressure-v15-evidence/head-sha.txt
+          ROOT=experiments/navier_stokes_semantic_bridge_v1
+          test "$(git hash-object "$ROOT/PressureGaussianLimit.lean")" = '4235fbf5625714a6bff5660423886def603d611b'
+          cp "$ROOT/PressureGaussianLimit.lean" .pressure-l2-env/PressureGaussianLimit.lean
+          cp "$ROOT/PressureScalarPairingLimit.lean" .pressure-l2-env/PressureScalarPairingLimit.lean
+          cp .pressure-l2-env/PressureScalarPairingLimit.lean pressure-v15-evidence/PressureScalarPairingLimit.lean
+          sha256sum .pressure-l2-env/{PressureGaussianLimit,PressureScalarPairingLimit}.lean > pressure-v15-evidence/sources.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .pressure-l2-env/lean-toolchain
+          cat > .pressure-l2-env/lakefile.toml <<'EOF'
+          name = "mathgraph_pressure_scalar_limit_v15"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureGaussianLimit"
+          [[lean_lib]]
+          name = "PressureScalarPairingLimit"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .pressure-l2-env/.lake
+            .pressure-l2-env/lake-manifest.json
+          key: openai-four-loss-v6-lean434rc2-mathlib-pinned-f9e8bc5
+      - name: Install exact upstream Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify original OpenAI pressure operators and mathlib
+        working-directory: .pressure-l2-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'theorem regularizedWeightedPressure_ae' .lake/packages/NavierStokesAndEuler/NavierStokes/R3PressureCutoff.lean
+          grep -q 'theorem regularized_flux_le' .lake/packages/NavierStokesAndEuler/NavierStokes/R3PressureFlux.lean
+          cp lake-manifest.json ../pressure-v15-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v15-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check Gaussian pressure scalar pairing transport
+        working-directory: .pressure-l2-env
+        run: |
+          set -euo pipefail
+          lake build PressureScalarPairingLimit 2>&1 | tee ../pressure-v15-evidence/build.log
+          lake env lean -DwarningAsError=true PressureScalarPairingLimit.lean 2>&1 | tee ../pressure-v15-evidence/axioms.log
+      - name: Audit exact named obligations and non-promotions
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('pressure-v15-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          expected={'MathGraph.PressureScalarPairingLimit.'+x for x in (
+            'l2Pair_eq_integral',
+            'gaussian_l2_pair_tendsto',
+            'gaussian_pair_eq_actual_integral',
+            'canonical_pair_eq_actual_integral',
+            'uniform_gaussian_flux_pairing_bound_passes_to_canonical'
+          )}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,a in rows:
+            assert n not in seen,n
+            used={s.strip() for s in a.split(',') if s.strip()}
+            assert used <= {'propext','Classical.choice','Quot.sound'},(n,sorted(used))
+            seen[n]=sorted(used)
+          assert set(seen)==expected,('Theorem name/axioms mismatch',sorted(expected.symmetric_difference(set(seen))))
+          result={
+            'schema':'mathgraph.gaussian-pressure-scalar-pairing-limit-v15',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'upstream_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'GAUSSIAN_WEIGHTED_PRESSURE_PAIRING_AGAINST_ARBITRARY_L2_TEST',
+            'source_v11_git_blob':'4235fbf5625714a6bff5660423886def603d611b',
+            'uniform_scalar_pairing_bound_transports_to_canonical':True,
+            'requires_uniform_scalar_gaussian_bound':True,
+            'uniform_analytic_bound_produced_here':False,
+            'active_physical_pressure_comparison_identity':False,
+            'manuscript_eq_10_19_proved':False,
+            'human_source_approval':False,
+            'production_admission_changed':False,
+            'axioms':seen,
+            'sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          }
+          (root/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pressure-scalar-pair-v15
+          path: pressure-v15-evidence/
+          if-no-files-found: error

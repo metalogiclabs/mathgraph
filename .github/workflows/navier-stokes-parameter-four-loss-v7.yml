@@ -1,0 +1,144 @@
+name: Genuine parameter mixed-jet four-loss V7
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/ParametricFourLoss.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/FullJetFourLoss.lean'
+      - '.github/workflows/navier-stokes-parameter-four-loss-v7.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/ParametricFourLoss.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/FullJetFourLoss.lean'
+      - '.github/workflows/navier-stokes-parameter-four-loss-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: parametric-four-loss-v7-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mixed-jet-four-loss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin V6 authorities and freeze exact sources
+        run: |
+          set -euo pipefail
+          mkdir -p .four-loss-env four-loss-v7-evidence
+          git rev-parse HEAD | tee four-loss-v7-evidence/head-sha.txt
+          ROOT=experiments/navier_stokes_semantic_bridge_v1
+          test "$(git hash-object $ROOT/FourLossBridge.lean)" = "9021aec2be1ebfa907461337b03ba3d8c5ce1fd4"
+          test "$(git hash-object $ROOT/ThirdLattice.lean)" = "c88f17f097b90f8b0a57182a3dcdc45d7c9e215c"
+          test "$(git hash-object $ROOT/FourLossUnconditional.lean)" = "766d4abeb26df5c4f052a6295ad8109d2e769956"
+          cp $ROOT/{FourLossBridge,ThirdLattice,FourLossUnconditional,ParametricFourLoss,FullJetFourLoss}.lean .four-loss-env/
+          cp $ROOT/FullJetFourLoss.lean four-loss-v7-evidence/FullJetFourLoss.lean
+          cp $ROOT/ParametricFourLoss.lean four-loss-v7-evidence/ParametricFourLoss.lean
+          sha256sum .four-loss-env/{FourLossBridge,ThirdLattice,FourLossUnconditional,ParametricFourLoss,FullJetFourLoss}.lean > four-loss-v7-evidence/lean-sources.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .four-loss-env/lean-toolchain
+          cat > .four-loss-env/lakefile.toml <<'EOF'
+          name = "mathgraph_actual_mixedjet_four_loss_v7"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "FourLossBridge"
+          [[lean_lib]]
+          name = "ThirdLattice"
+          [[lean_lib]]
+          name = "FourLossUnconditional"
+          [[lean_lib]]
+          name = "ParametricFourLoss"
+          [[lean_lib]]
+          name = "FullJetFourLoss"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .four-loss-env/.lake
+            .four-loss-env/lake-manifest.json
+          key: openai-four-loss-v6-lean434rc2-mathlib-pinned-f9e8bc5
+      - name: Install pinned upstream Lean
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve immutable OpenAI and mathlib
+        working-directory: .four-loss-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          cp lake-manifest.json ../four-loss-v7-evidence/lake-manifest.json
+          lake env lean --version | tee ../four-loss-v7-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check genuine parameter-jet four-loss bridge
+        working-directory: .four-loss-env
+        run: |
+          set -euo pipefail
+          lake build ParametricFourLoss FullJetFourLoss 2>&1 | tee ../four-loss-v7-evidence/build.log
+          lake env lean -DwarningAsError=true ParametricFourLoss.lean 2>&1 | tee ../four-loss-v7-evidence/axioms.log
+          lake env lean -DwarningAsError=true FullJetFourLoss.lean 2>&1 | tee ../four-loss-v7-evidence/fulljet-axioms.log
+      - name: Check theorem boundary and axioms
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('four-loss-v7-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text() + '\n' + (root/'fulljet-axioms.log').read_text()
+          expected={
+            'MathGraph.ParametricFourLoss.fourLossConstant_nonneg',
+            'MathGraph.ParametricFourLoss.mixedJet_inverse_bound_four',
+            'MathGraph.FullJetFourLoss.coefficient_moment_bound_three',
+            'MathGraph.FullJetFourLoss.multiplierJetConstantThree_nonneg',
+            'MathGraph.FullJetFourLoss.norm_jet_applyMultiplier_le_three',
+            'MathGraph.FullJetFourLoss.applyMultiplier_finiteJets_three',
+            'MathGraph.FullJetFourLoss.inverse_finiteJets_four',
+          }
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,axioms in rows:
+            assert n not in seen,n
+            used={a.strip() for a in axioms.split(',') if a.strip()}
+            assert used <= {'propext','Classical.choice','Quot.sound'},(n,used)
+            seen[n]=sorted(used)
+          assert set(seen)==expected,('missing_or_extra_theorem',sorted(expected.symmetric_difference(set(seen))))
+          r={
+            'schema':'mathgraph.actual-parametric-mixedjet-four-loss-v7',
+            'source_head':os.environ['EXPECTED_HEAD'],
+            'upstream_original':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'qualified_ancestor_v6':'23eab1150ec36ea78f16665d6c0403b9824fba55',
+            'scope':'ACTUAL_OPENAI_INVERSE_ALL_PARAMETER_JET_ORDERS_AND_TORUS_DERIVATIVE_WORDS',
+            'input_torus_jet_loss':4,
+            'extra_summability_hypothesis':False,
+            'source_NL_interpretation_approved':False,
+            'original_full_JetBound_Cm_statement':'FORMAL_JETBOUND_N_PLUS_FOUR_KERNEL_CHECKED_SOURCE_NL_UNKNOWN',
+            'full_Navier_Stokes_claim':'UNKNOWN',
+            'production_admission_changed':False,
+            'theorem_axioms':seen,
+            'file_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()},
+          }
+          (root/'result.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(r,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-parametric-four-loss-v7
+          path: four-loss-v7-evidence/
+          if-no-files-found: error
