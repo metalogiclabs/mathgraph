@@ -1,0 +1,31 @@
+name: WattBot available model backend check
+on:
+  push:
+    branches: [wattbot-2026-llm-v1]
+    paths:
+      - '.github/workflows/wattbot-model-backend-check.yml'
+jobs:
+  backend-presence:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check model integrations without revealing credentials or invoking models
+        shell: bash
+        run: |
+          set -euo pipefail
+          for var in OPENROUTER_API_KEY OPENAI_API_KEY GROQ_API_KEY TOGETHER_API_KEY HF_TOKEN; do
+            if [[ -n "${!var}" ]]; then
+              echo "$var=CONFIGURED"
+            else
+              echo "$var=NOT_CONFIGURED"
+            fi
+          done
+          echo "Presence-only probe; no model inference, spending, secret bytes, or values."
