@@ -27,7 +27,7 @@ theorem nat_cast_visited_card (f : ℕ → ℕ) (t : ℕ) :
   classical
   have hinj : Function.Injective (fun n : ℕ => (n : ℤ)) := by
     intro a b hab
-    exact_mod_cast hab
+    exact Int.ofNat.inj hab
   calc
     ((Finset.range (t + 1)).image (fun u => (f u : ℤ))).card =
         (((Finset.range (t + 1)).image f).image
