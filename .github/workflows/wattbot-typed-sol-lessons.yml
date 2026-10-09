@@ -1,0 +1,46 @@
+name: WattBot typed GPT-6 Sol calculation plus Flash-Lite lessons
+on:
+  push:
+    branches: [wattbot-typed-sol-lessons-v1]
+    paths:
+      - '.github/workflows/wattbot-typed-sol-lessons.yml'
+      - 'experiments/wattbot2026/derivation_router_probe.py'
+jobs:
+  typed-science-reader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official-score and pinned PDF dependencies
+        run: python -m pip install kaggle pandas numpy pymupdf requests
+      - name: Test question-only model router and holdout-safe lesson memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/derivation_router_probe.py --self-test
+      - name: Compare Math/CrossPaper GPT-6 Sol lesson answers against frozen Flash-Lite baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/derivation_router_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Scientific and cost boundary
+        run: |
+          echo "Only question wording chooses a model, no target answer or citation labels."
+          echo "Math and cross-paper second pass uses GPT-6 Sol; other questions use Flash-Lite."
+          echo "All retain exactly six source-page contexts plus two development-only worked lessons."
+          echo "Primary USD .12, additional model conservative reserve USD .85; no TEST or submission."
