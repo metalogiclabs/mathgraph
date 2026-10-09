@@ -212,6 +212,9 @@ def run(archive):
         return response,status,bound,actual
 
     def save_numeric(question,hits,docs):
+        # Numeric fallback runs even when model JSON is invalid; this is
+        # the only complete per-question document authority for critic checks.
+        docs_by_id[question["id"]]=docs
         item=original_numeric(question,hits,docs)
         if question["id"] not in numeric:
             numeric[question["id"]]=item
