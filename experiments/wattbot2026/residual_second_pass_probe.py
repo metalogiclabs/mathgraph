@@ -31,6 +31,7 @@ import full_reader as base
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
+from answer_value_residual_probe import raw_variant, usable
 
 READER_BLOB="4e1350ef72a44a333862dec23c737a2262ab99bc"
 SOURCE_SHA="4081ce09ef2f62a7ef0faf577f1fe201108ff5789a7b8659d64380cd7f9724a9"
@@ -82,6 +83,10 @@ def run(official_zip):
     original_checker=base.try_checked
     original_numeric=base.build_candidate
     first_checked={}
+    first_raw={}
+    first_passages={}
+    second_raw={}
+    second_anchored={}
     numeric={}
     ranked_map={}
     stats=Counter()
@@ -100,7 +105,10 @@ def run(official_zip):
         return candidate
     def checked_then_rescue(generated,question,passages,docs):
         first,reason=original_checker(generated,question,passages,docs)
-        first_checked[question["id"]]=(first,reason)
+        ident=question["id"]
+        first_checked[ident]=(first,reason)
+        first_raw[ident]=generated
+        first_passages[ident]=list(passages)
         stats["original_"+reason]+=1
         if first is not None or reason not in RECOVERABLE:
             return first,reason
@@ -134,6 +142,7 @@ def run(official_zip):
             stats["SECOND_PASS_BUDGET_CAP"]+=1
             return first,reason
         candidate,status,bound,reported=base.call_reader(key,prompt,expanded,rate)
+        second_raw[question["id"]]=(candidate,status,expanded)
         cost[0]+=bound
         cost[1]+=reported
         stats["second_"+status]+=1
@@ -143,6 +152,7 @@ def run(official_zip):
         stats["second_"+status2]+=1
         if checked is None:
             return first,reason
+        second_anchored[question["id"]]=checked
         # The existing source-page quote verifier, not the model, is the
         # admission authority. Scientific entailment remains unproved.
         checked["explanation"]=(
@@ -179,22 +189,64 @@ def run(official_zip):
              dtype={"id":str},keep_default_na=False)
         hold=train[train["id"].map(is_holdout)].reset_index(drop=True)
         blank=base.blank_submission(hold).reset_index(drop=True)
-        baseline=[]
+        arms={name:[] for name in (
+            "first_strict",
+            "first_provisional",
+            "second_strict",
+            "second_verified_else_first_provisional",
+            "second_provisional_else_first_provisional",
+        )}
         for _,item in blank.iterrows():
             source_id=str(item["id"])
-            verified,_=first_checked.get(source_id,(None,"FIRST_PASS_NOT_CHECKED"))
-            baseline.append(dict(verified) if verified is not None else numeric[source_id])
+            first,_=first_checked.get(source_id,(None,"FIRST_PASS_NOT_CHECKED"))
+            raw=first_raw.get(source_id)
+            pages=first_passages.get(source_id,[])
+            fallback=numeric[source_id]
+            original_provisional=raw_variant(
+                item,raw,fallback,pages,"selected")
+            second=second_anchored.get(source_id)
+            later_raw,status,later_pages=second_raw.get(
+                source_id,(None,"NOT_RETRIED",[]))
+            later_provisional=(raw_variant(item,later_raw,
+                                            original_provisional,later_pages,"selected")
+                               if status=="OK" and usable(later_raw)
+                               else original_provisional)
+            arms["first_strict"].append(
+                dict(first) if first is not None else dict(fallback))
+            arms["first_provisional"].append(
+                dict(first) if first is not None else original_provisional)
+            arms["second_strict"].append(
+                dict(first) if first is not None else
+                dict(second) if second is not None else dict(fallback))
+            arms["second_verified_else_first_provisional"].append(
+                dict(first) if first is not None else
+                dict(second) if second is not None else original_provisional)
+            arms["second_provisional_else_first_provisional"].append(
+                dict(first) if first is not None else
+                dict(second) if second is not None else later_provisional)
         with tempfile.TemporaryDirectory(prefix="wattbot_rescue_score_") as temp:
             scorer=load_score(z,temp)
-            frame=pd.DataFrame(baseline,columns=list(blank.columns))
-            initial=round(float(scorer(hold.copy(deep=True),frame,
-                 row_id_column_name="id",verbose=False)),8)
+            result_scores={}
+            for name,rows in arms.items():
+                frame=pd.DataFrame(rows,columns=list(blank.columns))
+                result_scores[name]=round(float(scorer(hold.copy(deep=True),frame,
+                     row_id_column_name="id",verbose=False)),8)
+            initial=result_scores["first_strict"]
     improved=score["scores"]["reader_then_numeric_fallback"]
-    print("WATTBOT_RESIDUAL_SECOND_PASS="+json.dumps({
+    if abs(improved-result_scores["second_strict"])>0.00000002:
+        raise RuntimeError("Reconstructed second-pass strict score diverges")
+    print("WATTBOT_SECOND_PASS_PROVISIONAL="+json.dumps({
        "scope":"Same original 63 TRAIN first-pass responses; official pinned scorer",
        "baseline_same_run":initial,
        "second_pass_qualified":improved,
        "same_run_gain":round(improved-initial,8),
+       "policy_scores_same_responses":result_scores,
+       "second_verified_gain_vs_first_provisional":round(
+           result_scores["second_verified_else_first_provisional"]
+           -result_scores["first_provisional"],8),
+       "second_raw_gain_vs_first_provisional":round(
+           result_scores["second_provisional_else_first_provisional"]
+           -result_scores["first_provisional"],8),
        "primary_model":"google/gemini-2.5-flash-lite",
        "intervention":"Only source quote failures receive a second K10 source view",
        "historical_unpaired_run":COMPARATOR_RUN,
@@ -203,9 +255,12 @@ def run(official_zip):
        "secondary_reported_usd":round(cost[1],7),
        "primary_reported_usd":score["observed_api_usd"],
        "source_manifest_sha256":SOURCE_SHA,
-       "boundary":"Quotation presence is independently verified; semantic entailment "
-                  "is UNKNOWN. Existing correct admissions preserved; no "
-                  "protected TEST labels or Kaggle submission.",
+       "boundary":"One identical first-pass TRAIN response per question and "
+                  "all variants scored with pinned Score.py after outputs freeze. "
+                  "A second pass may produce a new answer; independent PDF quote "
+                  "verification does not entail scientific correctness. "
+                  "Provisional source associations remain CANDIDATE. "
+                  "No protected TEST labels or Kaggle submission.",
     },sort_keys=True),flush=True)
 
 if __name__=="__main__":
