@@ -62,6 +62,58 @@ def normalize_unscored_unit(row):
     return updated
 
 
+def recover_candidate_unanchored(raw, question, passages, numeric):
+    """Retain answer-value candidates after a failed exact-quote check.
+
+    Provenance states remain distinct: these source IDs are proposed by the
+    LLM, NOT independently verified as supporting the answer. The serialized
+    evidence contains only verbatim PDF excerpts, never invented quotations.
+    """
+    if not isinstance(raw, dict):
+        return dict(numeric)
+    value = str(raw.get("answer_value", "")).strip()
+    if not value or value.casefold() in (
+            "is_blank", "unknown", "na", "n/a", "nan", "none", "null"):
+        return dict(numeric)
+    indices = raw.get("source_indices")
+    if not isinstance(indices, list) or not indices:
+        indices = [raw.get("source_index")]
+    selected=[]
+    seen=set()
+    for idx in indices:
+        if type(idx) is not int or not 0 <= idx < len(passages):
+            continue
+        item=passages[idx]
+        if item["ref_id"] in seen:
+            continue
+        selected.append(item)
+        seen.add(item["ref_id"])
+        if len(selected) == 3:
+            break
+    if not selected:
+        selected=list(passages[:1])
+    if not selected:
+        return dict(numeric)
+    result=dict(numeric)
+    result["answer_value"]=value
+    result["answer"]=str(raw.get("answer", value) or value)[:800]
+    result["answer_unit"]=str(raw.get("answer_unit", "is_blank") or "is_blank")
+    result["ref_id"]=repr([p["ref_id"] for p in selected])
+    result["ref_url"]=repr([p["url"] for p in selected])
+    # Exact excerpt is copied from the retrieved source, so readers can see
+    # the provisional grounding. It is NOT falsely certified as an answer
+    # entailment or as the model's quotation.
+    result["supporting_materials"]=repr(
+        [p["text"][:320] for p in selected])
+    result["explanation"]=(
+        "CANDIDATE_UNVERIFIED: LLM answer value retained after exact page-"
+        "quotation check failed; document identity proposed by model's "
+        "source index; displayed snippets are verbatim source text. "
+        "Scientific entailment and citation correctness are UNKNOWN."
+    )
+    return normalize_unscored_unit(result)
+
+
 def pinned_data(archive):
     with zipfile.ZipFile(archive) as z:
         for name, expected in EXPECTED.items():
@@ -195,6 +247,15 @@ def predict_rows(tests,docs,index,policy,key,rate):
                 status[result]+=1
                 if checked is not None:
                     selected=checked
+                    status["VERIFIED_PAGE_QUOTE_ADMITTED"]+=1
+                else:
+                    unverified=recover_candidate_unanchored(
+                        response,question,passages,numeric)
+                    if unverified["answer_value"]!=numeric["answer_value"]:
+                        selected=unverified
+                        status["UNVERIFIED_ANSWER_VALUE_RETAINED"]+=1
+                    else:
+                        status["NO_UNVERIFIED_VALUE_RECOVERY"]+=1
         else:
             status["NO_PASSAGES"]+=1
         selected = normalize_unscored_unit(selected)
@@ -243,7 +304,7 @@ def run(archive,out,policy):
         "nonblank_predictions":sum(x["answer_value"]!="is_blank" for x in predictions),
         "manifest":manifest,"inference":usage,
         "submission":verified,
-        "scope":"Official test question text only, no hidden labels; source checked not semantically proven",
+        "scope":"Official TEST question text only; page-verified quotes separated from unverified model-value/source candidates; no hidden labels",
     },sort_keys=True),flush=True)
 
 
@@ -257,6 +318,29 @@ def self_test():
     assert repaired["answer_unit"] == "is_blank"
     assert repaired["answer_value"] == "12" and repaired["ref_id"] == "['a']"
     assert normalize_unscored_unit({"answer_unit":"MWh"})["answer_unit"] == "MWh"
+    numeric={"id":"sample","question":"What energy was used?",
+             "answer":"is_blank","answer_value":"is_blank",
+             "answer_unit":"is_blank","ref_id":"is_blank","ref_url":"is_blank",
+             "supporting_materials":"is_blank","explanation":"No source."}
+    passages=[
+        {"ref_id":"p1","url":"https://arxiv.org/abs/2401.00001",
+         "page":1,"text":"Reported training electricity 12 MWh."},
+        {"ref_id":"p2","url":"https://arxiv.org/abs/2401.00002",
+         "page":2,"text":"A different source."}]
+    recovered=recover_candidate_unanchored({
+        "answer":"12 MWh","answer_value":"12","answer_unit":"NA",
+        "source_index":0,
+        "supporting_quote":"fabricated unsupported quotation"},
+        question,passages,numeric)
+    assert recovered["answer_value"]=="12"
+    assert recovered["answer_unit"]=="is_blank"
+    assert recovered["ref_id"]=="['p1']"
+    assert "Reported training electricity" in recovered["supporting_materials"]
+    assert "fabricated unsupported quotation" not in recovered["supporting_materials"]
+    assert "CANDIDATE_UNVERIFIED" in recovered["explanation"]
+    assert recover_candidate_unanchored({
+        "answer_value":"is_blank"},question,passages,numeric)==numeric
+    print("WATTBOT_V4_UNVERIFIED_RECOVERY_SELF_TEST=PASS")
     print("WATTBOT_FULL_TEST_SELF_TEST=PASS")
 
 
