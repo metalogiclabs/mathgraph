@@ -82,3 +82,11 @@ verified refutation of the original geometric theorem.
 The previous failed axiom-audit attempt used a theorem namespace instead of the compiled Lean module prefix; preserve that configuration failure in CI lineage without misidentifying it as a mathematical counterexample.
 
 Still UNKNOWN: full OpenAI Logspace Comparator replay; all imported definition and axiom checking under the OAI project; formal-versus-paper semantic correspondence; and independent proof of the geometric cusp-orientation sign. Do not promote a theorem beyond its verified boundary.
+
+## Closed Logspace source import tree (static preflight only)
+
+[Run 37864401230](https://github.com/metalogiclabs/mathgraph/actions/runs/37864401230) passed 20 focused offline falsifier controls, all 11 original source/build locks, and the new imported-source closure check. From the final solution Equality module, **39 of 39** local OAI Logspace modules were reached through transitive imports, and every downloaded UTF-8 source matched its Git blob identity in the immutable upstream release. The static lexical check raised **zero** risk signals after removing line and nested block comments. Machine-readable reports are preserved in GitHub Actions artifact openai-math-pinned-source-audit (artifact 11586939453).
+
+This is **WARRANTED_STATIC_SOURCE_IMPORT_CLOSURE**, not proof checking. The comment stripper is not a full Lean parser; zero lexical signals is not a proof that the Lean environment lacks arbitrary axioms or that its kernel accepts the solution. Imported Mathlib code and trust in the challenge environment remain outside this source preflight.
+
+The declared current main-theorem status is still UNKNOWN_INDEPENDENT_LEAN_REPLAY. A safe independent Comparator execution needs compatible pinned Lean, Comparator, lean4export and landrun versions, a sandbox consistent with comparator's threat model, and a full archived check of definitions and permitted axioms.
