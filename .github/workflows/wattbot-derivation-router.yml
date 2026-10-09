@@ -1,0 +1,48 @@
+name: WattBot quantitative derivation and cross-paper routing ablation
+on:
+  push:
+    branches: [wattbot-derivation-router-v1]
+    paths:
+      - '.github/workflows/wattbot-derivation-router.yml'
+      - 'experiments/wattbot2026/derivation_router_probe.py'
+      - 'experiments/wattbot2026/answer_value_residual_probe.py'
+jobs:
+  derivation-route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen official score and PDF reader dependencies
+        run: python -m pip install kaggle requests pandas numpy pymupdf
+      - name: Qualify question-only derivation intent and frozen page source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/derivation_router_probe.py --self-test
+          python experiments/wattbot2026/answer_value_residual_probe.py --self-test
+      - name: Score paired quantitative second-reader responses against first-pass candidate policies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/derivation_router_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Scientific evidence and spending boundary
+        run: |
+          echo "Same original first-pass model outputs for every scoring arm."
+          echo "Second reader invoked ONLY on question text heuristic, never via gold answers."
+          echo "Additional conservative reserved spend capped at USD 0.16."
+          echo "Mathematical and citation expressions remain CANDIDATE until independently grounded."
+          echo "TRAIN-only evaluation, no Kaggle TEST labels, submission, published answers or PDF artifacts."
