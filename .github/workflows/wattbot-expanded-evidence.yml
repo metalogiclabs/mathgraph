@@ -1,0 +1,42 @@
+name: WattBot 10-page evidence depth frozen TRAIN qualification
+on:
+  push:
+    branches: [wattbot-expanded-evidence-v1]
+    paths:
+      - 'experiments/wattbot2026/expanded_evidence_depth_probe.py'
+      - '.github/workflows/wattbot-expanded-evidence.yml'
+jobs:
+  expanded-context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official corpus/score pipeline
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Verify unchanged pinned source/reader and source-window identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/full_reader.py --self-test
+          python experiments/wattbot2026/expanded_evidence_depth_probe.py --self-test
+      - name: Score deeper top10 excerpts on reused official TRAIN holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/expanded_evidence_depth_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Evidence authority
+        run: echo "No TEST answers, no Kaggle submission, no input/corpus PDF artifacts."
