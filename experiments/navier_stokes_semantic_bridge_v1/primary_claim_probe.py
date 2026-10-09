@@ -49,7 +49,7 @@ def run(pdf: Path, inverse: Path, pressure: Path, out: Path) -> dict:
     require(len(pages) >= 160, "expected 166-page primary manuscript")
     page_results = {}
     for formula in ("8.19", "10.19"):
-        anchor = rf"\(\s*{formula.replace('.', r'\.')}\s*\)"
+        anchor = r"\(\s*" + re.escape(formula) + r"\s*\)"
         matches = [i for i, page in enumerate(pages, start=1) if re.search(anchor, page)]
         require(len(matches) >= 1, f"primary PDF missing equation ({formula})")
         # Match ambiguity remains explicit; do not secretly select based on desired claim.
