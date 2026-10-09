@@ -44,6 +44,7 @@ theorem initial_commutes (codec : AlphabetCodec α K)
     encodeConfiguration codec (sourceInitial M codec.blank n) =
       (compileMachine codec M).initial n := by
   simp only [encodeConfiguration, sourceInitial, Machine.initial, compileMachine]
+  congr 1
   funext j z
   simp [encodeTracks, encodeSymbol]
 
