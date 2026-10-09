@@ -1,0 +1,50 @@
+name: WattBot same-response exact-value citation repair
+on:
+  push:
+    branches: [wattbot-value-anchor-repair-v1]
+    paths:
+      - 'experiments/wattbot2026/value_anchor_repair_probe.py'
+      - '.github/workflows/wattbot-value-anchor-repair.yml'
+permissions:
+  contents: read
+jobs:
+  value-anchor-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official scorer and scientific evidence dependencies
+        run: python -m pip install kaggle requests pandas numpy pymupdf pytest
+      - name: Test exact numeric/text anchoring and ambiguity refusal
+        run: |
+          python experiments/wattbot2026/value_anchor_repair_probe.py --self-test
+          python -m pytest -q experiments/wattbot2026/tests/test_query_window.py experiments/wattbot2026/tests/test_submission_gate.py
+      - name: Official Kaggle training dataset access
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KAGGLE_API_TOKEN}" || -z "${OPENROUTER_API_KEY}" ]]; then
+            echo "::error::Kaggle or OpenRouter secret missing"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+      - name: Causal official score ablation using exactly the same model responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          python experiments/wattbot2026/value_anchor_repair_probe.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Epistemic boundary
+        run: |
+          echo "TRAIN holdout previously inspected; no protected test labels used."
+          echo "Admitted quotation proves only literal/source provenance, not semantic truth."
+          echo "Never promote a negative same-response score delta. No Kaggle submission is made here."
