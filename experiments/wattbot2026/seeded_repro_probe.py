@@ -69,6 +69,7 @@ def run():
             hashes=[]
             statuses=Counter()
             seen_providers=set()
+            attempted=0
             for _ in range(n):
                 body={
                     "model":base.MODEL,
@@ -82,6 +83,7 @@ def run():
                 if mode=="seeded":
                     body["seed"]=seed_for(fixture["question"])
                     body["provider"]={"require_parameters":True}
+                attempted+=1
                 response=requests.post(ENDPOINT,headers={
                    "Authorization":"Bearer "+key,
                    "Content-Type":"application/json",
@@ -89,7 +91,13 @@ def run():
                    "X-Title":"WattBot synthetic seed reproducibility audit"},
                    json=body,timeout=(10,75))
                 if response.status_code!=200:
-                    raise RuntimeError("Provider rejected seeded audit: HTTP "+str(response.status_code))
+                    if mode=="seeded" and response.status_code in (400,422):
+                        # Rejection is a measured feature-compatibility result;
+                        # it is NOT a deterministic model response and no
+                        # answer or source is promoted.
+                        statuses["seeded_parameter_rejected"]+=1
+                        break
+                    raise RuntimeError("Provider request failed: HTTP "+str(response.status_code))
                 result=response.json()
                 if result.get("error"):
                     raise RuntimeError("Provider returned an error")
@@ -117,12 +125,13 @@ def run():
                     raise RuntimeError("Total synthetic request reservation breached")
                 time.sleep(.25)
             cohorts.append({
-               "case":idx,"mode":mode,"calls":n,
+               "case":idx,"mode":mode,"calls":attempted,
                "unique_canonical_outputs":len(set(hashes)),
                "all_identical":len(set(hashes))==1,
                "valid_json":statuses["valid_json"],
                "invalid_json":statuses["invalid_json"],
-               "provider_count_if_reported":len(seen_providers)})
+               "provider_count_if_reported":len(seen_providers),
+               "seeded_parameter_rejected":statuses["seeded_parameter_rejected"]})
     print("WATTBOT_SEEDED_REPRODUCIBILITY="+json.dumps({
        "scope":"Three entirely synthetic scientific question fixtures",
        "model":base.MODEL,
