@@ -25,6 +25,8 @@ import zipfile
 import pandas as pd
 
 import full_reader as base
+from full_quote_reclosure import (reclose,frozen_pages,
+                                  self_test as reclosure_self_test)
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -100,6 +102,7 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
 
 
 def self_test():
+    reclosure_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
     assert base.MODEL == "google/gemini-2.5-flash-lite"
     assert base.K == 6 and base.MAX_EXCERPT == 1100 and base.MAX_REQUESTS == 63
@@ -141,8 +144,12 @@ def run(archive):
     passage_map = {}
     numeric_map = {}
     checked_map = {}
+    docs_by_id = {}
+    all_source_pages = []
     counters = Counter()
     def windowed(question, chunks):
+        if not all_source_pages:
+            all_source_pages.append(frozen_pages(chunks))
         original, hits = original_passages(question, chunks)
         pages = window_passages(question, original, base.MAX_EXCERPT)
         counters["questions"] += 1
@@ -162,6 +169,7 @@ def run(archive):
         passage_map[question] = list(passages)
         return raw,status,reserve,actual
     def record_numeric(question, hits, docs):
+        docs_by_id[question["id"]]=docs
         result=original_numeric(question,hits,docs)
         # First call is all-pinned-corpus numeric, later calls are controls.
         if question["id"] not in numeric_map:
@@ -212,6 +220,8 @@ def run(archive):
             "strict_then_raw_no_refs":[],
             "strict_then_raw_numeric_refs":[],
             "strict_then_raw_model_refs":[],
+            "strict_then_exact_full_quote":[],
+            "provisional_then_exact_full_quote":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -237,6 +247,22 @@ def run(archive):
                 strict_mode="strict_then_"+("raw_model_refs" if key=="selected"
                               else "raw_numeric_refs" if key=="numeric" else "raw_no_refs")
                 modes[strict_mode].append(dict(strict) if strict is not None else candidate)
+            certified=None
+            reason="ORIGINAL_EVIDENCE_ADMITTED"
+            if strict is None and usable(response):
+                certified,reason=reclose(
+                    response,{"id":ident,"question":question},
+                    all_source_pages[0],docs_by_id[ident],check)
+            diagnosis["fullquote_"+reason]+=1
+            if certified is not None:
+                diagnosis["new_unique_full_pdf_quotations"]+=1
+            provisional=raw_variant(row,response,numeric,passages,"selected")
+            modes["strict_then_exact_full_quote"].append(
+                dict(strict) if strict is not None else
+                dict(certified) if certified is not None else dict(numeric))
+            modes["provisional_then_exact_full_quote"].append(
+                dict(strict) if strict is not None else
+                dict(certified) if certified is not None else provisional)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
@@ -253,6 +279,13 @@ def run(archive):
                     invalid[name]=type(err).__name__
     comparison=baseline["scores"]["reader_then_numeric_fallback"]
     improvements={k:round(v-comparison,8) for k,v in scores.items()}
+    paired={
+        "exact_full_quote_over_strict":round(
+            scores["strict_then_exact_full_quote"]-comparison,8),
+        "exact_full_quote_over_original_provisional":round(
+            scores["provisional_then_exact_full_quote"]
+            -scores["strict_then_raw_model_refs"],8),
+    }
     result={
        "status":"EXPLORATORY_CANDIDATE",
        "scope":"Same 63 historic TRAIN questions and same LLM responses for all arms",
@@ -264,16 +297,23 @@ def run(archive):
        "historical_window_run":HISTORICAL_WINDOW_RUN,
        "alternative_scores":scores,
        "score_delta_vs_same_run_baseline":improvements,
+       "paired_source_reclosure_deltas":paired,
        "invalid_modes":invalid,
        "counters":dict(diagnosis),
        "contexts":dict(counters),
        "observed_api_usd":baseline["observed_api_usd"],
        "reserved_api_usd":baseline["max_reserved_usd"],
-       "boundary":"All alternatives are unverified LLM answers. Model-supplied citation indices "
-                  "are provisional, NOT exact-quote proof; neither alternative is promoted to "
-                  "scientific fact. No protected TEST labels or Kaggle submission.",
+       "boundary":"All quoted source-page reclosure uses the same model "
+                  "responses and entire pinned PDF corpus. A new source may "
+                  "be admitted ONLY after the verbatim quote matches one "
+                  "unambiguous registered document and passes independent "
+                  "original PDF page validator. No gold answer or source "
+                  "labels used in selection. Literal source occurrence does "
+                  "not establish scientific entailment. Same 63 reused "
+                  "TRAIN responses scored by official Score.py; no hidden "
+                  "TEST labels, new model calls or Kaggle submission.",
     }
-    print("WATTBOT_VALUE_RESIDUAL_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_FULL_QUOTE_RECLOSURE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
