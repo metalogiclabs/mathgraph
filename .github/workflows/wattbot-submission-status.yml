@@ -1,0 +1,27 @@
+name: WattBot Kaggle submission score check
+on:
+  push:
+    branches: [wattbot-2026-submission-v1]
+    paths:
+      - '.github/workflows/wattbot-submission-status.yml'
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install kaggle
+      - name: Read authoritative Kaggle submission status and public score
+        shell: bash
+        run: |
+          set -euo pipefail
+          kaggle competitions submissions -c WattBot2026
+          echo "Reference submission: 56994417. Never infer ranking from local training scores."
