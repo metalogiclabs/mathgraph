@@ -45,8 +45,8 @@ MODELS="https://openrouter.ai/api/v1/models"
 
 def require_bounded_price() -> None:
     global PRICE_IN, PRICE_OUT
-    if COST_CAP_USD < 0 or COST_CAP_USD > 0.02:
-        raise RuntimeError("Model budget cap must be in [0,$0.02]")
+    if COST_CAP_USD < 0 or COST_CAP_USD > 0.03:
+        raise RuntimeError("Model budget cap must be in [0,$0.03]")
     response=requests.get(MODELS,timeout=25)
     response.raise_for_status()
     matches=[m for m in response.json().get("data",[]) if m.get("id")==MODEL]
