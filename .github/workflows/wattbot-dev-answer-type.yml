@@ -1,0 +1,46 @@
+name: WattBot developmental answer type compiler qualification
+on:
+  push:
+    branches: [wattbot-answer-type-capability-v1]
+    paths:
+      - '.github/workflows/wattbot-dev-answer-type.yml'
+      - 'experiments/wattbot2026/dev_answer_type_compiler.py'
+jobs:
+  source-independent-answer-form:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official dataset and finite classifier dependencies
+        run: python -m pip install kaggle pandas numpy requests pymupdf
+      - name: Qualify exact answer-value form and source-safe development lessons
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q experiments/wattbot2026
+          python experiments/wattbot2026/verified_lesson.py
+          python experiments/wattbot2026/dev_answer_type_compiler.py --self-test
+      - name: Select on 182 development leave-one-out then evaluate 63 TRAIN holdout
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wattbot"
+          kaggle competitions download -c WattBot2026 -p "$RUNNER_TEMP/wattbot" --quiet
+          python experiments/wattbot2026/dev_answer_type_compiler.py \
+            --official-zip "$RUNNER_TEMP/wattbot/WattBot2026.zip"
+      - name: Protected future boundary
+        run: |
+          echo "Numeric tolerance bands, source-stated ranges and text responses are distinct."
+          echo "No gold answer from target row enters its developmental classifier."
+          echo "The 63 reused TRAIN holdout is only evaluated after development-policy selection."
+          echo "Output types cannot prove scientific facts or source provenance."
+          echo "No protected TEST answers/citations, PDF downloads, LLM calls, or submission."
