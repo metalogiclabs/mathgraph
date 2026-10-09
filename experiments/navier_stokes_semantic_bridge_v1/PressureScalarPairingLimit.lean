@@ -19,7 +19,7 @@ noncomputable section
 
 namespace MathGraph.PressureScalarPairingLimit
 
-open Set Filter MeasureTheory
+open Set Filter MeasureTheory ContinuousLinearMap
 open NavierStokes.ProblemStatement
 open NavierStokes.R3PressureCommutator (Cutoff weightedNorm)
 open NavierStokes.R3PressureCutoff
