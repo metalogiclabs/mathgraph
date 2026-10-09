@@ -100,6 +100,40 @@ def raw_variant(blank_row, raw, numeric, passages, refs_mode):
     return result
 
 
+def expand_numeric_certificate(raw, question, checked_reason, six, full, hundred,
+                               docs, scope):
+    """Search only already downloaded public PDF text, with no new LLM call.
+
+    Explicit source choices are model hypotheses; exact literal anchoring is
+    checked independently. No gold TRAIN/test refs or answers enter selection.
+    """
+    if not usable(raw):
+        return None, "MODEL_NO_VALUE"
+    if scope == "model_source":
+        picks=raw.get("source_indices")
+        if not isinstance(picks,list) or not picks:
+            picks=[raw.get("source_index")]
+        ids={six[i]["ref_id"] for i in picks if type(i) is int and 0<=i<len(six)}
+        if len(ids)!=1:
+            return None,"MISSING_SINGLE_MODEL_SOURCE"
+        pages=[p for p in full if p["page"]>0 and p["ref_id"] in ids]
+    elif scope == "six_source_documents":
+        ids={p["ref_id"] for p in six}
+        pages=[p for p in full if p["page"]>0 and p["ref_id"] in ids]
+    elif scope == "top100_retrieved":
+        pages=[p for p in hundred if p["page"]>0]
+    else:
+        raise ValueError("Unknown evidence expansion policy")
+    if not pages:
+        return None,"NO_SOURCE_PAGES"
+    matched,why=repaired_by_value(raw,question,pages,docs,checked_reason)
+    if matched is not None:
+        matched["explanation"] = (
+            "CANDIDATE: exact answer-value literal in pinned expanded source page; "
+            "source ranking/model hint is not a scientific entailment certificate.")
+    return matched,why
+
+
 def self_test():
     literal_anchor_self_test()
     assert git_blob(Path(base.__file__).read_bytes()) == BASE_BLOB
@@ -124,7 +158,20 @@ def self_test():
     assert t["ref_id"]=="['b']" and t["supporting_materials"]=="is_blank"
     assert t["answer_value"]=="31" and t["answer_unit"]=="is_blank"
     assert raw_variant(q,{"answer_value":"is_blank"},num,pages,"selected")==num
-    print("WATTBOT_VALUE_RESIDUAL_SELF_TEST=PASS")
+    study={"id":"q1","question":"How much cooling electricity use was reported in MWh?"}
+    from value_anchor import repaired_by_value
+    raw2={"answer":"1287 MWh","answer_value":"1287","answer_unit":"MWh",
+          "source_index":0}
+    p1=dict(ref_id="x",url="https://arxiv.org/abs/2601.00001",
+            page=1,text="Intro of paper, no number.")
+    p2=dict(ref_id="x",url=p1["url"],page=7,
+            text="The cooling electricity use reported was 1,287 MWh for analysis.")
+    sample,reason=expand_numeric_certificate(
+        raw2,study,"QUOTATION_NOT_ANCHORED",[p1],
+        [p1,p2],[p1,p2],{"x":{"url":p1["url"]}},"model_source")
+    assert sample is not None and reason=="VALUE_LITERAL_PAGE_ANCHORED"
+    assert sample["ref_id"]=="['x']" and "CANDIDATE" in sample["explanation"]
+    print("WATTBOT_EXPANDED_VALUE_CERTIFICATE_SELF_TEST=PASS")
 
 
 def run(archive):
@@ -144,9 +191,16 @@ def run(archive):
     numeric_map = {}
     checked_map = {}
     docs_by_id = {}
+    all_chunks = []
+    hit_map = {}
     counters = Counter()
     def windowed(question, chunks):
+        if not all_chunks:
+            all_chunks.append(chunks)
+        elif all_chunks[0] is not chunks:
+            raise RuntimeError("Reader changed pinned corpus object mid-run")
         original, hits = original_passages(question, chunks)
+        hit_map[question] = hits
         pages = window_passages(question, original, base.MAX_EXCERPT)
         counters["questions"] += 1
         counters["pages"] += len(pages)
@@ -218,6 +272,11 @@ def run(archive):
             "strict_then_raw_model_refs":[],
             "strict_then_unique_literal":[],
             "strict_literal_then_unverified_source":[],
+            "strict_literal_then_hint_doc":[],
+            "strict_literal_then_six_documents":[],
+            "strict_literal_then_top100":[],
+            "strict_literal_hint_then_unverified":[],
+            "strict_literal_top100_then_unverified":[],
         }
         diagnosis=Counter()
         for _,row in blank.iterrows():
@@ -263,6 +322,39 @@ def run(archive):
             modes["strict_then_unique_literal"].append(literal_only)
             modes["strict_literal_then_unverified_source"].append(
                 candidate_after_literal)
+            baseline_first=dict(strict) if strict is not None else (
+                dict(literal) if literal is not None else None)
+            expanded={}
+            for scope in ("model_source","six_source_documents","top100_retrieved"):
+                additional=None
+                reason="ALREADY_ADMITTED"
+                if baseline_first is None and usable(response):
+                    additional,reason=expand_numeric_certificate(
+                        response,{"id":ident,"question":question},check,
+                        passages,all_chunks[0],hit_map[question],
+                        docs_by_id[ident],scope)
+                expanded[scope]=additional
+                diagnosis[scope+"_"+reason]+=1
+                if additional is not None:
+                    diagnosis[scope+"_new_exact_literal"]+=1
+            fallback=raw_variant(row,response,numeric,passages,"selected")
+            candidates={
+              "strict_literal_then_hint_doc":expanded["model_source"],
+              "strict_literal_then_six_documents":expanded["six_source_documents"],
+              "strict_literal_then_top100":expanded["top100_retrieved"],
+            }
+            for name,value in candidates.items():
+                modes[name].append(
+                    dict(baseline_first) if baseline_first is not None else
+                    dict(value) if value is not None else dict(numeric))
+            modes["strict_literal_hint_then_unverified"].append(
+                dict(baseline_first) if baseline_first is not None else
+                dict(expanded["model_source"]) if expanded["model_source"] is not None
+                else fallback)
+            modes["strict_literal_top100_then_unverified"].append(
+                dict(baseline_first) if baseline_first is not None else
+                dict(expanded["top100_retrieved"]) if expanded["top100_retrieved"] is not None
+                else fallback)
 
         with tempfile.TemporaryDirectory(prefix="wattbot_value_score_") as tmp:
             scorer=load_score(z,tmp)
@@ -310,7 +402,7 @@ def run(archive):
                   "Same model responses scored by official TRAIN Score.py only; "
                   "no hidden TEST labels or Kaggle submission.",
     }
-    print("WATTBOT_TIERED_VALUE_ABLATION="+json.dumps(result,sort_keys=True),flush=True)
+    print("WATTBOT_EXPANDED_VALUE_CERTIFICATE="+json.dumps(result,sort_keys=True),flush=True)
 
 
 if __name__=="__main__":
