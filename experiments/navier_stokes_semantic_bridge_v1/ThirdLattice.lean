@@ -54,9 +54,9 @@ theorem weight_inv_three_le_product (k : Frequency) :
     calc
       a ^ (3 / 2 : ℝ) * b ^ (3 / 2 : ℝ) ≤
           (weight k) ^ (3 / 2 : ℝ) * (weight k) ^ (3 / 2 : ℝ) :=
-        mul_le_mul hpa hpb (by positivity) (by positivity)
+        mul_le_mul hpa hpb (Real.rpow_nonneg hb.le _) (Real.rpow_nonneg (weight_pos k).le _)
       _ = (weight k) ^ ((3 / 2 : ℝ) + (3 / 2 : ℝ)) := by
-        rw [Real.rpow_add (weight_pos k).le]
+        rw [Real.rpow_add (weight_pos k)]
       _ = (weight k) ^ 3 := by
         norm_num [Real.rpow_natCast]
   have h := one_div_le_one_div_of_le (by positivity :
