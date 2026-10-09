@@ -1,0 +1,124 @@
+name: Cross-pressure Laplacian test bridge V19
+on:
+  push:
+    branches: [navier-pressure-laplacian-v19]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureLaplacianBridge.lean'
+      - '.github/workflows/navier-stokes-laplacian-pressure-v19.yml'
+  pull_request:
+    branches: [navier-stokes-pressure-legacy-v17]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/PressureLaplacianBridge.lean'
+      - '.github/workflows/navier-stokes-laplacian-pressure-v19.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pressure-laplacian-v19-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actual-two-pressure-interfaces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Freeze exact candidate
+        run: |
+          set -euo pipefail
+          mkdir -p .pressure-env pressure-v19-evidence
+          git rev-parse HEAD | tee pressure-v19-evidence/head-sha.txt
+          cp experiments/navier_stokes_semantic_bridge_v1/PressureLaplacianBridge.lean .pressure-env/PressureLaplacianBridge.lean
+          cp .pressure-env/PressureLaplacianBridge.lean pressure-v19-evidence/PressureLaplacianBridge.lean
+          sha256sum .pressure-env/PressureLaplacianBridge.lean > pressure-v19-evidence/source-sha256.txt
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .pressure-env/lean-toolchain
+          cat > .pressure-env/lakefile.toml <<'EOF'
+          name = "mathgraph_two_pressure_laplacian_v19"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "PressureLaplacianBridge"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .pressure-env/.lake
+            .pressure-env/lake-manifest.json
+          key: openai-four-loss-v6-lean434rc2-mathlib-pinned-f9e8bc5
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve and hash upstream pressure logic
+        working-directory: .pressure-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          grep -q 'theorem pressureL1_poisson' .lake/packages/NavierStokesAndEuler/NavierStokes/R3PressureFourier.lean
+          grep -q 'theorem pressurePair_laplacianCLM' .lake/packages/NavierStokesAndEuler/NavierStokes/R3/RieszTestOperators.lean
+          cp lake-manifest.json ../pressure-v19-evidence/lake-manifest.json
+          lake env lean --version | tee ../pressure-v19-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel-check exact pressure Laplacian-test correspondence
+        working-directory: .pressure-env
+        run: |
+          set -euo pipefail
+          lake build PressureLaplacianBridge 2>&1 | tee ../pressure-v19-evidence/build.log
+          lake env lean -DwarningAsError=true PressureLaplacianBridge.lean 2>&1 | tee ../pressure-v19-evidence/axioms.log
+      - name: Verify exact head, axiom boundary and source scope
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,re,os
+          from pathlib import Path
+          root=Path('pressure-v19-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'axioms.log').read_text()
+          wanted={'MathGraph.PressureLaplacianBridge.'+s for s in
+            ('source_and_comparison_test_laplacians_agree',
+             'comparison_test_partials_commute',
+             'old_pressure_poisson_laplacian_test',
+             'actual_old_and_comparison_pressure_agree_on_laplacian_tests')}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,a in rows:
+            assert n not in seen,('duplicate',n)
+            used={x.strip() for x in a.split(',') if x.strip()}
+            assert used<= {'propext','Classical.choice','Quot.sound'},(n,sorted(used))
+            seen[n]=sorted(used)
+          assert set(seen)==wanted,sorted(wanted.symmetric_difference(set(seen)))
+          payload={
+            'schema':'mathgraph.actual-two-pressure-laplacian-tests-v19',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'upstream_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'OLD_L1_TEMPERED_PRESSURE_EQ_ACTIVE_COMPARISON_PRESSUREPAIR_ON_LAPLACIAN_TESTS',
+            'real_L1_stress_and_Schwartz_test':True,
+            'all_Schwartz_tests_equivalence_proved':False,
+            'full_physical_pressure_identification_proved':False,
+            'manuscript_10_19_estimate_proved':False,
+            'NL_source_specification_approved':False,
+            'production_semantics_modified':False,
+            'axiom_audit':seen,
+            'file_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()},
+          }
+          (root/'result.json').write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(payload,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pressure-laplacian-v19
+          path: pressure-v19-evidence/
+          if-no-files-found: error
