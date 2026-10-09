@@ -131,54 +131,59 @@ def pilot(zip_path: str, max_docs: int) -> None:
             "training_questions_with_all_gold_sources_downloaded":with_all,
             "training_questions_total":len(train)},sort_keys=True))
 
-        # Matched comparison on rows whose ALL gold refs are in the four-paper
-        # pilot. The denominator is conditional and selection was train-driven,
-        # so these figures are NOT overall corpus retrieval scores.
-        matched = [(row, refs[i]) for i, row in enumerate(train)
-                   if refs[i] and set(refs[i]) <= observed]
+        # Global source-retrieval check: same 240 answerable training questions,
+        # same full 122-document universe. Real PDF pages supplement metadata,
+        # and absences remain in the denominator. All training-only diagnostics.
         pseudo_meta = [
             {"ref_id": d["id"], "url": d["url"], "page": 0,
              "text": " ".join(str(d.get(k,"") or "") for k in
                               ("title","citation","year","venue"))}
             for d in meta
         ]
-        # Hybrid has metadata coverage for ALL 122 sources, unlike the
-        # PDF-only truncated index; the 4 PDF texts supplement metadata.
         hybrid = pseudo_meta + pdf_chunks
-        metrics = {}
-        for k in (1,3,8):
-            base_hit = hybrid_hit = base_complete = hybrid_complete = 0
-            for question, correct in matched:
-                expected = set(correct)
-                base = set(score_metadata(question["question"],meta,k))
-                hits = ranked(question["question"],hybrid,min(len(hybrid),200))
-                # Collapse multiple page chunks to unique source references.
-                seen = []
-                for hit in hits:
-                    if hit["ref_id"] not in seen:
-                        seen.append(hit["ref_id"])
-                    if len(seen) >= k:
-                        break
-                got = set(seen)
-                base_hit += bool(base & expected)
-                hybrid_hit += bool(got & expected)
-                base_complete += expected <= base
-                hybrid_complete += expected <= got
-            n = len(matched)
-            metrics[str(k)] = {
-                "matched_questions":n,
-                "metadata_any":round(base_hit/n,4) if n else None,
-                "hybrid_any":round(hybrid_hit/n,4) if n else None,
-                "metadata_all":round(base_complete/n,4) if n else None,
-                "hybrid_all":round(hybrid_complete/n,4) if n else None,
-            }
-        print("FOUR_PDF_HYBRID_MATCHED_DIAGNOSTIC="+json.dumps({
-            "selection_basis":"four most cited arXiv sources in training labels",
-            "metadata_source_count":len(meta),
-            "real_pdf_chunk_count":len(pdf_chunks),
-            "scores_by_source_rank":metrics,
-            "warning":"Train-selected conditional diagnostic, NOT global recall or official score",
-        },sort_keys=True))
+        ks = (1,3,8)
+        groups = {name:[] for name in ("all","fully_covered","partially_covered","none_covered")}
+        for i, question in enumerate(train):
+            expected = set(refs[i])
+            if not expected:
+                continue
+            baseline = score_metadata(question["question"],meta,8)
+            hit_chunks = ranked(question["question"],hybrid,min(len(hybrid),200))
+            diversified = []
+            for hit in hit_chunks:
+                if hit["ref_id"] not in diversified:
+                    diversified.append(hit["ref_id"])
+                if len(diversified)>=8:
+                    break
+            if expected <= observed:
+                group = "fully_covered"
+            elif expected & observed:
+                group = "partially_covered"
+            else:
+                group = "none_covered"
+            for tag in ("all",group):
+                groups[tag].append((expected,baseline,diversified))
+        results = {}
+        for name,rows in groups.items():
+            section={"n":len(rows)}
+            for k in ks:
+                metrics={}
+                for mode,idx in (("metadata",1),("hybrid",2)):
+                    n=len(rows)
+                    # Explicit indexing avoids inferring any labels from test_Q.
+                    any_count=sum(bool(truth & set(item[idx][:k])) for item in rows for truth in [item[0]])
+                    all_count=sum(item[0] <= set(item[idx][:k]) for item in rows)
+                    metrics[mode]={"any":round(any_count/n,4) if n else None,
+                                   "all":round(all_count/n,4) if n else None}
+                section["at_"+str(k)] = metrics
+            results[name]=section
+        print("FOUR_PDF_GLOBAL_RECALL_CONTROL="+json.dumps({
+            "source_universe":len(meta),
+            "pdf_sources":len(successful),
+            "pdf_chunks":len(pdf_chunks),
+            "strata":results,
+            "boundary":"Train-derived document selection; not holdout, answer accuracy or official WattBot score",
+        }, sort_keys=True))
 
 
 def self_test():
