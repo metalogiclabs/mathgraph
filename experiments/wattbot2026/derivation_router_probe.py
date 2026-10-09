@@ -28,6 +28,7 @@ import pandas as pd
 
 import full_reader as base
 from answer_value_residual_probe import raw_variant, usable
+from verified_lesson import illustrate, self_test as lessons_self_test
 from holdout_probe import is_holdout
 from query_window import window_passages
 from score_ablation import load_score
@@ -78,6 +79,7 @@ def derivation_question(question):
 
 
 def self_test():
+    lessons_self_test()
     assert git_blob(Path(base.__file__).read_bytes())==BASE_BLOB
     assert base.K==6 and base.MAX_EXCERPT==1100 and base.MAX_REQUESTS==63
     assert base.MODEL=="google/gemini-2.5-flash-lite"
@@ -96,6 +98,12 @@ def run(archive):
         for name,hash_value in PIN.items():
             if hashlib.sha256(z.read(name)).hexdigest()!=hash_value:
                 raise RuntimeError("Official TRAIN or scorer SHA moved: "+name)
+        dev_train=pd.read_csv(io.BytesIO(z.read("train_QA.csv")),
+            keep_default_na=False,dtype={"id":str})
+        worked=[item for item in dev_train.to_dict("records")
+                if not is_holdout(str(item["id"]))]
+        if len(worked)!=182:
+            raise RuntimeError("Development example universe changed")
     original_passages=base.passages_for
     original_model=base.call_reader
     original_numeric=base.build_candidate
@@ -131,17 +139,14 @@ def run(archive):
             raise RuntimeError("First response duplicated")
         first_raw[question]=(response,status)
         first_pages[question]=list(passages)
-        if not derivation_question(question):
-            stats["plain_question"]+=1
-            return response,status,bound,actual
-        stats["derivation_question"]+=1
-        hits=ranked_by_question[question]
-        selected=[p for p in hits if p["page"]>0][:SECONDARY_TOP_K]
-        if len(selected)!=SECONDARY_TOP_K:
-            stats["insufficient_additional_pages"]+=1
-            return response,status,bound,actual
-        expanded=window_passages(question,selected,base.MAX_EXCERPT)
-        enriched=question+"\n"+SECOND_INSTRUCTION
+        stats["worked_example_question"]+=1
+        # The exact same six PDF excerpts are supplied to both model calls:
+        # the ONLY change is two development-only worked examples appended
+        # to the instruction, never a target holdout label or source.
+        expanded=list(passages)
+        if len(expanded)!=base.K:
+            raise RuntimeError("Lesson policy changed source depth")
+        enriched=question+illustrate(question,worked)
         wire=json.dumps({"question":enriched,
                          "passages":[{"source_index":i,"ref_id":p["ref_id"],
                              "page":p["page"],"text":p["text"][:base.MAX_EXCERPT]}
@@ -269,12 +274,15 @@ def run(archive):
     if abs(official["first_strict"]-
            baseline["scores"]["reader_then_numeric_fallback"])>0.00000002:
         raise RuntimeError("First-pass official scoring mismatch")
-    print("WATTBOT_DERIVATION_ROUTER_HOLDOUT="+json.dumps({
+    print("WATTBOT_VERIFIED_LESSON_COMPILER_HOLDOUT="+json.dumps({
        "status":"CANDIDATE_TRAIN_ONLY",
        "scope":"Frozen 63 previously inspected TRAIN rows; same primary model outputs",
        "model":base.MODEL,"source_sha256":SOURCE_PIN,
-       "model_call_routing":"Question text only; no labels, ID or test answer used",
-       "only_router":"quantitative or multi-source question syntax",
+       "model_call_routing":"Two same-task worked examples from development TRAIN; "
+         "selected by question text and development type flags only. No target "
+         "holdout answer, reference or flag used as a demonstration.",
+       "only_router":"Two-example developmental formatting/reasoning transfer "
+         "on every question with identical pinned six-page context",
        "score_arms":official,
        "strict_baseline":official["first_strict"],
        "provisional_baseline":official["first_provisional"],
@@ -285,10 +293,12 @@ def run(archive):
        "first_api_reported_usd":baseline["observed_api_usd"],
        "secondary_reserved_usd":round(extra[0],7),
        "secondary_reported_usd":round(extra[1],7),
-       "boundary":"All outputs are scientific CANDIDATES. A quoted source fragment "
-                  "proves occurrence, not its semantic support. Question-only "
-                  "routing and identical first replies enable paired TRAIN "
-                  "comparisons; no private TEST inference or Kaggle submission."
+       "boundary":"Exact same first and second six-page source evidence; "
+         "two development TRAIN worked answer conventions inform only second "
+         "response. No holdout gold, reference, answer or label in exemplars. "
+         "Verbatim PDF quotations are provenance rather than scientific "
+         "entailment. Paired reused TRAIN qualification only; no TEST "
+         "inference or Kaggle submission."
     },sort_keys=True),flush=True)
 
 
