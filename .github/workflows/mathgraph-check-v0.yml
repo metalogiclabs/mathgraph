@@ -1,0 +1,63 @@
+name: MathGraph Check v0 - source fidelity preflight
+on:
+  push:
+    branches: [mathgraph-check-v0-source-fidelity]
+  pull_request:
+    branches: [navier-stokes-semantic-bridge-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test protected diagnostic boundary
+        run: python -m unittest discover -s tests -p 'test_mathgraph_check_v0.py' -v
+      - name: Preserve V1 comparator and negative controls
+        run: |
+          python - <<'PY'
+          import sys, types, unittest
+          from pathlib import Path
+          # Keep original V1 tests independent of the large optional imports in
+          # the historical monolithic mathgraph __init__.py.
+          pkg = types.ModuleType("mathgraph")
+          pkg.__path__ = [str(Path("mathgraph").resolve())]
+          sys.modules["mathgraph"] = pkg
+          suite = unittest.defaultTestLoader.discover(
+              "tests", pattern="test_semantic_correspondence.py"
+          )
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          raise SystemExit(0 if result.wasSuccessful() else 1)
+          PY
+      - name: Generate deterministic human and agent reports
+        run: |
+          mkdir -p evidence
+          python -m mathgraph_check examples/mathgraph_check_v0_navier.json \
+            --json evidence/mathgraph-check-v0.json \
+            --markdown evidence/mathgraph-check-v0.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/mathgraph-check-v0.json").read_text())
+          assert d["diagnostic"] == "CANDIDATE_CONTRACT_DIVERGENCE"
+          assert d["comparison"]["mismatches"] == ["loss"]
+          assert d["epistemic"]["formal_kernel_verification"] == "UNKNOWN_NOT_RUN_BY_CHECK_V0"
+          assert d["epistemic"]["informal_to_formal_fidelity"] == "UNKNOWN"
+          assert d["epistemic"]["truth_promotion"] is False
+          assert d["epistemic"]["verified_badge"] == "NOT_ISSUED"
+          assert d["source_pins"]["source"]["status"] == "PIN_NOT_REPLAYED"
+          print("MATHGRAPH_CHECK_V0_NON_PROMOTION_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-v0-diagnostic
+          path: evidence/mathgraph-check-v0.*
+          if-no-files-found: warn
