@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="MathGraph Check: independently reproducible, source-scoped Lean evidence.">
+<title>MathGraph Check — L4YAML source evidence</title>
+<style>
+:root{color-scheme:light;--ink:#1A202B;--muted:#657181;--line:#DDE3EA;--soft:#F5F7F9;--blue:#3155A8}
+*{box-sizing:border-box}
+body{margin:0;background:#FFF;color:var(--ink);font:16px/1.58 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+header{border-bottom:1px solid var(--line)}.shell{max-width:1024px;margin:auto;padding:0 28px}
+nav{display:flex;align-items:center;justify-content:space-between;min-height:74px;gap:16px}
+.brand{font-weight:730;letter-spacing:-.04em;font-size:23px;color:var(--ink)}
+.dot{display:inline-grid;place-items:center;width:29px;height:29px;border-radius:6px;background:var(--ink);color:white;margin-right:9px;font-size:15px;font-weight:700}
+nav .rhs{font-size:13px;color:var(--muted)}
+main{padding-top:65px;padding-bottom:95px}
+.kicker{font-size:12px;font-weight:720;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(35px,5vw,57px);font-weight:650;line-height:1.12;letter-spacing:-.048em;max-width:780px;margin:18px 0 19px}
+.lead{font-size:18px;color:#4C5968;max-width:770px;line-height:1.65;margin:0 0 25px}
+.pills{display:flex;flex-wrap:wrap;gap:9px;margin:20px 0 32px}
+.pill{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:5px;padding:5px 10px;color:#354354;font-weight:600}
+.pill.ch{border-color:#CAD7EE;color:#244993;background:#F5F8FD}
+.sep{border-top:1px solid var(--line);margin:35px 0}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.stat{padding:26px 24px;border-right:1px solid var(--line)}.stat:last-child{border-right:0}
+.big{font-size:36px;font-weight:670;letter-spacing:-.045em}
+.small{font-size:12px;color:var(--muted);line-height:1.5}
+.grid{display:grid;grid-template-columns:1.45fr 1fr;gap:38px;margin-top:55px}
+h2{font-size:22px;letter-spacing:-.025em;margin:0 0 17px}
+p{margin:0 0 16px}
+.rows{border-top:1px solid var(--line)}
+.item{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid var(--line);padding:15px 0}
+.item span:first-child{font-size:14px}.status{font:600 11px ui-monospace,monospace;white-space:nowrap;color:#476077}
+.note{background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:20px;margin-top:25px;font-size:14px}
+aside{border:1px solid var(--line);padding:24px;border-radius:9px;align-self:start}
+aside a{display:block;font-size:14px;margin:8px 0 12px;overflow-wrap:anywhere}
+pre{overflow:auto;white-space:pre-wrap;word-break:break-word;font:12px/1.6 ui-monospace,SFMono-Regular,monospace;color:#475467;background:var(--soft);padding:12px;border-radius:5px}
+footer{border-top:1px solid var(--line);padding:30px 0;font-size:13px;color:var(--muted)}
+@media(max-width:740px){.grid{grid-template-columns:1fr;gap:24px}.stats{grid-template-columns:1fr}.stat{border-right:0;border-bottom:1px solid var(--line)}.stat:last-child{border:0}main{padding-top:38px}}
+</style></head><body>
+<header><div class="shell"><nav>
+<a class="brand" href="/" aria-label="MathGraph"><span class="dot">M</span>MathGraph</a>
+<span class="rhs">Check / Research record</span>
+</nav></div></header>
+<main class="shell">
+<div class="kicker">Pinned external evidence · 10 October 2026</div>
+<h1>Know what this check establishes.</h1>
+<p class="lead">Independent, source-pinned observations of the L4YAML parser.
+The finite results are reproducible. Broader correctness remains an explicit open question.</p>
+<div class="pills"><span class="pill ch">52 source-bound Lean guards passed</span>
+<span class="pill">Universal theorem: UNKNOWN</span><span class="pill">No project endorsement</span></div>
+<div class="stats">
+<div class="stat"><div class="big">48/48</div><div class="small">Independent YAML case decisions matched<br>31 accepts / 17 rejects</div></div>
+<div class="stat"><div class="big">52/52</div><div class="small">Pinned Lean executable guards passed<br>4 targeted extra controls</div></div>
+<div class="stat"><div class="big">UNKNOWN</div><div class="small">Universal source-to-parser equivalence<br>Not established by this record</div></div>
+</div>
+<div class="grid">
+<section>
+<h2>Exactly what was checked</h2>
+<p>MathGraph replayed a fixed independent YAML test set against the original,
+pinned Lean parser function and separately checked the upstream source's
+named serialization lemmas. Its prior compiled command-line run remains
+an independent historical observation.</p>
+<div class="rows">
+<div class="item"><span>External test-suite acceptance</span><span class="status">48/48 REPLAYED</span></div>
+<div class="item"><span>Lean executable source guards</span><span class="status">52/52 PASSED</span></div>
+<div class="item"><span>Known cyclic-anchor behavior</span><span class="status">SCOPED DISTINCTION</span></div>
+<div class="item"><span>Whole YAML language correctness</span><span class="status">UNKNOWN</span></div>
+<div class="item"><span>Natural-language statement fidelity</span><span class="status">UNKNOWN</span></div>
+<div class="item"><span>Requalification against future commits</span><span class="status">NOT CHECKED</span></div>
+</div>
+<div class="note"><strong>An important distinction.</strong>
+The input <code>&amp;x [*x]</code> is accepted by the restricted early-anchor
+event model but rejected by this pinned version of L4YAML. This difference
+was already documented by its contributors. The correspondence from all
+possible YAML inputs to event traces is not proved here.</div>
+</section><aside><h2>Independent evidence</h2>
+<div class="small">Original projects are credited as sources, not endorsers.</div>
+<a href="https://github.com/nasa-jpl/L4YAML/tree/62bf7077910e888a0bc8adfc8e08a5f500ff3ca3">Pinned original L4YAML source ↗</a>
+<a href="https://github.com/yaml/yaml-test-suite/tree/da267a5c4782e7361e82889e76c0dc7df0e1e870">Pinned independent YAML test suite ↗</a>
+<a href="https://github.com/metalogiclabs/mathgraph/actions/runs/38018495536">Compiled parser + original Lean proofs ↗</a>
+<a href="https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793">Decoded 48-case native Lean replay ↗</a>
+<div class="sep"></div>
+<div class="small">Exact JPL commit</div><pre>62bf7077910e888a0bc8adfc8e08a5f500ff3ca3</pre>
+<div class="small">Read-only record SHA-256</div><pre>f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb</pre>
+<div class="small">Agent endpoints</div>
+<a href="/v1/records/mg-l4yaml-source-check-20261010">JSON record ↗</a>
+<a href="/v1/records/mg-l4yaml-source-check-20261010/evidence">Evidence references ↗</a>
+<a href="/v1/badges/mg-l4yaml-source-check-20261010.svg">Scoped SVG status mark ↗</a>
+</aside></div>
+</main><footer><div class="shell">MathGraph · Independently checkable,
+boundary-preserving research evidence. Built by Metalogic Labs.</div></footer>
+</body></html>
