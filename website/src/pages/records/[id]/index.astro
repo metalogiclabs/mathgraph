@@ -16,15 +16,15 @@ interface Props {
 }
 
 const { published } = Astro.props;
-const { entry, record } = published;
+const { entry } = published;
 ---
 
 <BaseLayout
-  title={`${record.title} — MathGraph`}
-  description="Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in the qualified L4YAML evidence record."
+  title={`${published.record_kind === 'SOURCE_CHECK' ? published.record.title : published.presentation.title} — MathGraph`}
+  description={published.record_kind === 'SOURCE_CHECK' ? 'Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in the qualified L4YAML evidence record.' : published.presentation.description}
   currentPath={`/records/${entry.id}/`}
   canonicalPath={new URL(entry.record_page_url).pathname}
-  socialImage={`/social/records/${entry.id}-${entry.version_slug}.png`}
+  socialImage={published.record_kind === 'SOURCE_CHECK' ? `/social/records/${entry.id}-${entry.version_slug}.png` : undefined}
   ogType="article"
 >
   <RecordDetail published={published} />

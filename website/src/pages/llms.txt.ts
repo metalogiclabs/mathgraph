@@ -14,7 +14,10 @@ Human agent guide: https://mathgraph.org/agents/
 Discovery manifest: https://mathgraph.org/.well-known/mathgraph.json
 Record index: https://mathgraph.org/records/index.json
 Current record schema: https://mathgraph.org/schemas/public-consequence-record-v1.schema.json
-Record index schema: https://mathgraph.org/schemas/record-index-v1.schema.json
+Record index schema: https://mathgraph.org/schemas/record-index-v2.schema.json
+Historical index schema: https://mathgraph.org/schemas/record-index-v1.schema.json
+Resolution snapshot schema: https://mathgraph.org/schemas/living-warrant-snapshot-v1.schema.json
+Precomputed scenarios schema: https://mathgraph.org/schemas/resolve-scenarios-v1.schema.json
 Presentation metadata schema: https://mathgraph.org/schemas/presentation-metadata-v1.schema.json
 Proposed Lean profile: https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json
 

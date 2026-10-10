@@ -8,9 +8,10 @@ import discoverySchema from '../../public/schemas/discovery-v1.schema.json';
 import leanProfileSchema from '../../public/schemas/lean-evidence-profile-draft-1.schema.json';
 import presentationSchema from '../../public/schemas/presentation-metadata-v1.schema.json';
 import publicRecordSchema from '../../public/schemas/public-consequence-record-v1.schema.json';
-import recordIndexSchema from '../../public/schemas/record-index-v1.schema.json';
+import recordIndexSchema from '../../public/schemas/record-index-v2.schema.json';
 import { validateQualifiedRecord, type QualifiedRecord } from './evidence';
 import { canonicalContentDigest, sha256Hex } from './integrity';
+import { validateResolveArtifacts, type ResolveSnapshot, type ResolveScenarios } from './resolve-record';
 
 export type HistoricStatus = 'WARRANTED_BOUNDED' | 'UNKNOWN' | 'REJECTED';
 export type LifecycleStatus = 'CURRENT' | 'SUPERSEDED' | 'REVOKED';
@@ -23,12 +24,11 @@ export interface ScopeContract {
   mismatch_status: 'UNKNOWN';
 }
 
-export interface PublishedRecordEntry {
+interface CommonRecordEntry {
   id: string;
   version: number;
   version_slug: string;
   record_schema: string;
-  historic_status: HistoricStatus;
   lifecycle: LifecycleStatus;
   snapshot_date: string;
   record_page_url: string;
@@ -36,18 +36,38 @@ export interface PublishedRecordEntry {
   record_json_url: string;
   record_content_sha256: string;
   record_transport_sha256: string;
-  evidence_json_url: string;
-  evidence_transport_sha256: string;
   presentation_json_url: string;
   presentation_schema: 'mathgraph.presentation-metadata.v1';
   presentation_content_sha256: string;
-  scope: ScopeContract;
   unknowns: string[];
 }
 
+export interface SourceCheckEntry extends CommonRecordEntry {
+  record_kind: 'SOURCE_CHECK';
+  historic_status: HistoricStatus;
+  evidence_json_url: string;
+  evidence_transport_sha256: string;
+  scope: ScopeContract;
+}
+
+export interface ResolutionSnapshotEntry extends CommonRecordEntry {
+  record_kind: 'RESOLUTION_SNAPSHOT';
+  historical_epistemic_result: 'SCOPED_MIXED';
+  research_maturity: 'BOUNDED_QUALIFIED';
+  action_policy: 'READ_ONLY_NO_AUTOMATIC_AUTHORIZATION';
+  current_applicability: 'UNKNOWN';
+  freshness: 'NOT_CHECKED';
+  scenarios_schema: 'mathgraph.resolve-scenarios.v1';
+  scenarios_json_url: string;
+  scenarios_transport_sha256: string;
+  independent_replay_ci_run: '38086245988';
+}
+
+export type PublishedRecordEntry = SourceCheckEntry | ResolutionSnapshotEntry;
+
 export interface RecordCatalog {
-  $schema: 'https://mathgraph.org/schemas/record-index-v1.schema.json';
-  schema: 'mathgraph.record-index.v1';
+  $schema: 'https://mathgraph.org/schemas/record-index-v2.schema.json';
+  schema: 'mathgraph.record-index.v2';
   latest_versions: Record<string, number>;
   records: PublishedRecordEntry[];
 }
@@ -69,11 +89,22 @@ export interface PresentationMetadata {
   content_sha256: string;
 }
 
-export interface PublishedRecordPackage {
-  entry: PublishedRecordEntry;
+export interface SourceCheckPackage {
+  record_kind: 'SOURCE_CHECK';
+  entry: SourceCheckEntry;
   record: QualifiedRecord;
   presentation: PresentationMetadata;
 }
+
+export interface ResolutionSnapshotPackage {
+  record_kind: 'RESOLUTION_SNAPSHOT';
+  entry: ResolutionSnapshotEntry;
+  record: ResolveSnapshot;
+  scenarios: ResolveScenarios;
+  presentation: PresentationMetadata;
+}
+
+export type PublishedRecordPackage = SourceCheckPackage | ResolutionSnapshotPackage;
 
 export interface ScopeRequest {
   record_id: string;
@@ -93,13 +124,15 @@ export interface ScopeMatchResult {
     | 'SUITE_PIN_MISMATCH'
     | 'UNSUPPORTED_GOAL'
     | 'LIFECYCLE_NOT_CURRENT'
-    | 'HISTORIC_STATUS_NOT_WARRANTED';
+    | 'HISTORIC_STATUS_NOT_WARRANTED'
+    | 'UNSUPPORTED_RECORD_KIND';
   truth_promotion: false;
 }
 
 interface PackageArtifacts {
   recordBytes: Uint8Array;
-  evidenceBytes: Uint8Array;
+  evidenceBytes?: Uint8Array;
+  scenariosBytes?: Uint8Array;
   presentation: unknown;
 }
 
@@ -123,6 +156,13 @@ const forbiddenPresentationFields = new Set([
   'verification_status',
   'warrant',
   'warrant_status',
+  'status',
+  'authority',
+  'research_maturity',
+  'action_policy',
+  'historical_epistemic_result',
+  'current_applicability',
+  'freshness',
 ]);
 
 const qualifiedPublicConsequenceAuthority = {
@@ -165,9 +205,15 @@ export function validatePublicRecordSchema(value: unknown): QualifiedRecord {
 
 export function validatePresentationMetadata(value: unknown): PresentationMetadata {
   requireCatalog(value !== null && typeof value === 'object' && !Array.isArray(value), 'PRESENTATION_SCHEMA_INVALID');
-  for (const key of Object.keys(value as Record<string, unknown>)) {
-    requireCatalog(!forbiddenPresentationFields.has(key), 'PRESENTATION_AUTHORITY_FIELD_FORBIDDEN');
-  }
+  const inspectFields = (child: unknown, path = ''): void => {
+    if (child === null || typeof child !== 'object') return;
+    for (const [key, nested] of Object.entries(child)) {
+      const metadataStatus = key === 'status' && (path === 'license' || path === 'external_registrations');
+      requireCatalog(metadataStatus || !forbiddenPresentationFields.has(key), 'PRESENTATION_AUTHORITY_FIELD_FORBIDDEN');
+      inspectFields(nested, path ? `${path}.${key}` : key);
+    }
+  };
+  inspectFields(value);
   requireCatalog(validatePresentation(value), 'PRESENTATION_SCHEMA_INVALID');
   const presentation = value as PresentationMetadata;
   requireCatalog(
@@ -181,13 +227,32 @@ export function validatePublishedRecordPackage(
   entry: PublishedRecordEntry,
   artifacts: PackageArtifacts,
 ): PublishedRecordPackage {
+  requireCatalog(entry.record_kind === 'SOURCE_CHECK' || entry.record_kind === 'RESOLUTION_SNAPSHOT', 'UNSUPPORTED_RECORD_KIND');
+  if (entry.record_kind === 'RESOLUTION_SNAPSHOT') {
+    validateRecordCatalog({ $schema: recordIndexSchema.$id, schema: 'mathgraph.record-index.v2', latest_versions: { [entry.id]: entry.version }, records: [entry] });
+    const origin = 'https://mathgraph.org';
+    requireCatalog(
+      entry.record_page_url === `${origin}/records/${entry.id}/v1/` &&
+      entry.latest_page_url === `${origin}/records/${entry.id}/` &&
+      entry.record_json_url === `${origin}/evidence/${entry.id}/record.json` &&
+      entry.scenarios_json_url === `${origin}/evidence/${entry.id}/scenarios.json` &&
+      entry.presentation_json_url === `${origin}/records/${entry.id}/v1/metadata.json`,
+      'RESOLVE_CATALOG_URL_IDENTITY_MISMATCH',
+    );
+    const { record, scenarios } = validateResolveArtifacts(entry, artifacts);
+    const presentation = validatePresentationMetadata(artifacts.presentation);
+    requireCatalog(presentation.content_sha256 === entry.presentation_content_sha256, 'PRESENTATION_DIGEST_MISMATCH');
+    requireCatalog(presentation.record_id === entry.id && presentation.record_version === entry.version, 'PRESENTATION_RECORD_IDENTITY_MISMATCH');
+    return { record_kind: 'RESOLUTION_SNAPSHOT', entry, record, scenarios, presentation };
+  }
   requireCatalog(entry.record_schema === 'mathgraph.public-consequence-record.v1', 'UNSUPPORTED_RECORD_SCHEMA');
+  requireCatalog(entry.version === 1, 'UNSUPPORTED_RECORD_VERSION');
   requireCatalog(sha256Hex(artifacts.recordBytes) === entry.record_transport_sha256, 'CATALOG_RECORD_TRANSPORT_DIGEST_MISMATCH');
   const parsedRecord = JSON.parse(new TextDecoder().decode(artifacts.recordBytes)) as unknown;
   const schemaRecord = validatePublicRecordSchema(parsedRecord);
   requireCatalog(schemaRecord.content_sha256 === entry.record_content_sha256, 'CATALOG_RECORD_DIGEST_MISMATCH');
   const record = validateQualifiedRecord(schemaRecord);
-  requireCatalog(sha256Hex(artifacts.evidenceBytes) === entry.evidence_transport_sha256, 'CATALOG_EVIDENCE_DIGEST_MISMATCH');
+  requireCatalog(artifacts.evidenceBytes !== undefined && sha256Hex(artifacts.evidenceBytes) === entry.evidence_transport_sha256, 'CATALOG_EVIDENCE_DIGEST_MISMATCH');
   const presentation = validatePresentationMetadata(artifacts.presentation);
   requireCatalog(presentation.content_sha256 === entry.presentation_content_sha256, 'PRESENTATION_DIGEST_MISMATCH');
   requireCatalog(presentation.record_id === entry.id && presentation.record_version === entry.version, 'PRESENTATION_RECORD_IDENTITY_MISMATCH');
@@ -203,7 +268,8 @@ export function validatePublishedRecordPackage(
       qualifiedPublicConsequenceAuthority.supportedGoals.every((goal) => entry.scope.supported_goals.includes(goal)),
     'CATALOG_UNQUALIFIED_SUPPORTED_GOAL',
   );
-  return { entry, record, presentation };
+  validateRecordCatalog({ $schema: recordIndexSchema.$id, schema: 'mathgraph.record-index.v2', latest_versions: { [entry.id]: entry.version }, records: [entry] });
+  return { record_kind: 'SOURCE_CHECK', entry, record, presentation };
 }
 
 export function matchRecordScope(entry: PublishedRecordEntry, request: ScopeRequest): ScopeMatchResult {
@@ -212,6 +278,7 @@ export function matchRecordScope(entry: PublishedRecordEntry, request: ScopeRequ
     reason,
     truth_promotion: false,
   });
+  if (entry.record_kind !== 'SOURCE_CHECK') return unknown('UNSUPPORTED_RECORD_KIND');
   if (request.record_id !== entry.id) return unknown('RECORD_ID_MISMATCH');
   if (request.version !== entry.version) return unknown('VERSION_MISMATCH');
   if (entry.lifecycle !== 'CURRENT') return unknown('LIFECYCLE_NOT_CURRENT');
@@ -228,18 +295,21 @@ export async function loadPublishedRecords(): Promise<PublishedRecordPackage[]> 
     catalog.records.map(async (entry) => {
       const [recordBytes, evidenceBytes, presentationBytes] = await Promise.all([
         readFile(publicFile(entry.record_json_url)),
-        readFile(publicFile(entry.evidence_json_url)),
+        readFile(publicFile(entry.record_kind === 'SOURCE_CHECK' ? entry.evidence_json_url : entry.scenarios_json_url)),
         readFile(publicFile(entry.presentation_json_url)),
       ]);
       return validatePublishedRecordPackage(entry, {
         recordBytes,
-        evidenceBytes,
+        ...(entry.record_kind === 'SOURCE_CHECK' ? { evidenceBytes } : { scenariosBytes: evidenceBytes }),
         presentation: JSON.parse(presentationBytes.toString('utf8')),
       });
     }),
   );
 }
 
+export function getPublishedRecord(id: 'mg-l4yaml-source-check-20261010', version?: number): Promise<SourceCheckPackage>;
+export function getPublishedRecord(id: 'mg-living-warrant-openai-jpl-20261010', version?: number): Promise<ResolutionSnapshotPackage>;
+export function getPublishedRecord(id: string, version?: number): Promise<PublishedRecordPackage>;
 export async function getPublishedRecord(id: string, version?: number): Promise<PublishedRecordPackage> {
   const records = await loadPublishedRecords();
   const record = records.find((candidate) => candidate.entry.id === id && (version === undefined || candidate.entry.version === version));
@@ -247,6 +317,9 @@ export async function getPublishedRecord(id: string, version?: number): Promise<
   return record;
 }
 
+export function getLatestPublishedRecord(id: 'mg-l4yaml-source-check-20261010'): Promise<SourceCheckPackage>;
+export function getLatestPublishedRecord(id: 'mg-living-warrant-openai-jpl-20261010'): Promise<ResolutionSnapshotPackage>;
+export function getLatestPublishedRecord(id: string): Promise<PublishedRecordPackage>;
 export async function getLatestPublishedRecord(id: string): Promise<PublishedRecordPackage> {
   const catalog = validateRecordCatalog(catalogSource);
   const version = catalog.latest_versions[id];

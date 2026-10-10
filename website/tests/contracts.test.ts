@@ -25,7 +25,7 @@ describe('agent discovery contracts', () => {
       json('records/index.json'),
       json(`evidence/${recordId}/record.json`),
       json('schemas/discovery-v1.schema.json'),
-      json('schemas/record-index-v1.schema.json'),
+      json('schemas/record-index-v2.schema.json'),
     ]);
 
     expect(ajv.validate(discoverySchema, discovery), ajv.errorsText()).toBe(true);
@@ -56,7 +56,8 @@ describe('agent discovery contracts', () => {
       record_index_max_age_seconds: 300,
       lifecycle_meaning: 'generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse.',
     });
-    expect(index.records).toHaveLength(1);
+    expect(index.records).toHaveLength(2);
+    expect(discovery.schemas.record_index_v2).toBe('https://mathgraph.org/schemas/record-index-v2.schema.json');
     expect(index.records[0].id).toBe(recordId);
     expect(index.records[0].record_page_url).toBe(`https://mathgraph.org/records/${recordId}/v1/`);
     expect(index.records[0].record_json_url).toBe(`https://mathgraph.org/evidence/${recordId}/record.json`);
@@ -80,6 +81,7 @@ describe('agent discovery contracts', () => {
     for (const url of [
       'https://mathgraph.org/agents/',
       'https://mathgraph.org/records/index.json',
+      'https://mathgraph.org/schemas/record-index-v2.schema.json',
       'https://mathgraph.org/schemas/public-consequence-record-v1.schema.json',
       'https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json',
       `https://mathgraph.org/evidence/${recordId}/record.json`,
@@ -99,8 +101,19 @@ describe('agent discovery contracts', () => {
       '/protocol/profiles/lean/',
       `/records/${recordId}/`,
       `/records/${recordId}/v1/`,
+      '/records/mg-living-warrant-openai-jpl-20261010/',
+      '/records/mg-living-warrant-openai-jpl-20261010/v1/',
     ]) {
       expect(sitemap).toContain(`<loc>https://mathgraph.org${route}</loc>`);
+    }
+  });
+  test('renders resolution snapshots with separate axes on both routes', async () => {
+    for (const suffix of ['', 'v1/']) {
+      const html = await text(`records/mg-living-warrant-openai-jpl-20261010/${suffix}index.html`);
+      expect(html).toContain('MathGraph Resolve — When Mathematical Evidence Changes');
+      for (const value of ['SCOPED_MIXED', 'Catalogue lifecycle', 'BOUNDED_QUALIFIED', 'READ_ONLY_NO_AUTOMATIC_AUTHORIZATION', 'Current applicability', 'NOT_CHECKED']) expect(html).toContain(value);
+      expect(html).not.toContain('Warranted — bounded');
+      expect(html).toContain('does not rerun the original JPL Lean proof');
     }
   });
 });

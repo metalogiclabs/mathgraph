@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mathgraph.org/schemas/living-warrant-snapshot-v1.schema.json",
+  "title": "Qualified MathGraph Living Warrant snapshot V1",
+  "description": "Strict shape and historical source profile. Schema validation is not evidence admission; independently pinned bytes and canonical digest are required.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "snapshot_sha256",
+    "derivation",
+    "interpretation",
+    "publisher_notice",
+    "sources",
+    "resolutions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "mathgraph.living-warrant-snapshot.v1"
+    },
+    "id": {
+      "const": "mg-living-warrant-openai-jpl-20261010"
+    },
+    "snapshot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claims",
+        "receipts",
+        "routes",
+        "receipt_admission",
+        "withdrawn_evidence"
+      ],
+      "properties": {
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 7,
+          "maxItems": 7
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/route"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "receipt_admission": {
+          "const": {
+            "documentary": "exact pinned OpenAI history notice",
+            "formal": "exact pinned JPL finite parser receipt"
+          }
+        },
+        "withdrawn_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      }
+    },
+    "interpretation": {
+      "const": {
+        "after": "The publisher withdrew three original arguments. Their prior documentary support paths are stale; mathematical truth remains UNKNOWN.",
+        "runtime_status": "IMMUTABLE_HISTORICAL_SNAPSHOT_NOT_CONTINUOUSLY_MONITORED",
+        "simulated_before": "Documentary original-support routes were modeled as active before publisher withdrawal; this does not prove their correctness.",
+        "source_contract": "Publication history is a source notice, not a formal theorem verifier.",
+        "unaffected": "An independently qualified JPL 48-case record survives without new verification or false promotion."
+      }
+    },
+    "publisher_notice": {
+      "const": {
+        "cause_as_reported": "sign_error_in_original_argument",
+        "documents": [
+          {
+            "editorial_status": "WITHDRAWN_BY_PUBLISHER",
+            "mathematical_truth": "UNKNOWN",
+            "name": "Algebraicity of Weil classes on split abelian eightfolds",
+            "original_support_claim": "openai.original_support.1"
+          },
+          {
+            "editorial_status": "WITHDRAWN_BY_PUBLISHER",
+            "mathematical_truth": "UNKNOWN",
+            "name": "Algebraicity of Kuga–Satake Correspondences for K3 Surfaces",
+            "original_support_claim": "openai.original_support.2"
+          },
+          {
+            "editorial_status": "WITHDRAWN_BY_PUBLISHER",
+            "mathematical_truth": "UNKNOWN",
+            "name": "The rational Hodge conjecture for products of K3 surfaces",
+            "original_support_claim": "openai.original_support.3"
+          }
+        ],
+        "does_not_imply": "mathematical_theorem_refuted",
+        "kind": "PUBLICATION_WITHDRAWAL"
+      }
+    },
+    "sources": {
+      "const": {
+        "jpl_record_id": "mg-l4yaml-source-check-20261010",
+        "jpl_record_sha256": "f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb",
+        "openai": {
+          "byte_sha256": "41c2a2d470014b3628695c7aabf5fd0c93f6f687621fca172062f22b59ed6a1e",
+          "commit": "fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb",
+          "git_blob_sha1": "693874f398905b1bc59e01b898b223ae9956bfc2",
+          "notice_date": "2026-10-07",
+          "path": "history.md",
+          "url": "https://github.com/openai/math/blob/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/history.md"
+        }
+      }
+    },
+    "resolutions": {
+      "type": "object",
+      "minProperties": 7,
+      "additionalProperties": {
+        "$ref": "#/$defs/resolution"
+      },
+      "maxProperties": 7
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "scope"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "documentary",
+            "formal"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conclusion",
+        "evidence",
+        "premises"
+      ],
+      "properties": {
+        "conclusion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "premises": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "UNKNOWN",
+        "STALE",
+        "SOURCE_DOCUMENTED",
+        "WARRANTED_BOUNDED"
+      ]
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "before",
+        "after",
+        "changed"
+      ],
+      "properties": {
+        "before": {
+          "$ref": "#/$defs/status"
+        },
+        "after": {
+          "$ref": "#/$defs/status"
+        },
+        "changed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "resolutions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/resolution"
+      }
+    },
+    "states": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/status"
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claims",
+        "receipts",
+        "routes"
+      ],
+      "properties": {
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 1
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          },
+          "minItems": 0
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/route"
+          },
+          "minItems": 0
+        }
+      }
+    }
+  }
+}

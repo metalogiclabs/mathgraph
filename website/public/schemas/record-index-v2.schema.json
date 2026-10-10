@@ -1,0 +1,341 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mathgraph.org/schemas/record-index-v2.schema.json",
+  "title": "MathGraph record index V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema",
+    "latest_versions",
+    "records"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://mathgraph.org/schemas/record-index-v2.schema.json"
+    },
+    "schema": {
+      "const": "mathgraph.record-index.v2"
+    },
+    "generated_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+    },
+    "lifecycle_freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "max_age_seconds",
+        "meaning",
+        "records_are_immutable"
+      ],
+      "properties": {
+        "basis": {
+          "const": "CLIENT_FETCH_TIME"
+        },
+        "max_age_seconds": {
+          "const": 300
+        },
+        "meaning": {
+          "const": "generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse."
+        },
+        "records_are_immutable": {
+          "const": true
+        }
+      }
+    },
+    "latest_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/sourceCheck"
+          },
+          {
+            "$ref": "#/$defs/resolutionSnapshot"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "canonicalUrl": {
+      "type": "string",
+      "pattern": "^https://mathgraph\\.org/"
+    },
+    "sourceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "version_slug",
+        "record_schema",
+        "historic_status",
+        "lifecycle",
+        "snapshot_date",
+        "record_page_url",
+        "latest_page_url",
+        "record_json_url",
+        "record_content_sha256",
+        "record_transport_sha256",
+        "evidence_json_url",
+        "evidence_transport_sha256",
+        "presentation_json_url",
+        "presentation_schema",
+        "presentation_content_sha256",
+        "scope",
+        "unknowns",
+        "record_kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^mg-[a-z0-9-]+$"
+        },
+        "version": {
+          "const": 1
+        },
+        "version_slug": {
+          "const": "v1"
+        },
+        "record_schema": {
+          "const": "mathgraph.public-consequence-record.v1"
+        },
+        "historic_status": {
+          "enum": [
+            "WARRANTED_BOUNDED",
+            "UNKNOWN",
+            "REJECTED"
+          ]
+        },
+        "lifecycle": {
+          "enum": [
+            "CURRENT",
+            "SUPERSEDED",
+            "REVOKED"
+          ]
+        },
+        "snapshot_date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "record_page_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "latest_page_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "record_json_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "record_content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "record_transport_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "evidence_json_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "evidence_transport_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "presentation_json_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "presentation_schema": {
+          "const": "mathgraph.presentation-metadata.v1"
+        },
+        "presentation_content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "match",
+            "source_commit",
+            "external_suite_commit",
+            "supported_goals",
+            "mismatch_status"
+          ],
+          "properties": {
+            "match": {
+              "const": "EXACT"
+            },
+            "source_commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "external_suite_commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "supported_goals": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "mismatch_status": {
+              "const": "UNKNOWN"
+            }
+          }
+        },
+        "unknowns": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "whole_language_correctness",
+              "statement_fidelity",
+              "generalization",
+              "current_requalification"
+            ]
+          }
+        },
+        "record_kind": {
+          "const": "SOURCE_CHECK"
+        }
+      }
+    },
+    "resolutionSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "version_slug",
+        "record_schema",
+        "lifecycle",
+        "snapshot_date",
+        "record_page_url",
+        "latest_page_url",
+        "record_json_url",
+        "record_content_sha256",
+        "record_transport_sha256",
+        "presentation_json_url",
+        "presentation_schema",
+        "presentation_content_sha256",
+        "record_kind",
+        "historical_epistemic_result",
+        "research_maturity",
+        "action_policy",
+        "current_applicability",
+        "freshness",
+        "scenarios_schema",
+        "scenarios_json_url",
+        "scenarios_transport_sha256",
+        "independent_replay_ci_run",
+        "unknowns"
+      ],
+      "properties": {
+        "id": {
+          "const": "mg-living-warrant-openai-jpl-20261010"
+        },
+        "version": {
+          "const": 1
+        },
+        "version_slug": {
+          "const": "v1"
+        },
+        "record_schema": {
+          "const": "mathgraph.living-warrant-snapshot.v1"
+        },
+        "lifecycle": {
+          "enum": [
+            "CURRENT",
+            "SUPERSEDED",
+            "REVOKED"
+          ]
+        },
+        "snapshot_date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "record_page_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "latest_page_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "record_json_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "record_content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "record_transport_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "presentation_json_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "presentation_schema": {
+          "const": "mathgraph.presentation-metadata.v1"
+        },
+        "presentation_content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "record_kind": {
+          "const": "RESOLUTION_SNAPSHOT"
+        },
+        "historical_epistemic_result": {
+          "const": "SCOPED_MIXED"
+        },
+        "research_maturity": {
+          "const": "BOUNDED_QUALIFIED"
+        },
+        "action_policy": {
+          "const": "READ_ONLY_NO_AUTOMATIC_AUTHORIZATION"
+        },
+        "current_applicability": {
+          "const": "UNKNOWN"
+        },
+        "freshness": {
+          "const": "NOT_CHECKED"
+        },
+        "scenarios_schema": {
+          "const": "mathgraph.resolve-scenarios.v1"
+        },
+        "scenarios_json_url": {
+          "$ref": "#/$defs/canonicalUrl"
+        },
+        "scenarios_transport_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "independent_replay_ci_run": {
+          "const": "38086245988"
+        },
+        "unknowns": {
+          "const": [
+            "current_applicability",
+            "freshness",
+            "mathematical_truth_of_withdrawn_arguments",
+            "new_jpl_lean_replay",
+            "independently_owned_adoption"
+          ]
+        }
+      }
+    }
+  }
+}

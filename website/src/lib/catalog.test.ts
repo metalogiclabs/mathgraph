@@ -14,7 +14,7 @@ import {
   validatePublishedRecordPackage,
   validateRecordCatalog,
   type PresentationMetadata,
-  type PublishedRecordEntry,
+  type SourceCheckEntry,
 } from './catalog';
 
 const RECORD_ID = 'mg-l4yaml-source-check-20261010';
@@ -29,6 +29,7 @@ function clone<T>(value: T): T {
 async function packageFixture() {
   const catalog = validateRecordCatalog(catalogSource);
   const entry = catalog.records[0];
+  if (entry.record_kind !== 'SOURCE_CHECK') throw new Error('Source Check fixture missing');
   const recordBytes = await readFile(new URL(`../../public/evidence/${RECORD_ID}/record.json`, import.meta.url));
   const evidenceBytes = await readFile(new URL(`../../public/evidence/${RECORD_ID}/evidence.json`, import.meta.url));
   const presentationBytes = await readFile(new URL(`../../public/records/${RECORD_ID}/v1/metadata.json`, import.meta.url));
@@ -41,7 +42,7 @@ describe('published record catalogue', () => {
     const records = await loadPublishedRecords();
     const latest = await getLatestPublishedRecord(RECORD_ID);
 
-    expect(records).toHaveLength(1);
+    expect(records).toHaveLength(2);
     expect(latest.entry.id).toBe(RECORD_ID);
     expect(latest.entry.version).toBe(1);
     expect(latest.entry.version_slug).toBe('v1');
@@ -101,17 +102,13 @@ describe('published record catalogue', () => {
     });
   });
 
-  test('selects the declared latest version independent of catalogue order', async () => {
-    const first = await getLatestPublishedRecord(RECORD_ID);
-    const second = clone(first);
-    second.entry.version = 2;
-    second.entry.version_slug = 'v2';
+  test('selects declared latest records independent of package and catalogue order', async () => {
+    const [first, second] = await loadPublishedRecords();
     const catalog = clone(catalogSource);
-    catalog.latest_versions[RECORD_ID] = 2;
     catalog.records = [second.entry, first.entry];
 
-    expect(selectLatestPublishedRecords(catalog, [first, second])).toEqual([second]);
-    expect(selectLatestPublishedRecords(catalog, [second, first])).toEqual([second]);
+    expect(selectLatestPublishedRecords(catalog, [first, second])).toEqual([first, second]);
+    expect(selectLatestPublishedRecords(catalog, [second, first])).toEqual([first, second]);
   });
 
   test('validates the qualified record against its public schema', () => {
@@ -121,7 +118,7 @@ describe('published record catalogue', () => {
 
   test('rejects a forged immutable digest', async () => {
     const fixture = await packageFixture();
-    const entry = clone(fixture.entry) as PublishedRecordEntry;
+    const entry = clone(fixture.entry) as SourceCheckEntry;
     entry.record_content_sha256 = '0'.repeat(64);
 
     expect(() => validatePublishedRecordPackage(entry, fixture)).toThrow('CATALOG_RECORD_DIGEST_MISMATCH');
@@ -129,7 +126,7 @@ describe('published record catalogue', () => {
 
   test('rejects a changed presentation digest', async () => {
     const fixture = await packageFixture();
-    const entry = clone(fixture.entry) as PublishedRecordEntry;
+    const entry = clone(fixture.entry) as SourceCheckEntry;
     entry.presentation_content_sha256 = '0'.repeat(64);
 
     expect(() => validatePublishedRecordPackage(entry, fixture)).toThrow('PRESENTATION_DIGEST_MISMATCH');
@@ -159,7 +156,7 @@ describe('published record catalogue', () => {
 
   test('rejects unsupported record schemas', async () => {
     const fixture = await packageFixture();
-    const entry = clone(fixture.entry) as PublishedRecordEntry;
+    const entry = clone(fixture.entry) as SourceCheckEntry;
     entry.record_schema = 'mathgraph.unqualified-future-record.v99';
 
     expect(() => validatePublishedRecordPackage(entry, fixture)).toThrow('UNSUPPORTED_RECORD_SCHEMA');
@@ -167,11 +164,11 @@ describe('published record catalogue', () => {
 
   test('rejects catalogue authority that exceeds the qualified adapter', async () => {
     const fixture = await packageFixture();
-    const expandedGoal = clone(fixture.entry) as PublishedRecordEntry;
+    const expandedGoal = clone(fixture.entry) as SourceCheckEntry;
     expandedGoal.scope.supported_goals.push('whole_language_correctness');
     expect(() => validatePublishedRecordPackage(expandedGoal, fixture)).toThrow('CATALOG_UNQUALIFIED_SUPPORTED_GOAL');
 
-    const changedStatus = clone(fixture.entry) as PublishedRecordEntry;
+    const changedStatus = clone(fixture.entry) as SourceCheckEntry;
     changedStatus.historic_status = 'UNKNOWN';
     expect(() => validatePublishedRecordPackage(changedStatus, fixture)).toThrow('CATALOG_HISTORIC_STATUS_MISMATCH');
   });
