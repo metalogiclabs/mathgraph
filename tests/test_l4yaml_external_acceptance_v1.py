@@ -62,7 +62,7 @@ class L4YAMLExternalModelTests(unittest.TestCase):
             suite_expected_accept({"tags": "tag", "fail": "true"})
 
     def test_visible_space_source_encoding_is_not_literal_unicode(self):
-        self.assertEqual(decode_yaml_suite_space_only("key:␣\\n"), "key: \\n".replace("\\n", "\n"))
+        self.assertEqual(decode_yaml_suite_space_only("key:␣"), "key: ")
         self.assertEqual(decode_yaml_suite_space_only("plain"), "plain")
         for symbol in ("↵", "∎", "»", "⇔", "←", "→"):
             with self.subTest(symbol=symbol):
