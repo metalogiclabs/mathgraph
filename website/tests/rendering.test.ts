@@ -78,6 +78,37 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('&amp;x [*x]');
   });
 
+  test('renders identical substantive evidence at current and permanent versioned routes', async () => {
+    const current = await page(`records/${record.id}`);
+    const versioned = await page(`records/${record.id}/v1`);
+
+    for (const value of [
+      record.id,
+      record.content_sha256,
+      record.source.commit,
+      record.source.external_suite_commit,
+      '48/48',
+      '52/52',
+      'UNKNOWN',
+      '&amp;x [*x]',
+    ]) {
+      expect(current).toContain(value);
+      expect(versioned).toContain(value);
+    }
+    const permanent = `https://mathgraph.org/records/${record.id}/v1/`;
+    expect(current).toContain(`<link rel="canonical" href="${permanent}">`);
+    expect(versioned).toContain(`<link rel="canonical" href="${permanent}">`);
+    expect(current).toContain('/records/index.json');
+    expect(versioned).toContain('/records/index.json');
+    expect(visibleText(versioned)).toMatch(/Version 1.*Lifecycle current/i);
+    expect(visibleText(versioned)).toMatch(/metadata updated.*evidence unchanged/i);
+    expect(`${current}${versioned}`).not.toContain('vercel.app');
+  });
+
+  test('generates no page for an unknown record identity', async () => {
+    await expect(page('records/mg-not-published/v1')).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   test('keeps status scoped and avoids universal or endorsement language', async () => {
     const html = `${await page('')}${await page('records')}${await page(`records/${record.id}`)}`;
     const text = visibleText(html);
