@@ -79,3 +79,20 @@ extractions to exact original source spans, formal declaration bytes, and
 independently checked semantics. Only after a held-out, cost-controlled
 evaluation should MathGraph claim improved source-fidelity diagnostics or
 publish an automated verified badge.
+
+
+## Pinned first-party manuscript replay (separate CI job)
+
+The workflow's real-original-surface job downloads the original public OpenAI
+Navier-Stokes manuscript and two exact historical Lean source files, confirms
+the PDF SHA-256 and Git blob identities, and runs the already-qualified V4
+original-source/declaration probe. It converts the selected four-derivative
+source wording and five-jet formal theorem surface to the same Check v0
+manifest. The new report records both actual source inputs as
+LOCAL_SHA256_CHECKED, but deliberately retains MANUAL_UNREVIEWED source
+interpretation, UNKNOWN formal proof replay, and NO VERIFIED BADGE.
+
+This is real original-source identity and selected-text/Lean-declaration
+corroboration, **not** a proof that the manuscript-to-formal translation is
+incorrect in all interpretations. It is not a cost-controlled head-to-head
+against Palomar; a dedicated independently labelled benchmark is still needed.
