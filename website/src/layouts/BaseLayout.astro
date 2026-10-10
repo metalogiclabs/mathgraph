@@ -27,6 +27,7 @@ const nav = [
   { href: '/check/', label: 'Check' },
   { href: '/records/', label: 'Records' },
   { href: '/protocol/', label: 'Protocol' },
+  { href: '/agents/', label: 'Agents' },
   { href: '/developers/', label: 'Developers' },
 ];
 const isCurrent = (href: string) => currentPath === href || currentPath.startsWith(href) && href !== '/';
@@ -83,6 +84,7 @@ const isCurrent = (href: string) => currentPath === href || currentPath.startsWi
         </div>
         <nav class="footer-links" aria-label="Footer">
           <a href="/records/">Evidence</a>
+          <a href="/agents/">Agents</a>
           <a href="/developers/">Documentation</a>
           <a href="https://github.com/metalogiclabs/mathgraph">Source</a>
         </nav>

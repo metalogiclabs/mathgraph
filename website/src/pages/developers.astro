@@ -38,6 +38,7 @@ const response = {
       <aside class="toc" aria-label="On this page">
         <strong>On this page</strong>
         <a href="#quickstart">Quickstart</a>
+        <a href="#discovery">Discovery</a>
         <a href="#format">Record format</a>
         <a href="#resolver">Resolver</a>
         <a href="#reproduce">Reproduce</a>
@@ -66,6 +67,13 @@ sha256sum record.json</code></pre></div>
             <tr><td><code>source.external_suite_commit</code></td><td>External suite pin: <code>{record.source.external_suite_commit}</code></td></tr>
             <tr><td><code>axes</code></td><td>Independent observations and explicit unknowns; no global truth promotion.</td></tr>
           </tbody></table></div>
+        </section>
+
+        <section id="discovery">
+          <h2>Machine discovery and permanent versions</h2>
+          <p>Agents begin with <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>, then fetch the short-lived <a href="/records/index.json">record index</a>. Historic record bytes remain immutable; lifecycle state is current only as of the fetched index response.</p>
+          <p>The permanent human route for this snapshot is <a href={`/records/${record.id}/v1/`}><code>/records/{record.id}/v1/</code></a>. Citation and discovery metadata live in a separately versioned <a href={`/records/${record.id}/v1/metadata.json`}>presentation sidecar</a>; changing that sidecar does not requalify the evidence.</p>
+          <p>The <a href="/protocol/profiles/lean/">Lean evidence profile</a> is a proposed draft, not a currently implemented record type.</p>
         </section>
 
         <section id="resolver">

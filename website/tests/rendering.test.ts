@@ -127,6 +127,54 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<main id="main-content"');
   });
 
+  test('onboards agents through exact machine-readable scope', async () => {
+    const html = await page('agents');
+    const text = visibleText(html);
+
+    expect(text).toContain('Point your agent to mathgraph.org/agents');
+    expect(html).toContain('/llms.txt');
+    expect(html).toContain('/.well-known/mathgraph.json');
+    expect(html).toContain('/records/index.json');
+    expect(text).toContain(record.content_sha256);
+    expect(text).toContain(record.source.commit);
+    expect(text).toContain(record.source.external_suite_commit);
+    expect(text).toMatch(/exact.*record ID.*version.*source pin.*suite pin.*goal/i);
+    expect(text).toMatch(/unsupported.*UNKNOWN/i);
+    expect(text).toMatch(/integrity.*not.*authenticity/i);
+    expect(text).toMatch(/MCP.*not deployed/i);
+    expect(html).not.toContain('vercel.app');
+  });
+
+  test('publishes the Lean evidence profile as an unstable proposal', async () => {
+    const html = await page('protocol/profiles/lean');
+    const text = visibleText(html);
+
+    for (const value of [
+      'formalization.yaml',
+      'Declaration names',
+      'Permitted axioms',
+      'Statement SHA-256',
+      'Proof SHA-256',
+      'Lean commit',
+      'Mathlib commit',
+      'Comparator',
+      'Policy digest',
+      'Independent-kernel receipt',
+      'Statement fidelity',
+    ]) {
+      expect(text).toContain(value);
+    }
+    expect(text).toContain('PROPOSED');
+    expect(text).toContain('mathgraph.lean-evidence-profile.draft-1');
+    expect(text).toMatch(/no qualified Lean record/i);
+    expect(text).toMatch(/Playground.*future.*receipt/i);
+  });
+
+  test('links Agents from primary navigation', async () => {
+    const html = await page('');
+    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
+  });
+
   test('explains independent verification axes on Check', async () => {
     const text = visibleText(await page('check'));
     expect(text).toContain('Source identity');
