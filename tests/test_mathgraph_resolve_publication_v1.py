@@ -8,6 +8,8 @@ import sys
 
 import pytest
 
+from mathgraph_check.living_warrants import verify_snapshot
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "evidence/living_warrant_openai_jpl_20261010.json"
@@ -77,6 +79,32 @@ def test_altered_source_is_rejected_before_any_output(tmp_path, mutation):
     source.write_bytes(raw)
     output = tmp_path / "website"
     with pytest.raises(ValueError, match="SOURCE_BYTES_MISMATCH"):
+        publisher.publish(source, output)
+    assert not output.exists()
+
+
+def test_same_length_rehashed_source_is_rejected_by_external_transport_pin(tmp_path):
+    publisher = load_publisher()
+    original = SOURCE.read_bytes()
+    value = json.loads(original)
+    assert value["sources"]["openai"]["notice_date"] == "2026-10-07"
+    value["sources"]["openai"]["notice_date"] = "2026-10-08"
+    value.pop("snapshot_sha256")
+    value["snapshot_sha256"] = sha256(canonical(value)[:-1]).hexdigest()
+    substituted = canonical(value)
+
+    # This forgery passes length, canonical encoding, and internal integrity;
+    # only an externally fixed identity can reject its changed source notice.
+    assert len(substituted) == len(original) == 5290
+    assert substituted == canonical(json.loads(substituted))
+    assert verify_snapshot(json.loads(substituted)) is True
+    assert substituted != original
+    assert sha256(substituted).hexdigest() != TRANSPORT
+
+    source = tmp_path / "same-length-rehashed.json"
+    source.write_bytes(substituted)
+    output = tmp_path / "website"
+    with pytest.raises(ValueError, match="^SOURCE_BYTES_MISMATCH$"):
         publisher.publish(source, output)
     assert not output.exists()
 
