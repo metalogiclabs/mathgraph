@@ -21,7 +21,7 @@ jobs:
       - name: Install pinned ML-DSA implementation and tests
         run: |
           set -euo pipefail
-          python -m pip install -e ".[all]" "cryptography==47.0.0"
+          python -m pip install -e ".[all]" "cryptography==47.0.0" "pqcrypto==1.0.0"
           python -m pip check
       - name: Run real ML-DSA-65 and independent semantic replay tests
         run: |
@@ -46,7 +46,7 @@ jobs:
           {
             echo "HEAD=$(git rev-parse HEAD)"
             echo "Branch=mathgraph-pq-warrant-v1"
-            echo "Profile=ML-DSA-65, SHA3-512, canonical MGSO v1"
+            echo "Profile=ML-DSA-65 (pqcrypto 1.0.0), SHA3-512, canonical MGSO v1"
             echo "Boundary=finite Boolean 3-variable claim logic, Python reference semantics"
             echo "Independent replay=distinct parser/logic, same cryptography backend"
             echo "NO_CLAIM=general proof soundness, secure deployment, independent crypto verification"
