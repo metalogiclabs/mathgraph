@@ -1,0 +1,31 @@
+{
+  "$schema": "https://mathgraph.org/schemas/discovery-v1.schema.json",
+  "schema": "mathgraph.discovery.v1",
+  "canonical_origin": "https://mathgraph.org",
+  "generated_at": "2026-10-10T08:03:44Z",
+  "agent_guide": "https://mathgraph.org/agents/",
+  "llms_txt": "https://mathgraph.org/llms.txt",
+  "record_index": "https://mathgraph.org/records/index.json",
+  "schemas": {
+    "public_consequence_record_v1": "https://mathgraph.org/schemas/public-consequence-record-v1.schema.json",
+    "record_index_v1": "https://mathgraph.org/schemas/record-index-v1.schema.json",
+    "presentation_metadata_v1": "https://mathgraph.org/schemas/presentation-metadata-v1.schema.json",
+    "lean_evidence_profile_draft_1": "https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json"
+  },
+  "capabilities": {
+    "static_records": "IMPLEMENTED",
+    "public_resolver": "NOT_DEPLOYED",
+    "lean_profile": "PROPOSED",
+    "mcp": "PROPOSED"
+  },
+  "freshness": {
+    "record_index_max_age_seconds": 300,
+    "lifecycle_meaning": "Lifecycle state is current only as of the fetched index response."
+  },
+  "integrity_notice": "Digests establish integrity and byte identity, not host authenticity or semantic truth.",
+  "repository_provenance": {
+    "repository": "https://github.com/metalogiclabs/mathgraph",
+    "catalogue_source": "https://github.com/metalogiclabs/mathgraph/blob/0992408c4c545536173709fc4781670f11efda96/website/src/data/record-index.json",
+    "authentication_status": "UNSIGNED_PROVENANCE_ONLY"
+  }
+}

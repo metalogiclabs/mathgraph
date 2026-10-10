@@ -4,7 +4,7 @@
   "title": "MathGraph discovery manifest V1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schema", "canonical_origin", "generated_at", "agent_guide", "llms_txt", "record_index", "schemas", "capabilities", "integrity_notice", "repository_provenance"],
+  "required": ["$schema", "schema", "canonical_origin", "generated_at", "agent_guide", "llms_txt", "record_index", "schemas", "capabilities", "freshness", "integrity_notice", "repository_provenance"],
   "properties": {
     "$schema": { "const": "https://mathgraph.org/schemas/discovery-v1.schema.json" },
     "schema": { "const": "mathgraph.discovery.v1" },
@@ -23,6 +23,15 @@
         "public_resolver": { "const": "NOT_DEPLOYED" },
         "lean_profile": { "const": "PROPOSED" },
         "mcp": { "const": "PROPOSED" }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_index_max_age_seconds", "lifecycle_meaning"],
+      "properties": {
+        "record_index_max_age_seconds": { "const": 300 },
+        "lifecycle_meaning": { "const": "Lifecycle state is current only as of the fetched index response." }
       }
     },
     "integrity_notice": { "type": "string", "minLength": 1 },

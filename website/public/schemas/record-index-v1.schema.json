@@ -8,6 +8,17 @@
   "properties": {
     "$schema": { "const": "https://mathgraph.org/schemas/record-index-v1.schema.json" },
     "schema": { "const": "mathgraph.record-index.v1" },
+    "generated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T" },
+    "lifecycle_freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_age_seconds", "meaning", "records_are_immutable"],
+      "properties": {
+        "max_age_seconds": { "const": 300 },
+        "meaning": { "const": "Lifecycle state is current only as of the fetched index response." },
+        "records_are_immutable": { "const": true }
+      }
+    },
     "latest_versions": {
       "type": "object",
       "minProperties": 1,

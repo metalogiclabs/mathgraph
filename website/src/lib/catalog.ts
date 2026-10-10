@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { resolve, sep } from 'node:path';
 
 import Ajv, { type ValidateFunction } from 'ajv';
@@ -112,7 +111,7 @@ const validateIndex = ajv.compile(recordIndexSchema) as ValidateFunction<RecordC
 const validatePresentation = ajv.compile(presentationSchema) as ValidateFunction<PresentationMetadata>;
 const validateRecord = ajv.compile(publicRecordSchema) as ValidateFunction<QualifiedRecord>;
 
-const publicRoot = resolve(fileURLToPath(new URL('../../public/', import.meta.url)));
+const publicRoot = resolve(process.cwd(), 'public');
 const forbiddenPresentationFields = new Set([
   'admission',
   'axes',
