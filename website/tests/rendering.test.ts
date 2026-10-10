@@ -39,6 +39,19 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('Evidence you can inspect. Results you can reuse.');
   });
 
+  test('uses the MathGraph mark in the site header and browser icons', async () => {
+    const html = await page('');
+
+    expect(html).toMatch(/<img[^>]+class="brand__mark"[^>]+src="\/mathgraph-logo\.png"[^>]+alt=""[^>]*>/);
+    expect(html).toContain('<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">');
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">');
+
+    for (const asset of ['mathgraph-logo.png', 'favicon-32.png', 'apple-touch-icon.png']) {
+      const bytes = await readFile(join(dist, asset));
+      expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    }
+  });
+
   test('renders the qualified record from the same machine-readable values', async () => {
     const html = await page(`records/${record.id}`);
     const text = visibleText(html);
