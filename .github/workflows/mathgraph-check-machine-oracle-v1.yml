@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence/mg-machine-oracle
-          python research/mathgraph_check_machine_oracle_v1.py --out evidence/mg-machine-oracle
+          python -m research.mathgraph_check_machine_oracle_v1 --out evidence/mg-machine-oracle
           python - <<'PY'
           import json
           from pathlib import Path
@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence/mg-machine-oracle
-          python research/mathgraph_check_machine_oracle_v1.py --out evidence/mg-machine-oracle
+          python -m research.mathgraph_check_machine_oracle_v1 --out evidence/mg-machine-oracle
           sha256sum evidence/mg-machine-oracle/MachineOracleV1.lean | tee evidence/mg-machine-oracle/lean-source.sha256
       - name: Install pinned Lean 4.35.0-rc2 and kernel-check independent finite claims
         run: |
