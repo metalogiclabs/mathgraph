@@ -1,0 +1,26 @@
+---
+import RecordSummary from '../../components/RecordSummary.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { loadQualifiedRecord } from '../../lib/evidence';
+
+const record = loadQualifiedRecord();
+---
+
+<BaseLayout title="Evidence records — MathGraph" description="Inspect immutable, source-pinned MathGraph evidence records and their exact qualification boundaries." currentPath="/records/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Public evidence ledger</div>
+      <h1>Records</h1>
+      <p class="lede">Each record is an immutable historic snapshot. Requalification, supersession, and revocation are separate states; the original evidence is never silently rewritten.</p>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell">
+      <p class="fineprint">1 published record · ordered by snapshot date</p>
+      <RecordSummary record={record} />
+      <div class="callout callout--unknown">
+        <strong>No synthetic examples.</strong> This index lists only evidence that has a corresponding qualified boundary and durable machine-readable record.
+      </div>
+    </div>
+  </section>
+</BaseLayout>

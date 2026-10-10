@@ -1,0 +1,22 @@
+---
+import StatusTag from './StatusTag.astro';
+
+interface Props {
+  label: string;
+  status: string;
+  tone: 'bounded' | 'implemented' | 'unknown' | 'experimental' | 'proposed' | 'rejected' | 'neutral';
+  authority: string;
+  scope: string;
+}
+
+const { label, status, tone, authority, scope } = Astro.props;
+---
+
+<article class="axis">
+  <div>
+    <h3>{label}</h3>
+    <StatusTag label={status} tone={tone} />
+  </div>
+  <p class="axis__authority">{authority}</p>
+  <p class="axis__scope">{scope}</p>
+</article>

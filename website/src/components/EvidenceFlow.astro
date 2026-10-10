@@ -1,0 +1,15 @@
+---
+const steps = [
+  { label: 'Claim', detail: 'Name exactly what is asserted.' },
+  { label: 'Source', detail: 'Pin the bytes and provenance.' },
+  { label: 'Verification', detail: 'Declare the checker boundary.' },
+  { label: 'Evidence', detail: 'Preserve receipts and unknowns.' },
+  { label: 'Reuse', detail: 'Resolve only the qualified scope.' },
+];
+---
+
+<ol class="flow" aria-label="MathGraph evidence workflow">
+  {steps.map((step) => (
+    <li><strong>{step.label}</strong><br /><span class="fineprint">{step.detail}</span></li>
+  ))}
+</ol>

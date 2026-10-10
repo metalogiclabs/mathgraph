@@ -1,0 +1,11 @@
+---
+import RecordDetail from '../../components/RecordDetail.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { loadQualifiedRecord } from '../../lib/evidence';
+
+const record = loadQualifiedRecord();
+---
+
+<BaseLayout title={`${record.title} — MathGraph`} description="Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in the qualified L4YAML evidence record." currentPath={`/records/${record.id}/`}>
+  <RecordDetail record={record} />
+</BaseLayout>

@@ -1,0 +1,10 @@
+---
+interface Props {
+  label: string;
+  tone?: 'bounded' | 'implemented' | 'unknown' | 'experimental' | 'proposed' | 'rejected' | 'neutral';
+}
+
+const { label, tone = 'neutral' } = Astro.props;
+---
+
+<span class:list={['status-tag', `status-tag--${tone}`]}>{label}</span>

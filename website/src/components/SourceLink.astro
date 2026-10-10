@@ -1,0 +1,14 @@
+---
+interface Props {
+  href: string;
+  label: string;
+  meta: string;
+}
+
+const { href, label, meta } = Astro.props;
+---
+
+<a class="source-link" href={href} rel="external noreferrer">
+  <span class="source-link__label">{label} ↗</span>
+  <span class="source-link__meta">{meta}</span>
+</a>
