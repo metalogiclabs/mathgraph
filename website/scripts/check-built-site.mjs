@@ -3,6 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
+const repositoryRoot = new URL('../..', import.meta.url).pathname;
 const dist = join(root, 'dist');
 const recordId = 'mg-l4yaml-source-check-20261010';
 const sourceRecordPath = join(root, 'src/data/l4yaml-record.json');
@@ -14,6 +15,14 @@ const [sourceBytes, publicBytes, builtBytes] = await Promise.all([
   readFile(builtRecordPath),
 ]);
 const deployment = JSON.parse(await readFile(join(root, 'vercel.json'), 'utf8'));
+const repositoryDeployment = JSON.parse(await readFile(join(repositoryRoot, 'vercel.json'), 'utf8'));
+
+assert.equal(repositoryDeployment.installCommand, 'cd website && npm ci --ignore-scripts');
+assert.equal(repositoryDeployment.buildCommand, 'cd website && npm run build');
+assert.equal(repositoryDeployment.outputDirectory, 'website/dist');
+for (const key of ['cleanUrls', 'redirects', 'headers']) {
+  assert.deepEqual(repositoryDeployment[key], deployment[key], `root Vercel ${key} must match website policy`);
+}
 
 assert.deepEqual(publicBytes, sourceBytes, 'public record must be the exact frozen record');
 assert.deepEqual(builtBytes, sourceBytes, 'built record must be the exact frozen record');
