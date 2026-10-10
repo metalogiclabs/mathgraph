@@ -22,6 +22,10 @@ const response = {
   verified: { extra_controls: 4, matched: 48, total: 48 },
   whole_language_validity: 'UNKNOWN',
 };
+const permanentRecordUrl = `https://mathgraph.org/records/${record.id}/v1/`;
+const badgeUrl = `https://mathgraph.org/v1/badges/${record.id}.svg`;
+const badgeMarkdown = `[![MathGraph: warranted — bounded](${badgeUrl})](${permanentRecordUrl})`;
+const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="MathGraph: warranted — bounded"></a>`;
 ---
 
 <BaseLayout title="MathGraph Developers — Consume exact evidence" description="Use the current immutable MathGraph record, reproduce its evidence, and understand the exact source-bound resolver contract." currentPath="/developers/">
@@ -39,6 +43,7 @@ const response = {
         <strong>On this page</strong>
         <a href="#quickstart">Quickstart</a>
         <a href="#discovery">Discovery</a>
+        <a href="#embed">Scoped badge</a>
         <a href="#format">Record format</a>
         <a href="#resolver">Resolver</a>
         <a href="#reproduce">Reproduce</a>
@@ -74,6 +79,14 @@ sha256sum record.json</code></pre></div>
           <p>Agents begin with <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>, then fetch the short-lived <a href="/records/index.json">record index</a>. Historic record bytes remain immutable; lifecycle state is current only as of the fetched index response.</p>
           <p>The permanent human route for this snapshot is <a href={`/records/${record.id}/v1/`}><code>/records/{record.id}/v1/</code></a>. Citation and discovery metadata live in a separately versioned <a href={`/records/${record.id}/v1/metadata.json`}>presentation sidecar</a>; changing that sidecar does not requalify the evidence.</p>
           <p>The <a href="/protocol/profiles/lean/">Lean evidence profile</a> is a proposed draft, not a currently implemented record type.</p>
+        </section>
+
+        <section id="embed">
+          <h2>Scoped badge embed</h2>
+          <p>The existing badge describes only the pinned finite observation and links to the permanent V1 boundary. It is not a universal truth badge, a statement-fidelity certificate, or an endorsement mark.</p>
+          <div class="code-block"><div class="code-label">Markdown</div><pre><code>{badgeMarkdown}</code></pre></div>
+          <div class="code-block"><div class="code-label">HTML</div><pre><code>{badgeHtml}</code></pre></div>
+          <p><a href={`/v1/badges/${record.id}.svg`}>Open the scoped status SVG →</a></p>
         </section>
 
         <section id="resolver">

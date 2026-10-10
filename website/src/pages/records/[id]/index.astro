@@ -24,6 +24,7 @@ const { entry, record } = published;
   description="Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in the qualified L4YAML evidence record."
   currentPath={`/records/${entry.id}/`}
   canonicalPath={new URL(entry.record_page_url).pathname}
+  socialImage={`/social/records/${entry.id}-${entry.version_slug}.png`}
   ogType="article"
 >
   <RecordDetail published={published} />

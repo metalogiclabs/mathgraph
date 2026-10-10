@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, test } from 'vitest';
+import sharp from 'sharp';
 
 import record from '../src/data/l4yaml-record.json';
 
@@ -100,7 +101,7 @@ describe('primary public evidence experience', () => {
     expect(versioned).toContain(`<link rel="canonical" href="${permanent}">`);
     expect(current).toContain('/records/index.json');
     expect(versioned).toContain('/records/index.json');
-    expect(visibleText(versioned)).toMatch(/Version 1.*Lifecycle current/i);
+    expect(visibleText(versioned)).toMatch(/Version 1.*Lifecycle.*Current/i);
     expect(visibleText(versioned)).toMatch(/metadata updated.*evidence unchanged/i);
     expect(`${current}${versioned}`).not.toContain('vercel.app');
   });
@@ -173,6 +174,63 @@ describe('primary public evidence experience', () => {
   test('links Agents from primary navigation', async () => {
     const html = await page('');
     expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
+  });
+
+  test('makes evidence boundaries and canned scope matches inspectable without arbitrary input', async () => {
+    const html = await page('');
+    const text = visibleText(html);
+
+    expect(text).toContain('Receipts for machine claims');
+    expect(text).not.toMatch(/record 001/i);
+    expect(text).toContain('48/48');
+    expect(text).toContain('52/52');
+    expect(text).toContain('Whole-language correctness');
+    expect(text).toContain('Statement fidelity');
+    expect(text).toContain('Generalization');
+    expect(text).toContain('EXACT_SCOPE_MATCH');
+    expect(text).toContain('SOURCE_PIN_MISMATCH');
+    expect(text).toContain('UNSUPPORTED_GOAL');
+    expect(html).toContain('href="/agents/"');
+    expect(html).not.toMatch(/<(?:input|textarea|form)\b/i);
+  });
+
+  test('separates evidence, lifecycle, and maturity status treatments', async () => {
+    const recordHtml = await page(`records/${record.id}/v1`);
+    const profileHtml = await page('protocol/profiles/lean');
+    const combined = `${recordHtml}${profileHtml}`;
+
+    expect(visibleText(recordHtml)).toMatch(/Evidence result.*Warranted — bounded/i);
+    expect(visibleText(recordHtml)).toMatch(/Lifecycle.*Current/i);
+    expect(combined).toMatch(/data-status-family="evidence"[^>]*>[\s\S]*aria-hidden="true"/);
+    expect(combined).toMatch(/data-status-family="lifecycle"[^>]*>[\s\S]*aria-hidden="true"/);
+    expect(combined).toMatch(/data-status-family="maturity"[^>]*>[\s\S]*aria-hidden="true"/);
+    expect(visibleText(profileHtml)).toMatch(/PROPOSED.*intended contract.*EXPERIMENTAL.*implemented research artifact/i);
+  });
+
+  test('publishes a deterministic large social card for the permanent record', async () => {
+    const html = await page(`records/${record.id}/v1`);
+    const imagePath = join(dist, 'social', 'records', `${record.id}-v1.png`);
+    const metadata = await sharp(imagePath).metadata();
+
+    expect(html).toContain(`<meta property="og:image" content="https://mathgraph.org/social/records/${record.id}-v1.png">`);
+    expect(html).toContain('<meta property="og:image:width" content="1200">');
+    expect(html).toContain('<meta property="og:image:height" content="630">');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+    expect(metadata.width).toBe(1200);
+    expect(metadata.height).toBe(630);
+    expect(metadata.format).toBe('png');
+  });
+
+  test('documents a scoped badge embed linked to the permanent boundary', async () => {
+    const html = await page('developers');
+    const text = visibleText(html);
+
+    expect(text).toContain('Scoped badge embed');
+    expect(text).toContain('Markdown');
+    expect(text).toContain('HTML');
+    expect(html).toContain(`/v1/badges/${record.id}.svg`);
+    expect(html).toContain(`/records/${record.id}/v1/`);
+    expect(text).toMatch(/not a universal truth badge/i);
   });
 
   test('explains independent verification axes on Check', async () => {

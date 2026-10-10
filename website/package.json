@@ -22,6 +22,8 @@
     "check:resolver": "node scripts/check-resolver-contract.mjs",
     "check:html": "html-validate \"dist/**/*.html\"",
     "check:links": "linkinator dist --config linkinator.config.json",
+    "generate:social": "node scripts/generate-social-card.mjs",
+    "check:social": "node scripts/generate-social-card.mjs --check",
     "qualify": "npm run check && npm run test:data && npm run build && npm run test:rendering && npm run check:built && npm run check:resolver && npm run check:html && npm run check:links && npm run test:consumer"
   },
   "dependencies": {
