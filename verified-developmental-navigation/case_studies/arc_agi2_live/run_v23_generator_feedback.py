@@ -346,9 +346,12 @@ def main(argv=None):
     wins2=sorted(tid for tid in protected
                  if index["full_v2"][tid]["protected_solved"]
                  and not index["full_v1"][tid]["protected_solved"])
+    # Strongest measured comparison is the union of all non-updated controls,
+    # not the deliberately structural stateless heuristic alone.
     independent=sorted(tid for tid in protected
                        if index["full_v2"][tid]["protected_solved"]
-                       and not index["stateless_schema"][tid]["protected_solved"])
+                       and not any(index[a][tid]["protected_solved"]
+                                   for a in ("cold","macro_only","stateless_schema")))
     regression=sorted(tid for tid in protected
                       if index["full_v1"][tid]["protected_solved"]
                       and not index["full_v2"][tid]["protected_solved"])
@@ -359,8 +362,8 @@ def main(argv=None):
         "meta_generator2_feedback_closed":
             "WARRANTED_BOUNDED" if policy2["policy_changed"] and wins2 and not regression
             else "UNKNOWN",
-        "generator2_strict_gain_vs_strong_stateless":
-            "WARRANTED_BOUNDED" if independent else "UNKNOWN",
+        "generator2_strict_gain_vs_strongest_controls":
+            "WARRANTED_BOUNDED" if policy2["policy_changed"] and independent and not regression else "UNKNOWN",
         "unbounded_recursive_acceleration":"UNKNOWN",
         "real_ARC_generalization":"UNKNOWN"
     }
