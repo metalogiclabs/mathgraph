@@ -8,7 +8,7 @@ This is bounded reference machinery, not a soundness theorem or a trust root.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import hashlib
 from html import escape
 import json
@@ -224,6 +224,16 @@ def build_snapshot(history: bytes, jpl_record: dict) -> dict:
                for n in range(3))
     assert states[JPL_CLAIM]["after"] == "WARRANTED_BOUNDED"
     publication = {
+        "derivation": {
+            "claims": [asdict(x) for x in claims],
+            "receipts": [asdict(x) for x in receipts],
+            "routes": [asdict(x) for x in routes],
+            "withdrawn_evidence": sorted(withdrawn),
+            "receipt_admission": {
+                "documentary": "exact pinned OpenAI history notice",
+                "formal": "exact pinned JPL finite parser receipt",
+            },
+        },
         "schema": SCHEMA,
         "id": RECORD_ID,
         "sources": {
