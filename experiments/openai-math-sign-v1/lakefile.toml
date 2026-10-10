@@ -1,0 +1,6 @@
+name = "WeilSignProbe"
+version = "0.1.0"
+defaultTargets = ["WeilSignProbe"]
+
+[[lean_lib]]
+name = "WeilSignProbe"

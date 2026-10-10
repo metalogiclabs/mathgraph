@@ -1,0 +1,113 @@
+name: Comparator 4.34 compatibility preflight
+
+on:
+  push:
+    paths:
+      - '.github/workflows/openai-comparator-compatibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comparator-compatibility:
+    name: Pin and build comparator + lean4export for OAI Lean 4.34.1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout pinned Comparator 4.34-family implementation
+        uses: actions/checkout@v4
+        with:
+          repository: leanprover/comparator
+          ref: d03acab154d269c06e60e4de7e4cc85deebff94b
+          path: comparator
+          persist-credentials: false
+      - name: Check locked export dependency and patch-only toolchain compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          m=json.load(open('comparator/lake-manifest.json'))
+          p=[x for x in m['packages'] if x['name']=='lean4export']
+          assert len(p)==1 and p[0]['rev']=='076e8e57707e813375e8f9da8bf989799ace9680',p
+          assert open('comparator/lean-toolchain').read().strip()=='leanprover/lean4:v4.34.0'
+          print('COMPARATOR_SOURCE_AND_EXPORT_PINS_VALID')
+          PY
+          printf 'leanprover/lean4:v4.34.1\n' > comparator/lean-toolchain
+      - name: Compile pinned comparator under OAI Lean version
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: comparator
+          auto-config: false
+          build: true
+          use-mathlib-cache: false
+          use-github-cache: false
+      - name: Verify comparator and exporter binaries exist
+        shell: bash
+        working-directory: comparator
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --version
+          lake build comparator lean4export
+          test -x .lake/build/bin/comparator
+          test -x .lake/packages/lean4export/.lake/build/bin/lean4export
+          echo COMPATIBLE_TOOLCHAIN_BUILD_ONLY
+          echo NOT_YET_LOGSPACE_THEOREM_REPLAY
+      - name: Controlled definition-hole soundness separator (self-authored inputs only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p controlled
+          cp comparator/lean-toolchain controlled/lean-toolchain
+          cat > controlled/lakefile.toml <<'LAKE'
+          name = "ComparatorDefinitionHoleCanary"
+          version = "0.1.0"
+
+          [[lean_lib]]
+          name = "Challenge"
+
+          [[lean_lib]]
+          name = "Solution"
+          LAKE
+          cat > controlled/Challenge.lean <<'LEAN'
+          namespace Probe
+          def Meaning : Prop := False
+          theorem claim : Meaning := by
+            sorry
+          end Probe
+          LEAN
+          cat > controlled/Solution.lean <<'LEAN'
+          namespace Probe
+          def Meaning : Prop := True
+          theorem claim : Meaning := by
+            trivial
+          end Probe
+          LEAN
+          cat > controlled/default.json <<'JSON'
+          {"challenge_module":"Challenge","solution_module":"Solution","theorem_names":["Probe.claim"],"definition_names":["Probe.Meaning"],"permitted_axioms":["propext","Quot.sound","Classical.choice"]}
+          JSON
+          cat > controlled/strict.json <<'JSON'
+          {"challenge_module":"Challenge","solution_module":"Solution","theorem_names":["Probe.claim"],"definition_names":[],"permitted_axioms":["propext","Quot.sound","Classical.choice"]}
+          JSON
+          export PATH="$HOME/.elan/bin:$PATH"
+          export COMPARATOR_BIN="$(realpath comparator/.lake/build/bin/comparator)"
+          export COMPARATOR_LANDRUN="$(realpath comparator/scripts/fake-landrun.sh)"
+          export COMPARATOR_LEAN4EXPORT="$(realpath comparator/.lake/packages/lean4export/.lake/build/bin/lean4export)"
+          cd controlled
+          echo "CONTROLLED_TEST_ONLY: shim has no sandbox, never use for untrusted proof files"
+          lake env "$COMPARATOR_BIN" default.json > default.log 2>&1 || { cat default.log; exit 1; }
+          grep -F 'Your solution is okay!' default.log || { cat default.log; exit 1; }
+          echo "EXPECTED_DEFAULT_DEFINITION_HOLE_ACCEPTS_ALTERED_MEANING"
+          if lake env "$COMPARATOR_BIN" strict.json > strict.log 2>&1; then
+            echo "ERROR_STRICT_COMPARATOR_ACCEPTED_ALTERED_MEANING"
+            cat strict.log
+            exit 1
+          fi
+          grep -F 'Const does not match' strict.log || { cat strict.log; exit 1; }
+          echo "EXPECTED_STRICT_DEFINITION_IDENTITY_REJECTS_ALTERED_MEANING"
+
