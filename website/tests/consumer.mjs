@@ -21,38 +21,50 @@ function canonicalJson(value) {
     .join(',')}}`;
 }
 
-function hasExpectedDigest(record) {
+function sha256(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+function hasExpectedDigest(record, entry) {
   const unsigned = structuredClone(record);
   const declared = unsigned.content_sha256;
   delete unsigned.content_sha256;
-  return declared === RECORD_DIGEST && createHash('sha256').update(canonicalJson(unsigned)).digest('hex') === declared;
+  return declared === entry.record_content_sha256 && sha256(canonicalJson(unsigned)) === declared;
 }
 
-function consume(record, request) {
-  const exact =
-    hasExpectedDigest(record) &&
-    record.id === RECORD_ID &&
-    record.content_sha256 === RECORD_DIGEST &&
-    record.source?.commit === SOURCE_COMMIT &&
-    record.source?.external_suite_commit === SUITE_COMMIT &&
-    request.record_id === RECORD_ID &&
-    request.source_commit === SOURCE_COMMIT &&
-    request.external_suite_commit === SUITE_COMMIT &&
-    request.goal === SUPPORTED_GOAL &&
-    record.axes?.finite_executable?.matched_external_labels === 48 &&
-    record.axes?.finite_executable?.extra_controls === 4 &&
-    record.axes?.global_truth_promotion === false;
+function consume(index, entry, record, recordBytes, request, fetchedAt, now = Date.now()) {
+  const unknown = (reason) => ({ status: 'UNKNOWN', reason, truth_promotion: false });
+  if (now - fetchedAt > index.lifecycle_freshness.max_age_seconds * 1000) return unknown('CATALOGUE_CACHE_EXPIRED');
+  if (request.record_id !== entry.id) return unknown('RECORD_ID_MISMATCH');
+  if (request.version !== entry.version) return unknown('VERSION_MISMATCH');
+  if (request.source_commit !== entry.scope?.source_commit) return unknown('SOURCE_PIN_MISMATCH');
+  if (request.external_suite_commit !== entry.scope?.external_suite_commit) return unknown('SUITE_PIN_MISMATCH');
+  if (!entry.scope?.supported_goals?.includes(request.goal)) return unknown('UNSUPPORTED_GOAL');
+  if (entry.lifecycle !== 'CURRENT') return unknown('LIFECYCLE_NOT_CURRENT');
+  if (entry.historic_status !== 'WARRANTED_BOUNDED') return unknown('HISTORIC_STATUS_NOT_WARRANTED');
+  if (record.extensions && Object.keys(record.extensions).length > 0) return unknown('UNSUPPORTED_EXTENSION');
+  if (sha256(recordBytes) !== entry.record_transport_sha256) return unknown('RECORD_TRANSPORT_MISMATCH');
+  if (!hasExpectedDigest(record, entry)) return unknown('RECORD_DIGEST_MISMATCH');
+  if (
+    record.id !== entry.id ||
+    record.content_sha256 !== RECORD_DIGEST ||
+    record.source?.commit !== entry.scope.source_commit ||
+    record.source?.external_suite_commit !== entry.scope.external_suite_commit ||
+    record.axes?.finite_executable?.matched_external_labels !== 48 ||
+    record.axes?.finite_executable?.source_cases !== 48 ||
+    record.axes?.finite_executable?.extra_controls !== 4 ||
+    record.axes?.global_truth_promotion !== false
+  ) return unknown('RECORD_BOUNDARY_MISMATCH');
 
-  return exact
-    ? {
-        status: 'WARRANTED_BOUNDED',
-        matched: 48,
-        total: 48,
-        extra_controls: 4,
-        whole_language_validity: record.axes.formal_verification.universal_yaml_correctness,
-        truth_promotion: false,
-      }
-    : { status: 'UNKNOWN', truth_promotion: false };
+  return {
+    status: 'WARRANTED_BOUNDED',
+    reason: 'EXACT_SCOPE_MATCH',
+    matched: 48,
+    total: 48,
+    extra_controls: 4,
+    whole_language_validity: record.axes.formal_verification.universal_yaml_correctness,
+    truth_promotion: false,
+  };
 }
 
 const server = createServer(async (request, response) => {
@@ -76,34 +88,71 @@ try {
   await new Promise((resolveListening) => server.listen(0, '127.0.0.1', resolveListening));
   const address = server.address();
   assert(address && typeof address === 'object');
-  const url = `http://127.0.0.1:${address.port}/evidence/${RECORD_ID}/record.json`;
-  const fetched = await fetch(url);
+  const origin = `http://127.0.0.1:${address.port}`;
+  const localUrl = (canonical) => `${origin}${new URL(canonical).pathname}`;
+  const discoveryResponse = await fetch(`${origin}/.well-known/mathgraph.json`);
+  assert.equal(discoveryResponse.status, 200, `discovery manifest returned ${discoveryResponse.status}`);
+  const discovery = await discoveryResponse.json();
+  assert.equal(discovery.capabilities.static_records, 'IMPLEMENTED');
+  const indexResponse = await fetch(localUrl(discovery.record_index));
+  assert.equal(indexResponse.status, 200, `record index returned ${indexResponse.status}`);
+  const index = await indexResponse.json();
+  const fetchedAt = Date.now();
+  assert(Number.isFinite(Date.parse(index.generated_at)), 'catalogue generated_at is invalid');
+  assert.equal(index.lifecycle_freshness.basis, 'CLIENT_FETCH_TIME');
+  const entry = index.records.find((candidate) => candidate.id === RECORD_ID && candidate.version === 1);
+  assert(entry, 'qualified V1 record is absent from catalogue');
+  const fetched = await fetch(localUrl(entry.record_json_url));
   assert.equal(fetched.status, 200, `published record returned ${fetched.status}`);
-  const record = await fetched.json();
+  const recordBytes = Buffer.from(await fetched.arrayBuffer());
+  const record = JSON.parse(recordBytes.toString('utf8'));
   const exactRequest = {
     record_id: RECORD_ID,
+    version: 1,
     source_commit: SOURCE_COMMIT,
     external_suite_commit: SUITE_COMMIT,
     goal: SUPPORTED_GOAL,
   };
 
-  const exact = consume(record, exactRequest);
+  const exact = consume(index, entry, record, recordBytes, exactRequest, fetchedAt);
   assert.deepEqual(exact, {
     status: 'WARRANTED_BOUNDED',
+    reason: 'EXACT_SCOPE_MATCH',
     matched: 48,
     total: 48,
     extra_controls: 4,
     whole_language_validity: 'UNKNOWN',
     truth_promotion: false,
   });
-  assert.equal(consume(record, { ...exactRequest, source_commit: '0'.repeat(40) }).status, 'UNKNOWN');
-  assert.equal(consume(record, { ...exactRequest, external_suite_commit: '0'.repeat(40) }).status, 'UNKNOWN');
-  assert.equal(consume(record, { ...exactRequest, goal: 'whole_language_correctness' }).status, 'UNKNOWN');
-  assert.equal(consume(record, { ...exactRequest, record_id: 'unknown-record' }).status, 'UNKNOWN');
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, source_commit: '0'.repeat(40) }, fetchedAt), {
+    status: 'UNKNOWN', reason: 'SOURCE_PIN_MISMATCH', truth_promotion: false,
+  });
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, external_suite_commit: '0'.repeat(40) }, fetchedAt), {
+    status: 'UNKNOWN', reason: 'SUITE_PIN_MISMATCH', truth_promotion: false,
+  });
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, goal: 'whole_language_correctness' }, fetchedAt), {
+    status: 'UNKNOWN', reason: 'UNSUPPORTED_GOAL', truth_promotion: false,
+  });
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, record_id: 'unknown-record' }, fetchedAt), {
+    status: 'UNKNOWN', reason: 'RECORD_ID_MISMATCH', truth_promotion: false,
+  });
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, version: 2 }, fetchedAt), {
+    status: 'UNKNOWN', reason: 'VERSION_MISMATCH', truth_promotion: false,
+  });
   const altered = structuredClone(record);
   altered.axes.finite_executable.expected_accept = 32;
-  assert.equal(consume(altered, exactRequest).status, 'UNKNOWN');
-  console.log('INDEPENDENT_STATIC_CONSUMER_GREEN exact=WARRANTED_BOUNDED negatives=5xUNKNOWN digest=recomputed');
+  const alteredBytes = Buffer.from(`${JSON.stringify(altered)}\n`);
+  assert.equal(consume(index, entry, altered, alteredBytes, exactRequest, fetchedAt).status, 'UNKNOWN');
+  const unknownExtension = structuredClone(record);
+  unknownExtension.extensions = { 'future.example': { raw: true } };
+  assert.deepEqual(consume(index, entry, unknownExtension, recordBytes, exactRequest, fetchedAt), {
+    status: 'UNKNOWN', reason: 'UNSUPPORTED_EXTENSION', truth_promotion: false,
+  });
+  assert.deepEqual(
+    consume(index, entry, record, recordBytes, exactRequest, fetchedAt, fetchedAt + 301_000),
+    { status: 'UNKNOWN', reason: 'CATALOGUE_CACHE_EXPIRED', truth_promotion: false },
+  );
+  console.log('INDEPENDENT_STATIC_CONSUMER_GREEN discovery=catalogue exact=WARRANTED_BOUNDED negatives=8xUNKNOWN digest=recomputed');
 } finally {
   await new Promise((resolveClosed) => server.close(resolveClosed));
 }

@@ -11,9 +11,10 @@
     "dev": "astro dev",
     "check": "astro check",
     "test": "npm run build && npm run test:unit",
-    "test:unit": "npm run test:data && npm run test:rendering",
-    "test:data": "vitest run src/lib/evidence.test.ts",
+    "test:unit": "npm run test:data && npm run test:rendering && npm run test:contracts",
+    "test:data": "vitest run src/lib/evidence.test.ts src/lib/catalog.test.ts",
     "test:rendering": "vitest run tests/rendering.test.ts",
+    "test:contracts": "vitest run tests/contracts.test.ts",
     "test:consumer": "node tests/consumer.mjs",
     "build": "astro build",
     "preview": "astro preview",
@@ -21,7 +22,9 @@
     "check:resolver": "node scripts/check-resolver-contract.mjs",
     "check:html": "html-validate \"dist/**/*.html\"",
     "check:links": "linkinator dist --config linkinator.config.json",
-    "qualify": "npm run check && npm run test:data && npm run build && npm run test:rendering && npm run check:built && npm run check:resolver && npm run check:html && npm run check:links && npm run test:consumer"
+    "generate:social": "node scripts/generate-social-card.mjs",
+    "check:social": "node scripts/generate-social-card.mjs --check",
+    "qualify": "npm run check:social && npm run check && npm run test:data && npm run build && npm run test:contracts && npm run test:rendering && npm run check:built && npm run check:resolver && npm run check:html && npm run check:links && npm run test:consumer"
   },
   "dependencies": {
     "astro": "7.3.8"
@@ -29,8 +32,10 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@types/node": "24.10.0",
+    "ajv": "8.20.0",
     "html-validate": "11.16.2",
     "linkinator": "8.1.0",
+    "sharp": "0.35.5",
     "typescript": "6.0.3",
     "vitest": "5.0.3"
   }

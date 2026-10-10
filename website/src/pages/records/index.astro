@@ -1,9 +1,9 @@
 ---
 import RecordSummary from '../../components/RecordSummary.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { loadQualifiedRecord } from '../../lib/evidence';
+import { loadPublishedRecords } from '../../lib/catalog';
 
-const record = loadQualifiedRecord();
+const records = await loadPublishedRecords();
 ---
 
 <BaseLayout title="Evidence records — MathGraph" description="Inspect immutable, source-pinned MathGraph evidence records and their exact qualification boundaries." currentPath="/records/">
@@ -16,8 +16,8 @@ const record = loadQualifiedRecord();
   </header>
   <section class="section">
     <div class="shell">
-      <p class="fineprint">1 published record · ordered by snapshot date</p>
-      <RecordSummary record={record} />
+      <p class="fineprint">{records.length} published record{records.length === 1 ? '' : 's'} · ordered by snapshot date</p>
+      {records.map(({ entry, record }) => <RecordSummary record={record} entry={entry} />)}
       <div class="callout callout--unknown">
         <strong>No synthetic examples.</strong> This index lists only evidence that has a corresponding qualified boundary and durable machine-readable record.
       </div>

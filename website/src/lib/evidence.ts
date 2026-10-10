@@ -1,6 +1,5 @@
-import { createHash } from 'node:crypto';
-
 import frozenRecord from '../data/l4yaml-record.json';
+import { canonicalContentDigest } from './integrity';
 
 export const EXPECTED_RECORD_ID = 'mg-l4yaml-source-check-20261010';
 export const EXPECTED_RECORD_CONTENT_SHA256 =
@@ -16,23 +15,8 @@ function requireBoundary(condition: boolean, code: string): asserts condition {
   }
 }
 
-function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(',')}]`;
-  }
-  const entries = Object.entries(value as Record<string, unknown>)
-    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-    .map(([key, child]) => `${JSON.stringify(key)}:${canonicalJson(child)}`);
-  return `{${entries.join(',')}}`;
-}
-
 function recordDigest(record: Record<string, unknown>): string {
-  const unsigned = structuredClone(record);
-  delete unsigned.content_sha256;
-  return createHash('sha256').update(canonicalJson(unsigned)).digest('hex');
+  return canonicalContentDigest(record);
 }
 
 export function validateQualifiedRecord(value: unknown): QualifiedRecord {

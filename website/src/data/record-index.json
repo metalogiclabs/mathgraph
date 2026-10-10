@@ -1,0 +1,43 @@
+{
+  "$schema": "https://mathgraph.org/schemas/record-index-v1.schema.json",
+  "schema": "mathgraph.record-index.v1",
+  "latest_versions": {
+    "mg-l4yaml-source-check-20261010": 1
+  },
+  "records": [
+    {
+      "id": "mg-l4yaml-source-check-20261010",
+      "version": 1,
+      "version_slug": "v1",
+      "record_schema": "mathgraph.public-consequence-record.v1",
+      "historic_status": "WARRANTED_BOUNDED",
+      "lifecycle": "CURRENT",
+      "snapshot_date": "2026-10-10",
+      "record_page_url": "https://mathgraph.org/records/mg-l4yaml-source-check-20261010/v1/",
+      "latest_page_url": "https://mathgraph.org/records/mg-l4yaml-source-check-20261010/",
+      "record_json_url": "https://mathgraph.org/evidence/mg-l4yaml-source-check-20261010/record.json",
+      "record_content_sha256": "f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb",
+      "record_transport_sha256": "7b59ee76a39995f35a0feb0f4d91a3c6ab1234393143480c4f3e361a79fee703",
+      "evidence_json_url": "https://mathgraph.org/evidence/mg-l4yaml-source-check-20261010/evidence.json",
+      "evidence_transport_sha256": "03b4bfff642c097757c88f12b578e2d903a999a4949393aefb8c91609ce74c63",
+      "presentation_json_url": "https://mathgraph.org/records/mg-l4yaml-source-check-20261010/v1/metadata.json",
+      "presentation_schema": "mathgraph.presentation-metadata.v1",
+      "presentation_content_sha256": "b415f4266f255b53a9878c0b1ded61d29a8e13dd00655a7992990648f566c7d6",
+      "scope": {
+        "match": "EXACT",
+        "source_commit": "62bf7077910e888a0bc8adfc8e08a5f500ff3ca3",
+        "external_suite_commit": "da267a5c4782e7361e82889e76c0dc7df0e1e870",
+        "supported_goals": [
+          "finite_parser_acceptance"
+        ],
+        "mismatch_status": "UNKNOWN"
+      },
+      "unknowns": [
+        "whole_language_correctness",
+        "statement_fidelity",
+        "generalization",
+        "current_requalification"
+      ]
+    }
+  ]
+}

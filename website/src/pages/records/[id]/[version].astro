@@ -1,0 +1,31 @@
+---
+import RecordDetail from '../../../components/RecordDetail.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { loadPublishedRecords, type PublishedRecordPackage } from '../../../lib/catalog';
+
+export async function getStaticPaths() {
+  const records = await loadPublishedRecords();
+  return records.map((published) => ({
+    params: { id: published.entry.id, version: published.entry.version_slug },
+    props: { published },
+  }));
+}
+
+interface Props {
+  published: PublishedRecordPackage;
+}
+
+const { published } = Astro.props;
+const { entry, record } = published;
+---
+
+<BaseLayout
+  title={`${record.title} — MathGraph`}
+  description="Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in this permanent version of the qualified L4YAML evidence record."
+  currentPath={`/records/${entry.id}/`}
+  canonicalPath={new URL(entry.record_page_url).pathname}
+  socialImage={`/social/records/${entry.id}-${entry.version_slug}.png`}
+  ogType="article"
+>
+  <RecordDetail published={published} />
+</BaseLayout>

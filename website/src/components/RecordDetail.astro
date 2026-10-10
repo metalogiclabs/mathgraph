@@ -1,5 +1,5 @@
 ---
-import type { QualifiedRecord } from '../lib/evidence';
+import type { PublishedRecordPackage } from '../lib/catalog';
 import CopyButton from './CopyButton.astro';
 import EvidenceAxis from './EvidenceAxis.astro';
 import Metric from './Metric.astro';
@@ -7,13 +7,16 @@ import SourceLink from './SourceLink.astro';
 import StatusTag from './StatusTag.astro';
 
 interface Props {
-  record: QualifiedRecord;
+  published: PublishedRecordPackage;
 }
 
-const { record } = Astro.props;
+const { published } = Astro.props;
+const { entry, presentation, record } = published;
 const finite = record.axes.finite_executable;
 const formal = record.axes.formal_verification;
 const base = `/evidence/${record.id}`;
+const lifecycleTone = entry.lifecycle === 'CURRENT' ? 'current' : entry.lifecycle === 'SUPERSEDED' ? 'superseded' : 'revoked';
+const lifecycleLabel = entry.lifecycle.charAt(0) + entry.lifecycle.slice(1).toLowerCase();
 ---
 
 <header class="record-hero shell">
@@ -27,8 +30,17 @@ const base = `/evidence/${record.id}`;
     </div>
   </div>
   <div class="record-hero__aside">
-    <StatusTag label="Warranted — bounded" tone="bounded" />
+    <p><strong>Version {entry.version}</strong></p>
+    <div class="status-axis">
+      <span class="status-axis__label">Evidence result</span>
+      <StatusTag label="Warranted — bounded" tone="bounded" />
+    </div>
+    <div class="status-axis">
+      <span class="status-axis__label">Lifecycle</span>
+      <StatusTag label={lifecycleLabel} tone={lifecycleTone} />
+    </div>
     <p><strong>Historic snapshot</strong><br />{record.snapshot_date}</p>
+    <p class="fineprint">Metadata updated {presentation.metadata_updated_at.slice(0, 10)} · evidence unchanged</p>
     <p class="fineprint">No affiliation or endorsement implied. This record is an independent check of public third-party code.</p>
   </div>
 </header>
@@ -73,6 +85,7 @@ const base = `/evidence/${record.id}`;
       <p><strong>Content SHA-256</strong></p>
       <div class="copy-row"><code>{record.content_sha256}</code><CopyButton value={record.content_sha256} label="Copy digest" /></div>
       <p class="fineprint">Schema: <code>{record.schema}</code></p>
+      <p class="fineprint">Permanent URL: <a href={new URL(entry.record_page_url).pathname}>{entry.record_page_url}</a></p>
     </div>
   </div>
 </section>
@@ -182,6 +195,8 @@ const base = `/evidence/${record.id}`;
       <SourceLink href={`${base}/qualified-release.html`} label="Original generated evidence page" meta="Publisher output preserved byte-for-byte" />
       <SourceLink href={`${base}/scoped-status.svg`} label="Scoped status SVG" meta="48/48 pinned source cases" />
       <SourceLink href={`${base}/openapi.preview.json`} label="Resolver OpenAPI" meta="Qualified preview contract; not publicly hosted" />
+      <SourceLink href="/records/index.json" label="Record index JSON" meta="Mutable catalogue · short-lived lifecycle state" />
+      <SourceLink href={new URL(entry.presentation_json_url).pathname} label="Presentation metadata JSON" meta={`Versioned sidecar · ${presentation.content_sha256}`} />
     </div>
   </div>
 </section>

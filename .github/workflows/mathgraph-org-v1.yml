@@ -2,14 +2,16 @@ name: MathGraph.org V1 qualification
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, website/mathgraph-brand-assets]
     paths:
       - 'website/**'
       - 'mathgraph_check/**'
       - 'tests/test_mathgraph_public_evidence_v1.py'
+      - 'docs/superpowers/specs/2026-10-10-mathgraph-agent-interoperability-design.md'
+      - 'docs/superpowers/plans/2026-10-10-mathgraph-agent-interoperability.md'
       - '.github/workflows/mathgraph-org-v1.yml'
   push:
-    branches: [website/mathgraph-org-v1]
+    branches: [website/mathgraph-org-v1, codex/mathgraph-agent-interface]
   workflow_dispatch:
 
 permissions:
