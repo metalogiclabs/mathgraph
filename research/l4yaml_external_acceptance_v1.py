@@ -194,6 +194,24 @@ def fixtures() -> list[ModelFixture]:
     return items
 
 
+def suite_expected_accept(case: dict[str, Any]) -> bool:
+    """Use yaml-test-suite's *fail* flag, not the descriptive 'error' tag.
+
+    An absent fail flag denotes a positive fixture. Fail is a typed Boolean;
+    malformed or contradictory labels are not quietly reinterpreted.
+    """
+    fail = case.get("fail", False)
+    if type(fail) is not bool:
+        raise ValueError("yaml-test-suite.fail must be a Boolean if present")
+    tags = case.get("tags", "")
+    tagset = set(tags.split()) if isinstance(tags, str) else (
+        set(tags) if isinstance(tags, list) and all(type(x) is str for x in tags)
+        else set())
+    if fail is False and "error" in tagset:
+        raise ValueError("yaml-test-suite.error tag conflicts with absent/false fail")
+    return not fail
+
+
 def load_suite_cases(suite: Path, per_category: int = 12) -> tuple[list[dict[str, Any]], list[str]]:
     """Load independent labels from yaml/yaml-test-suite, not the JPL test fork."""
     import yaml  # Dev-only metadata parser, NOT the truth oracle
@@ -232,7 +250,8 @@ def load_suite_cases(suite: Path, per_category: int = 12) -> tuple[list[dict[str
                 "yaml_source": snippet,
                 "yaml_sha256": sha256(snippet.encode("utf-8")),
                 "tags": sorted(tagset),
-                "expected_accept": "error" not in case,
+                "expected_accept": suite_expected_accept(case),
+                "label_source": "yaml-test-suite.fail",
                 "origin": "yaml/yaml-test-suite@da267a5c4782e7361e82889e76c0dc7df0e1e870",
             })
     selected: list[dict[str, Any]] = []
@@ -253,6 +272,10 @@ def load_suite_cases(suite: Path, per_category: int = 12) -> tuple[list[dict[str
         raise AssertionError("TOO_FEW_INDEPENDENT_YAML_CASES")
     if not any(not r["expected_accept"] for r in selected):
         raise AssertionError("NO_EXTERNAL_NEGATIVE_CASES")
+    if not any(r["expected_accept"] for r in selected):
+        raise AssertionError("NO_EXTERNAL_POSITIVE_CASES")
+    if len({r["id"] for r in selected}) != len(selected):
+        raise AssertionError("DUPLICATE_EXTERNAL_CASE_ID")
     return selected, skipped
 
 

@@ -2,7 +2,7 @@
 import unittest
 
 from research.l4yaml_external_acceptance_v1 import (
-    fixtures, independent_event_check, SCHEMA,
+    fixtures, independent_event_check, SCHEMA, suite_expected_accept,
 )
 
 
@@ -49,6 +49,17 @@ class L4YAMLExternalModelTests(unittest.TestCase):
         names = [c.id for c in fixtures()]
         self.assertEqual(len(names), len(set(names)))
         self.assertGreater(len(names), 25)
+
+    def test_independent_yaml_suite_fail_metadata_is_the_oracle(self):
+        # Public corpus uses a typed 'fail: true', not key 'error'.
+        self.assertFalse(suite_expected_accept({"tags": "error anchor", "fail": True}))
+        self.assertFalse(suite_expected_accept({"tags": "error directive tag", "fail": True}))
+        self.assertTrue(suite_expected_accept({"tags": "alias anchor"}))
+        self.assertTrue(suite_expected_accept({"tags": "alias", "fail": False}))
+        with self.assertRaises(ValueError):
+            suite_expected_accept({"tags": "error anchor"})
+        with self.assertRaises(ValueError):
+            suite_expected_accept({"tags": "tag", "fail": "true"})
 
     def test_full_yaml_language_claim_is_not_encapsulated(self):
         self.assertEqual(SCHEMA, "mathgraph.l4yaml.external-acceptance-audit.v1")
