@@ -32,6 +32,9 @@ jobs:
           node-version: '24.15.0'
           cache: npm
           cache-dependency-path: website/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Install exact package manager
         run: npm install --global npm@12.2.0
       - name: Clean dependency installation

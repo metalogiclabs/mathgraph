@@ -1,6 +1,12 @@
 {
   "recurse": true,
   "checkFragments": true,
-  "skip": ["github\\.com", "^https://mathgraph\\.org", "/v1/"],
+  "skip": [
+    "github\\.com",
+    "^https://mathgraph\\.org",
+    "/v1/records/mg-l4yaml-source-check-20261010$",
+    "/v1/records/mg-l4yaml-source-check-20261010/evidence$",
+    "/v1/badges/mg-l4yaml-source-check-20261010\\.svg$"
+  ],
   "verbosity": "error"
 }

@@ -10,6 +10,7 @@ interface Props {
 
 const { title, description, currentPath, socialDescription = description } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'";
 const nav = [
   { href: '/check/', label: 'Check' },
   { href: '/records/', label: 'Records' },
@@ -26,6 +27,7 @@ const isCurrent = (href: string) => currentPath === href || currentPath.startsWi
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f8f7f3" />
+    <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MathGraph" />
     <meta property="og:title" content={title} />

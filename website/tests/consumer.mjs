@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -8,11 +9,28 @@ const RECORD_ID = 'mg-l4yaml-source-check-20261010';
 const RECORD_DIGEST = 'f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb';
 const SOURCE_COMMIT = '62bf7077910e888a0bc8adfc8e08a5f500ff3ca3';
 const SUITE_COMMIT = 'da267a5c4782e7361e82889e76c0dc7df0e1e870';
-const SUPPORTED_GOAL = 'pinned_external_case_agreement';
+const SUPPORTED_GOAL = 'finite_parser_acceptance';
 const root = resolve(process.env.MATHGRAPH_CONSUMER_ROOT ?? new URL('../dist', import.meta.url).pathname);
+
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  return `{${Object.entries(value)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, child]) => `${JSON.stringify(key)}:${canonicalJson(child)}`)
+    .join(',')}}`;
+}
+
+function hasExpectedDigest(record) {
+  const unsigned = structuredClone(record);
+  const declared = unsigned.content_sha256;
+  delete unsigned.content_sha256;
+  return declared === RECORD_DIGEST && createHash('sha256').update(canonicalJson(unsigned)).digest('hex') === declared;
+}
 
 function consume(record, request) {
   const exact =
+    hasExpectedDigest(record) &&
     record.id === RECORD_ID &&
     record.content_sha256 === RECORD_DIGEST &&
     record.source?.commit === SOURCE_COMMIT &&
@@ -79,9 +97,13 @@ try {
     truth_promotion: false,
   });
   assert.equal(consume(record, { ...exactRequest, source_commit: '0'.repeat(40) }).status, 'UNKNOWN');
+  assert.equal(consume(record, { ...exactRequest, external_suite_commit: '0'.repeat(40) }).status, 'UNKNOWN');
   assert.equal(consume(record, { ...exactRequest, goal: 'whole_language_correctness' }).status, 'UNKNOWN');
   assert.equal(consume(record, { ...exactRequest, record_id: 'unknown-record' }).status, 'UNKNOWN');
-  console.log('INDEPENDENT_STATIC_CONSUMER_GREEN exact=WARRANTED_BOUNDED negatives=3xUNKNOWN');
+  const altered = structuredClone(record);
+  altered.axes.finite_executable.expected_accept = 32;
+  assert.equal(consume(altered, exactRequest).status, 'UNKNOWN');
+  console.log('INDEPENDENT_STATIC_CONSUMER_GREEN exact=WARRANTED_BOUNDED negatives=5xUNKNOWN digest=recomputed');
 } finally {
   await new Promise((resolveClosed) => server.close(resolveClosed));
 }

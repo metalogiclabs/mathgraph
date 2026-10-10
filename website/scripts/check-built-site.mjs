@@ -13,6 +13,7 @@ const [sourceBytes, publicBytes, builtBytes] = await Promise.all([
   readFile(publicRecordPath),
   readFile(builtRecordPath),
 ]);
+const deployment = JSON.parse(await readFile(join(root, 'vercel.json'), 'utf8'));
 
 assert.deepEqual(publicBytes, sourceBytes, 'public record must be the exact frozen record');
 assert.deepEqual(builtBytes, sourceBytes, 'built record must be the exact frozen record');
@@ -62,6 +63,24 @@ for (const prohibited of [
 }
 assert(rendered.includes('No affiliation or endorsement implied'));
 assert((await readFile(join(dist, '404.html'), 'utf8')).includes('Evidence not found'));
+
+const expectedRedirects = new Map([
+  [`/v1/records/${recordId}`, `/evidence/${recordId}/record.json`],
+  [`/v1/records/${recordId}/evidence`, `/evidence/${recordId}/evidence.json`],
+  [`/v1/badges/${recordId}.svg`, `/evidence/${recordId}/scoped-status.svg`],
+]);
+assert.equal(deployment.redirects?.length, expectedRedirects.size, 'unexpected V1 resource redirect count');
+for (const redirect of deployment.redirects) {
+  assert.equal(redirect.destination, expectedRedirects.get(redirect.source), `unexpected redirect ${redirect.source}`);
+  assert.equal(redirect.permanent, true, `resource redirect must be permanent: ${redirect.source}`);
+  await stat(join(dist, redirect.destination.slice(1)));
+}
+const preservedHtml = await readFile(join(dist, `evidence/${recordId}/qualified-release.html`), 'utf8');
+for (const source of expectedRedirects.keys()) assert(preservedHtml.includes(`href="${source}"`));
+const csp = deployment.headers
+  .flatMap((rule) => rule.headers ?? [])
+  .find((header) => header.key === 'Content-Security-Policy')?.value;
+assert(csp?.includes("default-src 'self'") && csp.includes("object-src 'none'") && csp.includes("frame-ancestors 'none'"));
 
 assert(clientBytes < 100_000, `client JS + CSS exceeds 100 kB (${clientBytes} bytes)`);
 console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} client_bytes=${clientBytes}`);

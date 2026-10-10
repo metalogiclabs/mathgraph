@@ -97,7 +97,8 @@ describe('primary public evidence experience', () => {
   });
 
   test('documents the exact resolver contract without claiming public deployment', async () => {
-    const text = visibleText(await page('developers'));
+    const html = await page('developers');
+    const text = visibleText(html);
     expect(text).toContain('Quickstart');
     expect(text).toContain('/v1/resolve');
     expect(text).toContain(record.id);
@@ -105,7 +106,18 @@ describe('primary public evidence experience', () => {
     expect(text).toContain(record.source.external_suite_commit);
     expect(text).toContain('WARRANTED_BOUNDED');
     expect(text).toContain('UNKNOWN');
+    expect(html).toContain('finite_parser_acceptance');
+    expect(html).not.toContain('pinned_external_case_agreement');
     expect(text).toMatch(/not.*publicly deployed/i);
+  });
+
+  test('ships a restrictive CSP with external executable JavaScript', async () => {
+    const html = await page('');
+    expect(html).toMatch(/http-equiv="Content-Security-Policy"/);
+    expect(html).toContain("default-src 'self'");
+    expect(html).toContain("object-src 'none'");
+    expect(html).toMatch(/<script type="module" src="\/_assets\/[^"]+\.js"><\/script>/);
+    expect(html).not.toMatch(/<script type="module">/);
   });
 
   test('builds an honest missing state and complete sitemap', async () => {

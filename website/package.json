@@ -10,15 +10,18 @@
   "scripts": {
     "dev": "astro dev",
     "check": "astro check",
-    "test": "npm run test:unit",
-    "test:unit": "vitest run",
+    "test": "npm run build && npm run test:unit",
+    "test:unit": "npm run test:data && npm run test:rendering",
+    "test:data": "vitest run src/lib/evidence.test.ts",
+    "test:rendering": "vitest run tests/rendering.test.ts",
     "test:consumer": "node tests/consumer.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "check:built": "node scripts/check-built-site.mjs",
+    "check:resolver": "node scripts/check-resolver-contract.mjs",
     "check:html": "html-validate \"dist/**/*.html\"",
     "check:links": "linkinator dist --config linkinator.config.json",
-    "qualify": "npm run check && npm run test:unit && npm run build && npm run check:built && npm run check:html && npm run check:links && npm run test:consumer"
+    "qualify": "npm run check && npm run test:data && npm run build && npm run test:rendering && npm run check:built && npm run check:resolver && npm run check:html && npm run check:links && npm run test:consumer"
   },
   "dependencies": {
     "astro": "7.3.8"

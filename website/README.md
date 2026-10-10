@@ -11,7 +11,7 @@ npm ci
 npm run qualify
 ```
 
-`qualify` runs Astro diagnostics, Vitest contracts, a production build, page/JSON integrity and claim checks, HTML validation, internal-link and fragment checks, and an isolated HTTP consumer. The consumer imports no MathGraph verifier code: exact pins resolve to `WARRANTED_BOUNDED`, while incorrect or unsupported inputs resolve to `UNKNOWN`.
+`qualify` runs Astro diagnostics, data tests, a production build, rendered-page contracts, page/JSON integrity and claim checks, the actual Python resolver documentation contract, HTML validation, internal-link and fragment checks, and an isolated HTTP consumer. The consumer imports no MathGraph verifier code and recomputes the canonical digest: exact pins resolve to `WARRANTED_BOUNDED`, while changed content, incorrect pins, or unsupported inputs resolve to `UNKNOWN`.
 
 To inspect the built site:
 
@@ -39,4 +39,4 @@ Exact-width Chrome captures are committed in [`qa/screenshots`](qa/screenshots/)
 
 ## Deployment
 
-`vercel.json` builds from this directory with `npm run build` and publishes `dist`. A preview may be created through an existing authenticated Vercel project or Git integration. Do not alias `mathgraph.org`, promote, or deploy with `--prod` without explicit release approval.
+`vercel.json` builds from this directory with `npm run build` and publishes `dist`. It supplies the restrictive site CSP and permanent read-only redirects from the three resource links in the byte-preserved publisher page to their durable `/evidence/` assets; it does not expose `POST /v1/resolve`. A preview may be created through an existing authenticated Vercel project or Git integration. Do not alias `mathgraph.org`, promote, or deploy with `--prod` without explicit release approval.
