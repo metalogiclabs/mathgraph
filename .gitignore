@@ -46,3 +46,6 @@ lakefile.olean
 
 # Vercel local project link and pulled environment data
 .vercel/
+
+# Local isolated feature worktrees
+.worktrees/
