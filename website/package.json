@@ -12,7 +12,7 @@
     "check": "astro check",
     "test": "npm run build && npm run test:unit",
     "test:unit": "npm run test:data && npm run test:rendering",
-    "test:data": "vitest run src/lib/evidence.test.ts",
+    "test:data": "vitest run src/lib/evidence.test.ts src/lib/catalog.test.ts",
     "test:rendering": "vitest run tests/rendering.test.ts",
     "test:consumer": "node tests/consumer.mjs",
     "build": "astro build",
@@ -29,8 +29,10 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@types/node": "24.10.0",
+    "ajv": "8.17.1",
     "html-validate": "11.16.2",
     "linkinator": "8.1.0",
+    "sharp": "0.35.5",
     "typescript": "6.0.3",
     "vitest": "5.0.3"
   }

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://mathgraph.org/schemas/presentation-metadata-v1.schema.json",
+  "schema": "mathgraph.presentation-metadata.v1",
+  "record_id": "mg-l4yaml-source-check-20261010",
+  "record_version": 1,
+  "title": "L4YAML parser acceptance — pinned source check",
+  "description": "A presentation envelope for the qualified, source-pinned L4YAML finite-case and Lean replay record.",
+  "publisher": {
+    "name": "Metalogic Labs / MathGraph",
+    "url": "https://mathgraph.org"
+  },
+  "citation": {
+    "bibtex": "@misc{mathgraph_l4yaml_2026, title={L4YAML parser acceptance — pinned source check}, author={{Metalogic Labs / MathGraph}}, year={2026}, url={https://mathgraph.org/records/mg-l4yaml-source-check-20261010/v1/}, note={Qualified bounded record; content SHA-256 f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb}}"
+  },
+  "classifications": [
+    "formal verification",
+    "Lean",
+    "parser evaluation",
+    "source-pinned evidence",
+    "YAML"
+  ],
+  "license": {
+    "status": "UNKNOWN",
+    "note": "This presentation envelope does not determine the licenses governing the pinned third-party sources; inspect each source repository at its recorded commit."
+  },
+  "external_registrations": {
+    "status": "UNKNOWN",
+    "entries": []
+  },
+  "metadata_updated_at": "2026-10-10T07:58:09Z",
+  "history": [
+    {
+      "updated_at": "2026-10-10T07:58:09Z",
+      "change": "Initial citation, classification, and discovery metadata.",
+      "evidence_changed": false
+    }
+  ],
+  "content_sha256": "b415f4266f255b53a9878c0b1ded61d29a8e13dd00655a7992990648f566c7d6"
+}
