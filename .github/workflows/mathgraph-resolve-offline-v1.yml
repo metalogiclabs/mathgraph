@@ -1,0 +1,98 @@
+name: MathGraph Resolve — Independent Offline V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/mathgraph-resolve-record-002]
+  pull_request:
+    paths:
+      - 'conformance/resolve_v1/**'
+      - 'scripts/package_mathgraph_resolve_v1.py'
+      - 'scripts/publish_mathgraph_resolve_v1.py'
+      - 'mathgraph_check/warrant_resolution.py'
+      - 'mathgraph_check/living_warrants.py'
+      - 'evidence/living_warrant_openai_jpl_20261010.json'
+      - 'website/public/evidence/**'
+      - 'tests/test_mathgraph_resolve_publication_v1.py'
+      - 'tests/test_mathgraph_warrant_resolution_core.py'
+      - 'tests/test_mathgraph_living_warrants_v1.py'
+      - '.github/workflows/mathgraph-resolve-offline-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  independent-offline-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Reviewed out-of-band policy pin; never read from the bundle.
+      RESOLVE_POLICY_SHA256: 09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prepare dependencies and resolve runtime identity before isolation
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.0.3
+          RESOLVE_IMAGE_REF=python:3.11-slim@sha256:e529028263dbe6910a2d96f7d2b8f5266385e917fd45d286ef166977c094a51e
+          docker pull "$RESOLVE_IMAGE_REF"
+          RESOLVE_IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$RESOLVE_IMAGE_REF")
+          echo "RESOLVE_IMAGE_ID=$RESOLVE_IMAGE_ID" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/resolve-evidence" "$RUNNER_TEMP/resolve-sources"
+          docker image inspect "$RESOLVE_IMAGE_ID" > "$RUNNER_TEMP/resolve-evidence/runtime-image.json"
+      - name: Acquire exact sources before isolation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/history.md \
+            -o "$RUNNER_TEMP/resolve-sources/history.md"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657687808/zip" \
+            -o "$RUNNER_TEMP/resolve-sources/l4yaml-v1.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657314389/zip" \
+            -o "$RUNNER_TEMP/resolve-sources/l4yaml-v2.zip"
+          echo "41c2a2d470014b3628695c7aabf5fd0c93f6f687621fca172062f22b59ed6a1e  $RUNNER_TEMP/resolve-sources/history.md" | sha256sum -c -
+          echo "b75581017d6620481c77e52b350e8bb8631d11747a92789f7887cde527807086  $RUNNER_TEMP/resolve-sources/l4yaml-v1.zip" | sha256sum -c -
+          echo "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e  $RUNNER_TEMP/resolve-sources/l4yaml-v2.zip" | sha256sum -c -
+          echo "MATHGRAPH_OPENAI_HISTORY_MD=$RUNNER_TEMP/resolve-sources/history.md" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_V1_EVIDENCE_ZIP=$RUNNER_TEMP/resolve-sources/l4yaml-v1.zip" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_V2_EVIDENCE_ZIP=$RUNNER_TEMP/resolve-sources/l4yaml-v2.zip" >> "$GITHUB_ENV"
+      - name: Independent conformance and focused producer parity
+        run: |
+          set -euo pipefail
+          echo "$RESOLVE_POLICY_SHA256  conformance/resolve_v1/trust-policy.json" | sha256sum -c -
+          echo "957080db79555f982fd3a314c263cf5177ef506969229e856897f0b19ccc1d62  conformance/resolve_v1/fixtures/bundle.json" | sha256sum -c -
+          python scripts/package_mathgraph_resolve_v1.py --history "$MATHGRAPH_OPENAI_HISTORY_MD" --check
+          python scripts/publish_mathgraph_resolve_v1.py --check
+          python -m pytest conformance/resolve_v1/test_consumer.py \
+            tests/test_mathgraph_resolve_publication_v1.py \
+            tests/test_mathgraph_warrant_resolution_core.py \
+            tests/test_mathgraph_living_warrants_v1.py -q
+          git diff --exit-code
+      - name: Replay only three inputs with enforced network denial
+        run: |
+          set -euo pipefail
+          # The harness mounts only a fresh three-file directory. No repository,
+          # credentials, source archives, host services, or Docker socket enter it.
+          python conformance/resolve_v1/run_isolated.py --backend docker \
+            --image-id "$RESOLVE_IMAGE_ID" --policy-sha256 "$RESOLVE_POLICY_SHA256" \
+            > "$RUNNER_TEMP/resolve-evidence/replay.json" \
+            2> "$RUNNER_TEMP/resolve-evidence/isolation.json"
+          echo "8c7b30e1eb2a24d2960e170d36652ca95aa71b41075f673abe394e154ae66668  $RUNNER_TEMP/resolve-evidence/replay.json" | sha256sum -c -
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-resolve-independent-offline-v1
+          path: ${{ runner.temp }}/resolve-evidence/
+          if-no-files-found: error

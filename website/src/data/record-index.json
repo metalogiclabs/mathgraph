@@ -1,8 +1,9 @@
 {
-  "$schema": "https://mathgraph.org/schemas/record-index-v1.schema.json",
-  "schema": "mathgraph.record-index.v1",
+  "$schema": "https://mathgraph.org/schemas/record-index-v2.schema.json",
+  "schema": "mathgraph.record-index.v2",
   "latest_versions": {
-    "mg-l4yaml-source-check-20261010": 1
+    "mg-l4yaml-source-check-20261010": 1,
+    "mg-living-warrant-openai-jpl-20261010": 1
   },
   "records": [
     {
@@ -37,6 +38,40 @@
         "statement_fidelity",
         "generalization",
         "current_requalification"
+      ],
+      "record_kind": "SOURCE_CHECK"
+    },
+    {
+      "id": "mg-living-warrant-openai-jpl-20261010",
+      "version": 1,
+      "version_slug": "v1",
+      "record_kind": "RESOLUTION_SNAPSHOT",
+      "record_schema": "mathgraph.living-warrant-snapshot.v1",
+      "historical_epistemic_result": "SCOPED_MIXED",
+      "lifecycle": "CURRENT",
+      "research_maturity": "BOUNDED_QUALIFIED",
+      "action_policy": "READ_ONLY_NO_AUTOMATIC_AUTHORIZATION",
+      "current_applicability": "UNKNOWN",
+      "freshness": "NOT_CHECKED",
+      "snapshot_date": "2026-10-10",
+      "record_page_url": "https://mathgraph.org/records/mg-living-warrant-openai-jpl-20261010/v1/",
+      "latest_page_url": "https://mathgraph.org/records/mg-living-warrant-openai-jpl-20261010/",
+      "record_json_url": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/record.json",
+      "record_content_sha256": "b95297a081d513fb0ec145a776cc997eaed18109d6b2af39fa8e61f6d637af41",
+      "record_transport_sha256": "0a850b112cce200f2fa97f0d861db712f3752712a6326e62f4c0d56996a95d87",
+      "scenarios_schema": "mathgraph.resolve-scenarios.v1",
+      "scenarios_json_url": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/scenarios.json",
+      "scenarios_transport_sha256": "ed458ccbee85e3aa3f49d9d38e7ad5380515d00d707bac09c584cc4955b88181",
+      "presentation_json_url": "https://mathgraph.org/records/mg-living-warrant-openai-jpl-20261010/v1/metadata.json",
+      "presentation_schema": "mathgraph.presentation-metadata.v1",
+      "presentation_content_sha256": "6a82557545dfdb7e8a96ae8cd06f22edecb3f62a3777410266bb59afa618f562",
+      "independent_replay_ci_run": "38086245988",
+      "unknowns": [
+        "current_applicability",
+        "freshness",
+        "mathematical_truth_of_withdrawn_arguments",
+        "new_jpl_lean_replay",
+        "independently_owned_adoption"
       ]
     }
   ]

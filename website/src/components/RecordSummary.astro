@@ -1,11 +1,11 @@
 ---
 import type { QualifiedRecord } from '../lib/evidence';
-import type { PublishedRecordEntry } from '../lib/catalog';
+import type { SourceCheckEntry } from '../lib/catalog';
 import StatusTag from './StatusTag.astro';
 
 interface Props {
   record: QualifiedRecord;
-  entry?: PublishedRecordEntry;
+  entry?: SourceCheckEntry;
 }
 
 const { record, entry } = Astro.props;

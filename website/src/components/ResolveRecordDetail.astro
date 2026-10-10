@@ -1,0 +1,171 @@
+---
+import type { ResolutionSnapshotPackage } from '../lib/catalog';
+import CopyButton from './CopyButton.astro';
+import ResolveExplorer from './ResolveExplorer.astro';
+import SourceLink from './SourceLink.astro';
+
+interface Props {
+  published: ResolutionSnapshotPackage;
+}
+
+const { published } = Astro.props;
+const { entry, record, scenarios, presentation } = published;
+const recordPath = new URL(entry.record_json_url).pathname;
+const scenariosPath = new URL(entry.scenarios_json_url).pathname;
+const metadataPath = new URL(entry.presentation_json_url).pathname;
+const sourceBundleCommit = 'a82d472139d970f17f88385e2cb95f20c08e0d12';
+const offlinePath = `/evidence/${entry.id}/offline`;
+const bundleUrl = `${offlinePath}/bundle.json`;
+const trustPolicyUrl = `${offlinePath}/trust-policy.json`;
+const humanize = (value: string) => value.replaceAll('_', ' ').toLowerCase();
+---
+
+<article>
+  <header class="shell resolve-record-hero">
+    <div>
+      <div class="eyebrow">MathGraph Resolve · permanent version {entry.version}</div>
+      <h1>{presentation.title}</h1>
+      <p class="lede">{presentation.description} It preserves what changed, what did not, and what the evidence still cannot establish.</p>
+      <div class="actions">
+        <a class="button" href="#historic-resolution">Inspect the seven results</a>
+        <a class="button button--secondary" href={recordPath}>Open immutable JSON</a>
+      </div>
+    </div>
+    <aside class="resolve-record-hero__identity" aria-label="Immutable record identity">
+      <p class="fineprint">Record ID</p>
+      <div class="copy-row"><code>{entry.id}</code><CopyButton value={entry.id} label="Copy record ID" /></div>
+      <p class="fineprint">Canonical snapshot SHA-256</p>
+      <div class="copy-row"><code>{record.snapshot_sha256}</code><CopyButton value={record.snapshot_sha256} label="Copy snapshot digest" /></div>
+      <p class="fineprint">Snapshot date {entry.snapshot_date} · immutable historical version</p>
+    </aside>
+  </header>
+
+  <section class="section section--compact" aria-labelledby="resolve-axis-title">
+    <div class="shell">
+      <div class="grid">
+        <div class="span-5">
+          <div class="eyebrow">Six independent axes</div>
+          <h2 id="resolve-axis-title">No single badge can describe this record.</h2>
+        </div>
+        <div class="span-7">
+          <p class="lede">Historic support resolution, catalogue state, research maturity, current applicability, freshness, and authorization answer different questions. They are kept separate here and in the machine-readable index.</p>
+        </div>
+      </div>
+      <div class="resolve-axis-grid">
+        <article class="resolve-axis" data-status-family="epistemic"><span>Historical epistemic result</span><strong><code>{entry.historical_epistemic_result}</code></strong><p>Mixed, exact per-claim outcomes in the pinned snapshot.</p></article>
+        <article class="resolve-axis" data-status-family="lifecycle"><span>Catalogue lifecycle</span><strong><code>{entry.lifecycle}</code></strong><p>The catalogue entry is current; the evidence object remains historic.</p></article>
+        <article class="resolve-axis" data-status-family="maturity"><span>Research maturity</span><strong><code>{entry.research_maturity}</code></strong><p>Bounded qualification, not universal resolution.</p></article>
+        <article class="resolve-axis" data-status-family="applicability"><span>Current applicability</span><strong><code>{entry.current_applicability}</code></strong><p>An offline replay cannot establish absence of newer changes.</p></article>
+        <article class="resolve-axis" data-status-family="freshness"><span>Freshness</span><strong><code>{entry.freshness}</code></strong><p>No authenticated live lifecycle check was performed.</p></article>
+        <article class="resolve-axis" data-status-family="action"><span>Action policy</span><strong><code>{entry.action_policy}</code></strong><p>This record authorizes no automatic external action.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="historic-resolution" class="section resolve-history" aria-labelledby="resolve-history-title">
+    <div class="shell">
+      <div class="grid">
+        <div class="span-5">
+          <div class="eyebrow">Historic resolution</div>
+          <h2 id="resolve-history-title">Withdrawal changes support, not truth by decree.</h2>
+        </div>
+        <div class="span-7">
+          <p class="lede">{record.interpretation.after}</p>
+          <p>{record.interpretation.simulated_before}</p>
+          <p><strong>{record.interpretation.source_contract}</strong></p>
+        </div>
+      </div>
+      <ResolveExplorer published={published} />
+    </div>
+  </section>
+
+  <section class="section section--ink" aria-labelledby="resolve-sources-title">
+    <div class="shell grid">
+      <div class="span-5">
+        <div class="eyebrow">Sources and receipts</div>
+        <h2 id="resolve-sources-title">Every route names its authority.</h2>
+        <p class="muted">The OpenAI history file documents a publisher withdrawal and reports a sign error. It is not a formal theorem verifier. No affiliation or endorsement is implied.</p>
+      </div>
+      <div class="span-7">
+        <SourceLink href={record.sources.openai.url} label="Pinned OpenAI publisher notice" meta={`${record.sources.openai.commit} · ${record.sources.openai.path} · SHA-256 ${record.sources.openai.byte_sha256}`} />
+        <SourceLink href={`/records/${record.sources.jpl_record_id}/v1/`} label="Qualified L4YAML observation record" meta={record.sources.jpl_record_sha256} />
+        <SourceLink href={scenarios.provenance.producer.run_url} label="Living Warrants producer qualification" meta={`run ${scenarios.provenance.producer.run_id} · commit ${scenarios.provenance.producer.commit}`} />
+        <SourceLink href={scenarios.provenance.consumer.run_url} label="RealityGraph replay" meta={`run ${scenarios.provenance.consumer.run_id} · commit ${scenarios.provenance.consumer.commit}`} />
+        <SourceLink href={`https://github.com/metalogiclabs/mathgraph/actions/runs/${entry.independent_replay_ci_run}`} label="Offline independent Resolve replay" meta={`run ${entry.independent_replay_ci_run} · no hosted MathGraph service`} />
+      </div>
+    </div>
+    <div class="shell table-wrap resolve-receipt-table">
+      <table>
+        <caption>Declared receipts in the immutable historical graph</caption>
+        <thead><tr><th scope="col">Receipt</th><th scope="col">Kind</th><th scope="col">Exact scope</th></tr></thead>
+        <tbody>
+          {record.derivation.receipts.map((receipt) => (
+            <tr><th scope="row"><code>{receipt.id}</code></th><td>{receipt.kind}</td><td><code>{receipt.scope}</code></td></tr>
+          ))}
+        </tbody>
+      </table>
+      <div class="resolve-receipt-table__field">
+        <h3>Exact record <code>withdrawn_evidence</code> field</h3>
+        <ul>
+          {record.derivation.withdrawn_evidence.map((receiptId) => <li><code>{receiptId}</code> — listed in <code>withdrawn_evidence</code></li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="resolve-boundaries-title">
+    <div class="shell page-grid">
+      <aside class="toc" aria-label="Record sections">
+        <div class="eyebrow">Audit boundary</div>
+        <ul>
+          <li><a href="#resolve-boundaries-title">Interpretation</a></li>
+          <li><a href="#resolve-replay">Independent replay</a></li>
+          <li><a href="#resolve-resources">Machine resources</a></li>
+        </ul>
+      </aside>
+      <div class="prose">
+        <h2 id="resolve-boundaries-title">What this record does—and does not—establish</h2>
+        <div class="callout callout--unknown">
+          <strong>Three propositions remain UNKNOWN.</strong>
+          <p>Stale documentary support is not a counterexample, refutation, or proof that a proposition is false. No unqualified implication from documentary publication to mathematical truth is present in the graph.</p>
+        </div>
+        <ul>
+          <li>{record.interpretation.unaffected}</li>
+          <li>The retained JPL observation is only the exact 48-case source-bound result; it is not universal YAML correctness.</li>
+          <li>{scenarios.provenance.integrity_boundary}</li>
+          <li>Git commit pins are provenance references under a separate repository and key trust policy.</li>
+          <li>The snapshot is not continuous monitoring: current applicability is <code>{entry.current_applicability}</code> and freshness is <code>{entry.freshness}</code>.</li>
+        </ul>
+
+        <h3>Explicit unknowns</h3>
+        <ul class="resolve-unknowns">
+          {entry.unknowns.map((unknown) => <li><code>{unknown}</code><span>{humanize(unknown)}</span></li>)}
+        </ul>
+
+        <h3 id="resolve-replay">Independent replay boundary</h3>
+        <p>The RealityGraph consumer is a <strong>same-owner independent implementation</strong>. It <strong>does not rerun the original JPL Lean proof</strong>; this published replay <strong>did not rerun the original JPL Lean proof</strong> and is not outside-organization adoption.</p>
+        <p>The later P0 replay runs from three isolated inputs without MathGraph.org, producer imports, hosted services, an LLM, or network access. Its trust-policy digest is supplied separately from the bundle.</p>
+        <ul>
+          <li><a href={`${offlinePath}/consumer.py`}>Standalone Python consumer</a></li>
+          <li><a href={bundleUrl}>Pinned offline evidence bundle</a></li>
+          <li><a href={trustPolicyUrl}>Separately pinned trust policy</a></li>
+          <li><a href="/examples/resolve-consumer-v1.ts">Independent Node 24 HTTP reference client</a></li>
+          <li><a href={`https://github.com/metalogiclabs/mathgraph/tree/${sourceBundleCommit}/conformance/resolve_v1`}>Pinned implementation source and reproduction instructions ↗</a></li>
+          <li><a href={`https://github.com/metalogiclabs/mathgraph/actions/runs/${entry.independent_replay_ci_run}`}>Isolation qualification run {entry.independent_replay_ci_run} ↗</a></li>
+        </ul>
+
+        <p>A policy downloaded from this host does not authenticate itself. Obtain its expected SHA-256 through a separately trusted channel: <code>09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a</code>. Hashes supplied by the same compromised host cannot establish publisher authority.</p>
+        <p>The Node example is a local HTTP client, not an offline isolation proof. Neither client checks current revocation or supersession; that axis remains <code>NOT_CHECKED</code>.</p>
+
+        <h3 id="resolve-resources">Durable machine-readable resources</h3>
+        <dl class="definition-list resolve-resource-list">
+          <div><dt>Immutable snapshot</dt><dd><a href={recordPath}>{recordPath}</a><br /><code>{entry.record_transport_sha256}</code> transport SHA-256</dd></div>
+          <div><dt>Precomputed scenarios</dt><dd><a href={scenariosPath}>{scenariosPath}</a><br /><code>{entry.scenarios_transport_sha256}</code> transport SHA-256</dd></div>
+          <div><dt>Presentation metadata</dt><dd><a href={metadataPath}>{metadataPath}</a><br />Non-authoritative sidecar; it cannot change a warrant.</dd></div>
+          <div><dt>Schemas</dt><dd><a href="/schemas/living-warrant-snapshot-v1.schema.json">Snapshot v1</a> · <a href="/schemas/resolve-scenarios-v1.schema.json">Scenarios v1</a> · <a href="/schemas/record-index-v2.schema.json">Catalogue v2</a></dd></div>
+        </dl>
+        <p class="fineprint">Metadata updated {presentation.metadata_updated_at}: {presentation.history[0].change}</p>
+      </div>
+    </div>
+  </section>
+</article>

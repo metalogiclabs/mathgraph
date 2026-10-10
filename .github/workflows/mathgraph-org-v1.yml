@@ -7,11 +7,21 @@ on:
       - 'website/**'
       - 'mathgraph_check/**'
       - 'tests/test_mathgraph_public_evidence_v1.py'
+      - 'tests/test_mathgraph_resolve_publication_v1.py'
+      - 'tests/test_mathgraph_warrant_resolution_core.py'
+      - 'tests/test_mathgraph_living_warrants_v1.py'
+      - 'conformance/resolve_v1/**'
+      - 'scripts/package_mathgraph_resolve_v1.py'
+      - 'scripts/publish_mathgraph_resolve_v1.py'
+      - 'evidence/living_warrant_openai_jpl_20261010.json'
+      - 'docs/mathgraph_resolve_v1_threat_model.md'
+      - 'docs/mathgraph_resolve_v1_reproduction.md'
+      - 'docs/superpowers/specs/2026-10-11-mathgraph-resolve-record-002-design.md'
       - 'docs/superpowers/specs/2026-10-10-mathgraph-agent-interoperability-design.md'
       - 'docs/superpowers/plans/2026-10-10-mathgraph-agent-interoperability.md'
       - '.github/workflows/mathgraph-org-v1.yml'
   push:
-    branches: [website/mathgraph-org-v1, codex/mathgraph-agent-interface]
+    branches: [website/mathgraph-org-v1, codex/mathgraph-agent-interface, codex/mathgraph-resolve-record-002]
   workflow_dispatch:
 
 permissions:
@@ -96,3 +106,32 @@ jobs:
           cmp website/public/evidence/mg-l4yaml-source-check-20261010/scoped-status.svg "$RUNNER_TEMP/generated-record/badge.svg"
           cmp website/public/evidence/mg-l4yaml-source-check-20261010/openapi.preview.json "$RUNNER_TEMP/generated-record/openapi.json"
           echo MATHGRAPH_ORG_PUBLICATION_IDENTITY_GREEN
+      - name: Qualify exact Resolve publication and standalone replay
+        env:
+          MATHGRAPH_V1_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-evidence/l4yaml-v1.zip
+          MATHGRAPH_V2_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-evidence/l4yaml-v2.zip
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.0.3 PyYAML==6.0.3
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/history.md \
+            -o "$RUNNER_TEMP/mathgraph-evidence/history.md"
+          export MATHGRAPH_OPENAI_HISTORY_MD="$RUNNER_TEMP/mathgraph-evidence/history.md"
+          echo "41c2a2d470014b3628695c7aabf5fd0c93f6f687621fca172062f22b59ed6a1e  $MATHGRAPH_OPENAI_HISTORY_MD" | sha256sum -c -
+          python scripts/package_mathgraph_resolve_v1.py --history "$MATHGRAPH_OPENAI_HISTORY_MD" --check
+          python scripts/publish_mathgraph_resolve_v1.py --check
+          python -m pytest conformance/resolve_v1/test_consumer.py \
+            tests/test_mathgraph_resolve_publication_v1.py \
+            tests/test_mathgraph_warrant_resolution_core.py \
+            tests/test_mathgraph_living_warrants_v1.py -q
+          cmp conformance/resolve_v1/consumer.py website/public/evidence/mg-living-warrant-openai-jpl-20261010/offline/consumer.py
+          cmp conformance/resolve_v1/fixtures/bundle.json website/public/evidence/mg-living-warrant-openai-jpl-20261010/offline/bundle.json
+          cmp conformance/resolve_v1/trust-policy.json website/public/evidence/mg-living-warrant-openai-jpl-20261010/offline/trust-policy.json
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          for path in Path('.github/workflows').glob('*.yml'):
+              yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+          print('WORKFLOW_YAML_PARSE_GREEN')
+          PY
+          git diff --exit-code

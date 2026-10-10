@@ -1,5 +1,6 @@
 ---
 import RecordSummary from '../../components/RecordSummary.astro';
+import ResolutionRecord from '../../components/ResolutionRecord.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { loadPublishedRecords } from '../../lib/catalog';
 
@@ -17,7 +18,9 @@ const records = await loadPublishedRecords();
   <section class="section">
     <div class="shell">
       <p class="fineprint">{records.length} published record{records.length === 1 ? '' : 's'} · ordered by snapshot date</p>
-      {records.map(({ entry, record }) => <RecordSummary record={record} entry={entry} />)}
+      {records.map((published) => published.record_kind === 'SOURCE_CHECK'
+        ? <RecordSummary record={published.record} entry={published.entry} />
+        : <ResolutionRecord published={published} />)}
       <div class="callout callout--unknown">
         <strong>No synthetic examples.</strong> This index lists only evidence that has a corresponding qualified boundary and durable machine-readable record.
       </div>

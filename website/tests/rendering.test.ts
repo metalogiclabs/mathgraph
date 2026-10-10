@@ -6,6 +6,8 @@ import { describe, expect, test } from 'vitest';
 import sharp from 'sharp';
 
 import record from '../src/data/l4yaml-record.json';
+import resolveRecord from '../src/data/resolve-record.json';
+import resolveScenarios from '../src/data/resolve-scenarios.json';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
@@ -43,6 +45,113 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<nav aria-label="Primary">');
     expect(html).toContain('<main id="main-content"');
     expect(html).toContain('Evidence you can inspect. Results you can reuse.');
+  });
+
+  test('builds Resolve as a complete public surface with the qualified historical default', async () => {
+    const html = await page('resolve');
+    const text = visibleText(html);
+
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toContain('<main id="main-content"');
+    expect(text).toContain('Evidence can change without truth becoming false.');
+    expect(text).toContain('Support is reclosed locally.');
+    expect(text).toContain('Independent support remains.');
+    expect(text).toContain('Cycles cannot create evidence.');
+    expect(html).toContain('data-static-qualified-default');
+    expect(html).toContain('data-default-scenario="published-after"');
+    expect(text).toContain('Published after publisher withdrawal');
+  });
+
+  test('renders all seven historic outcomes at both permanent Resolve record routes', async () => {
+    const current = await page(`records/${resolveRecord.id}`);
+    const versioned = await page(`records/${resolveRecord.id}/v1`);
+
+    for (const html of [current, versioned]) {
+      const text = visibleText(html);
+      for (const claimId of Object.keys(resolveRecord.resolutions)) expect(text).toContain(claimId);
+      expect((html.match(/data-historical-result-row/g) ?? [])).toHaveLength(7);
+      expect(text).toMatch(/openai\.original_support\.1.*SOURCE_DOCUMENTED.*STALE/i);
+      expect(text).toMatch(/openai\.theorem\.1.*UNKNOWN.*UNKNOWN/i);
+      expect(text).toMatch(/jpl\.l4yaml\.finite_parser_acceptance.*WARRANTED_BOUNDED.*WARRANTED_BOUNDED/i);
+      expect(text).toContain('Publication history is a source notice, not a formal theorem verifier.');
+      expect(text).toMatch(/modeled as active.*does not prove their correctness/i);
+      expect(text).toMatch(/same-owner independent implementation/i);
+      expect(text).toMatch(/did not rerun the original JPL Lean proof/i);
+      expect(text).not.toMatch(/withdrawn propositions? (?:are|were) (?:false|refuted)/i);
+    }
+  });
+
+  test('keeps Resolve epistemic, lifecycle, maturity, applicability, freshness, and action axes distinct', async () => {
+    const html = await page(`records/${resolveRecord.id}/v1`);
+    const text = visibleText(html);
+
+    expect(text).toMatch(/Historical epistemic result.*SCOPED_MIXED/i);
+    expect(text).toMatch(/Catalogue lifecycle.*CURRENT/i);
+    expect(text).toMatch(/Research maturity.*BOUNDED_QUALIFIED/i);
+    expect(text).toMatch(/Current applicability.*UNKNOWN/i);
+    expect(text).toMatch(/Freshness.*NOT_CHECKED/i);
+    expect(text).toMatch(/Action policy.*READ_ONLY_NO_AUTOMATIC_AUTHORIZATION/i);
+    expect(html).toContain('data-status-family="epistemic"');
+    expect(html).toContain('data-status-family="lifecycle"');
+    expect(html).toContain('data-status-family="maturity"');
+    expect(html).toContain('data-status-family="applicability"');
+    expect(html).toContain('data-status-family="freshness"');
+    expect(html).toContain('data-status-family="action"');
+    expect(text).not.toMatch(/universally verified/i);
+  });
+
+  test('separates published history from synthetic conformance scenarios', async () => {
+    const html = await page('resolve');
+    const text = visibleText(html);
+
+    expect(text).toContain('Published record');
+    expect(text).toContain('Synthetic conformance simulations');
+    expect(text).toContain('Synthetic kernel tests, not historical facts about OpenAI or JPL.');
+    expect(text).toMatch(/simulation.*never mutates.*historic snapshot/i);
+    expect(text).toContain('Before and after support resolution for the selected precomputed scenario');
+    expect(text).toContain('Selected scenario state');
+    expect(text).toContain('Historic graph boundary — unchanged by simulations.');
+    for (const scenario of resolveScenarios.SYNTHETIC_CONFORMANCE.scenarios) {
+      expect(html).toContain(`value="${scenario.id}"`);
+      expect(text).toContain(scenario.label);
+    }
+  });
+
+  test('shows declared graph topology and literal scenario fields without derived authority labels', async () => {
+    const html = await page('resolve');
+    const text = visibleText(html);
+    const detailText = visibleText(await page(`records/${resolveRecord.id}/v1`));
+
+    expect(text).toContain('Declared evidence receipts');
+    expect(text).toContain('Exact withdrawn_evidence field');
+    expect(text).toContain('Listed in withdrawn_evidence');
+    expect(text).toContain('Declared graph routes');
+    expect(text).toContain('Exact active_routes field');
+    expect(text).toContain('Listed in active_routes');
+    expect(text).not.toContain('AVAILABLE');
+    expect(text).not.toContain('WITHDRAWN / STALE');
+    expect(text).not.toContain('ACTIVE IN THIS VIEW');
+    expect(text).not.toContain('INACTIVE IN THIS VIEW');
+    expect(text).not.toContain('INACTIVE AFTER WITHDRAWAL');
+    expect(detailText).toContain('Exact record withdrawn_evidence field');
+    for (const misleadingLabel of ['AVAILABLE', 'WITHDRAWN / STALE', 'ACTIVE IN THIS VIEW', 'INACTIVE IN THIS VIEW', 'INACTIVE AFTER WITHDRAWAL']) {
+      expect(detailText).not.toContain(misleadingLabel);
+    }
+  });
+
+  test('provides keyboard-native controls and a fail-closed static fallback', async () => {
+    const html = await page('resolve');
+
+    expect(html).toMatch(/<fieldset[^>]*data-scenario-group="PUBLISHED_RECORD"/);
+    expect(html).toMatch(/<fieldset[^>]*data-scenario-group="SYNTHETIC_CONFORMANCE"/);
+    expect(html).toMatch(/<input[^>]+type="radio"[^>]+value="published-after"[^>]+checked[^>]+disabled/);
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toMatch(/role="alert"[^>]+data-resolve-error[^>]+hidden/);
+    expect(html).toContain('<noscript>');
+    expect(html).toMatch(/qualified static default remains shown/i);
+    expect(html).toContain('data-static-qualified-default');
+    expect(html).toMatch(/interaction failure.*restored.*server-rendered.*default/i);
   });
 
   test('uses the transparent black MathGraph mark while preserving the browser icons', async () => {
@@ -151,6 +260,68 @@ describe('primary public evidence experience', () => {
     expect(html).not.toContain('vercel.app');
   });
 
+  test('separates exact source matching from bounded offline Resolve replay for agents', async () => {
+    const html = await page('agents');
+    const text = visibleText(html);
+
+    expect(text).toMatch(/record 001.*exact source-scope match/i);
+    expect(text).toMatch(/record 002.*offline dependency replay/i);
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/consumer.py`);
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/bundle.json`);
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/trust-policy.json`);
+    expect(text).toMatch(/same-origin digests?.*trusted pin.*not authenticity/i);
+    expect(text).toMatch(/Current applicability.*UNKNOWN/i);
+    expect(text).toMatch(/Freshness.*NOT_CHECKED/i);
+    expect(text).toMatch(/does not rerun the original JPL Lean proof/i);
+    expect(text).toMatch(/same-owner.*not.*outside-organization adoption/i);
+  });
+
+  test('documents only runnable static consumers and keeps hosted interfaces undeployed', async () => {
+    const html = await page('developers');
+    const text = visibleText(html);
+
+    expect(text).toContain('python -I -S consumer.py');
+    expect(text).toContain('python -I -S -c');
+    expect(text).toContain('--bundle bundle.json');
+    expect(text).toContain('--policy trust-policy.json');
+    expect(text).toContain('--policy-sha256 09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a');
+    expect(text).toContain('27a9be606040cc94a47c9b903dfc1cb24a86cbbc4e05ce71040c6c3d6e8d527b');
+    expect(text).toContain('node resolve-consumer-v1.ts https://mathgraph.org');
+    expect(text).toContain('e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e');
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/consumer.py`);
+    expect(html).toContain('/examples/resolve-consumer-v1.ts');
+    expect(text).toMatch(/TypeScript.*HTTP client.*not.*offline/i);
+    expect(text).toMatch(/verify.*independently obtained.*consumer.*policy pins.*before execution/i);
+    expect(text).toMatch(/public resolver.*NOT_DEPLOYED/i);
+    expect(text).toMatch(/MCP.*PROPOSED/i);
+    expect(text).not.toMatch(/assert sha256/i);
+    expect(text).not.toMatch(/(?:implemented|deployed) hosted (?:resolver|API)/i);
+    expect(text).not.toMatch(/hosted (?:resolver|API) (?:is|are) (?:implemented|deployed)/i);
+  });
+
+  test('defines the minimum independently implementable P0 protocol without application dependencies', async () => {
+    const html = await page('protocol');
+    const text = visibleText(html);
+
+    expect(text).toMatch(/Applications may depend on the protocol.*protocol does not depend on MathGraph\.org/i);
+    for (const objectName of ['Typed claim', 'Evidence receipt', 'Dependency route', 'Resolution', 'Trust policy', 'Immutable snapshot']) {
+      expect(text).toContain(objectName);
+    }
+    expect(text).toMatch(/route is conjunctive/i);
+    expect(text).toMatch(/separate routes.*alternatives/i);
+    expect(text).toMatch(/least fixed point.*qualified root/i);
+    expect(text).toMatch(/cycles.*cannot.*self-justification/i);
+    expect(text).toMatch(/unsupported.*transport.*UNKNOWN|unsupported.*transport.*error/i);
+    expect(text).toMatch(/historical qualification.*current applicability/i);
+    expect(text).toMatch(/Check.*Implemented at the qualified record-001 boundary/i);
+    expect(text).toMatch(/Resolve.*Bounded-qualified offline/i);
+    expect(text).toMatch(/Discover.*Experimental.*no public protocol interface/i);
+    expect(text).toMatch(/Develop.*Experimental.*no public protocol interface/i);
+    expect(text).toMatch(/Capabilities.*Proposed.*no entries/i);
+    expect(text).toMatch(/in-toto.*Sigstore.*SCITT.*RATS.*under evaluation/i);
+    expect(text).toMatch(/None is an implemented MathGraph authority.*or endorsement/i);
+  });
+
   test('publishes the Lean evidence profile as an unstable proposal', async () => {
     const html = await page('protocol/profiles/lean');
     const text = visibleText(html);
@@ -179,6 +350,22 @@ describe('primary public evidence experience', () => {
   test('links Agents from primary navigation', async () => {
     const html = await page('');
     expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
+  });
+
+  test('adds Resolve to navigation and introduces the four-part cycle without advertising future routes', async () => {
+    const html = await page('');
+    const text = visibleText(html);
+
+    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/resolve\/"[\s\S]*>Resolve</);
+    expect(text).toContain('Discover what matters. Check what holds. Resolve what remains justified. Develop what becomes possible.');
+    expect(text).toContain('Inspect real evidence');
+    expect(text).toMatch(/Discover.*Advisory/i);
+    expect(text).toMatch(/Check.*Implemented/i);
+    expect(text).toMatch(/Resolve.*Bounded-qualified/i);
+    expect(text).toMatch(/Develop.*Experimental/i);
+    expect(html).not.toContain('href="/discover/"');
+    expect(html).not.toContain('href="/develop/"');
+    expect(html).not.toContain('href="/capabilities/"');
   });
 
   test('makes evidence boundaries and canned scope matches inspectable without arbitrary input', async () => {
@@ -294,7 +481,7 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/check/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
+    for (const route of ['/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
   });

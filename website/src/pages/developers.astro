@@ -2,9 +2,16 @@
 import SourceLink from '../components/SourceLink.astro';
 import StatusTag from '../components/StatusTag.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { loadQualifiedRecord } from '../lib/evidence';
+import { getLatestPublishedRecord } from '../lib/catalog';
 
-const record = loadQualifiedRecord();
+const sourcePublished = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
+const resolvePublished = await getLatestPublishedRecord('mg-living-warrant-openai-jpl-20261010');
+const { record } = sourcePublished;
+const { entry: resolveEntry } = resolvePublished;
+const resolveOfflineRoot = `https://mathgraph.org/evidence/${resolveEntry.id}/offline`;
+const resolveConsumerSha256 = '27a9be606040cc94a47c9b903dfc1cb24a86cbbc4e05ce71040c6c3d6e8d527b';
+const resolvePolicySha256 = '09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a';
+const typescriptConsumerSha256 = 'e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e';
 const request = {
   record_id: record.id,
   source_commit: record.source.commit,
@@ -32,8 +39,8 @@ const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="M
   <header class="section section--compact">
     <div class="shell">
       <div class="eyebrow">Developers</div>
-      <h1>Consume the record. Keep its boundary.</h1>
-      <p class="lede">The current public interface is an immutable JSON record. A qualified read-only resolver is reproducible locally from the release branch, but is not yet publicly deployed as an HTTPS service.</p>
+      <h1>Consume the records. Keep their boundaries.</h1>
+      <p class="lede">MathGraph publishes immutable static evidence and independently runnable consumers. Record 001 supports exact source-scope matching; record 002 supports bounded offline dependency replay. The qualified local resolver is not publicly deployed.</p>
     </div>
   </header>
 
@@ -42,6 +49,8 @@ const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="M
       <aside class="toc" aria-label="On this page">
         <strong>On this page</strong>
         <a href="#quickstart">Quickstart</a>
+        <a href="#offline-replay">Offline replay</a>
+        <a href="#typescript-consumer">TypeScript consumer</a>
         <a href="#discovery">Discovery</a>
         <a href="#embed">Scoped badge</a>
         <a href="#format">Record format</a>
@@ -52,7 +61,7 @@ const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="M
       <div class="prose">
         <section id="quickstart">
           <div class="eyebrow">Quickstart</div>
-          <h2>Fetch an exact immutable record</h2>
+          <h2>Fetch the exact source-check record</h2>
           <div class="code-block"><div class="code-label">Shell</div><pre><code>curl --fail --silent \
   https://mathgraph.org/evidence/{record.id}/record.json \
   -o record.json
@@ -60,6 +69,46 @@ const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="M
 sha256sum record.json</code></pre></div>
           <p>The transport-file hash is distinct from the record’s canonical content digest. Consumers should validate the schema, exact record ID, <code>content_sha256</code>, source commits, and requested scope before using the result.</p>
           <SourceLink href={`/evidence/${record.id}/record.json`} label="Open record JSON" meta={`${record.id} · immutable snapshot`} />
+        </section>
+
+        <section id="offline-replay">
+          <div class="eyebrow">Resolve · Python</div>
+          <h2>Replay record 002 without MathGraph.org</h2>
+          <p>Acquire these three static inputs first. The replay itself imports only the Python standard library and needs no MathGraph package, service, LLM, or network connection. The trust-policy digest must come from a channel you trust separately from the downloaded policy.</p>
+          <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre><code>mkdir mathgraph-resolve-v1
+cd mathgraph-resolve-v1
+curl --fail --remote-name {resolveOfflineRoot}/consumer.py
+curl --fail --remote-name {resolveOfflineRoot}/bundle.json
+curl --fail --remote-name {resolveOfflineRoot}/trust-policy.json
+
+python -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{resolveConsumerSha256}"; actual=sha256(Path("consumer.py").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "consumer.py SHA-256 mismatch: "+actual)'
+python -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{resolvePolicySha256}"; actual=sha256(Path("trust-policy.json").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "trust-policy.json SHA-256 mismatch: "+actual)'
+
+python -I -S consumer.py \
+  --bundle bundle.json \
+  --policy trust-policy.json \
+  --policy-sha256 {resolvePolicySha256}</code></pre></div>
+          <p><strong>Trust the executable first.</strong> Verify the independently obtained consumer and policy pins before execution. Hashes copied only from the same origin as the files provide integrity comparison, not publisher authenticity.</p>
+          <p>The deterministic report recomputes the seven historical results. It does not accept the snapshot’s reported statuses as resolution authority, rerun the original JPL Lean proof, establish current applicability, or authorize an action.</p>
+          <div class="source-stack">
+            <SourceLink href={`${resolveOfflineRoot}/consumer.py`} label="Download consumer.py" meta="Exact qualified standard-library consumer" />
+            <SourceLink href={`${resolveOfflineRoot}/bundle.json`} label="Download bundle.json" meta="Immutable source-pinned bundle" />
+            <SourceLink href={`${resolveOfflineRoot}/trust-policy.json`} label="Download trust-policy.json" meta={`Expected SHA-256 ${resolvePolicySha256}`} />
+          </div>
+        </section>
+
+        <section id="typescript-consumer">
+          <div class="eyebrow">Resolve · TypeScript</div>
+          <h2>Check the published static interface over HTTP</h2>
+          <div class="code-block"><div class="code-label">Shell · Node 24</div><pre><code>curl --fail \
+  https://mathgraph.org/examples/resolve-consumer-v1.ts \
+  -o resolve-consumer-v1.ts
+
+python -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{typescriptConsumerSha256}"; actual=sha256(Path("resolve-consumer-v1.ts").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "resolve-consumer-v1.ts SHA-256 mismatch: "+actual)'
+
+node resolve-consumer-v1.ts https://mathgraph.org</code></pre></div>
+          <p>The TypeScript reference is an HTTP client, not an offline replay. It accepts one origin, fetches only fixed documented paths, validates independently compiled-in authority pins, and recomputes the bounded historical closure. It does not provide a public execution endpoint.</p>
+          <SourceLink href="/examples/resolve-consumer-v1.ts" label="Open TypeScript reference consumer" meta="Local client · Node 24" />
         </section>
 
         <section id="format">
@@ -76,7 +125,7 @@ sha256sum record.json</code></pre></div>
 
         <section id="discovery">
           <h2>Machine discovery and permanent versions</h2>
-          <p>Agents begin with <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>, then fetch the short-lived <a href="/records/index.json">record index</a>. Record a local <code>fetched_at</code> time and re-fetch before <code>max_age_seconds</code> elapse; <code>generated_at</code> is the publication time, not a live response timestamp.</p>
+          <p>Agents begin with <a href="/llms.txt"><code>/llms.txt</code></a> or the versioned <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a> discovery manifest, then fetch the short-lived <a href="/records/index.json">record index</a>. Record a local <code>fetched_at</code> time and re-fetch before <code>max_age_seconds</code> elapse; <code>generated_at</code> is the publication time, not a live response timestamp.</p>
           <p>The stable human route for this snapshot is <a href={`/records/${record.id}/v1/`}><code>/records/{record.id}/v1/</code></a>. Its qualified evidence JSON stays immutable. Citation, lifecycle presentation, and discovery metadata live in a separately versioned <a href={`/records/${record.id}/v1/metadata.json`}>presentation sidecar</a> with visible history; changing that sidecar does not requalify the evidence.</p>
           <p>The <a href="/protocol/profiles/lean/">Lean evidence profile</a> is a proposed draft, not a currently implemented record type.</p>
         </section>
@@ -96,6 +145,7 @@ sha256sum record.json</code></pre></div>
           <div class="code-block"><div class="code-label">Qualified response</div><pre><code>{JSON.stringify(response, null, 2)}</code></pre></div>
           <p><StatusTag label="WARRANTED_BOUNDED" tone="bounded" /> is returned only for the exact record, both exact source pins, and the supported finite agreement goal. An incorrect pin, unsupported goal, or unknown version returns <StatusTag label="UNKNOWN" tone="unknown" /> or an explicit request error; it never inherits a warrant.</p>
           <SourceLink href={`/evidence/${record.id}/openapi.preview.json`} label="OpenAPI preview contract" meta="Qualified local resolver · no public endpoint" />
+          <div class="callout callout--unknown"><StatusTag label="Deployment boundary" tone="unknown" /><p>Public resolver: <code>NOT_DEPLOYED</code>. MCP: <code>PROPOSED</code>. These static consumers do not expose a service, accept arbitrary proof code, or fetch visitor-supplied URLs.</p></div>
         </section>
 
         <section id="reproduce">

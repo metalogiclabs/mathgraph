@@ -18,7 +18,7 @@ const { entry, record } = published;
       <h1>Evidence you can inspect. Results you can reuse.</h1>
       <p class="lede">MathGraph turns machine-generated and software claims into source-pinned evidence records, preserving exactly what was checked, what remains unknown, and what can be independently reused.</p>
       <div class="actions">
-        <a class="button" href="/records/">Explore evidence</a>
+        <a class="button" href="/records/">Inspect real evidence</a>
         <a class="button button--secondary" href="/protocol/">Read the protocol</a>
       </div>
     </div>
@@ -30,6 +30,27 @@ const { entry, record } = published;
   </section>
 
   <EvidenceBoundary record={record} entry={entry} />
+
+  <section class="section section--compact" aria-labelledby="development-cycle-title">
+    <div class="shell">
+      <div class="grid">
+        <div class="span-5">
+          <div class="eyebrow">A modular development cycle</div>
+          <h2 id="development-cycle-title">Knowledge develops by preserving its boundaries.</h2>
+        </div>
+        <div class="span-7">
+          <p class="lede">Discover what matters. Check what holds. Resolve what remains justified. Develop what becomes possible.</p>
+          <p>These functions exchange portable evidence; they are not a compulsory runtime pipeline, and their maturity differs today.</p>
+        </div>
+      </div>
+      <ol class="cycle-grid" aria-label="MathGraph conceptual development cycle">
+        <li><div><span>01</span><h3>Discover</h3></div><StatusTag label="Advisory" tone="proposed" /><p>Source-grounded research machinery proposes consequential distinctions. A public product surface remains future work.</p></li>
+        <li><div><span>02</span><h3><a href="/check/">Check</a></h3></div><StatusTag label="Implemented" tone="implemented" /><p>Publish exact verifier receipts, source pins, assumptions, outcomes, and visible unknowns.</p></li>
+        <li><div><span>03</span><h3><a href="/resolve/">Resolve</a></h3></div><StatusTag label="Bounded-qualified" tone="experimental" /><p>Replay one independently consumable historical dependency graph and localize what changes.</p></li>
+        <li><div><span>04</span><h3>Develop</h3></div><StatusTag label="Experimental" tone="experimental" /><p>Capability-constructor research is not yet a public certified capabilities service.</p></li>
+      </ol>
+    </div>
+  </section>
 
   <section class="section">
     <div class="shell">
@@ -68,7 +89,7 @@ const { entry, record } = published;
         <h2>Verification should outlive the interface that produced it.</h2>
       </div>
       <div class="span-7">
-        <p class="lede">The long-term direction is portable evidence across proof systems, scientific workflows, software verification, and machine-generated claims. V1 begins with something smaller and concrete: one qualified, content-addressed record that a human or agent can inspect without trusting a broad status badge.</p>
+        <p class="lede">The long-term direction is portable evidence across proof systems, scientific workflows, software verification, and machine-generated claims. The public foundation is smaller and concrete: qualified, content-addressed records that a human or agent can inspect without trusting a broad status badge.</p>
         <div class="callout">
           <StatusTag label="Current capability" tone="implemented" />
           <p><strong>Immutable source-bound publication.</strong> Reuse the exact record today. Broader semantic objects, requalification, revocation, and cryptographic warrant formats remain separately labeled research or proposed architecture.</p>
