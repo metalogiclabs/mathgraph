@@ -97,7 +97,7 @@ jobs:
           test -s public/mathgraph-check/living.html
           cmp evidence/living_warrant_openai_jpl_20261010.json public/mathgraph-check/living.json
           echo "0a850b112cce200f2fa97f0d861db712f3752712a6326e62f4c0d56996a95d87  public/mathgraph-check/living.json" | sha256sum -c -
-          echo "MATHGRAPH_OUT_OF_BAND_PUBLISHED_SNAPSHOT_PIN_GREEN
+          echo "MATHGRAPH_OUT_OF_BAND_PUBLISHED_SNAPSHOT_PIN_GREEN"
           {
             echo "HEAD=$(git rev-parse HEAD)"
             echo "MODE=FROZEN_PUBLICATION_CHANGE_DEMONSTRATION"
