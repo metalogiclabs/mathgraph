@@ -101,6 +101,7 @@ describe('agent discovery contracts', () => {
     const sitemap = await text('sitemap.xml');
     for (const route of [
       '/agents/',
+      '/resolve/',
       '/protocol/profiles/lean/',
       `/records/${recordId}/`,
       `/records/${recordId}/v1/`,

@@ -96,13 +96,19 @@ const humanize = (value: string) => value.replaceAll('_', ' ').toLowerCase();
     <div class="shell table-wrap resolve-receipt-table">
       <table>
         <caption>Declared receipts in the immutable historical graph</caption>
-        <thead><tr><th scope="col">Receipt</th><th scope="col">Kind</th><th scope="col">Exact scope</th><th scope="col">Published-after treatment</th></tr></thead>
+        <thead><tr><th scope="col">Receipt</th><th scope="col">Kind</th><th scope="col">Exact scope</th></tr></thead>
         <tbody>
           {record.derivation.receipts.map((receipt) => (
-            <tr><th scope="row"><code>{receipt.id}</code></th><td>{receipt.kind}</td><td><code>{receipt.scope}</code></td><td>{record.derivation.withdrawn_evidence.includes(receipt.id) ? 'WITHDRAWN / support becomes STALE' : 'Retained at its original bounded scope'}</td></tr>
+            <tr><th scope="row"><code>{receipt.id}</code></th><td>{receipt.kind}</td><td><code>{receipt.scope}</code></td></tr>
           ))}
         </tbody>
       </table>
+      <div class="resolve-receipt-table__field">
+        <h3>Exact record <code>withdrawn_evidence</code> field</h3>
+        <ul>
+          {record.derivation.withdrawn_evidence.map((receiptId) => <li><code>{receiptId}</code> — listed in <code>withdrawn_evidence</code></li>)}
+        </ul>
+      </div>
     </div>
   </section>
 

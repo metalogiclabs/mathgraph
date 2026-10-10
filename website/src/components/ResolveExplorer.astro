@@ -5,21 +5,12 @@ interface Props {
   published: ResolutionSnapshotPackage;
 }
 
-interface RouteView {
-  conclusion: string;
-  premises: string[];
-  evidence: string[];
-}
-
 const { published } = Astro.props;
 const { entry, record, scenarios } = published;
 const publishedAfter = scenarios.PUBLISHED_RECORD.scenarios.find((scenario) => scenario.id === scenarios.PUBLISHED_RECORD.default_scenario);
 if (!publishedAfter) throw new Error('RESOLVE_DEFAULT_SCENARIO_MISSING');
 
 const modeledViews = scenarios.PUBLISHED_RECORD.scenarios.filter((scenario) => scenario.id !== publishedAfter.id);
-const routeKey = (route: RouteView) => JSON.stringify([route.conclusion, route.premises, route.evidence]);
-const activeRoutes = new Set(publishedAfter.active_routes.map((route) => routeKey(route)));
-const withdrawnEvidence = new Set(publishedAfter.withdrawn_evidence);
 const claimById = new Map(record.derivation.claims.map((claim) => [claim.id, claim]));
 const routeConclusions = new Set(scenarios.PUBLISHED_RECORD.graph.routes.map((route) => route.conclusion));
 const resultEntries = Object.entries(publishedAfter.resolutions);
@@ -90,6 +81,7 @@ const documentName = (claimId: string) => {
 
   <p class="resolve-live fineprint" data-resolve-live aria-live="polite">Static qualified default: {publishedAfter.label}.</p>
   <p class="resolve-error callout callout--unknown" role="alert" data-resolve-error hidden>Interactive scenarios are unavailable. The qualified static default remains shown.</p>
+  <p class="fineprint">If an interaction failure occurs after activation, the qualified default is restored directly from its trusted server-rendered clone; the browser renderer is not used as a fallback.</p>
   <noscript><p class="callout callout--unknown">JavaScript is off. The qualified static default remains shown; scenario controls stay disabled.</p></noscript>
 
   <section id="resolve-scenario-result" class="resolve-view" data-static-qualified-default data-resolve-view aria-labelledby="resolve-scenario-heading">
@@ -106,7 +98,7 @@ const documentName = (claimId: string) => {
       <table>
         <caption>Before and after support resolution for the selected precomputed scenario</caption>
         <thead>
-          <tr><th scope="col">Claim at exact scope</th><th scope="col">Before support</th><th scope="col">After support</th><th scope="col">Current epistemic state</th></tr>
+          <tr><th scope="col">Claim at exact scope</th><th scope="col">Before support</th><th scope="col">After support</th><th scope="col">Selected scenario state</th></tr>
         </thead>
         <tbody data-resolve-results>
           {resultEntries.map(([claimId, resolution]) => (
@@ -120,24 +112,40 @@ const documentName = (claimId: string) => {
         </tbody>
       </table>
     </div>
-    <p class="fineprint">Support transitions come from <code>resolutions</code>. Raw current claim states come from <code>states</code>. <code>STALE</code> means support was withdrawn; it is not a refutation.</p>
+    <p class="fineprint">Support transitions come from <code>resolutions</code>. Raw selected-scenario claim states come from <code>states</code>. <code>STALE</code> means support was withdrawn; it is not a refutation.</p>
 
     <div class="resolve-graph" role="group" aria-label="Typed dependency view">
       <section>
-        <h4>Evidence receipts</h4>
+        <h4>Declared evidence receipts</h4>
         <ul data-resolve-receipts>
           {scenarios.PUBLISHED_RECORD.graph.receipts.map((receipt) => (
-            <li><code>{receipt.id}</code><span class="resolve-status" data-status={withdrawnEvidence.has(receipt.id) ? 'stale' : 'available'}>{withdrawnEvidence.has(receipt.id) ? 'WITHDRAWN / STALE' : 'AVAILABLE'}</span><small>{receipt.kind} · {receipt.scope}</small></li>
+            <li><code>{receipt.id}</code><small>{receipt.kind} · {receipt.scope}</small></li>
           ))}
         </ul>
+        <div class="resolve-exact-field">
+          <h5>Exact <code>withdrawn_evidence</code> field</h5>
+          <ul data-resolve-withdrawn>
+            {publishedAfter.withdrawn_evidence.map((receiptId) => (
+              <li><code>{receiptId}</code><small>Listed in <code>withdrawn_evidence</code></small></li>
+            ))}
+          </ul>
+        </div>
       </section>
       <section>
-        <h4>Qualified routes</h4>
+        <h4>Declared graph routes</h4>
         <ul data-resolve-routes>
           {scenarios.PUBLISHED_RECORD.graph.routes.map((route) => (
-            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>{activeRoutes.has(routeKey(route)) ? 'ACTIVE IN THIS VIEW' : 'INACTIVE AFTER WITHDRAWAL'}</small></li>
+            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>Declared in the selected scenario graph</small></li>
           ))}
         </ul>
+        <div class="resolve-exact-field">
+          <h5>Exact <code>active_routes</code> field</h5>
+          <ul data-resolve-active-routes>
+            {publishedAfter.active_routes.map((route) => (
+              <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>Listed in <code>active_routes</code></small></li>
+            ))}
+          </ul>
+        </div>
       </section>
       <section>
         <h4>Claim states</h4>

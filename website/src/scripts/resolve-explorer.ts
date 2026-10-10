@@ -76,10 +76,6 @@ function hexadecimal(bytes: ArrayBuffer): string {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function routeKey(value: Route): string {
-  return JSON.stringify([value.conclusion, value.premises, value.evidence]);
-}
-
 function element<K extends keyof HTMLElementTagNameMap>(name: K, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(name);
   if (text !== undefined) node.textContent = text;
@@ -99,6 +95,16 @@ function clear(node: Element): void {
 
 function appendCode(parent: Element, value: string): void {
   parent.append(element('code', value));
+}
+
+function appendRoute(parent: Element, value: Route): void {
+  value.evidence.forEach((id) => appendCode(parent, id));
+  if (value.premises.length > 0) {
+    parent.append(document.createTextNode(' + '));
+    value.premises.forEach((id) => appendCode(parent, id));
+  }
+  parent.append(document.createTextNode(' → '));
+  appendCode(parent, value.conclusion);
 }
 
 function renderTable(root: HTMLElement, selected: Scenario): void {
@@ -122,37 +128,51 @@ function renderTable(root: HTMLElement, selected: Scenario): void {
 
 function renderGraph(root: HTMLElement, selected: Scenario, selectedGraph: Graph): void {
   const receipts = root.querySelector('[data-resolve-receipts]');
+  const withdrawnEvidence = root.querySelector('[data-resolve-withdrawn]');
   const routes = root.querySelector('[data-resolve-routes]');
+  const activeRoutes = root.querySelector('[data-resolve-active-routes]');
   const claims = root.querySelector('[data-resolve-claims]');
-  if (!receipts || !routes || !claims) throw new Error('RESOLVE_GRAPH_TARGET_MISSING');
+  if (!receipts || !withdrawnEvidence || !routes || !activeRoutes || !claims) throw new Error('RESOLVE_GRAPH_TARGET_MISSING');
   clear(receipts);
+  clear(withdrawnEvidence);
   clear(routes);
+  clear(activeRoutes);
   clear(claims);
-  const withdrawn = new Set(selected.withdrawn_evidence);
-  const active = new Set(selected.active_routes.map(routeKey));
   const routeConclusions = new Set(selectedGraph.routes.map((item) => item.conclusion));
   const claimKinds = new Map(selectedGraph.claims.map((item) => [item.id, item.kind]));
 
   for (const receipt of selectedGraph.receipts) {
     const item = element('li');
     appendCode(item, receipt.id);
-    item.append(statusNode(withdrawn.has(receipt.id) ? 'WITHDRAWN / STALE' : 'AVAILABLE'));
     item.append(element('small', `${receipt.kind} · ${receipt.scope}`));
     receipts.append(item);
   }
+  for (const receiptId of selected.withdrawn_evidence) {
+    const item = element('li');
+    appendCode(item, receiptId);
+    const label = element('small');
+    label.append('Listed in ', element('code', 'withdrawn_evidence'));
+    item.append(label);
+    withdrawnEvidence.append(item);
+  }
+  if (selected.withdrawn_evidence.length === 0) withdrawnEvidence.append(element('li', 'No IDs listed in withdrawn_evidence.'));
   for (const qualifiedRoute of selectedGraph.routes) {
     const item = element('li');
     const relationship = element('span');
-    qualifiedRoute.evidence.forEach((id) => appendCode(relationship, id));
-    if (qualifiedRoute.premises.length > 0) {
-      relationship.append(document.createTextNode(' + '));
-      qualifiedRoute.premises.forEach((id) => appendCode(relationship, id));
-    }
-    relationship.append(document.createTextNode(' → '));
-    appendCode(relationship, qualifiedRoute.conclusion);
-    item.append(relationship, element('small', active.has(routeKey(qualifiedRoute)) ? 'ACTIVE IN THIS VIEW' : 'INACTIVE IN THIS VIEW'));
+    appendRoute(relationship, qualifiedRoute);
+    item.append(relationship, element('small', 'Declared in the selected scenario graph'));
     routes.append(item);
   }
+  for (const activeRoute of selected.active_routes) {
+    const item = element('li');
+    const relationship = element('span');
+    appendRoute(relationship, activeRoute);
+    const label = element('small');
+    label.append('Listed in ', element('code', 'active_routes'));
+    item.append(relationship, label);
+    activeRoutes.append(item);
+  }
+  if (selected.active_routes.length === 0) activeRoutes.append(element('li', 'No routes listed in active_routes.'));
   for (const [claimId, state] of Object.entries(selected.states)) {
     const item = element('li');
     appendCode(item, claimId);
@@ -188,20 +208,32 @@ function findScenario(data: Artifact, classification: string, id: string): { sel
   return selected && selectedGraph ? { selected, selectedGraph } : undefined;
 }
 
-function failClosed(root: HTMLElement, controls: HTMLInputElement[], data?: Artifact): void {
+function failClosed(root: HTMLElement, controls: HTMLInputElement[], trustedDefault?: HTMLElement): void {
   for (const control of controls) control.disabled = true;
   const defaultControl = controls.find((control) => control.dataset.scenarioClassification === root.dataset.defaultClassification && control.value === root.dataset.defaultScenario);
   if (defaultControl) defaultControl.checked = true;
-  if (data && root.dataset.defaultClassification && root.dataset.defaultScenario) {
-    const fallback = findScenario(data, root.dataset.defaultClassification, root.dataset.defaultScenario);
-    if (fallback) render(root, root.dataset.defaultClassification, fallback.selected, fallback.selectedGraph);
-  }
   const error = root.querySelector<HTMLElement>('[data-resolve-error]');
   if (error) error.hidden = false;
+  const live = root.querySelector<HTMLElement>('[data-resolve-live]');
+  if (live) live.textContent = trustedDefault
+    ? 'Interaction failure. Restored the trusted server-rendered qualified default.'
+    : 'Interactive scenarios unavailable. The qualified static default remains shown.';
+  if (trustedDefault) {
+    try {
+      const currentView = root.querySelector<HTMLElement>('[data-resolve-view]');
+      const replacement = trustedDefault.cloneNode(true);
+      if (currentView) currentView.replaceWith(replacement);
+      else root.append(replacement);
+    } catch {
+      // The alert and live notice are already exposed; never retry the renderer here.
+    }
+  }
 }
 
 async function initialise(root: HTMLElement): Promise<void> {
   const controls = [...root.querySelectorAll<HTMLInputElement>('input[type="radio"][data-scenario-classification]')];
+  const serverDefault = root.querySelector<HTMLElement>('[data-resolve-view]');
+  const trustedDefault = serverDefault?.cloneNode(true) as HTMLElement | undefined;
   try {
     const url = root.dataset.scenariosUrl;
     const expectedDigest = root.dataset.scenariosSha256;
@@ -214,7 +246,7 @@ async function initialise(root: HTMLElement): Promise<void> {
     const parsed: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
     if (!artifact(parsed, root)) throw new Error('RESOLVE_SCENARIO_IDENTITY_INVALID');
 
-    if (controls.length === 0) throw new Error('RESOLVE_SCENARIO_CONTROLS_MISSING');
+    if (controls.length === 0 || !trustedDefault) throw new Error('RESOLVE_SCENARIO_CONTROLS_MISSING');
     for (const control of controls) {
       const classification = control.dataset.scenarioClassification;
       if (!classification || !findScenario(parsed, classification, control.value)) throw new Error('RESOLVE_SCENARIO_CONTROL_UNKNOWN');
@@ -229,7 +261,7 @@ async function initialise(root: HTMLElement): Promise<void> {
           if (!classification || !found) throw new Error('RESOLVE_SCENARIO_SELECTION_UNKNOWN');
           render(root, classification, found.selected, found.selectedGraph);
         } catch {
-          failClosed(root, controls, parsed);
+          failClosed(root, controls, trustedDefault);
         }
       });
     }

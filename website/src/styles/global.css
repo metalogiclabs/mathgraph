@@ -1281,15 +1281,13 @@ summary {
   border-color: #9fc7b6;
 }
 
-.resolve-status[data-status="source-documented"],
-.resolve-status[data-status="available"] {
+.resolve-status[data-status="source-documented"] {
   color: var(--blue-700);
   background: var(--blue-100);
   border-color: #aab8ef;
 }
 
-.resolve-status[data-status="stale"],
-.resolve-status[data-status="withdrawn-\/-stale"] {
+.resolve-status[data-status="stale"] {
   color: var(--ink-650);
   background: #eceeea;
   border-color: var(--line-strong);
@@ -1312,6 +1310,17 @@ summary {
 
 .resolve-graph h4 {
   margin: 0 0 var(--space-3);
+}
+
+.resolve-exact-field {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-strong);
+}
+
+.resolve-exact-field h5 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--step--1);
 }
 
 .resolve-graph ul {
@@ -1340,6 +1349,19 @@ summary {
 
 .resolve-receipt-table {
   margin-top: var(--space-5);
+}
+
+.resolve-receipt-table__field {
+  padding-block: var(--space-4) var(--space-1);
+}
+
+.resolve-receipt-table__field h3 {
+  font-size: var(--step-0);
+}
+
+.resolve-receipt-table__field li {
+  margin-block: var(--space-2);
+  overflow-wrap: anywhere;
 }
 
 .section--ink .resolve-receipt-table th,

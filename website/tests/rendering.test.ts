@@ -110,10 +110,33 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('Synthetic kernel tests, not historical facts about OpenAI or JPL.');
     expect(text).toMatch(/simulation.*never mutates.*historic snapshot/i);
     expect(text).toContain('Before and after support resolution for the selected precomputed scenario');
+    expect(text).toContain('Selected scenario state');
     expect(text).toContain('Historic graph boundary — unchanged by simulations.');
     for (const scenario of resolveScenarios.SYNTHETIC_CONFORMANCE.scenarios) {
       expect(html).toContain(`value="${scenario.id}"`);
       expect(text).toContain(scenario.label);
+    }
+  });
+
+  test('shows declared graph topology and literal scenario fields without derived authority labels', async () => {
+    const html = await page('resolve');
+    const text = visibleText(html);
+    const detailText = visibleText(await page(`records/${resolveRecord.id}/v1`));
+
+    expect(text).toContain('Declared evidence receipts');
+    expect(text).toContain('Exact withdrawn_evidence field');
+    expect(text).toContain('Listed in withdrawn_evidence');
+    expect(text).toContain('Declared graph routes');
+    expect(text).toContain('Exact active_routes field');
+    expect(text).toContain('Listed in active_routes');
+    expect(text).not.toContain('AVAILABLE');
+    expect(text).not.toContain('WITHDRAWN / STALE');
+    expect(text).not.toContain('ACTIVE IN THIS VIEW');
+    expect(text).not.toContain('INACTIVE IN THIS VIEW');
+    expect(text).not.toContain('INACTIVE AFTER WITHDRAWAL');
+    expect(detailText).toContain('Exact record withdrawn_evidence field');
+    for (const misleadingLabel of ['AVAILABLE', 'WITHDRAWN / STALE', 'ACTIVE IN THIS VIEW', 'INACTIVE IN THIS VIEW', 'INACTIVE AFTER WITHDRAWAL']) {
+      expect(detailText).not.toContain(misleadingLabel);
     }
   });
 
@@ -127,6 +150,8 @@ describe('primary public evidence experience', () => {
     expect(html).toMatch(/role="alert"[^>]+data-resolve-error[^>]+hidden/);
     expect(html).toContain('<noscript>');
     expect(html).toMatch(/qualified static default remains shown/i);
+    expect(html).toContain('data-static-qualified-default');
+    expect(html).toMatch(/interaction failure.*restored.*server-rendered.*default/i);
   });
 
   test('uses the transparent black MathGraph mark while preserving the browser icons', async () => {
@@ -394,7 +419,7 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/check/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
+    for (const route of ['/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
   });
