@@ -1,0 +1,98 @@
+name: VDN V25 minimal relational representation generator
+on:
+  push:
+    branches: [vdn-verified-generator-feedback-v1]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_relational_representation.py'
+      - '.github/workflows/vdn-v25-relational-representation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  relational-separator-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check minimal feature refinement and negative control
+        run: |
+          set -euo pipefail
+          python -m py_compile verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_relational_representation.py
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,"verified-developmental-navigation/case_studies/arc_agi2_live")
+          import run_v25_relational_representation as v
+          g=[[0,0,0,0,0],[0,1,1,1,0],[0,1,0,1,0],[0,1,1,1,0],[0,0,0,0,0]]
+          y=[list(r) for r in g];y[2][2]=2
+          d=v.samples([{"input":g,"output":y}])
+          assert v.fit(d,("color",)) is None,"old colour state must be insufficient"
+          m=v.fit(d,("color","component_enclosed"))
+          assert m is not None,"new typed relation must refine old quotient"
+          assert v.apply(g,("color","component_enclosed"),m)==v.norm_grid(y)
+          assert v.fit(d,("color","component_enclosed")) == m
+          print("VDN_TYPED_RELATIONAL_SEPARATOR_SELFTEST_OK")
+          PY
+      - name: Sparse checkout of ConceptARC SOURCE corpus ONLY
+        run: |
+          set -euo pipefail
+          git clone --quiet --sparse --filter=blob:none https://github.com/victorvikram/ConceptARC.git /tmp/ConceptARC
+          cd /tmp/ConceptARC
+          git sparse-checkout set corpus
+          git checkout --quiet 0e67da6af879e4bad3d7cd3c196e8d551b445725
+          test "$(git rev-parse HEAD)" = '0e67da6af879e4bad3d7cd3c196e8d551b445725'
+          test "$(find corpus -name '*.json' | wc -l)" -eq 160
+          test ! -d MinimalTasks
+      - name: Source-qualify minimal distinguishing relational features
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/vdn-v25-relational
+          python verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_relational_representation.py \
+            --mode source \
+            --corpus /tmp/ConceptARC/corpus \
+            --policy evidence/vdn-v25-relational/qualified_policy_frozen.json
+          sha256sum evidence/vdn-v25-relational/qualified_policy_frozen.json > evidence/vdn-v25-relational/policy.sha256
+          sha256sum verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_relational_representation.py > evidence/vdn-v25-relational/script.sha256
+      - name: Only AFTER freeze expose 16 protected MinimalTasks
+        run: |
+          set -euo pipefail
+          test -s evidence/vdn-v25-relational/qualified_policy_frozen.json
+          cd /tmp/ConceptARC
+          test ! -d MinimalTasks
+          git sparse-checkout add MinimalTasks
+          test "$(find MinimalTasks -name '*Minimal.json' | wc -l)" -eq 16
+      - name: Select typed representations under identical 48-verification budgets
+        run: |
+          set -euo pipefail
+          python verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_relational_representation.py \
+            --mode protected \
+            --policy evidence/vdn-v25-relational/qualified_policy_frozen.json \
+            --minimal /tmp/ConceptARC/MinimalTasks \
+            --out evidence/vdn-v25-relational \
+            --budget 48
+      - name: Audit independent evidence and prevent universal truth promotion
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          r=pathlib.Path('evidence/vdn-v25-relational')
+          a=json.loads((r/'result.json').read_text())
+          p=json.loads((r/'qualified_policy_frozen.json').read_text())
+          f=json.loads((r/'target_choices_frozen.json').read_text())
+          assert p['source_count']==160 and not p['target_loaded_before_freeze']
+          assert a['target_tasks']==16
+          assert set(f)=={'color_only','no_meta','permuted_meta','learned_relation'}
+          assert all(z['candidate_checks']<=16*48 for z in a['arms'].values())
+          assert a['claims']['fully_autonomous_representation_invention']=='UNKNOWN'
+          assert a['claims']['multi_generation_recursive_compounding']=='UNKNOWN'
+          assert a['claims']['total_amortized_economic_gain']=='UNKNOWN'
+          print(json.dumps({'source_feature_witnesses':len(p['source_witnesses']),
+                            'claims':a['claims'],'arms':a['arms']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-v25-relational-source-protected
+          path: evidence/vdn-v25-relational/
+          if-no-files-found: warn
