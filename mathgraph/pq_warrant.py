@@ -94,11 +94,15 @@ def signed_message(statement: dict) -> bytes:
 
 def sign_mldsa65(statement: dict, private_key: object) -> dict:
     """Sign using standard ML-DSA-65, never a custom crypto implementation."""
-    from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA65PrivateKey
-    if not isinstance(private_key, MLDSA65PrivateKey):
-        raise TypeError("requires a real ML-DSA-65 private key")
-    public = private_key.public_key().public_bytes_raw()
-    signature = private_key.sign(signed_message(statement), SIGNATURE_CONTEXT)
+    from pqcrypto.sign import ml_dsa_65
+    if not isinstance(private_key, tuple) or len(private_key) != 2:
+        raise TypeError("requires (public_key, secret_key) from ML-DSA-65 keygen")
+    public, secret = private_key
+    if (not isinstance(public, bytes) or not isinstance(secret, bytes) or
+        len(public) != ml_dsa_65.PUBLIC_KEY_SIZE or
+        len(secret) != ml_dsa_65.SECRET_KEY_SIZE):
+        raise TypeError("requires valid-length ML-DSA-65 key material")
+    signature = ml_dsa_65.sign(secret, signed_message(statement), SIGNATURE_CONTEXT)
     return {"algorithm": "ML-DSA-65", "key_id": key_id("ML-DSA-65", public),
             "signature_b64": _b64(signature)}
 
@@ -219,13 +223,11 @@ def resolve(wire: bytes, bundle: bytes, *, trusted_keys: Mapping[str, tuple[str,
                 continue
             signature = _unb64(sig["signature_b64"])
             if algorithm == "ML-DSA-65":
-                from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA65PublicKey
-                from cryptography.exceptions import InvalidSignature
+                from pqcrypto.sign import ml_dsa_65
                 try:
-                    MLDSA65PublicKey.from_public_bytes(pub).verify(
-                        signature, msg, SIGNATURE_CONTEXT)
+                    ml_dsa_65.verify(pub, msg, signature, SIGNATURE_CONTEXT)
                     pq_valid = True
-                except (InvalidSignature, ValueError):
+                except ValueError:
                     pass
             # No classical-only fallback. Unknown future algorithm remains unsupported.
         if not pq_valid:
