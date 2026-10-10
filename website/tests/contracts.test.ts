@@ -20,9 +20,10 @@ async function json(path: string): Promise<Record<string, any>> {
 describe('agent discovery contracts', () => {
   test('publishes schema-valid discovery and record index documents', async () => {
     const ajv = new Ajv({ allErrors: true, strict: true });
-    const [discovery, index, discoverySchema, indexSchema] = await Promise.all([
+    const [discovery, index, record, discoverySchema, indexSchema] = await Promise.all([
       json('.well-known/mathgraph.json'),
       json('records/index.json'),
+      json(`evidence/${recordId}/record.json`),
       json('schemas/discovery-v1.schema.json'),
       json('schemas/record-index-v1.schema.json'),
     ]);
@@ -49,6 +50,13 @@ describe('agent discovery contracts', () => {
     });
     expect(index.records).toHaveLength(1);
     expect(index.records[0].id).toBe(recordId);
+    expect(index.records[0].record_page_url).toBe(`https://mathgraph.org/records/${recordId}/v1/`);
+    expect(index.records[0].record_json_url).toBe(`https://mathgraph.org/evidence/${recordId}/record.json`);
+    expect(index.records[0].record_content_sha256).toBe(record.content_sha256);
+    expect(index.records[0].scope.source_commit).toBe(record.source.commit);
+    expect(index.records[0].scope.external_suite_commit).toBe(record.source.external_suite_commit);
+    expect(index.records[0].historic_status).toBe('WARRANTED_BOUNDED');
+    expect(index.records[0].lifecycle).toBe('CURRENT');
     expect(index.records[0].scope).toEqual({
       match: 'EXACT',
       source_commit: '62bf7077910e888a0bc8adfc8e08a5f500ff3ca3',
