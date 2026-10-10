@@ -18,6 +18,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            mathgraph_check/
+            tests/test_mathgraph_public_evidence_v1.py
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
