@@ -54,7 +54,8 @@ jobs:
     timeout-minutes: 720
     env:
       HF_HOME: /root/hf-cache
-      V145_GPU_MEMORY: "0.90"\n      PIP_NO_CACHE_DIR: "1"
+      V145_GPU_MEMORY: "0.90"
+      PIP_NO_CACHE_DIR: "1"
       V145_MAX_MODEL_LEN: "4096"
     steps:
       - uses: actions/checkout@v4

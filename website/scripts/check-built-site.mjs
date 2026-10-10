@@ -95,6 +95,23 @@ assert.equal(resolveEntry?.record_kind, 'RESOLUTION_SNAPSHOT');
 assert.equal(resolveEntry.historical_epistemic_result, 'SCOPED_MIXED');
 assert.equal(resolveEntry.current_applicability, 'UNKNOWN');
 assert.equal(resolveEntry.freshness, 'NOT_CHECKED');
+for (const [name, source, expected] of [
+  ['consumer.py', 'conformance/resolve_v1/consumer.py', '27a9be606040cc94a47c9b903dfc1cb24a86cbbc4e05ce71040c6c3d6e8d527b'],
+  ['bundle.json', 'conformance/resolve_v1/fixtures/bundle.json', '957080db79555f982fd3a314c263cf5177ef506969229e856897f0b19ccc1d62'],
+  ['trust-policy.json', 'conformance/resolve_v1/trust-policy.json', '09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a'],
+]) {
+  const sourceBytes = await readFile(join(repositoryRoot, source));
+  const publicBytes = await readFile(join(root, `public/evidence/${resolveId}/offline/${name}`));
+  const builtBytes = await readFile(join(dist, `evidence/${resolveId}/offline/${name}`));
+  assert.equal(sha256(sourceBytes), expected);
+  assert.deepEqual(publicBytes, sourceBytes);
+  assert.deepEqual(builtBytes, sourceBytes);
+  const html = await readFile(join(dist, `records/${resolveId}/v1/index.html`), 'utf8');
+  assert(html.includes(`/evidence/${resolveId}/offline/${name}`));
+}
+const referenceClient = await readFile(join(root, 'public/examples/resolve-consumer-v1.ts'));
+assert.equal(sha256(referenceClient), 'e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e');
+assert.deepEqual(await readFile(join(dist, 'examples/resolve-consumer-v1.ts')), referenceClient, 'reference client changed in build');
 for (const [filename, expected] of [
   ['record.json', '0a850b112cce200f2fa97f0d861db712f3752712a6326e62f4c0d56996a95d87'],
   ['scenarios.json', 'ed458ccbee85e3aa3f49d9d38e7ad5380515d00d707bac09c584cc4955b88181'],

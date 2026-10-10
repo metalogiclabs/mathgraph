@@ -14,8 +14,9 @@ const recordPath = new URL(entry.record_json_url).pathname;
 const scenariosPath = new URL(entry.scenarios_json_url).pathname;
 const metadataPath = new URL(entry.presentation_json_url).pathname;
 const sourceBundleCommit = 'a82d472139d970f17f88385e2cb95f20c08e0d12';
-const bundleUrl = `https://github.com/metalogiclabs/mathgraph/blob/${sourceBundleCommit}/conformance/resolve_v1/fixtures/bundle.json`;
-const trustPolicyUrl = `https://github.com/metalogiclabs/mathgraph/blob/${sourceBundleCommit}/conformance/resolve_v1/trust-policy.json`;
+const offlinePath = `/evidence/${entry.id}/offline`;
+const bundleUrl = `${offlinePath}/bundle.json`;
+const trustPolicyUrl = `${offlinePath}/trust-policy.json`;
 const humanize = (value: string) => value.replaceAll('_', ' ').toLowerCase();
 ---
 
@@ -145,10 +146,16 @@ const humanize = (value: string) => value.replaceAll('_', ' ').toLowerCase();
         <p>The RealityGraph consumer is a <strong>same-owner independent implementation</strong>. It <strong>does not rerun the original JPL Lean proof</strong>; this published replay <strong>did not rerun the original JPL Lean proof</strong> and is not outside-organization adoption.</p>
         <p>The later P0 replay runs from three isolated inputs without MathGraph.org, producer imports, hosted services, an LLM, or network access. Its trust-policy digest is supplied separately from the bundle.</p>
         <ul>
-          <li><a href={bundleUrl}>Pinned offline evidence bundle ↗</a></li>
-          <li><a href={trustPolicyUrl}>Separately pinned trust policy ↗</a></li>
+          <li><a href={`${offlinePath}/consumer.py`}>Standalone Python consumer</a></li>
+          <li><a href={bundleUrl}>Pinned offline evidence bundle</a></li>
+          <li><a href={trustPolicyUrl}>Separately pinned trust policy</a></li>
+          <li><a href="/examples/resolve-consumer-v1.ts">Independent Node 24 HTTP reference client</a></li>
+          <li><a href={`https://github.com/metalogiclabs/mathgraph/tree/${sourceBundleCommit}/conformance/resolve_v1`}>Pinned implementation source and reproduction instructions ↗</a></li>
           <li><a href={`https://github.com/metalogiclabs/mathgraph/actions/runs/${entry.independent_replay_ci_run}`}>Isolation qualification run {entry.independent_replay_ci_run} ↗</a></li>
         </ul>
+
+        <p>A policy downloaded from this host does not authenticate itself. Obtain its expected SHA-256 through a separately trusted channel: <code>09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a</code>. Hashes supplied by the same compromised host cannot establish publisher authority.</p>
+        <p>The Node example is a local HTTP client, not an offline isolation proof. Neither client checks current revocation or supersession; that axis remains <code>NOT_CHECKED</code>.</p>
 
         <h3 id="resolve-resources">Durable machine-readable resources</h3>
         <dl class="definition-list resolve-resource-list">
