@@ -1,0 +1,54 @@
+name: MathGraph Post-Quantum Warrant V1
+
+on:
+  push:
+    branches:
+      - mathgraph-pq-warrant-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-locked-pq-warrant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned ML-DSA implementation and tests
+        run: |
+          python -m pip install -e ".[dev]" "cryptography==47.0.0"
+          python -m pip check
+      - name: Run real ML-DSA-65 and independent semantic replay tests
+        run: |
+          mkdir -p evidence-out/pq-warrant-v1
+          python -m pytest -v \
+            tests/test_crystal_extension.py \
+            tests/test_crystal_adapter_contract.py \
+            tests/test_pq_warrant.py \
+            --junitxml=evidence-out/pq-warrant-v1/junit.xml \
+            2>&1 | tee evidence-out/pq-warrant-v1/pytest.log
+      - name: Pin the audited exact-source files and explicit boundary
+        if: always()
+        run: |
+          {
+            echo "HEAD=$(git rev-parse HEAD)"
+            echo "Branch=mathgraph-pq-warrant-v1"
+            echo "Profile=ML-DSA-65, SHA3-512, canonical MGSO v1"
+            echo "Boundary=finite Boolean 3-variable claim logic, Python reference semantics"
+            echo "Independent replay=distinct parser/logic, same cryptography backend"
+            echo "NO_CLAIM=general proof soundness, secure deployment, independent crypto verification"
+            sha256sum mathgraph/crystal.py \
+              mathgraph/pq_warrant.py \
+              scripts/pq_warrant_independent_replay.py \
+              tests/test_pq_warrant.py \
+              docs/pq_warrant_v1.md
+          } > evidence-out/pq-warrant-v1/source-receipt.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-pq-warrant-v1-evidence
+          path: evidence-out/pq-warrant-v1
