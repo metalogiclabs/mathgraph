@@ -2,7 +2,7 @@
 
 ## Intent
 
-P0 extends the currently deployed MathGraph.org product with one independently replayed Resolve record. It demonstrates how a typed evidence withdrawal changes only dependent support while mathematical truth remains `UNKNOWN` and unrelated qualified evidence remains warranted at its original scope.
+P0 first proves that Resolve is independently consumable without MathGraph.org or any MathGraph application, then extends the currently deployed product with that independently replayed record. It demonstrates how a typed evidence withdrawal changes only dependent support while mathematical truth remains `UNKNOWN` and unrelated qualified evidence remains warranted at its original scope.
 
 The release does not claim live monitoring, theorem refutation, general semantic transport, autonomous development, or an open-ended trust service. Discover, Develop, Capabilities, hosted resolution, SDKs, and MCP remain later stages unless a concrete P0 dependency requires a small interface placeholder.
 
@@ -21,9 +21,17 @@ The Resolve source authority is producer commit `040456fc8862c79c8b384ce63846628
 
 The public record must preserve those snapshot bytes exactly. Presentation metadata, registry lifecycle, page copy, and visual state live outside the snapshot and cannot change its resolution result.
 
+## Governing dependency rule
+
+MathGraph applications may depend on the open protocol. The protocol must not depend on MathGraph applications. The website is one static publisher and consumer; it is not a trust root and is not required to replay a historical record.
+
+Discover, Check, Resolve, and Develop therefore remain separately usable interfaces. They may exchange portable, versioned evidence or capability contracts, but none is a compulsory runtime dependency of another. P0 implements only the minimum shared semantics exercised by the qualified Resolve record. It does not create four services or a centralized orchestration layer.
+
+The decisive release gate is an offline independent Resolve replay. The replay receives an immutable bundle and a separately supplied trust policy, imports no producer or website implementation, makes no network call, runs no LLM or MathGraph service, and independently derives the seven historical claim states from typed claims, admitted receipts, routes, and withdrawals. Website catalogue and UI integration may proceed only after that gate passes.
+
 ## Selected architecture
 
-### 1. One authoritative resolution kernel
+### 1. One producer-side resolution kernel
 
 The qualified Python reclosure logic becomes a small module with typed objects for claims, evidence receipts, assumptions, native verifiers, qualified relations, dependency routes, obstructions, resolutions, historical snapshots, and lifecycle events.
 
@@ -38,7 +46,17 @@ The kernel remains fail-closed:
 
 `mathgraph_check.living_warrants` will consume this kernel. Its generated historical snapshot must remain byte-identical to the qualified publication.
 
-### 2. Precomputed public scenarios
+### 2. One independently implemented offline consumer
+
+A separate standard-library consumer implements the declared Resolve v1 contract without importing `mathgraph_check`, the publisher, Astro, or any hosted client. It strictly parses a canonical evidence bundle, verifies every member against a separately pinned trust policy, validates types and source/receipt identities, and recomputes the least-supported dependency closure rather than accepting producer-reported statuses.
+
+The consumer is executed from an isolated directory with only its source, bundle, and trust policy available. Replay runs under an operating-system or container network denial and must fail qualification if isolation cannot be enforced. External source acquisition occurs before isolation. The policy hash is supplied out of band; neither a record self-hash nor a bundle-provided digest authenticates its own authority.
+
+The deterministic replay report keeps historical qualification, historical support resolution, current applicability, freshness, lifecycle, and action authorization distinct. A pinned offline snapshot can establish its historical meaning, but without current authenticated lifecycle evidence its current applicability remains `UNKNOWN` or `NOT_CHECKED`.
+
+Historical and synthetic data remain separate. Synthetic conformance fixtures cover alternative routes, localized invalidation, cycles, missing premises, scope changes, and a genuine bounded finite-countermodel refutation. No synthetic route becomes a historical OpenAI or JPL claim.
+
+### 3. Precomputed public scenarios
 
 A deterministic publisher invokes the Python kernel and emits canonical JSON scenarios. The committed artifact is regenerated and byte-compared in CI.
 
@@ -49,7 +67,7 @@ It contains two visibly separated classes:
 
 Astro renders a complete static default state from this artifact. Minimal same-origin JavaScript only selects an already-published scenario and updates the display; it does not perform reclosure or manufacture status fields.
 
-### 3. Versioned heterogeneous record catalogue
+### 4. Versioned heterogeneous record catalogue
 
 `/records/index.json` advances to `mathgraph.record-index.v2`, while the existing v1 schema remains permanently available. V2 adds an explicit `record_kind` and schema-specific adapter metadata rather than weakening record 001's hard-coded qualification gate.
 
@@ -69,7 +87,7 @@ Record 002 receives permanent routes:
 
 Its presentation title is **MathGraph Resolve — When Mathematical Evidence Changes**. The catalogue may describe it as the second published record, but the immutable historical ID is never renamed or replaced.
 
-### 4. Public experience
+### 5. Public experience
 
 `/resolve/` explains the product operation and hosts the read-only graph explorer. The permanent record page supplies exact source pins, before/after tables, producer and consumer qualification links, reproduction steps, limitations, and machine-readable resources.
 
@@ -106,6 +124,12 @@ No production deployment, domain, DNS, nameserver, registrar, or mail setting ch
 
 P0 is reviewable only when all of the following pass:
 
+- the standalone consumer imports no MathGraph producer implementation and runs with only its source, bundle, and policy mounted;
+- replay runs with network access denied and fails rather than silently falling back if isolation is unavailable;
+- the consumer independently derives three documentary paths as `STALE`, three propositions as `UNKNOWN`, and the JPL finite observation as `WARRANTED_BOUNDED`;
+- duplicate canonical fields, altered source bytes, wrong pins, rehashed unauthorized records, forged producer statuses, unsupported schemas/types/relations, wrong verifier or assumption contexts, and scope generalization fail closed;
+- synthetic controls prove alternative support, complete support loss, localized descendants, unrelated stability, rootless-cycle `UNKNOWN`, missing-premise `UNKNOWN`, exact scope matching, and `REFUTED` only from a checked finite countermodel;
+- the replay report states that current applicability and freshness were not established offline;
 - the original record 001 assets and digests remain byte-identical;
 - the original record 002 snapshot is exactly 5,290 bytes with the pinned transport and canonical hashes;
 - regenerated record 002 remains byte-identical to the qualified snapshot;

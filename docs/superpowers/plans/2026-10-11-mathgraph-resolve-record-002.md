@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Publish the qualified Living Warrants snapshot as MathGraph Resolve record 002 with one reusable warrant-resolution kernel and a read-only, precomputed graph explorer.
+**Goal:** Prove that the qualified Living Warrants snapshot can be independently replayed offline, then publish it as MathGraph Resolve record 002 with one reusable producer kernel and a read-only, precomputed graph explorer.
 
-**Architecture:** Preserve the qualified snapshot as immutable authority, extract its Python reclosure algorithm into a typed fail-closed kernel, and generate a canonical scenario artifact that Astro renders without duplicating resolution logic in the browser. Extend the website catalogue through a new schema-specific adapter rather than weakening record 001's validator.
+**Architecture:** Preserve the qualified snapshot as immutable authority, extract its Python reclosure algorithm into a typed fail-closed producer kernel, and independently reimplement the declared Resolve v1 semantics in a standard-library consumer that runs with no network and no MathGraph application imports. Only after that replay qualifies, extend the website catalogue through a schema-specific adapter and render canonical precomputed scenarios without duplicating resolution logic in the browser.
 
-**Tech Stack:** Python 3.12, pytest/unittest, Astro 7, TypeScript 6, Vitest, JSON Schema/Ajv, minimal browser JavaScript, Vercel protected preview.
+**Tech Stack:** Python 3.12 standard library plus pytest/unittest, OS/container network isolation, Astro 7, TypeScript 6, Vitest, JSON Schema/Ajv, minimal browser JavaScript, Vercel protected preview.
 
 **Spec:** `docs/superpowers/specs/2026-10-11-mathgraph-resolve-record-002-design.md`
 
@@ -19,6 +19,10 @@
 - Browser code displays precomputed outcomes and must not implement warrant resolution.
 - Historical and synthetic scenario data must be structurally and visibly separate.
 - Unknown schemas, source pins, versions, relations, and object types fail closed.
+- MathGraph applications may depend on the protocol; the protocol and offline replay must not depend on MathGraph applications, hosted services, LLMs, or the website.
+- P0 website catalogue and UI integration is blocked until the standalone consumer derives the qualified outcomes under enforced network isolation.
+- The offline trust-policy digest is supplied separately from the bundle; bundle and record self-hashes are integrity checks, not publisher authentication.
+- Offline replay establishes a pinned historical snapshot only. Current applicability and freshness remain `UNKNOWN` or `NOT_CHECKED` absent authenticated current-state evidence.
 - No production promotion or DNS/mail/registrar change is authorized by this plan.
 
 ## Review Focus
@@ -28,6 +32,8 @@
 - Multiple routes must preserve support until every independent route is unavailable.
 - A cycle with no admitted evidence root must remain `UNKNOWN`.
 - Client selection must never show a state absent from the immutable scenarios artifact.
+- The independent consumer must recompute outcomes from claims, receipts, routes, and withdrawals; producer-reported status tables are assertions to compare, never resolution authority.
+- Synthetic alternative support and refutation fixtures must remain outside the historical record; `REFUTED` requires an actually checked, appropriately scoped refutation witness.
 
 ---
 
@@ -138,7 +144,50 @@ Run the two focused suites and digest checks.
 
 Commit generator, tests, and generated small JSON assets together.
 
-### Task 4: Extend the record catalogue with a fail-closed record 002 adapter
+### Task 4: Qualify standalone offline Resolve replay
+
+**Files:**
+- Create: `conformance/resolve_v1/consumer.py`
+- Create: `conformance/resolve_v1/test_consumer.py`
+- Create: `conformance/resolve_v1/README.md`
+- Create: `conformance/resolve_v1/trust-policy.json`
+- Create: `conformance/resolve_v1/fixtures/bundle.json`
+- Create: `scripts/package_mathgraph_resolve_v1.py`
+- Create: `.github/workflows/mathgraph-resolve-offline-v1.yml`
+
+**Interfaces:**
+- Consumes: an immutable canonical bundle plus a separately hash-pinned trust policy.
+- Produces: a deterministic historical replay report and fail-closed conformance result without importing or calling any MathGraph application.
+
+- [ ] **Step 1: Write failing independent-consumer tests**
+
+Cover strict duplicate-key parsing, exact bundle/member pins, the seven historical outcomes, deterministic output, and a physical-import audit proving the consumer does not load `mathgraph_check`, publisher, website, Check, Discover, or Develop code.
+
+- [ ] **Step 2: Add adversarial and synthetic conformance tests**
+
+Reject mutated bytes, wrong commits/digests/verifiers/assumptions, recomputed self-hashes, replaced policies, forged producer statuses, unsupported schema/type/relation/transport, ambiguous canonical fields, unsupported generalization, and withdrawn evidence replayed as current. Separately test surviving alternative support, total support loss, dependent descendants, unrelated claims, rootless cycles, missing premises, exact scope matching, and a checked finite-countermodel refutation.
+
+- [ ] **Step 3: Implement the deterministic bundle packager**
+
+Package the exact 5,290-byte record, exact OpenAI notice bytes, exact public JPL record bytes, and precise provenance into canonical JSON without adding resolution logic. Pin every member length/hash and keep the policy outside the bundle.
+
+- [ ] **Step 4: Implement the minimal independent consumer**
+
+Use only the Python standard library. Strictly validate fields, source/receipt identities, scopes, references, and unsupported extensions; independently compute the least fixed point and compare it with, but never trust, published status claims.
+
+- [ ] **Step 5: Emit distinct temporal semantics**
+
+Report historical evidence qualification, historical resolution, current applicability, freshness, lifecycle, and action authorization separately. Offline current applicability must remain `UNKNOWN`/`NOT_CHECKED`.
+
+- [ ] **Step 6: Prove isolation locally and in dedicated CI**
+
+Copy only consumer source, bundle, and policy to the isolated replay directory; run `python -I -S`. Deny network with an enforced macOS sandbox locally and a network-disabled Linux container or namespace in CI. Include a negative connectivity probe; missing isolation is a failure, never a skip.
+
+- [ ] **Step 7: Review, commit, push, and require green P0 CI**
+
+Run the standalone suite, focused producer parity suite, digest checks, and `git diff --check`. After task review, push the isolated branch and do not begin catalogue/UI integration until the dedicated workflow is green.
+
+### Task 5: Extend the record catalogue with a fail-closed record 002 adapter
 
 **Files:**
 - Create: `website/public/schemas/record-index-v2.schema.json`
@@ -179,7 +228,7 @@ Run `npm run test:data` and `npm run check`.
 
 Commit the catalogue version and adapter as one reviewable change.
 
-### Task 5: Build the Resolve pages and read-only graph explorer
+### Task 6: Build the Resolve pages and read-only graph explorer
 
 **Files:**
 - Create: `website/src/components/ResolveExplorer.astro`
@@ -227,7 +276,7 @@ Run rendering/contracts, `npm run check`, and `npm run build`.
 
 Commit the public Resolve experience and tests.
 
-### Task 6: Complete protocol, developer, security, CI, and discovery contracts
+### Task 7: Complete protocol, developer, security, CI, and discovery contracts
 
 **Files:**
 - Modify: `website/src/pages/protocol/index.astro`
@@ -274,7 +323,7 @@ Run contracts, build, built-site, and isolated consumer tests.
 
 Commit documentation and qualification integration.
 
-### Task 7: Full qualification, visual review, protected preview, and draft PR
+### Task 8: Full qualification, visual review, protected preview, and draft PR
 
 **Files:**
 - Create: `website/qa/screenshots/resolve-desktop-1440.png`
