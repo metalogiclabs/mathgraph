@@ -1,0 +1,87 @@
+name: VDN V24 independent ConceptARC feedback transfer
+on:
+  push:
+    branches: [vdn-verified-generator-feedback-v1]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v24_cross_corpus_feedback.py'
+      - '.github/workflows/vdn-v24-cross-corpus-feedback.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prospective-cross-corpus-feedback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Syntax and fail-closed source-epoch checks
+        run: |
+          set -euo pipefail
+          python3 -m py_compile verified-developmental-navigation/case_studies/arc_agi2_live/run_v24_cross_corpus_feedback.py
+          python3 -m py_compile verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_generator_feedback.py
+      - name: Fetch fixed historical ARC-AGI-1 learning data
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          (cd /tmp/ARC-AGI-1 && git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34 && test "$(git rev-parse HEAD)" = "399030444e0ab0cc8b4e199870fb20b863846f34")
+          test "$(find /tmp/ARC-AGI-1/data/training -name '*.json' | wc -l)" -eq 400
+      - name: Retrieve and validate historical verified V23 source outcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/vdn-v24-feedback/source
+          gh api /repos/metalogiclabs/mathgraph/actions/artifacts/11664759577/zip > /tmp/vdn-v23-source.zip
+          echo 'b6ea785ccba30c719dde9194652b39b3c87a01a87bf506b0aafdb3fe48102297  /tmp/vdn-v23-source.zip' | sha256sum --check
+          unzip -q /tmp/vdn-v23-source.zip -d evidence/vdn-v24-feedback/source
+          echo 'c104ecc80db26588f55d92a5078a9731b16fe8df37bc5937789895ede7b13495  evidence/vdn-v24-feedback/source/result.json' | sha256sum --check
+      - name: Freeze learned policy BEFORE obtaining protected task corpus
+        run: |
+          set -euo pipefail
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v24_cross_corpus_feedback.py \
+            --mode freeze \
+            --source-v23 evidence/vdn-v24-feedback/source/result.json \
+            --arc1-train /tmp/ARC-AGI-1/data/training \
+            --policy evidence/vdn-v24-feedback/policy_frozen.json
+          sha256sum evidence/vdn-v24-feedback/policy_frozen.json > evidence/vdn-v24-feedback/policy_sha256.txt
+      - name: Now acquire untouched ConceptARC source (after policy freeze)
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/victorvikram/ConceptARC.git /tmp/ConceptARC
+          (cd /tmp/ConceptARC && git checkout --quiet 0e67da6af879e4bad3d7cd3c196e8d551b445725 && test "$(git rev-parse HEAD)" = '0e67da6af879e4bad3d7cd3c196e8d551b445725')
+          test "$(find /tmp/ConceptARC/corpus -name '*.json' | wc -l)" -eq 160
+      - name: Test frozen candidate generator against cold, memory and strong stateless
+        run: |
+          set -euo pipefail
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v24_cross_corpus_feedback.py \
+            --mode score \
+            --policy evidence/vdn-v24-feedback/policy_frozen.json \
+            --concept-corpus /tmp/ConceptARC/corpus \
+            --out evidence/vdn-v24-feedback
+      - name: Exact external authority and conservative claim audit
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          r=pathlib.Path('evidence/vdn-v24-feedback')
+          d=json.loads((r/'result.json').read_text())
+          assert d['task_count']==160
+          assert d['target']=='victorvikram/ConceptARC@0e67da6af879e4bad3d7cd3c196e8d551b445725'
+          assert set(d['arms'])=={'cold','stateless_shape','global_memory','learned_policy','permuted_policy'}
+          assert d['claims']['unbounded_recursive_acceleration']=='UNKNOWN'
+          assert d['claims']['amortized_total_gain']=='UNKNOWN'
+          for key,v in d['arms'].items():
+            assert v['candidate_full_checks']<=160*128, (key,v)
+          print(json.dumps({'claims':d['claims'],'arms':d['arms'],
+                            'new_protected_solve_ids':d['new_protected_solve_ids'],
+                            'causal_ablation_ids':d['causal_ablation_ids']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-v24-conceptarc-frozen-feedback
+          path: evidence/vdn-v24-feedback/
+          if-no-files-found: warn
