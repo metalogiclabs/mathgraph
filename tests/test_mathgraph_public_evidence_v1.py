@@ -47,7 +47,7 @@ class PinnedEvidencePublicReleaseTests(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory()
         cls.root = Path(cls.temp.name)
         cls.record = build_site(cls.v1, cls.v2, cls.root)
-        cls.app = app_for(cls.root)
+        cls.app = staticmethod(app_for(cls.root))
 
     @classmethod
     def tearDownClass(cls):
@@ -81,8 +81,7 @@ class PinnedEvidencePublicReleaseTests(unittest.TestCase):
         self.assertNotEqual(src["raw_sha256"], src["decoded_sha256"])
         self.assertTrue(src["v1_raw_mismatch"])
         self.assertEqual(src["v2_native_decoded_guard"], "PASS")
-        self.assertTrue(self.record["known_separator"]["normative_event_model"]
-                        if False else self.record["known_separator"]["independent_normative_event_model"] == "ACCEPT")
+        self.assertEqual(self.record["known_separator"]["independent_normative_event_model"], "ACCEPT")
         self.assertEqual(self.record["known_separator"]["actual_pinned_jpl_parser"], "REJECT")
         self.assertFalse(self.record["known_separator"]["novel_bug_claim"])
 
