@@ -1,0 +1,74 @@
+---
+import StatusTag from '../components/StatusTag.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="MathGraph Protocol — Portable, inspectable evidence" description="The MathGraph protocol separates identities, evidence receipts, assumptions, unknowns, and lifecycle state without confusing authenticity with truth." currentPath="/protocol/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Protocol</div>
+      <h1>Portable evidence without authority inflation.</h1>
+      <p class="lede">MathGraph’s protocol direction is a small set of stable semantic objects for claims, sources, verification receipts, assumptions, and lifecycle state. V1 publishes one qualified record; broader interoperability remains research.</p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="shell page-grid">
+      <aside class="toc" aria-label="On this page">
+        <strong>On this page</strong>
+        <a href="#objects">Semantic objects</a>
+        <a href="#identity">Identity and provenance</a>
+        <a href="#unknown">Typed unknowns</a>
+        <a href="#lifecycle">Lifecycle</a>
+        <a href="#cryptography">Cryptography</a>
+      </aside>
+      <div class="prose">
+        <section id="objects">
+          <div class="eyebrow">Architecture</div>
+          <h2>Canonical semantic objects</h2>
+          <p>A MathGraph semantic object is intended to carry canonical bytes, a typed payload, source references, and explicitly bounded interpretation. The experimental envelope uses the <code>MGSO</code> magic prefix and a versioned canonical encoding so new object types can be retained without being mistaken for known ones.</p>
+          <div class="maturity">
+            <StatusTag label="Implemented" tone="implemented" />
+            <div><strong>Public consequence record V1</strong><p>An immutable JSON record and faithful human-readable projection exist for the qualified L4YAML snapshot.</p></div>
+          </div>
+          <div class="maturity">
+            <StatusTag label="Experimental" tone="experimental" />
+            <div><strong>MGSO envelope</strong><p>A research candidate defines stable content identities and extension-safe handling. It is not the deployed public record format.</p></div>
+          </div>
+          <div class="maturity">
+            <StatusTag label="Proposed" tone="proposed" />
+            <div><strong>Cross-system evidence graph</strong><p>Future adapters may connect proof assistants, scientific workflows, and software verification without erasing their distinct trusted boundaries.</p></div>
+          </div>
+        </section>
+
+        <section id="identity">
+          <h2>Content identity is not claim truth</h2>
+          <p>Canonical content identities make exact objects addressable. Source pins name the repositories, commits, files, and toolchains used to produce an observation. A content hash proves byte identity; it does not establish that the represented claim is correct.</p>
+          <p>Verification receipts therefore retain the verifying system, executable boundary, source identity, assumptions, and observed result as separate fields. Consumers can reuse the receipt without granting it more authority than the producing boundary earned.</p>
+        </section>
+
+        <section id="unknown">
+          <h2>Typed <code>UNKNOWN</code> is a result</h2>
+          <p>Unsupported versions, unfamiliar semantic object types, changed source pins, and claims outside a receipt’s scope must remain inspectable and resolve to a typed <code>UNKNOWN</code>. Implementations must not coerce unknown types, silently discard their bytes, or borrow a nearby warrant.</p>
+          <div class="callout callout--unknown"><StatusTag label="UNKNOWN" tone="unknown" /><p>Unknown is neither false nor malformed. It says the available evidence cannot warrant the requested interpretation.</p></div>
+        </section>
+
+        <section id="lifecycle">
+          <h2>Historic evidence and current status are different objects</h2>
+          <p>An immutable record says what was observed at its snapshot. Requalification can issue a new receipt against newer sources. Revocation or supersession can change whether a historic result should be relied on now, but must not rewrite the historic bytes or public URL.</p>
+          <p>The intended lifecycle keeps <code>CANDIDATE</code>, <code>WARRANTED</code>, and <code>REUSABLE</code> distinct from <code>UNKNOWN</code>, <code>REJECTED</code>, and <code>SUPERSEDED</code>.</p>
+        </section>
+
+        <section id="cryptography">
+          <h2>Authenticity is not semantic correctness</h2>
+          <p>A signature authenticates a signed statement under a key policy; it does not establish the truth of that statement. In the same way, a cryptographic commitment can bind bytes without proving their mathematical or semantic meaning.</p>
+          <div class="maturity">
+            <StatusTag label="Experimental" tone="experimental" />
+            <div><strong>Bounded ML-DSA-65 warrant experiment</strong><p>A finite Boolean witness protocol passed 23/23 research tests using ML-DSA-65 and SHA3-512 evidence binding. It has no independent security audit, no cryptographic implementation diversity, and no production trust policy.</p></div>
+          </div>
+          <p>The experiment is evidence that a bounded warrant can be signed and replayed—not a claim of general security, universal verification, or semantic truth.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

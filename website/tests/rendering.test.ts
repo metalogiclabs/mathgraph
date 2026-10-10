@@ -54,4 +54,53 @@ describe('primary public evidence experience', () => {
     expect(text).not.toMatch(/universally verified/i);
     expect(text).not.toMatch(/quantum[- ]proof/i);
   });
+
+  test.each(['check', 'protocol', 'developers'])('builds the /%s public surface', async (route) => {
+    const html = await page(route);
+    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toContain('<main id="main-content"');
+  });
+
+  test('explains independent verification axes on Check', async () => {
+    const text = visibleText(await page('check'));
+    expect(text).toContain('Source identity');
+    expect(text).toContain('Formal verification');
+    expect(text).toContain('Finite executable evaluation');
+    expect(text).toContain('Statement fidelity');
+    expect(text).toContain('Generalization');
+    expect(text).toContain('Requalification and revocation');
+    expect(text).toMatch(/Warranted — bounded/i);
+  });
+
+  test('labels protocol maturity and separates authenticity from truth', async () => {
+    const text = visibleText(await page('protocol'));
+    expect(text).toContain('MGSO');
+    expect(text).toContain('Implemented');
+    expect(text).toContain('Experimental');
+    expect(text).toContain('Proposed');
+    expect(text).toContain('ML-DSA-65');
+    expect(text).toMatch(/signature authenticates.*not.*truth/i);
+    expect(text).not.toMatch(/quantum[- ]proof/i);
+  });
+
+  test('documents the exact resolver contract without claiming public deployment', async () => {
+    const text = visibleText(await page('developers'));
+    expect(text).toContain('Quickstart');
+    expect(text).toContain('/v1/resolve');
+    expect(text).toContain(record.id);
+    expect(text).toContain(record.source.commit);
+    expect(text).toContain(record.source.external_suite_commit);
+    expect(text).toContain('WARRANTED_BOUNDED');
+    expect(text).toContain('UNKNOWN');
+    expect(text).toMatch(/not.*publicly deployed/i);
+  });
+
+  test('builds an honest missing state and complete sitemap', async () => {
+    const notFound = await readFile(join(dist, '404.html'), 'utf8');
+    const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
+    expect(visibleText(notFound)).toContain('Evidence not found');
+    for (const route of ['/', '/check/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
+      expect(sitemap).toContain(`https://mathgraph.org${route}`);
+    }
+  });
 });
