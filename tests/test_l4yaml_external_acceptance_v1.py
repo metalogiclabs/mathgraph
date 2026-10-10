@@ -2,7 +2,7 @@
 import unittest
 
 from research.l4yaml_external_acceptance_v1 import (
-    fixtures, independent_event_check, SCHEMA, suite_expected_accept,
+    fixtures, independent_event_check, SCHEMA, suite_expected_accept, decode_yaml_suite_space_only,
 )
 
 
@@ -60,6 +60,14 @@ class L4YAMLExternalModelTests(unittest.TestCase):
             suite_expected_accept({"tags": "error anchor"})
         with self.assertRaises(ValueError):
             suite_expected_accept({"tags": "tag", "fail": "true"})
+
+    def test_visible_space_source_encoding_is_not_literal_unicode(self):
+        self.assertEqual(decode_yaml_suite_space_only("key:␣\\n"), "key: \\n".replace("\\n", "\n"))
+        self.assertEqual(decode_yaml_suite_space_only("plain"), "plain")
+        for symbol in ("↵", "∎", "»", "⇔", "←", "→"):
+            with self.subTest(symbol=symbol):
+                with self.assertRaisesRegex(ValueError, "UNSUPPORTED_YAML_SUITE_ENCODING"):
+                    decode_yaml_suite_space_only(symbol)
 
     def test_full_yaml_language_claim_is_not_encapsulated(self):
         self.assertEqual(SCHEMA, "mathgraph.l4yaml.external-acceptance-audit.v1")

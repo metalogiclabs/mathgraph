@@ -212,6 +212,21 @@ def suite_expected_accept(case: dict[str, Any]) -> bool:
     return not fail
 
 
+def decode_yaml_suite_space_only(source: str) -> str:
+    """Decode U+2423 visible trailing spaces on this frozen benchmark slice.
+
+    yaml-test-suite/src uses visible glyphs for invisible input bytes. The
+    current selected 48 cases only use the U+2423 marker; other markers
+    require a separately checked decoder extension and fail closed here.
+    """
+    if not isinstance(source, str):
+        raise ValueError("yaml test source must be a string")
+    unsupported = tuple(sorted(set(source) & set("—»→←↵∎⇔")))
+    if unsupported:
+        raise ValueError("UNSUPPORTED_YAML_SUITE_ENCODING:" + "".join(unsupported))
+    return source.replace("␣", " ")
+
+
 def load_suite_cases(suite: Path, per_category: int = 12) -> tuple[list[dict[str, Any]], list[str]]:
     """Load independent labels from yaml/yaml-test-suite, not the JPL test fork."""
     import yaml  # Dev-only metadata parser, NOT the truth oracle
@@ -276,6 +291,15 @@ def load_suite_cases(suite: Path, per_category: int = 12) -> tuple[list[dict[str
         raise AssertionError("NO_EXTERNAL_POSITIVE_CASES")
     if len({r["id"] for r in selected}) != len(selected):
         raise AssertionError("DUPLICATE_EXTERNAL_CASE_ID")
+    # Decode *only after* the frozen selection. Unknown marker families must
+    # not silently enter the grammar under a lossy representation change.
+    for row in selected:
+        encoded = row["yaml_source"]
+        decoded = decode_yaml_suite_space_only(encoded)
+        row["encoded_yaml_sha256"] = row["yaml_sha256"]
+        row["yaml_source"] = decoded
+        row["yaml_sha256"] = sha256(decoded.encode("utf-8"))
+        row["source_decoder"] = "yaml-suite-visible-space-only-v1"
     return selected, skipped
 
 
@@ -333,6 +357,8 @@ def run(jpl: Path, suite: Path, out: Path, *, require_replay: bool = True) -> di
             external_rows.append({
                 "id": case["id"], "source_file": case["source_file"],
                 "source_git_blob": case["source_git_blob"],
+                "encoded_yaml_sha256": case.get("encoded_yaml_sha256"),
+                "source_decoder": case.get("source_decoder"),
                 "yaml_sha256": case["yaml_sha256"],
                 "tags": case["tags"], "expected_accept": case["expected_accept"],
                 "parser": observed,

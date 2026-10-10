@@ -1,0 +1,108 @@
+name: MathGraph Check - normalized JPL YAML source 48-case fast replay V2
+on:
+  push:
+    branches: [mathgraph-check-l4yaml-normalized-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-normalization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check bounded visible-space decoder and source scope
+        run: python -m unittest discover -s tests -p test_l4yaml_external_acceptance_v1.py -v
+
+  actual-lean-parser:
+    needs: source-normalization
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test metadata reader
+        run: python -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+      - name: Fetch exact read-only public JPL and independent YAML test-suite commits
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/l4yaml-normalized-v2
+          git init -q "$RUNNER_TEMP/jpl-source"
+          git -C "$RUNNER_TEMP/jpl-source" fetch --no-tags --depth 1 \
+            https://github.com/nasa-jpl/L4YAML.git \
+            62bf7077910e888a0bc8adfc8e08a5f500ff3ca3
+          git -C "$RUNNER_TEMP/jpl-source" checkout -q --detach FETCH_HEAD
+          git init -q "$RUNNER_TEMP/independent-suite"
+          git -C "$RUNNER_TEMP/independent-suite" fetch --no-tags --depth 1 \
+            https://github.com/yaml/yaml-test-suite.git \
+            da267a5c4782e7361e82889e76c0dc7df0e1e870
+          git -C "$RUNNER_TEMP/independent-suite" checkout -q --detach FETCH_HEAD
+      - name: Reconstruct decoded test sources and prove frozen identity boundaries
+        run: |
+          PYTHONPATH=. python research/l4yaml_normalized_suite_guards_v2.py \
+            --jpl "$RUNNER_TEMP/jpl-source" \
+            --suite "$RUNNER_TEMP/independent-suite" \
+            --out evidence/l4yaml-normalized-v2
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/l4yaml-normalized-v2/manifest.json").read_text())
+          assert d["cases"]==48
+          assert d["external_expected"]=={"ACCEPT":31,"REJECT":17}
+          assert d["normalized_fixture_ids"]==["26DV:0"]
+          assert d["generated_lean_guards"]==52
+          assert d["truth_promotion"] is False
+          assert d["verified_badge"]=="NOT_ISSUED"
+          print("MATHGRAPH_L4YAML_NORMALIZATION_SOURCE_PINS_GREEN")
+          PY
+      - name: Install upstream-declared Lean 4.34.0
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.0
+          test "$(cat "$RUNNER_TEMP/jpl-source/lean-toolchain")" = "leanprover/lean4:v4.34.0"
+          "$HOME/.elan/bin/lean" --version \
+            | tee evidence/l4yaml-normalized-v2/toolchain.txt
+      - name: Build only actual parser entrypoint, not 487-job full JPL library
+        run: |
+          set -euo pipefail
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.0
+          cd "$RUNNER_TEMP/jpl-source"
+          "$HOME/.elan/bin/lake" build L4YAML.Parser.Composition
+      - name: Evaluate all 48 decoded cases against actual JPL Lean parser
+        run: |
+          set -euo pipefail
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.0
+          cd "$RUNNER_TEMP/jpl-source"
+          "$HOME/.elan/bin/lake" env lean \
+            "$GITHUB_WORKSPACE/evidence/l4yaml-normalized-v2/NormalizedSuiteV2.lean" \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/l4yaml-normalized-v2/lean-evaluation.log"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          f=Path("evidence/l4yaml-normalized-v2/manifest.json")
+          d=json.loads(f.read_text())
+          assert d["cases"]==48 and d["generated_lean_guards"]==52
+          assert d["normalized_fixture_ids"]==["26DV:0"]
+          assert d["truth_promotion"] is False
+          d["lean_evaluation"]="PASS_ALL_52_GUARDS_EXACT_JPL_SOURCE"
+          f.write_text(json.dumps(d,sort_keys=True,indent=2)+"\n")
+          print("MATHGRAPH_L4YAML_48_DECODED_SOURCE_LEAN_PARSER_CASES_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-l4yaml-normalized-48-v2
+          path: evidence/l4yaml-normalized-v2/
+          if-no-files-found: warn
