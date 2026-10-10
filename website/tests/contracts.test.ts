@@ -8,6 +8,9 @@ import { describe, expect, test } from 'vitest';
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
 const recordId = 'mg-l4yaml-source-check-20261010';
+const resolveRecordId = 'mg-living-warrant-openai-jpl-20261010';
+const resolveSnapshotSha256 = 'b95297a081d513fb0ec145a776cc997eaed18109d6b2af39fa8e61f6d637af41';
+const resolveScenariosSha256 = 'ed458ccbee85e3aa3f49d9d38e7ad5380515d00d707bac09c584cc4955b88181';
 
 async function text(path: string): Promise<string> {
   return readFile(join(dist, path), 'utf8');
@@ -115,5 +118,37 @@ describe('agent discovery contracts', () => {
       expect(html).not.toContain('Warranted — bounded');
       expect(html).toContain('does not rerun the original JPL Lean proof');
     }
+  });
+
+  test('binds the Resolve explorer to the exact immutable scenarios artifact', async () => {
+    for (const route of ['resolve/index.html', `records/${resolveRecordId}/v1/index.html`]) {
+      const html = await text(route);
+      expect(html).toContain(`data-record-id="${resolveRecordId}"`);
+      expect(html).toContain(`data-snapshot-sha256="${resolveSnapshotSha256}"`);
+      expect(html).toContain(`data-scenarios-sha256="${resolveScenariosSha256}"`);
+      expect(html).toContain(`data-scenarios-url="/evidence/${resolveRecordId}/scenarios.json"`);
+      expect(html).toContain('data-default-classification="PUBLISHED_RECORD"');
+      expect(html).toContain('data-default-scenario="published-after"');
+      expect(html).not.toContain('<script type="application/json"');
+      expect(html).not.toContain('&quot;SYNTHETIC_CONFORMANCE&quot;:');
+    }
+  });
+
+  test('publishes the exact Resolve JSON resources and exposes their identities from the detail page', async () => {
+    const [record, scenarios, html] = await Promise.all([
+      json(`evidence/${resolveRecordId}/record.json`),
+      json(`evidence/${resolveRecordId}/scenarios.json`),
+      text(`records/${resolveRecordId}/v1/index.html`),
+    ]);
+
+    expect(record.id).toBe(resolveRecordId);
+    expect(record.snapshot_sha256).toBe(resolveSnapshotSha256);
+    expect(scenarios.record_id).toBe(resolveRecordId);
+    expect(scenarios.snapshot_sha256).toBe(resolveSnapshotSha256);
+    expect(scenarios.PUBLISHED_RECORD.default_scenario).toBe('published-after');
+    expect(html).toContain(`/evidence/${resolveRecordId}/record.json`);
+    expect(html).toContain(`/evidence/${resolveRecordId}/scenarios.json`);
+    expect(html).toContain(resolveSnapshotSha256);
+    expect(html).toContain(resolveScenariosSha256);
   });
 });

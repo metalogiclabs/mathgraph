@@ -6,6 +6,8 @@ import { describe, expect, test } from 'vitest';
 import sharp from 'sharp';
 
 import record from '../src/data/l4yaml-record.json';
+import resolveRecord from '../src/data/resolve-record.json';
+import resolveScenarios from '../src/data/resolve-scenarios.json';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
@@ -43,6 +45,88 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<nav aria-label="Primary">');
     expect(html).toContain('<main id="main-content"');
     expect(html).toContain('Evidence you can inspect. Results you can reuse.');
+  });
+
+  test('builds Resolve as a complete public surface with the qualified historical default', async () => {
+    const html = await page('resolve');
+    const text = visibleText(html);
+
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toContain('<main id="main-content"');
+    expect(text).toContain('Evidence can change without truth becoming false.');
+    expect(text).toContain('Support is reclosed locally.');
+    expect(text).toContain('Independent support remains.');
+    expect(text).toContain('Cycles cannot create evidence.');
+    expect(html).toContain('data-static-qualified-default');
+    expect(html).toContain('data-default-scenario="published-after"');
+    expect(text).toContain('Published after publisher withdrawal');
+  });
+
+  test('renders all seven historic outcomes at both permanent Resolve record routes', async () => {
+    const current = await page(`records/${resolveRecord.id}`);
+    const versioned = await page(`records/${resolveRecord.id}/v1`);
+
+    for (const html of [current, versioned]) {
+      const text = visibleText(html);
+      for (const claimId of Object.keys(resolveRecord.resolutions)) expect(text).toContain(claimId);
+      expect((html.match(/data-historical-result-row/g) ?? [])).toHaveLength(7);
+      expect(text).toMatch(/openai\.original_support\.1.*SOURCE_DOCUMENTED.*STALE/i);
+      expect(text).toMatch(/openai\.theorem\.1.*UNKNOWN.*UNKNOWN/i);
+      expect(text).toMatch(/jpl\.l4yaml\.finite_parser_acceptance.*WARRANTED_BOUNDED.*WARRANTED_BOUNDED/i);
+      expect(text).toContain('Publication history is a source notice, not a formal theorem verifier.');
+      expect(text).toMatch(/modeled as active.*does not prove their correctness/i);
+      expect(text).toMatch(/same-owner independent implementation/i);
+      expect(text).toMatch(/did not rerun the original JPL Lean proof/i);
+      expect(text).not.toMatch(/withdrawn propositions? (?:are|were) (?:false|refuted)/i);
+    }
+  });
+
+  test('keeps Resolve epistemic, lifecycle, maturity, applicability, freshness, and action axes distinct', async () => {
+    const html = await page(`records/${resolveRecord.id}/v1`);
+    const text = visibleText(html);
+
+    expect(text).toMatch(/Historical epistemic result.*SCOPED_MIXED/i);
+    expect(text).toMatch(/Catalogue lifecycle.*CURRENT/i);
+    expect(text).toMatch(/Research maturity.*BOUNDED_QUALIFIED/i);
+    expect(text).toMatch(/Current applicability.*UNKNOWN/i);
+    expect(text).toMatch(/Freshness.*NOT_CHECKED/i);
+    expect(text).toMatch(/Action policy.*READ_ONLY_NO_AUTOMATIC_AUTHORIZATION/i);
+    expect(html).toContain('data-status-family="epistemic"');
+    expect(html).toContain('data-status-family="lifecycle"');
+    expect(html).toContain('data-status-family="maturity"');
+    expect(html).toContain('data-status-family="applicability"');
+    expect(html).toContain('data-status-family="freshness"');
+    expect(html).toContain('data-status-family="action"');
+    expect(text).not.toMatch(/universally verified/i);
+  });
+
+  test('separates published history from synthetic conformance scenarios', async () => {
+    const html = await page('resolve');
+    const text = visibleText(html);
+
+    expect(text).toContain('Published record');
+    expect(text).toContain('Synthetic conformance simulations');
+    expect(text).toContain('Synthetic kernel tests, not historical facts about OpenAI or JPL.');
+    expect(text).toMatch(/simulation.*never mutates.*historic snapshot/i);
+    expect(text).toContain('Before and after support resolution for the selected precomputed scenario');
+    expect(text).toContain('Historic graph boundary — unchanged by simulations.');
+    for (const scenario of resolveScenarios.SYNTHETIC_CONFORMANCE.scenarios) {
+      expect(html).toContain(`value="${scenario.id}"`);
+      expect(text).toContain(scenario.label);
+    }
+  });
+
+  test('provides keyboard-native controls and a fail-closed static fallback', async () => {
+    const html = await page('resolve');
+
+    expect(html).toMatch(/<fieldset[^>]*data-scenario-group="PUBLISHED_RECORD"/);
+    expect(html).toMatch(/<fieldset[^>]*data-scenario-group="SYNTHETIC_CONFORMANCE"/);
+    expect(html).toMatch(/<input[^>]+type="radio"[^>]+value="published-after"[^>]+checked[^>]+disabled/);
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toMatch(/role="alert"[^>]+data-resolve-error[^>]+hidden/);
+    expect(html).toContain('<noscript>');
+    expect(html).toMatch(/qualified static default remains shown/i);
   });
 
   test('uses the transparent black MathGraph mark while preserving the browser icons', async () => {
@@ -179,6 +263,22 @@ describe('primary public evidence experience', () => {
   test('links Agents from primary navigation', async () => {
     const html = await page('');
     expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
+  });
+
+  test('adds Resolve to navigation and introduces the four-part cycle without advertising future routes', async () => {
+    const html = await page('');
+    const text = visibleText(html);
+
+    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/resolve\/"[\s\S]*>Resolve</);
+    expect(text).toContain('Discover what matters. Check what holds. Resolve what remains justified. Develop what becomes possible.');
+    expect(text).toContain('Inspect real evidence');
+    expect(text).toMatch(/Discover.*Advisory/i);
+    expect(text).toMatch(/Check.*Implemented/i);
+    expect(text).toMatch(/Resolve.*Bounded-qualified/i);
+    expect(text).toMatch(/Develop.*Experimental/i);
+    expect(html).not.toContain('href="/discover/"');
+    expect(html).not.toContain('href="/develop/"');
+    expect(html).not.toContain('href="/capabilities/"');
   });
 
   test('makes evidence boundaries and canned scope matches inspectable without arbitrary input', async () => {

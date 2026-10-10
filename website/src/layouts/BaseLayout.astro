@@ -25,6 +25,7 @@ const absoluteSocialImage = socialImage ? new URL(socialImage, Astro.site) : und
 const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'";
 const nav = [
   { href: '/check/', label: 'Check' },
+  { href: '/resolve/', label: 'Resolve' },
   { href: '/records/', label: 'Records' },
   { href: '/protocol/', label: 'Protocol' },
   { href: '/agents/', label: 'Agents' },

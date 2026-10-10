@@ -1,26 +1,21 @@
 ---
 import type { ResolutionSnapshotPackage } from '../lib/catalog';
-interface Props { published: ResolutionSnapshotPackage; summary?: boolean }
-const { published, summary = false } = Astro.props;
-const { entry, record, presentation } = published;
-const Heading = summary ? 'h3' : 'h1';
+interface Props { published: ResolutionSnapshotPackage }
+const { published } = Astro.props;
+const { entry, presentation } = published;
 ---
-<article class={summary ? 'record-card' : 'section shell'}>
-  <Heading><a href={new URL(entry.record_page_url).pathname}>{presentation.title}</a></Heading>
-  <dl class="definition-list">
-    <div><dt>Historical epistemic result</dt><dd>{entry.historical_epistemic_result} — exact per-claim results in the immutable snapshot</dd></div>
-    <div><dt>Catalogue lifecycle</dt><dd>{entry.lifecycle} — catalogue state only</dd></div>
-    <div><dt>Research maturity</dt><dd>{entry.research_maturity}</dd></div>
-    <div><dt>Action policy</dt><dd>{entry.action_policy}</dd></div>
-    <div><dt>Current applicability</dt><dd>{entry.current_applicability}</dd></div>
-    <div><dt>Freshness</dt><dd>{entry.freshness}</dd></div>
-  </dl>
-  <p><a href={new URL(entry.record_json_url).pathname}>Immutable record JSON</a> · <a href={new URL(entry.scenarios_json_url).pathname}>Precomputed scenarios JSON</a></p>
-  {!summary && <>
-    <p><a href={record.sources.openai.url}>Pinned publisher notice</a> · <a href="/records/mg-l4yaml-source-check-20261010/v1/">Pinned JPL observation record</a></p>
-    <p>{published.scenarios.provenance.consumer.boundary}</p>
-    <p>{record.interpretation.source_contract}</p>
-    <p>{presentation.history[0].change}</p>
-    <p><a href={new URL(entry.presentation_json_url).pathname}>Presentation metadata JSON</a></p>
-  </>}
+<article class="record-card record-card--resolve">
+  <div>
+    <div class="eyebrow">Resolution snapshot</div>
+    <h3><a href={new URL(entry.latest_page_url).pathname}>{presentation.title}</a></h3>
+    <p class="muted">Three documentary support paths become stale, three propositions remain unknown, and one unrelated bounded observation keeps its exact warrant.</p>
+    <p><a href={new URL(entry.latest_page_url).pathname}>Inspect what remains justified →</a></p>
+  </div>
+  <div class="record-card__meta">
+    <span class="resolve-status" data-status="scoped-mixed">SCOPED_MIXED</span>
+    <span class="record-id">{entry.id}</span>
+    <span class="fineprint">Version {entry.version} · Catalogue lifecycle {entry.lifecycle.toLowerCase()}</span>
+    <span><strong>3</strong> stale support paths · <strong>3</strong> unknown propositions · <strong>1</strong> bounded observation</span>
+    <span class="fineprint">Snapshot {entry.snapshot_date} · freshness {entry.freshness.toLowerCase()}</span>
+  </div>
 </article>

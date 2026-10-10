@@ -1,0 +1,157 @@
+---
+import type { ResolutionSnapshotPackage } from '../lib/catalog';
+
+interface Props {
+  published: ResolutionSnapshotPackage;
+}
+
+interface RouteView {
+  conclusion: string;
+  premises: string[];
+  evidence: string[];
+}
+
+const { published } = Astro.props;
+const { entry, record, scenarios } = published;
+const publishedAfter = scenarios.PUBLISHED_RECORD.scenarios.find((scenario) => scenario.id === scenarios.PUBLISHED_RECORD.default_scenario);
+if (!publishedAfter) throw new Error('RESOLVE_DEFAULT_SCENARIO_MISSING');
+
+const modeledViews = scenarios.PUBLISHED_RECORD.scenarios.filter((scenario) => scenario.id !== publishedAfter.id);
+const routeKey = (route: RouteView) => JSON.stringify([route.conclusion, route.premises, route.evidence]);
+const activeRoutes = new Set(publishedAfter.active_routes.map((route) => routeKey(route)));
+const withdrawnEvidence = new Set(publishedAfter.withdrawn_evidence);
+const claimById = new Map(record.derivation.claims.map((claim) => [claim.id, claim]));
+const routeConclusions = new Set(scenarios.PUBLISHED_RECORD.graph.routes.map((route) => route.conclusion));
+const resultEntries = Object.entries(publishedAfter.resolutions);
+const scenarioName = `resolve-scenario-${entry.id}`;
+const scenariosPath = new URL(entry.scenarios_json_url).pathname;
+const statusToken = (value: string) => value.toLowerCase().replaceAll('_', '-');
+const documentName = (claimId: string) => {
+  const match = claimId.match(/^openai\.(?:original_support|theorem)\.(\d)$/);
+  return match ? record.publisher_notice.documents[Number(match[1]) - 1]?.name : undefined;
+};
+---
+
+<section
+  class="resolve-explorer"
+  aria-labelledby="resolve-explorer-title"
+  data-resolve-explorer
+  data-record-id={entry.id}
+  data-snapshot-sha256={record.snapshot_sha256}
+  data-record-transport-sha256={entry.record_transport_sha256}
+  data-scenarios-sha256={entry.scenarios_transport_sha256}
+  data-scenarios-url={scenariosPath}
+  data-default-classification="PUBLISHED_RECORD"
+  data-default-scenario={publishedAfter.id}
+>
+  <header class="resolve-explorer__header">
+    <div>
+      <div class="eyebrow">Read-only evidence explorer</div>
+      <h2 id="resolve-explorer-title">Inspect a resolution without rerunning it.</h2>
+    </div>
+    <p class="lede">The historical default below is server-rendered from the qualified snapshot. Optional controls select only precomputed entries from the exact published scenarios artifact; this browser does not resolve claims.</p>
+  </header>
+
+  <div class="resolve-controls" aria-describedby="resolve-controls-boundary">
+    <p id="resolve-controls-boundary" class="fineprint"><strong>Display-only.</strong> Controls unlock only after the same-origin artifact passes its pinned byte digest and identity checks. Every hypothetical view is a simulation and never mutates the immutable historic snapshot.</p>
+    <fieldset class="resolve-controls__group" data-scenario-group="PUBLISHED_RECORD">
+      <legend>Published record views</legend>
+      <div class="resolve-control-section">
+        <p class="resolve-control-section__label">Qualified historic snapshot</p>
+        <label class="resolve-option">
+          <input type="radio" name={scenarioName} value={publishedAfter.id} checked disabled data-scenario-classification="PUBLISHED_RECORD" aria-controls="resolve-scenario-result" />
+          <span><strong>{publishedAfter.label}</strong><small>{publishedAfter.basis} · the no-JavaScript default</small></span>
+        </label>
+      </div>
+      <div class="resolve-control-section resolve-control-section--modeled">
+        <p class="resolve-control-section__label">Modeled and hypothetical views</p>
+        <p class="fineprint">The modeled baseline is not proof of correctness. Withdrawal controls show precomputed consequences over that model, not additional historical events.</p>
+        {modeledViews.map((scenario) => (
+          <label class="resolve-option">
+            <input type="radio" name={scenarioName} value={scenario.id} disabled data-scenario-classification="PUBLISHED_RECORD" aria-controls="resolve-scenario-result" />
+            <span><strong>{scenario.label}</strong><small>{scenario.basis}</small></span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class="resolve-controls__group resolve-controls__group--synthetic" data-scenario-group="SYNTHETIC_CONFORMANCE">
+      <legend>Synthetic conformance simulations</legend>
+      <p>{scenarios.SYNTHETIC_CONFORMANCE.description}</p>
+      <p class="fineprint">These small kernel tests are structurally separate from the OpenAI/JPL historical graph and establish no new fact about it.</p>
+      {scenarios.SYNTHETIC_CONFORMANCE.scenarios.map((scenario) => (
+        <label class="resolve-option">
+          <input type="radio" name={scenarioName} value={scenario.id} disabled data-scenario-classification="SYNTHETIC_CONFORMANCE" aria-controls="resolve-scenario-result" />
+          <span><strong>{scenario.label}</strong><small>{scenario.basis}</small></span>
+        </label>
+      ))}
+    </fieldset>
+  </div>
+
+  <p class="resolve-live fineprint" data-resolve-live aria-live="polite">Static qualified default: {publishedAfter.label}.</p>
+  <p class="resolve-error callout callout--unknown" role="alert" data-resolve-error hidden>Interactive scenarios are unavailable. The qualified static default remains shown.</p>
+  <noscript><p class="callout callout--unknown">JavaScript is off. The qualified static default remains shown; scenario controls stay disabled.</p></noscript>
+
+  <section id="resolve-scenario-result" class="resolve-view" data-static-qualified-default data-resolve-view aria-labelledby="resolve-scenario-heading">
+    <header class="resolve-view__header">
+      <div>
+        <div class="eyebrow" data-resolve-classification>Qualified historic snapshot</div>
+        <h3 id="resolve-scenario-heading" data-resolve-heading>{publishedAfter.label}</h3>
+      </div>
+      <code data-resolve-basis>{publishedAfter.basis}</code>
+    </header>
+    <p class="resolve-view__description" data-resolve-description>{publishedAfter.description}</p>
+
+    <div class="table-wrap resolve-results">
+      <table>
+        <caption>Before and after support resolution for the selected precomputed scenario</caption>
+        <thead>
+          <tr><th scope="col">Claim at exact scope</th><th scope="col">Before support</th><th scope="col">After support</th><th scope="col">Current epistemic state</th></tr>
+        </thead>
+        <tbody data-resolve-results>
+          {resultEntries.map(([claimId, resolution]) => (
+            <tr data-historical-result-row data-claim-id={claimId}>
+              <th scope="row"><code>{claimId}</code>{documentName(claimId) && <small>{documentName(claimId)}</small>}</th>
+              <td><span class="resolve-status" data-status={statusToken(resolution.before)}>{resolution.before}</span></td>
+              <td><span class="resolve-status" data-status={statusToken(resolution.after)}>{resolution.after}</span></td>
+              <td><span class="resolve-status" data-status={statusToken(publishedAfter.states[claimId as keyof typeof publishedAfter.states])}>{publishedAfter.states[claimId as keyof typeof publishedAfter.states]}</span></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="fineprint">Support transitions come from <code>resolutions</code>. Raw current claim states come from <code>states</code>. <code>STALE</code> means support was withdrawn; it is not a refutation.</p>
+
+    <div class="resolve-graph" role="group" aria-label="Typed dependency view">
+      <section>
+        <h4>Evidence receipts</h4>
+        <ul data-resolve-receipts>
+          {scenarios.PUBLISHED_RECORD.graph.receipts.map((receipt) => (
+            <li><code>{receipt.id}</code><span class="resolve-status" data-status={withdrawnEvidence.has(receipt.id) ? 'stale' : 'available'}>{withdrawnEvidence.has(receipt.id) ? 'WITHDRAWN / STALE' : 'AVAILABLE'}</span><small>{receipt.kind} · {receipt.scope}</small></li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h4>Qualified routes</h4>
+        <ul data-resolve-routes>
+          {scenarios.PUBLISHED_RECORD.graph.routes.map((route) => (
+            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>{activeRoutes.has(routeKey(route)) ? 'ACTIVE IN THIS VIEW' : 'INACTIVE AFTER WITHDRAWAL'}</small></li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h4>Claim states</h4>
+        <ul data-resolve-claims>
+          {Object.entries(publishedAfter.states).map(([claimId, state]) => (
+            <li><code>{claimId}</code><span class="resolve-status" data-status={statusToken(state)}>{state}</span><small>{!routeConclusions.has(claimId) && claimById.get(claimId)?.kind === 'formal' ? 'No qualified support route in this snapshot' : claimById.get(claimId)?.scope}</small></li>
+          ))}
+        </ul>
+      </section>
+    </div>
+    <p class="callout callout--unknown"><strong>Historic graph boundary — unchanged by simulations.</strong> No documentary-to-theorem edge is admitted. The withdrawn publication paths and the three mathematical propositions are distinct objects. Each proposition remains <code>UNKNOWN</code>.</p>
+  </section>
+</section>
+
+<script>
+  import '../scripts/resolve-explorer';
+</script>

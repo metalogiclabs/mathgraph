@@ -966,6 +966,421 @@ summary {
   gap: var(--space-4);
 }
 
+.resolve-product-hero,
+.resolve-record-hero {
+  display: grid;
+  align-items: end;
+  min-height: min(680px, calc(100vh - 74px));
+  padding-block: var(--space-7);
+  grid-template-columns: minmax(0, 8fr) minmax(260px, 4fr);
+  gap: var(--space-6);
+}
+
+.resolve-product-hero__aside,
+.resolve-record-hero__identity {
+  min-width: 0;
+  padding: var(--space-4) 0 var(--space-2) var(--space-4);
+  border-left: 1px solid var(--line-strong);
+}
+
+.resolve-product-hero__aside p:last-child,
+.resolve-record-hero__identity > :last-child {
+  margin-bottom: 0;
+}
+
+.resolve-record-hero__identity code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.resolve-principles,
+.cycle-grid {
+  display: grid;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  border-block: 1px solid var(--line);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+}
+
+.resolve-principles article,
+.cycle-grid li {
+  min-width: 0;
+  padding: var(--space-4);
+  border-right: 1px solid var(--line);
+}
+
+.resolve-principles article:first-child,
+.cycle-grid li:first-child {
+  padding-left: 0;
+}
+
+.resolve-principles article:last-child,
+.cycle-grid li:last-child {
+  border-right: 0;
+}
+
+.resolve-principles article > span,
+.cycle-grid li > div > span {
+  color: var(--ink-500);
+  font: 700 var(--step--1) / 1 var(--mono);
+}
+
+.resolve-principles h3,
+.cycle-grid h3 {
+  margin-top: var(--space-3);
+}
+
+.resolve-principles p,
+.cycle-grid p {
+  margin: var(--space-3) 0 0;
+  color: var(--ink-650);
+  font-size: var(--step--1);
+}
+
+.cycle-grid li {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.cycle-grid h3 {
+  margin-bottom: 0;
+}
+
+.cycle-grid h3 a {
+  color: var(--ink-950);
+  text-decoration: none;
+}
+
+.resolve-axis-grid {
+  display: grid;
+  border-block: 1px solid var(--line);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.resolve-axis {
+  min-width: 0;
+  padding: var(--space-4);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.resolve-axis:nth-child(3n + 1) {
+  padding-left: 0;
+}
+
+.resolve-axis:nth-child(3n) {
+  border-right: 0;
+}
+
+.resolve-axis:nth-last-child(-n + 3) {
+  border-bottom: 0;
+}
+
+.resolve-axis > span {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--ink-650);
+  font-size: 0.7rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.resolve-axis strong,
+.resolve-axis code {
+  overflow-wrap: anywhere;
+}
+
+.resolve-axis p {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-650);
+  font-size: var(--step--1);
+}
+
+.resolve-explorer {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--paper-strong);
+}
+
+.resolve-explorer__header,
+.resolve-view__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.resolve-explorer__header h2,
+.resolve-view__header h3 {
+  margin-bottom: 0;
+}
+
+.resolve-explorer__header .lede {
+  max-width: 52ch;
+  margin-bottom: 0;
+}
+
+.resolve-controls {
+  display: grid;
+  margin-block: var(--space-5);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-4);
+}
+
+.resolve-controls > .fineprint {
+  margin: 0;
+  grid-column: 1 / -1;
+}
+
+.resolve-controls__group {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.resolve-controls__group legend {
+  padding-inline: var(--space-2);
+  font-weight: 760;
+}
+
+.resolve-controls__group--synthetic {
+  background: color-mix(in srgb, var(--blue-100) 42%, var(--paper-strong));
+}
+
+.resolve-control-section + .resolve-control-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.resolve-control-section__label {
+  margin-bottom: var(--space-2);
+  color: var(--ink-650);
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.resolve-option {
+  display: flex;
+  align-items: flex-start;
+  min-height: 48px;
+  padding: var(--space-2);
+  border-top: 1px solid var(--line);
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.resolve-option input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.22rem 0 0;
+  accent-color: var(--blue-700);
+}
+
+.resolve-option input:disabled,
+.resolve-option:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.resolve-option:has(input:disabled) {
+  opacity: 0.68;
+}
+
+.resolve-option span,
+.resolve-option small {
+  display: block;
+}
+
+.resolve-option small {
+  margin-top: var(--space-1);
+  color: var(--ink-650);
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.resolve-live {
+  min-height: 1.6em;
+}
+
+.resolve-error[hidden] {
+  display: none;
+}
+
+.resolve-view {
+  margin-top: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line-strong);
+}
+
+.resolve-view__header code {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.48rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.resolve-view__description {
+  max-width: var(--reading);
+  margin-block: var(--space-3) var(--space-5);
+  color: var(--ink-650);
+}
+
+.resolve-results table {
+  min-width: 760px;
+}
+
+.resolve-results caption,
+.resolve-receipt-table caption {
+  padding: 0 0 var(--space-3);
+  font-weight: 720;
+  text-align: left;
+}
+
+.resolve-results th[scope="row"] {
+  width: 44%;
+}
+
+.resolve-results th small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--ink-650);
+  font-weight: 500;
+}
+
+.resolve-status {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.18rem 0.4rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  color: var(--ink-800);
+  background: #eceeea;
+  font: 700 0.7rem / 1.3 var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.resolve-status[data-status="unknown"] {
+  color: var(--amber-800);
+  background: var(--amber-100);
+  border-color: #d8bd7f;
+}
+
+.resolve-status[data-status="warranted-bounded"] {
+  color: var(--green-700);
+  background: var(--green-100);
+  border-color: #9fc7b6;
+}
+
+.resolve-status[data-status="source-documented"],
+.resolve-status[data-status="available"] {
+  color: var(--blue-700);
+  background: var(--blue-100);
+  border-color: #aab8ef;
+}
+
+.resolve-status[data-status="stale"],
+.resolve-status[data-status="withdrawn-\/-stale"] {
+  color: var(--ink-650);
+  background: #eceeea;
+  border-color: var(--line-strong);
+}
+
+.resolve-graph {
+  display: grid;
+  margin-block: var(--space-5);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.resolve-graph > section {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper);
+}
+
+.resolve-graph h4 {
+  margin: 0 0 var(--space-3);
+}
+
+.resolve-graph ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resolve-graph li {
+  display: grid;
+  min-width: 0;
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--line);
+  gap: var(--space-2);
+}
+
+.resolve-graph li code,
+.resolve-graph li span,
+.resolve-graph li small {
+  overflow-wrap: anywhere;
+}
+
+.resolve-graph li small {
+  color: var(--ink-650);
+}
+
+.resolve-receipt-table {
+  margin-top: var(--space-5);
+}
+
+.section--ink .resolve-receipt-table th,
+.section--ink .resolve-receipt-table td {
+  border-color: #394252;
+  color: #e9edf7;
+}
+
+.section--ink .resolve-receipt-table th {
+  color: #c7ced9;
+}
+
+.section--ink .resolve-receipt-table code {
+  color: white;
+}
+
+.resolve-unknowns {
+  display: grid;
+  padding: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.resolve-unknowns li {
+  display: grid;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  gap: var(--space-1);
+}
+
+.resolve-unknowns span {
+  color: var(--ink-650);
+  font-size: var(--step--1);
+}
+
+.resolve-resource-list code,
+.resolve-receipt-table code {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 900px) {
   :root {
     --page: min(100% - 2rem, 760px);
@@ -995,9 +1410,16 @@ summary {
   }
 
   .hero,
-  .record-hero {
+  .record-hero,
+  .resolve-product-hero,
+  .resolve-record-hero {
     min-height: auto;
     grid-template-columns: 1fr;
+  }
+
+  .resolve-product-hero__aside,
+  .resolve-record-hero__identity {
+    max-width: var(--reading);
   }
 
   .hero__aside {
@@ -1066,6 +1488,39 @@ summary {
   }
 
   .query-demo {
+    grid-template-columns: 1fr;
+  }
+
+  .resolve-principles,
+  .cycle-grid,
+  .resolve-axis-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resolve-principles article:nth-child(2),
+  .cycle-grid li:nth-child(2),
+  .resolve-axis:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .resolve-principles article:nth-child(-n + 2),
+  .cycle-grid li:nth-child(-n + 2),
+  .resolve-axis:nth-child(-n + 4) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .resolve-principles article:nth-child(3),
+  .cycle-grid li:nth-child(3),
+  .resolve-axis:nth-child(2n + 1) {
+    padding-left: 0;
+  }
+
+  .resolve-axis:nth-child(2n + 1) {
+    border-right: 1px solid var(--line);
+  }
+
+  .resolve-controls,
+  .resolve-graph {
     grid-template-columns: 1fr;
   }
 
@@ -1158,6 +1613,55 @@ summary {
 
   .query-demo__result {
     grid-template-columns: 1fr;
+  }
+
+  .resolve-product-hero,
+  .resolve-record-hero {
+    padding-block: var(--space-6);
+    gap: var(--space-5);
+  }
+
+  .resolve-product-hero__aside,
+  .resolve-record-hero__identity,
+  .resolve-explorer {
+    padding: var(--space-4);
+  }
+
+  .resolve-explorer__header,
+  .resolve-view__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .resolve-principles,
+  .cycle-grid,
+  .resolve-axis-grid,
+  .resolve-unknowns {
+    grid-template-columns: 1fr;
+  }
+
+  .resolve-principles article,
+  .resolve-principles article:first-child,
+  .cycle-grid li,
+  .cycle-grid li:first-child,
+  .resolve-axis,
+  .resolve-axis:nth-child(3n + 1),
+  .resolve-axis:nth-child(2n + 1) {
+    padding: var(--space-4) 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .resolve-principles article:last-child,
+  .cycle-grid li:last-child,
+  .resolve-axis:last-child {
+    border-bottom: 0;
+  }
+
+  .resolve-controls__group,
+  .resolve-graph > section {
+    padding: var(--space-3);
   }
 
   .axis__scope {

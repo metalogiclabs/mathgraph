@@ -20,7 +20,7 @@ const records = await loadPublishedRecords();
       <p class="fineprint">{records.length} published record{records.length === 1 ? '' : 's'} · ordered by snapshot date</p>
       {records.map((published) => published.record_kind === 'SOURCE_CHECK'
         ? <RecordSummary record={published.record} entry={published.entry} />
-        : <ResolutionRecord published={published} summary />)}
+        : <ResolutionRecord published={published} />)}
       <div class="callout callout--unknown">
         <strong>No synthetic examples.</strong> This index lists only evidence that has a corresponding qualified boundary and durable machine-readable record.
       </div>
