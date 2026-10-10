@@ -1,0 +1,98 @@
+name: MathGraph Check - machine-labeled finite oracle V1
+on:
+  push:
+    branches: [mathgraph-check-finite-420-v1]
+  pull_request:
+    branches: [mathgraph-check-v0-source-fidelity]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-machine-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test finite adapter positive, negative and out-of-grammar controls
+        run: python -m unittest discover -s tests -p 'test_finite_logic.py' -v
+      - name: Freeze, replay and score the independent bitset-oracle corpus
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/mg-machine-oracle
+          PYTHONPATH=. python research/mathgraph_check_machine_oracle_v1.py --out evidence/mg-machine-oracle
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/mg-machine-oracle/summary.json')
+          s=json.loads(p.read_text())
+          assert s['total_cases'] == 420
+          assert s['corpus_sha256'] == 'a8c05bda6e6bbfb15fdfe21bc8954fd9c5d790f8a31b2df04c8a3ef83b04b609'
+          assert s['metrics']['equivalent'] == 195
+          assert s['metrics']['different'] == 193
+          assert s['metrics']['unsupported'] == 32
+          assert all(s['metrics'][k] == 0 for k in (
+              'false_alarms','missed_differences','wrong_witnesses',
+              'wrong_status_or_unknown','truth_promotions','kernel_bypass_promotions'))
+          assert s['external_human_labels'] == 0 and s['llm_calls'] == 0
+          assert s['lean_kernel_verified'] == 'PENDING_SEPARATE_PINNED_LEAN_CI'
+          assert s['palomar_statement_alignment_comparison'] == 'NOT_RUN'
+          print('MATHGRAPH_MACHINE_ORACLE_BITSET_REPLAY_GREEN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: machine-oracle-python-v1
+          path: evidence/mg-machine-oracle/
+          if-no-files-found: warn
+
+  independent-lean-oracle:
+    needs: python-machine-oracle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Regenerate exact frozen corpus and Lean obligations
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/mg-machine-oracle
+          PYTHONPATH=. python research/mathgraph_check_machine_oracle_v1.py --out evidence/mg-machine-oracle
+          sha256sum evidence/mg-machine-oracle/MachineOracleV1.lean | tee evidence/mg-machine-oracle/lean-source.sha256
+      - name: Install pinned Lean 4.35.0-rc2 and kernel-check independent finite claims
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0-rc2
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.35.0-rc2
+          "$HOME/.elan/bin/lean" --version | tee evidence/mg-machine-oracle/lean-version.txt
+          "$HOME/.elan/bin/lean" evidence/mg-machine-oracle/MachineOracleV1.lean
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/mg-machine-oracle')
+          x=json.loads((p/'summary.json').read_text())
+          assert x['sampled_lean_cases'] == 132
+          assert x['false_truth_promotion'] is False
+          x['lean_kernel_verified'] = 'SUCCESS_PINNED_LEAN4_V4_35_0_RC2'
+          x['exact_head_check'] = 'VERIFIED_IN_CURRENT_GITHUB_ACTIONS_JOB'
+          (p/'lean-checked-summary.json').write_text(json.dumps(x,indent=2,sort_keys=True)+'\n')
+          print('MATHGRAPH_MACHINE_ORACLE_132_LEAN_CASES_GREEN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: machine-oracle-lean-v1
+          path: evidence/mg-machine-oracle/
+          if-no-files-found: warn
