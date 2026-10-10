@@ -1,0 +1,126 @@
+name: MathGraph Check - pinned real JPL L4YAML external acceptance V1
+on:
+  push:
+    branches: [mathgraph-check-l4yaml-external-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-reference-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test model and non-circular negative controls
+        run: python -m unittest discover -s tests -p test_l4yaml_external_acceptance_v1.py -v
+
+  real-parser-and-lean:
+    needs: independent-reference-controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install separate YAML test-metadata reader
+        run: python -m pip install --disable-pip-version-check 'PyYAML==6.0.2'
+      - name: Fetch exact public repositories read-only, no upstream changes
+        env:
+          JPL_COMMIT: 62bf7077910e888a0bc8adfc8e08a5f500ff3ca3
+          YAML_SUITE_COMMIT: da267a5c4782e7361e82889e76c0dc7df0e1e870
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/l4yaml-v1
+          git init -q "$RUNNER_TEMP/jpl-source"
+          git -C "$RUNNER_TEMP/jpl-source" fetch --no-tags --depth 1 \
+            https://github.com/nasa-jpl/L4YAML.git "$JPL_COMMIT"
+          git -C "$RUNNER_TEMP/jpl-source" checkout --detach -q FETCH_HEAD
+          git init -q "$RUNNER_TEMP/independent-yaml-suite"
+          git -C "$RUNNER_TEMP/independent-yaml-suite" fetch --no-tags --depth 1 \
+            https://github.com/yaml/yaml-test-suite.git "$YAML_SUITE_COMMIT"
+          git -C "$RUNNER_TEMP/independent-yaml-suite" checkout --detach -q FETCH_HEAD
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from research.l4yaml_external_acceptance_v1 import ensure_source_pins
+          result=ensure_source_pins(
+              Path(os.environ['RUNNER_TEMP'])/'jpl-source',
+              Path(os.environ['RUNNER_TEMP'])/'independent-yaml-suite')
+          import json
+          Path('evidence/l4yaml-v1/pins.json').write_text(
+              json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print('MATHGRAPH_L4YAML_EXACT_PUBLIC_SOURCE_PINS_GREEN')
+          PY
+      - name: Install source-declared pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.0
+          "$HOME/.elan/bin/lean" --version \
+            | tee evidence/l4yaml-v1/toolchain-version.txt
+          test "$(cat "$RUNNER_TEMP/jpl-source/lean-toolchain")" \
+            = "leanprover/lean4:v4.34.0"
+      - name: Build actual JPL parser and independent stateful Lean proof package
+        run: |
+          set -euo pipefail
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.0
+          cd "$RUNNER_TEMP/jpl-source"
+          "$HOME/.elan/bin/lake" build tryparse L4YAML.Proofs.Serialization
+          test -x .lake/build/bin/tryparse
+      - name: Replay exact source-level formal separation in Lean
+        run: |
+          set -euo pipefail
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.34.0
+          cd "$RUNNER_TEMP/jpl-source"
+          "$HOME/.elan/bin/lake" env lean \
+            "$GITHUB_WORKSPACE/research/L4YAMLExternalBridgeV1.lean" \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/l4yaml-v1/lean-bridge.txt"
+          if grep -Eq 'sorryAx|Lean.ofReduceBool|Lean.ofReduceNat' \
+            "$GITHUB_WORKSPACE/evidence/l4yaml-v1/lean-bridge.txt"; then
+            echo "Disallowed proof axiom observed" >&2
+            exit 1
+          fi
+          echo "MATHGRAPH_L4YAML_ORIGINAL_SOURCE_LEAN_BRIDGE_GREEN"
+      - name: Run real compiled parser on independent test suite and source semantic mutants
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python research/l4yaml_external_acceptance_v1.py \
+            --jpl "$RUNNER_TEMP/jpl-source" \
+            --suite "$RUNNER_TEMP/independent-yaml-suite" \
+            --out evidence/l4yaml-v1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence/l4yaml-v1/report.json')
+          r=json.loads(p.read_text())
+          assert r['pins']['jpl_commit']=='62bf7077910e888a0bc8adfc8e08a5f500ff3ca3'
+          assert r['pins']['yaml_suite_commit']=='da267a5c4782e7361e82889e76c0dc7df0e1e870'
+          assert r['fixed_model_cases']==31
+          assert r['independent_suite_cases']>=20
+          assert r['independent_suite_scored']>0
+          assert r['self_reference_anchor_policy_separator']['normative_early_commit'] is True
+          assert r['self_reference_anchor_policy_separator']['current_l4yaml_completion_commit'] is False
+          assert r['whole_input_spec_iff_parser']=='UNKNOWN'
+          assert r['contacted_upstream_maintainer'] is False
+          assert r['no_truth_promotion'] is True
+          assert r['no_verified_badge'] is True
+          print('MATHGRAPH_L4YAML_EXECUTABLE_EXTERNAL_ORACLE_REPLAY_GREEN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-real-jpl-l4yaml-external-v1
+          path: evidence/l4yaml-v1/
+          if-no-files-found: warn
