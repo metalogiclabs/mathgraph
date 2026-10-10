@@ -182,15 +182,9 @@ pre {
 }
 
 .brand__mark {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  border-radius: 5px;
-  color: white;
-  background: var(--ink-950);
-  place-items: center;
-  font-family: var(--serif);
-  font-size: 1.05rem;
+  display: block;
+  width: 32px;
+  height: 32px;
 }
 
 .brand__dot {

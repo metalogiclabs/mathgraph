@@ -35,7 +35,8 @@ const isCurrent = (href: string) => currentPath === href || currentPath.startsWi
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary" />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <title>{title}</title>
   </head>
   <body>
@@ -43,7 +44,7 @@ const isCurrent = (href: string) => currentPath === href || currentPath.startsWi
     <header class="site-header">
       <div class="site-header__inner shell">
         <a class="brand" href="/" aria-label="MathGraph home">
-          <span class="brand__mark" aria-hidden="true">M</span>
+          <img class="brand__mark" src="/mathgraph-mark-black.png" alt="" width="32" height="32" aria-hidden="true" />
           <span class="brand__word">MathGraph<span class="brand__dot">.</span></span>
         </a>
         <nav aria-label="Primary">
