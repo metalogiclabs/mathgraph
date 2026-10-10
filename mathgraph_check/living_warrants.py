@@ -227,7 +227,10 @@ def build_snapshot(history: bytes, jpl_record: dict) -> dict:
         "derivation": {
             "claims": [asdict(x) for x in claims],
             "receipts": [asdict(x) for x in receipts],
-            "routes": [asdict(x) for x in routes],
+            "routes": [
+                {"conclusion":x.conclusion, "evidence":list(x.evidence),
+                 "premises":list(x.premises)} for x in routes
+            ],
             "withdrawn_evidence": sorted(withdrawn),
             "receipt_admission": {
                 "documentary": "exact pinned OpenAI history notice",
