@@ -1,0 +1,6 @@
+{
+  "recurse": true,
+  "checkFragments": true,
+  "skip": ["github\\.com", "^https://mathgraph\\.org", "/v1/"],
+  "verbosity": "error"
+}

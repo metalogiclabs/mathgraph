@@ -38,7 +38,7 @@ const record = loadQualifiedRecord();
           <p class="lede">The first record checks one exact L4YAML revision against 48 decoded external cases and four additional controls. It publishes the successes, the known semantic difference, the corrected input lineage, and the questions the evidence does not answer.</p>
         </div>
       </div>
-      <div class="metric-grid" aria-label="L4YAML record summary">
+      <div class="metric-grid" role="group" aria-label="L4YAML record summary">
         <Metric value="48/48" label="Source cases matched" detail="31 accept · 17 reject" />
         <Metric value="52/52" label="Lean guards" detail="Cases plus four controls" />
         <Metric value="2" label="Pinned repositories" detail="Exact Git commits" />

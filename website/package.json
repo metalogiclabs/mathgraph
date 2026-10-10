@@ -10,9 +10,15 @@
   "scripts": {
     "dev": "astro dev",
     "check": "astro check",
-    "test": "vitest run",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run",
+    "test:consumer": "node tests/consumer.mjs",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "check:built": "node scripts/check-built-site.mjs",
+    "check:html": "html-validate \"dist/**/*.html\"",
+    "check:links": "linkinator dist --config linkinator.config.json",
+    "qualify": "npm run check && npm run test:unit && npm run build && npm run check:built && npm run check:html && npm run check:links && npm run test:consumer"
   },
   "dependencies": {
     "astro": "7.3.8"

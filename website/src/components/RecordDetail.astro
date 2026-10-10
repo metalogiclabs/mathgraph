@@ -35,7 +35,7 @@ const base = `/evidence/${record.id}`;
 
 <section class="section section--compact">
   <div class="shell">
-    <div class="metric-grid" aria-label="Qualified observations">
+    <div class="metric-grid" role="group" aria-label="Qualified observations">
       <Metric value="48/48" label="Decoded cases matched" detail="Exact pinned YAML-suite source labels" />
       <Metric value="31" label="Expected acceptances" detail="Observed acceptance matched source label" />
       <Metric value="17" label="Expected rejections" detail="Observed rejection matched source label" />
@@ -55,7 +55,7 @@ const base = `/evidence/${record.id}`;
       <EvidenceAxis label="Finite execution" status="Pinned cases checked" tone="bounded" authority={finite.authority} scope={`${finite.matched_external_labels}/${finite.source_cases} decoded cases matched source labels; ${finite.extra_controls} additional controls; ${finite.total_lean_guards} total guards.`} />
       <EvidenceAxis label="Statement fidelity" status="Unknown" tone="unknown" authority="No qualified translation service" scope="Natural-language or source-intent correspondence was not independently certified." />
       <EvidenceAxis label="Generalization" status="Unknown" tone="unknown" authority="No whole-language theorem" scope="The observations do not establish parser correctness for YAML as a whole." />
-      <EvidenceAxis label="Current requalification" status="Not checked" tone="unknown" authority="Historic snapshot only" scope="Newer L4YAML or YAML-suite revisions have not been requalified by this record." />
+      <EvidenceAxis label="Current requalification" status="Not checked" tone="unknown" authority="Historic snapshot only" scope={`Newer L4YAML or YAML-suite revisions have not been requalified by this record. Machine status: ${record.axes.current_requalification.status}.`} />
     </div>
   </div>
 </section>

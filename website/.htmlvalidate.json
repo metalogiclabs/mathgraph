@@ -1,0 +1,9 @@
+{
+  "extends": ["html-validate:recommended"],
+  "rules": {
+    "long-title": "off",
+    "no-inline-style": "off",
+    "prefer-native-element": "off",
+    "require-sri": "off"
+  }
+}
