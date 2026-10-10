@@ -24,9 +24,11 @@ keys), with the following domain-separated message:
 
 ML-DSA-65 is mandatory (NIST FIPS 204). The signature context is
 MathGraph.pq-warrant.v1. Transitional Ed25519 signatures can accompany it,
-but never substitute for an accepted ML-DSA-65. The prototype uses the
-independently maintained pyca/cryptography 47.0.0 implementation, not
-custom-made post-quantum cryptography. Signer key trust is supplied OUTSIDE
+but never substitute for an accepted ML-DSA-65. The prototype uses pinned pqcrypto 1.0.0 backed by published Rust implementations
+for ML-DSA-65, and pyca/cryptography 47.0.0 for transitional Ed25519, not
+custom-made post-quantum cryptography. The pqcrypto vendor explicitly reports
+that its backend has not undergone a full third-party security audit; this is
+research code and must not authorize real deployments. Signer key trust is supplied OUTSIDE
 the untrusted statement. This is an experimental JSON format, not a claim
 to implement the standardized COSE/SCITT envelopes.
 
@@ -49,7 +51,7 @@ of deployed binaries. Source-to-binary semantic correspondence is UNKNOWN.
 The primary implementation is mathgraph/pq_warrant.py.
 The independent-process replayer scripts/pq_warrant_independent_replay.py
 parses MGSO bytes and executes the finite predicate WITHOUT importing
-the primary MathGraph implementation. Both use the SAME cryptographic library,
+the primary MathGraph implementation. Both use the SAME pinned pqcrypto backend,
 so this is protocol/semantic implementation independence, not cryptographic
 implementation diversity.
 
