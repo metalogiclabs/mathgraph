@@ -1,0 +1,72 @@
+name: LeanEval baseline
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'competitions/lean_eval/**'
+      - '.github/workflows/lean-eval-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-eval-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone frozen LeanEval
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          echo "LeanEval pin: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Toolchain: $(cat lean-toolchain)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Probe catalog
+        run: |
+          python competitions/lean_eval/catalog_probe.py /tmp/lean-eval/generated/index.json | tee /tmp/catalog.txt
+          {
+            echo '```text'
+            cat /tmp/catalog.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned LeanEval CLI
+        working-directory: /tmp/lean-eval
+        run: |
+          lake exe cache get
+          lake build
+          lake exe lean-eval --help >/tmp/lean-eval-help.txt
+          echo 'Pinned LeanEval CLI build: PASS' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build official starter workspace
+        working-directory: /tmp/lean-eval
+        run: |
+          rm -rf workspaces/two_plus_two
+          lake exe lean-eval start-problem two_plus_two
+          cd workspaces/two_plus_two
+          lake update
+          lake build
+          echo 'Official two_plus_two starter workspace build: PASS' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record Gate 0 terminal result
+        if: success()
+        run: |
+          echo '## Gate 0: VERIFIED_INTEGRATION' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This is an infrastructure result only; no LeanEval benchmark problem is claimed solved.' >> "$GITHUB_STEP_SUMMARY"
