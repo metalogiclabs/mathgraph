@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
@@ -8,6 +9,12 @@ const catalog = JSON.parse(await readFile(join(root, 'src/data/record-index.json
 const entry = catalog.records[0];
 const record = JSON.parse(await readFile(join(root, 'public', new URL(entry.record_json_url).pathname), 'utf8'));
 const output = join(root, 'public/social/records', `${entry.id}-${entry.version_slug}.png`);
+const sourceOutput = join(root, 'public/social/records', `${entry.id}-${entry.version_slug}.source.svg`);
+const expectedPngSha256 = '7269e84d1a81dbe671867bfc3f6effdde233c5ddffabfad35e665d1a9508844c';
+
+function sha256(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
+}
 
 function escapeXml(value) {
   return String(value)
@@ -37,16 +44,21 @@ const svg = `
   <text x="72" y="590" font-family="monospace" font-size="16" fill="#727b8d">sha256:${escapeXml(digest)}</text>
 </svg>`;
 
-const generated = await sharp(Buffer.from(svg)).png({ compressionLevel: 9, palette: false }).toBuffer();
-
 if (process.argv.includes('--check')) {
-  const committed = await readFile(output).catch(() => null);
-  if (!committed || !committed.equals(generated)) {
-    throw new Error('SOCIAL_CARD_OUT_OF_DATE');
+  const [committedSource, committedPng] = await Promise.all([
+    readFile(sourceOutput, 'utf8').catch(() => null),
+    readFile(output).catch(() => null),
+  ]);
+  if (committedSource !== svg) throw new Error('SOCIAL_CARD_SOURCE_OUT_OF_DATE');
+  if (!committedPng || sha256(committedPng) !== expectedPngSha256) throw new Error('SOCIAL_CARD_PNG_DIGEST_MISMATCH');
+  const metadata = await sharp(committedPng).metadata();
+  if (metadata.width !== 1200 || metadata.height !== 630 || metadata.format !== 'png') {
+    throw new Error('SOCIAL_CARD_PNG_FORMAT_INVALID');
   }
-  console.log(`SOCIAL_CARD_GREEN ${entry.id} ${generated.length} bytes`);
+  console.log(`SOCIAL_CARD_GREEN ${entry.id} ${committedPng.length} bytes sha256=${expectedPngSha256}`);
 } else {
+  const generated = await sharp(Buffer.from(svg)).png({ compressionLevel: 9, palette: false }).toBuffer();
   await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, generated);
-  console.log(`SOCIAL_CARD_WRITTEN ${output} ${generated.length} bytes`);
+  await Promise.all([writeFile(sourceOutput, svg), writeFile(output, generated)]);
+  console.log(`SOCIAL_CARD_WRITTEN ${output} ${generated.length} bytes sha256=${sha256(generated)}`);
 }

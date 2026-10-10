@@ -11,7 +11,7 @@ npm ci
 npm run qualify
 ```
 
-`qualify` checks the deterministic social card, runs Astro diagnostics and data tests, creates a production build, validates machine and rendered-page contracts, checks page/JSON integrity and claims, exercises the actual Python resolver documentation contract, validates HTML and links, and runs an isolated HTTP consumer. The consumer imports no MathGraph verifier code. It follows discovery → catalogue → immutable record, recomputes transport and canonical digests, accepts only the exact ID/version/source pin/suite pin/goal tuple, and returns `UNKNOWN` for altered content, wrong pins, unsupported goals, unknown identities or versions, and unknown extension types.
+`qualify` checks the evidence-derived social-card source plus the reviewed PNG artifact's exact digest and dimensions, runs Astro diagnostics and data tests, creates a production build, validates machine and rendered-page contracts, checks page/JSON integrity and claims, exercises the actual Python resolver documentation contract, validates HTML and links, and runs an isolated HTTP consumer. The source/PNG split avoids treating platform-dependent font rasterization as evidence drift while still failing on either source-data drift or changed published bytes. The consumer imports no MathGraph verifier code. It follows discovery → catalogue → immutable record, recomputes transport and canonical digests, accepts only the exact ID/version/source pin/suite pin/goal tuple, and returns `UNKNOWN` for altered content, wrong pins, unsupported goals, unknown identities or versions, and unknown extension types.
 
 To inspect the built site:
 

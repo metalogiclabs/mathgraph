@@ -215,7 +215,9 @@ describe('primary public evidence experience', () => {
   test('publishes a deterministic large social card for the permanent record', async () => {
     const html = await page(`records/${record.id}/v1`);
     const imagePath = join(dist, 'social', 'records', `${record.id}-v1.png`);
+    const sourcePath = join(dist, 'social', 'records', `${record.id}-v1.source.svg`);
     const metadata = await sharp(imagePath).metadata();
+    const source = await readFile(sourcePath, 'utf8');
 
     expect(html).toContain(`<meta property="og:image" content="https://mathgraph.org/social/records/${record.id}-v1.png">`);
     expect(html).toContain('<meta property="og:image:width" content="1200">');
@@ -224,6 +226,10 @@ describe('primary public evidence experience', () => {
     expect(metadata.width).toBe(1200);
     expect(metadata.height).toBe(630);
     expect(metadata.format).toBe('png');
+    expect(source).toContain(record.id);
+    expect(source).toContain(`${record.content_sha256.slice(0, 16)}…${record.content_sha256.slice(-8)}`);
+    expect(source).toContain('WARRANTED · BOUNDED');
+    expect(source).toContain('UNKNOWN · whole-language correctness');
   });
 
   test('documents a scoped badge embed linked to the permanent boundary', async () => {
