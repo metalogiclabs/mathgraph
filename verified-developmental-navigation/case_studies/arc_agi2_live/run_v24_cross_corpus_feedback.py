@@ -128,9 +128,19 @@ def candidate_order(pool,task,arm,policy,shuffled):
         order={n:(0,i) for i,n in enumerate(local_names)}
         for i,n in enumerate(global_names):order.setdefault(n,(1,i))
     elif arm=="stateless_shape":
-        # The strong stateless arm is allowed the same candidate universe and
-        # learned general DSL, but not the source-task success assignments.
-        order={}
+        # A strong memory-free task-local heuristic can inspect a first
+        # demonstration of EVERY generated candidate, at additional CPU cost.
+        # Prioritize pixel agreement without accessing protected test outputs.
+        first_x,first_y=run_v2.v1.task_pairs(task)[0]
+        size=run_v2.v1.shape(first_y)
+        def rank(item):
+            z=v23.safe_apply(item[1],first_x)
+            if z is None or run_v2.v1.shape(z)!=size:
+                return (2,0)
+            misses=sum(z[i][j]!=first_y[i][j]
+                       for i in range(size[0]) for j in range(size[1]))
+            return (0,misses)
+        return sorted(pool,key=rank)
     else:
         raise ValueError(arm)
     if not order:
