@@ -1,0 +1,83 @@
+name: VDN verified generator feedback V23
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - vdn-verified-generator-feedback-v1
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_generator_feedback.py'
+      - '.github/workflows/vdn-verified-generator-feedback-v23.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prospective-generator-feedback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate harness and cold/learned program semantics
+        run: |
+          set -euo pipefail
+          python3 -m py_compile verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_generator_feedback.py
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_generator_feedback.py --selftest
+      - name: Checkout fixed ARC-AGI-1 public task world
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/fchollet/ARC-AGI.git /tmp/ARC-AGI-1
+          cd /tmp/ARC-AGI-1
+          git checkout --quiet 399030444e0ab0cc8b4e199870fb20b863846f34
+          test "$(git rev-parse HEAD)" = '399030444e0ab0cc8b4e199870fb20b863846f34'
+          test "$(find data/training -name '*.json' | wc -l)" -eq 400
+          test "$(find data/evaluation -name '*.json' | wc -l)" -eq 400
+      - name: Independently retrieve historical V4 source evidence and pin bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/vdn-v23-generator-feedback
+          gh api /repos/metalogiclabs/mathgraph/actions/artifacts/9632884567/zip > /tmp/vdn-v4-raw.zip
+          echo '3368f188ba2f739a56fc6af3f98455cb1387af94fe9b5a0a14dc0d22e3e1942e  /tmp/vdn-v4-raw.zip' | sha256sum --check
+          unzip -q /tmp/vdn-v4-raw.zip -d evidence/vdn-v23-generator-feedback/prior
+          echo 'e298bbc41e1bc4a773e8b67ff1222d8ae4d2a1616089c221fb5707c89bb43a91  evidence/vdn-v23-generator-feedback/prior/result.json' | sha256sum --check
+          sha256sum verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_generator_feedback.py > evidence/vdn-v23-generator-feedback/script.sha256
+      - name: Freeze generator from V4, develop meta-policy, score disjoint protected tasks
+        run: |
+          set -euo pipefail
+          python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v23_generator_feedback.py \
+            --arc1-train /tmp/ARC-AGI-1/data/training \
+            --v4-result evidence/vdn-v23-generator-feedback/prior/result.json \
+            --out evidence/vdn-v23-generator-feedback \
+            --budget 128
+      - name: Audit freeze, complete accounting, and fail-closed interpretation
+        run: |
+          python3 - <<'PY'
+          import json, pathlib,hashlib
+          root=pathlib.Path('evidence/vdn-v23-generator-feedback')
+          result=json.loads((root/'result.json').read_text())
+          f=json.loads((root/'freeze.json').read_text())
+          p=json.loads((root/'policy_v2_frozen.json').read_text())
+          assert result['schema']=='vdn.generator-feedback.prospective-arc.v1'
+          assert f['dev_count']+f['protected_count']==400
+          assert not f['protected_outputs_inspected_pre_freeze']
+          assert f['source_v4_run']==33038153009
+          assert p['parent_policy_sha256']==f['policy1_sha256']
+          assert len(result['arm_stats'])==6
+          assert all(v['tasks']==f['protected_count'] for v in result['arm_stats'].values())
+          assert all(v['total_candidate_verifications']<=128*f['protected_count']
+                     for v in result['arm_stats'].values())
+          assert result['claims']['unbounded_recursive_acceleration']=='UNKNOWN'
+          assert result['claims']['real_ARC_generalization']=='UNKNOWN'
+          print(json.dumps({'claims':result['claims'],'arm_stats':result['arm_stats'],
+                            'policy_changed':p['policy_changed'],
+                            'new_protected_gain':result['new_generator2_solves_over_generator1']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-generator-feedback-v23-evidence
+          path: evidence/vdn-v23-generator-feedback/
+          if-no-files-found: warn
