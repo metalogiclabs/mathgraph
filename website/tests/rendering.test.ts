@@ -260,6 +260,68 @@ describe('primary public evidence experience', () => {
     expect(html).not.toContain('vercel.app');
   });
 
+  test('separates exact source matching from bounded offline Resolve replay for agents', async () => {
+    const html = await page('agents');
+    const text = visibleText(html);
+
+    expect(text).toMatch(/record 001.*exact source-scope match/i);
+    expect(text).toMatch(/record 002.*offline dependency replay/i);
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/consumer.py`);
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/bundle.json`);
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/trust-policy.json`);
+    expect(text).toMatch(/same-origin digests?.*trusted pin.*not authenticity/i);
+    expect(text).toMatch(/Current applicability.*UNKNOWN/i);
+    expect(text).toMatch(/Freshness.*NOT_CHECKED/i);
+    expect(text).toMatch(/does not rerun the original JPL Lean proof/i);
+    expect(text).toMatch(/same-owner.*not.*outside-organization adoption/i);
+  });
+
+  test('documents only runnable static consumers and keeps hosted interfaces undeployed', async () => {
+    const html = await page('developers');
+    const text = visibleText(html);
+
+    expect(text).toContain('python -I -S consumer.py');
+    expect(text).toContain('python -I -S -c');
+    expect(text).toContain('--bundle bundle.json');
+    expect(text).toContain('--policy trust-policy.json');
+    expect(text).toContain('--policy-sha256 09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a');
+    expect(text).toContain('27a9be606040cc94a47c9b903dfc1cb24a86cbbc4e05ce71040c6c3d6e8d527b');
+    expect(text).toContain('node resolve-consumer-v1.ts https://mathgraph.org');
+    expect(text).toContain('e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e');
+    expect(html).toContain(`/evidence/${resolveRecord.id}/offline/consumer.py`);
+    expect(html).toContain('/examples/resolve-consumer-v1.ts');
+    expect(text).toMatch(/TypeScript.*HTTP client.*not.*offline/i);
+    expect(text).toMatch(/verify.*independently obtained.*consumer.*policy pins.*before execution/i);
+    expect(text).toMatch(/public resolver.*NOT_DEPLOYED/i);
+    expect(text).toMatch(/MCP.*PROPOSED/i);
+    expect(text).not.toMatch(/assert sha256/i);
+    expect(text).not.toMatch(/(?:implemented|deployed) hosted (?:resolver|API)/i);
+    expect(text).not.toMatch(/hosted (?:resolver|API) (?:is|are) (?:implemented|deployed)/i);
+  });
+
+  test('defines the minimum independently implementable P0 protocol without application dependencies', async () => {
+    const html = await page('protocol');
+    const text = visibleText(html);
+
+    expect(text).toMatch(/Applications may depend on the protocol.*protocol does not depend on MathGraph\.org/i);
+    for (const objectName of ['Typed claim', 'Evidence receipt', 'Dependency route', 'Resolution', 'Trust policy', 'Immutable snapshot']) {
+      expect(text).toContain(objectName);
+    }
+    expect(text).toMatch(/route is conjunctive/i);
+    expect(text).toMatch(/separate routes.*alternatives/i);
+    expect(text).toMatch(/least fixed point.*qualified root/i);
+    expect(text).toMatch(/cycles.*cannot.*self-justification/i);
+    expect(text).toMatch(/unsupported.*transport.*UNKNOWN|unsupported.*transport.*error/i);
+    expect(text).toMatch(/historical qualification.*current applicability/i);
+    expect(text).toMatch(/Check.*Implemented at the qualified record-001 boundary/i);
+    expect(text).toMatch(/Resolve.*Bounded-qualified offline/i);
+    expect(text).toMatch(/Discover.*Experimental.*no public protocol interface/i);
+    expect(text).toMatch(/Develop.*Experimental.*no public protocol interface/i);
+    expect(text).toMatch(/Capabilities.*Proposed.*no entries/i);
+    expect(text).toMatch(/in-toto.*Sigstore.*SCITT.*RATS.*under evaluation/i);
+    expect(text).toMatch(/None is an implemented MathGraph authority.*or endorsement/i);
+  });
+
   test('publishes the Lean evidence profile as an unstable proposal', async () => {
     const html = await page('protocol/profiles/lean');
     const text = visibleText(html);

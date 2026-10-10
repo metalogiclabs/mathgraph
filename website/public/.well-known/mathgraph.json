@@ -1,12 +1,14 @@
 {
-  "$schema": "https://mathgraph.org/schemas/discovery-v1.schema.json",
-  "schema": "mathgraph.discovery.v1",
+  "$schema": "https://mathgraph.org/schemas/discovery-v2.schema.json",
+  "schema": "mathgraph.discovery.v2",
   "canonical_origin": "https://mathgraph.org",
-  "generated_at": "2026-10-10T08:03:44Z",
+  "generated_at": "2026-10-10T22:18:37Z",
   "agent_guide": "https://mathgraph.org/agents/",
   "llms_txt": "https://mathgraph.org/llms.txt",
   "record_index": "https://mathgraph.org/records/index.json",
   "schemas": {
+    "discovery_v1": "https://mathgraph.org/schemas/discovery-v1.schema.json",
+    "discovery_v2": "https://mathgraph.org/schemas/discovery-v2.schema.json",
     "public_consequence_record_v1": "https://mathgraph.org/schemas/public-consequence-record-v1.schema.json",
     "record_index_v1": "https://mathgraph.org/schemas/record-index-v1.schema.json",
     "record_index_v2": "https://mathgraph.org/schemas/record-index-v2.schema.json",
@@ -17,9 +19,56 @@
   },
   "capabilities": {
     "static_records": "IMPLEMENTED",
+    "resolve_explorer": "IMPLEMENTED_READ_ONLY",
+    "offline_resolve_replay": "BOUNDED_QUALIFIED",
     "public_resolver": "NOT_DEPLOYED",
+    "discover_interface": "NOT_DEPLOYED",
+    "develop_interface": "NOT_DEPLOYED",
+    "capabilities_registry": "PROPOSED",
     "lean_profile": "PROPOSED",
     "mcp": "PROPOSED"
+  },
+  "interfaces": {
+    "check": {
+      "maturity": "IMPLEMENTED_AT_QUALIFIED_BOUNDARY",
+      "mode": "STATIC_RECORD",
+      "record_id": "mg-l4yaml-source-check-20261010",
+      "record_page": "https://mathgraph.org/records/mg-l4yaml-source-check-20261010/v1/",
+      "record_json": "https://mathgraph.org/evidence/mg-l4yaml-source-check-20261010/record.json"
+    },
+    "resolve": {
+      "maturity": "BOUNDED_QUALIFIED",
+      "mode": "OFFLINE_REPLAY",
+      "record_id": "mg-living-warrant-openai-jpl-20261010",
+      "explorer": "https://mathgraph.org/resolve/",
+      "record_page": "https://mathgraph.org/records/mg-living-warrant-openai-jpl-20261010/v1/",
+      "record_json": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/record.json",
+      "scenarios_json": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/scenarios.json",
+      "offline_consumer": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/offline/consumer.py",
+      "offline_consumer_sha256": "27a9be606040cc94a47c9b903dfc1cb24a86cbbc4e05ce71040c6c3d6e8d527b",
+      "offline_bundle": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/offline/bundle.json",
+      "offline_bundle_sha256": "957080db79555f982fd3a314c263cf5177ef506969229e856897f0b19ccc1d62",
+      "offline_trust_policy": "https://mathgraph.org/evidence/mg-living-warrant-openai-jpl-20261010/offline/trust-policy.json",
+      "offline_trust_policy_sha256": "09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a",
+      "offline_replay_output_sha256": "8c7b30e1eb2a24d2960e170d36652ca95aa71b41075f673abe394e154ae66668",
+      "typescript_consumer": "https://mathgraph.org/examples/resolve-consumer-v1.ts",
+      "typescript_consumer_sha256": "e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e",
+      "current_applicability": "UNKNOWN",
+      "freshness": "NOT_CHECKED"
+    },
+    "discover": {
+      "maturity": "EXPERIMENTAL",
+      "public_interface": "NOT_DEPLOYED"
+    },
+    "develop": {
+      "maturity": "EXPERIMENTAL",
+      "public_interface": "NOT_DEPLOYED"
+    },
+    "capabilities": {
+      "maturity": "PROPOSED",
+      "public_registry": "NOT_DEPLOYED",
+      "entries": 0
+    }
   },
   "freshness": {
     "basis": "CLIENT_FETCH_TIME",
