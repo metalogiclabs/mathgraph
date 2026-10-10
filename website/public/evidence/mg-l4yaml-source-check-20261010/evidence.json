@@ -1,0 +1,27 @@
+{
+  "external_sources": {
+    "jpl": "https://github.com/nasa-jpl/L4YAML/tree/62bf7077910e888a0bc8adfc8e08a5f500ff3ca3",
+    "yaml_suite": "https://github.com/yaml/yaml-test-suite/tree/da267a5c4782e7361e82889e76c0dc7df0e1e870"
+  },
+  "v1_compiled_parser": {
+    "archive_sha256": "b75581017d6620481c77e52b350e8bb8631d11747a92789f7887cde527807086",
+    "artifact_id": 11657687808,
+    "artifact_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38018495536/artifacts/11657687808",
+    "original_build_targets": 487,
+    "raw_unconverted_external_agreement": 47,
+    "run": 38018495536,
+    "source_commit": "d49a17d2786e6d071af37d2aeba2f2dad7765b75",
+    "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38018495536"
+  },
+  "v2_normalized_native_parser": {
+    "archive_sha256": "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e",
+    "artifact_id": 11657314389,
+    "artifact_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793/artifacts/11657314389",
+    "decoded_case_count": 48,
+    "guards": 52,
+    "lean_source_sha256": "a9a16f54c053e3c3c5a9f56486508a04ac84d9eb9e18106271daddac488d5b62",
+    "run": 38020008793,
+    "source_commit": "988afbf9a6ec69488b63af5c7ff986fde26d673c",
+    "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793"
+  }
+}

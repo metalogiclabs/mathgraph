@@ -1,0 +1,102 @@
+---
+import SourceLink from '../components/SourceLink.astro';
+import StatusTag from '../components/StatusTag.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { loadQualifiedRecord } from '../lib/evidence';
+
+const record = loadQualifiedRecord();
+const request = {
+  record_id: record.id,
+  source_commit: record.source.commit,
+  external_suite_commit: record.source.external_suite_commit,
+  goal: 'finite_parser_acceptance',
+};
+const response = {
+  authority: 'PINNED_SOURCE_LEAN_GUARDS',
+  evidence: ['https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793'],
+  record_id: record.id,
+  record_sha256: record.content_sha256,
+  scope: '48 pinned external YAML cases plus 4 Lean guard controls',
+  status: 'WARRANTED_BOUNDED',
+  truth_promotion: false,
+  verified: { extra_controls: 4, matched: 48, total: 48 },
+  whole_language_validity: 'UNKNOWN',
+};
+---
+
+<BaseLayout title="MathGraph Developers — Consume exact evidence" description="Use the current immutable MathGraph record, reproduce its evidence, and understand the exact source-bound resolver contract." currentPath="/developers/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Developers</div>
+      <h1>Consume the record. Keep its boundary.</h1>
+      <p class="lede">The current public interface is an immutable JSON record. A qualified read-only resolver is reproducible locally from the release branch, but is not yet publicly deployed as an HTTPS service.</p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="shell page-grid">
+      <aside class="toc" aria-label="On this page">
+        <strong>On this page</strong>
+        <a href="#quickstart">Quickstart</a>
+        <a href="#format">Record format</a>
+        <a href="#resolver">Resolver</a>
+        <a href="#reproduce">Reproduce</a>
+        <a href="#compatibility">Compatibility</a>
+      </aside>
+      <div class="prose">
+        <section id="quickstart">
+          <div class="eyebrow">Quickstart</div>
+          <h2>Fetch an exact immutable record</h2>
+          <div class="code-block"><div class="code-label">Shell</div><pre><code>curl --fail --silent \
+  https://mathgraph.org/evidence/{record.id}/record.json \
+  -o record.json
+
+sha256sum record.json</code></pre></div>
+          <p>The transport-file hash is distinct from the record’s canonical content digest. Consumers should validate the schema, exact record ID, <code>content_sha256</code>, source commits, and requested scope before using the result.</p>
+          <SourceLink href={`/evidence/${record.id}/record.json`} label="Open record JSON" meta={`${record.id} · immutable snapshot`} />
+        </section>
+
+        <section id="format">
+          <h2>Current public record format</h2>
+          <p><code>mathgraph.public-consequence-record.v1</code> separates admission state from finite observations, formal proof replay, fidelity, generalization, current requalification, and source-specific discrepancies.</p>
+          <div class="table-wrap"><table><thead><tr><th>Field</th><th>Consumer meaning</th></tr></thead><tbody>
+            <tr><td><code>id</code></td><td>Stable identifier: <code>{record.id}</code></td></tr>
+            <tr><td><code>content_sha256</code></td><td>Canonical record digest: <code>{record.content_sha256}</code></td></tr>
+            <tr><td><code>source.commit</code></td><td>Original source pin: <code>{record.source.commit}</code></td></tr>
+            <tr><td><code>source.external_suite_commit</code></td><td>External suite pin: <code>{record.source.external_suite_commit}</code></td></tr>
+            <tr><td><code>axes</code></td><td>Independent observations and explicit unknowns; no global truth promotion.</td></tr>
+          </tbody></table></div>
+        </section>
+
+        <section id="resolver">
+          <h2>Exact source-bound resolver</h2>
+          <p>The qualified release defines <code>POST /v1/resolve</code> as a localhost read-only preview. It accepts only exact pins and a supported goal. It has strict JSON, content-type, method, and request-size checks. The OpenAPI file is a reproducible contract, not evidence of a hosted service.</p>
+          <div class="code-block"><div class="code-label">Request JSON</div><pre><code>{JSON.stringify(request, null, 2)}</code></pre></div>
+          <div class="code-block"><div class="code-label">Qualified response</div><pre><code>{JSON.stringify(response, null, 2)}</code></pre></div>
+          <p><StatusTag label="WARRANTED_BOUNDED" tone="bounded" /> is returned only for the exact record, both exact source pins, and the supported finite agreement goal. An incorrect pin, unsupported goal, or unknown version returns <StatusTag label="UNKNOWN" tone="unknown" /> or an explicit request error; it never inherits a warrant.</p>
+          <SourceLink href={`/evidence/${record.id}/openapi.preview.json`} label="OpenAPI preview contract" meta="Qualified local resolver · no public endpoint" />
+        </section>
+
+        <section id="reproduce">
+          <h2>Reproduce the qualification</h2>
+          <div class="code-block"><div class="code-label">Python</div><pre><code>export MATHGRAPH_V1_EVIDENCE_ZIP=/path/to/l4yaml-v1.zip
+export MATHGRAPH_V2_EVIDENCE_ZIP=/path/to/l4yaml-v2.zip
+python -m unittest discover \
+  -s tests -p test_mathgraph_public_evidence_v1.py -v</code></pre></div>
+          <p>The 13-test gate validates archive digests, source pins, the publication integrity gate, tamper rejection, negative lineage, resolver method and input limits, fail-closed unknowns, and agreement between human and machine-readable outputs.</p>
+          <div class="source-stack">
+            <SourceLink href="https://github.com/metalogiclabs/mathgraph/tree/7c1fd9be80966ece12ba455375319961194ae7f4" label="Qualified release source" meta="commit 7c1fd9b" />
+            <SourceLink href="https://github.com/metalogiclabs/mathgraph/actions/runs/38021785401" label="Qualification run" meta="13/13 isolated release tests" />
+            <SourceLink href="https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793" label="Decoded-source replay" meta="48 cases + 4 controls" />
+          </div>
+        </section>
+
+        <section id="compatibility">
+          <h2>Versioning and compatibility</h2>
+          <p>Consumers should treat schema names, record IDs, content digests, and source pins as exact. Unknown versions or fields must be retained where possible and must not be interpreted as known types. No endpoint currently promises automatic requalification, arbitrary proof execution, URL fetching, or a universal truth verdict.</p>
+          <div class="callout callout--unknown"><StatusTag label="Current limit" tone="unknown" /><p>The record establishes finite pinned observations and replayed source-scoped proof evidence. Whole-language YAML correctness, natural-language fidelity, and all newer source revisions remain <code>UNKNOWN</code>.</p></div>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

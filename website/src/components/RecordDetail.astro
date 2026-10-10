@@ -1,0 +1,187 @@
+---
+import type { QualifiedRecord } from '../lib/evidence';
+import CopyButton from './CopyButton.astro';
+import EvidenceAxis from './EvidenceAxis.astro';
+import Metric from './Metric.astro';
+import SourceLink from './SourceLink.astro';
+import StatusTag from './StatusTag.astro';
+
+interface Props {
+  record: QualifiedRecord;
+}
+
+const { record } = Astro.props;
+const finite = record.axes.finite_executable;
+const formal = record.axes.formal_verification;
+const base = `/evidence/${record.id}`;
+---
+
+<header class="record-hero shell">
+  <div>
+    <div class="eyebrow">Immutable public evidence</div>
+    <h1>{record.title}</h1>
+    <p class="lede">A source-pinned observation record over one exact L4YAML revision and one exact external suite. It preserves what ran, what matched, what differed, and what remains unknown.</p>
+    <div class="actions">
+      <a class="button" href={`${base}/record.json`}>Open record JSON</a>
+      <a class="button button--secondary" href="#verification-details">Verification details</a>
+    </div>
+  </div>
+  <div class="record-hero__aside">
+    <StatusTag label="Warranted — bounded" tone="bounded" />
+    <p><strong>Historic snapshot</strong><br />{record.snapshot_date}</p>
+    <p class="fineprint">No affiliation or endorsement implied. This record is an independent check of public third-party code.</p>
+  </div>
+</header>
+
+<section class="section section--compact">
+  <div class="shell">
+    <div class="metric-grid" role="group" aria-label="Qualified observations">
+      <Metric value="48/48" label="Decoded cases matched" detail="Exact pinned YAML-suite source labels" />
+      <Metric value="31" label="Expected acceptances" detail="Observed acceptance matched source label" />
+      <Metric value="17" label="Expected rejections" detail="Observed rejection matched source label" />
+      <Metric value="52/52" label="Lean guards evaluated" detail="48 cases plus four executable controls" />
+    </div>
+  </div>
+</section>
+
+<section class="section" id="verification-details">
+  <div class="shell">
+    <div class="eyebrow">Verification boundary</div>
+    <h2>One result. Several independent axes.</h2>
+    <p class="lede">Passing a finite suite does not establish a universal theorem. Replaying named proofs does not certify natural-language intent. This record keeps those questions separate.</p>
+    <div class="axis-list">
+      <EvidenceAxis label="Source identity" status="Implemented" tone="implemented" authority="Git commits + blob receipts" scope={`L4YAML ${record.source.commit.slice(0, 12)} and YAML suite ${record.source.external_suite_commit.slice(0, 12)} only.`} />
+      <EvidenceAxis label="Formal verification" status="Scoped replay" tone="bounded" authority={formal.authority} scope={`${formal.scope}. Universal YAML correctness: UNKNOWN.`} />
+      <EvidenceAxis label="Finite execution" status="Pinned cases checked" tone="bounded" authority={finite.authority} scope={`${finite.matched_external_labels}/${finite.source_cases} decoded cases matched source labels; ${finite.extra_controls} additional controls; ${finite.total_lean_guards} total guards.`} />
+      <EvidenceAxis label="Statement fidelity" status="Unknown" tone="unknown" authority="No qualified translation service" scope="Natural-language or source-intent correspondence was not independently certified." />
+      <EvidenceAxis label="Generalization" status="Unknown" tone="unknown" authority="No whole-language theorem" scope="The observations do not establish parser correctness for YAML as a whole." />
+      <EvidenceAxis label="Current requalification" status="Not checked" tone="unknown" authority="Historic snapshot only" scope={`Newer L4YAML or YAML-suite revisions have not been requalified by this record. Machine status: ${record.axes.current_requalification.status}.`} />
+    </div>
+  </div>
+</section>
+
+<section class="section section--compact">
+  <div class="shell grid">
+    <div class="span-5">
+      <div class="eyebrow">Immutable identity</div>
+      <h2>Address the record, not a moving claim.</h2>
+      <p class="muted">The content digest binds this exact publication object. It proves byte identity under the record's canonicalization rule—not the truth of claims outside its evidence boundary.</p>
+    </div>
+    <div class="span-7 surface">
+      <p><strong>Record ID</strong></p>
+      <div class="copy-row"><code>{record.id}</code><CopyButton value={record.id} label="Copy record ID" /></div>
+      <p><strong>Content SHA-256</strong></p>
+      <div class="copy-row"><code>{record.content_sha256}</code><CopyButton value={record.content_sha256} label="Copy digest" /></div>
+      <p class="fineprint">Schema: <code>{record.schema}</code></p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="shell grid">
+    <div class="span-5">
+      <div class="eyebrow">Pinned sources</div>
+      <h2>Every observation resolves to exact public code.</h2>
+      <p class="muted">The JPL source pin is a merged feature-branch revision, not default main. Attribution does not imply JPL or NASA affiliation, approval, or endorsement.</p>
+    </div>
+    <div class="span-7">
+      <SourceLink href={record.evidence.external_sources.jpl} label="L4YAML source repository" meta={`${record.source.repo}@${record.source.commit}`} />
+      <SourceLink href={record.evidence.external_sources.yaml_suite} label="YAML test suite" meta={`${record.source.external_suite_repo}@${record.source.external_suite_commit}`} />
+      <dl class="definition-list">
+        <div><dt>Branch at source pin</dt><dd><code>{record.source.branch_at_pin}</code></dd></div>
+        <div><dt>Lean toolchain</dt><dd><code>{record.source.lean_toolchain}</code></dd></div>
+        <div><dt>Executable case scope</dt><dd>{finite.case_scope}</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="section section--compact">
+  <div class="shell grid">
+    <div class="span-5">
+      <div class="eyebrow">Qualified receipts</div>
+      <h2>Two source executions, one publication gate.</h2>
+    </div>
+    <div class="span-7">
+      <SourceLink href={record.evidence.v1_compiled_parser.url} label="Compiled parser and proof replay" meta={`Run ${record.evidence.v1_compiled_parser.run} · ${record.evidence.v1_compiled_parser.source_commit}`} />
+      <SourceLink href={record.evidence.v2_normalized_native_parser.url} label="Decoded source-native replay" meta={`Run ${record.evidence.v2_normalized_native_parser.run} · ${record.evidence.v2_normalized_native_parser.source_commit}`} />
+      <SourceLink href="https://github.com/metalogiclabs/mathgraph/actions/runs/38021785401" label="Standalone publication qualification" meta="Run 38021785401 · 13/13 assertions" />
+      <dl class="definition-list">
+        <div><dt>Compiled receipt archive</dt><dd><code>{record.evidence.v1_compiled_parser.archive_sha256}</code></dd></div>
+        <div><dt>Decoded replay archive</dt><dd><code>{record.evidence.v2_normalized_native_parser.archive_sha256}</code></dd></div>
+        <div><dt>Generated Lean source</dt><dd><code>{record.evidence.v2_normalized_native_parser.lean_source_sha256}</code></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="shell grid">
+    <div class="span-5">
+      <div class="eyebrow">Negative lineage</div>
+      <h2>The discrepancies stay in the record.</h2>
+      <p class="muted">Qualification is not a cleanup operation. Historic misinterpretations and source-specific differences remain inspectable.</p>
+    </div>
+    <div class="span-7">
+      <article class="surface">
+        <StatusTag label="Known difference" tone="rejected" />
+        <h3>Recursive anchor behavior</h3>
+        <pre><code>{record.known_separator.input}</code></pre>
+        <dl class="definition-list">
+          <div><dt>Independent normative event model</dt><dd>{record.known_separator.independent_normative_event_model}</dd></div>
+          <div><dt>Pinned JPL parser</dt><dd>{record.known_separator.actual_pinned_jpl_parser}</dd></div>
+          <div><dt>Whole-input extraction theorem</dt><dd>{record.known_separator.whole_input_extraction_theorem}</dd></div>
+        </dl>
+        <p class="fineprint">This is a source-specific known discrepancy, not a novel bug claim and not a universal semantics finding.</p>
+      </article>
+      <article class="surface surface--flat">
+        <StatusTag label="Corrected lineage" tone="experimental" />
+        <h3>26DV:0 input decoding</h3>
+        <p>The first audit measured raw encoded whitespace and recorded one mismatch. The qualified V2 decoder applies the suite's visible-space convention; the native decoded guard passes. Both raw and decoded hashes remain recorded.</p>
+        <dl class="definition-list">
+          <div><dt>Decoder</dt><dd><code>{record.test_input_normalization.decoder}</code></dd></div>
+          <div><dt>Raw source SHA-256</dt><dd><code>{record.test_input_normalization.raw_sha256}</code></dd></div>
+          <div><dt>Decoded input SHA-256</dt><dd><code>{record.test_input_normalization.decoded_sha256}</code></dd></div>
+        </dl>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section--compact">
+  <div class="shell grid">
+    <div class="span-5">
+      <div class="eyebrow">Unknowns</div>
+      <h2>Not checked does not mean false—or true.</h2>
+    </div>
+    <div class="span-7">
+      <div class="callout callout--unknown">
+        <h3>Explicitly outside this record</h3>
+        <ul>
+          <li>Universal correctness of the L4YAML parser or YAML as a language.</li>
+          <li>Natural-language, source-intent, or source-to-formalization fidelity.</li>
+          <li>Generalization beyond the 48 decoded source cases and four controls.</li>
+          <li>Requalification of any revision after the {record.snapshot_date} snapshot.</li>
+          <li>JPL, NASA, or YAML project endorsement of MathGraph or this result.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--ink">
+  <div class="shell grid">
+    <div class="span-5">
+      <div class="eyebrow">Durable resources</div>
+      <h2>Inspect the original projection.</h2>
+      <p class="muted">These committed assets are the byte-identical outputs of the qualified publisher. The OpenAPI document describes a localhost/preview resolver; it is not a promise of a live public endpoint.</p>
+    </div>
+    <div class="span-7">
+      <SourceLink href={`${base}/record.json`} label="Record JSON" meta="Qualified immutable snapshot" />
+      <SourceLink href={`${base}/evidence.json`} label="Evidence JSON" meta="Source receipts and run identities" />
+      <SourceLink href={`${base}/qualified-release.html`} label="Original generated evidence page" meta="Publisher output preserved byte-for-byte" />
+      <SourceLink href={`${base}/scoped-status.svg`} label="Scoped status SVG" meta="48/48 pinned source cases" />
+      <SourceLink href={`${base}/openapi.preview.json`} label="Resolver OpenAPI" meta="Qualified preview contract; not publicly hosted" />
+    </div>
+  </div>
+</section>

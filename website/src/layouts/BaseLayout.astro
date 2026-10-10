@@ -1,0 +1,79 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  currentPath: string;
+  socialDescription?: string;
+}
+
+const { title, description, currentPath, socialDescription = description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'";
+const nav = [
+  { href: '/check/', label: 'Check' },
+  { href: '/records/', label: 'Records' },
+  { href: '/protocol/', label: 'Protocol' },
+  { href: '/developers/', label: 'Developers' },
+];
+const isCurrent = (href: string) => currentPath === href || currentPath.startsWith(href) && href !== '/';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f8f7f3" />
+    <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MathGraph" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={socialDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner shell">
+        <a class="brand" href="/" aria-label="MathGraph home">
+          <span class="brand__mark" aria-hidden="true">M</span>
+          <span class="brand__word">MathGraph<span class="brand__dot">.</span></span>
+        </a>
+        <nav aria-label="Primary">
+          <ul class="nav-list">
+            {nav.map((item) => (
+              <li><a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a></li>
+            ))}
+            <li><a href="https://github.com/metalogiclabs/mathgraph" rel="external">GitHub ↗</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main id="main-content" class="page-main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="site-footer__inner shell">
+        <div>
+          <p><strong>Evidence you can inspect. Results you can reuse.</strong></p>
+          <p class="fineprint">MathGraph is open verification and trust infrastructure developed by Metalogic Labs. Evidence status is scoped; unknowns remain visible.</p>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="/records/">Evidence</a>
+          <a href="/developers/">Documentation</a>
+          <a href="https://github.com/metalogiclabs/mathgraph">Source</a>
+        </nav>
+      </div>
+    </footer>
+    <script>
+      import '../scripts/copy';
+    </script>
+  </body>
+</html>

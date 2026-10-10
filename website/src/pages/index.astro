@@ -1,0 +1,87 @@
+---
+import EvidenceFlow from '../components/EvidenceFlow.astro';
+import Metric from '../components/Metric.astro';
+import RecordSummary from '../components/RecordSummary.astro';
+import StatusTag from '../components/StatusTag.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { loadQualifiedRecord } from '../lib/evidence';
+
+const record = loadQualifiedRecord();
+---
+
+<BaseLayout title="MathGraph — Inspectable evidence for machine claims" description="MathGraph turns machine-generated and software claims into source-pinned evidence records with exact verification boundaries." currentPath="/">
+  <section class="shell hero">
+    <div class="hero__copy">
+      <div class="eyebrow">Open verification infrastructure</div>
+      <h1>Evidence you can inspect. Results you can reuse.</h1>
+      <p class="lede">MathGraph turns machine-generated and software claims into source-pinned evidence records, preserving exactly what was checked, what remains unknown, and what can be independently reused.</p>
+      <div class="actions">
+        <a class="button" href="/records/">Explore evidence</a>
+        <a class="button button--secondary" href="/protocol/">Read the protocol</a>
+      </div>
+    </div>
+    <aside class="hero__aside" aria-label="Product distinction">
+      <p><strong>Metalogic Labs</strong><br /><span class="muted">Company and research organization</span></p>
+      <p><strong>MathGraph</strong><br /><span class="muted">Open verification and trust infrastructure</span></p>
+      <p><strong>MathGraph.org</strong><br /><span class="muted">Public product, documentation, and evidence interface</span></p>
+    </aside>
+  </section>
+
+  <section class="section">
+    <div class="shell">
+      <div class="grid">
+        <div class="span-5">
+          <div class="eyebrow">Qualified public record 001</div>
+          <h2>A real result, with its edges intact.</h2>
+        </div>
+        <div class="span-7">
+          <p class="lede">The first record checks one exact L4YAML revision against 48 decoded external cases and four additional controls. It publishes the successes, the known semantic difference, the corrected input lineage, and the questions the evidence does not answer.</p>
+        </div>
+      </div>
+      <div class="metric-grid" role="group" aria-label="L4YAML record summary">
+        <Metric value="48/48" label="Source cases matched" detail="31 accept · 17 reject" />
+        <Metric value="52/52" label="Lean guards" detail="Cases plus four controls" />
+        <Metric value="2" label="Pinned repositories" detail="Exact Git commits" />
+        <Metric value="UNKNOWN" label="Whole-language correctness" detail="Not inferred from a finite suite" />
+      </div>
+      <RecordSummary record={record} />
+    </div>
+  </section>
+
+  <section class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">The evidence path</div>
+      <h2>Trust is a chain of declared boundaries.</h2>
+      <p class="lede">MathGraph records how a claim reaches a checker, which source bytes and assumptions were used, and which conclusions remain unavailable.</p>
+      <EvidenceFlow />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell grid">
+      <div class="span-5">
+        <div class="eyebrow">Portable by design</div>
+        <h2>Verification should outlive the interface that produced it.</h2>
+      </div>
+      <div class="span-7">
+        <p class="lede">The long-term direction is portable evidence across proof systems, scientific workflows, software verification, and machine-generated claims. V1 begins with something smaller and concrete: one qualified, content-addressed record that a human or agent can inspect without trusting a broad status badge.</p>
+        <div class="callout">
+          <StatusTag label="Current capability" tone="implemented" />
+          <p><strong>Immutable source-bound publication.</strong> Reuse the exact record today. Broader semantic objects, requalification, revocation, and cryptographic warrant formats remain separately labeled research or proposed architecture.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--ink">
+    <div class="shell grid">
+      <div class="span-8">
+        <div class="eyebrow">Start with evidence</div>
+        <h2>Inspect the record before you trust the summary.</h2>
+      </div>
+      <div class="span-4 actions">
+        <a class="button" href={`/records/${record.id}/`}>Open L4YAML record</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

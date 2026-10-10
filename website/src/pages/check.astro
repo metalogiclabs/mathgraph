@@ -1,0 +1,84 @@
+---
+import EvidenceAxis from '../components/EvidenceAxis.astro';
+import Metric from '../components/Metric.astro';
+import RecordSummary from '../components/RecordSummary.astro';
+import StatusTag from '../components/StatusTag.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { loadQualifiedRecord } from '../lib/evidence';
+
+const record = loadQualifiedRecord();
+---
+
+<BaseLayout title="MathGraph Check — Exact verification boundaries" description="See what MathGraph Check establishes today, axis by axis, without collapsing finite observations, proof replay, fidelity, and generalization." currentPath="/check/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">MathGraph Check</div>
+      <h1>Verification is not one bit.</h1>
+      <p class="lede">MathGraph Check publishes source identity, machine observations, proof receipts, assumptions, and unknowns as separate facts. It does not turn every green sub-check into a universal “verified” label.</p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="shell">
+      <div class="grid">
+        <div class="span-5">
+          <div class="eyebrow">Current capability</div>
+          <h2>Pin a claim to the evidence that actually supports it.</h2>
+        </div>
+        <div class="span-7">
+          <p class="lede">Today, Check can publish an immutable record from a qualified evidence boundary and resolve only exact source-bound questions. New revisions and broader goals remain UNKNOWN until separately requalified.</p>
+        </div>
+      </div>
+      <div class="axis-list">
+        <EvidenceAxis label="Source identity" status="Implemented" tone="implemented" authority="Git objects + archived receipt hashes" scope="Identifies exact repositories, commits, source blobs, toolchain, and publication digest." />
+        <EvidenceAxis label="Formal verification" status="Scoped replay" tone="bounded" authority="Named Lean proof objects" scope="Replays only the explicitly named theorems and their recorded axiom boundary." />
+        <EvidenceAxis label="Finite executable evaluation" status="Warranted — bounded" tone="bounded" authority="Compiled parser + Lean #guard evaluation" scope="Reports exact outcomes on exact decoded cases and controls; does not generalize to the whole language." />
+        <EvidenceAxis label="Statement fidelity" status="Unknown" tone="unknown" authority="No qualified interpretation service" scope="Does not assert that an informal or normative source statement was translated completely or correctly." />
+        <EvidenceAxis label="Assumptions and semantic interpretation" status="Explicit boundary" tone="experimental" authority="Record fields + declared separator" scope="Preserves assumptions and source-specific differences without promoting a preferred interpretation to truth." />
+        <EvidenceAxis label="Generalization" status="Unknown" tone="unknown" authority="No whole-domain theorem" scope="A finite suite, content hash, or signature cannot establish correctness beyond the declared scope." />
+        <EvidenceAxis label="Requalification and revocation" status="Proposed lifecycle" tone="proposed" authority="Historic record remains immutable" scope="Future state can mark a record superseded, stale, revoked, or requalified without rewriting its historic evidence." />
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Bounded example</div>
+      <h2>The L4YAML record earns one narrow result.</h2>
+      <div class="metric-grid">
+        <Metric value="48/48" label="Decoded source cases" detail="Matched exact source labels" />
+        <Metric value="31" label="Expected acceptances" detail="Pinned suite observations" />
+        <Metric value="17" label="Expected rejections" detail="Pinned suite observations" />
+        <Metric value="4" label="Extra controls" detail="52 total Lean guards" />
+      </div>
+      <RecordSummary record={record} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell grid">
+      <div class="span-5">
+        <div class="eyebrow">Fail closed</div>
+        <h2>Unsupported questions do not inherit nearby evidence.</h2>
+      </div>
+      <div class="span-7">
+        <div class="callout callout--unknown">
+          <StatusTag label="Unknown" tone="unknown" />
+          <p>An incorrect source commit, a changed suite pin, a different record ID, or a broader goal such as whole-language correctness returns <code>UNKNOWN</code>. It is not a failed theorem and not an invitation to guess.</p>
+        </div>
+        <h3>Current versus research</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Capability</th><th>Maturity</th><th>Boundary</th></tr></thead>
+            <tbody>
+              <tr><td>Immutable static evidence record</td><td>Implemented</td><td>Qualified L4YAML snapshot</td></tr>
+              <tr><td>Exact source-bound localhost resolver</td><td>Implemented preview</td><td>Read-only; no public hosted endpoint yet</td></tr>
+              <tr><td>Stable semantic object envelope</td><td>Experimental</td><td>Qualified research candidate, not deployed V1</td></tr>
+              <tr><td>Automatic source-change requalification</td><td>Proposed</td><td>No continuous watcher or revocation service</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
