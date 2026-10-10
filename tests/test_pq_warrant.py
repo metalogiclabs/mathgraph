@@ -10,7 +10,8 @@ import sys
 
 import pytest
 
-from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA65PrivateKey
+from pqcrypto.sign import ml_dsa_65
+from mathgraph.pq_warrant import signed_message
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from mathgraph.crystal import SemanticObject
@@ -22,9 +23,9 @@ from mathgraph.pq_warrant import (
 
 @pytest.fixture(scope="module")
 def keys():
-    pq = MLDSA65PrivateKey.generate()
+    pq = ml_dsa_65.keygen()
     ed = Ed25519PrivateKey.generate()
-    pq_pub = pq.public_key().public_bytes_raw()
+    pq_pub = pq[0]
     ed_pub = ed.public_key().public_bytes_raw()
     pq_id = key_id("ML-DSA-65", pq_pub)
     ed_id = key_id("Ed25519", ed_pub)
@@ -172,11 +173,8 @@ def test_noncanonical_json_and_opaque_unknown_grammar(keys):
 def test_wrong_signature_context_rejected(keys):
     obj = source()
     statement = make_statement(obj)
-    pub = keys[0].public_key().public_bytes_raw()
-    body = json.dumps(statement, sort_keys=True, separators=(",", ":")).encode()
-    wrong_sig = keys[0].sign(
-        b"MathGraph.pq-warrant.v1.signed-statement\x00"
-        + len(body).to_bytes(8, "big") + body, b"wrong-pq-context")
+    pub = keys[0][0]
+    wrong_sig = ml_dsa_65.sign(keys[0][1], signed_message(statement), b"wrong-pq-context")
     bad = bundle_bytes(statement, [{"algorithm":"ML-DSA-65",
                                     "key_id":key_id("ML-DSA-65",pub),
                                     "signature_b64":base64.b64encode(wrong_sig).decode()}])
