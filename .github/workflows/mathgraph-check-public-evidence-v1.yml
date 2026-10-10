@@ -1,0 +1,79 @@
+name: MathGraph Check — source-pinned public record and agent API V1
+on:
+  push:
+    branches: [mathgraph-check-public-evidence-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  published-evidence-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            mathgraph_check/
+            tests/test_mathgraph_public_evidence_v1.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve exact archived proof/execution evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-evidence"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657687808/zip" \
+            -o "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v1.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657314389/zip" \
+            -o "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v2.zip"
+          echo "b75581017d6620481c77e52b350e8bb8631d11747a92789f7887cde527807086  $RUNNER_TEMP/mathgraph-evidence/l4yaml-v1.zip" | sha256sum -c -
+          echo "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e  $RUNNER_TEMP/mathgraph-evidence/l4yaml-v2.zip" | sha256sum -c -
+          echo "MATHGRAPH_SOURCE_RECEIPT_ZIP_DIGESTS_GREEN"
+      - name: Verify exact receipt boundary and the agent API with adversarial controls
+        env:
+          MATHGRAPH_V1_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-evidence/l4yaml-v1.zip
+          MATHGRAPH_V2_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-evidence/l4yaml-v2.zip
+        run: |
+          python -m unittest discover -s tests \
+            -p 'test_mathgraph_public_evidence_v1.py' -v
+          echo "MATHGRAPH_PUBLIC_RELEASE_ASSERTIONS_GREEN"
+      - name: Create human, agent and scoped status outputs from checked evidence
+        run: |
+          set -euo pipefail
+          python -m mathgraph_check.public_receipts \
+            --v1-zip "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v1.zip" \
+            --v2-zip "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v2.zip" \
+            --out public/mathgraph-check
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph_check.public_http import load_release
+          r=load_release(Path("public/mathgraph-check"))
+          assert r["axes"]["finite_executable"]["matched_external_labels"] == 48
+          assert r["axes"]["finite_executable"]["total_lean_guards"] == 52
+          assert r["axes"]["generalization"]["status"] == "UNKNOWN"
+          assert r["axes"]["statement_fidelity"]["status"] == "UNKNOWN"
+          assert r["admission"]["mathematical_theorem_badge_issued"] is False
+          assert r["axes"]["current_requalification"]["status"] == "NOT_CHECKED_AFTER_SNAPSHOT"
+          print("MATHGRAPH_PUBLIC_EVIDENCE_SOURCE_BOUND_RELEASE_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-public-evidence-v1
+          path: public/mathgraph-check/
+          if-no-files-found: warn
