@@ -14,8 +14,7 @@ import json
 from pathlib import Path
 import sys
 
-from cryptography.hazmat.primitives.asymmetric.mldsa import MLDSA65PublicKey
-from cryptography.exceptions import InvalidSignature
+from pqcrypto.sign import ml_dsa_65
 
 CONTEXT = b"MathGraph.pq-warrant.v1"
 DOMAIN = b"MathGraph.pq-warrant.v1.signed-statement\x00"
@@ -136,10 +135,10 @@ def replay(path):
             if kid != sig["key_id"]:
                 continue
             try:
-                MLDSA65PublicKey.from_public_bytes(pub).verify(
-                    base64.b64decode(sig["signature_b64"], validate=True), msg, CONTEXT)
+                ml_dsa_65.verify(
+                    pub, msg, base64.b64decode(sig["signature_b64"], validate=True), CONTEXT)
                 valid = True
-            except (InvalidSignature, ValueError):
+            except ValueError:
                 continue
         if not valid:
             return {"state": "UNAUTHENTICATED", "reason": "required_mldsa65_not_verified"}
