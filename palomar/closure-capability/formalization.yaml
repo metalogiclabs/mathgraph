@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+version: "v0.4"
+
+project:
+  name: "MathGraph: Closure-relative capability growth"
+  description: >-
+    A finite verified-search model separates literal rewrite identity from
+    capability identity modulo an already-available cyclic symmetry, and
+    separates strict growth of verified reachability from growth of the raw
+    constructor language. Two LT-to-LE rewrites at different coordinates are
+    identified by the old symmetry. Under the retained LT-to-LE regime a target
+    containing OR is unreachable; after adjoining AND-to-OR the same target is
+    reachable. The later rewrite was nevertheless already formable in the raw
+    one-site language, so the formal result explicitly rules out the stronger
+    interpretation that the witness demonstrates growth of raw syntax.
+  authors:
+    - name: "Heath Sanchez"
+      affiliation: "Metalogic Labs"
+  license: "Apache-2.0"
+  responsible_maintainers:
+    - name: "Heath Sanchez"
+      affiliation: "Metalogic Labs"
+
+classification:
+  arxiv: ["cs.LO", "cs.AI"]
+  msc2020: ["03B35", "68T27"]
+
+sources:
+  - title: "Closure-relative capability growth: exact finite witness and categorical question"
+    authors:
+      - "Heath Sanchez"
+    id: "https://github.com/metalogiclabs/mathgraph/blob/fd98cc2ceb77cdf54f3f68360904a17db420418c/reproductions/daniel_closure_depth_v1/MATHEMATICAL_NOTE.md"
+    type: "research note"
+    relationship: "formalizes"
+    note: >-
+      This Lean project formalizes the exact finite propositions on
+      closure-relative orbit identity, generation-2 reachability expansion,
+      and the explicit raw-formability boundary. The source note also discusses
+      broader categorical questions and experimental claims that are not part of
+      the compared Lean declarations.
+    author_endorsement: "participated"
+
+related_formalizations: []
+
+status:
+  scope: >-
+    The formalization covers the finite four-coordinate witness only. It proves
+    orbit identity for two literal LT-to-LE rewrites under the fixed cyclic
+    symmetry, non-reachability of the protected target in regime 1,
+    reachability after adjoining AND-to-OR in regime 2, and raw formability of
+    that later rewrite. It does not formalize the experimental search-compression
+    measurements, information-flow claims, natural-code transfer experiments,
+    scope/revocation experiments, future-relative comparative representations,
+    or any claim of representation-independent invention or recursive
+    self-extension.
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: []
+  main_results:
+    - "MathGraphPalomarClosure.orbit_identity"
+    - "MathGraphPalomarClosure.strict_closure_obstruction"
+    - "MathGraphPalomarClosure.strict_closure_expansion"
+    - "MathGraphPalomarClosure.raw_formability_boundary"
+
+automation:
+  methods:
+    - method: "agent"
+      models: ["GPT-5.6 Sol"]
+      framework: "ChatGPT"
+      tool_setup: >-
+        AI-assisted theorem packaging, Lean proof development, GitHub Actions
+        iteration, and Palomar Comparator/NanoDa integration, with human choice
+        of the mathematical target and claim boundary.
+      cost:
+        wall_time: "not tracked"
+        spend_usd: "subscription-based / not separately tracked"
+        hardware: "hosted services and GitHub Actions"
+      prompting_notes: >-
+        Development followed a residual-driven loop: run the strongest current
+        proof, inspect the exact verifier failure, repair only that residual,
+        and rerun through the independent checker stack.
+  spend_usd: "subscription-based / not separately tracked"
+  notes: >-
+    The source mathematical witness predates this Palomar package. AI assistance
+    was used to isolate and formalize the exact bounded claims and to repair Lean
+    elaboration issues. The final Solution contains no admitted proof and is
+    replayed through Comparator and NanoDa.
+
+fidelity:
+  divergences: >-
+    The Lean result is deliberately narrower than the broader MathGraph
+    experimental programme. In particular, strict reachability expansion is
+    not presented as growth of raw syntax; the compared raw-formability theorem
+    records the opposite boundary explicitly.
+
+review:
+  status: "self-assessed; mechanically checked"
+  reviewers: []
+  notes: >-
+    The statement surface has been audited against the source mathematical note.
+    GitHub Actions builds Challenge and Solution separately, rejects admitted
+    proofs in Solution, and runs the Palomar Comparator and independent NanoDa
+    replay. No independent human mathematical peer review is claimed.
+
+alignment:
+  namespace: "MathGraphPalomarClosure"
+  statements:
+    - source: "Proposition 2 — quotient identity"
+      lean: "MathGraphPalomarClosure.orbit_identity"
+      module: "Challenge"
+      status: "proved"
+      note: "Formalizes that two coordinate-distinct LT-to-LE literals lie in the same orbit under the old cyclic symmetry."
+    - source: "Theorem 4 — exact generation-2 closure expansion (negative half)"
+      lean: "MathGraphPalomarClosure.strict_closure_obstruction"
+      module: "Challenge"
+      status: "proved"
+      note: "Formalizes non-reachability of the protected target under cyclic transport plus LT-to-LE."
+    - source: "Theorem 4 — exact generation-2 closure expansion (positive half)"
+      lean: "MathGraphPalomarClosure.strict_closure_expansion"
+      module: "Challenge"
+      status: "proved"
+      note: "Formalizes reachability after adjoining AND-to-OR."
+    - source: "Section 9 — raw constructor formability"
+      lean: "MathGraphPalomarClosure.raw_formability_boundary"
+      module: "Challenge"
+      status: "proved"
+      note: "Formalizes the falsification boundary that AND-to-OR was already expressible in the raw one-site language."
+
+acknowledgements: >-
+  Lean 4, the Lean FRO Comparator and lean4export tools, NanoDa, and the Palomar
+  Registry submission standard are used for independent statement/proof
+  separation and replay.
