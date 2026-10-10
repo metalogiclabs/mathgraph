@@ -72,8 +72,40 @@ export function validateResolveAgreement(recordValue: unknown, scenariosValue: u
   for (const scenario of scenarios.PUBLISHED_RECORD.scenarios) {
     requireResolve(same(Object.keys(scenario.states).sort(), historicalIds) && same(Object.keys(scenario.resolutions).sort(), historicalIds), 'RESOLVE_HISTORICAL_SYNTHETIC_MIX');
   }
+  const historicalObjectIds = new Set([
+    ...historicalIds,
+    ...graph.receipts.map(receipt => receipt.id),
+    ...graph.routes.flatMap(route => [route.conclusion, ...route.premises, ...route.evidence]),
+  ]);
   for (const scenario of scenarios.SYNTHETIC_CONFORMANCE.scenarios) {
-    requireResolve(scenario.graph.claims.every(claim => claim.scope === 'synthetic-conformance' && !historicalIds.includes(claim.id)), 'RESOLVE_HISTORICAL_SYNTHETIC_MIX');
+    const { claims, receipts, routes } = scenario.graph;
+    const claimIds = new Set(claims.map(claim => claim.id));
+    const receiptIds = new Set(receipts.map(receipt => receipt.id));
+    requireResolve(
+      [...claims, ...receipts].every(item => item.scope === 'synthetic-conformance' && !historicalObjectIds.has(item.id)),
+      'RESOLVE_HISTORICAL_SYNTHETIC_MIX',
+    );
+    requireResolve(
+      claimIds.size === claims.length && receiptIds.size === receipts.length &&
+      [...claimIds].every(id => !receiptIds.has(id)),
+      'RESOLVE_SYNTHETIC_DUPLICATE_IDENTITY',
+    );
+    // V1 routes have no independent IDs: their conclusion/premise/evidence
+    // tuple is their identity. Validate references, not dependency closure.
+    const internallyReferential = (route: { conclusion: string; premises: string[]; evidence: string[] }): boolean =>
+      claimIds.has(route.conclusion) && route.premises.every(id => claimIds.has(id)) &&
+      route.evidence.every(id => receiptIds.has(id));
+    requireResolve(routes.every(internallyReferential), 'RESOLVE_SYNTHETIC_ROUTE_REFERENCE_INVALID');
+    requireResolve(
+      scenario.active_routes.every(route => internallyReferential(route) && routes.some(candidate => same(candidate, route))),
+      'RESOLVE_SYNTHETIC_ACTIVE_ROUTE_INVALID',
+    );
+    requireResolve(scenario.withdrawn_evidence.every(id => receiptIds.has(id)), 'RESOLVE_SYNTHETIC_WITHDRAWAL_REFERENCE_INVALID');
+    const expectedKeys = [...claimIds].sort();
+    requireResolve(
+      same(Object.keys(scenario.states).sort(), expectedKeys) && same(Object.keys(scenario.resolutions).sort(), expectedKeys),
+      'RESOLVE_SYNTHETIC_STATE_REFERENCE_INVALID',
+    );
   }
   return { record, scenarios };
 }

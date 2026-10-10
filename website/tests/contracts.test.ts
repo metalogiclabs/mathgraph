@@ -40,7 +40,7 @@ describe('agent discovery contracts', () => {
     });
     expect(discovery.integrity_notice).toMatch(/integrity.*not.*authenticity/i);
     expect(discovery.repository_provenance.authentication_status).toBe('UNSIGNED_PROVENANCE_ONLY');
-    expect(discovery.repository_provenance.catalogue_source).toContain('0992408c4c545536173709fc4781670f11efda96');
+    expect(discovery.repository_provenance.catalogue_source).toBe('https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json');
 
     const generatedAt = Date.parse(index.generated_at);
     expect(Number.isFinite(generatedAt)).toBe(true);

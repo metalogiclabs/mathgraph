@@ -133,6 +133,44 @@ describe('record 002 immutable admission', () => {
     scenarios.snapshot_sha256 = record.snapshot_sha256;
     expect(() => validateResolveAgreement(record, scenarios)).toThrow('RESOLVE_HISTORICAL_OUTCOME_MISMATCH');
   });
+  test.each([
+    'historicalReceipt', 'historicalReceiptScope', 'claimUsesHistoricalReceiptId',
+    'historicalConclusion', 'historicalPremise', 'historicalEvidence',
+    'unknownConclusion', 'unknownPremise', 'unknownEvidence',
+    'historicalStateKey', 'historicalResolutionKey', 'missingState',
+    'activeHistoricalRoute', 'unlistedActiveRoute', 'historicalWithdrawal',
+    'unknownWithdrawal', 'duplicateReceipt', 'overlappingClaimReceipt',
+  ])('rejects synthetic reference contamination: %s', async mutation => {
+    const f = await fixture();
+    const record = JSON.parse(f.recordBytes.toString());
+    const scenarios = JSON.parse(f.scenariosBytes.toString());
+    const synthetic = scenarios.SYNTHETIC_CONFORMANCE.scenarios[0];
+    const historicalClaim = 'openai.original_support.1';
+    const historicalReceipt = 'openai.original_publication_receipt.1';
+    if (mutation === 'historicalReceipt') {
+      synthetic.graph.receipts[0].id = historicalReceipt;
+      synthetic.graph.routes[0].evidence = [historicalReceipt];
+      synthetic.withdrawn_evidence = [historicalReceipt];
+    }
+    if (mutation === 'historicalReceiptScope') synthetic.graph.receipts[0].scope = record.derivation.receipts[0].scope;
+    if (mutation === 'claimUsesHistoricalReceiptId') synthetic.graph.claims[0].id = historicalReceipt;
+    if (mutation === 'historicalConclusion') synthetic.graph.routes[0].conclusion = historicalClaim;
+    if (mutation === 'historicalPremise') synthetic.graph.routes[0].premises = [historicalClaim];
+    if (mutation === 'historicalEvidence') synthetic.graph.routes[0].evidence = [historicalReceipt];
+    if (mutation === 'unknownConclusion') synthetic.graph.routes[0].conclusion = 'missing-claim';
+    if (mutation === 'unknownPremise') synthetic.graph.routes[0].premises = ['missing-claim'];
+    if (mutation === 'unknownEvidence') synthetic.graph.routes[0].evidence = ['missing-receipt'];
+    if (mutation === 'historicalStateKey') synthetic.states[historicalClaim] = 'UNKNOWN';
+    if (mutation === 'historicalResolutionKey') synthetic.resolutions[historicalClaim] = { before: 'UNKNOWN', after: 'UNKNOWN', changed: false };
+    if (mutation === 'missingState') delete synthetic.states.A;
+    if (mutation === 'activeHistoricalRoute') synthetic.active_routes.push(record.derivation.routes[0]);
+    if (mutation === 'unlistedActiveRoute') synthetic.active_routes.push({ conclusion: 'A', evidence: ['rB'], premises: [] });
+    if (mutation === 'historicalWithdrawal') synthetic.withdrawn_evidence = [historicalReceipt];
+    if (mutation === 'unknownWithdrawal') synthetic.withdrawn_evidence = ['missing-receipt'];
+    if (mutation === 'duplicateReceipt') synthetic.graph.receipts[1].id = 'rA';
+    if (mutation === 'overlappingClaimReceipt') synthetic.graph.claims[0].id = 'rA';
+    expect(() => validateResolveAgreement(record, scenarios)).toThrow();
+  });
   test.each(['recordExtension', 'claimExtension', 'scenarioExtension', 'schema', 'sourcePin', 'consumerOwnership', 'leanRerun', 'historicalSyntheticMix'])('rejects semantic/schema mutation %s without relying on transport', async mutation => {
     const f = await fixture();
     const record = JSON.parse(f.recordBytes.toString());

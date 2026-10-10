@@ -29,7 +29,7 @@
   "integrity_notice": "Digests establish integrity and byte identity, not host authenticity or semantic truth.",
   "repository_provenance": {
     "repository": "https://github.com/metalogiclabs/mathgraph",
-    "catalogue_source": "https://github.com/metalogiclabs/mathgraph/blob/0992408c4c545536173709fc4781670f11efda96/website/src/data/record-index.json",
+    "catalogue_source": "https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json",
     "authentication_status": "UNSIGNED_PROVENANCE_ONLY"
   }
 }

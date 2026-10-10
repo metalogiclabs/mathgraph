@@ -191,6 +191,7 @@ export function validateRecordCatalog(value: unknown): RecordCatalog {
     requireCatalog(!versions.has(key), 'DUPLICATE_RECORD_VERSION');
     versions.add(key);
     requireCatalog(entry.version_slug === `v${entry.version}`, 'RECORD_VERSION_SLUG_MISMATCH');
+    requireCatalog(Object.hasOwn(catalog.latest_versions, entry.id), 'LATEST_RECORD_MAPPING_MISSING');
   }
   for (const [id, version] of Object.entries(catalog.latest_versions)) {
     requireCatalog(versions.has(`${id}@${version}`), 'LATEST_RECORD_VERSION_MISSING');

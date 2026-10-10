@@ -154,6 +154,13 @@ describe('published record catalogue', () => {
     expect(() => validateRecordCatalog(catalog)).toThrow('LATEST_RECORD_VERSION_MISSING');
   });
 
+  test('rejects a published record omitted from latest versions', () => {
+    const catalog = clone(catalogSource);
+    delete (catalog.latest_versions as Record<string, number>)['mg-living-warrant-openai-jpl-20261010'];
+
+    expect(() => validateRecordCatalog(catalog)).toThrow('LATEST_RECORD_MAPPING_MISSING');
+  });
+
   test('rejects unsupported record schemas', async () => {
     const fixture = await packageFixture();
     const entry = clone(fixture.entry) as SourceCheckEntry;
