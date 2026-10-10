@@ -1,0 +1,115 @@
+name: MathGraph Check — Living Warrant Evidence V1
+
+on:
+  push:
+    branches:
+      - mathgraph-check-living-warrants-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout: |
+            mathgraph_check/
+            tests/test_mathgraph_public_evidence_v1.py
+            tests/test_mathgraph_living_warrants_v1.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reacquire qualified immutable JPL receipts and pinned OpenAI publisher notice
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mg-source" evidence-out/living
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657687808/zip" \
+            -o "$RUNNER_TEMP/mg-source/l4yaml-v1.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657314389/zip" \
+            -o "$RUNNER_TEMP/mg-source/l4yaml-v2.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            "https://raw.githubusercontent.com/openai/math/fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb/history.md" \
+            -o "$RUNNER_TEMP/mg-source/openai-history.md"
+          echo "b75581017d6620481c77e52b350e8bb8631d11747a92789f7887cde527807086  $RUNNER_TEMP/mg-source/l4yaml-v1.zip" | sha256sum -c -
+          echo "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e  $RUNNER_TEMP/mg-source/l4yaml-v2.zip" | sha256sum -c -
+          python - <<'PY'
+          from mathgraph_check.living_warrants import git_blob_sha1, read_withdrawals, OPENAI_HISTORY_BLOB
+          from pathlib import Path
+          import os
+          raw = (Path(os.environ["RUNNER_TEMP"])/"mg-source"/"openai-history.md").read_bytes()
+          assert git_blob_sha1(raw) == OPENAI_HISTORY_BLOB
+          assert len(read_withdrawals(raw)) == 3
+          print("PINNED_OPENAI_THREE_WITHDRAWALS_SOURCE_GREEN")
+          PY
+          echo "MATHGRAPH_OPENAI_HISTORY_MD=$RUNNER_TEMP/mg-source/openai-history.md" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_V1_EVIDENCE_ZIP=$RUNNER_TEMP/mg-source/l4yaml-v1.zip" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_V2_EVIDENCE_ZIP=$RUNNER_TEMP/mg-source/l4yaml-v2.zip" >> "$GITHUB_ENV"
+      - name: Strict source-fidelity, source-integrity and warrant-graph controls
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_mathgraph_public_evidence_v1.py -v \
+            2>&1 | tee evidence-out/living/jpl-release-tests.log
+          python -m unittest discover -s tests -p test_mathgraph_living_warrants_v1.py -v \
+            2>&1 | tee evidence-out/living/living-graph-tests.log
+          grep -Eq '^Ran [1-9][0-9]* tests?' evidence-out/living/jpl-release-tests.log
+          grep -Eq '^Ran [1-9][0-9]* tests?' evidence-out/living/living-graph-tests.log
+      - name: Publish historical pinned observations, without theorem promotion
+        run: |
+          set -euo pipefail
+          python -m mathgraph_check.public_receipts \
+            --v1-zip "$MATHGRAPH_V1_EVIDENCE_ZIP" \
+            --v2-zip "$MATHGRAPH_V2_EVIDENCE_ZIP" \
+            --out public/mathgraph-check
+          python - <<'PY'
+          from pathlib import Path
+          from mathgraph_check.living_warrants import write_snapshot, verify_snapshot, JPL_CLAIM
+          from mathgraph_check.public_http import load_release
+          import os
+          out = Path("public/mathgraph-check")
+          trusted = load_release(out)
+          snap = write_snapshot(Path(os.environ["MATHGRAPH_OPENAI_HISTORY_MD"]), out/"record.json", out)
+          assert verify_snapshot(snap)
+          assert len(snap["publisher_notice"]["documents"]) == 3
+          assert all(v["mathematical_truth"] == "UNKNOWN" for v in snap["publisher_notice"]["documents"])
+          assert snap["resolutions"][JPL_CLAIM]["after"] == "WARRANTED_BOUNDED"
+          assert trusted["content_sha256"] == snap["sources"]["jpl_record_sha256"]
+          assert snap["interpretation"]["runtime_status"] == "IMMUTABLE_HISTORICAL_SNAPSHOT_NOT_CONTINUOUSLY_MONITORED"
+          print("QUALIFIED_BOUNDED_LIVING_WARRANT_SNAPSHOT=" + snap["snapshot_sha256"])
+          PY
+          test -s public/mathgraph-check/living.json
+          test -s public/mathgraph-check/living.html
+          {
+            echo "HEAD=$(git rev-parse HEAD)"
+            echo "MODE=FROZEN_PUBLICATION_CHANGE_DEMONSTRATION"
+            echo "ACTUAL_FORMAL_THEOREM_RESULT_FOR_WITHDRAWN_PAPERS=UNKNOWN"
+            echo "EFFECT=3_DOCUMENTARY_SUPPORT_PATHS_WITHDRAWN_JPL_48_CASES_UNCHANGED"
+            echo "NO_CLAIM=AUTOMATIC_NL_PROOF_CHECKING_OR_LIVE_MONITORING"
+            sha256sum mathgraph_check/living_warrants.py \
+              mathgraph_check/public_receipts.py \
+              tests/test_mathgraph_living_warrants_v1.py \
+              public/mathgraph-check/living.json
+          } > evidence-out/living/source-receipt.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-living-warrant-v1
+          path: |
+            public/mathgraph-check/
+            evidence-out/living/
+          if-no-files-found: warn
