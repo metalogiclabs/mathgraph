@@ -8,12 +8,15 @@ This is bounded reference machinery, not a soundness theorem or a trust root.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 import hashlib
 from html import escape
 import json
 from pathlib import Path
-from typing import Mapping, Sequence
+
+from .warrant_resolution import (
+    KINDS, Claim, Receipt, Route, compare_snapshots, reclose,
+)
 
 OPENAI_REPO = "openai/math"
 OPENAI_HEAD = "fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb"
@@ -35,7 +38,6 @@ JPL_SCOPE = (
     ":48-cases"
 )
 JPL_RECEIPT = "mathgraph.l4yaml.48-case-qualification"
-KINDS = frozenset(("formal", "documentary"))
 
 
 def canonical(value: object) -> bytes:
@@ -68,111 +70,6 @@ def read_withdrawals(raw: bytes) -> tuple[str, ...]:
     if bullets != WITHDRAWN_TITLES:
         raise ValueError("WITHDRAWAL_TITLES_CHANGED")
     return bullets
-
-
-@dataclass(frozen=True)
-class Claim:
-    id: str
-    kind: str
-    scope: str
-
-    def __post_init__(self):
-        if not self.id or self.kind not in KINDS or not self.scope:
-            raise ValueError("INVALID_CLAIM_TYPE")
-
-
-@dataclass(frozen=True)
-class Receipt:
-    """Pre-qualified externally bound evidence, NOT an untrusted self-label.
-
-    Real imports must independently validate source/replay before constructing
-    these values. These value objects are not signature or receipt verifiers.
-    """
-    id: str
-    kind: str
-    scope: str
-
-    def __post_init__(self):
-        if not self.id or self.kind not in KINDS or not self.scope:
-            raise ValueError("INVALID_RECEIPT_TYPE")
-
-
-@dataclass(frozen=True)
-class Route:
-    conclusion: str
-    evidence: tuple[str, ...]
-    premises: tuple[str, ...] = ()
-
-
-def reclose(
-    claims: Sequence[Claim],
-    routes: Sequence[Route],
-    receipts: Sequence[Receipt],
-    *,
-    withdrawn: frozenset[str] = frozenset(),
-) -> dict[str, str]:
-    """Small, monotone, source/logic-typed AND/OR consequence resolver.
-
-    All routes require conjunctive premises and evidence; independent routes
-    are alternatives. Cycles with no qualified base remain UNKNOWN. No
-    source/documentary route can establish a formal theorem.
-    """
-    cl = {c.id: c for c in claims}
-    ev = {r.id: r for r in receipts}
-    if len(cl) != len(claims) or len(ev) != len(receipts):
-        raise ValueError("DUPLICATE_CLAIM_OR_RECEIPT")
-    if not withdrawn.issubset(ev.keys()):
-        raise ValueError("UNKNOWN_WITHDRAWAL_TARGET")
-    if len(set(routes)) != len(routes):
-        raise ValueError("DUPLICATE_ROUTE")
-    for route in routes:
-        if route.conclusion not in cl or not route.evidence:
-            raise ValueError("INVALID_ROUTE")
-        if any(x not in ev for x in route.evidence):
-            raise ValueError("UNKNOWN_ROUTE_RECEIPT")
-        if any(x not in cl for x in route.premises):
-            raise ValueError("UNKNOWN_ROUTE_PREMISE")
-        dest = cl[route.conclusion]
-        if any(ev[x].kind != dest.kind or ev[x].scope != dest.scope
-               for x in route.evidence):
-            raise ValueError("CROSS_BOUNDARY_EVIDENCE_WITHOUT_BRIDGE")
-        if any(cl[x].kind != dest.kind or cl[x].scope != dest.scope
-               for x in route.premises):
-            raise ValueError("CROSS_BOUNDARY_PREMISE_WITHOUT_BRIDGE")
-
-    active = set()
-    for _ in range(len(cl) + 1):
-        changed = False
-        for route in routes:
-            if (all(e not in withdrawn for e in route.evidence)
-                    and all(p in active for p in route.premises)
-                    and route.conclusion not in active):
-                active.add(route.conclusion)
-                changed = True
-        if not changed:
-            break
-    return {
-        key: ("WARRANTED_BOUNDED" if cl[key].kind == "formal"
-              else "SOURCE_DOCUMENTED") if key in active else "UNKNOWN"
-        for key in sorted(cl)
-    }
-
-
-def compare_snapshots(
-    before: Mapping[str, str], after: Mapping[str, str]
-) -> dict[str, dict]:
-    if before.keys() != after.keys():
-        raise ValueError("DIFFERENT_CLAIM_UNIVERSE")
-    result = {}
-    for claim in sorted(before):
-        old, new = before[claim], after[claim]
-        if old != "UNKNOWN" and new == "UNKNOWN":
-            status = "STALE"
-        else:
-            status = new
-        result[claim] = {"before": old, "after": status,
-                         "changed": old != status}
-    return result
 
 
 def build_snapshot(history: bytes, jpl_record: dict) -> dict:

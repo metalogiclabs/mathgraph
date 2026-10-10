@@ -1,5 +1,6 @@
 """Conservative living-warrant graph: source-pin and adversarial controls."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import tempfile
@@ -18,6 +19,26 @@ from mathgraph_check.public_receipts import (
 
 
 class GraphSemanticsTests(unittest.TestCase):
+    def test_pinned_snapshot_reclosure_regenerates_identical_bytes(self):
+        from mathgraph_check.warrant_resolution import resolve_graph
+        path = Path(__file__).resolve().parents[1] / "evidence/living_warrant_openai_jpl_20261010.json"
+        raw = path.read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(),
+                         "0a850b112cce200f2fa97f0d861db712f3752712a6326e62f4c0d56996a95d87")
+        snapshot = json.loads(raw)
+        graph = snapshot["derivation"]
+        claims = [Claim(**item) for item in graph["claims"]]
+        receipts = [Receipt(**item) for item in graph["receipts"]]
+        routes = [Route(item["conclusion"], tuple(item["evidence"]), tuple(item["premises"]))
+                  for item in graph["routes"]]
+        before = resolve_graph(claims, routes, receipts)
+        after = resolve_graph(claims, routes, receipts,
+                              withdrawn=frozenset(graph["withdrawn_evidence"]))
+        snapshot["resolutions"] = compare_snapshots(before.states, after.states)
+        del snapshot["snapshot_sha256"]
+        snapshot["snapshot_sha256"] = hashlib.sha256(canonical(snapshot)).hexdigest()
+        self.assertEqual(canonical(snapshot) + b"\n", raw)
+
     def test_synthetic_conjunctive_dependency_invalidates_only_descendants(self):
         scope = "synthetic.formal.scope@1"
         cs = [Claim(x, "formal", scope) for x in "ABC"]
@@ -130,6 +151,8 @@ class RealSourceTests(unittest.TestCase):
 
     def test_end_to_end_exact_source_live_graph(self):
         snap = build_snapshot(self.history, self.record)
+        published = Path(__file__).resolve().parents[1] / "evidence/living_warrant_openai_jpl_20261010.json"
+        self.assertEqual(canonical(snap) + b"\n", published.read_bytes())
         self.assertTrue(verify_snapshot(snap))
         items = snap["publisher_notice"]["documents"]
         self.assertEqual(tuple(x["name"] for x in items), WITHDRAWN_TITLES)
