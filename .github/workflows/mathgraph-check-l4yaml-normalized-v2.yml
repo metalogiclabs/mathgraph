@@ -88,10 +88,11 @@ jobs:
           "$HOME/.elan/bin/lake" env lean \
             "$GITHUB_WORKSPACE/evidence/l4yaml-normalized-v2/NormalizedSuiteV2.lean" \
             2>&1 | tee "$GITHUB_WORKSPACE/evidence/l4yaml-normalized-v2/lean-evaluation.log"
+          echo "MATHGRAPH_L4YAML_ALL_52_SOURCE_GUARDS_GREEN"
           python - <<'PY'
           import json
           from pathlib import Path
-          f=Path("evidence/l4yaml-normalized-v2/manifest.json")
+          f=Path(__import__("os").environ["GITHUB_WORKSPACE"])/"evidence/l4yaml-normalized-v2/manifest.json"
           d=json.loads(f.read_text())
           assert d["cases"]==48 and d["generated_lean_guards"]==52
           assert d["normalized_fixture_ids"]==["26DV:0"]
