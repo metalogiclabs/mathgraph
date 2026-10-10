@@ -1,25 +1,29 @@
 ---
 import type { QualifiedRecord } from '../lib/evidence';
+import type { PublishedRecordEntry } from '../lib/catalog';
 import StatusTag from './StatusTag.astro';
 
 interface Props {
   record: QualifiedRecord;
+  entry?: PublishedRecordEntry;
 }
 
-const { record } = Astro.props;
+const { record, entry } = Astro.props;
 const executable = record.axes.finite_executable;
+const href = entry ? new URL(entry.latest_page_url).pathname : `/records/${record.id}/`;
 ---
 
 <article class="record-card">
   <div>
     <div class="eyebrow">Published evidence record</div>
-    <h3><a href={`/records/${record.id}/`}>{record.title}</a></h3>
+    <h3><a href={href}>{record.title}</a></h3>
     <p class="muted">A read-only projection of exact pinned parser, source, test-suite, and Lean replay receipts. No project endorsement implied.</p>
-    <p><a href={`/records/${record.id}/`}>Inspect the verification boundary →</a></p>
+    <p><a href={href}>Inspect the verification boundary →</a></p>
   </div>
   <div class="record-card__meta">
     <StatusTag label="Warranted — bounded" tone="bounded" />
     <span class="record-id">{record.id}</span>
+    {entry && <span class="fineprint">Version {entry.version} · Lifecycle {entry.lifecycle.toLowerCase()}</span>}
     <span><strong>{executable.matched_external_labels}/{executable.source_cases}</strong> decoded source cases matched</span>
     <span class="fineprint">Snapshot {record.snapshot_date} · later versions not checked</span>
   </div>

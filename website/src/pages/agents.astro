@@ -1,0 +1,92 @@
+---
+import CopyButton from '../components/CopyButton.astro';
+import SourceLink from '../components/SourceLink.astro';
+import StatusTag from '../components/StatusTag.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLatestPublishedRecord, matchRecordScope } from '../lib/catalog';
+
+const published = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
+const { entry, record } = published;
+const request = {
+  record_id: entry.id,
+  version: entry.version,
+  source_commit: entry.scope.source_commit,
+  external_suite_commit: entry.scope.external_suite_commit,
+  goal: entry.scope.supported_goals[0],
+};
+const exactResult = matchRecordScope(entry, request);
+const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_language_correctness' });
+---
+
+<BaseLayout title="MathGraph for agents — Exact, reusable evidence" description="Give an agent stable discovery routes, immutable evidence records, deterministic scope matching, and explicit UNKNOWN results." currentPath="/agents/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Agent interface</div>
+      <h1>Point your agent to <span class="agent-route">mathgraph.org/agents</span></h1>
+      <p class="lede">MathGraph gives agents source-pinned evidence they can cite without silently expanding its authority. Discovery is public and static; reuse requires exact structured scope matching.</p>
+      <div class="actions">
+        <a class="button" href="/llms.txt">Open llms.txt</a>
+        <a class="button button--secondary" href="/.well-known/mathgraph.json">Open discovery manifest</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="shell page-grid">
+      <aside class="toc" aria-label="On this page">
+        <strong>On this page</strong>
+        <a href="#discover">Discover</a>
+        <a href="#match">Match scope</a>
+        <a href="#integrity">Integrity</a>
+        <a href="#limits">Current limits</a>
+      </aside>
+      <div class="prose">
+        <section id="discover">
+          <div class="eyebrow">01 · Discover</div>
+          <h2>Start with a manifest, not a claim.</h2>
+          <ol>
+            <li>Read <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>.</li>
+            <li>Fetch the short-lived <a href="/records/index.json"><code>/records/index.json</code></a> catalogue and record the local fetch time.</li>
+            <li>Select an explicit record version and fetch its immutable JSON.</li>
+            <li>Validate the schema and both the canonical and transport digests.</li>
+            <li>Cite the permanent versioned page and content digest.</li>
+          </ol>
+          <p><code>generated_at</code> is publication time, not a response timestamp. Treat lifecycle state as fresh for at most <code>max_age_seconds</code> after your own fetch time, then re-fetch the catalogue.</p>
+          <SourceLink href={entry.record_page_url} label="Permanent L4YAML record" meta={`${entry.id} · ${entry.version_slug}`} />
+        </section>
+
+        <section id="match">
+          <div class="eyebrow">02 · Match</div>
+          <h2>Reuse is an exact deterministic rule.</h2>
+          <p>An in-scope request must match the exact record ID, version, source pin, suite pin, and supported goal. This is a structured comparison—not an LLM judgment. Any mismatch or unsupported claim returns <StatusTag label="UNKNOWN" tone="unknown" />.</p>
+          <div class="code-block"><div class="code-label">Exact request</div><pre><code>{JSON.stringify(request, null, 2)}</code></pre></div>
+          <div class="code-block"><div class="code-label">Exact result</div><pre><code>{JSON.stringify(exactResult, null, 2)}</code></pre></div>
+          <div class="code-block"><div class="code-label">Unsupported whole-language claim</div><pre><code>{JSON.stringify(unsupportedResult, null, 2)}</code></pre></div>
+        </section>
+
+        <section id="integrity">
+          <div class="eyebrow">03 · Verify identity</div>
+          <h2>A digest is integrity, not authenticity.</h2>
+          <p>The catalogue and record digest can detect changed bytes. If both arrive from a compromised host, the digest alone cannot authenticate that host or establish who published the replacement. The discovery manifest therefore links the committed catalogue source on GitHub as a second-origin provenance check, currently marked <code>UNSIGNED_PROVENANCE_ONLY</code>.</p>
+          <p>A future signature must name a key policy and authenticate a specific statement. It still would not establish semantic truth.</p>
+          <p><strong>Canonical content SHA-256</strong></p>
+          <div class="copy-row"><code>{record.content_sha256}</code><CopyButton value={record.content_sha256} label="Copy digest" /></div>
+          <p><strong>Source pin</strong></p>
+          <div class="copy-row"><code>{record.source.commit}</code><CopyButton value={record.source.commit} label="Copy source pin" /></div>
+          <p><strong>Suite pin</strong></p>
+          <div class="copy-row"><code>{record.source.external_suite_commit}</code><CopyButton value={record.source.external_suite_commit} label="Copy suite pin" /></div>
+        </section>
+
+        <section id="limits">
+          <div class="eyebrow">04 · Limits</div>
+          <h2>The static interface does not execute claims.</h2>
+          <div class="callout callout--unknown">
+            <StatusTag label="Current boundary" tone="unknown" />
+            <p>The qualified <code>/v1/resolve</code> contract remains a local/preview interface. A public resolver is not deployed. An MCP endpoint is not deployed. MathGraph.org accepts no visitor-supplied code, proof, claim, or URL.</p>
+          </div>
+          <p>Whole-language YAML correctness, natural-language fidelity, generalization beyond the pinned cases, and newer source revisions remain <code>UNKNOWN</code>.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

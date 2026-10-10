@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json",
+  "title": "MathGraph Lean evidence profile draft 1",
+  "description": "PROPOSED profile. Publication of this schema does not qualify any Lean record or receipt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "maturity", "record_id", "formalization", "declarations", "toolchain", "boundaries"],
+  "properties": {
+    "schema": { "const": "mathgraph.lean-evidence-profile.draft-1" },
+    "maturity": { "const": "PROPOSED" },
+    "record_id": { "type": "string", "pattern": "^mg-[a-z0-9-]+$" },
+    "formalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metadata_path", "authorship", "source_status", "automation_use", "license_status", "maintainers", "limitations", "classifications"],
+      "properties": {
+        "metadata_path": { "const": "formalization.yaml" },
+        "authorship": { "type": "array", "items": { "type": "string" } },
+        "source_status": { "enum": ["ORIGINAL", "TRANSLATED", "ADAPTED", "UNKNOWN"] },
+        "automation_use": { "enum": ["NONE_DECLARED", "DECLARED", "UNKNOWN"] },
+        "license_status": { "enum": ["DECLARED", "UNKNOWN"] },
+        "maintainers": { "type": "array", "items": { "type": "string" } },
+        "limitations": { "type": "array", "items": { "type": "string" } },
+        "classifications": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "declarations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "permitted_axioms", "statement_sha256", "proof_sha256"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "permitted_axioms": { "type": "array", "items": { "type": "string" } },
+          "statement_sha256": { "$ref": "#/$defs/sha256" },
+          "proof_sha256": { "$ref": "#/$defs/sha256" },
+          "source_url": { "type": "string" },
+          "playground_url": { "type": "string" }
+        }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lean_commit", "mathlib_commit", "lake_version", "verifier_versions", "workflow_sha256", "report_sha256"],
+      "properties": {
+        "lean_commit": { "type": "string", "minLength": 1 },
+        "mathlib_commit": { "type": "string", "minLength": 1 },
+        "lake_version": { "type": "string", "minLength": 1 },
+        "verifier_versions": { "type": "object", "additionalProperties": { "type": "string" } },
+        "workflow_sha256": { "$ref": "#/$defs/sha256" },
+        "report_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "receipts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "comparator": { "$ref": "#/$defs/proposedReceipt" },
+        "independent_kernel": { "$ref": "#/$defs/proposedReceipt" },
+        "review_policy": { "$ref": "#/$defs/proposedReceipt" }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proof_validity", "statement_fidelity", "execution", "provenance", "generalization"],
+      "properties": {
+        "proof_validity": { "$ref": "#/$defs/axis" },
+        "statement_fidelity": { "$ref": "#/$defs/axis" },
+        "execution": { "$ref": "#/$defs/axis" },
+        "provenance": { "$ref": "#/$defs/axis" },
+        "generalization": { "$ref": "#/$defs/axis" }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "scope"],
+      "properties": {
+        "status": { "enum": ["WARRANTED_BOUNDED", "UNKNOWN", "REJECTED"] },
+        "scope": { "type": "string", "minLength": 1 }
+      }
+    },
+    "proposedReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maturity", "uri", "digest"],
+      "properties": {
+        "maturity": { "const": "PROPOSED" },
+        "uri": { "type": "string" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mathgraph.org/schemas/record-index-v1.schema.json",
+  "title": "MathGraph record index V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema", "latest_versions", "records"],
+  "properties": {
+    "$schema": { "const": "https://mathgraph.org/schemas/record-index-v1.schema.json" },
+    "schema": { "const": "mathgraph.record-index.v1" },
+    "generated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T" },
+    "lifecycle_freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["basis", "max_age_seconds", "meaning", "records_are_immutable"],
+      "properties": {
+        "basis": { "const": "CLIENT_FETCH_TIME" },
+        "max_age_seconds": { "const": 300 },
+        "meaning": { "const": "generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse." },
+        "records_are_immutable": { "const": true }
+      }
+    },
+    "latest_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/record" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "canonicalUrl": { "type": "string", "pattern": "^https://mathgraph\\.org/" },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "version", "version_slug", "record_schema", "historic_status", "lifecycle",
+        "snapshot_date", "record_page_url", "latest_page_url", "record_json_url",
+        "record_content_sha256", "record_transport_sha256", "evidence_json_url",
+        "evidence_transport_sha256", "presentation_json_url", "presentation_schema",
+        "presentation_content_sha256", "scope", "unknowns"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^mg-[a-z0-9-]+$" },
+        "version": { "type": "integer", "minimum": 1 },
+        "version_slug": { "type": "string", "pattern": "^v[1-9][0-9]*$" },
+        "record_schema": { "type": "string", "minLength": 1 },
+        "historic_status": { "enum": ["WARRANTED_BOUNDED", "UNKNOWN", "REJECTED"] },
+        "lifecycle": { "enum": ["CURRENT", "SUPERSEDED", "REVOKED"] },
+        "snapshot_date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "record_page_url": { "$ref": "#/$defs/canonicalUrl" },
+        "latest_page_url": { "$ref": "#/$defs/canonicalUrl" },
+        "record_json_url": { "$ref": "#/$defs/canonicalUrl" },
+        "record_content_sha256": { "$ref": "#/$defs/sha256" },
+        "record_transport_sha256": { "$ref": "#/$defs/sha256" },
+        "evidence_json_url": { "$ref": "#/$defs/canonicalUrl" },
+        "evidence_transport_sha256": { "$ref": "#/$defs/sha256" },
+        "presentation_json_url": { "$ref": "#/$defs/canonicalUrl" },
+        "presentation_schema": { "const": "mathgraph.presentation-metadata.v1" },
+        "presentation_content_sha256": { "$ref": "#/$defs/sha256" },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["match", "source_commit", "external_suite_commit", "supported_goals", "mismatch_status"],
+          "properties": {
+            "match": { "const": "EXACT" },
+            "source_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            "external_suite_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            "supported_goals": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+            "mismatch_status": { "const": "UNKNOWN" }
+          }
+        },
+        "unknowns": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["whole_language_correctness", "statement_fidelity", "generalization", "current_requalification"] }
+        }
+      }
+    }
+  }
+}

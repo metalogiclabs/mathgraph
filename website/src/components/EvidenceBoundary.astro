@@ -1,0 +1,101 @@
+---
+import type { PublishedRecordEntry } from '../lib/catalog';
+import { matchRecordScope } from '../lib/catalog';
+import type { QualifiedRecord } from '../lib/evidence';
+import StatusTag from './StatusTag.astro';
+
+interface Props {
+  record: QualifiedRecord;
+  entry: PublishedRecordEntry;
+}
+
+const { record, entry } = Astro.props;
+const finite = record.axes.finite_executable;
+const exactRequest = {
+  record_id: entry.id,
+  version: entry.version,
+  source_commit: entry.scope.source_commit,
+  external_suite_commit: entry.scope.external_suite_commit,
+  goal: entry.scope.supported_goals[0],
+};
+const queries = [
+  {
+    label: 'Exact pinned observation',
+    request: exactRequest,
+    result: matchRecordScope(entry, exactRequest),
+  },
+  {
+    label: 'Wrong source pin',
+    request: { ...exactRequest, source_commit: '0'.repeat(40) },
+    result: matchRecordScope(entry, { ...exactRequest, source_commit: '0'.repeat(40) }),
+  },
+  {
+    label: 'Unsupported whole-language claim',
+    request: { ...exactRequest, goal: 'whole_language_correctness' },
+    result: matchRecordScope(entry, { ...exactRequest, goal: 'whole_language_correctness' }),
+  },
+];
+---
+
+<section class="section boundary-explorer" aria-labelledby="boundary-title">
+  <div class="shell">
+    <div class="grid">
+      <div class="span-5">
+        <div class="eyebrow">The edge of the record</div>
+        <h2 id="boundary-title">See what resolves—and what does not.</h2>
+      </div>
+      <div class="span-7">
+        <p class="lede">The record warrants an exact, finite observation. The same deterministic matcher returns <code>UNKNOWN</code> as soon as the record identity, version, pins, or goal leave that boundary.</p>
+      </div>
+    </div>
+
+    <ol class="boundary-grid" aria-label="L4YAML evidence boundary">
+      <li>
+        <StatusTag label="Implemented" tone="implemented" />
+        <strong>Source identity</strong>
+        <span>Two exact Git commits.</span>
+      </li>
+      <li>
+        <StatusTag label="Warranted — bounded" tone="bounded" />
+        <strong>{finite.matched_external_labels}/{finite.source_cases} decoded cases</strong>
+        <span>{finite.expected_accept} accept · {finite.expected_reject} reject</span>
+      </li>
+      <li>
+        <StatusTag label="Warranted — bounded" tone="bounded" />
+        <strong>{finite.total_lean_guards}/{finite.total_lean_guards} Lean guards</strong>
+        <span>Cases plus {finite.extra_controls} controls.</span>
+      </li>
+      <li class="boundary-grid__unknown">
+        <StatusTag label="UNKNOWN" tone="unknown" />
+        <strong>Beyond the pinned boundary</strong>
+        <span>Whole-language correctness · Statement fidelity · Generalization</span>
+      </li>
+    </ol>
+
+    <section class="query-demo" aria-labelledby="query-demo-title">
+      <div>
+        <div class="eyebrow">Three fixed requests</div>
+        <h3 id="query-demo-title">Try the boundary, without pretending to run arbitrary claims.</h3>
+      </div>
+      <div class="query-demo__items">
+        {queries.map(({ label, request, result }, index) => (
+          <details open={index === 0}>
+            <summary>{label}</summary>
+            <div class="query-demo__result">
+              <div>
+                <span class="fineprint">Request</span>
+                <code>{request.goal}</code>
+              </div>
+              <div>
+                <StatusTag label={result.status === 'WARRANTED_BOUNDED' ? 'Warranted — bounded' : 'UNKNOWN'} tone={result.status === 'WARRANTED_BOUNDED' ? 'bounded' : 'unknown'} />
+                <code>{result.reason}</code>
+              </div>
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+    <p class="fineprint">These are precomputed from the same exact-match function used by the isolated consumer test. No visitor input is executed.</p>
+    <p><a href="/agents/">Point your agent to MathGraph →</a></p>
+  </div>
+</section>

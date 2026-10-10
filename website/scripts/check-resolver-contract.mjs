@@ -31,6 +31,12 @@ assert.equal(response.whole_language_validity, 'UNKNOWN');
 assert.equal(response.truth_promotion, false);
 
 const developerHtml = await readFile(join(website, 'dist/developers/index.html'), 'utf8');
+const index = JSON.parse(await readFile(join(website, 'dist/records/index.json'), 'utf8'));
+const catalogueEntry = index.records.find((candidate) => candidate.id === request.record_id && candidate.version === 1);
+assert(catalogueEntry, 'catalogue omits the qualified resolver record');
+assert.deepEqual(catalogueEntry.scope.supported_goals, [request.goal], 'catalogue goal exceeds the qualified resolver contract');
+assert.equal(catalogueEntry.historic_status, response.status, 'catalogue historic status disagrees with the qualified resolver');
+assert.equal(catalogueEntry.lifecycle, 'CURRENT', 'qualified resolver result may only be reused from a current catalogue entry');
 assert(developerHtml.includes(request.goal), 'developer page omits the executable qualified goal');
 for (const value of [response.status, response.record_id, response.record_sha256, response.whole_language_validity]) {
   assert(developerHtml.includes(value), `developer page disagrees with resolver value ${value}`);

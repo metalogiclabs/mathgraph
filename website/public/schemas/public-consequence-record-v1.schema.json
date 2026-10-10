@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mathgraph.org/schemas/public-consequence-record-v1.schema.json",
+  "title": "MathGraph public consequence record V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["admission", "attribution", "axes", "content_sha256", "evidence", "id", "known_separator", "project", "publisher", "record_kind", "schema", "snapshot_date", "source", "test_input_normalization", "title"],
+  "properties": {
+    "admission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["automatic_api_warrant_promotion", "mathematical_theorem_badge_issued", "source_archive_hashes_replayed", "source_fidelity_certified", "status"],
+      "properties": {
+        "automatic_api_warrant_promotion": { "const": false },
+        "mathematical_theorem_badge_issued": { "const": false },
+        "source_archive_hashes_replayed": { "const": true },
+        "source_fidelity_certified": { "const": false },
+        "status": { "const": "WARRANTED_ON_PINNED_BOUNDED_CASES" }
+      }
+    },
+    "attribution": { "type": "string", "minLength": 1 },
+    "axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current_requalification", "finite_executable", "formal_verification", "generalization", "global_truth_promotion", "human_digestion", "statement_fidelity"],
+      "properties": {
+        "current_requalification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": { "status": { "const": "NOT_CHECKED_AFTER_SNAPSHOT" } }
+        },
+        "finite_executable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority", "case_scope", "expected_accept", "expected_reject", "extra_controls", "matched_external_labels", "source_cases", "status", "total_lean_guards"],
+          "properties": {
+            "authority": { "type": "string", "minLength": 1 },
+            "case_scope": { "type": "string", "minLength": 1 },
+            "expected_accept": { "type": "integer", "minimum": 0 },
+            "expected_reject": { "type": "integer", "minimum": 0 },
+            "extra_controls": { "type": "integer", "minimum": 0 },
+            "matched_external_labels": { "type": "integer", "minimum": 0 },
+            "source_cases": { "type": "integer", "minimum": 0 },
+            "status": { "type": "string", "minLength": 1 },
+            "total_lean_guards": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "formal_verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority", "scope", "status", "universal_yaml_correctness"],
+          "properties": {
+            "authority": { "type": "string", "minLength": 1 },
+            "scope": { "type": "string", "minLength": 1 },
+            "status": { "type": "string", "minLength": 1 },
+            "universal_yaml_correctness": { "const": "UNKNOWN" }
+          }
+        },
+        "generalization": { "$ref": "#/$defs/unknownAxis" },
+        "global_truth_promotion": { "const": false },
+        "human_digestion": { "$ref": "#/$defs/unknownAxis" },
+        "statement_fidelity": { "$ref": "#/$defs/unknownAxis" }
+      }
+    },
+    "content_sha256": { "$ref": "#/$defs/sha256" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_sources", "v1_compiled_parser", "v2_normalized_native_parser"],
+      "properties": {
+        "external_sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["jpl", "yaml_suite"],
+          "properties": { "jpl": { "type": "string" }, "yaml_suite": { "type": "string" } }
+        },
+        "v1_compiled_parser": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["archive_sha256", "artifact_id", "artifact_url", "original_build_targets", "raw_unconverted_external_agreement", "run", "source_commit", "url"],
+          "properties": {
+            "archive_sha256": { "$ref": "#/$defs/sha256" },
+            "artifact_id": { "type": "integer", "minimum": 1 },
+            "artifact_url": { "type": "string" },
+            "original_build_targets": { "type": "integer", "minimum": 0 },
+            "raw_unconverted_external_agreement": { "type": "integer", "minimum": 0 },
+            "run": { "type": "integer", "minimum": 1 },
+            "source_commit": { "$ref": "#/$defs/gitSha" },
+            "url": { "type": "string" }
+          }
+        },
+        "v2_normalized_native_parser": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["archive_sha256", "artifact_id", "artifact_url", "decoded_case_count", "guards", "lean_source_sha256", "run", "source_commit", "url"],
+          "properties": {
+            "archive_sha256": { "$ref": "#/$defs/sha256" },
+            "artifact_id": { "type": "integer", "minimum": 1 },
+            "artifact_url": { "type": "string" },
+            "decoded_case_count": { "type": "integer", "minimum": 0 },
+            "guards": { "type": "integer", "minimum": 0 },
+            "lean_source_sha256": { "$ref": "#/$defs/sha256" },
+            "run": { "type": "integer", "minimum": 1 },
+            "source_commit": { "$ref": "#/$defs/gitSha" },
+            "url": { "type": "string" }
+          }
+        }
+      }
+    },
+    "id": { "type": "string", "pattern": "^mg-[a-z0-9-]+$" },
+    "known_separator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actual_pinned_jpl_parser", "evidence_kind", "independent_normative_event_model", "input", "jpl_completion_order_event_model", "novel_bug_claim", "source_to_event_translation", "whole_input_extraction_theorem"],
+      "properties": {
+        "actual_pinned_jpl_parser": { "type": "string" },
+        "evidence_kind": { "type": "string" },
+        "independent_normative_event_model": { "type": "string" },
+        "input": { "type": "string" },
+        "jpl_completion_order_event_model": { "type": "string" },
+        "novel_bug_claim": { "const": false },
+        "source_to_event_translation": { "type": "string" },
+        "whole_input_extraction_theorem": { "const": "UNKNOWN" }
+      }
+    },
+    "project": { "type": "string", "minLength": 1 },
+    "publisher": { "type": "string", "minLength": 1 },
+    "record_kind": { "const": "READ_ONLY_EVIDENCE_PROJECTION" },
+    "schema": { "const": "mathgraph.public-consequence-record.v1" },
+    "snapshot_date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch_at_pin", "commit", "external_suite_commit", "external_suite_repo", "lean_toolchain", "repo"],
+      "properties": {
+        "branch_at_pin": { "type": "string", "minLength": 1 },
+        "commit": { "$ref": "#/$defs/gitSha" },
+        "external_suite_commit": { "$ref": "#/$defs/gitSha" },
+        "external_suite_repo": { "type": "string", "minLength": 1 },
+        "lean_toolchain": { "type": "string", "minLength": 1 },
+        "repo": { "type": "string", "minLength": 1 }
+      }
+    },
+    "test_input_normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "decoded_sha256", "decoder", "raw_sha256", "v1_raw_mismatch", "v2_native_decoded_guard"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "decoded_sha256": { "$ref": "#/$defs/sha256" },
+        "decoder": { "type": "string", "minLength": 1 },
+        "raw_sha256": { "$ref": "#/$defs/sha256" },
+        "v1_raw_mismatch": { "const": true },
+        "v2_native_decoded_guard": { "const": "PASS" }
+      }
+    },
+    "title": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "unknownAxis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "truth_promoting"],
+      "properties": { "status": { "const": "UNKNOWN" }, "truth_promoting": { "const": false } }
+    }
+  }
+}

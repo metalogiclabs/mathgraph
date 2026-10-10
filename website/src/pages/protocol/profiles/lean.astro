@@ -1,0 +1,70 @@
+---
+import StatusTag from '../../../components/StatusTag.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Lean evidence profile — MathGraph Protocol" description="A proposed draft profile for source-pinned Lean evidence, declarations, axioms, toolchains, and optional independent receipts." currentPath="/protocol/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Protocol profile</div>
+      <StatusTag label="PROPOSED" tone="proposed" />
+      <h1>Lean evidence profile</h1>
+      <p class="lede"><code>mathgraph.lean-evidence-profile.draft-1</code> describes how a future record may separate proof validity, statement fidelity, execution, provenance, and generalization. No qualified Lean record currently implements this profile.</p>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="shell page-grid">
+      <aside class="toc" aria-label="On this page">
+        <strong>On this page</strong>
+        <a href="#metadata">Formalization metadata</a>
+        <a href="#declarations">Declarations</a>
+        <a href="#toolchain">Toolchain</a>
+        <a href="#receipts">Optional receipts</a>
+        <a href="#maturity">Maturity</a>
+      </aside>
+      <div class="prose">
+        <section id="metadata">
+          <div class="eyebrow">Draft contract</div>
+          <h2><code>formalization.yaml</code> metadata</h2>
+          <p>The profile can carry authorship, source status, maintainers, declared automation or AI use, license status, limitations, and classifications. These fields describe provenance; they do not prove fidelity or correctness.</p>
+        </section>
+
+        <section id="declarations">
+          <h2>Statement and proof remain separate.</h2>
+          <div class="table-wrap"><table><thead><tr><th>Field</th><th>Purpose</th></tr></thead><tbody>
+            <tr><td>Declaration names</td><td>Exact Lean names covered by the receipt.</td></tr>
+            <tr><td>Permitted axioms</td><td>Declared trusted assumptions, distinct from observed axiom output.</td></tr>
+            <tr><td>Statement SHA-256</td><td>Identity of the statement bytes or canonical statement object.</td></tr>
+            <tr><td>Proof SHA-256</td><td>Identity of the proof source, separate from the statement.</td></tr>
+            <tr><td>Statement fidelity</td><td>A separate axis; never inferred from kernel acceptance.</td></tr>
+          </tbody></table></div>
+        </section>
+
+        <section id="toolchain">
+          <h2>Pin the environment that checked it.</h2>
+          <div class="table-wrap"><table><thead><tr><th>Field</th><th>Boundary</th></tr></thead><tbody>
+            <tr><td>Lean commit</td><td>Exact compiler or verifier revision.</td></tr>
+            <tr><td>Mathlib commit</td><td>Exact library revision when used.</td></tr>
+            <tr><td>Workflow SHA-256</td><td>Identity of the executed workflow definition.</td></tr>
+            <tr><td>Report SHA-256</td><td>Identity of the resulting verification report.</td></tr>
+            <tr><td>Verifier versions</td><td>Named tools and exact versions, without collapsing their trust boundaries.</td></tr>
+          </tbody></table></div>
+        </section>
+
+        <section id="receipts">
+          <h2>Optional receipts require actual evidence.</h2>
+          <p>A future record may attach a Comparator receipt, an Independent-kernel receipt, or a review Policy digest. Each receipt must name its URI, digest, and maturity. Absence remains visible.</p>
+          <p>Source links and “Open in Lean Playground” links appear only when a future qualified receipt establishes a reproducible environment. Playground convenience is not proof authority.</p>
+          <div class="callout callout--unknown"><StatusTag label="Not implemented" tone="unknown" /><p>The current L4YAML public consequence record does not carry this Lean profile, Comparator, Playground, review-policy, or independent-kernel receipts.</p></div>
+        </section>
+
+        <section id="maturity">
+          <h2>Draft means unstable.</h2>
+          <p><StatusTag label="PROPOSED" tone="proposed" /> specifies an intended contract with no qualified adopter. <StatusTag label="EXPERIMENTAL" tone="experimental" /> would require an implemented research artifact and bounded evidence, but still would not be a stable production contract. This profile stays <strong>PROPOSED</strong> until a real Lean record tests and reshapes it.</p>
+          <p><a href="/schemas/lean-evidence-profile-draft-1.schema.json">Open the draft JSON Schema →</a></p>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

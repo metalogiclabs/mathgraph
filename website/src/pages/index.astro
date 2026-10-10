@@ -1,18 +1,20 @@
 ---
 import EvidenceFlow from '../components/EvidenceFlow.astro';
+import EvidenceBoundary from '../components/EvidenceBoundary.astro';
 import Metric from '../components/Metric.astro';
 import RecordSummary from '../components/RecordSummary.astro';
 import StatusTag from '../components/StatusTag.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { loadQualifiedRecord } from '../lib/evidence';
+import { getLatestPublishedRecord } from '../lib/catalog';
 
-const record = loadQualifiedRecord();
+const published = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
+const { entry, record } = published;
 ---
 
 <BaseLayout title="MathGraph — Open Verification Infrastructure" description="MathGraph turns machine-generated and software claims into source-pinned evidence records with exact verification boundaries." currentPath="/">
   <section class="shell hero">
     <div class="hero__copy">
-      <div class="eyebrow">Open verification infrastructure</div>
+      <div class="eyebrow">Receipts for machine claims</div>
       <h1>Evidence you can inspect. Results you can reuse.</h1>
       <p class="lede">MathGraph turns machine-generated and software claims into source-pinned evidence records, preserving exactly what was checked, what remains unknown, and what can be independently reused.</p>
       <div class="actions">
@@ -27,11 +29,13 @@ const record = loadQualifiedRecord();
     </aside>
   </section>
 
+  <EvidenceBoundary record={record} entry={entry} />
+
   <section class="section">
     <div class="shell">
       <div class="grid">
         <div class="span-5">
-          <div class="eyebrow">Qualified public record 001</div>
+          <div class="eyebrow">Qualified public record</div>
           <h2>A real result, with its edges intact.</h2>
         </div>
         <div class="span-7">
@@ -44,7 +48,7 @@ const record = loadQualifiedRecord();
         <Metric value="2" label="Pinned repositories" detail="Exact Git commits" />
         <Metric value="UNKNOWN" label="Whole-language correctness" detail="Not inferred from a finite suite" />
       </div>
-      <RecordSummary record={record} />
+      <RecordSummary record={record} entry={entry} />
     </div>
   </section>
 
