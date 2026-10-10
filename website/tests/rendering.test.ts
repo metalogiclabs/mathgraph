@@ -31,6 +31,11 @@ describe('primary public evidence experience', () => {
     expect(css).toMatch(/@media \(max-width: 900px\)[\s\S]*\.page-grid\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
   });
 
+  test('allows long machine-facing identifiers in headings to wrap on mobile', async () => {
+    const css = await readFile(join(website, 'src/styles/global.css'), 'utf8');
+    expect(css).toMatch(/h1\s*{[^}]*overflow-wrap:\s*anywhere/s);
+  });
+
   test.each(['', 'records', `records/${record.id}`])('builds /%s as a complete document', async (route) => {
     const html = await page(route);
 
