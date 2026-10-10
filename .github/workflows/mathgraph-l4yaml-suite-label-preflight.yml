@@ -58,6 +58,18 @@ jobs:
           Path("evidence/l4yaml-label-audit/report.json").write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
           print("MATHGRAPH_INDEPENDENT_YAML_EXTERNAL_LABELS_GREEN "+json.dumps(data["label_counts"],sort_keys=True))
           PY
+      - name: Check a separate real YAML interpreter on anchor/cycle controls
+        run: |
+          python research/l4yaml_reference_interpreter_probe_v1.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("evidence/l4yaml-label-audit/reference-observer.json").read_text())
+          assert d["cases"] == d["agreements"] == 7
+          assert d["interpreter_version"] == "6.0.2"
+          assert d["jpl_parser_observation"] == "NOT_RUN_BY_THIS_PROBE"
+          print("MATHGRAPH_INDEPENDENT_YAML_PYYAML_7_CONTROLS_GREEN")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
