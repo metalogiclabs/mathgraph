@@ -1,0 +1,23 @@
+{
+  "schema": "mathgraph.check.v0",
+  "title": "OpenAI inverse estimate derivative-loss diagnostic",
+  "source_contract_origin": "MANUAL_UNREVIEWED",
+  "protected_dimensions": [
+    "torus_dimension",
+    "loss"
+  ],
+  "source": {
+    "anchor": "arxiv:2610.08144v1#eq8.19",
+    "dimensions": {
+      "torus_dimension": 2,
+      "loss": 4
+    }
+  },
+  "formal": {
+    "anchor": "openai/NavierStokesAndEuler@f9e8bc5#norm_derivativeWord_inverse_le",
+    "dimensions": {
+      "torus_dimension": 2,
+      "loss": 5
+    }
+  }
+}
