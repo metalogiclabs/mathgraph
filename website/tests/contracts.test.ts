@@ -42,11 +42,19 @@ describe('agent discovery contracts', () => {
     expect(discovery.repository_provenance.authentication_status).toBe('UNSIGNED_PROVENANCE_ONLY');
     expect(discovery.repository_provenance.catalogue_source).toContain('0992408c4c545536173709fc4781670f11efda96');
 
-    expect(index.generated_at).toMatch(/^2026-10-10T/);
+    const generatedAt = Date.parse(index.generated_at);
+    expect(Number.isFinite(generatedAt)).toBe(true);
+    expect(generatedAt).toBeLessThanOrEqual(Date.now());
     expect(index.lifecycle_freshness).toEqual({
+      basis: 'CLIENT_FETCH_TIME',
       max_age_seconds: 300,
-      meaning: 'Lifecycle state is current only as of the fetched index response.',
+      meaning: 'generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse.',
       records_are_immutable: true,
+    });
+    expect(discovery.freshness).toEqual({
+      basis: 'CLIENT_FETCH_TIME',
+      record_index_max_age_seconds: 300,
+      lifecycle_meaning: 'generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse.',
     });
     expect(index.records).toHaveLength(1);
     expect(index.records[0].id).toBe(recordId);

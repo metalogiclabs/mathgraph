@@ -91,7 +91,9 @@ export interface ScopeMatchResult {
     | 'VERSION_MISMATCH'
     | 'SOURCE_PIN_MISMATCH'
     | 'SUITE_PIN_MISMATCH'
-    | 'UNSUPPORTED_GOAL';
+    | 'UNSUPPORTED_GOAL'
+    | 'LIFECYCLE_NOT_CURRENT'
+    | 'HISTORIC_STATUS_NOT_WARRANTED';
   truth_promotion: false;
 }
 
@@ -122,6 +124,11 @@ const forbiddenPresentationFields = new Set([
   'warrant',
   'warrant_status',
 ]);
+
+const qualifiedPublicConsequenceAuthority = {
+  historicStatus: 'WARRANTED_BOUNDED' as const,
+  supportedGoals: ['finite_parser_acceptance'] as const,
+};
 
 function requireCatalog(condition: boolean, code: string): asserts condition {
   if (!condition) throw new Error(code);
@@ -187,6 +194,15 @@ export function validatePublishedRecordPackage(
   requireCatalog(record.id === entry.id && record.schema === entry.record_schema, 'CATALOG_RECORD_IDENTITY_MISMATCH');
   requireCatalog(record.source.commit === entry.scope.source_commit, 'CATALOG_SCOPE_SOURCE_MISMATCH');
   requireCatalog(record.source.external_suite_commit === entry.scope.external_suite_commit, 'CATALOG_SCOPE_SUITE_MISMATCH');
+  requireCatalog(
+    entry.historic_status === qualifiedPublicConsequenceAuthority.historicStatus,
+    'CATALOG_HISTORIC_STATUS_MISMATCH',
+  );
+  requireCatalog(
+    entry.scope.supported_goals.length === qualifiedPublicConsequenceAuthority.supportedGoals.length &&
+      qualifiedPublicConsequenceAuthority.supportedGoals.every((goal) => entry.scope.supported_goals.includes(goal)),
+    'CATALOG_UNQUALIFIED_SUPPORTED_GOAL',
+  );
   return { entry, record, presentation };
 }
 
@@ -198,6 +214,8 @@ export function matchRecordScope(entry: PublishedRecordEntry, request: ScopeRequ
   });
   if (request.record_id !== entry.id) return unknown('RECORD_ID_MISMATCH');
   if (request.version !== entry.version) return unknown('VERSION_MISMATCH');
+  if (entry.lifecycle !== 'CURRENT') return unknown('LIFECYCLE_NOT_CURRENT');
+  if (entry.historic_status !== 'WARRANTED_BOUNDED') return unknown('HISTORIC_STATUS_NOT_WARRANTED');
   if (request.source_commit !== entry.scope.source_commit) return unknown('SOURCE_PIN_MISMATCH');
   if (request.external_suite_commit !== entry.scope.external_suite_commit) return unknown('SUITE_PIN_MISMATCH');
   if (!entry.scope.supported_goals.includes(request.goal)) return unknown('UNSUPPORTED_GOAL');
@@ -234,4 +252,21 @@ export async function getLatestPublishedRecord(id: string): Promise<PublishedRec
   const version = catalog.latest_versions[id];
   requireCatalog(typeof version === 'number', 'PUBLISHED_RECORD_NOT_FOUND');
   return getPublishedRecord(id, version);
+}
+
+export function selectLatestPublishedRecords(
+  catalogValue: unknown,
+  records: PublishedRecordPackage[],
+): PublishedRecordPackage[] {
+  const catalog = validateRecordCatalog(catalogValue);
+  return Object.entries(catalog.latest_versions).map(([id, version]) => {
+    const record = records.find((candidate) => candidate.entry.id === id && candidate.entry.version === version);
+    requireCatalog(record !== undefined, 'PUBLISHED_RECORD_NOT_FOUND');
+    return record;
+  });
+}
+
+export async function loadLatestPublishedRecords(): Promise<PublishedRecordPackage[]> {
+  const records = await loadPublishedRecords();
+  return selectLatestPublishedRecords(catalogSource, records);
 }

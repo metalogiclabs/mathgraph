@@ -32,14 +32,16 @@ function hasExpectedDigest(record, entry) {
   return declared === entry.record_content_sha256 && sha256(canonicalJson(unsigned)) === declared;
 }
 
-function consume(entry, record, recordBytes, request) {
+function consume(index, entry, record, recordBytes, request, fetchedAt, now = Date.now()) {
   const unknown = (reason) => ({ status: 'UNKNOWN', reason, truth_promotion: false });
+  if (now - fetchedAt > index.lifecycle_freshness.max_age_seconds * 1000) return unknown('CATALOGUE_CACHE_EXPIRED');
   if (request.record_id !== entry.id) return unknown('RECORD_ID_MISMATCH');
   if (request.version !== entry.version) return unknown('VERSION_MISMATCH');
   if (request.source_commit !== entry.scope?.source_commit) return unknown('SOURCE_PIN_MISMATCH');
   if (request.external_suite_commit !== entry.scope?.external_suite_commit) return unknown('SUITE_PIN_MISMATCH');
   if (!entry.scope?.supported_goals?.includes(request.goal)) return unknown('UNSUPPORTED_GOAL');
-  if (entry.historic_status !== 'WARRANTED_BOUNDED' || entry.lifecycle !== 'CURRENT') return unknown('LIFECYCLE_NOT_CURRENT');
+  if (entry.lifecycle !== 'CURRENT') return unknown('LIFECYCLE_NOT_CURRENT');
+  if (entry.historic_status !== 'WARRANTED_BOUNDED') return unknown('HISTORIC_STATUS_NOT_WARRANTED');
   if (record.extensions && Object.keys(record.extensions).length > 0) return unknown('UNSUPPORTED_EXTENSION');
   if (sha256(recordBytes) !== entry.record_transport_sha256) return unknown('RECORD_TRANSPORT_MISMATCH');
   if (!hasExpectedDigest(record, entry)) return unknown('RECORD_DIGEST_MISMATCH');
@@ -95,9 +97,9 @@ try {
   const indexResponse = await fetch(localUrl(discovery.record_index));
   assert.equal(indexResponse.status, 200, `record index returned ${indexResponse.status}`);
   const index = await indexResponse.json();
-  const generatedAt = Date.parse(index.generated_at);
-  assert(Number.isFinite(generatedAt), 'catalogue generated_at is invalid');
-  assert(Date.now() - generatedAt <= index.lifecycle_freshness.max_age_seconds * 1000, 'catalogue lifecycle state is stale');
+  const fetchedAt = Date.now();
+  assert(Number.isFinite(Date.parse(index.generated_at)), 'catalogue generated_at is invalid');
+  assert.equal(index.lifecycle_freshness.basis, 'CLIENT_FETCH_TIME');
   const entry = index.records.find((candidate) => candidate.id === RECORD_ID && candidate.version === 1);
   assert(entry, 'qualified V1 record is absent from catalogue');
   const fetched = await fetch(localUrl(entry.record_json_url));
@@ -112,7 +114,7 @@ try {
     goal: SUPPORTED_GOAL,
   };
 
-  const exact = consume(entry, record, recordBytes, exactRequest);
+  const exact = consume(index, entry, record, recordBytes, exactRequest, fetchedAt);
   assert.deepEqual(exact, {
     status: 'WARRANTED_BOUNDED',
     reason: 'EXACT_SCOPE_MATCH',
@@ -122,31 +124,35 @@ try {
     whole_language_validity: 'UNKNOWN',
     truth_promotion: false,
   });
-  assert.deepEqual(consume(entry, record, recordBytes, { ...exactRequest, source_commit: '0'.repeat(40) }), {
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, source_commit: '0'.repeat(40) }, fetchedAt), {
     status: 'UNKNOWN', reason: 'SOURCE_PIN_MISMATCH', truth_promotion: false,
   });
-  assert.deepEqual(consume(entry, record, recordBytes, { ...exactRequest, external_suite_commit: '0'.repeat(40) }), {
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, external_suite_commit: '0'.repeat(40) }, fetchedAt), {
     status: 'UNKNOWN', reason: 'SUITE_PIN_MISMATCH', truth_promotion: false,
   });
-  assert.deepEqual(consume(entry, record, recordBytes, { ...exactRequest, goal: 'whole_language_correctness' }), {
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, goal: 'whole_language_correctness' }, fetchedAt), {
     status: 'UNKNOWN', reason: 'UNSUPPORTED_GOAL', truth_promotion: false,
   });
-  assert.deepEqual(consume(entry, record, recordBytes, { ...exactRequest, record_id: 'unknown-record' }), {
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, record_id: 'unknown-record' }, fetchedAt), {
     status: 'UNKNOWN', reason: 'RECORD_ID_MISMATCH', truth_promotion: false,
   });
-  assert.deepEqual(consume(entry, record, recordBytes, { ...exactRequest, version: 2 }), {
+  assert.deepEqual(consume(index, entry, record, recordBytes, { ...exactRequest, version: 2 }, fetchedAt), {
     status: 'UNKNOWN', reason: 'VERSION_MISMATCH', truth_promotion: false,
   });
   const altered = structuredClone(record);
   altered.axes.finite_executable.expected_accept = 32;
   const alteredBytes = Buffer.from(`${JSON.stringify(altered)}\n`);
-  assert.equal(consume(entry, altered, alteredBytes, exactRequest).status, 'UNKNOWN');
+  assert.equal(consume(index, entry, altered, alteredBytes, exactRequest, fetchedAt).status, 'UNKNOWN');
   const unknownExtension = structuredClone(record);
   unknownExtension.extensions = { 'future.example': { raw: true } };
-  assert.deepEqual(consume(entry, unknownExtension, recordBytes, exactRequest), {
+  assert.deepEqual(consume(index, entry, unknownExtension, recordBytes, exactRequest, fetchedAt), {
     status: 'UNKNOWN', reason: 'UNSUPPORTED_EXTENSION', truth_promotion: false,
   });
-  console.log('INDEPENDENT_STATIC_CONSUMER_GREEN discovery=catalogue exact=WARRANTED_BOUNDED negatives=7xUNKNOWN digest=recomputed');
+  assert.deepEqual(
+    consume(index, entry, record, recordBytes, exactRequest, fetchedAt, fetchedAt + 301_000),
+    { status: 'UNKNOWN', reason: 'CATALOGUE_CACHE_EXPIRED', truth_promotion: false },
+  );
+  console.log('INDEPENDENT_STATIC_CONSUMER_GREEN discovery=catalogue exact=WARRANTED_BOUNDED negatives=8xUNKNOWN digest=recomputed');
 } finally {
   await new Promise((resolveClosed) => server.close(resolveClosed));
 }

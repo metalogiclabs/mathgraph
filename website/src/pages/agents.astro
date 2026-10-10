@@ -46,11 +46,12 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
           <h2>Start with a manifest, not a claim.</h2>
           <ol>
             <li>Read <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>.</li>
-            <li>Fetch the short-lived <a href="/records/index.json"><code>/records/index.json</code></a> catalogue.</li>
+            <li>Fetch the short-lived <a href="/records/index.json"><code>/records/index.json</code></a> catalogue and record the local fetch time.</li>
             <li>Select an explicit record version and fetch its immutable JSON.</li>
             <li>Validate the schema and both the canonical and transport digests.</li>
             <li>Cite the permanent versioned page and content digest.</li>
           </ol>
+          <p><code>generated_at</code> is publication time, not a response timestamp. Treat lifecycle state as fresh for at most <code>max_age_seconds</code> after your own fetch time, then re-fetch the catalogue.</p>
           <SourceLink href={entry.record_page_url} label="Permanent L4YAML record" meta={`${entry.id} · ${entry.version_slug}`} />
         </section>
 

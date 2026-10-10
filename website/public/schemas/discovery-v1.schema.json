@@ -28,10 +28,11 @@
     "freshness": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["record_index_max_age_seconds", "lifecycle_meaning"],
+      "required": ["basis", "record_index_max_age_seconds", "lifecycle_meaning"],
       "properties": {
+        "basis": { "const": "CLIENT_FETCH_TIME" },
         "record_index_max_age_seconds": { "const": 300 },
-        "lifecycle_meaning": { "const": "Lifecycle state is current only as of the fetched index response." }
+        "lifecycle_meaning": { "const": "generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse." }
       }
     },
     "integrity_notice": { "type": "string", "minLength": 1 },

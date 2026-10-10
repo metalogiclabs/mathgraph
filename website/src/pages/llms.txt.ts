@@ -27,7 +27,8 @@ Usage boundary:
 - Match the exact record ID, version, source pin, suite pin, and supported goal.
 - Any mismatch or unsupported claim is UNKNOWN; never borrow a nearby warrant.
 - A digest establishes integrity and byte identity, not host authenticity or semantic truth.
-- Lifecycle state is current only as of the fetched record index. Records remain immutable.
+- Treat generated_at as publication time. Set fetched_at when the record index is received and re-fetch before max_age_seconds elapse.
+- Qualified record evidence bytes remain immutable; lifecycle and presentation metadata may be updated separately with history.
 - The public resolver and MCP endpoint are not deployed.
 `;
   return new Response(body, {

@@ -1,10 +1,10 @@
 ---
 import RecordDetail from '../../../components/RecordDetail.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { loadPublishedRecords, type PublishedRecordPackage } from '../../../lib/catalog';
+import { loadLatestPublishedRecords, type PublishedRecordPackage } from '../../../lib/catalog';
 
 export async function getStaticPaths() {
-  const records = await loadPublishedRecords();
+  const records = await loadLatestPublishedRecords();
   return records.map((published) => ({
     params: { id: published.entry.id },
     props: { published },

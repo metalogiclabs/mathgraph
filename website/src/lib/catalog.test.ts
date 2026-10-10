@@ -8,6 +8,7 @@ import {
   getLatestPublishedRecord,
   loadPublishedRecords,
   matchRecordScope,
+  selectLatestPublishedRecords,
   validatePresentationMetadata,
   validatePublicRecordSchema,
   validatePublishedRecordPackage,
@@ -88,6 +89,29 @@ describe('published record catalogue', () => {
       reason: 'VERSION_MISMATCH',
       truth_promotion: false,
     });
+    expect(matchRecordScope({ ...entry, lifecycle: 'REVOKED' }, request)).toEqual({
+      status: 'UNKNOWN',
+      reason: 'LIFECYCLE_NOT_CURRENT',
+      truth_promotion: false,
+    });
+    expect(matchRecordScope({ ...entry, historic_status: 'UNKNOWN' }, request)).toEqual({
+      status: 'UNKNOWN',
+      reason: 'HISTORIC_STATUS_NOT_WARRANTED',
+      truth_promotion: false,
+    });
+  });
+
+  test('selects the declared latest version independent of catalogue order', async () => {
+    const first = await getLatestPublishedRecord(RECORD_ID);
+    const second = clone(first);
+    second.entry.version = 2;
+    second.entry.version_slug = 'v2';
+    const catalog = clone(catalogSource);
+    catalog.latest_versions[RECORD_ID] = 2;
+    catalog.records = [second.entry, first.entry];
+
+    expect(selectLatestPublishedRecords(catalog, [first, second])).toEqual([second]);
+    expect(selectLatestPublishedRecords(catalog, [second, first])).toEqual([second]);
   });
 
   test('validates the qualified record against its public schema', () => {
@@ -139,5 +163,16 @@ describe('published record catalogue', () => {
     entry.record_schema = 'mathgraph.unqualified-future-record.v99';
 
     expect(() => validatePublishedRecordPackage(entry, fixture)).toThrow('UNSUPPORTED_RECORD_SCHEMA');
+  });
+
+  test('rejects catalogue authority that exceeds the qualified adapter', async () => {
+    const fixture = await packageFixture();
+    const expandedGoal = clone(fixture.entry) as PublishedRecordEntry;
+    expandedGoal.scope.supported_goals.push('whole_language_correctness');
+    expect(() => validatePublishedRecordPackage(expandedGoal, fixture)).toThrow('CATALOG_UNQUALIFIED_SUPPORTED_GOAL');
+
+    const changedStatus = clone(fixture.entry) as PublishedRecordEntry;
+    changedStatus.historic_status = 'UNKNOWN';
+    expect(() => validatePublishedRecordPackage(changedStatus, fixture)).toThrow('CATALOG_HISTORIC_STATUS_MISMATCH');
   });
 });

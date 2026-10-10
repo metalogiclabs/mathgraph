@@ -11,8 +11,9 @@ export const GET: APIRoute = async () => {
     ...catalogSource,
     generated_at: new Date().toISOString(),
     lifecycle_freshness: {
+      basis: 'CLIENT_FETCH_TIME',
       max_age_seconds: 300,
-      meaning: 'Lifecycle state is current only as of the fetched index response.',
+      meaning: 'generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse.',
       records_are_immutable: true,
     },
     records: packages.map(({ entry }) => entry),

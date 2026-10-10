@@ -76,8 +76,8 @@ sha256sum record.json</code></pre></div>
 
         <section id="discovery">
           <h2>Machine discovery and permanent versions</h2>
-          <p>Agents begin with <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>, then fetch the short-lived <a href="/records/index.json">record index</a>. Historic record bytes remain immutable; lifecycle state is current only as of the fetched index response.</p>
-          <p>The permanent human route for this snapshot is <a href={`/records/${record.id}/v1/`}><code>/records/{record.id}/v1/</code></a>. Citation and discovery metadata live in a separately versioned <a href={`/records/${record.id}/v1/metadata.json`}>presentation sidecar</a>; changing that sidecar does not requalify the evidence.</p>
+          <p>Agents begin with <a href="/llms.txt"><code>/llms.txt</code></a> or <a href="/.well-known/mathgraph.json"><code>/.well-known/mathgraph.json</code></a>, then fetch the short-lived <a href="/records/index.json">record index</a>. Record a local <code>fetched_at</code> time and re-fetch before <code>max_age_seconds</code> elapse; <code>generated_at</code> is the publication time, not a live response timestamp.</p>
+          <p>The stable human route for this snapshot is <a href={`/records/${record.id}/v1/`}><code>/records/{record.id}/v1/</code></a>. Its qualified evidence JSON stays immutable. Citation, lifecycle presentation, and discovery metadata live in a separately versioned <a href={`/records/${record.id}/v1/metadata.json`}>presentation sidecar</a> with visible history; changing that sidecar does not requalify the evidence.</p>
           <p>The <a href="/protocol/profiles/lean/">Lean evidence profile</a> is a proposed draft, not a currently implemented record type.</p>
         </section>
 

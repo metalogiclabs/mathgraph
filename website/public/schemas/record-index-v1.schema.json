@@ -12,10 +12,11 @@
     "lifecycle_freshness": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["max_age_seconds", "meaning", "records_are_immutable"],
+      "required": ["basis", "max_age_seconds", "meaning", "records_are_immutable"],
       "properties": {
+        "basis": { "const": "CLIENT_FETCH_TIME" },
         "max_age_seconds": { "const": 300 },
-        "meaning": { "const": "Lifecycle state is current only as of the fetched index response." },
+        "meaning": { "const": "generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse." },
         "records_are_immutable": { "const": true }
       }
     },

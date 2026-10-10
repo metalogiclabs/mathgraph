@@ -19,8 +19,9 @@
     "mcp": "PROPOSED"
   },
   "freshness": {
+    "basis": "CLIENT_FETCH_TIME",
     "record_index_max_age_seconds": 300,
-    "lifecycle_meaning": "Lifecycle state is current only as of the fetched index response."
+    "lifecycle_meaning": "generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse."
   },
   "integrity_notice": "Digests establish integrity and byte identity, not host authenticity or semantic truth.",
   "repository_provenance": {

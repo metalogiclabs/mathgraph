@@ -26,7 +26,7 @@ The exact 13-test publisher and resolver qualification also requires the two ori
 
 - `/` — product overview and qualified record
 - `/check/` — independent verification axes
-- `/records/` — immutable record index
+- `/records/` — human-readable record index
 - `/records/mg-l4yaml-source-check-20261010/` — full evidence boundary
 - `/records/mg-l4yaml-source-check-20261010/v1/` — permanent V1 record page
 - `/protocol/` — implemented, experimental, and proposed architecture
@@ -43,7 +43,7 @@ Every published version is a package with separately governed evidence and prese
 
 - Immutable verifier output under `public/evidence/<record-id>/`, produced by a qualified publisher.
 - A registered entry in `src/data/record-index.json` with an exact version, schema, canonical record digest, transport digests, source pins, lifecycle, and structured scope contract.
-- A versioned sidecar at `public/records/<record-id>/vN/metadata.json`. It may contain citation, classification, license, and display metadata. It may not contain a warrant, evidence axes, lifecycle, admission, or verification status.
+- A versioned sidecar at `public/records/<record-id>/vN/metadata.json`. It may contain citation, classification, license, and display metadata. It may not contain a warrant, evidence axes, lifecycle, admission, or verification status. Its content digest and visible history make editorial changes auditable without changing qualified evidence bytes.
 - A public JSON Schema under `public/schemas/` and an explicit adapter in `src/lib/catalog.ts`. Unknown record schemas fail closed with `UNSUPPORTED_RECORD_SCHEMA`; do not add a catalogue entry before its adapter exists.
 - A permanent `/records/<record-id>/vN/` page and an unversioned route that resolves only to the declared `latest_versions` entry.
 
@@ -65,6 +65,6 @@ Exact-width Chrome captures are committed in [`qa/screenshots`](qa/screenshots/)
 
 ## Deployment
 
-The repository-root `vercel.json` installs and builds this workspace, then publishes `website/dist`; the colocated `website/vercel.json` is the matching workspace policy for direct local use. Both supply the restrictive site CSP, immutable caching for versioned evidence resources, short revalidation for discovery/lifecycle resources, and permanent read-only redirects from the three resource links in the byte-preserved publisher page to their durable `/evidence/` assets. Neither exposes `POST /v1/resolve`.
+The repository-root `vercel.json` installs and builds this workspace, then publishes `website/dist`; the colocated `website/vercel.json` is the matching workspace policy for direct local use. Both supply the restrictive site CSP, immutable caching for evidence, schemas, and deterministic social images; short revalidation for discovery, lifecycle, versioned HTML, and presentation sidecars; and permanent read-only redirects from the three resource links in the byte-preserved publisher page to their durable `/evidence/` assets. Versioned page URLs remain stable while their lifecycle and metadata projection may be refreshed. Neither configuration exposes `POST /v1/resolve`.
 
 Create previews only through the already linked Vercel project or Git integration. Promote the exact qualified preview through Vercel's normal promotion mechanism only after local qualification, green GitHub checks, authenticated preview checks, and visual review. Never change Namecheap DNS, nameservers, MX, SPF, DKIM, DMARC, or unrelated Vercel settings as part of a website release.

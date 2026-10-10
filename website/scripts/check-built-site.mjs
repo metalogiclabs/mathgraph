@@ -163,10 +163,10 @@ const cacheHeaders = new Map(
     rule.headers?.find((header) => header.key.toLowerCase() === 'cache-control')?.value,
   ]),
 );
-for (const source of ['/evidence/(.*)', '/schemas/(.*)', '/records/(.*)/v(.*)/metadata.json', '/social/(.*)', '/records/(.*)/v(.*)']) {
+for (const source of ['/evidence/(.*)', '/schemas/(.*)', '/social/(.*)']) {
   assert.equal(cacheHeaders.get(source), 'public, max-age=31536000, immutable', `immutable cache policy missing for ${source}`);
 }
-for (const source of ['/records/index.json', '/llms.txt', '/.well-known/mathgraph.json']) {
+for (const source of ['/records/index.json', '/llms.txt', '/.well-known/mathgraph.json', '/records/(.*)/v(.*)/metadata.json', '/records/(.*)/v(.*)']) {
   assert.equal(cacheHeaders.get(source), 'public, max-age=0, s-maxage=300, stale-while-revalidate=60', `fresh catalogue policy missing for ${source}`);
 }
 
