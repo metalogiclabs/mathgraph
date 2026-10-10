@@ -55,7 +55,8 @@ def test_unknown_references_and_duplicate_routes_reject(routes, withdrawn, error
 def test_duplicate_identities_reject(duplicate):
     claims = [Claim("A", "formal", "s")]
     receipts = [Receipt("r", "formal", "s")]
-    relations = [QualifiedRelation("bridge", "formal", "s", "formal", "s", "r", ("r",))]
+    relations = [QualifiedRelation("bridge", "formal", "s", "formal", "s", "r", ("r",),
+                                   checked_route=Route("A", ("r",), relation="bridge"))]
     {"claim": claims, "receipt": receipts, "relation": relations}[duplicate] *= 2
     with pytest.raises(ValueError, match="DUPLICATE"):
         resolve_graph(claims, [], receipts, relations=relations)
@@ -78,9 +79,9 @@ def bridge_graph():
     claims = [Claim("source", "documentary", "source-scope"), Claim("target", "formal", "target-scope")]
     receipts = [Receipt("notice", "documentary", "source-scope"),
                 Receipt("verifier", "formal", "target-scope"), Receipt("checked", "formal", "target-scope")]
+    routes = [Route("source", ("notice",)), Route("target", ("notice", "checked"), ("source",), relation="bridge")]
     relation = QualifiedRelation("bridge", "documentary", "source-scope", "formal", "target-scope",
-                                 "verifier", ("checked",))
-    routes = [Route("source", ("notice",)), Route("target", ("notice",), ("source",), relation="bridge")]
+                                 "verifier", ("checked",), checked_route=routes[1])
     return claims, routes, receipts, relation
 
 
@@ -91,6 +92,26 @@ def test_qualified_relation_requires_live_verifier_and_evidence():
     for withdrawn in ("verifier", "checked", "notice"):
         after = resolve_graph(claims, routes, receipts, relations=[relation], withdrawn=frozenset({withdrawn}))
         assert after.states["target"] == "UNKNOWN"
+
+
+@pytest.mark.parametrize("change", [
+    {"conclusion": "unrelated-target"},
+    {"premises": ()},
+    {"premises": ("unrelated-source",)},
+    {"evidence": ("notice",)},
+    {"evidence": ("notice", "unrelated-evidence")},
+], ids=["same-scope-retarget", "remove-premise", "substitute-premise",
+        "remove-evidence", "substitute-evidence"])
+def test_relation_authorizes_only_the_exact_checked_route(change):
+    claims, routes, receipts, relation = bridge_graph()
+    claims += [Claim("unrelated-target", "formal", "target-scope"),
+               Claim("unrelated-source", "documentary", "source-scope")]
+    receipts += [Receipt("unrelated-evidence", "formal", "target-scope")]
+    routes.insert(0, Route("unrelated-source", ("notice",)))
+    assert resolve_graph(claims, routes, receipts, relations=[relation]).states["target"] == "WARRANTED_BOUNDED"
+    routes[-1] = replace(routes[-1], **change)
+    with pytest.raises(ValueError, match="RELATION_ROUTE_MISMATCH"):
+        resolve_graph(claims, routes, receipts, relations=[relation])
 
 
 @pytest.mark.parametrize("change,error", [

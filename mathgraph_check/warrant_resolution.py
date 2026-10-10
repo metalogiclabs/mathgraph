@@ -52,12 +52,14 @@ class Route:
 
 @dataclass(frozen=True)
 class QualifiedRelation:
-    """Admitted adapter for one exact source and destination boundary.
+    """Admitted adapter for one exact route across a typed boundary.
 
     Only verified_adapter is supported. The named verifier must be an admitted
     formal receipt at the target scope; evidence receipts must match the target
     kind and scope. Caller admission attests that the verifier checked this
-    particular relation. Their presence here checks references, not provenance.
+    particular relation and checked_route, including its conclusion, premises,
+    evidence, and relation ID. It cannot authorize another route in the same
+    scope. Their presence here checks references, not provenance.
     Withdrawing any qualification receipt disables every route using it.
     """
 
@@ -68,6 +70,7 @@ class QualifiedRelation:
     target_scope: str
     verifier: str
     evidence: tuple[str, ...]
+    checked_route: Route
     kind: str = "verified_adapter"
 
     def __post_init__(self):
@@ -131,6 +134,8 @@ def resolve_graph(
             bridge = rel[route.relation]
             if (bridge.target_kind, bridge.target_scope) != boundary:
                 raise ValueError("RELATION_TARGET_MISMATCH")
+            if route != bridge.checked_route:
+                raise ValueError("RELATION_ROUTE_MISMATCH")
         allowed = {boundary}
         if bridge is not None:
             allowed.add((bridge.source_kind, bridge.source_scope))
