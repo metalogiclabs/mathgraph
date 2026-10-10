@@ -1,0 +1,23 @@
+name: VDN ARC-AGI-2 v22 component carrier
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v22_component_carrier.py'
+      - '.github/workflows/vdn-arc2-v22.yml'
+permissions:
+  contents: read
+jobs:
+  component-carrier:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/arc2
+          cd /tmp/arc2
+          git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v22_component_carrier.py /tmp/arc2/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-v22
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v22_component_carrier/result.json

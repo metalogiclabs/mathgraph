@@ -1,0 +1,21 @@
+name: VDN finite interface v44
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v44_capability_frontier_nonmonotonic.py'
+      - '.github/workflows/vdn-finite-interface-v44.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capability-frontier:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust capability-frontier worlds
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v44_capability_frontier_nonmonotonic.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-finite-interface-v44
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v44_capability_frontier_nonmonotonic/result.json
