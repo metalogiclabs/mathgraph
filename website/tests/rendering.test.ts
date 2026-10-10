@@ -6,7 +6,8 @@ import { describe, expect, test } from 'vitest';
 
 import record from '../src/data/l4yaml-record.json';
 
-const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+const website = join(dirname(fileURLToPath(import.meta.url)), '..');
+const dist = join(website, 'dist');
 
 async function page(path: string): Promise<string> {
   return readFile(join(dist, path, 'index.html'), 'utf8');
@@ -17,6 +18,18 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('keeps durable evidence links legible on the dark section', async () => {
+    const css = await readFile(join(website, 'src/styles/global.css'), 'utf8');
+    expect(css).toMatch(/\.section--ink \.source-link__label\s*{[^}]*color:\s*white/s);
+    expect(css).toMatch(/\.section--ink \.source-link__meta\s*{[^}]*color:\s*#aeb7c7/s);
+  });
+
+  test('allows developer content to shrink within a mobile grid track', async () => {
+    const css = await readFile(join(website, 'src/styles/global.css'), 'utf8');
+    expect(css).toMatch(/\.prose\s*{[^}]*min-width:\s*0/s);
+    expect(css).toMatch(/@media \(max-width: 900px\)[\s\S]*\.page-grid\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  });
+
   test.each(['', 'records', `records/${record.id}`])('builds /%s as a complete document', async (route) => {
     const html = await page(route);
 

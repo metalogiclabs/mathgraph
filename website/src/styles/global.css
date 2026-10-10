@@ -257,6 +257,22 @@ pre {
   color: #aeb7c7;
 }
 
+.section--ink .source-link {
+  border-color: #4b5565;
+}
+
+.section--ink .source-link__label {
+  color: white;
+}
+
+.section--ink .source-link__meta {
+  color: #aeb7c7;
+}
+
+.section--ink .source-link:hover .source-link__label {
+  color: #cfd8ff;
+}
+
 .eyebrow {
   display: flex;
   align-items: center;
@@ -676,6 +692,7 @@ pre {
 }
 
 .prose {
+  min-width: 0;
   max-width: var(--reading);
 }
 
@@ -897,7 +914,7 @@ summary {
   }
 
   .page-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .toc {
