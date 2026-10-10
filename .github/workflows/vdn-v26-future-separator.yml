@@ -1,0 +1,71 @@
+name: VDN V26 exact future separator
+on:
+  push:
+    branches: [vdn-verified-generator-feedback-v1]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v26_future_separator.py'
+      - '.github/workflows/vdn-v26-future-separator.yml'
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  retrospective-exact-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Static selftest syntax and source scope
+        run: |
+          set -euo pipefail
+          python -m py_compile verified-developmental-navigation/case_studies/arc_agi2_live/run_v26_future_separator.py
+          python -m py_compile verified-developmental-navigation/case_studies/arc_agi2_live/run_v25_relational_representation.py
+      - name: Fetch independently qualified and explicitly retrospective V25 record
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/vdn-v26-future-separator/v25
+          gh api /repos/metalogiclabs/mathgraph/actions/artifacts/11665702600/zip >/tmp/vdn-v25-source.zip
+          echo '5a45bc9509750138d09b304327b4a0ebc70972d74ba148fe60496d72265610cb  /tmp/vdn-v25-source.zip' | sha256sum --check
+          unzip -q /tmp/vdn-v25-source.zip -d evidence/vdn-v26-future-separator/v25
+          test -s evidence/vdn-v26-future-separator/v25/result.json
+          test -s evidence/vdn-v26-future-separator/v25/qualified_policy_frozen.json
+      - name: Fetch pinned source-distinct ConceptARC MinimalTasks for retrospective analysis
+        run: |
+          set -euo pipefail
+          git clone --quiet --sparse --filter=blob:none https://github.com/victorvikram/ConceptARC.git /tmp/ConceptARC
+          (cd /tmp/ConceptARC &&
+            git sparse-checkout set MinimalTasks &&
+            git checkout --quiet 0e67da6af879e4bad3d7cd3c196e8d551b445725 &&
+            test "$(git rev-parse HEAD)" = 0e67da6af879e4bad3d7cd3c196e8d551b445725)
+          test "$(find /tmp/ConceptARC/MinimalTasks -name '*Minimal.json' | wc -l)" -eq 16
+      - name: Produce bounded counterexample to selected future-sufficient feature quotient
+        run: |
+          python verified-developmental-navigation/case_studies/arc_agi2_live/run_v26_future_separator.py \
+            --v25-result evidence/vdn-v26-future-separator/v25/result.json \
+            --v25-policy evidence/vdn-v26-future-separator/v25/qualified_policy_frozen.json \
+            --minimal /tmp/ConceptARC/MinimalTasks \
+            --out evidence/vdn-v26-future-separator/result.json
+      - name: Audit all 16 terminal obligations and epistemic scope
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          r=json.loads(pathlib.Path("evidence/vdn-v26-future-separator/result.json").read_text())
+          assert r['schema']=='vdn.v26.retrospective_future_separator'
+          assert sum(r['obstruction_counts'].values())==16
+          assert r['tasks']==16
+          assert r['epistemic']['generator_solved_new_protected_task']=='NO'
+          assert r['epistemic']['autonomous_representation_invention']=='UNKNOWN'
+          assert all(not x['old_V25_heldout_solved'] for x in r['rows'])
+          print(json.dumps({'obstruction_counts':r['obstruction_counts'],
+                            'witness_tasks':r['fixed_vocabulary_collision_tasks']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vdn-v26-future-separator-evidence
+          path: evidence/vdn-v26-future-separator
