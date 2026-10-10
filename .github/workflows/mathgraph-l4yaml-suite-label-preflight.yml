@@ -1,0 +1,66 @@
+name: MathGraph Check - independent YAML labels preflight
+on:
+  push:
+    branches: [mathgraph-check-l4yaml-suite-label-preflight-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-external-labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install metadata YAML reader only
+        run: python -m pip install --disable-pip-version-check PyYAML==6.0.2
+      - name: Fetch independent frozen yaml-test-suite source
+        run: |
+          set -euo pipefail
+          git init -q "$RUNNER_TEMP/yaml-test-suite-external"
+          git -C "$RUNNER_TEMP/yaml-test-suite-external" fetch --depth 1 --no-tags \
+            https://github.com/yaml/yaml-test-suite.git da267a5c4782e7361e82889e76c0dc7df0e1e870
+          git -C "$RUNNER_TEMP/yaml-test-suite-external" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/yaml-test-suite-external" rev-parse HEAD)" \
+            = da267a5c4782e7361e82889e76c0dc7df0e1e870
+      - name: Fail closed if positive and negative labels are not both real
+        run: |
+          mkdir -p evidence/l4yaml-label-audit
+          python - <<'PY'
+          from collections import Counter
+          import json
+          import os
+          from pathlib import Path
+          from research.l4yaml_external_acceptance_v1 import load_suite_cases
+          cases, skipped=load_suite_cases(Path(os.environ["RUNNER_TEMP"])/"yaml-test-suite-external")
+          counts=Counter(("expected_accept" if x["expected_accept"] else "expected_reject") for x in cases)
+          assert counts["expected_accept"]>0 and counts["expected_reject"]>0
+          assert len(cases)>=20
+          assert all(x.get("label_source")=="yaml-test-suite.fail" for x in cases)
+          data={
+              "schema":"mathgraph.l4yaml.external-suite-label-audit-v1",
+              "yaml_suite_commit":"da267a5c4782e7361e82889e76c0dc7df0e1e870",
+              "cases":len(cases),
+              "label_counts":dict(counts),
+              "cases_by_tag":{
+                t:sum(t in x["tags"] for x in cases)
+                for t in ("alias","anchor","directive","tag")
+              },
+              "skipped_metadata_files":len(skipped),
+              "selected_cases":cases,
+              "parser_executed":False,
+              "source_fidelity":"UNKNOWN"
+          }
+          Path("evidence/l4yaml-label-audit/report.json").write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          print("MATHGRAPH_INDEPENDENT_YAML_EXTERNAL_LABELS_GREEN "+json.dumps(data["label_counts"],sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-yaml-suite-label-audit
+          path: evidence/l4yaml-label-audit/
+          if-no-files-found: warn
