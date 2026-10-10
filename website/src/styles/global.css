@@ -976,6 +976,11 @@ summary {
   gap: var(--space-6);
 }
 
+.resolve-product-hero > :first-child,
+.resolve-record-hero > :first-child {
+  min-width: 0;
+}
+
 .resolve-product-hero__aside,
 .resolve-record-hero__identity {
   min-width: 0;
@@ -1641,6 +1646,22 @@ summary {
   .resolve-record-hero {
     padding-block: var(--space-6);
     gap: var(--space-5);
+  }
+
+  .resolve-product-hero .actions,
+  .resolve-record-hero .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .resolve-product-hero .actions .button,
+  .resolve-record-hero .actions .button {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    text-align: center;
+    overflow-wrap: anywhere;
   }
 
   .resolve-product-hero__aside,
