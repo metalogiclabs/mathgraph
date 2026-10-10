@@ -43,3 +43,6 @@ lakefile.olean
 *.c
 *.o
 *.so
+
+# Vercel local project link and pulled environment data
+.vercel/
