@@ -1,5 +1,6 @@
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,16 @@ const dist = join(website, 'dist');
 const execFileAsync = promisify(execFile);
 const importImplementationCommit = '1204a1d267b6217c45c9b17f093cc3587450cf78';
 const importSourceRoot = `https://github.com/metalogiclabs/mathgraph/blob/${importImplementationCommit}`;
+const approvedBrandAssetSha256 = {
+  favicon: '0beff29e14bfc3f7e9c57e8a52b0831e76c483a0da5cd6bc1f0031e87908b103',
+  fallback: '558f93385698ec7b523222d9f44ef465190a1b5aa2f242f4ee997b29185ca39c',
+  appleTouchIcon: 'ca637314c8a722419b8a4132b358e6adaefe502f7bdf1400a560528f973bc5be',
+  headerMark: '97af4e6c6eef62948e284733438228382a29c4eef77d4fdf3a588fa27e9fe82c',
+} as const;
+
+function sha256(bytes: Uint8Array): string {
+  return createHash('sha256').update(bytes).digest('hex');
+}
 
 async function page(path: string): Promise<string> {
   return readFile(join(dist, path, 'index.html'), 'utf8');
@@ -249,13 +260,16 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<link rel="icon" href="/favicon-32.png?v=20261012" type="image/png" sizes="32x32">');
     expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">');
 
-    for (const asset of ['mathgraph-mark-black.png', 'favicon-32.png', 'apple-touch-icon.png']) {
-      const bytes = await readFile(join(dist, asset));
-      expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-    }
-
+    const headerMark = await readFile(join(dist, 'mathgraph-mark-black.png'));
     const approvedPng = await readFile(join(dist, 'favicon-32.png'));
+    const appleTouchIcon = await readFile(join(dist, 'apple-touch-icon.png'));
     const fallback = await readFile(join(dist, 'favicon.ico'));
+
+    expect(sha256(headerMark)).toBe(approvedBrandAssetSha256.headerMark);
+    expect(sha256(approvedPng)).toBe(approvedBrandAssetSha256.favicon);
+    expect(sha256(appleTouchIcon)).toBe(approvedBrandAssetSha256.appleTouchIcon);
+    expect(sha256(fallback)).toBe(approvedBrandAssetSha256.fallback);
+
     expect(fallback.subarray(0, 6)).toEqual(Buffer.from([0, 0, 1, 0, 1, 0]));
     expect(fallback[6]).toBe(32);
     expect(fallback[7]).toBe(32);
