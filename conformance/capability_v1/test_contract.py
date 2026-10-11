@@ -156,6 +156,19 @@ def test_identical_expected_contract_is_not_an_admitted_receipt():
     assert not any("MISMATCH" in reason for reason in result["reason_codes"])
 
 
+@pytest.mark.parametrize("before,after", [(True, 1), (1, True), (False, 0), (0, False),
+                                          (True, 1.0), (1.0, True), (False, 0.0), (0.0, False)])
+def test_exact_snapshot_binding_distinguishes_nested_booleans_and_numbers(before, after):
+    expected = contract()
+    expected["extensions"] = [{"id": "urn:ext", "version": "1", "critical": False,
+                               "payload": {"nested": [{"value": before}]}}]
+    supplied = copy.deepcopy(expected)
+    supplied["extensions"][0]["payload"]["nested"][0]["value"] = after
+    result = module().evaluate_contract(supplied, expected_contract=expected)
+    assert_unknown(result)
+    assert "CONTRACT_MISMATCH" in result["reason_codes"]
+
+
 def test_evaluation_binds_exact_descriptor_bytes_without_normalization():
     data = contract()
     data["id"] = "URN:Example:Capability"

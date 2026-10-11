@@ -41,7 +41,9 @@ integrity, authenticity, or mathematical content.
 
 Identifiers, versions, claim scope, assumption statements, and reference fields
 are compared exactly: no URL rewriting, case folding, trimming, aliases, subset
-inference, or extrapolation. Changed content requires a new version and new pins;
+inference, or extrapolation. Snapshot comparison recursively preserves scalar
+types (including Boolean versus integer/float), object keys, and array ordering;
+object member ordering does not matter. Changed content requires a new version and new pins;
 the evaluator can detect a rebind against a consumer-owned expected descriptor,
 but it does not maintain global identity history.
 

@@ -187,6 +187,17 @@ def _decode(document: Any) -> tuple[Any, bytes]:
     return document, encode_result(document)
 
 
+def _same_json(left: Any, right: Any) -> bool:
+    """Compare validated JSON trees without Python's Boolean/number coercion."""
+    if type(left) is not type(right):
+        return False
+    if type(left) is dict:
+        return left.keys() == right.keys() and all(_same_json(left[key], right[key]) for key in left)
+    if type(left) is list:
+        return len(left) == len(right) and all(_same_json(a, b) for a, b in zip(left, right))
+    return left == right
+
+
 def evaluate_contract(document: Any, *, expected_contract: Any = None) -> dict:
     """Inspect a descriptor without I/O, execution, admission, or mutation.
 
@@ -212,7 +223,7 @@ def evaluate_contract(document: Any, *, expected_contract: Any = None) -> dict:
                       (("boundary",), "BOUNDARY_MISMATCH"),
                       (("inputs", "outputs", "preconditions", "guarantees", "limitations", "extensions"), "CONTRACT_MISMATCH")]
             for fields, code in groups:
-                if any(contract[field] != expected[field] for field in fields):
+                if any(not _same_json(contract[field], expected[field]) for field in fields):
                     reasons.append(code)
         result = error_result("unused")
         result.update({"validation": "VALID", "contract": {field: contract[field] for field in IDENTITY_FIELDS},
