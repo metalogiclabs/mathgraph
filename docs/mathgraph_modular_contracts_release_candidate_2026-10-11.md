@@ -8,12 +8,12 @@ complete at `11944c2b44ac890ecc03c7f183ae74ea4640246c`.
 ## Source identity and release status
 
 The qualified executable source is
-`0037dbe515c43481ba02426e56bc7eaefc296285`, Git tree
-`83506b3979ea5f8cf56e9e76d2a7f190dffb80fd`. It is the Task 7 implementation
-`b7bbdc8a3e0d30fb752882f0ed83048c2543bec1` plus two empty package markers needed
-for the exact combined pytest command. This report, the audit addendum, and
-screenshots are subsequent evidence-only changes. Their commit is recorded by
-Git history; they do not modify the qualified executable artifacts.
+`fbd3994642735f7599ec66bc89c2b9394a7b6b53`, Git tree
+`5eb51b98b76a75e2395dfce319799f54d4781d67`. It includes the Task 7 projection,
+the two empty package markers required for combined pytest collection, and the
+three independently reviewed release fixes described below. This report and the
+audit update are subsequent evidence-only changes; their commit is recorded by
+Git history and does not modify the qualified executable artifacts.
 
 | Component | Implementation commit(s) |
 | --- | --- |
@@ -25,10 +25,13 @@ Git history; they do not modify the qualified executable artifacts.
 | Unsigned in-toto binding | `02a817e8de64c65e4d88d43a6279ee9f16d4364d` |
 | Astro projection | `b7bbdc8a3e0d30fb752882f0ed83048c2543bec1` |
 | Combined-test collection fix | `0037dbe515c43481ba02426e56bc7eaefc296285` |
+| Structured parser-limit rejection | `d335223d368b146ac220e60198eaa0ae6d88e7cf` |
+| Complete modular CI coverage | `ae65f940486a372489aa097aa76d2a5cd056fd1c` |
+| Resolve schema discovery | `fbd3994642735f7599ec66bc89c2b9394a7b6b53` |
 
 No branch push, PR, remote preview, production promotion, alias, DNS change, or
-hosted deployment was performed. Task-scoped independent review and final
-whole-branch review belong to the controller after this self-review. Linux Docker
+hosted deployment was performed. Task-scoped review, whole-branch review, and
+scoped re-review of all findings completed. Linux Docker
 isolation and candidate-specific remote website CI are **PENDING**. Historical
 P0 CI links in the audit are not evidence that this candidate passed remote CI.
 
@@ -36,10 +39,11 @@ P0 CI links in the audit are not evidence that this candidate passed remote CI.
 
 Commands run from the repository root unless marked otherwise. Python was
 **3.11.14**, Homebrew runtime **3.11.14_3**. All successful results below were
-observed during Task 8, not inferred from earlier implementation reports.
+observed during Task 8 or rerun on the final reviewed executable head; they are
+not inferred from earlier implementation reports.
 
 ```sh
-python -m pytest conformance/protocol_v1 conformance/resolve_v1 conformance/discover_v1 conformance/capability_v1 conformance/interoperability_v1 -q
+python -m pytest conformance/protocol_v1 conformance/resolve_v1 conformance/discover_v1 conformance/capability_v1 conformance/interoperability_v1 tests/test_mathgraph_protocol_import.py tests/test_discovery_scheduler.py tests/test_discovery_candidate_sources.py -q
 python -m pytest tests/test_mathgraph_resolve_publication_v1.py tests/test_mathgraph_protocol_import.py -q
 python -m pytest tests/test_discovery_scheduler.py tests/test_discovery_candidate_sources.py -q
 python -m pytest conformance/resolve_v1 -q
@@ -48,7 +52,7 @@ python -m pytest conformance/capability_v1 -q
 
 | Gate, in command order | Observed final result |
 | --- | --- |
-| Combined conformance | Exit 0; **281 passed, 60 subtests passed** |
+| Expanded final-head conformance and compatibility | Exit 0; **311 passed, 72 subtests passed** |
 | Historical publication and package import | Exit 0; **24 passed** |
 | Existing discovery scheduler/source compatibility | Exit 0; **14 passed** |
 | Standalone Resolve after package-marker fix | Exit 0; **15 passed, 52 subtests passed** |
@@ -128,16 +132,16 @@ with loopback-server permission and exited **0**:
 - Social-card identity: 51,254 bytes, SHA-256
   `7269e84d1a81dbe671867bfc3f6effdde233c5ddffabfad35e665d1a9508844c`.
 - Astro: 49 files, **0 errors, 0 warnings, 0 hints**.
-- Data **68/68**, contract **15/15**, rendering **37/37**: **120 checks**.
+- Data **68/68**, contract **16/16**, rendering **37/37**: **121 checks**.
 - Build: **16 Astro pages**; built integrity: **17 HTML pages**, **32,206 client
   bytes**, catalogue V2, two records, 1200×630 social card.
-- Resolver documentation contract and HTML validation passed; **56 links** passed.
+- Resolver documentation contract and HTML validation passed; **58 links** passed.
 - Independent static consumer passed, including eight negative `UNKNOWN` cases.
   Independent Resolve HTTP consumer passed all seven claims with external pins,
   recomputed closure, and current applicability `UNKNOWN`.
 
 The link checker intentionally skips GitHub and production-origin URLs, as
-declared in `website/linkinator.config.json`. These 56 checks are not external
+declared in `website/linkinator.config.json`. These 58 checks are not external
 link availability evidence. Source links target committed module revision
 `02a817e8…`; their public availability requires the later branch push.
 
@@ -166,7 +170,7 @@ the published audit baseline.
 | Discover request | `23d6d59eef4fd6ba7bdddd673d01b8f2e61e71412b1d7bc66d3fce68b728c25a` |
 | Discover result | `6d9a24c7ffebe2288561e976a774f9d184f47b21e40572046e003b917cc939a5` |
 | Unsigned in-toto statement | `01cf99a1a37a370e453c5978914625c63602938420591c1dd2cfeef1ad86b5e6` |
-| Discovery V3 manifest | `76d198e1a4a3ebb4d8f48d20ef8f590a48c23c667215ae02e03df9baf96bbe9f` |
+| Discovery V3 manifest | `3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540` |
 | Original finite `run.py` | `4a76cae749b75e1461948854bf91fbcff5c5385591ec1f21967d44ba9738d588` |
 | Original all-refinement audit | `e4354d8c5ad2c07c5494907f0909f522f33a9c861f8f79586da395bc7535a0f3` |
 
@@ -282,13 +286,12 @@ remain in the controller's task reports and were not recreated here.
 | Task 7: routes, machine parity, desktop/tablet/mobile behavior | Full qualify and 21 browser combinations passed; nine retained images visually verified |
 | Task 8 Step 1: all specified isolated gates, original scripts, immutable hashes | Completed; collection issue corrected and exact command rerun; full outputs inspected |
 | Task 8 files: observed audit update and release report, permitted screenshot artifacts | Audit baseline retained with explicit addendum; this report and nine small QA images added |
-| Task 8 Step 2: independent release review | Deferred to controller by explicit ruling; this task self-reviewed only and spawned no agents |
-| Task 8 Step 3: push/draft PR/CI/preview | Deferred until task and whole-branch review; none performed here |
+| Task 8 Step 2: independent release review | Task review approved; whole-branch review found three interface gaps; all three fixes passed scoped re-review with no remaining finding |
+| Task 8 Step 3: push/draft PR/CI/preview | Push and draft PR remain pending; no production or remote action occurred during local qualification |
 | No P0 regeneration or production/config mutation | Immutable Git comparisons and exact pins passed; no deployment action taken |
 
-The smallest next action is task-scoped review followed by whole-branch review.
-After those pass, publish this branch and open the requested draft PR, collect
-fresh Linux Docker and website CI results, inspect an automatically created
-preview if available, and attach the exact final commit and evidence links.
+The smallest next action is to publish this branch and open the requested draft
+PR, collect fresh Linux Docker and website CI results, inspect an automatically
+created preview if available, and attach the exact final commit and evidence links.
 Production promotion remains a separate action. No release should cite this
 document as evidence that those pending gates have already passed.
