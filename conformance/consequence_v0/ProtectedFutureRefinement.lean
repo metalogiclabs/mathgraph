@@ -1,5 +1,5 @@
 /-!
-MathGraph protected-future refinement and source-indexed requalification.
+MathGraph protectedQuery-future refinement and source-indexed requalification.
 
 This is a general conditional calculus. It deliberately does not claim that
 any arbitrary real source adapter or equivalence relation satisfies the premises.
@@ -9,29 +9,29 @@ universe u v
 namespace MathGraphRefinement
 
 def EquivalentOn {S : Type u} {Query : Type v}
-    (protected : Query → Prop) (observe : S → Query → Prop)
+    (protectedQuery : Query → Prop) (observe : S → Query → Prop)
     (x y : S) : Prop :=
-  ∀ q, protected q → (observe x q ↔ observe y q)
+  ∀ q, protectedQuery q → (observe x q ↔ observe y q)
 
 theorem equivalent_refl {S : Type u} {Query : Type v}
-    (protected : Query → Prop) (observe : S → Query → Prop) (x : S) :
-    EquivalentOn protected observe x x := by
+    (protectedQuery : Query → Prop) (observe : S → Query → Prop) (x : S) :
+    EquivalentOn protectedQuery observe x x := by
   intro q h
   exact Iff.rfl
 
 theorem equivalent_symm {S : Type u} {Query : Type v}
-    (protected : Query → Prop) (observe : S → Query → Prop)
-    {x y : S} (h : EquivalentOn protected observe x y) :
-    EquivalentOn protected observe y x := by
+    (protectedQuery : Query → Prop) (observe : S → Query → Prop)
+    {x y : S} (h : EquivalentOn protectedQuery observe x y) :
+    EquivalentOn protectedQuery observe y x := by
   intro q hq
   exact (h q hq).symm
 
 theorem equivalent_trans {S : Type u} {Query : Type v}
-    (protected : Query → Prop) (observe : S → Query → Prop)
+    (protectedQuery : Query → Prop) (observe : S → Query → Prop)
     {x y z : S}
-    (hxy : EquivalentOn protected observe x y)
-    (hyz : EquivalentOn protected observe y z) :
-    EquivalentOn protected observe x z := by
+    (hxy : EquivalentOn protectedQuery observe x y)
+    (hyz : EquivalentOn protectedQuery observe y z) :
+    EquivalentOn protectedQuery observe x z := by
   intro q hq
   exact (hxy q hq).trans (hyz q hq)
 
@@ -56,11 +56,11 @@ theorem expansion_requires_new_obligations {S : Type u} {Query : Type v}
 
 theorem distinguishing_query_blocks_equivalence
     {S : Type u} {Query : Type v}
-    (protected : Query → Prop) (observe : S → Query → Prop)
+    (protectedQuery : Query → Prop) (observe : S → Query → Prop)
     (x y : S) (q : Query)
-    (hq : protected q)
+    (hq : protectedQuery q)
     (different : ¬ (observe x q ↔ observe y q)) :
-    ¬ EquivalentOn protected observe x y := by
+    ¬ EquivalentOn protectedQuery observe x y := by
   intro h
   exact different (h q hq)
 
