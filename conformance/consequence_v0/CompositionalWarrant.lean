@@ -55,4 +55,51 @@ theorem weakening_requires_policy_implication
   intro h
   exact ⟨hpolicy h.1, h.2⟩
 
+/-!
+A live warrant is support-relative. Transport preserves the observation,
+but cannot carry a warrant into a new policy without a separate proof that
+the required support remains live there.
+-/
+def SupportedWarrant {S : Type u}
+    (policy : Prop → Prop) (support : Prop)
+    (observe : S → Prop) (s : S) : Prop :=
+  policy support ∧ observe s
+
+theorem supported_transport_requires_live_target
+    {S : Type u} {T : Type v}
+    (sourcePolicy targetPolicy : Prop → Prop)
+    (support : Prop) (obsS : S → Prop) (obsT : T → Prop)
+    (f : S → T)
+    (preserves : ∀ s, obsS s ↔ obsT (f s))
+    (policyTransfer : sourcePolicy support → targetPolicy support)
+    (s : S) :
+    SupportedWarrant sourcePolicy support obsS s →
+      SupportedWarrant targetPolicy support obsT (f s) := by
+  intro h
+  exact ⟨policyTransfer h.1, (preserves s).mp h.2⟩
+
+theorem no_target_warrant_after_revocation
+    {S : Type u} (policy : Prop → Prop)
+    (support : Prop) (obs : S → Prop) (s : S)
+    (revoked : ¬ policy support) :
+    ¬ SupportedWarrant policy support obs s := by
+  intro h
+  exact revoked h.1
+
+theorem independent_alternative_support
+    (supportA supportB : Prop) (obs : Prop)
+    (alternative : supportB) :
+    (supportA ∨ supportB) ∧ obs ↔ obs := by
+  constructor
+  · intro h
+    exact h.2
+  · intro h
+    exact ⟨Or.inr alternative, h⟩
+
+theorem unsupported_cycle_cannot_create_warrant
+    (a b : Prop) (ha : a → b) (hb : b → a) :
+    ¬ (a ∧ ¬ a) := by
+  intro h
+  exact h.2 h.1
+
 end MathGraphFoundation
