@@ -2,13 +2,21 @@
 
 **Reconciled:** 11 October 2026<br>
 **Repository:** [`metalogiclabs/mathgraph`](https://github.com/metalogiclabs/mathgraph)<br>
-**Source authority:** [`11944c2b44ac890ecc03c7f183ae74ea4640246c`](https://github.com/metalogiclabs/mathgraph/commit/11944c2b44ac890ecc03c7f183ae74ea4640246c)<br>
+**Original audit baseline:** [`11944c2b44ac890ecc03c7f183ae74ea4640246c`](https://github.com/metalogiclabs/mathgraph/commit/11944c2b44ac890ecc03c7f183ae74ea4640246c)<br>
 **Audit purpose:** identify the first unfinished product and protocol gates after the qualified publication of MathGraph Resolve record 002.
 
 **Post-audit update:** Sections 1–8 preserve the audit baseline at `11944c2b…`.
 Section 9 records subsequently observed local implementation and qualification at
 `fbd3994642735f7599ec66bc89c2b9394a7b6b53`. It does not change the P0 release
 authority, claim a new production release, or supersede any immutable evidence.
+
+**Current-state correction, 11 October 2026:** Sections 1–9 are historical
+observations, including their stage-specific references to “current,” “draft,”
+and “production untouched.” PR #156 subsequently merged and deployed at
+`4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c`. Sections 10–14 reconcile that
+foundation with V2 implementation through `7a43e7ff45eda96aee11c9efe056542f2498bbd8`.
+V2 remains unreleased; Task 8 qualification is PENDING. See the
+[current authority record](mathgraph_v2_release_authority_2026-10-11.md).
 
 ## 1. Executive correction
 
@@ -320,3 +328,162 @@ remain `NOT_CHECKED`; no action is authorized. Further research and adoption
 gaps in Sections 4 and 7 remain open unless explicitly closed above. Human
 review and separate explicit approval remain necessary before any production
 promotion.
+
+## 10. Current authority and V2 implementation checkpoint
+
+GitHub authority was rechecked on 2026-10-11 at approximately 10:24 UTC.
+Remote `main` is `4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c`, the merge of
+[PR #156](https://github.com/metalogiclabs/mathgraph/pull/156). Its final head
+`349764269756bc6c679ee99cc9147609980963d8` and merge share the complete Git tree
+`a2efc76cb1b95b617e60173d01a85ecd7cdd65d7`. Four final-head release gates passed;
+no merge-commit Actions run was returned. Production deployment `6990666088`
+reports that merge commit and success. Exact CI/deployment links, immutable
+hashes and the V2 commit ledger are in the [authority record](mathgraph_v2_release_authority_2026-10-11.md).
+
+This closes the historical Section 1/4/5/6 proposals for Resolve format
+contracts, a dependency-free protocol package, local advisory Discover,
+capability description/evaluation, the independent finite profile and the
+unsigned in-toto binding. It does not close their research or current-state
+obligations. Discover remains `PARTIAL` / `NOT_CHECKED`; the general capability
+descriptor evaluator remains `UNKNOWN`; one exact finite profile is
+`QUALIFIED_BOUNDED`; VDN Lean is `EXPERIMENTAL`; CFC is `NOT_IMPLEMENTED`.
+
+[PR #157](https://github.com/metalogiclabs/mathgraph/pull/157) remains OPEN/draft
+at `ba94d2827fbc0dc296ea3507ae034f00f9c58a5e`. Its consequence envelope is
+candidate research, not a normative replacement for any existing contract.
+Conditional Lean laws do not establish that a real imported certificate
+discharges their premises. An archival workflow does not establish retained
+artifact availability. These distinctions remain in the
+[obligations register](mathgraph_v2_unresolved_obligations_2026-10-11.md).
+
+V2 Tasks 1–6 are implemented through `7a43e7ff…`. Task reports record local
+tests and browser checks at their respective commits. Those reports are not
+V2 remote CI, a protected-preview receipt or final release approval. Task 8's
+exact final source, CI, preview, browser evidence and whole-branch review are
+PENDING. No V2 production promotion or DNS change has been performed.
+
+The separate axes are historical epistemic result, lifecycle, research
+maturity, freshness, current applicability and action authorization. Import
+receipt validation, finite-profile replay and original native proof replay
+are different operations; a browser recognition or map export has authority
+`NONE`. These distinctions supplement the historical Section 3 list.
+
+## 11. V2 feature and gap disposition
+
+`Release` means a gate of the V2 candidate, not a completed release.
+`Research` and `Separate production` do not block the bounded V2 implementation.
+Commit labels T1–T6 below refer to exact identities in the
+[implementation ledger](mathgraph_v2_release_authority_2026-10-11.md#implementation-ledger).
+Each test citation identifies executable coverage, not an assertion that Task 8
+has already run it. The [browser report](mathgraph_v2_browser_qualification_2026-10-11.md)
+separates prior local observations from all pending preview checks.
+
+| Area | Exact existing implementation | Missing distinction | Priority | Verification obligation | Smallest qualifying next action |
+| --- | --- | --- | --- | --- | --- |
+| Supported import | T1: [consumer](../conformance/import_v1/consumer.py), [schema](../protocol/schemas/import-result-v1.schema.json), [tests](../conformance/import_v1/test_consumer.py) | Historical record/policy validation is not original Lean/source-suite replay | Release | Standalone deterministic output; strict parsing; source/scope/verifier/policy substitutions; presentation rejection | Repeat final-head conformance in Task 8; retain replay NOT_PERFORMED |
+| Browser workflow | T3/T4: [workbench](../website/src/scripts/import-workbench.ts), [fixture](../website/tests/fixtures/import-workflow.json), [browser test](../website/tests/import-workbench.browser.mjs) | Exact-byte recognition has no warrant authority; only the declared record-bound handoff applies | Release | Identity/scope/evidence/unknowns through all six stages; changed bytes reset; actual export rejected by Python; no interaction fetch | Exercise protected preview success/failure/unsupported paths |
+| Object adapters | T2: [adapters](../website/src/lib/object-projections.ts), [tests](../website/src/lib/object-projections.test.ts) | Partial views are not source round trips or a universal ontology | Release | Source parity, independent axes, noninterference, critical-extension rejection | Recheck exact adapters and disclose losses in Section 12 |
+| Object detail | T5: [detail component](../website/src/components/ObjectDetail.astro), [routes](../website/src/pages/objects/[slug].astro), [rendering tests](../website/tests/rendering.test.ts) | Missing projected attribution is UNKNOWN; lineage locator is not chronology or equivalence | Release | All 14 detail routes, source/export links, six axes and honest absent fields | Preview source-backed details at all target widths |
+| Knowledge map | T2/T5: [map contract/reader](../website/src/lib/knowledge-map.ts), [tests](../website/src/lib/knowledge-map.test.ts), [component](../website/src/components/KnowledgeMap.astro) | Display traversal is not certified path composition; current relations require same-source provenance | Release | Directed typed endpoints, exact occurrences, provenance, source pins, omissions, separate reader and evidence rejection | Preview filters, traversal, actual downloads and no-JS fallback |
+| Map history navigation | T5 fix `e1b13678…`: [script](../website/src/scripts/knowledge-map.ts), [browser regression](../website/tests/knowledge-map.browser.mjs) | Fragment/reload/Back/Forward selection must agree without hijacking unrelated fragments | Release | Existing exact-fragment and history checks at 1440/768/390 | Repeat on immutable preview |
+| Outcome navigation/homepage | T4: [layout](../website/src/layouts/BaseLayout.astro), [home](../website/src/pages/index.astro), [navigation test](../website/tests/outcome-navigation.browser.mjs) | Outcome navigation does not expand supported inputs or module maturity | Release | Active child groups, disclosure focus, keyboard/no-JS, stable legacy routes, real source-derived examples | Preview navigation and measure transfer/loading |
+| Searchable catalogues | T6/fix: [component](../website/src/components/CatalogueFilter.astro), [script](../website/src/scripts/catalogue-filter.ts), [browser test](../website/tests/catalogue-filter.browser.mjs) | Filtering changes display only; qualified and experimental entries stay distinct | Release | Keyboard search/select/reset, honest no-match, full no-JS content, 390/901/1024 regression | Repeat on preview, including breakpoint cases |
+| Agent/developer/protocol docs | T6: [agents](../website/src/pages/agents.astro), [developers](../website/src/pages/developers.astro), [protocol](../website/src/pages/protocol.astro), [contract tests](../website/tests/contracts.test.ts) | Object/Relation/Evidence/Resolution/Transition are responsibilities, not a new ontology; CLOSE/ACT/REFINE remain distinct | Release | Executable commands, exact artifacts, correspondence-only in-toto, no hosted/MCP/action promotion | Run final documentation/consumer gates |
+| Discover/Develop boundaries | PR #156 source retained; T6 [rendering tests](../website/tests/rendering.test.ts) | Advisory discovery and one finite replay do not qualify CFC, VDN Lean or autonomous growth | Release | PARTIAL/NOT_CHECKED versus QUALIFIED_BOUNDED/EXPERIMENTAL/NOT_IMPLEMENTED remain explicit | Check machine/UI agreement on preview |
+| TypeScript MIME | T6: synchronized [root config](../vercel.json) / [site config](../website/vercel.json), [built checks](../website/scripts/check-built-site.mjs) | Local header configuration is not observed deployed HTTP behavior | Release | Exact-path text/plain; charset=utf-8, nosniff retained, original byte digest, direct browser rendering | Task 8 preview header/digest/browser check PENDING |
+| About/Contact | T6: [About](../website/src/pages/about.astro), [Contact](../website/src/pages/contact.astro), rendering tests | Public repository contact is not a response SLA or endorsement | Release | Correct routes and facts; no fabricated relationships | Preview route/link inspection |
+| Record 002 social card | T6/fix: [generator](../website/scripts/generate-social-card.mjs), rendering mismatch regression | Presentation metadata is outside immutable evidence digests | Release | Derive actual counts/statuses; reject inconsistent temporary source; preserve record bytes | Check preview metadata and image |
+| Machine discovery | T6 [llms.txt](../website/src/pages/llms.txt.ts); existing [.well-known manifest](../website/public/.well-known/mathgraph.json) unchanged; [module tests](../website/tests/modules.test.ts) | Discovery metadata is not qualification or a hosted endpoint | Release | Contract locations/bytes and advertised boundaries agree | Verify final built and preview downloads |
+| Evidence integrity | Existing record 001/002, Resolve/capability artifacts; T1 schema/fixture parity tests | Integrity is not publisher authenticity or current truth | Release | Compare historical bytes and all public mirrors at exact final source | Repeat parity audit in Task 8 |
+| Release reconciliation | These Task 7 docs; historical PR #156 evidence remains separate | No final V2 source/CI/preview/review identity yet | Release | One clean final commit bound to immutable deployment, successful gates and browser/review report | Complete Task 8; all such identities PENDING |
+| www redirect | Baseline observation in [design](superpowers/specs/2026-10-11-mathgraph-v2-foundation-design.md) | Duplicate 200 is a production-domain policy issue | Separate production | Explicit authorization plus redirect/canonical-host checks | Leave deferred; do not alter DNS or aliases |
+
+## 12. Two-domain extension test and protected future
+
+The [adapter matrix test](../website/src/lib/object-projections.test.ts)
+compares source contracts, verifier authority, assumptions, lifecycle, replay
+boundary, unknowns and unsupported semantics directly with committed inputs.
+
+| Distinction | Record 001 evidence | Finite capability |
+| --- | --- | --- |
+| Contract | `mathgraph.public-consequence-record.v1` | `mathgraph.capability-contract.v1`, profile `mathgraph.finite-representation-refinement.v1` |
+| Historical result / maturity | WARRANTED_BOUNDED; projected research maturity UNKNOWN | QUALIFIED_BOUNDED; projected research maturity UNKNOWN |
+| Scope | 48 decoded pinned YAML-suite cases plus four controls; separately scoped original Lean lemmas | Eight ordered Boolean states, five named refinements, all 256 Boolean one-bit refinements; discovery AND and distinct reuse OR targets |
+| Verifier authority | Historical LEAN_GUARDS_AND_COMPILED_TRYPARSE and ORIGINAL_JPL_LEAN_PROOF_OBJECTS | `urn:mathgraph:verifier:finite-refinement-independent:v1`, separately pinned consumer and policy; independent implementation, same owner |
+| Assumptions | Source/suite commits, specified decoder, finite case selection, toolchain and scoped theorem interpretation; empty receipt list is not unconditional correctness | Exact carrier; total deterministic Boolean policies; distinct reuse means two target functions within one owned source |
+| Replay | Import validates historical receipt/policy; original Lean, kernel admission and source suite NOT_PERFORMED | Profile consumer recomputes finite gates; original candidate program is provenance, not executed or runtime-certified; website adapter only displays pinned results |
+| Lifecycle/freshness | Website catalogue lifecycle CURRENT; projected freshness NOT_CHECKED_AFTER_SNAPSHOT; importer lifecycle UNKNOWN and freshness NOT_CHECKED | Lifecycle UNKNOWN; freshness/revocation/supersession NOT_CHECKED |
+| Applicability/authorization | Current applicability UNKNOWN; read-only, no automatic authorization | Current applicability UNKNOWN; action authorization NONE |
+| Unknown/unsupported | Whole-language correctness, statement fidelity, generalization, human digestion, whole-input extraction and current requalification | Universal invention, autonomous improvement, global feature uniqueness, external adoption and current-state authority |
+| Projection loss | Attribution/publisher, evidence-run links, normalization and known separator are omitted from the object projection | Opaque contract extensions and full policy/receipt bodies are omitted; pins remain |
+| New extensions | Unknown source kinds/versions refused | Critical extensions refused; changed descriptor bytes fail exact registry pins, including new noncritical extensions |
+
+See the [original record](../website/src/data/l4yaml-record.json),
+[import boundary](../conformance/import_v1/README.md),
+[capability descriptor](../conformance/capability_v1/fixtures/capability-contract.json)
+and [finite replay boundary](../conformance/capability_v1/README.md).
+Pins provide recovery locators and byte identities, not availability guarantees
+or lossless semantic round trips. Object details display absent attribution as
+UNKNOWN and link the full original; this is a known presentation limitation.
+
+The noninterference test loads records without capability support, with it,
+then without it again and requires identical canonical record-001 projections.
+It also rereads record 001/002 transport bytes and content identities. Mutation
+of a returned projection does not mutate its source. This tests these exact
+adapters only; arbitrary future extensions remain unqualified.
+
+The [map reader/tests](../website/src/lib/knowledge-map.test.ts) preserve
+explicit noncritical opaque map extensions and reject critical extensions,
+unsupported versions, invented relation types, wrong endpoints/provenance and
+authority injection. Current types are EVIDENCE_FOR, PREMISE_FOR and WITHDRAWS,
+with same-source provenance. Exports and reader wrappers have authority NONE;
+record-schema and actual browser/import controls reject presentations as evidence.
+
+The foundation preserves the following seams, with no universal compatibility claim:
+
+| Protected future | Present extension seam | Smallest new-profile qualification |
+| --- | --- | --- |
+| Authored Brains | Exact source/version identities, read-only collections and separate axes | One versioned authored manifest; distinguish attributed commentary from admitted claims; test ownership/edit history and source preservation |
+| Portable Maps | Directed bounded export, pins, selection and completeness, separate reader | A separately implemented consumer with positive/negative vectors, explicit extension/loss rules and authority NONE |
+| Verified capabilities | Descriptor/evaluation separation and finite profile | New exact scope, inputs, assumptions, verifier and independent policy; replay and mutation controls before admission |
+| Certified Paths | Declared Resolve routes and least-support replay | Step/input/output correspondence, composition preconditions, assumption discharge, broken-step and cycle controls |
+| Collaboration/living papers | Immutable claim/evidence pointers, original attribution, withdrawal and surviving support | One paper/claim/evidence manifest plus versioned correction; distinguish authorship, review and mathematical evidence; no editor implied |
+| Cross-prover/domain transport | Native-verifier identities and narrow unsigned external binding | One real source-to-target mapping with statement/axiom/toolchain pins, losses, native replay and wrong-semantics controls; discharge actual Lean premises |
+| Agent exchange | Local CLIs, reason codes, source-bound advisory proposals | Independent recipient policy and untrusted-status controls; separate permission contract before any operational action |
+| Federation | Offline replay independent of MathGraph.org and explicit recipient policies | Two independently administered publishers; authenticated identity, conflicts, delegated authority and replay/rollback controls |
+| Compounding | Finite retention/reuse/sham/ablation controls | Prospective new families, parent-removal, retained old capabilities, restartable lineage, strong comparator and full costs |
+| Independent requalification | Standalone import, Resolve and finite consumers | Durable original artifacts and exact native replay; distinguish implementation independence, outside-owner trust and authenticated current state |
+| Network sharing | Static downloadable bundles/contracts and exact pins | Independently retrieve exact artifacts; separately qualify authentication, retention, freshness/revocation and recipient permission |
+
+## 13. Deliberately omitted abstractions
+
+| Omission | Why the present boundary is smaller | Preserved seam |
+| --- | --- | --- |
+| Universal Unit/Brain/Map/Path ontology | Two source domains justify a view adapter, not universal semantics | Versioned source contracts and explicit per-domain adapters |
+| Inferred equivalence/support | Names, proximity, hashes and graph layout cannot establish semantic relations | Each future relation needs its own evidence/profile |
+| Universal verified badge | Collapsing validity, warrant, lifecycle, freshness, applicability and permission changes decisions | Independent machine-readable axes |
+| General composition/CFC/autonomous growth | Existing finite controls and conditional research do not qualify general constructors | Separately verified path/family profiles |
+| Accounts/database/editor/marketplace | The current slice needs no mutable multi-user store or transaction authority | Immutable manifests and independent clients |
+| Hosted proof execution/arbitrary imports/MCP | Local exact-input consumers need no remote execution/fetch surface | A future bounded service over a qualified contract if demanded |
+| New trust root | Same-origin hashes do not authenticate publishers | Independently selected policy and future detached authentication |
+| Heavy graph framework | Fourteen objects/seven declared occurrences fit bounded semantic HTML/SVG | Replaceable renderer over explicit projections |
+
+These choices reduce trusted code and maintenance while retaining a concrete
+place for future profiles. They are not a proof that those profiles will fit
+without changes. They follow the [approved design](superpowers/specs/2026-10-11-mathgraph-v2-foundation-design.md).
+
+## 14. Unresolved obligations and release disposition
+
+The [obligations register](mathgraph_v2_unresolved_obligations_2026-10-11.md)
+records present status, acceptance gate and smallest action for durable JPL
+retention, certificate-to-Lean premises, outside-owner adoption, semantic
+transport, VDN admission, CFC, compounding, authenticated lifecycle, agent
+authorization, federation, monorepo residuals and the deferred www redirect.
+
+The bounded extension test is satisfied by the existing source-derived tests
+and the local task observations, subject to final-head release requalification.
+It establishes neither universal interchange nor certified composition,
+autonomous growth, authenticated federation or outside-owner adoption.
+Task 8's final review, preview, CI, browser matrix and performance comparison
+remain PENDING. V2 promotion is NOT_PERFORMED; the production authority above
+has not been changed by this documentation task.
