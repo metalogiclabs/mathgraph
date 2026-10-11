@@ -125,9 +125,9 @@ def validate_request(request: Any) -> None:
         _unique(candidate["candidate_id"], candidate_ids)
         for field in ("advisory_only", "can_promote_truth"):
             _require(type(candidate[field]) is bool, "INVALID_FIELD_TYPE")
-        for field in NUMERIC_FIELDS & candidate.keys():
+        for field in sorted(NUMERIC_FIELDS & candidate.keys()):
             _number(candidate[field])
-        for field in {"notes", "description"} & candidate.keys():
+        for field in sorted({"notes", "description"} & candidate.keys()):
             _require(type(candidate[field]) is str, "INVALID_FIELD_TYPE")
         _array(candidate["source_ids"])
         references: set[str] = set()

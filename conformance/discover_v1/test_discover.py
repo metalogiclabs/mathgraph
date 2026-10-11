@@ -3,6 +3,7 @@
 import copy
 import importlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -102,6 +103,19 @@ def test_excessively_large_json_integer_returns_structural_error():
     result = module().discover('{"top_k":' + '1' * 5000 + '}')
     assert result["status"] == "ERROR"
     assert_boundary(result)
+
+
+def test_multiple_invalid_numeric_fields_have_deterministic_error_priority():
+    data = request()
+    data["candidates"][0].update({"verification_cost": -1, "expected_reuse": "invalid"})
+    code = "import sys; sys.path.insert(0, sys.argv[1]); from mathgraph_protocol.discover_v1 import discover, encode_result; sys.stdout.buffer.write(encode_result(discover(sys.argv[2])))"
+    outputs = []
+    for seed in range(1, 8):
+        run = subprocess.run([sys.executable, "-S", "-c", code, str(ROOT), json.dumps(data)],
+                             env={**os.environ, "PYTHONHASHSEED": str(seed)}, capture_output=True, check=True)
+        outputs.append(run.stdout)
+    assert len(set(outputs)) == 1
+    assert json.loads(outputs[0])["reason_codes"] == ["INVALID_FIELD_TYPE"]
 
 
 @pytest.mark.parametrize("change,code", [
