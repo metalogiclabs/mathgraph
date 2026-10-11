@@ -96,10 +96,5 @@ theorem independent_alternative_support
   · intro h
     exact ⟨Or.inr alternative, h⟩
 
-theorem unsupported_cycle_cannot_create_warrant
-    (a b : Prop) (ha : a → b) (hb : b → a) :
-    ¬ (a ∧ ¬ a) := by
-  intro h
-  exact h.2 h.1
 
 end MathGraphFoundation
