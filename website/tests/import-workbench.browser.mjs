@@ -9,6 +9,30 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const root = resolve('dist');
 const fixture = JSON.parse(await readFile('tests/fixtures/import-workflow.json', 'utf8'));
 const raw = await readFile(`public/evidence/${fixture.id}/record.json`);
+const expectedCheckoutLines = [
+  'git clone https://github.com/metalogiclabs/mathgraph.git mathgraph-import-v1',
+  'cd mathgraph-import-v1',
+  'git checkout --detach 1204a1d267b6217c45c9b17f093cc3587450cf78',
+];
+const expectedReplayArgs = [
+  '-I', '-S', 'scripts/mathgraph_import_v1.py',
+  '--record', 'conformance/import_v1/fixtures/record.json',
+  '--policy', 'conformance/import_v1/fixtures/trust-policy.json',
+  '--policy-sha256', '944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65',
+  '--goal', 'finite_parser_acceptance',
+];
+
+const runDocumentedReplay = (documentedCommand, label) => {
+  const blocks = documentedCommand.trim().split(/\n\s*\n/);
+  assert.equal(blocks.length, 2, `${label}: expected separate checkout and replay command blocks`);
+  assert.deepEqual(blocks[0].split('\n'), expectedCheckoutLines, `${label}: checkout instructions are not pinned`);
+  const replayTokens = blocks[1].replaceAll('\\\n', ' ').trim().split(/\s+/);
+  assert.equal(replayTokens.shift(), 'python', `${label}: replay must be the only executable command`);
+  assert.deepEqual(replayTokens, expectedReplayArgs, `${label}: replay arguments are not the pinned local contract`);
+  const replay = spawnSync(process.env.PYTHON ?? 'python3', replayTokens, { cwd: resolve('..'), encoding: 'utf8' });
+  assert.equal(replay.status, 0, `${label}: documented local import command failed: ${replay.stderr}`);
+  return JSON.parse(replay.stdout);
+};
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url, 'http://localhost').pathname;
   const file = resolve(root, `.${pathname.endsWith('/') ? `${pathname}index.html` : pathname}`);
@@ -31,16 +55,10 @@ try {
     const workbench = page.locator('[data-import-workbench]');
     assert.equal(await workbench.count(), 1, `${route}: shared workbench missing`);
     const documentedCommand = await workbench.locator('pre code').textContent();
-    const [, ...documentedArgs] = documentedCommand.replaceAll('\\\n', ' ').trim().split(/\s+/);
-    const replay = spawnSync(process.env.PYTHON ?? 'python3', documentedArgs, { cwd: resolve('..'), encoding: 'utf8' });
-    assert.equal(replay.status, 0, `documented local import command failed: ${replay.stderr}`);
-    assert.equal(JSON.parse(replay.stdout).schema, 'mathgraph.import-result.v1');
+    assert.equal(runDocumentedReplay(documentedCommand, `${route || 'home'} workbench`).schema, 'mathgraph.import-result.v1');
     if (route === '') {
       const quickStart = await page.locator('[data-home-quick-start] code').textContent();
-      const [, ...args] = quickStart.replaceAll('\\\n', ' ').trim().split(/\s+/);
-      const result = spawnSync(process.env.PYTHON ?? 'python3', args, { cwd: resolve('..'), encoding: 'utf8' });
-      assert.equal(result.status, 0, result.stderr);
-      const imported = JSON.parse(result.stdout);
+      const imported = runDocumentedReplay(quickStart, 'home quick start');
       assert.equal(imported.schema, 'mathgraph.import-result.v1');
       assert.equal(imported.evidence.proof_replay, 'NOT_PERFORMED');
       assert.equal(imported.freshness, 'NOT_CHECKED');
