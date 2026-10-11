@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ImportWorkbench from '../../components/ImportWorkbench.astro';
+---
+
+<BaseLayout title="MathGraph Verify — Local record workbench" description="Recognize the exact supported local evidence record, preserve its finite scope and unknowns, and export a non-authoritative presentation." currentPath="/verify/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">MathGraph Verify</div>
+      <h1>Inspect what a record actually supports.</h1>
+      <p class="lede">A local file, one exact evidence boundary, and explicit unknowns through every step. <a href="/check/">Read Check’s verification axes and current limits.</a></p>
+    </div>
+  </header>
+  <div class="section section--compact"><div class="shell"><ImportWorkbench /></div></div>
+</BaseLayout>

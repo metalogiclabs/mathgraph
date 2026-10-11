@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
+import { recognizeLocalFile, selectQualifiedHandoff } from '../src/scripts/import-workbench';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
@@ -34,6 +35,54 @@ async function json(path: string): Promise<Record<string, any>> {
 }
 
 describe('agent discovery contracts', () => {
+  test('recognizes only bounded exact local bytes and never accepts browser output as an import result', async () => {
+    const bytes = await readFile(join(website, `public/evidence/${recordId}/record.json`));
+    const preview = await recognizeLocalFile(new File([bytes], 'record.json', { type: 'application/json' }));
+    expect(preview.status).toBe('EXACT_BYTES_RECOGNIZED');
+    expect(preview.schema).toBe('mathgraph.browser-recognition.v1');
+    expect(preview.processing_mode).toBe('LOCAL_BROWSER_EXACT_BYTE_RECOGNITION');
+    expect(preview.authority).toBe('NONE');
+    expect(preview.proof_replay).toBe('NOT_PERFORMED');
+    expect(preview.kernel_replay).toBe('NOT_PERFORMED');
+    expect(preview.source_suite_replay).toBe('NOT_PERFORMED');
+    expect(preview.freshness).toBe('UNKNOWN');
+    expect(preview.current_applicability).toBe('UNKNOWN');
+    expect(preview.authorization).toBe('READ_ONLY_NO_AUTOMATIC_AUTHORIZATION');
+    const fixture = JSON.parse(await readFile(join(website, 'tests/fixtures/import-workflow.json'), 'utf8'));
+    expect(preview.record).toMatchObject(fixture);
+    expect(preview.handoff).toEqual({ status: 'UNKNOWN', reason: 'NOT_SELECTED' });
+    const handedOff = selectQualifiedHandoff(preview, 'finite_parser_acceptance');
+    expect(handedOff.record).toEqual(preview.record);
+    expect(handedOff.handoff).toEqual({
+      status: 'QUALIFIED_RECORD_HANDOFF', historical_result: 'WARRANTED_BOUNDED',
+      goal: 'finite_parser_acceptance', href: `/records/${recordId}/v1/`,
+    });
+    const unsupported = selectQualifiedHandoff(handedOff, 'whole_language_correctness');
+    expect(unsupported.record).toEqual(preview.record);
+    expect(unsupported.handoff).toEqual({ status: 'UNKNOWN', reason: 'UNSUPPORTED_ROUTE' });
+    const schema = await json('schemas/import-result-v1.schema.json');
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    expect(ajv.validate(schema, handedOff)).toBe(false);
+    // Values that permissive JSON parsers might normalize must never be interpreted.
+    for (const candidate of [
+      null, 'https://mathgraph.org/record.json',
+      new File([bytes, '\n'], 'record.json'),
+      new File([bytes.toString('utf8').replace('"expected_accept": 31', '"expected_accept": 32')], 'record.json'),
+      new File([bytes.toString('utf8').replace('"admission": {', '"admission": {}, "admission": {')], 'record.json'),
+      new File([bytes.toString('utf8').replace('"expected_accept": 31', '"expected_accept": NaN')], 'record.json'),
+      new File([new Uint8Array([0xef, 0xbb, 0xbf]), bytes], 'record.json'),
+      new File([bytes.toString('utf8').replace(recordId, 'untrusted-producer')], 'record.json'),
+      new File(['<script>throw new Error("not JSON")</script>'], 'record.json'),
+      new File([new Uint8Array(65537)], 'record.json'),
+    ]) {
+      const result = await recognizeLocalFile(candidate);
+      expect(result.status).toBe('UNKNOWN');
+      expect(result.record).toBeNull();
+      expect(JSON.stringify(result)).not.toContain('WARRANTED');
+      expect(selectQualifiedHandoff(result, 'finite_parser_acceptance').handoff.status).toBe('UNKNOWN');
+    }
+  });
+
   test('publishes the independent import result schema without widening historical authority', async () => {
     const repository = join(website, '..');
     const name = 'import-result-v1.schema.json';

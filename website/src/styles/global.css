@@ -1764,3 +1764,24 @@ summary {
     animation-iteration-count: 1 !important;
   }
 }
+.import-workbench {
+  border: 1px solid var(--line, #d9d7cf);
+  border-radius: 1rem;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  min-width: 0;
+}
+.import-workbench [hidden] { display: none; }
+.import-workbench label { display: block; font-weight: 650; margin-block: 1rem .5rem; }
+.import-workbench input, .import-workbench select { max-width: 100%; width: 100%; font: inherit; }
+.import-workbench select { padding: .6rem; }
+.import-controls { display: flex; flex-wrap: wrap; gap: .65rem; margin-block: 1.5rem; }
+.import-controls button { border: 1px solid currentColor; border-radius: .4rem; padding: .65rem .85rem; font: inherit; background: transparent; cursor: pointer; }
+.import-controls button[aria-current="step"] { background: #152639; color: #fff; }
+.import-controls button:disabled { opacity: .5; cursor: default; }
+.import-workbench :focus-visible { outline: 3px solid #4565bb; outline-offset: 4px; }
+.import-status { font-weight: 650; }
+.import-context { margin-block: 1.5rem; }
+.import-context dt { font-weight: 650; margin-top: 1.1rem; }
+.import-context dd { margin: .3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.import-workbench summary { cursor: pointer; font-weight: 650; }
+.import-workbench pre { max-width: 100%; overflow-x: auto; }

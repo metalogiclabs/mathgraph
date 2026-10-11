@@ -21,6 +21,30 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test.each(['verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
+    const html = await page(route).catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-import-workbench');
+    expect(html).toMatch(/<input[^>]+type="file"[^>]+accept="application\/json,.json"[^>]+disabled/);
+    expect(html).not.toMatch(/<input[^>]+type="url"/);
+    expect(text).toContain('65,536 bytes');
+    expect(text).toContain('4,321 bytes');
+    expect(text).toContain('UNKNOWN');
+    expect(text).toContain('No proof, kernel, or source-suite execution');
+    expect(html).toContain(`/evidence/${record.id}/record.json`);
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('<noscript>');
+    for (const stage of ['interpret', 'check', 'resolve', 'explore', 'export']) {
+      expect(html).toContain(`data-import-step="${stage}"`);
+    }
+    for (const region of ['source', 'evidence', 'scope', 'unknowns']) {
+      expect(html).toContain(`data-import-${region}`);
+    }
+    expect(text).toContain('python scripts/mathgraph_import_v1.py');
+    expect(text).toContain('--policy-sha256');
+    expect(text).toContain('Download presentation JSON');
+  });
+
   test('keeps durable evidence links legible on the dark section', async () => {
     const css = await readFile(join(website, 'src/styles/global.css'), 'utf8');
     expect(css).toMatch(/\.section--ink \.source-link__label\s*{[^}]*color:\s*white/s);

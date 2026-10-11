@@ -16,6 +16,7 @@
     "test:rendering": "vitest run tests/rendering.test.ts",
     "test:contracts": "vitest run tests/contracts.test.ts tests/modules.test.ts",
     "test:consumer": "node tests/consumer.mjs",
+    "test:import-browser": "node tests/import-workbench.browser.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "check:built": "node scripts/check-built-site.mjs",

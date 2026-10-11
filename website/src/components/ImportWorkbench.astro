@@ -1,0 +1,74 @@
+---
+const recordId = 'mg-l4yaml-source-check-20261010';
+const replayCommand = [
+  'python scripts/mathgraph_import_v1.py',
+  '  --record conformance/import_v1/fixtures/record.json',
+  '  --policy conformance/import_v1/fixtures/trust-policy.json',
+  '  --policy-sha256 944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65',
+  '  --goal finite_parser_acceptance',
+].join(' \\\n');
+---
+
+<section class="import-workbench" data-import-workbench data-stage="unknown" aria-labelledby="import-title">
+  <header>
+    <div class="eyebrow">Local import workbench</div>
+    <h2 id="import-title">Carry the evidence boundary with the record.</h2>
+    <p>Import → Interpret → Check → Resolve → Explore → Export. This browser recognizes an exact local record and displays its existing qualified boundary. Its authority is <code>NONE</code>.</p>
+  </header>
+  <div class="callout">
+    <p id="import-file-help">JSON local files only, at most <strong>65,536 bytes</strong>. The one supported artifact is the unchanged L4YAML V1 record: <strong>4,321 bytes</strong>. Changed, unsupported, or non-JSON bytes remain <code>UNKNOWN</code>.</p>
+    <p><a href={`/evidence/${recordId}/record.json`} download="record.json">Download the exact supported record.json</a>, then select that local file below. There is no upload or URL input.</p>
+    <p class="fineprint">No proof, kernel, or source-suite execution takes place here. Exact byte recognition supplies integrity, not authenticity or warrant authority. Input contents are never parsed or executed; only a digest match unlocks the committed display data.</p>
+    <label for="import-file">1. Import a local record</label>
+    <input id="import-file" type="file" accept="application/json,.json" disabled data-import-file aria-describedby="import-file-help" />
+  </div>
+  <p class="import-status" role="status" aria-live="polite" aria-atomic="true" data-import-status>UNKNOWN — no local record has been recognized. Current applicability and freshness remain UNKNOWN.</p>
+  <noscript><p class="callout callout--unknown">JavaScript is off. Local recognition remains UNKNOWN and controls stay disabled. The supported artifact, permanent evidence record, and offline import command remain available.</p></noscript>
+
+  <div class="import-controls" role="group" aria-label="Record workflow">
+    <button type="button" disabled data-import-step="interpret" aria-controls="import-stage-output">2. Interpret</button>
+    <button type="button" disabled data-import-step="check" aria-controls="import-stage-output">3. Check</button>
+    <button type="button" disabled data-import-step="resolve" aria-controls="import-stage-output">4. Resolve handoff</button>
+    <button type="button" disabled data-import-step="explore" aria-controls="import-stage-output">5. Explore</button>
+    <button type="button" disabled data-import-step="export" aria-controls="import-stage-output">6. Export</button>
+  </div>
+  <label for="import-goal">Record-bound handoff route</label>
+  <select id="import-goal" disabled data-import-goal aria-describedby="import-route-help">
+    <option value="finite_parser_acceptance">finite_parser_acceptance — exact pinned record</option>
+    <option value="whole_language_correctness">whole_language_correctness — unsupported, UNKNOWN</option>
+  </select>
+  <p id="import-route-help" class="fineprint">Resolve selects the already qualified record-bound outcome only. An unsupported route remains UNKNOWN. The browser adds no resolution semantics.</p>
+  <p id="import-stage-output" class="callout" aria-live="polite" data-import-stage-output>Select a supported local file to begin. No imported evidence is shown yet.</p>
+  <p><a href={`/records/${recordId}/v1/`} data-import-handoff hidden>Open the qualified record-bound result</a></p>
+
+  <section class="import-context" data-import-context hidden aria-labelledby="import-context-title">
+    <h3 id="import-context-title">The same record at every step</h3>
+    <dl>
+      <dt>Record identity and integrity</dt><dd data-import-identity>UNKNOWN</dd>
+      <dt>Source and suite pins</dt><dd data-import-source>UNKNOWN</dd>
+      <dt>Finite scope</dt><dd data-import-scope>UNKNOWN</dd>
+      <dt>Evidence reference</dt><dd data-import-evidence>UNKNOWN</dd>
+      <dt>Unknowns carried forward</dt><dd data-import-unknowns>UNKNOWN</dd>
+      <dt>Browser processing mode</dt><dd>LOCAL_BROWSER_EXACT_BYTE_RECOGNITION</dd>
+      <dt>Browser authority</dt><dd>NONE</dd>
+      <dt>Original proof / kernel / source-suite replay</dt><dd>NOT_PERFORMED / NOT_PERFORMED / NOT_PERFORMED</dd>
+      <dt>Current applicability / freshness</dt><dd>UNKNOWN / UNKNOWN</dd>
+      <dt>Authorization</dt><dd>READ_ONLY_NO_AUTOMATIC_AUTHORIZATION</dd>
+    </dl>
+    <p><a href={`/records/${recordId}/v1/`}>Explore this exact permanent evidence record</a></p>
+  </section>
+  <p><a hidden data-import-download>Download presentation JSON</a></p>
+  <p class="fineprint">The portable export is a read-only <code>mathgraph.browser-recognition.v1</code> presentation, not an independent import result, proof, certificate, or input to the Python importer.</p>
+
+  <details>
+    <summary>Supported local-record import paths and independent replay command</summary>
+    <p>The browser supports only the exact downloaded <code>record.json</code>. For independent offline historical receipt and local-policy validation, run this command from a local MathGraph checkout after reviewing the separate trust policy and its digest:</p>
+    <pre><code>{replayCommand}</code></pre>
+    <p>You may replace <code>--record</code> with the local path to that unchanged supported artifact. Keep the reviewed policy separate. This offline command does not execute the original proof, kernel, or source suite, check current applicability, or authorize actions.</p>
+    <p><a href="https://github.com/metalogiclabs/mathgraph/blob/main/conformance/import_v1/consumer.py">Inspect the independent consumer</a> · <a href="/schemas/import-result-v1.schema.json">Independent result contract</a> · <a href={`/records/${recordId}/v1/`}>Permanent supported record</a></p>
+  </details>
+</section>
+
+<script>
+  import '../scripts/import-workbench';
+</script>
