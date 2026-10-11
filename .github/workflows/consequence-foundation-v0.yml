@@ -82,3 +82,22 @@ jobs:
           echo "CRYSTAL_SOURCE_SHA256=$(sha256sum "$RUNNER_TEMP/original-crystal.py" | cut -d' ' -f1)" >> "$GITHUB_ENV"
       - name: Compare original runtime against candidate codec
         run: PYTHONPATH=conformance/consequence_v0 python conformance/consequence_v0/original_crystal_compatibility.py -v
+  lean-compositional-warrant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean 4 compiler
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain leanprover/lean4:v4.35.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check compositional warrant theorems
+        run: |
+          set -euo pipefail
+          lean --version
+          lean conformance/consequence_v0/CompositionalWarrant.lean
+          sha256sum conformance/consequence_v0/CompositionalWarrant.lean
