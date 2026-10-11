@@ -118,7 +118,7 @@ jobs:
           root=pathlib.Path("conformance/consequence_v0")
           for path in sorted(root.glob("*.lean")):
               names=re.findall(r"(?m)^theorem\s+([A-Za-z_][A-Za-z_0-9]*)",path.read_text())
-              source=path.read_text()+"\n"+"\n".join(f"#print axioms {name}" for name in names)+"\n"
+              source=path.read_text()\n              marker="\nend "+re.search(r"(?m)^namespace\\s+(\\w+)",source).group(1)+"\n"\n              source=source.replace(marker,"\n"+"\n".join(f"#print axioms {name}" for name in names)+"\n"+marker)
               probe=path.with_name(path.stem+"AxiomAudit.lean")
               probe.write_text(source)
               print(f"AXIOM_AUDIT {path.name}: {len(names)} theorems")
