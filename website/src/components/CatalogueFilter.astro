@@ -14,7 +14,7 @@ interface Props {
 const { id, total, filters } = Astro.props;
 ---
 
-<section class="catalogue-filter" data-catalogue-filter aria-labelledby={`${id}-filter-title`}>
+<section class="catalogue-filter" data-catalogue-filter data-catalogue-filter-count={filters.length} aria-labelledby={`${id}-filter-title`}>
   <div class="catalogue-filter__header">
     <div>
       <div class="eyebrow">Local catalogue view</div>

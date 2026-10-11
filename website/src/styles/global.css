@@ -750,7 +750,9 @@ pre {
 
 .catalogue-filter {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+  container-type: inline-size;
 }
 
 .catalogue-filter__header {
@@ -768,11 +770,16 @@ pre {
 .catalogue-filter__controls {
   display: grid;
   align-items: end;
+  min-width: 0;
   margin: 0;
   padding: var(--space-4);
   border: 1px solid var(--line);
   grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
   gap: var(--space-3);
+}
+
+.catalogue-filter[data-catalogue-filter-count="1"] .catalogue-filter__controls {
+  grid-template-columns: minmax(180px, 2fr) minmax(130px, 1fr) auto;
 }
 
 .catalogue-filter__controls label {
@@ -812,6 +819,16 @@ pre {
 .catalogue-filter__items > article {
   padding-block: var(--space-5);
   border-block: 1px solid var(--line);
+}
+
+@container (max-width: 42rem) {
+  .catalogue-filter__controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalogue-filter__search {
+    grid-column: 1 / -1;
+  }
 }
 
 .record-id {

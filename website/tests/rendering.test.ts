@@ -1,6 +1,9 @@
-import { readFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 import { describe, expect, test } from 'vitest';
 import sharp from 'sharp';
@@ -11,6 +14,7 @@ import resolveScenarios from '../src/data/resolve-scenarios.json';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
+const execFileAsync = promisify(execFile);
 
 async function page(path: string): Promise<string> {
   return readFile(join(dist, path, 'index.html'), 'utf8');
@@ -538,6 +542,26 @@ describe('primary public evidence experience', () => {
       'Presentation only · authority NONE',
     ]) expect(resolveCard).toContain(copy);
     expect(resolveCard).not.toMatch(/(?:OpenAI|JPL).*(?:verified|refuted)/i);
+  });
+
+  test('rejects a Resolve card when source predicates disagree without editing committed evidence', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'mathgraph-social-card-mismatch-'));
+    try {
+      await Promise.all([
+        cp(join(website, 'src/data'), join(fixtureRoot, 'src/data'), { recursive: true }),
+        cp(join(website, 'public/evidence'), join(fixtureRoot, 'public/evidence'), { recursive: true }),
+        cp(join(website, 'public/social/records'), join(fixtureRoot, 'public/social/records'), { recursive: true }),
+      ]);
+      const fixtureRecordPath = join(fixtureRoot, `public/evidence/${resolveRecord.id}/record.json`);
+      const fixtureRecord = JSON.parse(await readFile(fixtureRecordPath, 'utf8'));
+      fixtureRecord.resolutions['openai.original_support.1'].after = 'UNKNOWN';
+      await writeFile(fixtureRecordPath, `${JSON.stringify(fixtureRecord, null, 2)}\n`);
+      await expect(execFileAsync(process.execPath, [join(website, 'scripts/generate-social-card.mjs'), '--check'], {
+        cwd: fixtureRoot,
+      })).rejects.toMatchObject({ stderr: expect.stringContaining('SOCIAL_CARD_RESOLVE_FACTS_MISMATCH') });
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
   });
 
   test('renders complete progressively enhanced record and capability catalogues', async () => {
