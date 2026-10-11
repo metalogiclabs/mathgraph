@@ -94,4 +94,45 @@ class FoundationFinite(unittest.TestCase):
         self.assertNotIn("trap",safe)
         self.assertEqual([a for a in choices[("fresh","d")] if transitions[("fresh","d",a)] in safe],["good"])
 
+def admitted_actions(states, goal, disturbances, choices, transitions,
+                    authorized, live_support):
+    """Only actions with live independent authorization and viable successors.
+
+    A reachability witness is not permission to act. Authorization is a
+    separate external input; no inference from the capability descriptor.
+    """
+    winning=viability(states,goal,disturbances,choices,transitions)
+    return {(s,d,a) for (s,d),acts in choices.items() for a in acts
+            if (s,d,a) in transitions
+            and s in winning and transitions[(s,d,a)] in winning
+            and (s,d,a) in authorized and (s,d,a) in live_support}
+
+class AuthorizationBoundary(unittest.TestCase):
+    def setUp(self):
+        self.states={"start","goal","trap"}
+        self.goal={"goal"}
+        self.disturbances={"start":("d",),"trap":("d",)}
+        self.choices={("start","d"):("good","bad"),("trap","d"):("bad",)}
+        self.transitions={("start","d","good"):"goal",
+                          ("start","d","bad"):"trap",
+                          ("trap","d","bad"):"trap"}
+        self.good=("start","d","good")
+        self.bad=("start","d","bad")
+    def admission(self,authorized,live):
+        return admitted_actions(self.states,self.goal,self.disturbances,
+                                self.choices,self.transitions,authorized,live)
+    def test_qualified_and_viable_but_unauthorized_denied(self):
+        self.assertEqual(self.admission(set(),{self.good}),set())
+    def test_authorized_but_unsupported_denied(self):
+        self.assertEqual(self.admission({self.good},set()),set())
+    def test_authorized_and_supported_viable_allowed(self):
+        self.assertEqual(self.admission({self.good},{self.good}),{self.good})
+    def test_authorized_bad_successor_denied(self):
+        self.assertEqual(self.admission({self.bad},{self.bad}),set())
+    def test_revocation_disables_without_deleting_history(self):
+        historic={self.good}
+        self.assertEqual(self.admission(historic,historic),historic)
+        self.assertEqual(self.admission(historic,set()),set())
+        self.assertEqual(historic,{self.good})
+
 if __name__=="__main__":unittest.main()
