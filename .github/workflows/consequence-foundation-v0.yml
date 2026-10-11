@@ -1,15 +1,15 @@
-name: Consequence Foundation V0 Boundary Tests
+name: Consequence Foundation V0 Stateful Qualification
 on:
   pull_request:
     paths:
       - 'conformance/consequence_v0/**'
+      - 'conformance/capability_v1/**'
       - 'protocol/schemas/consequence-envelope-v0.schema.json'
       - 'website/src/data/record-index.json'
-      - 'conformance/capability_v1/evaluation.json'
       - '.github/workflows/consequence-foundation-v0.yml'
   workflow_dispatch:
 jobs:
-  bounded-interchange:
+  stateful-campaign:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,5 +18,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Structural and source-bound projection controls
+      - name: Run all structural, transport and real finite replay controls
         run: python -m unittest discover -s conformance/consequence_v0 -p 'test_*.py' -v
+      - name: Produce machine-readable exact-head evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/mathgraph-consequence"
+          python conformance/consequence_v0/test_stateful_campaign.py --report > "$RUNNER_TEMP/mathgraph-consequence/report.json"
+          python -m json.tool "$RUNNER_TEMP/mathgraph-consequence/report.json" > /dev/null
+          sha256sum "$RUNNER_TEMP/mathgraph-consequence/report.json" | tee "$RUNNER_TEMP/mathgraph-consequence/report.sha256"
+          git rev-parse HEAD > "$RUNNER_TEMP/mathgraph-consequence/checkout-commit.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequence-foundation-v0-stateful-evidence
+          path: ${{ runner.temp }}/mathgraph-consequence/
+          if-no-files-found: error
