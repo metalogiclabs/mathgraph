@@ -21,6 +21,51 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('exposes bounded projection objects, typed relations and full source-linked details without JavaScript', async () => {
+    const html = await page('objects').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-knowledge-map');
+    expect(text).toContain('Presentation projection · authority NONE · not a certificate, proof, or verifier');
+    expect(html).toMatch(/<input[^>]*type="checkbox"[^>]*data-map-kind/);
+    expect(html).toContain('data-object-detail');
+    expect(html).toContain('data-map-select');
+    expect(html).toContain('data-map-export');
+    expect(html).toContain('data-map-limit');
+    for (const field of ['Canonical identity', 'Source pins', 'Attribution', 'Evidence', 'Verifier authority', 'Assumptions', 'Scope', 'historical_result', 'lifecycle', 'research_maturity', 'current_applicability', 'freshness', 'action_authorization', 'Incoming relations', 'Outgoing relations', 'Lineage', 'Replay boundary', 'Unknowns', 'Unsupported semantics']) expect(text).toContain(field);
+    expect(text).toContain('No declared incoming relations in this displayed projection');
+    expect(text).toContain('No declared outgoing relations in this displayed projection');
+    expect(text).toContain('No declared alternative support route');
+    expect(text).toContain('Display-only traversal');
+    expect(text).toMatch(/14 of 14 objects.*7 of 7 relations/);
+    expect(html).toMatch(/<svg[^>]*aria-labelledby=/);
+    expect(html).toContain('EVIDENCE_FOR');
+    expect(html).toContain('WITHDRAWS');
+    expect(html).toContain('/developers/#offline-replay');
+    expect(html).toContain('<noscript>');
+  });
+
+  test('reuses the interactive map at the homepage’s exact two-object, one-edge scope', async () => {
+    const html = await page('');
+    expect(html).toContain('data-knowledge-map');
+    expect((html.match(/data-object-detail=/g) ?? [])).toHaveLength(2);
+    expect(visibleText(html)).toContain('2 of 2 objects · 1 of 1 relations');
+    expect(html).toContain('href="/objects/"');
+  });
+
+  test('connects canonical objects from exploration, Resolve and historical records', async () => {
+    for (const route of ['explore', 'resolve', 'records', `records/${record.id}/v1`]) {
+      expect(await page(route)).toContain('href="/objects/');
+    }
+  });
+
+  test('links repository-relative capability pins to their published artifact mirror', async () => {
+    const html = await page('objects');
+    for (const path of ['fixtures/capability-contract.json', 'evaluation.json', 'trust-policy.json', 'receipt.json']) {
+      expect(html).toContain(`href="/artifacts/conformance/capability_v1/${path}"`);
+      expect(html).not.toContain(`href="conformance/capability_v1/${path}"`);
+    }
+  });
+
   test.each(['', 'verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
     const html = await page(route).catch(() => '');
     const text = visibleText(html);

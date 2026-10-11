@@ -1859,3 +1859,37 @@ summary {
 .import-context dd { margin: .3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .import-workbench summary { cursor: pointer; font-weight: 650; }
 .import-workbench pre { max-width: 100%; overflow-x: auto; }
+/* Knowledge maps project declared objects; layout and color carry no authority. */
+.knowledge-map { min-width: 0; }
+.knowledge-map [hidden] { display: none !important; }
+.map-boundary { border-left: 3px solid currentColor; padding: .8rem 1rem; background: #eeeee8; font-weight: 600; }
+.map-controls { display: flex; flex-wrap: wrap; gap: .8rem 1.3rem; padding: 1rem; margin: 1.4rem 0; border: 1px solid #c6ccc9; }
+.map-controls label { display: flex; align-items: center; gap: .5rem; font-size: .85rem; overflow-wrap: anywhere; }
+.map-controls input[type="number"] { width: 5rem; padding: .3rem; }
+.map-object-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); list-style: none; padding: 0; gap: .6rem; }
+.map-object-list a { display: block; padding: .8rem; border: 1px solid #c6ccc9; height: 100%; text-decoration: none; overflow-wrap: anywhere; }
+.map-object-list span { display: block; font-size: .7rem; letter-spacing: .06em; margin-bottom: .4rem; }
+.map-object-list a[aria-current] { outline: 2px solid currentColor; outline-offset: -2px; background: #e7eae7; }
+.map-visual { overflow-x: auto; max-width: 100%; border: 1px solid #c6ccc9; margin: 1rem 0; }
+.map-visual svg { display: block; min-width: 1140px; max-width: none; }
+.map-visual rect { fill: #f7f7f1; stroke: #66716b; stroke-width: 1; }
+.map-visual path { stroke: #66716b; stroke-width: 1.5; }
+.map-visual marker path { fill: #66716b; }
+.map-visual text { fill: #27382d; font-size: 12px; }
+.map-visual .map-node-kind { font-size: 10px; }
+.map-visual .map-edge-label { font-size: 9px; paint-order: stroke; stroke: #f8f7f3; stroke-width: 4px; }
+.map-visual a[aria-current] rect { stroke: #142e20; stroke-width: 3; }
+.map-visual a:focus rect { stroke: #142e20; stroke-width: 4; stroke-dasharray: 5 3; }
+.map-traversal button { margin: .3rem .5rem .3rem 0; padding: .6rem .8rem; border: 1px solid #9daaa1; background: transparent; border-radius: 3px; cursor: pointer; }
+.map-traversal button:disabled { opacity: .6; cursor: default; }
+.map-traversal ul, .object-relations, .object-pins { padding-left: 1.3rem; overflow-wrap: anywhere; }
+.object-detail { margin: 2rem 0; padding: clamp(1rem, 3vw, 2rem); border: 1px solid #c6ccc9; scroll-margin-top: 2rem; overflow-wrap: anywhere; min-width: 0; }
+.object-detail h3 { font-size: clamp(1.3rem, 3vw, 2rem); }
+.object-detail h4, .knowledge-map > h4 { margin-top: 1.6rem; }
+.object-detail pre, .object-relations pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
+.object-detail details, .object-relations details { margin: .7rem 0; min-width: 0; }
+.object-detail summary, .object-relations summary { cursor: pointer; }
+.object-axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.object-axes dt { font-size: .8rem; }
+.object-axes dd { margin: .35rem 0 0; }
+.knowledge-map a:focus-visible, .knowledge-map button:focus-visible, .knowledge-map input:focus-visible, .map-visual:focus-visible { outline: 3px solid #385d49; outline-offset: 3px; }

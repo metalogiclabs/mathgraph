@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ObjectDetail from '../../components/ObjectDetail.astro';
+import { loadObjectProjections } from '../../data/object-projections';
+import { buildKnowledgeMap } from '../../lib/knowledge-map';
+import { objectRoutes } from '../../lib/object-locators';
+import type { ObjectProjection, RelationProjection } from '../../lib/object-projections';
+export async function getStaticPaths() {
+  const map = buildKnowledgeMap(await loadObjectProjections());
+  return objectRoutes(map.nodes).map(({ slug, object }) => ({ params: { slug }, props: { object, edges: map.edges } }));
+}
+interface Props { object: ObjectProjection; edges: RelationProjection[] }
+const { object, edges } = Astro.props;
+---
+<BaseLayout title={`${object.source_id} — MathGraph object`} description="Exact source-qualified identity, status axes, declared relations and replay boundary. Presentation only; authority NONE." currentPath="/objects/">
+  <div class="shell section"><h1>Canonical object</h1><p><a href="/objects/">Explore all declared objects and relations →</a></p><ObjectDetail object={object} edges={edges} /></div>
+</BaseLayout>

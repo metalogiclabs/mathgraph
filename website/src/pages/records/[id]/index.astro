@@ -2,6 +2,8 @@
 import RecordDetail from '../../../components/RecordDetail.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { loadLatestPublishedRecords, type PublishedRecordPackage } from '../../../lib/catalog';
+import { projectPublishedRecord } from '../../../lib/object-projections';
+import { objectSlug } from '../../../lib/object-locators';
 
 export async function getStaticPaths() {
   const records = await loadLatestPublishedRecords();
@@ -17,6 +19,7 @@ interface Props {
 
 const { published } = Astro.props;
 const { entry } = published;
+const sourceObject = projectPublishedRecord(published).objects[0];
 ---
 
 <BaseLayout
@@ -28,4 +31,5 @@ const { entry } = published;
   ogType="article"
 >
   <RecordDetail published={published} />
+  <p class="shell"><a href={`/objects/${objectSlug(sourceObject.id)}/`}>Inspect this record’s canonical object projection →</a> · <a href="/objects/">All objects and declared relations</a></p>
 </BaseLayout>

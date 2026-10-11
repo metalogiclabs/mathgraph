@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 
 import { loadPublishedRecords } from '../lib/catalog';
+import { loadObjectProjections } from '../data/object-projections';
+import { objectRoutes } from '../lib/object-locators';
 
 export const prerender = true;
 
@@ -21,6 +23,8 @@ export const GET: APIRoute = async () => {
     '/develop/',
     '/capabilities/',
     '/records/',
+    '/objects/',
+    ...objectRoutes((await loadObjectProjections()).objects).map(({ slug }) => `/objects/${slug}/`),
     '/protocol/',
     '/protocol/profiles/lean/',
     '/developers/',

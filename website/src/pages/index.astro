@@ -3,6 +3,7 @@ import EvidenceBoundary from '../components/EvidenceBoundary.astro';
 import ImportWorkbench from '../components/ImportWorkbench.astro';
 import RecordSummary from '../components/RecordSummary.astro';
 import StatusTag from '../components/StatusTag.astro';
+import KnowledgeMap from '../components/KnowledgeMap.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { loadObjectProjections } from '../data/object-projections';
 import { getLatestPublishedRecord } from '../lib/catalog';
@@ -71,15 +72,9 @@ const quickStart = `python -I -S scripts/mathgraph_import_v1.py \\
     <div class="shell">
       <div class="eyebrow">Source-derived map preview</div>
       <h2 id="map-title">A receipt connects to one declared claim.</h2>
-      <p>This static selection comes from the published Resolve snapshot. It shows only the JPL receipt and claim; other objects are outside this preview. A relation records the source’s declaration, not a new proof or a live status check.</p>
-      <ul class="map-preview__nodes" aria-label="Selected source objects">
-        {map.nodes.map(node => <li data-map-node={node.id}><div class="eyebrow">{node.kind.replaceAll('_', ' ')}</div><h3>{node.source_id}</h3><p>Historical result: <code>{node.axes.historical_result}</code></p><p>Current applicability: <code>{node.axes.current_applicability}</code></p><p>Source pointer: <code>{node.pointer}</code></p></li>)}
-      </ul>
-      <ol class="map-preview__relations" aria-label="Declared source relations">
-        {map.edges.map(edge => <li data-map-edge={edge.id}><p><code>{edge.source_id}</code> → <strong>{edge.type}</strong> → <code>{edge.target_id}</code></p><p>Source pointer: <code>{edge.provenance.pointer}</code> in <a href={edge.provenance.source.locator}>the pinned record JSON</a>.</p></li>)}
-      </ol>
-      <p class="fineprint"><code>{map.kind}</code> · authority <code>{map.authority}</code>. Objects retain their source identities. No equivalence across records is inferred.</p>
-      <p><a href="/resolve/">Inspect the complete historical dependency view →</a></p>
+      <p>This bounded selection comes from the published Resolve snapshot. It shows only the JPL receipt and claim; other objects are outside this preview. A relation records the source’s declaration, not a new proof or a live status check.</p>
+      <KnowledgeMap map={map} id="home-map" />
+      <p><a href="/objects/">Explore all canonical objects and declared relations →</a> · <a href="/resolve/">Inspect the historical dependency scenarios</a></p>
     </div>
   </section>
 
