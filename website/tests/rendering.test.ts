@@ -241,17 +241,28 @@ describe('primary public evidence experience', () => {
     expect(html).toMatch(/interaction failure.*restored.*server-rendered.*default/i);
   });
 
-  test('uses the transparent black MathGraph mark while preserving the browser icons', async () => {
+  test('publishes the approved MathGraph favicon through refreshed and fallback browser routes', async () => {
     const html = await page('');
 
     expect(html).toMatch(/<img[^>]+class="brand__mark"[^>]+src="\/mathgraph-mark-black\.png"[^>]+alt=""[^>]*>/);
-    expect(html).toContain('<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">');
+    expect(html).toContain('<link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any">');
+    expect(html).toContain('<link rel="icon" href="/favicon-32.png?v=20261012" type="image/png" sizes="32x32">');
     expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">');
 
     for (const asset of ['mathgraph-mark-black.png', 'favicon-32.png', 'apple-touch-icon.png']) {
       const bytes = await readFile(join(dist, asset));
       expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
     }
+
+    const approvedPng = await readFile(join(dist, 'favicon-32.png'));
+    const fallback = await readFile(join(dist, 'favicon.ico'));
+    expect(fallback.subarray(0, 6)).toEqual(Buffer.from([0, 0, 1, 0, 1, 0]));
+    expect(fallback[6]).toBe(32);
+    expect(fallback[7]).toBe(32);
+    expect(fallback.readUInt32LE(14)).toBe(approvedPng.length);
+    const payloadOffset = fallback.readUInt32LE(18);
+    expect(payloadOffset).toBe(22);
+    expect(fallback.subarray(payloadOffset)).toEqual(approvedPng);
   });
 
   test('publishes the requested homepage SEO title without changing the MathGraph identity', async () => {

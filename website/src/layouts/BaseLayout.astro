@@ -53,7 +53,8 @@ const currentState = (item: typeof nav[number]) => normalizedPath === item.href
     {absoluteSocialImage && <meta property="og:image:height" content="630" />}
     <meta name="twitter:card" content={absoluteSocialImage ? 'summary_large_image' : 'summary'} />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="any" />
+    <link rel="icon" href="/favicon-32.png?v=20261012" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <title>{title}</title>
   </head>
