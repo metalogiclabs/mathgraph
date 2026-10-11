@@ -1,0 +1,273 @@
+{
+  "basis": "same-owner implementation-independent qualification",
+  "contract": {
+    "id": "urn:mathgraph:capability:finite-developmental-growth",
+    "locator": "conformance/capability_v1/fixtures/capability-contract.json",
+    "media_type": "application/json",
+    "sha256": "24e639b9181af313100504e0aa525536197d868810e6ffdb5093fd13501577a8",
+    "size_bytes": 3533
+  },
+  "fixture": {
+    "id": "urn:mathgraph:boundary:finite-refinement:v1",
+    "locator": "conformance/capability_v1/fixtures/finite-representation-refinement-v1.json",
+    "media_type": "application/json",
+    "sha256": "62d74bd64163edd83c82414b344c7fd3c16e4983bbf480c165cf9e8218a86c60",
+    "size_bytes": 2524
+  },
+  "limitations": [
+    "Finite scope only; no universal invention theorem or autonomous improvement claim.",
+    "Same-owner implementation-independent qualification, not external adoption or independent organizational trust.",
+    "Named-family uniqueness is not global feature uniqueness; no historical preregistration is claimed.",
+    "No freshness, revocation, supersession, present applicability, or action authorization is established."
+  ],
+  "qualification": "QUALIFIED_BOUNDED",
+  "replay": {
+    "boolean_refinements_tested": 256,
+    "checks": {
+      "ablation_restores_obstruction": true,
+      "complete_refinement_audit": true,
+      "distinct_reuse": true,
+      "new_witness": true,
+      "non_tautological_feature": true,
+      "old_exclusion_with_obstruction": true,
+      "retains_entire_old_closure": true,
+      "same_shape_sham_failure": true,
+      "unique_named_family_repair": true
+    },
+    "discovery_mask": 144,
+    "discovery_witness": [
+      {
+        "observations": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "observations": [
+          0,
+          1
+        ],
+        "output": 0
+      },
+      {
+        "observations": [
+          1,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "observations": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "failed_refinements": 224,
+    "obstruction_pairs": [
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        7
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        7
+      ]
+    ],
+    "old_closure_masks": [
+      0,
+      105,
+      150,
+      255
+    ],
+    "refined_closure_size": 16,
+    "retained_closure_masks": [
+      0,
+      105,
+      150,
+      255
+    ],
+    "reuse_mask": 246,
+    "reuse_witness": [
+      {
+        "observations": [
+          0,
+          0
+        ],
+        "output": 0
+      },
+      {
+        "observations": [
+          0,
+          1
+        ],
+        "output": 1
+      },
+      {
+        "observations": [
+          1,
+          0
+        ],
+        "output": 1
+      },
+      {
+        "observations": [
+          1,
+          1
+        ],
+        "output": 1
+      }
+    ],
+    "successful_cell_count_distribution": {
+      "3": 4,
+      "4": 28
+    },
+    "successful_named_refinements": [
+      "bit0"
+    ],
+    "successful_partition_classes": 8,
+    "successful_partition_signatures": [
+      [
+        0,
+        1,
+        1,
+        0,
+        4,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        4,
+        0,
+        6,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        4,
+        5,
+        0,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        4,
+        5,
+        5,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        3,
+        4,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        3,
+        4,
+        0,
+        3,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        3,
+        4,
+        3,
+        0,
+        4
+      ],
+      [
+        0,
+        1,
+        1,
+        3,
+        4,
+        3,
+        3,
+        4
+      ]
+    ],
+    "successful_refinement_masks": [
+      6,
+      7,
+      14,
+      15,
+      38,
+      39,
+      46,
+      47,
+      70,
+      71,
+      78,
+      79,
+      102,
+      103,
+      110,
+      111,
+      144,
+      145,
+      152,
+      153,
+      176,
+      177,
+      184,
+      185,
+      208,
+      209,
+      216,
+      217,
+      240,
+      241,
+      248,
+      249
+    ],
+    "successful_refinements": 32
+  },
+  "schema_version": "mathgraph.finite-qualification-receipt.v1",
+  "scope": "Exactly the eight ordered 3-bit states; deterministic Boolean policies on observational cells; the fixed five named refinements and all 256 Boolean one-bit refinements; discovery bit0 AND parity and reuse bit0 OR parity.",
+  "trust_policy": {
+    "id": "urn:mathgraph:policy:finite-refinement:v1",
+    "locator": "conformance/capability_v1/trust-policy.json",
+    "media_type": "application/json",
+    "sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
+    "size_bytes": 1199
+  },
+  "verifier": {
+    "id": "urn:mathgraph:verifier:finite-refinement-independent:v1",
+    "locator": "conformance/capability_v1/consumer.py",
+    "media_type": "text/x-python",
+    "sha256": "d70a1a13d15ca6d7331c84e49d81c3f96e484f919f351b88dc66d7c9fc26870f",
+    "size_bytes": 20491
+  }
+}

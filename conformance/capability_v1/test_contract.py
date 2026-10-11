@@ -186,15 +186,18 @@ def test_nonfinite_extension_payload_cannot_bypass_dictionary_validation():
     assert module().evaluate_contract(data)["validation"] == "INVALID"
 
 
-def test_registry_empty_qualified_entries_and_separate_experimental_candidates():
+def test_registry_accepts_empty_qualified_entries_and_separate_experimental_candidates():
     path = ROOT / "protocol/registries/capabilities-v1.json"
     assert path.is_file(), "versioned registry missing"
     registry = json.loads(path.read_bytes())
     module().validate_registry(registry)
-    assert registry["qualified_entries"] == []
+    assert len(registry["qualified_entries"]) == 1  # Admitted by independent finite replay.
     assert registry["experimental_candidates"]
     assert all(row["status"] == "EXPERIMENTAL" for row in registry["experimental_candidates"])
     assert path.read_bytes() == (ROOT / "website/public/capabilities/index-v1.json").read_bytes()
+    empty = copy.deepcopy(registry)
+    empty["qualified_entries"] = []
+    module().validate_registry(empty)
     registry["experimental_candidates"].append(copy.deepcopy(registry["experimental_candidates"][0]))
     with pytest.raises(module().CapabilityValidationError, match="DUPLICATE_ID"):
         module().validate_registry(registry)
@@ -308,7 +311,7 @@ def test_cli_exact_binding_invalid_arguments_and_registry_cross_index_duplicates
     registry = json.loads((ROOT / "protocol/registries/capabilities-v1.json").read_bytes())
     candidate = registry["experimental_candidates"][0]
     registry["qualified_entries"].append({key: candidate[key] for key in ("id", "version", "profile")})
-    registry["qualified_entries"][0].update({key: artifact(key) for key in
+    registry["qualified_entries"][-1].update({key: artifact(key) for key in
                                           ("contract", "evaluation", "qualification_receipt", "trust_policy")})
     with pytest.raises(module().CapabilityValidationError, match="DUPLICATE_ID"):
         module().validate_registry(registry)

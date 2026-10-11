@@ -1,0 +1,35 @@
+{
+  "action_authorization": "NONE",
+  "contract": {
+    "id": "urn:mathgraph:capability:finite-developmental-growth",
+    "profile": "mathgraph.finite-representation-refinement.v1",
+    "version": "1"
+  },
+  "contract_sha256": "24e639b9181af313100504e0aa525536197d868810e6ffdb5093fd13501577a8",
+  "contract_size_bytes": 3533,
+  "current_applicability": "UNKNOWN",
+  "freshness": "NOT_CHECKED",
+  "qualification": "QUALIFIED_BOUNDED",
+  "qualification_receipt": {
+    "id": "urn:mathgraph:receipt:finite-refinement:v1",
+    "locator": "conformance/capability_v1/receipt.json",
+    "media_type": "application/json",
+    "sha256": "2f07b700dfd2b75236ee399f77f4f288953b045af0eae55f4099a558278cb009",
+    "size_bytes": 5260
+  },
+  "reason_codes": [
+    "EXACT_FINITE_REPLAY_PASSED",
+    "SAME_OWNER_INDEPENDENT_IMPLEMENTATION"
+  ],
+  "revocation": "NOT_CHECKED",
+  "schema_version": "mathgraph.capability-evaluation.v1",
+  "supersession": "NOT_CHECKED",
+  "trust_policy": {
+    "id": "urn:mathgraph:policy:finite-refinement:v1",
+    "locator": "conformance/capability_v1/trust-policy.json",
+    "media_type": "application/json",
+    "sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
+    "size_bytes": 1199
+  },
+  "validation": "VALID"
+}

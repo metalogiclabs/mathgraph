@@ -1,0 +1,65 @@
+name: MathGraph Protocol — Finite Capability Conformance V1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'conformance/capability_v1/**'
+      - 'conformance/discover_v1/**'
+      - 'conformance/protocol_v1/**'
+      - 'mathgraph_protocol/**'
+      - 'protocol/schemas/**'
+      - 'protocol/registries/**'
+      - 'website/public/capabilities/**'
+      - 'website/public/schemas/**'
+      - 'experiments/developmental_capability_growth_v1/**'
+      - '.github/workflows/mathgraph-protocol-conformance-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  finite-capability-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Reviewed separately from incoming descriptors, receipts, and registries.
+      FINITE_POLICY_SHA256: 7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Acquire test tools and immutable runtime before isolation
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.0.3 jsonschema==4.26.0
+          FINITE_IMAGE_REF=python:3.11-slim@sha256:e529028263dbe6910a2d96f7d2b8f5266385e917fd45d286ef166977c094a51e
+          docker pull "$FINITE_IMAGE_REF"
+          FINITE_IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$FINITE_IMAGE_REF")
+          echo "FINITE_IMAGE_ID=$FINITE_IMAGE_ID" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/finite-capability-evidence"
+          docker image inspect "$FINITE_IMAGE_ID" > "$RUNNER_TEMP/finite-capability-evidence/runtime-image.json"
+      - name: Strict contracts, mutations, pins, and byte-identical projections
+        run: |
+          set -euo pipefail
+          echo "$FINITE_POLICY_SHA256  conformance/capability_v1/trust-policy.json" | sha256sum -c -
+          python -m pytest conformance/capability_v1 conformance/discover_v1 conformance/protocol_v1 -q
+          cmp protocol/registries/capabilities-v1.json website/public/capabilities/index-v1.json
+          git diff --exit-code
+      - name: Replay only four inputs with network and repository access denied
+        run: |
+          set -euo pipefail
+          python conformance/capability_v1/run_isolated.py --backend docker \
+            --image-id "$FINITE_IMAGE_ID" --policy-sha256 "$FINITE_POLICY_SHA256" \
+            > "$RUNNER_TEMP/finite-capability-evidence/replay.json" \
+            2> "$RUNNER_TEMP/finite-capability-evidence/isolation.json"
+          echo "5d85d7117532fd777d7b2948ab1138bec47db81176327fdb9591e0be7fe2a006  $RUNNER_TEMP/finite-capability-evidence/replay.json" | sha256sum -c -
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-finite-capability-independent-v1
+          path: ${{ runner.temp }}/finite-capability-evidence/
+          if-no-files-found: error

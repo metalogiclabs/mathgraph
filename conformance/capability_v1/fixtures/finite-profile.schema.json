@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mathgraph:schema:finite-profile-input:v1",
+  "title": "Exact finite refinement replay input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile",
+    "scope",
+    "states",
+    "features",
+    "targets",
+    "baseline_features",
+    "named_family",
+    "selected_refinement",
+    "sham_refinement",
+    "refined_features",
+    "ablated_features",
+    "retained_targets",
+    "coverage"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "mathgraph.finite-profile-input.v1"
+    },
+    "profile": {
+      "const": "mathgraph.finite-representation-refinement.v1"
+    },
+    "scope": {
+      "const": "Exactly the eight ordered 3-bit states; deterministic Boolean policies on observational cells; the fixed five named refinements and all 256 Boolean one-bit refinements; discovery bit0 AND parity and reuse bit0 OR parity."
+    },
+    "states": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parity",
+        "bit0",
+        "bit1",
+        "bit2",
+        "weight",
+        "constant_zero"
+      ],
+      "properties": {
+        "parity": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "bit0": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "bit1": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "bit2": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "weight": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "constant_zero": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "discovery",
+        "reuse"
+      ],
+      "properties": {
+        "discovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "vector"
+          ],
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "vector": {
+              "type": "array",
+              "minItems": 8,
+              "maxItems": 8,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "reuse": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "vector"
+          ],
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "vector": {
+              "type": "array",
+              "minItems": 8,
+              "maxItems": 8,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "baseline_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "named_family": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "selected_refinement": {
+      "type": "string"
+    },
+    "sham_refinement": {
+      "type": "string"
+    },
+    "refined_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "ablated_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "retained_targets": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "array",
+        "minItems": 8,
+        "maxItems": 8,
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_masks",
+        "refinement_masks"
+      ],
+      "properties": {
+        "policy_masks": {
+          "const": [
+            0,
+            256
+          ]
+        },
+        "refinement_masks": {
+          "const": [
+            0,
+            256
+          ]
+        }
+      }
+    }
+  },
+  "description": "Structure only. The independent consumer verifies exact feature/target semantics, complete coverage and every finite gate. No producer verdict is an input."
+}

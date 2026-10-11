@@ -96,7 +96,7 @@ other contract fields add `IDENTITY_MISMATCH`, `PROFILE_MISMATCH`,
 `CLAIM_SCOPE_MISMATCH`, `ASSUMPTIONS_MISMATCH`, `SOURCE_MISMATCH`,
 `BOUNDARY_MISMATCH`, or `CONTRACT_MISMATCH` respectively, and remain `UNKNOWN`.
 
-The evaluation schema reserves `QUALIFIED_BOUNDED` for later independent profile
+The evaluation schema reserves `QUALIFIED_BOUNDED` for independent profile
 replay. Such an evaluation requires structural validity, a pinned qualification
 receipt, and a pinned consumer trust policy. Merely supplying these fields or
 passing schema validation does not admit the receipt. A profile consumer must
@@ -110,14 +110,18 @@ checks and must not be inferred from historical bounded qualification.
 
 ## Registry
 
-The versioned registry accepts empty `qualified_entries`. Its initial contents
-have zero qualified entries and separate `EXPERIMENTAL` finite-developmental and
-VDN Lean research pointers. Their source pins identify candidate material only;
-neither is an admitted capability descriptor or receipt. Finite admission awaits
-independent replay. Lean admission awaits pinned native replay and independent
-contract-to-declaration correspondence.
+The versioned registry accepts empty `qualified_entries`. It now contains one
+finite-developmental entry, admitted after exact finite replay by the separate
+standard-library consumer in `conformance/capability_v1/consumer.py`. Its pinned
+evaluation says `QUALIFIED_BOUNDED`; its receipt and descriptor state the finite
+scope and deny universal invention, autonomous improvement, and external
+adoption. This is same-owner implementation-independent qualification. See
+[`conformance/capability_v1/README.md`](../conformance/capability_v1/README.md).
+The general descriptor evaluator remains unqualified as described above.
+The separate VDN Lean research pointer remains `EXPERIMENTAL`; Lean admission
+awaits pinned native replay and independent contract-to-declaration correspondence.
 
-A future qualified row must pin its contract, evaluation, qualification receipt,
+A qualified row must pin its contract, evaluation, qualification receipt,
 and trust policy as well as the exact capability identity/profile. An admission
 process must validate and authenticate the relevant pins and independently check
 the profile before publishing that row. `validate_registry` checks index

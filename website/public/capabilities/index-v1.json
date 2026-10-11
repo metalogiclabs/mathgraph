@@ -2,22 +2,42 @@
   "schema_version": "mathgraph.capability-registry.v1",
   "id": "urn:mathgraph:capability-registry",
   "version": "1",
-  "qualified_entries": [],
-  "experimental_candidates": [
+  "qualified_entries": [
     {
       "id": "urn:mathgraph:capability:finite-developmental-growth",
-      "version": "1",
       "profile": "mathgraph.finite-representation-refinement.v1",
-      "status": "EXPERIMENTAL",
-      "description": "Bounded finite research candidate. No independent portable-profile replay or registry admission has occurred.",
-      "source": {
-        "id": "urn:mathgraph:source:finite-developmental-run",
-        "locator": "experiments/developmental_capability_growth_v1/run.py",
-        "sha256": "4a76cae749b75e1461948854bf91fbcff5c5385591ec1f21967d44ba9738d588",
-        "size_bytes": 13753,
-        "media_type": "text/x-python"
+      "version": "1",
+      "contract": {
+        "id": "urn:mathgraph:capability:finite-developmental-growth",
+        "locator": "conformance/capability_v1/fixtures/capability-contract.json",
+        "media_type": "application/json",
+        "sha256": "24e639b9181af313100504e0aa525536197d868810e6ffdb5093fd13501577a8",
+        "size_bytes": 3533
+      },
+      "evaluation": {
+        "id": "urn:mathgraph:evaluation:finite-refinement:v1",
+        "locator": "conformance/capability_v1/evaluation.json",
+        "sha256": "c1cf195917694f4402e6b3e41a174985d52fb57c5f0de99bd96a28ebf91d4312",
+        "size_bytes": 1260,
+        "media_type": "application/json"
+      },
+      "qualification_receipt": {
+        "id": "urn:mathgraph:receipt:finite-refinement:v1",
+        "locator": "conformance/capability_v1/receipt.json",
+        "media_type": "application/json",
+        "sha256": "2f07b700dfd2b75236ee399f77f4f288953b045af0eae55f4099a558278cb009",
+        "size_bytes": 5260
+      },
+      "trust_policy": {
+        "id": "urn:mathgraph:policy:finite-refinement:v1",
+        "locator": "conformance/capability_v1/trust-policy.json",
+        "media_type": "application/json",
+        "sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89",
+        "size_bytes": 1199
       }
-    },
+    }
+  ],
+  "experimental_candidates": [
     {
       "id": "urn:mathgraph:capability:vdn-lean",
       "version": "1",
