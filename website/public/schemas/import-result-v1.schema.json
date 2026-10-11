@@ -2,12 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mathgraph.org/schemas/import-result-v1.schema.json",
   "title": "MathGraph exact historical supported-import result V1",
-  "description": "Read-only local import of the exact pinned L4YAML receipt. Validation establishes shape and scope, not authenticity, current applicability, proof replay, kernel admission, or permission.",
+  "description": "Independent offline validation of the exact historical L4YAML record and local policy. Historical evidence authority is distinct from consumer authority. No source-suite or kernel replay, kernel admission, current truth, freshness, or permission is established.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema",
     "result_kind",
+    "processing_mode",
+    "consumer_authority",
+    "source_suite_replay",
     "record_id",
     "record_schema",
     "record_sha256",
@@ -35,6 +38,28 @@
     "result_kind": {
       "type": "string",
       "const": "READ_ONLY_IMPORT_RESULT"
+    },
+    "processing_mode": {
+      "type": "string",
+      "const": "INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION"
+    },
+    "consumer_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boundary", "kernel_replay", "kernel_admission", "current_truth"],
+      "properties": {
+        "boundary": {
+          "type": "string",
+          "const": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY"
+        },
+        "kernel_replay": { "type": "string", "const": "NOT_PERFORMED" },
+        "kernel_admission": { "type": "string", "const": "NOT_PERFORMED" },
+        "current_truth": { "type": "string", "const": "NOT_ESTABLISHED" }
+      }
+    },
+    "source_suite_replay": {
+      "type": "string",
+      "const": "NOT_PERFORMED"
     },
     "record_id": {
       "type": "string",

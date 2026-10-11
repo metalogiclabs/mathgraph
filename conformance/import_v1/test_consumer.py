@@ -16,6 +16,7 @@ HERE = Path(__file__).parent
 PUBLIC = ROOT / "website/public/evidence/mg-l4yaml-source-check-20261010/record.json"
 TRANSPORT = "7b59ee76a39995f35a0feb0f4d91a3c6ab1234393143480c4f3e361a79fee703"
 CONTENT = "f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb"
+RESULT = "55ff4aa97dcc33deb2d319d41e4d91783492e7eff5c3048697f6a310cbcdab8b"
 SOURCE_COMMIT = "62bf7077910e888a0bc8adfc8e08a5f500ff3ca3"
 SUITE_COMMIT = "da267a5c4782e7361e82889e76c0dc7df0e1e870"
 SCOPE = f"nasa-jpl/L4YAML@{SOURCE_COMMIT}:yaml/yaml-test-suite@{SUITE_COMMIT}:48-cases"
@@ -96,11 +97,90 @@ def test_exact_record_result_and_deterministic_fixture(consumer, policy):
         "whole_input_extraction_theorem": "UNKNOWN",
     }
     assert (HERE / "fixtures/result.json").read_bytes() == encoded(result) + b"\n"
+    assert hashlib.sha256((HERE / "fixtures/result.json").read_bytes()).hexdigest() == RESULT
     validator = Draft202012Validator(json.loads((ROOT / "protocol/schemas/import-result-v1.schema.json").read_bytes()))
     validator.validate(result)
     for key, value in [("epistemic_status", "VERIFIED_PROOF"), ("authorization", "EXECUTE"), ("lifecycle", "CURRENT"), ("freshness", "CHECKED"), ("current_applicability", "APPLICABLE"), ("producer_verdict", "VERIFIED_PROOF")]:
         changed = {**result, key: value}
         assert not validator.is_valid(changed), key
+
+
+def test_result_distinguishes_processing_authority_from_historical_evidence(consumer, policy):
+    result = run_import(consumer, policy)
+    assert result["processing_mode"] == "INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION"
+    assert result["consumer_authority"] == {
+        "boundary": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY",
+        "kernel_replay": "NOT_PERFORMED",
+        "kernel_admission": "NOT_PERFORMED",
+        "current_truth": "NOT_ESTABLISHED",
+    }
+    assert result["source_suite_replay"] == "NOT_PERFORMED"
+    assert result["evidence"]["authority"] == "LEAN_GUARDS_AND_COMPILED_TRYPARSE"
+    assert result["evidence"]["proof_replay"] == "NOT_PERFORMED"
+
+
+@pytest.mark.parametrize(("key", "promoted"), [
+    ("processing_mode", "KERNEL_VERIFICATION"),
+    ("consumer_authority", {
+        "boundary": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY",
+        "kernel_replay": "PERFORMED", "kernel_admission": "NOT_PERFORMED",
+        "current_truth": "NOT_ESTABLISHED",
+    }),
+    ("consumer_authority", {
+        "boundary": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY",
+        "kernel_replay": "NOT_PERFORMED", "kernel_admission": "PERFORMED",
+        "current_truth": "NOT_ESTABLISHED",
+    }),
+    ("consumer_authority", {
+        "boundary": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY",
+        "kernel_replay": "NOT_PERFORMED", "kernel_admission": "NOT_PERFORMED",
+        "current_truth": "ESTABLISHED",
+    }),
+    ("consumer_authority", {
+        "boundary": "SOURCE_SUITE_EXECUTION", "kernel_replay": "NOT_PERFORMED",
+        "kernel_admission": "NOT_PERFORMED", "current_truth": "NOT_ESTABLISHED",
+    }),
+    ("source_suite_replay", "PERFORMED"),
+])
+def test_schema_requires_processing_boundary_and_rejects_promotion(consumer, policy, key, promoted):
+    result = run_import(consumer, policy)
+    validator = Draft202012Validator(json.loads((ROOT / "protocol/schemas/import-result-v1.schema.json").read_bytes()))
+    assert validator.is_valid(result)
+    missing = {name: value for name, value in result.items() if name != key}
+    assert not validator.is_valid(missing), f"missing {key} must be rejected"
+    assert not validator.is_valid({**result, key: promoted})
+
+
+@pytest.mark.parametrize("projection_schema", ["mathgraph.presentation-export.v1", "mathgraph.browser-result.v1"])
+def test_presentation_and_browser_outputs_cannot_borrow_record_authority(consumer, policy, projection_schema):
+    # These are explicitly synthetic presentation outputs, not evidence fixtures.
+    original = json.loads(PUBLIC.read_bytes())
+    presentation = {
+        "schema": projection_schema, "id": original["id"],
+        "record_id": original["id"], "record_schema": original["schema"],
+        "record_sha256": TRANSPORT, "content_sha256": CONTENT,
+        "source": original["source"], "evidence": original["evidence"],
+        "epistemic_status": "WARRANTED_BOUNDED",
+        "authorization": "READ_ONLY_NO_AUTOMATIC_AUTHORIZATION",
+    }
+    with pytest.raises(consumer.ImportError, match="UNEXPECTED_FIELD"):
+        run_import(consumer, policy, encoded(presentation))
+    # Copying the complete original fields and digests still cannot admit a
+    # presentation schema or a browser projection disguised as the record schema.
+    presentation = {**original, "schema": projection_schema}
+    with pytest.raises(consumer.ImportError, match="UNSUPPORTED_RECORD_SCHEMA"):
+        run_import(consumer, policy, encoded(presentation))
+    presentation = {**original, "record_kind": "PRESENTATION_ONLY"}
+    with pytest.raises(consumer.ImportError, match="UNSUPPORTED_RECORD_KIND"):
+        run_import(consumer, policy, encoded(presentation))
+
+
+def test_import_result_is_not_reimportable_evidence(consumer, policy):
+    result = run_import(consumer, policy)
+    assert result["record_sha256"] == TRANSPORT
+    assert result["content_sha256"] == CONTENT
+    with pytest.raises(consumer.ImportError, match="UNEXPECTED_FIELD"):
+        run_import(consumer, policy, encoded(result))
 
 
 @pytest.mark.parametrize("goal", ["universal_yaml_correctness", "current_applicability", "current_lifecycle", "execute"])

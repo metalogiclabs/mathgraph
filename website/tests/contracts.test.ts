@@ -46,15 +46,36 @@ describe('agent discovery contracts', () => {
     expect(publicBytes).toEqual(schemaBytes);
     expect(recordBytes).toEqual(await readFile(join(dist, `evidence/${recordId}/record.json`)));
     expect(createHash('sha256').update(recordBytes).digest('hex')).toBe(sourceCheckTransportSha256);
+    expect(createHash('sha256').update(resultBytes).digest('hex')).toBe('55ff4aa97dcc33deb2d319d41e4d91783492e7eff5c3048697f6a310cbcdab8b');
     const ajv = new Ajv2020({ allErrors: true, strict: true });
     const schema = JSON.parse(schemaBytes.toString('utf8'));
     const result = JSON.parse(resultBytes.toString('utf8'));
+    expect(result.processing_mode).toBe('INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION');
+    expect(result.consumer_authority).toEqual({
+      boundary: 'EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY',
+      kernel_replay: 'NOT_PERFORMED', kernel_admission: 'NOT_PERFORMED',
+      current_truth: 'NOT_ESTABLISHED',
+    });
+    expect(result.source_suite_replay).toBe('NOT_PERFORMED');
+    expect(result.evidence.authority).toBe('LEAN_GUARDS_AND_COMPILED_TRYPARSE');
     expect(ajv.validate(schema, result), ajv.errorsText()).toBe(true);
     for (const [key, value] of [
       ['epistemic_status', 'VERIFIED_PROOF'], ['lifecycle', 'CURRENT'],
       ['freshness', 'CHECKED'], ['current_applicability', 'APPLICABLE'],
       ['authorization', 'EXECUTE'], ['producer_verdict', 'VERIFIED_PROOF'],
+      ['processing_mode', 'KERNEL_VERIFICATION'], ['source_suite_replay', 'PERFORMED'],
     ]) expect(ajv.validate(schema, { ...result, [key]: value })).toBe(false);
+    for (const key of ['processing_mode', 'consumer_authority', 'source_suite_replay']) {
+      const missing = { ...result };
+      delete missing[key];
+      expect(ajv.validate(schema, missing)).toBe(false);
+    }
+    for (const [key, value] of [
+      ['boundary', 'SOURCE_SUITE_EXECUTION'], ['kernel_replay', 'PERFORMED'],
+      ['kernel_admission', 'PERFORMED'], ['current_truth', 'ESTABLISHED'],
+    ]) expect(ajv.validate(schema, {
+      ...result, consumer_authority: { ...result.consumer_authority, [key]: value },
+    })).toBe(false);
   });
 
   test('publishes byte-identical Resolve transport schemas that accept the immutable fixtures', async () => {

@@ -26,6 +26,8 @@ Python's standard library. The CLI accepts local regular files only; each read
 is bounded to 65,536 bytes. It does not accept URLs or standard input. Successful
 stdout is canonical UTF-8 JSON followed by one newline, exactly matching
 `fixtures/result.json`. Failures exit 1 and emit a JSON `reason_code` on stderr.
+The result fixture SHA-256 is
+`55ff4aa97dcc33deb2d319d41e4d91783492e7eff5c3048697f6a310cbcdab8b`.
 
 The Python entry point is
 `import_record(record_raw, policy_raw, policy_sha256, *, goal="finite_parser_acceptance")`.
@@ -51,6 +53,22 @@ mirrored byte-for-byte from `protocol/schemas/import-result-v1.schema.json`.
 Schema validation alone does not authenticate evidence.
 
 ## Meaning and limits
+
+This execution is identified by the fixed `processing_mode`
+`INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION`.
+Its separate `consumer_authority` object states:
+
+- `boundary`: `EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY`
+- `kernel_replay`: `NOT_PERFORMED`
+- `kernel_admission`: `NOT_PERFORMED`
+- `current_truth`: `NOT_ESTABLISHED`
+
+The top-level `source_suite_replay` is explicitly `NOT_PERFORMED`.
+`evidence.authority=LEAN_GUARDS_AND_COMPILED_TRYPARSE` describes the historical
+receipt's evidence, not the importing execution. The existing
+`evidence.proof_replay=NOT_PERFORMED` continues to make that replay limit explicit.
+The closed result schema requires these distinctions and rejects their removal
+or promotion.
 
 The result separates historical epistemic status from current lifecycle,
 freshness, applicability, and authorization. Lifecycle and current applicability
@@ -82,3 +100,8 @@ Tests mutate source bytes and commits, test commits/digests, content digests,
 finite scope, verifier, assumptions, generalization, status and authorization.
 They also cover strict parsing, policy substitution, unsupported goals,
 standalone execution, deterministic output, and schema/public-record byte parity.
+Explicit negative controls reject synthetic presentation exports and browser
+results under the legitimate policy, even with copied source identities,
+commits, evidence, and content/transport digests. The import result itself is
+also not reimportable evidence. Copying identity metadata does not change an
+output's schema, semantic kind, or original byte identity.

@@ -223,6 +223,13 @@ def import_record(record_raw, policy_raw, policy_sha256, *, goal=GOAL):
     require(supported, "FINITE_SCOPE_MISMATCH")
     return {
         "schema": "mathgraph.import-result.v1", "result_kind": "READ_ONLY_IMPORT_RESULT",
+        "processing_mode": "INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION",
+        "consumer_authority": {
+            "boundary": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY",
+            "kernel_replay": "NOT_PERFORMED", "kernel_admission": "NOT_PERFORMED",
+            "current_truth": "NOT_ESTABLISHED",
+        },
+        "source_suite_replay": "NOT_PERFORMED",
         "record_id": record["id"], "record_schema": record["schema"],
         "record_sha256": digest(record_raw), "content_sha256": record["content_sha256"],
         "policy_sha256": policy_sha256, "goal": goal,
