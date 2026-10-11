@@ -63,6 +63,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
 
         <section id="modules">
           <h2>Choose a module without expanding its authority.</h2>
+          <p>Record 001 is an exact-scope consumption contract. Record 002 is a historical offline replay contract. They are independently usable and neither grants authority to browser or map exports: those presentation files declare <code>authority: NONE</code>.</p>
           <p><a href="/discover/">Discover</a> is a local advisory contract. Its real source-pack result is <code>PARTIAL</code>, with <code>advisory_only: true</code>, <code>can_promote_truth: false</code>, verification <code>NOT_CHECKED</code>, and <code>FULL_REPLAY_UNAVAILABLE</code>. Attention is allocation, not truth confidence.</p>
           <p><a href="/develop/">Develop</a> has one exact eight-state <code>QUALIFIED_BOUNDED</code> profile from same-owner implementation-independent replay. The Capability Family Compiler remains <code>NOT_IMPLEMENTED</code>. VDN / Lean remains an unqualified <code>EXPERIMENTAL</code> candidate.</p>
           <p>The <a href="/capabilities/">Capabilities registry</a> has one qualified finite entry with exact contract, evaluation, receipt, and policy pins. Read the <a href="/capabilities/index-v1.json">registry JSON</a> and independently admit its policy and replay boundary. Reading the registry alone grants no trust. Current applicability is <code>UNKNOWN</code>; freshness, revocation, and supersession are <code>NOT_CHECKED</code>; action authorization is <code>NONE</code>.</p>
@@ -89,6 +90,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
             <SourceLink href={resolveEntry.record_page_url} label="Permanent Resolve record" meta={`${resolveEntry.id} · ${resolveEntry.version_slug}`} />
           </div>
           <p>The replay establishes a pinned historical snapshot. Current applicability remains <code>{resolveEntry.current_applicability}</code>; freshness remains <code>{resolveEntry.freshness}</code>. It does not rerun the original JPL Lean proof. This consumer and the earlier RealityGraph comparison are same-owner independent implementations, not outside-organization adoption.</p>
+          <p>The browser import report and knowledge-map download are presentation projections with authority <code>NONE</code>. They cannot be supplied as evidence to either independent consumer.</p>
           <p><strong>Snapshot digest</strong></p>
           <div class="copy-row"><code>{resolveRecord.snapshot_sha256}</code><CopyButton value={resolveRecord.snapshot_sha256} label="Copy Resolve digest" /></div>
         </section>

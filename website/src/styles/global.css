@@ -58,6 +58,18 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 a {
   color: var(--blue-700);
   text-underline-offset: 0.18em;
@@ -734,6 +746,72 @@ pre {
   display: grid;
   align-content: start;
   gap: var(--space-2);
+}
+
+.catalogue-filter {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.catalogue-filter__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.catalogue-filter__header h2,
+.catalogue-filter__header p {
+  margin-bottom: 0;
+}
+
+.catalogue-filter__controls {
+  display: grid;
+  align-items: end;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto;
+  gap: var(--space-3);
+}
+
+.catalogue-filter__controls label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--ink-650);
+  font-size: var(--step--1);
+  font-weight: 650;
+}
+
+.catalogue-filter__controls input,
+.catalogue-filter__controls select,
+.catalogue-filter__controls button {
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  color: var(--ink-950);
+  background: var(--paper-strong);
+  font: inherit;
+}
+
+.catalogue-filter__controls button {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.catalogue-filter__controls:disabled,
+.catalogue-filter__controls :disabled {
+  opacity: 0.75;
+}
+
+.catalogue-filter__items > [data-catalogue-item] + [data-catalogue-item] {
+  margin-top: var(--space-4);
+}
+
+.catalogue-filter__items > article {
+  padding-block: var(--space-5);
+  border-block: 1px solid var(--line);
 }
 
 .record-id {
@@ -1575,6 +1653,14 @@ summary {
   }
 
   .page-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalogue-filter__header {
+    display: grid;
+  }
+
+  .catalogue-filter__controls {
     grid-template-columns: minmax(0, 1fr);
   }
 

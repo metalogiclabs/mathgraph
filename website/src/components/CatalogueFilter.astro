@@ -1,0 +1,47 @@
+---
+interface FilterDefinition {
+  field: string;
+  label: string;
+  options: string[];
+}
+
+interface Props {
+  id: string;
+  total: number;
+  filters: FilterDefinition[];
+}
+
+const { id, total, filters } = Astro.props;
+---
+
+<section class="catalogue-filter" data-catalogue-filter aria-labelledby={`${id}-filter-title`}>
+  <div class="catalogue-filter__header">
+    <div>
+      <div class="eyebrow">Local catalogue view</div>
+      <h2 id={`${id}-filter-title`}>Filter displayed entries</h2>
+    </div>
+    <p class="fineprint">Display controls only · catalogue authority unchanged</p>
+  </div>
+  <fieldset class="catalogue-filter__controls" data-catalogue-controls disabled>
+    <legend class="visually-hidden">Filter the current static catalogue</legend>
+    <label class="catalogue-filter__search">
+      Search
+      <input id={`${id}-query`} type="search" data-catalogue-query disabled autocomplete="off" placeholder="Search identities and descriptions" />
+    </label>
+    {filters.map((filter) => (
+      <label>
+        {filter.label}
+        <select id={`${id}-${filter.field}`} data-catalogue-select data-catalogue-field={filter.field} disabled>
+          <option value="">All</option>
+          {filter.options.map((option) => <option value={option}>{option}</option>)}
+        </select>
+      </label>
+    ))}
+    <button type="button" data-catalogue-clear disabled>Clear filters</button>
+  </fieldset>
+  <p data-catalogue-count aria-live="polite" aria-atomic="true">{total} of {total} displayed.</p>
+  <p class="callout callout--unknown" data-catalogue-no-match hidden>The current static catalogue has no matching displayed entries.</p>
+  <noscript><p class="fineprint">JavaScript is off. Every published entry remains visible below; local display filters are unavailable.</p></noscript>
+  <div class="catalogue-filter__items" data-catalogue-items><slot /></div>
+</section>
+<script>import '../scripts/catalogue-filter';</script>

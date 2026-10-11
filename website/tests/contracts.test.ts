@@ -295,7 +295,39 @@ describe('agent discovery contracts', () => {
     expect(llms).toMatch(/freshness.*NOT_CHECKED/i);
     expect(llms).toMatch(/public resolver.*NOT_DEPLOYED/i);
     expect(llms).toMatch(/MCP.*PROPOSED/i);
+    expect(llms).toContain('https://mathgraph.org/about/');
+    expect(llms).toContain('https://mathgraph.org/contact/');
+    expect(llms).toMatch(/resolve-consumer-v1\.ts.*text\/plain; charset=utf-8/i);
+    expect(llms).toMatch(/browser.*presentation.*authority.*NONE/i);
     expect(llms).not.toContain('vercel.app');
+  });
+
+  test('keeps discovery V3 byte-identical while narrowing the TypeScript content type in both Vercel configs', async () => {
+    const repository = join(website, '..');
+    const [rootConfigBytes, websiteConfigBytes, discoveryBytes, sourceConsumer, builtConsumer] = await Promise.all([
+      readFile(join(repository, 'vercel.json')),
+      readFile(join(website, 'vercel.json')),
+      readFile(join(website, 'public/.well-known/mathgraph.json')),
+      readFile(join(website, 'public/examples/resolve-consumer-v1.ts')),
+      readFile(join(dist, 'examples/resolve-consumer-v1.ts')),
+    ]);
+    const rootConfig = JSON.parse(rootConfigBytes.toString('utf8'));
+    const websiteConfig = JSON.parse(websiteConfigBytes.toString('utf8'));
+    for (const key of ['cleanUrls', 'redirects', 'headers']) expect(rootConfig[key]).toEqual(websiteConfig[key]);
+    const contentTypeRules = websiteConfig.headers.filter((rule: any) =>
+      rule.headers?.some((header: any) => header.key.toLowerCase() === 'content-type'));
+    expect(contentTypeRules).toEqual([{
+      source: '/examples/resolve-consumer-v1.ts',
+      headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+    }]);
+    const narrowRuleIndex = websiteConfig.headers.findIndex((rule: any) => rule.source === '/examples/resolve-consumer-v1.ts');
+    const catchAllIndex = websiteConfig.headers.findIndex((rule: any) => rule.source === '/(.*)');
+    expect(narrowRuleIndex).toBeGreaterThanOrEqual(0);
+    expect(narrowRuleIndex).toBeLessThan(catchAllIndex);
+    expect(websiteConfig.headers[catchAllIndex].headers).toContainEqual({ key: 'X-Content-Type-Options', value: 'nosniff' });
+    expect(createHash('sha256').update(sourceConsumer).digest('hex')).toBe(typescriptConsumerSha256);
+    expect(builtConsumer).toEqual(sourceConsumer);
+    expect(createHash('sha256').update(discoveryBytes).digest('hex')).toBe('3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540');
   });
 
   test('advertises the Resolve transport schemas consistently without adding authentication', async () => {

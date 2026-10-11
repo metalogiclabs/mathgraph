@@ -1,0 +1,17 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f8f7f3"/>
+  <rect x="0" y="0" width="12" height="630" fill="#3d5fd2"/>
+  <text x="72" y="82" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#10131a">MathGraph<tspan fill="#3d5fd2">.</tspan> Resolve</text>
+  <text x="72" y="142" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="2" fill="#515a6b">HISTORIC SNAPSHOT · SCOPED_MIXED</text>
+  <text x="72" y="222" font-family="Georgia, Times, serif" font-size="48" fill="#10131a">Evidence changed.</text>
+  <text x="72" y="282" font-family="Georgia, Times, serif" font-size="48" fill="#10131a">Truth was not inferred.</text>
+  <line x1="72" y1="330" x2="1128" y2="330" stroke="#bec4c8"/>
+  <text x="72" y="388" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#10131a">3 stale documentary paths</text>
+  <text x="72" y="430" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#75520e">3 UNKNOWN propositions</text>
+  <text x="72" y="472" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#10131a">1 exactly scoped WARRANTED_BOUNDED observation retained</text>
+  <text x="72" y="522" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#75520e">CURRENT APPLICABILITY · UNKNOWN</text>
+  <text x="1128" y="522" text-anchor="end" font-family="Arial, Helvetica, sans-serif" font-size="17" fill="#515a6b">Presentation only · authority NONE</text>
+  <text x="72" y="568" font-family="monospace" font-size="17" fill="#515a6b">mg-living-warrant-openai-jpl-20261010</text>
+  <text x="72" y="598" font-family="monospace" font-size="16" fill="#727b8d">sha256:b95297a081d513fb…d637af41</text>
+</svg>

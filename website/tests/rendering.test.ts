@@ -506,24 +506,86 @@ describe('primary public evidence experience', () => {
     expect(visibleText(profileHtml)).toMatch(/PROPOSED.*intended contract.*EXPERIMENTAL.*implemented research artifact/i);
   });
 
-  test('publishes a deterministic large social card for the permanent record', async () => {
-    const html = await page(`records/${record.id}/v1`);
-    const imagePath = join(dist, 'social', 'records', `${record.id}-v1.png`);
-    const sourcePath = join(dist, 'social', 'records', `${record.id}-v1.source.svg`);
-    const metadata = await sharp(imagePath).metadata();
-    const source = await readFile(sourcePath, 'utf8');
+  test('publishes presentation-only 1200 × 630 social cards for both immutable records', async () => {
+    const sourceId = record.id;
+    const resolveId = resolveRecord.id;
+    for (const id of [sourceId, resolveId]) {
+      const html = await page(`records/${id}/v1`);
+      const imagePath = join(dist, 'social', 'records', `${id}-v1.png`);
+      const sourcePath = join(dist, 'social', 'records', `${id}-v1.source.svg`);
+      const metadata = await sharp(imagePath).metadata();
+      const source = await readFile(sourcePath, 'utf8');
+      expect(html).toContain(`<meta property="og:image" content="https://mathgraph.org/social/records/${id}-v1.png">`);
+      expect(html).toContain('<meta property="og:image:width" content="1200">');
+      expect(html).toContain('<meta property="og:image:height" content="630">');
+      expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+      expect(metadata.width).toBe(1200);
+      expect(metadata.height).toBe(630);
+      expect(metadata.format).toBe('png');
+      expect(source).toContain(id);
+    }
+    const sourceCard = await readFile(join(dist, 'social', 'records', `${sourceId}-v1.source.svg`), 'utf8');
+    expect(sourceCard).toContain(`${record.content_sha256.slice(0, 16)}…${record.content_sha256.slice(-8)}`);
+    expect(sourceCard).toContain('WARRANTED · BOUNDED');
+    expect(sourceCard).toContain('UNKNOWN · whole-language correctness');
+    const resolveCard = await readFile(join(dist, 'social', 'records', `${resolveId}-v1.source.svg`), 'utf8');
+    for (const copy of [
+      'HISTORIC SNAPSHOT · SCOPED_MIXED',
+      '3 stale documentary paths',
+      '3 UNKNOWN propositions',
+      '1 exactly scoped WARRANTED_BOUNDED observation retained',
+      'CURRENT APPLICABILITY · UNKNOWN',
+      'Presentation only · authority NONE',
+    ]) expect(resolveCard).toContain(copy);
+    expect(resolveCard).not.toMatch(/(?:OpenAI|JPL).*(?:verified|refuted)/i);
+  });
 
-    expect(html).toContain(`<meta property="og:image" content="https://mathgraph.org/social/records/${record.id}-v1.png">`);
-    expect(html).toContain('<meta property="og:image:width" content="1200">');
-    expect(html).toContain('<meta property="og:image:height" content="630">');
-    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
-    expect(metadata.width).toBe(1200);
-    expect(metadata.height).toBe(630);
-    expect(metadata.format).toBe('png');
-    expect(source).toContain(record.id);
-    expect(source).toContain(`${record.content_sha256.slice(0, 16)}…${record.content_sha256.slice(-8)}`);
-    expect(source).toContain('WARRANTED · BOUNDED');
-    expect(source).toContain('UNKNOWN · whole-language correctness');
+  test('renders complete progressively enhanced record and capability catalogues', async () => {
+    const recordsHtml = await page('records');
+    const capabilitiesHtml = await page('capabilities');
+    for (const [html, count] of [[recordsHtml, 2], [capabilitiesHtml, 2]] as const) {
+      expect(html).toContain('data-catalogue-filter');
+      expect(html).toMatch(/<input[^>]*type="search"[^>]*data-catalogue-query[^>]*disabled/);
+      expect(html).toMatch(/<button[^>]*data-catalogue-clear[^>]*disabled/);
+      expect(html).toContain('data-catalogue-select');
+      expect(html).toContain('data-catalogue-count');
+      expect(html).toContain('aria-live="polite"');
+      expect(html).toContain('data-catalogue-no-match');
+      expect(visibleText(html)).toContain('The current static catalogue has no matching displayed entries.');
+      expect((html.match(/data-catalogue-item(?:[ >])/g) ?? [])).toHaveLength(count);
+      expect(html).toContain('<noscript>');
+    }
+    for (const entry of ['mg-l4yaml-source-check-20261010', 'mg-living-warrant-openai-jpl-20261010']) {
+      expect(recordsHtml).toContain(entry);
+    }
+    for (const entry of ['urn:mathgraph:capability:finite-developmental-growth', 'urn:mathgraph:capability:vdn-lean']) {
+      expect(capabilitiesHtml).toContain(entry);
+    }
+    expect(recordsHtml).toContain('data-catalogue-record-kind');
+    expect(recordsHtml).toContain('data-catalogue-lifecycle');
+    expect(capabilitiesHtml).toContain('data-catalogue-qualification');
+  });
+
+  test('documents responsibilities and operations without widening module authority', async () => {
+    const protocol = visibleText(await page('protocol'));
+    for (const responsibility of ['Object responsibility', 'Relation responsibility', 'Evidence responsibility', 'Resolution responsibility', 'Transition responsibility']) {
+      expect(protocol).toContain(responsibility);
+    }
+    expect(protocol).toMatch(/CLOSE.*bounded support closure/i);
+    expect(protocol).toMatch(/ACT.*caller policy.*NONE/i);
+    expect(protocol).toMatch(/REFINE.*separately qualified.*never rewrites historic bytes/i);
+    const discover = visibleText(await page('discover'));
+    for (const value of ['PARTIAL', 'advisory_only: true', 'can_promote_truth: false', 'NOT_CHECKED', 'FULL_REPLAY_UNAVAILABLE']) expect(discover).toContain(value);
+    const develop = visibleText(await page('develop'));
+    for (const value of ['eight-state', 'QUALIFIED_BOUNDED', 'Capability Family Compiler', 'NOT_IMPLEMENTED', 'EXPERIMENTAL', 'Current applicability', 'UNKNOWN', 'Action authorization', 'NONE']) expect(develop).toContain(value);
+    const agents = visibleText(await page('agents'));
+    expect(agents).toMatch(/record 001.*exact-scope/i);
+    expect(agents).toMatch(/record 002.*historical offline replay/i);
+    expect(agents).toMatch(/browser.*map.*authority.*NONE/i);
+    const developers = visibleText(await page('developers'));
+    expect(developers).toMatch(/in-toto.*unsigned correspondence/i);
+    for (const boundary of ['authenticity', 'signer policy', 'transparency', 'freshness', 'qualification', 'current applicability', 'action authorization']) expect(developers).toContain(boundary);
+    expect(developers).toMatch(/Sigstore.*SCITT.*RATS.*deferred/i);
   });
 
   test('documents a scoped badge embed linked to the permanent boundary', async () => {
@@ -588,8 +650,22 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
+    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
+    for (const route of ['about', 'contact']) {
+      const html = await page(route);
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('MathGraph');
+    }
+    const about = visibleText(await page('about'));
+    expect(about).toMatch(/open verification and trust infrastructure.*Metalogic Labs/i);
+    const contact = await page('contact');
+    expect(contact).toContain('https://github.com/metalogiclabs/mathgraph');
+    expect(contact).toContain('https://github.com/metalogiclabs/mathgraph/issues');
+    expect(contact).not.toMatch(/mailto:|@[a-z0-9.-]+\.[a-z]{2,}/i);
+    const home = await page('');
+    expect(home).toContain('href="/about/"');
+    expect(home).toContain('href="/contact/"');
   });
 });

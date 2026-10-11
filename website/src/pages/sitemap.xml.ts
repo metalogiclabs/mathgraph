@@ -29,6 +29,8 @@ export const GET: APIRoute = async () => {
     '/protocol/profiles/lean/',
     '/developers/',
     '/agents/',
+    '/about/',
+    '/contact/',
     ...packages.flatMap(({ entry }) => [new URL(entry.latest_page_url).pathname, new URL(entry.record_page_url).pathname]),
   ];
   const uniqueRoutes = [...new Set(routes)];

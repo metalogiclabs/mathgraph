@@ -19,6 +19,7 @@
     "test:import-browser": "node tests/import-workbench.browser.mjs",
     "test:navigation-browser": "node tests/outcome-navigation.browser.mjs",
     "test:map-browser": "node tests/knowledge-map.browser.mjs",
+    "test:catalogue-browser": "node tests/catalogue-filter.browser.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "check:built": "node scripts/check-built-site.mjs",

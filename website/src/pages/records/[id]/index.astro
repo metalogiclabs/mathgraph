@@ -27,7 +27,7 @@ const sourceObject = projectPublishedRecord(published).objects[0];
   description={published.record_kind === 'SOURCE_CHECK' ? 'Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in the qualified L4YAML evidence record.' : published.presentation.description}
   currentPath={`/records/${entry.id}/`}
   canonicalPath={new URL(entry.record_page_url).pathname}
-  socialImage={published.record_kind === 'SOURCE_CHECK' ? `/social/records/${entry.id}-${entry.version_slug}.png` : undefined}
+  socialImage={`/social/records/${entry.id}-${entry.version_slug}.png`}
   ogType="article"
 >
   <RecordDetail published={published} />
