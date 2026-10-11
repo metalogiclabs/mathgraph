@@ -72,13 +72,23 @@ The consumer:
 5. returns a deterministic portable result;
 6. declines unsupported artifacts and extensions.
 
+The result must say, in machine-readable fields, that its processing mode is
+independent offline validation of an exact historical record and pinned local
+policy. The consumer's authority is that bounded derivation only. Original
+Lean proof replay and original source-suite execution are both
+`NOT_PERFORMED`; the native verifier authority recorded in the historical
+receipt remains a separate field. Browser/presentation projections declare
+`authority: NONE` and cannot be admitted as evidence even when they copy valid
+record identifiers or digests.
+
 The trust policy is an existing exact record/source authority expressed as a
 versioned local fixture. This release does not expand what is trusted.
 
 Negative conformance covers source-byte mutation, source/test commit changes,
 content-digest changes, forged status, scope/generalization changes, verifier
 and assumption changes, duplicate keys, non-finite values, oversize input,
-unsupported versions/types, and unauthorized action promotion.
+unsupported versions/types, unauthorized action promotion, self-consistent but
+substituted policies, and attempted presentation/browser-output admission.
 
 ### 3.3 Presentation-only object projections
 
@@ -104,6 +114,12 @@ Unknown types preserve their original bytes where the underlying contract
 allows it and are otherwise declined; they are never coerced into known
 semantics.
 
+A two-domain extension matrix records, for each adapter, the source contract,
+verifier authority, assumptions, lifecycle, replay boundary, preserved
+unknowns, and unsupported semantics. Adding or declining the capability
+adapter must not change record 001's projected meaning. A critical unsupported
+extension case is tested explicitly.
+
 ### 3.4 Knowledge map projection
 
 The knowledge map is derived only from committed identities and declared typed
@@ -116,20 +132,32 @@ runtime and graph dependency while satisfying selection, traversal, filtering,
 lineage, mobile layout, keyboard access, and subgraph export. A node limit and
 explicit truncation state prevent accidental unbounded rendering.
 
-Every exported subgraph declares `authority: NONE`, its projection schema, and
-the source identities/digests from which it was derived.
+Every exported subgraph declares `authority: NONE`, a versioned projection
+schema, directed typed edges with valid endpoints and provenance, selection and
+filter context, completeness/truncation state, and the source
+identities/digests from which it was derived. A small independent read-only
+reader either preserves declared non-critical unknown fields or declines
+unsupported versions and critical extensions. Projection exports can never be
+reimported as qualified evidence.
 
 ### 3.5 Local browser import
 
 The import workbench accepts a local `.json` file with a conservative size
-limit. It uses strict shape checks and Web Crypto for digest comparison, then
-matches only supported exact artifacts. It performs no network fetch and no
-code execution.
+limit. It uses strict UTF-8 parsing, rejects duplicate keys and non-finite
+numbers before interpretation, uses Web Crypto for raw-byte and content-digest
+comparison, then matches only supported exact artifacts. It performs no
+network fetch and no code execution.
 
-The UI labels its result as a local recognition/inspection result, links to the
-independent replay command, and keeps current applicability and action
-authorization separate. Unsupported inputs return `UNKNOWN` with concrete
-supported import paths.
+The UI labels its result and download as a local recognition/inspection
+projection with `authority: NONE`, links to the independent replay command,
+and keeps current applicability and action authorization separate. Unsupported
+inputs return `UNKNOWN` with concrete supported import paths.
+
+One connected integration scenario carries the supported record's identity,
+exact scope, evidence reference, and unknowns through Import, Interpret, Check,
+Resolve, Explore, and Export. Resolve selects only an already-qualified
+record-bound result; if no declared qualified route applies, it returns
+UNKNOWN/unsupported. The browser does not implement new resolution semantics.
 
 ## 4. Information architecture and UX
 
@@ -140,6 +168,11 @@ accessible mobile disclosure. Secondary landing pages link to existing module
 routes. Existing `/check/`, `/resolve/`, `/records/`, `/discover/`,
 `/develop/`, `/capabilities/`, `/agents/`, `/developers/`, and `/protocol/`
 routes remain stable.
+
+Outcome groups carry an active state for their contained routes, including
+Discover, Develop, and Capabilities. `/about/` and `/contact/` are added as
+concise organizational/contact surfaces without endorsements or fabricated
+relationships.
 
 ### 4.2 Homepage
 
@@ -173,6 +206,11 @@ executable quick start, and carefully scoped long-term direction.
 - `/protocol/` is organized around Object, Relation, Evidence, Resolution, and
   Transition, with CLOSE/ACT/REFINE kept distinct. Historical schemas remain
   unchanged.
+- The published TypeScript example is served with a browser-safe JavaScript or
+  text media type and retains a downloadable TypeScript source. The current
+  production `video/mp2t` failure receives a header/browser regression test.
+- Record 002 receives a presentation-only social image whose metadata is kept
+  outside the immutable evidence digest.
 
 ### 4.4 Status treatment
 
@@ -214,11 +252,22 @@ Qualification is layered:
 4. **Existing suites:** full website qualification plus protocol, Resolve,
    Discover, capability, interoperability, and research regression suites.
 5. **Browser QA:** actual protected preview at desktop, tablet, and mobile;
-   keyboard navigation, reduced motion, input errors, graph selection,
-   filtering, export, downloads, console, headers, and cache behavior.
+   keyboard completion of navigation, graph selection/filter/traversal/export,
+   disclosure focus behavior, status announcements, touch sizing, contrast,
+   reduced motion, no-JavaScript fallbacks, input errors, downloads, console,
+   headers, and cache behavior. Record page transfer, client bundle cost, and
+   loading measurements against the qualified production baseline, explaining
+   material regressions.
 6. **Independent review:** architecture/security/claims review against exact
    final commit. Same-owner replay is described accurately and never promoted
    to outside-owner adoption.
+
+Release evidence is valid only when it binds one clean final commit to its CI
+runs, immutable protected-preview deployment, browser report, screenshots, and
+review. Any later code, content, or evidence change invalidates and repeats the
+affected gates. Documentation-only evidence commits must explicitly state
+which already-immutable deployment they describe. Research OS is updated only
+after this reconciliation.
 
 ## 7. Explicit deferrals and residuals
 
@@ -235,6 +284,10 @@ product-integration release and must not be implied by its UI.
 
 Durable retention for historical JPL Actions artifacts also remains unqualified;
 V2 must not claim otherwise.
+
+`www.mathgraph.org` currently serving a duplicate 200 response is documented
+but deferred: redirecting it is a separate production-domain action requiring
+authorization. Production remains unchanged by this release candidate.
 
 ## 8. Demonstrating the foundational principle
 
