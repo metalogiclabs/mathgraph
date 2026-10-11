@@ -1,15 +1,14 @@
-"""Fail-closed bridge from real domain receipts to theorem premises.
+"""Source-derived bounded premise audit, not a certificate-to-Lean proof bridge.
 
-This is an executable *premise audit*, not a Lean proof that arbitrary
-adapters are sound. It reports exactly which premises are available.
+No universal theorem discharge is inferred from producer-controlled strings.
+Tests exercise the independent replay oracle, not a hard-coded 'False' flag.
 """
+import copy
 import hashlib
-import json
 import unittest
-from test_stateful_campaign import invoke,finite_oracle,CONTRACT,POLICY,read
+from test_stateful_campaign import invoke,finite_oracle,CONTRACT,POLICY
 
-def premise_audit(result):
-    evaluation=result["evaluation"]
+def bounded_audit(result):
     receipt=result.get("receipt")
     replay=receipt.get("replay") if isinstance(receipt,dict) else None
     valid=False
@@ -18,46 +17,43 @@ def premise_audit(result):
             valid=finite_oracle(replay)["reuse_mask"]==246
         except (AssertionError,ValueError,TypeError,KeyError):
             valid=False
-    qualified=evaluation.get("qualification")=="QUALIFIED_BOUNDED"
+    evaluation=result.get("evaluation",{})
     return {
-        "receipt_replay_verified":valid,
-        "bounded_semantics_admitted":qualified and valid,
-        "source_contract_sha256":hashlib.sha256(CONTRACT.read_bytes()).hexdigest(),
-        "trust_policy_sha256":hashlib.sha256(POLICY.read_bytes()).hexdigest(),
-        "general_adapter_preservation_proof":"NOT_PROVIDED",
-        "target_policy_live_support":"NOT_CHECKED",
-        "freshness":evaluation.get("freshness","UNKNOWN"),
-        "revocation":evaluation.get("revocation","UNKNOWN"),
+        "replay_valid":valid,
+        "bounded_admitted":valid and evaluation.get("qualification")=="QUALIFIED_BOUNDED",
+        "contract_sha256":hashlib.sha256(CONTRACT.read_bytes()).hexdigest(),
+        "policy_sha256":hashlib.sha256(POLICY.read_bytes()).hexdigest(),
+        "current_applicability":evaluation.get("current_applicability","UNKNOWN"),
         "action_authorization":evaluation.get("action_authorization","NONE"),
-        "lean_premises_fully_discharged":False,
     }
 
-class RealPremiseAudit(unittest.TestCase):
+class BoundedPremiseAudit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         code,result=invoke()
         assert code==0
         cls.result=result
-    def test_replay_but_no_unsupported_theorem_application(self):
-        audit=premise_audit(self.result)
-        self.assertTrue(audit["bounded_semantics_admitted"])
-        self.assertFalse(audit["lean_premises_fully_discharged"])
-        self.assertEqual(audit["target_policy_live_support"],"NOT_CHECKED")
-    def test_producer_status_mutation_does_not_create_proof(self):
-        import copy
+    def test_source_replay_admitted(self):
+        self.assertTrue(bounded_audit(self.result)["bounded_admitted"])
+    def test_witness_mutation_changes_verdict(self):
         altered=copy.deepcopy(self.result)
-        altered["evaluation"]["action_authorization"]="GRANTED"
-        audit=premise_audit(altered)
-        self.assertFalse(audit["lean_premises_fully_discharged"])
-    def test_corrupt_witness_blocks_bounded_admission(self):
-        import copy
+        altered["receipt"]["replay"]["reuse_witness"][0]["output"] ^= 1
+        self.assertFalse(bounded_audit(altered)["bounded_admitted"])
+    def test_qualification_mutation_changes_verdict(self):
         altered=copy.deepcopy(self.result)
-        altered["receipt"]["replay"]["reuse_witness"][0]["output"]^=1
-        audit=premise_audit(altered)
-        self.assertFalse(audit["bounded_semantics_admitted"])
-    def test_pins_are_source_derived(self):
-        audit=premise_audit(self.result)
-        self.assertEqual(audit["source_contract_sha256"],hashlib.sha256(CONTRACT.read_bytes()).hexdigest())
-        self.assertEqual(audit["trust_policy_sha256"],hashlib.sha256(POLICY.read_bytes()).hexdigest())
+        altered["evaluation"]["qualification"]="UNKNOWN"
+        self.assertFalse(bounded_audit(altered)["bounded_admitted"])
+    def test_missing_receipt_changes_verdict(self):
+        altered=copy.deepcopy(self.result)
+        altered["receipt"]=None
+        self.assertFalse(bounded_audit(altered)["bounded_admitted"])
+    def test_scope_and_authorization_are_not_inferred(self):
+        audit=bounded_audit(self.result)
+        self.assertEqual(audit["current_applicability"],"UNKNOWN")
+        self.assertEqual(audit["action_authorization"],"NONE")
+    def test_hashes_derived_from_exact_source(self):
+        audit=bounded_audit(self.result)
+        self.assertEqual(audit["contract_sha256"],hashlib.sha256(CONTRACT.read_bytes()).hexdigest())
+        self.assertEqual(audit["policy_sha256"],hashlib.sha256(POLICY.read_bytes()).hexdigest())
 
 if __name__=="__main__":unittest.main()
