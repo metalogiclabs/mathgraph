@@ -15,7 +15,10 @@ observations, including their stage-specific references to “current,” “dra
 and “production untouched.” PR #156 subsequently merged and deployed at
 `4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c`. Sections 10–14 reconcile that
 foundation with V2 implementation through `7a43e7ff45eda96aee11c9efe056542f2498bbd8`.
-V2 remains unreleased; Task 8 qualification is PENDING. See the
+Their Task 8 PENDING statements preserve the Task 7 checkpoint and are
+explicitly superseded by [Section 15](#15-final-v2-release-candidate-reconciliation).
+V2 remains unreleased, but exact implementation commit `9da8dbd…` has completed
+the bounded draft-candidate qualification described there. See the
 [current authority record](mathgraph_v2_release_authority_2026-10-11.md).
 
 ## 1. Executive correction
@@ -356,11 +359,12 @@ discharges their premises. An archival workflow does not establish retained
 artifact availability. These distinctions remain in the
 [obligations register](mathgraph_v2_unresolved_obligations_2026-10-11.md).
 
-V2 Tasks 1–6 are implemented through `7a43e7ff…`. Task reports record local
-tests and browser checks at their respective commits. Those reports are not
-V2 remote CI, a protected-preview receipt or final release approval. Task 8's
-exact final source, CI, preview, browser evidence and whole-branch review are
-PENDING. No V2 production promotion or DNS change has been performed.
+At this Task 7 checkpoint, V2 Tasks 1–6 were implemented through `7a43e7ff…`.
+The task reports recorded local tests and browser checks at their respective
+commits; they were not V2 remote CI, a protected-preview receipt or final
+release approval. The PENDING Task 8 statement here is historical and
+superseded by Section 15. No V2 production promotion or DNS change has been
+performed.
 
 The separate axes are historical epistemic result, lifecycle, research
 maturity, freshness, current applicability and action authorization. Import
@@ -370,7 +374,10 @@ are different operations; a browser recognition or map export has authority
 
 ## 11. V2 feature and gap disposition
 
-`Release` means a gate of the V2 candidate, not a completed release.
+This section preserves the Task 7 gap snapshot. Its Task 8 action cells are
+superseded by Section 15; the missing distinctions remain valid unless that
+section explicitly changes them. `Release` means a gate of the V2 candidate,
+not a completed release.
 `Research` and `Separate production` do not block the bounded V2 implementation.
 Commit labels T1–T6 below refer to exact identities in the
 [implementation ledger](mathgraph_v2_release_authority_2026-10-11.md#implementation-ledger).
@@ -484,6 +491,137 @@ The bounded extension test is satisfied by the existing source-derived tests
 and the local task observations, subject to final-head release requalification.
 It establishes neither universal interchange nor certified composition,
 autonomous growth, authenticated federation or outside-owner adoption.
-Task 8's final review, preview, CI, browser matrix and performance comparison
-remain PENDING. V2 promotion is NOT_PERFORMED; the production authority above
-has not been changed by this documentation task.
+At the preserved Task 7 checkpoint, Task 8's final review, preview, CI, browser
+matrix and performance comparison were PENDING. Section 15 supersedes that
+release-gate status. V2 promotion remains NOT_PERFORMED; the production
+authority above has not been changed by the implementation or this
+documentation task.
+
+## 15. Final V2 release-candidate reconciliation
+
+Observed 11 October 2026 UTC / 12 October 2026 NZDT. This section supersedes
+only the Task 8 PENDING/NOT_PERFORMED release-gate statements in Sections
+10–14; it does not rewrite the historical audit, expand a warrant, close a
+research obligation, or authorize production.
+
+### 15.1 Exact source, CI and deployment
+
+The exact implementation candidate is
+[`9da8dbd4b877bbcc5ea39005b5c7c40618c14abc`](https://github.com/metalogiclabs/mathgraph/commit/9da8dbd4b877bbcc5ea39005b5c7c40618c14abc)
+on open draft [PR #158](https://github.com/metalogiclabs/mathgraph/pull/158).
+The protected preview is deployment `dpl_A1MDVoRhCDnpGcu4UyhahJ485qJr` at
+[mathgraph-loomaaug7-over-market.vercel.app](https://mathgraph-loomaaug7-over-market.vercel.app).
+The Vercel build log associated it with branch
+`codex/mathgraph-v2-foundation`, commit `9da8dbd`, and a successful 36-page
+Astro static build. The candidate is not merged or promoted.
+
+All required exact-head PR checks passed:
+
+- [published evidence, run 38167753906](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753906),
+  artifact `11712802985`, SHA-256
+  `9951bbe2410711320a452a13df498f150b7d530bed6837210dc9256e9a66c2bc`;
+- [finite capability conformance, run 38167753876](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753876),
+  artifact `11712023975`, SHA-256
+  `783d41bda7ea921ff803bc72f01adc5be47f2c6cea68550dc7700f529cbf0899`;
+- [independent offline Resolve replay, run 38167753925](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753925),
+  artifact `11712148740`, SHA-256
+  `4249c7b853f58b00fdd8512fe86a4426b35ae821cb5c4154a5ecbf8d1f9bb33c`;
+  and
+- [website and evidence integrity, run 38167753899](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753899),
+  artifact `11712424203`, SHA-256
+  `75b25fa241fdd65a9ca2e91c493a5b0c390b757c78f6c5a7104e8534ee9f98a8`.
+
+The exact-head local Python gates passed 387 tests plus 72 subtests, and 119
+focused tests plus 72 subtests. Resolve recomputed three `STALE`, three
+`UNKNOWN`, and one exact JPL observation `WARRANTED_BOUNDED`; applicability
+remained `UNKNOWN`, freshness/revocation `NOT_CHECKED`, and authorization
+`NONE`. The exact-head site qualification passed 72 Astro files with zero
+diagnostics; 82 data, 19 contract and 63 rendering tests; 36 routes / 37 HTML
+files; 97 published artifact files; 53,365 client bytes; 83 internal links;
+and both independent consumers. All four serial local browser suites passed.
+A same-owner whole-branch review was approved with no P0–P2 findings; the P3
+projection-loss observation remains disclosed in Section 12.
+
+The protected-preview run passed 10/10 suites over 24 routes and 34 hashed
+screenshots at desktop, tablet, mobile and catalogue breakpoint widths, with
+and without JavaScript where declared. Deployment protection and `noindex`
+were retained. Import, map, catalogue, navigation, Contact, About, social,
+reduced-motion, long-content, security/MIME and byte-parity checks passed with
+zero console/page/request/HTTP-resource failures. See the
+[browser qualification](mathgraph_v2_browser_qualification_2026-10-11.md#final-protected-preview-qualification)
+and [visual-evidence manifest](assets/mathgraph-v2/README.md). Generated
+screenshots remain outside Git under repository policy; their hashes record
+the reviewed bytes but the machine-local capture directory is not durable
+artifact storage.
+
+Final qualification found and corrected four consequential delivery defects
+before this exact candidate: the displayed acquisition command was incorrectly
+executed by the browser test harness; catalogue controls collided at responsive
+breakpoints; Contact used an undefined grid span; and the static CI artifact
+omitted `/.well-known/mathgraph.json`. The corrections are commits
+`f52753fc…`, `6ea4bf4a…`, `9eb635e6…`, and `9da8dbd…` respectively. Gates were
+rerun after each affected change; none was weakened to manufacture success.
+
+Production is unchanged at
+[`4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c`](https://github.com/metalogiclabs/mathgraph/commit/4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c),
+deployment `dpl_3L7v4EWE4SJB8hxiMNhpRWJ1Jaq9`. No merge, promotion,
+production alias, DNS, registrar, nameserver, mail, trust-policy, immutable
+record, or hosted execution-service change occurred.
+
+### 15.2 Final gap and obligation matrix
+
+`Candidate-qualified` below means qualified for this exact draft source and
+protected preview. It does not mean production-qualified, universally correct,
+currently applicable, externally adopted, or authorized for action.
+
+| Area | Exact existing implementation | Missing distinction | Priority | Verification obligation | Smallest qualifying next action |
+| --- | --- | --- | --- | --- | --- |
+| Supported import | [Standard-library consumer](../conformance/import_v1/consumer.py), result schema/tests and immutable replay command pinned at `1204a1d…`; candidate-qualified locally and in CI | Receipt/policy validation is not original Lean/kernel/source-suite replay | P0 boundary retained | Exact bytes, source/scope/verifier/policy pins, strict parsing and mutation/presentation rejection | Preserve `original_verifier_replay: NOT_PERFORMED`; add native replay only with durable original artifacts and a separately qualified adapter |
+| Import-to-result browser workflow | [Workbench](../website/src/scripts/import-workbench.ts), fixtures and browser regression; candidate-qualified on `/`, `/verify/`, `/check/` | Exact-byte recognition and a presentation export have authority `NONE` | P0 release complete | Six stages preserve identity/scope/evidence/unknowns; mutations and unsupported goals fail closed; zero arbitrary requests | Keep regressions on any supported-input change; add a new input family only through an independently qualified adapter |
+| Object projections/details | [Projection adapters](../website/src/lib/object-projections.ts), 14 stable details and source links; candidate-qualified | Views intentionally omit attribution/evidence/normalization or opaque contract bodies; not round trips or universal Units | P1 | Source parity, independent axes, noninterference and fail-closed critical extensions | Extend one adapter only when a protected consumer needs an omitted field; preserve the original source as authority |
+| Typed knowledge map | [Bounded map/reader](../website/src/lib/knowledge-map.ts) and semantic/SVG explorer; candidate-qualified with 14 nodes/7 declared edges | Display traversal is not certified path composition; no inferred equivalence | P1 | Directed types/endpoints/provenance/pins, completeness and authority `NONE`; wrong edges/versions rejected | Qualify one independent map consumer before claiming portable cross-implementation Maps |
+| Homepage/outcome navigation | [Layout](../website/src/layouts/BaseLayout.astro), V2 home and accessible disclosure; candidate-qualified | Product framing does not expand supported inputs or module maturity | P0 release complete | Stable legacy URLs, active groups, keyboard/focus/no-JS and real evidence examples | Retain regression suite; production publication requires separate merge/promotion approval |
+| Records/capabilities catalogues | [Catalogue component](../website/src/components/CatalogueFilter.astro) and filter script; candidate-qualified at 390/901/1024 | Filtering is presentation only; experimental entries remain distinct from qualified ones | P0 release complete | Exact token filters, no-match state, complete no-JS content and no collisions | Add an entry only after its own admission/qualification; never use display state as warrant |
+| Agent/developer/protocol guidance | `/agents/`, `/developers/`, `/protocol/`, exact commands and contracts; candidate-qualified | Responsibility vocabulary is not a new ontology; no hosted resolver/MCP/action authority exists | P1 | Commands reproduce bounded consumers; CLOSE/ACT/REFINE and authority boundaries remain separate | Keep hosted/MCP claims absent until a concrete service is independently qualified |
+| Discover | Existing dependency-free request/result/CLI and source-grounded `PARTIAL` example from PR #156 | Full historical replay is unavailable because candidate-score CSV and full ledger are missing; advice is not a terminal form | P1 research | Exact source artifacts/digests, bounded-search diagnostics and advisory-only output | Recover and validate one missing pinned artifact; do not rerun a generic solver or promote bounded exhaustion |
+| Develop/capabilities | Portable descriptor/evaluation, empty/candidate registries and one finite `QUALIFIED_BOUNDED` profile | VDN Lean correspondence, general Capability Family Compiler and autonomously discovered family remain unqualified | P2 research | Native theorem/premise bridge, fresh instances, invalid-domain, parent-removal, restart, strong baseline and cost controls | Qualify one real certificate-to-Lean premise adapter before beginning the bounded family-compiler experiment |
+| TypeScript consumer delivery | Synchronized Vercel header configs and exact consumer SHA-256 `e7360df2…`; candidate-qualified as `text/plain; charset=utf-8` with `nosniff` | Preview delivery is not production delivery or semantic authority | P0 release complete | Source/CI/deployed bytes and exact headers agree | After approved promotion, repeat the same check on production |
+| About, Contact and social metadata | Static routes and source-derived social generator; candidate-qualified after Contact grid correction | Contact is not an SLA; social/presentation bytes are outside warrant identity | P0 release complete | Truthful links, responsive/no-JS layout, source-derived facts and unchanged record bytes | Publish only through approved promotion; retain the source-mismatch negative control |
+| Machine discovery | `/llms.txt`, unchanged `/.well-known/mathgraph.json`, record index and candidate static-artifact inclusion | Discovery metadata neither authenticates a publisher nor qualifies a claim | P0 release complete | Exact bytes, locations, boundaries and static artifact presence | Add authenticated publication only under a separate external trust-root policy |
+| Evidence integrity/authenticity | Immutable records 001/002, bundle/policy, CI artifact parity and hashes | Same-origin digests prove integrity, not publisher authenticity, mathematical truth, freshness or authorization | P0 integrity; P2 authenticity | Preserve historic bytes; distinguish content/transport identity and recipient policy | Retain a durable archive; then qualify one detached authenticated statement without changing semantic status |
+| Durable JPL artifacts | Committed small records plus external historical CI references | Original Actions ZIP retention/retrieval remains unqualified | P1 operations | Retrieve exact archives by independent path and verify pinned digests | Execute the already gated archival workflow only with authority, then independently retrieve its output |
+| Semantic/cross-prover transport | Unsigned in-toto exact-correspondence wrapper and explicit native verifier identities | No real source-to-target semantic correspondence or cross-prover proof exists | P2 research | Statement/axiom/toolchain pins, declared losses, native target replay and wrong-semantics controls | Qualify one narrow real transport profile; do not infer meaning from names, hashes or shape |
+| Authenticated lifecycle/current applicability | Historical Resolve snapshots and recipient policy; current applicability `UNKNOWN` | No authenticated current-state channel excludes later revocation/supersession | P2 protocol | Issuer/root policy, expiry, replay/rollback, conflict and offline-staleness semantics | One signed lifecycle fixture plus independent verifier and negative controls |
+| Agent action authorization | Read-only consumers; action authorization `NONE` | Warrant/applicability/viability/permission are not an operational policy | P3, demand-driven | Exact actor/resource/action authority and denial/liveness/safety controls | Define one bounded action profile only when a real consumer requires it |
+| Federation/outside-owner adoption | Offline independent implementations and same-owner cross-repository replay | No independently administered recipient or multipublisher trust policy is established | P2/P3 ecosystem | Independent policy choice, publisher authentication, conflict/delegation/revocation handling | Recruit one actual external recipient for one exact artifact and record ownership distinctly |
+| Capability compounding | Exact finite retention/reuse/sham/ablation experiment | No general, economic or recursive compounding result | P2 research | Prospective held-out family, parent removal, retained prior abilities, restart, strong executable-memory baseline and total costs | Run one frozen second-family transfer only after the premise bridge; retain negative results |
+| Full monorepo baseline | Targeted V2 gates are green | Historical 10 SorryDB and 19 external-fixture failures were not rerun or repaired here | Separate maintenance | Provision prerequisites and reproduce failures without weakening V2 gates | Track and repair in a separate branch; do not call the entire monorepo green |
+| Performance | 53,365 static client bytes and a three-sample warmed-edge production/preview transfer check | No Lighthouse, Core Web Vitals, field, capacity or causal comparison | P1 release follow-up | Reproducible browser/lab conditions and explicit budget before making a performance claim | Define and run a performance budget only if required for promotion; current small sample supports no speed conclusion |
+| `www` canonical host | Existing production apex and duplicate-200 baseline observation | Redirect/canonical-host policy is an operational production decision | Separate production | Explicit authority plus alias/DNS and redirect verification | Leave unchanged until separately approved; it is not needed for this candidate |
+| Release/Research OS | Exact draft PR, CI, protected preview, captures and review are reconciled in committed docs | Production release and Research OS synthesis are distinct from qualification | P0 release governance | Production source association, rollback, exact final checks and explicit approval; ROS cites evidence rather than replacing it | Record the exact checkpoint in ROS; then seek human approval to merge/promote PR #158 without DNS/mail changes |
+
+### 15.3 Performance and architectural boundary
+
+The [browser report](mathgraph_v2_browser_qualification_2026-10-11.md#performance-boundary--operational-sample-only)
+records the limited warmed-edge numbers. Preview response times were higher in
+this small sample and the V2 root body was substantially larger than production,
+but the sample had only three sequential requests, high variability and
+deployment-protection overhead. It supports no comparative performance or
+production-capacity conclusion.
+
+The architectural future test in Section 12 remains the accepted boundary.
+Two materially different source domains—record 001 and the finite capability
+profile—pass through explicit adapters without changing one another, while
+unknown critical extensions fail closed. This provides concrete seams for
+future Brains, Maps, Paths, living papers, federation and capability families;
+it does not prove universal future compatibility. The deliberate omissions in
+Section 13 remain the smallest architecture consistent with the protected
+future: no database, accounts, universal ontology, hosted proof execution,
+inferred relations, new trust root or heavy graph framework was added.
+
+The final release action is therefore small and explicit: after Research OS
+records these exact receipts and a human separately approves production,
+merge draft PR #158 and promote its reviewed source, then repeat the production
+HTTP/MIME/byte/browser smoke checks. No DNS or mail change is required. Until
+that action occurs, MathGraph V2 is an independently replayable, protected
+release candidate—not the production site.

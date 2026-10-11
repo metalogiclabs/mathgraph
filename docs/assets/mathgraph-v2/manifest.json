@@ -1,0 +1,49 @@
+{
+  "schema": "mathgraph.preview-capture-evidence.v1",
+  "source_commit": "9da8dbd4b877bbcc5ea39005b5c7c40618c14abc",
+  "deployment_id": "dpl_A1MDVoRhCDnpGcu4UyhahJ485qJr",
+  "preview_origin": "https://mathgraph-loomaaug7-over-market.vercel.app",
+  "source_capture_count": 34,
+  "capture_storage": "not committed; machine-local source is ephemeral; durable external copy not established",
+  "observed_captures": [
+    {
+      "name": "home-desktop-1440.png",
+      "width": 1440,
+      "height": 12326,
+      "sha256": "167b5909bb2220e41b67a16d25773a01ee4fce8d767e64885dd3607dc9329bf2"
+    },
+    {
+      "name": "home-mobile-390.png",
+      "width": 390,
+      "height": 16978,
+      "sha256": "ace88a6aa48438fe11fa57e42000480faf6e94dc6823697d7776ad1f694859e0"
+    },
+    {
+      "name": "object-map-desktop-1440.png",
+      "width": 1440,
+      "height": 7080,
+      "sha256": "c5de96772cb4c956dd3b9e6803e83ee9599dc9c7f1eb3695434aabbc1621e006"
+    },
+    {
+      "name": "records-catalogue-1024.png",
+      "width": 1024,
+      "height": 2176,
+      "sha256": "8383f68f7e6ca4a3d75763e7207c49f93d45ba2a993929e5040f4adac2091ebb"
+    },
+    {
+      "name": "contact-mobile-390.png",
+      "width": 390,
+      "height": 1625,
+      "sha256": "8c7240150669fbfc6dd4ae53ef64b56b42d6efe24e1cc5c6eba1196eb48ec364"
+    }
+  ],
+  "source_evidence": {
+    "capture-manifest.json": "07875522e8bee5c41f95c8122986b2ef5cf8f5eb536ef82f9f42a4e73296c108",
+    "qa.log": "c3818939b85dfd2641dc6404228a90fb00492ac99b9353fee176d2e61629e8a5",
+    "deployment.json": "175727141c008beba65fb666d7f8db0d7f90ade357911bfb13cc7ee16a5351bb",
+    "build.log": "3ec6400038d31dc7d0844bd4cda9c343b0a43a5b1c8bfe624f96c03480389c49",
+    "visual-review.json": "6dbe52ff304189428a7d18518e9413ce3ea8f4c00007a04c076e7927100ee9a4",
+    "preview-qa.mjs": "c0f337f96da99e8c44c66efb51e66020f22575448aa996de41f338a89de19fb2"
+  },
+  "boundary": "Observed rendered-byte identities only. Generated captures are not committed and the machine-local source directory is not durable evidence storage. The source records and independent consumers remain authoritative within their declared scopes."
+}

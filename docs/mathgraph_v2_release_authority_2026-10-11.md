@@ -1,11 +1,12 @@
 # MathGraph V2 — release authority checkpoint
 
-Status: **UNRELEASED_CANDIDATE**. Observation date: 11 October 2026.
-GitHub facts below were refreshed at approximately 10:24 UTC. Implementation
-boundary: `7a43e7ff45eda96aee11c9efe056542f2498bbd8` on
-`codex/mathgraph-v2-foundation`. This Task 7 document does not perform Task 8.
-Its own documentation commit is identified by Git history; it is not an
-already-qualified deployment identity.
+Status: **UNRELEASED_CANDIDATE**. Original observation date: 11 October 2026.
+The Task 7 checkpoint below is preserved as an historical checkpoint: GitHub
+facts were refreshed at approximately 10:24 UTC and the implementation boundary
+was `7a43e7ff45eda96aee11c9efe056542f2498bbd8`. Its PENDING and NOT_PERFORMED
+Task 8 statements are explicitly superseded by
+[Final Task 8 reconciliation](#final-task-8-reconciliation) below. They remain
+in place so the release history is not silently rewritten.
 
 ## Production and research authority
 
@@ -52,6 +53,13 @@ observations are timestamped snapshots, not continuous monitoring.
 | T5 history correction | `e1b13678c4680fee76e196c7e10b6f89506ac500` | Direct-fragment/reload/Back/Forward selection regression |
 | T6 catalogues/docs | `a34e91523f34f9cddb4dcbd9586b47efbbfa4564` | [Catalogue](../website/src/components/CatalogueFilter.astro), [protocol](../website/src/pages/protocol.astro), [contracts](../website/tests/contracts.test.ts), [rendering](../website/tests/rendering.test.ts), MIME configs and social metadata |
 | T6 source/layout correction | `7a43e7ff45eda96aee11c9efe056542f2498bbd8` | Source-derived social facts/mismatch control; container-responsive catalogue; [browser regression](../website/tests/catalogue-filter.browser.mjs) |
+| T7 authority checkpoint | `1bfa92277d49fcf5b350a12851f0eb14e0c9974e` | Preserved the historical audit and recorded the pre-Task-8 gaps |
+| Replay-link correction | `4b4e7c1d85caa7708c89f3fb845426644b5e8234` | Pinned the public reproduction instructions to the immutable importer implementation |
+| Browser replay-harness correction | `f52753fcd74734edaead341f96ff42f9931b9c4d` | Kept network acquisition outside the test and executed only the local Python replay command |
+| Design-document normalization | `3cac736907669c1010dbf9f8536a7f7771fef0a1` | Documentation-only formatting correction |
+| Catalogue containment correction | `6ea4bf4a0a58b12a8b4a4ff26333b48d22929d63` | Prevented label/control collisions across the 390/901/1024 regression widths |
+| Contact layout correction | `9eb635e6a578ae44269f36e5e547d7524d3f6d6e` | Replaced an undefined grid span and qualified half-width desktop versus stacked tablet/mobile cards |
+| Final implementation candidate | `9da8dbd4b877bbcc5ea39005b5c7c40618c14abc` | Included the machine-discovery resource in the static artifact and became the exact source of CI and the protected preview |
 
 ## Local observations and their limits
 
@@ -128,7 +136,11 @@ changes only the five planned Markdown documents; its scratch checker/log/report
 are ignored handoff files. No protocol, evidence, data, site source, deployment
 or production setting was changed by this task.
 
-## Final release identity — Task 8 has not run
+## Historical Task 7 release identity — superseded
+
+This table is the original Task 7 checkpoint. Its PENDING/NOT_PERFORMED values
+describe that earlier moment and are superseded, not deleted, by the final
+reconciliation that follows.
 
 | Required fact | Status |
 | --- | --- |
@@ -155,3 +167,86 @@ The immediate next action is Task 8 candidate qualification under the approved
 [plan](superpowers/plans/2026-10-11-mathgraph-v2-foundation.md). After that evidence
 is reconciled, any production merge/promotion or www-domain change remains a
 separate authorized action. No such approval or action is implied here.
+
+## Final Task 8 reconciliation
+
+Observed 11 October 2026 UTC / 12 October 2026 NZDT. The release candidate is
+the exact implementation commit
+[`9da8dbd4b877bbcc5ea39005b5c7c40618c14abc`](https://github.com/metalogiclabs/mathgraph/commit/9da8dbd4b877bbcc5ea39005b5c7c40618c14abc)
+on draft [PR #158](https://github.com/metalogiclabs/mathgraph/pull/158). The PR
+was open, draft, and mergeable when inspected. The protected, review-only
+deployment is [`dpl_A1MDVoRhCDnpGcu4UyhahJ485qJr`](https://vercel.com/over-market/mathgraph/A1MDVoRhCDnpGcu4UyhahJ485qJr)
+at [mathgraph-loomaaug7-over-market.vercel.app](https://mathgraph-loomaaug7-over-market.vercel.app).
+Vercel's build log identifies branch `codex/mathgraph-v2-foundation`, commit
+`9da8dbd`, Astro static output, Node 24.x, 36 generated pages and successful
+READY deployment.
+
+### Exact-head CI and retained artifacts
+
+| Gate | Exact-head result | Retained artifact |
+| --- | --- | --- |
+| [Published evidence](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753906) | SUCCESS, job `114553756085` | `mathgraph-check-public-evidence-v1`, artifact `11712802985`, SHA-256 `9951bbe2410711320a452a13df498f150b7d530bed6837210dc9256e9a66c2bc` |
+| [Finite capability conformance](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753876) | SUCCESS, job `114553755909` | `mathgraph-finite-capability-independent-v1`, artifact `11712023975`, SHA-256 `783d41bda7ea921ff803bc72f01adc5be47f2c6cea68550dc7700f529cbf0899` |
+| [Independent offline Resolve replay](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753925) | SUCCESS, job `114553756049` | `mathgraph-resolve-independent-offline-v1`, artifact `11712148740`, SHA-256 `4249c7b853f58b00fdd8512fe86a4426b35ae821cb5c4154a5ecbf8d1f9bb33c` |
+| [Website and evidence integrity](https://github.com/metalogiclabs/mathgraph/actions/runs/38167753899) | Both jobs SUCCESS, jobs `114553756262` and `114553756032` | `mathgraph-org-v1-static-site`, artifact `11712424203`, 414,583 bytes, SHA-256 `75b25fa241fdd65a9ca2e91c493a5b0c390b757c78f6c5a7104e8534ee9f98a8` |
+| Vercel | SUCCESS | Deployment `dpl_A1MDVoRhCDnpGcu4UyhahJ485qJr`; source-exact preview above |
+
+The Actions artifacts were unexpired when inspected and reported expiry on
+9 January 2027. They are qualification receipts, not the sole durable storage
+for the public evidence: the small immutable records and replay inputs remain
+committed. GitHub skipped unrelated LeanEval PR-trigger jobs; skipped jobs are
+not reported as successful V2 gates.
+
+### Exact-head local qualification
+
+- Required protocol/import/Resolve/Discover/Develop Python gate: **387 passed,
+  72 subtests passed**.
+- Focused import/protocol/Resolve/publication gate: **119 passed, 72 subtests
+  passed**.
+- Resolve replay recomputed three `STALE`, three `UNKNOWN`, and one exact JPL
+  observation `WARRANTED_BOUNDED`; current applicability remained `UNKNOWN`,
+  freshness/revocation `NOT_CHECKED`, and authorization `NONE`.
+- `npm run qualify`: 72 Astro files with zero diagnostics; 82 data, 19
+  contract, and 63 rendering tests; 36 pages / 37 HTML files; 97 artifact
+  files; 53,365 client bytes; 83 links; both independent consumers passed.
+- Four serial local Chromium suites passed: navigation and Contact at
+  1440/768/390 with and without JavaScript; exact import replay, mutations,
+  unsupported result and export rejection with no interaction network; map at
+  1440/768/390 with and without JavaScript; catalogues at 390/901/1024 with and
+  without JavaScript. Fifty-one local PNGs were captured.
+- A separate same-owner whole-branch architecture/security/claims review at
+  this exact commit was **APPROVED with no P0–P2 findings**. The P3 observation
+  that object projections omit source fields remains documented and is not a
+  warrant expansion.
+
+### Protected-preview and production boundary
+
+Authorized preview qualification passed 10/10 suites over 24 routes and 34
+hashed screenshots. Unauthenticated access returned Vercel protection (302,
+`no-store`, `noindex`, frame denial); authorized responses were 200 and
+`noindex`. The route, navigation, import, map, catalogue, Contact, About,
+social-card, reduced-motion, long-identifier, MIME, security-header and
+immutable-byte checks passed with no browser console, page, request or HTTP
+resource failures. The TypeScript consumer was observed as `text/plain;
+charset=utf-8` with `nosniff`; its bytes matched SHA-256
+`e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e`.
+Representative capture identities and the complete evidence-manifest hashes
+are retained under
+[docs/assets/mathgraph-v2/](assets/mathgraph-v2/README.md). Generated PNGs are
+not committed under repository policy; the live protected preview is the
+review surface, and the machine-local capture directory is not claimed as
+durable storage.
+
+Production remained unchanged at commit
+[`4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c`](https://github.com/metalogiclabs/mathgraph/commit/4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c),
+deployment `dpl_3L7v4EWE4SJB8hxiMNhpRWJ1Jaq9`. No merge, promotion,
+production alias, DNS, registrar, nameserver, mail, trust-policy, hosted
+execution, or immutable-record change occurred.
+
+The documentation-only commit containing this reconciliation follows the
+preview source and is not represented as its deployment source. It changes no
+website, protocol, evidence or trust-policy bytes. A Research OS checkpoint is
+separate synthesis work and remains `NOT_PERFORMED` until it names these exact
+receipts. Production release still requires explicit human approval to merge
+PR #158 and promote the reviewed source; the deferred `www` policy remains a
+separate action.

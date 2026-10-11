@@ -26,12 +26,19 @@ preserves the earlier local/draft-stage evidence and its limitations.
 
 ## MathGraph V2 foundation — unreleased candidate
 
-Implementation checkpoint: `7a43e7ff45eda96aee11c9efe056542f2498bbd8`.
-Final source/CI/protected-preview/review reconciliation is PENDING;
-protected-preview browser qualification and production promotion are NOT_PERFORMED.
+The earlier Task 7 implementation checkpoint
+`7a43e7ff45eda96aee11c9efe056542f2498bbd8` and its PENDING preview statement
+are superseded by exact implementation source
+[`9da8dbd4b877bbcc5ea39005b5c7c40618c14abc`](https://github.com/metalogiclabs/mathgraph/commit/9da8dbd4b877bbcc5ea39005b5c7c40618c14abc).
+Draft [PR #158](https://github.com/metalogiclabs/mathgraph/pull/158), required
+exact-head CI, protected deployment `dpl_A1MDVoRhCDnpGcu4UyhahJ485qJr`, and the
+protected-preview browser matrix passed. This remains an unreleased candidate:
+production is unchanged at `4edc77cb1a4ff3a345b5feffcf7f2b38d3fbab0c`,
+and merge/promotion are NOT_PERFORMED.
 
 - [Release authority checkpoint](mathgraph_v2_release_authority_2026-10-11.md)
-- [Browser qualification checkpoint](mathgraph_v2_browser_qualification_2026-10-11.md)
+- [Protected-preview browser qualification](mathgraph_v2_browser_qualification_2026-10-11.md#final-protected-preview-qualification)
+- [Protected-preview visual-evidence manifest](assets/mathgraph-v2/README.md)
 - [Unresolved obligations](mathgraph_v2_unresolved_obligations_2026-10-11.md)
 - [Updated product/architecture audit](mathgraph_full_product_audit_2026-10-11.md)
 
