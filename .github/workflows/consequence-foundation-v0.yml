@@ -95,6 +95,7 @@ jobs:
         run: |
           set -euo pipefail
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          test "$(git hash-object "$RUNNER_TEMP/elan-init.sh")" = "ab8c346be2d665b2c77a6eba0dc2338c43413a9c"
           sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain leanprover/lean4:v4.35.0-rc2
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Kernel-check compositional warrant theorems
