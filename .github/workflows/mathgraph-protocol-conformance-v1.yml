@@ -6,10 +6,26 @@ on:
     paths:
       - 'conformance/capability_v1/**'
       - 'conformance/discover_v1/**'
+      - 'conformance/interoperability_v1/**'
       - 'conformance/protocol_v1/**'
+      - 'conformance/resolve_v1/**'
       - 'mathgraph_protocol/**'
+      - 'mathgraph/discovery_scheduler.py'
+      - 'mathgraph/discovery_candidate_sources.py'
+      - 'mathgraph/evidence_packs.py'
+      - 'adapters/in_toto_v1.py'
+      - 'scripts/mathgraph_discover_v1.py'
+      - 'scripts/mathgraph_capability_v1.py'
+      - 'scripts/package_mathgraph_resolve_v1.py'
+      - 'scripts/run_discovery_scheduler.py'
+      - 'scripts/run_discovery_scheduler_from_evidence.py'
+      - 'tests/test_mathgraph_protocol_import.py'
+      - 'tests/test_discovery_scheduler.py'
+      - 'tests/test_discovery_candidate_sources.py'
       - 'protocol/schemas/**'
       - 'protocol/registries/**'
+      - 'examples/evidence_packs/**'
+      - 'pyproject.toml'
       - 'website/public/capabilities/**'
       - 'website/public/schemas/**'
       - 'experiments/developmental_capability_growth_v1/**'
@@ -35,7 +51,8 @@ jobs:
       - name: Acquire test tools and immutable runtime before isolation
         run: |
           set -euo pipefail
-          python -m pip install pytest==9.0.3 jsonschema==4.26.0
+          # Legacy scheduler compatibility imports the optional SAIR dependencies.
+          python -m pip install pytest==9.0.3 jsonschema==4.26.0 numpy==2.4.2 pandas==3.0.1
           FINITE_IMAGE_REF=python:3.11-slim@sha256:e529028263dbe6910a2d96f7d2b8f5266385e917fd45d286ef166977c094a51e
           docker pull "$FINITE_IMAGE_REF"
           FINITE_IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$FINITE_IMAGE_REF")
@@ -46,7 +63,10 @@ jobs:
         run: |
           set -euo pipefail
           echo "$FINITE_POLICY_SHA256  conformance/capability_v1/trust-policy.json" | sha256sum -c -
-          python -m pytest conformance/capability_v1 conformance/discover_v1 conformance/protocol_v1 -q
+          python -m pytest conformance/protocol_v1 conformance/resolve_v1 \
+            conformance/discover_v1 conformance/capability_v1 conformance/interoperability_v1 \
+            tests/test_mathgraph_protocol_import.py \
+            tests/test_discovery_scheduler.py tests/test_discovery_candidate_sources.py -q
           cmp protocol/registries/capabilities-v1.json website/public/capabilities/index-v1.json
           git diff --exit-code
       - name: Replay only four inputs with network and repository access denied
