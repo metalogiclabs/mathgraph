@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StatusTag from '../../components/StatusTag.astro';
+import SourceLink from '../../components/SourceLink.astro';
+import CapabilityBoundary from '../../components/CapabilityBoundary.astro';
+import { registry, artifactUrl, sourceUrl } from '../../lib/modules';
+---
+<BaseLayout title="MathGraph Capabilities — Exact contracts and qualification boundaries" description="A static registry with one qualified finite capability and a separate experimental candidate index, bound to exact contracts, receipts, and trust policies." currentPath="/capabilities/">
+  <header class="section section--compact"><div class="shell">
+    <div class="eyebrow">Capabilities · static registry</div><h1>A contract is only as broad as its qualification.</h1>
+    <p class="lede">Inspect the descriptor, evaluation, replay receipt, and trust policy together. The registry indexes exact artifacts; reading an entry does not grant trust or authorize an action.</p>
+    <div class="actions"><a class="button" href="/capabilities/index-v1.json">Open registry JSON</a><a class="button button--secondary" href="/develop/">Understand the finite result</a></div>
+  </div></header>
+  <section class="section"><div class="shell page-grid">
+    <aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#qualified">Qualified entry ({registry.qualified_entries.length})</a><a href="#candidates">Candidates ({registry.experimental_candidates.length})</a><a href="#contracts">Contract schemas</a></aside>
+    <div class="prose">
+      <section id="qualified"><div class="eyebrow">Qualified finite entry</div><h2>Finite developmental growth</h2>
+        {registry.qualified_entries.map((entry) => <article data-qualified-capability={entry.id}>
+          <p><code>{entry.id}</code><br />Version <code>{entry.version}</code> · profile <code>{entry.profile}</code></p>
+          <CapabilityBoundary />
+          <h3>Exact admission artifacts</h3>
+          <div class="source-stack">{([
+            ['Contract', entry.contract], ['Evaluation', entry.evaluation], ['Qualification receipt', entry.qualification_receipt], ['Trust policy', entry.trust_policy],
+          ] as const).map(([label, pin]) => <SourceLink href={artifactUrl(pin.locator)} label={label} meta={`${pin.size_bytes} bytes · SHA-256 ${pin.sha256}`} />)}</div>
+          <p><a href={sourceUrl(entry.contract.locator)}>Committed descriptor and source revision ↗</a></p>
+          <p>Only the separate finite-profile consumer admits this exact descriptor after replay. The general descriptor evaluator remains <code>UNKNOWN</code>; a descriptor cannot qualify itself.</p>
+        </article>)}
+      </section>
+      <section id="candidates"><div class="eyebrow">Separate experimental index</div><h2>Candidates awaiting admission</h2>
+        {registry.experimental_candidates.map((candidate) => <article data-experimental-capability={candidate.id}>
+          <h3>VDN / Lean</h3><StatusTag label={candidate.status} tone="experimental" />
+          <p><code>{candidate.id}</code><br />Version <code>{candidate.version}</code> · profile <code>{candidate.profile}</code></p>
+          <p>{candidate.description}</p><SourceLink href={sourceUrl(candidate.source.locator)} label="Pinned research source" meta={`SHA-256 ${candidate.source.sha256}`} />
+          <p>This candidate is unqualified. It is not included in the qualified section and receives no authority from the finite result.</p>
+        </article>)}
+      </section>
+      <section id="contracts"><h2>Portable objects, explicit limits.</h2>
+        <p>Hosted service: <code>NOT_DEPLOYED</code>. This is the byte-identical static projection of <a href={sourceUrl('protocol/registries/capabilities-v1.json')}>registry version {registry.version}</a>. Artifact hashes establish integrity, not authenticity. Qualification remains separate from freshness, current applicability, revocation, supersession, and authorization.</p>
+        <p><a href="/schemas/capability-contract-v1.schema.json">Descriptor schema</a> · <a href="/schemas/capability-evaluation-v1.schema.json">Evaluation schema</a> · <a href="/schemas/capability-registry-v1.schema.json">Registry schema</a></p>
+        <p><a href="/developers/#interoperability">Unsigned external correspondence</a> binds one descriptor to an in-toto statement without importing qualification. <a href="/discover/">Discover</a> allocates advisory attention; it cannot promote candidates into this index.</p>
+      </section>
+    </div>
+  </div></section>
+</BaseLayout>

@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import Ajv from 'ajv';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,13 +34,38 @@ async function json(path: string): Promise<Record<string, any>> {
 }
 
 describe('agent discovery contracts', () => {
+  test('publishes byte-identical Resolve transport schemas that accept the immutable fixtures', async () => {
+    const repository = join(website, '..');
+    const names = ['resolve-bundle-v1.schema.json', 'resolve-trust-policy-v1.schema.json'];
+    const [bundleSchemaBytes, policySchemaBytes, publicBundleSchemaBytes, publicPolicySchemaBytes] = await Promise.all([
+      readFile(join(repository, 'protocol/schemas', names[0])),
+      readFile(join(repository, 'protocol/schemas', names[1])),
+      readFile(join(dist, 'schemas', names[0])),
+      readFile(join(dist, 'schemas', names[1])),
+    ]);
+
+    expect(publicBundleSchemaBytes).toEqual(bundleSchemaBytes);
+    expect(publicPolicySchemaBytes).toEqual(policySchemaBytes);
+
+    const bundleSchema = JSON.parse(bundleSchemaBytes.toString('utf8')) as Record<string, any>;
+    const policySchema = JSON.parse(policySchemaBytes.toString('utf8')) as Record<string, any>;
+    const [bundle, policy] = await Promise.all([
+      json(`evidence/${resolveRecordId}/offline/bundle.json`),
+      json(`evidence/${resolveRecordId}/offline/trust-policy.json`),
+    ]);
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    ajv.addSchema(bundleSchema);
+    expect(ajv.validate(policySchema, policy), ajv.errorsText()).toBe(true);
+    expect(ajv.validate(bundleSchema, bundle), ajv.errorsText()).toBe(true);
+  });
+
   test('publishes schema-valid discovery and record index documents', async () => {
     const ajv = new Ajv({ allErrors: true, strict: true });
     const [discovery, index, record, discoverySchema, indexSchema, discoveryV1Bytes] = await Promise.all([
       json('.well-known/mathgraph.json'),
       json('records/index.json'),
       json(`evidence/${recordId}/record.json`),
-      json('schemas/discovery-v2.schema.json'),
+      json('schemas/discovery-v3.schema.json'),
       json('schemas/record-index-v2.schema.json'),
       readFile(join(dist, 'schemas/discovery-v1.schema.json')),
     ]);
@@ -47,8 +73,9 @@ describe('agent discovery contracts', () => {
     expect(ajv.validate(discoverySchema, discovery), ajv.errorsText()).toBe(true);
     expect(ajv.validate(indexSchema, index), ajv.errorsText()).toBe(true);
     expect(createHash('sha256').update(discoveryV1Bytes).digest('hex')).toBe(discoveryV1Sha256);
-    expect(discovery.$schema).toBe('https://mathgraph.org/schemas/discovery-v2.schema.json');
-    expect(discovery.schema).toBe('mathgraph.discovery.v2');
+    expect(createHash('sha256').update(await readFile(join(dist, 'schemas/discovery-v2.schema.json'))).digest('hex')).toBe('827214b81d0c45a36cf3d9fc25d23910c9da19c47553d69411a893b4049941fc');
+    expect(discovery.$schema).toBe('https://mathgraph.org/schemas/discovery-v3.schema.json');
+    expect(discovery.schema).toBe('mathgraph.discovery.v3');
     expect(discovery.canonical_origin).toBe('https://mathgraph.org');
     expect(JSON.stringify(discovery)).not.toContain('vercel.app');
     expect(discovery.capabilities).toEqual({
@@ -56,9 +83,9 @@ describe('agent discovery contracts', () => {
       resolve_explorer: 'IMPLEMENTED_READ_ONLY',
       offline_resolve_replay: 'BOUNDED_QUALIFIED',
       public_resolver: 'NOT_DEPLOYED',
-      discover_interface: 'NOT_DEPLOYED',
-      develop_interface: 'NOT_DEPLOYED',
-      capabilities_registry: 'PROPOSED',
+      discover_interface: 'IMPLEMENTED_LOCAL_ADVISORY',
+      develop_interface: 'QUALIFIED_BOUNDED_OFFLINE',
+      capabilities_registry: 'STATIC_REGISTRY',
       lean_profile: 'PROPOSED',
       mcp: 'PROPOSED',
     });
@@ -89,9 +116,9 @@ describe('agent discovery contracts', () => {
       current_applicability: 'UNKNOWN',
       freshness: 'NOT_CHECKED',
     });
-    expect(discovery.interfaces.discover).toEqual({ maturity: 'EXPERIMENTAL', public_interface: 'NOT_DEPLOYED' });
-    expect(discovery.interfaces.develop).toEqual({ maturity: 'EXPERIMENTAL', public_interface: 'NOT_DEPLOYED' });
-    expect(discovery.interfaces.capabilities).toEqual({ maturity: 'PROPOSED', public_registry: 'NOT_DEPLOYED', entries: 0 });
+    expect(discovery.interfaces.discover.public_interface).toBe('NOT_DEPLOYED');
+    expect(discovery.interfaces.develop.public_interface).toBe('NOT_DEPLOYED');
+    expect(discovery.interfaces.capabilities.qualified_entries).toBe(1);
     expect(discovery.integrity_notice).toMatch(/integrity.*not.*authenticity/i);
     expect(discovery.repository_provenance.authentication_status).toBe('UNSIGNED_PROVENANCE_ONLY');
     expect(discovery.repository_provenance.catalogue_source).toBe('https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json');
@@ -176,6 +203,34 @@ describe('agent discovery contracts', () => {
     expect(llms).toMatch(/public resolver.*NOT_DEPLOYED/i);
     expect(llms).toMatch(/MCP.*PROPOSED/i);
     expect(llms).not.toContain('vercel.app');
+  });
+
+  test('advertises the Resolve transport schemas consistently without adding authentication', async () => {
+    const [discovery, discoverySchema, llms, developers] = await Promise.all([
+      json('.well-known/mathgraph.json'),
+      json('schemas/discovery-v3.schema.json'),
+      text('llms.txt'),
+      text('developers/index.html'),
+    ]);
+    const ajv = new Ajv({ allErrors: true, strict: true });
+    for (const [key, name] of [
+      ['resolve_bundle_v1', 'resolve-bundle-v1.schema.json'],
+      ['resolve_trust_policy_v1', 'resolve-trust-policy-v1.schema.json'],
+    ]) {
+      const url = `https://mathgraph.org/schemas/${name}`;
+      expect(discovery.schemas[key]).toBe(url);
+      expect(llms).toContain(url);
+      expect(developers).toContain(`href="/schemas/${name}"`);
+      expect((await json(`schemas/${name}`)).$id).toBe(url);
+      const missing = structuredClone(discovery);
+      delete missing.schemas[key];
+      expect(ajv.validate(discoverySchema, missing)).toBe(false);
+      const substituted = structuredClone(discovery);
+      substituted.schemas[key] = 'https://mathgraph.org/schemas/unrelated.schema.json';
+      expect(ajv.validate(discoverySchema, substituted)).toBe(false);
+    }
+    expect(llms).toMatch(/schemas.*do not authenticate.*records/i);
+    expect(developers.replace(/<[^>]+>/g, ' ')).toMatch(/schemas.*do not authenticate.*records/i);
   });
 
   test('includes human and permanent record routes in the generated sitemap', async () => {

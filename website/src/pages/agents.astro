@@ -40,6 +40,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
       <aside class="toc" aria-label="On this page">
         <strong>On this page</strong>
         <a href="#discover">Discover</a>
+        <a href="#modules">Modular contracts</a>
         <a href="#match">Record 001</a>
         <a href="#replay">Record 002</a>
         <a href="#integrity">Integrity</a>
@@ -58,6 +59,14 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
           </ol>
           <p><code>generated_at</code> is publication time, not a response timestamp. Treat lifecycle state as fresh for at most <code>max_age_seconds</code> after your own fetch time, then re-fetch the catalogue.</p>
           <SourceLink href={entry.record_page_url} label="Permanent L4YAML record" meta={`${entry.id} · ${entry.version_slug}`} />
+        </section>
+
+        <section id="modules">
+          <h2>Choose a module without expanding its authority.</h2>
+          <p><a href="/discover/">Discover</a> is a local advisory contract. Its real source-pack result is <code>PARTIAL</code>, with <code>advisory_only: true</code>, <code>can_promote_truth: false</code>, verification <code>NOT_CHECKED</code>, and <code>FULL_REPLAY_UNAVAILABLE</code>. Attention is allocation, not truth confidence.</p>
+          <p><a href="/develop/">Develop</a> has one exact eight-state <code>QUALIFIED_BOUNDED</code> profile from same-owner implementation-independent replay. The Capability Family Compiler remains <code>NOT_IMPLEMENTED</code>. VDN / Lean remains an unqualified <code>EXPERIMENTAL</code> candidate.</p>
+          <p>The <a href="/capabilities/">Capabilities registry</a> has one qualified finite entry with exact contract, evaluation, receipt, and policy pins. Read the <a href="/capabilities/index-v1.json">registry JSON</a> and independently admit its policy and replay boundary. Reading the registry alone grants no trust. Current applicability is <code>UNKNOWN</code>; freshness, revocation, and supersession are <code>NOT_CHECKED</code>; action authorization is <code>NONE</code>.</p>
+          <p><a href="/developers/#interoperability">External interoperability</a> is unsigned correspondence only. An in-toto wrapper creates no qualification or authentication. Modules are independently usable; no autonomous loop or compulsory pipeline is provided.</p>
         </section>
 
         <section id="match">
@@ -102,7 +111,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
           <h2>The static interface does not execute claims.</h2>
           <div class="callout callout--unknown">
             <StatusTag label="Current boundary" tone="unknown" />
-            <p>The qualified <code>/v1/resolve</code> contract remains a local/preview interface. A public resolver is not deployed. An MCP endpoint is not deployed. Discover and Develop have no public protocol interfaces, and the proposed Capabilities registry has no P0 entries. MathGraph.org accepts no visitor-supplied code, proof, claim, or URL.</p>
+            <p>The qualified <code>/v1/resolve</code> contract remains a local/preview interface. A public resolver is not deployed. An MCP endpoint is not deployed. Discover and Develop are local contracts with static documentation; their hosted services remain <code>NOT_DEPLOYED</code>. The capability registry is static. MathGraph.org accepts no visitor-supplied code, proof, claim, or URL.</p>
           </div>
           <p>Whole-language YAML correctness, natural-language fidelity, generalization beyond the pinned cases, and newer source revisions remain <code>UNKNOWN</code>.</p>
         </section>

@@ -3,6 +3,7 @@ import SourceLink from '../components/SourceLink.astro';
 import StatusTag from '../components/StatusTag.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLatestPublishedRecord } from '../lib/catalog';
+import { artifactUrl, sourceUrl, registry } from '../lib/modules';
 
 const sourcePublished = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
 const resolvePublished = await getLatestPublishedRecord('mg-living-warrant-openai-jpl-20261010');
@@ -49,6 +50,8 @@ const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="M
       <aside class="toc" aria-label="On this page">
         <strong>On this page</strong>
         <a href="#quickstart">Quickstart</a>
+        <a href="#modules">Local modules</a>
+        <a href="#interoperability">Interoperability</a>
         <a href="#offline-replay">Offline replay</a>
         <a href="#typescript-consumer">TypeScript consumer</a>
         <a href="#discovery">Discovery</a>
@@ -71,10 +74,36 @@ sha256sum record.json</code></pre></div>
           <SourceLink href={`/evidence/${record.id}/record.json`} label="Open record JSON" meta={`${record.id} · immutable snapshot`} />
         </section>
 
+        <section id="modules">
+          <h2>Use the modular contracts locally.</h2>
+          <p><a href="/discover/">Discover</a> exposes a deterministic advisory request/result contract. <a href="/develop/">Develop</a> publishes one exact finite replay. The <a href="/capabilities/">Capabilities registry</a> separates the qualified finite entry from experimental candidates. Hosted services remain <code>NOT_DEPLOYED</code>; these commands run from a repository checkout.</p>
+          <div class="code-block"><div class="code-label">Local CLI · Python standard library</div><pre><code>python -I -S scripts/mathgraph_discover_v1.py --request conformance/discover_v1/fixtures/request.json
+
+python -I -S scripts/mathgraph_capability_v1.py --contract conformance/capability_v1/fixtures/capability-contract.json
+
+python -I -S conformance/capability_v1/consumer.py \
+  --fixture conformance/capability_v1/fixtures/finite-representation-refinement-v1.json \
+  --contract conformance/capability_v1/fixtures/capability-contract.json \
+  --policy conformance/capability_v1/trust-policy.json \
+  --policy-sha256 {registry.qualified_entries[0].trust_policy.sha256}</code></pre></div>
+          <p>The Discover example is <code>PARTIAL</code>, advisory-only, with verification <code>NOT_CHECKED</code> and <code>FULL_REPLAY_UNAVAILABLE</code>. Attention allocates work; it is not truth confidence.</p>
+          <p>The general descriptor evaluator returns <code>UNKNOWN</code>, including when its process exits 0. Only the separate exact finite replay produces <code>QUALIFIED_BOUNDED</code>. Obtain the consumer and policy pins through a separately trusted channel before executing; same-origin hashes do not authenticate their publisher.</p>
+          <p><a href="/schemas/discover-request-v1.schema.json">Discover request</a> · <a href="/schemas/discover-result-v1.schema.json">Discover result</a> · <a href="/schemas/capability-contract-v1.schema.json">Capability descriptor</a> · <a href="/schemas/capability-evaluation-v1.schema.json">Evaluation</a> · <a href="/schemas/capability-registry-v1.schema.json">Registry schema</a></p>
+          <p><a href={sourceUrl('conformance/capability_v1/README.md')}>Finite consumer and isolated replay instructions ↗</a></p>
+        </section>
+
+        <section id="interoperability">
+          <h2>Unsigned external correspondence.</h2>
+          <p>The local in-toto adapter binds the exact capability artifact bytes, claim, assumptions, and evidence. Its checked result is correspondence only: signature <code>UNSIGNED</code>; authenticity, signer policy, transparency, and freshness <code>NOT_CHECKED</code>; qualification and current applicability <code>UNKNOWN</code>; action authorization <code>NONE</code>.</p>
+          <p>The caller selects the expected artifact pin independently. A wrapper never imports the finite contract’s qualification. Sigstore, SCITT, and RATS integrations remain deferred; no signing or transparency verification is implemented here.</p>
+          <p><a href={artifactUrl('conformance/interoperability_v1/statement.json')}>Exact in-toto statement</a> · <a href="/schemas/external-binding-v1.schema.json">Binding schema</a> · <a href={sourceUrl('docs/external_interoperability_v1.md')}>Local API and correspondence contract ↗</a></p>
+        </section>
+
         <section id="offline-replay">
           <div class="eyebrow">Resolve · Python</div>
           <h2>Replay record 002 without MathGraph.org</h2>
           <p>Acquire these three static inputs first. The replay itself imports only the Python standard library and needs no MathGraph package, service, LLM, or network connection. The trust-policy digest must come from a channel you trust separately from the downloaded policy.</p>
+          <p>The <a href="/schemas/resolve-bundle-v1.schema.json">Resolve bundle schema</a> and <a href="/schemas/resolve-trust-policy-v1.schema.json">Resolve trust-policy schema</a> describe the published transport structure. These schemas do not authenticate records or replace the separately pinned trust policy and semantic replay.</p>
           <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre><code>mkdir mathgraph-resolve-v1
 cd mathgraph-resolve-v1
 curl --fail --remote-name {resolveOfflineRoot}/consumer.py

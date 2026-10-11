@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathgraph.org/schemas/discover-result-v1.schema.json",
+  "title": "MathGraph Discover result v1",
+  "description": "Local advisory contract. Duplicate JSON keys and nonfinite numbers are forbidden. IDs must be unique and source references must resolve. No verification, terminal outcome, or hosted service is implied.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "status",
+    "advisory_only",
+    "can_promote_truth",
+    "verification_status",
+    "attention_interpretation",
+    "reason_codes",
+    "ranked_candidates",
+    "rejected_candidates",
+    "sources",
+    "source_diagnostics",
+    "reported_metrics"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "mathgraph.discover-result.v1"
+    },
+    "request_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "OK",
+        "PARTIAL",
+        "UNKNOWN",
+        "ERROR"
+      ]
+    },
+    "advisory_only": {
+      "const": true
+    },
+    "can_promote_truth": {
+      "const": false
+    },
+    "verification_status": {
+      "const": "NOT_CHECKED"
+    },
+    "attention_interpretation": {
+      "const": "ALLOCATION_NOT_TRUTH_CONFIDENCE"
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      },
+      "uniqueItems": true
+    },
+    "ranked_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "rank",
+          "taste_score",
+          "attention_probability",
+          "selected",
+          "descension_target",
+          "suggested_route",
+          "source_ids"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "taste_score": {
+            "type": "number"
+          },
+          "attention_probability": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "selected": {
+            "type": "boolean"
+          },
+          "descension_target": {
+            "enum": [
+              "finite_countermodel_attempt",
+              "lean_verifier_contact_candidate",
+              "lean_digest_repair",
+              "obstruction_naming_attempt",
+              "obstruction_naming",
+              "constructor_synthesis_attempt",
+              "constructor_synthesis",
+              "projection_test",
+              "representation_repair",
+              "evidence_replay",
+              "replay_validation",
+              "lawbook_ingestion",
+              "reason_atlas_route_test",
+              "trust_audit"
+            ]
+          },
+          "suggested_route": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "rejected_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "reason_codes"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "INVALID_DESCENSION_TARGET",
+                "ADVISORY_ONLY_REQUIRED",
+                "TRUTH_PROMOTION_FORBIDDEN"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "source_diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S"
+      }
+    },
+    "reported_metrics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/metric"
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "locator",
+        "repo_path",
+        "bundle",
+        "bundle_relative_path",
+        "sha256",
+        "size_bytes",
+        "availability",
+        "integrity_check",
+        "required_for_full_replay"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "repo_path": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bundle": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bundle_relative_path": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "availability": {
+          "enum": [
+            "PRESENT",
+            "MISSING"
+          ]
+        },
+        "integrity_check": {
+          "enum": [
+            "MATCHED",
+            "NOT_CHECKED"
+          ]
+        },
+        "required_for_full_replay": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "MISSING"
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "integrity_check": {
+                "const": "NOT_CHECKED"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "value",
+        "source_id"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    }
+  }
+}

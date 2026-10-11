@@ -810,6 +810,28 @@ pre {
   max-width: var(--reading);
 }
 
+.module-artifacts,
+.module-axes {
+  margin: 1.5rem 0;
+}
+
+.module-artifacts > div,
+.module-axes > div {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.module-artifacts dt,
+.module-axes dt {
+  font-weight: 600;
+}
+
+.module-artifacts dd,
+.module-axes dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+
 .prose h2 {
   margin-top: var(--space-6);
 }
@@ -868,9 +890,10 @@ pre {
 
 .maturity {
   display: grid;
+  align-items: start;
   padding-block: var(--space-4);
   border-bottom: 1px solid var(--line);
-  grid-template-columns: minmax(150px, 2fr) minmax(130px, 1fr) minmax(0, 4fr);
+  grid-template-columns: minmax(150px, 2fr) minmax(0, 5fr);
   gap: var(--space-4);
 }
 
@@ -951,7 +974,7 @@ summary {
 
 .site-footer__inner {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--space-5);
 }
 
@@ -961,6 +984,7 @@ summary {
 
 .footer-links {
   display: flex;
+  flex-wrap: wrap;
   align-items: start;
   justify-content: flex-end;
   gap: var(--space-4);

@@ -1,0 +1,16 @@
+---
+import StatusTag from './StatusTag.astro';
+import { capabilityContract as contract, capabilityEvaluation as evaluation } from '../lib/modules';
+---
+<div class="callout">
+  <StatusTag label={evaluation.qualification} tone="bounded" />
+  <p><strong>Exact finite scope.</strong> {contract.claim.scope}</p>
+</div>
+<ul>{contract.limitations.map((limitation) => <li>{limitation}</li>)}</ul>
+<dl class="module-axes">
+  <div><dt>Current applicability</dt><dd><code>{evaluation.current_applicability}</code></dd></div>
+  <div><dt>Freshness</dt><dd><code>{evaluation.freshness}</code></dd></div>
+  <div><dt>Revocation</dt><dd><code>{evaluation.revocation}</code></dd></div>
+  <div><dt>Supersession</dt><dd><code>{evaluation.supersession}</code></dd></div>
+  <div><dt>Action authorization</dt><dd><code>{evaluation.action_authorization}</code></dd></div>
+</dl>

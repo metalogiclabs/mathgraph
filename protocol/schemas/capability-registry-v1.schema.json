@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathgraph.org/schemas/capability-registry-v1.schema.json",
+  "title": "MathGraph capability registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "qualified_entries",
+    "experimental_candidates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "mathgraph.capability-registry.v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "qualified_entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "profile",
+          "contract",
+          "evaluation",
+          "qualification_receipt",
+          "trust_policy"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "profile": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "contract": {
+            "$ref": "#/$defs/artifact"
+          },
+          "evaluation": {
+            "$ref": "#/$defs/artifact"
+          },
+          "qualification_receipt": {
+            "$ref": "#/$defs/artifact"
+          },
+          "trust_policy": {
+            "$ref": "#/$defs/artifact"
+          }
+        }
+      },
+      "uniqueItems": true
+    },
+    "experimental_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "profile",
+          "status",
+          "description",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "profile": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "status": {
+            "const": "EXPERIMENTAL"
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "source": {
+            "$ref": "#/$defs/artifact"
+          }
+        }
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "locator",
+        "sha256",
+        "size_bytes",
+        "media_type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "locator": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      }
+    }
+  },
+  "description": "An empty qualified index is valid. Experimental source pointers are not admitted descriptors. Qualified rows require independent receipt/policy admission; parsing an index does not establish trust. Strict consumer rejects duplicate (id, version) across both arrays."
+}

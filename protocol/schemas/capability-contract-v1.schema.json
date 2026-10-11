@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathgraph.org/schemas/capability-contract-v1.schema.json",
+  "title": "MathGraph portable capability descriptor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "profile",
+    "claim",
+    "inputs",
+    "outputs",
+    "preconditions",
+    "guarantees",
+    "assumptions",
+    "boundary",
+    "implementation",
+    "evidence",
+    "limitations",
+    "extensions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "mathgraph.capability-contract.v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "profile": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "scope"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/typed"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/typed"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "guarantees": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      },
+      "minItems": 1
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "boundary": {
+      "$ref": "#/$defs/artifact"
+    },
+    "implementation": {
+      "$ref": "#/$defs/artifact"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      },
+      "uniqueItems": true
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      },
+      "minItems": 1
+    },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "critical",
+          "payload"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "critical": {
+            "type": "boolean"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "locator",
+        "sha256",
+        "size_bytes",
+        "media_type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "locator": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      }
+    },
+    "typed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type_id",
+        "schema"
+      ],
+      "properties": {
+        "type_id": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "schema": {
+          "$ref": "#/$defs/artifact"
+        }
+      }
+    }
+  },
+  "description": "Description only. No self-qualification or authority. Strict decoder additionally rejects duplicate JSON keys, nonfinite values, repeated collection IDs and conflicting artifact IDs; identities and scopes are compared exactly."
+}

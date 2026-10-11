@@ -8,11 +8,17 @@ from __future__ import annotations
 
 import csv
 import json
-import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+
+from mathgraph_protocol.discovery_ranking import (
+    default_weights as protocol_default_weights,
+    rank_candidates,
+    score_candidate as protocol_score_candidate,
+    softmax,
+)
 
 
 ALLOWED_DESCENSION_TARGETS = {
@@ -119,59 +125,7 @@ class DiscoveryRunResult:
 
 
 def default_weights(mode: str) -> dict[str, float]:
-    modes = {
-        "harvest": {
-            "certificate": 2.0,
-            "obstruction": 0.8,
-            "compression": 1.0,
-            "projection": 0.6,
-            "reuse": 1.6,
-            "novelty": 0.4,
-            "cost": 1.2,
-            "duplicate": 1.0,
-            "overfit": 0.8,
-            "foreign": 1.0,
-        },
-        "frontier": {
-            "certificate": 0.8,
-            "obstruction": 1.8,
-            "compression": 1.8,
-            "projection": 1.0,
-            "reuse": 0.8,
-            "novelty": 1.5,
-            "cost": 0.8,
-            "duplicate": 0.7,
-            "overfit": 0.9,
-            "foreign": 0.8,
-        },
-        "architectonic": {
-            "certificate": 0.6,
-            "obstruction": 1.0,
-            "compression": 1.7,
-            "projection": 2.0,
-            "reuse": 1.5,
-            "novelty": 1.2,
-            "cost": 0.6,
-            "duplicate": 0.8,
-            "overfit": 0.8,
-            "foreign": 0.7,
-        },
-        "balanced": {
-            "certificate": 1.2,
-            "obstruction": 1.2,
-            "compression": 1.3,
-            "projection": 1.1,
-            "reuse": 1.1,
-            "novelty": 0.9,
-            "cost": 0.9,
-            "duplicate": 0.8,
-            "overfit": 0.8,
-            "foreign": 0.8,
-        },
-    }
-    if mode not in modes:
-        raise ValueError(f"Unknown taste policy mode: {mode}")
-    return modes[mode]
+    return protocol_default_weights(mode)
 
 
 def make_policy(mode: str = "balanced", beta: float = 1.0) -> TastePolicy:
@@ -331,21 +285,7 @@ def validate_candidate(candidate: DiscoveryCandidate) -> tuple[bool, list[str]]:
 
 
 def score_candidate(candidate: DiscoveryCandidate, policy: TastePolicy) -> float:
-    w = policy.weights
-    projection_value = candidate.expected_projection_gain + candidate.expected_bridge_value
-    reuse_value = candidate.expected_reuse + candidate.expected_constructor_reuse
-    return (
-        w["certificate"] * candidate.expected_certificate_value
-        + w["obstruction"] * candidate.expected_obstruction_value
-        + w["compression"] * candidate.expected_residual_compression
-        + w["projection"] * projection_value
-        + w["reuse"] * reuse_value
-        + w["novelty"] * candidate.novelty_score
-        - w["cost"] * candidate.verification_cost
-        - w["duplicate"] * candidate.duplicate_risk
-        - w["overfit"] * candidate.overfit_risk
-        - w["foreign"] * candidate.foreign_moisture_risk
-    )
+    return protocol_score_candidate(candidate.to_dict(), policy.weights)
 
 
 def allocate_attention(candidates: Sequence[DiscoveryCandidate], policy: TastePolicy, top_k: int) -> tuple[list[DiscoveryCandidate], list[DiscoveryCandidate], list[dict[str, Any]]]:
@@ -363,13 +303,19 @@ def allocate_attention(candidates: Sequence[DiscoveryCandidate], policy: TastePo
             invalid_rows.append(row)
     if not eligible:
         return [], [], invalid_rows
-    scores = [score_candidate(candidate, policy) for candidate in eligible]
-    probs = _softmax(scores, beta=policy.beta)
+    protocol_ranking = rank_candidates(
+        [candidate.to_dict() for candidate in eligible],
+        weights=policy.weights,
+        beta=policy.beta,
+    )
     ranked = [
-        _replace(candidate, taste_score=score, attention_probability=prob)
-        for candidate, score, prob in zip(eligible, scores, probs)
+        _replace(
+            eligible[row.source_index],
+            taste_score=row.score,
+            attention_probability=row.probability,
+        )
+        for row in protocol_ranking
     ]
-    ranked.sort(key=lambda c: (-c.attention_probability, -c.taste_score, c.candidate_id))
     selected_ids = {candidate.candidate_id for candidate in ranked[: max(0, top_k)]}
     ranked = [_replace(candidate, chosen=candidate.candidate_id in selected_ids) for candidate in ranked]
     selected = [candidate for candidate in ranked if candidate.chosen]
@@ -469,15 +415,7 @@ def build_trust_boundary_audit(candidates: Sequence[DiscoveryCandidate], invalid
 
 
 def _softmax(scores: Sequence[float], beta: float) -> list[float]:
-    if not scores:
-        return []
-    scaled = [float(beta) * score for score in scores]
-    shift = max(scaled)
-    exps = [math.exp(value - shift) for value in scaled]
-    total = sum(exps)
-    if total <= 0:
-        return [1.0 / len(scores) for _ in scores]
-    return [value / total for value in exps]
+    return softmax(scores, beta=beta)
 
 
 def _replace(candidate: DiscoveryCandidate, **updates: Any) -> DiscoveryCandidate:

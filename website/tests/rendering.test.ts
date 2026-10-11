@@ -315,11 +315,11 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/historical qualification.*current applicability/i);
     expect(text).toMatch(/Check.*Implemented at the qualified record-001 boundary/i);
     expect(text).toMatch(/Resolve.*Bounded-qualified offline/i);
-    expect(text).toMatch(/Discover.*Experimental.*no public protocol interface/i);
-    expect(text).toMatch(/Develop.*Experimental.*no public protocol interface/i);
-    expect(text).toMatch(/Capabilities.*Proposed.*no entries/i);
-    expect(text).toMatch(/in-toto.*Sigstore.*SCITT.*RATS.*under evaluation/i);
-    expect(text).toMatch(/None is an implemented MathGraph authority.*or endorsement/i);
+    expect(text).toMatch(/Discover.*local advisory contract/i);
+    expect(text).toMatch(/Develop.*QUALIFIED_BOUNDED.*eight/i);
+    expect(text).toMatch(/Capabilities.*one qualified finite entry/i);
+    expect(text).toMatch(/in-toto.*unsigned correspondence only/i);
+    expect(text).toMatch(/Sigstore.*SCITT.*RATS.*deferred/i);
   });
 
   test('publishes the Lean evidence profile as an unstable proposal', async () => {
@@ -352,7 +352,7 @@ describe('primary public evidence experience', () => {
     expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
   });
 
-  test('adds Resolve to navigation and introduces the four-part cycle without advertising future routes', async () => {
+  test('links the static modular surfaces without making the cycle a compulsory runtime', async () => {
     const html = await page('');
     const text = visibleText(html);
 
@@ -362,10 +362,10 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/Discover.*Advisory/i);
     expect(text).toMatch(/Check.*Implemented/i);
     expect(text).toMatch(/Resolve.*Bounded-qualified/i);
-    expect(text).toMatch(/Develop.*Experimental/i);
-    expect(html).not.toContain('href="/discover/"');
-    expect(html).not.toContain('href="/develop/"');
-    expect(html).not.toContain('href="/capabilities/"');
+    expect(text).toMatch(/Develop.*Qualified finite profile/i);
+    expect(text).toMatch(/not a compulsory runtime pipeline/i);
+    expect(text).toMatch(/no autonomous loop/i);
+    for (const route of ['discover', 'develop', 'capabilities']) expect(html).toContain(`href="/${route}/"`);
   });
 
   test('makes evidence boundaries and canned scope matches inspectable without arbitrary input', async () => {
