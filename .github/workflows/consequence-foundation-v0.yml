@@ -20,6 +20,8 @@ jobs:
           python-version: '3.11'
       - name: Run structural, transport and real finite replay controls
         run: python -m unittest discover -s conformance/consequence_v0 -p 'test_*.py' -v
+      - name: Kill deliberately broken premise-audit implementations
+        run: python conformance/consequence_v0/mutation_gate.py
       - name: Produce machine-readable exact-head evidence
         run: |
           mkdir -p "$RUNNER_TEMP/mathgraph-consequence"
