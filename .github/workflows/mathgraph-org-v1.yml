@@ -59,6 +59,7 @@ jobs:
           name: mathgraph-org-v1-static-site
           path: website/dist/
           if-no-files-found: error
+          include-hidden-files: true
 
   evidence-integrity:
     runs-on: ubuntu-latest
