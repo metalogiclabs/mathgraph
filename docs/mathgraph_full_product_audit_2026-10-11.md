@@ -5,6 +5,11 @@
 **Source authority:** [`11944c2b44ac890ecc03c7f183ae74ea4640246c`](https://github.com/metalogiclabs/mathgraph/commit/11944c2b44ac890ecc03c7f183ae74ea4640246c)  
 **Audit purpose:** identify the first unfinished product and protocol gates after the qualified publication of MathGraph Resolve record 002.
 
+**Post-audit update:** Sections 1–8 preserve the audit baseline at `11944c2b…`.
+Section 9 records subsequently observed local implementation and qualification at
+`0037dbe515c43481ba02426e56bc7eaefc296285`. It does not change the P0 release
+authority, claim a new production release, or supersede any immutable evidence.
+
 ## 1. Executive correction
 
 P0 Resolve publication is complete. It must not be reopened or represented as pending.
@@ -231,3 +236,64 @@ Success for the next release candidate is therefore narrower than the full progr
 6. the website accurately projects those contracts while all historical identities stay unchanged.
 
 Anything beyond those observations remains experimental, proposed, or `UNKNOWN` until its own acceptance gate passes.
+
+## 9. Observed post-audit release candidate
+
+The local branch `codex/mathgraph-contracts-and-modules-v1` now implements the
+contract sequence in Section 6 through the Astro projection. The implementation
+head was `b7bbdc8a3e0d30fb752882f0ed83048c2543bec1`; release qualification found
+and fixed a combined-pytest module-name collision with two empty package markers
+in `0037dbe515c43481ba02426e56bc7eaefc296285` (tree
+`83506b3979ea5f8cf56e9e76d2a7f190dffb80fd`). No consumer, fixture, or test logic
+changed in that correction. The detailed commands, artifact pins, screenshots,
+and limits are in the [release-candidate evidence report](mathgraph_modular_contracts_release_candidate_2026-10-11.md).
+
+| Audit gate | Observed local outcome | Retained boundary |
+| --- | --- | --- |
+| Resolve format contracts | Eight normative schemas across the release, including explicit Resolve bundle/policy v1, have exact public mirrors; separate structural validation and historical semantic replay pass | The new structural consumer does not itself replay the graph; policy pins remain external trust inputs |
+| Module independence and Discover | Dependency-free package, shared ranking arithmetic, strict advisory request/result, local CLI, and source checks implemented | The example is `PARTIAL` / `NOT_CHECKED`; nine local artifacts match; absent candidate-score CSV and SQLite ledger leave full historical replay unavailable |
+| Capability description and admission | Descriptor/evaluation separation and one independently replayed finite registry entry implemented | `QUALIFIED_BOUNDED` covers the exact eight-state profile only; same-owner implementation independence, not external adoption |
+| Finite Develop replay | Original scripts and separate consumer agree on old closure size 4, refined size 16, sham/ablation/reuse controls, 256 refinements, 32 successes, eight partition classes, and 4/28 successful three-/four-cell features | Original implementation provenance is not a general runtime certification; VDN Lean remains experimental and the Capability Family Compiler is not implemented |
+| Interoperability | Deterministic unsigned in-toto correspondence profile and negative controls implemented | No signer authentication, semantic promotion, transparency, freshness, or action authority; Sigstore/SCITT/RATS remain unimplemented |
+| Website projection | `/discover/`, `/develop/`, `/capabilities/`, exact artifact downloads, and discovery V3 implemented | Static local candidate; V1/V2 schema identities and all historical evidence remain unchanged |
+
+Fresh checks on 11 October 2026 passed: combined conformance **281 tests and 60
+subtests**; historical publication/import **24 tests**; legacy scheduler/source
+**14 tests**. Standalone replay suites additionally passed **15 tests and 52
+subtests** for Resolve and **147 tests** for capability. Both macOS isolation
+harnesses enforced IPv4/IPv6 denial and repository unavailability, audited
+standard-library imports, and produced identical replay pairs. Resolve output
+remains `8c7b30e1eb2a24d2960e170d36652ca95aa71b41075f673abe394e154ae66668`;
+finite capability output is
+`5d85d7117532fd777d7b2948ab1138bec47db81176327fdb9591e0be7fe2a006`.
+The enforced-isolation test requires host permission to create its nested
+sandbox; a restricted final repeat failed that prerequisite, and the complete
+gate was rerun with the required permission. No isolation test was skipped.
+
+Complete website `qualify` under cached Node **24.15.0** / npm **12.2.0** passed:
+Astro 49 files with zero diagnostics; data **68/68**, contracts **15/15**,
+rendering **37/37**; 16 Astro pages, 17 checked HTML pages, 32,206 client bytes;
+HTML validation, **56 links**, and both independent consumers passed. The first
+sandboxed attempt stopped at loopback `listen EPERM`; the complete rerun with
+local-server permission exited zero. Browser checks covered **21 route/viewport
+combinations**; nine new representative screenshots are preserved under
+`website/qa/screenshots/`. These are accessibility-oriented checks, not a full
+accessibility certification.
+
+All Section 2.3 immutable hashes were rechecked unchanged. Git comparisons with
+`11944c2b…` also preserve record 001/002 evidence, source/data projections, original
+developmental scripts, consumers, lockfile, and deployment configuration. Eight
+schema mirrors, the registry mirror, and ten built artifact downloads matched
+their normative sources byte-for-byte. The finite contract remains
+`24e639b9181af313100504e0aa525536197d868810e6ffdb5093fd13501577a8` and the registry
+remains `7ae45ef09ce492856234872c12adc6999667b14899a008baddc19687934b1358`.
+
+**Remaining release gate:** task and whole-branch review, then branch publication
+and a draft PR with fresh CI. The Linux Docker backend and remote website CI have
+not been run for this candidate; no remote CI success or preview deployment is
+claimed. No push, PR creation, production promotion, alias, DNS, or hosted-service
+change occurred during this qualification. The original full-suite fixture and
+SorryDB residual in Section 2.4 remains documented and was not rerun. Current
+applicability remains `UNKNOWN`; freshness/revocation remain `NOT_CHECKED`; no
+action is authorized. Further research and adoption gaps in Sections 4 and 7
+remain open unless explicitly closed above.
