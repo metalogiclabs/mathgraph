@@ -22,17 +22,17 @@ def transported_warrant(facts, a, b, protected):
     return set(protected)&set(facts)&set(a)&set(b)
 
 def viability(states, goal, disturbances, choices, transitions):
-    """Greatest safety/reachability-style controllable predecessor fixed point.
+    """Least reachability-attractor fixed point (not greatest safety kernel).
 
     A state remains if it is already a goal or each declared disturbance has
     at least one admissible action whose successor remains in the candidate.
     """
-    live=set(states)
+    live=set(goal) & set(states)
     while True:
-        nxt={s for s in live if s in goal or all(
+        nxt=live | {s for s in set(states) if all(
             any(transitions[(s,d,a)] in live for a in choices.get((s,d),())
                 if (s,d,a) in transitions)
-            for d in disturbances.get(s,()))}
+            for d in disturbances.get(s,())) and bool(disturbances.get(s,()))}
         if nxt==live:return live
         live=nxt
 
