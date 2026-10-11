@@ -1,7 +1,9 @@
 # MathGraph V2 Foundation — Design Specification
 
-**Date:** 2026-10-11  
-**Status:** Approved implementation design derived from the MathGraph V2 master mission  
+**Date:** 2026-10-11
+
+**Status:** Approved implementation design derived from the MathGraph V2 master mission
+
 **Release boundary:** Draft pull request and protected preview only; production, DNS, immutable evidence, and trust-policy authority remain unchanged
 
 ## 1. Authority and starting point
