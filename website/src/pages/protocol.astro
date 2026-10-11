@@ -1,6 +1,7 @@
 ---
 import StatusTag from '../components/StatusTag.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { capabilityEvaluation, sourceUrl } from '../lib/modules';
 ---
 
 <BaseLayout title="MathGraph Protocol — Portable, inspectable evidence" description="An independently implementable protocol for typed claims, receipts, dependency resolution, immutable snapshots, and explicit temporal boundaries." currentPath="/protocol/">
@@ -37,17 +38,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <div><strong>Resolve — Bounded-qualified offline for record 002</strong><p>The standard-library consumer replays one pinned historical dependency graph with a separately supplied trust-policy pin. The browser explorer only displays precomputed scenarios.</p></div>
           </div>
           <div class="maturity">
-            <StatusTag label="Experimental" tone="experimental" />
-            <div><strong>Discover — Experimental; no public protocol interface</strong><p>Research schedulers and residual discovery exist, but P0 publishes no Discover service or portable Discover contract.</p></div>
+            <StatusTag label="Local advisory" tone="implemented" />
+            <div><strong><a href="/discover/">Discover — local advisory contract</a></strong><p>The deterministic request/result contract allocates attention and cannot promote truth. The real example is PARTIAL with full replay unavailable. Hosted service: NOT_DEPLOYED.</p></div>
           </div>
           <div class="maturity">
-            <StatusTag label="Experimental" tone="experimental" />
-            <div><strong>Develop — Experimental; no public protocol interface</strong><p>Developmental research does not become a reusable capability merely because an experiment ran.</p></div>
+            <StatusTag label={capabilityEvaluation.qualification} tone="bounded" />
+            <div><strong><a href="/develop/">Develop — {capabilityEvaluation.qualification} for one exact finite profile</a></strong><p>Independent replay covers exactly eight ordered 3-bit states. The Capability Family Compiler is NOT_IMPLEMENTED; VDN / Lean remains EXPERIMENTAL. Hosted service: NOT_DEPLOYED.</p></div>
           </div>
           <div class="maturity">
-            <StatusTag label="Proposed" tone="proposed" />
-            <div><strong>Capabilities — Proposed; no entries in P0</strong><p>No public capability registry or hosted capability interface is deployed.</p></div>
+            <StatusTag label="Static registry" tone="implemented" />
+            <div><strong><a href="/capabilities/">Capabilities — one qualified finite entry</a></strong><p>The exact descriptor, evaluation, receipt, and policy are pinned separately. Experimental candidates remain outside the qualified index. Reading an entry grants no trust or authorization.</p></div>
           </div>
+          <p>The conceptual Discover → Check → Resolve → Develop loop is optional, not a compulsory runtime pipeline. No autonomous loop is implemented. Capability qualification adds no mathematical terminal form: accepted claims still end in exactly one VERIFIED_PROOF, FINITE_COUNTERMODEL, or NAMED_OBSTRUCTION.</p>
+          <p><StatusTag label="Proposed" tone="proposed" /> The <a href="/protocol/profiles/lean/">Lean evidence profile</a> remains a draft; native replay and independent statement correspondence are separate admission requirements.</p>
         </section>
 
         <section id="objects">
@@ -93,7 +96,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <StatusTag label="Experimental" tone="experimental" />
             <div><strong>Bounded ML-DSA-65 warrant experiment</strong><p>A finite Boolean witness protocol passed 23/23 research tests using ML-DSA-65 and SHA3-512 evidence binding. It has no independent security audit, implementation diversity, or production trust policy.</p></div>
           </div>
-          <p>Interoperability with in-toto, Sigstore, SCITT, and RATS is under evaluation. None is an implemented MathGraph authority, conformance claim, partnership, or endorsement in P0.</p>
+          <p>The local in-toto profile implements <strong>unsigned correspondence only</strong> for one exact capability descriptor. The wrapper does not import qualification: signature is UNSIGNED, authenticity and freshness are NOT_CHECKED, qualification and current applicability are UNKNOWN, and action authorization is NONE. <a href="/developers/#interoperability">Inspect the exact binding contract</a>.</p>
+          <p>Sigstore, SCITT, and RATS remain deferred extension boundaries. No signing, transparency verification, partnership, or endorsement is established. <a href={sourceUrl('docs/external_interoperability_v1.md')}>Full interoperability boundary ↗</a></p>
           <p>The experiment is evidence that a bounded warrant can be signed and replayed—not a claim of general security, universal verification, production post-quantum security, or semantic truth.</p>
         </section>
       </div>

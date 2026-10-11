@@ -65,7 +65,7 @@ describe('agent discovery contracts', () => {
       json('.well-known/mathgraph.json'),
       json('records/index.json'),
       json(`evidence/${recordId}/record.json`),
-      json('schemas/discovery-v2.schema.json'),
+      json('schemas/discovery-v3.schema.json'),
       json('schemas/record-index-v2.schema.json'),
       readFile(join(dist, 'schemas/discovery-v1.schema.json')),
     ]);
@@ -73,8 +73,9 @@ describe('agent discovery contracts', () => {
     expect(ajv.validate(discoverySchema, discovery), ajv.errorsText()).toBe(true);
     expect(ajv.validate(indexSchema, index), ajv.errorsText()).toBe(true);
     expect(createHash('sha256').update(discoveryV1Bytes).digest('hex')).toBe(discoveryV1Sha256);
-    expect(discovery.$schema).toBe('https://mathgraph.org/schemas/discovery-v2.schema.json');
-    expect(discovery.schema).toBe('mathgraph.discovery.v2');
+    expect(createHash('sha256').update(await readFile(join(dist, 'schemas/discovery-v2.schema.json'))).digest('hex')).toBe('827214b81d0c45a36cf3d9fc25d23910c9da19c47553d69411a893b4049941fc');
+    expect(discovery.$schema).toBe('https://mathgraph.org/schemas/discovery-v3.schema.json');
+    expect(discovery.schema).toBe('mathgraph.discovery.v3');
     expect(discovery.canonical_origin).toBe('https://mathgraph.org');
     expect(JSON.stringify(discovery)).not.toContain('vercel.app');
     expect(discovery.capabilities).toEqual({
@@ -82,9 +83,9 @@ describe('agent discovery contracts', () => {
       resolve_explorer: 'IMPLEMENTED_READ_ONLY',
       offline_resolve_replay: 'BOUNDED_QUALIFIED',
       public_resolver: 'NOT_DEPLOYED',
-      discover_interface: 'NOT_DEPLOYED',
-      develop_interface: 'NOT_DEPLOYED',
-      capabilities_registry: 'PROPOSED',
+      discover_interface: 'IMPLEMENTED_LOCAL_ADVISORY',
+      develop_interface: 'QUALIFIED_BOUNDED_OFFLINE',
+      capabilities_registry: 'STATIC_REGISTRY',
       lean_profile: 'PROPOSED',
       mcp: 'PROPOSED',
     });
@@ -115,9 +116,9 @@ describe('agent discovery contracts', () => {
       current_applicability: 'UNKNOWN',
       freshness: 'NOT_CHECKED',
     });
-    expect(discovery.interfaces.discover).toEqual({ maturity: 'EXPERIMENTAL', public_interface: 'NOT_DEPLOYED' });
-    expect(discovery.interfaces.develop).toEqual({ maturity: 'EXPERIMENTAL', public_interface: 'NOT_DEPLOYED' });
-    expect(discovery.interfaces.capabilities).toEqual({ maturity: 'PROPOSED', public_registry: 'NOT_DEPLOYED', entries: 0 });
+    expect(discovery.interfaces.discover.public_interface).toBe('NOT_DEPLOYED');
+    expect(discovery.interfaces.develop.public_interface).toBe('NOT_DEPLOYED');
+    expect(discovery.interfaces.capabilities.qualified_entries).toBe(1);
     expect(discovery.integrity_notice).toMatch(/integrity.*not.*authenticity/i);
     expect(discovery.repository_provenance.authentication_status).toBe('UNSIGNED_PROVENANCE_ONLY');
     expect(discovery.repository_provenance.catalogue_source).toBe('https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json');

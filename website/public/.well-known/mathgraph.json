@@ -1,8 +1,8 @@
 {
-  "$schema": "https://mathgraph.org/schemas/discovery-v2.schema.json",
-  "schema": "mathgraph.discovery.v2",
+  "$schema": "https://mathgraph.org/schemas/discovery-v3.schema.json",
+  "schema": "mathgraph.discovery.v3",
   "canonical_origin": "https://mathgraph.org",
-  "generated_at": "2026-10-10T22:18:37Z",
+  "generated_at": "2026-10-11T01:17:00Z",
   "agent_guide": "https://mathgraph.org/agents/",
   "llms_txt": "https://mathgraph.org/llms.txt",
   "record_index": "https://mathgraph.org/records/index.json",
@@ -15,16 +15,23 @@
     "living_warrant_snapshot_v1": "https://mathgraph.org/schemas/living-warrant-snapshot-v1.schema.json",
     "resolve_scenarios_v1": "https://mathgraph.org/schemas/resolve-scenarios-v1.schema.json",
     "presentation_metadata_v1": "https://mathgraph.org/schemas/presentation-metadata-v1.schema.json",
-    "lean_evidence_profile_draft_1": "https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json"
+    "lean_evidence_profile_draft_1": "https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json",
+    "discovery_v3": "https://mathgraph.org/schemas/discovery-v3.schema.json",
+    "discover_request_v1": "https://mathgraph.org/schemas/discover-request-v1.schema.json",
+    "discover_result_v1": "https://mathgraph.org/schemas/discover-result-v1.schema.json",
+    "capability_contract_v1": "https://mathgraph.org/schemas/capability-contract-v1.schema.json",
+    "capability_evaluation_v1": "https://mathgraph.org/schemas/capability-evaluation-v1.schema.json",
+    "capability_registry_v1": "https://mathgraph.org/schemas/capability-registry-v1.schema.json",
+    "external_binding_v1": "https://mathgraph.org/schemas/external-binding-v1.schema.json"
   },
   "capabilities": {
     "static_records": "IMPLEMENTED",
     "resolve_explorer": "IMPLEMENTED_READ_ONLY",
     "offline_resolve_replay": "BOUNDED_QUALIFIED",
     "public_resolver": "NOT_DEPLOYED",
-    "discover_interface": "NOT_DEPLOYED",
-    "develop_interface": "NOT_DEPLOYED",
-    "capabilities_registry": "PROPOSED",
+    "discover_interface": "IMPLEMENTED_LOCAL_ADVISORY",
+    "develop_interface": "QUALIFIED_BOUNDED_OFFLINE",
+    "capabilities_registry": "STATIC_REGISTRY",
     "lean_profile": "PROPOSED",
     "mcp": "PROPOSED"
   },
@@ -57,17 +64,62 @@
       "freshness": "NOT_CHECKED"
     },
     "discover": {
-      "maturity": "EXPERIMENTAL",
-      "public_interface": "NOT_DEPLOYED"
+      "maturity": "IMPLEMENTED_LOCAL_ADVISORY",
+      "mode": "LOCAL_CLI",
+      "public_interface": "NOT_DEPLOYED",
+      "page": "https://mathgraph.org/discover/",
+      "request": "https://mathgraph.org/artifacts/conformance/discover_v1/fixtures/request.json",
+      "request_sha256": "23d6d59eef4fd6ba7bdddd673d01b8f2e61e71412b1d7bc66d3fce68b728c25a",
+      "result": "https://mathgraph.org/artifacts/conformance/discover_v1/fixtures/result.json",
+      "result_sha256": "6d9a24c7ffebe2288561e976a774f9d184f47b21e40572046e003b917cc939a5",
+      "example_status": "PARTIAL",
+      "advisory_only": true,
+      "can_promote_truth": false,
+      "verification_status": "NOT_CHECKED",
+      "attention_interpretation": "ALLOCATION_NOT_TRUTH_CONFIDENCE"
     },
     "develop": {
-      "maturity": "EXPERIMENTAL",
-      "public_interface": "NOT_DEPLOYED"
+      "maturity": "QUALIFIED_BOUNDED",
+      "mode": "OFFLINE_FINITE_REPLAY",
+      "public_interface": "NOT_DEPLOYED",
+      "page": "https://mathgraph.org/develop/",
+      "profile": "mathgraph.finite-representation-refinement.v1",
+      "compiler": "NOT_IMPLEMENTED",
+      "qualification_basis": "SAME_OWNER_INDEPENDENT_IMPLEMENTATION",
+      "current_applicability": "UNKNOWN",
+      "freshness": "NOT_CHECKED",
+      "revocation": "NOT_CHECKED",
+      "supersession": "NOT_CHECKED",
+      "action_authorization": "NONE",
+      "contract": "https://mathgraph.org/artifacts/conformance/capability_v1/fixtures/capability-contract.json",
+      "contract_sha256": "24e639b9181af313100504e0aa525536197d868810e6ffdb5093fd13501577a8",
+      "evaluation": "https://mathgraph.org/artifacts/conformance/capability_v1/evaluation.json",
+      "evaluation_sha256": "c1cf195917694f4402e6b3e41a174985d52fb57c5f0de99bd96a28ebf91d4312",
+      "qualification_receipt": "https://mathgraph.org/artifacts/conformance/capability_v1/receipt.json",
+      "qualification_receipt_sha256": "2f07b700dfd2b75236ee399f77f4f288953b045af0eae55f4099a558278cb009",
+      "trust_policy": "https://mathgraph.org/artifacts/conformance/capability_v1/trust-policy.json",
+      "trust_policy_sha256": "7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89"
     },
     "capabilities": {
-      "maturity": "PROPOSED",
-      "public_registry": "NOT_DEPLOYED",
-      "entries": 0
+      "maturity": "STATIC_REGISTRY",
+      "page": "https://mathgraph.org/capabilities/",
+      "registry": "https://mathgraph.org/capabilities/index-v1.json",
+      "registry_sha256": "7ae45ef09ce492856234872c12adc6999667b14899a008baddc19687934b1358",
+      "qualified_entries": 1,
+      "experimental_candidates": 1
+    },
+    "external_binding": {
+      "mode": "LOCAL_UNSIGNED_CORRESPONDENCE",
+      "statement": "https://mathgraph.org/artifacts/conformance/interoperability_v1/statement.json",
+      "statement_sha256": "01cf99a1a37a370e453c5978914625c63602938420591c1dd2cfeef1ad86b5e6",
+      "signature": "UNSIGNED",
+      "authenticity": "NOT_CHECKED",
+      "signer_policy": "NOT_CHECKED",
+      "transparency": "NOT_CHECKED",
+      "freshness": "NOT_CHECKED",
+      "qualification": "UNKNOWN",
+      "current_applicability": "UNKNOWN",
+      "action_authorization": "NONE"
     }
   },
   "freshness": {

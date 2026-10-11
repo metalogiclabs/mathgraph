@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StatusTag from '../../components/StatusTag.astro';
+import CapabilityBoundary from '../../components/CapabilityBoundary.astro';
+import SourceLink from '../../components/SourceLink.astro';
+import { capabilityReceipt as receipt, artifactUrl, sourceUrl } from '../../lib/modules';
+---
+<BaseLayout title="MathGraph Develop — One bounded capability, replayed independently" description="Inspect exact eight-state finite capability qualification and the boundary separating it from a future Capability Family Compiler." currentPath="/develop/">
+  <header class="section section--compact"><div class="shell">
+    <div class="eyebrow">Develop · qualified finite profile</div><h1>Make a capability reusable within its evidence.</h1>
+    <p class="lede">One finite representation-refinement result has an independent replay, a portable descriptor, and a separately pinned consumer policy. Its qualification applies to the exact eight-state profile.</p>
+    <div class="actions"><a class="button" href="/capabilities/#qualified">Inspect the qualified contract</a><a class="button button--secondary" href={artifactUrl('conformance/capability_v1/receipt.json')}>Read the replay receipt</a></div>
+  </div></header>
+  <section class="section"><div class="shell page-grid">
+    <aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#finite">Finite result</a><a href="#replay">Independent replay</a><a href="#compiler">Compiler boundary</a><a href="#candidates">Research candidates</a></aside>
+    <div class="prose">
+      <section id="finite"><h2>A small result, with a complete boundary.</h2><CapabilityBoundary />
+        <p>The replay checks old exclusion and an explicit obstruction, repair within a fixed named family, same-shape sham failure, ablation, retention of the full old closure, and distinct reuse.</p>
+        <p>It examines all <strong>{receipt.replay.boolean_refinements_tested}</strong> Boolean one-bit refinements: <strong>{receipt.replay.successful_refinements}</strong> succeed in <strong>{receipt.replay.successful_partition_classes}</strong> induced partition classes. The refined closure contains <strong>{receipt.replay.refined_closure_size}</strong> policies; all <strong>{receipt.replay.retained_closure_masks.length}</strong> old policies remain available.</p>
+        <p>Only <code>{receipt.replay.successful_named_refinements.join(', ')}</code> repairs discovery within the five named refinements. Named-family uniqueness does not establish global feature uniqueness.</p>
+      </section>
+      <section id="replay"><h2>Qualification comes from independent replay.</h2>
+        <p>This is <strong>{receipt.basis}</strong>. The standard-library consumer enumerates the finite closures without importing the producer implementation, MathGraph package, website, or producer verdict tables. It recomputes the gates from exact vectors, descriptor bytes, and a separately pinned trust policy.</p>
+        <p>The general descriptor evaluator returns <code>UNKNOWN</code>. Reading a contract or registry, matching a hash, or validating a schema does not admit the finite profile. Consumers must independently trust the policy and replay its exact boundary.</p>
+        <p>Capability qualification does not add a mathematical terminal form. Accepted mathematical claims still require exactly one of <code>VERIFIED_PROOF</code>, <code>FINITE_COUNTERMODEL</code>, or <code>NAMED_OBSTRUCTION</code>.</p>
+        <div class="source-stack"><SourceLink href={artifactUrl(receipt.verifier.locator)} label="Independent finite consumer" meta={`SHA-256 ${receipt.verifier.sha256}`} /><SourceLink href={artifactUrl(receipt.fixture.locator)} label="Exact eight-state boundary" meta={`SHA-256 ${receipt.fixture.sha256}`} /></div>
+        <p><a href={sourceUrl('conformance/capability_v1/README.md')}>Replay instructions and isolation boundary ↗</a></p>
+      </section>
+      <section id="compiler"><div class="eyebrow">Future construction machinery</div><h2>Capability Family Compiler</h2><StatusTag label="NOT_IMPLEMENTED" tone="proposed" />
+        <p>The proposed compiler would construct families of candidate capabilities for subsequent verification. This finite replay does not implement that compiler or demonstrate universal invention, open-ended capability synthesis, or autonomous improvement.</p>
+        <p>Hosted service: <code>NOT_DEPLOYED</code>. Develop currently publishes the bounded offline profile and its evidence. There is no automatic construction-and-admission service.</p>
+      </section>
+      <section id="candidates"><h2>VDN / Lean remains experimental.</h2><StatusTag label="EXPERIMENTAL" tone="experimental" />
+        <p>The VDN / Lean candidate needs pinned native replay and independent contract-to-declaration correspondence before admission. Its research artifacts do not inherit the finite profile’s qualification.</p>
+        <p><a href="/capabilities/#candidates">Inspect the separate candidate index</a> · <a href="/discover/">Explore advisory Discover</a> · <a href="/developers/#modules">Local consumer contracts</a></p>
+        <p>The conceptual Discover → Check → Resolve → Develop loop is optional. Modules exchange portable evidence; no autonomous loop or compulsory runtime pipeline is provided.</p>
+      </section>
+    </div>
+  </div></section>
+</BaseLayout>
