@@ -1,0 +1,68 @@
+---
+import type { KnowledgeMapProjection } from '../lib/knowledge-map';
+import { serializeKnowledgeMap } from '../lib/knowledge-map';
+import { objectKinds } from '../lib/object-projections';
+import { objectSlug, objectRoutes } from '../lib/object-locators';
+import ObjectDetail from './ObjectDetail.astro';
+import ObjectRelations from './ObjectRelations.astro';
+interface Props { map: KnowledgeMapProjection; id: string }
+const { map, id } = Astro.props;
+objectRoutes(map.nodes); // Fail the build if a presentation locator would collide.
+const lanes = [0, 0, 0];
+const positions = new Map(map.nodes.map(node => {
+  const lane = node.kind === 'RESOLVE_RECEIPT' ? 1 : node.kind === 'RESOLVE_CLAIM' ? 2 : 0;
+  return [node.id, { x: 30 + lane * 380, y: 70 + lanes[lane]++ * 130 }];
+}));
+const height = Math.max(220, Math.max(...lanes) * 130 + 60);
+const serialized = serializeKnowledgeMap(map);
+const exportHref = `data:application/json;charset=utf-8,${encodeURIComponent(serialized)}`;
+---
+<section class="knowledge-map" data-knowledge-map aria-labelledby={`${id}-title`}>
+  <h3 id={`${id}-title`}>Declared objects and relations</h3>
+  <p class="map-boundary">Presentation projection · authority NONE · not a certificate, proof, or verifier</p>
+  <p class="fineprint">Lanes and proximity organize this display only. Arrows repeat exact source declarations; they do not establish proof, route sufficiency, equivalence or independent support.</p>
+  <fieldset class="map-controls" disabled data-map-controls>
+    <legend>Filter displayed object kinds</legend>
+    {objectKinds.filter(kind => map.nodes.some(node => node.kind === kind)).map(kind => <label><input type="checkbox" data-map-kind value={kind} checked /> {kind}</label>)}
+    <label>Display node limit <input type="number" data-map-limit min="0" max={map.nodes.length} value={map.nodes.length} /></label>
+  </fieldset>
+  <p data-map-count aria-live="polite">{map.nodes.length} of {map.completeness.total_nodes} objects · {map.edges.length} of {map.completeness.total_edges} relations · omitted: {map.completeness.omitted_nodes} objects, {map.completeness.omitted_edges} relations · truncated: {String(map.completeness.truncated)}</p>
+  <p class="fineprint">Counts retain the original selected adapter scope. Display filters and limits count as omissions. Initial projection limits: {map.context.max_nodes} nodes / {map.context.max_edges} edges; initially omitted: {map.completeness.omitted_nodes} nodes / {map.completeness.omitted_edges} edges. Nothing is fetched beyond this bounded projection.</p>
+  <noscript><p>The whole bounded projection and every matching detail are available below. Filtering and display-only traversal require JavaScript.</p></noscript>
+  <div class="map-semantic">
+    <h4>Declared object list</h4>
+    <ul class="map-object-list">{map.nodes.map(node => <li data-map-node={node.id}><a data-map-select={node.id} href={`#${id}-${objectSlug(node.id)}`}><span>{node.kind}</span><code>{node.source_id}</code></a></li>)}</ul>
+    <p data-map-selection aria-live="polite">Select an object to inspect its exact source fields.</p>
+    <div class="map-traversal">
+      <h4>Display-only traversal</h4>
+      <p>Follow declared incoming or outgoing arrows in the currently displayed map. This is not verification or support closure.</p>
+      <button type="button" data-map-traverse="incoming" disabled>Follow incoming arrows</button>
+      <button type="button" data-map-traverse="outgoing" disabled>Follow outgoing arrows</button>
+      <p data-map-traversal-status aria-live="polite">No traversal requested.</p>
+      <ul data-map-traversal-results></ul>
+    </div>
+    <h4>Declared relation list</h4>
+    <ObjectRelations edges={map.edges} direction="source" prefix={id} />
+  </div>
+  <h4>Visual projection</h4>
+  <p class="fineprint">The diagram may scroll horizontally. The semantic list and object details above and below remain usable at any width.</p>
+  <div class="map-visual" role="region" aria-label="Scrollable visual projection" tabindex="0">
+    <svg role="group" viewBox={`0 0 1140 ${height}`} width="1140" height={height} aria-labelledby={`${id}-svg-title ${id}-svg-desc`}>
+      <title id={`${id}-svg-title`}>Declared source objects and directed relations</title>
+      <desc id={`${id}-svg-desc`}>Source, receipt and claim lanes. Each labeled arrow is a declared relation; each node links to matching semantic details. No relation is inferred from position.</desc>
+      <defs><marker id={`${id}-arrow`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>
+      <text x="30" y="30">Sources / capabilities</text><text x="410" y="30">Receipts</text><text x="790" y="30">Claims</text>
+      {map.edges.map((edge, index) => {
+        const from = positions.get(edge.from)!; const to = positions.get(edge.to)!;
+        const y1 = from.y + 38 + index % 3 * 5; const y2 = to.y + 38 + index % 3 * 5;
+        return <g data-map-svg-edge={edge.id}><path d={`M ${from.x + 310} ${y1} C ${from.x + 345} ${y1}, ${to.x - 25} ${y2}, ${to.x} ${y2}`} fill="none" marker-end={`url(#${id}-arrow)`} /><text x={(from.x + 310 + to.x) / 2} y={(y1 + y2) / 2 - 9} text-anchor="middle" class="map-edge-label">{edge.type}</text><title>{edge.id} · {edge.from} → {edge.to} · {edge.provenance.pointer}</title></g>;
+      })}
+      {map.nodes.map(node => { const p = positions.get(node.id)!; return <a data-map-svg-node={node.id} data-map-select={node.id} href={`#${id}-${objectSlug(node.id)}`} aria-label={`Inspect ${node.kind}: ${node.source_id}`}><rect x={p.x} y={p.y} width="310" height="85" rx="5" /><text x={p.x + 12} y={p.y + 25} class="map-node-kind">{node.kind}</text><text x={p.x + 12} y={p.y + 50}>{node.source_id.length > 34 ? `${node.source_id.slice(0, 16)}…${node.source_id.slice(-16)}` : node.source_id}</text><text x={p.x + 12} y={p.y + 70} class="map-node-kind">Inspect exact identity and source →</text><title>{node.id}</title></a>; })}
+    </svg>
+  </div>
+  <p><a class="button button--secondary" data-map-export href={exportHref} download="mathgraph-presentation-projection.json">Download displayed subgraph</a></p>
+  <p class="fineprint">Export kind PRESENTATION_PROJECTION · authority NONE. This download is accepted only by the separate read-only knowledge-map reader; it is not an evidence import.</p>
+  <div class="map-details">{map.nodes.map(object => <ObjectDetail object={object} edges={map.edges} prefix={id} />)}</div>
+  <script type="application/json" data-map-data set:html={serialized.replaceAll('<', '\\u003c')} />
+</section>
+<script>import '../scripts/knowledge-map';</script>

@@ -1,5 +1,6 @@
 ---
 import EvidenceAxis from '../components/EvidenceAxis.astro';
+import ImportWorkbench from '../components/ImportWorkbench.astro';
 import Metric from '../components/Metric.astro';
 import RecordSummary from '../components/RecordSummary.astro';
 import StatusTag from '../components/StatusTag.astro';
@@ -17,6 +18,8 @@ const record = loadQualifiedRecord();
       <p class="lede">MathGraph Check publishes source identity, machine observations, proof receipts, assumptions, and unknowns as separate facts. It does not turn every green sub-check into a universal “verified” label.</p>
     </div>
   </header>
+
+  <div class="section section--compact"><div class="shell"><ImportWorkbench /></div></div>
 
   <section class="section">
     <div class="shell">

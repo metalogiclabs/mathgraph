@@ -1,0 +1,106 @@
+{
+  "admission": {
+    "automatic_api_warrant_promotion": false,
+    "mathematical_theorem_badge_issued": false,
+    "source_archive_hashes_replayed": true,
+    "source_fidelity_certified": false,
+    "status": "WARRANTED_ON_PINNED_BOUNDED_CASES"
+  },
+  "attribution": "Independent check of public third-party code; no affiliation or endorsement implied",
+  "axes": {
+    "current_requalification": {
+      "status": "NOT_CHECKED_AFTER_SNAPSHOT"
+    },
+    "finite_executable": {
+      "authority": "LEAN_GUARDS_AND_COMPILED_TRYPARSE",
+      "case_scope": "Pinned YAML-suite examples after specified source decoding",
+      "expected_accept": 31,
+      "expected_reject": 17,
+      "extra_controls": 4,
+      "matched_external_labels": 48,
+      "source_cases": 48,
+      "status": "PINNED_CASES_CHECKED",
+      "total_lean_guards": 52
+    },
+    "formal_verification": {
+      "authority": "ORIGINAL_JPL_LEAN_PROOF_OBJECTS",
+      "scope": "Named executable factorization and scoped anchor-event lemmas only",
+      "status": "PINNED_SOURCE_THEOREMS_REPLAYED",
+      "universal_yaml_correctness": "UNKNOWN"
+    },
+    "generalization": {
+      "status": "UNKNOWN",
+      "truth_promoting": false
+    },
+    "global_truth_promotion": false,
+    "human_digestion": {
+      "status": "UNKNOWN",
+      "truth_promoting": false
+    },
+    "statement_fidelity": {
+      "status": "UNKNOWN",
+      "truth_promoting": false
+    }
+  },
+  "content_sha256": "f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb",
+  "evidence": {
+    "external_sources": {
+      "jpl": "https://github.com/nasa-jpl/L4YAML/tree/62bf7077910e888a0bc8adfc8e08a5f500ff3ca3",
+      "yaml_suite": "https://github.com/yaml/yaml-test-suite/tree/da267a5c4782e7361e82889e76c0dc7df0e1e870"
+    },
+    "v1_compiled_parser": {
+      "archive_sha256": "b75581017d6620481c77e52b350e8bb8631d11747a92789f7887cde527807086",
+      "artifact_id": 11657687808,
+      "artifact_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38018495536/artifacts/11657687808",
+      "original_build_targets": 487,
+      "raw_unconverted_external_agreement": 47,
+      "run": 38018495536,
+      "source_commit": "d49a17d2786e6d071af37d2aeba2f2dad7765b75",
+      "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38018495536"
+    },
+    "v2_normalized_native_parser": {
+      "archive_sha256": "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e",
+      "artifact_id": 11657314389,
+      "artifact_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793/artifacts/11657314389",
+      "decoded_case_count": 48,
+      "guards": 52,
+      "lean_source_sha256": "a9a16f54c053e3c3c5a9f56486508a04ac84d9eb9e18106271daddac488d5b62",
+      "run": 38020008793,
+      "source_commit": "988afbf9a6ec69488b63af5c7ff986fde26d673c",
+      "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38020008793"
+    }
+  },
+  "id": "mg-l4yaml-source-check-20261010",
+  "known_separator": {
+    "actual_pinned_jpl_parser": "REJECT",
+    "evidence_kind": "SOURCE_SPECIFIC_KNOWN_DISCREPANCY",
+    "independent_normative_event_model": "ACCEPT",
+    "input": "&x [*x]\\n",
+    "jpl_completion_order_event_model": "REJECT",
+    "novel_bug_claim": false,
+    "source_to_event_translation": "RESTRICTED_MANUALLY_DECLARED",
+    "whole_input_extraction_theorem": "UNKNOWN"
+  },
+  "project": "L4YAML",
+  "publisher": "Metalogic Labs / MathGraph",
+  "record_kind": "READ_ONLY_EVIDENCE_PROJECTION",
+  "schema": "mathgraph.public-consequence-record.v1",
+  "snapshot_date": "2026-10-10",
+  "source": {
+    "branch_at_pin": "fix-a-grammar-completeness",
+    "commit": "62bf7077910e888a0bc8adfc8e08a5f500ff3ca3",
+    "external_suite_commit": "da267a5c4782e7361e82889e76c0dc7df0e1e870",
+    "external_suite_repo": "yaml/yaml-test-suite",
+    "lean_toolchain": "leanprover/lean4:v4.34.0",
+    "repo": "nasa-jpl/L4YAML"
+  },
+  "test_input_normalization": {
+    "case_id": "26DV:0",
+    "decoded_sha256": "b9ac5bb5babe113af697638577d77ee556dbc2d596bf05c5d31a8b402882976a",
+    "decoder": "yaml-suite-visible-space-only-v1",
+    "raw_sha256": "6a7b111962441781a368bdcb793ca5a4be450b65c2c82da48bca86f3d8944791",
+    "v1_raw_mismatch": true,
+    "v2_native_decoded_guard": "PASS"
+  },
+  "title": "L4YAML parser acceptance — pinned source check"
+}

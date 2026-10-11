@@ -1,6 +1,9 @@
-import { readFile } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 
 import { describe, expect, test } from 'vitest';
 import sharp from 'sharp';
@@ -11,6 +14,9 @@ import resolveScenarios from '../src/data/resolve-scenarios.json';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
+const execFileAsync = promisify(execFile);
+const importImplementationCommit = '1204a1d267b6217c45c9b17f093cc3587450cf78';
+const importSourceRoot = `https://github.com/metalogiclabs/mathgraph/blob/${importImplementationCommit}`;
 
 async function page(path: string): Promise<string> {
   return readFile(join(dist, path, 'index.html'), 'utf8');
@@ -21,10 +27,91 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('exposes bounded projection objects, typed relations and full source-linked details without JavaScript', async () => {
+    const html = await page('objects').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-knowledge-map');
+    expect(text).toContain('Presentation projection · authority NONE · not a certificate, proof, or verifier');
+    expect(html).toMatch(/<input[^>]*type="checkbox"[^>]*data-map-kind/);
+    expect(html).toContain('data-object-detail');
+    expect(html).toContain('data-map-select');
+    expect(html).toContain('data-map-export');
+    expect(html).toContain('data-map-limit');
+    for (const field of ['Canonical identity', 'Source pins', 'Attribution', 'Evidence', 'Verifier authority', 'Assumptions', 'Scope', 'historical_result', 'lifecycle', 'research_maturity', 'current_applicability', 'freshness', 'action_authorization', 'Incoming relations', 'Outgoing relations', 'Lineage', 'Replay boundary', 'Unknowns', 'Unsupported semantics']) expect(text).toContain(field);
+    expect(text).toContain('No declared incoming relations in this displayed projection');
+    expect(text).toContain('No declared outgoing relations in this displayed projection');
+    expect(text).toContain('No declared alternative support route');
+    expect(text).toContain('Display-only traversal');
+    expect(text).toMatch(/14 of 14 objects.*7 of 7 relations/);
+    expect(html).toMatch(/<svg[^>]*aria-labelledby=/);
+    expect(html).toContain('EVIDENCE_FOR');
+    expect(html).toContain('WITHDRAWS');
+    expect(html).toContain('/developers/#offline-replay');
+    expect(html).toContain('<noscript>');
+  });
+
+  test('reuses the interactive map at the homepage’s exact two-object, one-edge scope', async () => {
+    const html = await page('');
+    expect(html).toContain('data-knowledge-map');
+    expect((html.match(/data-object-detail=/g) ?? [])).toHaveLength(2);
+    expect(visibleText(html)).toContain('2 of 2 objects · 1 of 1 relations');
+    expect(html).toContain('href="/objects/"');
+  });
+
+  test('connects canonical objects from exploration, Resolve and historical records', async () => {
+    for (const route of ['explore', 'resolve', 'records', `records/${record.id}/v1`]) {
+      expect(await page(route)).toContain('href="/objects/');
+    }
+  });
+
+  test('links repository-relative capability pins to their published artifact mirror', async () => {
+    const html = await page('objects');
+    for (const path of ['fixtures/capability-contract.json', 'evaluation.json', 'trust-policy.json', 'receipt.json']) {
+      expect(html).toContain(`href="/artifacts/conformance/capability_v1/${path}"`);
+      expect(html).not.toContain(`href="conformance/capability_v1/${path}"`);
+    }
+  });
+
+  test.each(['', 'verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
+    const html = await page(route).catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-import-workbench');
+    expect(html).toMatch(/<input[^>]+type="file"[^>]+accept="application\/json,.json"[^>]+disabled/);
+    expect(html).not.toMatch(/<input[^>]+type="url"/);
+    expect(text).toContain('65,536 bytes');
+    expect(text).toContain('4,321 bytes');
+    expect(text).toContain('UNKNOWN');
+    expect(text).toContain('No proof, kernel, or source-suite execution');
+    expect(html).toContain(`/evidence/${record.id}/record.json`);
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('<noscript>');
+    for (const stage of ['interpret', 'check', 'resolve', 'explore', 'export']) {
+      expect(html).toContain(`data-import-step="${stage}"`);
+    }
+    for (const region of ['source', 'evidence', 'scope', 'unknowns']) {
+      expect(html).toContain(`data-import-${region}`);
+    }
+    expect(text).toContain('python -I -S scripts/mathgraph_import_v1.py');
+    expect(text).toContain('--policy-sha256');
+    expect(text).toContain('Download presentation JSON');
+  });
+
+  test('pins candidate importer checkout, consumer, and separately reviewed policy before merge', async () => {
+    for (const route of ['', 'verify', 'check', 'developers']) {
+      const html = await page(route);
+      const text = visibleText(html);
+      expect(text).toContain(`git checkout --detach ${importImplementationCommit}`);
+      expect(html).toContain(`${importSourceRoot}/conformance/import_v1/consumer.py`);
+      expect(html).toContain(`${importSourceRoot}/conformance/import_v1/fixtures/trust-policy.json`);
+      expect(html).not.toMatch(/github\.com\/metalogiclabs\/mathgraph\/blob\/main\/(?:conformance\/import_v1|scripts\/mathgraph_import_v1\.py)/);
+    }
+  });
+
   test('keeps durable evidence links legible on the dark section', async () => {
     const css = await readFile(join(website, 'src/styles/global.css'), 'utf8');
     expect(css).toMatch(/\.section--ink \.source-link__label\s*{[^}]*color:\s*white/s);
     expect(css).toMatch(/\.section--ink \.source-link__meta\s*{[^}]*color:\s*#aeb7c7/s);
+    expect(css).toMatch(/\.section--ink \.lede\s*{[^}]*color:\s*#aeb7c7/s);
   });
 
   test('allows developer content to shrink within a mobile grid track', async () => {
@@ -42,7 +129,7 @@ describe('primary public evidence experience', () => {
     const html = await page(route);
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
     expect(html).toContain('Evidence you can inspect. Results you can reuse.');
   });
@@ -52,7 +139,7 @@ describe('primary public evidence experience', () => {
     const text = visibleText(html);
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
     expect(text).toContain('Evidence can change without truth becoming false.');
     expect(text).toContain('Support is reclosed locally.');
@@ -238,7 +325,7 @@ describe('primary public evidence experience', () => {
 
   test.each(['check', 'protocol', 'developers'])('builds the /%s public surface', async (route) => {
     const html = await page(route);
-    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
   });
 
@@ -347,33 +434,62 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/Playground.*future.*receipt/i);
   });
 
-  test('links Agents from primary navigation', async () => {
+  test('exposes four outcome journeys and a progressively enhanced menu', async () => {
     const html = await page('');
-    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
+    const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
+    for (const label of ['Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
+    expect(nav.match(/<a /g)).toHaveLength(5);
+    expect(nav).toContain('GitHub');
+    expect(html).toMatch(/<button[^>]+aria-expanded="false"[^>]+aria-controls="primary-navigation"[^>]*>Menu<\/button>/);
+    expect(nav).not.toContain('hidden');
+    expect(nav).not.toContain('aria-current');
   });
 
-  test('links the static modular surfaces without making the cycle a compulsory runtime', async () => {
+  test.each([
+    ['explore', 'explore', 'page'], ['records', 'explore', 'location'], ['discover', 'explore', 'location'],
+    [`records/${record.id}/v1`, 'explore', 'location'],
+    ['verify', 'verify', 'page'], ['check', 'verify', 'location'], ['resolve', 'verify', 'location'],
+    ['build', 'build', 'page'], ['develop', 'build', 'location'], ['capabilities', 'build', 'location'],
+    ['developers', 'developers', 'page'], ['agents', 'developers', 'location'], ['protocol', 'developers', 'location'],
+    ['protocol/profiles/lean', 'developers', 'location'],
+  ])('marks /%s in the %s outcome group with aria-current=%s', async (route, group, state) => {
+    const html = await page(route).catch(() => '');
+    const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(nav).toContain(`href="/${group}/" aria-current="${state}"`);
+    expect(nav.match(/aria-current=/g)).toHaveLength(1);
+  });
+
+  test('gives visitors a bounded route into exploration and capability reuse', async () => {
+    const explore = await page('explore').catch(() => '');
+    const build = await page('build').catch(() => '');
+    expect(explore).toContain('href="/records/"');
+    expect(explore).toContain('href="/discover/"');
+    expect(visibleText(explore)).toContain(record.title);
+    expect(visibleText(explore)).toMatch(/advisory/i);
+    expect(build).toContain('href="/develop/"');
+    expect(build).toContain('href="/capabilities/"');
+    expect(visibleText(build)).toContain('QUALIFIED_BOUNDED');
+    expect(visibleText(build)).toMatch(/compiler.*unimplemented/i);
+  });
+
+  test('presents outcome journeys with their actual maturity boundaries', async () => {
     const html = await page('');
     const text = visibleText(html);
 
-    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/resolve\/"[\s\S]*>Resolve</);
-    expect(text).toContain('Discover what matters. Check what holds. Resolve what remains justified. Develop what becomes possible.');
-    expect(text).toContain('Inspect real evidence');
-    expect(text).toMatch(/Discover.*Advisory/i);
-    expect(text).toMatch(/Check.*Implemented/i);
-    expect(text).toMatch(/Resolve.*Bounded-qualified/i);
-    expect(text).toMatch(/Develop.*Qualified finite profile/i);
-    expect(text).toMatch(/not a compulsory runtime pipeline/i);
+    expect(html).toContain('<h1>Knowledge you can verify. Capabilities you can build on.</h1>');
+    expect(text).toContain('Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.');
+    for (const route of ['explore', 'verify', 'build']) expect(html).toContain(`data-outcome="${route}"`);
+    for (const section of ['source-to-result', 'map-preview', 'capability', 'independent-verification', 'quick-start', 'long-term']) expect(html).toContain(`id="${section}"`);
+    expect(text).toMatch(/Discover.*advisory/i);
+    expect(text).toMatch(/compiler.*unimplemented/i);
     expect(text).toMatch(/no autonomous loop/i);
     for (const route of ['discover', 'develop', 'capabilities']) expect(html).toContain(`href="/${route}/"`);
   });
 
-  test('makes evidence boundaries and canned scope matches inspectable without arbitrary input', async () => {
+  test('shows real source-derived evidence and map relations without implying new verification', async () => {
     const html = await page('');
     const text = visibleText(html);
 
-    expect(text).toContain('Receipts for machine claims');
-    expect(text).not.toMatch(/record 001/i);
     expect(text).toContain('48/48');
     expect(text).toContain('52/52');
     expect(text).toContain('Whole-language correctness');
@@ -383,7 +499,15 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('SOURCE_PIN_MISMATCH');
     expect(text).toContain('UNSUPPORTED_GOAL');
     expect(html).toContain('href="/agents/"');
-    expect(html).not.toMatch(/<(?:input|textarea|form)\b/i);
+    expect(text).toContain('mathgraph.l4yaml.48-case-qualification');
+    expect(text).toContain('jpl.l4yaml.finite_parser_acceptance');
+    expect(text).toContain('EVIDENCE_FOR');
+    expect(text).toContain('/derivation/routes/3/evidence/0');
+    expect(text).toContain('PRESENTATION_PROJECTION');
+    expect(text).toMatch(/authority.*NONE/i);
+    expect(text).toMatch(/does not rerun the original.*proof/i);
+    const quickStart = html.match(/<section id="quick-start"[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(visibleText(quickStart)).toContain('freshness NOT_CHECKED');
   });
 
   test('separates evidence, lifecycle, and maturity status treatments', async () => {
@@ -399,24 +523,106 @@ describe('primary public evidence experience', () => {
     expect(visibleText(profileHtml)).toMatch(/PROPOSED.*intended contract.*EXPERIMENTAL.*implemented research artifact/i);
   });
 
-  test('publishes a deterministic large social card for the permanent record', async () => {
-    const html = await page(`records/${record.id}/v1`);
-    const imagePath = join(dist, 'social', 'records', `${record.id}-v1.png`);
-    const sourcePath = join(dist, 'social', 'records', `${record.id}-v1.source.svg`);
-    const metadata = await sharp(imagePath).metadata();
-    const source = await readFile(sourcePath, 'utf8');
+  test('publishes presentation-only 1200 × 630 social cards for both immutable records', async () => {
+    const sourceId = record.id;
+    const resolveId = resolveRecord.id;
+    for (const id of [sourceId, resolveId]) {
+      const html = await page(`records/${id}/v1`);
+      const imagePath = join(dist, 'social', 'records', `${id}-v1.png`);
+      const sourcePath = join(dist, 'social', 'records', `${id}-v1.source.svg`);
+      const metadata = await sharp(imagePath).metadata();
+      const source = await readFile(sourcePath, 'utf8');
+      expect(html).toContain(`<meta property="og:image" content="https://mathgraph.org/social/records/${id}-v1.png">`);
+      expect(html).toContain('<meta property="og:image:width" content="1200">');
+      expect(html).toContain('<meta property="og:image:height" content="630">');
+      expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+      expect(metadata.width).toBe(1200);
+      expect(metadata.height).toBe(630);
+      expect(metadata.format).toBe('png');
+      expect(source).toContain(id);
+    }
+    const sourceCard = await readFile(join(dist, 'social', 'records', `${sourceId}-v1.source.svg`), 'utf8');
+    expect(sourceCard).toContain(`${record.content_sha256.slice(0, 16)}…${record.content_sha256.slice(-8)}`);
+    expect(sourceCard).toContain('WARRANTED · BOUNDED');
+    expect(sourceCard).toContain('UNKNOWN · whole-language correctness');
+    const resolveCard = await readFile(join(dist, 'social', 'records', `${resolveId}-v1.source.svg`), 'utf8');
+    for (const copy of [
+      'HISTORIC SNAPSHOT · SCOPED_MIXED',
+      '3 stale documentary paths',
+      '3 UNKNOWN propositions',
+      '1 exactly scoped WARRANTED_BOUNDED observation retained',
+      'CURRENT APPLICABILITY · UNKNOWN',
+      'Presentation only · authority NONE',
+    ]) expect(resolveCard).toContain(copy);
+    expect(resolveCard).not.toMatch(/(?:OpenAI|JPL).*(?:verified|refuted)/i);
+  });
 
-    expect(html).toContain(`<meta property="og:image" content="https://mathgraph.org/social/records/${record.id}-v1.png">`);
-    expect(html).toContain('<meta property="og:image:width" content="1200">');
-    expect(html).toContain('<meta property="og:image:height" content="630">');
-    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
-    expect(metadata.width).toBe(1200);
-    expect(metadata.height).toBe(630);
-    expect(metadata.format).toBe('png');
-    expect(source).toContain(record.id);
-    expect(source).toContain(`${record.content_sha256.slice(0, 16)}…${record.content_sha256.slice(-8)}`);
-    expect(source).toContain('WARRANTED · BOUNDED');
-    expect(source).toContain('UNKNOWN · whole-language correctness');
+  test('rejects a Resolve card when source predicates disagree without editing committed evidence', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'mathgraph-social-card-mismatch-'));
+    try {
+      await Promise.all([
+        cp(join(website, 'src/data'), join(fixtureRoot, 'src/data'), { recursive: true }),
+        cp(join(website, 'public/evidence'), join(fixtureRoot, 'public/evidence'), { recursive: true }),
+        cp(join(website, 'public/social/records'), join(fixtureRoot, 'public/social/records'), { recursive: true }),
+      ]);
+      const fixtureRecordPath = join(fixtureRoot, `public/evidence/${resolveRecord.id}/record.json`);
+      const fixtureRecord = JSON.parse(await readFile(fixtureRecordPath, 'utf8'));
+      fixtureRecord.resolutions['openai.original_support.1'].after = 'UNKNOWN';
+      await writeFile(fixtureRecordPath, `${JSON.stringify(fixtureRecord, null, 2)}\n`);
+      await expect(execFileAsync(process.execPath, [join(website, 'scripts/generate-social-card.mjs'), '--check'], {
+        cwd: fixtureRoot,
+      })).rejects.toMatchObject({ stderr: expect.stringContaining('SOCIAL_CARD_RESOLVE_FACTS_MISMATCH') });
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('renders complete progressively enhanced record and capability catalogues', async () => {
+    const recordsHtml = await page('records');
+    const capabilitiesHtml = await page('capabilities');
+    for (const [html, count] of [[recordsHtml, 2], [capabilitiesHtml, 2]] as const) {
+      expect(html).toContain('data-catalogue-filter');
+      expect(html).toMatch(/<input[^>]*type="search"[^>]*data-catalogue-query[^>]*disabled/);
+      expect(html).toMatch(/<button[^>]*data-catalogue-clear[^>]*disabled/);
+      expect(html).toContain('data-catalogue-select');
+      expect(html).toContain('data-catalogue-count');
+      expect(html).toContain('aria-live="polite"');
+      expect(html).toContain('data-catalogue-no-match');
+      expect(visibleText(html)).toContain('The current static catalogue has no matching displayed entries.');
+      expect((html.match(/data-catalogue-item(?:[ >])/g) ?? [])).toHaveLength(count);
+      expect(html).toContain('<noscript>');
+    }
+    for (const entry of ['mg-l4yaml-source-check-20261010', 'mg-living-warrant-openai-jpl-20261010']) {
+      expect(recordsHtml).toContain(entry);
+    }
+    for (const entry of ['urn:mathgraph:capability:finite-developmental-growth', 'urn:mathgraph:capability:vdn-lean']) {
+      expect(capabilitiesHtml).toContain(entry);
+    }
+    expect(recordsHtml).toContain('data-catalogue-record-kind');
+    expect(recordsHtml).toContain('data-catalogue-lifecycle');
+    expect(capabilitiesHtml).toContain('data-catalogue-qualification');
+  });
+
+  test('documents responsibilities and operations without widening module authority', async () => {
+    const protocol = visibleText(await page('protocol'));
+    for (const responsibility of ['Object responsibility', 'Relation responsibility', 'Evidence responsibility', 'Resolution responsibility', 'Transition responsibility']) {
+      expect(protocol).toContain(responsibility);
+    }
+    expect(protocol).toMatch(/CLOSE.*bounded support closure/i);
+    expect(protocol).toMatch(/ACT.*caller policy.*NONE/i);
+    expect(protocol).toMatch(/REFINE.*separately qualified.*never rewrites historic bytes/i);
+    const discover = visibleText(await page('discover'));
+    for (const value of ['PARTIAL', 'advisory_only: true', 'can_promote_truth: false', 'NOT_CHECKED', 'FULL_REPLAY_UNAVAILABLE']) expect(discover).toContain(value);
+    const develop = visibleText(await page('develop'));
+    for (const value of ['eight-state', 'QUALIFIED_BOUNDED', 'Capability Family Compiler', 'NOT_IMPLEMENTED', 'EXPERIMENTAL', 'Current applicability', 'UNKNOWN', 'Action authorization', 'NONE']) expect(develop).toContain(value);
+    const agents = visibleText(await page('agents'));
+    expect(agents).toMatch(/record 001.*exact-scope/i);
+    expect(agents).toMatch(/record 002.*historical offline replay/i);
+    expect(agents).toMatch(/browser.*map.*authority.*NONE/i);
+    const developers = visibleText(await page('developers'));
+    expect(developers).toMatch(/in-toto.*unsigned correspondence/i);
+    for (const boundary of ['authenticity', 'signer policy', 'transparency', 'freshness', 'qualification', 'current applicability', 'action authorization']) expect(developers).toContain(boundary);
+    expect(developers).toMatch(/Sigstore.*SCITT.*RATS.*deferred/i);
   });
 
   test('documents a scoped badge embed linked to the permanent boundary', async () => {
@@ -481,8 +687,22 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
+    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
+    for (const route of ['about', 'contact']) {
+      const html = await page(route);
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('MathGraph');
+    }
+    const about = visibleText(await page('about'));
+    expect(about).toMatch(/open verification and trust infrastructure.*Metalogic Labs/i);
+    const contact = await page('contact');
+    expect(contact).toContain('https://github.com/metalogiclabs/mathgraph');
+    expect(contact).toContain('https://github.com/metalogiclabs/mathgraph/issues');
+    expect(contact).not.toMatch(/mailto:|@[a-z0-9.-]+\.[a-z]{2,}/i);
+    const home = await page('');
+    expect(home).toContain('href="/about/"');
+    expect(home).toContain('href="/contact/"');
   });
 });

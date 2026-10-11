@@ -18,6 +18,8 @@ import { capabilityEvaluation, sourceUrl } from '../lib/modules';
       <aside class="toc" aria-label="On this page">
         <strong>On this page</strong>
         <a href="#modules">Independent modules</a>
+        <a href="#responsibilities">Five responsibilities</a>
+        <a href="#operations">CLOSE / ACT / REFINE</a>
         <a href="#objects">Minimum P0 objects</a>
         <a href="#resolution">Resolution semantics</a>
         <a href="#identity">Identity and transport</a>
@@ -51,6 +53,30 @@ import { capabilityEvaluation, sourceUrl } from '../lib/modules';
           </div>
           <p>The conceptual Discover → Check → Resolve → Develop loop is optional, not a compulsory runtime pipeline. No autonomous loop is implemented. Capability qualification adds no mathematical terminal form: accepted claims still end in exactly one VERIFIED_PROOF, FINITE_COUNTERMODEL, or NAMED_OBSTRUCTION.</p>
           <p><StatusTag label="Proposed" tone="proposed" /> The <a href="/protocol/profiles/lean/">Lean evidence profile</a> remains a draft; native replay and independent statement correspondence are separate admission requirements.</p>
+        </section>
+
+        <section id="responsibilities">
+          <div class="eyebrow">Views over existing contracts</div>
+          <h2>Five responsibilities, not a new universal ontology.</h2>
+          <dl class="definition-list">
+            <div><dt>Object responsibility</dt><dd>Preserve the exact identity, type, version, source occurrence, attribution, and history already declared by each supported contract.</dd></div>
+            <div><dt>Relation responsibility</dt><dd>Carry only typed dependencies, evidence support, provenance, withdrawal, or other relations explicitly declared by a qualified source contract. Names and layout create no relation.</dd></div>
+            <div><dt>Evidence responsibility</dt><dd>Bind a claim to exact sources, verifier results, assumptions, toolchains, scope, and replay boundaries without promoting signatures or hashes into truth.</dd></div>
+            <div><dt>Resolution responsibility</dt><dd>Let a receiving consumer apply its own pinned policy and distinguish historic warrant, lifecycle, freshness, applicability, and authorization.</dd></div>
+            <div><dt>Transition responsibility</dt><dd>Represent a separately evidenced lifecycle or developmental change while preserving the byte-identical historical state that preceded it.</dd></div>
+          </dl>
+          <p>These responsibilities organize the current record, Resolve, Discover, capability, and interoperability contracts. They do not replace those contracts with a new serialized Unit type.</p>
+        </section>
+
+        <section id="operations">
+          <div class="eyebrow">Separate operations</div>
+          <h2>CLOSE, ACT, and REFINE do different work.</h2>
+          <dl class="definition-list">
+            <div><dt>CLOSE</dt><dd>Bounded support closure over exact admitted roots and declared routes. Unsupported cycles and scope changes remain <code>UNKNOWN</code>.</dd></div>
+            <div><dt>ACT</dt><dd>Caller policy, viability, and permission. Action authorization remains <code>NONE</code> in every published static consumer and projection here.</dd></div>
+            <div><dt>REFINE</dt><dd>A separately qualified evidence or lifecycle change. It emits a new event or state and never rewrites historic bytes.</dd></div>
+          </dl>
+          <p>A proof does not authorize an action. A display projection cannot refine evidence. A new distinction requires its own appropriate qualification.</p>
         </section>
 
         <section id="objects">

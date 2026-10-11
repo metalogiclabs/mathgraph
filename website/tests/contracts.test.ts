@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
+import { recognizeLocalFile, selectQualifiedHandoff } from '../src/scripts/import-workbench';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
@@ -34,6 +35,98 @@ async function json(path: string): Promise<Record<string, any>> {
 }
 
 describe('agent discovery contracts', () => {
+  test('recognizes only bounded exact local bytes and never accepts browser output as an import result', async () => {
+    const bytes = await readFile(join(website, `public/evidence/${recordId}/record.json`));
+    const preview = await recognizeLocalFile(new File([bytes], 'record.json', { type: 'application/json' }));
+    expect(preview.status).toBe('EXACT_BYTES_RECOGNIZED');
+    expect(preview.schema).toBe('mathgraph.browser-recognition.v1');
+    expect(preview.processing_mode).toBe('LOCAL_BROWSER_EXACT_BYTE_RECOGNITION');
+    expect(preview.authority).toBe('NONE');
+    expect(preview.proof_replay).toBe('NOT_PERFORMED');
+    expect(preview.kernel_replay).toBe('NOT_PERFORMED');
+    expect(preview.source_suite_replay).toBe('NOT_PERFORMED');
+    expect(preview.freshness).toBe('UNKNOWN');
+    expect(preview.current_applicability).toBe('UNKNOWN');
+    expect(preview.authorization).toBe('READ_ONLY_NO_AUTOMATIC_AUTHORIZATION');
+    const fixture = JSON.parse(await readFile(join(website, 'tests/fixtures/import-workflow.json'), 'utf8'));
+    expect(preview.record).toMatchObject(fixture);
+    expect(preview.handoff).toEqual({ status: 'UNKNOWN', reason: 'NOT_SELECTED' });
+    const handedOff = selectQualifiedHandoff(preview, 'finite_parser_acceptance');
+    expect(handedOff.record).toEqual(preview.record);
+    expect(handedOff.handoff).toEqual({
+      status: 'QUALIFIED_RECORD_HANDOFF', historical_result: 'WARRANTED_BOUNDED',
+      goal: 'finite_parser_acceptance', href: `/records/${recordId}/v1/`,
+    });
+    const unsupported = selectQualifiedHandoff(handedOff, 'whole_language_correctness');
+    expect(unsupported.record).toEqual(preview.record);
+    expect(unsupported.handoff).toEqual({ status: 'UNKNOWN', reason: 'UNSUPPORTED_ROUTE' });
+    const schema = await json('schemas/import-result-v1.schema.json');
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    expect(ajv.validate(schema, handedOff)).toBe(false);
+    // Values that permissive JSON parsers might normalize must never be interpreted.
+    for (const candidate of [
+      null, 'https://mathgraph.org/record.json',
+      new File([bytes, '\n'], 'record.json'),
+      new File([bytes.toString('utf8').replace('"expected_accept": 31', '"expected_accept": 32')], 'record.json'),
+      new File([bytes.toString('utf8').replace('"admission": {', '"admission": {}, "admission": {')], 'record.json'),
+      new File([bytes.toString('utf8').replace('"expected_accept": 31', '"expected_accept": NaN')], 'record.json'),
+      new File([new Uint8Array([0xef, 0xbb, 0xbf]), bytes], 'record.json'),
+      new File([bytes.toString('utf8').replace(recordId, 'untrusted-producer')], 'record.json'),
+      new File(['<script>throw new Error("not JSON")</script>'], 'record.json'),
+      new File([new Uint8Array(65537)], 'record.json'),
+    ]) {
+      const result = await recognizeLocalFile(candidate);
+      expect(result.status).toBe('UNKNOWN');
+      expect(result.record).toBeNull();
+      expect(JSON.stringify(result)).not.toContain('WARRANTED');
+      expect(selectQualifiedHandoff(result, 'finite_parser_acceptance').handoff.status).toBe('UNKNOWN');
+    }
+  });
+
+  test('publishes the independent import result schema without widening historical authority', async () => {
+    const repository = join(website, '..');
+    const name = 'import-result-v1.schema.json';
+    const [schemaBytes, publicBytes, resultBytes, recordBytes] = await Promise.all([
+      readFile(join(repository, 'protocol/schemas', name)),
+      readFile(join(dist, 'schemas', name)),
+      readFile(join(repository, 'conformance/import_v1/fixtures/result.json')),
+      readFile(join(repository, 'conformance/import_v1/fixtures/record.json')),
+    ]);
+    expect(publicBytes).toEqual(schemaBytes);
+    expect(recordBytes).toEqual(await readFile(join(dist, `evidence/${recordId}/record.json`)));
+    expect(createHash('sha256').update(recordBytes).digest('hex')).toBe(sourceCheckTransportSha256);
+    expect(createHash('sha256').update(resultBytes).digest('hex')).toBe('55ff4aa97dcc33deb2d319d41e4d91783492e7eff5c3048697f6a310cbcdab8b');
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    const schema = JSON.parse(schemaBytes.toString('utf8'));
+    const result = JSON.parse(resultBytes.toString('utf8'));
+    expect(result.processing_mode).toBe('INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION');
+    expect(result.consumer_authority).toEqual({
+      boundary: 'EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY',
+      kernel_replay: 'NOT_PERFORMED', kernel_admission: 'NOT_PERFORMED',
+      current_truth: 'NOT_ESTABLISHED',
+    });
+    expect(result.source_suite_replay).toBe('NOT_PERFORMED');
+    expect(result.evidence.authority).toBe('LEAN_GUARDS_AND_COMPILED_TRYPARSE');
+    expect(ajv.validate(schema, result), ajv.errorsText()).toBe(true);
+    for (const [key, value] of [
+      ['epistemic_status', 'VERIFIED_PROOF'], ['lifecycle', 'CURRENT'],
+      ['freshness', 'CHECKED'], ['current_applicability', 'APPLICABLE'],
+      ['authorization', 'EXECUTE'], ['producer_verdict', 'VERIFIED_PROOF'],
+      ['processing_mode', 'KERNEL_VERIFICATION'], ['source_suite_replay', 'PERFORMED'],
+    ]) expect(ajv.validate(schema, { ...result, [key]: value })).toBe(false);
+    for (const key of ['processing_mode', 'consumer_authority', 'source_suite_replay']) {
+      const missing = { ...result };
+      delete missing[key];
+      expect(ajv.validate(schema, missing)).toBe(false);
+    }
+    for (const [key, value] of [
+      ['boundary', 'SOURCE_SUITE_EXECUTION'], ['kernel_replay', 'PERFORMED'],
+      ['kernel_admission', 'PERFORMED'], ['current_truth', 'ESTABLISHED'],
+    ]) expect(ajv.validate(schema, {
+      ...result, consumer_authority: { ...result.consumer_authority, [key]: value },
+    })).toBe(false);
+  });
+
   test('publishes byte-identical Resolve transport schemas that accept the immutable fixtures', async () => {
     const repository = join(website, '..');
     const names = ['resolve-bundle-v1.schema.json', 'resolve-trust-policy-v1.schema.json'];
@@ -202,7 +295,39 @@ describe('agent discovery contracts', () => {
     expect(llms).toMatch(/freshness.*NOT_CHECKED/i);
     expect(llms).toMatch(/public resolver.*NOT_DEPLOYED/i);
     expect(llms).toMatch(/MCP.*PROPOSED/i);
+    expect(llms).toContain('https://mathgraph.org/about/');
+    expect(llms).toContain('https://mathgraph.org/contact/');
+    expect(llms).toMatch(/resolve-consumer-v1\.ts.*text\/plain; charset=utf-8/i);
+    expect(llms).toMatch(/browser.*presentation.*authority.*NONE/i);
     expect(llms).not.toContain('vercel.app');
+  });
+
+  test('keeps discovery V3 byte-identical while narrowing the TypeScript content type in both Vercel configs', async () => {
+    const repository = join(website, '..');
+    const [rootConfigBytes, websiteConfigBytes, discoveryBytes, sourceConsumer, builtConsumer] = await Promise.all([
+      readFile(join(repository, 'vercel.json')),
+      readFile(join(website, 'vercel.json')),
+      readFile(join(website, 'public/.well-known/mathgraph.json')),
+      readFile(join(website, 'public/examples/resolve-consumer-v1.ts')),
+      readFile(join(dist, 'examples/resolve-consumer-v1.ts')),
+    ]);
+    const rootConfig = JSON.parse(rootConfigBytes.toString('utf8'));
+    const websiteConfig = JSON.parse(websiteConfigBytes.toString('utf8'));
+    for (const key of ['cleanUrls', 'redirects', 'headers']) expect(rootConfig[key]).toEqual(websiteConfig[key]);
+    const contentTypeRules = websiteConfig.headers.filter((rule: any) =>
+      rule.headers?.some((header: any) => header.key.toLowerCase() === 'content-type'));
+    expect(contentTypeRules).toEqual([{
+      source: '/examples/resolve-consumer-v1.ts',
+      headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+    }]);
+    const narrowRuleIndex = websiteConfig.headers.findIndex((rule: any) => rule.source === '/examples/resolve-consumer-v1.ts');
+    const catchAllIndex = websiteConfig.headers.findIndex((rule: any) => rule.source === '/(.*)');
+    expect(narrowRuleIndex).toBeGreaterThanOrEqual(0);
+    expect(narrowRuleIndex).toBeLessThan(catchAllIndex);
+    expect(websiteConfig.headers[catchAllIndex].headers).toContainEqual({ key: 'X-Content-Type-Options', value: 'nosniff' });
+    expect(createHash('sha256').update(sourceConsumer).digest('hex')).toBe(typescriptConsumerSha256);
+    expect(builtConsumer).toEqual(sourceConsumer);
+    expect(createHash('sha256').update(discoveryBytes).digest('hex')).toBe('3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540');
   });
 
   test('advertises the Resolve transport schemas consistently without adding authentication', async () => {

@@ -3,7 +3,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import StatusTag from '../../components/StatusTag.astro';
 import SourceLink from '../../components/SourceLink.astro';
 import CapabilityBoundary from '../../components/CapabilityBoundary.astro';
-import { registry, artifactUrl, sourceUrl } from '../../lib/modules';
+import CatalogueFilter from '../../components/CatalogueFilter.astro';
+import { registry, capabilityEvaluation, artifactUrl, sourceUrl } from '../../lib/modules';
+
+const catalogueEntries = [
+  ...registry.qualified_entries.map((entry) => ({ kind: 'QUALIFIED' as const, entry, qualification: capabilityEvaluation.qualification })),
+  ...registry.experimental_candidates.map((entry) => ({ kind: 'EXPERIMENTAL' as const, entry, qualification: entry.status })),
+];
+const qualifications = [...new Set(catalogueEntries.map(({ qualification }) => qualification))];
 ---
 <BaseLayout title="MathGraph Capabilities — Exact contracts and qualification boundaries" description="A static registry with one qualified finite capability and a separate experimental candidate index, bound to exact contracts, receipts, and trust policies." currentPath="/capabilities/">
   <header class="section section--compact"><div class="shell">
@@ -12,10 +19,12 @@ import { registry, artifactUrl, sourceUrl } from '../../lib/modules';
     <div class="actions"><a class="button" href="/capabilities/index-v1.json">Open registry JSON</a><a class="button button--secondary" href="/develop/">Understand the finite result</a></div>
   </div></header>
   <section class="section"><div class="shell page-grid">
-    <aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#qualified">Qualified entry ({registry.qualified_entries.length})</a><a href="#candidates">Candidates ({registry.experimental_candidates.length})</a><a href="#contracts">Contract schemas</a></aside>
+    <aside class="toc" aria-label="On this page"><strong>On this page</strong><a href="#catalogue">Catalogue</a><a href="#contracts">Contract schemas</a></aside>
     <div class="prose">
-      <section id="qualified"><div class="eyebrow">Qualified finite entry</div><h2>Finite developmental growth</h2>
-        {registry.qualified_entries.map((entry) => <article data-qualified-capability={entry.id}>
+      <section id="catalogue"><div class="eyebrow">Qualified and experimental entries remain distinct</div><h2>Static capability catalogue</h2>
+      <CatalogueFilter id="capabilities" total={catalogueEntries.length} filters={[{ field: 'qualification', label: 'Qualification / status', options: qualifications }]}>
+        {registry.qualified_entries.map((entry) => <article id="qualified" data-catalogue-item data-catalogue-search={`${entry.id} ${entry.profile} finite developmental growth`} data-catalogue-qualification={capabilityEvaluation.qualification} data-qualified-capability={entry.id}>
+          <div class="eyebrow">Qualified finite entry</div><h2>Finite developmental growth</h2>
           <p><code>{entry.id}</code><br />Version <code>{entry.version}</code> · profile <code>{entry.profile}</code></p>
           <CapabilityBoundary />
           <h3>Exact admission artifacts</h3>
@@ -25,14 +34,14 @@ import { registry, artifactUrl, sourceUrl } from '../../lib/modules';
           <p><a href={sourceUrl(entry.contract.locator)}>Committed descriptor and source revision ↗</a></p>
           <p>Only the separate finite-profile consumer admits this exact descriptor after replay. The general descriptor evaluator remains <code>UNKNOWN</code>; a descriptor cannot qualify itself.</p>
         </article>)}
-      </section>
-      <section id="candidates"><div class="eyebrow">Separate experimental index</div><h2>Candidates awaiting admission</h2>
-        {registry.experimental_candidates.map((candidate) => <article data-experimental-capability={candidate.id}>
+        {registry.experimental_candidates.map((candidate) => <article id="candidates" data-catalogue-item data-catalogue-search={`${candidate.id} ${candidate.profile} ${candidate.description} VDN Lean`} data-catalogue-qualification={candidate.status} data-experimental-capability={candidate.id}>
+          <div class="eyebrow">Separate experimental index</div><h2>Candidates awaiting admission</h2>
           <h3>VDN / Lean</h3><StatusTag label={candidate.status} tone="experimental" />
           <p><code>{candidate.id}</code><br />Version <code>{candidate.version}</code> · profile <code>{candidate.profile}</code></p>
           <p>{candidate.description}</p><SourceLink href={sourceUrl(candidate.source.locator)} label="Pinned research source" meta={`SHA-256 ${candidate.source.sha256}`} />
           <p>This candidate is unqualified. It is not included in the qualified section and receives no authority from the finite result.</p>
         </article>)}
+      </CatalogueFilter>
       </section>
       <section id="contracts"><h2>Portable objects, explicit limits.</h2>
         <p>Hosted service: <code>NOT_DEPLOYED</code>. This is the byte-identical static projection of <a href={sourceUrl('protocol/registries/capabilities-v1.json')}>registry version {registry.version}</a>. Artifact hashes establish integrity, not authenticity. Qualification remains separate from freshness, current applicability, revocation, supersession, and authorization.</p>

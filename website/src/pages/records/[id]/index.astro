@@ -2,6 +2,8 @@
 import RecordDetail from '../../../components/RecordDetail.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { loadLatestPublishedRecords, type PublishedRecordPackage } from '../../../lib/catalog';
+import { projectPublishedRecord } from '../../../lib/object-projections';
+import { objectSlug } from '../../../lib/object-locators';
 
 export async function getStaticPaths() {
   const records = await loadLatestPublishedRecords();
@@ -17,6 +19,7 @@ interface Props {
 
 const { published } = Astro.props;
 const { entry } = published;
+const sourceObject = projectPublishedRecord(published).objects[0];
 ---
 
 <BaseLayout
@@ -24,8 +27,9 @@ const { entry } = published;
   description={published.record_kind === 'SOURCE_CHECK' ? 'Inspect the exact source pins, finite observations, Lean replay receipts, discrepancies, and unknowns in the qualified L4YAML evidence record.' : published.presentation.description}
   currentPath={`/records/${entry.id}/`}
   canonicalPath={new URL(entry.record_page_url).pathname}
-  socialImage={published.record_kind === 'SOURCE_CHECK' ? `/social/records/${entry.id}-${entry.version_slug}.png` : undefined}
+  socialImage={`/social/records/${entry.id}-${entry.version_slug}.png`}
   ogType="article"
 >
   <RecordDetail published={published} />
+  <p class="shell"><a href={`/objects/${objectSlug(sourceObject.id)}/`}>Inspect this record’s canonical object projection →</a> · <a href="/objects/">All objects and declared relations</a></p>
 </BaseLayout>

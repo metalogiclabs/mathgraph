@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CapabilityBoundary from '../../components/CapabilityBoundary.astro';
+---
+<BaseLayout title="Build — MathGraph" description="Inspect the qualified finite capability, its assumptions, and independent replay before considering reuse." currentPath="/build/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Build</div>
+      <h1>Reuse a capability within its checked boundary.</h1>
+      <p class="lede">The current foundation offers one exact finite representation-refinement capability. Its independent replay qualifies a bounded result, with assumptions and limitations attached.</p>
+      <div class="actions">
+        <a class="button" href="/capabilities/">Inspect the capability registry</a>
+        <a class="button button--secondary" href="/develop/">Read the finite replay</a>
+      </div>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell">
+      <h2>One qualified finite profile.</h2>
+      <CapabilityBoundary />
+      <p>The registry separates the QUALIFIED_BOUNDED finite entry from experimental candidates. A general descriptor evaluator returning UNKNOWN does not qualify a capability, even when the command exits successfully.</p>
+      <p><a href="/developers/#modules">Run the local capability consumer →</a></p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="shell">
+      <h2>Development is still bounded.</h2>
+      <p>The Capability Family Compiler remains unimplemented. There is no hosted build service, autonomous improvement loop, or universal invention theorem. Discover can propose attention; evidence and independent checks are still required before reuse.</p>
+      <p><a href="/develop/">Inspect Develop’s maturity and limitations →</a> · <a href="/verify/">Verify the supported local record</a></p>
+    </div>
+  </section>
+</BaseLayout>

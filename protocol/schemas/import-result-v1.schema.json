@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathgraph.org/schemas/import-result-v1.schema.json",
+  "title": "MathGraph exact historical supported-import result V1",
+  "description": "Independent offline validation of the exact historical L4YAML record and local policy. Historical evidence authority is distinct from consumer authority. No source-suite or kernel replay, kernel admission, current truth, freshness, or permission is established.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "result_kind",
+    "processing_mode",
+    "consumer_authority",
+    "source_suite_replay",
+    "record_id",
+    "record_schema",
+    "record_sha256",
+    "content_sha256",
+    "policy_sha256",
+    "goal",
+    "epistemic_status",
+    "source",
+    "snapshot_date",
+    "verifier",
+    "assumptions",
+    "scope",
+    "evidence",
+    "lifecycle",
+    "freshness",
+    "current_applicability",
+    "authorization",
+    "unknowns"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "mathgraph.import-result.v1"
+    },
+    "result_kind": {
+      "type": "string",
+      "const": "READ_ONLY_IMPORT_RESULT"
+    },
+    "processing_mode": {
+      "type": "string",
+      "const": "INDEPENDENT_OFFLINE_HISTORICAL_RECORD_POLICY_VALIDATION"
+    },
+    "consumer_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["boundary", "kernel_replay", "kernel_admission", "current_truth"],
+      "properties": {
+        "boundary": {
+          "type": "string",
+          "const": "EXACT_HISTORICAL_RECEIPT_AND_LOCAL_POLICY_ONLY"
+        },
+        "kernel_replay": { "type": "string", "const": "NOT_PERFORMED" },
+        "kernel_admission": { "type": "string", "const": "NOT_PERFORMED" },
+        "current_truth": { "type": "string", "const": "NOT_ESTABLISHED" }
+      }
+    },
+    "source_suite_replay": {
+      "type": "string",
+      "const": "NOT_PERFORMED"
+    },
+    "record_id": {
+      "type": "string",
+      "const": "mg-l4yaml-source-check-20261010"
+    },
+    "record_schema": {
+      "type": "string",
+      "const": "mathgraph.public-consequence-record.v1"
+    },
+    "record_sha256": {
+      "type": "string",
+      "const": "7b59ee76a39995f35a0feb0f4d91a3c6ab1234393143480c4f3e361a79fee703"
+    },
+    "content_sha256": {
+      "type": "string",
+      "const": "f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a71c8d3cb"
+    },
+    "policy_sha256": {
+      "type": "string",
+      "const": "944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65"
+    },
+    "goal": {
+      "type": "string",
+      "const": "finite_parser_acceptance"
+    },
+    "epistemic_status": {
+      "type": "string",
+      "const": "WARRANTED_BOUNDED"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch_at_pin",
+        "commit",
+        "external_suite_commit",
+        "external_suite_repo",
+        "lean_toolchain",
+        "repo"
+      ],
+      "properties": {
+        "branch_at_pin": {
+          "type": "string",
+          "const": "fix-a-grammar-completeness"
+        },
+        "commit": {
+          "type": "string",
+          "const": "62bf7077910e888a0bc8adfc8e08a5f500ff3ca3"
+        },
+        "external_suite_commit": {
+          "type": "string",
+          "const": "da267a5c4782e7361e82889e76c0dc7df0e1e870"
+        },
+        "external_suite_repo": {
+          "type": "string",
+          "const": "yaml/yaml-test-suite"
+        },
+        "lean_toolchain": {
+          "type": "string",
+          "const": "leanprover/lean4:v4.34.0"
+        },
+        "repo": {
+          "type": "string",
+          "const": "nasa-jpl/L4YAML"
+        }
+      }
+    },
+    "snapshot_date": {
+      "type": "string",
+      "const": "2026-10-10"
+    },
+    "verifier": {
+      "type": "string",
+      "const": "pinned-jpl-qualified-receipt-v1"
+    },
+    "assumptions": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "case_scope",
+        "source_cases",
+        "expected_accept",
+        "expected_reject",
+        "extra_controls",
+        "matched_external_labels",
+        "total_lean_guards",
+        "normalization"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "const": "nasa-jpl/L4YAML@62bf7077910e888a0bc8adfc8e08a5f500ff3ca3:yaml/yaml-test-suite@da267a5c4782e7361e82889e76c0dc7df0e1e870:48-cases"
+        },
+        "case_scope": {
+          "type": "string",
+          "const": "Pinned YAML-suite examples after specified source decoding"
+        },
+        "source_cases": {
+          "type": "integer",
+          "const": 48
+        },
+        "expected_accept": {
+          "type": "integer",
+          "const": 31
+        },
+        "expected_reject": {
+          "type": "integer",
+          "const": 17
+        },
+        "extra_controls": {
+          "type": "integer",
+          "const": 4
+        },
+        "matched_external_labels": {
+          "type": "integer",
+          "const": 48
+        },
+        "total_lean_guards": {
+          "type": "integer",
+          "const": 52
+        },
+        "normalization": {
+          "type": "string",
+          "const": "yaml-suite-visible-space-only-v1"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_id",
+        "authority",
+        "test_commit",
+        "lean_source_sha256",
+        "archive_sha256",
+        "normalization",
+        "proof_replay"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "const": "mathgraph.l4yaml.48-case-qualification"
+        },
+        "authority": {
+          "type": "string",
+          "const": "LEAN_GUARDS_AND_COMPILED_TRYPARSE"
+        },
+        "test_commit": {
+          "type": "string",
+          "const": "988afbf9a6ec69488b63af5c7ff986fde26d673c"
+        },
+        "lean_source_sha256": {
+          "type": "string",
+          "const": "a9a16f54c053e3c3c5a9f56486508a04ac84d9eb9e18106271daddac488d5b62"
+        },
+        "archive_sha256": {
+          "type": "string",
+          "const": "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e"
+        },
+        "normalization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "case_id",
+            "decoded_sha256",
+            "decoder",
+            "raw_sha256",
+            "v1_raw_mismatch",
+            "v2_native_decoded_guard"
+          ],
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "const": "26DV:0"
+            },
+            "decoded_sha256": {
+              "type": "string",
+              "const": "b9ac5bb5babe113af697638577d77ee556dbc2d596bf05c5d31a8b402882976a"
+            },
+            "decoder": {
+              "type": "string",
+              "const": "yaml-suite-visible-space-only-v1"
+            },
+            "raw_sha256": {
+              "type": "string",
+              "const": "6a7b111962441781a368bdcb793ca5a4be450b65c2c82da48bca86f3d8944791"
+            },
+            "v1_raw_mismatch": {
+              "type": "boolean",
+              "const": true
+            },
+            "v2_native_decoded_guard": {
+              "type": "string",
+              "const": "PASS"
+            }
+          }
+        },
+        "proof_replay": {
+          "type": "string",
+          "const": "NOT_PERFORMED"
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "string",
+      "const": "UNKNOWN"
+    },
+    "freshness": {
+      "type": "string",
+      "const": "NOT_CHECKED"
+    },
+    "current_applicability": {
+      "type": "string",
+      "const": "UNKNOWN"
+    },
+    "authorization": {
+      "type": "string",
+      "const": "READ_ONLY_NO_AUTOMATIC_AUTHORIZATION"
+    },
+    "unknowns": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generalization",
+        "human_digestion",
+        "statement_fidelity",
+        "universal_yaml_correctness",
+        "whole_input_extraction_theorem"
+      ],
+      "properties": {
+        "generalization": {
+          "type": "string",
+          "const": "UNKNOWN"
+        },
+        "human_digestion": {
+          "type": "string",
+          "const": "UNKNOWN"
+        },
+        "statement_fidelity": {
+          "type": "string",
+          "const": "UNKNOWN"
+        },
+        "universal_yaml_correctness": {
+          "type": "string",
+          "const": "UNKNOWN"
+        },
+        "whole_input_extraction_theorem": {
+          "type": "string",
+          "const": "UNKNOWN"
+        }
+      }
+    }
+  }
+}

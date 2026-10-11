@@ -18,6 +18,8 @@ export const GET: APIRoute = async () => {
 > Evidence you can inspect. Results you can reuse.
 
 Human agent guide: https://mathgraph.org/agents/
+About: https://mathgraph.org/about/
+Contact and public issue route: https://mathgraph.org/contact/
 Discovery manifest: https://mathgraph.org/.well-known/mathgraph.json
 Record index: https://mathgraph.org/records/index.json
 Discovery schema: https://mathgraph.org/schemas/discovery-v3.schema.json
@@ -58,7 +60,7 @@ Published immutable records:
 - Separately pinned trust policy: https://mathgraph.org/evidence/${resolveEntry.id}/offline/trust-policy.json
 - Trust policy SHA-256: 09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a
 - Deterministic replay output SHA-256: 8c7b30e1eb2a24d2960e170d36652ca95aa71b41075f673abe394e154ae66668
-- TypeScript HTTP reference consumer: https://mathgraph.org/examples/resolve-consumer-v1.ts
+- TypeScript HTTP reference consumer: https://mathgraph.org/examples/resolve-consumer-v1.ts · media type: text/plain; charset=utf-8
 - TypeScript consumer SHA-256: e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e
 
 Local modular contracts (static publication; hosted services NOT_DEPLOYED):
@@ -107,6 +109,7 @@ Usage boundary:
 - Treat generated_at as publication time. Set fetched_at when the record index is received and re-fetch before max_age_seconds elapse.
 - Qualified record evidence bytes remain immutable; lifecycle and presentation metadata may be updated separately with history.
 - Record 002 current applicability is UNKNOWN and freshness is NOT_CHECKED in the offline replay.
+- Browser recognition and knowledge-map exports are presentation projections with authority NONE; they are not evidence or independent replay results.
 - Public resolver: NOT_DEPLOYED. MCP: PROPOSED. Discover and Develop hosted services are NOT_DEPLOYED. Local CLI contracts and static artifact downloads are not execution endpoints.
 - Modules are independently usable. The conceptual Discover / Check / Resolve / Develop loop is not compulsory and provides no autonomous loop.
 - Capability qualification adds no mathematical terminal form. Accepted claims still require exactly one VERIFIED_PROOF, FINITE_COUNTERMODEL, or NAMED_OBSTRUCTION.

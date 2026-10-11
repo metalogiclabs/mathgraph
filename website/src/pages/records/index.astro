@@ -1,10 +1,13 @@
 ---
 import RecordSummary from '../../components/RecordSummary.astro';
 import ResolutionRecord from '../../components/ResolutionRecord.astro';
+import CatalogueFilter from '../../components/CatalogueFilter.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { loadPublishedRecords } from '../../lib/catalog';
 
 const records = await loadPublishedRecords();
+const recordKinds = [...new Set(records.map(({ entry }) => entry.record_kind))];
+const lifecycles = [...new Set(records.map(({ entry }) => entry.lifecycle))];
 ---
 
 <BaseLayout title="Evidence records — MathGraph" description="Inspect immutable, source-pinned MathGraph evidence records and their exact qualification boundaries." currentPath="/records/">
@@ -12,15 +15,26 @@ const records = await loadPublishedRecords();
     <div class="shell">
       <div class="eyebrow">Public evidence ledger</div>
       <h1>Records</h1>
+      <p><a href="/objects/">Explore canonical objects and typed relations →</a></p>
       <p class="lede">Each record is an immutable historic snapshot. Requalification, supersession, and revocation are separate states; the original evidence is never silently rewritten.</p>
     </div>
   </header>
   <section class="section">
     <div class="shell">
       <p class="fineprint">{records.length} published record{records.length === 1 ? '' : 's'} · ordered by snapshot date</p>
-      {records.map((published) => published.record_kind === 'SOURCE_CHECK'
-        ? <RecordSummary record={published.record} entry={published.entry} />
-        : <ResolutionRecord published={published} />)}
+      <CatalogueFilter id="records" total={records.length} filters={[
+        { field: 'recordKind', label: 'Record kind', options: recordKinds },
+        { field: 'lifecycle', label: 'Lifecycle', options: lifecycles },
+      ]}>
+        {records.map((published) => <div
+          data-catalogue-item
+          data-catalogue-search={`${published.entry.id} ${published.presentation.title} ${published.presentation.description}`}
+          data-catalogue-record-kind={published.entry.record_kind}
+          data-catalogue-lifecycle={published.entry.lifecycle}
+        >{published.record_kind === 'SOURCE_CHECK'
+          ? <RecordSummary record={published.record} entry={published.entry} />
+          : <ResolutionRecord published={published} />}</div>)}
+      </CatalogueFilter>
       <div class="callout callout--unknown">
         <strong>No synthetic examples.</strong> This index lists only evidence that has a corresponding qualified boundary and durable machine-readable record.
       </div>

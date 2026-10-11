@@ -12,10 +12,15 @@
     "check": "astro check",
     "test": "npm run build && npm run test:unit",
     "test:unit": "npm run test:data && npm run test:rendering && npm run test:contracts",
-    "test:data": "vitest run src/lib/evidence.test.ts src/lib/catalog.test.ts src/lib/resolve-record.test.ts",
+    "test:data": "vitest run src/lib/evidence.test.ts src/lib/catalog.test.ts src/lib/resolve-record.test.ts src/lib/object-projections.test.ts src/lib/knowledge-map.test.ts",
     "test:rendering": "vitest run tests/rendering.test.ts",
     "test:contracts": "vitest run tests/contracts.test.ts tests/modules.test.ts",
     "test:consumer": "node tests/consumer.mjs",
+    "test:import-browser": "node tests/import-workbench.browser.mjs",
+    "test:navigation-browser": "node tests/outcome-navigation.browser.mjs",
+    "test:map-browser": "node tests/knowledge-map.browser.mjs",
+    "test:catalogue-browser": "node tests/catalogue-filter.browser.mjs",
+    "test:artifact": "node tests/static-artifact-contract.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "check:built": "node scripts/check-built-site.mjs",
@@ -24,7 +29,7 @@
     "check:links": "linkinator dist --config linkinator.config.json",
     "generate:social": "node scripts/generate-social-card.mjs",
     "check:social": "node scripts/generate-social-card.mjs --check",
-    "qualify": "npm run check:social && npm run check && npm run test:data && npm run build && npm run test:contracts && npm run test:rendering && npm run check:built && npm run check:resolver && npm run check:html && npm run check:links && npm run test:consumer"
+    "qualify": "npm run check:social && npm run check && npm run test:data && npm run build && npm run test:contracts && npm run test:rendering && npm run check:built && npm run test:artifact && npm run check:resolver && npm run check:html && npm run check:links && npm run test:consumer"
   },
   "dependencies": {
     "astro": "7.3.8"

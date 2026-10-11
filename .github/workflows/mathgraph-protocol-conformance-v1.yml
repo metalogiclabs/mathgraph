@@ -7,6 +7,7 @@ on:
       - 'conformance/capability_v1/**'
       - 'conformance/discover_v1/**'
       - 'conformance/interoperability_v1/**'
+      - 'conformance/import_v1/**'
       - 'conformance/protocol_v1/**'
       - 'conformance/resolve_v1/**'
       - 'mathgraph_protocol/**'
@@ -16,6 +17,7 @@ on:
       - 'adapters/in_toto_v1.py'
       - 'scripts/mathgraph_discover_v1.py'
       - 'scripts/mathgraph_capability_v1.py'
+      - 'scripts/mathgraph_import_v1.py'
       - 'scripts/package_mathgraph_resolve_v1.py'
       - 'scripts/run_discovery_scheduler.py'
       - 'scripts/run_discovery_scheduler_from_evidence.py'
@@ -27,6 +29,7 @@ on:
       - 'examples/evidence_packs/**'
       - 'pyproject.toml'
       - 'website/public/capabilities/**'
+      - 'website/public/evidence/mg-l4yaml-source-check-20261010/record.json'
       - 'website/public/schemas/**'
       - 'experiments/developmental_capability_growth_v1/**'
       - '.github/workflows/mathgraph-protocol-conformance-v1.yml'
@@ -41,6 +44,7 @@ jobs:
     env:
       # Reviewed separately from incoming descriptors, receipts, and registries.
       FINITE_POLICY_SHA256: 7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89
+      IMPORT_POLICY_SHA256: 944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,7 +67,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "$FINITE_POLICY_SHA256  conformance/capability_v1/trust-policy.json" | sha256sum -c -
-          python -m pytest conformance/protocol_v1 conformance/resolve_v1 \
+          echo "$IMPORT_POLICY_SHA256  conformance/import_v1/fixtures/trust-policy.json" | sha256sum -c -
+          python -m pytest conformance/import_v1 conformance/protocol_v1 conformance/resolve_v1 \
             conformance/discover_v1 conformance/capability_v1 conformance/interoperability_v1 \
             tests/test_mathgraph_protocol_import.py \
             tests/test_discovery_scheduler.py tests/test_discovery_candidate_sources.py -q

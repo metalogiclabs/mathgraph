@@ -1,113 +1,116 @@
 ---
-import EvidenceFlow from '../components/EvidenceFlow.astro';
 import EvidenceBoundary from '../components/EvidenceBoundary.astro';
-import Metric from '../components/Metric.astro';
+import ImportWorkbench from '../components/ImportWorkbench.astro';
 import RecordSummary from '../components/RecordSummary.astro';
 import StatusTag from '../components/StatusTag.astro';
+import KnowledgeMap from '../components/KnowledgeMap.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { loadObjectProjections } from '../data/object-projections';
 import { getLatestPublishedRecord } from '../lib/catalog';
+import { buildKnowledgeMap } from '../lib/knowledge-map';
+import { capabilityContract } from '../lib/modules';
+import { importCheckoutReplayCommand, importImplementationCommit } from '../lib/import-replay';
 
-const published = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
-const { entry, record } = published;
+const { entry, record } = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
+const objects = await loadObjectProjections();
+const capability = objects.objects.find(object => object.kind === 'FINITE_CAPABILITY')!;
+const previewIds = objects.objects.filter(object =>
+  ['mathgraph.l4yaml.48-case-qualification', 'jpl.l4yaml.finite_parser_acceptance'].includes(object.source_id)
+).map(object => object.id);
+const map = buildKnowledgeMap(objects, { objectIds: previewIds });
+const finite = record.axes.finite_executable;
 ---
 
-<BaseLayout title="MathGraph — Open Verification Infrastructure" description="MathGraph turns machine-generated and software claims into source-pinned evidence records with exact verification boundaries." currentPath="/">
-  <section class="shell hero">
-    <div class="hero__copy">
-      <div class="eyebrow">Receipts for machine claims</div>
-      <h1>Evidence you can inspect. Results you can reuse.</h1>
-      <p class="lede">MathGraph turns machine-generated and software claims into source-pinned evidence records, preserving exactly what was checked, what remains unknown, and what can be independently reused.</p>
-      <div class="actions">
-        <a class="button" href="/records/">Inspect real evidence</a>
-        <a class="button button--secondary" href="/protocol/">Read the protocol</a>
-      </div>
+<BaseLayout title="MathGraph — Open Verification Infrastructure" description="Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused." currentPath="/">
+  <header class="shell home-hero">
+    <div class="eyebrow">Open verification infrastructure</div>
+    <h1>Knowledge you can verify. Capabilities you can build on.</h1>
+    <p class="lede">Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.</p>
+    <p>Start with the supported local record below. Today’s browser workflow recognizes one exact published JSON artifact; broader artifact import remains future work.</p>
+    <div class="actions">
+      <a class="button" href="#import-title">Try the local record</a>
+      <a class="button button--secondary" href="/explore/">Explore the evidence</a>
     </div>
-    <aside class="hero__aside" aria-label="Product distinction">
-      <p><strong>Metalogic Labs</strong><br /><span class="muted">Company and research organization</span></p>
-      <p><strong>MathGraph</strong><br /><span class="muted">Open verification and trust infrastructure</span></p>
-      <p><strong>MathGraph.org</strong><br /><span class="muted">Public product, documentation, and evidence interface</span></p>
-    </aside>
-  </section>
+  </header>
 
-  <EvidenceBoundary record={record} entry={entry} />
+  <div class="shell"><ImportWorkbench /></div>
 
-  <section class="section section--compact" aria-labelledby="development-cycle-title">
+  <section class="section" aria-labelledby="journeys-title">
     <div class="shell">
-      <div class="grid">
-        <div class="span-5">
-          <div class="eyebrow">A modular development cycle</div>
-          <h2 id="development-cycle-title">Knowledge develops by preserving its boundaries.</h2>
-        </div>
-        <div class="span-7">
-          <p class="lede">Discover what matters. Check what holds. Resolve what remains justified. Develop what becomes possible.</p>
-          <p>These functions exchange portable evidence; they are not a compulsory runtime pipeline, and their maturity differs today. There is no autonomous loop.</p>
-        </div>
-      </div>
-      <ol class="cycle-grid" aria-label="MathGraph conceptual development cycle">
-        <li><div><span>01</span><h3><a href="/discover/">Discover</a></h3></div><StatusTag label="Advisory" tone="implemented" /><p>A local contract allocates attention to proposed continuations. Inspect the real PARTIAL source-pack example and its missing replay material.</p></li>
-        <li><div><span>02</span><h3><a href="/check/">Check</a></h3></div><StatusTag label="Implemented" tone="implemented" /><p>Publish exact verifier receipts, source pins, assumptions, outcomes, and visible unknowns.</p></li>
-        <li><div><span>03</span><h3><a href="/resolve/">Resolve</a></h3></div><StatusTag label="Bounded-qualified" tone="experimental" /><p>Replay one independently consumable historical dependency graph and localize what changes.</p></li>
-        <li><div><span>04</span><h3><a href="/develop/">Develop</a></h3></div><StatusTag label="Qualified finite profile" tone="bounded" /><p>One exact eight-state capability has independent bounded replay. The Capability Family Compiler remains unimplemented.</p></li>
-      </ol>
-      <p><a href="/capabilities/">Inspect the capability registry →</a> One qualified finite entry; experimental candidates remain separate. These static surfaces do not provide hosted execution services.</p>
+      <div class="eyebrow">Three ways in</div>
+      <h2 id="journeys-title">Follow the outcome you need.</h2>
+      <ul class="outcome-grid">
+        <li data-outcome="explore"><h3><a href="/explore/">Explore knowledge</a></h3><p>Inspect source-pinned records and their declared relations. Keep unknowns in view.</p><p><a href="/discover/">Discover</a> is advisory: it allocates attention, not truth confidence.</p></li>
+        <li data-outcome="verify"><h3><a href="/verify/">Verify a claim</a></h3><p>Recognize the supported local record, inspect the historical receipt, and replay the independent consumer.</p><p><a href="/check/">Check</a> preserves source scope. <a href="/resolve/">Resolve</a> replays a bounded historical dependency graph.</p></li>
+        <li data-outcome="build"><h3><a href="/build/">Build on a capability</a></h3><p>Inspect one independently replayable finite capability and the precise conditions for reuse.</p><p><a href="/develop/">Develop</a> has a qualified finite profile. The Capability Family Compiler remains unimplemented.</p></li>
+      </ul>
+      <p class="fineprint">The modules exchange evidence at different maturity levels. There is no autonomous loop or hosted execution service.</p>
     </div>
   </section>
 
-  <section class="section">
+  <section id="source-to-result" class="section" aria-labelledby="source-result-title">
     <div class="shell">
-      <div class="grid">
-        <div class="span-5">
-          <div class="eyebrow">Qualified public record</div>
-          <h2>A real result, with its edges intact.</h2>
-        </div>
-        <div class="span-7">
-          <p class="lede">The first record checks one exact L4YAML revision against 48 decoded external cases and four additional controls. It publishes the successes, the known semantic difference, the corrected input lineage, and the questions the evidence does not answer.</p>
-        </div>
-      </div>
-      <div class="metric-grid" role="group" aria-label="L4YAML record summary">
-        <Metric value="48/48" label="Source cases matched" detail="31 accept · 17 reject" />
-        <Metric value="52/52" label="Lean guards" detail="Cases plus four controls" />
-        <Metric value="2" label="Pinned repositories" detail="Exact Git commits" />
-        <Metric value="UNKNOWN" label="Whole-language correctness" detail="Not inferred from a finite suite" />
-      </div>
+      <div class="eyebrow">Real source → bounded result</div>
+      <h2 id="source-result-title">An exact JPL parser revision. An inspectable result.</h2>
+      <p class="lede">The L4YAML source check follows a pinned repository and decoded YAML-suite cases into published Lean and executable-parser receipts.</p>
+      <dl class="definition-list">
+        <div><dt>Source</dt><dd><a href={record.evidence.external_sources.jpl}>{record.source.repo}</a> at <code>{record.source.commit}</code></dd></div>
+        <div><dt>Suite</dt><dd><a href={record.evidence.external_sources.yaml_suite}>{record.source.external_suite_repo}</a> at <code>{record.source.external_suite_commit}</code></dd></div>
+        <div><dt>Finite observation</dt><dd>{finite.matched_external_labels}/{finite.source_cases} decoded cases matched; {finite.expected_accept} accept, {finite.expected_reject} reject. {finite.total_lean_guards}/{finite.total_lean_guards} Lean guards include {finite.extra_controls} additional controls.</dd></div>
+        <div><dt>Historical receipt</dt><dd><a href={record.evidence.v2_normalized_native_parser.url}>Inspect the normalized native parser run</a>. Whole-language correctness, statement fidelity, and generalization remain UNKNOWN.</dd></div>
+      </dl>
+      <p class="fineprint">Independent check of public third-party code. No affiliation or endorsement implied. The site displays published receipts; it does not rerun the original JPL Lean proof.</p>
       <RecordSummary record={record} entry={entry} />
     </div>
   </section>
 
-  <section class="section section--compact">
+  <section id="map-preview" class="section" aria-labelledby="map-title">
     <div class="shell">
-      <div class="eyebrow">The evidence path</div>
-      <h2>Trust is a chain of declared boundaries.</h2>
-      <p class="lede">MathGraph records how a claim reaches a checker, which source bytes and assumptions were used, and which conclusions remain unavailable.</p>
-      <EvidenceFlow />
+      <div class="eyebrow">Source-derived map preview</div>
+      <h2 id="map-title">A receipt connects to one declared claim.</h2>
+      <p>This bounded selection comes from the published Resolve snapshot. It shows only the JPL receipt and claim; other objects are outside this preview. A relation records the source’s declaration, not a new proof or a live status check.</p>
+      <KnowledgeMap map={map} id="home-map" />
+      <p><a href="/objects/">Explore all canonical objects and declared relations →</a> · <a href="/resolve/">Inspect the historical dependency scenarios</a></p>
     </div>
   </section>
 
-  <section class="section">
+  <section id="capability" class="section" aria-labelledby="capability-title">
     <div class="shell grid">
-      <div class="span-5">
-        <div class="eyebrow">Portable by design</div>
-        <h2>Verification should outlive the interface that produced it.</h2>
-      </div>
+      <div class="span-5"><div class="eyebrow">Bounded capability</div><h2 id="capability-title">Reuse starts with explicit conditions.</h2><StatusTag label={capability.axes.historical_result} tone="bounded" /></div>
       <div class="span-7">
-        <p class="lede">The long-term direction is portable evidence across proof systems, scientific workflows, software verification, and machine-generated claims. The public foundation is smaller and concrete: qualified, content-addressed records that a human or agent can inspect without trusting a broad status badge.</p>
-        <div class="callout">
-          <StatusTag label="Current capability" tone="implemented" />
-          <p><strong>Immutable source-bound publication.</strong> Reuse the exact record today. Broader semantic objects, requalification, revocation, and cryptographic warrant formats remain separately labeled research or proposed architecture.</p>
-        </div>
+        <p class="lede">One finite representation-refinement profile has independent bounded replay.</p>
+        <p>{capabilityContract.claim.scope}</p>
+        <p>Assumptions stay attached:</p><ul>{capability.assumptions.map(assumption => <li>{assumption}</li>)}</ul>
+        <p>Current applicability: <code>{capability.axes.current_applicability}</code>. Freshness: <code>{capability.axes.freshness}</code>. Action authorization: <code>{capability.axes.action_authorization}</code>.</p>
+        <p>Same-owner implementation-independent qualification does not establish external adoption. The Capability Family Compiler remains unimplemented; no universal invention theorem is claimed.</p>
+        <p><a href="/capabilities/">Inspect the capability registry →</a> · <a href="/develop/">Read the finite replay boundary</a></p>
       </div>
     </div>
   </section>
 
-  <section class="section section--ink">
+  <EvidenceBoundary record={record} entry={entry} />
+
+  <section id="independent-verification" class="section" aria-labelledby="independent-title">
     <div class="shell grid">
-      <div class="span-8">
-        <div class="eyebrow">Start with evidence</div>
-        <h2>Inspect the record before you trust the summary.</h2>
-      </div>
-      <div class="span-4 actions">
-        <a class="button" href={`/records/${record.id}/`}>Open L4YAML record</a>
-      </div>
+      <div class="span-5"><div class="eyebrow">Independent verification</div><h2 id="independent-title">Inspect the checker. Choose the trust policy.</h2></div>
+      <div class="span-7"><p class="lede">A result is useful when you can trace its source, scope, assumptions, and verifier.</p><p>The local Python importer validates the supported record and replays its historical receipt under a separate pinned policy. The browser only recognizes exact bytes and presents existing evidence. Neither step reruns the original proof or establishes current applicability.</p><p>Obtain consumer and policy pins through a separately trusted channel. Same-origin hashes protect byte integrity; they do not authenticate a publisher.</p><p><a href="/developers/#offline-replay">Independent dependency replay instructions</a> · <a href="/agents/">Agent consumption contract</a> · <a href="/protocol/">Read the protocol</a></p></div>
+    </div>
+  </section>
+
+  <section id="quick-start" class="section" aria-labelledby="quick-start-title">
+    <div class="shell">
+      <div class="eyebrow">Executable quick start</div><h2 id="quick-start-title">Import the supported record locally.</h2>
+      <p>Clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>. With Python available and the separately pinned policy and consumer reviewed:</p>
+      <pre data-home-quick-start><code>{importCheckoutReplayCommand}</code></pre>
+      <p>The result uses <code>mathgraph.import-result.v1</code>. Historical bounded receipt validation leaves proof, kernel, and source-suite replay <code>NOT_PERFORMED</code>; freshness <code>NOT_CHECKED</code>; and current applicability <code>UNKNOWN</code>. It authorizes no action.</p>
+      <p><a href="/developers/">Developer setup and consumers →</a></p>
+    </div>
+  </section>
+
+  <section id="long-term" class="section section--ink" aria-labelledby="long-term-title">
+    <div class="shell grid">
+      <div class="span-5"><div class="eyebrow">Long-term direction</div><h2 id="long-term-title">Portable evidence across systems.</h2></div>
+      <div class="span-7"><p class="lede">MathGraph aims to connect mathematics, scientific workflows, software verification, and machine-generated claims through reusable evidence.</p><p>Today’s foundation is finite and explicit: source-pinned records, a historical dependency replay, one qualified finite capability, and a local record workflow. Broader artifact import, capability compilation, continuous requalification, and hosted resolver or MCP services remain future work. These examples do not establish universal support.</p></div>
     </div>
   </section>
 </BaseLayout>

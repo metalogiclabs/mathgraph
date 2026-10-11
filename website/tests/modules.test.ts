@@ -17,7 +17,9 @@ test.each(['discover', 'develop', 'capabilities'])('publishes the static /%s sur
   const html = await built(`${route}/index.html`).catch(() => '');
   expect(html).toContain('<main id="main-content"');
   expect(html).toContain(`<link rel="canonical" href="https://mathgraph.org/${route}/">`);
-  expect(html).not.toMatch(/<(?:form|input|textarea)\b/i);
+  expect(html).not.toMatch(/<(?:form|textarea)\b|<input[^>]+type="(?:file|url)"/i);
+  if (route === 'capabilities') expect(html).toMatch(/<input[^>]+type="search"[^>]+data-catalogue-query/);
+  else expect(html).not.toMatch(/<input\b/i);
   expect(plain(html)).toMatch(/hosted service.*NOT_DEPLOYED/i);
   expect(await built('sitemap.xml')).toContain(`<loc>https://mathgraph.org/${route}/</loc>`);
 });

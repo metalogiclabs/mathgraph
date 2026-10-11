@@ -81,6 +81,13 @@ for (const value of ['48/48', '31', '17', '52/52', 'UNKNOWN', 'NOT_CHECKED_AFTER
   assert(recordHtml.includes(value), `record page missing qualified observation ${value}`);
 }
 assert(homeHtml.includes(record.id), 'homepage must identify the featured record');
+assert(homeHtml.includes('<title>MathGraph — Open Verification Infrastructure</title>'));
+assert(homeHtml.includes('<h1>Knowledge you can verify. Capabilities you can build on.</h1>'));
+assert(homeHtml.includes('data-import-workbench'));
+for (const route of ['explore', 'verify', 'build', 'check', 'resolve', 'discover', 'develop', 'capabilities', 'records', 'objects', 'protocol', 'agents', 'developers', 'about', 'contact']) {
+  const html = await readFile(join(dist, route, 'index.html'), 'utf8');
+  assert(html.includes('aria-controls="primary-navigation"'), `${route}: navigation disclosure missing`);
+}
 assert(homeHtml.includes('EXACT_SCOPE_MATCH') && homeHtml.includes('SOURCE_PIN_MISMATCH') && homeHtml.includes('UNSUPPORTED_GOAL'));
 assert.equal(entry.record_content_sha256, record.content_sha256);
 assert.equal(entry.scope.source_commit, record.source.commit);
@@ -90,6 +97,8 @@ assert.equal(entry.lifecycle, 'CURRENT');
 assert.equal(entry.scope.mismatch_status, 'UNKNOWN');
 assert.equal(index.schema, 'mathgraph.record-index.v2');
 const resolveId = 'mg-living-warrant-openai-jpl-20261010';
+const importImplementationCommit = '1204a1d267b6217c45c9b17f093cc3587450cf78';
+const importSourceRoot = `https://github.com/metalogiclabs/mathgraph/blob/${importImplementationCommit}`;
 const resolveEntry = index.records.find((candidate) => candidate.id === resolveId && candidate.version === 1);
 assert.equal(resolveEntry?.record_kind, 'RESOLUTION_SNAPSHOT');
 assert.equal(resolveEntry.historical_epistemic_result, 'SCOPED_MIXED');
@@ -140,6 +149,12 @@ assert.equal(record.admission.mathematical_theorem_badge_issued, false);
 assert.equal(record.admission.source_fidelity_certified, false);
 
 const rendered = allHtml.join('\n');
+for (const html of [homeHtml, developersHtml]) {
+  assert(html.includes(`git checkout --detach ${importImplementationCommit}`), 'candidate importer checkout must use the immutable implementation commit');
+  assert(html.includes(`${importSourceRoot}/conformance/import_v1/consumer.py`), 'candidate importer consumer link must use the immutable implementation commit');
+  assert(html.includes(`${importSourceRoot}/conformance/import_v1/fixtures/trust-policy.json`), 'candidate importer policy link must use the immutable implementation commit');
+}
+assert(!/github\.com\/metalogiclabs\/mathgraph\/blob\/main\/(?:conformance\/import_v1|scripts\/mathgraph_import_v1\.py)/.test(rendered), 'candidate-only importer paths must not use blob/main');
 for (const prohibited of [
   /verified by (?:NASA|JPL)/i,
   /NASA[- ]verified/i,
@@ -167,11 +182,17 @@ for (const filename of ['record.json', 'evidence.json', 'qualified-release.html'
   assert.deepEqual(built, published, `qualified publisher asset changed during build: ${filename}`);
 }
 
-const socialPath = join(dist, `social/records/${recordId}-v1.png`);
-const social = await sharp(socialPath).metadata();
-assert.equal(social.width, 1200);
-assert.equal(social.height, 630);
-assert(versionedRecordHtml.includes(`https://mathgraph.org/social/records/${recordId}-v1.png`));
+for (const [socialRecordId, html] of [
+  [recordId, versionedRecordHtml],
+  [resolveId, await readFile(join(dist, `records/${resolveId}/v1/index.html`), 'utf8')],
+]) {
+  const socialPath = join(dist, `social/records/${socialRecordId}-v1.png`);
+  const social = await sharp(socialPath).metadata();
+  assert.equal(social.width, 1200);
+  assert.equal(social.height, 630);
+  assert.equal(social.format, 'png');
+  assert(html.includes(`https://mathgraph.org/social/records/${socialRecordId}-v1.png`));
+}
 
 const expectedRedirects = new Map([
   [`/v1/records/${recordId}`, `/evidence/${recordId}/record.json`],
@@ -190,6 +211,13 @@ const csp = deployment.headers
   .flatMap((rule) => rule.headers ?? [])
   .find((header) => header.key === 'Content-Security-Policy')?.value;
 assert(csp?.includes("default-src 'self'") && csp.includes("object-src 'none'") && csp.includes("frame-ancestors 'none'"));
+const consumerContentTypeRules = deployment.headers.filter((rule) =>
+  rule.headers?.some((header) => header.key.toLowerCase() === 'content-type'));
+assert.deepEqual(consumerContentTypeRules, [{
+  source: '/examples/resolve-consumer-v1.ts',
+  headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+}]);
+assert(deployment.headers.findIndex((rule) => rule.source === '/examples/resolve-consumer-v1.ts') < deployment.headers.findIndex((rule) => rule.source === '/(.*)'));
 
 const cacheHeaders = new Map(
   deployment.headers.map((rule) => [
@@ -205,4 +233,4 @@ for (const source of ['/records/index.json', '/llms.txt', '/.well-known/mathgrap
 }
 
 assert(clientBytes < 100_000, `client JS + CSS exceeds 100 kB (${clientBytes} bytes)`);
-console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} client_bytes=${clientBytes} catalogue=V2 records=2 social=1200x630`);
+console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} client_bytes=${clientBytes} catalogue=V2 records=2 social=2x1200x630`);
