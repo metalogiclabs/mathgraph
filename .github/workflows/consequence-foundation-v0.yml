@@ -58,5 +58,5 @@ jobs:
           MATHGRAPH_V1_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-cross-domain/l4yaml-v1.zip
           MATHGRAPH_V2_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-cross-domain/l4yaml-v2.zip
         run: |
-          python conformance/consequence_v0/cross_domain_real.py -v
+          PYTHONPATH=. python conformance/consequence_v0/cross_domain_real.py -v
           echo "BOUNDED_TWO_DOMAIN_TRANSPORT_CHECKS_PASSED"
