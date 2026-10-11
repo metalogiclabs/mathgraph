@@ -21,7 +21,7 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
-  test.each(['verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
+  test.each(['', 'verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
     const html = await page(route).catch(() => '');
     const text = visibleText(html);
     expect(html).toContain('data-import-workbench');
@@ -49,6 +49,7 @@ describe('primary public evidence experience', () => {
     const css = await readFile(join(website, 'src/styles/global.css'), 'utf8');
     expect(css).toMatch(/\.section--ink \.source-link__label\s*{[^}]*color:\s*white/s);
     expect(css).toMatch(/\.section--ink \.source-link__meta\s*{[^}]*color:\s*#aeb7c7/s);
+    expect(css).toMatch(/\.section--ink \.lede\s*{[^}]*color:\s*#aeb7c7/s);
   });
 
   test('allows developer content to shrink within a mobile grid track', async () => {
@@ -66,7 +67,7 @@ describe('primary public evidence experience', () => {
     const html = await page(route);
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
     expect(html).toContain('Evidence you can inspect. Results you can reuse.');
   });
@@ -76,7 +77,7 @@ describe('primary public evidence experience', () => {
     const text = visibleText(html);
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
     expect(text).toContain('Evidence can change without truth becoming false.');
     expect(text).toContain('Support is reclosed locally.');
@@ -262,7 +263,7 @@ describe('primary public evidence experience', () => {
 
   test.each(['check', 'protocol', 'developers'])('builds the /%s public surface', async (route) => {
     const html = await page(route);
-    expect(html).toContain('<nav aria-label="Primary">');
+    expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
   });
 
@@ -371,33 +372,62 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/Playground.*future.*receipt/i);
   });
 
-  test('links Agents from primary navigation', async () => {
+  test('exposes four outcome journeys and a progressively enhanced menu', async () => {
     const html = await page('');
-    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/agents\/"[\s\S]*>Agents</);
+    const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
+    for (const label of ['Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
+    expect(nav.match(/<a /g)).toHaveLength(5);
+    expect(nav).toContain('GitHub');
+    expect(html).toMatch(/<button[^>]+aria-expanded="false"[^>]+aria-controls="primary-navigation"[^>]*>Menu<\/button>/);
+    expect(nav).not.toContain('hidden');
+    expect(nav).not.toContain('aria-current');
   });
 
-  test('links the static modular surfaces without making the cycle a compulsory runtime', async () => {
+  test.each([
+    ['explore', 'explore', 'page'], ['records', 'explore', 'location'], ['discover', 'explore', 'location'],
+    [`records/${record.id}/v1`, 'explore', 'location'],
+    ['verify', 'verify', 'page'], ['check', 'verify', 'location'], ['resolve', 'verify', 'location'],
+    ['build', 'build', 'page'], ['develop', 'build', 'location'], ['capabilities', 'build', 'location'],
+    ['developers', 'developers', 'page'], ['agents', 'developers', 'location'], ['protocol', 'developers', 'location'],
+    ['protocol/profiles/lean', 'developers', 'location'],
+  ])('marks /%s in the %s outcome group with aria-current=%s', async (route, group, state) => {
+    const html = await page(route).catch(() => '');
+    const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(nav).toContain(`href="/${group}/" aria-current="${state}"`);
+    expect(nav.match(/aria-current=/g)).toHaveLength(1);
+  });
+
+  test('gives visitors a bounded route into exploration and capability reuse', async () => {
+    const explore = await page('explore').catch(() => '');
+    const build = await page('build').catch(() => '');
+    expect(explore).toContain('href="/records/"');
+    expect(explore).toContain('href="/discover/"');
+    expect(visibleText(explore)).toContain(record.title);
+    expect(visibleText(explore)).toMatch(/advisory/i);
+    expect(build).toContain('href="/develop/"');
+    expect(build).toContain('href="/capabilities/"');
+    expect(visibleText(build)).toContain('QUALIFIED_BOUNDED');
+    expect(visibleText(build)).toMatch(/compiler.*unimplemented/i);
+  });
+
+  test('presents outcome journeys with their actual maturity boundaries', async () => {
     const html = await page('');
     const text = visibleText(html);
 
-    expect(html).toMatch(/<nav aria-label="Primary">[\s\S]*href="\/resolve\/"[\s\S]*>Resolve</);
-    expect(text).toContain('Discover what matters. Check what holds. Resolve what remains justified. Develop what becomes possible.');
-    expect(text).toContain('Inspect real evidence');
-    expect(text).toMatch(/Discover.*Advisory/i);
-    expect(text).toMatch(/Check.*Implemented/i);
-    expect(text).toMatch(/Resolve.*Bounded-qualified/i);
-    expect(text).toMatch(/Develop.*Qualified finite profile/i);
-    expect(text).toMatch(/not a compulsory runtime pipeline/i);
+    expect(html).toContain('<h1>Knowledge you can verify. Capabilities you can build on.</h1>');
+    expect(text).toContain('Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.');
+    for (const route of ['explore', 'verify', 'build']) expect(html).toContain(`data-outcome="${route}"`);
+    for (const section of ['source-to-result', 'map-preview', 'capability', 'independent-verification', 'quick-start', 'long-term']) expect(html).toContain(`id="${section}"`);
+    expect(text).toMatch(/Discover.*advisory/i);
+    expect(text).toMatch(/compiler.*unimplemented/i);
     expect(text).toMatch(/no autonomous loop/i);
     for (const route of ['discover', 'develop', 'capabilities']) expect(html).toContain(`href="/${route}/"`);
   });
 
-  test('makes evidence boundaries and canned scope matches inspectable without arbitrary input', async () => {
+  test('shows real source-derived evidence and map relations without implying new verification', async () => {
     const html = await page('');
     const text = visibleText(html);
 
-    expect(text).toContain('Receipts for machine claims');
-    expect(text).not.toMatch(/record 001/i);
     expect(text).toContain('48/48');
     expect(text).toContain('52/52');
     expect(text).toContain('Whole-language correctness');
@@ -407,7 +437,15 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('SOURCE_PIN_MISMATCH');
     expect(text).toContain('UNSUPPORTED_GOAL');
     expect(html).toContain('href="/agents/"');
-    expect(html).not.toMatch(/<(?:input|textarea|form)\b/i);
+    expect(text).toContain('mathgraph.l4yaml.48-case-qualification');
+    expect(text).toContain('jpl.l4yaml.finite_parser_acceptance');
+    expect(text).toContain('EVIDENCE_FOR');
+    expect(text).toContain('/derivation/routes/3/evidence/0');
+    expect(text).toContain('PRESENTATION_PROJECTION');
+    expect(text).toMatch(/authority.*NONE/i);
+    expect(text).toMatch(/does not rerun the original.*proof/i);
+    const quickStart = html.match(/<section id="quick-start"[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(visibleText(quickStart)).toContain('freshness NOT_CHECKED');
   });
 
   test('separates evidence, lifecycle, and maturity status treatments', async () => {
@@ -505,7 +543,7 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
+    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
   });

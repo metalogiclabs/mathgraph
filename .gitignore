@@ -9,6 +9,7 @@ __pycache__/
 venv/
 dist/
 build/
+!website/src/pages/build/
 *.egg-info/
 
 # Generated artifacts and experiment outputs

@@ -203,6 +203,7 @@ pre {
 
 .nav-list {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   margin: 0;
   padding: 0;
@@ -218,12 +219,12 @@ pre {
   text-decoration: none;
 }
 
-.nav-list a[aria-current="page"],
+.nav-list a[aria-current],
 .nav-list a:hover {
   color: var(--ink-950);
 }
 
-.nav-list a[aria-current="page"]::after {
+.nav-list a[aria-current]::after {
   position: absolute;
   right: 0;
   bottom: -0.75rem;
@@ -231,6 +232,52 @@ pre {
   height: 2px;
   background: var(--blue-600);
   content: "";
+}
+
+.nav-toggle {
+  display: none;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--ink-950);
+  background: var(--paper-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.home-hero {
+  padding-block: var(--space-7) var(--space-5);
+}
+
+.home-hero h1 {
+  max-width: 22ch;
+}
+
+.outcome-grid,
+.map-preview__nodes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.outcome-grid > li,
+.map-preview__nodes > li {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--paper-strong);
+  overflow-wrap: anywhere;
+}
+
+.map-preview__nodes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.map-preview__relations {
+  padding-left: 1.3rem;
+  overflow-wrap: anywhere;
 }
 
 .page-main {
@@ -253,7 +300,8 @@ pre {
 }
 
 .section--ink .eyebrow,
-.section--ink .muted {
+.section--ink .muted,
+.section--ink .lede {
   color: #aeb7c7;
 }
 
@@ -1439,25 +1487,51 @@ summary {
   }
 
   .site-header__inner {
-    align-items: flex-start;
+    align-items: center;
     padding-block: var(--space-3);
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: var(--space-2);
   }
 
   .site-header nav {
     width: 100%;
     margin-left: 0;
-    overflow-x: auto;
   }
 
   .nav-list {
-    min-width: max-content;
     padding-bottom: var(--space-2);
   }
 
-  .nav-list a[aria-current="page"]::after {
+  .site-header[data-nav-enhanced] .nav-toggle {
+    display: block;
+    margin-left: auto;
+  }
+
+  .site-header[data-nav-enhanced] .nav-toggle[aria-expanded="false"] + nav {
+    display: none;
+  }
+
+  .site-header[data-nav-enhanced] .nav-list {
+    display: grid;
+    gap: 0;
+  }
+
+  .site-header[data-nav-enhanced] .nav-list a {
+    display: block;
+    padding: 0.65rem 0;
+  }
+
+  .nav-list a[aria-current]::after {
     bottom: -0.45rem;
+  }
+
+  .site-header[data-nav-enhanced] .nav-list a[aria-current]::after {
+    bottom: 0;
+  }
+
+  .outcome-grid,
+  .map-preview__nodes {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero,

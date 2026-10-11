@@ -23,11 +23,11 @@ let browser;
 try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
   const origin = `http://127.0.0.1:${server.address().port}`;
-  for (const route of ['verify', 'check']) {
+  for (const route of ['', 'verify', 'check']) {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(`${origin}/${route}/`, { waitUntil: 'networkidle' });
+    await page.goto(`${origin}/${route ? `${route}/` : ''}`, { waitUntil: 'networkidle' });
     const workbench = page.locator('[data-import-workbench]');
     assert.equal(await workbench.count(), 1, `${route}: shared workbench missing`);
     const documentedCommand = await workbench.locator('pre code').textContent();
@@ -35,6 +35,17 @@ try {
     const replay = spawnSync(process.env.PYTHON ?? 'python3', documentedArgs, { cwd: resolve('..'), encoding: 'utf8' });
     assert.equal(replay.status, 0, `documented local import command failed: ${replay.stderr}`);
     assert.equal(JSON.parse(replay.stdout).schema, 'mathgraph.import-result.v1');
+    if (route === '') {
+      const quickStart = await page.locator('[data-home-quick-start] code').textContent();
+      const [, ...args] = quickStart.replaceAll('\\\n', ' ').trim().split(/\s+/);
+      const result = spawnSync(process.env.PYTHON ?? 'python3', args, { cwd: resolve('..'), encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      const imported = JSON.parse(result.stdout);
+      assert.equal(imported.schema, 'mathgraph.import-result.v1');
+      assert.equal(imported.evidence.proof_replay, 'NOT_PERFORMED');
+      assert.equal(imported.freshness, 'NOT_CHECKED');
+      assert.equal(imported.current_applicability, 'UNKNOWN');
+    }
     const requests = [];
     page.on('request', request => requests.push(request.url()));
     const input = workbench.locator('input[type=file]');
@@ -101,7 +112,7 @@ try {
   assert.equal(await noJS.locator('input[type=file]').isDisabled(), true);
   assert.match(await noJS.locator('noscript').innerText(), /UNKNOWN/);
   assert.ok(await noJS.getByRole('link', { name: 'Download the exact supported record.json' }).getAttribute('href'));
-  console.log('PASS import browser workflow: both routes, keyboard, mobile, no-JS, no network, mutation reset, unsupported handoff, portable export, Python rejection');
+  console.log('PASS import browser workflow: home/verify/check, keyboard, mobile, no-JS, no network, mutation reset, unsupported handoff, portable export, Python rejection');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.close(resolve));

@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { loadPublishedRecords } from '../../lib/catalog';
+const records = await loadPublishedRecords();
+---
+<BaseLayout title="Explore — MathGraph" description="Explore source-pinned evidence records, declared dependencies, and advisory discovery with their exact boundaries." currentPath="/explore/">
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Explore</div>
+      <h1>Find what is established. Keep the unknowns visible.</h1>
+      <p class="lede">Start with the actual records, their source objects, and declared relations. The map is a presentation of published evidence; it adds no verification authority.</p>
+    </div>
+  </header>
+  <section class="section">
+    <div class="shell">
+      <h2>Inspect the published records.</h2>
+      <ul>
+        {records.map(published => (
+          <li>
+            <a href={new URL(published.entry.record_page_url).pathname}>{published.record_kind === 'SOURCE_CHECK' ? published.record.title : published.presentation.title}</a>
+            <p><code>{published.entry.id}</code> · version {published.entry.version}. Scope and unknowns are preserved on the record.</p>
+          </li>
+        ))}
+      </ul>
+      <p><a href="/records/">All evidence records →</a></p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="shell grid">
+      <div class="span-5">
+        <h2>Follow the declared connections.</h2>
+        <p>The historical Resolve view shows exact receipt and claim objects, including publisher withdrawal and the independent JPL finite receipt. Historical support does not establish present applicability.</p>
+        <p><a href="/resolve/">Explore the historical dependency graph →</a> · <a href="/#map-preview">Preview the JPL receipt relation</a></p>
+      </div>
+      <div class="span-7">
+        <h2>Choose a next question.</h2>
+        <p>Discover is advisory. Its PARTIAL source-pack example has verification NOT_CHECKED and FULL_REPLAY_UNAVAILABLE. Suggested attention is not a truth verdict.</p>
+        <p><a href="/discover/">Inspect advisory discovery →</a></p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

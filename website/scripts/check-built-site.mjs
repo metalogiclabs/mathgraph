@@ -81,6 +81,13 @@ for (const value of ['48/48', '31', '17', '52/52', 'UNKNOWN', 'NOT_CHECKED_AFTER
   assert(recordHtml.includes(value), `record page missing qualified observation ${value}`);
 }
 assert(homeHtml.includes(record.id), 'homepage must identify the featured record');
+assert(homeHtml.includes('<title>MathGraph — Open Verification Infrastructure</title>'));
+assert(homeHtml.includes('<h1>Knowledge you can verify. Capabilities you can build on.</h1>'));
+assert(homeHtml.includes('data-import-workbench'));
+for (const route of ['explore', 'verify', 'build', 'check', 'resolve', 'discover', 'develop', 'capabilities', 'records', 'protocol', 'agents', 'developers']) {
+  const html = await readFile(join(dist, route, 'index.html'), 'utf8');
+  assert(html.includes('aria-controls="primary-navigation"'), `${route}: navigation disclosure missing`);
+}
 assert(homeHtml.includes('EXACT_SCOPE_MATCH') && homeHtml.includes('SOURCE_PIN_MISMATCH') && homeHtml.includes('UNSUPPORTED_GOAL'));
 assert.equal(entry.record_content_sha256, record.content_sha256);
 assert.equal(entry.scope.source_commit, record.source.commit);

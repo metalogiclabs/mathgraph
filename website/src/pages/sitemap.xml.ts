@@ -12,6 +12,9 @@ export const GET: APIRoute = async () => {
   const packages = await loadPublishedRecords();
   const routes = [
     '/',
+    '/explore/',
+    '/verify/',
+    '/build/',
     '/check/',
     '/resolve/',
     '/discover/',

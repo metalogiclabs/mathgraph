@@ -24,14 +24,15 @@ const canonical = new URL(canonicalPath ?? Astro.url.pathname, Astro.site);
 const absoluteSocialImage = socialImage ? new URL(socialImage, Astro.site) : undefined;
 const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'";
 const nav = [
-  { href: '/check/', label: 'Check' },
-  { href: '/resolve/', label: 'Resolve' },
-  { href: '/records/', label: 'Records' },
-  { href: '/protocol/', label: 'Protocol' },
-  { href: '/agents/', label: 'Agents' },
-  { href: '/developers/', label: 'Developers' },
+  { href: '/explore/', label: 'Explore', routes: ['/explore/', '/records/', '/objects/', '/discover/'] },
+  { href: '/verify/', label: 'Verify', routes: ['/verify/', '/check/', '/resolve/'] },
+  { href: '/build/', label: 'Build', routes: ['/build/', '/develop/', '/capabilities/'] },
+  { href: '/developers/', label: 'Developers', routes: ['/developers/', '/agents/', '/protocol/'] },
 ];
-const isCurrent = (href: string) => currentPath === href || currentPath.startsWith(href) && href !== '/';
+const normalizedPath = `${currentPath.replace(/\/+$/, '')}/`;
+const currentState = (item: typeof nav[number]) => normalizedPath === item.href
+  ? 'page'
+  : item.routes.some(route => normalizedPath.startsWith(route)) ? 'location' : undefined;
 ---
 
 <!DOCTYPE html>
@@ -64,10 +65,11 @@ const isCurrent = (href: string) => currentPath === href || currentPath.startsWi
           <img class="brand__mark" src="/mathgraph-mark-black.png" alt="" width="32" height="32" aria-hidden="true" />
           <span class="brand__word">MathGraph<span class="brand__dot">.</span></span>
         </a>
-        <nav aria-label="Primary">
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">Menu</button>
+        <nav aria-label="Primary" id="primary-navigation">
           <ul class="nav-list">
             {nav.map((item) => (
-              <li><a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a></li>
+              <li><a href={item.href} aria-current={currentState(item)}>{item.label}</a></li>
             ))}
             <li><a href="https://github.com/metalogiclabs/mathgraph" rel="external">GitHub ↗</a></li>
           </ul>
@@ -96,6 +98,7 @@ const isCurrent = (href: string) => currentPath === href || currentPath.startsWi
     </footer>
     <script>
       import '../scripts/copy';
+      import '../scripts/navigation';
     </script>
   </body>
 </html>
