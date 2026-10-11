@@ -76,6 +76,39 @@ try {
             `${route}: ${await nested.evaluate((element) => element.tagName)} ${index} escapes its fieldset at ${width}px: fieldset=${JSON.stringify(controlsBox)} nested=${JSON.stringify(box)}`,
           );
         }
+        const gridItems = catalogue.locator('[data-catalogue-controls] > label, [data-catalogue-controls] > button');
+        const paintedBoxes = [];
+        for (let index = 0; index < await gridItems.count(); index += 1) {
+          const item = gridItems.nth(index);
+          const itemBox = await item.boundingBox();
+          assert(itemBox, `${route}: missing catalogue grid item ${index} at ${width}px`);
+          const descendants = item.locator('input, select, button');
+          const boxes = [itemBox];
+          for (let descendantIndex = 0; descendantIndex < await descendants.count(); descendantIndex += 1) {
+            const descendantBox = await descendants.nth(descendantIndex).boundingBox();
+            assert(descendantBox, `${route}: missing grid-item control ${index}.${descendantIndex} at ${width}px`);
+            boxes.push(descendantBox);
+          }
+          paintedBoxes.push({
+            index,
+            x: Math.min(...boxes.map((box) => box.x)),
+            y: Math.min(...boxes.map((box) => box.y)),
+            right: Math.max(...boxes.map((box) => box.x + box.width)),
+            bottom: Math.max(...boxes.map((box) => box.y + box.height)),
+          });
+        }
+        for (let leftIndex = 0; leftIndex < paintedBoxes.length; leftIndex += 1) {
+          for (let rightIndex = leftIndex + 1; rightIndex < paintedBoxes.length; rightIndex += 1) {
+            const left = paintedBoxes[leftIndex];
+            const right = paintedBoxes[rightIndex];
+            const horizontalOverlap = Math.min(left.right, right.right) - Math.max(left.x, right.x);
+            const verticalOverlap = Math.min(left.bottom, right.bottom) - Math.max(left.y, right.y);
+            assert(
+              horizontalOverlap <= 0.5 || verticalOverlap <= 0.5,
+              `${route}: catalogue grid items ${left.index} and ${right.index} overlap at ${width}px: left=${JSON.stringify(left)} right=${JSON.stringify(right)}`,
+            );
+          }
+        }
         if (javaScriptEnabled) {
           const query = catalogue.locator('[data-catalogue-query]');
           await query.focus();
