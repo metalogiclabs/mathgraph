@@ -205,6 +205,34 @@ describe('agent discovery contracts', () => {
     expect(llms).not.toContain('vercel.app');
   });
 
+  test('advertises the Resolve transport schemas consistently without adding authentication', async () => {
+    const [discovery, discoverySchema, llms, developers] = await Promise.all([
+      json('.well-known/mathgraph.json'),
+      json('schemas/discovery-v3.schema.json'),
+      text('llms.txt'),
+      text('developers/index.html'),
+    ]);
+    const ajv = new Ajv({ allErrors: true, strict: true });
+    for (const [key, name] of [
+      ['resolve_bundle_v1', 'resolve-bundle-v1.schema.json'],
+      ['resolve_trust_policy_v1', 'resolve-trust-policy-v1.schema.json'],
+    ]) {
+      const url = `https://mathgraph.org/schemas/${name}`;
+      expect(discovery.schemas[key]).toBe(url);
+      expect(llms).toContain(url);
+      expect(developers).toContain(`href="/schemas/${name}"`);
+      expect((await json(`schemas/${name}`)).$id).toBe(url);
+      const missing = structuredClone(discovery);
+      delete missing.schemas[key];
+      expect(ajv.validate(discoverySchema, missing)).toBe(false);
+      const substituted = structuredClone(discovery);
+      substituted.schemas[key] = 'https://mathgraph.org/schemas/unrelated.schema.json';
+      expect(ajv.validate(discoverySchema, substituted)).toBe(false);
+    }
+    expect(llms).toMatch(/schemas.*do not authenticate.*records/i);
+    expect(developers.replace(/<[^>]+>/g, ' ')).toMatch(/schemas.*do not authenticate.*records/i);
+  });
+
   test('includes human and permanent record routes in the generated sitemap', async () => {
     const sitemap = await text('sitemap.xml');
     for (const route of [

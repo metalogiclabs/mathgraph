@@ -53,6 +53,8 @@
         "record_index_v2",
         "living_warrant_snapshot_v1",
         "resolve_scenarios_v1",
+        "resolve_bundle_v1",
+        "resolve_trust_policy_v1",
         "presentation_metadata_v1",
         "lean_evidence_profile_draft_1",
         "discovery_v3",
@@ -84,6 +86,12 @@
         },
         "resolve_scenarios_v1": {
           "const": "https://mathgraph.org/schemas/resolve-scenarios-v1.schema.json"
+        },
+        "resolve_bundle_v1": {
+          "const": "https://mathgraph.org/schemas/resolve-bundle-v1.schema.json"
+        },
+        "resolve_trust_policy_v1": {
+          "const": "https://mathgraph.org/schemas/resolve-trust-policy-v1.schema.json"
         },
         "presentation_metadata_v1": {
           "const": "https://mathgraph.org/schemas/presentation-metadata-v1.schema.json"

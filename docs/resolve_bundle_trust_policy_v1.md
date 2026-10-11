@@ -10,11 +10,15 @@ MathGraph Resolve v1 publishes two distinct protocol objects:
 
 The normative JSON Schema Draft 2020-12 sources are:
 
-- `protocol/schemas/resolve-bundle-v1.schema.json`
-- `protocol/schemas/resolve-trust-policy-v1.schema.json`
+- [Resolve bundle schema](../protocol/schemas/resolve-bundle-v1.schema.json)
+  ([public copy](https://mathgraph.org/schemas/resolve-bundle-v1.schema.json))
+- [Resolve trust-policy schema](../protocol/schemas/resolve-trust-policy-v1.schema.json)
+  ([public copy](https://mathgraph.org/schemas/resolve-trust-policy-v1.schema.json))
 
 The files under `website/public/schemas/` are byte-identical publication
-projections. The protocol copies are authoritative.
+projections. The protocol copies are authoritative. These schemas describe
+structure; they do not authenticate records or replace the separately pinned
+trust policy and semantic replay.
 
 ## Validation boundary
 

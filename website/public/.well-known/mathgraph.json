@@ -14,6 +14,8 @@
     "record_index_v2": "https://mathgraph.org/schemas/record-index-v2.schema.json",
     "living_warrant_snapshot_v1": "https://mathgraph.org/schemas/living-warrant-snapshot-v1.schema.json",
     "resolve_scenarios_v1": "https://mathgraph.org/schemas/resolve-scenarios-v1.schema.json",
+    "resolve_bundle_v1": "https://mathgraph.org/schemas/resolve-bundle-v1.schema.json",
+    "resolve_trust_policy_v1": "https://mathgraph.org/schemas/resolve-trust-policy-v1.schema.json",
     "presentation_metadata_v1": "https://mathgraph.org/schemas/presentation-metadata-v1.schema.json",
     "lean_evidence_profile_draft_1": "https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json",
     "discovery_v3": "https://mathgraph.org/schemas/discovery-v3.schema.json",

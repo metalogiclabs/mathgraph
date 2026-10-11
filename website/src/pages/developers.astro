@@ -103,6 +103,7 @@ python -I -S conformance/capability_v1/consumer.py \
           <div class="eyebrow">Resolve · Python</div>
           <h2>Replay record 002 without MathGraph.org</h2>
           <p>Acquire these three static inputs first. The replay itself imports only the Python standard library and needs no MathGraph package, service, LLM, or network connection. The trust-policy digest must come from a channel you trust separately from the downloaded policy.</p>
+          <p>The <a href="/schemas/resolve-bundle-v1.schema.json">Resolve bundle schema</a> and <a href="/schemas/resolve-trust-policy-v1.schema.json">Resolve trust-policy schema</a> describe the published transport structure. These schemas do not authenticate records or replace the separately pinned trust policy and semantic replay.</p>
           <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre><code>mkdir mathgraph-resolve-v1
 cd mathgraph-resolve-v1
 curl --fail --remote-name {resolveOfflineRoot}/consumer.py

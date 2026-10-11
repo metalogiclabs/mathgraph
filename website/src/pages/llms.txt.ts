@@ -28,6 +28,8 @@ Record index schema: https://mathgraph.org/schemas/record-index-v2.schema.json
 Historical index schema: https://mathgraph.org/schemas/record-index-v1.schema.json
 Resolution snapshot schema: https://mathgraph.org/schemas/living-warrant-snapshot-v1.schema.json
 Precomputed scenarios schema: https://mathgraph.org/schemas/resolve-scenarios-v1.schema.json
+Resolve bundle schema: ${manifest.schemas.resolve_bundle_v1}
+Resolve trust-policy schema: ${manifest.schemas.resolve_trust_policy_v1}
 Presentation metadata schema: https://mathgraph.org/schemas/presentation-metadata-v1.schema.json
 Proposed Lean profile: https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json
 
@@ -101,6 +103,7 @@ Usage boundary:
 - For record 002, replay the pinned bundle against the separately trusted policy; do not accept producer-reported states as resolution authority.
 - Any mismatch, unsupported claim, unknown type, or unsupported transport is UNKNOWN or an explicit error; never borrow a nearby warrant.
 - A digest establishes integrity and byte identity, not host authenticity or semantic truth.
+- Resolve transport schemas describe structure; they do not authenticate records or replace the separately pinned trust policy and semantic replay.
 - Treat generated_at as publication time. Set fetched_at when the record index is received and re-fetch before max_age_seconds elapse.
 - Qualified record evidence bytes remain immutable; lifecycle and presentation metadata may be updated separately with history.
 - Record 002 current applicability is UNKNOWN and freshness is NOT_CHECKED in the offline replay.

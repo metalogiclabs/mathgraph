@@ -8,6 +8,13 @@ arguments were mathematically correct.
 
 ## Exact offline inputs
 
+The published [Resolve bundle schema](https://mathgraph.org/schemas/resolve-bundle-v1.schema.json)
+and [Resolve trust-policy schema](https://mathgraph.org/schemas/resolve-trust-policy-v1.schema.json)
+describe the transport structure. These schemas do not authenticate records or
+replace the separately pinned trust policy and semantic replay. See the
+[format contracts](resolve_bundle_trust_policy_v1.md) for the independent
+structural/admission validation boundary.
+
 Download the following resources before entering network isolation. Each public
 file must be byte-identical to its canonical repository source.
 
