@@ -129,6 +129,42 @@ class ProtocolConsumerTests(unittest.TestCase):
         changed = canonical(policy)
         self.assert_reason("UNKNOWN_SEMANTIC_KIND", bundle, changed)
 
+    def test_rejects_non_string_semantic_kinds_through_api_and_cli(self):
+        bundle, policy_raw = self.inputs()
+        for kind in ([], {}):
+            policy = json.loads(policy_raw)
+            policy["admissions"]["mathgraph.l4yaml.48-case-qualification"]["kind"] = kind
+            changed = canonical(policy)
+            with self.subTest(kind=kind, interface="api"):
+                self.assert_reason("INVALID_FIELD_TYPE", bundle, changed)
+            with self.subTest(kind=kind, interface="cli"), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                shutil.copyfile(HERE / "consumer.py", directory / "consumer.py")
+                (directory / "bundle.json").write_bytes(bundle)
+                (directory / "policy.json").write_bytes(changed)
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "-I",
+                        "-S",
+                        "consumer.py",
+                        "--bundle",
+                        "bundle.json",
+                        "--policy",
+                        "policy.json",
+                        "--policy-sha256",
+                        digest(changed),
+                    ],
+                    cwd=directory,
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(
+                    json.loads(result.stderr),
+                    {"accepted": False, "reason_code": "INVALID_FIELD_TYPE"},
+                )
+                self.assertNotIn(b"Traceback", result.stderr)
+
     def test_rejects_wrong_source_scope_verifier_and_assumptions(self):
         bundle, policy_raw = self.inputs()
         mutations = {

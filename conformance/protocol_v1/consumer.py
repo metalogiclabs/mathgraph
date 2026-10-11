@@ -189,6 +189,8 @@ def validate_policy(policy, policy_raw, policy_sha256):
         reject("ADMISSION_ID_MISMATCH")
     for admission_id, admission in admissions.items():
         exact_fields(admission, ("assumptions", "kind", "outcome", "scope", "source", "verifier"), f"admissions.{admission_id}")
+        if type(admission["kind"]) is not str:
+            reject("INVALID_FIELD_TYPE", f"admissions.{admission_id}.kind")
         if admission["kind"] not in {"documentary", "formal"}:
             reject("UNKNOWN_SEMANTIC_KIND", admission_id)
         expected = EXPECTED_ADMISSIONS[admission_id]
