@@ -99,8 +99,35 @@ jobs:
         run: |
           set -euo pipefail
           lean --version
+          # A successful Lean process alone permits 'sorry'. Reject it explicitly.
+          python - <<'PY'
+          import pathlib, re
+          root=pathlib.Path("conformance/consequence_v0")
+          for p in sorted(root.glob("*.lean")):
+              text=p.read_text()
+              if re.search(r"\bsorry\b|\b(admit|axiom)\b", re.sub(r"/-![\s\S]*?-/", "", text)):
+                  raise SystemExit(f"Forbidden proof placeholder or axiom: {p}")
+          PY
           lean conformance/consequence_v0/CompositionalWarrant.lean
           lean conformance/consequence_v0/GeneralWarrantCalculus.lean
           lean conformance/consequence_v0/ProtectedFutureRefinement.lean
           lean conformance/consequence_v0/EconomicCompoundingBoundary.lean
+          # Print every theorem's dependencies for the evidence log.
+          python - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("conformance/consequence_v0")
+          for path in sorted(root.glob("*.lean")):
+              names=re.findall(r"(?m)^theorem\s+([A-Za-z_][A-Za-z_0-9]*)",path.read_text())
+              source=path.read_text()+"\n"+"\n".join(f"#print axioms {name}" for name in names)+"\n"
+              probe=path.with_name(path.stem+"AxiomAudit.lean")
+              probe.write_text(source)
+              print(f"AXIOM_AUDIT {path.name}: {len(names)} theorems")
+          PY
+          for f in conformance/consequence_v0/*AxiomAudit.lean; do
+            lean "$f" 2>&1 | tee "$RUNNER_TEMP/$(basename "$f").log"
+          done
+          if grep -E 'sorryAx|declaration uses \\[sorry\\]|error:' "$RUNNER_TEMP/"*AxiomAudit.lean.log; then
+            echo "Forbidden axiom or failed theorem audit"
+            exit 1
+          fi
           sha256sum conformance/consequence_v0/CompositionalWarrant.lean conformance/consequence_v0/GeneralWarrantCalculus.lean conformance/consequence_v0/ProtectedFutureRefinement.lean conformance/consequence_v0/EconomicCompoundingBoundary.lean
