@@ -1,0 +1,36 @@
+{
+  "schema_version": "mathgraph.capability-registry.v1",
+  "id": "urn:mathgraph:capability-registry",
+  "version": "1",
+  "qualified_entries": [],
+  "experimental_candidates": [
+    {
+      "id": "urn:mathgraph:capability:finite-developmental-growth",
+      "version": "1",
+      "profile": "mathgraph.finite-representation-refinement.v1",
+      "status": "EXPERIMENTAL",
+      "description": "Bounded finite research candidate. No independent portable-profile replay or registry admission has occurred.",
+      "source": {
+        "id": "urn:mathgraph:source:finite-developmental-run",
+        "locator": "experiments/developmental_capability_growth_v1/run.py",
+        "sha256": "4a76cae749b75e1461948854bf91fbcff5c5385591ec1f21967d44ba9738d588",
+        "size_bytes": 13753,
+        "media_type": "text/x-python"
+      }
+    },
+    {
+      "id": "urn:mathgraph:capability:vdn-lean",
+      "version": "1",
+      "profile": "mathgraph.capability.vdn-lean.v1",
+      "status": "EXPERIMENTAL",
+      "description": "Lean capability evidence candidate. Requires pinned native replay and independent contract-to-declaration binding before admission.",
+      "source": {
+        "id": "urn:mathgraph:source:vdn-development-certificate",
+        "locator": "verified-developmental-navigation/lean/VerifiedDevelopmentalNavigation/DevelopmentCertificate.lean",
+        "sha256": "fc266183da8d7de2e5bc82b9eea093b64719fd9ef8f90f7c14e5bb3fe9b98a0a",
+        "size_bytes": 2705,
+        "media_type": "text/plain"
+      }
+    }
+  ]
+}
