@@ -44,7 +44,7 @@ theorem evidence_monotonicity
 theorem alternative_support_survives
     {Claim : Type u} (E : Claim → Prop)
     (Rule : Claim → List Claim → Prop)
-    (a b target : Claim)
+    (b target : Claim)
     (hb : E b) (r : Rule target [b]) :
     Derives E Rule target := by
   apply Derives.inference r
@@ -55,7 +55,7 @@ theorem alternative_support_survives
   subst p
   exact Derives.evidence hb
 
-theorem unsupported_cycle_cannot_self_certify
+theorem no_derivation_without_authorized_origin
     {Claim : Type u}
     (E : Claim → Prop) (Rule : Claim → List Claim → Prop)
     (origin : Claim → Prop)
