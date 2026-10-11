@@ -38,7 +38,8 @@ function initializeMap(root: HTMLElement) {
   const controls = Array.from(root.querySelectorAll<HTMLAnchorElement | SVGAElement>('[data-map-select]'));
   const traversalStatus = root.querySelector<HTMLElement>('[data-map-traversal-status]')!;
   const traversalResults = root.querySelector<HTMLElement>('[data-map-traversal-results]')!;
-  let selected: string | null = null;
+  const fragmentObject = () => articles.find(article => `#${article.id}` === window.location.hash)?.dataset.objectDetail;
+  let selected: string | null = fragmentObject() ?? null;
   let displayed = map;
   const detail = (id: string) => articles.find(article => article.dataset.objectDetail === id);
   function render() {
@@ -94,6 +95,15 @@ function initializeMap(root: HTMLElement) {
     }));
   });
   for (const input of [...kindInputs, limit]) input.addEventListener('change', render);
+  window.addEventListener('hashchange', () => {
+    const id = fragmentObject();
+    // Only this component's exact generated detail fragments affect selection.
+    // Keep native anchors/history and the current display filters unchanged.
+    if (id && id !== selected && displayed.nodes.some(node => node.id === id)) {
+      selected = id;
+      render();
+    }
+  });
   root.querySelector<HTMLFieldSetElement>('[data-map-controls]')!.disabled = false;
   render();
 }

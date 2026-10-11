@@ -45,6 +45,29 @@ try {
       assert.equal(await map.locator('[data-object-detail]:visible').count(), javaScriptEnabled ? 1 : 14);
       if (process.env.BROWSER_EVIDENCE_DIR) await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/objects-${width}-${javaScriptEnabled ? 'js' : 'nojs'}.png` });
       if (javaScriptEnabled) {
+        const receiptFragment = await semanticNode(receipt.id).getAttribute('href');
+        const claimFragment = await semanticNode(claim.id).getAttribute('href');
+        await page.goto('about:blank');
+        await page.goto(`${origin}/objects/${receiptFragment}`, { waitUntil: 'networkidle' });
+        assert.equal(await semanticNode(receipt.id).getAttribute('aria-current'), 'true', 'Direct object fragment must select its matching detail');
+        assert.equal(await selectedDetail(receipt.id).isVisible(), true);
+        await page.reload({ waitUntil: 'networkidle' });
+        assert.equal(await semanticNode(receipt.id).getAttribute('aria-current'), 'true', 'Reload must retain fragment selection');
+        assert.equal(await selectedDetail(receipt.id).isVisible(), true);
+        await semanticNode(claim.id).click();
+        await page.waitForURL(`${origin}/objects/${claimFragment}`);
+        await page.goBack();
+        await page.waitForFunction(id => document.querySelector(`[data-object-detail="${id}"]`)?.hidden === false, receipt.id, { timeout: 3000 });
+        assert.equal(new URL(page.url()).hash, receiptFragment);
+        assert.equal(await semanticNode(receipt.id).getAttribute('aria-current'), 'true');
+        await page.goForward();
+        await page.waitForFunction(id => document.querySelector(`[data-object-detail="${id}"]`)?.hidden === false, claim.id, { timeout: 3000 });
+        assert.equal(new URL(page.url()).hash, claimFragment);
+        assert.equal(await semanticNode(claim.id).getAttribute('aria-current'), 'true');
+        await page.goto(`${origin}/objects/#main-content`);
+        assert.equal(await semanticNode(claim.id).getAttribute('aria-current'), 'true', 'Unrelated fragment must not reset map selection');
+        assert.equal(await selectedDetail(claim.id).isVisible(), true);
+        assert.equal(new URL(page.url()).hash, '#main-content', 'Keep native unrelated fragment navigation');
         await semanticNode(receipt.id).focus();
         await page.keyboard.press('Enter');
         assert.equal(await semanticNode(receipt.id).getAttribute('aria-current'), 'true');
@@ -135,7 +158,7 @@ try {
     }
   }
   assert.deepEqual(errors, []);
-  console.log('PASS knowledge map browser: 1440/768/390; keyboard semantic/SVG selection; filters; directed display-only traversal; actual download + read-only reader + evidence rejection; limits/omissions; all 14 detail routes; JS/no-JS; reduced motion; homepage 2/1 scope; zero overflow/console errors.');
+  console.log('PASS knowledge map browser: 1440/768/390; direct-fragment/reload and Back/Forward selection; unrelated fragments preserved; keyboard semantic/SVG selection; filters; directed display-only traversal; actual download + read-only reader + evidence rejection; limits/omissions; all 14 detail routes; JS/no-JS; reduced motion; homepage 2/1 scope; zero overflow/console errors.');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.close(resolve));
