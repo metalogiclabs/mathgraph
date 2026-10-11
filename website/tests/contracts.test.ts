@@ -34,6 +34,29 @@ async function json(path: string): Promise<Record<string, any>> {
 }
 
 describe('agent discovery contracts', () => {
+  test('publishes the independent import result schema without widening historical authority', async () => {
+    const repository = join(website, '..');
+    const name = 'import-result-v1.schema.json';
+    const [schemaBytes, publicBytes, resultBytes, recordBytes] = await Promise.all([
+      readFile(join(repository, 'protocol/schemas', name)),
+      readFile(join(dist, 'schemas', name)),
+      readFile(join(repository, 'conformance/import_v1/fixtures/result.json')),
+      readFile(join(repository, 'conformance/import_v1/fixtures/record.json')),
+    ]);
+    expect(publicBytes).toEqual(schemaBytes);
+    expect(recordBytes).toEqual(await readFile(join(dist, `evidence/${recordId}/record.json`)));
+    expect(createHash('sha256').update(recordBytes).digest('hex')).toBe(sourceCheckTransportSha256);
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    const schema = JSON.parse(schemaBytes.toString('utf8'));
+    const result = JSON.parse(resultBytes.toString('utf8'));
+    expect(ajv.validate(schema, result), ajv.errorsText()).toBe(true);
+    for (const [key, value] of [
+      ['epistemic_status', 'VERIFIED_PROOF'], ['lifecycle', 'CURRENT'],
+      ['freshness', 'CHECKED'], ['current_applicability', 'APPLICABLE'],
+      ['authorization', 'EXECUTE'], ['producer_verdict', 'VERIFIED_PROOF'],
+    ]) expect(ajv.validate(schema, { ...result, [key]: value })).toBe(false);
+  });
+
   test('publishes byte-identical Resolve transport schemas that accept the immutable fixtures', async () => {
     const repository = join(website, '..');
     const names = ['resolve-bundle-v1.schema.json', 'resolve-trust-policy-v1.schema.json'];
