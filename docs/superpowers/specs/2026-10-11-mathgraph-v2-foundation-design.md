@@ -206,9 +206,11 @@ executable quick start, and carefully scoped long-term direction.
 - `/protocol/` is organized around Object, Relation, Evidence, Resolution, and
   Transition, with CLOSE/ACT/REFINE kept distinct. Historical schemas remain
   unchanged.
-- The published TypeScript example is served with a browser-safe JavaScript or
-  text media type and retains a downloadable TypeScript source. The current
-  production `video/mp2t` failure receives a header/browser regression test.
+- The published Node-oriented TypeScript example remains byte-identical and is
+  served as `text/plain; charset=utf-8` at its exact path, so browsers can
+  inspect it without weakening `nosniff`. The current production `video/mp2t`
+  failure receives config, header, digest, and browser regression tests. No
+  second browser-JavaScript implementation or runtime endpoint is introduced.
 - Record 002 receives a presentation-only social image whose metadata is kept
   outside the immutable evidence digest.
 

@@ -290,11 +290,12 @@ git commit -m "Add canonical object explorer and knowledge map"
 - Modify: `website/public/.well-known/mathgraph.json`
 - Create: `website/src/pages/about.astro`
 - Create: `website/src/pages/contact.astro`
-- Create: `website/public/examples/resolve-consumer-v1.js`
 - Create: `website/public/social/records/mg-living-warrant-openai-jpl-20261010-v1.source.svg`
 - Create: `website/public/social/records/mg-living-warrant-openai-jpl-20261010-v1.png`
 - Modify: `website/scripts/generate-social-card.mjs`
+- Modify: `vercel.json`
 - Modify: `website/vercel.json`
+- Modify: `website/scripts/check-built-site.mjs`
 - Modify: `website/tests/rendering.test.ts`
 - Modify: `website/tests/contracts.test.ts`
 
@@ -305,11 +306,13 @@ commands, no hosted resolver/MCP claims, current protocol contracts, separate
 CLOSE/ACT/REFINE descriptions, advisory Discover status, and explicit UNKNOWN
 for the Capability Family Compiler and action authorization.
 
-Require `/about/` and `/contact/`, a directly viewable/runnable JavaScript
-consumer plus downloadable TypeScript source, a correct MIME/header smoke test,
-and presentation-only social metadata for record 002 outside its evidence
-digest. Keep the `www` redirect explicitly deferred as a separately authorized
-production-domain action.
+Require `/about/` and `/contact/`, a directly viewable and byte-identical
+Node-oriented TypeScript consumer served as `text/plain; charset=utf-8`, exact
+root/website Vercel-config parity, preview header/digest/browser checks, and
+presentation-only social metadata for record 002 outside its evidence digest.
+Keep `nosniff`; do not introduce a second JavaScript implementation or runtime
+endpoint. Keep the `www` redirect explicitly deferred as a separately
+authorized production-domain action.
 
 ### Step 2: Implement lightweight catalogue controls
 
