@@ -102,4 +102,5 @@ jobs:
           lean conformance/consequence_v0/CompositionalWarrant.lean
           lean conformance/consequence_v0/GeneralWarrantCalculus.lean
           lean conformance/consequence_v0/ProtectedFutureRefinement.lean
-          sha256sum conformance/consequence_v0/CompositionalWarrant.lean conformance/consequence_v0/GeneralWarrantCalculus.lean conformance/consequence_v0/ProtectedFutureRefinement.lean
+          lean conformance/consequence_v0/EconomicCompoundingBoundary.lean
+          sha256sum conformance/consequence_v0/CompositionalWarrant.lean conformance/consequence_v0/GeneralWarrantCalculus.lean conformance/consequence_v0/ProtectedFutureRefinement.lean conformance/consequence_v0/EconomicCompoundingBoundary.lean
