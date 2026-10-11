@@ -122,7 +122,8 @@ def parse_json(raw, label):
         )
     except ProtocolError:
         raise
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+    except (ValueError, RecursionError) as error:
+        # Includes UTF-8/JSON syntax errors and Python's integer/nesting limits.
         reject("INVALID_JSON", f"{label}:{error}")
     if type(value) is not dict:
         reject("INVALID_ROOT_TYPE", label)

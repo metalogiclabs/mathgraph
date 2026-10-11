@@ -83,6 +83,58 @@ class ProtocolConsumerTests(unittest.TestCase):
         self.assert_reason("DUPLICATE_JSON_KEY", b'{"schema":"mathgraph.resolve-bundle.v1","schema":"other"}', policy)
         self.assert_reason("DUPLICATE_JSON_KEY", bundle, b'{"schema":"x","schema":"y"}')
 
+    def test_rejects_nonfinite_numbers_before_structural_validation(self):
+        bundle, policy = self.inputs()
+        for number in (b"NaN", b"Infinity", b"-Infinity", b"1e999"):
+            malformed = b'{"number":' + number + b"}"
+            with self.subTest(number=number, input="bundle"):
+                self.assert_reason("NONFINITE_JSON_NUMBER", malformed, policy)
+            with self.subTest(number=number, input="policy"):
+                self.assert_reason("NONFINITE_JSON_NUMBER", bundle, malformed)
+
+    def test_normalizes_integer_conversion_limit_through_api(self):
+        bundle, policy = self.inputs()
+        original_limit = sys.get_int_max_str_digits()
+        try:
+            sys.set_int_max_str_digits(640)
+            malformed = b'{"number":' + b"1" * 641 + b"}"
+            self.assert_reason("INVALID_JSON", malformed, policy)
+            self.assert_reason("INVALID_JSON", bundle, malformed)
+        finally:
+            sys.set_int_max_str_digits(original_limit)
+
+    def test_normalizes_nesting_limit_through_api(self):
+        bundle, policy = self.inputs()
+        depth = sys.getrecursionlimit() + 100
+        malformed = b'{"nested":' + b"[" * depth + b"0" + b"]" * depth + b"}"
+        self.assert_reason("INVALID_JSON", malformed, policy)
+        self.assert_reason("INVALID_JSON", bundle, malformed)
+
+    def test_normalizes_parser_limits_through_cli(self):
+        bundle, policy = self.inputs()
+        malformed_inputs = {
+            "integer": b'{"number":' + b"1" * 641 + b"}",
+            "nesting": b'{"nested":' + b"[" * 10000 + b"0" + b"]" * 10000 + b"}",
+        }
+        for limit, malformed in malformed_inputs.items():
+            for input_name in ("bundle", "policy"):
+                with self.subTest(limit=limit, input=input_name), tempfile.TemporaryDirectory() as tmp:
+                    directory = Path(tmp)
+                    shutil.copyfile(HERE / "consumer.py", directory / "consumer.py")
+                    (directory / "bundle.json").write_bytes(malformed if input_name == "bundle" else bundle)
+                    policy_bytes = malformed if input_name == "policy" else policy
+                    (directory / "policy.json").write_bytes(policy_bytes)
+                    result = subprocess.run(
+                        [sys.executable, "-I", "-S", "-X", "int_max_str_digits=640", "consumer.py",
+                         "--bundle", "bundle.json", "--policy", "policy.json",
+                         "--policy-sha256", digest(policy_bytes)],
+                        cwd=directory,
+                        capture_output=True,
+                    )
+                    self.assertEqual(result.returncode, 1)
+                    self.assertEqual(result.stdout, b"")
+                    self.assertEqual(result.stderr, b'{"accepted":false,"reason_code":"INVALID_JSON"}\n')
+
     def test_rejects_extra_fields_and_missing_fields(self):
         bundle_raw, policy_raw = self.inputs()
         bundle = json.loads(bundle_raw)
