@@ -1,0 +1,22 @@
+name: Consequence Foundation V0 Boundary Tests
+on:
+  pull_request:
+    paths:
+      - 'conformance/consequence_v0/**'
+      - 'protocol/schemas/consequence-envelope-v0.schema.json'
+      - 'website/src/data/record-index.json'
+      - 'conformance/capability_v1/evaluation.json'
+      - '.github/workflows/consequence-foundation-v0.yml'
+  workflow_dispatch:
+jobs:
+  bounded-interchange:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Structural and source-bound projection controls
+        run: python -m unittest discover -s conformance/consequence_v0 -p 'test_*.py' -v
