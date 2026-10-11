@@ -15,6 +15,8 @@ import resolveScenarios from '../src/data/resolve-scenarios.json';
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
 const execFileAsync = promisify(execFile);
+const importImplementationCommit = '1204a1d267b6217c45c9b17f093cc3587450cf78';
+const importSourceRoot = `https://github.com/metalogiclabs/mathgraph/blob/${importImplementationCommit}`;
 
 async function page(path: string): Promise<string> {
   return readFile(join(dist, path, 'index.html'), 'utf8');
@@ -89,9 +91,20 @@ describe('primary public evidence experience', () => {
     for (const region of ['source', 'evidence', 'scope', 'unknowns']) {
       expect(html).toContain(`data-import-${region}`);
     }
-    expect(text).toContain('python scripts/mathgraph_import_v1.py');
+    expect(text).toContain('python -I -S scripts/mathgraph_import_v1.py');
     expect(text).toContain('--policy-sha256');
     expect(text).toContain('Download presentation JSON');
+  });
+
+  test('pins candidate importer checkout, consumer, and separately reviewed policy before merge', async () => {
+    for (const route of ['', 'verify', 'check', 'developers']) {
+      const html = await page(route);
+      const text = visibleText(html);
+      expect(text).toContain(`git checkout --detach ${importImplementationCommit}`);
+      expect(html).toContain(`${importSourceRoot}/conformance/import_v1/consumer.py`);
+      expect(html).toContain(`${importSourceRoot}/conformance/import_v1/fixtures/trust-policy.json`);
+      expect(html).not.toMatch(/github\.com\/metalogiclabs\/mathgraph\/blob\/main\/(?:conformance\/import_v1|scripts\/mathgraph_import_v1\.py)/);
+    }
   });
 
   test('keeps durable evidence links legible on the dark section', async () => {

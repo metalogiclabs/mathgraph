@@ -778,7 +778,7 @@ pre {
   gap: var(--space-3);
 }
 
-.catalogue-filter[data-catalogue-filter-count="1"] .catalogue-filter__controls {
+:where(.catalogue-filter[data-catalogue-filter-count="1"]) .catalogue-filter__controls {
   grid-template-columns: minmax(180px, 2fr) minmax(130px, 1fr) auto;
 }
 

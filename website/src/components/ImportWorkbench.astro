@@ -1,12 +1,12 @@
 ---
+import {
+  importCheckoutReplayCommand,
+  importConsumerSourceUrl,
+  importImplementationCommit,
+  importPolicySourceUrl,
+} from '../lib/import-replay';
+
 const recordId = 'mg-l4yaml-source-check-20261010';
-const replayCommand = [
-  'python scripts/mathgraph_import_v1.py',
-  '  --record conformance/import_v1/fixtures/record.json',
-  '  --policy conformance/import_v1/fixtures/trust-policy.json',
-  '  --policy-sha256 944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65',
-  '  --goal finite_parser_acceptance',
-].join(' \\\n');
 ---
 
 <section class="import-workbench" data-import-workbench data-stage="unknown" aria-labelledby="import-title">
@@ -62,10 +62,10 @@ const replayCommand = [
 
   <details>
     <summary>Supported local-record import paths and independent replay command</summary>
-    <p>The browser supports only the exact downloaded <code>record.json</code>. For independent offline historical receipt and local-policy validation, run this command from a local MathGraph checkout after reviewing the separate trust policy and its digest:</p>
-    <pre><code>{replayCommand}</code></pre>
+    <p>The browser supports only the exact downloaded <code>record.json</code>. The candidate importer is not yet available on <code>main</code>. For independent offline historical receipt and local-policy validation, clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>, then run the pinned consumer after reviewing the separate trust policy and its digest:</p>
+    <pre><code>{importCheckoutReplayCommand}</code></pre>
     <p>You may replace <code>--record</code> with the local path to that unchanged supported artifact. Keep the reviewed policy separate. This offline command does not execute the original proof, kernel, or source suite, check current applicability, or authorize actions.</p>
-    <p><a href="https://github.com/metalogiclabs/mathgraph/blob/main/conformance/import_v1/consumer.py">Inspect the independent consumer</a> · <a href="/schemas/import-result-v1.schema.json">Independent result contract</a> · <a href={`/records/${recordId}/v1/`}>Permanent supported record</a></p>
+    <p><a href={importConsumerSourceUrl}>Inspect the pinned independent consumer</a> · <a href={importPolicySourceUrl}>Inspect the separately reviewed pinned policy</a> · <a href="/schemas/import-result-v1.schema.json">Independent result contract</a> · <a href={`/records/${recordId}/v1/`}>Permanent supported record</a></p>
   </details>
 </section>
 

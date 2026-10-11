@@ -3,6 +3,12 @@ import SourceLink from '../components/SourceLink.astro';
 import StatusTag from '../components/StatusTag.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLatestPublishedRecord } from '../lib/catalog';
+import {
+  importCheckoutReplayCommand,
+  importConsumerSourceUrl,
+  importImplementationCommit,
+  importPolicySourceUrl,
+} from '../lib/import-replay';
 import { artifactUrl, sourceUrl, registry } from '../lib/modules';
 
 const sourcePublished = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
@@ -64,8 +70,12 @@ const badgeHtml = `<a href="${permanentRecordUrl}"><img src="${badgeUrl}" alt="M
       <div class="prose">
         <section id="quickstart">
           <div class="eyebrow">Quickstart</div>
-          <h2>Fetch the exact source-check record</h2>
-          <p>Run these commands from a clean repository checkout using the committed dependency manifests. The same local contracts are exercised in CI; no hosted resolver or MCP service is involved.</p>
+          <h2>Replay the exact source-check record</h2>
+          <p>The candidate importer is not yet available on <code>main</code>. Clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>. The same pinned local contract is exercised in CI; no hosted resolver or MCP service is involved.</p>
+          <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre><code>{importCheckoutReplayCommand}</code></pre></div>
+          <p><a href={importConsumerSourceUrl}>Inspect the pinned independent consumer ↗</a> · <a href={importPolicySourceUrl}>Inspect the separately reviewed pinned policy ↗</a></p>
+          <p>The trust-policy digest in the command must be obtained through a channel trusted separately from the evidence and policy bytes. This historical replay does not run the original proof, kernel, or source suite; current applicability remains <code>UNKNOWN</code>.</p>
+          <h3>Fetch the public evidence bytes separately</h3>
           <div class="code-block"><div class="code-label">Shell</div><pre><code>curl --fail --silent \
   https://mathgraph.org/evidence/{record.id}/record.json \
   -o record.json

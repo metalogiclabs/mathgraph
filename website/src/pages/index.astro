@@ -9,6 +9,7 @@ import { loadObjectProjections } from '../data/object-projections';
 import { getLatestPublishedRecord } from '../lib/catalog';
 import { buildKnowledgeMap } from '../lib/knowledge-map';
 import { capabilityContract } from '../lib/modules';
+import { importCheckoutReplayCommand, importImplementationCommit } from '../lib/import-replay';
 
 const { entry, record } = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
 const objects = await loadObjectProjections();
@@ -18,11 +19,6 @@ const previewIds = objects.objects.filter(object =>
 ).map(object => object.id);
 const map = buildKnowledgeMap(objects, { objectIds: previewIds });
 const finite = record.axes.finite_executable;
-const quickStart = `python -I -S scripts/mathgraph_import_v1.py \\
-  --record conformance/import_v1/fixtures/record.json \\
-  --policy conformance/import_v1/fixtures/trust-policy.json \\
-  --policy-sha256 944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65 \\
-  --goal finite_parser_acceptance`;
 ---
 
 <BaseLayout title="MathGraph — Open Verification Infrastructure" description="Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused." currentPath="/">
@@ -104,8 +100,8 @@ const quickStart = `python -I -S scripts/mathgraph_import_v1.py \\
   <section id="quick-start" class="section" aria-labelledby="quick-start-title">
     <div class="shell">
       <div class="eyebrow">Executable quick start</div><h2 id="quick-start-title">Import the supported record locally.</h2>
-      <p>From a local MathGraph checkout, with Python available and the separate policy and consumer reviewed:</p>
-      <pre data-home-quick-start><code>{quickStart}</code></pre>
+      <p>Clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>. With Python available and the separately pinned policy and consumer reviewed:</p>
+      <pre data-home-quick-start><code>{importCheckoutReplayCommand}</code></pre>
       <p>The result uses <code>mathgraph.import-result.v1</code>. Historical bounded receipt validation leaves proof, kernel, and source-suite replay <code>NOT_PERFORMED</code>; freshness <code>NOT_CHECKED</code>; and current applicability <code>UNKNOWN</code>. It authorizes no action.</p>
       <p><a href="/developers/">Developer setup and consumers →</a></p>
     </div>

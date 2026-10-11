@@ -63,6 +63,19 @@ try {
           controlsBox.x + controlsBox.width <= catalogueBox.x + catalogueBox.width + 0.5,
           `${route} controls overflow their catalogue at ${width}px`,
         );
+        const nestedControls = catalogue.locator('[data-catalogue-controls] label, [data-catalogue-controls] input, [data-catalogue-controls] select, [data-catalogue-controls] button');
+        for (let index = 0; index < await nestedControls.count(); index += 1) {
+          const nested = nestedControls.nth(index);
+          const box = await nested.boundingBox();
+          assert(box, `${route}: missing nested control box ${index} at ${width}px`);
+          assert(
+            box.x >= controlsBox.x - 0.5
+              && box.y >= controlsBox.y - 0.5
+              && box.x + box.width <= controlsBox.x + controlsBox.width + 0.5
+              && box.y + box.height <= controlsBox.y + controlsBox.height + 0.5,
+            `${route}: ${await nested.evaluate((element) => element.tagName)} ${index} escapes its fieldset at ${width}px: fieldset=${JSON.stringify(controlsBox)} nested=${JSON.stringify(box)}`,
+          );
+        }
         if (javaScriptEnabled) {
           const query = catalogue.locator('[data-catalogue-query]');
           await query.focus();

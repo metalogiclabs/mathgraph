@@ -97,6 +97,8 @@ assert.equal(entry.lifecycle, 'CURRENT');
 assert.equal(entry.scope.mismatch_status, 'UNKNOWN');
 assert.equal(index.schema, 'mathgraph.record-index.v2');
 const resolveId = 'mg-living-warrant-openai-jpl-20261010';
+const importImplementationCommit = '1204a1d267b6217c45c9b17f093cc3587450cf78';
+const importSourceRoot = `https://github.com/metalogiclabs/mathgraph/blob/${importImplementationCommit}`;
 const resolveEntry = index.records.find((candidate) => candidate.id === resolveId && candidate.version === 1);
 assert.equal(resolveEntry?.record_kind, 'RESOLUTION_SNAPSHOT');
 assert.equal(resolveEntry.historical_epistemic_result, 'SCOPED_MIXED');
@@ -147,6 +149,12 @@ assert.equal(record.admission.mathematical_theorem_badge_issued, false);
 assert.equal(record.admission.source_fidelity_certified, false);
 
 const rendered = allHtml.join('\n');
+for (const html of [homeHtml, developersHtml]) {
+  assert(html.includes(`git checkout --detach ${importImplementationCommit}`), 'candidate importer checkout must use the immutable implementation commit');
+  assert(html.includes(`${importSourceRoot}/conformance/import_v1/consumer.py`), 'candidate importer consumer link must use the immutable implementation commit');
+  assert(html.includes(`${importSourceRoot}/conformance/import_v1/fixtures/trust-policy.json`), 'candidate importer policy link must use the immutable implementation commit');
+}
+assert(!/github\.com\/metalogiclabs\/mathgraph\/blob\/main\/(?:conformance\/import_v1|scripts\/mathgraph_import_v1\.py)/.test(rendered), 'candidate-only importer paths must not use blob/main');
 for (const prohibited of [
   /verified by (?:NASA|JPL)/i,
   /NASA[- ]verified/i,
