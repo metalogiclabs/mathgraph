@@ -90,4 +90,30 @@ class CrossDomainReal(unittest.TestCase):
         self.assertEqual(self.finite["evaluation"]["freshness"],"NOT_CHECKED")
         self.assertEqual(self.finite["evaluation"]["revocation"],"NOT_CHECKED")
 
+    def test_real_receipts_discharge_only_bounded_consumer_premises(self):
+        """Receiver-owned decision; producer strings cannot authorize an action."""
+        wire_jpl,body_jpl=transfer_payload(JPL_ID,json.dumps(self.record,sort_keys=True).encode())
+        wire_cap,body_cap=transfer_payload(CAP_ID,json.dumps(self.finite["receipt"],sort_keys=True).encode())
+        self.assertNotEqual(hashlib.sha256(wire_jpl).hexdigest(),hashlib.sha256(wire_cap).hexdigest())
+        jpl=resolve_jpl(json.loads(body_jpl),"finite_parser_acceptance")
+        cap=json.loads(body_cap)
+        self.assertEqual(jpl["status"],"WARRANTED_BOUNDED")
+        self.assertEqual(jpl["whole_language_validity"],"UNKNOWN")
+        self.assertEqual(finite_oracle(cap["replay"])["reuse_mask"],246)
+        self.assertEqual(self.finite["evaluation"]["qualification"],"QUALIFIED_BOUNDED")
+        self.assertEqual(self.finite["evaluation"]["current_applicability"],"UNKNOWN")
+        self.assertEqual(self.finite["evaluation"]["action_authorization"],"NONE")
+        # These are two distinct receipts, NOT a proof of shared meaning.
+        self.assertNotEqual(JPL_ID,CAP_ID)
+    def test_real_jpl_receipt_cannot_cross_policy_scope(self):
+        wire,payload=transfer_payload(JPL_ID,json.dumps(self.record,sort_keys=True).encode())
+        imported=json.loads(payload)
+        self.assertEqual(resolve_jpl(imported,"universal_yaml_correctness")["status"],"UNKNOWN")
+        self.assertEqual(resolve_jpl(imported,"finite_parser_acceptance",source="0"*40)["status"],"UNKNOWN")
+        self.assertEqual(encode(*decode(wire)),wire)
+    def test_replay_is_not_live_action_authorization(self):
+        self.assertEqual(self.finite["evaluation"]["action_authorization"],"NONE")
+        self.assertEqual(self.finite["evaluation"]["freshness"],"NOT_CHECKED")
+        self.assertEqual(self.finite["evaluation"]["revocation"],"NOT_CHECKED")
+
 if __name__=="__main__":unittest.main()
