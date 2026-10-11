@@ -298,12 +298,25 @@ Task-scoped and whole-branch reviews completed. The final review found no
 authority or immutable-evidence regression; its three interface findings were
 fixed and the scoped re-review approved the fixes with no remaining finding.
 
-**Remaining release gate:** branch publication and a draft PR with fresh CI. The
-Linux Docker backend and remote website CI have
-not been run for this candidate; no remote CI success or preview deployment is
-claimed. No push, PR creation, production promotion, alias, DNS, or hosted-service
-change occurred during this qualification. The original full-suite fixture and
-SorryDB residual in Section 2.4 remains documented and was not rerun. Current
-applicability remains `UNKNOWN`; freshness/revocation remain `NOT_CHECKED`; no
-action is authorized. Further research and adoption gaps in Sections 4 and 7
-remain open unless explicitly closed above.
+The branch was then published in draft PR
+[#156](https://github.com/metalogiclabs/mathgraph/pull/156) at exact head
+`eabed36460e3a6dbc4681ebdc154d8c745c49cfc`. Fresh remote gates passed:
+[Linux protocol conformance 38104216174](https://github.com/metalogiclabs/mathgraph/actions/runs/38104216174),
+[independent Resolve replay 38104217672](https://github.com/metalogiclabs/mathgraph/actions/runs/38104217672),
+[published evidence 38104216146](https://github.com/metalogiclabs/mathgraph/actions/runs/38104216146),
+and both jobs in [website/evidence run 38104216133](https://github.com/metalogiclabs/mathgraph/actions/runs/38104216133).
+Vercel deployment `6989732937` associated the same head with the protected
+[preview](https://mathgraph-iak1skcjt-over-market.vercel.app/). Authenticated
+smoke checks returned 200 for the new routes and machine contracts; downloaded
+manifest, Resolve schemas, registry, and `/llms.txt` matched the qualified local
+bytes exactly. Discover, Develop, and Capabilities were rendered and visually
+inspected on the preview.
+
+Production remains untouched. No promotion, merge, production alias, DNS,
+registrar, mail, or hosted execution-service change occurred. The original
+full-suite fixture and SorryDB residual in Section 2.4 remains documented and
+was not rerun. Current applicability remains `UNKNOWN`; freshness/revocation
+remain `NOT_CHECKED`; no action is authorized. Further research and adoption
+gaps in Sections 4 and 7 remain open unless explicitly closed above. Human
+review and separate explicit approval remain necessary before any production
+promotion.

@@ -29,11 +29,14 @@ Git history and does not modify the qualified executable artifacts.
 | Complete modular CI coverage | `ae65f940486a372489aa097aa76d2a5cd056fd1c` |
 | Resolve schema discovery | `fbd3994642735f7599ec66bc89c2b9394a7b6b53` |
 
-No branch push, PR, remote preview, production promotion, alias, DNS change, or
-hosted deployment was performed. Task-scoped review, whole-branch review, and
-scoped re-review of all findings completed. Linux Docker
-isolation and candidate-specific remote website CI are **PENDING**. Historical
-P0 CI links in the audit are not evidence that this candidate passed remote CI.
+Task-scoped review, whole-branch review, and scoped re-review of all findings
+completed. The reviewed branch was published in draft PR
+[#156](https://github.com/metalogiclabs/mathgraph/pull/156) at exact head
+`eabed36460e3a6dbc4681ebdc154d8c745c49cfc`; remote Linux isolation, Resolve,
+evidence, and website gates passed. The protected Vercel preview was inspected.
+No production promotion, merge, alias, DNS, registrar, mail, or hosted
+execution-service change was performed. Historical P0 CI links in the audit
+remain separate evidence and do not expand this candidate's boundary.
 
 ## Fresh commands and results
 
@@ -143,7 +146,9 @@ with loopback-server permission and exited **0**:
 The link checker intentionally skips GitHub and production-origin URLs, as
 declared in `website/linkinator.config.json`. These 58 checks are not external
 link availability evidence. Source links target committed module revision
-`02a817e8…`; their public availability requires the later branch push.
+`02a817e8…`. At the time of this local check their public availability depended
+on the later branch push; the branch is now published, but external GitHub link
+availability was not independently exercised by this link gate.
 
 ## Immutable identities and byte parity
 
@@ -262,7 +267,7 @@ existing small QA screenshot convention:
 | Finite Develop | One exact `QUALIFIED_BOUNDED` registry entry after independent finite replay | Same-owner implementation independence only; two distinct target functions within one owned source, not independent organizations; no universal invention/autonomous improvement claim |
 | VDN / compiler | Separate experimental VDN candidate | No pinned native Lean admission; Capability Family Compiler `NOT_IMPLEMENTED` |
 | Interoperability | Unsigned in-toto subject/schema/scope/evidence correspondence | No authentication, signing, transparency, Sigstore/SCITT/RATS implementation, freshness, or authority |
-| Website | Qualified local static projection and schema/artifact parity | No remote preview or production promotion; source-link availability awaits publication; V3 adoption is explicit for consumers pinned to V2 |
+| Website | Qualified local static projection and schema/artifact parity; protected remote preview inspected | No production promotion; external GitHub source-link availability was not independently exercised by the link gate; V3 adoption is explicit for consumers pinned to V2 |
 
 All capability temporal axes stay separate: current applicability `UNKNOWN`,
 freshness/revocation/supersession `NOT_CHECKED`, action authorization `NONE`.
@@ -281,17 +286,30 @@ remain in the controller's task reports and were not recreated here.
 | Task 2: dependency-free package and shared ranking parity | Import tests plus 14 legacy scheduler/source tests passed |
 | Task 3: strict advisory/source contract, deterministic offline example | Discover conformance passed, including isolated dependency/audit-hook checks; exact request/result download parity passed |
 | Task 4: descriptor/evaluation separation and registry contract | Capability conformance passed; general descriptor cannot self-admit; empty registry remains a supported shape |
-| Task 5: independent finite replay before bounded admission | Fresh four-input macOS isolation passed, matched exact receipt counts; registry has one bounded entry; Linux backend pending |
+| Task 5: independent finite replay before bounded admission | Fresh four-input macOS isolation passed and matched exact receipt counts; Linux Docker isolation passed in run 38104216174; registry has one bounded entry |
 | Task 6: unsigned external mapping and negative controls | Interoperability conformance passed; no authentication/admission implied |
 | Task 7: routes, machine parity, desktop/tablet/mobile behavior | Full qualify and 21 browser combinations passed; nine retained images visually verified |
 | Task 8 Step 1: all specified isolated gates, original scripts, immutable hashes | Completed; collection issue corrected and exact command rerun; full outputs inspected |
 | Task 8 files: observed audit update and release report, permitted screenshot artifacts | Audit baseline retained with explicit addendum; this report and nine small QA images added |
 | Task 8 Step 2: independent release review | Task review approved; whole-branch review found three interface gaps; all three fixes passed scoped re-review with no remaining finding |
-| Task 8 Step 3: push/draft PR/CI/preview | Push and draft PR remain pending; no production or remote action occurred during local qualification |
-| No P0 regeneration or production/config mutation | Immutable Git comparisons and exact pins passed; no deployment action taken |
+| Task 8 Step 3: push/draft PR/CI/preview | Draft PR #156 published; Linux protocol, independent Resolve, evidence and website gates passed; protected preview inspected; production untouched |
+| No P0 regeneration or production/config mutation | Immutable Git comparisons and exact pins passed; only the automatic protected preview was created; production and deployment configuration remained unchanged |
 
-The smallest next action is to publish this branch and open the requested draft
-PR, collect fresh Linux Docker and website CI results, inspect an automatically
-created preview if available, and attach the exact final commit and evidence links.
-Production promotion remains a separate action. No release should cite this
-document as evidence that those pending gates have already passed.
+### Remote qualification
+
+- [Linux finite-capability conformance 38104216174](https://github.com/metalogiclabs/mathgraph/actions/runs/38104216174): passed, including Docker isolation.
+- [Independent offline Resolve replay 38104217672](https://github.com/metalogiclabs/mathgraph/actions/runs/38104217672): passed.
+- [Published evidence gate 38104216146](https://github.com/metalogiclabs/mathgraph/actions/runs/38104216146): passed.
+- [Website and evidence integrity 38104216133](https://github.com/metalogiclabs/mathgraph/actions/runs/38104216133): both jobs passed.
+- Vercel deployment `6989732937`: protected [preview](https://mathgraph-iak1skcjt-over-market.vercel.app/) associated with `eabed36460e3a6dbc4681ebdc154d8c745c49cfc`.
+
+Authenticated preview checks returned 200 for the three new routes, both Resolve
+schemas, capability registry, discovery manifest, and `/llms.txt`. The five
+downloaded machine artifacts matched local qualified bytes exactly. Discover,
+Develop, and Capabilities were rendered and visually inspected. Preview pages
+carry `noindex`; production was not promoted or aliased.
+
+The smallest next action is human review of draft PR #156. Any merge or
+production promotion remains a separate explicitly authorized action. This
+report does not close the research, adoption, authentication, temporal-state,
+or full-monorepo residuals stated above.
