@@ -1,4 +1,4 @@
-# Foundation closeout decision — evidence-limited, 2026-10-11
+> **SUPERSEDED — historical research snapshot.** This document predates recovery of the original Crystal comparator, the RealityGraph cross-repository replay, and subsequent Lean qualification. Do not use its UNKNOWN table as the current state. See [evidence-qualified completion](foundation_evidence_qualified_completion_2026-10-11.md) and the latest PR description.\n\n# Foundation closeout decision — evidence-limited, 2026-10-11
 
 ## Objective
 Determine whether the candidate universal Consequence Envelope v0 should become MathGraph's canonical transport, and whether all proposed foundation experiments can be completed from available evidence.
