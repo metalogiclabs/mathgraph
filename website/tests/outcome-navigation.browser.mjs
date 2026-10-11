@@ -82,6 +82,24 @@ try {
         await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/home-${width}-${javaScriptEnabled ? 'js' : 'nojs'}.png`, fullPage: true });
         await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/home-${width}-${javaScriptEnabled ? 'js' : 'nojs'}-viewport.png` });
       }
+      assert.equal((await page.goto(`${origin}/contact/`, { waitUntil: 'networkidle' })).status(), 200);
+      const contactGrid = page.locator('main .grid');
+      const contactCards = contactGrid.locator(':scope > article.callout');
+      assert.equal(await contactCards.count(), 2, 'Contact must expose both project channels');
+      const [contactGridBox, repositoryCard, issuesCard] = await Promise.all([
+        contactGrid.boundingBox(),
+        contactCards.nth(0).boundingBox(),
+        contactCards.nth(1).boundingBox(),
+      ]);
+      assert(contactGridBox && repositoryCard && issuesCard, `Contact geometry missing at ${width}px, JS=${javaScriptEnabled}`);
+      if (width > 900) {
+        assert.ok(repositoryCard.width >= contactGridBox.width * 0.45 && issuesCard.width >= contactGridBox.width * 0.45, `Contact cards collapsed below half-grid width at ${width}px, JS=${javaScriptEnabled}`);
+        assert.ok(Math.abs(repositoryCard.y - issuesCard.y) <= 0.5, `Contact desktop cards must share a row at ${width}px, JS=${javaScriptEnabled}`);
+      } else {
+        assert.ok(repositoryCard.width >= contactGridBox.width * 0.99 && issuesCard.width >= contactGridBox.width * 0.99, `Contact cards must span the mobile/tablet grid at ${width}px, JS=${javaScriptEnabled}`);
+        assert.ok(issuesCard.y >= repositoryCard.y + repositoryCard.height, `Contact cards overlap instead of stacking at ${width}px, JS=${javaScriptEnabled}`);
+      }
+      if (process.env.BROWSER_EVIDENCE_DIR) await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/contact-${width}-${javaScriptEnabled ? 'js' : 'nojs'}.png`, fullPage: true });
       assert.deepEqual(errors, []);
       await page.close();
     }

@@ -436,6 +436,10 @@ pre {
   grid-column: span 5;
 }
 
+.span-6 {
+  grid-column: span 6;
+}
+
 .span-7 {
   grid-column: span 7;
 }
@@ -1655,6 +1659,7 @@ summary {
 
   .span-4,
   .span-5,
+  .span-6,
   .span-7,
   .span-8 {
     grid-column: 1 / -1;
