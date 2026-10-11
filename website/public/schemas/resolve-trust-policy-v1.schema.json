@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathgraph.org/schemas/resolve-trust-policy-v1.schema.json",
+  "title": "MathGraph Resolve trust policy v1",
+  "description": "Fail-closed policy for member pins and exact receipt admissions. The policy digest must be supplied through an independent trust channel.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "members", "provenance", "admissions"],
+  "properties": {
+    "schema": { "const": "mathgraph.resolve-trust-policy.v1" },
+    "members": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["history.md", "jpl-record.json", "record.json"],
+      "properties": {
+        "history.md": { "$ref": "#/$defs/memberPin" },
+        "jpl-record.json": { "$ref": "#/$defs/memberPin" },
+        "record.json": { "$ref": "#/$defs/memberPin" }
+      }
+    },
+    "provenance": { "$ref": "resolve-bundle-v1.schema.json#/$defs/provenance" },
+    "admissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mathgraph.l4yaml.48-case-qualification",
+        "openai.original_publication_receipt.1",
+        "openai.original_publication_receipt.2",
+        "openai.original_publication_receipt.3"
+      ],
+      "properties": {
+        "mathgraph.l4yaml.48-case-qualification": { "$ref": "#/$defs/admission" },
+        "openai.original_publication_receipt.1": { "$ref": "#/$defs/admission" },
+        "openai.original_publication_receipt.2": { "$ref": "#/$defs/admission" },
+        "openai.original_publication_receipt.3": { "$ref": "#/$defs/admission" }
+      }
+    }
+  },
+  "$defs": {
+    "memberPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "size"],
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "size": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "admission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assumptions", "kind", "outcome", "scope", "source", "verifier"],
+      "properties": {
+        "assumptions": { "type": "array", "maxItems": 0 },
+        "kind": { "enum": ["documentary", "formal"] },
+        "outcome": { "const": "SUPPORT" },
+        "scope": { "type": "string", "minLength": 1 },
+        "source": { "enum": ["history.md", "jpl-record.json"] },
+        "verifier": { "enum": ["pinned-jpl-qualified-receipt-v1", "pinned-publisher-notice-v1"] }
+      }
+    }
+  }
+}

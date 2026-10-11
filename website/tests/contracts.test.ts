@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import Ajv from 'ajv';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, test } from 'vitest';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -33,6 +34,31 @@ async function json(path: string): Promise<Record<string, any>> {
 }
 
 describe('agent discovery contracts', () => {
+  test('publishes byte-identical Resolve transport schemas that accept the immutable fixtures', async () => {
+    const repository = join(website, '..');
+    const names = ['resolve-bundle-v1.schema.json', 'resolve-trust-policy-v1.schema.json'];
+    const [bundleSchemaBytes, policySchemaBytes, publicBundleSchemaBytes, publicPolicySchemaBytes] = await Promise.all([
+      readFile(join(repository, 'protocol/schemas', names[0])),
+      readFile(join(repository, 'protocol/schemas', names[1])),
+      readFile(join(dist, 'schemas', names[0])),
+      readFile(join(dist, 'schemas', names[1])),
+    ]);
+
+    expect(publicBundleSchemaBytes).toEqual(bundleSchemaBytes);
+    expect(publicPolicySchemaBytes).toEqual(policySchemaBytes);
+
+    const bundleSchema = JSON.parse(bundleSchemaBytes.toString('utf8')) as Record<string, any>;
+    const policySchema = JSON.parse(policySchemaBytes.toString('utf8')) as Record<string, any>;
+    const [bundle, policy] = await Promise.all([
+      json(`evidence/${resolveRecordId}/offline/bundle.json`),
+      json(`evidence/${resolveRecordId}/offline/trust-policy.json`),
+    ]);
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    ajv.addSchema(bundleSchema);
+    expect(ajv.validate(policySchema, policy), ajv.errorsText()).toBe(true);
+    expect(ajv.validate(bundleSchema, bundle), ajv.errorsText()).toBe(true);
+  });
+
   test('publishes schema-valid discovery and record index documents', async () => {
     const ajv = new Ajv({ allErrors: true, strict: true });
     const [discovery, index, record, discoverySchema, indexSchema, discoveryV1Bytes] = await Promise.all([

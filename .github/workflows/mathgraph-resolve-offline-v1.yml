@@ -6,6 +6,8 @@ on:
     branches: [codex/mathgraph-resolve-record-002]
   pull_request:
     paths:
+      - 'protocol/schemas/resolve-*-v1.schema.json'
+      - 'conformance/protocol_v1/**'
       - 'conformance/resolve_v1/**'
       - 'scripts/package_mathgraph_resolve_v1.py'
       - 'scripts/publish_mathgraph_resolve_v1.py'
@@ -13,6 +15,9 @@ on:
       - 'mathgraph_check/living_warrants.py'
       - 'evidence/living_warrant_openai_jpl_20261010.json'
       - 'website/public/evidence/**'
+      - 'website/public/schemas/resolve-*-v1.schema.json'
+      - 'website/tests/contracts.test.ts'
+      - 'docs/resolve_bundle_trust_policy_v1.md'
       - 'tests/test_mathgraph_resolve_publication_v1.py'
       - 'tests/test_mathgraph_warrant_resolution_core.py'
       - 'tests/test_mathgraph_living_warrants_v1.py'
@@ -75,7 +80,10 @@ jobs:
           echo "957080db79555f982fd3a314c263cf5177ef506969229e856897f0b19ccc1d62  conformance/resolve_v1/fixtures/bundle.json" | sha256sum -c -
           python scripts/package_mathgraph_resolve_v1.py --history "$MATHGRAPH_OPENAI_HISTORY_MD" --check
           python scripts/publish_mathgraph_resolve_v1.py --check
-          python -m pytest conformance/resolve_v1/test_consumer.py \
+          cmp protocol/schemas/resolve-bundle-v1.schema.json website/public/schemas/resolve-bundle-v1.schema.json
+          cmp protocol/schemas/resolve-trust-policy-v1.schema.json website/public/schemas/resolve-trust-policy-v1.schema.json
+          python -m pytest conformance/protocol_v1/test_consumer.py \
+            conformance/resolve_v1/test_consumer.py \
             tests/test_mathgraph_resolve_publication_v1.py \
             tests/test_mathgraph_warrant_resolution_core.py \
             tests/test_mathgraph_living_warrants_v1.py -q
