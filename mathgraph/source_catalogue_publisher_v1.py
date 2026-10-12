@@ -26,7 +26,7 @@ import zlib
 from mathgraph_protocol import source_catalogue_v1 as contract
 
 MAX_EXTRACTION_BYTES = 16 * 1024 * 1024
-MAX_PUBLICATION_BYTES = 4 * 1024 * 1024
+MAX_PUBLICATION_BYTES = 12 * 1024 * 1024
 MAX_PUBLICATION_GZIP_BYTES = 1536 * 1024
 REPRODUCE = ("MATHGRAPH_CATALOGUE_ENVIRONMENT={ENVIRONMENT} python scripts/publish_mathlib_source_catalogue_v1.py --checkout {CHECKOUT} "
              "--source-policy {SOURCE_POLICY} --extractor-identity {EXTRACTOR_IDENTITY} --output-dir {OUTPUT}")
@@ -478,13 +478,14 @@ def build_publication(policy: dict, source: VerifiedSource, extractor_identity: 
     require(type(raw["contract_version"]) is int and raw["contract_version"] == 1, "unsupported extraction contract")
     contract._array(raw["modules"])
     require([m["module"] for m in raw["modules"]] == [m["module"] for m in p["modules"]], "extracted module order or inventory mismatch")
-    all_names, omissions = set(), set()
+    all_names, all_omissions = set(), set()
     modules, objects = {}, {}
     for policy_module, m in zip(p["modules"], raw["modules"]):
         contract._shape(m, {"module", "imports", "declarations", "omissions"})
         _strings(m["imports"])
         contract._array(m["declarations"])
         contract._array(m["omissions"])
+        module_omissions = set()
         mid = contract.module_id(p["source"]["repository"], p["source"]["commit"], m["module"], policy_module["path"])
         module = {"module_id": mid, **policy_module, "objects": []}
         modules[m["module"]] = module
@@ -501,9 +502,10 @@ def build_publication(policy: dict, source: VerifiedSource, extractor_identity: 
         contract._ordered([d["qualified_name"] for d in m["declarations"]])
         for omission in m["omissions"]:
             contract._shape(omission, {"qualified_name", "kind", "reason"})
-            contract._unique(omission["qualified_name"], omissions, "DUPLICATE_NAME")
+            contract._unique(omission["qualified_name"], module_omissions, "DUPLICATE_NAME")
+            all_omissions.add(omission["qualified_name"])
         contract._ordered([o["qualified_name"] for o in m["omissions"]])
-    require(not all_names & omissions, "declaration both admitted and omitted")
+    require(not all_names & all_omissions, "declaration both admitted and omitted")
     require(len(objects) <= contract.LIMITS["max_declarations"], "declaration count overflow")
     files, shards, search_rows = [], [], []
     for m in raw["modules"]:

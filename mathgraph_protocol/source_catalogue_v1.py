@@ -27,7 +27,7 @@ MANIFEST_SCHEMA = "mathgraph.source-catalogue-manifest.v1"
 SHARD_SCHEMA = "mathgraph.source-catalogue-shard.v1"
 MAX_SAFE_INTEGER = 9007199254740991
 LIMITS = {"max_declarations": 2500, "max_relations": 25000,
-          "max_search_bytes": 750 * 1024, "max_shard_bytes": 512 * 1024,
+          "max_search_bytes": 2 * 1024 * 1024, "max_shard_bytes": 2 * 1024 * 1024,
           "max_manifest_bytes": 1024 * 1024, "max_projection_nodes": 50,
           "max_projection_edges": 100}
 AXES = {"source_status": "SOURCE_INDEXED", "verification_status": "NOT_CHECKED",

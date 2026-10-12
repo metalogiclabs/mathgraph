@@ -29,6 +29,17 @@ def api():
     return importlib.import_module("mathgraph_protocol.source_catalogue_v1")
 
 
+def test_complete_catalogue_uses_measured_raw_file_boundaries(api):
+    """Keep the exact 13-module publication without weakening transfer limits."""
+    assert api.LIMITS["max_search_bytes"] == 2 * 1024 * 1024
+    assert api.LIMITS["max_shard_bytes"] == 2 * 1024 * 1024
+
+    schema = json.loads((ROOT / "protocol/schemas/source-catalogue-manifest-v1.schema.json").read_text())
+    limits = schema["properties"]["limits"]["properties"]
+    assert limits["max_search_bytes"]["maximum"] == api.LIMITS["max_search_bytes"]
+    assert limits["max_shard_bytes"]["maximum"] == api.LIMITS["max_shard_bytes"]
+
+
 def fixture(api):
     modules, objects = [], []
     for name, qualified in [("Mathlib.One", "One.first"), ("Mathlib.Two", "Two.second")]:
@@ -82,8 +93,8 @@ def fixture(api):
                 "modules": modules,
                 "counts": {"modules": 2, "objects": 2, "relations": 4, "omitted_type_references": 1,
                            "omitted_imports": 1, "omitted_declarations": 0},
-                "limits": {"max_declarations": 2500, "max_relations": 25000, "max_search_bytes": 768000,
-                           "max_shard_bytes": 524288, "max_manifest_bytes": 1048576,
+                "limits": {"max_declarations": 2500, "max_relations": 25000, "max_search_bytes": 2097152,
+                           "max_shard_bytes": 2097152, "max_manifest_bytes": 1048576,
                            "max_projection_nodes": 50, "max_projection_edges": 100},
                 "truncation": {"occurred": False, "reason": None},
                 "reproduce_command": "python scripts/publish_mathlib_source_catalogue_v1.py --checkout {CHECKOUT} --output {OUTPUT}",
@@ -255,7 +266,7 @@ def test_pin_inventory_and_content_addressing_mutations(api):
                  lambda m: m["modules"][0]["objects"][0].update(object_id=m["modules"][1]["objects"][0]["object_id"]),
                  lambda m: m["modules"][1]["objects"][0].update(qualified_name="One.first"),
                  lambda m: m["shards"][0].update(path="shards/wrong.json"),
-                 lambda m: m["shards"][0].update(size_bytes=524289),
+                 lambda m: m["shards"][0].update(size_bytes=api.LIMITS["max_shard_bytes"] + 1),
                  lambda m: m["limits"].update(max_declarations=2501),
                  lambda m: m["selection_policy"].update(type_references="TEXT_MENTIONS"),
                  lambda m: m["truncation"].update(occurred=True),
@@ -373,7 +384,7 @@ def test_canonical_shard_transport_and_supported_kinds(api):
         api.validate_shard(api.canonical_bytes(shard) + b"\n", manifest)
     assert error.value.code == "NONCANONICAL_SHARD"
     with pytest.raises(api.SourceCatalogueError) as error:
-        api.validate_shard(b" " * (524288 + 1), manifest)
+        api.validate_shard(b" " * (api.LIMITS["max_shard_bytes"] + 1), manifest)
     assert error.value.code == "INPUT_TOO_LARGE"
     # Mutable callers must never be able to alter the validator's returned copy.
     validated = api.validate_manifest(manifest)

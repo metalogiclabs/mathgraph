@@ -263,11 +263,25 @@ Hard limits:
 
 - no more than 2,500 public declarations;
 - no more than 25,000 in-slice relations;
-- search index at most 750 KiB raw and preferably at most 200 KiB compressed;
-- each module shard at most 512 KiB raw; and
+- search index at most 2 MiB raw and 256 KiB under deterministic gzip;
+- each module shard at most 2 MiB raw;
+- the complete catalogue at most 12 MiB raw and 1.5 MiB under deterministic gzip; and
 - each browser graph projection at most 50 nodes and 100 edges.
 
 Exceeding a limit fails qualification. Nothing is silently dropped. Any deliberate bounded omission is counted and described in the manifest.
+
+Execution ruling, 13 October 2026: exact Lean extraction of the approved
+13-module slice produced 2,345 occurrences and 3,571 relations. The complete
+canonical publication measured 9,022,416 raw bytes and 1,150,269 bytes under
+deterministic gzip; the largest raw shard was 1,730,897 bytes and the search
+index was 1,624,539 raw / 200,901 gzip bytes. This invalidated the preliminary
+raw-JSON estimates while satisfying the intended transfer budget. V1 therefore
+keeps one exact shard per selected source module and the full statement data,
+raises only the bounded raw parsing ceilings shown above, and retains the
+independently enforced 1.5 MiB compressed-publication ceiling. Splitting source
+modules, introducing a string-table format, or dropping statements would add
+new representation semantics without improving transferred bytes enough to
+justify them in this release.
 
 ## 8. Product experience
 

@@ -168,6 +168,38 @@ def test_publication_is_deterministic_and_only_has_structural_edges(api, inputs,
     api.publish_catalogue(two, output, check=True)
 
 
+def test_generated_omission_names_are_scoped_to_their_selected_module(api, inputs):
+    root, policy, identity = inputs
+    raw = json.loads(FIXTURE.read_bytes())
+    shared = {"qualified_name": "Shared.generated", "kind": "theorem", "reason": "GENERATED"}
+    raw["modules"][0]["omissions"].append(deepcopy(shared))
+    raw["modules"][1]["omissions"].append(deepcopy(shared))
+    publication = api.build_publication(
+        policy,
+        api.verify_source_checkout(policy, root),
+        identity,
+        json.dumps(raw).encode(),
+    )
+    shards = [json.loads(payload) for path, payload in publication.files if path.startswith("shards/")]
+    assert {
+        shard["module"]["module"]: [entry["qualified_name"] for entry in shard["omissions"]["declarations"]]
+        for shard in shards
+    } == {"A": ["Shared.generated"], "B": ["B.T.rec", "Shared.generated"]}
+
+
+def test_duplicate_omission_name_inside_one_module_is_rejected(api, inputs):
+    root, policy, identity = inputs
+    raw = json.loads(FIXTURE.read_bytes())
+    raw["modules"][1]["omissions"].append(deepcopy(raw["modules"][1]["omissions"][0]))
+    with pytest.raises(ValueError, match="DUPLICATE_NAME"):
+        api.build_publication(
+            policy,
+            api.verify_source_checkout(policy, root),
+            identity,
+            json.dumps(raw).encode(),
+        )
+
+
 @pytest.mark.parametrize("mutation", ["changed", "added", "missing"])
 def test_check_detects_every_publication_byte_change(api, inputs, tmp_path, mutation):
     root, policy, identity = inputs
@@ -195,7 +227,7 @@ def test_extraction_rejects_ambiguity_and_forgery(api, inputs, mutation):
     if mutation == "module": raw["modules"][0]["module"] = "Outside"
     if mutation == "order": raw["modules"].reverse()
     if mutation == "omission": raw["modules"][0]["omissions"].append({"qualified_name": "A.α", "kind": "definition", "reason": "GENERATED"})
-    if mutation == "overflow": decl["statement"] = "x" * 800000
+    if mutation == "overflow": decl["statement"] = "x" * api.contract.LIMITS["max_shard_bytes"]
     payload = b"\xff" if mutation == "utf8" else json.dumps(raw).encode()
     with pytest.raises(ValueError): api.build_publication(policy, api.verify_source_checkout(policy, root), identity, payload)
 

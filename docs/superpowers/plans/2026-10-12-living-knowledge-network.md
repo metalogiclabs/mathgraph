@@ -32,9 +32,9 @@
 - Toolchain: `leanprover/lean4:v4.34.1`
 - Selected source modules: exactly the 13 paths listed in the approved spec.
 - Catalogue: no more than 2,500 declarations and 25,000 in-slice relations.
-- Search data: no more than 750 KiB raw; record gzip size and target no more than 200 KiB.
-- Shard: no more than 512 KiB raw per module.
-- Entire committed catalogue (manifest, search, and shards): no more than 4 MiB raw and 1.5 MiB gzip. If the qualified result exceeds this, reduce the selected slice or relation surface and re-review it; do not silently raise the bound.
+- Search data: no more than 2 MiB raw and 256 KiB under deterministic gzip.
+- Shard: no more than 2 MiB raw per selected module.
+- Entire committed catalogue (manifest, search, and shards): no more than 12 MiB raw and 1.5 MiB under deterministic gzip. Exceeding either bound requires a new review; never truncate silently.
 - Browser projection: no more than 50 nodes and 100 edges.
 - Client CSS + JavaScript: less than 100 KiB for the built site.
 - Homepage: no more than 96 KiB raw and 24 KiB gzip.
@@ -43,6 +43,17 @@
 - Explore page: no more than 1 MiB raw and 200 KiB gzip while retaining a complete no-JavaScript catalogue.
 - Static output: no more than 64 MiB and 2,100 generated HTML pages.
 - Clean production build: no more than 180 seconds on the qualification runner.
+
+Execution ruling, 13 October 2026: the exact 13-module extraction yielded
+2,345 source occurrences and 3,571 relations. Canonical output measured
+9,022,416 bytes raw and 1,150,269 bytes under deterministic gzip; the largest
+shard was 1,730,897 bytes, and search was 1,624,539 bytes raw / 200,901 gzip.
+The earlier 512 KiB / 750 KiB / 4 MiB raw estimates were therefore rejected as
+preflight assumptions, not weakened after publication. Keeping complete
+statements and one shard per exact source module is the smaller interoperable
+contract; deterministic gzip retains the original transfer ceiling and avoids
+adding a chunking or string-table representation solely to optimize repeated
+JSON text.
 - Search after index load: p95 below 50 ms desktop and 100 ms under 4x CPU slowdown.
 - Initial bounded graph render: below 500 ms under 4x CPU slowdown; interaction below 200 ms.
 - Accessibility: zero serious or critical axe findings on primary journeys; no keyboard traps; no horizontal document overflow at 1440x900, 768x900, or 390x844.

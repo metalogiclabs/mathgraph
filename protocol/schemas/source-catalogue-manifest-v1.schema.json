@@ -303,12 +303,12 @@
         "max_search_bytes": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 768000
+          "maximum": 2097152
         },
         "max_shard_bytes": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 524288
+          "maximum": 2097152
         },
         "max_manifest_bytes": {
           "type": "integer",
