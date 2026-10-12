@@ -134,6 +134,21 @@ def test_tracked_nonselected_symlink_must_remain_inside_verified_root(api, input
         with pytest.raises(ValueError): api.verify_source_checkout(policy, root)
 
 
+def test_tracked_selected_source_symlink_is_still_rejected(api, inputs):
+    root, policy, _ = inputs
+    (root / "A.lean").unlink()
+    (root / "A.lean").symlink_to("B.lean")
+    git(root, "add", "A.lean")
+    git(root, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "commit", "-qm", "selected source link")
+    policy["source"]["commit"] = git(root, "rev-parse", "HEAD")
+    policy["source"]["tree"] = git(root, "rev-parse", "HEAD^{tree}")
+    policy["modules"][0]["sha256"] = sha((root / "B.lean").read_bytes())
+    policy["modules"][0]["size_bytes"] = len((root / "B.lean").read_bytes())
+    with pytest.raises(ValueError, match="symlink input is not admitted"):
+        api.verify_source_checkout(policy, root)
+
+
 def test_publication_is_deterministic_and_only_has_structural_edges(api, inputs, tmp_path):
     root, policy, identity = inputs
     source = api.verify_source_checkout(policy, root)
@@ -298,6 +313,9 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
             if len(commands) == 1 or source_tree == mount_path("/verified-dependencies"): assert not selected
         assert (snapshot / ".lake/build/lib/lean/Outside.olean").read_bytes() == b"pinned cache bytes"
         assert (snapshot / "A.lean").read_bytes() == (root / "A.lean").read_bytes()
+        assert (snapshot / ".lake/packages/dep/docs/README.md").is_symlink()
+        assert os.readlink(snapshot / ".lake/packages/dep/docs/README.md") == "../README.md"
+        assert (mount_path("/verified-dependencies") / "packages/dep/docs/README.md").is_symlink()
         if len(commands) == 1:
             assert "CompileOrder.lean" in command[-4]
             (mount_path("/plan") / "order.json").write_text('{"modules":["B","A"]}')
@@ -371,8 +389,10 @@ def git_dependency(api, environment):
     package = root / "packages/dep"
     package.mkdir(parents=True)
     for path, contents in {"Dep.lean": "def depValue : Nat := 7\n", "lakefile.toml": 'name = "dep"\n[[lean_lib]]\nname = "Dep"\n',
-                           ".gitignore": ".lake\n"}.items():
+                           ".gitignore": ".lake\n", "README.md": "dependency documentation\n"}.items():
         (package / path).write_text(contents)
+    (package / "docs").mkdir()
+    (package / "docs/README.md").symlink_to("../README.md")
     git(package, "init", "-q")
     git(package, "add", ".")
     git(package, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "dependency")
@@ -382,11 +402,95 @@ def git_dependency(api, environment):
               "tree": git(package, "rev-parse", "HEAD^{tree}"), "repository": repository}
     record["git_metadata_sha256"] = api.git_metadata_digest(api.sanitized_git_files(package, record))
     inventory["packages"] = [record]
-    for path in sorted(package.iterdir()):
-        if path.is_file(): inventory["files"].append({"path": path.relative_to(root).as_posix(), "sha256": sha(path.read_bytes()),
-                                                   "size_bytes": path.stat().st_size, "mode": "100644"})
+    for path in sorted(package.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if ".git" in path.relative_to(package).parts:
+            continue
+        if path.is_symlink():
+            target = os.readlink(path)
+            raw = target.encode()
+            inventory["files"].append({"path": relative, "sha256": sha(raw),
+                                       "size_bytes": len(raw), "mode": "120000", "target": target})
+        elif path.is_file():
+            inventory["files"].append({"path": relative, "sha256": sha(path.read_bytes()),
+                                       "size_bytes": path.stat().st_size, "mode": "100644"})
     inventory["files"].sort(key=lambda f: f["path"])
     return package, root, inventory
+
+
+@pytest.fixture
+def git_dependency_with_tracked_symlink(tmp_path):
+    package = tmp_path / "linked-dependency"
+    package.mkdir()
+    (package / "Target.lean").write_text("def linkedValue : Nat := 11\n")
+    (package / "Alias.lean").symlink_to("Target.lean")
+    git(package, "init", "-q")
+    git(package, "add", ".")
+    git(package, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "commit", "-qm", "tracked relative link")
+    repository = "https://example.invalid/linked-dependency"
+    git(package, "remote", "add", "origin", repository)
+    return package, {"name": "linked-dependency", "path": "packages/linked-dependency",
+                     "commit": git(package, "rev-parse", "HEAD"),
+                     "tree": git(package, "rev-parse", "HEAD^{tree}"), "repository": repository}
+
+
+def test_tracked_dependency_symlink_is_preserved_in_sanitized_identity(
+        api, git_dependency_with_tracked_symlink, tmp_path):
+    package, record = git_dependency_with_tracked_symlink
+    files = api.sanitized_git_files(package, record)
+    rebuilt = tmp_path / "rebuilt"
+    shutil.copytree(package, rebuilt, ignore=shutil.ignore_patterns(".git"), symlinks=True)
+    for relative, raw in files:
+        destination = rebuilt / ".git" / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(raw)
+    (rebuilt / ".git/refs").mkdir(exist_ok=True)
+    assert (rebuilt / "Alias.lean").is_symlink()
+    assert os.readlink(rebuilt / "Alias.lean") == "Target.lean"
+    assert git(rebuilt, "diff", "--exit-code", "HEAD") == ""
+
+
+@pytest.mark.parametrize("mutation", ["absolute", "escape", "missing", "untracked", "chain", "git", "target_bytes", "link_blob"])
+def test_dependency_symlink_declines_unsafe_or_unbound_targets_with_context(
+        api, git_dependency_with_tracked_symlink, tmp_path, mutation):
+    package, record = git_dependency_with_tracked_symlink
+    link = package / "Alias.lean"
+    link.unlink()
+    if mutation == "absolute":
+        outside = tmp_path / "absolute.lean"
+        outside.write_text("def outside := 1\n")
+        link.symlink_to(outside)
+    elif mutation == "escape":
+        outside = package.parent / "outside.lean"
+        outside.write_text("def outside := 1\n")
+        link.symlink_to("../outside.lean")
+    elif mutation == "missing":
+        link.symlink_to("Missing.lean")
+    elif mutation == "untracked":
+        (package / "Untracked.lean").write_text("def untracked := 1\n")
+        link.symlink_to("Untracked.lean")
+    elif mutation == "chain":
+        (package / "Second.lean").symlink_to("Target.lean")
+        link.symlink_to("Second.lean")
+        git(package, "add", "Second.lean")
+    elif mutation == "git":
+        link.symlink_to(".git/config")
+    elif mutation == "target_bytes":
+        link.symlink_to("Target.lean")
+        (package / "Target.lean").write_text("def changedTarget := 12\n")
+    else:
+        link.symlink_to("Target.lean")
+    if mutation not in {"link_blob", "target_bytes"}:
+        git(package, "add", "Alias.lean")
+        git(package, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+            "commit", "-qm", "mutated tracked link")
+        record.update(commit=git(package, "rev-parse", "HEAD"), tree=git(package, "rev-parse", "HEAD^{tree}"))
+    elif mutation == "link_blob":
+        link.unlink()
+        link.symlink_to("Missing.lean")
+    with pytest.raises(ValueError, match=r"package=linked-dependency path=Alias\.lean mode=120000"):
+        api.sanitized_git_files(package, record)
 
 
 @pytest.mark.parametrize("mutation", [None, "missing_git", "commit", "remote", "dirty", "git_escape", "extra_git", "metadata_digest"])
@@ -407,6 +511,31 @@ def test_dependency_git_identity_is_verified(api, git_dependency, tmp_path, muta
         with pytest.raises(ValueError): api.verify_dependency_inventory(root, inventory, digest)
 
 
+@pytest.mark.parametrize("mutation", ["target", "digest", "mode", "outside_package"])
+def test_dependency_inventory_rejects_unbound_symlink_semantics(api, git_dependency, mutation):
+    package, root, inventory = git_dependency
+    link = next(entry for entry in inventory["files"] if entry["mode"] == "120000")
+    if mutation == "target":
+        link["target"] = "../Dep.lean"
+        raw = link["target"].encode()
+        link.update(sha256=sha(raw), size_bytes=len(raw))
+    elif mutation == "digest":
+        link["sha256"] = "0" * 64
+    elif mutation == "mode":
+        link.pop("target")
+        link["mode"] = "100644"
+    else:
+        source = package / "docs/README.md"
+        target = root / "outside-link"
+        target.symlink_to(source)
+        raw = os.readlink(target).encode()
+        inventory["files"].append({"path": "outside-link", "sha256": sha(raw),
+                                   "size_bytes": len(raw), "mode": "120000", "target": os.readlink(target)})
+        inventory["files"].sort(key=lambda item: item["path"])
+    with pytest.raises(ValueError):
+        api.verify_dependency_inventory(root, inventory, sha(api.contract.canonical_bytes(inventory)))
+
+
 def test_sanitized_dependency_git_supports_real_offline_lake_build(api, git_dependency, tmp_path):
     import shutil
     package, _, inventory = git_dependency
@@ -423,7 +552,7 @@ def test_sanitized_dependency_git_supports_real_offline_lake_build(api, git_depe
     (project / "Main.lean").write_text("import Dep\nexample : depValue = 7 := rfl\n")
     (project / "lake-manifest.json").write_text(json.dumps({"version": "1.2.0", "name": "offline_fixture", "lakeDir": ".lake", "packagesDir": ".lake/packages", "packages": [{"name": "dep", "type": "git", "url": record["repository"], "rev": record["commit"], "inputRev": record["commit"], "scope": "", "subDir": None, "manifestFile": "lake-manifest.json", "configFile": "lakefile.toml", "inherited": False}]}))
     target = project / ".lake/packages/dep"
-    shutil.copytree(package, target, ignore=shutil.ignore_patterns(".git"))
+    shutil.copytree(package, target, ignore=shutil.ignore_patterns(".git"), symlinks=True)
     for relative, raw in files:
         destination = target / ".git" / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -432,6 +561,8 @@ def test_sanitized_dependency_git_supports_real_offline_lake_build(api, git_depe
     (target / ".git/refs").mkdir(exist_ok=True)
     assert git(target, "rev-parse", "HEAD") == record["commit"]
     assert not git(target, "diff", "--exit-code", "HEAD")
+    assert (target / "docs/README.md").is_symlink()
+    assert os.readlink(target / "docs/README.md") == "../README.md"
     lean = Path(os.environ["MATHGRAPH_CATALOGUE_LEAN"])
     env = {k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "LEAN_", "LAKE_"))}
     env.update(api.git_runtime_environment(inventory["packages"], str(project / ".lake")))

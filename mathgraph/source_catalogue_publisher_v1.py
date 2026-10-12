@@ -269,30 +269,6 @@ def verify_dependency_inventory(root: Path, inventory: dict, expected_sha256: st
     contract._array(inventory["packages"])
     contract._array(inventory["files"])
     require(root.is_dir() and not root.is_symlink(), "local dependency closure required")
-    paths = set()
-    for f in inventory["files"]:
-        contract._file(f, {"size_bytes", "mode"})
-        contract._integer(f["size_bytes"])
-        require(f["mode"] in {"100644", "100755"}, "unsupported environment file mode")
-        contract._unique(f["path"], paths)
-        require(".git" not in Path(f["path"]).parts, "Git administration is not an environment artifact")
-        path = _safe_file(root, f["path"])
-        require(("100755" if path.stat().st_mode & 0o111 else "100644") == f["mode"], "dependency executable mode changed")
-        raw = path.read_bytes()
-        require(len(raw) == f["size_bytes"] and sha256(raw) == f["sha256"], "dependency artifact changed")
-    contract._ordered([f["path"] for f in inventory["files"]])
-    actual = set()
-    git_roots = {p["path"] + "/.git" for p in inventory["packages"]}
-    for path in root.rglob("*"):
-        relative = path.relative_to(root)
-        if ".git" in relative.parts:
-            prefix = Path(*relative.parts[:relative.parts.index(".git") + 1]).as_posix()
-            require(prefix in git_roots, "unlisted package Git state")
-            require(not path.is_symlink(), "symlink in dependency Git administration")
-            continue
-        require(not path.is_symlink(), "symlink in dependency closure")
-        if path.is_file(): actual.add(relative.as_posix())
-    require(paths == actual and bool(paths), "arbitrary or incomplete dependency build state")
     names = set()
     for package in inventory["packages"]:
         contract._shape(package, {"name", "path", "commit", "tree", "repository", "git_metadata_sha256"})
@@ -305,6 +281,41 @@ def verify_dependency_inventory(root: Path, inventory: dict, expected_sha256: st
         metadata = sanitized_git_files(root / package["path"], package)
         require(git_metadata_digest(metadata) == package["git_metadata_sha256"], "sanitized Git metadata digest mismatch")
     contract._ordered([p["name"] for p in inventory["packages"]])
+    paths = set()
+    for f in inventory["files"]:
+        require(type(f) is dict, "dependency inventory file must be an object")
+        link = f.get("mode") == "120000"
+        contract._file(f, {"size_bytes", "mode", "target"} if link else {"size_bytes", "mode"})
+        contract._integer(f["size_bytes"])
+        require(f["mode"] in {"100644", "100755", "120000"}, "unsupported environment file mode")
+        contract._unique(f["path"], paths)
+        require(".git" not in Path(f["path"]).parts, "Git administration is not an environment artifact")
+        if link:
+            package, relative = _dependency_package_for_path(inventory["packages"], f["path"])
+            target = dependency_symlink_target(root / package["path"], package, relative)
+            require(type(f["target"]) is str and f["target"] == target,
+                    "dependency symlink target differs from exact Git tree")
+            raw = target.encode("utf-8", errors="strict")
+        else:
+            path = _safe_file(root, f["path"])
+            require(("100755" if path.stat().st_mode & 0o111 else "100644") == f["mode"], "dependency executable mode changed")
+            raw = path.read_bytes()
+        require(len(raw) == f["size_bytes"] and sha256(raw) == f["sha256"], "dependency artifact changed")
+    contract._ordered([f["path"] for f in inventory["files"]])
+    actual = set()
+    git_roots = {p["path"] + "/.git" for p in inventory["packages"]}
+    for path in root.rglob("*"):
+        relative = path.relative_to(root)
+        if ".git" in relative.parts:
+            prefix = Path(*relative.parts[:relative.parts.index(".git") + 1]).as_posix()
+            require(prefix in git_roots, "unlisted package Git state")
+            require(not path.is_symlink(), "symlink in dependency Git administration")
+            continue
+        if path.is_symlink():
+            actual.add(relative.as_posix())
+        elif path.is_file():
+            actual.add(relative.as_posix())
+    require(paths == actual and bool(paths), "arbitrary or incomplete dependency build state")
 
 
 def git_metadata_digest(files: tuple[tuple[str, bytes], ...]) -> str:
@@ -330,6 +341,60 @@ def git_runtime_environment(packages: list[dict], runtime_root: str = "/work/.la
     return env
 
 
+def _dependency_symlink_target(root: Path, package: dict, path: str, mode: bytes, blob: str,
+                               entries: tuple[tuple[str, bytes, str], ...]) -> str:
+    context = f"package={package['name']} path={path} mode={mode.decode()}"
+    require(mode == b"120000", "dependency link mode mismatch: " + context)
+    contract._path(path)
+    require(root.is_dir() and not root.is_symlink(), "dependency root is unsafe: " + context)
+    root = root.resolve()
+    leaf = root / path
+    require(leaf.is_symlink(), "tracked dependency link is not a symlink: " + context)
+    target = os.readlink(leaf)
+    require(not Path(target).is_absolute() and "\\" not in target
+            and not any(ord(character) < 32 or ord(character) == 127 for character in target),
+            "dependency symlink target is not portable relative text: " + context)
+    target_bytes = target.encode("utf-8", errors="strict")
+    require(_git_blob(target_bytes) == blob, "dependency symlink bytes differ from Git tree: " + context)
+    lexical_target = Path(os.path.normpath(str(leaf.parent / target)))
+    require(lexical_target.is_relative_to(root) and ".git" not in lexical_target.relative_to(root).parts,
+            "dependency symlink target escapes package tree: " + context)
+    require(lexical_target.exists(), "dependency symlink target is missing: " + context)
+    current = root
+    for part in lexical_target.relative_to(root).parts:
+        current /= part
+        require(not current.is_symlink(), "dependency symlink chain is not admitted: " + context)
+    target_path = lexical_target.relative_to(root).as_posix()
+    tracked = {entry_path: (entry_mode, entry_blob) for entry_path, entry_mode, entry_blob in entries}
+    require(target_path in tracked and tracked[target_path][0] in {b"100644", b"100755"},
+            "dependency symlink target is not an exact tracked file: " + context)
+    require(lexical_target.is_file(), "dependency symlink target is not a regular file: " + context)
+    require(_git_blob(lexical_target.read_bytes()) == tracked[target_path][1],
+            "dependency symlink target bytes differ from Git tree: " + context)
+    return target
+
+
+def dependency_symlink_target(root: Path, package: dict, path: str) -> str:
+    """Return an exact Git-bound relative link target or decline with context."""
+    entries = tuple(_tree_entries(root, package["commit"]))
+    matches = [entry for entry in entries if entry[0] == path]
+    require(len(matches) == 1,
+            f"dependency symlink is not uniquely tree-bound: package={package['name']} path={path} mode=unknown")
+    relative, mode, blob = matches[0]
+    return _dependency_symlink_target(root, package, relative, mode, blob, entries)
+
+
+def _dependency_package_for_path(packages: list[dict], path: str) -> tuple[dict, str]:
+    """Locate the one exact package root that owns an inventoried link."""
+    contract._path(path)
+    matches = [package for package in packages if path.startswith(package["path"] + "/")]
+    require(len(matches) == 1, "dependency symlink is not inside one pinned package tree")
+    package = matches[0]
+    relative = path[len(package["path"]) + 1:]
+    contract._path(relative)
+    return package, relative
+
+
 def sanitized_git_files(root: Path, package: dict) -> tuple[tuple[str, bytes], ...]:
     """Generate a detached shallow Git identity with only the pinned tree objects.
 
@@ -341,10 +406,12 @@ def sanitized_git_files(root: Path, package: dict) -> tuple[tuple[str, bytes], .
     require(isinstance(repository, str) and re.fullmatch(r"https://[A-Za-z0-9.-]+/[A-Za-z0-9_./-]+", repository) is not None,
             "public HTTPS dependency repository required")
     require((root / ".git").is_dir() and not (root / ".git").is_symlink(), "standalone dependency Git directory required")
+    entries = tuple(_tree_entries(root, package["commit"]))
+    for path, mode, blob in entries:
+        if mode == b"120000":
+            _dependency_symlink_target(root, package, path, mode, blob, entries)
     _verify_tree(root, package["commit"], package["tree"])
     require(_git(root, "config", "--local", "--get-all", "remote.origin.url").decode().strip() == repository, "dependency remote mismatch")
-    entries = list(_tree_entries(root, package["commit"]))
-    require(all(mode != b"120000" for _, mode, _ in entries), "dependency symlink not admitted")
     objects = {package["commit"], package["tree"]}
     for item in _git(root, "ls-tree", "-rtz", package["commit"]).split(b"\0"):
         if item: objects.add(item.split(b"\t", 1)[0].split()[2].decode())
@@ -598,9 +665,15 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
         for entry in inventory["files"]:
             path = audit_dependencies / entry["path"]
             path.parent.mkdir(parents=True, exist_ok=True)
-            origin = _safe_file(dependencies, entry["path"])
-            require(("100755" if origin.stat().st_mode & 0o111 else "100644") == entry["mode"], "dependency mode changed while snapshotting")
-            raw = origin.read_bytes()
+            if entry["mode"] == "120000":
+                package, relative = _dependency_package_for_path(inventory["packages"], entry["path"])
+                target = dependency_symlink_target(dependencies / package["path"], package, relative)
+                require(target == entry["target"], "dependency symlink target changed while snapshotting")
+                raw = target.encode("utf-8", errors="strict")
+            else:
+                origin = _safe_file(dependencies, entry["path"])
+                require(("100755" if origin.stat().st_mode & 0o111 else "100644") == entry["mode"], "dependency mode changed while snapshotting")
+                raw = origin.read_bytes()
             require(len(raw) == entry["size_bytes"] and sha256(raw) == entry["sha256"], "dependency changed while snapshotting")
             # Exclude every selected-origin output suffix, including private,
             # server, trace, native and future sidecars, from all cache mounts.
@@ -608,9 +681,12 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
             build_path = next((entry["path"][len(prefix):] for prefix in build_roots if entry["path"].startswith(prefix)), None)
             if build_path is not None and any("/" + selected + "." in "/" + build_path for selected in selected_paths):
                 continue
-            path.write_bytes(raw)
-            path.chmod(0o755 if entry["mode"] == "100755" else 0o644)
-        shutil.copytree(audit_dependencies, snapshot / ".lake")
+            if entry["mode"] == "120000":
+                path.symlink_to(entry["target"])
+            else:
+                path.write_bytes(raw)
+                path.chmod(0o755 if entry["mode"] == "100755" else 0o644)
+        shutil.copytree(audit_dependencies, snapshot / ".lake", symlinks=True)
         git_mounts = []
         for package in inventory["packages"]:
             metadata = sanitized_git_files(dependencies / package["path"], package)
