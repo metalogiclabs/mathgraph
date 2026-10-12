@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import importlib.util
 import hashlib
 import json
@@ -29,7 +30,7 @@ def test_qualification_orchestrator_exists():
 
 
 def test_approved_producer_commit_and_wrapper_identity_are_separate(api):
-    assert api.PRODUCER_COMMIT == "d98f217d7e43cf74bfdb180dd953e98a29388f48"
+    assert api.PRODUCER_COMMIT == "e6643d8e3d207893713da94041ff3822c1190457"
     assert set(api.QUALIFICATION_WRAPPER_FILES) == {
         ".github/workflows/mathgraph-source-catalogue-v1.yml",
         "conformance/source_catalogue_v1/consumer.py",
@@ -74,6 +75,36 @@ def test_parent_index_requires_exact_linux_amd64_child(api):
             + api.BASE_IMAGE.rsplit("@sha256:", 1)[1].encode()
             + b'","platform":{"architecture":"amd64","os":"linux"}}]}'
         )
+
+
+def test_size_report_records_raw_and_deterministic_gzip_boundaries(api, tmp_path):
+    publication = tmp_path / "catalogue"
+    publication.mkdir()
+    (publication / "a.json").write_bytes(b'{"a":1}')
+    (publication / "b.json").write_bytes(b'{"b":"bbbbbbbb"}')
+    inventory = api._publication_inventory(publication)
+    publisher = api.load_producer_module(ROOT)
+    report = api.publication_size_report(
+        publication,
+        inventory,
+        {"max_search_bytes": 2 * 1024 * 1024},
+        publisher,
+    )
+    payloads = [(publication / item["path"]).read_bytes() for item in inventory]
+    assert report == {
+        "schema": "mathgraph.source-catalogue-size-report.v1",
+        "raw_bytes": sum(map(len, payloads)),
+        "gzip_bytes": sum(len(gzip.compress(raw, mtime=0)) for raw in payloads),
+        "max_raw_file_bytes": max(map(len, payloads)),
+        "max_gzip_file_bytes": max(len(gzip.compress(raw, mtime=0)) for raw in payloads),
+        "file_count": 2,
+        "limits": {"max_search_bytes": 2 * 1024 * 1024},
+        "compressed_limits": {
+            "max_file_gzip_bytes": publisher.MAX_PUBLICATION_FILE_GZIP_BYTES,
+            "max_publication_gzip_bytes": publisher.MAX_PUBLICATION_GZIP_BYTES,
+        },
+        "authority": "NONE",
+    }
 
 
 def git(root: Path, *args: str) -> str:

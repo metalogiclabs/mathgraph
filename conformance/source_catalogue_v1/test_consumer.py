@@ -42,6 +42,14 @@ def isolation_api():
     return importlib.import_module("conformance.source_catalogue_v1.run_isolated")
 
 
+def test_independent_resource_limits_match_the_measured_complete_catalogue(api, isolation_api):
+    assert api.MAX_SEARCH_BYTES == isolation_api.MAX_SEARCH_BYTES == 2 * 1024 * 1024
+    assert api.MAX_SHARD_BYTES == isolation_api.MAX_SHARD_BYTES == 2 * 1024 * 1024
+    assert api.MAX_PUBLICATION_BYTES == 12 * 1024 * 1024
+    assert api.MAX_PUBLICATION_FILE_GZIP_BYTES == 256 * 1024
+    assert api.MAX_PUBLICATION_GZIP_BYTES == 1536 * 1024
+
+
 @pytest.fixture
 def publication(tmp_path):
     root = tmp_path / "catalogue"

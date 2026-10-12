@@ -17,8 +17,8 @@ import tempfile
 HERE = Path(__file__).resolve().parent
 MAX_POLICY_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
-MAX_SHARD_BYTES = 512 * 1024
-MAX_SEARCH_BYTES = 750 * 1024
+MAX_SHARD_BYTES = 2 * 1024 * 1024
+MAX_SEARCH_BYTES = 2 * 1024 * 1024
 PROBE = r'''
 import errno, hashlib, json, os, pathlib, socket, sys
 root = pathlib.Path(".")

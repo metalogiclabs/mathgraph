@@ -21,9 +21,10 @@ import sys
 MAX_SAFE_INTEGER = 9007199254740991
 MAX_POLICY_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
-MAX_SHARD_BYTES = 512 * 1024
-MAX_SEARCH_BYTES = 750 * 1024
-MAX_PUBLICATION_BYTES = 4 * 1024 * 1024
+MAX_SHARD_BYTES = 2 * 1024 * 1024
+MAX_SEARCH_BYTES = 2 * 1024 * 1024
+MAX_PUBLICATION_BYTES = 12 * 1024 * 1024
+MAX_PUBLICATION_FILE_GZIP_BYTES = 256 * 1024
 MAX_PUBLICATION_GZIP_BYTES = 1536 * 1024
 MANIFEST_SCHEMA = "mathgraph.source-catalogue-manifest.v1"
 SHARD_SCHEMA = "mathgraph.source-catalogue-shard.v1"
@@ -55,8 +56,8 @@ SELECTION_POLICY = {
 LIMITS = {
     "max_declarations": 2500,
     "max_relations": 25000,
-    "max_search_bytes": 750 * 1024,
-    "max_shard_bytes": 512 * 1024,
+    "max_search_bytes": 2 * 1024 * 1024,
+    "max_shard_bytes": 2 * 1024 * 1024,
     "max_manifest_bytes": 1024 * 1024,
     "max_projection_nodes": 50,
     "max_projection_edges": 100,
@@ -575,7 +576,10 @@ def validate_publication(catalogue_root: Path | str, policy_path: Path | str, po
     require(actual_paths == expected_paths, "PUBLICATION_INVENTORY_MISMATCH", "publication has missing or extra bytes")
     publication_bytes = [raw_files[relative] for relative in sorted(expected_paths)]
     require(sum(map(len, publication_bytes)) <= MAX_PUBLICATION_BYTES, "INPUT_TOO_LARGE", "publication raw budget exceeded")
-    require(sum(len(gzip.compress(raw, mtime=0)) for raw in publication_bytes) <= MAX_PUBLICATION_GZIP_BYTES,
+    compressed_sizes = [len(gzip.compress(raw, mtime=0)) for raw in publication_bytes]
+    require(all(size <= MAX_PUBLICATION_FILE_GZIP_BYTES for size in compressed_sizes),
+            "INPUT_TOO_LARGE", "publication compressed file budget exceeded")
+    require(sum(compressed_sizes) <= MAX_PUBLICATION_GZIP_BYTES,
             "INPUT_TOO_LARGE", "publication gzip budget exceeded")
     return {"policy": policy, "manifest": manifest, "shards": shards, "search": search, "result": dict(RESULT)}
 

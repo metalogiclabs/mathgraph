@@ -11,6 +11,7 @@ consumer workflow is still required before publication is qualified.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -25,7 +26,7 @@ from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PRODUCER_COMMIT = "d98f217d7e43cf74bfdb180dd953e98a29388f48"
+PRODUCER_COMMIT = "e6643d8e3d207893713da94041ff3822c1190457"
 MATHLIB_REPOSITORY = "https://github.com/leanprover-community/mathlib4"
 SOURCE_POLICY_PATH = "catalogues/mathlib-v4.34.1-foundations-v1.source.json"
 PRODUCER_FILES = (
@@ -411,6 +412,43 @@ def _publication_inventory(root: Path) -> list[dict]:
     return sorted(files, key=lambda item: _utf16(item["path"]))
 
 
+def publication_size_report(root: Path, files: list[dict], limits: dict, publisher) -> dict:
+    """Record bounded canonical bytes and deterministic transfer-size evidence."""
+    require(bool(files), "publication size report requires files")
+    require(sum(item["size_bytes"] for item in files) <= publisher.MAX_PUBLICATION_BYTES,
+            "publication raw budget exceeded before size reporting")
+    raw_sizes, gzip_sizes = [], []
+    resolved_root = root.resolve()
+    for item in files:
+        publisher.contract._path(item["path"])
+        path = root / item["path"]
+        require(path.is_file() and not path.is_symlink() and path.resolve().is_relative_to(resolved_root),
+                "publication size report input is missing or unsafe")
+        raw = path.read_bytes()
+        require(len(raw) == item["size_bytes"] and sha256(raw) == item["sha256"],
+                "publication changed before size reporting")
+        raw_sizes.append(len(raw))
+        gzip_sizes.append(len(gzip.compress(raw, mtime=0)))
+    require(max(gzip_sizes) <= publisher.MAX_PUBLICATION_FILE_GZIP_BYTES,
+            "publication compressed file budget exceeded before size reporting")
+    require(sum(gzip_sizes) <= publisher.MAX_PUBLICATION_GZIP_BYTES,
+            "publication gzip budget exceeded before size reporting")
+    return {
+        "schema": "mathgraph.source-catalogue-size-report.v1",
+        "raw_bytes": sum(raw_sizes),
+        "gzip_bytes": sum(gzip_sizes),
+        "max_raw_file_bytes": max(raw_sizes),
+        "max_gzip_file_bytes": max(gzip_sizes),
+        "file_count": len(files),
+        "limits": limits,
+        "compressed_limits": {
+            "max_file_gzip_bytes": publisher.MAX_PUBLICATION_FILE_GZIP_BYTES,
+            "max_publication_gzip_bytes": publisher.MAX_PUBLICATION_GZIP_BYTES,
+        },
+        "authority": "NONE",
+    }
+
+
 def _write_canonical(path: Path, value: object, publisher) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(publisher.contract.canonical_bytes(value))
@@ -562,9 +600,7 @@ def qualify(arguments) -> dict:
         "authority": "NONE",
     }
     _write_canonical(evidence / "qualification-report.json", report, publisher)
-    size_report = {"schema": "mathgraph.source-catalogue-size-report.v1",
-                   "raw_bytes": sum(item["size_bytes"] for item in publication_files),
-                   "file_count": len(publication_files), "limits": manifest["limits"], "authority": "NONE"}
+    size_report = publication_size_report(catalogue_root, publication_files, manifest["limits"], publisher)
     _write_canonical(evidence / "size-report.json", size_report, publisher)
     isolation = {"schema": "mathgraph.source-catalogue-isolation-preflight.v1", **container_receipt,
                  "extraction_network": "none", "publication_authority": "NONE"}
