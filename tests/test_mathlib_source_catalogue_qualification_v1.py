@@ -43,7 +43,14 @@ def test_approved_producer_commit_and_wrapper_identity_are_separate(api):
 def test_runtime_profile_uses_child_manifest_not_parent_index_as_run_reference(api):
     assert api.BASE_IMAGE.endswith("@sha256:17923645546d74acef88727bce62c23bbaed953fc7097c41a8b777bba3ca98de")
     assert api.BASE_PARENT_INDEX == "sha256:8ea58fbc817960cd62d512044956ff00cb94865e549eeec32c12139413262004"
-    assert api.BASE_IMAGE_CONFIG == "sha256:12d2284be437af82eaf5d1965223b8f259d82c1a523fff8e46de50ed5b54"
+    assert api.BASE_IMAGE_CONFIG == "sha256:12d2284be437af82eaf8ebf5d1965223b8f259d82c1a523fff8e46de50ed5b54"
+
+
+def test_qualification_runtime_profile_matches_exact_approved_producer(api):
+    publisher = api.load_producer_module(ROOT)
+    assert api.BASE_IMAGE == publisher.BASE_IMAGE
+    assert api.BASE_IMAGE_CONFIG == publisher.BASE_IMAGE_CONFIG
+    assert len(api.BASE_IMAGE_CONFIG.removeprefix("sha256:")) == 64
 
 
 def test_parent_index_requires_exact_linux_amd64_child(api):
