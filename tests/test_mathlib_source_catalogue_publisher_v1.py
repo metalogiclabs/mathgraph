@@ -200,6 +200,21 @@ def test_duplicate_omission_name_inside_one_module_is_rejected(api, inputs):
         )
 
 
+def test_each_publication_file_has_a_bounded_compressed_transfer(api, inputs):
+    root, policy, identity = inputs
+    raw = json.loads(FIXTURE.read_bytes())
+    raw["modules"][0]["declarations"][0]["statement"] = "".join(
+        hashlib.sha256(str(index).encode()).hexdigest() for index in range(12_000)
+    )
+    with pytest.raises(ValueError, match="compressed file budget"):
+        api.build_publication(
+            policy,
+            api.verify_source_checkout(policy, root),
+            identity,
+            json.dumps(raw).encode(),
+        )
+
+
 @pytest.mark.parametrize("mutation", ["changed", "added", "missing"])
 def test_check_detects_every_publication_byte_change(api, inputs, tmp_path, mutation):
     root, policy, identity = inputs

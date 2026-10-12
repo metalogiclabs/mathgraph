@@ -264,7 +264,7 @@ Hard limits:
 - no more than 2,500 public declarations;
 - no more than 25,000 in-slice relations;
 - search index at most 2 MiB raw and 256 KiB under deterministic gzip;
-- each module shard at most 2 MiB raw;
+- each module shard at most 2 MiB raw and 256 KiB under deterministic gzip;
 - the complete catalogue at most 12 MiB raw and 1.5 MiB under deterministic gzip; and
 - each browser graph projection at most 50 nodes and 100 edges.
 

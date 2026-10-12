@@ -33,7 +33,7 @@
 - Selected source modules: exactly the 13 paths listed in the approved spec.
 - Catalogue: no more than 2,500 declarations and 25,000 in-slice relations.
 - Search data: no more than 2 MiB raw and 256 KiB under deterministic gzip.
-- Shard: no more than 2 MiB raw per selected module.
+- Shard: no more than 2 MiB raw and 256 KiB under deterministic gzip per selected module.
 - Entire committed catalogue (manifest, search, and shards): no more than 12 MiB raw and 1.5 MiB under deterministic gzip. Exceeding either bound requires a new review; never truncate silently.
 - Browser projection: no more than 50 nodes and 100 edges.
 - Client CSS + JavaScript: less than 100 KiB for the built site.

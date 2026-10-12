@@ -27,6 +27,7 @@ from mathgraph_protocol import source_catalogue_v1 as contract
 
 MAX_EXTRACTION_BYTES = 16 * 1024 * 1024
 MAX_PUBLICATION_BYTES = 12 * 1024 * 1024
+MAX_PUBLICATION_FILE_GZIP_BYTES = 256 * 1024
 MAX_PUBLICATION_GZIP_BYTES = 1536 * 1024
 REPRODUCE = ("MATHGRAPH_CATALOGUE_ENVIRONMENT={ENVIRONMENT} python scripts/publish_mathlib_source_catalogue_v1.py --checkout {CHECKOUT} "
              "--source-policy {SOURCE_POLICY} --extractor-identity {EXTRACTOR_IDENTITY} --output-dir {OUTPUT}")
@@ -577,7 +578,10 @@ def validate_publication(publication: CataloguePublication) -> None:
     expected.sort(key=lambda r: contract._key(r["qualified_name"]))
     require(search == contract.canonical_bytes(expected), "search must be derived from occurrences")
     require(sum(len(b) for b in files.values()) <= MAX_PUBLICATION_BYTES, "publication raw budget exceeded")
-    require(sum(len(gzip.compress(b, mtime=0)) for b in files.values()) <= MAX_PUBLICATION_GZIP_BYTES, "publication gzip budget exceeded")
+    compressed_sizes = [len(gzip.compress(raw, mtime=0)) for raw in files.values()]
+    require(all(size <= MAX_PUBLICATION_FILE_GZIP_BYTES for size in compressed_sizes),
+            "publication compressed file budget exceeded")
+    require(sum(compressed_sizes) <= MAX_PUBLICATION_GZIP_BYTES, "publication gzip budget exceeded")
 
 
 def publish_catalogue(publication: CataloguePublication, output_dir: Path, *, check: bool = False) -> None:
