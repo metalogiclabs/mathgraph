@@ -74,12 +74,12 @@ const sourceCatalogue = discovery.source_catalogue;
         <section id="quickstart">
           <div class="eyebrow">Quickstart</div>
           <h2>Replay the exact source-check record</h2>
-          <p>The candidate importer is not yet available on <code>main</code>. Clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>. The same pinned local contract is exercised in CI; no hosted resolver or MCP service is involved.</p>
-          <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre><code>{importCheckoutReplayCommand}</code></pre></div>
+          <p>The importer is available on <code>main</code>, but this historical replay deliberately detaches at exact implementation commit <code>{importImplementationCommit}</code>. The release checkout exercises its current local import consumer and policy in CI; the command below preserves the original implementation boundary. No hosted resolver or MCP service is involved.</p>
+          <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre tabindex="0"><code>{importCheckoutReplayCommand}</code></pre></div>
           <p><a href={importConsumerSourceUrl}>Inspect the pinned independent consumer ↗</a> · <a href={importPolicySourceUrl}>Inspect the separately reviewed pinned policy ↗</a></p>
           <p>The trust-policy digest in the command must be obtained through a channel trusted separately from the evidence and policy bytes. This historical replay does not run the original proof, kernel, or source suite; current applicability remains <code>UNKNOWN</code>.</p>
           <h3>Fetch the public evidence bytes separately</h3>
-          <div class="code-block"><div class="code-label">Shell</div><pre><code>curl --fail --silent \
+          <div class="code-block"><div class="code-label">Shell</div><pre tabindex="0"><code>curl --fail --silent \
   https://mathgraph.org/evidence/{record.id}/record.json \
   -o record.json
 
@@ -93,14 +93,14 @@ sha256sum record.json</code></pre></div>
           <h2>Replay the pinned Mathlib source index offline.</h2>
           <p>At exact retrieval snapshot <code>{sourceCatalogue.repository_snapshot_commit}</code>, this standard-library consumer validates the canonical manifest, manifest-listed shards, search derivation, source identities, structural relation meanings, endpoint closure, counts, and publication budgets. The exact public trust policy identifies producer <code>{sourceCatalogue.qualification.public_bundle.producer_commit}</code> and qualification wrapper <code>{sourceCatalogue.qualification.public_bundle.wrapper_commit}</code>; its same-owner independent qualification run is <a href={sourceCatalogue.qualification.public_bundle.run_url}>public on GitHub Actions ↗</a>.</p>
           <p>The bundle was committed at <code>{sourceCatalogue.qualification.publication_commit}</code>. A later <a href={sourceCatalogue.qualification.later_regeneration.run_url}>catalogue regeneration run ↗</a> at <code>{sourceCatalogue.qualification.later_regeneration.commit}</code> reproduced the catalogue with a run-specific policy. It did <strong>not</strong> replay the exact public trust-policy bytes; these are distinct provenance scopes.</p>
-          <div class="code-block" data-source-catalogue-command><div class="code-label">Exact retrieval snapshot · Python 3</div><pre><code>git checkout --detach {sourceCatalogue.repository_snapshot_commit}
+          <div class="code-block" data-source-catalogue-command><div class="code-label">Exact retrieval snapshot · Python 3</div><pre tabindex="0"><code>git checkout --detach {sourceCatalogue.repository_snapshot_commit}
 
 python3 -I -S -B conformance/source_catalogue_v1/consumer.py \
   --catalogue-root website/public/catalogues/mathlib/v4.34.1 \
   --policy conformance/source_catalogue_v1/trust-policy.json \
   --policy-sha256 {sourceCatalogue.artifacts.trust_policy.sha256} \
   --audit-imports</code></pre></div>
-          <div class="code-block"><div class="code-label">Exact result</div><pre><code>{JSON.stringify(sourceCatalogue.result)}</code></pre></div>
+          <div class="code-block"><div class="code-label">Exact result</div><pre tabindex="0"><code>{JSON.stringify(sourceCatalogue.result)}</code></pre></div>
           <p>Manifest SHA-256: <code>{sourceCatalogue.artifacts.manifest.sha256}</code>. Consumer SHA-256: <code>{sourceCatalogue.artifacts.consumer.sha256}</code>.</p>
           <p>The consumer imports neither the producer implementation nor the MathGraph protocol package. It does not fetch upstream source, run Lean, prove declarations, check current applicability, or authorize action. <code>SOURCE_INDEXED</code> means the pinned source structure passed this finite publication contract; independent proof verification remains <code>NOT_CHECKED</code>.</p>
           <div class="source-stack">
@@ -115,11 +115,11 @@ python3 -I -S -B conformance/source_catalogue_v1/consumer.py \
         <section id="modules">
           <h2>Use the modular contracts locally.</h2>
           <p><a href="/discover/">Discover</a> exposes a deterministic advisory request/result contract. <a href="/develop/">Develop</a> publishes one exact finite replay. The <a href="/capabilities/">Capabilities registry</a> separates the qualified finite entry from experimental candidates. Hosted services remain <code>NOT_DEPLOYED</code>; these commands run from a repository checkout.</p>
-          <div class="code-block"><div class="code-label">Local CLI · Python standard library</div><pre><code>python -I -S scripts/mathgraph_discover_v1.py --request conformance/discover_v1/fixtures/request.json
+          <div class="code-block"><div class="code-label">Local CLI · Python standard library</div><pre tabindex="0"><code>python3 -I -S scripts/mathgraph_discover_v1.py --request conformance/discover_v1/fixtures/request.json
 
-python -I -S scripts/mathgraph_capability_v1.py --contract conformance/capability_v1/fixtures/capability-contract.json
+python3 -I -S scripts/mathgraph_capability_v1.py --contract conformance/capability_v1/fixtures/capability-contract.json
 
-python -I -S conformance/capability_v1/consumer.py \
+python3 -I -S conformance/capability_v1/consumer.py \
   --fixture conformance/capability_v1/fixtures/finite-representation-refinement-v1.json \
   --contract conformance/capability_v1/fixtures/capability-contract.json \
   --policy conformance/capability_v1/trust-policy.json \
@@ -142,16 +142,16 @@ python -I -S conformance/capability_v1/consumer.py \
           <h2>Replay record 002 without MathGraph.org</h2>
           <p>Acquire these three static inputs first. The replay itself imports only the Python standard library and needs no MathGraph package, service, LLM, or network connection. The trust-policy digest must come from a channel you trust separately from the downloaded policy.</p>
           <p>The <a href="/schemas/resolve-bundle-v1.schema.json">Resolve bundle schema</a> and <a href="/schemas/resolve-trust-policy-v1.schema.json">Resolve trust-policy schema</a> describe the published transport structure. These schemas do not authenticate records or replace the separately pinned trust policy and semantic replay.</p>
-          <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre><code>mkdir mathgraph-resolve-v1
+          <div class="code-block"><div class="code-label">Shell · Python 3.11+</div><pre tabindex="0"><code>mkdir mathgraph-resolve-v1
 cd mathgraph-resolve-v1
 curl --fail --remote-name {resolveOfflineRoot}/consumer.py
 curl --fail --remote-name {resolveOfflineRoot}/bundle.json
 curl --fail --remote-name {resolveOfflineRoot}/trust-policy.json
 
-python -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{resolveConsumerSha256}"; actual=sha256(Path("consumer.py").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "consumer.py SHA-256 mismatch: "+actual)'
-python -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{resolvePolicySha256}"; actual=sha256(Path("trust-policy.json").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "trust-policy.json SHA-256 mismatch: "+actual)'
+python3 -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{resolveConsumerSha256}"; actual=sha256(Path("consumer.py").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "consumer.py SHA-256 mismatch: "+actual)'
+python3 -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{resolvePolicySha256}"; actual=sha256(Path("trust-policy.json").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "trust-policy.json SHA-256 mismatch: "+actual)'
 
-python -I -S consumer.py \
+python3 -I -S consumer.py \
   --bundle bundle.json \
   --policy trust-policy.json \
   --policy-sha256 {resolvePolicySha256}</code></pre></div>
@@ -167,11 +167,11 @@ python -I -S consumer.py \
         <section id="typescript-consumer">
           <div class="eyebrow">Resolve · TypeScript</div>
           <h2>Check the published static interface over HTTP</h2>
-          <div class="code-block"><div class="code-label">Shell · Node 24</div><pre><code>curl --fail \
+          <div class="code-block"><div class="code-label">Shell · Node 24</div><pre tabindex="0"><code>curl --fail \
   https://mathgraph.org/examples/resolve-consumer-v1.ts \
   -o resolve-consumer-v1.ts
 
-python -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{typescriptConsumerSha256}"; actual=sha256(Path("resolve-consumer-v1.ts").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "resolve-consumer-v1.ts SHA-256 mismatch: "+actual)'
+python3 -I -S -c 'import sys; from hashlib import sha256; from pathlib import Path; expected="{typescriptConsumerSha256}"; actual=sha256(Path("resolve-consumer-v1.ts").read_bytes()).hexdigest(); sys.exit(None if actual == expected else "resolve-consumer-v1.ts SHA-256 mismatch: "+actual)'
 
 node resolve-consumer-v1.ts https://mathgraph.org</code></pre></div>
           <p>The TypeScript reference is an HTTP client, not an offline replay. It accepts one origin, fetches only fixed documented paths, validates independently compiled-in authority pins, and recomputes the bounded historical closure. It does not provide a public execution endpoint.</p>
@@ -201,16 +201,16 @@ node resolve-consumer-v1.ts https://mathgraph.org</code></pre></div>
         <section id="embed">
           <h2>Scoped badge embed</h2>
           <p>The existing badge describes only the pinned finite observation and links to the permanent V1 boundary. It is not a universal truth badge, a statement-fidelity certificate, or an endorsement mark.</p>
-          <div class="code-block"><div class="code-label">Markdown</div><pre><code>{badgeMarkdown}</code></pre></div>
-          <div class="code-block"><div class="code-label">HTML</div><pre><code>{badgeHtml}</code></pre></div>
+          <div class="code-block"><div class="code-label">Markdown</div><pre tabindex="0"><code>{badgeMarkdown}</code></pre></div>
+          <div class="code-block"><div class="code-label">HTML</div><pre tabindex="0"><code>{badgeHtml}</code></pre></div>
           <p><a href={`/v1/badges/${record.id}.svg`}>Open the scoped status SVG →</a></p>
         </section>
 
         <section id="resolver">
           <h2>Exact source-bound resolver</h2>
           <p>The qualified release defines <code>POST /v1/resolve</code> as a localhost read-only preview. It accepts only exact pins and a supported goal. It has strict JSON, content-type, method, and request-size checks. The OpenAPI file is a reproducible contract, not evidence of a hosted service.</p>
-          <div class="code-block"><div class="code-label">Request JSON</div><pre><code>{JSON.stringify(request, null, 2)}</code></pre></div>
-          <div class="code-block"><div class="code-label">Qualified response</div><pre><code>{JSON.stringify(response, null, 2)}</code></pre></div>
+          <div class="code-block"><div class="code-label">Request JSON</div><pre tabindex="0"><code>{JSON.stringify(request, null, 2)}</code></pre></div>
+          <div class="code-block"><div class="code-label">Qualified response</div><pre tabindex="0"><code>{JSON.stringify(response, null, 2)}</code></pre></div>
           <p><StatusTag label="WARRANTED_BOUNDED" tone="bounded" /> is returned only for the exact record, both exact source pins, and the supported finite agreement goal. An incorrect pin, unsupported goal, or unknown version returns <StatusTag label="UNKNOWN" tone="unknown" /> or an explicit request error; it never inherits a warrant.</p>
           <SourceLink href={`/evidence/${record.id}/openapi.preview.json`} label="OpenAPI preview contract" meta="Qualified local resolver · no public endpoint" />
           <div class="callout callout--unknown"><StatusTag label="Deployment boundary" tone="unknown" /><p>Public resolver: <code>NOT_DEPLOYED</code>. MCP: <code>NOT_DEPLOYED</code>. These static consumers do not expose a service, accept arbitrary proof code, or fetch visitor-supplied URLs.</p></div>
@@ -218,9 +218,9 @@ node resolve-consumer-v1.ts https://mathgraph.org</code></pre></div>
 
         <section id="reproduce">
           <h2>Reproduce the qualification</h2>
-          <div class="code-block"><div class="code-label">Python</div><pre><code>export MATHGRAPH_V1_EVIDENCE_ZIP=/path/to/l4yaml-v1.zip
+          <div class="code-block"><div class="code-label">Python</div><pre tabindex="0"><code>export MATHGRAPH_V1_EVIDENCE_ZIP=/path/to/l4yaml-v1.zip
 export MATHGRAPH_V2_EVIDENCE_ZIP=/path/to/l4yaml-v2.zip
-python -m unittest discover \
+python3 -m unittest discover \
   -s tests -p test_mathgraph_public_evidence_v1.py -v</code></pre></div>
           <p>The 13-test gate validates archive digests, source pins, the publication integrity gate, tamper rejection, negative lineage, resolver method and input limits, fail-closed unknowns, and agreement between human and machine-readable outputs.</p>
           <div class="source-stack">

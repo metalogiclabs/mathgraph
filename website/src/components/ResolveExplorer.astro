@@ -109,9 +109,9 @@ const documentName = (claimId: string) => {
               <div class="eyebrow">{item.eyebrow}</div>
               <h4>{item.title}</h4>
               <code>{item.id}</code>
-              <div class="resolve-comparison__transition" aria-label={`Before ${resolution.before}; after ${resolution.after}`}>
+              <div class="resolve-comparison__transition">
                 <span><small>Before</small><span data-resolve-before><span class="resolve-status" data-status={statusToken(resolution.before)}>{resolution.before}</span></span></span>
-                <b aria-hidden="true">→</b>
+                <b class="resolve-arrow" aria-hidden="true"></b>
                 <span><small>After</small><span data-resolve-after><span class="resolve-status" data-status={statusToken(resolution.after)}>{resolution.after}</span></span></span>
               </div>
               <p>{item.note}</p>
@@ -220,14 +220,14 @@ const documentName = (claimId: string) => {
         <h4>Declared graph routes</h4>
         <ul data-resolve-routes>
           {scenarios.PUBLISHED_RECORD.graph.routes.map((route) => (
-            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>Declared in the selected scenario graph</small></li>
+            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b class="resolve-arrow" aria-hidden="true"></b> <code>{route.conclusion}</code></span><small>Declared in the selected scenario graph</small></li>
           ))}
         </ul>
         <div class="resolve-exact-field">
           <h5>Exact <code>active_routes</code> field</h5>
           <ul data-resolve-active-routes>
             {publishedAfter.active_routes.map((route) => (
-              <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>Listed in <code>active_routes</code></small></li>
+              <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b class="resolve-arrow" aria-hidden="true"></b> <code>{route.conclusion}</code></span><small>Listed in <code>active_routes</code></small></li>
             ))}
           </ul>
         </div>

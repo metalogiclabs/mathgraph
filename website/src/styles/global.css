@@ -49,9 +49,7 @@ html {
 body {
   margin: 0;
   color: var(--ink-950);
-  background:
-    linear-gradient(90deg, transparent calc(50% - 590px), rgba(16, 19, 26, 0.035) calc(50% - 590px), rgba(16, 19, 26, 0.035) calc(50% - 589px), transparent calc(50% - 589px)),
-    var(--paper);
+  background: var(--paper);
   font-family: var(--sans);
   font-size: var(--step-0);
   line-height: 1.65;
@@ -151,6 +149,11 @@ pre {
   background: #141922;
   line-height: 1.65;
   tab-size: 2;
+}
+
+pre:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--blue-600) 45%, white);
+  outline-offset: 2px;
 }
 
 .skip-link {
@@ -673,11 +676,59 @@ pre {
 }
 
 .status-tag__glyph {
-  display: inline-grid;
-  width: 0.72rem;
-  place-items: center;
-  font-size: 0.78rem;
-  line-height: 1;
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  background: currentColor;
+}
+
+.status-tag--bounded .status-tag__glyph {
+  transform: rotate(45deg);
+}
+
+.status-tag--unknown .status-tag__glyph,
+.status-tag--proposed .status-tag__glyph {
+  border: 1.5px solid currentColor;
+  background: transparent;
+}
+
+.status-tag--unknown .status-tag__glyph {
+  transform: rotate(45deg);
+}
+
+.status-tag--proposed .status-tag__glyph,
+.status-tag--current .status-tag__glyph,
+.status-tag--neutral .status-tag__glyph {
+  border-radius: 50%;
+}
+
+.status-tag--experimental .status-tag__glyph {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.status-tag--rejected .status-tag__glyph,
+.status-tag--superseded .status-tag__glyph,
+.status-tag--revoked .status-tag__glyph {
+  height: 2px;
+}
+
+.status-tag--rejected .status-tag__glyph {
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 currentColor;
+}
+
+.status-tag--rejected .status-tag__glyph::after {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  content: "";
+  transform: rotate(90deg);
+}
+
+.status-tag--superseded .status-tag__glyph {
+  transform: rotate(-45deg);
 }
 
 .status-tag--bounded,
@@ -777,7 +828,7 @@ pre {
 }
 
 .boundary-grid__unknown {
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--amber-100) 70%, transparent));
+  background: color-mix(in srgb, var(--amber-100) 55%, var(--paper));
 }
 
 .query-demo {
@@ -1662,8 +1713,29 @@ summary {
   text-transform: uppercase;
 }
 
-.resolve-comparison__transition b {
+.resolve-comparison__transition .resolve-arrow {
   padding-bottom: 0.25rem;
+}
+
+.resolve-arrow {
+  position: relative;
+  display: inline-block;
+  width: 0.85rem;
+  height: 0;
+  border-top: 2px solid currentColor;
+  vertical-align: middle;
+}
+
+.resolve-arrow::after {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  width: 5px;
+  height: 5px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  content: "";
+  transform: rotate(45deg);
 }
 
 .resolve-comparison__withdrawn,
@@ -1759,6 +1831,8 @@ summary {
 .resolve-option span,
 .resolve-option small {
   display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .resolve-option small {
@@ -2175,6 +2249,21 @@ summary {
     grid-template-columns: 1fr;
   }
 
+  .resolve-results table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .resolve-results th,
+  .resolve-results td {
+    padding-inline: var(--space-2);
+    overflow-wrap: anywhere;
+  }
+
+  .resolve-results th[scope="row"] {
+    width: 34%;
+  }
+
   .resolve-comparison__outcomes article,
   .resolve-comparison__outcomes article:first-child,
   .resolve-comparison__outcomes article:last-child {
@@ -2332,6 +2421,16 @@ summary {
     padding: var(--space-3);
   }
 
+  .resolve-comparison__transition {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .resolve-comparison__transition .resolve-arrow {
+    margin: 0.15rem 0.35rem;
+    transform: rotate(90deg);
+  }
+
   .resolve-comparison__selection > div {
     min-width: 0;
   }
@@ -2364,6 +2463,23 @@ summary {
   .resolve-controls__group,
   .resolve-graph > section {
     padding: var(--space-3);
+  }
+
+  .resolve-results th,
+  .resolve-results td {
+    padding: 0.45rem 0.25rem;
+    font-size: 0.64rem;
+  }
+
+  .resolve-results th[scope="row"] {
+    width: 31%;
+  }
+
+  .resolve-results .resolve-status {
+    display: block;
+    padding-inline: 0.2rem;
+    font-size: 0.6rem;
+    white-space: normal;
   }
 
   .axis__scope {

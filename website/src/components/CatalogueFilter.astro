@@ -43,7 +43,9 @@ const {
 <section
   class="catalogue-filter"
   data-catalogue-filter
+  data-catalogue-ready="false"
   data-catalogue-filter-count={filters.length}
+  data-catalogue-total={total}
   data-catalogue-url-state={urlState ? 'true' : undefined}
   data-catalogue-ranked={ranked ? 'true' : undefined}
   data-catalogue-search-index={searchIndex}
@@ -76,7 +78,8 @@ const {
   </fieldset>
   <p data-catalogue-count aria-live="polite" aria-atomic="true">{total} of {total} displayed.</p>
   <p class="callout callout--unknown" data-catalogue-no-match hidden>{noMatch}</p>
+  <p><button class="button button--secondary" type="button" data-catalogue-more aria-controls={`${id}-items`} hidden>Show 50 more</button></p>
   <noscript><p class="fineprint">{noScript}</p></noscript>
-  <div class="catalogue-filter__items" data-catalogue-items><slot /></div>
+  <div id={`${id}-items`} class="catalogue-filter__items" data-catalogue-items><slot /></div>
 </section>
 <script>import '../scripts/catalogue-filter';</script>

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const website = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repository = resolve(website, '..');
 const workflowPath = resolve(repository, '.github/workflows/mathgraph-org-v1.yml');
+const protocolWorkflowPath = resolve(repository, '.github/workflows/mathgraph-protocol-conformance-v1.yml');
 
 function indentation(line) {
   return line.length - line.trimStart().length;
@@ -22,7 +23,7 @@ function websiteArtifactContract(workflow) {
   );
   const jobLines = lines.slice(websiteStart, websiteEnd === -1 ? undefined : websiteEnd);
   const uploadIndex = jobLines.findIndex(
-    (line) => line.trim().replace(/^-\s*/, '') === 'uses: actions/upload-artifact@v4',
+    (line) => /^-?\s*uses:\s+actions\/upload-artifact@[0-9a-f]{40}(?:\s+#.*)?$/u.test(line.trim()),
   );
   assert.notEqual(uploadIndex, -1, 'website job does not upload a static-site artifact');
 
@@ -43,6 +44,7 @@ function websiteArtifactContract(workflow) {
   return {
     includeHiddenFiles: values.get('include-hidden-files') === 'true',
     name: values.get('name'),
+    overwrite: values.get('overwrite') === 'true',
     path: values.get('path'),
   };
 }
@@ -62,8 +64,32 @@ function isHidden(relativePath) {
 }
 
 const workflow = await readFile(workflowPath, 'utf8');
+const protocolWorkflow = await readFile(protocolWorkflowPath, 'utf8');
+for (const [name, source] of [['website', workflow], ['protocol', protocolWorkflow]]) {
+  for (const match of source.matchAll(/uses:\s+actions\/[^@\s]+@([^\s#]+)/gu)) {
+    assert.match(match[1], /^[0-9a-f]{40}$/u, `${name} workflow action is not commit-pinned: ${match[0]}`);
+  }
+  assert(source.includes('runs-on: ubuntu-24.04'), `${name} workflow runner is not pinned`);
+}
+for (const source of [workflow, protocolWorkflow]) {
+  assert(source.includes('github.head_ref || github.ref_name'), 'workflow concurrency is not branch-aware');
+  assert(source.includes('cancel-in-progress: true'), 'workflow does not cancel stale runs');
+}
+assert(protocolWorkflow.includes("python-version: '3.11.17'"), 'protocol workflow Python patch is not pinned');
+assert(
+  protocolWorkflow.includes('name: mathgraph-finite-capability-independent-v1-${{ github.run_id }}-${{ github.run_attempt }}'),
+  'protocol evidence artifact is not rerun-scoped',
+);
+const evidenceJob = workflow.slice(workflow.indexOf('  evidence-integrity:'));
+assert(!evidenceJob.includes('\n    env:\n      GH_TOKEN:'), 'evidence token must not be job-scoped');
+assert.match(
+  evidenceJob,
+  /- name: Retrieve exact archived proof and execution receipts\n        env:\n          GH_TOKEN: \$\{\{ github\.token \}\}/u,
+  'evidence token must be scoped to the archive retrieval step',
+);
 const contract = websiteArtifactContract(workflow);
-assert.equal(contract.name, 'mathgraph-org-v1-static-site');
+assert.equal(contract.name, 'mathgraph-org-v1-static-site-${{ github.run_id }}');
+assert.equal(contract.overwrite, true, 'run-scoped website artifact must support same-run job reruns');
 assert.equal(contract.path, 'website/dist/');
 
 const artifactRoot = resolve(repository, contract.path);

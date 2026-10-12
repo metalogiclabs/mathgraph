@@ -38,7 +38,7 @@ const githubSource = source.repository && source.commit && source.path
   ? `${source.repository}/blob/${source.commit}/${source.path}${source.range ? `#L${source.range.start.line}-L${source.range.end.line}` : ''}`
   : undefined;
 const catalogueRoot = '/catalogues/mathlib/v4.34.1';
-const validationCommand = `python -I -S -B conformance/source_catalogue_v1/consumer.py \\
+const validationCommand = `python3 -I -S -B conformance/source_catalogue_v1/consumer.py \\
   --catalogue-root website/public/catalogues/mathlib/v4.34.1 \\
   --policy conformance/source_catalogue_v1/trust-policy.json \\
   --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \\
@@ -76,7 +76,7 @@ const axes = [
 
   {details.statement && <section aria-labelledby="source-statement-title">
     <h2 id="source-statement-title">Indexed statement</h2>
-    <pre class="source-statement"><code>{details.statement}</code></pre>
+    <pre class="source-statement" tabindex="0"><code>{details.statement}</code></pre>
     <p class="fineprint">This text is bound to the statement digest above. Parsing and indexing it does not establish proof validity, informal fidelity, implication or equivalence.</p>
   </section>}
 
@@ -104,7 +104,7 @@ const axes = [
   <section aria-labelledby="source-validation-title">
     <h2 id="source-validation-title">Independent validation</h2>
     <p>Validate the committed catalogue, pins, canonical encoding, identities, relation endpoints, named omissions and authority ceiling from a clean checkout:</p>
-    <pre><code>{validationCommand}</code></pre>
+    <pre tabindex="0"><code>{validationCommand}</code></pre>
     <p><a href={`${catalogueRoot}/manifest.json`}>Manifest</a>{shardMetadata && <> · <a href={`${catalogueRoot}/${shardMetadata.path}`}>Module shard</a></>} · <a href={`${catalogueRoot}/search.json`}>Search export</a></p>
     <p class="fineprint">This replay does not fetch Mathlib, rerun Lean, authenticate GitHub, check current applicability, or grant action authority. It validates the pinned publication contract and returns only its bounded source-indexing result.</p>
   </section>

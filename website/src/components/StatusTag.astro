@@ -6,21 +6,21 @@ interface Props {
 
 const { label, tone = 'neutral' } = Astro.props;
 const status = {
-  bounded: { family: 'evidence', glyph: '◆' },
-  unknown: { family: 'evidence', glyph: '◇' },
-  rejected: { family: 'evidence', glyph: '×' },
-  current: { family: 'lifecycle', glyph: '●' },
-  superseded: { family: 'lifecycle', glyph: '↗' },
-  revoked: { family: 'lifecycle', glyph: '—' },
-  implemented: { family: 'maturity', glyph: '■' },
-  experimental: { family: 'maturity', glyph: '△' },
-  proposed: { family: 'maturity', glyph: '○' },
-  neutral: { family: 'neutral', glyph: '·' },
+  bounded: { family: 'evidence' },
+  unknown: { family: 'evidence' },
+  rejected: { family: 'evidence' },
+  current: { family: 'lifecycle' },
+  superseded: { family: 'lifecycle' },
+  revoked: { family: 'lifecycle' },
+  implemented: { family: 'maturity' },
+  experimental: { family: 'maturity' },
+  proposed: { family: 'maturity' },
+  neutral: { family: 'neutral' },
 } as const;
 const treatment = status[tone];
 ---
 
 <span class:list={['status-tag', `status-tag--${tone}`]} data-status-family={treatment.family}>
-  <span class="status-tag__glyph" aria-hidden="true">{treatment.glyph}</span>
+  <span class="status-tag__glyph" aria-hidden="true"></span>
   <span>{label}</span>
 </span>

@@ -39,9 +39,9 @@ const relationTypes = [...new Set(projection.relations.map(edge => edge.type))].
     </li>)}</ul></section>)}
   </div>
 
-  <aside class="map-compact-detail" data-neighborhood-detail>
+  <aside class="map-compact-detail" data-neighborhood-detail aria-labelledby={`${id}-detail-title`}>
     <div class="eyebrow" data-neighborhood-detail-kind>{center.kind}</div>
-    <h4 data-neighborhood-detail-title>{center.title}</h4>
+    <h4 id={`${id}-detail-title`} data-neighborhood-detail-title>{center.title}</h4>
     <code data-neighborhood-detail-id>{center.id}</code>
     <p><a data-neighborhood-detail-link href={center.href}>Open exact source and status →</a></p>
   </aside>

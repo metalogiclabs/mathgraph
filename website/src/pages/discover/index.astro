@@ -89,7 +89,7 @@ const frontier = deriveSourceDiscoveryFrontierV1(await loadSourceCatalogueV1());
       <section id="contract">
         <h2>Run locally with explicit inputs.</h2>
         <p>Hosted service: <code>NOT_DEPLOYED</code>. This page is a static projection. The CLI performs no solver call, route execution, or semantic verification.</p>
-        <div class="code-block"><div class="code-label">From a repository checkout · Python standard library</div><pre><code>python -I -S scripts/mathgraph_discover_v1.py --request conformance/discover_v1/fixtures/request.json</code></pre></div>
+        <div class="code-block"><div class="code-label">From a repository checkout · Python standard library</div><pre tabindex="0"><code>python3 -I -S scripts/mathgraph_discover_v1.py --request conformance/discover_v1/fixtures/request.json</code></pre></div>
         <p><a href="/schemas/discover-request-v1.schema.json">Request schema</a> · <a href="/schemas/discover-result-v1.schema.json">Result schema</a> · <a href={sourceUrl('docs/discover_contract_v1.md')}>Full contract</a></p>
         <p>Modules can be used separately. <a href="/develop/">Develop</a> and <a href="/capabilities/">Capabilities</a> expose different contracts; no autonomous loop or compulsory runtime sequence is provided.</p>
       </section>

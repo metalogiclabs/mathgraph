@@ -25,9 +25,9 @@ const fields = [
   <h4>Six independent status axes</h4>
   <dl class="object-axes">{Object.entries(object.axes).map(([key, value]) => <div><dt><a href={sourceLink}>{key}</a></dt><dd><code>{value || 'UNKNOWN'}</code></dd></div>)}</dl>
   <h4>Source pins</h4>
-  <ul class="object-pins">{[object.source, ...object.supporting_sources].map(pin => <li><a href={sourceHref(pin.locator)}>{pin.id}</a> · version {pin.version}<details><summary>Contract, locator and digests</summary><pre><code>{JSON.stringify(pin, null, 2)}</code></pre></details></li>)}</ul>
+  <ul class="object-pins">{[object.source, ...object.supporting_sources].map(pin => <li><a href={sourceHref(pin.locator)}>{pin.id}</a> · version {pin.version}<details><summary>Contract, locator and digests</summary><pre tabindex="0"><code>{JSON.stringify(pin, null, 2)}</code></pre></details></li>)}</ul>
   <dl class="definition-list">
-    {fields.map(([label, value]) => <div><dt>{label}</dt><dd><pre><code>{render(value)}</code></pre></dd></div>)}
+    {fields.map(([label, value]) => <div><dt>{label}</dt><dd><pre tabindex="0"><code>{render(value)}</code></pre></dd></div>)}
     {([
       ['Verifier authority', object.verifier_authority], ['Assumptions', object.assumptions], ['Replay boundary', object.replay_boundary],
       ['Unknowns', object.unknowns], ['Unsupported semantics', object.unsupported_semantics],
@@ -40,7 +40,7 @@ const fields = [
   <ObjectRelations edges={edges.filter(edge => edge.from === object.id)} direction="outgoing" prefix={prefix === 'object' ? undefined : prefix} objects={objects} />
   <h4>Lineage</h4>
   <p>Source <a href={sourceLink}>{object.source.id}</a> · version <code>{object.source.version}</code> · pointer <code>{object.pointer || '"" (document root)'}</code>. This locator declares no chronology, supersession or equivalence.</p>
-  <details><summary>All projected source fields</summary><pre><code>{JSON.stringify(object.details, null, 2)}</code></pre></details>
+  <details><summary>All projected source fields</summary><pre tabindex="0"><code>{JSON.stringify(object.details, null, 2)}</code></pre></details>
   <p><a href={`/objects/${objectSlug(object)}/`}>Permanent object view</a> · <a href={sourceLink}>Source / export JSON</a> · <a href="/developers/#offline-replay">Reproduction instructions and boundaries</a></p>
   <p class="fineprint">The route slug is a presentation locator only. Use the full canonical identity above.</p>
 </article>

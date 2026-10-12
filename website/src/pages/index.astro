@@ -142,7 +142,7 @@ const format = (value: number) => value.toLocaleString('en-US');
         </div>
         <div class="span-7 source-feature__statement">
           <div class="eyebrow">Rendered declaration type</div>
-          <pre><code>{representativeDetails.statement}</code></pre>
+          <pre tabindex="0"><code>{representativeDetails.statement}</code></pre>
           <p class="fineprint">Statement digest <code>{representativeDetails.statement_sha256}</code>. The hash protects bytes; it does not establish truth or semantic equivalence.</p>
         </div>
       </div>
@@ -178,7 +178,7 @@ const format = (value: number) => value.toLocaleString('en-US');
     <div class="shell">
       <div class="eyebrow">Executable quick start</div><h2 id="quick-start-title">Import the supported record locally.</h2>
       <p>Clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>. With Python available and the separately pinned policy and consumer reviewed:</p>
-      <pre data-home-quick-start><code>{importCheckoutReplayCommand}</code></pre>
+      <pre tabindex="0" data-home-quick-start><code>{importCheckoutReplayCommand}</code></pre>
       <p>The result uses <code>mathgraph.import-result.v1</code>. Historical bounded receipt validation leaves proof, kernel, and source-suite replay <code>NOT_PERFORMED</code>; freshness <code>NOT_CHECKED</code>; and current applicability <code>UNKNOWN</code>. It authorizes no action.</p>
       <p><a href={importConsumerSourceUrl}>Inspect the pinned independent consumer</a> · <a href={importPolicySourceUrl}>Inspect the separately reviewed policy</a> · <a href="/developers/">Developer setup and consumers →</a></p>
     </div>

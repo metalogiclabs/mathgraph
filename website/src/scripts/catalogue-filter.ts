@@ -12,6 +12,20 @@ function orderedSubsequence(query: string[], value: string[]): boolean {
   return index === query.length;
 }
 
+interface SearchableItem {
+  item: HTMLElement;
+  title: string;
+  finalName: string;
+  titleTokens: string[];
+  metadata: string;
+  id: string;
+}
+
+interface NormalizedQuery {
+  needle: string;
+  tokens: string[];
+}
+
 function titleFor(item: HTMLElement): string {
   return item.dataset.catalogueTitle ?? item.querySelector<HTMLElement>('[data-catalogue-entry-title]')?.textContent ?? '';
 }
@@ -20,20 +34,14 @@ function moduleFor(item: HTMLElement): string {
   return item.dataset.catalogueModule ?? item.querySelector<HTMLElement>('.knowledge-catalogue__meta > span')?.textContent ?? '';
 }
 
-function relevance(item: HTMLElement, query: string, metadata: string): number | null {
-  const needle = normalize(query);
-  if (!needle) return 5;
-  const displayTitle = titleFor(item);
-  const title = normalize(displayTitle);
-  const finalName = normalize(displayTitle.split(/[.:/#]/u).filter(Boolean).at(-1) ?? displayTitle);
-  if (title === needle) return 0;
-  if (finalName === needle) return 1;
-  const queryTokens = tokens(query);
-  if (queryTokens.length > 0 && orderedSubsequence(queryTokens, tokens(title))) return 2;
-  if (title.includes(needle)) return 3;
-  const normalizedMetadata = normalize(metadata);
-  if (queryTokens.length > 0 && queryTokens.every(token => normalizedMetadata.includes(token))) return 4;
-  return normalizedMetadata.includes(needle) ? 4 : null;
+function relevance(searchable: SearchableItem, query: NormalizedQuery): number | null {
+  if (!query.needle) return 5;
+  if (searchable.title === query.needle) return 0;
+  if (searchable.finalName === query.needle) return 1;
+  if (query.tokens.length > 0 && orderedSubsequence(query.tokens, searchable.titleTokens)) return 2;
+  if (searchable.title.includes(query.needle)) return 3;
+  if (query.tokens.length > 0 && query.tokens.every(token => searchable.metadata.includes(token))) return 4;
+  return searchable.metadata.includes(query.needle) ? 4 : null;
 }
 
 async function initializeCatalogue(root: HTMLElement): Promise<void> {
@@ -43,12 +51,15 @@ async function initializeCatalogue(root: HTMLElement): Promise<void> {
   const clear = root.querySelector<HTMLButtonElement>('[data-catalogue-clear]');
   const count = root.querySelector<HTMLElement>('[data-catalogue-count]');
   const noMatch = root.querySelector<HTMLElement>('[data-catalogue-no-match]');
+  const more = root.querySelector<HTMLButtonElement>('[data-catalogue-more]');
   const itemsRoot = root.querySelector<HTMLElement>('[data-catalogue-items]');
   const orderRoot = root.querySelector<HTMLElement>('[data-catalogue-order-root]');
   const items = Array.from(root.querySelectorAll<HTMLElement>('[data-catalogue-item]'));
-  if (!controls || !query || !clear || !count || !noMatch || !itemsRoot) return;
+  if (!controls || !query || !clear || !count || !noMatch || !more || !itemsRoot) return;
   const ranked = root.dataset.catalogueRanked === 'true';
   const urlState = root.dataset.catalogueUrlState === 'true';
+  const pageSize = 50;
+  let resultLimit = pageSize;
   const metadata = new Map(items.map(item => [item, item.dataset.catalogueMetadata ?? item.dataset.catalogueSearch ?? item.textContent ?? '']));
 
   const searchIndex = root.dataset.catalogueSearchIndex;
@@ -97,43 +108,75 @@ async function initializeCatalogue(root: HTMLElement): Promise<void> {
     }
   }
 
+  // Catalogue source text and titles are immutable for the lifetime of this page.
+  // Normalize them once after optional index enrichment instead of repeating Unicode,
+  // token, and DOM work for every item on every keystroke.
+  const searchableItems: SearchableItem[] = items.map((item) => {
+    const displayTitle = titleFor(item);
+    return {
+      item,
+      title: normalize(displayTitle),
+      finalName: normalize(displayTitle.split(/[.:/#]/u).filter(Boolean).at(-1) ?? displayTitle),
+      titleTokens: tokens(displayTitle),
+      metadata: normalize(metadata.get(item) ?? ''),
+      id: item.dataset.catalogueSourceId ?? '',
+    };
+  });
+
   const render = (): void => {
-    const needle = normalize(query.value);
+    const normalizedQuery = { needle: normalize(query.value), tokens: tokens(query.value) };
     const visible: Array<{ item: HTMLElement; score: number; id: string }> = [];
-    const hidden: HTMLElement[] = [];
-    for (const item of items) {
-      const itemMetadata = metadata.get(item) ?? '';
-      const score = ranked ? relevance(item, query.value, itemMetadata) : (!needle || normalize(itemMetadata).includes(needle) ? 0 : null);
+    for (const searchable of searchableItems) {
+      const { item } = searchable;
+      const score = ranked
+        ? relevance(searchable, normalizedQuery)
+        : (!normalizedQuery.needle || searchable.metadata.includes(normalizedQuery.needle) ? 0 : null);
       const axesMatch = selects.every((select) => {
         const field = select.dataset.catalogueField;
         const itemField = field ? `catalogue${field[0].toUpperCase()}${field.slice(1)}` : undefined;
         return !select.value || (itemField !== undefined && item.dataset[itemField] === select.value);
       });
-      item.hidden = score === null || !axesMatch;
-      if (item.hidden) hidden.push(item);
-      else visible.push({ item, score: score ?? 0, id: item.dataset.catalogueSourceId ?? '' });
+      const shouldShow = score !== null && axesMatch;
+      const shouldHide = !shouldShow;
+      if (!ranked && item.hidden !== shouldHide) item.hidden = shouldHide;
+      if (shouldShow) visible.push({ item, score: score ?? 0, id: searchable.id });
     }
-    if (ranked) visible.sort((left, right) => left.score - right.score || left.id.localeCompare(right.id, 'en-US'));
-    const destination = orderRoot ?? itemsRoot;
-    for (const { item } of visible) destination.append(item);
-    for (const item of hidden) destination.append(item);
-    count.textContent = `${visible.length} of ${items.length} displayed.`;
+    if (ranked) {
+      visible.sort((left, right) => left.score - right.score || left.id.localeCompare(right.id, 'en-US'));
+      const shown = visible.slice(0, resultLimit);
+      const ordered = document.createDocumentFragment();
+      for (const { item } of shown) { item.hidden = false; ordered.append(item); }
+      const destination = orderRoot ?? itemsRoot;
+      destination.replaceChildren(ordered);
+      const format = (value: number) => value.toLocaleString('en-US');
+      count.textContent = `${format(shown.length)} shown · ${format(visible.length)} ${visible.length === 1 ? 'match' : 'matches'} · ${format(items.length)} catalogue entries.`;
+      more.hidden = shown.length >= visible.length;
+      if (!more.hidden) more.textContent = `Show ${format(Math.min(pageSize, visible.length - shown.length))} more`;
+    } else {
+      count.textContent = `${visible.length} of ${items.length} displayed.`;
+      more.hidden = true;
+    }
     noMatch.hidden = visible.length !== 0;
   };
 
-  query.addEventListener('input', render);
-  for (const select of selects) select.addEventListener('change', render);
+  const renderFromStart = () => { resultLimit = pageSize; render(); };
+  query.addEventListener('input', renderFromStart);
+  for (const select of selects) select.addEventListener('change', renderFromStart);
+  more.addEventListener('click', () => { resultLimit += pageSize; render(); });
   clear.addEventListener('click', () => {
     query.value = '';
     for (const select of selects) select.value = '';
-    render();
+    renderFromStart();
     query.focus();
   });
+  // A single product-level readiness signal is set only after the first
+  // deterministic render has committed its bounded result window.
+  render();
   controls.disabled = false;
   query.disabled = false;
   clear.disabled = false;
   for (const select of selects) select.disabled = false;
-  render();
+  root.dataset.catalogueReady = 'true';
 }
 
 if (typeof document !== 'undefined') {

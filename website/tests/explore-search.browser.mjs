@@ -6,6 +6,16 @@ import { extname, resolve, sep } from 'node:path';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const root = resolve('dist');
+const waitForCatalogueReady = page => page.waitForFunction(() => {
+  const rootElement = document.querySelector('[data-knowledge-catalogue] [data-catalogue-filter]');
+  const query = rootElement?.querySelector('[data-catalogue-query]');
+  const mounted = rootElement?.querySelectorAll('[data-catalogue-item]').length ?? 0;
+  return rootElement?.getAttribute('data-catalogue-ready') === 'true'
+    && query instanceof HTMLInputElement
+    && !query.disabled
+    && mounted > 0
+    && mounted <= 50;
+});
 const server = createServer(async (request, response) => {
   const pathname = new URL(request.url, 'http://localhost').pathname;
   const file = resolve(root, `.${pathname.endsWith('/') ? `${pathname}index.html` : pathname}`);
@@ -42,12 +52,18 @@ try {
           return { tag: element.tagName, className: element.className, text: element.textContent?.slice(0, 120), left: box.left, right: box.right, width: box.width, display: style.display, overflowWrap: style.overflowWrap, wordBreak: style.wordBreak, parentClass: element.parentElement?.className };
         }).filter(box => box.right > window.innerWidth + .5 || box.left < -.5).slice(0, 8),
       }));
-      assert.equal(await items.count(), 2372, 'Complete semantic catalogue must be present');
-      assert.equal(await catalogue.locator('[data-catalogue-query]').isEnabled(), javaScriptEnabled);
       if (!javaScriptEnabled) {
+        assert.equal(await catalogue.locator('[data-catalogue-query]').isEnabled(), false);
+        assert.equal(await items.count(), 2372, 'Complete semantic catalogue must be present without JavaScript');
         assert.equal(await visibleItems().count(), 2372, 'No-JavaScript fallback must expose every entry');
         assert.match(await catalogue.locator('noscript').textContent(), /every entry remains available without JavaScript/i);
       } else {
+        await catalogue.locator('[data-catalogue-query]').waitFor({ state: 'visible' });
+        await waitForCatalogueReady(page);
+        assert.equal(await catalogue.locator('[data-catalogue-filter]').getAttribute('data-catalogue-ready'), 'true');
+        assert.equal(await catalogue.locator('[data-catalogue-query]').isEnabled(), true);
+        assert.equal(await catalogue.locator('[data-catalogue-filter]').getAttribute('data-catalogue-total'), '2372');
+        assert.ok(await items.count() > 0 && await items.count() <= 50, 'JavaScript view must mount a bounded result window');
         const query = catalogue.locator('[data-catalogue-query]');
         assert.equal(await query.inputValue(), 'Real.rpow');
         assert.equal(await visibleItems().first().locator('h3').innerText(), 'Real.rpow');
@@ -70,7 +86,14 @@ try {
         await catalogue.locator('[data-catalogue-clear]').click();
         assert.equal(await query.inputValue(), '');
         assert.equal(await query.evaluate(element => element === document.activeElement), true, 'Clear must return focus to search');
-        assert.equal(await visibleItems().count(), 2372);
+        assert.equal(await visibleItems().count(), 50);
+        assert.match(await catalogue.locator('[data-catalogue-count]').innerText(), /50 shown · 2,372 matches · 2,372 catalogue entries/i);
+        const more = catalogue.locator('[data-catalogue-more]');
+        assert.equal(await more.isVisible(), true);
+        await more.focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await visibleItems().count(), 100, 'Show more must expand the same deterministic result set');
+        assert.match(await catalogue.locator('[data-catalogue-count]').innerText(), /100 shown · 2,372 matches · 2,372 catalogue entries/i);
         const geometry = await layout();
         assert.equal(geometry.fits, true, `${viewport.width}px Explore page overflow: ${JSON.stringify(geometry)}`);
 
@@ -85,6 +108,7 @@ try {
       }
       if (process.env.BROWSER_EVIDENCE_DIR) {
         await page.goto(`${origin}/explore/?q=Real.rpow`, { waitUntil: 'networkidle' });
+        if (javaScriptEnabled) await waitForCatalogueReady(page);
         await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/explore-${viewport.width}-${javaScriptEnabled ? 'js' : 'nojs'}.png`, fullPage: false });
       }
       await page.close();

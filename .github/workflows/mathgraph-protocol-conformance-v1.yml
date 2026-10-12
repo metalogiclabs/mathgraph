@@ -45,21 +45,25 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   finite-capability-conformance:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       # Reviewed separately from incoming descriptors, receipts, and registries.
       FINITE_POLICY_SHA256: 7069c764579d933679f6bfd9b922a724ad9bcb250e4060c660cb4fd099c60e89
       IMPORT_POLICY_SHA256: 944231afaf9d89e6f7dc77d9efbe80dcbd3fc76f8e8f260b32637a0f261faf65
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.11'
+          python-version: '3.11.17'
       - name: Acquire test tools and immutable runtime before isolation
         run: |
           set -euo pipefail
@@ -92,9 +96,10 @@ jobs:
             > "$RUNNER_TEMP/finite-capability-evidence/replay.json" \
             2> "$RUNNER_TEMP/finite-capability-evidence/isolation.json"
           echo "5d85d7117532fd777d7b2948ab1138bec47db81176327fdb9591e0be7fe2a006  $RUNNER_TEMP/finite-capability-evidence/replay.json" | sha256sum -c -
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: mathgraph-finite-capability-independent-v1
+          name: mathgraph-finite-capability-independent-v1-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/finite-capability-evidence/
           if-no-files-found: error
+          retention-days: 14

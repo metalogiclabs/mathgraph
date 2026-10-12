@@ -66,7 +66,7 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('PINNED_HISTORICAL_SOURCE');
     expect(text).toContain('Omitted structural references');
     expect(text).toContain('Independent validation');
-    expect(text).toContain('python -I -S -B conformance/source_catalogue_v1/consumer.py');
+    expect(text).toContain('python3 -I -S -B conformance/source_catalogue_v1/consumer.py');
     expect(html).toContain('data-knowledge-map');
     expect(html).toContain('data-map-center');
     expect(text).toContain('Presentation projection · authority NONE · not a certificate, proof, or verifier');
@@ -156,12 +156,12 @@ describe('primary public evidence experience', () => {
     for (const region of ['source', 'evidence', 'scope', 'unknowns']) {
       expect(html).toContain(`data-import-${region}`);
     }
-    expect(text).toContain('python -I -S scripts/mathgraph_import_v1.py');
+    expect(text).toContain('python3 -I -S scripts/mathgraph_import_v1.py');
     expect(text).toContain('--policy-sha256');
     expect(text).toContain('Download presentation JSON');
   });
 
-  test('pins candidate importer checkout, consumer, and separately reviewed policy before merge', async () => {
+  test('pins historical importer checkout, consumer, and separately reviewed policy', async () => {
     for (const route of ['', 'verify', 'check', 'developers']) {
       const html = await page(route);
       const text = visibleText(html);
@@ -169,6 +169,10 @@ describe('primary public evidence experience', () => {
       expect(html).toContain(`${importSourceRoot}/conformance/import_v1/consumer.py`);
       expect(html).toContain(`${importSourceRoot}/conformance/import_v1/fixtures/trust-policy.json`);
       expect(html).not.toMatch(/github\.com\/metalogiclabs\/mathgraph\/blob\/main\/(?:conformance\/import_v1|scripts\/mathgraph_import_v1\.py)/);
+      if (route) {
+        expect(text).toMatch(/importer is available on main/i);
+        expect(text).not.toMatch(/importer is not yet available on main/i);
+      }
     }
   });
 
@@ -478,8 +482,9 @@ describe('primary public evidence experience', () => {
     const html = await page('developers');
     const text = visibleText(html);
 
-    expect(text).toContain('python -I -S consumer.py');
-    expect(text).toContain('python -I -S -c');
+    expect(text).toContain('python3 -I -S consumer.py');
+    expect(text).toContain('python3 -I -S -c');
+    expect(text).not.toMatch(/\bpython\s+(?:-I|-m)\b/);
     expect(text).toContain('--bundle bundle.json');
     expect(text).toContain('--policy trust-policy.json');
     expect(text).toContain('--policy-sha256 09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a');

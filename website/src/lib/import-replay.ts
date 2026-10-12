@@ -14,7 +14,7 @@ export const importCheckoutCommand = [
 ].join('\n');
 
 export const importReplayCommand = [
-  'python -I -S scripts/mathgraph_import_v1.py',
+  'python3 -I -S scripts/mathgraph_import_v1.py',
   '  --record conformance/import_v1/fixtures/record.json',
   '  --policy conformance/import_v1/fixtures/trust-policy.json',
   '  --policy-sha256 ' + importPolicySha256,

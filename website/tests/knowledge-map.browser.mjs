@@ -143,22 +143,32 @@ try {
         assert.ok((await response.text()).includes(object.id));
       }
       await page.goto(origin, { waitUntil: 'networkidle' });
-      const home = page.locator('[data-knowledge-map]');
-      assert.equal(await home.locator('[data-map-node]').count(), 2);
-      assert.equal(await home.locator('[data-map-edge]').count(), 1);
+      const home = page.locator('[data-source-neighborhood]');
+      const homeProjection = JSON.parse(await home.locator('[data-neighborhood-data]').textContent());
+      assert.equal(homeProjection.nodes.length, 3);
+      assert.equal(homeProjection.relations.length, 3);
+      assert.equal(await home.locator('[data-neighborhood-node]').count(), 3);
+      assert.equal(await home.locator('[data-neighborhood-edge]').count(), 3);
       if (javaScriptEnabled) {
-        await home.locator('[data-map-node] a').last().focus();
+        const target = homeProjection.nodes.find(node => node.id !== homeProjection.center_id);
+        const targetControl = home.locator(`[data-neighborhood-node="${target.id}"] [data-neighborhood-select]`).first();
+        await targetControl.focus();
         await page.keyboard.press('Enter');
-        assert.equal(await home.locator('[data-map-node] a').last().getAttribute('aria-current'), 'true');
-        await home.locator('[data-map-kind][value=RESOLVE_RECEIPT]').uncheck();
-        assert.equal(await home.locator('[data-map-svg-edge]:visible').count(), 0);
-      } else assert.equal(await home.locator('[data-object-detail]:visible').count(), 2);
+        assert.equal(await targetControl.getAttribute('aria-current'), 'true');
+        assert.equal(await home.locator('[data-neighborhood-detail-id]').innerText(), target.id);
+        await home.locator('[data-neighborhood-type][value=TYPE_REFERENCES]').uncheck();
+        assert.equal(await home.locator('[data-neighborhood-edge]:visible').count(), 2);
+        assert.equal(await home.locator('[data-neighborhood-visual] line[data-relation=TYPE_REFERENCES]').count(), 0);
+      } else {
+        assert.equal(await home.locator('[data-neighborhood-node]:visible').count(), 3);
+        assert.equal(await home.locator('[data-neighborhood-edge]:visible').count(), 3);
+      }
       await noOverflow();
       await page.close();
     }
   }
   assert.deepEqual(errors, []);
-  console.log('PASS knowledge map browser: 1440/768/390; direct-fragment/reload and Back/Forward selection; unrelated fragments preserved; keyboard semantic/SVG selection; filters; directed display-only traversal; actual download + read-only reader + evidence rejection; limits/omissions; all 14 detail routes; JS/no-JS; reduced motion; homepage 2/1 scope; zero overflow/console errors.');
+  console.log('PASS knowledge map browser: 1440/768/390; direct-fragment/reload and Back/Forward selection; unrelated fragments preserved; keyboard semantic/SVG selection; filters; directed display-only traversal; actual download + read-only reader + evidence rejection; limits/omissions; all 14 detail routes; JS/no-JS; reduced motion; homepage 3-object/3-relation source projection; zero overflow/console errors.');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.close(resolve));
