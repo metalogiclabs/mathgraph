@@ -14,6 +14,13 @@ const RECORD_DIGEST = 'f0d092974d5d710fe9e17fb6759a894f2c28f2d3f5456439c071bd0a7
 const SOURCE_COMMIT = '62bf7077910e888a0bc8adfc8e08a5f500ff3ca3';
 const SUITE_COMMIT = 'da267a5c4782e7361e82889e76c0dc7df0e1e870';
 const SUPPORTED_GOAL = 'finite_parser_acceptance';
+const SOURCE_CATALOGUE_MANIFEST_SHA256 = '5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68';
+const SOURCE_CATALOGUE_SEARCH_SHA256 = 'af346a9d68adfaacddf4103004d97976e6ebc106e2b8b0bc199fb0a5fabeb60b';
+const SOURCE_CATALOGUE_POLICY_SHA256 = 'c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9';
+const SOURCE_CATALOGUE_RESULT = {
+  authority: 'NONE', authorization: 'NONE', current_applicability: 'NOT_CHECKED',
+  freshness: 'PINNED_HISTORICAL_SOURCE', independent_verification: 'NOT_CHECKED', source_status: 'SOURCE_INDEXED',
+};
 const root = resolve(process.env.MATHGRAPH_CONSUMER_ROOT ?? new URL('../dist', import.meta.url).pathname);
 const resolveId = 'mg-living-warrant-openai-jpl-20261010';
 const offlinePath = `evidence/${resolveId}/offline`;
@@ -121,6 +128,37 @@ try {
   assert.equal(discoveryResponse.status, 200, `discovery manifest returned ${discoveryResponse.status}`);
   const discovery = await discoveryResponse.json();
   assert.equal(discovery.capabilities.static_records, 'IMPLEMENTED');
+  assert.equal(discovery.schema, 'mathgraph.discovery.v4');
+  assert.equal(discovery.source_catalogue.artifacts.manifest.sha256, SOURCE_CATALOGUE_MANIFEST_SHA256);
+  assert.equal(discovery.source_catalogue.artifacts.search.sha256, SOURCE_CATALOGUE_SEARCH_SHA256);
+  assert.deepEqual(discovery.source_catalogue.result, SOURCE_CATALOGUE_RESULT);
+  const sourceManifestResponse = await fetch(localUrl(discovery.source_catalogue.artifacts.manifest.url));
+  const sourceSearchResponse = await fetch(localUrl(discovery.source_catalogue.artifacts.search.url));
+  const sourceManifestBytes = Buffer.from(await sourceManifestResponse.arrayBuffer());
+  const sourceSearchBytes = Buffer.from(await sourceSearchResponse.arrayBuffer());
+  assert.equal(sha256(sourceManifestBytes), SOURCE_CATALOGUE_MANIFEST_SHA256);
+  assert.equal(sha256(sourceSearchBytes), SOURCE_CATALOGUE_SEARCH_SHA256);
+  const sourceConsumerPath = resolve(root, new URL(discovery.source_catalogue.artifacts.consumer.url).pathname.slice(1));
+  const sourcePolicyPath = resolve(root, new URL(discovery.source_catalogue.artifacts.trust_policy.url).pathname.slice(1));
+  const sourceReplay = await promisify(execFile)('python3', [
+    '-I', '-S', '-B', sourceConsumerPath,
+    '--catalogue-root', resolve(root, 'catalogues/mathlib/v4.34.1'),
+    '--policy', sourcePolicyPath,
+    '--policy-sha256', SOURCE_CATALOGUE_POLICY_SHA256,
+    '--audit-imports',
+  ], { env: { PATH: process.env.PATH } });
+  assert.deepEqual(JSON.parse(sourceReplay.stdout), SOURCE_CATALOGUE_RESULT);
+  assert.deepEqual(JSON.parse(sourceReplay.stderr), {
+    dont_write_bytecode: true, forbidden_imports: [], isolated: true, network_access: 'NOT_USED', no_site: true,
+    proof_replay: 'NOT_PERFORMED', source_bytes: 'NOT_PRESENT',
+  });
+  await assert.rejects(promisify(execFile)('python3', [
+    '-I', '-S', '-B', sourceConsumerPath,
+    '--catalogue-root', resolve(root, 'catalogues/mathlib/v4.34.1'),
+    '--policy', sourcePolicyPath,
+    '--policy-sha256', '0'.repeat(64),
+  ], { env: { PATH: process.env.PATH } }), /POLICY_PIN_MISMATCH/);
+  console.log('INDEPENDENT_SOURCE_CATALOGUE_CONSUMER_GREEN source=SOURCE_INDEXED proof=NOT_CHECKED authority=NONE negatives=policy-pin');
   const indexResponse = await fetch(localUrl(discovery.record_index));
   assert.equal(indexResponse.status, 200, `record index returned ${indexResponse.status}`);
   const index = await indexResponse.json();

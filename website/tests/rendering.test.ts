@@ -11,6 +11,9 @@ import sharp from 'sharp';
 import record from '../src/data/l4yaml-record.json';
 import resolveRecord from '../src/data/resolve-record.json';
 import resolveScenarios from '../src/data/resolve-scenarios.json';
+import { loadSourceCatalogueV1 } from '../src/lib/source-catalogue';
+import { projectSourceCatalogueV1 } from '../src/lib/object-projections';
+import { objectSlug } from '../src/lib/object-locators';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
@@ -27,6 +30,49 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
+    const html = await page('explore').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-knowledge-catalogue');
+    expect(html).toContain('data-catalogue-url-state');
+    expect(html).toContain('data-catalogue-ranked');
+    expect((html.match(/data-catalogue-item(?=[\s>])/g) ?? [])).toHaveLength(2372);
+    expect(text).toContain('Real.rpow');
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toContain('NOT_CHECKED');
+    expect(text).toContain('Source indexing is not independent proof checking.');
+    expect(text).toContain('Every entry remains available without JavaScript.');
+    expect(html).toContain('<noscript>');
+    expect(html).toContain('name="q"');
+    expect(html).toContain('data-catalogue-no-match');
+    expect(html).toContain('href="/discover/"');
+  });
+
+  test('renders a permanent source occurrence with exact pins, unknowns, omissions and a bounded map', async () => {
+    const catalogue = await loadSourceCatalogueV1();
+    const projection = projectSourceCatalogueV1(catalogue);
+    const occurrence = projection.objects.find(object => object.title === 'Real.rpow')!;
+    const slug = objectSlug(occurrence);
+    const html = await page(`objects/${slug}`).catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-source-occurrence-detail');
+    expect(text).toContain('Real.rpow');
+    expect(text).toContain('Mathlib.Analysis.SpecialFunctions.Pow.Real');
+    expect(text).toContain(catalogue.manifest.source.repository);
+    expect(text).toContain(catalogue.manifest.source.commit);
+    expect(text).toContain(catalogue.manifest.source.tree);
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toContain('NOT_CHECKED');
+    expect(text).toContain('PINNED_HISTORICAL_SOURCE');
+    expect(text).toContain('Omitted structural references');
+    expect(text).toContain('Independent validation');
+    expect(text).toContain('python3 -I -S -B conformance/source_catalogue_v1/consumer.py');
+    expect(html).toContain('data-knowledge-map');
+    expect(html).toContain('data-map-center');
+    expect(text).toContain('Presentation projection · authority NONE · not a certificate, proof, or verifier');
+    expect(html).toContain(`/catalogues/mathlib/v4.34.1/`);
+  });
+
   test('exposes bounded projection objects, typed relations and full source-linked details without JavaScript', async () => {
     const html = await page('objects').catch(() => '');
     const text = visibleText(html);
@@ -50,12 +96,31 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<noscript>');
   });
 
-  test('reuses the interactive map at the homepage’s exact two-object, one-edge scope', async () => {
+  test('makes the source-derived living network the homepage entry point without authority inflation', async () => {
     const html = await page('');
-    expect(html).toContain('data-knowledge-map');
-    expect((html.match(/data-object-detail=/g) ?? [])).toHaveLength(2);
-    expect(visibleText(html)).toContain('2 of 2 objects · 1 of 1 relations');
-    expect(html).toContain('href="/objects/"');
+    const text = visibleText(html);
+    expect(text).toContain('Knowledge you can verify. Capabilities you can build on.');
+    expect(html).toMatch(/<form[^>]+action="\/explore\/"[^>]+method="get"[^>]+data-home-search/);
+    expect(html).toMatch(/<input[^>]+name="q"/);
+    expect(html).toMatch(/Content-Security-Policy[^>]+form-action 'self'/);
+    expect(html).not.toContain('data-import-workbench');
+    for (const [value, label] of [['2,345', 'Indexed declarations'], ['1', 'Qualified bounded result'], ['3,578', 'Typed source-backed relations'], ['4', 'External source projects'], ['1', 'Qualified reusable capability']]) {
+      expect(text).toContain(value); expect(text).toContain(label);
+    }
+    expect(text).not.toContain('Total network');
+    expect(text).toContain('DECLARES 2,345');
+    expect(text).toContain('TYPE_REFERENCES 1,224');
+    expect(text).toContain('IMPORTS_MODULE 2');
+    expect(text).toContain('Real.rpow');
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toContain('Independent verification NOT_CHECKED');
+    expect(html).toContain('data-source-neighborhood');
+    expect(html).toContain('TYPE_REFERENCES');
+    expect(html).toMatch(/href="\/objects\/object-[a-f0-9]{64}\//);
+    expect(text).toContain(record.id);
+    expect(text).toContain('One finite representation-refinement profile');
+    expect(text).toContain('Independent verification');
+    expect(html).toContain('data-home-quick-start');
   });
 
   test('connects canonical objects from exploration, Resolve and historical records', async () => {
@@ -72,7 +137,7 @@ describe('primary public evidence experience', () => {
     }
   });
 
-  test.each(['', 'verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
+  test.each(['verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
     const html = await page(route).catch(() => '');
     const text = visibleText(html);
     expect(html).toContain('data-import-workbench');
@@ -91,12 +156,12 @@ describe('primary public evidence experience', () => {
     for (const region of ['source', 'evidence', 'scope', 'unknowns']) {
       expect(html).toContain(`data-import-${region}`);
     }
-    expect(text).toContain('python -I -S scripts/mathgraph_import_v1.py');
+    expect(text).toContain('python3 -I -S scripts/mathgraph_import_v1.py');
     expect(text).toContain('--policy-sha256');
     expect(text).toContain('Download presentation JSON');
   });
 
-  test('pins candidate importer checkout, consumer, and separately reviewed policy before merge', async () => {
+  test('pins historical importer checkout, consumer, and separately reviewed policy', async () => {
     for (const route of ['', 'verify', 'check', 'developers']) {
       const html = await page(route);
       const text = visibleText(html);
@@ -104,6 +169,10 @@ describe('primary public evidence experience', () => {
       expect(html).toContain(`${importSourceRoot}/conformance/import_v1/consumer.py`);
       expect(html).toContain(`${importSourceRoot}/conformance/import_v1/fixtures/trust-policy.json`);
       expect(html).not.toMatch(/github\.com\/metalogiclabs\/mathgraph\/blob\/main\/(?:conformance\/import_v1|scripts\/mathgraph_import_v1\.py)/);
+      if (route) {
+        expect(text).toMatch(/importer is available on main/i);
+        expect(text).not.toMatch(/importer is not yet available on main/i);
+      }
     }
   });
 
@@ -148,6 +217,34 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('data-static-qualified-default');
     expect(html).toContain('data-default-scenario="published-after"');
     expect(text).toContain('Published after publisher withdrawal');
+  });
+
+  test('puts the selective consequence comparison before the secondary Resolve controls', async () => {
+    const html = await page('resolve');
+    const comparison = html.match(/<section[^>]+data-resolve-comparison[\s\S]+?<\/section>/)?.[0] ?? '';
+    const text = visibleText(comparison);
+
+    expect(comparison).not.toBe('');
+    expect(html.indexOf('data-resolve-comparison')).toBeLessThan(html.indexOf('class="resolve-controls"'));
+    expect(comparison).toContain('data-selected-scenario="published-after"');
+    expect(text).toContain('What changed — and what did not');
+    expect(text).toContain('openai.original_support.1');
+    expect(text).toMatch(/SOURCE_DOCUMENTED.*STALE/i);
+    expect(text).toContain('openai.theorem.1');
+    expect(text).toMatch(/UNKNOWN.*UNKNOWN/i);
+    expect(text).toMatch(/not REFUTED/i);
+    expect(text).toContain('jpl.l4yaml.finite_parser_acceptance');
+    expect(text).toMatch(/WARRANTED_BOUNDED.*WARRANTED_BOUNDED/i);
+    expect(text).toContain('nasa-jpl/L4YAML@62bf7077910e888a0bc8adfc8e08a5f500ff3ca3:yaml/yaml-test-suite@da267a5c4782e7361e82889e76c0dc7df0e1e870:48-cases');
+    expect(text).toMatch(/browser neither resolves, qualifies, nor mutates/i);
+    for (const [id, label] of [
+      ['published-after', 'Qualified history'],
+      ['modeled-before', 'Modeled baseline'],
+      ['withdraw-openai.original_publication_receipt.1', 'Counterfactual'],
+    ]) {
+      expect(comparison).toMatch(new RegExp(`<button[^>]+data-resolve-select="${id.replaceAll('.', '[.]')}"[^>]+disabled`, 'i'));
+      expect(text).toContain(label);
+    }
   });
 
   test('renders all seven historic outcomes at both permanent Resolve record routes', async () => {
@@ -363,12 +460,31 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/same-owner.*not.*outside-organization adoption/i);
   });
 
+  test('gives agents a fail-closed source-catalogue consumption sequence', async () => {
+    const html = await page('agents');
+    const text = visibleText(html);
+
+    expect(html).toContain('data-agent-source-catalogue');
+    expect(html).toContain('data-agent-source-sequence');
+    expect((html.match(/data-agent-source-step=/g) ?? [])).toHaveLength(7);
+    for (const value of ['SOURCE_INDEXED', 'NOT_CHECKED', 'PINNED_HISTORICAL_SOURCE', 'NONE']) expect(text).toContain(value);
+    expect(text).toMatch(/DECLARES.*IMPORTS_MODULE.*TYPE_REFERENCES/i);
+    expect(text).toMatch(/structural.*never.*implication.*equivalence/i);
+    expect(text).toMatch(/same origin.*detects changed bytes.*does not authenticate.*compromised origin.*mathematical truth/i);
+    expect(text).toMatch(/independently chosen channel/i);
+    expect(text).toMatch(/unsupported version.*critical extension.*forged status.*missing endpoint.*decline/i);
+    expect(html).toContain('/catalogues/mathlib/v4.34.1/manifest.json');
+    expect(html).toContain('/artifacts/conformance/source_catalogue_v1/consumer.py');
+    expect(html).toContain('/artifacts/conformance/source_catalogue_v1/trust-policy.json');
+  });
+
   test('documents only runnable static consumers and keeps hosted interfaces undeployed', async () => {
     const html = await page('developers');
     const text = visibleText(html);
 
-    expect(text).toContain('python -I -S consumer.py');
-    expect(text).toContain('python -I -S -c');
+    expect(text).toContain('python3 -I -S consumer.py');
+    expect(text).toContain('python3 -I -S -c');
+    expect(text).not.toMatch(/\bpython\s+(?:-I|-m)\b/);
     expect(text).toContain('--bundle bundle.json');
     expect(text).toContain('--policy trust-policy.json');
     expect(text).toContain('--policy-sha256 09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a');
@@ -380,10 +496,33 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/TypeScript.*HTTP client.*not.*offline/i);
     expect(text).toMatch(/verify.*independently obtained.*consumer.*policy pins.*before execution/i);
     expect(text).toMatch(/public resolver.*NOT_DEPLOYED/i);
-    expect(text).toMatch(/MCP.*PROPOSED/i);
+    expect(text).toMatch(/MCP.*NOT_DEPLOYED/i);
     expect(text).not.toMatch(/assert sha256/i);
     expect(text).not.toMatch(/(?:implemented|deployed) hosted (?:resolver|API)/i);
     expect(text).not.toMatch(/hosted (?:resolver|API) (?:is|are) (?:implemented|deployed)/i);
+  });
+
+  test('documents the exact independently replayed source-catalogue command and boundary', async () => {
+    const html = await page('developers');
+    const text = visibleText(html);
+
+    expect(html).toContain('id="source-catalogue"');
+    expect(html).toContain('data-source-catalogue-command');
+    expect(text).toContain('python3 -I -S -B conformance/source_catalogue_v1/consumer.py');
+    expect(text).toContain('--catalogue-root website/public/catalogues/mathlib/v4.34.1');
+    expect(text).toContain('--policy conformance/source_catalogue_v1/trust-policy.json');
+    expect(text).toContain('--policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9');
+    expect(text).toContain('--audit-imports');
+    expect(text).toContain('8e8f5f529b44852815627206dc5b45062f0c96d6');
+    expect(text).toContain('7519de6a51e524caf70df51d37389ff42d430d43');
+    expect(text).toContain('eb3149b70f0cdf39109c775898b19a26574c27e6');
+    expect(text).toContain('e6643d8e3d207893713da94041ff3822c1190457');
+    expect(text).toMatch(/run-specific policy.*did not.*public trust-policy bytes/i);
+    expect(text).toContain('5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68');
+    expect(text).toContain('583dcfca46854f56469cdda865b5da62b1068e985bdce411dac9c587e556ca5d');
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toMatch(/imports neither.*producer implementation.*protocol package/i);
+    expect(text).toMatch(/does not fetch.*source.*run Lean.*prove declarations.*check current applicability.*authorize action/i);
   });
 
   test('defines the minimum independently implementable P0 protocol without application dependencies', async () => {
@@ -623,6 +762,27 @@ describe('primary public evidence experience', () => {
     expect(developers).toMatch(/in-toto.*unsigned correspondence/i);
     for (const boundary of ['authenticity', 'signer policy', 'transparency', 'freshness', 'qualification', 'current applicability', 'action authorization']) expect(developers).toContain(boundary);
     expect(developers).toMatch(/Sigstore.*SCITT.*RATS.*deferred/i);
+  });
+
+  test('renders the source-grounded Discovery frontier as an incomplete advisory omission', async () => {
+    const html = await page('discover');
+    const text = visibleText(html);
+
+    for (const boundary of [
+      'Source-grounded frontier', 'Real.log_rpow', 'Real.log', '42 distinct indexed declarations',
+      'ADVISORY', 'INCOMPLETE', 'Terminal form NONE', 'NOT_CHECKED',
+      'Authority NONE', 'Authorization NONE',
+      'Next gate 1 — catalogue expansion', 'Later gate 2 — Lean proof qualification',
+    ]) expect(text).toContain(boundary);
+    expect(text).toMatch(/omission.*does not create.*TYPE_REFERENCES relation/i);
+    expect(text).toMatch(/not a proof, countermodel, or named obstruction/i);
+    expect(text).toMatch(/catalogue expansion alone cannot establish proof validity/i);
+    expect(html).toContain('href="/objects/object-8d7d18f07e0f6262a3b65bbb71105c16c69ab67a6d96a78c18e97cfa7afc2322/"');
+    expect(html).toContain('href="/catalogues/mathlib/v4.34.1/manifest.json"');
+    expect(html).toContain('href="/catalogues/mathlib/v4.34.1/shards/6400eba377e910ff2ac4bea415657e6c84b546832d93808c9fcb9dce952d22c0.json"');
+    expect(html).toContain('href="https://github.com/leanprover-community/mathlib4/blob/d13f23b723b8a846827a245b89c10fc7d3f11612/Mathlib/Analysis/SpecialFunctions/Pow/Real.lean#L491-L496"');
+    expect(text).toContain('PARTIAL');
+    expect(text).toContain('FULL_REPLAY_UNAVAILABLE');
   });
 
   test('documents a scoped badge embed linked to the permanent boundary', async () => {

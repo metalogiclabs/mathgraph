@@ -21,8 +21,10 @@ Human agent guide: https://mathgraph.org/agents/
 About: https://mathgraph.org/about/
 Contact and public issue route: https://mathgraph.org/contact/
 Discovery manifest: https://mathgraph.org/.well-known/mathgraph.json
+Frozen V3 discovery snapshot: ${manifest.historical_discovery.v3_manifest}
 Record index: https://mathgraph.org/records/index.json
-Discovery schema: https://mathgraph.org/schemas/discovery-v3.schema.json
+Discovery schema: https://mathgraph.org/schemas/discovery-v4.schema.json
+Historical discovery schema V3: https://mathgraph.org/schemas/discovery-v3.schema.json
 Historical discovery schema V2: https://mathgraph.org/schemas/discovery-v2.schema.json
 Historical discovery schema: https://mathgraph.org/schemas/discovery-v1.schema.json
 Source-check record schema: https://mathgraph.org/schemas/public-consequence-record-v1.schema.json
@@ -34,6 +36,27 @@ Resolve bundle schema: ${manifest.schemas.resolve_bundle_v1}
 Resolve trust-policy schema: ${manifest.schemas.resolve_trust_policy_v1}
 Presentation metadata schema: https://mathgraph.org/schemas/presentation-metadata-v1.schema.json
 Proposed Lean profile: https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json
+
+Source catalogue (static source indexing; not proof verification):
+
+- Manifest: ${manifest.source_catalogue.artifacts.manifest.url}
+- Manifest SHA-256: ${manifest.source_catalogue.artifacts.manifest.sha256}
+- Search index: ${manifest.source_catalogue.artifacts.search.url}
+- Search SHA-256: ${manifest.source_catalogue.artifacts.search.sha256}
+- Independent consumer: ${manifest.source_catalogue.artifacts.consumer.url}
+- Consumer SHA-256: ${manifest.source_catalogue.artifacts.consumer.sha256}
+- Trust policy: ${manifest.source_catalogue.artifacts.trust_policy.url}
+- Policy SHA-256: ${manifest.source_catalogue.artifacts.trust_policy.sha256}
+- Replay instructions: ${manifest.source_catalogue.artifacts.readme.url}
+- README SHA-256: ${manifest.source_catalogue.artifacts.readme.sha256}
+- Exact retrieval snapshot: ${manifest.source_catalogue.repository_snapshot_commit}
+- Public bundle publication commit: ${manifest.source_catalogue.qualification.publication_commit}
+- Public policy qualification wrapper: ${manifest.source_catalogue.qualification.public_bundle.wrapper_commit}
+- Public policy qualification run: ${manifest.source_catalogue.qualification.public_bundle.run_url}
+- Later catalogue-only regeneration: ${manifest.source_catalogue.qualification.later_regeneration.commit} (${manifest.source_catalogue.qualification.later_regeneration.run_url}); it used a run-specific policy and did not replay the public trust-policy bytes.
+- Result: source status ${manifest.source_catalogue.result.source_status}; independent verification ${manifest.source_catalogue.result.independent_verification}; current applicability ${manifest.source_catalogue.result.current_applicability}; freshness ${manifest.source_catalogue.result.freshness}; authority ${manifest.source_catalogue.result.authority}; authorization ${manifest.source_catalogue.result.authorization}.
+- Relations DECLARES, IMPORTS_MODULE, and TYPE_REFERENCES are source-backed structural relations, not logical implication or semantic equivalence.
+- Shards are admitted only through the exact manifest inventory and digests. Unsupported versions, critical extensions, forged status, and missing endpoints are declined.
 
 Published immutable records:
 
@@ -110,7 +133,7 @@ Usage boundary:
 - Qualified record evidence bytes remain immutable; lifecycle and presentation metadata may be updated separately with history.
 - Record 002 current applicability is UNKNOWN and freshness is NOT_CHECKED in the offline replay.
 - Browser recognition and knowledge-map exports are presentation projections with authority NONE; they are not evidence or independent replay results.
-- Public resolver: NOT_DEPLOYED. MCP: PROPOSED. Discover and Develop hosted services are NOT_DEPLOYED. Local CLI contracts and static artifact downloads are not execution endpoints.
+- Public resolver: NOT_DEPLOYED. MCP: NOT_DEPLOYED. Discover and Develop hosted services are NOT_DEPLOYED. Local CLI contracts and static artifact downloads are not execution endpoints.
 - Modules are independently usable. The conceptual Discover / Check / Resolve / Develop loop is not compulsory and provides no autonomous loop.
 - Capability qualification adds no mathematical terminal form. Accepted claims still require exactly one VERIFIED_PROOF, FINITE_COUNTERMODEL, or NAMED_OBSTRUCTION.
 `;

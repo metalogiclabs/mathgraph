@@ -1,0 +1,16 @@
+module
+
+public import HCongrDefs
+
+@[expose] public section
+
+namespace Origin
+
+run_meta
+  let some _ ← Lean.Meta.mkCongrSimpForConst? ``Origin.congrTarget []
+    | throwError "failed to generate sibling congr_simp theorem"
+  Lean.addDeclarationRanges `Origin.congrTarget.congr_simp default
+
+theorem forceRangeSpoofCongrSimpRight : congrTarget 1 2 3 = 6 := by decide
+
+end Origin

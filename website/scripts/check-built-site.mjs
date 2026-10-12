@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 import sharp from 'sharp';
 
@@ -37,12 +38,14 @@ const versionedRecordHtml = await readFile(join(dist, `records/${recordId}/v1/in
 const homeHtml = await readFile(join(dist, 'index.html'), 'utf8');
 const developersHtml = await readFile(join(dist, 'developers/index.html'), 'utf8');
 const discovery = JSON.parse(await readFile(join(dist, '.well-known/mathgraph.json'), 'utf8'));
+const historicalDiscovery = await readFile(join(dist, '.well-known/mathgraph-v3.json'));
 const index = JSON.parse(await readFile(join(dist, 'records/index.json'), 'utf8'));
 const presentation = JSON.parse(await readFile(presentationPath, 'utf8'));
 const entry = index.records.find((candidate) => candidate.id === recordId && candidate.version === 1);
 assert(entry, 'machine catalogue must expose the qualified V1 record');
 const allHtml = [];
 let clientBytes = 0;
+let outputBytes = 0;
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -61,8 +64,12 @@ async function collect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await collect(path);
-    else if (extname(entry.name) === '.html') allHtml.push(await readFile(path, 'utf8'));
-    else if (['.js', '.css'].includes(extname(entry.name))) clientBytes += (await stat(path)).size;
+    else {
+      const size = (await stat(path)).size;
+      outputBytes += size;
+      if (extname(entry.name) === '.html') allHtml.push(await readFile(path, 'utf8'));
+      else if (['.js', '.css'].includes(extname(entry.name))) clientBytes += size;
+    }
   }
 }
 
@@ -83,7 +90,11 @@ for (const value of ['48/48', '31', '17', '52/52', 'UNKNOWN', 'NOT_CHECKED_AFTER
 assert(homeHtml.includes(record.id), 'homepage must identify the featured record');
 assert(homeHtml.includes('<title>MathGraph — Open Verification Infrastructure</title>'));
 assert(homeHtml.includes('<h1>Knowledge you can verify. Capabilities you can build on.</h1>'));
-assert(homeHtml.includes('data-import-workbench'));
+assert(homeHtml.includes('data-home-search') && homeHtml.includes('action="/explore/"'), 'homepage must expose same-origin knowledge search');
+assert(!homeHtml.includes('data-import-workbench'), 'generic local import belongs on Verify, not the homepage');
+for (const value of ['2,345', 'Indexed declarations', '1,224', 'TYPE_REFERENCES', 'Real.rpow', 'SOURCE_INDEXED', 'Independent verification', 'NOT_CHECKED', 'data-source-neighborhood']) {
+  assert(homeHtml.includes(value), `homepage living-network projection missing ${value}`);
+}
 for (const route of ['explore', 'verify', 'build', 'check', 'resolve', 'discover', 'develop', 'capabilities', 'records', 'objects', 'protocol', 'agents', 'developers', 'about', 'contact']) {
   const html = await readFile(join(dist, route, 'index.html'), 'utf8');
   assert(html.includes('aria-controls="primary-navigation"'), `${route}: navigation disclosure missing`);
@@ -132,6 +143,23 @@ for (const [filename, expected] of [
 }
 assert.equal(sha256(await readFile(join(dist, 'schemas/record-index-v1.schema.json'))), '699095f0cebc548565a86dd89c7f5a0854ad7982ed8d6be2cc1c299d7a8381cc');
 assert.equal(discovery.record_index, 'https://mathgraph.org/records/index.json');
+assert.equal(discovery.schema, 'mathgraph.discovery.v4');
+assert.equal(sha256(historicalDiscovery), '3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540');
+assert.equal(discovery.source_catalogue.result.source_status, 'SOURCE_INDEXED');
+assert.equal(discovery.source_catalogue.result.independent_verification, 'NOT_CHECKED');
+assert.equal(discovery.source_catalogue.result.authority, 'NONE');
+for (const [relativePath, expected] of [
+  ['conformance/source_catalogue_v1/consumer.py', '583dcfca46854f56469cdda865b5da62b1068e985bdce411dac9c587e556ca5d'],
+  ['conformance/source_catalogue_v1/trust-policy.json', 'c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9'],
+  ['conformance/source_catalogue_v1/README.md', '787f1dd6cf9c7b24c1adc7f8d2c31bd44d637c77574f091fc19414761ca1f323'],
+]) {
+  const [sourceArtifact, builtArtifact] = await Promise.all([
+    readFile(join(repositoryRoot, relativePath)),
+    readFile(join(dist, 'artifacts', relativePath)),
+  ]);
+  assert.equal(sha256(sourceArtifact), expected);
+  assert.deepEqual(builtArtifact, sourceArtifact);
+}
 assert.equal(discovery.freshness.record_index_max_age_seconds, index.lifecycle_freshness.max_age_seconds);
 assert.equal(discovery.repository_provenance.authentication_status, 'UNSIGNED_PROVENANCE_ONLY');
 assert.equal(entry.record_page_url, `https://mathgraph.org/records/${recordId}/v1/`);
@@ -213,10 +241,31 @@ const csp = deployment.headers
 assert(csp?.includes("default-src 'self'") && csp.includes("object-src 'none'") && csp.includes("frame-ancestors 'none'"));
 const consumerContentTypeRules = deployment.headers.filter((rule) =>
   rule.headers?.some((header) => header.key.toLowerCase() === 'content-type'));
-assert.deepEqual(consumerContentTypeRules, [{
-  source: '/examples/resolve-consumer-v1.ts',
-  headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
-}]);
+assert.deepEqual(consumerContentTypeRules, [
+  {
+    source: '/catalogues/(.*)',
+    headers: [
+      { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+      { key: 'Content-Type', value: 'application/json; charset=utf-8' },
+    ],
+  },
+  {
+    source: '/examples/resolve-consumer-v1.ts',
+    headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+  },
+  {
+    source: '/artifacts/conformance/source_catalogue_v1/consumer.py',
+    headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+  },
+  {
+    source: '/artifacts/conformance/source_catalogue_v1/trust-policy.json',
+    headers: [{ key: 'Content-Type', value: 'application/json; charset=utf-8' }],
+  },
+  {
+    source: '/artifacts/conformance/source_catalogue_v1/README.md',
+    headers: [{ key: 'Content-Type', value: 'text/markdown; charset=utf-8' }],
+  },
+]);
 assert(deployment.headers.findIndex((rule) => rule.source === '/examples/resolve-consumer-v1.ts') < deployment.headers.findIndex((rule) => rule.source === '/(.*)'));
 
 const cacheHeaders = new Map(
@@ -225,7 +274,7 @@ const cacheHeaders = new Map(
     rule.headers?.find((header) => header.key.toLowerCase() === 'cache-control')?.value,
   ]),
 );
-for (const source of ['/evidence/(.*)', '/schemas/(.*)', '/social/(.*)']) {
+for (const source of ['/catalogues/(.*)', '/evidence/(.*)', '/schemas/(.*)', '/social/(.*)', '/.well-known/mathgraph-v3.json']) {
   assert.equal(cacheHeaders.get(source), 'public, max-age=31536000, immutable', `immutable cache policy missing for ${source}`);
 }
 for (const source of ['/records/index.json', '/llms.txt', '/.well-known/mathgraph.json', '/records/(.*)/v(.*)/metadata.json', '/records/(.*)/v(.*)']) {
@@ -233,4 +282,11 @@ for (const source of ['/records/index.json', '/llms.txt', '/.well-known/mathgrap
 }
 
 assert(clientBytes < 100_000, `client JS + CSS exceeds 100 kB (${clientBytes} bytes)`);
-console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} client_bytes=${clientBytes} catalogue=V2 records=2 social=2x1200x630`);
+assert(outputBytes <= 64 * 1024 * 1024, `static output exceeds 64 MiB (${outputBytes} bytes)`);
+assert(allHtml.length <= 2400, `static HTML count exceeds reviewed complete-catalogue ceiling (${allHtml.length})`);
+const exploreBytes = await readFile(join(dist, 'explore/index.html'));
+assert(exploreBytes.length <= 1024 * 1024, `Explore HTML exceeds 1 MiB (${exploreBytes.length} bytes)`);
+assert(gzipSync(exploreBytes, { level: 9, mtime: 0 }).length <= 200 * 1024, 'Explore HTML exceeds 200 KiB deterministic gzip');
+const representativeSource = await readFile(join(dist, 'objects/object-d4f47a456aef565016039d955ab630e0ea7fe7ebc9497be27b66858572fad84a/index.html'));
+assert(representativeSource.length <= 96 * 1024, `representative source page exceeds 96 KiB (${representativeSource.length} bytes)`);
+console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} output_bytes=${outputBytes} client_bytes=${clientBytes} representative_source_bytes=${representativeSource.length} catalogue=V2 records=2 social=2x1200x630`);

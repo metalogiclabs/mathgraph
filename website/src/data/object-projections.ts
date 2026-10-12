@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { loadPublishedRecords } from '../lib/catalog';
-import { projectPublishedRecord, projectFiniteCapabilityV1, type FiniteCapabilityArtifacts, type ProjectionCollection } from '../lib/object-projections';
+import { mergeProjectionCollections, projectPublishedRecord, projectFiniteCapabilityV1, type FiniteCapabilityArtifacts, type ProjectionCollection } from '../lib/object-projections';
 
 export async function loadFiniteCapabilityArtifacts(): Promise<FiniteCapabilityArtifacts> {
   // Build-time local reads only. No registry-provided path is executed or fetched.
@@ -18,5 +18,5 @@ export async function loadFiniteCapabilityArtifacts(): Promise<FiniteCapabilityA
 export async function loadObjectProjections(options: { includeCapability?: boolean } = {}): Promise<ProjectionCollection> {
   const fragments = (await loadPublishedRecords()).map(projectPublishedRecord);
   if (options.includeCapability !== false) fragments.push(projectFiniteCapabilityV1(await loadFiniteCapabilityArtifacts()));
-  return { objects: fragments.flatMap(fragment => fragment.objects), relations: fragments.flatMap(fragment => fragment.relations) };
+  return mergeProjectionCollections(fragments);
 }

@@ -1,9 +1,12 @@
 ---
-import type { RelationProjection } from '../lib/object-projections';
+import type { ObjectProjection, RelationProjection } from '../lib/object-projections';
 import { objectSlug } from '../lib/object-locators';
-interface Props { edges: RelationProjection[]; direction: 'incoming' | 'outgoing' | 'source'; prefix?: string }
-const { edges, direction, prefix } = Astro.props;
-const target = (id: string) => prefix ? `#${prefix}-${objectSlug(id)}` : `/objects/${objectSlug(id)}/`;
+interface Props { edges: RelationProjection[]; direction: 'incoming' | 'outgoing' | 'source'; prefix?: string; objects?: ObjectProjection[] }
+const { edges, direction, prefix, objects = [] } = Astro.props;
+const byId = new Map(objects.map(object => [object.id, object]));
+const target = (id: string) => prefix
+  ? `#${prefix}-${objectSlug(id)}`
+  : `/objects/${objectSlug(byId.get(id) ?? id)}/`;
 ---
 <div data-relation-group>
   <p data-empty-relations hidden={edges.length > 0}>No declared {direction} relations in this displayed projection.</p>
@@ -17,7 +20,7 @@ const target = (id: string) => prefix ? `#${prefix}-${objectSlug(id)}` : `/objec
           <div><dt>To</dt><dd><code>{edge.to}</code></dd></div>
           <div><dt>Direction / authority</dt><dd>directed: true · authority {edge.authority}</dd></div>
           <div><dt>Source pointer</dt><dd><a href={edge.provenance.source.locator}>{edge.provenance.pointer}</a></dd></div>
-          <div><dt>Source pin</dt><dd><pre><code>{JSON.stringify(edge.provenance.source, null, 2)}</code></pre></dd></div>
+          <div><dt>Source pin</dt><dd><pre tabindex="0"><code>{JSON.stringify(edge.provenance.source, null, 2)}</code></pre></dd></div>
         </dl>
       </details>
     </li>)}

@@ -56,7 +56,7 @@ try {
         await page.locator('h1').click();
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
         await menu.click();
-        await page.locator('[data-import-file]').focus();
+        await page.locator('[data-home-search] input[type=search]').focus();
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
         await menu.click();
         await page.setViewportSize({ width: 1440, height: 900 });

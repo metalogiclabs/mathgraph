@@ -27,9 +27,10 @@ const runDocumentedReplay = (documentedCommand, label) => {
   assert.equal(blocks.length, 2, `${label}: expected separate checkout and replay command blocks`);
   assert.deepEqual(blocks[0].split('\n'), expectedCheckoutLines, `${label}: checkout instructions are not pinned`);
   const replayTokens = blocks[1].replaceAll('\\\n', ' ').trim().split(/\s+/);
-  assert.equal(replayTokens.shift(), 'python', `${label}: replay must be the only executable command`);
+  const replayExecutable = replayTokens.shift();
+  assert.equal(replayExecutable, 'python3', `${label}: replay must be the only executable command`);
   assert.deepEqual(replayTokens, expectedReplayArgs, `${label}: replay arguments are not the pinned local contract`);
-  const replay = spawnSync(process.env.PYTHON ?? 'python3', replayTokens, { cwd: resolve('..'), encoding: 'utf8' });
+  const replay = spawnSync(replayExecutable, replayTokens, { cwd: resolve('..'), encoding: 'utf8' });
   assert.equal(replay.status, 0, `${label}: documented local import command failed: ${replay.stderr}`);
   return JSON.parse(replay.stdout);
 };
@@ -47,7 +48,18 @@ let browser;
 try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
   const origin = `http://127.0.0.1:${server.address().port}`;
-  for (const route of ['', 'verify', 'check']) {
+  const home = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await home.goto(`${origin}/`, { waitUntil: 'networkidle' });
+  assert.equal(await home.locator('[data-import-workbench]').count(), 0, 'home must keep the generic import workbench in Verify');
+  const homeQuickStart = await home.locator('[data-home-quick-start] code').textContent();
+  const homeImported = runDocumentedReplay(homeQuickStart, 'home quick start');
+  assert.equal(homeImported.schema, 'mathgraph.import-result.v1');
+  assert.equal(homeImported.evidence.proof_replay, 'NOT_PERFORMED');
+  assert.equal(homeImported.freshness, 'NOT_CHECKED');
+  assert.equal(homeImported.current_applicability, 'UNKNOWN');
+  await home.close();
+
+  for (const route of ['verify', 'check']) {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -56,14 +68,6 @@ try {
     assert.equal(await workbench.count(), 1, `${route}: shared workbench missing`);
     const documentedCommand = await workbench.locator('pre code').textContent();
     assert.equal(runDocumentedReplay(documentedCommand, `${route || 'home'} workbench`).schema, 'mathgraph.import-result.v1');
-    if (route === '') {
-      const quickStart = await page.locator('[data-home-quick-start] code').textContent();
-      const imported = runDocumentedReplay(quickStart, 'home quick start');
-      assert.equal(imported.schema, 'mathgraph.import-result.v1');
-      assert.equal(imported.evidence.proof_replay, 'NOT_PERFORMED');
-      assert.equal(imported.freshness, 'NOT_CHECKED');
-      assert.equal(imported.current_applicability, 'UNKNOWN');
-    }
     const requests = [];
     page.on('request', request => requests.push(request.url()));
     const input = workbench.locator('input[type=file]');
@@ -130,7 +134,7 @@ try {
   assert.equal(await noJS.locator('input[type=file]').isDisabled(), true);
   assert.match(await noJS.locator('noscript').innerText(), /UNKNOWN/);
   assert.ok(await noJS.getByRole('link', { name: 'Download the exact supported record.json' }).getAttribute('href'));
-  console.log('PASS import browser workflow: home/verify/check, keyboard, mobile, no-JS, no network, mutation reset, unsupported handoff, portable export, Python rejection');
+  console.log('PASS import browser workflow: home pinned quick start, Verify/Check workbench, keyboard, mobile, no-JS, no network, mutation reset, unsupported handoff, portable export, Python rejection');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolve => server.close(resolve));

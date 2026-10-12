@@ -1,17 +1,39 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ObjectDetail from '../../components/ObjectDetail.astro';
+import SourceOccurrenceDetail from '../../components/SourceOccurrenceDetail.astro';
+import SourceNeighborhood from '../../components/SourceNeighborhood.astro';
 import { loadObjectProjections } from '../../data/object-projections';
-import { buildKnowledgeMap } from '../../lib/knowledge-map';
+import { loadLivingKnowledgeProjections } from '../../data/source-catalogue';
+import { loadSourceCatalogueV1, type ValidatedSourceCatalogueV1 } from '../../lib/source-catalogue';
+import { buildKnowledgeMap, buildKnowledgeNeighborhood, type KnowledgeMapProjection } from '../../lib/knowledge-map';
 import { objectRoutes } from '../../lib/object-locators';
 import type { ObjectProjection, RelationProjection } from '../../lib/object-projections';
 export async function getStaticPaths() {
-  const map = buildKnowledgeMap(await loadObjectProjections());
-  return objectRoutes(map.nodes).map(({ slug, object }) => ({ params: { slug }, props: { object, edges: map.edges } }));
+  const [legacyCollection, livingCollection, catalogue] = await Promise.all([
+    loadObjectProjections(), loadLivingKnowledgeProjections(), loadSourceCatalogueV1(),
+  ]);
+  const legacyMap = buildKnowledgeMap(legacyCollection);
+  return objectRoutes(livingCollection.objects).map(({ slug, object }) => {
+    const sourceObject = object.kind === 'SOURCE_DECLARATION' || object.kind === 'SOURCE_MODULE';
+    const map = sourceObject
+      ? buildKnowledgeNeighborhood(livingCollection, object.id, { depth: 1, maxNodes: 8, maxEdges: 12 })
+      : undefined;
+    return {
+      params: { slug },
+      props: { object, edges: map?.edges ?? legacyMap.edges, map, catalogue: sourceObject ? catalogue : undefined },
+    };
+  });
 }
-interface Props { object: ObjectProjection; edges: RelationProjection[] }
-const { object, edges } = Astro.props;
+interface Props { object: ObjectProjection; edges: RelationProjection[]; map?: KnowledgeMapProjection; catalogue?: ValidatedSourceCatalogueV1 }
+const { object, edges, map, catalogue } = Astro.props;
+const sourceObject = object.kind === 'SOURCE_DECLARATION' || object.kind === 'SOURCE_MODULE';
 ---
 <BaseLayout title={`${object.source_id} — MathGraph object`} description="Exact source-qualified identity, status axes, declared relations and replay boundary. Presentation only; authority NONE." currentPath="/objects/">
-  <div class="shell section"><h1>Canonical object</h1><p><a href="/objects/">Explore all declared objects and relations →</a></p><ObjectDetail object={object} edges={edges} /></div>
+  <div class="shell section">
+    <p><a href="/explore/">← Search the knowledge catalogue</a> · <a href="/objects/">Qualified object projection</a></p>
+    {sourceObject && catalogue && map
+      ? <><SourceOccurrenceDetail object={object} edges={edges} catalogue={catalogue} /><section class="source-neighborhood" aria-labelledby="source-neighborhood-title"><h2 id="source-neighborhood-title">Bounded source neighborhood</h2><p>Navigate exact declared source structure around this occurrence. The projection is capped at 8 objects and 12 relations; named omissions and out-of-slice references stay visible above.</p><SourceNeighborhood map={map} id="source-neighborhood-map" /></section></>
+      : <><h1>Canonical object</h1><ObjectDetail object={object} edges={edges} /></>}
+  </div>
 </BaseLayout>

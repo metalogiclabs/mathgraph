@@ -1,0 +1,74 @@
+---
+import type { KnowledgeMapProjection } from '../lib/knowledge-map';
+import { serializeSourceNeighborhoodV1, sourceNeighborhoodV1 } from '../lib/source-neighborhood';
+
+interface Props { map: KnowledgeMapProjection; id: string }
+const { map, id } = Astro.props;
+const projection = sourceNeighborhoodV1(map);
+const serialized = serializeSourceNeighborhoodV1(map);
+const byId = new Map(projection.nodes.map(node => [node.id, node]));
+const incomingIds = new Set(projection.relations.filter(edge => edge.to === projection.center_id).map(edge => edge.from));
+const outgoingIds = new Set(projection.relations.filter(edge => edge.from === projection.center_id).map(edge => edge.to));
+const center = byId.get(projection.center_id)!;
+const lanes = [
+  { title: 'Incoming', nodes: projection.nodes.filter(node => incomingIds.has(node.id)) },
+  { title: 'Selected occurrence', nodes: [center] },
+  { title: 'Outgoing', nodes: projection.nodes.filter(node => node.id !== center.id && !incomingIds.has(node.id) && outgoingIds.has(node.id)) },
+];
+const remainder = projection.nodes.filter(node => !lanes.some(lane => lane.nodes.some(candidate => candidate.id === node.id)));
+if (remainder.length) lanes[2].nodes.push(...remainder);
+const relationTypes = [...new Set(projection.relations.map(edge => edge.type))].sort();
+---
+
+<section class="source-network" data-knowledge-map data-source-neighborhood data-map-center={projection.center_id} aria-labelledby={`${id}-title`}>
+  <h3 id={`${id}-title`}>Declared objects and relations</h3>
+  <p class="map-boundary">Presentation projection · authority NONE · not a certificate, proof, or verifier</p>
+  <p class="fineprint">Position and proximity organize this view only. Every arrow repeats an exact structural relation whose logical implication and semantic equivalence flags are false.</p>
+  <fieldset class="map-controls" disabled data-neighborhood-controls>
+    <legend>Filter declared relation types</legend>
+    {relationTypes.map(type => <label><input type="checkbox" data-neighborhood-type value={type} checked /> {type}</label>)}
+  </fieldset>
+  <p data-neighborhood-count aria-live="polite">{projection.nodes.length} of {projection.completeness.total_nodes} objects · {projection.relations.length} of {projection.completeness.total_edges} relations · omitted: {projection.completeness.omitted_nodes} objects, {projection.completeness.omitted_edges} relations</p>
+  <p class="fineprint">This page is capped at {projection.context.max_nodes} objects and {projection.context.max_edges} relations. Counts preserve the complete one-hop selected scope, including named omissions.</p>
+  <noscript><p>All bounded objects and declared relations are listed below. Selection, filtering, traversal, visual drawing and subgraph download require JavaScript.</p></noscript>
+
+  <div class="source-network__lanes">
+    {lanes.map(lane => <section><h4>{lane.title}</h4><ul>{lane.nodes.map(node => <li id={`${id}-${node.id}`} data-neighborhood-node={node.id}>
+      <a href={`#${id}-${node.id}`} data-neighborhood-select={node.id}><span>{node.kind}</span><strong>{node.title}</strong></a>
+      <a class="map-permanent-link" data-neighborhood-permanent href={node.href}>Open source object →</a>
+    </li>)}</ul></section>)}
+  </div>
+
+  <aside class="map-compact-detail" data-neighborhood-detail aria-labelledby={`${id}-detail-title`}>
+    <div class="eyebrow" data-neighborhood-detail-kind>{center.kind}</div>
+    <h4 id={`${id}-detail-title`} data-neighborhood-detail-title>{center.title}</h4>
+    <code data-neighborhood-detail-id>{center.id}</code>
+    <p><a data-neighborhood-detail-link href={center.href}>Open exact source and status →</a></p>
+  </aside>
+
+  <div class="map-traversal">
+    <h4>Display-only traversal</h4>
+    <p>Follow only the currently displayed declared arrows. This is not proof search, verification or support closure.</p>
+    <button type="button" data-neighborhood-traverse="incoming" disabled>Follow incoming arrows</button>
+    <button type="button" data-neighborhood-traverse="outgoing" disabled>Follow outgoing arrows</button>
+    <p data-neighborhood-traversal-status aria-live="polite">No traversal requested.</p>
+    <ul data-neighborhood-traversal-results></ul>
+  </div>
+
+  <h4>Declared relation list</h4>
+  <ol class="source-network__relations">{projection.relations.map(edge => <li data-neighborhood-edge={edge.id} data-edge-from={edge.from} data-edge-to={edge.to}>
+    <a href={`#${id}-${edge.from}`} data-neighborhood-select={edge.from}>{byId.get(edge.from)?.title}</a>
+    <strong>{edge.type}</strong>
+    <a href={`#${id}-${edge.to}`} data-neighborhood-select={edge.to}>{byId.get(edge.to)?.title}</a>
+    <small>directed · implication false · equivalence false · authority NONE</small>
+  </li>)}</ol>
+
+  <h4>Visual projection</h4>
+  <p class="fineprint">The diagram is drawn from the same bounded payload after JavaScript loads. The semantic lists remain the accessible source of exact links and relation labels.</p>
+  <div class="source-network__visual" data-neighborhood-visual role="region" aria-label="Scrollable bounded structural source neighborhood" tabindex="0"><p>Enable JavaScript to draw the visual projection.</p></div>
+
+  <p><a class="button button--secondary" data-neighborhood-export href="#" download="mathgraph-source-neighborhood.json">Download displayed subgraph</a></p>
+  <p class="fineprint">Export kind PRESENTATION_PROJECTION · authority NONE · semantics READ_ONLY_SOURCE_STRUCTURE. It is not an evidence receipt and grants no action authority.</p>
+  <script type="application/json" data-neighborhood-data set:html={serialized.replaceAll('<', '\u003c')} />
+</section>
+<script>import '../scripts/source-neighborhood';</script>

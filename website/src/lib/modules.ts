@@ -26,6 +26,9 @@ export const moduleArtifactPaths = [
   'conformance/capability_v1/trust-policy.json',
   'conformance/capability_v1/consumer.py',
   'conformance/interoperability_v1/statement.json',
+  'conformance/source_catalogue_v1/consumer.py',
+  'conformance/source_catalogue_v1/trust-policy.json',
+  'conformance/source_catalogue_v1/README.md',
 ] as const;
 
 // Finite build-time allowlist: no visitor-supplied path or runtime I/O.

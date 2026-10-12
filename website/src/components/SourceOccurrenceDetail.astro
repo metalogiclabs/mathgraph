@@ -1,0 +1,111 @@
+---
+import type { ObjectProjection, RelationProjection } from '../lib/object-projections';
+import type { ValidatedSourceCatalogueV1 } from '../lib/source-catalogue';
+
+interface Props {
+  object: ObjectProjection;
+  edges: RelationProjection[];
+  catalogue: ValidatedSourceCatalogueV1;
+}
+
+const { object, edges, catalogue } = Astro.props;
+const details = object.details as {
+  module_id?: string;
+  module?: string;
+  path?: string;
+  qualified_name?: string;
+  declaration_kind?: string;
+  statement?: string;
+  statement_sha256?: string;
+  source?: {
+    repository?: string;
+    commit?: string;
+    tree?: string;
+    module?: string;
+    path?: string;
+    range?: { start: { line: number; column: number; byte: number }; end: { line: number; column: number; byte: number } };
+  };
+};
+const source = details.source ?? {};
+const moduleId = details.module_id;
+const shardIndex = catalogue.shards.findIndex(candidate => candidate.module.module_id === moduleId);
+const shard = shardIndex >= 0 ? catalogue.shards[shardIndex] : undefined;
+const shardMetadata = catalogue.manifest.shards.find(candidate => candidate.module_id === moduleId);
+const omittedReferences = shard?.omissions.type_references.filter(item => item.source_id === object.source_id) ?? [];
+const incoming = edges.filter(edge => edge.to === object.id);
+const outgoing = edges.filter(edge => edge.from === object.id);
+const githubSource = source.repository && source.commit && source.path
+  ? `${source.repository}/blob/${source.commit}/${source.path}${source.range ? `#L${source.range.start.line}-L${source.range.end.line}` : ''}`
+  : undefined;
+const catalogueRoot = '/catalogues/mathlib/v4.34.1';
+const validationCommand = `python3 -I -S -B conformance/source_catalogue_v1/consumer.py \\
+  --catalogue-root website/public/catalogues/mathlib/v4.34.1 \\
+  --policy conformance/source_catalogue_v1/trust-policy.json \\
+  --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \\
+  --audit-imports`;
+const axes = [
+  ['Source status', object.axes.source_status ?? 'UNKNOWN'],
+  ['Independent verification', object.axes.independent_verification ?? 'UNKNOWN'],
+  ['Current applicability', object.axes.current_applicability],
+  ['Freshness', object.axes.freshness],
+  ['Action authorization', object.axes.action_authorization],
+] as const;
+---
+
+<article class="source-occurrence" data-source-occurrence-detail={object.source_id}>
+  <div class="eyebrow">{object.kind === 'SOURCE_DECLARATION' ? 'Mathlib source occurrence' : 'Mathlib source module'}</div>
+  <h1>{object.title}</h1>
+  <p class="lede">A source-pinned catalogue entry. MathGraph indexed these exact bytes and structural references; it did not independently check this declaration as a proof.</p>
+  <p class="map-boundary">SOURCE_INDEXED · independent verification NOT_CHECKED · authority NONE</p>
+
+  <section aria-labelledby="source-identity-title">
+    <h2 id="source-identity-title">Exact source identity</h2>
+    <dl class="definition-list source-identity-grid">
+      <div><dt>Canonical occurrence</dt><dd><code>{object.source_id}</code></dd></div>
+      <div><dt>Kind</dt><dd><code>{details.declaration_kind ?? object.kind}</code></dd></div>
+      <div><dt>Module</dt><dd><code>{source.module ?? details.module ?? 'UNKNOWN'}</code></dd></div>
+      <div><dt>Path</dt><dd><code>{source.path ?? details.path ?? 'UNKNOWN'}</code></dd></div>
+      <div><dt>Repository</dt><dd>{source.repository ? <a href={source.repository}><code>{source.repository}</code></a> : 'UNKNOWN'}</dd></div>
+      <div><dt>Commit</dt><dd><code>{source.commit ?? 'UNKNOWN'}</code></dd></div>
+      <div><dt>Tree</dt><dd><code>{source.tree ?? 'UNKNOWN'}</code></dd></div>
+      <div><dt>Statement digest</dt><dd><code>{details.statement_sha256 ?? 'NOT_APPLICABLE'}</code></dd></div>
+      <div><dt>Source range</dt><dd>{source.range ? <code>{source.range.start.line}:{source.range.start.column}–{source.range.end.line}:{source.range.end.column}</code> : 'NOT_APPLICABLE'}</dd></div>
+    </dl>
+    {githubSource && <p><a class="button button--secondary" href={githubSource}>Open exact source occurrence</a></p>}
+  </section>
+
+  {details.statement && <section aria-labelledby="source-statement-title">
+    <h2 id="source-statement-title">Indexed statement</h2>
+    <pre class="source-statement" tabindex="0"><code>{details.statement}</code></pre>
+    <p class="fineprint">This text is bound to the statement digest above. Parsing and indexing it does not establish proof validity, informal fidelity, implication or equivalence.</p>
+  </section>}
+
+  <section aria-labelledby="source-status-title">
+    <h2 id="source-status-title">Independent status axes</h2>
+    <dl class="status-axis-grid">{axes.map(([label, value]) => <div><dt>{label}</dt><dd><code>{value}</code></dd></div>)}</dl>
+    <p>Lifecycle and research maturity are <strong>UNKNOWN</strong> in this source catalogue. The source pin is historical; absence of a newer change or revocation has not been checked.</p>
+  </section>
+
+  <section aria-labelledby="source-relations-title">
+    <h2 id="source-relations-title">Declared structural neighborhood</h2>
+    <p>{incoming.length} incoming and {outgoing.length} outgoing relations occur in the bounded projection below. <code>DECLARES</code>, <code>IMPORTS_MODULE</code> and <code>TYPE_REFERENCES</code> are structural source relations only. Each explicitly sets logical implication and semantic equivalence to false.</p>
+    <h3>Omitted structural references</h3>
+    {omittedReferences.length
+      ? <ul>{omittedReferences.map(item => <li><code>{item.target_name}</code> — named target outside this selected catalogue slice</li>)}</ul>
+      : <p>No omitted direct type-reference target is recorded for this occurrence.</p>}
+    <dl class="definition-list">
+      <div><dt>Module declarations omitted</dt><dd>{shard?.omissions.declarations.length ?? 'UNKNOWN'}</dd></div>
+      <div><dt>Module imports omitted</dt><dd>{shard?.omissions.imports.length ?? 'UNKNOWN'}</dd></div>
+      <div><dt>Module type references omitted</dt><dd>{shard?.omissions.type_references.length ?? 'UNKNOWN'}</dd></div>
+    </dl>
+    <p class="fineprint">Omissions are preserved rather than converted into absent relations. Out-of-slice targets remain unsupported by this projection.</p>
+  </section>
+
+  <section aria-labelledby="source-validation-title">
+    <h2 id="source-validation-title">Independent validation</h2>
+    <p>Validate the committed catalogue, pins, canonical encoding, identities, relation endpoints, named omissions and authority ceiling from a clean checkout:</p>
+    <pre tabindex="0"><code>{validationCommand}</code></pre>
+    <p><a href={`${catalogueRoot}/manifest.json`}>Manifest</a>{shardMetadata && <> · <a href={`${catalogueRoot}/${shardMetadata.path}`}>Module shard</a></>} · <a href={`${catalogueRoot}/search.json`}>Search export</a></p>
+    <p class="fineprint">This replay does not fetch Mathlib, rerun Lean, authenticate GitHub, check current applicability, or grant action authority. It validates the pinned publication contract and returns only its bounded source-indexing result.</p>
+  </section>
+</article>

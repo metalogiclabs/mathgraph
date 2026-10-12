@@ -62,8 +62,8 @@ const recordId = 'mg-l4yaml-source-check-20261010';
 
   <details>
     <summary>Supported local-record import paths and independent replay command</summary>
-    <p>The browser supports only the exact downloaded <code>record.json</code>. The candidate importer is not yet available on <code>main</code>. For independent offline historical receipt and local-policy validation, clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>, then run the pinned consumer after reviewing the separate trust policy and its digest:</p>
-    <pre><code>{importCheckoutReplayCommand}</code></pre>
+    <p>The browser supports only the exact downloaded <code>record.json</code>. The importer is available on <code>main</code>, while independent historical replay deliberately detaches at exact implementation commit <code>{importImplementationCommit}</code>. Run that pinned consumer only after reviewing the separate trust policy and its digest:</p>
+    <pre tabindex="0"><code>{importCheckoutReplayCommand}</code></pre>
     <p>You may replace <code>--record</code> with the local path to that unchanged supported artifact. Keep the reviewed policy separate. This offline command does not execute the original proof, kernel, or source suite, check current applicability, or authorize actions.</p>
     <p><a href={importConsumerSourceUrl}>Inspect the pinned independent consumer</a> · <a href={importPolicySourceUrl}>Inspect the separately reviewed pinned policy</a> · <a href="/schemas/import-result-v1.schema.json">Independent result contract</a> · <a href={`/records/${recordId}/v1/`}>Permanent supported record</a></p>
   </details>

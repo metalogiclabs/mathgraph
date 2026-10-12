@@ -9,6 +9,9 @@ const { published } = Astro.props;
 const { entry, record, scenarios } = published;
 const publishedAfter = scenarios.PUBLISHED_RECORD.scenarios.find((scenario) => scenario.id === scenarios.PUBLISHED_RECORD.default_scenario);
 if (!publishedAfter) throw new Error('RESOLVE_DEFAULT_SCENARIO_MISSING');
+const modeledBefore = scenarios.PUBLISHED_RECORD.scenarios.find((scenario) => scenario.id === 'modeled-before');
+const counterfactual = scenarios.PUBLISHED_RECORD.scenarios.find((scenario) => scenario.id === 'withdraw-openai.original_publication_receipt.1');
+if (!modeledBefore || !counterfactual) throw new Error('RESOLVE_FEATURED_SCENARIO_MISSING');
 
 const modeledViews = scenarios.PUBLISHED_RECORD.scenarios.filter((scenario) => scenario.id !== publishedAfter.id);
 const claimById = new Map(record.derivation.claims.map((claim) => [claim.id, claim]));
@@ -17,6 +20,34 @@ const resultEntries = Object.entries(publishedAfter.resolutions);
 const scenarioName = `resolve-scenario-${entry.id}`;
 const scenariosPath = new URL(entry.scenarios_json_url).pathname;
 const statusToken = (value: string) => value.toLowerCase().replaceAll('_', '-');
+const featuredClaims = {
+  support: 'openai.original_support.1',
+  proposition: 'openai.theorem.1',
+  preserved: 'jpl.l4yaml.finite_parser_acceptance',
+} as const;
+const comparisonItems = [
+  {
+    id: featuredClaims.support,
+    eyebrow: 'Changed · documentary support',
+    title: 'The source-backed support path becomes stale.',
+    note: 'This is a support-resolution transition. It does not establish that the mathematical proposition is false.',
+  },
+  {
+    id: featuredClaims.proposition,
+    eyebrow: 'Still unresolved · mathematical proposition',
+    title: 'The proposition remains UNKNOWN.',
+    note: 'It is not REFUTED. No qualified documentary-to-theorem proof or refutation relation is admitted.',
+  },
+  {
+    id: featuredClaims.preserved,
+    eyebrow: 'Unaffected · independently bounded observation',
+    title: 'The unrelated JPL observation keeps its exact warrant.',
+    note: claimById.get(featuredClaims.preserved)?.scope ?? '',
+  },
+] as const;
+for (const item of comparisonItems) {
+  if (!publishedAfter.resolutions[item.id as keyof typeof publishedAfter.resolutions]) throw new Error('RESOLVE_FEATURED_CLAIM_MISSING');
+}
 const documentName = (claimId: string) => {
   const match = claimId.match(/^openai\.(?:original_support|theorem)\.(\d)$/);
   return match ? record.publisher_notice.documents[Number(match[1]) - 1]?.name : undefined;
@@ -42,6 +73,60 @@ const documentName = (claimId: string) => {
     </div>
     <p class="lede">The historical default below is server-rendered from the qualified snapshot. Optional controls select only precomputed entries from the exact published scenarios artifact; this browser does not resolve claims.</p>
   </header>
+
+  <section class="resolve-comparison" data-resolve-comparison data-selected-scenario={publishedAfter.id} aria-labelledby="resolve-comparison-title">
+    <header class="resolve-comparison__header">
+      <div>
+        <div class="eyebrow">Selective consequence</div>
+        <h3 id="resolve-comparison-title">What changed — and what did not</h3>
+      </div>
+      <p class="fineprint">Three exact objects. No inferred edge between them.</p>
+    </header>
+    <div class="resolve-comparison__choices" role="group" aria-label="Featured precomputed Resolve views">
+      <button type="button" data-resolve-select={publishedAfter.id} data-scenario-classification="PUBLISHED_RECORD" aria-pressed="true" disabled>
+        <span>Qualified history</span><small>Published withdrawal state</small>
+      </button>
+      <button type="button" data-resolve-select={modeledBefore.id} data-scenario-classification="PUBLISHED_RECORD" aria-pressed="false" disabled>
+        <span>Modeled baseline</span><small>Not proof of correctness</small>
+      </button>
+      <button type="button" data-resolve-select={counterfactual.id} data-scenario-classification="PUBLISHED_RECORD" aria-pressed="false" disabled>
+        <span>Counterfactual</span><small>Simulate one withdrawn receipt</small>
+      </button>
+    </div>
+    <div class="resolve-comparison__selection">
+      <div>
+        <code data-resolve-comparison-basis>{publishedAfter.basis}</code>
+        <strong data-resolve-comparison-label>{publishedAfter.label}</strong>
+      </div>
+      <p data-resolve-comparison-description>{publishedAfter.description}</p>
+    </div>
+    <div data-resolve-comparison-output>
+      <div class="resolve-comparison__outcomes">
+        {comparisonItems.map((item) => {
+          const resolution = publishedAfter.resolutions[item.id as keyof typeof publishedAfter.resolutions];
+          return (
+            <article data-resolve-outcome={item.id}>
+              <div class="eyebrow">{item.eyebrow}</div>
+              <h4>{item.title}</h4>
+              <code>{item.id}</code>
+              <div class="resolve-comparison__transition">
+                <span><small>Before</small><span data-resolve-before><span class="resolve-status" data-status={statusToken(resolution.before)}>{resolution.before}</span></span></span>
+                <b class="resolve-arrow" aria-hidden="true"></b>
+                <span><small>After</small><span data-resolve-after><span class="resolve-status" data-status={statusToken(resolution.after)}>{resolution.after}</span></span></span>
+              </div>
+              <p>{item.note}</p>
+            </article>
+          );
+        })}
+      </div>
+      <p class="resolve-comparison__withdrawn fineprint" data-resolve-comparison-withdrawn>
+        Published withdrawal receipts: {publishedAfter.withdrawn_evidence.map((id) => <code>{id}</code>)}
+      </p>
+      <p class="resolve-comparison__unchanged" data-resolve-comparison-unchanged><strong>What did not change:</strong> the proposition was not promoted to truth or refutation, and the unrelated bounded JPL route retained its original exact scope.</p>
+    </div>
+    <p class="callout callout--unknown" data-resolve-comparison-unavailable hidden>This synthetic conformance scenario does not use the OpenAI/JPL comparison objects. Inspect its exact precomputed results below.</p>
+    <p class="fineprint"><strong>Precomputed selection only.</strong> This is a simulation/counterfactual interface; the browser neither resolves, qualifies, nor mutates historical evidence.</p>
+  </section>
 
   <div class="resolve-controls" aria-describedby="resolve-controls-boundary">
     <p id="resolve-controls-boundary" class="fineprint"><strong>Display-only.</strong> Controls unlock only after the same-origin artifact passes its pinned byte digest and identity checks. Every hypothetical view is a simulation and never mutates the immutable historic snapshot.</p>
@@ -94,7 +179,7 @@ const documentName = (claimId: string) => {
     </header>
     <p class="resolve-view__description" data-resolve-description>{publishedAfter.description}</p>
 
-    <div class="table-wrap resolve-results">
+    <div class="table-wrap resolve-results" tabindex="0" role="region" aria-label="Scrollable Resolve result table">
       <table>
         <caption>Before and after support resolution for the selected precomputed scenario</caption>
         <thead>
@@ -102,7 +187,7 @@ const documentName = (claimId: string) => {
         </thead>
         <tbody data-resolve-results>
           {resultEntries.map(([claimId, resolution]) => (
-            <tr data-historical-result-row data-claim-id={claimId}>
+            <tr data-historical-result-row data-resolve-result-row data-claim-id={claimId}>
               <th scope="row"><code>{claimId}</code>{documentName(claimId) && <small>{documentName(claimId)}</small>}</th>
               <td><span class="resolve-status" data-status={statusToken(resolution.before)}>{resolution.before}</span></td>
               <td><span class="resolve-status" data-status={statusToken(resolution.after)}>{resolution.after}</span></td>
@@ -135,14 +220,14 @@ const documentName = (claimId: string) => {
         <h4>Declared graph routes</h4>
         <ul data-resolve-routes>
           {scenarios.PUBLISHED_RECORD.graph.routes.map((route) => (
-            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>Declared in the selected scenario graph</small></li>
+            <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b class="resolve-arrow" aria-hidden="true"></b> <code>{route.conclusion}</code></span><small>Declared in the selected scenario graph</small></li>
           ))}
         </ul>
         <div class="resolve-exact-field">
           <h5>Exact <code>active_routes</code> field</h5>
           <ul data-resolve-active-routes>
             {publishedAfter.active_routes.map((route) => (
-              <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b aria-hidden="true">→</b> <code>{route.conclusion}</code></span><small>Listed in <code>active_routes</code></small></li>
+              <li><span>{route.evidence.map((id) => <code>{id}</code>)}{route.premises.length > 0 && <> + {route.premises.map((id) => <code>{id}</code>)}</>} <b class="resolve-arrow" aria-hidden="true"></b> <code>{route.conclusion}</code></span><small>Listed in <code>active_routes</code></small></li>
             ))}
           </ul>
         </div>

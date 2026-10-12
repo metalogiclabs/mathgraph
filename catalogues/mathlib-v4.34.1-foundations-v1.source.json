@@ -1,0 +1,31 @@
+{
+  "schema": "mathgraph.source-catalogue-policy.v1",
+  "catalogue_id": "mathlib-v4.34.1-foundations-v1",
+  "source": {
+    "repository": "https://github.com/leanprover-community/mathlib4",
+    "tag": "v4.34.1",
+    "commit": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+    "tree": "efa132418a56d0e38c56cc412a06df22178dac5c",
+    "license": {"path": "LICENSE", "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"},
+    "citation": {"path": "CITATION.md", "sha256": "08a68d7e41823aa5bf55f19b65266e58802b76b7208109646fb5e94a056f518a"},
+    "lean_toolchain": {"path": "lean-toolchain", "value": "leanprover/lean4:v4.34.1", "sha256": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"},
+    "lake_manifest": {"path": "lake-manifest.json", "sha256": "8f67b2cf24143ac091cdb425e886c2164b2fc2d6fbccd6db9454b697f9541a67"},
+    "root_module": {"path": "Mathlib.lean", "sha256": "61d699d8ace6240934a751f1b1951339090d6e380b505041632227dd7eb73a29"}
+  },
+  "build_inputs": [{"path": "lakefile.lean", "sha256": "274e720ccc7dbabeb9fbf362290dc7e5ed2c5175fbade0ef20cc19b1331affaf"}],
+  "modules": [
+    {"module": "Mathlib.Algebra.Group.Basic", "path": "Mathlib/Algebra/Group/Basic.lean", "sha256": "1de660ac794263d0363bc5bf9ce7b357409c2db36c0642521738103a0938fa84", "size_bytes": 38391},
+    {"module": "Mathlib.Algebra.Ring.Basic", "path": "Mathlib/Algebra/Ring/Basic.lean", "sha256": "5ff332ec2eadf105ea5db5449f96c241510b0e59bc9c5ef1a7467dc860f01025", "size_bytes": 11565},
+    {"module": "Mathlib.Analysis.SpecialFunctions.Pow.Real", "path": "Mathlib/Analysis/SpecialFunctions/Pow/Real.lean", "sha256": "5f4970fe329b14615ca6cfa3e0dcb0cf9d2017c98d2e3501237412aa2474e70b", "size_bytes": 50134},
+    {"module": "Mathlib.Combinatorics.SimpleGraph.Basic", "path": "Mathlib/Combinatorics/SimpleGraph/Basic.lean", "sha256": "97f49ff9b52fe1906b6a2071422b35ec496cd6b3d9d81043e77e56efceb0a73f", "size_bytes": 42725},
+    {"module": "Mathlib.Data.Finset.Basic", "path": "Mathlib/Data/Finset/Basic.lean", "sha256": "610233da92210bc5b2afc728468b5bb2c4894606286ded6628ac15f4dfec93b5", "size_bytes": 25364},
+    {"module": "Mathlib.Data.Int.Basic", "path": "Mathlib/Data/Int/Basic.lean", "sha256": "c524836299f9abaa2622e907d6bf008e6c6ce25f386948cb8fda17690bc25095", "size_bytes": 3362},
+    {"module": "Mathlib.Data.List.Basic", "path": "Mathlib/Data/List/Basic.lean", "sha256": "9808333bd8309d8b77e3eee8fd984d59159086c9ffa0685e26aa47e98a34c9ba", "size_bytes": 44445},
+    {"module": "Mathlib.Data.Nat.Basic", "path": "Mathlib/Data/Nat/Basic.lean", "sha256": "3acde740ae618c93431f89b06d0b00904e9d6565330667085bb713536e409295", "size_bytes": 5759},
+    {"module": "Mathlib.Data.Nat.Prime.Basic", "path": "Mathlib/Data/Nat/Prime/Basic.lean", "sha256": "b71a7d5f51c626ae6b70cbe36bab7b77a691f9a214373cfb98e170bd7e6f9aeb", "size_bytes": 12365},
+    {"module": "Mathlib.Data.Set.Basic", "path": "Mathlib/Data/Set/Basic.lean", "sha256": "44b4028c23fb3020ec9c6fdd1ea501842d0d949614925f80e215493a0cc87e60", "size_bytes": 41057},
+    {"module": "Mathlib.Logic.Function.Basic", "path": "Mathlib/Logic/Function/Basic.lean", "sha256": "a3c45dcdfb9c5395a6650745e92a509b91f21b2bd9dd3fde373ccdf04c12e273", "size_bytes": 53582},
+    {"module": "Mathlib.Order.Basic", "path": "Mathlib/Order/Basic.lean", "sha256": "d03ae9000e7225b8e8955e05245f894d391282ffc2951512f7f530d15f60636f", "size_bytes": 43197},
+    {"module": "Mathlib.Topology.Basic", "path": "Mathlib/Topology/Basic.lean", "sha256": "7ed5bc70e1b1afb811bb65e61f8820b334408d9a92c656efd74dcb79f9169f99", "size_bytes": 10320}
+  ]
+}

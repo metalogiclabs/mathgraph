@@ -33,9 +33,15 @@ The exact 13-test publisher and resolver qualification also requires the two ori
 - `/protocol/profiles/lean/` — proposed, unstable Lean evidence profile
 - `/agents/` — deterministic agent-consumption contract
 - `/developers/` — record and local resolver contract
-- `/llms.txt`, `/.well-known/mathgraph.json`, and `/records/index.json` — machine discovery and short-lived lifecycle catalogue
+- `/llms.txt` and `/.well-known/mathgraph.json` — current machine discovery (`mathgraph.discovery.v4`), including exact source-catalogue artifacts and authority-free consumption boundaries
+- `/.well-known/mathgraph-v3.json` — byte-preserved prior discovery V3 contract for existing consumers
+- `/catalogues/mathlib/v4.34.1/` — immutable, source-indexed Mathlib catalogue (`SOURCE_INDEXED`; proof, applicability, and action authority `NOT_CHECKED`/`NONE`)
+- `/artifacts/conformance/source_catalogue_v1/` — finite allowlist containing the standard-library consumer, independently pinned trust policy, and replay instructions
+- `/records/index.json` — short-lived lifecycle catalogue for immutable evidence records
 
 The `/v1/resolve` resolver is a qualified localhost preview, not a publicly deployed service. The committed static JSON record is the V1 machine-readable public interface.
+
+The Mathlib catalogue is a source index, not an accepted MathGraph terminal form. Its `DECLARES`, `IMPORTS_MODULE`, and `TYPE_REFERENCES` relations are structural source relations; they do not establish logical implication, semantic equivalence, proof dependency, or mathematical truth. An independent consumer can validate the exact committed publication offline, but the catalogue and its same-origin digest do not authenticate their own origin. A receiving consumer must pin the manifest and trust-policy digests through a separately chosen channel such as the exact Git commit.
 
 ## Publishing another record
 

@@ -1,8 +1,10 @@
 {
-  "$schema": "https://mathgraph.org/schemas/discovery-v3.schema.json",
-  "schema": "mathgraph.discovery.v3",
+  "$schema": "https://mathgraph.org/schemas/discovery-v4.schema.json",
+  "schema": "mathgraph.discovery.v4",
   "canonical_origin": "https://mathgraph.org",
-  "generated_at": "2026-10-11T01:17:00Z",
+  "generated_at": "2026-10-12T18:53:33Z",
+  "authority": "NONE",
+  "authorization": "NONE",
   "agent_guide": "https://mathgraph.org/agents/",
   "llms_txt": "https://mathgraph.org/llms.txt",
   "record_index": "https://mathgraph.org/records/index.json",
@@ -19,6 +21,9 @@
     "presentation_metadata_v1": "https://mathgraph.org/schemas/presentation-metadata-v1.schema.json",
     "lean_evidence_profile_draft_1": "https://mathgraph.org/schemas/lean-evidence-profile-draft-1.schema.json",
     "discovery_v3": "https://mathgraph.org/schemas/discovery-v3.schema.json",
+    "discovery_v4": "https://mathgraph.org/schemas/discovery-v4.schema.json",
+    "source_catalogue_manifest_v1": "https://mathgraph.org/schemas/source-catalogue-manifest-v1.schema.json",
+    "source_catalogue_shard_v1": "https://mathgraph.org/schemas/source-catalogue-shard-v1.schema.json",
     "discover_request_v1": "https://mathgraph.org/schemas/discover-request-v1.schema.json",
     "discover_result_v1": "https://mathgraph.org/schemas/discover-result-v1.schema.json",
     "capability_contract_v1": "https://mathgraph.org/schemas/capability-contract-v1.schema.json",
@@ -34,8 +39,9 @@
     "discover_interface": "IMPLEMENTED_LOCAL_ADVISORY",
     "develop_interface": "QUALIFIED_BOUNDED_OFFLINE",
     "capabilities_registry": "STATIC_REGISTRY",
+    "source_catalogue": "IMPLEMENTED_STATIC_SOURCE_INDEX",
     "lean_profile": "PROPOSED",
-    "mcp": "PROPOSED"
+    "mcp": "NOT_DEPLOYED"
   },
   "interfaces": {
     "check": {
@@ -124,6 +130,102 @@
       "action_authorization": "NONE"
     }
   },
+  "source_catalogue": {
+    "catalogue_id": "mathlib-v4.34.1-foundations-v1",
+    "catalogue_version": 1,
+    "publication_root": "https://mathgraph.org/catalogues/mathlib/v4.34.1/",
+    "source": {
+      "repository": "https://github.com/leanprover-community/mathlib4",
+      "commit": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+      "tree": "efa132418a56d0e38c56cc412a06df22178dac5c",
+      "lean_toolchain": "leanprover/lean4:v4.34.1"
+    },
+    "artifacts": {
+      "manifest": {
+        "url": "https://mathgraph.org/catalogues/mathlib/v4.34.1/manifest.json",
+        "sha256": "5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68",
+        "size_bytes": 319664,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/website/public/catalogues/mathlib/v4.34.1/manifest.json"
+      },
+      "search": {
+        "url": "https://mathgraph.org/catalogues/mathlib/v4.34.1/search.json",
+        "sha256": "af346a9d68adfaacddf4103004d97976e6ebc106e2b8b0bc199fb0a5fabeb60b",
+        "size_bytes": 1624539,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/website/public/catalogues/mathlib/v4.34.1/search.json"
+      },
+      "manifest_schema": {
+        "url": "https://mathgraph.org/schemas/source-catalogue-manifest-v1.schema.json",
+        "sha256": "efd1f70039e8205f8e0cbf861ce9796604fbc56c224fec0b43834135b68f17cc",
+        "size_bytes": 14602,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/website/public/schemas/source-catalogue-manifest-v1.schema.json"
+      },
+      "shard_schema": {
+        "url": "https://mathgraph.org/schemas/source-catalogue-shard-v1.schema.json",
+        "sha256": "363cf2a199f2c60fe026b74ecbab3c78d7e6d3fc0d3422ae6528c89c871f8683",
+        "size_bytes": 14816,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/website/public/schemas/source-catalogue-shard-v1.schema.json"
+      },
+      "consumer": {
+        "url": "https://mathgraph.org/artifacts/conformance/source_catalogue_v1/consumer.py",
+        "sha256": "583dcfca46854f56469cdda865b5da62b1068e985bdce411dac9c587e556ca5d",
+        "size_bytes": 34582,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/conformance/source_catalogue_v1/consumer.py"
+      },
+      "trust_policy": {
+        "url": "https://mathgraph.org/artifacts/conformance/source_catalogue_v1/trust-policy.json",
+        "sha256": "c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9",
+        "size_bytes": 5751,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/conformance/source_catalogue_v1/trust-policy.json"
+      },
+      "readme": {
+        "url": "https://mathgraph.org/artifacts/conformance/source_catalogue_v1/README.md",
+        "sha256": "787f1dd6cf9c7b24c1adc7f8d2c31bd44d637c77574f091fc19414761ca1f323",
+        "size_bytes": 3345,
+        "repository_url": "https://github.com/metalogiclabs/mathgraph/blob/8e8f5f529b44852815627206dc5b45062f0c96d6/conformance/source_catalogue_v1/README.md"
+      }
+    },
+    "relation_types": [
+      "DECLARES",
+      "IMPORTS_MODULE",
+      "TYPE_REFERENCES"
+    ],
+    "semantics": {
+      "logical_implication": false,
+      "semantic_equivalence": false
+    },
+    "result": {
+      "source_status": "SOURCE_INDEXED",
+      "independent_verification": "NOT_CHECKED",
+      "current_applicability": "NOT_CHECKED",
+      "freshness": "PINNED_HISTORICAL_SOURCE",
+      "authority": "NONE",
+      "authorization": "NONE"
+    },
+    "qualification": {
+      "basis": "SAME_OWNER_INDEPENDENT_CONSUMER",
+      "public_bundle": {
+        "producer_commit": "e6643d8e3d207893713da94041ff3822c1190457",
+        "wrapper_commit": "eb3149b70f0cdf39109c775898b19a26574c27e6",
+        "run_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38242539984",
+        "trust_policy_sha256": "c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9"
+      },
+      "publication_commit": "7519de6a51e524caf70df51d37389ff42d430d43",
+      "later_regeneration": {
+        "commit": "8e8f5f529b44852815627206dc5b45062f0c96d6",
+        "run_url": "https://github.com/metalogiclabs/mathgraph/actions/runs/38246586898",
+        "scope": "CATALOGUE_PUBLICATION_REGENERATED_WITH_RUN_SPECIFIC_TRUST_POLICY",
+        "public_trust_policy_replayed": false
+      }
+    },
+    "repository_snapshot_commit": "8e8f5f529b44852815627206dc5b45062f0c96d6",
+    "repository_snapshot": "https://github.com/metalogiclabs/mathgraph/tree/8e8f5f529b44852815627206dc5b45062f0c96d6",
+    "repository_authentication": "CHOSEN_TRUST_POLICY_NOT_MATHEMATICAL_TRUTH"
+  },
+  "historical_discovery": {
+    "v3_manifest": "https://mathgraph.org/.well-known/mathgraph-v3.json",
+    "v3_manifest_sha256": "3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540",
+    "v3_schema": "https://mathgraph.org/schemas/discovery-v3.schema.json"
+  },
   "freshness": {
     "basis": "CLIENT_FETCH_TIME",
     "record_index_max_age_seconds": 300,
@@ -132,7 +234,7 @@
   "integrity_notice": "Digests establish integrity and byte identity, not host authenticity or semantic truth.",
   "repository_provenance": {
     "repository": "https://github.com/metalogiclabs/mathgraph",
-    "catalogue_source": "https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json",
+    "record_catalogue_source": "https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json",
     "authentication_status": "UNSIGNED_PROVENANCE_ONLY"
   }
 }

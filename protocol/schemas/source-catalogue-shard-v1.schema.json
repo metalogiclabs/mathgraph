@@ -1,0 +1,619 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathgraph.org/schemas/source-catalogue-shard-v1.schema.json",
+  "title": "MathGraph source catalogue shard v1",
+  "description": "Source publication structure only: SOURCE_INDEXED, no independent verification, applicability, action permission, or terminal form. Restricted RFC 8785/JCS bytes require scalar Unicode and safe integers, UTF-16 key order, and no newline. Python also checks source identity, counts, closed endpoints, provenance, ordering, and byte limits. Unknown noncritical extensions remain opaque and grant no authority; v1 recognizes no critical extensions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "catalogue_version",
+    "catalogue_id",
+    "module",
+    "objects",
+    "relations",
+    "omissions",
+    "source_status",
+    "verification_status",
+    "current_applicability",
+    "freshness",
+    "authorization",
+    "authority",
+    "extensions"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "mathgraph.source-catalogue-shard.v1"
+    },
+    "catalogue_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "catalogue_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "module",
+        "path",
+        "sha256",
+        "size_bytes",
+        "repository",
+        "commit",
+        "tree",
+        "source_status",
+        "verification_status",
+        "current_applicability",
+        "freshness",
+        "authorization",
+        "authority"
+      ],
+      "properties": {
+        "module_id": {
+          "$ref": "#/$defs/moduleId"
+        },
+        "module": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_status": {
+          "type": "string",
+          "const": "SOURCE_INDEXED"
+        },
+        "verification_status": {
+          "type": "string",
+          "const": "NOT_CHECKED"
+        },
+        "current_applicability": {
+          "type": "string",
+          "const": "NOT_CHECKED"
+        },
+        "freshness": {
+          "type": "string",
+          "const": "PINNED_HISTORICAL_SOURCE"
+        },
+        "authorization": {
+          "type": "string",
+          "const": "NONE"
+        },
+        "authority": {
+          "type": "string",
+          "const": "NONE"
+        }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "object_id",
+          "object_contract_version",
+          "source",
+          "qualified_name",
+          "kind",
+          "statement",
+          "statement_sha256",
+          "source_status",
+          "verification_status",
+          "current_applicability",
+          "freshness",
+          "authorization",
+          "authority",
+          "extensions"
+        ],
+        "properties": {
+          "object_id": {
+            "$ref": "#/$defs/objectId"
+          },
+          "object_contract_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "commit",
+              "tree",
+              "module",
+              "path",
+              "range"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "minLength": 1
+              },
+              "commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "tree": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "module": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "$ref": "#/$defs/relativePath"
+              },
+              "range": {
+                "$ref": "#/$defs/range"
+              }
+            }
+          },
+          "qualified_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "theorem",
+              "definition",
+              "opaque",
+              "axiom",
+              "inductive",
+              "constructor"
+            ]
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_status": {
+            "type": "string",
+            "const": "SOURCE_INDEXED"
+          },
+          "verification_status": {
+            "type": "string",
+            "const": "NOT_CHECKED"
+          },
+          "current_applicability": {
+            "type": "string",
+            "const": "NOT_CHECKED"
+          },
+          "freshness": {
+            "type": "string",
+            "const": "PINNED_HISTORICAL_SOURCE"
+          },
+          "authorization": {
+            "type": "string",
+            "const": "NONE"
+          },
+          "authority": {
+            "type": "string",
+            "const": "NONE"
+          },
+          "extensions": {
+            "$ref": "#/$defs/extensions"
+          }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "relation_id",
+          "type",
+          "source_id",
+          "target_id",
+          "source_kind",
+          "target_kind",
+          "authority",
+          "logical_implication",
+          "semantic_equivalence",
+          "extensions"
+        ],
+        "properties": {
+          "relation_id": {
+            "$ref": "#/$defs/relationId"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "DECLARES",
+              "IMPORTS_MODULE",
+              "TYPE_REFERENCES"
+            ]
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "SOURCE_MODULE",
+              "SOURCE_DECLARATION"
+            ]
+          },
+          "target_kind": {
+            "type": "string",
+            "enum": [
+              "SOURCE_MODULE",
+              "SOURCE_DECLARATION"
+            ]
+          },
+          "authority": {
+            "type": "string",
+            "const": "NONE"
+          },
+          "logical_implication": {
+            "type": "boolean",
+            "const": false
+          },
+          "semantic_equivalence": {
+            "type": "boolean",
+            "const": false
+          },
+          "extensions": {
+            "$ref": "#/$defs/extensions"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "DECLARES"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "source_kind": {
+                  "const": "SOURCE_MODULE"
+                },
+                "target_kind": {
+                  "const": "SOURCE_DECLARATION"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "IMPORTS_MODULE"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "source_kind": {
+                  "const": "SOURCE_MODULE"
+                },
+                "target_kind": {
+                  "const": "SOURCE_MODULE"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "TYPE_REFERENCES"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "properties": {
+                "source_kind": {
+                  "const": "SOURCE_DECLARATION"
+                },
+                "target_kind": {
+                  "const": "SOURCE_DECLARATION"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "omissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type_references",
+        "imports",
+        "declarations"
+      ],
+      "properties": {
+        "type_references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "target_name"
+            ],
+            "properties": {
+              "source_id": {
+                "$ref": "#/$defs/objectId"
+              },
+              "target_name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "declarations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "qualified_name",
+              "kind",
+              "reason"
+            ],
+            "properties": {
+              "qualified_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "GENERATED",
+                  "MISSING_RANGE",
+                  "UNSUPPORTED_KIND"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "source_status": {
+      "type": "string",
+      "const": "SOURCE_INDEXED"
+    },
+    "verification_status": {
+      "type": "string",
+      "const": "NOT_CHECKED"
+    },
+    "current_applicability": {
+      "type": "string",
+      "const": "NOT_CHECKED"
+    },
+    "freshness": {
+      "type": "string",
+      "const": "PINNED_HISTORICAL_SOURCE"
+    },
+    "authorization": {
+      "type": "string",
+      "const": "NONE"
+    },
+    "authority": {
+      "type": "string",
+      "const": "NONE"
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*[\\\\:\\u0000-\\u001f\\u007f]).*[^/]$"
+    },
+    "moduleId": {
+      "type": "string",
+      "pattern": "^module-[0-9a-f]{64}$"
+    },
+    "objectId": {
+      "type": "string",
+      "pattern": "^object-[0-9a-f]{64}$"
+    },
+    "relationId": {
+      "type": "string",
+      "pattern": "^relation-[0-9a-f]{64}$"
+    },
+    "canonicalValue": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/canonicalValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/canonicalValue"
+          },
+          "propertyNames": {
+            "pattern": "^[^\\uD800-\\uDFFF]*$"
+          }
+        }
+      ]
+    },
+    "extension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "critical",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "critical": {
+          "type": "boolean",
+          "const": false
+        },
+        "payload": {
+          "$ref": "#/$defs/canonicalValue"
+        }
+      }
+    },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/extension"
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "line",
+        "column",
+        "byte"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "byte": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/point"
+        },
+        "end": {
+          "$ref": "#/$defs/point"
+        }
+      }
+    }
+  }
+}
