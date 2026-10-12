@@ -302,6 +302,28 @@ def test_congr_simp_collision_with_selected_module_source_range_remains_fail_clo
     assert not output.exists()
 
 
+def test_forged_congr_simp_metadata_cannot_replace_parent_rederivation(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "forged-congr-simp-metadata-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["HCongrDefs", "ForgedCongrSimpLeft", "ForgedCongrSimpRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "ForgedCongrSimpLeft", "ForgedCongrSimpRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "Origin.congrTarget.congr_simp" in result.stderr
+    assert "selected=ForgedCongrSimpRight" in result.stderr
+    assert "canonical=ForgedCongrSimpLeft" in result.stderr
+    assert not output.exists()
+
+
 @pytest.mark.parametrize("cache_mode", ["stale", "absent"])
 def test_source_compile_order_includes_transitive_selected_dependencies(tmp_path, cache_mode):
     helper = ROOT / "tools/mathlib_catalogue/CompileOrder.lean"

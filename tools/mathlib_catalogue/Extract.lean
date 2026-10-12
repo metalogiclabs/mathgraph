@@ -52,6 +52,23 @@ def sameGeneratedTheorem (observed canonical : ConstantInfo) : Bool :=
     a.name == b.name && a.type == b.type && a.levelParams == b.levelParams && a.all == b.all
   | _, _ => false
 
+/-- Recompute the theorem that Lean's reserved-name action would create from
+the parent declaration. Serialized names and congruence metadata are not by
+themselves evidence that a theorem was produced by that mechanism. -/
+def expectedGeneratedCongruence? (parent : Name) (suffix : String) : MetaM (Option Meta.CongrTheorem) := do
+  try
+    let info ← getConstInfo parent
+    let f := mkConst parent (info.levelParams.map mkLevelParam)
+    if Meta.isHCongrReservedNameSuffix suffix then
+      return some (← Meta.mkHCongrWithArity f (suffix.drop 7).toNat!)
+    else if suffix == Meta.congrSimpSuffix then
+      let funInfo ← Meta.getFunInfo f
+      Meta.mkCongrSimpCore? f funInfo (← Meta.getCongrSimpKinds f funInfo)
+    else
+      return none
+  catch _ =>
+    return none
+
 /-- `mkHCongrWithArityForConst?` and `mkCongrSimpForConst?` realize Lean's two
 reserved congruence-theorem forms, `hcongr_<Nat>` and exact `congr_simp`, and
 record their argument kinds in the congruence declaration extension. Sibling
@@ -59,32 +76,39 @@ modules may realize the same theorem before import finalization chooses one
 canonical origin. Require the official suffix grammar (including hcongr
 arity), the registered reserved-name predicate, no direct source range, an
 exact entry in the selected module's private serialized extension state, and
-agreement with canonical extension metadata. Looking up only the canonical
-extension entry is insufficient: a low-level declaration in a sibling module
-could otherwise borrow the canonical module's generated status. User theorems
-with exact or near-match suffixes are therefore not classified as generated. -/
-def isGeneratedCongruence (env : Environment) (idx : ModuleIdx) (name : Name) : Bool :=
+agreement with canonical extension metadata and a fresh derivation from the
+parent declaration. Looking up only the canonical extension entry is
+insufficient: low-level declarations in sibling modules could otherwise borrow
+or forge the canonical module's generated status. User theorems with exact or
+near-match suffixes are therefore not classified as generated. -/
+def isGeneratedCongruence (env : Environment) (idx : ModuleIdx) (name : Name)
+    (observed : ConstantInfo) : MetaM Bool := do
   match name with
-  | .str _ suffix =>
+  | .str parent suffix =>
     let hcongr := Meta.isHCongrReservedNameSuffix suffix
     let congrSimp := suffix == Meta.congrSimpSuffix
     if !(hcongr || congrSimp) || !isReservedName env name then
-      false
+      return false
     else
       let localKindsEntries := Meta.congrKindsExt.getModuleEntries env idx (level := .private)
         |>.filter (fun entry => entry.1 == name)
       let localRangeEntries := declRangeExt.getModuleEntries env idx (level := .private)
         |>.filter (fun entry => entry.1 == name)
       if localKindsEntries.size != 1 || !localRangeEntries.isEmpty then
-        false
+        return false
       else
         match Meta.congrKindsExt.find? env name (level := .private) with
         | some canonicalKinds =>
           let localKinds := localKindsEntries[0]!.2
-          localKinds == canonicalKinds
+          let some expected ← expectedGeneratedCongruence? parent suffix | return false
+          let some parentInfo := env.find? parent | return false
+          return localKinds == canonicalKinds
+            && localKinds == expected.argKinds
+            && expected.type == observed.type
+            && parentInfo.levelParams == observed.levelParams
             && (!hcongr || localKinds.size == (suffix.drop 7).toNat!)
-        | none => false
-  | _ => false
+        | none => return false
+  | _ => return false
 
 def position (map : FileMap) (p : Position) : Except String Json := do
   let offset := map.ofPosition p
@@ -117,7 +141,7 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
       -- suffix against the underlying safe definition, including exposure and
       -- private-name rules, so a sibling realization is still recognized.
       let equation := (Meta.declFromEqLikeName env name).isSome || (← Meta.isEqnThm name)
-      let congruence := isGeneratedCongruence env idx name
+      let congruence ← isGeneratedCongruence env idx name info
       -- A private or underscore-prefixed *user* name with its own direct range
       -- remains a source occurrence. Names alone cannot make it generated.
       let generated := k == "recursor" || isAuxRecursor env name || isNoConfusion env name
