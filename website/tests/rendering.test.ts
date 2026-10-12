@@ -96,12 +96,31 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<noscript>');
   });
 
-  test('reuses the interactive map at the homepage’s exact two-object, one-edge scope', async () => {
+  test('makes the source-derived living network the homepage entry point without authority inflation', async () => {
     const html = await page('');
-    expect(html).toContain('data-knowledge-map');
-    expect((html.match(/data-object-detail=/g) ?? [])).toHaveLength(2);
-    expect(visibleText(html)).toContain('2 of 2 objects · 1 of 1 relations');
-    expect(html).toContain('href="/objects/"');
+    const text = visibleText(html);
+    expect(text).toContain('Knowledge you can verify. Capabilities you can build on.');
+    expect(html).toMatch(/<form[^>]+action="\/explore\/"[^>]+method="get"[^>]+data-home-search/);
+    expect(html).toMatch(/<input[^>]+name="q"/);
+    expect(html).toMatch(/Content-Security-Policy[^>]+form-action 'self'/);
+    expect(html).not.toContain('data-import-workbench');
+    for (const [value, label] of [['2,345', 'Indexed declarations'], ['1', 'Qualified bounded result'], ['3,578', 'Typed source-backed relations'], ['4', 'External source projects'], ['1', 'Qualified reusable capability']]) {
+      expect(text).toContain(value); expect(text).toContain(label);
+    }
+    expect(text).not.toContain('Total network');
+    expect(text).toContain('DECLARES 2,345');
+    expect(text).toContain('TYPE_REFERENCES 1,224');
+    expect(text).toContain('IMPORTS_MODULE 2');
+    expect(text).toContain('Real.rpow');
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toContain('Independent verification NOT_CHECKED');
+    expect(html).toContain('data-source-neighborhood');
+    expect(html).toContain('TYPE_REFERENCES');
+    expect(html).toMatch(/href="\/objects\/object-[a-f0-9]{64}\//);
+    expect(text).toContain(record.id);
+    expect(text).toContain('One finite representation-refinement profile');
+    expect(text).toContain('Independent verification');
+    expect(html).toContain('data-home-quick-start');
   });
 
   test('connects canonical objects from exploration, Resolve and historical records', async () => {
@@ -118,7 +137,7 @@ describe('primary public evidence experience', () => {
     }
   });
 
-  test.each(['', 'verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
+  test.each(['verify', 'check'])('offers the same honest local import workflow on /%s', async (route) => {
     const html = await page(route).catch(() => '');
     const text = visibleText(html);
     expect(html).toContain('data-import-workbench');

@@ -89,7 +89,11 @@ for (const value of ['48/48', '31', '17', '52/52', 'UNKNOWN', 'NOT_CHECKED_AFTER
 assert(homeHtml.includes(record.id), 'homepage must identify the featured record');
 assert(homeHtml.includes('<title>MathGraph — Open Verification Infrastructure</title>'));
 assert(homeHtml.includes('<h1>Knowledge you can verify. Capabilities you can build on.</h1>'));
-assert(homeHtml.includes('data-import-workbench'));
+assert(homeHtml.includes('data-home-search') && homeHtml.includes('action="/explore/"'), 'homepage must expose same-origin knowledge search');
+assert(!homeHtml.includes('data-import-workbench'), 'generic local import belongs on Verify, not the homepage');
+for (const value of ['2,345', 'Indexed declarations', '1,224', 'TYPE_REFERENCES', 'Real.rpow', 'SOURCE_INDEXED', 'Independent verification', 'NOT_CHECKED', 'data-source-neighborhood']) {
+  assert(homeHtml.includes(value), `homepage living-network projection missing ${value}`);
+}
 for (const route of ['explore', 'verify', 'build', 'check', 'resolve', 'discover', 'develop', 'capabilities', 'records', 'objects', 'protocol', 'agents', 'developers', 'about', 'contact']) {
   const html = await readFile(join(dist, route, 'index.html'), 'utf8');
   assert(html.includes('aria-controls="primary-navigation"'), `${route}: navigation disclosure missing`);

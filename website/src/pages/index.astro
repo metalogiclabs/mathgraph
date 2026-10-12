@@ -1,39 +1,97 @@
 ---
 import EvidenceBoundary from '../components/EvidenceBoundary.astro';
-import ImportWorkbench from '../components/ImportWorkbench.astro';
+import Metric from '../components/Metric.astro';
 import RecordSummary from '../components/RecordSummary.astro';
+import SourceNeighborhood from '../components/SourceNeighborhood.astro';
 import StatusTag from '../components/StatusTag.astro';
-import KnowledgeMap from '../components/KnowledgeMap.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { loadObjectProjections } from '../data/object-projections';
+import capabilityRegistry from '../../public/capabilities/index-v1.json';
+import { loadLivingKnowledgeProjections } from '../data/source-catalogue';
 import { getLatestPublishedRecord } from '../lib/catalog';
-import { buildKnowledgeMap } from '../lib/knowledge-map';
+import { buildKnowledgeNeighborhood } from '../lib/knowledge-map';
+import { deriveNetworkMetrics } from '../lib/network-metrics';
+import { objectSlug } from '../lib/object-locators';
+import { loadSourceCatalogueV1 } from '../lib/source-catalogue';
 import { capabilityContract } from '../lib/modules';
-import { importCheckoutReplayCommand, importImplementationCommit } from '../lib/import-replay';
+import {
+  importCheckoutReplayCommand,
+  importConsumerSourceUrl,
+  importImplementationCommit,
+  importPolicySourceUrl,
+} from '../lib/import-replay';
 
 const { entry, record } = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
-const objects = await loadObjectProjections();
+const [catalogue, objects] = await Promise.all([
+  loadSourceCatalogueV1(),
+  loadLivingKnowledgeProjections(),
+]);
+const metrics = deriveNetworkMetrics(catalogue, objects, capabilityRegistry);
 const capability = objects.objects.find(object => object.kind === 'FINITE_CAPABILITY')!;
-const previewIds = objects.objects.filter(object =>
-  ['mathgraph.l4yaml.48-case-qualification', 'jpl.l4yaml.finite_parser_acceptance'].includes(object.source_id)
-).map(object => object.id);
-const map = buildKnowledgeMap(objects, { objectIds: previewIds });
+const representative = objects.objects.find(object => object.kind === 'SOURCE_DECLARATION' && object.title === 'Real.rpow');
+if (!representative) throw new Error('REPRESENTATIVE_SOURCE_OBJECT_MISSING');
+const representativeDetails = representative.details as {
+  declaration_kind: string;
+  statement: string;
+  statement_sha256: string;
+  source: { repository: string; commit: string; tree: string; module: string; path: string };
+};
+const representativeRoute = `/objects/${objectSlug(representative)}/`;
+const sourceMap = buildKnowledgeNeighborhood(objects, representative.id, { depth: 1, maxNodes: 6, maxEdges: 10 });
 const finite = record.axes.finite_executable;
+const format = (value: number) => value.toLocaleString('en-US');
 ---
 
 <BaseLayout title="MathGraph — Open Verification Infrastructure" description="Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused." currentPath="/">
   <header class="shell home-hero">
-    <div class="eyebrow">Open verification infrastructure</div>
-    <h1>Knowledge you can verify. Capabilities you can build on.</h1>
-    <p class="lede">Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.</p>
-    <p>Start with the supported local record below. Today’s browser workflow recognizes one exact published JSON artifact; broader artifact import remains future work.</p>
-    <div class="actions">
-      <a class="button" href="#import-title">Try the local record</a>
-      <a class="button button--secondary" href="/explore/">Explore the evidence</a>
+    <div class="home-hero__copy">
+      <div class="eyebrow">Open verification infrastructure</div>
+      <h1>Knowledge you can verify. Capabilities you can build on.</h1>
+      <p class="lede">Search real mathematical objects, follow exact source-backed connections, and inspect what independent evidence does—and does not—establish.</p>
+      <p>Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.</p>
+      <form class="home-search" action="/explore/" method="get" data-home-search>
+        <label for="home-search-query">Search the living knowledge network</label>
+        <div class="home-search__controls">
+          <input id="home-search-query" name="q" type="search" placeholder="Try Real.rpow, topology, or a theorem statement" autocomplete="off" />
+          <button class="button" type="submit">Explore</button>
+        </div>
+        <p class="fineprint">Search covers the pinned Mathlib source catalogue, qualified records, and reusable capability descriptors. Source indexing is not proof checking.</p>
+      </form>
+      <div class="actions">
+        <a class="button button--secondary" href="/verify/">Inspect real evidence</a>
+        <a class="button button--secondary" href="/protocol/">Understand the protocol</a>
+      </div>
     </div>
+    <aside class="home-hero__signal" aria-label="Status boundaries represented in the network">
+      <div class="eyebrow">Three distinct signals</div>
+      <ol>
+        <li><span>Source occurrence</span><strong>SOURCE_INDEXED</strong><small>Independent verification NOT_CHECKED</small></li>
+        <li><span>Check result</span><strong>WARRANTED_BOUNDED</strong><small>Exact finite observation only</small></li>
+        <li><span>Reusable capability</span><strong>QUALIFIED_BOUNDED</strong><small>Declared inputs and assumptions</small></li>
+      </ol>
+      <p class="fineprint">No combined truth score. No action authorization.</p>
+    </aside>
   </header>
 
-  <div class="shell"><ImportWorkbench /></div>
+  <section class="section section--compact network-snapshot" aria-labelledby="network-snapshot-title">
+    <div class="shell">
+      <div class="network-snapshot__header">
+        <div><div class="eyebrow">Published network snapshot</div><h2 id="network-snapshot-title">Substantial source coverage. Deliberately separate evidence.</h2></div>
+        <p>Every number below is derived at build time from validated, versioned contracts. They are not added into a single adoption or verification total.</p>
+      </div>
+      <div class="metric-grid network-metrics">
+        <Metric value={format(metrics.indexedObjects)} label="Indexed declarations" detail="Pinned Mathlib source occurrences" />
+        <Metric value={format(metrics.qualifiedResults)} label="Qualified bounded result" detail="Unique independently admitted Check result" />
+        <Metric value={format(metrics.typedRelations)} label="Typed source-backed relations" detail="Structural and qualified-evidence relations" />
+        <Metric value={format(metrics.externalProjects)} label="External source projects" detail="Allowlisted repository identities" />
+        <Metric value={format(metrics.qualifiedCapabilities)} label="Qualified reusable capability" detail="Registry entry with bounded replay" />
+      </div>
+      <div class="network-snapshot__details">
+        <p><strong>Source structure:</strong> DECLARES {format(metrics.relationBreakdown.DECLARES ?? 0)} · TYPE_REFERENCES {format(metrics.relationBreakdown.TYPE_REFERENCES ?? 0)} · IMPORTS_MODULE {format(metrics.relationBreakdown.IMPORTS_MODULE ?? 0)}</p>
+        <p><strong>Evidence structure:</strong> EVIDENCE_FOR {format(metrics.relationBreakdown.EVIDENCE_FOR ?? 0)} · WITHDRAWS {format(metrics.relationBreakdown.WITHDRAWS ?? 0)}</p>
+        <details><summary>Exact external project identities</summary><ul>{metrics.externalProjectIdentities.map(project => <li><a href={project}>{project}</a></li>)}</ul></details>
+      </div>
+    </div>
+  </section>
 
   <section class="section" aria-labelledby="journeys-title">
     <div class="shell">
@@ -59,6 +117,8 @@ const finite = record.axes.finite_executable;
         <div><dt>Finite observation</dt><dd>{finite.matched_external_labels}/{finite.source_cases} decoded cases matched; {finite.expected_accept} accept, {finite.expected_reject} reject. {finite.total_lean_guards}/{finite.total_lean_guards} Lean guards include {finite.extra_controls} additional controls.</dd></div>
         <div><dt>Historical receipt</dt><dd><a href={record.evidence.v2_normalized_native_parser.url}>Inspect the normalized native parser run</a>. Whole-language correctness, statement fidelity, and generalization remain UNKNOWN.</dd></div>
       </dl>
+      <p class="qualified-relation"><code>mathgraph.l4yaml.48-case-qualification</code> <strong>EVIDENCE_FOR</strong> <code>jpl.l4yaml.finite_parser_acceptance</code> · source pointer <code>/derivation/routes/3/evidence/0</code></p>
+      <p class="fineprint">This typed relation is copied from the qualified record projection. It does not generalize the finite observation or establish a new proof.</p>
       <p class="fineprint">Independent check of public third-party code. No affiliation or endorsement implied. The site displays published receipts; it does not rerun the original JPL Lean proof.</p>
       <RecordSummary record={record} entry={entry} />
     </div>
@@ -66,11 +126,28 @@ const finite = record.axes.finite_executable;
 
   <section id="map-preview" class="section" aria-labelledby="map-title">
     <div class="shell">
-      <div class="eyebrow">Source-derived map preview</div>
-      <h2 id="map-title">A receipt connects to one declared claim.</h2>
-      <p>This bounded selection comes from the published Resolve snapshot. It shows only the JPL receipt and claim; other objects are outside this preview. A relation records the source’s declaration, not a new proof or a live status check.</p>
-      <KnowledgeMap map={map} id="home-map" />
-      <p><a href="/objects/">Explore all canonical objects and declared relations →</a> · <a href="/resolve/">Inspect the historical dependency scenarios</a></p>
+      <div class="grid source-feature">
+        <div class="span-5">
+          <div class="eyebrow">A real mathematical object</div>
+          <h2 id="map-title">Open a theorem. Follow what its source actually says.</h2>
+          <p class="lede"><code>Real.rpow</code> is one exact declaration occurrence in the pinned Mathlib catalogue—not a MathGraph-verified theorem.</p>
+          <dl class="definition-list source-feature__identity">
+            <div><dt>Declaration</dt><dd><a href={representativeRoute}>Real.rpow</a> · {representativeDetails.declaration_kind}</dd></div>
+            <div><dt>Module</dt><dd><code>{representativeDetails.source.module}</code></dd></div>
+            <div><dt>Source pin</dt><dd><code>{representativeDetails.source.commit}</code></dd></div>
+            <div><dt>Source status</dt><dd><code>SOURCE_INDEXED</code></dd></div>
+            <div><dt>Independent verification</dt><dd><code>NOT_CHECKED</code></dd></div>
+          </dl>
+          <p><a href={representativeRoute}>Inspect exact source, statement, omissions, and replay →</a></p>
+        </div>
+        <div class="span-7 source-feature__statement">
+          <div class="eyebrow">Rendered declaration type</div>
+          <pre><code>{representativeDetails.statement}</code></pre>
+          <p class="fineprint">Statement digest <code>{representativeDetails.statement_sha256}</code>. The hash protects bytes; it does not establish truth or semantic equivalence.</p>
+        </div>
+      </div>
+      <SourceNeighborhood map={sourceMap} id="home-source-network" />
+      <p><a href="/explore/?q=Real.rpow">Explore this declaration in the catalogue →</a> · <a href="/objects/">Inspect canonical objects and declared relations</a></p>
     </div>
   </section>
 
@@ -103,14 +180,14 @@ const finite = record.axes.finite_executable;
       <p>Clone the repository and detach at exact implementation commit <code>{importImplementationCommit}</code>. With Python available and the separately pinned policy and consumer reviewed:</p>
       <pre data-home-quick-start><code>{importCheckoutReplayCommand}</code></pre>
       <p>The result uses <code>mathgraph.import-result.v1</code>. Historical bounded receipt validation leaves proof, kernel, and source-suite replay <code>NOT_PERFORMED</code>; freshness <code>NOT_CHECKED</code>; and current applicability <code>UNKNOWN</code>. It authorizes no action.</p>
-      <p><a href="/developers/">Developer setup and consumers →</a></p>
+      <p><a href={importConsumerSourceUrl}>Inspect the pinned independent consumer</a> · <a href={importPolicySourceUrl}>Inspect the separately reviewed policy</a> · <a href="/developers/">Developer setup and consumers →</a></p>
     </div>
   </section>
 
   <section id="long-term" class="section section--ink" aria-labelledby="long-term-title">
     <div class="shell grid">
       <div class="span-5"><div class="eyebrow">Long-term direction</div><h2 id="long-term-title">Portable evidence across systems.</h2></div>
-      <div class="span-7"><p class="lede">MathGraph aims to connect mathematics, scientific workflows, software verification, and machine-generated claims through reusable evidence.</p><p>Today’s foundation is finite and explicit: source-pinned records, a historical dependency replay, one qualified finite capability, and a local record workflow. Broader artifact import, capability compilation, continuous requalification, and hosted resolver or MCP services remain future work. These examples do not establish universal support.</p></div>
+      <div class="span-7"><p class="lede">MathGraph aims to connect mathematics, scientific workflows, software verification, and machine-generated claims through reusable evidence.</p><p>Today’s foundation is finite and explicit: a source-indexed mathematical catalogue, source-pinned records, a historical dependency replay, one qualified finite capability, and a local record workflow. Broader source adapters, capability compilation, continuous requalification, and hosted resolver or MCP services remain future work. These examples do not establish universal support.</p></div>
     </div>
   </section>
 </BaseLayout>
