@@ -1645,6 +1645,11 @@ summary {
   width: fit-content;
 }
 
+.resolve-comparison__selection strong,
+.resolve-view__header h3 {
+  overflow-wrap: anywhere;
+}
+
 .resolve-comparison__selection p {
   max-width: 64ch;
   margin: 0;
