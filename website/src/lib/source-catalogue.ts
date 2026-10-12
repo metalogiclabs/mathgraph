@@ -1,7 +1,6 @@
 import { gzipSync } from 'node:zlib';
 import { lstat, readFile, readdir, realpath } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { sha256Hex } from './integrity';
 
@@ -12,8 +11,9 @@ const MAX_SEARCH_BYTES = 2 * 1024 * 1024;
 const MAX_PUBLICATION_BYTES = 12 * 1024 * 1024;
 const MAX_PUBLICATION_FILE_GZIP_BYTES = 256 * 1024;
 const MAX_PUBLICATION_GZIP_BYTES = 1536 * 1024;
-const defaultRoot = fileURLToPath(new URL('../../public/catalogues/mathlib/v4.34.1/', import.meta.url));
-const schemaRoot = fileURLToPath(new URL('../../public/schemas/', import.meta.url));
+// Astro relocates server modules while prerendering. The package build root remains stable.
+const defaultRoot = resolve(process.cwd(), 'public/catalogues/mathlib/v4.34.1');
+const schemaRoot = resolve(process.cwd(), 'public/schemas');
 const expectedSource = {
   repository: 'https://github.com/leanprover-community/mathlib4',
   commit: 'd13f23b723b8a846827a245b89c10fc7d3f11612',

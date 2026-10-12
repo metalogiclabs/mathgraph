@@ -1,41 +1,54 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { loadPublishedRecords } from '../../lib/catalog';
-const records = await loadPublishedRecords();
+import KnowledgeCatalogue from '../../components/KnowledgeCatalogue.astro';
+import { loadObjectProjections } from '../../data/object-projections';
+import { loadSourceCatalogueV1 } from '../../lib/source-catalogue';
+import { mergeProjectionCollections, projectSourceCatalogueV1 } from '../../lib/object-projections';
+import { buildExploreEntries } from '../../lib/catalogue-search';
+
+const sourceCatalogue = await loadSourceCatalogueV1();
+const projections = mergeProjectionCollections([
+  await loadObjectProjections(),
+  projectSourceCatalogueV1(sourceCatalogue),
+]);
+const entries = buildExploreEntries(projections, { sourceSearch: sourceCatalogue.search });
 ---
-<BaseLayout title="Explore — MathGraph" description="Explore source-pinned evidence records, declared dependencies, and advisory discovery with their exact boundaries." currentPath="/explore/">
+<BaseLayout title="Explore mathematical knowledge — MathGraph" description="Search source-pinned Mathlib declarations, qualified evidence records, and reusable capabilities without hiding verification boundaries." currentPath="/explore/">
   <header class="section section--compact">
     <div class="shell">
-      <div class="eyebrow">Explore</div>
-      <h1>Find what is established. Keep the unknowns visible.</h1>
-      <p class="lede">Start with the actual records, their source objects, and declared relations. The map is a presentation of published evidence; it adds no verification authority.</p>
+      <div class="eyebrow">Explore · real source-pinned knowledge</div>
+      <h1>Find the mathematics. Then inspect what is known about it.</h1>
+      <p class="lede">Search genuine declarations from an exact Mathlib revision alongside MathGraph’s qualified evidence objects and one bounded reusable capability. Names and structural references help you navigate; they do not create proof or implication.</p>
+      <ul class="explore-summary" aria-label="Catalogue scope">
+        <li><strong>{sourceCatalogue.manifest.counts.objects.toLocaleString('en-US')}</strong><span>source-indexed declarations</span></li>
+        <li><strong>{sourceCatalogue.manifest.counts.modules}</strong><span>pinned Mathlib modules</span></li>
+        <li><strong>{sourceCatalogue.manifest.counts.relations.toLocaleString('en-US')}</strong><span>typed structural relations</span></li>
+        <li><strong>1</strong><span>qualified reusable capability</span></li>
+      </ul>
     </div>
   </header>
   <section class="section">
     <div class="shell">
-      <h2>Inspect the published records.</h2>
-      <ul>
-        {records.map(published => (
-          <li>
-            <a href={new URL(published.entry.record_page_url).pathname}>{published.record_kind === 'SOURCE_CHECK' ? published.record.title : published.presentation.title}</a>
-            <p><code>{published.entry.id}</code> · version {published.entry.version}. Scope and unknowns are preserved on the record.</p>
-          </li>
-        ))}
-      </ul>
-      <p><a href="/objects/">Explore canonical objects and typed relations →</a> · <a href="/records/">All evidence records</a></p>
+      <div class="callout callout--unknown explore-boundary">
+        <strong>Source indexing is not independent proof checking.</strong>
+        These declarations and structural relations are reproduced from pinned source bytes. Their independent verification is <code>NOT_CHECKED</code>; the catalogue grants no terminal form or action authority.
+      </div>
+      <KnowledgeCatalogue entries={entries} />
     </div>
   </section>
-  <section class="section">
+  <section class="section section--tint">
     <div class="shell grid">
       <div class="span-5">
-        <h2>Follow the declared connections.</h2>
-        <p>The historical Resolve view shows exact receipt and claim objects, including publisher withdrawal and the independent JPL finite receipt. Historical support does not establish present applicability.</p>
-        <p><a href="/resolve/">Explore the historical dependency graph →</a> · <a href="/#map-preview">Preview the JPL receipt relation</a></p>
+        <div class="eyebrow">Verify</div>
+        <h2>Open the boundary, not just the result.</h2>
+        <p>Qualified records expose exact receipts, assumptions, source identities, replay instructions, and unknowns. Historical support never silently becomes current applicability.</p>
+        <p><a href="/records/">Inspect qualified evidence →</a> · <a href="/resolve/">See support withdrawal</a></p>
       </div>
       <div class="span-7">
-        <h2>Choose a next question.</h2>
-        <p>Discover is advisory. Its PARTIAL source-pack example has verification NOT_CHECKED and FULL_REPLAY_UNAVAILABLE. Suggested attention is not a truth verdict.</p>
-        <p><a href="/discover/">Inspect advisory discovery →</a></p>
+        <div class="eyebrow">Discover</div>
+        <h2>Turn an omission into the next inspectable question.</h2>
+        <p>Discover identifies source-grounded residuals and candidate next experiments. Its output is advisory until an appropriate independent verifier qualifies it.</p>
+        <p><a href="/discover/">Inspect the current discovery frontier →</a></p>
       </div>
     </div>
   </section>

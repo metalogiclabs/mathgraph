@@ -9,29 +9,64 @@ interface Props {
   id: string;
   total: number;
   filters: FilterDefinition[];
+  eyebrow?: string;
+  heading?: string;
+  fineprint?: string;
+  queryLabel?: string;
+  queryPlaceholder?: string;
+  noMatch?: string;
+  noScript?: string;
+  urlState?: boolean;
+  ranked?: boolean;
+  searchIndex?: string;
+  searchIndexCount?: number;
 }
 
-const { id, total, filters } = Astro.props;
+const {
+  id,
+  total,
+  filters,
+  eyebrow = 'Local catalogue view',
+  heading = 'Filter displayed entries',
+  fineprint = 'Display controls only · catalogue authority unchanged',
+  queryLabel = 'Search',
+  queryPlaceholder = 'Search identities and descriptions',
+  noMatch = 'The current static catalogue has no matching displayed entries.',
+  noScript = 'JavaScript is off. Every published entry remains visible below; local display filters are unavailable.',
+  urlState = false,
+  ranked = false,
+  searchIndex,
+  searchIndexCount,
+} = Astro.props;
 ---
 
-<section class="catalogue-filter" data-catalogue-filter data-catalogue-filter-count={filters.length} aria-labelledby={`${id}-filter-title`}>
+<section
+  class="catalogue-filter"
+  data-catalogue-filter
+  data-catalogue-filter-count={filters.length}
+  data-catalogue-url-state={urlState ? 'true' : undefined}
+  data-catalogue-ranked={ranked ? 'true' : undefined}
+  data-catalogue-search-index={searchIndex}
+  data-catalogue-search-index-count={searchIndexCount}
+  aria-labelledby={`${id}-filter-title`}
+>
   <div class="catalogue-filter__header">
     <div>
-      <div class="eyebrow">Local catalogue view</div>
-      <h2 id={`${id}-filter-title`}>Filter displayed entries</h2>
+      <div class="eyebrow">{eyebrow}</div>
+      <h2 id={`${id}-filter-title`}>{heading}</h2>
     </div>
-    <p class="fineprint">Display controls only · catalogue authority unchanged</p>
+    <p class="fineprint">{fineprint}</p>
   </div>
   <fieldset class="catalogue-filter__controls" data-catalogue-controls disabled>
     <legend class="visually-hidden">Filter the current static catalogue</legend>
     <label class="catalogue-filter__search">
-      Search
-      <input id={`${id}-query`} type="search" data-catalogue-query disabled autocomplete="off" placeholder="Search identities and descriptions" />
+      {queryLabel}
+      <input id={`${id}-query`} name="q" type="search" data-catalogue-query disabled autocomplete="off" placeholder={queryPlaceholder} />
     </label>
     {filters.map((filter) => (
       <label>
         {filter.label}
-        <select id={`${id}-${filter.field}`} data-catalogue-select data-catalogue-field={filter.field} disabled>
+        <select id={`${id}-${filter.field}`} name={filter.field} data-catalogue-select data-catalogue-field={filter.field} disabled>
           <option value="">All</option>
           {filter.options.map((option) => <option value={option}>{option}</option>)}
         </select>
@@ -40,8 +75,8 @@ const { id, total, filters } = Astro.props;
     <button type="button" data-catalogue-clear disabled>Clear filters</button>
   </fieldset>
   <p data-catalogue-count aria-live="polite" aria-atomic="true">{total} of {total} displayed.</p>
-  <p class="callout callout--unknown" data-catalogue-no-match hidden>The current static catalogue has no matching displayed entries.</p>
-  <noscript><p class="fineprint">JavaScript is off. Every published entry remains visible below; local display filters are unavailable.</p></noscript>
+  <p class="callout callout--unknown" data-catalogue-no-match hidden>{noMatch}</p>
+  <noscript><p class="fineprint">{noScript}</p></noscript>
   <div class="catalogue-filter__items" data-catalogue-items><slot /></div>
 </section>
 <script>import '../scripts/catalogue-filter';</script>

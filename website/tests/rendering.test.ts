@@ -27,6 +27,24 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
+    const html = await page('explore').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-knowledge-catalogue');
+    expect(html).toContain('data-catalogue-url-state');
+    expect(html).toContain('data-catalogue-ranked');
+    expect((html.match(/data-catalogue-item(?=[\s>])/g) ?? [])).toHaveLength(2372);
+    expect(text).toContain('Real.rpow');
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toContain('NOT_CHECKED');
+    expect(text).toContain('Source indexing is not independent proof checking.');
+    expect(text).toContain('Every entry remains available without JavaScript.');
+    expect(html).toContain('<noscript>');
+    expect(html).toContain('name="q"');
+    expect(html).toContain('data-catalogue-no-match');
+    expect(html).toContain('href="/discover/"');
+  });
+
   test('exposes bounded projection objects, typed relations and full source-linked details without JavaScript', async () => {
     const html = await page('objects').catch(() => '');
     const text = visibleText(html);
