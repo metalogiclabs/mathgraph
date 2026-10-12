@@ -55,15 +55,27 @@ def sameGeneratedTheorem (observed canonical : ConstantInfo) : Bool :=
 /-- `mkHCongrWithArityForConst?` realizes reserved `hcongr_<Nat>` theorem
 names on demand and records their argument kinds in Lean's congruence
 declaration extension. Sibling modules may realize the same theorem before
-import finalization chooses one canonical origin. Require all three pieces of
-Lean-owned metadata: the exact hcongr suffix grammar, the registered reserved
-name predicate (which also requires an existing parent declaration), and the
-congruence-extension entry. A user theorem merely ending in `hcongr_<Nat>` is
-therefore not classified as generated. -/
-def isGeneratedHCongr (env : Environment) (name : Name) : Bool :=
+import finalization chooses one canonical origin. Require the exact hcongr
+suffix grammar and arity, the registered reserved-name predicate, no direct
+source range, an exact entry in the selected module's private serialized
+extension state, and agreement with canonical extension metadata. Looking up
+only the canonical extension entry is insufficient: a low-level declaration in
+a sibling module could otherwise borrow the canonical module's generated
+status. A user theorem merely ending in `hcongr_<Nat>` is therefore not
+classified as generated. -/
+def isGeneratedHCongr (env : Environment) (idx : ModuleIdx) (name : Name)
+    (hasDirectRange : Bool) : Bool :=
   match name with
-  | .str _ suffix => Meta.isHCongrReservedNameSuffix suffix && isReservedName env name
-      && (Meta.congrKindsExt.find? env name).isSome
+  | .str _ suffix =>
+    if hasDirectRange || !Meta.isHCongrReservedNameSuffix suffix || !isReservedName env name then
+      false
+    else
+      let localEntries := Meta.congrKindsExt.getModuleEntries env idx (level := .private)
+      match localEntries.find? (fun entry => entry.1 == name),
+          Meta.congrKindsExt.find? env name (level := .private) with
+      | some (_, localKinds), some canonicalKinds =>
+        localKinds == canonicalKinds && localKinds.size == (suffix.drop 7).toNat!
+      | _, _ => false
   | _ => false
 
 def position (map : FileMap) (p : Position) : Except String Json := do
@@ -97,7 +109,7 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
       -- suffix against the underlying safe definition, including exposure and
       -- private-name rules, so a sibling realization is still recognized.
       let equation := (Meta.declFromEqLikeName env name).isSome || (← Meta.isEqnThm name)
-      let hcongr := isGeneratedHCongr env name
+      let hcongr := isGeneratedHCongr env idx name range?.isSome
       -- A private or underscore-prefixed *user* name with its own direct range
       -- remains a source occurrence. Names alone cannot make it generated.
       let generated := k == "recursor" || isAuxRecursor env name || isNoConfusion env name
