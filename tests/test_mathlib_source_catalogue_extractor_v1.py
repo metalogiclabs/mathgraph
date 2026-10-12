@@ -50,3 +50,19 @@ def test_real_lean_environment_extractor(tmp_path):
     assert omissions["CatalogueFixture.Token.rec"]["reason"] == "GENERATED"
     assert omissions["CatalogueFixture.noRange"]["reason"] == "MISSING_RANGE"
     assert "proofOnly" not in ds["CatalogueFixture.usesProof"]["statement"]
+
+
+def test_real_environment_compile_order_includes_transitive_selected_dependencies(tmp_path):
+    helper = ROOT / "tools/mathlib_catalogue/CompileOrder.lean"
+    assert helper.is_file(), "environment compile-order helper missing"
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    source, cache = tmp_path / "source", tmp_path / "cache"
+    source.mkdir()
+    cache.mkdir()
+    env = {**os.environ, "LEAN_PATH": str(cache)}
+    for name, text in [("Z", "def z : Nat := 1\n"), ("Middle", "import Z\ndef middle : Nat := z\n"), ("A", "import Middle\ndef a : Nat := middle\n")]:
+        (source / (name + ".lean")).write_text(text)
+        subprocess.run([lean, "-o", str(cache / (name + ".olean")), str(source / (name + ".lean"))], cwd=source, env=env, check=True)
+    out = tmp_path / "order.json"
+    subprocess.run([lean, "--run", str(helper), str(out), "A", "Z"], env=env, check=True)
+    assert json.loads(out.read_bytes()) == {"modules": ["Z", "A"]}

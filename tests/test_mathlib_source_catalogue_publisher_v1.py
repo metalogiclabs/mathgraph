@@ -5,6 +5,7 @@ import importlib
 import importlib.util
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -72,6 +73,7 @@ def inputs(tmp_path):
 
 def test_policy_freezes_exact_source(api):
     p = api.load_source_policy(POLICY)
+    assert sha(api.contract.canonical_bytes(p)) == "3f5f60ffbcb64207f360f5ffdc982bd6e11f7709a0525c033e80729ad215f320"
     assert p["source"]["repository"] == "https://github.com/leanprover-community/mathlib4"
     assert p["source"]["commit"] == "d13f23b723b8a846827a245b89c10fc7d3f11612"
     assert p["source"]["tree"] == "efa132418a56d0e38c56cc412a06df22178dac5c"
@@ -191,14 +193,6 @@ def test_offline_harness_rejects_mutable_image_and_arbitrary_cache(api, tmp_path
     with pytest.raises(ValueError): api.verify_dependency_inventory(cache, {"files": []}, "0" * 64)
 
 
-def test_cli_rejects_remote_and_moving_revision_without_network(tmp_path):
-    cli = ROOT / "scripts/publish_mathlib_source_catalogue_v1.py"
-    assert cli.is_file(), "publisher CLI missing"
-    import sys
-    result = subprocess.run([sys.executable, str(cli), "--checkout", "https://github.com/leanprover-community/mathlib4", "--revision", "main"], capture_output=True)
-    assert result.returncode != 0
-
-
 @pytest.fixture
 def environment(api, inputs, tmp_path):
     root, policy, _ = inputs
@@ -236,7 +230,8 @@ def test_dependency_inventory_rejects_unbound_state(api, environment, mutation):
     with pytest.raises(ValueError): api.verify_dependency_inventory(root, inventory, sha(api.contract.canonical_bytes(inventory)))
 
 
-def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inputs, environment, git_dependency, monkeypatch):
+@pytest.mark.parametrize("external_toolchain", [False, True])
+def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inputs, environment, git_dependency, monkeypatch, local_toolchain, external_toolchain):
     root, policy, _ = inputs
     dependencies, inventory, config = environment
     package = inventory["packages"][0]
@@ -248,11 +243,18 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
     policy["source"]["lake_manifest"]["sha256"] = sha((root / "lake-manifest.json").read_bytes())
     Path(config["inventory"]).write_bytes(api.contract.canonical_bytes(inventory))
     config["dependency_inventory_sha256"] = sha(Path(config["inventory"]).read_bytes())
+    if external_toolchain:
+        toolchain, receipt, profile = local_toolchain
+        monkeypatch.setattr(api, "TOOLCHAIN_PROFILE", profile)
+        config.update(image=api.BASE_IMAGE, toolchain={"root": str(toolchain), "inventory": str(receipt)})
     source = api.verify_source_checkout(policy, root)
     real_run = subprocess.run
     commands = []
     def docker_boundary(command, **kwargs):
         if command[0] != "docker": return real_run(command, **kwargs)
+        if command[1:3] == ["image", "inspect"]:
+            assert command[-1] == api.BASE_IMAGE
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"id": api.BASE_IMAGE_CONFIG, "os": "linux", "arch": "amd64"}).encode())
         commands.append(command)
         assert command[command.index("--network") + 1] == "none"
         assert command[command.index("--pull") + 1] == "never"
@@ -266,6 +268,12 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
         assert container_env["GIT_CONFIG_GLOBAL"] == "/dev/null"
         assert container_env["GIT_CONFIG_NOSYSTEM"] == "1"
         mounts = [command[i + 1] for i, arg in enumerate(command) if arg == "--mount"]
+        if external_toolchain:
+            assert any(m.endswith("dst=/opt/lean,readonly") for m in mounts)
+            assert container_env["PATH"].startswith("/opt/lean/bin:")
+            assert "LD_LIBRARY_PATH" not in container_env and "ELAN_HOME" not in container_env
+            assert command[command.index("--platform") + 1] == "linux/amd64"
+            assert "/opt/lean/bin/lean" in command[command.index("-c") + 1]
         assert any("dst=/verified-source,readonly" in m for m in mounts)
         assert any("dst=/verified-dependencies,readonly" in m for m in mounts)
         def mount_path(target):
@@ -278,21 +286,27 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
         assert not (mount_path("/verified-dependencies") / "packages/dep/.git").exists()
         assert any(m.endswith("dst=/work/.lake/packages/dep/.git,readonly") for m in mounts)
         assert snapshot != root
-        assert not (snapshot / ".lake/build/lib/lean/A.olean").exists()
-        assert not (snapshot / ".lake/build/lib/lean/A.olean.server").exists()
-        assert not (snapshot / ".lake/build/ir/A.c").exists()
+        assert any(m.endswith("dst=/work,readonly") for m in mounts)
+        assert (snapshot / ".lake/build/lib/lean/A.olean").read_bytes() == b"pinned cache bytes"
         assert (snapshot / ".lake/build/lib/lean/Outside.olean").read_bytes() == b"pinned cache bytes"
         assert (snapshot / "A.lean").read_bytes() == (root / "A.lean").read_bytes()
         if len(commands) == 1:
-            assert any(m.endswith("dst=/work") for m in mounts)
+            assert "CompileOrder.lean" in command[-4]
+            (mount_path("/plan") / "order.json").write_text('{"modules":["B","A"]}')
             assert not any("dst=/output" in m for m in mounts)
+        elif len(commands) < 4:
+            assert command[-1] == ("B.lean" if len(commands) == 2 else "A.lean")
+            assert any(m.endswith("dst=/compiled,readonly") for m in mounts)
+            assert "-DautoImplicit=false" in command[-3]
+            (mount_path("/module-output") / "module.olean").write_bytes(b"fresh compiled output")
         else:
-            assert any(m.endswith("dst=/work,readonly") for m in mounts)
+            assert (mount_path("/compiled") / "A.olean").read_bytes() == b"fresh compiled output"
+            assert (mount_path("/compiled") / "B.olean").read_bytes() == b"fresh compiled output"
             (mount_path("/output") / "extraction.json").write_bytes(FIXTURE.read_bytes())
         return subprocess.CompletedProcess(command, 0)
     monkeypatch.setattr(api.subprocess, "run", docker_boundary)
     assert api.run_offline_extraction(source, ROOT / "tools/mathlib_catalogue/Extract.lean", ["A", "B"], config) == FIXTURE.read_bytes()
-    assert len(commands) == 2
+    assert len(commands) == 4
     assert (dependencies / "build/lib/lean/A.olean").exists()
 
 
@@ -319,9 +333,10 @@ def test_producer_identity_requires_clean_commit_and_all_source_bytes(api, input
     _, _, identity = inputs
     producer = tmp_path / "producer"
     producer.mkdir()
-    paths = ["mathgraph/source_catalogue_publisher_v1.py", "mathgraph_protocol/json_strict.py",
-             "mathgraph_protocol/source_catalogue_v1.py", "scripts/publish_mathlib_source_catalogue_v1.py",
-             "scripts/run_mathlib_source_catalogue_offline_v1.py", "tools/mathlib_catalogue/Extract.lean"]
+    paths = ["mathgraph/source_catalogue_publisher_v1.py", "mathgraph_protocol/__init__.py",
+             "mathgraph_protocol/discovery_ranking.py", "mathgraph_protocol/json_strict.py",
+             "mathgraph_protocol/source_catalogue_v1.py", "scripts/catalogue_bootstrap_v1.py", "scripts/publish_mathlib_source_catalogue_v1.py",
+             "scripts/run_mathlib_source_catalogue_offline_v1.py", "tools/mathlib_catalogue/CompileOrder.lean", "tools/mathlib_catalogue/Extract.lean"]
     for path in paths:
         f = producer / path
         f.parent.mkdir(parents=True, exist_ok=True)
@@ -422,3 +437,186 @@ def test_sanitized_dependency_git_supports_real_offline_lake_build(api, git_depe
 def test_runtime_git_allowlist_rejects_nonliteral_package_roots(api, name):
     with pytest.raises(ValueError):
         api.git_runtime_environment([{"name": name, "path": "packages/" + name}])
+
+
+@pytest.fixture
+def producer_checkout(api, inputs, tmp_path):
+    _, _, identity = inputs
+    root = tmp_path / "producer-checkout"
+    paths = set(api.PRODUCER_FILES) | {"mathgraph_protocol/__init__.py", "mathgraph_protocol/discovery_ranking.py"}
+    for relative in paths:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes((ROOT / relative).read_bytes())
+    (root / ".gitignore").write_text("__pycache__/\n")
+    (root / "unlisted.txt").write_text("tracked but not imported\n")
+    git(root, "init", "-q")
+    git(root, "add", ".")
+    git(root, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "producer")
+    identity["source_commit"] = git(root, "rev-parse", "HEAD")
+    identity["sources"] = [{"path": p, "sha256": sha((root / p).read_bytes())} for p in api.PRODUCER_FILES]
+    return root, identity
+
+
+@pytest.mark.parametrize("cli", ["publish_mathlib_source_catalogue_v1.py", "run_mathlib_source_catalogue_offline_v1.py"])
+@pytest.mark.parametrize("flag", ["--assume-unchanged", "--skip-worktree"])
+def test_cli_declines_hidden_initializer_mutation_before_import(api, producer_checkout, inputs, environment, tmp_path, cli, flag):
+    producer, identity = producer_checkout
+    checkout, policy, _ = inputs
+    _, _, config = environment
+    marker = tmp_path / "initializer-ran"
+    path = producer / "mathgraph_protocol/__init__.py"
+    path.write_text(path.read_text() + f"\nfrom pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n")
+    git(producer, "update-index", flag, "mathgraph_protocol/__init__.py")
+    assert not git(producer, "status", "--porcelain")
+    policy_path, identity_path, config_path = [tmp_path / name for name in ["policy.json", "identity.json", "config.json"]]
+    for path, value in [(policy_path, policy), (identity_path, identity), (config_path, config)]: path.write_text(json.dumps(value))
+    args = [sys.executable, str(producer / "scripts" / cli), "--checkout", str(checkout), "--source-policy", str(policy_path), "--extractor-identity", str(identity_path)]
+    args += ["--output-dir", str(tmp_path / "out")] if cli.startswith("publish") else ["--environment", str(config_path), "--output", str(tmp_path / "out.json")]
+    result = subprocess.run(args, env={**os.environ, "MATHGRAPH_CATALOGUE_ENVIRONMENT": str(config_path)}, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert not marker.exists(), "unverified package initializer executed before producer verification"
+    assert "producer" in result.stderr.lower()
+
+
+@pytest.mark.parametrize("mode", ["publish", "extract", "remote", "hidden_unlisted", "poison_bytecode"])
+def test_complete_cli_uses_verified_sources_without_acquisition(api, producer_checkout, inputs, environment, tmp_path, mode):
+    producer, identity = producer_checkout
+    checkout, policy, _ = inputs
+    _, _, config = environment
+    identity["environment"] = {"image": config["image"], "dependency_inventory_sha256": config["dependency_inventory_sha256"], "authority": "NONE"}
+    marker = tmp_path / "poison-ran"
+    if mode == "hidden_unlisted":
+        (producer / "unlisted.txt").write_text("mutated")
+        git(producer, "update-index", "--skip-worktree", "unlisted.txt")
+        assert not git(producer, "status", "--porcelain")
+    if mode == "poison_bytecode":
+        import marshal
+        import struct
+        path = producer / "mathgraph_protocol/__init__.py"
+        cache = Path(importlib.util.cache_from_source(str(path)))
+        cache.parent.mkdir()
+        payload = compile(f"from pathlib import Path; Path({str(marker)!r}).write_text('poison')", str(path), "exec")
+        cache.write_bytes(importlib.util.MAGIC_NUMBER + struct.pack("<III", 0, int(path.stat().st_mtime), path.stat().st_size) + marshal.dumps(payload))
+        assert not git(producer, "status", "--porcelain")
+    policy_path, identity_path, config_path = [tmp_path / name for name in ["policy.json", "identity.json", "config.json"]]
+    for path, value in [(policy_path, policy), (identity_path, identity), (config_path, config)]: path.write_text(json.dumps(value))
+    binaries = tmp_path / "bin"
+    binaries.mkdir()
+    log = tmp_path / "commands.jsonl"
+    common = "import json,os,sys\nfrom pathlib import Path\nwith open(os.environ['CATALOGUE_TEST_LOG'],'a') as f: f.write(json.dumps(sys.argv)+'\\n')\n"
+    scripts = {
+        "git": common + "assert not set(sys.argv[1:]) & {'clone','fetch','pull'}\nos.execv(" + repr(shutil.which("git")) + ", ['git',*sys.argv[1:]])\n",
+        "docker": common + "args=sys.argv[1:]\nassert args[args.index('--network')+1]=='none' and args[args.index('--pull')+1]=='never'\nmounts=[dict(x.split('=',1) if '=' in x else (x,True) for x in args[i+1].split(',')) for i,a in enumerate(args) if a=='--mount']\npaths={m['dst']:Path(m['src']) for m in mounts}\nassert next(m for m in mounts if m['dst']=='/work')['readonly']\nif '/plan' in paths: (paths['/plan']/'order.json').write_text('{\"modules\":[\"B\",\"A\"]}')\nelif '/module-output' in paths: (paths['/module-output']/'module.olean').write_bytes(b'fixture')\nelse: (paths['/output']/'extraction.json').write_bytes(Path(os.environ['CATALOGUE_TEST_RAW']).read_bytes())\n",
+        "curl": common + "raise SystemExit('acquisition forbidden')\n", "wget": common + "raise SystemExit('acquisition forbidden')\n"}
+    for name, body in scripts.items():
+        path = binaries / name
+        path.write_text("#!" + sys.executable + "\n" + body)
+        path.chmod(0o755)
+    cli = "run_mathlib_source_catalogue_offline_v1.py" if mode == "extract" else "publish_mathlib_source_catalogue_v1.py"
+    args = [sys.executable, str(producer / "scripts" / cli), "--checkout", "https://example.invalid/source" if mode == "remote" else str(checkout), "--source-policy", str(policy_path), "--extractor-identity", str(identity_path)]
+    args += ["--environment", str(config_path), "--output", str(tmp_path / "extraction.json")] if mode == "extract" else ["--output-dir", str(tmp_path / "publication")]
+    env = {**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"], "MATHGRAPH_CATALOGUE_ENVIRONMENT": str(config_path), "CATALOGUE_TEST_LOG": str(log), "CATALOGUE_TEST_RAW": str(FIXTURE)}
+    result = subprocess.run(args, env=env, capture_output=True, text=True)
+    assert not marker.exists(), "unverified bytecode ran"
+    commands = [json.loads(line) for line in log.read_text().splitlines()]
+    assert all(not set(c[1:]) & {"clone", "fetch", "pull"} and Path(c[0]).name not in {"curl", "wget"} for c in commands)
+    if mode in {"remote", "hidden_unlisted"}:
+        assert result.returncode != 0
+        assert not any(Path(c[0]).name == "docker" for c in commands)
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert len([c for c in commands if Path(c[0]).name == "docker"]) == 4
+        if mode == "extract": assert (tmp_path / "extraction.json").read_bytes() == FIXTURE.read_bytes()
+        else: api.contract.validate_manifest((tmp_path / "publication/manifest.json").read_bytes())
+
+
+@pytest.fixture
+def local_toolchain(api, tmp_path):
+    root = tmp_path / "toolchain"
+    (root / "bin").mkdir(parents=True)
+    (root / "bin/lean").write_bytes(b"fixture lean")
+    root.chmod(0o755)
+    (root / "bin").chmod(0o755)
+    (root / "bin/lean").chmod(0o755)
+    (root / "lean-link").symlink_to("bin/lean")
+    if hasattr(os, "lchmod"): os.lchmod(root / "lean-link", 0o777)
+    entries = [{"kind": "directory", "mode": "0755", "path": "."}, {"kind": "directory", "mode": "0755", "path": "bin"},
+               {"kind": "file", "mode": "0755", "path": "bin/lean", "sha256": sha(b"fixture lean"), "size_bytes": 12},
+               {"kind": "symlink", "mode": "0777", "path": "lean-link", "target": "bin/lean"}]
+    receipt = tmp_path / "toolchain-inventory.json"
+    raw = api.contract.canonical_bytes({"schema": "mathgraph.toolchain-tree.v1", "entries": entries})
+    receipt.write_bytes(raw)
+    profile = dict(inventory_sha256=sha(raw), inventory_size_bytes=len(raw), entry_count=4, file_count=1, directory_count=2, symlink_count=1, regular_bytes=12,
+                   lean_commit="5045d0056413266e57c625dcd7c365b10e377c52", authority="NONE")
+    return root, receipt, profile
+
+
+@pytest.mark.parametrize("mutation", [None, "bytes", "mode", "extra", "missing", "escape", "digest", "count", "root_symlink"])
+def test_toolchain_tree_requires_exact_inventory(api, local_toolchain, tmp_path, mutation):
+    assert hasattr(api, "verify_toolchain_tree"), "toolchain tree verifier missing"
+    root, receipt, profile = local_toolchain
+    if mutation == "bytes": (root / "bin/lean").write_bytes(b"altered lean")
+    if mutation == "mode": (root / "bin/lean").chmod(0o644)
+    if mutation == "extra": (root / "extra").write_text("extra")
+    if mutation == "missing": (root / "bin/lean").unlink()
+    if mutation == "escape":
+        (root / "lean-link").unlink()
+        (root / "lean-link").symlink_to("../toolchain-inventory.json")
+    if mutation == "digest": profile["inventory_sha256"] = "0" * 64
+    if mutation == "count": profile["file_count"] += 1
+    if mutation == "root_symlink":
+        link = tmp_path / "toolchain-link"
+        link.symlink_to(root, target_is_directory=True)
+        root = link
+    if mutation is None: api.verify_toolchain_tree(root, receipt, profile)
+    else:
+        with pytest.raises((ValueError, OSError)): api.verify_toolchain_tree(root, receipt, profile)
+
+
+@pytest.mark.parametrize("mutation", [None, "archive", "tree", "authority", "platform", "base", "missing"])
+def test_external_toolchain_identity_is_exact_and_non_authoritative(api, inputs, mutation):
+    identity = inputs[2]
+    identity["environment"].update(image=api.BASE_IMAGE, toolchain=deepcopy(api.TOOLCHAIN_PROFILE))
+    profile = identity["environment"]["toolchain"]
+    assert profile["archive_sha256"] == "47bf4bbd78f70c2e9670598ab7124d92b6efb7330ff33e5fbb4030f6fd72e4e4"
+    assert profile["inventory_sha256"] == "dce115ba9934df63c9c59f53297d90ffefa702b3736cab41eac4900351754c88"
+    assert (profile["archive_size_bytes"], profile["inventory_size_bytes"], profile["entry_count"], profile["regular_bytes"]) == (580432872, 3206496, 18381, 3068313425)
+    assert (profile["file_count"], profile["directory_count"], profile["symlink_count"]) == (17738, 631, 12)
+    assert profile["base_image"] == "docker.io/library/buildpack-deps@sha256:17923645546d74acef88727bce62c23bbaed953fc7097c41a8b777bba3ca98de"
+    assert profile["base_image_config"] == "sha256:12d2284be437af82eaf8ebf5d1965223b8f259d82c1a523fff8e46de50ed5b54"
+    if mutation == "archive": profile["archive_sha256"] = "0" * 64
+    if mutation == "tree": profile["inventory_sha256"] = "0" * 64
+    if mutation == "authority": profile["authority"] = "VERIFIED"
+    if mutation == "platform": profile["platform"] = "linux/arm64"
+    if mutation == "base": identity["environment"]["image"] = "fixture@sha256:" + "b" * 64
+    if mutation == "missing": del identity["environment"]["toolchain"]
+    if mutation is None: assert api._environment(identity)["toolchain"]["authority"] == "NONE"
+    else:
+        with pytest.raises(ValueError): api._environment(identity)
+
+
+@pytest.mark.parametrize("mutation", ["config", "architecture", "os", "missing_toolchain", "wrong_image"])
+def test_external_toolchain_declines_before_build_for_wrong_base(api, inputs, environment, local_toolchain, monkeypatch, mutation):
+    root, policy, _ = inputs
+    config = environment[2]
+    toolchain, receipt, profile = local_toolchain
+    monkeypatch.setattr(api, "TOOLCHAIN_PROFILE", profile)
+    config.update(image=api.BASE_IMAGE, toolchain={"root": str(toolchain), "inventory": str(receipt)})
+    inspected = {"id": api.BASE_IMAGE_CONFIG, "os": "linux", "arch": "amd64"}
+    if mutation == "config": inspected["id"] = "sha256:" + "0" * 64
+    if mutation == "architecture": inspected["arch"] = "arm64"
+    if mutation == "os": inspected["os"] = "windows"
+    if mutation == "missing_toolchain": del config["toolchain"]
+    if mutation == "wrong_image": config["image"] = "fixture@sha256:" + "b" * 64
+    source = api.verify_source_checkout(policy, root)
+    real_run = subprocess.run
+    calls = []
+    def boundary(command, **kwargs):
+        if command[0] != "docker": return real_run(command, **kwargs)
+        calls.append(command)
+        assert command[1:3] == ["image", "inspect"], "build must not start"
+        return subprocess.CompletedProcess(command, 0, stdout=json.dumps(inspected).encode())
+    monkeypatch.setattr(api.subprocess, "run", boundary)
+    with pytest.raises(ValueError): api.run_offline_extraction(source, ROOT / "tools/mathlib_catalogue/Extract.lean", ["A", "B"], config)
+    assert len(calls) == (0 if mutation in {"missing_toolchain", "wrong_image"} else 1)

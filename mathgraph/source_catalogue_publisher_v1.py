@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import struct
 import subprocess
 import tempfile
@@ -31,9 +32,22 @@ REPRODUCE = ("MATHGRAPH_CATALOGUE_ENVIRONMENT={ENVIRONMENT} python scripts/publi
              "--source-policy {SOURCE_POLICY} --extractor-identity {EXTRACTOR_IDENTITY} --output-dir {OUTPUT}")
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCER_FILES = (
-    "mathgraph/source_catalogue_publisher_v1.py", "mathgraph_protocol/json_strict.py",
-    "mathgraph_protocol/source_catalogue_v1.py", "scripts/publish_mathlib_source_catalogue_v1.py",
-    "scripts/run_mathlib_source_catalogue_offline_v1.py", "tools/mathlib_catalogue/Extract.lean")
+    "mathgraph/source_catalogue_publisher_v1.py", "mathgraph_protocol/__init__.py",
+    "mathgraph_protocol/discovery_ranking.py", "mathgraph_protocol/json_strict.py",
+    "mathgraph_protocol/source_catalogue_v1.py", "scripts/catalogue_bootstrap_v1.py",
+    "scripts/publish_mathlib_source_catalogue_v1.py",
+    "scripts/run_mathlib_source_catalogue_offline_v1.py", "tools/mathlib_catalogue/CompileOrder.lean", "tools/mathlib_catalogue/Extract.lean")
+COMPILE_FLAGS = ("-DautoImplicit=false", "-DmaxSynthPendingDepth=3", "-Dpp.unicode.fun=true")
+BASE_IMAGE = "docker.io/library/buildpack-deps@sha256:17923645546d74acef88727bce62c23bbaed953fc7097c41a8b777bba3ca98de"
+BASE_IMAGE_CONFIG = "sha256:12d2284be437af82eaf8ebf5d1965223b8f259d82c1a523fff8e46de50ed5b54"
+TOOLCHAIN_PROFILE = {
+    "archive_url": "https://github.com/leanprover/lean4/releases/download/v4.34.1/lean-4.34.1-linux.tar.zst",
+    "archive_sha256": "47bf4bbd78f70c2e9670598ab7124d92b6efb7330ff33e5fbb4030f6fd72e4e4", "archive_size_bytes": 580432872,
+    "archive_root": "lean-4.34.1-linux", "mount": "/opt/lean", "lean_version": "4.34.1", "lean_commit": "5045d0056413266e57c625dcd7c365b10e377c52",
+    "base_image": BASE_IMAGE, "base_image_config": BASE_IMAGE_CONFIG, "platform": "linux/amd64",
+    "inventory_schema": "mathgraph.toolchain-tree.v1", "inventory_sha256": "dce115ba9934df63c9c59f53297d90ffefa702b3736cab41eac4900351754c88",
+    "inventory_size_bytes": 3206496, "entry_count": 18381, "file_count": 17738, "directory_count": 631, "symlink_count": 12,
+    "regular_bytes": 3068313425, "authority": "NONE"}
 
 
 @dataclass(frozen=True)
@@ -182,11 +196,52 @@ def validate_image_digest(image: str) -> None:
 
 def _environment(identity: dict) -> dict:
     e = identity["environment"]
-    contract._shape(e, {"image", "dependency_inventory_sha256", "authority"})
+    contract._shape(e, {"image", "dependency_inventory_sha256", "authority"} | ({"toolchain"} if "toolchain" in e else set()))
     validate_image_digest(e["image"])
     contract._digest(e["dependency_inventory_sha256"])
     require(e["authority"] == "NONE", "environment trust grants no authority")
+    if "toolchain" in e:
+        require(e["image"] == BASE_IMAGE and e["toolchain"] == TOOLCHAIN_PROFILE, "external toolchain profile mismatch")
+    else:
+        require(e["image"] != BASE_IMAGE, "base image requires verified external toolchain")
     return e
+
+
+def toolchain_inventory(root: Path) -> dict:
+    """Exact portable archive-tree recipe: paths sorted by UTF-8 bytes."""
+    require(root.is_dir() and not root.is_symlink(), "regular toolchain root required")
+    root = root.resolve()
+    entries = []
+    for path in sorted([root, *root.rglob("*")], key=lambda p: p.relative_to(root).as_posix().encode("utf-8")):
+        relative = path.relative_to(root).as_posix()
+        info = path.lstat()
+        entry = {"path": relative, "mode": format(stat.S_IMODE(info.st_mode), "04o")}
+        if stat.S_ISLNK(info.st_mode):
+            target = os.readlink(path)
+            require(not Path(target).is_absolute() and path.resolve(strict=True).is_relative_to(root), "external toolchain symlink")
+            entry.update(kind="symlink", target=target)
+        elif stat.S_ISDIR(info.st_mode):
+            entry.update(kind="directory")
+        else:
+            require(stat.S_ISREG(info.st_mode), "unsupported toolchain entry")
+            digest = hashlib.sha256()
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""): digest.update(chunk)
+            entry.update(kind="file", sha256=digest.hexdigest(), size_bytes=info.st_size)
+        entries.append(entry)
+    return {"schema": "mathgraph.toolchain-tree.v1", "entries": entries}
+
+
+def verify_toolchain_tree(root: Path, receipt: Path, profile: dict) -> None:
+    raw = receipt.read_bytes()
+    require(len(raw) == profile["inventory_size_bytes"] and sha256(raw) == profile["inventory_sha256"], "toolchain receipt pin mismatch")
+    expected = contract._load(raw, 8 * 1024 * 1024)
+    actual = toolchain_inventory(root)
+    require(raw == contract.canonical_bytes(expected) and actual == expected, "toolchain bytes/modes/inventory mismatch")
+    entries = actual["entries"]
+    require(len(entries) == profile["entry_count"] and sum(e.get("size_bytes", 0) for e in entries) == profile["regular_bytes"], "toolchain inventory totals mismatch")
+    for kind in ["file", "directory", "symlink"]:
+        require(sum(e["kind"] == kind for e in entries) == profile[kind + "_count"], "toolchain entry count mismatch")
 
 
 def verify_extractor_identity(identity: dict, root: Path = ROOT) -> None:
@@ -196,7 +251,7 @@ def verify_extractor_identity(identity: dict, root: Path = ROOT) -> None:
     _environment(identity)
     head = _git(root, "rev-parse", "HEAD").decode().strip()
     require(head == identity["source_commit"], "producer source commit mismatch")
-    require(not _git(root, "status", "--porcelain=v1", "--untracked-files=all").strip(), "MathGraph checkout must be clean")
+    _verify_tree(root, head, _git(root, "rev-parse", "HEAD^{tree}").decode().strip())
     require([f["path"] for f in identity["sources"]] == list(PRODUCER_FILES), "every producer source must be pinned")
     for f in identity["sources"]:
         contract._file(f)
@@ -498,8 +553,17 @@ def run_lean_extractor(source: VerifiedSource, extractor: Path, modules: Sequenc
 
 
 def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Sequence[str], config: dict) -> bytes:
-    contract._shape(config, {"image", "dependency_root", "inventory", "dependency_inventory_sha256"})
+    contract._shape(config, {"image", "dependency_root", "inventory", "dependency_inventory_sha256"} | ({"toolchain"} if "toolchain" in config else set()))
     validate_image_digest(config["image"])
+    toolchain = config.get("toolchain")
+    if toolchain is not None:
+        contract._shape(toolchain, {"root", "inventory"})
+        require(config["image"] == BASE_IMAGE, "external toolchain requires exact base image")
+        verify_toolchain_tree(Path(toolchain["root"]), Path(toolchain["inventory"]), TOOLCHAIN_PROFILE)
+        inspected = subprocess.check_output(["docker", "image", "inspect", "--format", '{"id":"{{.Id}}","os":"{{.Os}}","arch":"{{.Architecture}}"}', BASE_IMAGE])
+        require(json.loads(inspected) == {"id": BASE_IMAGE_CONFIG, "os": "linux", "arch": "amd64"}, "base manifest/config/platform mismatch")
+    else:
+        require(config["image"] != BASE_IMAGE, "base image requires verified external toolchain")
     policy = json.loads(source.policy_bytes)
     require(list(modules) == [m["module"] for m in policy["modules"]], "extraction must use exact selected module list")
     verified = verify_source_checkout(policy, source.root)
@@ -551,42 +615,63 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
             (git_dir / "refs").mkdir()
             (snapshot / ".lake" / package["path"] / ".git").mkdir()
             git_mounts += ["--mount", f"type=bind,src={git_dir},dst=/work/.lake/{package['path']}/.git,readonly"]
-        # Invalidate every selected origin's compilation, including private/server
-        # data, IR, hashes, traces, native objects, and generated C.
-        for module in modules:
-            suffix = module.replace(".", "/")
-            for base in [snapshot / ".lake/build/lib/lean", snapshot / ".lake/build/ir"]:
-                parent = base / str(Path(suffix).parent)
-                stem = Path(suffix).name
-                if parent.exists():
-                    for artifact in parent.iterdir():
-                        if artifact.is_file() and artifact.name.startswith(stem + "."):
-                            artifact.unlink()
+        # Retained inputs are never writable. Cached selected modules are used
+        # only to read the environment import order; each selected origin is
+        # recompiled into its own fresh output directory before extraction.
+        compiled, plan = work / "compiled", work / "plan"
+        compiled.mkdir()
+        plan.mkdir()
         out = work / "output"
         out.mkdir()
         # Image is deliberately --pull never; Docker itself cannot acquire it.
-        # Sources/dependencies are mounted read-only for audit; only fresh snapshot
-        # build/output roots are writable. --network none applies to build + extract.
+        # The actual compiled source/cache roots are read-only, not just audit
+        # copies. Earlier compiled outputs also remain read-only in every process.
         command = ["docker", "run", "--rm", "--pull", "never", "--network", "none", "--read-only",
                    "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--tmpfs", "/tmp:rw,nosuid,nodev",
                    "--mount", f"type=bind,src={audit_source},dst=/verified-source,readonly",
                    "--mount", f"type=bind,src={audit_dependencies},dst=/verified-dependencies,readonly",
                    "--mount", f"type=bind,src={extractor.resolve()},dst=/extract/Extract.lean,readonly",
-                   "--workdir", "/work", "--env", "HOME=/tmp", "--env", "ELAN_HOME=/opt/elan",
+                   "--mount", f"type=bind,src={extractor.parent / 'CompileOrder.lean'},dst=/extract/CompileOrder.lean,readonly",
+                   "--mount", f"type=bind,src={snapshot},dst=/work,readonly",
+                   "--mount", f"type=bind,src={compiled},dst=/compiled,readonly", *git_mounts,
+                   "--workdir", "/work", "--env", "HOME=/tmp",
+                   "--env", "LEAN_PATH=" + ":".join(["/compiled", "/work/.lake/build/lib/lean", *["/work/.lake/" + p["path"] + "/.lake/build/lib/lean" for p in inventory["packages"]]]),
                    "--env", "MATHGRAPH_EXPECTED_TOOLCHAIN=" + policy["source"]["lean_toolchain"]["value"],
                    "--entrypoint", "/bin/sh"]
         for key, value in git_runtime_environment(inventory["packages"]).items():
             command += ["--env", key + "=" + value]
+        lean_command = "/opt/lean/bin/lean" if toolchain is not None else "lean"
+        if toolchain is not None:
+            command += ["--platform", "linux/amd64", "--mount", f"type=bind,src={Path(toolchain['root']).resolve()},dst=/opt/lean,readonly",
+                        "--env", "PATH=/opt/lean/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"]
+        else:
+            command += ["--env", "ELAN_HOME=/opt/elan"]
         toolchain_check = ('test "$(cat lean-toolchain)" = "$MATHGRAPH_EXPECTED_TOOLCHAIN"; '
                            'version=${MATHGRAPH_EXPECTED_TOOLCHAIN##*:v}; '
-                           'case "$(lean --version)" in "Lean (version $version,"*) ;; *) exit 1 ;; esac; ')
-        subprocess.run([*command, "--mount", f"type=bind,src={snapshot},dst=/work", *git_mounts, config["image"],
-                        "-eu", "-c", toolchain_check + 'lake build "$@"', "catalogue", *modules], check=True)
-        # Extraction gets a read-only compiled snapshot, distinct from the build
-        # process; only its requested output directory and private /tmp can write.
-        subprocess.run([*command, "--mount", f"type=bind,src={snapshot},dst=/work,readonly",
-                        *git_mounts, "--mount", f"type=bind,src={out},dst=/output", config["image"], "-eu", "-c",
-                        toolchain_check + 'lake env lean --run /extract/Extract.lean /work /output/extraction.json "$@"',
+                           f'case "$({lean_command} --version)" in "Lean (version $version,"*) ;; *) exit 1 ;; esac; ')
+        if toolchain is not None:
+            toolchain_check += f'test "$({lean_command} --githash)" = "{TOOLCHAIN_PROFILE["lean_commit"]}"; '
+        subprocess.run([*command, "--mount", f"type=bind,src={plan},dst=/plan", config["image"],
+                        "-eu", "-c", toolchain_check + lean_command + ' --run /extract/CompileOrder.lean /plan/order.json "$@"', "catalogue", *modules], check=True)
+        require([p.name for p in plan.iterdir()] == ["order.json"], "unexpected compile-order output")
+        order = contract._load(_safe_file(plan, "order.json").read_bytes(), contract.LIMITS["max_manifest_bytes"])
+        contract._shape(order, {"modules"})
+        require(type(order["modules"]) is list and len(order["modules"]) == len(modules) and set(order["modules"]) == set(modules), "invalid compilation order")
+        for index, module in enumerate(order["modules"]):
+            destination = work / f"module-{index}"
+            destination.mkdir()
+            subprocess.run([*command, "--mount", f"type=bind,src={destination},dst=/module-output", config["image"],
+                            "-eu", "-c", toolchain_check + lean_command + " " + " ".join(COMPILE_FLAGS) + ' -R /work -o /module-output/module.olean "$1"',
+                            "catalogue", module.replace(".", "/") + ".lean"], check=True)
+            produced = list(destination.iterdir())
+            require(any(p.name == "module.olean" for p in produced) and all(p.name in {"module.olean", "module.olean.private", "module.olean.server"} for p in produced), "unexpected compiler output")
+            for artifact in produced:
+                raw = _safe_file(destination, artifact.name).read_bytes()
+                target = compiled / (module.replace(".", "/") + artifact.name.removeprefix("module"))
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+        subprocess.run([*command, "--mount", f"type=bind,src={out},dst=/output", config["image"], "-eu", "-c",
+                        toolchain_check + lean_command + ' --run /extract/Extract.lean /work /output/extraction.json "$@"',
                         "catalogue", *modules], check=True)
         require([p.name for p in out.iterdir()] == ["extraction.json"], "extractor wrote unexpected output")
         result = _safe_file(out, "extraction.json").read_bytes()
