@@ -106,6 +106,19 @@ def repin(api, manifest, shard):
     metadata["path"] = f"shards/{metadata['sha256']}.json"
 
 
+@pytest.mark.parametrize("start,end", [
+    ({"line": 1, "column": 0, "byte": 5}, {"line": 1, "column": 5, "byte": 10}),
+    ({"line": 2, "column": 5, "byte": 5}, {"line": 2, "column": 10, "byte": 10}),
+    ({"line": 1, "column": 10, "byte": 10}, {"line": 2, "column": 20, "byte": 30}),
+])
+def test_internally_impossible_byte_coordinates_are_rejected(api, start, end):
+    manifest, shard = fixture(api)
+    shard["objects"][0]["source"]["range"] = {"start": start, "end": end}
+    repin(api, manifest, shard)
+    with pytest.raises(api.SourceCatalogueError, match="INVALID_RANGE"):
+        api.validate_shard(shard, manifest)
+
+
 def test_shared_jcs_vectors(api):
     for vector in json.loads(VECTORS.read_text()):
         assert api.canonical_bytes(vector["value"]) == vector["canonical"].encode("utf-8")

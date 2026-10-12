@@ -353,6 +353,10 @@ def _range(value: dict, maximum: int) -> None:
         _integer(position["byte"], 0, maximum)
         _require(position["column"] <= position["byte"], "INVALID_RANGE", "column exceeds absolute offset")
         _require(position["line"] <= position["byte"] + 1, "INVALID_RANGE", "line exceeds possible preceding newlines")
+        _require(position["byte"] >= position["column"] + position["line"] - 1,
+                 "INVALID_RANGE", "column leaves insufficient preceding newline bytes")
+        if position["line"] == 1:
+            _require(position["byte"] == position["column"], "INVALID_RANGE", "first-line byte and column disagree")
     start, end = value["start"], value["end"]
     _require(start["byte"] < end["byte"] and (start["line"], start["column"]) < (end["line"], end["column"]),
              "INVALID_RANGE", "range must be nonempty and ordered")
@@ -361,6 +365,9 @@ def _range(value: dict, maximum: int) -> None:
     if start["line"] == end["line"]:
         _require(end["byte"] - start["byte"] == end["column"] - start["column"],
                  "INVALID_RANGE", "same-line byte coordinates disagree")
+    else:
+        _require(end["byte"] - start["byte"] >= end["line"] - start["line"] + end["column"],
+                 "INVALID_RANGE", "multiline interval cannot contain newlines and final column")
 
 
 def validate_shard(document: str | bytes | bytearray | dict, manifest: dict) -> dict:
