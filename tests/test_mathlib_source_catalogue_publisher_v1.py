@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import shutil
+import stat
 from pathlib import Path
 import subprocess
 import sys
@@ -208,6 +209,37 @@ def test_offline_harness_rejects_mutable_image_and_arbitrary_cache(api, tmp_path
     with pytest.raises(ValueError): api.verify_dependency_inventory(cache, {"files": []}, "0" * 64)
 
 
+def test_container_output_leaf_is_nonowner_writable_then_sealed_and_closed(api, tmp_path):
+    parent = tmp_path / "private-parent"
+    parent.mkdir(mode=0o700)
+    leaf = parent / "plan"
+    api._prepare_container_output(leaf)
+    assert stat.S_IMODE(parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(leaf.stat().st_mode) == 0o733
+    (leaf / "order.json").write_text('{"modules":[]}')
+    assert [path.name for path in api._seal_container_output(
+        leaf, {"order.json"}, {"order.json"})] == ["order.json"]
+    assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
+    with pytest.raises(ValueError):
+        api._prepare_container_output(leaf)
+
+
+@pytest.mark.parametrize("unsafe", ["extra", "directory", "symlink"])
+def test_container_output_leaf_rejects_any_unadmitted_output(api, tmp_path, unsafe):
+    leaf = tmp_path / "output"
+    api._prepare_container_output(leaf)
+    (leaf / "extraction.json").write_bytes(b"{}")
+    if unsafe == "extra":
+        (leaf / "unexpected").write_bytes(b"extra")
+    elif unsafe == "directory":
+        (leaf / "unexpected").mkdir()
+    else:
+        (leaf / "unexpected").symlink_to("extraction.json")
+    with pytest.raises(ValueError):
+        api._seal_container_output(leaf, {"extraction.json"}, {"extraction.json"})
+    assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
+
+
 @pytest.fixture
 def environment(api, inputs, tmp_path):
     root, policy, _ = inputs
@@ -288,6 +320,12 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
         assert container_env["GIT_CONFIG_GLOBAL"] == "/dev/null"
         assert container_env["GIT_CONFIG_NOSYSTEM"] == "1"
         mounts = [command[i + 1] for i, arg in enumerate(command) if arg == "--mount"]
+        writable = [mount for mount in mounts if not mount.endswith(",readonly")]
+        assert len(writable) == 1
+        writable_root = Path(writable[0].split("src=", 1)[1].split(",", 1)[0])
+        assert writable[0].split("dst=", 1)[1] in {"/plan", "/module-output", "/output"}
+        assert stat.S_IMODE(writable_root.stat().st_mode) == 0o733
+        assert list(writable_root.iterdir()) == []
         if external_toolchain:
             assert any(m.endswith("dst=/opt/lean,readonly") for m in mounts)
             assert container_env["PATH"].startswith("/opt/lean/bin:")

@@ -619,6 +619,37 @@ def run_lean_extractor(source: VerifiedSource, extractor: Path, modules: Sequenc
     return run_offline_extraction(source, extractor, modules, config)
 
 
+def _prepare_container_output(root: Path) -> None:
+    """Open one fresh scratch leaf to an otherwise non-owner container UID."""
+    require(not root.exists() and not root.is_symlink(), "container output leaf must be new")
+    require(root.parent.is_dir() and not root.parent.is_symlink(), "container output parent is unsafe")
+    root.mkdir(mode=0o700)
+    root.chmod(0o733)
+    require(stat.S_IMODE(root.stat().st_mode) == 0o733,
+            "container output leaf is not non-owner writable")
+
+
+def _revoke_container_output(root: Path) -> None:
+    require(root.is_dir() and not root.is_symlink(), "container output leaf changed type")
+    root.chmod(0o700)
+    require(stat.S_IMODE(root.stat().st_mode) == 0o700,
+            "container output permissions could not be revoked")
+
+
+def _seal_container_output(root: Path, allowed: set[str], required: set[str]) -> tuple[Path, ...]:
+    """Revoke container writes and accept only exact regular output names."""
+    _revoke_container_output(root)
+    require(required <= allowed and bool(required), "invalid container output contract")
+    entries = tuple(sorted(root.iterdir(), key=lambda path: path.name.encode("utf-16-be")))
+    names = {path.name for path in entries}
+    require(required <= names <= allowed, "unexpected or missing container output")
+    for path in entries:
+        metadata = path.lstat()
+        require(not path.is_symlink() and stat.S_ISREG(metadata.st_mode) and metadata.st_nlink == 1,
+                "container output must be a single regular file")
+    return entries
+
+
 def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Sequence[str], config: dict) -> bytes:
     contract._shape(config, {"image", "dependency_root", "inventory", "dependency_inventory_sha256"} | ({"toolchain"} if "toolchain" in config else set()))
     validate_image_digest(config["image"])
@@ -705,9 +736,7 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
         # selected outputs after each isolated compiler exits successfully.
         compiled, plan = snapshot / ".lake/build/lib/lean", work / "plan"
         compiled.mkdir(parents=True, exist_ok=True)
-        plan.mkdir()
         out = work / "output"
-        out.mkdir()
         # Image is deliberately --pull never; Docker itself cannot acquire it.
         # The actual compiled source/cache roots are read-only, not just audit
         # copies. Earlier compiled outputs also remain read-only in every process.
@@ -737,30 +766,44 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
                            f'case "$({lean_command} --version)" in "Lean (version $version,"*) ;; *) exit 1 ;; esac; ')
         if toolchain is not None:
             toolchain_check += f'test "$({lean_command} --githash)" = "{TOOLCHAIN_PROFILE["lean_commit"]}"; '
-        subprocess.run([*command, "--mount", f"type=bind,src={plan},dst=/plan", config["image"],
-                        "-eu", "-c", toolchain_check + lean_command + ' --run /extract/CompileOrder.lean /plan/order.json "$@"', "catalogue", *modules], check=True)
-        require([p.name for p in plan.iterdir()] == ["order.json"], "unexpected compile-order output")
+        _prepare_container_output(plan)
+        try:
+            subprocess.run([*command, "--mount", f"type=bind,src={plan},dst=/plan", config["image"],
+                            "-eu", "-c", toolchain_check + lean_command + ' --run /extract/CompileOrder.lean /plan/order.json "$@"', "catalogue", *modules], check=True)
+        finally:
+            _revoke_container_output(plan)
+        _seal_container_output(plan, {"order.json"}, {"order.json"})
         order = contract._load(_safe_file(plan, "order.json").read_bytes(), contract.LIMITS["max_manifest_bytes"])
         contract._shape(order, {"modules"})
         require(type(order["modules"]) is list and len(order["modules"]) == len(modules) and set(order["modules"]) == set(modules), "invalid compilation order")
         for index, module in enumerate(order["modules"]):
             destination = work / f"module-{index}"
-            destination.mkdir()
-            subprocess.run([*command, "--mount", f"type=bind,src={destination},dst=/module-output", config["image"],
-                            "-eu", "-c", toolchain_check + lean_command + " " + " ".join(COMPILE_FLAGS) + ' -R /work -o /module-output/module.olean "$1"',
-                            "catalogue", module.replace(".", "/") + ".lean"], check=True)
-            produced = list(destination.iterdir())
-            require(any(p.name == "module.olean" for p in produced) and all(p.name in {"module.olean", "module.olean.private", "module.olean.server"} for p in produced), "unexpected compiler output")
+            _prepare_container_output(destination)
+            try:
+                subprocess.run([*command, "--mount", f"type=bind,src={destination},dst=/module-output", config["image"],
+                                "-eu", "-c", toolchain_check + lean_command + " " + " ".join(COMPILE_FLAGS) + ' -R /work -o /module-output/module.olean "$1"',
+                                "catalogue", module.replace(".", "/") + ".lean"], check=True)
+            finally:
+                _revoke_container_output(destination)
+            produced = _seal_container_output(
+                destination,
+                {"module.olean", "module.olean.private", "module.olean.server"},
+                {"module.olean"},
+            )
             for artifact in produced:
                 raw = _safe_file(destination, artifact.name).read_bytes()
                 target = compiled / (module.replace(".", "/") + artifact.name.removeprefix("module"))
                 require(not target.exists(), "selected output would replace retained artifact")
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(raw)
-        subprocess.run([*command, "--mount", f"type=bind,src={out},dst=/output", config["image"], "-eu", "-c",
-                        toolchain_check + lean_command + ' --run /extract/Extract.lean /work /output/extraction.json "$@"',
-                        "catalogue", *modules], check=True)
-        require([p.name for p in out.iterdir()] == ["extraction.json"], "extractor wrote unexpected output")
+        _prepare_container_output(out)
+        try:
+            subprocess.run([*command, "--mount", f"type=bind,src={out},dst=/output", config["image"], "-eu", "-c",
+                            toolchain_check + lean_command + ' --run /extract/Extract.lean /work /output/extraction.json "$@"',
+                            "catalogue", *modules], check=True)
+        finally:
+            _revoke_container_output(out)
+        _seal_container_output(out, {"extraction.json"}, {"extraction.json"})
         result = _safe_file(out, "extraction.json").read_bytes()
         require(len(result) <= MAX_EXTRACTION_BYTES, "extractor output too large")
         return result
