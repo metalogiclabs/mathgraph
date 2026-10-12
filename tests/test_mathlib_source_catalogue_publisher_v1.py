@@ -218,7 +218,7 @@ def test_container_output_leaf_is_nonowner_writable_then_sealed_and_closed(api, 
     assert stat.S_IMODE(leaf.stat().st_mode) == 0o733
     (leaf / "order.json").write_text('{"modules":[]}')
     assert [path.name for path in api._seal_container_output(
-        leaf, {"order.json"}, {"order.json"})] == ["order.json"]
+        leaf, {"order.json"}, {"order.json"}, stage="compile-order")] == ["order.json"]
     assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
     with pytest.raises(ValueError):
         api._prepare_container_output(leaf)
@@ -236,7 +236,46 @@ def test_container_output_leaf_rejects_any_unadmitted_output(api, tmp_path, unsa
     else:
         (leaf / "unexpected").symlink_to("extraction.json")
     with pytest.raises(ValueError):
-        api._seal_container_output(leaf, {"extraction.json"}, {"extraction.json"})
+        api._seal_container_output(
+            leaf, {"extraction.json"}, {"extraction.json"}, stage="extract-catalogue")
+    assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
+
+
+def test_container_output_mismatch_reports_stage_names_and_types_without_contents(api, tmp_path):
+    leaf = tmp_path / "output"
+    api._prepare_container_output(leaf)
+    (leaf / "module.olean").write_bytes(b"SECRET_OLEAN_CONTENT")
+    (leaf / "module.ilean").write_bytes(b"SECRET_ILEAN_CONTENT")
+    with pytest.raises(ValueError) as exc:
+        api._seal_container_output(
+            leaf,
+            {"module.olean", "module.olean.private", "module.olean.server"},
+            {"module.olean"},
+            stage="compile-selected-module",
+        )
+    message = str(exc.value)
+    assert "stage=compile-selected-module" in message
+    assert '"name":"module.ilean","type":"regular"' in message
+    assert '"name":"module.olean","type":"regular"' in message
+    assert "SECRET_OLEAN_CONTENT" not in message
+    assert "SECRET_ILEAN_CONTENT" not in message
+    assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
+
+
+def test_container_output_mismatch_reports_missing_required_output(api, tmp_path):
+    leaf = tmp_path / "plan"
+    api._prepare_container_output(leaf)
+    with pytest.raises(ValueError) as exc:
+        api._seal_container_output(
+            leaf,
+            {"order.json"},
+            {"order.json"},
+            stage="compile-order",
+        )
+    message = str(exc.value)
+    assert "stage=compile-order" in message
+    assert "observed=[]" in message
+    assert 'required=["order.json"]' in message
     assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
 
 

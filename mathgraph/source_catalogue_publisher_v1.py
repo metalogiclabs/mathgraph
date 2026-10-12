@@ -636,13 +636,47 @@ def _revoke_container_output(root: Path) -> None:
             "container output permissions could not be revoked")
 
 
-def _seal_container_output(root: Path, allowed: set[str], required: set[str]) -> tuple[Path, ...]:
+def _container_output_type(path: Path) -> str:
+    mode = path.lstat().st_mode
+    if stat.S_ISREG(mode):
+        return "regular"
+    if stat.S_ISDIR(mode):
+        return "directory"
+    if stat.S_ISLNK(mode):
+        return "symlink"
+    return "other"
+
+
+def _seal_container_output(
+    root: Path,
+    allowed: set[str],
+    required: set[str],
+    *,
+    stage: str,
+) -> tuple[Path, ...]:
     """Revoke container writes and accept only exact regular output names."""
     _revoke_container_output(root)
+    require(re.fullmatch(r"[a-z0-9-]{1,64}", stage) is not None,
+            "invalid container output stage")
     require(required <= allowed and bool(required), "invalid container output contract")
     entries = tuple(sorted(root.iterdir(), key=lambda path: path.name.encode("utf-16-be")))
     names = {path.name for path in entries}
-    require(required <= names <= allowed, "unexpected or missing container output")
+    if not required <= names <= allowed:
+        # Output names and node kinds locate a hosted-runtime contract mismatch
+        # without exposing source or compiled file contents. Keep the diagnostic
+        # bounded even if a compromised child creates many entries.
+        observed = [
+            {"name": path.name, "type": _container_output_type(path)}
+            for path in entries[:16]
+        ]
+        detail = " ".join((
+            f"stage={stage}",
+            f"observed_count={len(entries)}",
+            "observed=" + json.dumps(observed, sort_keys=True, separators=(",", ":")),
+            "allowed=" + json.dumps(sorted(allowed), separators=(",", ":")),
+            "required=" + json.dumps(sorted(required), separators=(",", ":")),
+        ))
+        raise ValueError("container output set mismatch: " + detail)
     for path in entries:
         metadata = path.lstat()
         require(not path.is_symlink() and stat.S_ISREG(metadata.st_mode) and metadata.st_nlink == 1,
@@ -772,7 +806,8 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
                             "-eu", "-c", toolchain_check + lean_command + ' --run /extract/CompileOrder.lean /plan/order.json "$@"', "catalogue", *modules], check=True)
         finally:
             _revoke_container_output(plan)
-        _seal_container_output(plan, {"order.json"}, {"order.json"})
+        _seal_container_output(
+            plan, {"order.json"}, {"order.json"}, stage="compile-order")
         order = contract._load(_safe_file(plan, "order.json").read_bytes(), contract.LIMITS["max_manifest_bytes"])
         contract._shape(order, {"modules"})
         require(type(order["modules"]) is list and len(order["modules"]) == len(modules) and set(order["modules"]) == set(modules), "invalid compilation order")
@@ -789,6 +824,7 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
                 destination,
                 {"module.olean", "module.olean.private", "module.olean.server"},
                 {"module.olean"},
+                stage="compile-selected-module",
             )
             for artifact in produced:
                 raw = _safe_file(destination, artifact.name).read_bytes()
@@ -803,7 +839,8 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
                             "catalogue", *modules], check=True)
         finally:
             _revoke_container_output(out)
-        _seal_container_output(out, {"extraction.json"}, {"extraction.json"})
+        _seal_container_output(
+            out, {"extraction.json"}, {"extraction.json"}, stage="extract-catalogue")
         result = _safe_file(out, "extraction.json").read_bytes()
         require(len(result) <= MAX_EXTRACTION_BYTES, "extractor output too large")
         return result
