@@ -26,8 +26,16 @@ After the qualified public catalogue and trust policy are committed:
 python -I -S -B conformance/source_catalogue_v1/consumer.py \
   --catalogue-root website/public/catalogues/mathlib/v4.34.1 \
   --policy conformance/source_catalogue_v1/trust-policy.json \
-  --policy-sha256 <separately-reviewed-sha256> --audit-imports
+  --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \
+  --audit-imports
 ```
+
+That policy and the committed catalogue were generated and independently
+replayed by [qualification run 38242539984](https://github.com/metalogiclabs/mathgraph/actions/runs/38242539984)
+from wrapper commit `eb3149b70f0cdf39109c775898b19a26574c27e6` and producer
+commit `e6643d8e3d207893713da94041ff3822c1190457`. The digest above is an
+independently reviewed input to replay; it is not a signature or a claim of
+publisher authenticity.
 
 For mechanically enforced network and repository isolation, acquire the exact
 runtime image before replay and use `run_isolated.py --backend docker`. The

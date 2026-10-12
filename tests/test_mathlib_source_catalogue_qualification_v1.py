@@ -283,3 +283,15 @@ def test_light_workflows_watch_committed_catalogue_contracts(workflow_name):
         "scripts/qualify_mathlib_source_catalogue_v1.py",
     ]:
         assert watched in text
+
+
+def test_website_workflow_replays_only_the_committed_catalogue():
+    text = (ROOT / ".github/workflows/mathgraph-org-v1.yml").read_text()
+    website_job = text.split("  website:\n", 1)[1].split("\n  evidence-integrity:\n", 1)[0]
+    assert "python -I -S -B ../conformance/source_catalogue_v1/consumer.py" in website_job
+    assert "--catalogue-root public/catalogues/mathlib/v4.34.1" in website_job
+    assert "--policy ../conformance/source_catalogue_v1/trust-policy.json" in website_job
+    assert "c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9" in website_job
+    assert "--audit-imports" in website_job
+    assert "qualify_mathlib_source_catalogue_v1.py" not in website_job
+    assert "run_mathlib_source_catalogue_offline_v1.py" not in website_job

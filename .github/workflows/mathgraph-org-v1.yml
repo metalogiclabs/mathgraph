@@ -55,6 +55,13 @@ jobs:
         run: npm install --global npm@12.2.0
       - name: Clean dependency installation
         run: npm ci
+      - name: Replay committed authority-free source catalogue
+        run: |
+          python -I -S -B ../conformance/source_catalogue_v1/consumer.py \
+            --catalogue-root public/catalogues/mathlib/v4.34.1 \
+            --policy ../conformance/source_catalogue_v1/trust-policy.json \
+            --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \
+            --audit-imports
       - name: Qualify static product and isolated consumer
         run: npm run qualify
       - uses: actions/upload-artifact@v4

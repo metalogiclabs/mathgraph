@@ -272,7 +272,7 @@ Exceeding a limit fails qualification. Nothing is silently dropped. Any delibera
 
 Execution ruling, 13 October 2026: exact Lean extraction of the approved
 13-module slice produced 2,345 occurrences and 3,571 relations. The complete
-canonical publication measured 9,022,416 raw bytes and 1,150,269 bytes under
+canonical publication measured 9,024,472 raw bytes and 1,151,293 bytes under
 deterministic gzip; the largest raw shard was 1,730,897 bytes and the search
 index was 1,624,539 raw / 200,901 gzip bytes. This invalidated the preliminary
 raw-JSON estimates while satisfying the intended transfer budget. V1 therefore
@@ -282,6 +282,14 @@ independently enforced 1.5 MiB compressed-publication ceiling. Splitting source
 modules, introducing a string-table format, or dropping statements would add
 new representation semantics without improving transferred bytes enough to
 justify them in this release.
+
+Hosted qualification run
+[38242539984](https://github.com/metalogiclabs/mathgraph/actions/runs/38242539984)
+passed exact double generation and the separately pinned, network-denied
+independent replay for these final bytes. Manifest SHA-256 is
+`5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68`;
+the separate trust-policy SHA-256 is
+`c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9`.
 
 ## 8. Product experience
 

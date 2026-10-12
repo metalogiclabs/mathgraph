@@ -46,7 +46,7 @@
 
 Execution ruling, 13 October 2026: the exact 13-module extraction yielded
 2,345 source occurrences and 3,571 relations. Canonical output measured
-9,022,416 bytes raw and 1,150,269 bytes under deterministic gzip; the largest
+9,024,472 bytes raw and 1,151,293 bytes under deterministic gzip; the largest
 shard was 1,730,897 bytes, and search was 1,624,539 bytes raw / 200,901 gzip.
 The earlier 512 KiB / 750 KiB / 4 MiB raw estimates were therefore rejected as
 preflight assumptions, not weakened after publication. Keeping complete
@@ -54,6 +54,14 @@ statements and one shard per exact source module is the smaller interoperable
 contract; deterministic gzip retains the original transfer ceiling and avoids
 adding a chunking or string-table representation solely to optimize repeated
 JSON text.
+
+The final exact bytes passed hosted double generation and separate
+network-denied independent replay in
+[run 38242539984](https://github.com/metalogiclabs/mathgraph/actions/runs/38242539984).
+The committed manifest is
+`5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68` and
+the separately reviewed trust policy is
+`c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9`.
 - Search after index load: p95 below 50 ms desktop and 100 ms under 4x CPU slowdown.
 - Initial bounded graph render: below 500 ms under 4x CPU slowdown; interaction below 200 ms.
 - Accessibility: zero serious or critical axe findings on primary journeys; no keyboard traps; no horizontal document overflow at 1440x900, 768x900, or 390x844.

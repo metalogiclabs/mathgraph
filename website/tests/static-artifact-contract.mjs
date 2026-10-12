@@ -73,10 +73,34 @@ const selectedFiles = contract.includeHiddenFiles
   ? allFiles
   : allFiles.filter((file) => !isHidden(file));
 const discoveryManifest = ['.well-known', 'mathgraph.json'].join(sep);
+const catalogueRoot = ['catalogues', 'mathlib', 'v4.34.1'].join(sep);
+const catalogueManifestPath = [catalogueRoot, 'manifest.json'].join(sep);
+const catalogueSearchPath = [catalogueRoot, 'search.json'].join(sep);
 
 assert(
   selectedFiles.includes(discoveryManifest),
   'mathgraph-org-v1-static-site would omit .well-known/mathgraph.json; include hidden files in the upload contract',
 );
 
-console.log(`PASS static artifact contract: ${discoveryManifest} included among ${selectedFiles.length} files`);
+assert(selectedFiles.includes(catalogueManifestPath), `static artifact missing ${catalogueManifestPath}`);
+assert(selectedFiles.includes(catalogueSearchPath), `static artifact missing ${catalogueSearchPath}`);
+
+const manifest = JSON.parse(await readFile(resolve(artifactRoot, catalogueManifestPath), 'utf8'));
+assert(Array.isArray(manifest.shards) && manifest.shards.length > 0, 'catalogue manifest has no shard inventory');
+const expectedShards = manifest.shards.map(({ path }) => [catalogueRoot, ...path.split('/')].join(sep)).sort();
+const selectedShards = selectedFiles
+  .filter((path) => path.startsWith(`${catalogueRoot}${sep}shards${sep}`) && path.endsWith('.json'))
+  .sort();
+assert.deepEqual(selectedShards, expectedShards, 'static artifact catalogue shards differ from the manifest inventory');
+
+for (const relativePath of [catalogueManifestPath, catalogueSearchPath, ...expectedShards]) {
+  const publicPath = resolve(website, 'public', relativePath);
+  const builtPath = resolve(artifactRoot, relativePath);
+  assert.deepEqual(
+    await readFile(builtPath),
+    await readFile(publicPath),
+    `static build changed committed catalogue bytes: ${relativePath}`,
+  );
+}
+
+console.log(`PASS static artifact contract: discovery manifest plus ${expectedShards.length} catalogue shards included byte-for-byte among ${selectedFiles.length} files`);
