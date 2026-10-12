@@ -25,6 +25,18 @@ const offlineBundleSha256 = '957080db79555f982fd3a314c263cf5177ef506969229e85689
 const offlinePolicySha256 = '09e8d5ba97bca126a81dfe0fcbd5d57f3915ffe71402a497ece4d5e6117f2b4a';
 const offlineReplaySha256 = '8c7b30e1eb2a24d2960e170d36652ca95aa71b41075f673abe394e154ae66668';
 const typescriptConsumerSha256 = 'e7360df24b2fd0900c8ea88ccb1689163cec73a6c2e2347e4ab2b23b4d01bc2e';
+const sourceCatalogueManifestSha256 = '5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68';
+const sourceCatalogueSearchSha256 = 'af346a9d68adfaacddf4103004d97976e6ebc106e2b8b0bc199fb0a5fabeb60b';
+const sourceCatalogueConsumerSha256 = '583dcfca46854f56469cdda865b5da62b1068e985bdce411dac9c587e556ca5d';
+const sourceCataloguePolicySha256 = 'c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9';
+const sourceCatalogueReadmeSha256 = '787f1dd6cf9c7b24c1adc7f8d2c31bd44d637c77574f091fc19414761ca1f323';
+const sourceCatalogueSnapshotCommit = '8e8f5f529b44852815627206dc5b45062f0c96d6';
+const sourceCataloguePublicationCommit = '7519de6a51e524caf70df51d37389ff42d430d43';
+const sourceCatalogueWrapperCommit = 'eb3149b70f0cdf39109c775898b19a26574c27e6';
+const sourceCatalogueProducerCommit = 'e6643d8e3d207893713da94041ff3822c1190457';
+const sourceCatalogueManifestSchemaSha256 = 'efd1f70039e8205f8e0cbf861ce9796604fbc56c224fec0b43834135b68f17cc';
+const sourceCatalogueShardSchemaSha256 = '363cf2a199f2c60fe026b74ecbab3c78d7e6d3fc0d3422ae6528c89c871f8683';
+const discoveryV3Sha256 = '3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540';
 const resolvePublicRoot = `https://mathgraph.org/evidence/${resolveRecordId}`;
 const resolveOfflineRoot = `${resolvePublicRoot}/offline`;
 
@@ -193,69 +205,149 @@ describe('agent discovery contracts', () => {
     expect(ajv.validate(bundleSchema, bundle), ajv.errorsText()).toBe(true);
   });
 
-  test('publishes schema-valid discovery and record index documents', async () => {
+  test('publishes schema-valid V4 discovery, preserves V3 bytes, and links the exact source catalogue', async () => {
     const ajv = new Ajv({ allErrors: true, strict: true });
-    const [discovery, index, record, discoverySchema, indexSchema, discoveryV1Bytes] = await Promise.all([
+    const [discovery, historicalV3, index, record, discoverySchema, historicalV3Schema, indexSchema, discoveryV1Bytes] = await Promise.all([
       json('.well-known/mathgraph.json'),
+      json('.well-known/mathgraph-v3.json'),
       json('records/index.json'),
       json(`evidence/${recordId}/record.json`),
+      json('schemas/discovery-v4.schema.json'),
       json('schemas/discovery-v3.schema.json'),
       json('schemas/record-index-v2.schema.json'),
       readFile(join(dist, 'schemas/discovery-v1.schema.json')),
     ]);
 
     expect(ajv.validate(discoverySchema, discovery), ajv.errorsText()).toBe(true);
+    expect(ajv.validate(historicalV3Schema, historicalV3), ajv.errorsText()).toBe(true);
     expect(ajv.validate(indexSchema, index), ajv.errorsText()).toBe(true);
     expect(createHash('sha256').update(discoveryV1Bytes).digest('hex')).toBe(discoveryV1Sha256);
     expect(createHash('sha256').update(await readFile(join(dist, 'schemas/discovery-v2.schema.json'))).digest('hex')).toBe('827214b81d0c45a36cf3d9fc25d23910c9da19c47553d69411a893b4049941fc');
-    expect(discovery.$schema).toBe('https://mathgraph.org/schemas/discovery-v3.schema.json');
-    expect(discovery.schema).toBe('mathgraph.discovery.v3');
+    expect(createHash('sha256').update(await readFile(join(dist, 'schemas/discovery-v3.schema.json'))).digest('hex')).toBe('dd5361baaff001d17ca82510d64861d59db846a4af0d07e0f4f0c4556aab8099');
+    expect(createHash('sha256').update(await readFile(join(dist, '.well-known/mathgraph-v3.json'))).digest('hex')).toBe(discoveryV3Sha256);
+    expect(discovery.$schema).toBe('https://mathgraph.org/schemas/discovery-v4.schema.json');
+    expect(discovery.schema).toBe('mathgraph.discovery.v4');
     expect(discovery.canonical_origin).toBe('https://mathgraph.org');
+    const discoveryGeneratedAt = Date.parse(discovery.generated_at);
+    expect(Number.isFinite(discoveryGeneratedAt)).toBe(true);
+    expect(discoveryGeneratedAt).toBeLessThanOrEqual(Date.now());
     expect(JSON.stringify(discovery)).not.toContain('vercel.app');
-    expect(discovery.capabilities).toEqual({
+    expect(discovery.authority).toBe('NONE');
+    expect(discovery.authorization).toBe('NONE');
+    expect(discovery.record_index).toBe('https://mathgraph.org/records/index.json');
+    expect(discovery.capabilities).toMatchObject({
       static_records: 'IMPLEMENTED',
-      resolve_explorer: 'IMPLEMENTED_READ_ONLY',
-      offline_resolve_replay: 'BOUNDED_QUALIFIED',
+      source_catalogue: 'IMPLEMENTED_STATIC_SOURCE_INDEX',
       public_resolver: 'NOT_DEPLOYED',
-      discover_interface: 'IMPLEMENTED_LOCAL_ADVISORY',
-      develop_interface: 'QUALIFIED_BOUNDED_OFFLINE',
-      capabilities_registry: 'STATIC_REGISTRY',
-      lean_profile: 'PROPOSED',
-      mcp: 'PROPOSED',
+      mcp: 'NOT_DEPLOYED',
     });
-    expect(discovery.interfaces.check).toEqual({
-      maturity: 'IMPLEMENTED_AT_QUALIFIED_BOUNDARY',
-      mode: 'STATIC_RECORD',
-      record_id: recordId,
-      record_page: `https://mathgraph.org/records/${recordId}/v1/`,
-      record_json: `https://mathgraph.org/evidence/${recordId}/record.json`,
+    expect(discovery.interfaces.capabilities.registry).toBe('https://mathgraph.org/capabilities/index-v1.json');
+    expect(discovery.interfaces.capabilities.registry_sha256).toBe('7ae45ef09ce492856234872c12adc6999667b14899a008baddc19687934b1358');
+    expect(discovery.source_catalogue).toMatchObject({
+      catalogue_id: 'mathlib-v4.34.1-foundations-v1',
+      catalogue_version: 1,
+      publication_root: 'https://mathgraph.org/catalogues/mathlib/v4.34.1/',
+      qualification: {
+        basis: 'SAME_OWNER_INDEPENDENT_CONSUMER',
+        public_bundle: {
+          producer_commit: sourceCatalogueProducerCommit,
+          wrapper_commit: sourceCatalogueWrapperCommit,
+          run_url: 'https://github.com/metalogiclabs/mathgraph/actions/runs/38242539984',
+          trust_policy_sha256: sourceCataloguePolicySha256,
+        },
+        publication_commit: sourceCataloguePublicationCommit,
+        later_regeneration: {
+          commit: sourceCatalogueSnapshotCommit,
+          run_url: 'https://github.com/metalogiclabs/mathgraph/actions/runs/38246586898',
+          scope: 'CATALOGUE_PUBLICATION_REGENERATED_WITH_RUN_SPECIFIC_TRUST_POLICY',
+          public_trust_policy_replayed: false,
+        },
+      },
     });
-    expect(discovery.interfaces.resolve).toEqual({
-      maturity: 'BOUNDED_QUALIFIED',
-      mode: 'OFFLINE_REPLAY',
-      record_id: resolveRecordId,
-      explorer: 'https://mathgraph.org/resolve/',
-      record_page: `https://mathgraph.org/records/${resolveRecordId}/v1/`,
-      record_json: `${resolvePublicRoot}/record.json`,
-      scenarios_json: `${resolvePublicRoot}/scenarios.json`,
-      offline_consumer: `${resolveOfflineRoot}/consumer.py`,
-      offline_consumer_sha256: offlineConsumerSha256,
-      offline_bundle: `${resolveOfflineRoot}/bundle.json`,
-      offline_bundle_sha256: offlineBundleSha256,
-      offline_trust_policy: `${resolveOfflineRoot}/trust-policy.json`,
-      offline_trust_policy_sha256: offlinePolicySha256,
-      offline_replay_output_sha256: offlineReplaySha256,
-      typescript_consumer: 'https://mathgraph.org/examples/resolve-consumer-v1.ts',
-      typescript_consumer_sha256: typescriptConsumerSha256,
-      current_applicability: 'UNKNOWN',
-      freshness: 'NOT_CHECKED',
+    expect(discovery.source_catalogue.result).toEqual({
+      source_status: 'SOURCE_INDEXED',
+      independent_verification: 'NOT_CHECKED',
+      current_applicability: 'NOT_CHECKED',
+      freshness: 'PINNED_HISTORICAL_SOURCE',
+      authority: 'NONE',
+      authorization: 'NONE',
     });
-    expect(discovery.interfaces.discover.public_interface).toBe('NOT_DEPLOYED');
-    expect(discovery.interfaces.develop.public_interface).toBe('NOT_DEPLOYED');
-    expect(discovery.interfaces.capabilities.qualified_entries).toBe(1);
+    expect(discovery.source_catalogue.semantics).toEqual({ logical_implication: false, semantic_equivalence: false });
+    const repositoryRoot = `https://github.com/metalogiclabs/mathgraph/blob/${sourceCatalogueSnapshotCommit}`;
+    expect(discovery.source_catalogue.artifacts.manifest).toEqual({
+      url: 'https://mathgraph.org/catalogues/mathlib/v4.34.1/manifest.json',
+      sha256: sourceCatalogueManifestSha256,
+      size_bytes: 319664,
+      repository_url: `${repositoryRoot}/website/public/catalogues/mathlib/v4.34.1/manifest.json`,
+    });
+    expect(discovery.source_catalogue.artifacts.search).toEqual({
+      url: 'https://mathgraph.org/catalogues/mathlib/v4.34.1/search.json',
+      sha256: sourceCatalogueSearchSha256,
+      size_bytes: 1624539,
+      repository_url: `${repositoryRoot}/website/public/catalogues/mathlib/v4.34.1/search.json`,
+    });
+    expect(discovery.source_catalogue.artifacts.manifest_schema).toEqual({
+      url: 'https://mathgraph.org/schemas/source-catalogue-manifest-v1.schema.json',
+      sha256: sourceCatalogueManifestSchemaSha256,
+      size_bytes: 14602,
+      repository_url: `${repositoryRoot}/website/public/schemas/source-catalogue-manifest-v1.schema.json`,
+    });
+    expect(discovery.source_catalogue.artifacts.shard_schema).toEqual({
+      url: 'https://mathgraph.org/schemas/source-catalogue-shard-v1.schema.json',
+      sha256: sourceCatalogueShardSchemaSha256,
+      size_bytes: 14816,
+      repository_url: `${repositoryRoot}/website/public/schemas/source-catalogue-shard-v1.schema.json`,
+    });
+    expect(discovery.source_catalogue.artifacts.consumer).toEqual({
+      url: 'https://mathgraph.org/artifacts/conformance/source_catalogue_v1/consumer.py',
+      sha256: sourceCatalogueConsumerSha256,
+      size_bytes: 34582,
+      repository_url: `${repositoryRoot}/conformance/source_catalogue_v1/consumer.py`,
+    });
+    expect(discovery.source_catalogue.artifacts.trust_policy).toEqual({
+      url: 'https://mathgraph.org/artifacts/conformance/source_catalogue_v1/trust-policy.json',
+      sha256: sourceCataloguePolicySha256,
+      size_bytes: 5751,
+      repository_url: `${repositoryRoot}/conformance/source_catalogue_v1/trust-policy.json`,
+    });
+    expect(discovery.source_catalogue.artifacts.readme).toEqual({
+      url: 'https://mathgraph.org/artifacts/conformance/source_catalogue_v1/README.md',
+      sha256: sourceCatalogueReadmeSha256,
+      size_bytes: 3345,
+      repository_url: `${repositoryRoot}/conformance/source_catalogue_v1/README.md`,
+    });
+    for (const artifact of Object.keys(discovery.source_catalogue.artifacts)) {
+      const expected = discovery.source_catalogue.artifacts[artifact];
+      for (const [field, replacement] of Object.entries({
+        url: 'https://mathgraph.org/unrelated.json',
+        sha256: '0'.repeat(64),
+        size_bytes: 1,
+        repository_url: `${repositoryRoot}/unrelated.json`,
+      })) {
+        expect(expected[field]).not.toEqual(replacement);
+        const changed = structuredClone(discovery);
+        changed.source_catalogue.artifacts[artifact][field] = replacement;
+        expect(ajv.validate(discoverySchema, changed), `${artifact}.${field} mutation must fail closed`).toBe(false);
+      }
+    }
+    expect(discovery.source_catalogue.source).toEqual({
+      repository: 'https://github.com/leanprover-community/mathlib4',
+      commit: 'd13f23b723b8a846827a245b89c10fc7d3f11612',
+      tree: 'efa132418a56d0e38c56cc412a06df22178dac5c',
+      lean_toolchain: 'leanprover/lean4:v4.34.1',
+    });
+    expect(discovery.source_catalogue.relation_types).toEqual(['DECLARES', 'IMPORTS_MODULE', 'TYPE_REFERENCES']);
+    expect(discovery.source_catalogue.repository_snapshot_commit).toBe(sourceCatalogueSnapshotCommit);
+    expect(discovery.source_catalogue.repository_snapshot).toBe(`https://github.com/metalogiclabs/mathgraph/tree/${sourceCatalogueSnapshotCommit}`);
+    expect(discovery.source_catalogue.repository_authentication).toBe('CHOSEN_TRUST_POLICY_NOT_MATHEMATICAL_TRUTH');
+    expect(discovery.historical_discovery).toEqual({
+      v3_manifest: 'https://mathgraph.org/.well-known/mathgraph-v3.json',
+      v3_manifest_sha256: discoveryV3Sha256,
+      v3_schema: 'https://mathgraph.org/schemas/discovery-v3.schema.json',
+    });
     expect(discovery.integrity_notice).toMatch(/integrity.*not.*authenticity/i);
     expect(discovery.repository_provenance.authentication_status).toBe('UNSIGNED_PROVENANCE_ONLY');
-    expect(discovery.repository_provenance.catalogue_source).toBe('https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json');
+    expect(discovery.repository_provenance.record_catalogue_source).toBe('https://github.com/metalogiclabs/mathgraph/blob/1a38f63f01b08f62854d289e4a64f8669b79e59f/website/src/data/record-index.json');
 
     const generatedAt = Date.parse(index.generated_at);
     expect(Number.isFinite(generatedAt)).toBe(true);
@@ -266,15 +358,7 @@ describe('agent discovery contracts', () => {
       meaning: 'generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse.',
       records_are_immutable: true,
     });
-    expect(discovery.freshness).toEqual({
-      basis: 'CLIENT_FETCH_TIME',
-      record_index_max_age_seconds: 300,
-      lifecycle_meaning: 'generated_at is publication time; set fetched_at when received and re-fetch before max_age_seconds elapse.',
-    });
     expect(index.records).toHaveLength(2);
-    expect(discovery.schemas.discovery_v1).toBe('https://mathgraph.org/schemas/discovery-v1.schema.json');
-    expect(discovery.schemas.discovery_v2).toBe('https://mathgraph.org/schemas/discovery-v2.schema.json');
-    expect(discovery.schemas.record_index_v2).toBe('https://mathgraph.org/schemas/record-index-v2.schema.json');
     expect(index.records[0].id).toBe(recordId);
     expect(index.records[0].record_page_url).toBe(`https://mathgraph.org/records/${recordId}/v1/`);
     expect(index.records[0].record_json_url).toBe(`https://mathgraph.org/evidence/${recordId}/record.json`);
@@ -310,6 +394,13 @@ describe('agent discovery contracts', () => {
       `${resolveOfflineRoot}/bundle.json`,
       `${resolveOfflineRoot}/trust-policy.json`,
       'https://mathgraph.org/examples/resolve-consumer-v1.ts',
+      'https://mathgraph.org/.well-known/mathgraph-v3.json',
+      'https://mathgraph.org/schemas/discovery-v4.schema.json',
+      'https://mathgraph.org/catalogues/mathlib/v4.34.1/manifest.json',
+      'https://mathgraph.org/catalogues/mathlib/v4.34.1/search.json',
+      'https://mathgraph.org/artifacts/conformance/source_catalogue_v1/consumer.py',
+      'https://mathgraph.org/artifacts/conformance/source_catalogue_v1/trust-policy.json',
+      'https://mathgraph.org/artifacts/conformance/source_catalogue_v1/README.md',
     ]) {
       expect(llms).toContain(url);
     }
@@ -328,6 +419,16 @@ describe('agent discovery contracts', () => {
       offlinePolicySha256,
       offlineReplaySha256,
       typescriptConsumerSha256,
+      sourceCatalogueManifestSha256,
+      sourceCatalogueSearchSha256,
+      sourceCatalogueConsumerSha256,
+      sourceCataloguePolicySha256,
+      sourceCatalogueReadmeSha256,
+      sourceCatalogueSnapshotCommit,
+      sourceCataloguePublicationCommit,
+      sourceCatalogueWrapperCommit,
+      'SOURCE_INDEXED',
+      'PINNED_HISTORICAL_SOURCE',
     ]) expect(llms).toContain(value);
     expect(llms).toMatch(/exact record ID, version, source pin, suite pin, and supported goal/i);
     expect(llms).toMatch(/mismatch.*UNKNOWN/i);
@@ -335,7 +436,11 @@ describe('agent discovery contracts', () => {
     expect(llms).toMatch(/current applicability.*UNKNOWN/i);
     expect(llms).toMatch(/freshness.*NOT_CHECKED/i);
     expect(llms).toMatch(/public resolver.*NOT_DEPLOYED/i);
-    expect(llms).toMatch(/MCP.*PROPOSED/i);
+    expect(llms).toMatch(/MCP.*NOT_DEPLOYED/i);
+    expect(llms).toMatch(/source catalogue[\s\S]*NOT_CHECKED/i);
+    expect(llms).toMatch(/structural.*not.*implication.*equivalence/i);
+    expect(llms).toMatch(/authority.*NONE/i);
+    expect(Buffer.byteLength(llms)).toBeLessThan(12 * 1024);
     expect(llms).toContain('https://mathgraph.org/about/');
     expect(llms).toContain('https://mathgraph.org/contact/');
     expect(llms).toMatch(/resolve-consumer-v1\.ts.*text\/plain; charset=utf-8/i);
@@ -343,12 +448,12 @@ describe('agent discovery contracts', () => {
     expect(llms).not.toContain('vercel.app');
   });
 
-  test('keeps discovery V3 byte-identical while narrowing the TypeScript content type in both Vercel configs', async () => {
+  test('keeps discovery V3 byte-identical and applies narrow public content/cache policies in both Vercel configs', async () => {
     const repository = join(website, '..');
     const [rootConfigBytes, websiteConfigBytes, discoveryBytes, sourceConsumer, builtConsumer] = await Promise.all([
       readFile(join(repository, 'vercel.json')),
       readFile(join(website, 'vercel.json')),
-      readFile(join(website, 'public/.well-known/mathgraph.json')),
+      readFile(join(website, 'public/.well-known/mathgraph-v3.json')),
       readFile(join(website, 'public/examples/resolve-consumer-v1.ts')),
       readFile(join(dist, 'examples/resolve-consumer-v1.ts')),
     ]);
@@ -357,10 +462,31 @@ describe('agent discovery contracts', () => {
     for (const key of ['cleanUrls', 'redirects', 'headers']) expect(rootConfig[key]).toEqual(websiteConfig[key]);
     const contentTypeRules = websiteConfig.headers.filter((rule: any) =>
       rule.headers?.some((header: any) => header.key.toLowerCase() === 'content-type'));
-    expect(contentTypeRules).toEqual([{
-      source: '/examples/resolve-consumer-v1.ts',
-      headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
-    }]);
+    expect(contentTypeRules).toEqual([
+      {
+        source: '/catalogues/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: 'Content-Type', value: 'application/json; charset=utf-8' },
+        ],
+      },
+      {
+        source: '/examples/resolve-consumer-v1.ts',
+        headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+      },
+      {
+        source: '/artifacts/conformance/source_catalogue_v1/consumer.py',
+        headers: [{ key: 'Content-Type', value: 'text/plain; charset=utf-8' }],
+      },
+      {
+        source: '/artifacts/conformance/source_catalogue_v1/trust-policy.json',
+        headers: [{ key: 'Content-Type', value: 'application/json; charset=utf-8' }],
+      },
+      {
+        source: '/artifacts/conformance/source_catalogue_v1/README.md',
+        headers: [{ key: 'Content-Type', value: 'text/markdown; charset=utf-8' }],
+      },
+    ]);
     const narrowRuleIndex = websiteConfig.headers.findIndex((rule: any) => rule.source === '/examples/resolve-consumer-v1.ts');
     const catchAllIndex = websiteConfig.headers.findIndex((rule: any) => rule.source === '/(.*)');
     expect(narrowRuleIndex).toBeGreaterThanOrEqual(0);
@@ -368,13 +494,42 @@ describe('agent discovery contracts', () => {
     expect(websiteConfig.headers[catchAllIndex].headers).toContainEqual({ key: 'X-Content-Type-Options', value: 'nosniff' });
     expect(createHash('sha256').update(sourceConsumer).digest('hex')).toBe(typescriptConsumerSha256);
     expect(builtConsumer).toEqual(sourceConsumer);
-    expect(createHash('sha256').update(discoveryBytes).digest('hex')).toBe('3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540');
+    expect(createHash('sha256').update(discoveryBytes).digest('hex')).toBe(discoveryV3Sha256);
+    const cacheHeaders = new Map(websiteConfig.headers.map((rule: any) => [
+      rule.source,
+      rule.headers?.find((header: any) => header.key.toLowerCase() === 'cache-control')?.value,
+    ]));
+    expect(cacheHeaders.get('/catalogues/(.*)')).toBe('public, max-age=31536000, immutable');
+    expect(cacheHeaders.get('/.well-known/mathgraph.json')).toBe('public, max-age=0, s-maxage=300, stale-while-revalidate=60');
+  });
+
+  test('publishes only the three source-catalogue consumer artifacts with exact repository bytes', async () => {
+    const allowed = [
+      ['conformance/source_catalogue_v1/consumer.py', sourceCatalogueConsumerSha256],
+      ['conformance/source_catalogue_v1/trust-policy.json', sourceCataloguePolicySha256],
+      ['conformance/source_catalogue_v1/README.md', sourceCatalogueReadmeSha256],
+    ] as const;
+    for (const [path, digest] of allowed) {
+      const [repositoryBytes, builtBytes] = await Promise.all([
+        readFile(join(website, '..', path)),
+        readFile(join(dist, 'artifacts', path)),
+      ]);
+      expect(createHash('sha256').update(repositoryBytes).digest('hex')).toBe(digest);
+      expect(builtBytes).toEqual(repositoryBytes);
+    }
+    for (const path of [
+      'conformance/source_catalogue_v1/run_isolated.py',
+      'conformance/source_catalogue_v1/test_consumer.py',
+      'pyproject.toml',
+    ]) {
+      await expect(readFile(join(dist, 'artifacts', path))).rejects.toThrow();
+    }
   });
 
   test('advertises the Resolve transport schemas consistently without adding authentication', async () => {
     const [discovery, discoverySchema, llms, developers] = await Promise.all([
       json('.well-known/mathgraph.json'),
-      json('schemas/discovery-v3.schema.json'),
+      json('schemas/discovery-v4.schema.json'),
       text('llms.txt'),
       text('developers/index.html'),
     ]);

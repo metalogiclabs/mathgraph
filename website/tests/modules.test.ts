@@ -89,14 +89,26 @@ test('Develop retains the finite qualification scope and distinguishes the unimp
 
 test('machine and human entry points agree on static modules and unsigned interoperability', async () => {
   const manifest = JSON.parse(await built('.well-known/mathgraph.json'));
-  const schema = JSON.parse(await built('schemas/discovery-v3.schema.json').catch(() => '{}'));
-  expect(manifest.schema).toBe('mathgraph.discovery.v3');
+  const schema = JSON.parse(await built('schemas/discovery-v4.schema.json').catch(() => '{}'));
+  expect(manifest.schema).toBe('mathgraph.discovery.v4');
   const ajv = new Ajv({ allErrors: true, strict: true });
   expect(ajv.validate(schema, manifest), ajv.errorsText()).toBe(true);
   expect(manifest.interfaces.discover).toMatchObject({ maturity: 'IMPLEMENTED_LOCAL_ADVISORY', mode: 'LOCAL_CLI', public_interface: 'NOT_DEPLOYED', example_status: 'PARTIAL', advisory_only: true, can_promote_truth: false });
   expect(manifest.interfaces.develop).toMatchObject({ maturity: 'QUALIFIED_BOUNDED', mode: 'OFFLINE_FINITE_REPLAY', public_interface: 'NOT_DEPLOYED', compiler: 'NOT_IMPLEMENTED', current_applicability: 'UNKNOWN', freshness: 'NOT_CHECKED', action_authorization: 'NONE' });
   expect(manifest.interfaces.capabilities).toMatchObject({ maturity: 'STATIC_REGISTRY', qualified_entries: 1, experimental_candidates: 1, registry: 'https://mathgraph.org/capabilities/index-v1.json' });
   expect(manifest.interfaces.external_binding).toMatchObject({ mode: 'LOCAL_UNSIGNED_CORRESPONDENCE', signature: 'UNSIGNED', qualification: 'UNKNOWN', action_authorization: 'NONE' });
+  expect(manifest.source_catalogue).toMatchObject({
+    catalogue_id: 'mathlib-v4.34.1-foundations-v1',
+    catalogue_version: 1,
+    result: {
+      source_status: 'SOURCE_INDEXED', independent_verification: 'NOT_CHECKED', current_applicability: 'NOT_CHECKED',
+      freshness: 'PINNED_HISTORICAL_SOURCE', authorization: 'NONE', authority: 'NONE',
+    },
+    semantics: { logical_implication: false, semantic_equivalence: false },
+  });
+  expect(manifest.source_catalogue.relation_types).toEqual(['DECLARES', 'IMPORTS_MODULE', 'TYPE_REFERENCES']);
+  expect(manifest.capabilities.source_catalogue).toBe('IMPLEMENTED_STATIC_SOURCE_INDEX');
+  expect(manifest.capabilities.mcp).toBe('NOT_DEPLOYED');
   const registry = await json('protocol/registries/capabilities-v1.json');
   const result = await json('conformance/discover_v1/fixtures/result.json');
   const evaluation = await json('conformance/capability_v1/evaluation.json');
@@ -122,7 +134,7 @@ test('machine and human entry points agree on static modules and unsigned intero
     expect(llms).toContain(`https://mathgraph.org/${route}/`);
     for (const page of ['', 'protocol/', 'agents/', 'developers/']) expect(await built(`${page}index.html`)).toContain(`href="/${route}/"`);
   }
-  for (const field of ['PARTIAL', 'ALLOCATION_NOT_TRUTH_CONFIDENCE', 'FULL_REPLAY_UNAVAILABLE', 'QUALIFIED_BOUNDED', 'NOT_IMPLEMENTED', 'UNSIGNED']) expect(llms).toContain(field);
+  for (const field of ['PARTIAL', 'ALLOCATION_NOT_TRUTH_CONFIDENCE', 'FULL_REPLAY_UNAVAILABLE', 'QUALIFIED_BOUNDED', 'NOT_IMPLEMENTED', 'UNSIGNED', 'SOURCE_INDEXED', 'PINNED_HISTORICAL_SOURCE']) expect(llms).toContain(field);
   for (const route of ['discover/', 'develop/', 'capabilities/', 'protocol/', 'agents/', 'developers/']) {
     const html = await built(`${route}index.html`);
     expect(plain(html)).not.toMatch(/(?:deployed|live) (?:Discover|Develop|capability) (?:API|service)|universally verified|autonomous improvement is (?:qualified|verified)/i);
@@ -134,7 +146,7 @@ test('all normative schemas remain exact public projections and modular download
     if (!name.endsWith('.json')) continue;
     expect(await readFile(join(website, 'dist/schemas', name))).toEqual(await read(`protocol/schemas/${name}`));
   }
-  for (const path of ['conformance/discover_v1/fixtures/request.json', 'conformance/discover_v1/fixtures/result.json', 'conformance/capability_v1/fixtures/finite-representation-refinement-v1.json', 'conformance/capability_v1/consumer.py', 'conformance/interoperability_v1/statement.json']) {
+  for (const path of ['conformance/discover_v1/fixtures/request.json', 'conformance/discover_v1/fixtures/result.json', 'conformance/capability_v1/fixtures/finite-representation-refinement-v1.json', 'conformance/capability_v1/consumer.py', 'conformance/interoperability_v1/statement.json', 'conformance/source_catalogue_v1/consumer.py', 'conformance/source_catalogue_v1/trust-policy.json', 'conformance/source_catalogue_v1/README.md']) {
     expect(await readFile(join(website, 'dist/artifacts', path)).catch(() => Buffer.alloc(0))).toEqual(await read(path));
   }
 });

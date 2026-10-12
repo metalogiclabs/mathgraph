@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -73,6 +74,7 @@ const selectedFiles = contract.includeHiddenFiles
   ? allFiles
   : allFiles.filter((file) => !isHidden(file));
 const discoveryManifest = ['.well-known', 'mathgraph.json'].join(sep);
+const historicalDiscoveryManifest = ['.well-known', 'mathgraph-v3.json'].join(sep);
 const catalogueRoot = ['catalogues', 'mathlib', 'v4.34.1'].join(sep);
 const catalogueManifestPath = [catalogueRoot, 'manifest.json'].join(sep);
 const catalogueSearchPath = [catalogueRoot, 'search.json'].join(sep);
@@ -80,6 +82,12 @@ const catalogueSearchPath = [catalogueRoot, 'search.json'].join(sep);
 assert(
   selectedFiles.includes(discoveryManifest),
   'mathgraph-org-v1-static-site would omit .well-known/mathgraph.json; include hidden files in the upload contract',
+);
+assert(selectedFiles.includes(historicalDiscoveryManifest), 'static artifact missing frozen discovery V3 manifest');
+assert.equal(
+  createHash('sha256').update(await readFile(resolve(artifactRoot, historicalDiscoveryManifest))).digest('hex'),
+  '3bde9969e635a39153f58b7f237979b954302c48878c2266dffe2ab9afd16540',
+  'frozen discovery V3 bytes changed',
 );
 
 assert(selectedFiles.includes(catalogueManifestPath), `static artifact missing ${catalogueManifestPath}`);
@@ -103,4 +111,17 @@ for (const relativePath of [catalogueManifestPath, catalogueSearchPath, ...expec
   );
 }
 
-console.log(`PASS static artifact contract: discovery manifest plus ${expectedShards.length} catalogue shards included byte-for-byte among ${selectedFiles.length} files`);
+for (const [relativePath, expectedDigest] of [
+  [['artifacts', 'conformance', 'source_catalogue_v1', 'consumer.py'].join(sep), '583dcfca46854f56469cdda865b5da62b1068e985bdce411dac9c587e556ca5d'],
+  [['artifacts', 'conformance', 'source_catalogue_v1', 'trust-policy.json'].join(sep), 'c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9'],
+  [['artifacts', 'conformance', 'source_catalogue_v1', 'README.md'].join(sep), '787f1dd6cf9c7b24c1adc7f8d2c31bd44d637c77574f091fc19414761ca1f323'],
+]) {
+  assert(selectedFiles.includes(relativePath), `static artifact missing ${relativePath}`);
+  assert.equal(createHash('sha256').update(await readFile(resolve(artifactRoot, relativePath))).digest('hex'), expectedDigest);
+}
+for (const relativePath of [
+  ['artifacts', 'conformance', 'source_catalogue_v1', 'run_isolated.py'].join(sep),
+  ['artifacts', 'conformance', 'source_catalogue_v1', 'test_consumer.py'].join(sep),
+]) assert(!selectedFiles.includes(relativePath), `static artifact exposed non-allowlisted path ${relativePath}`);
+
+console.log(`PASS static artifact contract: V4 + frozen V3 discovery, ${expectedShards.length} catalogue shards, and 3 independent-consumer files included byte-for-byte among ${selectedFiles.length} files`);

@@ -456,6 +456,24 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/same-owner.*not.*outside-organization adoption/i);
   });
 
+  test('gives agents a fail-closed source-catalogue consumption sequence', async () => {
+    const html = await page('agents');
+    const text = visibleText(html);
+
+    expect(html).toContain('data-agent-source-catalogue');
+    expect(html).toContain('data-agent-source-sequence');
+    expect((html.match(/data-agent-source-step=/g) ?? [])).toHaveLength(7);
+    for (const value of ['SOURCE_INDEXED', 'NOT_CHECKED', 'PINNED_HISTORICAL_SOURCE', 'NONE']) expect(text).toContain(value);
+    expect(text).toMatch(/DECLARES.*IMPORTS_MODULE.*TYPE_REFERENCES/i);
+    expect(text).toMatch(/structural.*never.*implication.*equivalence/i);
+    expect(text).toMatch(/same origin.*detects changed bytes.*does not authenticate.*compromised origin.*mathematical truth/i);
+    expect(text).toMatch(/independently chosen channel/i);
+    expect(text).toMatch(/unsupported version.*critical extension.*forged status.*missing endpoint.*decline/i);
+    expect(html).toContain('/catalogues/mathlib/v4.34.1/manifest.json');
+    expect(html).toContain('/artifacts/conformance/source_catalogue_v1/consumer.py');
+    expect(html).toContain('/artifacts/conformance/source_catalogue_v1/trust-policy.json');
+  });
+
   test('documents only runnable static consumers and keeps hosted interfaces undeployed', async () => {
     const html = await page('developers');
     const text = visibleText(html);
@@ -473,10 +491,33 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/TypeScript.*HTTP client.*not.*offline/i);
     expect(text).toMatch(/verify.*independently obtained.*consumer.*policy pins.*before execution/i);
     expect(text).toMatch(/public resolver.*NOT_DEPLOYED/i);
-    expect(text).toMatch(/MCP.*PROPOSED/i);
+    expect(text).toMatch(/MCP.*NOT_DEPLOYED/i);
     expect(text).not.toMatch(/assert sha256/i);
     expect(text).not.toMatch(/(?:implemented|deployed) hosted (?:resolver|API)/i);
     expect(text).not.toMatch(/hosted (?:resolver|API) (?:is|are) (?:implemented|deployed)/i);
+  });
+
+  test('documents the exact independently replayed source-catalogue command and boundary', async () => {
+    const html = await page('developers');
+    const text = visibleText(html);
+
+    expect(html).toContain('id="source-catalogue"');
+    expect(html).toContain('data-source-catalogue-command');
+    expect(text).toContain('python3 -I -S -B conformance/source_catalogue_v1/consumer.py');
+    expect(text).toContain('--catalogue-root website/public/catalogues/mathlib/v4.34.1');
+    expect(text).toContain('--policy conformance/source_catalogue_v1/trust-policy.json');
+    expect(text).toContain('--policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9');
+    expect(text).toContain('--audit-imports');
+    expect(text).toContain('8e8f5f529b44852815627206dc5b45062f0c96d6');
+    expect(text).toContain('7519de6a51e524caf70df51d37389ff42d430d43');
+    expect(text).toContain('eb3149b70f0cdf39109c775898b19a26574c27e6');
+    expect(text).toContain('e6643d8e3d207893713da94041ff3822c1190457');
+    expect(text).toMatch(/run-specific policy.*did not.*public trust-policy bytes/i);
+    expect(text).toContain('5974ac4d68b1e090d511964cd61237565b80d39b5e47e9966171d4d8bcd2fe68');
+    expect(text).toContain('583dcfca46854f56469cdda865b5da62b1068e985bdce411dac9c587e556ca5d');
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toMatch(/imports neither.*producer implementation.*protocol package/i);
+    expect(text).toMatch(/does not fetch.*source.*run Lean.*prove declarations.*check current applicability.*authorize action/i);
   });
 
   test('defines the minimum independently implementable P0 protocol without application dependencies', async () => {
@@ -716,6 +757,27 @@ describe('primary public evidence experience', () => {
     expect(developers).toMatch(/in-toto.*unsigned correspondence/i);
     for (const boundary of ['authenticity', 'signer policy', 'transparency', 'freshness', 'qualification', 'current applicability', 'action authorization']) expect(developers).toContain(boundary);
     expect(developers).toMatch(/Sigstore.*SCITT.*RATS.*deferred/i);
+  });
+
+  test('renders the source-grounded Discovery frontier as an incomplete advisory omission', async () => {
+    const html = await page('discover');
+    const text = visibleText(html);
+
+    for (const boundary of [
+      'Source-grounded frontier', 'Real.log_rpow', 'Real.log', '42 distinct indexed declarations',
+      'ADVISORY', 'INCOMPLETE', 'Terminal form NONE', 'NOT_CHECKED',
+      'Authority NONE', 'Authorization NONE',
+      'Next gate 1 — catalogue expansion', 'Later gate 2 — Lean proof qualification',
+    ]) expect(text).toContain(boundary);
+    expect(text).toMatch(/omission.*does not create.*TYPE_REFERENCES relation/i);
+    expect(text).toMatch(/not a proof, countermodel, or named obstruction/i);
+    expect(text).toMatch(/catalogue expansion alone cannot establish proof validity/i);
+    expect(html).toContain('href="/objects/object-8d7d18f07e0f6262a3b65bbb71105c16c69ab67a6d96a78c18e97cfa7afc2322/"');
+    expect(html).toContain('href="/catalogues/mathlib/v4.34.1/manifest.json"');
+    expect(html).toContain('href="/catalogues/mathlib/v4.34.1/shards/6400eba377e910ff2ac4bea415657e6c84b546832d93808c9fcb9dce952d22c0.json"');
+    expect(html).toContain('href="https://github.com/leanprover-community/mathlib4/blob/d13f23b723b8a846827a245b89c10fc7d3f11612/Mathlib/Analysis/SpecialFunctions/Pow/Real.lean#L491-L496"');
+    expect(text).toContain('PARTIAL');
+    expect(text).toContain('FULL_REPLAY_UNAVAILABLE');
   });
 
   test('documents a scoped badge embed linked to the permanent boundary', async () => {

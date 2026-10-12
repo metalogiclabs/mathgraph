@@ -4,6 +4,7 @@ import SourceLink from '../components/SourceLink.astro';
 import StatusTag from '../components/StatusTag.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLatestPublishedRecord, matchRecordScope } from '../lib/catalog';
+import discovery from '../../public/.well-known/mathgraph.json';
 
 const published = await getLatestPublishedRecord('mg-l4yaml-source-check-20261010');
 const { entry, record } = published;
@@ -20,6 +21,7 @@ const request = {
 };
 const exactResult = matchRecordScope(entry, request);
 const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_language_correctness' });
+const sourceCatalogue = discovery.source_catalogue;
 ---
 
 <BaseLayout title="MathGraph for agents — Exact, reusable evidence" description="Give an agent stable discovery routes, immutable evidence records, deterministic scope matching, and explicit UNKNOWN results." currentPath="/agents/">
@@ -40,6 +42,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
       <aside class="toc" aria-label="On this page">
         <strong>On this page</strong>
         <a href="#discover">Discover</a>
+        <a href="#source-catalogue">Source catalogue</a>
         <a href="#modules">Modular contracts</a>
         <a href="#match">Record 001</a>
         <a href="#replay">Record 002</a>
@@ -61,6 +64,36 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
           <SourceLink href={entry.record_page_url} label="Permanent L4YAML record" meta={`${entry.id} · ${entry.version_slug}`} />
         </section>
 
+        <section id="source-catalogue" data-agent-source-catalogue>
+          <div class="eyebrow">02 · Consume source structure</div>
+          <h2>Index source without promoting it into proof.</h2>
+          <p>The Mathlib catalogue publishes real declaration occurrences and three closed-endpoint structural relations: <code>DECLARES</code>, <code>IMPORTS_MODULE</code>, and <code>TYPE_REFERENCES</code>. These are structural relations, never logical implication or semantic equivalence.</p>
+          <ol data-agent-source-sequence>
+            <li data-agent-source-step="1">Independently pin the exact <a href={sourceCatalogue.artifacts.manifest.url}>manifest</a> and <a href={sourceCatalogue.artifacts.trust_policy.url}>trust-policy</a> digests. The exact Git commit is one chosen trust channel, not truth.</li>
+            <li data-agent-source-step="2">Hash the manifest bytes before parsing them.</li>
+            <li data-agent-source-step="3">Validate the catalogue ID and version plus the Mathlib repository, commit, tree, and Lean toolchain pins.</li>
+            <li data-agent-source-step="4">Fetch only manifest-listed search and shard paths, then verify every declared size and SHA-256 digest.</li>
+            <li data-agent-source-step="5">Recompute object and relation identities, require closed endpoints, and admit only the three declared structural relation types.</li>
+            <li data-agent-source-step="6">For an unsupported version, unknown critical extension, forged status, or missing endpoint: decline. Do not infer a nearby result.</li>
+            <li data-agent-source-step="7">Return the authority-free result below. Do not convert source indexing into verification or action permission.</li>
+          </ol>
+          <dl class="module-artifacts" data-agent-source-result>
+            <div><dt>Source status</dt><dd><code>{sourceCatalogue.result.source_status}</code></dd></div>
+            <div><dt>Independent verification</dt><dd><code>{sourceCatalogue.result.independent_verification}</code></dd></div>
+            <div><dt>Current applicability</dt><dd><code>{sourceCatalogue.result.current_applicability}</code></dd></div>
+            <div><dt>Freshness</dt><dd><code>{sourceCatalogue.result.freshness}</code></dd></div>
+            <div><dt>Authority</dt><dd><code>{sourceCatalogue.result.authority}</code></dd></div>
+            <div><dt>Authorization</dt><dd><code>{sourceCatalogue.result.authorization}</code></dd></div>
+          </dl>
+          <div class="source-stack">
+            <SourceLink href={sourceCatalogue.artifacts.consumer.url} label="Independent catalogue consumer" meta={`SHA-256 ${sourceCatalogue.artifacts.consumer.sha256}`} />
+            <SourceLink href={sourceCatalogue.artifacts.trust_policy.url} label="Catalogue trust policy" meta={`SHA-256 ${sourceCatalogue.artifacts.trust_policy.sha256}`} />
+            <SourceLink href={sourceCatalogue.artifacts.readme.url} label="Offline replay instructions" meta={`Public policy qualified by wrapper ${sourceCatalogue.qualification.public_bundle.wrapper_commit.slice(0, 12)}…`} />
+          </div>
+          <p>The exact public catalogue and trust policy were replayed by <a href={sourceCatalogue.qualification.public_bundle.run_url}>qualification run {sourceCatalogue.qualification.public_bundle.run_url.split('/').at(-1)} ↗</a>, then committed at <code>{sourceCatalogue.qualification.publication_commit}</code>. A later <a href={sourceCatalogue.qualification.later_regeneration.run_url}>regeneration run ↗</a> reproduced the catalogue publication with its own run-specific policy; it did not replay the public trust-policy bytes.</p>
+          <p>A digest served by the same origin detects changed bytes relative to a trusted pin; it does not authenticate a compromised origin or establish mathematical truth. Pin the manifest and trust-policy digests through an independently chosen channel. Repository authentication is a trust-policy choice, not mathematical truth.</p>
+        </section>
+
         <section id="modules">
           <h2>Choose a module without expanding its authority.</h2>
           <p>Record 001 is an exact-scope consumption contract. Record 002 is a historical offline replay contract. They are independently usable and neither grants authority to browser or map exports: those presentation files declare <code>authority: NONE</code>.</p>
@@ -71,7 +104,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
         </section>
 
         <section id="match">
-          <div class="eyebrow">02 · Match</div>
+          <div class="eyebrow">03 · Match</div>
           <h2>Record 001 — exact source-scope match</h2>
           <p>An in-scope request must match the exact record ID, version, source pin, suite pin, and supported goal. This is a structured comparison—not an LLM judgment. Any mismatch or unsupported claim returns <StatusTag label="UNKNOWN" tone="unknown" />.</p>
           <div class="code-block"><div class="code-label">Exact request</div><pre><code>{JSON.stringify(request, null, 2)}</code></pre></div>
@@ -80,7 +113,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
         </section>
 
         <section id="replay">
-          <div class="eyebrow">03 · Replay dependencies</div>
+          <div class="eyebrow">04 · Replay dependencies</div>
           <h2>Record 002 — offline dependency replay</h2>
           <p>This contract is different from record 001’s exact scope lookup. Download the immutable bundle, the separately supplied trust policy, and the standard-library Python consumer. Supply the expected policy digest through a trusted channel; the consumer validates typed claims, receipts, routes, withdrawals, and pins, then independently recomputes the seven historical outcomes.</p>
           <div class="source-stack">
@@ -96,7 +129,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
         </section>
 
         <section id="integrity">
-          <div class="eyebrow">04 · Verify identity</div>
+          <div class="eyebrow">05 · Verify identity</div>
           <h2>A digest is integrity, not authenticity.</h2>
           <p>The catalogue and record digest can detect changed bytes. If both arrive from a compromised host, the digest alone cannot authenticate that host or establish who published the replacement. Same-origin digests provide integrity relative to a trusted pin, not authenticity. The discovery manifest therefore links the committed catalogue source on GitHub as a second-origin provenance check, currently marked <code>UNSIGNED_PROVENANCE_ONLY</code>.</p>
           <p>A future signature must name a key policy and authenticate a specific statement. It still would not establish semantic truth.</p>
@@ -109,7 +142,7 @@ const unsupportedResult = matchRecordScope(entry, { ...request, goal: 'whole_lan
         </section>
 
         <section id="limits">
-          <div class="eyebrow">05 · Limits</div>
+          <div class="eyebrow">06 · Limits</div>
           <h2>The static interface does not execute claims.</h2>
           <div class="callout callout--unknown">
             <StatusTag label="Current boundary" tone="unknown" />
