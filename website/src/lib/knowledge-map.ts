@@ -35,14 +35,19 @@ const sourcePinShape = {
 const nodeShape = shape({
   id: text, source_id: text, title: text, kind: { enum: objectKinds }, authority: { const: 'NONE' },
   source: sourcePinShape, supporting_sources: { type: 'array', items: sourcePinShape }, pointer: { type: 'string', pattern: '^($|/)' },
-  axes: shape({ historical_result: text, lifecycle: text, research_maturity: text, current_applicability: text, freshness: text, action_authorization: text }),
+  axes: shape({
+    historical_result: text, lifecycle: text, research_maturity: text, current_applicability: text,
+    freshness: text, action_authorization: text, source_status: text, independent_verification: text,
+  }, ['historical_result', 'lifecycle', 'research_maturity', 'current_applicability', 'freshness', 'action_authorization']),
   verifier_authority: strings, assumptions: strings, replay_boundary: strings, unknowns: strings, unsupported_semantics: strings,
   details: { type: 'object' },
 });
 const edgeShape = shape({
   id: text, type: { enum: relationTypes }, from: text, to: text, source_id: text, target_id: text,
-  directed: { const: true }, authority: { const: 'NONE' }, provenance: shape({ source: sourcePinShape, pointer: { type: 'string', pattern: '^/' } }),
-});
+  directed: { const: true }, authority: { const: 'NONE' }, source_relation_id: text,
+  logical_implication: { type: 'boolean' }, semantic_equivalence: { type: 'boolean' },
+  provenance: shape({ source: sourcePinShape, pointer: { type: 'string', pattern: '^/' } }),
+}, ['id', 'type', 'from', 'to', 'source_id', 'target_id', 'directed', 'authority', 'provenance']);
 const format = shape({
   schema: { const: 'mathgraph.website-knowledge-map.v1' }, kind: { const: 'PRESENTATION_PROJECTION' }, authority: { const: 'NONE' },
   context: shape({ object_ids: { ...strings, uniqueItems: true }, kinds: { type: 'array', items: { enum: objectKinds }, uniqueItems: true }, max_nodes: natural, max_edges: natural }),
@@ -60,17 +65,50 @@ function requireMap(condition: boolean, code: string): asserts condition {
 }
 function graphIntegrity(nodes: ObjectProjection[], edges: RelationProjection[]): void {
   const byId = new Map(nodes.map(node => [node.id, node]));
-  requireMap(byId.size === nodes.length && new Set(edges.map(edge => edge.id)).size === edges.length, 'DUPLICATE_PROJECTION_ID');
+  requireMap(byId.size === nodes.length
+    && new Set(nodes.map(node => node.source_id)).size === nodes.length
+    && new Set(edges.map(edge => edge.id)).size === edges.length
+    && new Set(edges.flatMap(edge => edge.source_relation_id === undefined ? [] : [edge.source_relation_id])).size
+      === edges.filter(edge => edge.source_relation_id !== undefined).length, 'DUPLICATE_PROJECTION_ID');
   for (const edge of edges) {
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     requireMap(from !== undefined && to !== undefined && from.source_id === edge.source_id && to.source_id === edge.target_id, 'INVALID_PROJECTION_ENDPOINT');
-    requireMap(canonicalJson(edge.provenance.source) === canonicalJson(from.source) && canonicalJson(edge.provenance.source) === canonicalJson(to.source), 'INVALID_PROJECTION_PROVENANCE');
+    const legacy = edge.type === 'EVIDENCE_FOR' || edge.type === 'PREMISE_FOR' || edge.type === 'WITHDRAWS';
+    if (legacy) {
+      requireMap(canonicalJson(edge.provenance.source) === canonicalJson(from.source)
+        && canonicalJson(edge.provenance.source) === canonicalJson(to.source), 'INVALID_PROJECTION_PROVENANCE');
+      requireMap(edge.logical_implication === undefined && edge.semantic_equivalence === undefined
+        && edge.source_relation_id === undefined, 'INVALID_PROJECTION_RELATION');
+    } else {
+      requireMap(canonicalJson(edge.provenance.source) === canonicalJson(from.source), 'INVALID_PROJECTION_PROVENANCE');
+      requireMap(edge.logical_implication === false && edge.semantic_equivalence === false
+        && edge.source_relation_id !== undefined, 'INVALID_CATALOGUE_RELATION_SEMANTICS');
+      const fromDetails = from.details as { module_id?: unknown; source?: { repository?: unknown; commit?: unknown; tree?: unknown } };
+      const toDetails = to.details as { module_id?: unknown; source?: { repository?: unknown; commit?: unknown; tree?: unknown } };
+      requireMap(typeof fromDetails.module_id === 'string' && typeof toDetails.module_id === 'string', 'INVALID_PROJECTION_PROVENANCE');
+      requireMap([
+        fromDetails.source?.repository, fromDetails.source?.commit, fromDetails.source?.tree,
+        toDetails.source?.repository, toDetails.source?.commit, toDetails.source?.tree,
+      ].every(value => typeof value === 'string'), 'INVALID_PROJECTION_PROVENANCE');
+      const sourceIdentity = (details: typeof fromDetails) => canonicalJson({
+        repository: details.source?.repository, commit: details.source?.commit, tree: details.source?.tree,
+      });
+      requireMap(sourceIdentity(fromDetails) === sourceIdentity(toDetails), 'INVALID_PROJECTION_PROVENANCE');
+      if (edge.type === 'DECLARES') requireMap(fromDetails.module_id === toDetails.module_id
+        && canonicalJson(from.source) === canonicalJson(to.source), 'INVALID_PROJECTION_PROVENANCE');
+    }
     const validType = edge.type === 'EVIDENCE_FOR'
       ? from.kind === 'RESOLVE_RECEIPT' && to.kind === 'RESOLVE_CLAIM'
       : edge.type === 'PREMISE_FOR'
         ? from.kind === 'RESOLVE_CLAIM' && to.kind === 'RESOLVE_CLAIM'
-        : from.kind === 'RESOLUTION_SNAPSHOT' && to.kind === 'RESOLVE_RECEIPT';
+        : edge.type === 'WITHDRAWS'
+          ? from.kind === 'RESOLUTION_SNAPSHOT' && to.kind === 'RESOLVE_RECEIPT'
+          : edge.type === 'DECLARES'
+            ? from.kind === 'SOURCE_MODULE' && to.kind === 'SOURCE_DECLARATION'
+            : edge.type === 'IMPORTS_MODULE'
+              ? from.kind === 'SOURCE_MODULE' && to.kind === 'SOURCE_MODULE'
+              : from.kind === 'SOURCE_DECLARATION' && to.kind === 'SOURCE_DECLARATION';
     requireMap(validType, 'INVALID_PROJECTION_RELATION');
   }
 }
