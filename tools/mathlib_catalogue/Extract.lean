@@ -63,19 +63,24 @@ only the canonical extension entry is insufficient: a low-level declaration in
 a sibling module could otherwise borrow the canonical module's generated
 status. A user theorem merely ending in `hcongr_<Nat>` is therefore not
 classified as generated. -/
-def isGeneratedHCongr (env : Environment) (idx : ModuleIdx) (name : Name)
-    (hasDirectRange : Bool) : Bool :=
+def isGeneratedHCongr (env : Environment) (idx : ModuleIdx) (name : Name) : Bool :=
   match name with
   | .str _ suffix =>
-    if hasDirectRange || !Meta.isHCongrReservedNameSuffix suffix || !isReservedName env name then
+    if !Meta.isHCongrReservedNameSuffix suffix || !isReservedName env name then
       false
     else
-      let localEntries := Meta.congrKindsExt.getModuleEntries env idx (level := .private)
-      match localEntries.find? (fun entry => entry.1 == name),
-          Meta.congrKindsExt.find? env name (level := .private) with
-      | some (_, localKinds), some canonicalKinds =>
-        localKinds == canonicalKinds && localKinds.size == (suffix.drop 7).toNat!
-      | _, _ => false
+      let localKindsEntries := Meta.congrKindsExt.getModuleEntries env idx (level := .private)
+        |>.filter (fun entry => entry.1 == name)
+      let localRangeEntries := declRangeExt.getModuleEntries env idx (level := .private)
+        |>.filter (fun entry => entry.1 == name)
+      if localKindsEntries.size != 1 || !localRangeEntries.isEmpty then
+        false
+      else
+        match Meta.congrKindsExt.find? env name (level := .private) with
+        | some canonicalKinds =>
+          let localKinds := localKindsEntries[0]!.2
+          localKinds == canonicalKinds && localKinds.size == (suffix.drop 7).toNat!
+        | none => false
   | _ => false
 
 def position (map : FileMap) (p : Position) : Except String Json := do
@@ -109,7 +114,7 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
       -- suffix against the underlying safe definition, including exposure and
       -- private-name rules, so a sibling realization is still recognized.
       let equation := (Meta.declFromEqLikeName env name).isSome || (← Meta.isEqnThm name)
-      let hcongr := isGeneratedHCongr env idx name range?.isSome
+      let hcongr := isGeneratedHCongr env idx name
       -- A private or underscore-prefixed *user* name with its own direct range
       -- remains a source occurrence. Names alone cannot make it generated.
       let generated := k == "recursor" || isAuxRecursor env name || isNoConfusion env name

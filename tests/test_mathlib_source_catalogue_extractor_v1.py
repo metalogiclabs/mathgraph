@@ -180,6 +180,28 @@ def test_hcongr_collision_without_selected_module_metadata_remains_fail_closed(t
     assert not output.exists()
 
 
+def test_hcongr_collision_with_selected_module_source_range_remains_fail_closed(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "range-spoof-hcongr-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["HCongrDefs", "HCongrLeft", "HCongrRangeSpoofRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "HCongrLeft", "HCongrRangeSpoofRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "Origin.congrTarget.hcongr_3" in result.stderr
+    assert "selected=HCongrRangeSpoofRight" in result.stderr
+    assert "canonical=HCongrLeft" in result.stderr
+    assert not output.exists()
+
+
 @pytest.mark.parametrize("cache_mode", ["stale", "absent"])
 def test_source_compile_order_includes_transitive_selected_dependencies(tmp_path, cache_mode):
     helper = ROOT / "tools/mathlib_catalogue/CompileOrder.lean"
