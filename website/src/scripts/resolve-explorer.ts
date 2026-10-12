@@ -161,10 +161,18 @@ function renderComparison(root: HTMLElement, selected: Scenario): void {
   for (const outcome of outcomes) {
     const claimId = outcome.dataset.resolveOutcome as string;
     const resolution = selected.resolutions[claimId];
+    const kind = outcome.dataset.transitionKind;
+    const subject = outcome.dataset.transitionSubject;
+    const eyebrow = outcome.querySelector<HTMLElement>('[data-resolve-outcome-eyebrow]');
+    const title = outcome.querySelector<HTMLElement>('[data-resolve-outcome-title]');
     const before = outcome.querySelector('[data-resolve-before]');
     const after = outcome.querySelector('[data-resolve-after]');
     const transition = outcome.querySelector<HTMLElement>('.resolve-comparison__transition');
-    if (!before || !after || !transition) throw new Error('RESOLVE_COMPARISON_OUTCOME_INVALID');
+    if (!kind || !subject || !eyebrow || !title || !before || !after || !transition) throw new Error('RESOLVE_COMPARISON_OUTCOME_INVALID');
+    eyebrow.textContent = `${resolution.changed ? 'Changed' : 'Unchanged'} · ${kind}`;
+    title.textContent = resolution.changed
+      ? `${subject} changes from ${resolution.before} to ${resolution.after}.`
+      : `${subject} remains ${resolution.after}.`;
     replaceStatus(before, resolution.before);
     replaceStatus(after, resolution.after);
     transition.setAttribute('aria-label', `Before ${resolution.before}; after ${resolution.after}`);

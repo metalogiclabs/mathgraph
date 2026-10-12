@@ -36,6 +36,8 @@ const ids = {
   history: 'published-after',
   modeled: 'modeled-before',
   counterfactual: 'withdraw-openai.original_publication_receipt.1',
+  withdrawJpl: 'withdraw-mathgraph.l4yaml.48-case-qualification',
+  withdrawReceipt2: 'withdraw-openai.original_publication_receipt.2',
   support: 'openai.original_support.1',
   proposition: 'openai.theorem.1',
   jpl: 'jpl.l4yaml.finite_parser_acceptance',
@@ -49,6 +51,12 @@ async function assertCompactOutcome(page, scenario, supportAfter) {
   const proposition = panel.locator(`[data-resolve-outcome="${ids.proposition}"]`);
   const jpl = panel.locator(`[data-resolve-outcome="${ids.jpl}"]`);
   assert.match(await support.innerText(), new RegExp(`SOURCE_DOCUMENTED[\\s\\S]*${supportAfter}`));
+  if (scenario === ids.modeled) {
+    assert.match(await support.innerText(), /Unchanged · documentary support[\s\S]*The documentary support path remains SOURCE_DOCUMENTED/i);
+    assert.doesNotMatch(await support.innerText(), /becomes stale/i);
+  } else {
+    assert.match(await support.innerText(), /Changed · documentary support[\s\S]*The documentary support path changes from SOURCE_DOCUMENTED to STALE/i);
+  }
   assert.match(await proposition.innerText(), /UNKNOWN[\s\S]*UNKNOWN[\s\S]*not REFUTED/i);
   assert.doesNotMatch(await proposition.locator('.resolve-status').allInnerTexts().then(values => values.join(' ')), /REFUTED/);
   assert.match(await jpl.innerText(), new RegExp(`WARRANTED_BOUNDED[\\s\\S]*WARRANTED_BOUNDED[\\s\\S]*${jplScope.replaceAll('/', '\\/')}`));
@@ -59,7 +67,7 @@ try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const errors = [];
-  for (const viewport of [{ width: 1440, height: 900 }, { width: 768, height: 900 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 768, height: 900 }, { width: 390, height: 844 }, { width: 375, height: 812 }]) {
     const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(`${viewport.width}px: ${error.message}`));
@@ -83,7 +91,25 @@ try {
     await assertCompactOutcome(page, ids.counterfactual, 'STALE');
     assert.equal(await page.locator(`input[value="${ids.counterfactual}"]`).isChecked(), true);
     assert.match(await page.locator('[data-resolve-description]').innerText(), /Hypothetical single-dependency withdrawal/);
+    for (const selector of ['[data-resolve-comparison] .resolve-comparison__selection', '[data-resolve-view]', '[data-resolve-view] .resolve-view__header']) {
+      assert.equal(
+        await page.locator(selector).evaluate(element => element.scrollWidth <= element.clientWidth),
+        true,
+        `${viewport.width}px ${selector} internal overflow`,
+      );
+    }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${viewport.width}px Resolve overflow`);
+
+    await page.locator(`input[value="${ids.withdrawJpl}"]`).check();
+    const panel = page.locator('[data-resolve-comparison]');
+    assert.equal(await panel.getAttribute('data-selected-scenario'), ids.withdrawJpl);
+    assert.match(await panel.locator(`[data-resolve-outcome="${ids.support}"]`).innerText(), /Unchanged · documentary support[\s\S]*remains SOURCE_DOCUMENTED/i);
+    assert.match(await panel.locator(`[data-resolve-outcome="${ids.jpl}"]`).innerText(), /Changed · independently bounded observation[\s\S]*changes from WARRANTED_BOUNDED to STALE/i);
+    assert.match(await panel.locator('[data-resolve-comparison-unchanged]').innerText(), /objects remain distinct[\s\S]*does not infer a relation[\s\S]*declared scope/i);
+
+    await page.locator(`input[value="${ids.withdrawReceipt2}"]`).check();
+    assert.match(await panel.locator(`[data-resolve-outcome="${ids.support}"]`).innerText(), /Unchanged · documentary support[\s\S]*remains SOURCE_DOCUMENTED/i);
+    assert.doesNotMatch(await panel.locator(`[data-resolve-outcome="${ids.support}"]`).innerText(), /becomes stale/i);
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     assert.deepEqual(axe.violations, [], `${viewport.width}px accessibility violations: ${axe.violations.map(item => item.id).join(', ')}`);
     if (process.env.BROWSER_EVIDENCE_DIR) await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/resolve-${viewport.width}.png`, fullPage: false });
@@ -111,7 +137,7 @@ try {
   await tampered.close();
 
   assert.deepEqual(errors, []);
-  console.log('PASS Resolve explorer: immutable parity; qualified default; modeled comparison; counterfactual selective change; keyboard; fail-closed tamper; JS/no-JS; 1440/768/390px; WCAG A/AA; no overflow or console errors.');
+  console.log('PASS Resolve explorer: immutable parity; scenario-derived copy; selective changes; keyboard; fail-closed tamper; JS/no-JS; 1440/768/390/375px; WCAG A/AA; no overflow or console errors.');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolveClose => server.close(resolveClose));
