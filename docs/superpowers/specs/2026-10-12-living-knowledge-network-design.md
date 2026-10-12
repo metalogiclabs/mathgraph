@@ -1,10 +1,10 @@
 # MathGraph Living Knowledge Network Design
 
-**Date:** 2026-10-12  
-**Status:** Approved architecture; implementation pending  
-**Product:** MathGraph.org  
-**Base authority:** `metalogiclabs/mathgraph@50b74559551d4935d7b5237ff5e98438f09d5d26`  
-**Production deployment at approval:** Vercel `dpl_A5y8eC32p7p5M9Kg6LLK5ehX9ahz`, serving `mathgraph.org` from the same commit  
+**Date:** 2026-10-12
+**Status:** Approved architecture; implementation pending
+**Product:** MathGraph.org
+**Base authority:** `metalogiclabs/mathgraph@50b74559551d4935d7b5237ff5e98438f09d5d26`
+**Production deployment at approval:** Vercel `dpl_A5y8eC32p7p5M9Kg6LLK5ehX9ahz`, serving `mathgraph.org` from the same commit
 **Implementation branch:** `codex/living-knowledge-network`
 
 ## 1. Objective
@@ -380,7 +380,7 @@ The metrics come from validated static manifests. They are never summed into one
 
 The Resolve interaction reuses immutable record 002 and existing `mathgraph.resolve-scenarios.v1` fixtures.
 
-Initial historical view: `published-after`.  
+Initial historical view: `published-after`.
 Comparison baseline: `modeled-before`.
 
 The primary 15-second interaction is an explicitly labeled counterfactual simulation:
@@ -586,4 +586,3 @@ The smallest-warranted-present principle removes a database, full-corpus graph, 
 The clean branch website qualification passes unchanged.
 
 The repository-wide Python suite is not a clean standalone baseline without external inputs. At the approved base commit it produced 1,958 passes, 1 skip, 10 failures, and 19 setup errors. The errors require deliberately external `MATHGRAPH_*` source archives; the failures concern absent ignored SorryDB runner summaries/source caches and environment-sensitive research-ledger regeneration. They predate this branch and are outside the website/catalogue increment. The implementation must not weaken or silently skip them, must run relevant focused suites, and must preserve the exact residual report alongside final-head qualification.
-
