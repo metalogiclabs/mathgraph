@@ -28,7 +28,7 @@ def test_qualification_orchestrator_exists():
 
 
 def test_approved_producer_commit_and_wrapper_identity_are_separate(api):
-    assert api.PRODUCER_COMMIT == "71f56a914114c9cf6391516f99cc076c5a6d9ad6"
+    assert api.PRODUCER_COMMIT == "d5653c3e9cff5085cd0b17200234e1deaf266567"
     assert set(api.QUALIFICATION_WRAPPER_FILES) == {
         ".github/workflows/mathgraph-source-catalogue-v1.yml",
         "conformance/source_catalogue_v1/consumer.py",
