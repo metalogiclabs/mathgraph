@@ -431,6 +431,22 @@ def write_artifact_checksum_manifest(output_root: Path) -> list[dict]:
     return entries
 
 
+def host_runtime_identity() -> dict:
+    executable = Path(sys.executable).resolve()
+    executable_sha256, _ = _file_digest(executable)
+    return {
+        "implementation": sys.implementation.name,
+        "version": sys.version,
+        "cache_tag": sys.implementation.cache_tag,
+        "executable": str(executable),
+        "executable_sha256": executable_sha256,
+        "runner_os": os.environ.get("RUNNER_OS"),
+        "runner_arch": os.environ.get("RUNNER_ARCH"),
+        "runner_image_os": os.environ.get("ImageOS"),
+        "runner_image_version": os.environ.get("ImageVersion"),
+    }
+
+
 def qualify(arguments) -> dict:
     repository_root = arguments.repository_root.resolve()
     work_root, output_root = arguments.work_root.absolute(), arguments.output_root.absolute()
@@ -531,6 +547,7 @@ def qualify(arguments) -> dict:
                    "tree": policy["source"]["tree"], "descriptive_tag_observation": tag_observation},
         "producer": {"commit": PRODUCER_COMMIT, "identity_sha256": sha256(identity_path.read_bytes())},
         "qualification_wrapper": qualified_wrapper,
+        "orchestration_runtime": host_runtime_identity(),
         "runtime": container_receipt,
         "toolchain_inventory": toolchain_summary,
         "dependency_inventory": {"sha256": dependency_sha256, "size_bytes": len(inventory_raw),

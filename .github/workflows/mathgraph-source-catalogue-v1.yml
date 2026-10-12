@@ -45,6 +45,9 @@ jobs:
   generate-and-compare:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    outputs:
+      trust-policy-sha256: ${{ steps.pin-generated-output.outputs.trust-policy-sha256 }}
+      artifact-checksums-sha256: ${{ steps.pin-generated-output.outputs.artifact-checksums-sha256 }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -76,6 +79,15 @@ jobs:
           test "$(find "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output/catalogue/shards" -type f | wc -l)" -eq 13
           (cd "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" && sha256sum -c evidence/checksums.txt)
           (cd "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" && sha256sum -c evidence/artifact-checksums.txt)
+      - name: Export exact pre-upload transfer pins
+        id: pin-generated-output
+        run: |
+          set -euo pipefail
+          generated="$RUNNER_TEMP/mathgraph-source-catalogue-v1-output"
+          trust_policy_sha=$(sha256sum "$generated/trust-policy.json" | awk '{print $1}')
+          artifact_checksums_sha=$(sha256sum "$generated/evidence/artifact-checksums.txt" | awk '{print $1}')
+          echo "trust-policy-sha256=$trust_policy_sha" >> "$GITHUB_OUTPUT"
+          echo "artifact-checksums-sha256=$artifact_checksums_sha" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -108,8 +120,14 @@ jobs:
         run: |
           set -euo pipefail
           generated="$RUNNER_TEMP/mathgraph-source-catalogue-v1-generated"
+          trust_policy_sha="${{ needs.generate-and-compare.outputs.trust-policy-sha256 }}"
+          artifact_checksums_sha="${{ needs.generate-and-compare.outputs.artifact-checksums-sha256 }}"
           expected="$RUNNER_TEMP/mathgraph-source-catalogue-v1-expected-paths.txt"
           actual="$RUNNER_TEMP/mathgraph-source-catalogue-v1-actual-paths.txt"
+          [[ "$trust_policy_sha" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$artifact_checksums_sha" =~ ^[0-9a-f]{64}$ ]]
+          echo "$trust_policy_sha  trust-policy.json" | (cd "$generated" && sha256sum -c -)
+          echo "$artifact_checksums_sha  evidence/artifact-checksums.txt" | (cd "$generated" && sha256sum -c -)
           (cd "$generated" && sha256sum -c evidence/artifact-checksums.txt)
           (cd "$generated" && cut -c67- evidence/artifact-checksums.txt | LC_ALL=C sort) > "$expected"
           (cd "$generated" && find . -type f ! -path './evidence/artifact-checksums.txt' -printf '%P\n' | LC_ALL=C sort) > "$actual"
@@ -136,7 +154,8 @@ jobs:
           generated="$RUNNER_TEMP/mathgraph-source-catalogue-v1-generated"
           evidence="$RUNNER_TEMP/mathgraph-source-catalogue-v1-independent"
           mkdir -p "$evidence"
-          policy_sha=$(sha256sum "$generated/trust-policy.json" | awk '{print $1}')
+          policy_sha="${{ needs.generate-and-compare.outputs.trust-policy-sha256 }}"
+          artifact_checksums_sha="${{ needs.generate-and-compare.outputs.artifact-checksums-sha256 }}"
           # The runner constructs Docker with --pull never and --network none.
           python conformance/source_catalogue_v1/run_isolated.py \
             --backend docker \
@@ -144,6 +163,7 @@ jobs:
             --catalogue-root "$generated/catalogue" \
             --policy "$generated/trust-policy.json" \
             --policy-sha256 "$policy_sha" \
+            --artifact-checksums-sha256 "$artifact_checksums_sha" \
             --expected-wrapper-commit "$GITHUB_SHA" \
             > "$evidence/replay.json" \
             2> "$evidence/isolation.json"

@@ -192,6 +192,19 @@ def test_generated_artifact_checksum_manifest_closes_exact_relative_inventory(ap
     assert all(not line.split("  ", 1)[1].startswith("/") for line in lines)
 
 
+def test_generation_orchestrator_runtime_identity_is_explicit(api):
+    identity = api.host_runtime_identity()
+    assert identity["implementation"] == "cpython"
+    assert identity["version"]
+    assert identity["cache_tag"].startswith("cpython-")
+    assert Path(identity["executable"]).is_absolute()
+    assert re.fullmatch(r"[0-9a-f]{64}", identity["executable_sha256"])
+    assert set(identity) == {
+        "implementation", "version", "cache_tag", "executable", "executable_sha256",
+        "runner_os", "runner_arch", "runner_image_os", "runner_image_version",
+    }
+
+
 def test_dedicated_workflow_has_heavy_generation_and_independent_isolation_contract():
     workflow = ROOT / ".github/workflows/mathgraph-source-catalogue-v1.yml"
     assert workflow.is_file()
@@ -219,6 +232,13 @@ def test_dedicated_workflow_has_heavy_generation_and_independent_isolation_contr
     assert "sha256sum -c evidence/artifact-checksums.txt" in text
     assert "find . -type f ! -path './evidence/artifact-checksums.txt'" in text
     assert "artifact-digest: ${{ steps.upload-independent.outputs.artifact-digest }}" in text
+    assert "trust-policy-sha256: ${{ steps.pin-generated-output.outputs.trust-policy-sha256 }}" in text
+    assert "artifact-checksums-sha256: ${{ steps.pin-generated-output.outputs.artifact-checksums-sha256 }}" in text
+    assert "id: pin-generated-output" in text and '>> "$GITHUB_OUTPUT"' in text
+    assert 'needs.generate-and-compare.outputs.trust-policy-sha256' in text
+    assert 'needs.generate-and-compare.outputs.artifact-checksums-sha256' in text
+    assert text.count('sha256sum "$generated/trust-policy.json"') == 1
+    assert '--artifact-checksums-sha256 "$artifact_checksums_sha"' in text
 
 
 @pytest.mark.parametrize("workflow_name", [

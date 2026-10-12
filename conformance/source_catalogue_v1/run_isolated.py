@@ -126,6 +126,8 @@ def run(args) -> None:
         raise ValueError("regular trust policy required")
     if not re.fullmatch(r"[0-9a-f]{64}", args.policy_sha256):
         raise ValueError("exact policy SHA-256 required")
+    if not re.fullmatch(r"[0-9a-f]{64}", args.artifact_checksums_sha256):
+        raise ValueError("exact artifact checksum manifest SHA-256 required")
     if not re.fullmatch(r"[0-9a-f]{40}", args.expected_wrapper_commit):
         raise ValueError("exact independently supplied wrapper commit required")
     policy_raw = _read_limited(policy, MAX_POLICY_BYTES)
@@ -204,6 +206,7 @@ def run(args) -> None:
                     "probe": probe, "import_audit": audit,
                     "implementation_sha256": implementation_sha256,
                     "trust_policy_sha256": args.policy_sha256,
+                    "artifact_checksums_sha256": args.artifact_checksums_sha256,
                     "qualification_wrapper": policy_binding,
                     "replay_sha256": hashlib.sha256(first.stdout).hexdigest(),
                     "replay_arguments": command, "replays_identical": True}
@@ -217,6 +220,7 @@ def main() -> int:
     parser.add_argument("--catalogue-root", type=Path, required=True)
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--policy-sha256", required=True)
+    parser.add_argument("--artifact-checksums-sha256", required=True)
     parser.add_argument("--expected-wrapper-commit", required=True)
     parser.add_argument("--image-id")
     args = parser.parse_args()

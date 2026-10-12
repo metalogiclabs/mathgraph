@@ -41,6 +41,7 @@ python -I -S -B conformance/source_catalogue_v1/run_isolated.py \
   --backend docker --image-id sha256:<exact-image-id> \
   --catalogue-root <catalogue> --policy <trust-policy.json> \
   --policy-sha256 <separately-reviewed-sha256> \
+  --artifact-checksums-sha256 <separate-transfer-sha256> \
   --expected-wrapper-commit <exact-checked-out-commit>
 ```
 

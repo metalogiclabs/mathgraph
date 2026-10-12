@@ -316,6 +316,7 @@ class IndependentConsumerConformance(unittest.TestCase):
                         if target == "policy" else candidate.policy_pin(),
                         backend="docker", image_id="sha256:" + "1" * 64,
                         expected_wrapper_commit="9" * 40,
+                        artifact_checksums_sha256="a" * 64,
                     )
                     with self.assertRaisesRegex(ValueError, "input exceeds byte limit"):
                         RUNNER.run(arguments)

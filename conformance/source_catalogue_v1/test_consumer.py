@@ -310,6 +310,7 @@ def test_isolation_stager_rejects_oversize_inputs_before_whole_read_or_copy(
         "backend": "docker",
         "image_id": "sha256:" + "1" * 64,
         "expected_wrapper_commit": "9" * 40,
+        "artifact_checksums_sha256": "a" * 64,
     })()
     with pytest.raises(ValueError, match="input exceeds byte limit"):
         isolation_api.run(args)
@@ -345,6 +346,21 @@ def test_isolation_implementation_hashes_and_wrapper_commit_must_match_policy(ap
     ]:
         with pytest.raises(ValueError):
             isolation_api.bind_implementation_to_policy(changed_raw, actual, changed_commit)
+
+
+def test_isolation_requires_external_artifact_closure_digest(isolation_api, publication):
+    root, policy = publication
+    args = type("Args", (), {
+        "catalogue_root": root,
+        "policy": policy,
+        "policy_sha256": digest(policy),
+        "backend": "docker",
+        "image_id": "sha256:" + "1" * 64,
+        "expected_wrapper_commit": "9" * 40,
+        "artifact_checksums_sha256": "not-a-digest",
+    })()
+    with pytest.raises(ValueError, match="artifact checksum manifest SHA-256"):
+        isolation_api.run(args)
 
 
 def test_noncritical_extension_is_preserved_but_cannot_promote_result(api, publication):
@@ -400,7 +416,8 @@ def test_native_runner_mounts_only_declared_inputs_and_denies_network(api, isola
     write_canonical(api, policy, policy_document)
     command = [sys.executable, str(HERE / "run_isolated.py"), "--backend", "macos",
                "--catalogue-root", str(root), "--policy", str(policy),
-               "--policy-sha256", digest(policy), "--expected-wrapper-commit", "9" * 40]
+               "--policy-sha256", digest(policy), "--expected-wrapper-commit", "9" * 40,
+               "--artifact-checksums-sha256", "a" * 64]
     result = subprocess.run(command, capture_output=True, check=True)
     assert result.stdout == api.canonical_bytes(EXPECTED)
     metadata = json.loads(result.stderr)
@@ -408,6 +425,7 @@ def test_native_runner_mounts_only_declared_inputs_and_denies_network(api, isola
     assert metadata["probe"]["repository_unavailable"] is True
     assert metadata["replays_identical"] is True
     assert metadata["implementation_sha256"] == isolation_api.implementation_digests()
+    assert metadata["artifact_checksums_sha256"] == "a" * 64
     runtime = metadata["probe"]["python"]
     assert runtime["implementation"] == "cpython"
     assert runtime["cache_tag"].startswith("cpython-")
