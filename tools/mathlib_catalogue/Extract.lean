@@ -41,16 +41,30 @@ def kind (c : ConstantInfo) : String :=
   | .recInfo _ => "recursor"
   | .quotInfo _ => "quotient"
 
-/-- Lean's module system may independently realize the same on-demand equation
-theorem in sibling modules. `finalizeImport` admits only compatible theorem
+/-- Lean's module system may independently realize the same on-demand theorem
+in sibling modules. `finalizeImport` admits only compatible theorem
 types/levels/mutual blocks and assigns one canonical origin. Mirror that narrow
 boundary for omission accounting; no user declaration or other generated kind
 is transportable across an origin mismatch. -/
-def sameGeneratedEquation (observed canonical : ConstantInfo) : Bool :=
+def sameGeneratedTheorem (observed canonical : ConstantInfo) : Bool :=
   match observed, canonical with
   | .thmInfo a, .thmInfo b =>
     a.name == b.name && a.type == b.type && a.levelParams == b.levelParams && a.all == b.all
   | _, _ => false
+
+/-- `mkHCongrWithArityForConst?` realizes reserved `hcongr_<Nat>` theorem
+names on demand and records their argument kinds in Lean's congruence
+declaration extension. Sibling modules may realize the same theorem before
+import finalization chooses one canonical origin. Require all three pieces of
+Lean-owned metadata: the exact hcongr suffix grammar, the registered reserved
+name predicate (which also requires an existing parent declaration), and the
+congruence-extension entry. A user theorem merely ending in `hcongr_<Nat>` is
+therefore not classified as generated. -/
+def isGeneratedHCongr (env : Environment) (name : Name) : Bool :=
+  match name with
+  | .str _ suffix => Meta.isHCongrReservedNameSuffix suffix && isReservedName env name
+      && (Meta.congrKindsExt.find? env name).isSome
+  | _ => false
 
 def position (map : FileMap) (p : Position) : Except String Json := do
   let offset := map.ofPosition p
@@ -83,14 +97,15 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
       -- suffix against the underlying safe definition, including exposure and
       -- private-name rules, so a sibling realization is still recognized.
       let equation := (Meta.declFromEqLikeName env name).isSome || (← Meta.isEqnThm name)
+      let hcongr := isGeneratedHCongr env name
       -- A private or underscore-prefixed *user* name with its own direct range
       -- remains a source occurrence. Names alone cannot make it generated.
       let generated := k == "recursor" || isAuxRecursor env name || isNoConfusion env name
-        || Meta.isMatcherCore env name || equation
+        || Meta.isMatcherCore env name || equation || hcongr
         || (range?.isNone && name.isInternalDetail)
       if origin != idx then
         let some canonical := env.find? name | throwError "missing canonical declaration for {name}"
-        unless equation && sameGeneratedEquation info canonical do
+        unless (equation || hcongr) && sameGeneratedTheorem info canonical do
           let canonicalModule := nameText env.header.moduleNames[origin]!
           throwError "inconsistent non-generated origin name={qualified} selected={moduleName} canonical={canonicalModule}"
       let reason := if generated then

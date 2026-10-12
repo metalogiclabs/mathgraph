@@ -106,6 +106,58 @@ def test_direct_source_origin_collision_remains_fail_closed(tmp_path):
     assert not output.exists()
 
 
+def test_generated_hcongr_origin_collision_is_named_omission(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "hcongr-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["HCongrDefs", "HCongrLeft", "HCongrRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "hcongr-origin-collision.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "HCongrLeft", "HCongrRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    document = json.loads(output.read_bytes())
+    assert [module["module"] for module in document["modules"]] == [
+        "HCongrLeft", "HCongrRight",
+    ]
+    for module, direct in zip(document["modules"], ["Origin.forceHCongrLeft", "Origin.forceHCongrRight"]):
+        omissions = {entry["qualified_name"]: entry for entry in module["omissions"]}
+        assert omissions["Origin.congrTarget.hcongr_3"] == {
+            "qualified_name": "Origin.congrTarget.hcongr_3",
+            "kind": "theorem",
+            "reason": "GENERATED",
+        }
+        assert {entry["qualified_name"] for entry in module["declarations"]} == {direct}
+
+
+def test_direct_hcongr_suffix_origin_collision_remains_fail_closed(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "direct-hcongr-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["DirectHCongrLeft", "DirectHCongrRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "DirectHCongrLeft", "DirectHCongrRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "DirectHCongr.hcongr_3" in result.stderr
+    assert "selected=DirectHCongrRight" in result.stderr
+    assert "canonical=DirectHCongrLeft" in result.stderr
+    assert not output.exists()
+
+
 @pytest.mark.parametrize("cache_mode", ["stale", "absent"])
 def test_source_compile_order_includes_transitive_selected_dependencies(tmp_path, cache_mode):
     helper = ROOT / "tools/mathlib_catalogue/CompileOrder.lean"
