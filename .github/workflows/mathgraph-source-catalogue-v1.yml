@@ -1,0 +1,146 @@
+name: MathGraph source catalogue — Mathlib v4.34.1 qualification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'catalogues/mathlib-v4.34.1-foundations-v1.source.json'
+      - 'conformance/source_catalogue_v1/**'
+      - 'mathgraph/source_catalogue_publisher_v1.py'
+      - 'mathgraph_protocol/**'
+      - 'scripts/catalogue_bootstrap_v1.py'
+      - 'scripts/publish_mathlib_source_catalogue_v1.py'
+      - 'scripts/qualify_mathlib_source_catalogue_v1.py'
+      - 'scripts/run_mathlib_source_catalogue_offline_v1.py'
+      - 'tests/test_mathlib_source_catalogue_extractor_v1.py'
+      - 'tests/test_mathlib_source_catalogue_publisher_v1.py'
+      - 'tests/test_mathlib_source_catalogue_qualification_v1.py'
+      - 'tests/test_source_catalogue_contract_v1.py'
+      - 'tools/mathlib_catalogue/**'
+      - 'website/public/catalogues/mathlib/v4.34.1/**'
+      - '.github/workflows/mathgraph-source-catalogue-v1.yml'
+  push:
+    branches: [codex/living-knowledge-network]
+    paths:
+      - 'catalogues/mathlib-v4.34.1-foundations-v1.source.json'
+      - 'conformance/source_catalogue_v1/**'
+      - 'mathgraph/source_catalogue_publisher_v1.py'
+      - 'mathgraph_protocol/**'
+      - 'scripts/catalogue_bootstrap_v1.py'
+      - 'scripts/publish_mathlib_source_catalogue_v1.py'
+      - 'scripts/qualify_mathlib_source_catalogue_v1.py'
+      - 'scripts/run_mathlib_source_catalogue_offline_v1.py'
+      - 'tests/test_mathlib_source_catalogue_extractor_v1.py'
+      - 'tests/test_mathlib_source_catalogue_publisher_v1.py'
+      - 'tests/test_mathlib_source_catalogue_qualification_v1.py'
+      - 'tests/test_source_catalogue_contract_v1.py'
+      - 'tools/mathlib_catalogue/**'
+      - 'website/public/catalogues/mathlib/v4.34.1/**'
+      - '.github/workflows/mathgraph-source-catalogue-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  generate-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require a fresh runner with at least 12 GiB free
+        run: |
+          set -euo pipefail
+          available=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1)
+          test "$available" -ge $((12 * 1024 * 1024 * 1024))
+          test ! -e "$RUNNER_TEMP/mathgraph-source-catalogue-v1-work"
+          test ! -e "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output"
+      - name: Acquire exact inputs and generate twice under the offline boundary
+        run: |
+          set -euo pipefail
+          expected=()
+          if test -f website/public/catalogues/mathlib/v4.34.1/manifest.json; then
+            expected=(--expected-publication website/public/catalogues/mathlib/v4.34.1)
+          fi
+          python -I -S -B scripts/qualify_mathlib_source_catalogue_v1.py \
+            --repository-root . \
+            --work-root "$RUNNER_TEMP/mathgraph-source-catalogue-v1-work" \
+            --output-root "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" \
+            --minimum-free-gib 12 \
+            "${expected[@]}" \
+            > "$RUNNER_TEMP/mathgraph-source-catalogue-v1-wrapper-stdout.json"
+          mv "$RUNNER_TEMP/mathgraph-source-catalogue-v1-wrapper-stdout.json" \
+            "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output/evidence/wrapper-stdout.json"
+          test "$(find "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output/catalogue/shards" -type f | wc -l)" -eq 13
+          (cd "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" && sha256sum -c evidence/checksums.txt)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-source-catalogue-v1-generated
+          path: ${{ runner.temp }}/mathgraph-source-catalogue-v1-output/
+          if-no-files-found: error
+          retention-days: 14
+
+  independent-consumer:
+    needs: generate-and-compare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      INDEPENDENT_IMAGE: python:3.11-slim@sha256:e529028263dbe6910a2d96f7d2b8f5266385e917fd45d286ef166977c094a51e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: mathgraph-source-catalogue-v1-generated
+          path: ${{ runner.temp }}/mathgraph-source-catalogue-v1-generated
+      - name: Acquire the independent runtime before isolation
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.0.3
+          docker pull "$INDEPENDENT_IMAGE"
+          image_id=$(docker image inspect --format '{{.Id}}' "$INDEPENDENT_IMAGE")
+          case "$image_id" in sha256:????????????????????????????????????????????????????????????????) ;; *) exit 1 ;; esac
+          echo "INDEPENDENT_IMAGE_ID=$image_id" >> "$GITHUB_ENV"
+      - name: Run stdlib adversarial conformance
+        run: |
+          set -euo pipefail
+          python -m pytest conformance/source_catalogue_v1/test_consumer.py \
+            tests/test_mathlib_source_catalogue_qualification_v1.py -q
+      - name: Replay only the compact publication with repository and network denied
+        run: |
+          set -euo pipefail
+          generated="$RUNNER_TEMP/mathgraph-source-catalogue-v1-generated"
+          evidence="$RUNNER_TEMP/mathgraph-source-catalogue-v1-independent"
+          mkdir -p "$evidence"
+          policy_sha=$(sha256sum "$generated/trust-policy.json" | awk '{print $1}')
+          # The runner constructs Docker with --pull never and --network none.
+          python conformance/source_catalogue_v1/run_isolated.py \
+            --backend docker \
+            --image-id "$INDEPENDENT_IMAGE_ID" \
+            --catalogue-root "$generated/catalogue" \
+            --policy "$generated/trust-policy.json" \
+            --policy-sha256 "$policy_sha" \
+            > "$evidence/replay.json" \
+            2> "$evidence/isolation.json"
+          echo "abcd7ba9000a2d303b1d8ea3f9530c9d628d8addc3757f647b4f986f03430c00  $evidence/replay.json" | sha256sum -c -
+          cp "$generated/evidence/qualification-report.json" "$evidence/"
+          cp "$generated/evidence/size-report.json" "$evidence/"
+          cp "$generated/evidence/checksums.txt" "$evidence/publication-checksums.txt"
+          sha256sum "$evidence"/* > "$evidence/artifact-checksums.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-source-catalogue-v1-independent
+          path: ${{ runner.temp }}/mathgraph-source-catalogue-v1-independent/
+          if-no-files-found: error
+          retention-days: 14

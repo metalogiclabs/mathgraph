@@ -10,6 +10,8 @@ on:
       - 'conformance/import_v1/**'
       - 'conformance/protocol_v1/**'
       - 'conformance/resolve_v1/**'
+      - 'conformance/source_catalogue_v1/**'
+      - 'catalogues/mathlib-v4.34.1-foundations-v1.source.json'
       - 'mathgraph_protocol/**'
       - 'mathgraph/discovery_scheduler.py'
       - 'mathgraph/discovery_candidate_sources.py'
@@ -19,9 +21,11 @@ on:
       - 'scripts/mathgraph_capability_v1.py'
       - 'scripts/mathgraph_import_v1.py'
       - 'scripts/package_mathgraph_resolve_v1.py'
+      - 'scripts/qualify_mathlib_source_catalogue_v1.py'
       - 'scripts/run_discovery_scheduler.py'
       - 'scripts/run_discovery_scheduler_from_evidence.py'
       - 'tests/test_mathgraph_protocol_import.py'
+      - 'tests/test_mathlib_source_catalogue_qualification_v1.py'
       - 'tests/test_source_catalogue_contract_v1.py'
       - 'tests/fixtures/source_catalogue_v1/**'
       - 'website/tests/contracts.test.ts'
@@ -32,6 +36,7 @@ on:
       - 'examples/evidence_packs/**'
       - 'pyproject.toml'
       - 'website/public/capabilities/**'
+      - 'website/public/catalogues/mathlib/v4.34.1/**'
       - 'website/public/evidence/mg-l4yaml-source-check-20261010/record.json'
       - 'website/public/schemas/**'
       - 'experiments/developmental_capability_growth_v1/**'
@@ -73,7 +78,9 @@ jobs:
           echo "$IMPORT_POLICY_SHA256  conformance/import_v1/fixtures/trust-policy.json" | sha256sum -c -
           python -m pytest conformance/import_v1 conformance/protocol_v1 conformance/resolve_v1 \
             conformance/discover_v1 conformance/capability_v1 conformance/interoperability_v1 \
+            conformance/source_catalogue_v1 \
             tests/test_mathgraph_protocol_import.py \
+            tests/test_mathlib_source_catalogue_qualification_v1.py \
             tests/test_discovery_scheduler.py tests/test_discovery_candidate_sources.py -q
           cmp protocol/registries/capabilities-v1.json website/public/capabilities/index-v1.json
           git diff --exit-code
