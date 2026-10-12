@@ -25,7 +25,7 @@ from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PRODUCER_COMMIT = "8d6b9d2a01de4ec08bba876956cdb0e60c6e1162"
+PRODUCER_COMMIT = "e3f18f1ccc7383dc5d8ce3ada745e67a2fcdce1b"
 MATHLIB_REPOSITORY = "https://github.com/leanprover-community/mathlib4"
 SOURCE_POLICY_PATH = "catalogues/mathlib-v4.34.1-foundations-v1.source.json"
 PRODUCER_FILES = (
