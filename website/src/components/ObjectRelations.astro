@@ -1,9 +1,12 @@
 ---
-import type { RelationProjection } from '../lib/object-projections';
+import type { ObjectProjection, RelationProjection } from '../lib/object-projections';
 import { objectSlug } from '../lib/object-locators';
-interface Props { edges: RelationProjection[]; direction: 'incoming' | 'outgoing' | 'source'; prefix?: string }
-const { edges, direction, prefix } = Astro.props;
-const target = (id: string) => prefix ? `#${prefix}-${objectSlug(id)}` : `/objects/${objectSlug(id)}/`;
+interface Props { edges: RelationProjection[]; direction: 'incoming' | 'outgoing' | 'source'; prefix?: string; objects?: ObjectProjection[] }
+const { edges, direction, prefix, objects = [] } = Astro.props;
+const byId = new Map(objects.map(object => [object.id, object]));
+const target = (id: string) => prefix
+  ? `#${prefix}-${objectSlug(id)}`
+  : `/objects/${objectSlug(byId.get(id) ?? id)}/`;
 ---
 <div data-relation-group>
   <p data-empty-relations hidden={edges.length > 0}>No declared {direction} relations in this displayed projection.</p>

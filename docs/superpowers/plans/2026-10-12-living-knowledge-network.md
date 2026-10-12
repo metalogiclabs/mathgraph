@@ -41,7 +41,16 @@
 - Representative occurrence page: no more than 96 KiB raw.
 - Resolve page: no more than 64 KiB raw.
 - Explore page: no more than 1 MiB raw and 200 KiB gzip while retaining a complete no-JavaScript catalogue.
-- Static output: no more than 64 MiB and 2,100 generated HTML pages.
+- Static output: no more than 64 MiB and 2,400 generated HTML files.
+
+Execution ruling (2026-10-13): the original 2,100-page ceiling conflicts with
+the accepted requirement that every one of the 2,345 pinned declaration
+occurrences have a permanent static route. Omitting at least 245 real objects
+to satisfy that estimate would make source coverage incomplete. The smallest
+reviewed correction is therefore a 2,400-file ceiling: the exact implementation
+produces 2,395 HTML files while retaining the unchanged 64 MiB output ceiling.
+This is a presentation/build-budget correction, not a change to catalogue
+bytes, evidence authority, source status, or verification semantics.
 - Clean production build: no more than 180 seconds on the qualification runner.
 
 Execution ruling, 13 October 2026: the exact 13-module extraction yielded

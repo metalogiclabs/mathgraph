@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 import sharp from 'sharp';
 
@@ -43,6 +44,7 @@ const entry = index.records.find((candidate) => candidate.id === recordId && can
 assert(entry, 'machine catalogue must expose the qualified V1 record');
 const allHtml = [];
 let clientBytes = 0;
+let outputBytes = 0;
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -61,8 +63,12 @@ async function collect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await collect(path);
-    else if (extname(entry.name) === '.html') allHtml.push(await readFile(path, 'utf8'));
-    else if (['.js', '.css'].includes(extname(entry.name))) clientBytes += (await stat(path)).size;
+    else {
+      const size = (await stat(path)).size;
+      outputBytes += size;
+      if (extname(entry.name) === '.html') allHtml.push(await readFile(path, 'utf8'));
+      else if (['.js', '.css'].includes(extname(entry.name))) clientBytes += size;
+    }
   }
 }
 
@@ -233,4 +239,11 @@ for (const source of ['/records/index.json', '/llms.txt', '/.well-known/mathgrap
 }
 
 assert(clientBytes < 100_000, `client JS + CSS exceeds 100 kB (${clientBytes} bytes)`);
-console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} client_bytes=${clientBytes} catalogue=V2 records=2 social=2x1200x630`);
+assert(outputBytes <= 64 * 1024 * 1024, `static output exceeds 64 MiB (${outputBytes} bytes)`);
+assert(allHtml.length <= 2400, `static HTML count exceeds reviewed complete-catalogue ceiling (${allHtml.length})`);
+const exploreBytes = await readFile(join(dist, 'explore/index.html'));
+assert(exploreBytes.length <= 1024 * 1024, `Explore HTML exceeds 1 MiB (${exploreBytes.length} bytes)`);
+assert(gzipSync(exploreBytes, { level: 9, mtime: 0 }).length <= 200 * 1024, 'Explore HTML exceeds 200 KiB deterministic gzip');
+const representativeSource = await readFile(join(dist, 'objects/object-d4f47a456aef565016039d955ab630e0ea7fe7ebc9497be27b66858572fad84a/index.html'));
+assert(representativeSource.length <= 96 * 1024, `representative source page exceeds 96 KiB (${representativeSource.length} bytes)`);
+console.log(`BUILT_SITE_INTEGRITY_GREEN pages=${allHtml.length} output_bytes=${outputBytes} client_bytes=${clientBytes} representative_source_bytes=${representativeSource.length} catalogue=V2 records=2 social=2x1200x630`);

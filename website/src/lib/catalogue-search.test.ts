@@ -31,7 +31,10 @@ describe('deterministic living-network catalogue search', () => {
     expect(entries.filter(entry => entry.category === 'SOURCE_INDEXED')).toHaveLength(2358);
     expect(entries.filter(entry => entry.category === 'QUALIFIED_CAPABILITY')).toHaveLength(1);
     expect(entries.filter(entry => entry.kind === 'SOURCE_DECLARATION')).toHaveLength(2345);
-    expect(entries.every(entry => entry.href === `/objects/${objectSlug(entry.id)}/`)).toBe(true);
+    expect(entries.every(entry => {
+      const object = projections.objects.find(value => value.id === entry.id)!;
+      return entry.href === `/objects/${objectSlug(object)}/`;
+    })).toBe(true);
     expect(entries.filter(entry => entry.category !== 'EVIDENCE_RECORD')
       .every(entry => entry.actionAuthorization === 'NONE')).toBe(true);
     expect(entries.every(entry => entry.actionAuthorization !== 'PERMIT')).toBe(true);

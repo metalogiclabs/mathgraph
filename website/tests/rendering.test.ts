@@ -11,6 +11,9 @@ import sharp from 'sharp';
 import record from '../src/data/l4yaml-record.json';
 import resolveRecord from '../src/data/resolve-record.json';
 import resolveScenarios from '../src/data/resolve-scenarios.json';
+import { loadSourceCatalogueV1 } from '../src/lib/source-catalogue';
+import { projectSourceCatalogueV1 } from '../src/lib/object-projections';
+import { objectSlug } from '../src/lib/object-locators';
 
 const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(website, 'dist');
@@ -43,6 +46,31 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('name="q"');
     expect(html).toContain('data-catalogue-no-match');
     expect(html).toContain('href="/discover/"');
+  });
+
+  test('renders a permanent source occurrence with exact pins, unknowns, omissions and a bounded map', async () => {
+    const catalogue = await loadSourceCatalogueV1();
+    const projection = projectSourceCatalogueV1(catalogue);
+    const occurrence = projection.objects.find(object => object.title === 'Real.rpow')!;
+    const slug = objectSlug(occurrence);
+    const html = await page(`objects/${slug}`).catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('data-source-occurrence-detail');
+    expect(text).toContain('Real.rpow');
+    expect(text).toContain('Mathlib.Analysis.SpecialFunctions.Pow.Real');
+    expect(text).toContain(catalogue.manifest.source.repository);
+    expect(text).toContain(catalogue.manifest.source.commit);
+    expect(text).toContain(catalogue.manifest.source.tree);
+    expect(text).toContain('SOURCE_INDEXED');
+    expect(text).toContain('NOT_CHECKED');
+    expect(text).toContain('PINNED_HISTORICAL_SOURCE');
+    expect(text).toContain('Omitted structural references');
+    expect(text).toContain('Independent validation');
+    expect(text).toContain('python -I -S -B conformance/source_catalogue_v1/consumer.py');
+    expect(html).toContain('data-knowledge-map');
+    expect(html).toContain('data-map-center');
+    expect(text).toContain('Presentation projection · authority NONE · not a certificate, proof, or verifier');
+    expect(html).toContain(`/catalogues/mathlib/v4.34.1/`);
   });
 
   test('exposes bounded projection objects, typed relations and full source-linked details without JavaScript', async () => {

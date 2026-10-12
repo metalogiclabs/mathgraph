@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { loadObjectProjections } from '../data/object-projections';
+import { loadLivingKnowledgeProjections } from '../data/source-catalogue';
 import { validatePublicRecordSchema } from './catalog';
-import { buildKnowledgeMap, serializeKnowledgeMap, readKnowledgeMap } from './knowledge-map';
+import { buildKnowledgeMap, buildKnowledgeNeighborhood, serializeKnowledgeMap, readKnowledgeMap } from './knowledge-map';
 import { displayProjection, traceDisplayed } from '../scripts/knowledge-map';
 import { objectRoutes, objectSlug } from './object-locators';
+import { serializeSourceNeighborhoodV1, sourceNeighborhoodV1 } from './source-neighborhood';
 
 describe('non-authoritative map export and separate read-only reader', () => {
   test('preserves filtered export provenance, exact edges, scope and selection without evidence authority', async () => {
@@ -55,6 +57,82 @@ describe('non-authoritative map export and separate read-only reader', () => {
     expect(objectSlug('same name@1')).not.toBe(objectSlug('same name@2'));
     expect(objectSlug(objects[0].id)).toBe(objectRoutes(objects)[0].slug);
     expect(() => objectRoutes([objects[0], objects[0]])).toThrow('OBJECT_LOCATOR_COLLISION');
+  });
+
+  test('builds deterministic bounded one- and two-hop source neighbourhoods with the centre preserved', async () => {
+    const source = await loadLivingKnowledgeProjections();
+    const centre = source.objects.find(object => object.title === 'SimpleGraph')!;
+    const one = buildKnowledgeNeighborhood(source, centre.id);
+    expect(one.nodes).toHaveLength(50);
+    expect(one.edges.length).toBeLessThanOrEqual(100);
+    expect(one.nodes.some(node => node.id === centre.id)).toBe(true);
+    expect(one.completeness.total_nodes).toBeGreaterThan(one.nodes.length);
+    expect(one.completeness.truncated).toBe(true);
+    expect(one.edges.every(edge => one.nodes.some(node => node.id === edge.from) && one.nodes.some(node => node.id === edge.to))).toBe(true);
+    expect(one.nodes.filter(node => node.id !== centre.id).every(node => one.edges.some(edge => (edge.from === centre.id && edge.to === node.id) || (edge.to === centre.id && edge.from === node.id)))).toBe(true);
+    expect(one.extensions.at(-1)?.payload).toMatchObject({ center_id: centre.id, depth: 1, semantics: 'PRESENTATION_ONLY' });
+
+    const bounded = buildKnowledgeNeighborhood(source, centre.id, { depth: 2, maxNodes: 5, maxEdges: 2 });
+    expect(bounded.nodes).toHaveLength(5);
+    expect(bounded.edges.length).toBeLessThanOrEqual(2);
+    expect(bounded.nodes.some(node => node.id === centre.id)).toBe(true);
+    expect(bounded.context).toMatchObject({ object_ids: [centre.id], max_nodes: 5, max_edges: 2 });
+    const reversed = buildKnowledgeNeighborhood({ objects: [...source.objects].reverse(), relations: [...source.relations].reverse() }, centre.id, { depth: 2, maxNodes: 5, maxEdges: 2 });
+    expect(serializeKnowledgeMap(reversed)).toBe(serializeKnowledgeMap(bounded));
+  });
+
+  test('handles cross-module, isolated, filtered and unknown-centre neighbourhoods without inventing edges', async () => {
+    const source = await loadLivingKnowledgeProjections();
+    const cross = source.objects.find(object => object.title === 'neg_involutive')!;
+    const map = buildKnowledgeNeighborhood(source, cross.id, { relationTypes: ['TYPE_REFERENCES'] });
+    expect(map.nodes.some(node => node.title === 'Function.Involutive')).toBe(true);
+    expect(new Set(map.nodes.map(node => (node.details.source as { module?: string } | undefined)?.module).filter(Boolean)).size).toBeGreaterThan(1);
+    expect(map.edges.every(edge => edge.type === 'TYPE_REFERENCES')).toBe(true);
+
+    const incident = new Set(source.relations.flatMap(edge => [edge.from, edge.to]));
+    const isolated = source.objects.find(object => !incident.has(object.id))!;
+    const isolatedMap = buildKnowledgeNeighborhood(source, isolated.id);
+    expect(isolatedMap.nodes.map(node => node.id)).toEqual([isolated.id]);
+    expect(isolatedMap.edges).toEqual([]);
+    expect(isolatedMap.completeness.truncated).toBe(false);
+    expect(() => buildKnowledgeNeighborhood(source, 'missing-object')).toThrow('UNKNOWN_PROJECTION_CENTER');
+    expect(() => buildKnowledgeNeighborhood(source, cross.id, { depth: 3 as 1 })).toThrow('INVALID_PROJECTION_DEPTH');
+    expect(() => buildKnowledgeNeighborhood(source, cross.id, { maxNodes: 0 })).toThrow('INVALID_PROJECTION_LIMIT');
+  });
+
+  test('preserves each available direct structural relation class before filling a tight node budget', async () => {
+    const source = await loadLivingKnowledgeProjections();
+    const module = source.objects.find(object => object.kind === 'SOURCE_MODULE' && object.title === 'Mathlib.Data.Int.Basic')!;
+    const map = buildKnowledgeNeighborhood(source, module.id, { maxNodes: 8, maxEdges: 12 });
+    expect(map.edges.some(edge => edge.type === 'DECLARES')).toBe(true);
+    expect(map.edges.some(edge => edge.type === 'IMPORTS_MODULE')).toBe(true);
+  });
+
+  test('uses canonical occurrence IDs as source routes while preserving every legacy locator', async () => {
+    const legacy = await loadObjectProjections();
+    const living = await loadLivingKnowledgeProjections();
+    const declaration = living.objects.find(object => object.kind === 'SOURCE_DECLARATION')!;
+    expect(declaration.source_id).toMatch(/^object-[a-f0-9]{64}$/);
+    expect(objectSlug(declaration)).toBe(declaration.source_id);
+    expect(objectSlug(legacy.objects[0])).toBe(objectSlug(legacy.objects[0].id));
+    expect(objectRoutes(living.objects)).toHaveLength(2372);
+    expect(() => objectRoutes([declaration, { ...structuredClone(declaration), id: `${declaration.id}-collision` }])).toThrow('OBJECT_LOCATOR_COLLISION');
+  });
+
+  test('compacts a bounded source neighborhood without changing identities, edges, status or omissions', async () => {
+    const source = await loadLivingKnowledgeProjections();
+    const centre = source.objects.find(object => object.title === 'Real.rpow')!;
+    const map = buildKnowledgeNeighborhood(source, centre.id, { maxNodes: 8, maxEdges: 12 });
+    const compact = sourceNeighborhoodV1(map);
+    expect(compact.center_id).toBe(centre.source_id);
+    expect(compact.nodes.find(node => node.id === centre.source_id)?.href).toBe(`/objects/${centre.source_id}/`);
+    expect(compact.status).toEqual({ source_status: 'SOURCE_INDEXED', independent_verification: 'NOT_CHECKED', current_applicability: 'NOT_CHECKED', freshness: 'PINNED_HISTORICAL_SOURCE', action_authorization: 'NONE' });
+    expect(compact.completeness).toEqual(map.completeness);
+    expect(compact.relations).toHaveLength(map.edges.length);
+    expect(compact.relations.every(edge => edge.authority === 'NONE' && edge.logical_implication === false && edge.semantic_equivalence === false)).toBe(true);
+    expect(JSON.parse(serializeSourceNeighborhoodV1(map))).toEqual(compact);
+    const legacyMap = buildKnowledgeMap(await loadObjectProjections());
+    expect(() => sourceNeighborhoodV1(legacyMap)).toThrow('INVALID_SOURCE_NEIGHBORHOOD');
   });
 
   test('exports deterministic directed relations with valid endpoints, provenance and all source pins', async () => {

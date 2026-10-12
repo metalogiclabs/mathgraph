@@ -1191,6 +1191,10 @@ summary {
   color: white;
 }
 
+.site-footer .fineprint {
+  color: #c7ced9;
+}
+
 .footer-links {
   display: flex;
   flex-wrap: wrap;
@@ -2056,6 +2060,8 @@ summary {
 .map-object-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); list-style: none; padding: 0; gap: .6rem; }
 .map-object-list a { display: block; padding: .8rem; border: 1px solid #c6ccc9; height: 100%; text-decoration: none; overflow-wrap: anywhere; }
 .map-object-list span { display: block; font-size: .7rem; letter-spacing: .06em; margin-bottom: .4rem; }
+.map-object-list strong, .map-object-list code { display: block; margin-top: .35rem; overflow-wrap: anywhere; }
+.map-object-list .map-permanent-link { border-top: 0; height: auto; padding: .45rem .8rem; font-size: .78rem; }
 .map-object-list a[aria-current] { outline: 2px solid currentColor; outline-offset: -2px; background: #e7eae7; }
 .map-visual { overflow-x: auto; max-width: 100%; border: 1px solid #c6ccc9; margin: 1rem 0; }
 .map-visual svg { display: block; min-width: 1140px; max-width: none; }
@@ -2076,6 +2082,41 @@ summary {
 .object-detail pre, .object-relations pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
 .object-detail details, .object-relations details { margin: .7rem 0; min-width: 0; }
 .object-detail summary, .object-relations summary { cursor: pointer; }
+.map-compact-detail { border-left: 3px solid #385d49; margin: 1rem 0; padding: .8rem 1rem; background: #f2f2ec; overflow-wrap: anywhere; }
+.map-compact-detail h4 { margin: .25rem 0; }
+.source-occurrence > section, .source-neighborhood { margin-top: clamp(2rem, 5vw, 4rem); }
+.source-occurrence pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.source-statement { padding: 1rem; border: 1px solid #c6ccc9; background: #f2f2ec; }
+.source-statement code { color: var(--ink-950); }
+.source-identity-grid, .status-axis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 0; border-top: 1px solid #c6ccc9; }
+.source-identity-grid > div, .status-axis-grid > div { padding: .85rem 0; border-bottom: 1px solid #c6ccc9; min-width: 0; }
+.source-identity-grid dd, .status-axis-grid dd { overflow-wrap: anywhere; }
+.source-neighborhood .knowledge-map { margin-top: 1.5rem; }
+.source-network { margin-top: 1.5rem; min-width: 0; }
+.source-network [hidden] { display: none !important; }
+.source-network__lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.source-network__lanes section { min-width: 0; }
+.source-network__lanes h4 { margin: 0 0 .6rem; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; }
+.source-network__lanes ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.source-network__lanes li { border: 1px solid #c6ccc9; min-width: 0; }
+.source-network__lanes li > a { display: block; padding: .7rem; text-decoration: none; overflow-wrap: anywhere; }
+.source-network__lanes li > a:first-child[aria-current] { background: #e7eae7; outline: 2px solid #385d49; outline-offset: -2px; }
+.source-network__lanes span, .source-network__lanes strong { display: block; }
+.source-network__lanes span { font-size: .68rem; letter-spacing: .05em; }
+.source-network__relations { padding-left: 1.25rem; }
+.source-network__relations li { padding: .5rem 0; overflow-wrap: anywhere; }
+.source-network__relations strong { margin: 0 .45rem; font-size: .75rem; }
+.source-network__relations small { display: block; color: #526059; }
+.source-network__visual { overflow: auto; border: 1px solid #c6ccc9; min-height: 12rem; }
+.source-network__visual svg { display: block; min-width: 900px; width: 100%; height: auto; }
+.source-network__visual line { stroke: #66716b; stroke-width: 1.5; }
+.source-network__visual rect { fill: #f7f7f1; stroke: #66716b; }
+.source-network__visual g[data-selected] rect { stroke: #142e20; stroke-width: 3; }
+.source-network__visual text { fill: #27382d; font-size: 12px; }
+.source-network a:focus-visible, .source-network button:focus-visible, .source-network input:focus-visible { outline: 3px solid #385d49; outline-offset: 3px; }
+@media (max-width: 700px) {
+  .source-network__lanes { grid-template-columns: 1fr; }
+}
 .object-axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
 .object-axes dt { font-size: .8rem; }
 .object-axes dd { margin: .35rem 0 0; }

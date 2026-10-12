@@ -6,7 +6,7 @@ export interface KnowledgeMapProjection {
   schema: 'mathgraph.website-knowledge-map.v1';
   kind: 'PRESENTATION_PROJECTION';
   authority: 'NONE';
-  context: { object_ids: string[]; kinds: ObjectKind[]; max_nodes: number; max_edges: number };
+  context: { object_ids: string[]; kinds: ObjectKind[]; max_nodes: number; max_edges: number; mode?: 'NEIGHBORHOOD' };
   completeness: { scope: 'SELECTED_ADAPTER_OUTPUT'; total_nodes: number; total_edges: number; omitted_nodes: number; omitted_edges: number; truncated: boolean };
   source_pins: SourcePin[];
   nodes: ObjectProjection[];
@@ -14,6 +14,13 @@ export interface KnowledgeMapProjection {
   extensions: Array<{ id: string; critical: boolean; payload: unknown }>;
 }
 export interface MapSelection { objectIds?: string[]; kinds?: ObjectKind[]; maxNodes?: number; maxEdges?: number }
+export interface NeighborhoodSelection {
+  depth?: 1 | 2;
+  maxNodes?: number;
+  maxEdges?: number;
+  kinds?: ObjectKind[];
+  relationTypes?: RelationProjection['type'][];
+}
 export interface ReadOnlyProjection {
   kind: 'READ_ONLY_PROJECTION';
   authority: 'NONE';
@@ -50,7 +57,7 @@ const edgeShape = shape({
 }, ['id', 'type', 'from', 'to', 'source_id', 'target_id', 'directed', 'authority', 'provenance']);
 const format = shape({
   schema: { const: 'mathgraph.website-knowledge-map.v1' }, kind: { const: 'PRESENTATION_PROJECTION' }, authority: { const: 'NONE' },
-  context: shape({ object_ids: { ...strings, uniqueItems: true }, kinds: { type: 'array', items: { enum: objectKinds }, uniqueItems: true }, max_nodes: natural, max_edges: natural }),
+  context: shape({ object_ids: { ...strings, uniqueItems: true }, kinds: { type: 'array', items: { enum: objectKinds }, uniqueItems: true }, max_nodes: natural, max_edges: natural, mode: { const: 'NEIGHBORHOOD' } }, ['object_ids', 'kinds', 'max_nodes', 'max_edges']),
   completeness: shape({ scope: { const: 'SELECTED_ADAPTER_OUTPUT' }, total_nodes: natural, total_edges: natural, omitted_nodes: natural, omitted_edges: natural, truncated: { type: 'boolean' } }),
   source_pins: { type: 'array', items: sourcePinShape, uniqueItems: true },
   nodes: { type: 'array', items: nodeShape }, edges: { type: 'array', items: edgeShape },
@@ -145,6 +152,94 @@ export function buildKnowledgeMap(collection: ProjectionCollection, selection: M
   return structuredClone(map);
 }
 
+/** A bounded presentation projection around one exact object. It derives no new relation or warrant. */
+export function buildKnowledgeNeighborhood(
+  collection: ProjectionCollection,
+  centerId: string,
+  selection: NeighborhoodSelection = {},
+): KnowledgeMapProjection {
+  requireMap(validateCollection(collection), 'INVALID_PRESENTATION_PROJECTION');
+  graphIntegrity(collection.objects, collection.relations);
+  const center = collection.objects.find(node => node.id === centerId);
+  requireMap(center !== undefined, 'UNKNOWN_PROJECTION_CENTER');
+  const depth = selection.depth ?? 1;
+  const maxNodes = selection.maxNodes ?? 50;
+  const maxEdges = selection.maxEdges ?? 100;
+  requireMap(depth === 1 || depth === 2, 'INVALID_PROJECTION_DEPTH');
+  requireMap(Number.isSafeInteger(maxNodes) && maxNodes >= 1
+    && Number.isSafeInteger(maxEdges) && maxEdges >= 0, 'INVALID_PROJECTION_LIMIT');
+  const kinds = [...new Set(selection.kinds ?? [])].sort();
+  requireMap(kinds.every(kind => objectKinds.includes(kind)), 'INVALID_PROJECTION_KIND');
+  const selectedRelationTypes = [...new Set(selection.relationTypes ?? relationTypes)].sort();
+  requireMap(selectedRelationTypes.every(type => relationTypes.includes(type)), 'INVALID_PROJECTION_RELATION');
+  const allowed = sorted(collection.relations.filter(edge => selectedRelationTypes.includes(edge.type)));
+  const byId = new Map(collection.objects.map(node => [node.id, node]));
+  const distances = new Map<string, number>([[centerId, 0]]);
+  let frontier = [centerId];
+  for (let step = 0; step < depth; step += 1) {
+    const next = new Set<string>();
+    for (const current of frontier) {
+      for (const edge of allowed) {
+        const neighbor = edge.from === current ? edge.to : edge.to === current ? edge.from : null;
+        if (neighbor === null || distances.has(neighbor)) continue;
+        const node = byId.get(neighbor)!;
+        if (kinds.length > 0 && !kinds.includes(node.kind)) continue;
+        distances.set(neighbor, step + 1);
+        next.add(neighbor);
+      }
+    }
+    frontier = [...next].sort(compare);
+  }
+  const candidates = [...distances.keys()];
+  const incoming = new Set(allowed.filter(edge => edge.to === centerId).map(edge => edge.from));
+  const outgoing = new Set(allowed.filter(edge => edge.from === centerId).map(edge => edge.to));
+  const directSeeds = selectedRelationTypes.flatMap(type => {
+    const neighbors = allowed.filter(edge => edge.type === type && (edge.from === centerId || edge.to === centerId))
+      .map(edge => edge.from === centerId ? edge.to : edge.from)
+      .filter(id => distances.has(id))
+      .sort(compare);
+    return neighbors.slice(0, 1);
+  });
+  const seeded = new Set(directSeeds);
+  const remainder = candidates.filter(id => id !== centerId && !seeded.has(id)).sort((left, right) => {
+    const distance = distances.get(left)! - distances.get(right)!;
+    if (distance !== 0) return distance;
+    return compare(left, right);
+  });
+  const priority = [...new Set([...directSeeds, ...remainder])];
+  const selectedIds = new Set([centerId, ...priority.slice(0, maxNodes - 1)]);
+  const incomingNodes = priority.filter(id => selectedIds.has(id) && incoming.has(id)).sort(compare);
+  const outgoingNodes = priority.filter(id => selectedIds.has(id) && !incoming.has(id) && outgoing.has(id)).sort(compare);
+  const otherNodes = priority.filter(id => selectedIds.has(id) && !incoming.has(id) && !outgoing.has(id))
+    .sort((left, right) => distances.get(left)! - distances.get(right)! || compare(left, right));
+  const nodes = [...incomingNodes, centerId, ...outgoingNodes, ...otherNodes].map(id => byId.get(id)!);
+  const candidateIds = new Set(candidates);
+  const candidateEdges = allowed.filter(edge => candidateIds.has(edge.from) && candidateIds.has(edge.to));
+  const edges = candidateEdges.filter(edge => selectedIds.has(edge.from) && selectedIds.has(edge.to))
+    .sort((left, right) => {
+      const leftCenter = left.from === centerId || left.to === centerId ? 0 : 1;
+      const rightCenter = right.from === centerId || right.to === centerId ? 0 : 1;
+      return leftCenter - rightCenter || compare(left.id, right.id);
+    })
+    .slice(0, maxEdges);
+  const map: KnowledgeMapProjection = {
+    schema: 'mathgraph.website-knowledge-map.v1', kind: 'PRESENTATION_PROJECTION', authority: 'NONE',
+    context: { object_ids: [centerId], kinds, max_nodes: maxNodes, max_edges: maxEdges, mode: 'NEIGHBORHOOD' },
+    completeness: {
+      scope: 'SELECTED_ADAPTER_OUTPUT', total_nodes: candidates.length, total_edges: candidateEdges.length,
+      omitted_nodes: candidates.length - nodes.length, omitted_edges: candidateEdges.length - edges.length,
+      truncated: candidates.length > nodes.length || candidateEdges.length > edges.length,
+    },
+    source_pins: pinsFor(nodes, edges), nodes: structuredClone(nodes), edges: structuredClone(edges),
+    extensions: [{
+      id: 'mathgraph.website-neighborhood.v1', critical: false,
+      payload: { center_id: centerId, depth, relation_types: selectedRelationTypes, semantics: 'PRESENTATION_ONLY' },
+    }],
+  };
+  validateProjection(map);
+  return map;
+}
+
 function validateProjection(value: unknown): asserts value is KnowledgeMapProjection {
   requireMap(typeof value === 'object' && value !== null && 'schema' in value && value.schema === 'mathgraph.website-knowledge-map.v1', 'UNSUPPORTED_PROJECTION_VERSION');
   requireMap(validateFormat(value), 'INVALID_PRESENTATION_PROJECTION');
@@ -154,7 +249,8 @@ function validateProjection(value: unknown): asserts value is KnowledgeMapProjec
   requireMap(pinsFor(value.nodes, value.edges).every(pin => pins.has(canonicalJson(pin))), 'MISSING_PROJECTION_SOURCE_PIN');
   const { completeness: c, context } = value;
   requireMap(c.total_nodes === value.nodes.length + c.omitted_nodes && c.total_edges === value.edges.length + c.omitted_edges && c.truncated === (c.omitted_nodes > 0 || c.omitted_edges > 0) && value.nodes.length <= context.max_nodes && value.edges.length <= context.max_edges, 'INVALID_PROJECTION_COMPLETENESS');
-  requireMap(value.nodes.every(node => (!context.object_ids.length || context.object_ids.includes(node.id)) && (!context.kinds.length || context.kinds.includes(node.kind))), 'INVALID_PROJECTION_SELECTION');
+  requireMap(value.nodes.every(node => (context.mode === 'NEIGHBORHOOD' || !context.object_ids.length || context.object_ids.includes(node.id))
+    && (!context.kinds.length || node.id === context.object_ids[0] || context.kinds.includes(node.kind))), 'INVALID_PROJECTION_SELECTION');
 }
 
 /** Stable serialization of a presentation, never a certificate or proof. */

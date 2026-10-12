@@ -2,8 +2,8 @@
 import type { ObjectProjection, RelationProjection } from '../lib/object-projections';
 import { objectSlug, sourceHref } from '../lib/object-locators';
 import ObjectRelations from './ObjectRelations.astro';
-interface Props { object: ObjectProjection; edges: RelationProjection[]; prefix?: string }
-const { object, edges, prefix = 'object' } = Astro.props;
+interface Props { object: ObjectProjection; edges: RelationProjection[]; prefix?: string; objects?: ObjectProjection[] }
+const { object, edges, prefix = 'object', objects = [] } = Astro.props;
 const sourceLink = sourceHref(object.source.locator);
 const render = (value: unknown) => value === undefined || value === null || value === '' ? 'UNKNOWN' : typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 const fields = [
@@ -35,12 +35,12 @@ const fields = [
   </dl>
   <p class="fineprint">Every value above is a display of the <a href={sourceLink}>source object</a> and the listed supporting pins. Missing fields are UNKNOWN. The complete projected fields remain available below.</p>
   <h4>Incoming relations</h4>
-  <ObjectRelations edges={edges.filter(edge => edge.to === object.id)} direction="incoming" prefix={prefix === 'object' ? undefined : prefix} />
+  <ObjectRelations edges={edges.filter(edge => edge.to === object.id)} direction="incoming" prefix={prefix === 'object' ? undefined : prefix} objects={objects} />
   <h4>Outgoing relations</h4>
-  <ObjectRelations edges={edges.filter(edge => edge.from === object.id)} direction="outgoing" prefix={prefix === 'object' ? undefined : prefix} />
+  <ObjectRelations edges={edges.filter(edge => edge.from === object.id)} direction="outgoing" prefix={prefix === 'object' ? undefined : prefix} objects={objects} />
   <h4>Lineage</h4>
   <p>Source <a href={sourceLink}>{object.source.id}</a> · version <code>{object.source.version}</code> · pointer <code>{object.pointer || '"" (document root)'}</code>. This locator declares no chronology, supersession or equivalence.</p>
   <details><summary>All projected source fields</summary><pre><code>{JSON.stringify(object.details, null, 2)}</code></pre></details>
-  <p><a href={`/objects/${objectSlug(object.id)}/`}>Permanent object view</a> · <a href={sourceLink}>Source / export JSON</a> · <a href="/developers/#offline-replay">Reproduction instructions and boundaries</a></p>
+  <p><a href={`/objects/${objectSlug(object)}/`}>Permanent object view</a> · <a href={sourceLink}>Source / export JSON</a> · <a href="/developers/#offline-replay">Reproduction instructions and boundaries</a></p>
   <p class="fineprint">The route slug is a presentation locator only. Use the full canonical identity above.</p>
 </article>

@@ -100,7 +100,7 @@ function entryFor(object: ObjectProjection): ExploreEntry | null {
     ...(object.axes.source_status === undefined ? {} : { sourceStatus: object.axes.source_status }),
     ...(object.axes.independent_verification === undefined ? {} : { independentVerification: object.axes.independent_verification }),
     actionAuthorization: object.axes.action_authorization,
-    href: `/objects/${objectSlug(object.id)}/`,
+    href: `/objects/${objectSlug(object)}/`,
     metadata: `${object.title} ${object.source_id} ${object.kind} ${module} ${canonicalJson(searchableDetails)}`,
   };
 }
@@ -123,7 +123,8 @@ export function validateExploreEntries(entries: ExploreEntry[], collection: Proj
     ids.add(entry.id); hrefs.add(entry.href);
     const match = expected.get(entry.id);
     requireExplore(match !== undefined, 'EXPLORE_SOURCE_MISMATCH');
-    requireExplore(entry.href === `/objects/${objectSlug(entry.id)}/`, 'EXPLORE_URL_MISMATCH');
+    const source = collection.objects.find(object => object.id === entry.id);
+    requireExplore(source !== undefined && entry.href === `/objects/${objectSlug(source)}/`, 'EXPLORE_URL_MISMATCH');
     requireExplore(canonicalJson(entry) === canonicalJson(match), 'EXPLORE_STATUS_MISMATCH');
   }
 }
