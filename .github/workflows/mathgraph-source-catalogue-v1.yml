@@ -46,13 +46,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.11'
+          python-version: '3.11.17'
       - name: Require a fresh runner with at least 12 GiB free
         run: |
           set -euo pipefail
@@ -72,13 +72,11 @@ jobs:
             --work-root "$RUNNER_TEMP/mathgraph-source-catalogue-v1-work" \
             --output-root "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" \
             --minimum-free-gib 12 \
-            "${expected[@]}" \
-            > "$RUNNER_TEMP/mathgraph-source-catalogue-v1-wrapper-stdout.json"
-          mv "$RUNNER_TEMP/mathgraph-source-catalogue-v1-wrapper-stdout.json" \
-            "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output/evidence/wrapper-stdout.json"
+            "${expected[@]}"
           test "$(find "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output/catalogue/shards" -type f | wc -l)" -eq 13
           (cd "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" && sha256sum -c evidence/checksums.txt)
-      - uses: actions/upload-artifact@v4
+          (cd "$RUNNER_TEMP/mathgraph-source-catalogue-v1-output" && sha256sum -c evidence/artifact-checksums.txt)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: mathgraph-source-catalogue-v1-generated
@@ -90,23 +88,35 @@ jobs:
     needs: generate-and-compare
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    outputs:
+      artifact-id: ${{ steps.upload-independent.outputs.artifact-id }}
+      artifact-digest: ${{ steps.upload-independent.outputs.artifact-digest }}
     env:
       INDEPENDENT_IMAGE: python:3.11-slim@sha256:e529028263dbe6910a2d96f7d2b8f5266385e917fd45d286ef166977c094a51e
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.11'
-      - uses: actions/download-artifact@v4
+          python-version: '3.11.17'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: mathgraph-source-catalogue-v1-generated
           path: ${{ runner.temp }}/mathgraph-source-catalogue-v1-generated
+      - name: Verify exact downloaded artifact closure
+        run: |
+          set -euo pipefail
+          generated="$RUNNER_TEMP/mathgraph-source-catalogue-v1-generated"
+          expected="$RUNNER_TEMP/mathgraph-source-catalogue-v1-expected-paths.txt"
+          actual="$RUNNER_TEMP/mathgraph-source-catalogue-v1-actual-paths.txt"
+          (cd "$generated" && sha256sum -c evidence/artifact-checksums.txt)
+          (cd "$generated" && cut -c67- evidence/artifact-checksums.txt | LC_ALL=C sort) > "$expected"
+          (cd "$generated" && find . -type f ! -path './evidence/artifact-checksums.txt' -printf '%P\n' | LC_ALL=C sort) > "$actual"
+          diff -u "$expected" "$actual"
       - name: Acquire the independent runtime before isolation
         run: |
           set -euo pipefail
-          python -m pip install pytest==9.0.3
           docker pull "$INDEPENDENT_IMAGE"
           image_id=$(docker image inspect --format '{{.Id}}' "$INDEPENDENT_IMAGE")
           case "$image_id" in sha256:????????????????????????????????????????????????????????????????) ;; *) exit 1 ;; esac
@@ -114,8 +124,12 @@ jobs:
       - name: Run stdlib adversarial conformance
         run: |
           set -euo pipefail
-          python -m pytest conformance/source_catalogue_v1/test_consumer.py \
-            tests/test_mathlib_source_catalogue_qualification_v1.py -q
+          evidence="$RUNNER_TEMP/mathgraph-source-catalogue-v1-independent"
+          mkdir -p "$evidence"
+          python -I -S -B conformance/source_catalogue_v1/stdlib_conformance.py \
+            > "$evidence/conformance.json"
+          python -I -S -B -c 'import hashlib,json,os,sys; stream=open(sys.executable,"rb"); digest=hashlib.file_digest(stream,"sha256").hexdigest(); stream.close(); print(json.dumps({"cache_tag":sys.implementation.cache_tag,"executable":sys.executable,"executable_sha256":digest,"implementation":sys.implementation.name,"runner_arch":os.environ.get("RUNNER_ARCH"),"runner_image_os":os.environ.get("ImageOS"),"runner_image_version":os.environ.get("ImageVersion"),"runner_os":os.environ.get("RUNNER_OS"),"version":sys.version},sort_keys=True,separators=(",",":")))' \
+            > "$evidence/host-runtime.json"
       - name: Replay only the compact publication with repository and network denied
         run: |
           set -euo pipefail
@@ -130,14 +144,19 @@ jobs:
             --catalogue-root "$generated/catalogue" \
             --policy "$generated/trust-policy.json" \
             --policy-sha256 "$policy_sha" \
+            --expected-wrapper-commit "$GITHUB_SHA" \
             > "$evidence/replay.json" \
             2> "$evidence/isolation.json"
           echo "abcd7ba9000a2d303b1d8ea3f9530c9d628d8addc3757f647b4f986f03430c00  $evidence/replay.json" | sha256sum -c -
           cp "$generated/evidence/qualification-report.json" "$evidence/"
           cp "$generated/evidence/size-report.json" "$evidence/"
           cp "$generated/evidence/checksums.txt" "$evidence/publication-checksums.txt"
-          sha256sum "$evidence"/* > "$evidence/artifact-checksums.txt"
-      - uses: actions/upload-artifact@v4
+          (cd "$evidence" && \
+            sha256sum conformance.json host-runtime.json replay.json isolation.json qualification-report.json size-report.json publication-checksums.txt \
+              > artifact-checksums.txt)
+          (cd "$evidence" && sha256sum -c artifact-checksums.txt)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        id: upload-independent
         if: always()
         with:
           name: mathgraph-source-catalogue-v1-independent

@@ -6,6 +6,7 @@ import importlib.util
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 
 import pytest
@@ -28,11 +29,12 @@ def test_qualification_orchestrator_exists():
 
 
 def test_approved_producer_commit_and_wrapper_identity_are_separate(api):
-    assert api.PRODUCER_COMMIT == "9354983e1f339c1d251be175bcfba2b290270582"
+    assert api.PRODUCER_COMMIT == "8d6b9d2a01de4ec08bba876956cdb0e60c6e1162"
     assert set(api.QUALIFICATION_WRAPPER_FILES) == {
         ".github/workflows/mathgraph-source-catalogue-v1.yml",
         "conformance/source_catalogue_v1/consumer.py",
         "conformance/source_catalogue_v1/run_isolated.py",
+        "conformance/source_catalogue_v1/stdlib_conformance.py",
         "conformance/source_catalogue_v1/test_consumer.py",
         "scripts/qualify_mathlib_source_catalogue_v1.py",
         "tests/test_mathlib_source_catalogue_qualification_v1.py",
@@ -174,6 +176,22 @@ def test_trust_policy_pins_publication_source_producer_and_wrapper(api, tmp_path
     assert policy["result"]["authority"] == "NONE"
 
 
+def test_generated_artifact_checksum_manifest_closes_exact_relative_inventory(api, tmp_path):
+    output = tmp_path / "output"
+    (output / "catalogue").mkdir(parents=True)
+    (output / "evidence").mkdir()
+    (output / "catalogue/manifest.json").write_bytes(b"manifest")
+    (output / "trust-policy.json").write_bytes(b"policy")
+    (output / "evidence/qualification-report.json").write_bytes(b"report")
+    entries = api.write_artifact_checksum_manifest(output)
+    assert [entry["path"] for entry in entries] == [
+        "catalogue/manifest.json", "evidence/qualification-report.json", "trust-policy.json",
+    ]
+    lines = (output / "evidence/artifact-checksums.txt").read_text().splitlines()
+    assert lines == [f'{entry["sha256"]}  {entry["path"]}' for entry in entries]
+    assert all(not line.split("  ", 1)[1].startswith("/") for line in lines)
+
+
 def test_dedicated_workflow_has_heavy_generation_and_independent_isolation_contract():
     workflow = ROOT / ".github/workflows/mathgraph-source-catalogue-v1.yml"
     assert workflow.is_file()
@@ -187,8 +205,20 @@ def test_dedicated_workflow_has_heavy_generation_and_independent_isolation_contr
     assert "needs: generate-and-compare" in text
     assert "conformance/source_catalogue_v1/run_isolated.py" in text
     assert "--backend docker" in text
+    assert '--expected-wrapper-commit "$GITHUB_SHA"' in text
     assert "--network none" in text
     assert "python:3.11-slim@sha256:e529028263dbe6910a2d96f7d2b8f5266385e917fd45d286ef166977c094a51e" in text
+    assert text.count("python-version: '3.11.17'") == 2
+    assert "pip install" not in text
+    assert "python -I -S -B conformance/source_catalogue_v1/stdlib_conformance.py" in text
+    for line in text.splitlines():
+        if line.lstrip().startswith("- uses:"):
+            assert re.search(r"@[0-9a-f]{40}(?:\s|$)", line), line
+    assert 'sha256sum conformance.json host-runtime.json replay.json isolation.json qualification-report.json size-report.json publication-checksums.txt' in text
+    assert "sha256sum -c artifact-checksums.txt" in text
+    assert "sha256sum -c evidence/artifact-checksums.txt" in text
+    assert "find . -type f ! -path './evidence/artifact-checksums.txt'" in text
+    assert "artifact-digest: ${{ steps.upload-independent.outputs.artifact-digest }}" in text
 
 
 @pytest.mark.parametrize("workflow_name", [

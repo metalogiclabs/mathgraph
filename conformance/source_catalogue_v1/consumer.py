@@ -286,6 +286,14 @@ def _safe_file(root: Path, relative: str) -> Path:
     return path
 
 
+def _read_limited(path: Path, maximum: int) -> bytes:
+    """Read at most one byte beyond a declared boundary, never the whole input."""
+    with path.open("rb") as handle:
+        raw = handle.read(maximum + 1)
+    require(len(raw) <= maximum, "INPUT_TOO_LARGE", "input exceeds byte limit")
+    return raw
+
+
 def _validate_policy(raw: bytes, expected_sha256: str) -> dict:
     _digest(expected_sha256)
     require(hashlib.sha256(raw).hexdigest() == expected_sha256,
@@ -313,12 +321,20 @@ def _validate_policy(raw: bytes, expected_sha256: str) -> dict:
     _digest(producer["source_commit"], 40)
     require(producer["contract_version"] == 1 and type(producer["contract_version"]) is int,
             "UNSUPPORTED_VERSION", "unsupported producer contract")
-    for file in _array(producer["sources"]): _file(file)
+    producer_sources = _array(producer["sources"])
+    require(bool(producer_sources), "MISSING_FIELD", "producer source is required")
+    producer_paths = set()
+    for file in producer_sources:
+        _file(file)
+        _unique(file["path"], producer_paths, "DUPLICATE_PATH")
     _ordered([file["path"] for file in producer["sources"]])
     wrapper = _shape(policy["qualification_wrapper"], {"source_commit", "sources"})
     _digest(wrapper["source_commit"], 40)
     require(bool(_array(wrapper["sources"])), "MISSING_FIELD", "qualification wrapper source is required")
-    for file in wrapper["sources"]: _file(file)
+    wrapper_paths = set()
+    for file in wrapper["sources"]:
+        _file(file)
+        _unique(file["path"], wrapper_paths, "DUPLICATE_PATH")
     _ordered([file["path"] for file in wrapper["sources"]])
     require(policy["admitted_relations"] == ["DECLARES", "IMPORTS_MODULE", "TYPE_REFERENCES"],
             "INVALID_POLICY", "unrecognized relation policy")
@@ -423,6 +439,9 @@ def _range(value: object, maximum: int) -> None:
     if start["line"] == end["line"]:
         require(end["byte"] - start["byte"] == end["column"] - start["column"],
                 "INVALID_RANGE", "same-line coordinates disagree")
+    else:
+        require(end["byte"] - start["byte"] >= end["line"] - start["line"] + end["column"],
+                "INVALID_RANGE", "multiline interval cannot contain newlines and final column")
 
 
 def _validate_shard(raw: bytes, manifest: dict, metadata: dict, endpoints: dict) -> dict:
@@ -524,21 +543,25 @@ def _validate_shard(raw: bytes, manifest: dict, metadata: dict, endpoints: dict)
 def validate_publication(catalogue_root: Path | str, policy_path: Path | str, policy_sha256: str) -> dict:
     root, policy_path = Path(catalogue_root), Path(policy_path)
     require(policy_path.is_file() and not policy_path.is_symlink(), "UNSAFE_INPUT", "regular policy file required")
-    policy = _validate_policy(policy_path.read_bytes(), policy_sha256)
-    manifest_raw = _safe_file(root, policy["manifest"]["path"]).read_bytes()
+    policy = _validate_policy(_read_limited(policy_path, MAX_POLICY_BYTES), policy_sha256)
+    manifest_raw = _read_limited(_safe_file(root, policy["manifest"]["path"]), MAX_MANIFEST_BYTES)
     manifest = _validate_manifest(manifest_raw, policy)
+    raw_files = {policy["manifest"]["path"]: manifest_raw}
     endpoints = {module["module_id"]: ("SOURCE_MODULE", module["module_id"]) for module in manifest["modules"]}
     endpoints.update({obj["object_id"]: ("SOURCE_DECLARATION", module["module_id"])
                       for module in manifest["modules"] for obj in module["objects"]})
     shards, expected_search = [], []
     for metadata in manifest["shards"]:
-        shard = _validate_shard(_safe_file(root, metadata["path"]).read_bytes(), manifest, metadata, endpoints)
+        shard_raw = _read_limited(_safe_file(root, metadata["path"]), MAX_SHARD_BYTES)
+        raw_files[metadata["path"]] = shard_raw
+        shard = _validate_shard(shard_raw, manifest, metadata, endpoints)
         shards.append(shard)
         for obj in shard["objects"]:
             expected_search.append({"object_id": obj["object_id"], "qualified_name": obj["qualified_name"],
                                     "module": obj["source"]["module"], "kind": obj["kind"], "statement": obj["statement"]})
     expected_search.sort(key=lambda item: _utf16(item["qualified_name"]))
-    search_raw = _safe_file(root, manifest["search"]["path"]).read_bytes()
+    search_raw = _read_limited(_safe_file(root, manifest["search"]["path"]), MAX_SEARCH_BYTES)
+    raw_files[manifest["search"]["path"]] = search_raw
     require(len(search_raw) == manifest["search"]["size_bytes"]
             and hashlib.sha256(search_raw).hexdigest() == manifest["search"]["sha256"],
             "SEARCH_INTEGRITY_MISMATCH", "search bytes changed")
@@ -550,9 +573,9 @@ def validate_publication(catalogue_root: Path | str, policy_path: Path | str, po
         require(not path.is_symlink(), "UNSAFE_INPUT", "symlink publication entry")
         if path.is_file(): actual_paths.add(path.relative_to(root).as_posix())
     require(actual_paths == expected_paths, "PUBLICATION_INVENTORY_MISMATCH", "publication has missing or extra bytes")
-    raw_files = [_safe_file(root, relative).read_bytes() for relative in sorted(expected_paths)]
-    require(sum(map(len, raw_files)) <= MAX_PUBLICATION_BYTES, "INPUT_TOO_LARGE", "publication raw budget exceeded")
-    require(sum(len(gzip.compress(raw, mtime=0)) for raw in raw_files) <= MAX_PUBLICATION_GZIP_BYTES,
+    publication_bytes = [raw_files[relative] for relative in sorted(expected_paths)]
+    require(sum(map(len, publication_bytes)) <= MAX_PUBLICATION_BYTES, "INPUT_TOO_LARGE", "publication raw budget exceeded")
+    require(sum(len(gzip.compress(raw, mtime=0)) for raw in publication_bytes) <= MAX_PUBLICATION_GZIP_BYTES,
             "INPUT_TOO_LARGE", "publication gzip budget exceeded")
     return {"policy": policy, "manifest": manifest, "shards": shards, "search": search, "result": dict(RESULT)}
 

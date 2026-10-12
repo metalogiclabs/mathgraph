@@ -25,7 +25,7 @@ from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PRODUCER_COMMIT = "9354983e1f339c1d251be175bcfba2b290270582"
+PRODUCER_COMMIT = "8d6b9d2a01de4ec08bba876956cdb0e60c6e1162"
 MATHLIB_REPOSITORY = "https://github.com/leanprover-community/mathlib4"
 SOURCE_POLICY_PATH = "catalogues/mathlib-v4.34.1-foundations-v1.source.json"
 PRODUCER_FILES = (
@@ -44,6 +44,7 @@ QUALIFICATION_WRAPPER_FILES = (
     ".github/workflows/mathgraph-source-catalogue-v1.yml",
     "conformance/source_catalogue_v1/consumer.py",
     "conformance/source_catalogue_v1/run_isolated.py",
+    "conformance/source_catalogue_v1/stdlib_conformance.py",
     "conformance/source_catalogue_v1/test_consumer.py",
     "scripts/qualify_mathlib_source_catalogue_v1.py",
     "tests/test_mathlib_source_catalogue_qualification_v1.py",
@@ -415,6 +416,21 @@ def _write_canonical(path: Path, value: object, publisher) -> None:
     path.write_bytes(publisher.contract.canonical_bytes(value))
 
 
+def write_artifact_checksum_manifest(output_root: Path) -> list[dict]:
+    """Close the complete generated artifact inventory with relative digests."""
+    checksum_path = output_root / "evidence/artifact-checksums.txt"
+    require(not checksum_path.exists() and not checksum_path.is_symlink(),
+            "artifact checksum manifest must be written once")
+    entries = _publication_inventory(output_root)
+    for entry in entries:
+        require("\n" not in entry["path"] and "\r" not in entry["path"], "unsafe artifact path")
+    checksum_path.write_text(
+        "".join(f"{entry['sha256']}  {entry['path']}\n" for entry in entries),
+        encoding="utf-8",
+    )
+    return entries
+
+
 def qualify(arguments) -> dict:
     repository_root = arguments.repository_root.resolve()
     work_root, output_root = arguments.work_root.absolute(), arguments.output_root.absolute()
@@ -539,6 +555,7 @@ def qualify(arguments) -> dict:
     checksums = [f"{item['sha256']}  catalogue/{item['path']}" for item in publication_files]
     checksums += [f"{trust_policy_sha256}  trust-policy.json"]
     (evidence / "checksums.txt").write_text("\n".join(checksums) + "\n", encoding="utf-8")
+    write_artifact_checksum_manifest(output_root)
     return report
 
 

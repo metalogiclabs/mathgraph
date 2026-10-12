@@ -7,7 +7,8 @@ publication bytes under a separately pinned trust policy. It imports neither
 
 The replay checks canonical bytes, content addresses, source and producer pins,
 closed object/relation identities, admitted structural relation meanings,
-counts, ordering, byte budgets, and the exact derived search index. Unknown
+counts, ordering, byte budgets, feasible source ranges, nonempty unique producer
+and wrapper source identities, and the exact derived search index. Unknown
 noncritical extensions remain opaque. Unknown critical extensions, unsupported
 relations, forged statuses, terminal forms, proof/evidence edges, implication,
 equivalence, or action authority fail closed.
@@ -31,4 +32,25 @@ python -I -S -B conformance/source_catalogue_v1/consumer.py \
 For mechanically enforced network and repository isolation, acquire the exact
 runtime image before replay and use `run_isolated.py --backend docker`. The
 runner mounts only the consumer, trust policy, manifest, search index, and the
-manifest-listed shards read-only.
+manifest-listed shards read-only. It also requires an independently supplied
+checked-out wrapper commit, binds the actual consumer and runner SHA-256 values
+to the trust policy, and records the isolated interpreter identity:
+
+```sh
+python -I -S -B conformance/source_catalogue_v1/run_isolated.py \
+  --backend docker --image-id sha256:<exact-image-id> \
+  --catalogue-root <catalogue> --policy <trust-policy.json> \
+  --policy-sha256 <separately-reviewed-sha256> \
+  --expected-wrapper-commit <exact-checked-out-commit>
+```
+
+The hosted adversarial suite needs no package installation:
+
+```sh
+python -I -S -B conformance/source_catalogue_v1/stdlib_conformance.py
+```
+
+It emits a deterministic authority-`NONE` report for 48 named conformance
+cases. The hosted workflow retains that report, verifies the complete downloaded
+artifact inventory from a sorted relative checksum manifest, and records action
+artifact metadata only as provenance rather than as an enforced integrity gate.
