@@ -62,20 +62,30 @@ def test_real_selected_compile_and_extract_with_readonly_inputs(api, inputs, env
     prefix = "Pkg." if cache_graph == "namespace" else ""
     def path(name): return (prefix + name).replace(".", "/")
     (root / path("A")).parent.mkdir(parents=True, exist_ok=True)
-    imports = "import " + prefix + "B\n" + ("import Pkg.Outside\n" if prefix else "")
-    (root / (path("B") + ".lean")).write_text("namespace B\ninductive T where | " + ("staleMk" if cache_graph == "stale_imports" else "mk") + "\nend B\n")
-    (root / (path("A") + ".lean")).write_text("namespace A\ndef stale : Nat := 0\nend A\n" if cache_graph == "stale_imports" else imports + "namespace A\ndef stale : B.T := B.T.mk\nend A\n")
+    header = "module\n\n"
+    imports = "public import " + prefix + "B\n" + ("public import Pkg.Outside\n" if prefix else "")
+    (root / (path("B") + ".lean")).write_text(
+        header + "public section\nnamespace B\ninductive T where | "
+        + ("staleMk" if cache_graph == "stale_imports" else "mk") + "\nend B\n")
+    (root / (path("A") + ".lean")).write_text(
+        header + "public section\nnamespace A\ndef stale : Nat := 0\nend A\n"
+        if cache_graph == "stale_imports" else
+        header + imports + "public section\nnamespace A\ndef stale : B.T := B.T.mk\nend A\n")
     lean = Path(os.environ["MATHGRAPH_CATALOGUE_LEAN"])
     cache = dependencies / "build/lib/lean"
     env = {**os.environ, "LEAN_PATH": str(cache), "PATH": str(lean.parent) + os.pathsep + os.environ["PATH"]}
-    if prefix: (root / "Pkg/Outside.lean").write_text("def outsideValue : Nat := 5\n")
+    if prefix:
+        (root / "Pkg/Outside.lean").write_text(
+            header + "public section\ndef outsideValue : Nat := 5\n")
     for name in (["Outside"] if prefix else []) + ["B", "A"]:
         target = cache / (path(name) + ".olean")
         target.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([str(lean), "-o", str(target), path(name) + ".lean"], cwd=root, env=env, check=True)
     # Stale selected cache must never win over newly compiled source outputs.
-    (root / (path("B") + ".lean")).write_text("namespace B\ninductive T where | mk\nend B\n")
-    (root / (path("A") + ".lean")).write_text(imports + "namespace A\ndef α : B.T := B.T.mk\nend A\n")
+    (root / (path("B") + ".lean")).write_text(
+        header + "public section\nnamespace B\ninductive T where | mk\nend B\n")
+    (root / (path("A") + ".lean")).write_text(
+        header + imports + "public section\nnamespace A\ndef α : B.T := B.T.mk\nend A\n")
     git(root, "add", ".")
     git(root, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "real sources")
     for field, rev in [("commit", "HEAD"), ("tree", "HEAD^{tree}")]: policy["source"][field] = inventory["source_" + field] = git(root, "rev-parse", rev)

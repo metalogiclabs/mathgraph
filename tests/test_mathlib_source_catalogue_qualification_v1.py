@@ -123,6 +123,31 @@ def test_existing_or_symlink_acquisition_root_is_rejected(api, tmp_path):
     with pytest.raises(ValueError): api.require_new_work_root(link)
 
 
+def test_selected_native_module_outputs_are_pruned_before_inventory(api, tmp_path):
+    mathlib = tmp_path / "mathlib"
+    build = mathlib / ".lake/build/lib/lean"
+    selected = build / "Mathlib/Data/Nat/Basic"
+    unrelated = build / "Mathlib/Data/Nat/Defs.olean"
+    selected.parent.mkdir(parents=True)
+    unrelated.parent.mkdir(parents=True, exist_ok=True)
+    expected = {
+        "lib/lean/Mathlib/Data/Nat/Basic.olean",
+        "lib/lean/Mathlib/Data/Nat/Basic.olean.private",
+        "lib/lean/Mathlib/Data/Nat/Basic.olean.server",
+        "lib/lean/Mathlib/Data/Nat/Basic.ir",
+        "lib/lean/Mathlib/Data/Nat/Basic.ir.sig",
+    }
+    for relative in expected:
+        path = mathlib / ".lake/build" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(relative.encode())
+    unrelated.write_bytes(b"unrelated")
+    policy = {"modules": [{"module": "Mathlib.Data.Nat.Basic"}]}
+    assert set(api._prune_selected_outputs(mathlib, policy)) == expected
+    assert unrelated.read_bytes() == b"unrelated"
+    assert not any((mathlib / ".lake/build" / relative).exists() for relative in expected)
+
+
 def test_trust_policy_pins_publication_source_producer_and_wrapper(api, tmp_path):
     fixture = ROOT / "conformance/source_catalogue_v1/fixtures"
     root = tmp_path / "catalogue"

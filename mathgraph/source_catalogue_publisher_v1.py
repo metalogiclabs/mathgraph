@@ -38,6 +38,16 @@ PRODUCER_FILES = (
     "scripts/publish_mathlib_source_catalogue_v1.py",
     "scripts/run_mathlib_source_catalogue_offline_v1.py", "tools/mathlib_catalogue/CompileOrder.lean", "tools/mathlib_catalogue/Extract.lean")
 COMPILE_FLAGS = ("-DautoImplicit=false", "-DmaxSynthPendingDepth=3", "-Dpp.unicode.fun=true")
+SELECTED_COMPILE_OUTPUTS = {
+    "module.olean": ".olean",
+    "module.olean.private": ".olean.private",
+    "module.olean.server": ".olean.server",
+    "module.ir": ".ir",
+    "module.ir.sig": ".ir.sig",
+}
+REQUIRED_SELECTED_COMPILE_OUTPUTS = frozenset({
+    "module.olean", "module.ir", "module.ir.sig",
+})
 BASE_IMAGE = "docker.io/library/buildpack-deps@sha256:17923645546d74acef88727bce62c23bbaed953fc7097c41a8b777bba3ca98de"
 BASE_IMAGE_CONFIG = "sha256:12d2284be437af82eaf8ebf5d1965223b8f259d82c1a523fff8e46de50ed5b54"
 TOOLCHAIN_PROFILE = {
@@ -684,6 +694,12 @@ def _seal_container_output(
     return entries
 
 
+def _selected_compile_target(root: Path, module: str, output_name: str) -> Path:
+    suffix = SELECTED_COMPILE_OUTPUTS.get(output_name)
+    require(suffix is not None, "unadmitted selected compiler output")
+    return root / (module.replace(".", "/") + suffix)
+
+
 def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Sequence[str], config: dict) -> bytes:
     contract._shape(config, {"image", "dependency_root", "inventory", "dependency_inventory_sha256"} | ({"toolchain"} if "toolchain" in config else set()))
     validate_image_digest(config["image"])
@@ -822,13 +838,13 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
                 _revoke_container_output(destination)
             produced = _seal_container_output(
                 destination,
-                {"module.olean", "module.olean.private", "module.olean.server"},
-                {"module.olean"},
+                set(SELECTED_COMPILE_OUTPUTS),
+                set(REQUIRED_SELECTED_COMPILE_OUTPUTS),
                 stage="compile-selected-module",
             )
             for artifact in produced:
                 raw = _safe_file(destination, artifact.name).read_bytes()
-                target = compiled / (module.replace(".", "/") + artifact.name.removeprefix("module"))
+                target = _selected_compile_target(compiled, module, artifact.name)
                 require(not target.exists(), "selected output would replace retained artifact")
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(raw)

@@ -245,12 +245,14 @@ def test_container_output_mismatch_reports_stage_names_and_types_without_content
     leaf = tmp_path / "output"
     api._prepare_container_output(leaf)
     (leaf / "module.olean").write_bytes(b"SECRET_OLEAN_CONTENT")
+    (leaf / "module.ir").write_bytes(b"SECRET_IR_CONTENT")
+    (leaf / "module.ir.sig").write_bytes(b"SECRET_IR_SIG_CONTENT")
     (leaf / "module.ilean").write_bytes(b"SECRET_ILEAN_CONTENT")
     with pytest.raises(ValueError) as exc:
         api._seal_container_output(
             leaf,
-            {"module.olean", "module.olean.private", "module.olean.server"},
-            {"module.olean"},
+            {"module.olean", "module.olean.private", "module.olean.server", "module.ir", "module.ir.sig"},
+            {"module.olean", "module.ir", "module.ir.sig"},
             stage="compile-selected-module",
         )
     message = str(exc.value)
@@ -258,8 +260,104 @@ def test_container_output_mismatch_reports_stage_names_and_types_without_content
     assert '"name":"module.ilean","type":"regular"' in message
     assert '"name":"module.olean","type":"regular"' in message
     assert "SECRET_OLEAN_CONTENT" not in message
+    assert "SECRET_IR_CONTENT" not in message
+    assert "SECRET_IR_SIG_CONTENT" not in message
     assert "SECRET_ILEAN_CONTENT" not in message
     assert stat.S_IMODE(leaf.stat().st_mode) == 0o700
+
+
+def test_selected_module_output_contract_maps_exact_native_artifacts(api, tmp_path):
+    expected = {
+        "module.olean": ".olean",
+        "module.olean.private": ".olean.private",
+        "module.olean.server": ".olean.server",
+        "module.ir": ".ir",
+        "module.ir.sig": ".ir.sig",
+    }
+    assert api.SELECTED_COMPILE_OUTPUTS == expected
+    assert api.REQUIRED_SELECTED_COMPILE_OUTPUTS == frozenset({
+        "module.olean", "module.ir", "module.ir.sig",
+    })
+    compiled = tmp_path / "compiled"
+    for output_name, suffix in expected.items():
+        assert api._selected_compile_target(
+            compiled, "Mathlib.Data.Nat.Basic", output_name
+        ) == compiled / ("Mathlib/Data/Nat/Basic" + suffix)
+    for output_name in ["module.irsig", "module.ir.extra", "module.IR", "prefix.module.ir"]:
+        with pytest.raises(ValueError):
+            api._selected_compile_target(compiled, "Mathlib.Data.Nat.Basic", output_name)
+
+
+@pytest.mark.parametrize("near_name", [
+    "module.irsig", "module.ir.extra", "module.ir-sig", "prefix.module.ir",
+])
+def test_selected_module_output_contract_rejects_near_name_extras(api, tmp_path, near_name):
+    leaf = tmp_path / "module-output"
+    api._prepare_container_output(leaf)
+    for name in api.REQUIRED_SELECTED_COMPILE_OUTPUTS:
+        (leaf / name).write_bytes(name.encode())
+    (leaf / near_name).write_bytes(b"near-name")
+    with pytest.raises(ValueError, match="container output set mismatch"):
+        api._seal_container_output(
+            leaf,
+            set(api.SELECTED_COMPILE_OUTPUTS),
+            set(api.REQUIRED_SELECTED_COMPILE_OUTPUTS),
+            stage="compile-selected-module",
+        )
+
+
+@pytest.mark.parametrize("unsafe_type", ["symlink", "hardlink"])
+def test_selected_module_output_contract_rejects_linked_core_artifacts(api, tmp_path, unsafe_type):
+    leaf = tmp_path / "module-output"
+    api._prepare_container_output(leaf)
+    for name in api.REQUIRED_SELECTED_COMPILE_OUTPUTS - {"module.ir"}:
+        (leaf / name).write_bytes(name.encode())
+    backing = tmp_path / "backing-ir"
+    backing.write_bytes(b"bound elsewhere")
+    if unsafe_type == "symlink":
+        (leaf / "module.ir").symlink_to(backing)
+    else:
+        os.link(backing, leaf / "module.ir")
+    with pytest.raises(ValueError, match="single regular file"):
+        api._seal_container_output(
+            leaf,
+            set(api.SELECTED_COMPILE_OUTPUTS),
+            set(api.REQUIRED_SELECTED_COMPILE_OUTPUTS),
+            stage="compile-selected-module",
+        )
+
+
+@pytest.mark.parametrize("missing", ["module.olean", "module.ir", "module.ir.sig"])
+def test_selected_module_output_contract_requires_each_core_artifact(api, tmp_path, missing):
+    leaf = tmp_path / "module-output"
+    api._prepare_container_output(leaf)
+    for name in api.REQUIRED_SELECTED_COMPILE_OUTPUTS - {missing}:
+        (leaf / name).write_bytes(name.encode())
+    with pytest.raises(ValueError, match="container output set mismatch"):
+        api._seal_container_output(
+            leaf,
+            set(api.SELECTED_COMPILE_OUTPUTS),
+            set(api.REQUIRED_SELECTED_COMPILE_OUTPUTS),
+            stage="compile-selected-module",
+        )
+
+
+def test_exact_lean_module_system_outputs_are_complete_and_deterministic(api, tmp_path):
+    lean = Path(os.environ["MATHGRAPH_CATALOGUE_LEAN"])
+    source = tmp_path / "Exact.lean"
+    source.write_text("module\npublic section\npublic def exactCatalogueValue : Nat := 7\n")
+    passes = []
+    for index in range(2):
+        output = tmp_path / f"pass-{index}"
+        output.mkdir()
+        subprocess.run([
+            str(lean), *api.COMPILE_FLAGS, "-R", str(tmp_path),
+            "-o", str(output / "module.olean"), str(source),
+        ], check=True)
+        files = {path.name: path.read_bytes() for path in output.iterdir()}
+        assert set(files) == set(api.SELECTED_COMPILE_OUTPUTS)
+        passes.append(files)
+    assert passes[0] == passes[1]
 
 
 def test_container_output_mismatch_reports_missing_required_output(api, tmp_path):
@@ -285,7 +383,7 @@ def environment(api, inputs, tmp_path):
     dependencies = tmp_path / "dependencies"
     dependencies.mkdir()
     entries = []
-    for path in ["build/lib/lean/A.olean", "build/lib/lean/A.olean.server", "build/lib/lean/A.olean.private", "build/lib/lean/A.ilean", "build/lib/lean/A.trace", "build/lib/lean/A.olean.hash", "build/ir/A.c", "build/ir/A.c.o", "build/lib/lean/Outside.olean"]:
+    for path in ["build/lib/lean/A.olean", "build/lib/lean/A.olean.server", "build/lib/lean/A.olean.private", "build/lib/lean/A.ir", "build/lib/lean/A.ir.sig", "build/lib/lean/A.ilean", "build/lib/lean/A.trace", "build/lib/lean/A.olean.hash", "build/ir/A.c", "build/ir/A.c.o", "build/lib/lean/Outside.olean"]:
         f = dependencies / path
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_bytes(b"pinned cache bytes")
@@ -386,7 +484,7 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
         assert any(m.endswith("dst=/work,readonly") for m in mounts)
         for source_tree in [snapshot / ".lake", mount_path("/verified-dependencies")]:
             selected = [p for p in source_tree.rglob("*") if p.is_file() and p.name.startswith("A.")]
-            assert all(p.read_bytes() == b"fresh compiled output" for p in selected), "selected cached artifacts remain visible"
+            assert all(p.read_bytes().startswith(b"fresh compiled output:") for p in selected), "selected cached artifacts remain visible"
             if len(commands) == 1 or source_tree == mount_path("/verified-dependencies"): assert not selected
         assert (snapshot / ".lake/build/lib/lean/Outside.olean").read_bytes() == b"pinned cache bytes"
         assert (snapshot / "A.lean").read_bytes() == (root / "A.lean").read_bytes()
@@ -401,10 +499,14 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
             assert command[-1] == ("B.lean" if len(commands) == 2 else "A.lean")
             assert any(m.endswith("dst=/compiled,readonly") for m in mounts)
             assert "-DautoImplicit=false" in command[-3]
-            (mount_path("/module-output") / "module.olean").write_bytes(b"fresh compiled output")
+            for name in api.SELECTED_COMPILE_OUTPUTS:
+                (mount_path("/module-output") / name).write_bytes(
+                    b"fresh compiled output:" + name.encode())
         else:
-            assert (mount_path("/compiled") / "A.olean").read_bytes() == b"fresh compiled output"
-            assert (mount_path("/compiled") / "B.olean").read_bytes() == b"fresh compiled output"
+            for module in ["A", "B"]:
+                for name, suffix in api.SELECTED_COMPILE_OUTPUTS.items():
+                    assert (mount_path("/compiled") / (module + suffix)).read_bytes() == (
+                        b"fresh compiled output:" + name.encode())
             (mount_path("/output") / "extraction.json").write_bytes(FIXTURE.read_bytes())
         return subprocess.CompletedProcess(command, 0)
     monkeypatch.setattr(api.subprocess, "run", docker_boundary)
@@ -723,7 +825,7 @@ def test_complete_cli_uses_verified_sources_without_acquisition(api, producer_ch
     common = "import json,os,sys\nfrom pathlib import Path\nwith open(os.environ['CATALOGUE_TEST_LOG'],'a') as f: f.write(json.dumps(sys.argv)+'\\n')\n"
     scripts = {
         "git": common + "assert not set(sys.argv[1:]) & {'clone','fetch','pull'}\nos.execv(" + repr(shutil.which("git")) + ", ['git',*sys.argv[1:]])\n",
-        "docker": common + "args=sys.argv[1:]\nassert args[args.index('--network')+1]=='none' and args[args.index('--pull')+1]=='never'\nmounts=[dict(x.split('=',1) if '=' in x else (x,True) for x in args[i+1].split(',')) for i,a in enumerate(args) if a=='--mount']\npaths={m['dst']:Path(m['src']) for m in mounts}\nassert next(m for m in mounts if m['dst']=='/work')['readonly']\nif '/plan' in paths: (paths['/plan']/'order.json').write_text('{\"modules\":[\"B\",\"A\"]}')\nelif '/module-output' in paths: (paths['/module-output']/'module.olean').write_bytes(b'fixture')\nelse: (paths['/output']/'extraction.json').write_bytes(Path(os.environ['CATALOGUE_TEST_RAW']).read_bytes())\n",
+        "docker": common + "args=sys.argv[1:]\nassert args[args.index('--network')+1]=='none' and args[args.index('--pull')+1]=='never'\nmounts=[dict(x.split('=',1) if '=' in x else (x,True) for x in args[i+1].split(',')) for i,a in enumerate(args) if a=='--mount']\npaths={m['dst']:Path(m['src']) for m in mounts}\nassert next(m for m in mounts if m['dst']=='/work')['readonly']\nif '/plan' in paths: (paths['/plan']/'order.json').write_text('{\"modules\":[\"B\",\"A\"]}')\nelif '/module-output' in paths:\n  for name in ['module.olean','module.olean.private','module.olean.server','module.ir','module.ir.sig']: (paths['/module-output']/name).write_bytes(b'fixture:'+name.encode())\nelse: (paths['/output']/'extraction.json').write_bytes(Path(os.environ['CATALOGUE_TEST_RAW']).read_bytes())\n",
         "curl": common + "raise SystemExit('acquisition forbidden')\n", "wget": common + "raise SystemExit('acquisition forbidden')\n"}
     for name, body in scripts.items():
         path = binaries / name
