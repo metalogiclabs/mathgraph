@@ -215,6 +215,34 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('Published after publisher withdrawal');
   });
 
+  test('puts the selective consequence comparison before the secondary Resolve controls', async () => {
+    const html = await page('resolve');
+    const comparison = html.match(/<section[^>]+data-resolve-comparison[\s\S]+?<\/section>/)?.[0] ?? '';
+    const text = visibleText(comparison);
+
+    expect(comparison).not.toBe('');
+    expect(html.indexOf('data-resolve-comparison')).toBeLessThan(html.indexOf('class="resolve-controls"'));
+    expect(comparison).toContain('data-selected-scenario="published-after"');
+    expect(text).toContain('What changed — and what did not');
+    expect(text).toContain('openai.original_support.1');
+    expect(text).toMatch(/SOURCE_DOCUMENTED.*STALE/i);
+    expect(text).toContain('openai.theorem.1');
+    expect(text).toMatch(/UNKNOWN.*UNKNOWN/i);
+    expect(text).toMatch(/not REFUTED/i);
+    expect(text).toContain('jpl.l4yaml.finite_parser_acceptance');
+    expect(text).toMatch(/WARRANTED_BOUNDED.*WARRANTED_BOUNDED/i);
+    expect(text).toContain('nasa-jpl/L4YAML@62bf7077910e888a0bc8adfc8e08a5f500ff3ca3:yaml/yaml-test-suite@da267a5c4782e7361e82889e76c0dc7df0e1e870:48-cases');
+    expect(text).toMatch(/browser neither resolves, qualifies, nor mutates/i);
+    for (const [id, label] of [
+      ['published-after', 'Qualified history'],
+      ['modeled-before', 'Modeled baseline'],
+      ['withdraw-openai.original_publication_receipt.1', 'Counterfactual'],
+    ]) {
+      expect(comparison).toMatch(new RegExp(`<button[^>]+data-resolve-select="${id.replaceAll('.', '[.]')}"[^>]+disabled`, 'i'));
+      expect(text).toContain(label);
+    }
+  });
+
   test('renders all seven historic outcomes at both permanent Resolve record routes', async () => {
     const current = await page(`records/${resolveRecord.id}`);
     const versioned = await page(`records/${resolveRecord.id}/v1`);

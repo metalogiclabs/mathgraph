@@ -22,6 +22,7 @@
     "test:catalogue-browser": "node tests/catalogue-filter.browser.mjs",
     "test:explore-browser": "node tests/explore-search.browser.mjs",
     "test:source-browser": "node tests/source-objects.browser.mjs",
+    "test:resolve-browser": "node tests/resolve-explorer.browser.mjs",
     "test:artifact": "node tests/static-artifact-contract.mjs",
     "build": "astro build",
     "preview": "astro preview",

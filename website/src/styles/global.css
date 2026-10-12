@@ -401,6 +401,10 @@ pre {
   color: #aeb7c7;
 }
 
+.section--ink .fineprint {
+  color: #aeb7c7;
+}
+
 .section--ink .source-link {
   border-color: #4b5565;
 }
@@ -854,7 +858,7 @@ pre {
 .flow li::before {
   display: block;
   margin-bottom: var(--space-3);
-  color: var(--ink-500);
+  color: var(--ink-650);
   font-family: var(--mono);
   font-size: var(--step--1);
   content: "0" counter(flow);
@@ -1403,7 +1407,7 @@ summary {
 
 .resolve-principles article > span,
 .cycle-grid li > div > span {
-  color: var(--ink-500);
+  color: var(--ink-650);
   font: 700 var(--step--1) / 1 var(--mono);
 }
 
@@ -1505,6 +1509,181 @@ summary {
 .resolve-explorer__header .lede {
   max-width: 52ch;
   margin-bottom: 0;
+}
+
+.resolve-comparison {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--blue-100) 24%, var(--paper-strong));
+}
+
+.resolve-comparison__header,
+.resolve-comparison__selection {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.resolve-comparison__header h3 {
+  margin: 0;
+}
+
+.resolve-comparison__header > p {
+  margin: 0;
+}
+
+.resolve-comparison__choices {
+  display: grid;
+  margin-block: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.resolve-comparison__choices button {
+  min-height: 56px;
+  padding: var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--ink-800);
+  background: var(--paper-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.resolve-comparison__choices button[aria-pressed="true"] {
+  border-color: var(--blue-700);
+  box-shadow: inset 0 0 0 1px var(--blue-700);
+  background: var(--blue-100);
+}
+
+.resolve-comparison__choices button:disabled {
+  opacity: 0.64;
+  cursor: not-allowed;
+}
+
+.resolve-comparison__choices button span,
+.resolve-comparison__choices button small {
+  display: block;
+}
+
+.resolve-comparison__choices button span {
+  font-weight: 760;
+}
+
+.resolve-comparison__choices button small {
+  margin-top: var(--space-1);
+  color: var(--ink-650);
+}
+
+.resolve-comparison__selection {
+  padding-block: var(--space-3);
+  border-block: 1px solid var(--line);
+}
+
+.resolve-comparison__selection > div {
+  display: grid;
+  min-width: 15rem;
+  gap: var(--space-2);
+}
+
+.resolve-comparison__selection code {
+  width: fit-content;
+}
+
+.resolve-comparison__selection p {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--ink-650);
+}
+
+.resolve-comparison__outcomes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.resolve-comparison__outcomes article {
+  min-width: 0;
+  padding: var(--space-4);
+  border-right: 1px solid var(--line);
+}
+
+.resolve-comparison__outcomes article:first-child {
+  padding-left: 0;
+}
+
+.resolve-comparison__outcomes article:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.resolve-comparison__outcomes h4 {
+  margin-block: var(--space-2);
+  font-size: var(--step-0);
+}
+
+.resolve-comparison__outcomes article > code,
+.resolve-comparison__outcomes article > p {
+  overflow-wrap: anywhere;
+}
+
+.resolve-comparison__outcomes article > code {
+  font-size: 0.68rem;
+}
+
+.resolve-comparison__outcomes article > p {
+  margin-bottom: 0;
+  color: var(--ink-650);
+  font-size: var(--step--1);
+}
+
+.resolve-comparison__transition {
+  display: grid;
+  align-items: end;
+  margin-top: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.resolve-comparison__transition > span,
+.resolve-comparison__transition small {
+  display: block;
+}
+
+.resolve-comparison__transition small {
+  margin-bottom: var(--space-1);
+  color: var(--ink-650);
+  font-size: 0.68rem;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.resolve-comparison__transition b {
+  padding-bottom: 0.25rem;
+}
+
+.resolve-comparison__withdrawn,
+.resolve-comparison__unchanged {
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+
+.resolve-comparison__withdrawn code + code {
+  margin-left: var(--space-1);
+}
+
+.resolve-comparison__unchanged {
+  margin-top: var(--space-3);
+}
+
+.resolve-comparison [hidden] {
+  display: none;
 }
 
 .resolve-controls {
@@ -1990,8 +2169,22 @@ summary {
   }
 
   .resolve-controls,
-  .resolve-graph {
+  .resolve-graph,
+  .resolve-comparison__choices,
+  .resolve-comparison__outcomes {
     grid-template-columns: 1fr;
+  }
+
+  .resolve-comparison__outcomes article,
+  .resolve-comparison__outcomes article:first-child,
+  .resolve-comparison__outcomes article:last-child {
+    padding: var(--space-4) 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .resolve-comparison__outcomes article:last-child {
+    border-bottom: 0;
   }
 
   .flow li {
@@ -2127,10 +2320,20 @@ summary {
   }
 
   .resolve-explorer__header,
-  .resolve-view__header {
+  .resolve-view__header,
+  .resolve-comparison__header,
+  .resolve-comparison__selection {
     align-items: flex-start;
     flex-direction: column;
     gap: var(--space-3);
+  }
+
+  .resolve-comparison {
+    padding: var(--space-3);
+  }
+
+  .resolve-comparison__selection > div {
+    min-width: 0;
   }
 
   .resolve-principles,
