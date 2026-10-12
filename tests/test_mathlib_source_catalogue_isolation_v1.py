@@ -55,22 +55,32 @@ def test_build_process_cannot_mutate_compiled_inputs(api, inputs, environment, g
     assert attempted == [relative]
 
 
-def test_real_selected_compile_and_extract_with_readonly_inputs(api, inputs, environment, monkeypatch, tmp_path):
+@pytest.mark.parametrize("cache_graph", ["unchanged", "stale_imports", "namespace", "forced_bad_order"])
+def test_real_selected_compile_and_extract_with_readonly_inputs(api, inputs, environment, monkeypatch, tmp_path, cache_graph):
     root, policy, identity = inputs
     dependencies, inventory, config = environment
-    (root / "B.lean").write_text("namespace B\ninductive T where | mk\nend B\n")
-    (root / "A.lean").write_text("import B\nnamespace A\ndef stale : B.T := B.T.mk\nend A\n")
+    prefix = "Pkg." if cache_graph == "namespace" else ""
+    def path(name): return (prefix + name).replace(".", "/")
+    (root / path("A")).parent.mkdir(parents=True, exist_ok=True)
+    imports = "import " + prefix + "B\n" + ("import Pkg.Outside\n" if prefix else "")
+    (root / (path("B") + ".lean")).write_text("namespace B\ninductive T where | " + ("staleMk" if cache_graph == "stale_imports" else "mk") + "\nend B\n")
+    (root / (path("A") + ".lean")).write_text("namespace A\ndef stale : Nat := 0\nend A\n" if cache_graph == "stale_imports" else imports + "namespace A\ndef stale : B.T := B.T.mk\nend A\n")
     lean = Path(os.environ["MATHGRAPH_CATALOGUE_LEAN"])
     cache = dependencies / "build/lib/lean"
     env = {**os.environ, "LEAN_PATH": str(cache), "PATH": str(lean.parent) + os.pathsep + os.environ["PATH"]}
-    for name in ["B", "A"]:
-        subprocess.run([str(lean), "-o", str(cache / (name + ".olean")), name + ".lean"], cwd=root, env=env, check=True)
+    if prefix: (root / "Pkg/Outside.lean").write_text("def outsideValue : Nat := 5\n")
+    for name in (["Outside"] if prefix else []) + ["B", "A"]:
+        target = cache / (path(name) + ".olean")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([str(lean), "-o", str(target), path(name) + ".lean"], cwd=root, env=env, check=True)
     # Stale selected cache must never win over newly compiled source outputs.
-    (root / "A.lean").write_text("import B\nnamespace A\ndef α : B.T := B.T.mk\nend A\n")
+    (root / (path("B") + ".lean")).write_text("namespace B\ninductive T where | mk\nend B\n")
+    (root / (path("A") + ".lean")).write_text(imports + "namespace A\ndef α : B.T := B.T.mk\nend A\n")
     git(root, "add", ".")
     git(root, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "real sources")
     for field, rev in [("commit", "HEAD"), ("tree", "HEAD^{tree}")]: policy["source"][field] = inventory["source_" + field] = git(root, "rev-parse", rev)
     for module in policy["modules"]:
+        module.update(module=prefix + module["module"], path=path(module["module"]) + ".lean")
         raw = (root / module["path"]).read_bytes()
         module.update(sha256=sha(raw), size_bytes=len(raw))
     inventory["files"] = [{"path": p.relative_to(dependencies).as_posix(), "sha256": sha(p.read_bytes()), "size_bytes": p.stat().st_size, "mode": "100644"} for p in sorted(dependencies.rglob("*")) if p.is_file()]
@@ -93,11 +103,23 @@ def test_real_selected_compile_and_extract_with_readonly_inputs(api, inputs, env
         args = [translate(a) for a in command[command.index(config["image"]) + 1:]]
         commands.append(args)
         result = real_run(["sandbox-exec", "-p", profile, "/bin/sh", *args], cwd=translate("/work"), env=child_env, capture_output=True, text=True)
+        if cache_graph == "forced_bad_order" and len(commands) == 1:
+            Path(translate("/plan/order.json")).write_text('{"modules":["A","B"]}')
+        if cache_graph == "forced_bad_order" and len(commands) == 2:
+            assert result.returncode != 0, "dependent compiler fell back to retained selected B"
+            assert "B" in result.stdout and ("does not exist" in result.stdout or "unknown module prefix" in result.stdout)
+            assert not Path(translate("/module-output/module.olean")).exists()
+            raise subprocess.CalledProcessError(result.returncode, command)
         assert result.returncode == 0, result.stdout + result.stderr
         return result
     monkeypatch.setattr(api.subprocess, "run", boundary)
-    raw = api.run_offline_extraction(source, ROOT / "tools/mathlib_catalogue/Extract.lean", ["A", "B"], config)
-    assert [c[-1] for c in commands[1:3]] == ["B.lean", "A.lean"]
+    if cache_graph == "forced_bad_order":
+        with pytest.raises(subprocess.CalledProcessError):
+            api.run_offline_extraction(source, ROOT / "tools/mathlib_catalogue/Extract.lean", ["A", "B"], config)
+        assert len(commands) == 2 and commands[-1][-1] == "A.lean"
+        return
+    raw = api.run_offline_extraction(source, ROOT / "tools/mathlib_catalogue/Extract.lean", [prefix + "A", prefix + "B"], config)
+    assert [c[-1] for c in commands[1:3]] == [path("B") + ".lean", path("A") + ".lean"]
     assert len(commands) == 4
     doc = json.loads(raw)
     assert any(d["qualified_name"] == "A.α" for d in doc["modules"][0]["declarations"])

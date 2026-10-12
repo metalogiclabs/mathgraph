@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/fixtures/source_catalogue_v1/lean-project"
@@ -52,17 +53,34 @@ def test_real_lean_environment_extractor(tmp_path):
     assert "proofOnly" not in ds["CatalogueFixture.usesProof"]["statement"]
 
 
-def test_real_environment_compile_order_includes_transitive_selected_dependencies(tmp_path):
+@pytest.mark.parametrize("cache_mode", ["stale", "absent"])
+def test_source_compile_order_includes_transitive_selected_dependencies(tmp_path, cache_mode):
     helper = ROOT / "tools/mathlib_catalogue/CompileOrder.lean"
     assert helper.is_file(), "environment compile-order helper missing"
     lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
     source, cache = tmp_path / "source", tmp_path / "cache"
     source.mkdir()
     cache.mkdir()
-    env = {**os.environ, "LEAN_PATH": str(cache)}
-    for name, text in [("Z", "def z : Nat := 1\n"), ("Middle", "import Z\ndef middle : Nat := z\n"), ("A", "import Middle\ndef a : Nat := middle\n")]:
+    env = {**os.environ, "LEAN_PATH": str(cache), "LEAN_SRC_PATH": str(source)}
+    for name, text in [("Z", "def z : Nat := 1\n"), ("Middle", "def middle : Nat := 0\n"), ("A", "def a : Nat := 0\n")]:
         (source / (name + ".lean")).write_text(text)
-        subprocess.run([lean, "-o", str(cache / (name + ".olean")), str(source / (name + ".lean"))], cwd=source, env=env, check=True)
+        if cache_mode == "stale": subprocess.run([lean, "-o", str(cache / (name + ".olean")), str(source / (name + ".lean"))], cwd=source, env=env, check=True)
+    (source / "Middle.lean").write_text("import Z\ndef middle : Nat := z\n")
+    (source / "A.lean").write_text("/- import Missing.Comment -/\nimport Middle\ndef text := \"import Missing.String\"\n")
     out = tmp_path / "order.json"
     subprocess.run([lean, "--run", str(helper), str(out), "A", "Z"], env=env, check=True)
     assert json.loads(out.read_bytes()) == {"modules": ["Z", "A"]}
+
+
+@pytest.mark.parametrize("failure", ["cycle", "missing_source", "malformed_header"])
+def test_source_compile_order_declines_invalid_import_closure(tmp_path, failure):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "A.lean").write_text("import B\n" if failure != "malformed_header" else "import\n")
+    if failure == "cycle": (source / "B.lean").write_text("import A\n")
+    output = tmp_path / "order.json"
+    result = subprocess.run([os.environ["MATHGRAPH_CATALOGUE_LEAN"], "--run", str(ROOT / "tools/mathlib_catalogue/CompileOrder.lean"), str(output), "A"],
+                            env={**os.environ, "LEAN_SRC_PATH": str(source)}, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert {"cycle": "cyclic source imports", "missing_source": "missing verified import source", "malformed_header": "invalid source import header"}[failure] in result.stderr
+    assert not output.exists()

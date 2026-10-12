@@ -593,6 +593,8 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
         shutil.copytree(snapshot, audit_source, symlinks=True)
         audit_dependencies = work / "verified-dependencies"
         audit_dependencies.mkdir()
+        selected_paths = [m.replace(".", "/") for m in modules]
+        build_roots = ["build/", *[p["path"] + "/.lake/build/" for p in inventory["packages"]]]
         for entry in inventory["files"]:
             path = audit_dependencies / entry["path"]
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -600,6 +602,12 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
             require(("100755" if origin.stat().st_mode & 0o111 else "100644") == entry["mode"], "dependency mode changed while snapshotting")
             raw = origin.read_bytes()
             require(len(raw) == entry["size_bytes"] and sha256(raw) == entry["sha256"], "dependency changed while snapshotting")
+            # Exclude every selected-origin output suffix, including private,
+            # server, trace, native and future sidecars, from all cache mounts.
+            # Original inventoried bytes remain verified but never searchable.
+            build_path = next((entry["path"][len(prefix):] for prefix in build_roots if entry["path"].startswith(prefix)), None)
+            if build_path is not None and any("/" + selected + "." in "/" + build_path for selected in selected_paths):
+                continue
             path.write_bytes(raw)
             path.chmod(0o755 if entry["mode"] == "100755" else 0o644)
         shutil.copytree(audit_dependencies, snapshot / ".lake")
@@ -615,11 +623,12 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
             (git_dir / "refs").mkdir()
             (snapshot / ".lake" / package["path"] / ".git").mkdir()
             git_mounts += ["--mount", f"type=bind,src={git_dir},dst=/work/.lake/{package['path']}/.git,readonly"]
-        # Retained inputs are never writable. Cached selected modules are used
-        # only to read the environment import order; each selected origin is
-        # recompiled into its own fresh output directory before extraction.
-        compiled, plan = work / "compiled", work / "plan"
-        compiled.mkdir()
+        # Lean resolves a module prefix at its first search root, so selected
+        # outputs must share the root with retained unselected siblings. Child
+        # processes see this entire tree read-only; only the host inserts fresh
+        # selected outputs after each isolated compiler exits successfully.
+        compiled, plan = snapshot / ".lake/build/lib/lean", work / "plan"
+        compiled.mkdir(parents=True, exist_ok=True)
         plan.mkdir()
         out = work / "output"
         out.mkdir()
@@ -635,7 +644,8 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
                    "--mount", f"type=bind,src={snapshot},dst=/work,readonly",
                    "--mount", f"type=bind,src={compiled},dst=/compiled,readonly", *git_mounts,
                    "--workdir", "/work", "--env", "HOME=/tmp",
-                   "--env", "LEAN_PATH=" + ":".join(["/compiled", "/work/.lake/build/lib/lean", *["/work/.lake/" + p["path"] + "/.lake/build/lib/lean" for p in inventory["packages"]]]),
+                   "--env", "LEAN_PATH=" + ":".join(["/compiled", *["/work/.lake/" + p["path"] + "/.lake/build/lib/lean" for p in inventory["packages"]]]),
+                   "--env", "LEAN_SRC_PATH=" + ":".join(["/work", *["/work/.lake/" + p["path"] for p in inventory["packages"]]]),
                    "--env", "MATHGRAPH_EXPECTED_TOOLCHAIN=" + policy["source"]["lean_toolchain"]["value"],
                    "--entrypoint", "/bin/sh"]
         for key, value in git_runtime_environment(inventory["packages"]).items():
@@ -668,6 +678,7 @@ def run_offline_extraction(source: VerifiedSource, extractor: Path, modules: Seq
             for artifact in produced:
                 raw = _safe_file(destination, artifact.name).read_bytes()
                 target = compiled / (module.replace(".", "/") + artifact.name.removeprefix("module"))
+                require(not target.exists(), "selected output would replace retained artifact")
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(raw)
         subprocess.run([*command, "--mount", f"type=bind,src={out},dst=/output", config["image"], "-eu", "-c",

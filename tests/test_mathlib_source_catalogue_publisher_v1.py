@@ -199,7 +199,7 @@ def environment(api, inputs, tmp_path):
     dependencies = tmp_path / "dependencies"
     dependencies.mkdir()
     entries = []
-    for path in ["build/lib/lean/A.olean", "build/lib/lean/A.olean.server", "build/ir/A.c", "build/lib/lean/Outside.olean"]:
+    for path in ["build/lib/lean/A.olean", "build/lib/lean/A.olean.server", "build/lib/lean/A.olean.private", "build/lib/lean/A.ilean", "build/lib/lean/A.trace", "build/lib/lean/A.olean.hash", "build/ir/A.c", "build/ir/A.c.o", "build/lib/lean/Outside.olean"]:
         f = dependencies / path
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_bytes(b"pinned cache bytes")
@@ -234,6 +234,11 @@ def test_dependency_inventory_rejects_unbound_state(api, environment, mutation):
 def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inputs, environment, git_dependency, monkeypatch, local_toolchain, external_toolchain):
     root, policy, _ = inputs
     dependencies, inventory, config = environment
+    package_cache = dependencies / "packages/dep/.lake/build/lib/lean/A.olean"
+    package_cache.parent.mkdir(parents=True, exist_ok=True)
+    package_cache.write_bytes(b"pinned cache bytes")
+    inventory["files"].append({"path": "packages/dep/.lake/build/lib/lean/A.olean", "sha256": sha(package_cache.read_bytes()), "size_bytes": 18, "mode": "100644"})
+    inventory["files"].sort(key=lambda f: f["path"])
     package = inventory["packages"][0]
     (root / "lake-manifest.json").write_text(json.dumps({"packages": [{"name": package["name"], "rev": package["commit"], "url": package["repository"]}]}))
     git(root, "add", "lake-manifest.json")
@@ -287,7 +292,10 @@ def test_harness_rebuilds_selected_origins_and_denies_container_network(api, inp
         assert any(m.endswith("dst=/work/.lake/packages/dep/.git,readonly") for m in mounts)
         assert snapshot != root
         assert any(m.endswith("dst=/work,readonly") for m in mounts)
-        assert (snapshot / ".lake/build/lib/lean/A.olean").read_bytes() == b"pinned cache bytes"
+        for source_tree in [snapshot / ".lake", mount_path("/verified-dependencies")]:
+            selected = [p for p in source_tree.rglob("*") if p.is_file() and p.name.startswith("A.")]
+            assert all(p.read_bytes() == b"fresh compiled output" for p in selected), "selected cached artifacts remain visible"
+            if len(commands) == 1 or source_tree == mount_path("/verified-dependencies"): assert not selected
         assert (snapshot / ".lake/build/lib/lean/Outside.olean").read_bytes() == b"pinned cache bytes"
         assert (snapshot / "A.lean").read_bytes() == (root / "A.lean").read_bytes()
         if len(commands) == 1:
