@@ -202,6 +202,106 @@ def test_hcongr_collision_with_selected_module_source_range_remains_fail_closed(
     assert not output.exists()
 
 
+def test_generated_congr_simp_origin_collision_is_named_omission(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "congr-simp-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["HCongrDefs", "CongrSimpLeft", "CongrSimpRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "congr-simp-origin-collision.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "CongrSimpLeft", "CongrSimpRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    document = json.loads(output.read_bytes())
+    assert [module["module"] for module in document["modules"]] == [
+        "CongrSimpLeft", "CongrSimpRight",
+    ]
+    for module, direct in zip(document["modules"], ["Origin.forceCongrSimpLeft", "Origin.forceCongrSimpRight"]):
+        omissions = {entry["qualified_name"]: entry for entry in module["omissions"]}
+        assert omissions["Origin.congrTarget.congr_simp"] == {
+            "qualified_name": "Origin.congrTarget.congr_simp",
+            "kind": "theorem",
+            "reason": "GENERATED",
+        }
+        assert {entry["qualified_name"] for entry in module["declarations"]} == {direct}
+
+
+@pytest.mark.parametrize("left,right,qualified", [
+    ("DirectCongrSimpLeft", "DirectCongrSimpRight", "DirectCongrSimp.congr_simp"),
+    ("NearCongrSimpLeft", "NearCongrSimpRight", "NearCongrSimp.congr_simp_extra"),
+])
+def test_direct_congr_simp_names_remain_fail_closed(tmp_path, left, right, qualified):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / (left + "-origin-collision")
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in [left, right]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), left, right,
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert qualified in result.stderr
+    assert f"selected={right}" in result.stderr
+    assert f"canonical={left}" in result.stderr
+    assert not output.exists()
+
+
+def test_congr_simp_collision_without_selected_module_metadata_remains_fail_closed(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "spoof-congr-simp-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["HCongrDefs", "CongrSimpLeft", "CongrSimpSpoofRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "CongrSimpLeft", "CongrSimpSpoofRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "Origin.congrTarget.congr_simp" in result.stderr
+    assert "selected=CongrSimpSpoofRight" in result.stderr
+    assert "canonical=CongrSimpLeft" in result.stderr
+    assert not output.exists()
+
+
+def test_congr_simp_collision_with_selected_module_source_range_remains_fail_closed(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "range-spoof-congr-simp-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["HCongrDefs", "CongrSimpLeft", "CongrSimpRangeSpoofRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "CongrSimpLeft", "CongrSimpRangeSpoofRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "Origin.congrTarget.congr_simp" in result.stderr
+    assert "selected=CongrSimpRangeSpoofRight" in result.stderr
+    assert "canonical=CongrSimpLeft" in result.stderr
+    assert not output.exists()
+
+
 @pytest.mark.parametrize("cache_mode", ["stale", "absent"])
 def test_source_compile_order_includes_transitive_selected_dependencies(tmp_path, cache_mode):
     helper = ROOT / "tools/mathlib_catalogue/CompileOrder.lean"

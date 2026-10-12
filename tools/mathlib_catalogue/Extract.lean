@@ -52,21 +52,23 @@ def sameGeneratedTheorem (observed canonical : ConstantInfo) : Bool :=
     a.name == b.name && a.type == b.type && a.levelParams == b.levelParams && a.all == b.all
   | _, _ => false
 
-/-- `mkHCongrWithArityForConst?` realizes reserved `hcongr_<Nat>` theorem
-names on demand and records their argument kinds in Lean's congruence
-declaration extension. Sibling modules may realize the same theorem before
-import finalization chooses one canonical origin. Require the exact hcongr
-suffix grammar and arity, the registered reserved-name predicate, no direct
-source range, an exact entry in the selected module's private serialized
-extension state, and agreement with canonical extension metadata. Looking up
-only the canonical extension entry is insufficient: a low-level declaration in
-a sibling module could otherwise borrow the canonical module's generated
-status. A user theorem merely ending in `hcongr_<Nat>` is therefore not
-classified as generated. -/
-def isGeneratedHCongr (env : Environment) (idx : ModuleIdx) (name : Name) : Bool :=
+/-- `mkHCongrWithArityForConst?` and `mkCongrSimpForConst?` realize Lean's two
+reserved congruence-theorem forms, `hcongr_<Nat>` and exact `congr_simp`, and
+record their argument kinds in the congruence declaration extension. Sibling
+modules may realize the same theorem before import finalization chooses one
+canonical origin. Require the official suffix grammar (including hcongr
+arity), the registered reserved-name predicate, no direct source range, an
+exact entry in the selected module's private serialized extension state, and
+agreement with canonical extension metadata. Looking up only the canonical
+extension entry is insufficient: a low-level declaration in a sibling module
+could otherwise borrow the canonical module's generated status. User theorems
+with exact or near-match suffixes are therefore not classified as generated. -/
+def isGeneratedCongruence (env : Environment) (idx : ModuleIdx) (name : Name) : Bool :=
   match name with
   | .str _ suffix =>
-    if !Meta.isHCongrReservedNameSuffix suffix || !isReservedName env name then
+    let hcongr := Meta.isHCongrReservedNameSuffix suffix
+    let congrSimp := suffix == Meta.congrSimpSuffix
+    if !(hcongr || congrSimp) || !isReservedName env name then
       false
     else
       let localKindsEntries := Meta.congrKindsExt.getModuleEntries env idx (level := .private)
@@ -79,7 +81,8 @@ def isGeneratedHCongr (env : Environment) (idx : ModuleIdx) (name : Name) : Bool
         match Meta.congrKindsExt.find? env name (level := .private) with
         | some canonicalKinds =>
           let localKinds := localKindsEntries[0]!.2
-          localKinds == canonicalKinds && localKinds.size == (suffix.drop 7).toNat!
+          localKinds == canonicalKinds
+            && (!hcongr || localKinds.size == (suffix.drop 7).toNat!)
         | none => false
   | _ => false
 
@@ -114,15 +117,15 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
       -- suffix against the underlying safe definition, including exposure and
       -- private-name rules, so a sibling realization is still recognized.
       let equation := (Meta.declFromEqLikeName env name).isSome || (← Meta.isEqnThm name)
-      let hcongr := isGeneratedHCongr env idx name
+      let congruence := isGeneratedCongruence env idx name
       -- A private or underscore-prefixed *user* name with its own direct range
       -- remains a source occurrence. Names alone cannot make it generated.
       let generated := k == "recursor" || isAuxRecursor env name || isNoConfusion env name
-        || Meta.isMatcherCore env name || equation || hcongr
+        || Meta.isMatcherCore env name || equation || congruence
         || (range?.isNone && name.isInternalDetail)
       if origin != idx then
         let some canonical := env.find? name | throwError "missing canonical declaration for {name}"
-        unless (equation || hcongr) && sameGeneratedTheorem info canonical do
+        unless (equation || congruence) && sameGeneratedTheorem info canonical do
           let canonicalModule := nameText env.header.moduleNames[origin]!
           throwError "inconsistent non-generated origin name={qualified} selected={moduleName} canonical={canonicalModule}"
       let reason := if generated then
