@@ -25,7 +25,7 @@ from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PRODUCER_COMMIT = "b321166e085fca3393d5e244ae89ab852f869c33"
+PRODUCER_COMMIT = "71f56a914114c9cf6391516f99cc076c5a6d9ad6"
 MATHLIB_REPOSITORY = "https://github.com/leanprover-community/mathlib4"
 SOURCE_POLICY_PATH = "catalogues/mathlib-v4.34.1-foundations-v1.source.json"
 PRODUCER_FILES = (
@@ -207,7 +207,18 @@ def build_dependency_inventory(mathlib_root: Path, policy: dict, publisher) -> t
         if ".git" in relative.parts:
             require(not path.is_symlink(), "symlink in package Git administration")
             continue
-        require(not path.is_symlink(), "symlink in dependency closure")
+        if path.is_symlink():
+            matches = [package for package in packages
+                       if relative.as_posix().startswith(package["path"] + "/")]
+            require(len(matches) == 1, "dependency symlink is not inside one pinned package tree")
+            package = matches[0]
+            package_relative = relative.as_posix()[len(package["path"]) + 1:]
+            target = publisher.dependency_symlink_target(dependency_root / package["path"], package,
+                                                         package_relative)
+            raw = target.encode("utf-8", errors="strict")
+            files.append({"path": relative.as_posix(), "sha256": sha256(raw), "size_bytes": len(raw),
+                          "mode": "120000", "target": target})
+            continue
         if path.is_dir():
             continue
         require(path.is_file() and stat.S_ISREG(path.stat().st_mode), "unsupported dependency entry")

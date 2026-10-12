@@ -28,7 +28,7 @@ def test_qualification_orchestrator_exists():
 
 
 def test_approved_producer_commit_and_wrapper_identity_are_separate(api):
-    assert api.PRODUCER_COMMIT == "b321166e085fca3393d5e244ae89ab852f869c33"
+    assert api.PRODUCER_COMMIT == "71f56a914114c9cf6391516f99cc076c5a6d9ad6"
     assert set(api.QUALIFICATION_WRAPPER_FILES) == {
         ".github/workflows/mathgraph-source-catalogue-v1.yml",
         "conformance/source_catalogue_v1/consumer.py",
@@ -85,6 +85,9 @@ def test_dependency_inventory_is_complete_canonical_and_package_pinned(api, tmp_
     (mathlib / ".lake/build/lib/lean").mkdir(parents=True)
     (mathlib / ".lake/build/lib/lean/Root.olean").write_bytes(b"root-cache")
     (package / "Dep.lean").write_text("def dep : Nat := 1\n")
+    (package / "README.md").write_text("dependency documentation\n")
+    (package / "docs").mkdir()
+    (package / "docs/README.md").symlink_to("../README.md")
     git(package, "init", "-q")
     git(package, "add", ".")
     git(package, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "dep")
@@ -100,8 +103,12 @@ def test_dependency_inventory_is_complete_canonical_and_package_pinned(api, tmp_
     assert inventory["packages"][0]["commit"] == commit
     assert inventory["packages"][0]["tree"] == tree
     assert {entry["path"] for entry in inventory["files"]} == {
-        "build/lib/lean/Root.olean", "packages/dep/Dep.lean",
+        "build/lib/lean/Root.olean", "packages/dep/Dep.lean", "packages/dep/README.md",
+        "packages/dep/docs/README.md",
     }
+    link = next(entry for entry in inventory["files"] if entry["path"] == "packages/dep/docs/README.md")
+    assert link == {"path": "packages/dep/docs/README.md", "sha256": hashlib.sha256(b"../README.md").hexdigest(),
+                    "size_bytes": 12, "mode": "120000", "target": "../README.md"}
     publisher.verify_dependency_inventory(mathlib / ".lake", inventory, hashlib.sha256(raw).hexdigest())
 
 
