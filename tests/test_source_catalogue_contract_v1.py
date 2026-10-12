@@ -38,6 +38,14 @@ def test_complete_catalogue_uses_measured_raw_file_boundaries(api):
     limits = schema["properties"]["limits"]["properties"]
     assert limits["max_search_bytes"]["maximum"] == api.LIMITS["max_search_bytes"]
     assert limits["max_shard_bytes"]["maximum"] == api.LIMITS["max_shard_bytes"]
+    assert schema["properties"]["search"]["properties"]["size_bytes"]["maximum"] == api.LIMITS["max_search_bytes"]
+    assert schema["properties"]["shards"]["items"]["properties"]["size_bytes"]["maximum"] == api.LIMITS["max_shard_bytes"]
+
+
+def test_exact_committed_catalogue_manifest_satisfies_its_public_schema():
+    manifest = json.loads((ROOT / "website/public/catalogues/mathlib/v4.34.1/manifest.json").read_text())
+    schema = json.loads((ROOT / "protocol/schemas/source-catalogue-manifest-v1.schema.json").read_text())
+    jsonschema.Draft202012Validator(schema).validate(manifest)
 
 
 def fixture(api):

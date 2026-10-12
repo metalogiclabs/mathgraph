@@ -8,6 +8,7 @@ on:
       - 'conformance/source_catalogue_v1/**'
       - 'mathgraph/source_catalogue_publisher_v1.py'
       - 'mathgraph_protocol/**'
+      - 'protocol/schemas/source-catalogue-*-v1.schema.json'
       - 'scripts/catalogue_bootstrap_v1.py'
       - 'scripts/publish_mathlib_source_catalogue_v1.py'
       - 'scripts/qualify_mathlib_source_catalogue_v1.py'
@@ -18,6 +19,7 @@ on:
       - 'tests/test_source_catalogue_contract_v1.py'
       - 'tools/mathlib_catalogue/**'
       - 'website/public/catalogues/mathlib/v4.34.1/**'
+      - 'website/public/schemas/source-catalogue-*-v1.schema.json'
       - '.github/workflows/mathgraph-source-catalogue-v1.yml'
   push:
     branches: [codex/living-knowledge-network]
@@ -26,6 +28,7 @@ on:
       - 'conformance/source_catalogue_v1/**'
       - 'mathgraph/source_catalogue_publisher_v1.py'
       - 'mathgraph_protocol/**'
+      - 'protocol/schemas/source-catalogue-*-v1.schema.json'
       - 'scripts/catalogue_bootstrap_v1.py'
       - 'scripts/publish_mathlib_source_catalogue_v1.py'
       - 'scripts/qualify_mathlib_source_catalogue_v1.py'
@@ -36,6 +39,7 @@ on:
       - 'tests/test_source_catalogue_contract_v1.py'
       - 'tools/mathlib_catalogue/**'
       - 'website/public/catalogues/mathlib/v4.34.1/**'
+      - 'website/public/schemas/source-catalogue-*-v1.schema.json'
       - '.github/workflows/mathgraph-source-catalogue-v1.yml'
 
 permissions:

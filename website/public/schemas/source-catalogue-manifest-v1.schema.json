@@ -369,7 +369,7 @@
         "size_bytes": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 768000
+          "maximum": 2097152
         },
         "object_count": {
           "type": "integer",
@@ -408,7 +408,7 @@
           "size_bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 524288
+            "maximum": 2097152
           },
           "object_count": {
             "type": "integer",
