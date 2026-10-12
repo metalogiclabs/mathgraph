@@ -8,6 +8,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/fixtures/source_catalogue_v1/lean-project"
+ORIGIN_COLLISION_FIXTURE = ROOT / "tests/fixtures/source_catalogue_v1/lean-origin-collision"
 
 
 def test_real_lean_environment_extractor(tmp_path):
@@ -51,6 +52,58 @@ def test_real_lean_environment_extractor(tmp_path):
     assert omissions["CatalogueFixture.Token.rec"]["reason"] == "GENERATED"
     assert omissions["CatalogueFixture.noRange"]["reason"] == "MISSING_RANGE"
     assert "proofOnly" not in ds["CatalogueFixture.usesProof"]["statement"]
+
+
+def test_generated_equation_origin_collision_is_named_omission(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["OriginDefs", "OriginBasic", "OriginLeft"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "origin-collision.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "OriginBasic", "OriginLeft",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    document = json.loads(output.read_bytes())
+    assert [module["module"] for module in document["modules"]] == [
+        "OriginBasic", "OriginLeft",
+    ]
+    for module, direct in zip(document["modules"], ["Origin.forceInBasic", "Origin.forceInLeft"]):
+        omissions = {entry["qualified_name"]: entry for entry in module["omissions"]}
+        assert omissions["Origin.duplicatedEquation.eq_1"] == {
+            "qualified_name": "Origin.duplicatedEquation.eq_1",
+            "kind": "theorem",
+            "reason": "GENERATED",
+        }
+        assert {entry["qualified_name"] for entry in module["declarations"]} == {direct}
+
+
+def test_direct_source_origin_collision_remains_fail_closed(tmp_path):
+    lean = os.environ["MATHGRAPH_CATALOGUE_LEAN"]
+    project = tmp_path / "direct-origin-collision"
+    shutil.copytree(ORIGIN_COLLISION_FIXTURE, project)
+    env = {**os.environ, "LEAN_PATH": str(project)}
+    for module in ["DirectLeft", "DirectRight"]:
+        subprocess.run([
+            lean, "-o", str(project / (module + ".olean")),
+            str(project / (module + ".lean")),
+        ], cwd=project, env=env, check=True)
+    output = tmp_path / "must-not-exist.json"
+    result = subprocess.run([
+        lean, "--run", str(ROOT / "tools/mathlib_catalogue/Extract.lean"),
+        str(project), str(output), "DirectLeft", "DirectRight",
+    ], cwd=project, env=env, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "Origin.directDuplicate" in result.stderr
+    assert "selected=DirectRight" in result.stderr
+    assert "canonical=DirectLeft" in result.stderr
+    assert not output.exists()
 
 
 @pytest.mark.parametrize("cache_mode", ["stale", "absent"])

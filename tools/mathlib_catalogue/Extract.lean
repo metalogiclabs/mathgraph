@@ -41,6 +41,17 @@ def kind (c : ConstantInfo) : String :=
   | .recInfo _ => "recursor"
   | .quotInfo _ => "quotient"
 
+/-- Lean's module system may independently realize the same on-demand equation
+theorem in sibling modules. `finalizeImport` admits only compatible theorem
+types/levels/mutual blocks and assigns one canonical origin. Mirror that narrow
+boundary for omission accounting; no user declaration or other generated kind
+is transportable across an origin mismatch. -/
+def sameGeneratedEquation (observed canonical : ConstantInfo) : Bool :=
+  match observed, canonical with
+  | .thmInfo a, .thmInfo b =>
+    a.name == b.name && a.type == b.type && a.levelParams == b.levelParams && a.all == b.all
+  | _, _ => false
+
 def position (map : FileMap) (p : Position) : Except String Json := do
   let offset := map.ofPosition p
   unless map.toPosition offset == p do throw "invalid declaration coordinate"
@@ -63,18 +74,25 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
     for info in cs do
       let name := info.name
       let some origin := env.getModuleIdxFor? name | throwError "unknown origin for {name}"
-      if origin != idx then throwError "inconsistent origin for {name}"
       let qualified := nameText name
-      if seen.contains qualified then throwError "duplicate admitted name {qualified}"
-      seen := seen.push qualified
       let k := kind info
       -- Core lookup deliberately does not inherit an inductive's range for a recursor.
       let range? ← findDeclarationRangesCore? name
+      -- The imported equation-extension state may name only one canonical
+      -- realization. `declFromEqLikeName` independently validates the reserved
+      -- suffix against the underlying safe definition, including exposure and
+      -- private-name rules, so a sibling realization is still recognized.
+      let equation := (Meta.declFromEqLikeName env name).isSome || (← Meta.isEqnThm name)
       -- A private or underscore-prefixed *user* name with its own direct range
       -- remains a source occurrence. Names alone cannot make it generated.
       let generated := k == "recursor" || isAuxRecursor env name || isNoConfusion env name
-        || Meta.isMatcherCore env name || (← Meta.isEqnThm name)
+        || Meta.isMatcherCore env name || equation
         || (range?.isNone && name.isInternalDetail)
+      if origin != idx then
+        let some canonical := env.find? name | throwError "missing canonical declaration for {name}"
+        unless equation && sameGeneratedEquation info canonical do
+          let canonicalModule := nameText env.header.moduleNames[origin]!
+          throwError "inconsistent non-generated origin name={qualified} selected={moduleName} canonical={canonicalModule}"
       let reason := if generated then
           some "GENERATED"
         else if k == "quotient" then some "UNSUPPORTED_KIND"
@@ -84,6 +102,8 @@ def extract (root : System.FilePath) (names : Array String) : MetaM Json := do
         omissions := omissions.push (Json.mkObj [("qualified_name", toJson qualified),
           ("kind", toJson k), ("reason", toJson reason)])
       else
+        if seen.contains qualified then throwError "duplicate admitted name {qualified}"
+        seen := seen.push qualified
         let some ranges := range? | throwError "inconsistent omission accounting"
         let start ← ofExcept (position map ranges.range.pos)
         let finish ← ofExcept (position map ranges.range.endPos)
