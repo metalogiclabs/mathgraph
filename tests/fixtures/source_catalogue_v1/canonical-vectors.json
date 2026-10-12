@@ -1,0 +1,7 @@
+[
+  {"value":{"z":[null,true,false,0,1,"1"],"a":{"b":2,"a":1}},"canonical":"{\"a\":{\"a\":1,\"b\":2},\"z\":[null,true,false,0,1,\"1\"]}"},
+  {"value":{"":1,"😀":2,"é":3,"é":4},"canonical":"{\"é\":4,\"é\":3,\"😀\":2,\"\":1}"},
+  {"value":{"escapes":"\b\t\n\f\r\u0000\"\\/  "},"canonical":"{\"escapes\":\"\\b\\t\\n\\f\\r\\u0000\\\"\\\\/  \"}"},
+  {"value":[-9007199254740991,9007199254740991,{},[]],"canonical":"[-9007199254740991,9007199254740991,{},[]]"},
+  {"value":{"extensions":[{"id":"opaque.example","version":1,"critical":false,"payload":{"authority":"EXECUTE","n":1,"text":"1"}}]},"canonical":"{\"extensions\":[{\"critical\":false,\"id\":\"opaque.example\",\"payload\":{\"authority\":\"EXECUTE\",\"n\":1,\"text\":\"1\"},\"version\":1}]}"}
+]

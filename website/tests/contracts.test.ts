@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 import Ajv from 'ajv';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -35,6 +37,45 @@ async function json(path: string): Promise<Record<string, any>> {
 }
 
 describe('agent discovery contracts', () => {
+  test('mirrors the non-authoritative source catalogue schemas and shares restricted JCS bytes with Python', async () => {
+    const repository = join(website, '..');
+    const ajv = new Ajv2020({ allErrors: true, strict: true });
+    for (const name of ['source-catalogue-manifest-v1.schema.json', 'source-catalogue-shard-v1.schema.json']) {
+      const protocol = await readFile(join(repository, 'protocol/schemas', name));
+      expect(await readFile(join(website, 'public/schemas', name))).toEqual(protocol);
+      expect(await readFile(join(dist, 'schemas', name))).toEqual(protocol);
+      expect(ajv.compile(JSON.parse(protocol.toString('utf8')))).toBeTypeOf('function');
+    }
+    // Independent test-side encoder; the browser adapter belongs to the later projection task.
+    function canonical(value: unknown): string {
+      if (value === null || typeof value === 'boolean') return JSON.stringify(value);
+      if (typeof value === 'number') {
+        if (!Number.isSafeInteger(value) || Object.is(value, -0)) throw new Error('unsupported number');
+        return JSON.stringify(value);
+      }
+      if (typeof value === 'string') {
+        if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value)) throw new Error('lone surrogate');
+        return JSON.stringify(value);
+      }
+      if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+      if (typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+        return `{${Object.keys(value).sort().map(key => `${canonical(key)}:${canonical((value as Record<string, unknown>)[key])}`).join(',')}}`;
+      }
+      throw new Error('unsupported value');
+    }
+    const vectors = JSON.parse(await readFile(join(repository, 'tests/fixtures/source_catalogue_v1/canonical-vectors.json'), 'utf8'));
+    const { stdout } = await promisify(execFile)('python3', ['-c',
+      'import json; from pathlib import Path; from mathgraph_protocol.source_catalogue_v1 import canonical_bytes; print(json.dumps([canonical_bytes(v["value"]).hex() for v in json.loads(Path("tests/fixtures/source_catalogue_v1/canonical-vectors.json").read_text())]))',
+    ], { cwd: repository });
+    const pythonBytes = JSON.parse(stdout);
+    vectors.forEach((vector: { value: unknown; canonical: string }, index: number) => {
+      const bytes = Buffer.from(canonical(vector.value), 'utf8');
+      expect(bytes).toEqual(Buffer.from(vector.canonical, 'utf8'));
+      expect(bytes.toString('hex')).toBe(pythonBytes[index]);
+    });
+    for (const value of [1.5, -0, NaN, Infinity, 9007199254740992, '\uD800']) expect(() => canonical(value)).toThrow();
+  });
+
   test('recognizes only bounded exact local bytes and never accepts browser output as an import result', async () => {
     const bytes = await readFile(join(website, `public/evidence/${recordId}/record.json`));
     const preview = await recognizeLocalFile(new File([bytes], 'record.json', { type: 'application/json' }));
