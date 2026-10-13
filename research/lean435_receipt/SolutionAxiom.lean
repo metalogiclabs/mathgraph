@@ -1,5 +1,6 @@
 /- Deliberately unauthorized axiom. This compiles as ordinary Lean
-   source, but comparator must REJECT under permitted_axioms = [].
+   source, but comparator must REJECT because permitted axioms are only
+   the standard three (propext, Quot.sound, Classical.choice).
 -/
 import Init.Data.Nat.Gcd
 
