@@ -70,7 +70,6 @@ check "reject conflicting deterministic automaton transitions" \\
 t.write_text(orig.replace(sentinel, "\n"+additional+sentinel))
 PY
 git -C "$TREE" add -N tools/verification/rvgen/tests/specs/test_nondeterministic_da.dot
-rm -f tests/specs/test_nondeterministic_ha.dot
 git -C "$TREE" diff --check
 git -C "$TREE" diff --stat | tee "$OUT/patch-stat.txt"
 git -C "$TREE" diff --binary > "$OUT/linux-rvgen-reject-ambiguous-transitions.patch"
