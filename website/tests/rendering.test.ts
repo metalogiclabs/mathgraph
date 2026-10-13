@@ -354,8 +354,8 @@ describe('primary public evidence experience', () => {
   test('publishes the requested homepage SEO title without changing the MathGraph identity', async () => {
     const html = await page('');
 
-    expect(html).toContain('<title>MathGraph — Open Verification Infrastructure</title>');
-    expect(html).toContain('<meta property="og:title" content="MathGraph — Open Verification Infrastructure">');
+    expect(html).toContain('<title>MathGraph — Verification Evidence Network</title>');
+    expect(html).toContain('<meta property="og:title" content="MathGraph — Verification Evidence Network">');
     expect(html).toContain('<meta property="og:site_name" content="MathGraph">');
     expect(html).toContain('<span class="brand__word">MathGraph');
   });

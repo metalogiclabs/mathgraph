@@ -130,25 +130,22 @@ def test_committed_lean_digest_demo_preserves_public_boundary() -> None:
     assert {entry["advisory_only"] for entry in lawbook_entries} == {True}
 
 
-def test_lean_digest_announcement_and_readme_links_are_public_ready() -> None:
-    announcement = ROOT / "docs" / "public" / "lean_project_digest_announcement.md"
-    text = announcement.read_text(encoding="utf-8")
-    lower = text.lower()
-    assert "does not replace lean" in lower
-    assert "cannot become\nverified_proof" in lower or "cannot become verified_proof" in lower
-    assert "feedback" in lower
-    assert "python scripts/run_lean_project_digest.py --fallback-demo" in text
-    assert "python scripts/run_lean_project_digest.py --project-root" in text
+def test_lean_digest_documentation_and_readme_links_are_public_ready() -> None:
+    guide = (ROOT / "docs" / "lean_project_digest.md").read_text(encoding="utf-8")
+    lower = guide.lower()
+    assert "textual parsing is advisory" in lower
+    assert "verified_proof" in lower
+    assert "can_promote_truth=false" in lower
+    assert "sorry" in lower and "axiom" in lower and "unsafe" in lower
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "docs/lean_project_digest.md" in readme
     assert "examples/lean_project_digest_demo/" in readme
-    assert "docs/public/lean_project_digest_announcement.md" in readme
+    assert "docs/public/lean_project_digest_announcement.md" not in readme
 
 
 def test_architecture_audit_recognizes_lean_digest_public_demo() -> None:
     report = run_audit(ROOT)
-    assert report["canonical_doc_presence"]["docs/public/lean_project_digest_announcement.md"] is True
     assert report["canonical_doc_presence"]["examples/lean_project_digest_demo/README.md"] is True
     assert report["canonical_doc_presence"]["examples/lean_project_digest_demo/trust_boundary_audit.json"] is True
     assert report["lean_digest_demo_audit"]["all_present"] is True
