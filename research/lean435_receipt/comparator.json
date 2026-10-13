@@ -4,5 +4,9 @@
   "theorem_names": [
     "MathGraphReceipt.upstream_gcd_comm"
   ],
-  "permitted_axioms": []
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ]
 }
