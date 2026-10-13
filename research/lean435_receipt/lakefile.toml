@@ -15,3 +15,10 @@ name = "ChallengeMutated"
 
 [[lean_lib]]
 name = "SolutionAxiom"
+
+# Isolated source-identity separator. Does not change default qualification target.
+[[lean_lib]]
+name = "ForgedChallenge"
+
+[[lean_lib]]
+name = "ForgedSolution"

@@ -11,11 +11,14 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parent
 EVIDENCE = ROOT / "evidence"
 EVIDENCE.mkdir(exist_ok=True)
 STEPS = []
+UPSTREAM_COMMIT = "eb6cafb7290e8bd5f2937522d8d804f58f02bafc"
+UPSTREAM_SOURCE_BLOB = "6b3ac409cc1ed8775644c5c6a00a1a59f96fac2b"
 EXPECTED = ["leanchecker-paranoid", "lean4lean", "nanoda", "con-leche", "con-ron"]
 
 def digest(path):
@@ -47,17 +50,41 @@ def get_source_sha():
             return head["sha"]
     return os.environ.get("GITHUB_SHA", "LOCAL_UNQUALIFIED")
 
+def verify_pinned_upstream_statement_source():
+    """This pin must NOT be derived from the candidate challenge or solution."""
+    url = ("https://raw.githubusercontent.com/leanprover/lean4/"
+           + UPSTREAM_COMMIT + "/src/Init/Data/Nat/Gcd.lean")
+    req = Request(url, headers={"User-Agent": "mathgraph-lean435-receipt"})
+    with urlopen(req, timeout=40) as response:
+        data = response.read()
+    blob = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
+    if blob != UPSTREAM_SOURCE_BLOB:
+        raise RuntimeError("UPSTREAM_SOURCE_BLOB_MISMATCH")
+    if b"theorem gcd_comm (m n : Nat) : gcd m n = gcd n m :=" not in data:
+        raise RuntimeError("ORIGINAL_UPSTREAM_STATEMENT_NOT_FOUND")
+    evidence = {"url": url, "git_blob_sha": blob,
+                "source_sha256": hashlib.sha256(data).hexdigest()}
+    (EVIDENCE / "upstream_source_pin.json").write_text(
+        json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+    return evidence
+
 def run():
     status = "UNKNOWN"
     problem = None
+    upstream_source_pin = None
     try:
         version = exec_step("lean_version", ["lean", "--version"], 0)
         if "4.35.0" not in version:
             raise RuntimeError("Wrong Lean version, fail closed")
+        upstream_source_pin = verify_pinned_upstream_statement_source()
         exec_step("lake_update", ["lake", "update"], 0)
         if not (ROOT / "lake-manifest.json").exists():
             raise RuntimeError("lake-manifest.json not produced; sandbox precondition missing")
         exec_step("lake_build_solution", ["lake", "build", "Solution"], 0)
+        source_anchor_log = exec_step("source_statement_anchor",
+            ["lake", "env", "lean", "SourceAnchorHonest.lean"], 0)
+        if "SOURCE_STATEMENT_MATCH" not in source_anchor_log:
+            raise RuntimeError("SOURCE_STATEMENT_ANCHOR_NOT_QUALIFIED")
         exec_step("lake_build_controls",
                   ["lake", "build", "Challenge", "ChallengeMutated", "SolutionAxiom"], 0)
         exec_step("lake_check_paranoid", ["lake", "check", "--paranoid"], 0)
@@ -87,6 +114,7 @@ def run():
             "qualification_problem": problem,
             "source_repo": "metalogiclabs/mathgraph",
             "source_commit": get_source_sha(),
+            "upstream_source_pin": upstream_source_pin,
             "upstream": {
                 "repository": "leanprover/lean4",
                 "toolchain": "leanprover/lean4:v4.35.0",
@@ -102,7 +130,8 @@ def run():
             "covered_by_receipt": [
                 "exact statement comparison", "Lean kernel replay",
                 "Lean v4.35 paranoid bundled external recheck",
-                "rejection of altered challenge", "rejection of new axiom"
+                "rejection of altered challenge", "rejection of new axiom",
+                "type identity with independently pinned upstream formal statement"
             ] if status.startswith("WARRANTED") else [],
             "not_covered": [
                 "new theorem discovery", "independent reconstruction of original proof",
@@ -111,7 +140,7 @@ def run():
             ],
             "input_sha256": {path: digest(ROOT / path) for path in [
                 "lean-toolchain", "lakefile.toml", "Challenge.lean",
-                "Solution.lean", "ChallengeMutated.lean",
+                "Solution.lean", "SourceAnchorHonest.lean", "ChallengeMutated.lean",
                 "SolutionAxiom.lean", "comparator.json", "qualify.py"]},
             "steps": STEPS,
         }
