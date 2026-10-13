@@ -1,7 +1,7 @@
 # Colab / Local Test Drive
 
 ```bash
-git clone https://github.com/heathsanchez/mathgraph.git
+git clone https://github.com/metalogiclabs/mathgraph.git
 cd mathgraph
 python scripts/run_colab_testdrive.py --use-current-checkout --quick-smoke
 python scripts/run_colab_testdrive.py --use-current-checkout --allow-live-verifier --allow-missing-verifier

@@ -106,7 +106,7 @@ def _markdown(report: dict[str, object]) -> str:
 def main(argv: list[str] | None = None) -> int:
     default_work = Path("/content") if Path("/content").exists() else Path("./tmp_colab_testdrive")
     p = argparse.ArgumentParser()
-    p.add_argument("--repo-url", default="https://github.com/heathsanchez/mathgraph.git")
+    p.add_argument("--repo-url", default="https://github.com/metalogiclabs/mathgraph.git")
     p.add_argument("--repo-ref", default="main")
     p.add_argument("--work-root", default=str(default_work))
     p.add_argument("--repo-dir")

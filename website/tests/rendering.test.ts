@@ -616,7 +616,8 @@ describe('primary public evidence experience', () => {
     const text = visibleText(html);
 
     expect(html).toContain('<h1>Knowledge you can verify. Capabilities you can build on.</h1>');
-    expect(text).toContain('Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.');
+    expect(text).toContain('Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved.');
+    expect(text).toContain('Open a declaration. Follow what its source actually says.');
     for (const route of ['explore', 'verify', 'build']) expect(html).toContain(`data-outcome="${route}"`);
     for (const section of ['source-to-result', 'map-preview', 'capability', 'independent-verification', 'quick-start', 'long-term']) expect(html).toContain(`id="${section}"`);
     expect(text).toMatch(/Discover.*advisory/i);

@@ -1,29 +1,56 @@
 # MathGraph
 
-MathGraph is a generative verification kernel for trustworthy mathematical
-discovery and verified AI reasoning.
+MathGraph is a research-stage **verification-aware mathematical knowledge network**, developed by [Metalogic Labs](https://metalogiclabs.xyz). It publishes source-pinned mathematical objects, independently qualified **bounded** evidence, and portable local consumers. It does not replace Lean's kernel or claim to prove every indexed declaration.
 
-It routes claims toward explicit verifier, finite-checker, trusted-importer, or
-chain-audit boundaries. Advisory memory can guide search, but cannot promote
-truth.
+**A source index is not an independent proof check.** Mathematical structure, historical verification, current applicability, and action authority remain separate.
 
-## Start Here
+## Start here (October 2026)
 
-Three public paths:
+- **[Explore the Mathlib source catalogue](https://mathgraph.org/explore/)** — a deliberately limited slice: 2,345 declaration occurrences across 13 pinned Mathlib v4.34.1 modules, with 3,571 structural relations (`DECLARES`, `TYPE_REFERENCES` and `IMPORTS_MODULE`). Source-location links and permanent object pages are available; these relations do **not** establish proof dependency, implication, equivalence, or independent checking.
+- **[Inspect the L4YAML evidence case](https://mathgraph.org/records/mg-l4yaml-source-check-20261010/)** — a check of public third-party Lean 4 source from the [NASA JPL L4YAML repository](https://github.com/nasa-jpl/L4YAML), using exact source and YAML-suite revisions. The historical qualification covers separately imported named Lean proof objects and 48 decoded external cases plus 4 additional guards; universal YAML correctness and source fidelity remain `UNKNOWN`. **This is not JPL/NASA sponsorship or endorsement.**
+- **[Inspect evidence withdrawal](https://mathgraph.org/resolve/)** — in the published historical OpenAI-source case, three withdrawn documentary support routes become `STALE`, the three mathematical propositions remain `UNKNOWN`, and an unrelated bounded JPL observation retains its exact historical warrant.
+- **[Reproduce a published scope offline](https://mathgraph.org/developers/)** — standard-library consumers validate pinned records and catalogue publication using an independently selected trust policy. Importing a receipt is not rerunning the original Lean proof.
 
-1. Quick public demo
-2. Official SAIR Stage 2 Evidence Pack
-3. Developer / architecture docs
+### What it adds beyond existing Lean tools
 
-Start with:
+`doc-gen4`, Loogle, LeanSearch, and import graphs primarily help readers locate documentation, declarations, or source relationships. MathGraph's experiment is **separate provenance and evidence status across exact source revisions**, including explicit scope and stale-support behavior. It is not presently a replacement for those tools, a full-Mathlib index, or a qualified generic proof-dependency graph.
 
-```bash
+Tao's [Math 2.0](https://terrytao.wordpress.com/2026/10/10/math-2-0/) and the independently developed [IEANTN](https://github.com/teorth/IEANTN) offer complementary motivation and prior work; no affiliation or cross-project interoperability is claimed.
+
+### Try the finite catalogue contract (Python 3)
+
+The following command checks **catalogue publication** under exact pins, not theorem validity:
+
+```sh
+git clone https://github.com/metalogiclabs/mathgraph.git
+cd mathgraph
+git checkout --detach 8e8f5f529b44852815627206dc5b45062f0c96d6
+python3 -I -S -B conformance/source_catalogue_v1/consumer.py \
+  --catalogue-root website/public/catalogues/mathlib/v4.34.1 \
+  --policy conformance/source_catalogue_v1/trust-policy.json \
+  --policy-sha256 c3cdec2b2c784728621bb8c25a055a1e73d67d3c1c922b7ab62b09003399e1c9 \
+  --audit-imports
+```
+
+The SHA-256 pin must be authenticated through a channel you trust independently of the retrieved bytes. The consumer does not fetch upstream Mathlib or execute Lean. See the [Lean-facing quickstart](docs/quickstart.md) and [published developer instructions](https://mathgraph.org/developers/).
+
+### Status, licensing, and participation
+
+MathGraph is a Metalogic Labs **research project** with a public reference website. This repository proposes Apache-2.0 licensing for original MathGraph-authored code; review the [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) before release. Mathlib, L4YAML, YAML test-suite materials, papers, evidence archives, and other third-party content retain their own applicable rights. A public source link does not establish institutional endorsement.
+
+The focused living-network release checks passed for their declared scope. The broader research test collection retains fixture/environment failures; see [release status](docs/public/mathgraph_release_status_2026-10-13.md). No outside-organization adoption, continuous requalification, hosted arbitrary-proof verifier, or universal autonomous proof synthesis is claimed.
+
+## Historical research paths
+
+For existing SAIR/verification experiments, the original quick-release and architecture audits remain available:
+
+```sh
 python scripts/run_release_check.py --quick
 python scripts/run_repo_architecture_audit.py
 python scripts/replay_official_sair_stage2_breakthrough.py --help
 ```
 
-Then read [docs/quickstart.md](docs/quickstart.md).
+The May SAIR evidence pack below is a separate, bounded historical research milestone, **not** the only current MathGraph public evidence.
 
 ## Official SAIR Stage 2 Evidence Pack
 
@@ -90,13 +117,13 @@ are research/advanced runners used by the replay wrapper and evidence pack.
 - General autonomous theorem proving is not claimed.
 - Fallback demos are infrastructure checks, not evidence.
 - Advisory routes guide search but do not promote truth.
-- The current official evidence is a bounded FALSE-side SAIR Stage 2 result.
+- The SAIR Stage 2 evidence pack is a bounded FALSE-side research result; newer public Check/Resolve records have different exact scopes.
 
 ## Next Technical Frontiers
 
 - Improve robustness and magnitude of compounding gain.
 - Promote more exact finite-countermodel certificates into durable evidence.
-- Build TRUE-side Lean proof-verification paths.
+- Expand independently qualified Lean proof evidence and test proof-generation transfer without generalizing existing bounded results.
 - Build [Lean Project Digest](docs/lean_project_digest.md) for existing Lean projects.
 - Try the [Lean Project Digest demo](examples/lean_project_digest_demo/) and review the [announcement draft](docs/public/lean_project_digest_announcement.md).
 - Use [DiscoveryScheduler](docs/discovery_scheduler.md) to rank testable continuations without promoting truth.
@@ -145,8 +172,7 @@ Canonical modules:
 | finite checker | `mathgraph/finite_magma_world.py` |
 | SAIR / ETP adapters | `mathgraph/sair_task_loader.py`, `mathgraph/sair_constructor_bank.py` |
 
-Legacy scripts and experiment modules still exist, but new users should start
-with release check, architecture audit, and the official SAIR evidence pack.
+Legacy scripts and experiment modules still exist; new visitors should start with the October 2026 public source catalogue and bounded Check/Resolve records above. Researchers reproducing the older SAIR results can use the historical release check, architecture audit, and May evidence pack.
 
 Canonical commands:
 
