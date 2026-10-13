@@ -1,9 +1,19 @@
 # Quickstart
 
+## Lean/Mathlib readers: three real entry points (October 2026)
+
+1. **[Browse the pinned Mathlib slice](https://mathgraph.org/explore/):** 2,345 declaration occurrences in 13 Mathlib v4.34.1 modules. Relations `DECLARES`, `TYPE_REFERENCES` and `IMPORTS_MODULE` are structural, not proof dependencies.
+2. **[Inspect the public JPL L4YAML case](https://mathgraph.org/records/mg-l4yaml-source-check-20261010/):** an independent third-party source check with exact Lean receipt pins, 48 decoded YAML cases and 4 extra guards; not an endorsement or universal YAML proof.
+3. **[Run the source-catalogue consumer](https://mathgraph.org/developers/#source-catalogue):** standard-library Python verifies published structure against an exact policy, not theorem validity. The source snapshot is `8e8f5f529b44852815627206dc5b45062f0c96d6`; use a separately trusted policy digest.
+
+Documentation/search tools such as doc-gen4, Loogle and LeanSearch serve a different purpose: MathGraph explores **source-to-evidence provenance and scoped status**, not a better or complete declaration search engine. Original code licensing is proposed as Apache-2.0 and subject to review; see `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+
+## Research/demo commands
+
 ## 1. Fresh Clone
 
 ```bash
-git clone https://github.com/heathsanchez/mathgraph.git
+git clone https://github.com/metalogiclabs/mathgraph.git
 cd mathgraph
 ```
 

@@ -41,20 +41,20 @@ const finite = record.axes.finite_executable;
 const format = (value: number) => value.toLocaleString('en-US');
 ---
 
-<BaseLayout title="MathGraph — Open Verification Infrastructure" description="Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused." currentPath="/">
+<BaseLayout title="MathGraph — Open Verification Infrastructure" description="Explore a pinned Mathlib slice, inspect exactly scoped verification evidence, and identify what remains unknown or stale." currentPath="/">
   <header class="shell home-hero">
     <div class="home-hero__copy">
       <div class="eyebrow">Open verification infrastructure</div>
       <h1>Knowledge you can verify. Capabilities you can build on.</h1>
       <p class="lede">Search real mathematical objects, follow exact source-backed connections, and inspect what independent evidence does—and does not—establish.</p>
-      <p>Bring a claim, proof, repository, or research artifact. Discover what has been established, what remains unknown, how it connects, and what can be reused.</p>
+      <p>Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved. Start with the published Mathlib slice and reproducible verification cases; arbitrary repository or proof submission is not currently hosted.</p>
       <form class="home-search" action="/explore/" method="get" data-home-search>
         <label for="home-search-query">Search the living knowledge network</label>
         <div class="home-search__controls">
           <input id="home-search-query" name="q" type="search" placeholder="Try Real.rpow, topology, or a theorem statement" autocomplete="off" />
           <button class="button" type="submit">Explore</button>
         </div>
-        <p class="fineprint">Search covers the pinned Mathlib source catalogue, qualified records, and reusable capability descriptors. Source indexing is not proof checking.</p>
+        <p class="fineprint">This is a 13-module slice of Mathlib, not all of Mathlib. Search includes source-indexed declarations, separately qualified records, and bounded capabilities; indexing is not independent proof checking.</p>
       </form>
       <div class="actions">
         <a class="button button--secondary" href="/verify/">Inspect real evidence</a>
@@ -109,8 +109,8 @@ const format = (value: number) => value.toLocaleString('en-US');
   <section id="source-to-result" class="section" aria-labelledby="source-result-title">
     <div class="shell">
       <div class="eyebrow">Real source → bounded result</div>
-      <h2 id="source-result-title">An exact JPL parser revision. An inspectable result.</h2>
-      <p class="lede">The L4YAML source check follows a pinned repository and decoded YAML-suite cases into published Lean and executable-parser receipts.</p>
+      <h2 id="source-result-title">Public JPL Lean source. An independently scoped check.</h2>
+      <p class="lede">Using a public Lean 4 repository from NASA JPL as a third-party case study, the L4YAML source check follows an exact revision and decoded YAML-suite cases into published Lean and executable-parser receipts.</p>
       <dl class="definition-list">
         <div><dt>Source</dt><dd><a href={record.evidence.external_sources.jpl}>{record.source.repo}</a> at <code>{record.source.commit}</code></dd></div>
         <div><dt>Suite</dt><dd><a href={record.evidence.external_sources.yaml_suite}>{record.source.external_suite_repo}</a> at <code>{record.source.external_suite_commit}</code></dd></div>
@@ -129,7 +129,7 @@ const format = (value: number) => value.toLocaleString('en-US');
       <div class="grid source-feature">
         <div class="span-5">
           <div class="eyebrow">A real mathematical object</div>
-          <h2 id="map-title">Open a theorem. Follow what its source actually says.</h2>
+          <h2 id="map-title">Open a declaration. Follow what its source actually says.</h2>
           <p class="lede"><code>Real.rpow</code> is one exact declaration occurrence in the pinned Mathlib catalogue—not a MathGraph-verified theorem.</p>
           <dl class="definition-list source-feature__identity">
             <div><dt>Declaration</dt><dd><a href={representativeRoute}>Real.rpow</a> · {representativeDetails.declaration_kind}</dd></div>
@@ -148,6 +148,7 @@ const format = (value: number) => value.toLocaleString('en-US');
       </div>
       <SourceNeighborhood map={sourceMap} id="home-source-network" />
       <p><a href="/explore/?q=Real.rpow">Explore this declaration in the catalogue →</a> · <a href="/objects/">Inspect canonical objects and declared relations</a></p>
+      <p class="fineprint">Source relations such as <code>DECLARES</code> and <code>TYPE_REFERENCES</code> support navigation; they are not dependency proofs. Unlike documentation or theorem-search tools, MathGraph also links separately qualified records to exact evidence, scope, and historical changes.</p>
     </div>
   </section>
 
