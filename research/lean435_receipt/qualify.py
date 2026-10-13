@@ -58,6 +58,8 @@ def run():
         if not (ROOT / "lake-manifest.json").exists():
             raise RuntimeError("lake-manifest.json not produced; sandbox precondition missing")
         exec_step("lake_build_solution", ["lake", "build", "Solution"], 0)
+        exec_step("lake_build_controls",
+                  ["lake", "build", "Challenge", "ChallengeMutated", "SolutionAxiom"], 0)
         exec_step("lake_check_paranoid", ["lake", "check", "--paranoid"], 0)
         exec_step("lake_comparator_paranoid", ["lake", "comparator", "--paranoid"], 0)
 
@@ -66,10 +68,14 @@ def run():
         (ROOT / "comparator-mutated.json").write_text(json.dumps(mutated, indent=2)+"\n")
         forbidden = {**canonical, "solution_module": "SolutionAxiom"}
         (ROOT / "comparator-forbidden.json").write_text(json.dumps(forbidden, indent=2)+"\n")
-        exec_step("negative_statement_mutation",
+        mutation_log = exec_step("negative_statement_mutation",
                   ["lake", "comparator", "--config", "comparator-mutated.json", "--paranoid"], 1)
-        exec_step("negative_forbidden_axiom",
+        if "statement" not in mutation_log.lower() or "match" not in mutation_log.lower():
+            raise RuntimeError("Statement-mutation negative lacks explicit mismatch evidence")
+        axiom_log = exec_step("negative_forbidden_axiom",
                   ["lake", "comparator", "--config", "comparator-forbidden.json", "--paranoid"], 1)
+        if "axiom" not in axiom_log.lower():
+            raise RuntimeError("Forbidden-axiom negative lacks explicit axiom evidence")
         status = "WARRANTED_BOUNDED_NATIVE_REPLAY"
     except Exception as exc:
         problem = str(exc)
@@ -90,7 +96,7 @@ def run():
             },
             "formal_statement": "forall m n : Nat, Nat.gcd m n = Nat.gcd n m",
             "local_declaration": "MathGraphReceipt.upstream_gcd_comm",
-            "permitted_axioms": [],
+            "permitted_axioms": json.loads((ROOT / "comparator.json").read_text())["permitted_axioms"],
             "requested_checker_mode": "paranoid",
             "bundled_external_checkers_expected_by_release": EXPECTED,
             "covered_by_receipt": [
