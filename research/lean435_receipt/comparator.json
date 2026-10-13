@@ -1,0 +1,8 @@
+{
+  "challenge_module": "Challenge",
+  "solution_module": "Solution",
+  "theorem_names": [
+    "MathGraphReceipt.upstream_gcd_comm"
+  ],
+  "permitted_axioms": []
+}
