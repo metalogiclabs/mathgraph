@@ -354,8 +354,8 @@ describe('primary public evidence experience', () => {
   test('publishes the requested homepage SEO title without changing the MathGraph identity', async () => {
     const html = await page('');
 
-    expect(html).toContain('<title>MathGraph — Open Verification Infrastructure</title>');
-    expect(html).toContain('<meta property="og:title" content="MathGraph — Open Verification Infrastructure">');
+    expect(html).toContain('<title>MathGraph — Verification Evidence Network</title>');
+    expect(html).toContain('<meta property="og:title" content="MathGraph — Verification Evidence Network">');
     expect(html).toContain('<meta property="og:site_name" content="MathGraph">');
     expect(html).toContain('<span class="brand__word">MathGraph');
   });
@@ -857,7 +857,9 @@ describe('primary public evidence experience', () => {
       expect(html).toContain('MathGraph');
     }
     const about = visibleText(await page('about'));
-    expect(about).toMatch(/open verification and trust infrastructure.*Metalogic Labs/i);
+    expect(about).toMatch(/research-stage project developed by Metalogic Labs/i);
+    expect(about).toContain('Source-indexed references support navigation; they are not proof dependencies');
+    expect(about).not.toMatch(/IEANTN|Terence Tao|Math 2\.0/);
     const contact = await page('contact');
     expect(contact).toContain('https://github.com/metalogiclabs/mathgraph');
     expect(contact).toContain('https://github.com/metalogiclabs/mathgraph/issues');

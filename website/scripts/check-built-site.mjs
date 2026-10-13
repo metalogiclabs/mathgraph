@@ -88,7 +88,7 @@ for (const value of ['48/48', '31', '17', '52/52', 'UNKNOWN', 'NOT_CHECKED_AFTER
   assert(recordHtml.includes(value), `record page missing qualified observation ${value}`);
 }
 assert(homeHtml.includes(record.id), 'homepage must identify the featured record');
-assert(homeHtml.includes('<title>MathGraph — Open Verification Infrastructure</title>'));
+assert(homeHtml.includes('<title>MathGraph — Verification Evidence Network</title>'));
 assert(homeHtml.includes('<h1>Knowledge you can verify. Capabilities you can build on.</h1>'));
 assert(homeHtml.includes('data-home-search') && homeHtml.includes('action="/explore/"'), 'homepage must expose same-origin knowledge search');
 assert(!homeHtml.includes('data-import-workbench'), 'generic local import belongs on Verify, not the homepage');

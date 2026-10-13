@@ -7,15 +7,11 @@ MathGraph is a research-stage **verification-aware mathematical knowledge networ
 ## Start here (October 2026)
 
 - **[Explore the Mathlib source catalogue](https://mathgraph.org/explore/)** — a deliberately limited slice: 2,345 declaration occurrences across 13 pinned Mathlib v4.34.1 modules, with 3,571 structural relations (`DECLARES`, `TYPE_REFERENCES` and `IMPORTS_MODULE`). Source-location links and permanent object pages are available; these relations do **not** establish proof dependency, implication, equivalence, or independent checking.
-- **[Inspect the L4YAML evidence case](https://mathgraph.org/records/mg-l4yaml-source-check-20261010/)** — a check of public third-party Lean 4 source from the [NASA JPL L4YAML repository](https://github.com/nasa-jpl/L4YAML), using exact source and YAML-suite revisions. The historical qualification covers separately imported named Lean proof objects and 48 decoded external cases plus 4 additional guards; universal YAML correctness and source fidelity remain `UNKNOWN`. **This is not JPL/NASA sponsorship or endorsement.**
+- **[Inspect a bounded parser-evidence record](https://mathgraph.org/records/mg-l4yaml-source-check-20261010/)** — a source-specific check of the public [L4YAML Lean 4 project](https://github.com/nasa-jpl/L4YAML), using exact source and YAML-suite revisions. The historical qualification covers separately imported named Lean proof objects and 48 decoded external cases plus 4 additional guards; universal YAML correctness and source fidelity remain `UNKNOWN`. 
 - **[Inspect evidence withdrawal](https://mathgraph.org/resolve/)** — in the published historical OpenAI-source case, three withdrawn documentary support routes become `STALE`, the three mathematical propositions remain `UNKNOWN`, and an unrelated bounded JPL observation retains its exact historical warrant.
 - **[Reproduce a published scope offline](https://mathgraph.org/developers/)** — standard-library consumers validate pinned records and catalogue publication using an independently selected trust policy. Importing a receipt is not rerunning the original Lean proof.
 
-### What it adds beyond existing Lean tools
-
-`doc-gen4`, Loogle, LeanSearch, and import graphs primarily help readers locate documentation, declarations, or source relationships. MathGraph's experiment is **separate provenance and evidence status across exact source revisions**, including explicit scope and stale-support behavior. It is not presently a replacement for those tools, a full-Mathlib index, or a qualified generic proof-dependency graph.
-
-Tao's [Math 2.0](https://terrytao.wordpress.com/2026/10/10/math-2-0/) and the independently developed [IEANTN](https://github.com/teorth/IEANTN) offer complementary motivation and prior work; no affiliation or cross-project interoperability is claimed.
+The current catalogue is a small source index, not a full-Mathlib index or proof-dependency checker. It complements declaration search and documentation by keeping published verification evidence separate from source-derived navigation.
 
 ### Try the finite catalogue contract (Python 3)
 
@@ -34,11 +30,9 @@ python3 -I -S -B conformance/source_catalogue_v1/consumer.py \
 
 The SHA-256 pin must be authenticated through a channel you trust independently of the retrieved bytes. The consumer does not fetch upstream Mathlib or execute Lean. See the [Lean-facing quickstart](docs/quickstart.md) and [published developer instructions](https://mathgraph.org/developers/).
 
-### Status, licensing, and participation
+### Project status
 
-MathGraph is a Metalogic Labs **research project** with a public reference website. This repository proposes Apache-2.0 licensing for original MathGraph-authored code; review the [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) before release. Mathlib, L4YAML, YAML test-suite materials, papers, evidence archives, and other third-party content retain their own applicable rights. A public source link does not establish institutional endorsement.
-
-The focused living-network release checks passed for their declared scope. The broader research test collection retains fixture/environment failures; see [release status](docs/public/mathgraph_release_status_2026-10-13.md). No outside-organization adoption, continuous requalification, hosted arbitrary-proof verifier, or universal autonomous proof synthesis is claimed.
+MathGraph is a research-stage project developed by Metalogic Labs. Its source can be inspected publicly; a project-wide open-source license has not been confirmed. Refer to original publishers for rights associated with third-party source material and evidence. The published website is read-only and does not offer a general hosted Lean verifier.
 
 ## Historical research paths
 
@@ -125,7 +119,7 @@ are research/advanced runners used by the replay wrapper and evidence pack.
 - Promote more exact finite-countermodel certificates into durable evidence.
 - Expand independently qualified Lean proof evidence and test proof-generation transfer without generalizing existing bounded results.
 - Build [Lean Project Digest](docs/lean_project_digest.md) for existing Lean projects.
-- Try the [Lean Project Digest demo](examples/lean_project_digest_demo/) and review the [announcement draft](docs/public/lean_project_digest_announcement.md).
+- Try the [Lean Project Digest demo](examples/lean_project_digest_demo/) and inspect its explicit advisory trust boundaries.
 - Use [DiscoveryScheduler](docs/discovery_scheduler.md) to rank testable continuations without promoting truth.
 - Derive scheduler candidates from [repo-native evidence sources](docs/discovery_candidate_sources.md).
 

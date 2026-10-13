@@ -41,10 +41,10 @@ const finite = record.axes.finite_executable;
 const format = (value: number) => value.toLocaleString('en-US');
 ---
 
-<BaseLayout title="MathGraph — Open Verification Infrastructure" description="Explore a pinned Mathlib slice, inspect exactly scoped verification evidence, and identify what remains unknown or stale." currentPath="/">
+<BaseLayout title="MathGraph — Verification Evidence Network" description="Explore a pinned Mathlib slice, inspect exactly scoped verification evidence, and identify what remains unknown or stale." currentPath="/">
   <header class="shell home-hero">
     <div class="home-hero__copy">
-      <div class="eyebrow">Open verification infrastructure</div>
+      <div class="eyebrow">Source-pinned verification evidence</div>
       <h1>Knowledge you can verify. Capabilities you can build on.</h1>
       <p class="lede">Search real mathematical objects, follow exact source-backed connections, and inspect what independent evidence does—and does not—establish.</p>
       <p>Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved. Start with the published Mathlib slice and reproducible verification cases; arbitrary repository or proof submission is not currently hosted.</p>
@@ -109,8 +109,8 @@ const format = (value: number) => value.toLocaleString('en-US');
   <section id="source-to-result" class="section" aria-labelledby="source-result-title">
     <div class="shell">
       <div class="eyebrow">Real source → bounded result</div>
-      <h2 id="source-result-title">Public JPL Lean source. An independently scoped check.</h2>
-      <p class="lede">Using a public Lean 4 repository from NASA JPL as a third-party case study, the L4YAML source check follows an exact revision and decoded YAML-suite cases into published Lean and executable-parser receipts.</p>
+      <h2 id="source-result-title">Pinned parser source. Bounded evidence.</h2>
+      <p class="lede">The L4YAML example checks an exact revision of publicly available third-party Lean 4 code against decoded YAML-suite cases, preserving the scope of its proof and parser receipts.</p>
       <dl class="definition-list">
         <div><dt>Source</dt><dd><a href={record.evidence.external_sources.jpl}>{record.source.repo}</a> at <code>{record.source.commit}</code></dd></div>
         <div><dt>Suite</dt><dd><a href={record.evidence.external_sources.yaml_suite}>{record.source.external_suite_repo}</a> at <code>{record.source.external_suite_commit}</code></dd></div>

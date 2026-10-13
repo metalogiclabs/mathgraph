@@ -114,7 +114,6 @@ CANONICAL_DOCS = (
     "docs/lean_digest_lawbook_ingestion.md",
     "docs/lean_lawbook_attention.md",
     "docs/lean_project_digest.md",
-    "docs/public/lean_project_digest_announcement.md",
     "docs/evidence/residual_obstruction_atlas_v8_4.md",
     "docs/evidence/collatz_primitive_divisor_v12_2.md",
     "docs/evidence/root_node_persistent_filtration_v16_3.md",
