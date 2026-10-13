@@ -857,7 +857,9 @@ describe('primary public evidence experience', () => {
       expect(html).toContain('MathGraph');
     }
     const about = visibleText(await page('about'));
-    expect(about).toMatch(/open verification and trust infrastructure.*Metalogic Labs/i);
+    expect(about).toMatch(/research-stage project developed by Metalogic Labs/i);
+    expect(about).toContain('Source-indexed references support navigation; they are not proof dependencies');
+    expect(about).not.toMatch(/IEANTN|Terence Tao|Math 2\.0/);
     const contact = await page('contact');
     expect(contact).toContain('https://github.com/metalogiclabs/mathgraph');
     expect(contact).toContain('https://github.com/metalogiclabs/mathgraph/issues');
