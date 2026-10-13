@@ -1,0 +1,6 @@
+name = "mathgraph_lean435_receipt"
+version = "0.1.0"
+defaultTargets = ["Solution"]
+
+[[lean_lib]]
+name = "Solution"
