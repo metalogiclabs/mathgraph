@@ -1,32 +1,25 @@
 # Proposed Lean Zulip project announcement — 13 October 2026
 
-**Proposed topic:** MathGraph: source-pinned Mathlib objects and scoped verification evidence
+**Topic:** MathGraph: source-pinned Mathlib objects and scoped verification evidence
 
-**Publication gate:** Draft only. Check community channel norms and confirm that the Apache-2.0 license proposal has been legally reviewed and merged before asserting it is open-source licensed. Verify the live public links. Do not claim cooperation or endorsement from NASA/JPL or Tao.
+**Publication gate:** Draft only. Confirm the channel norms, the pending Apache-2.0 rights review/merge, and live links before posting. JPL/NASA and Tao are cited as independent public sources, never collaborators or endorsers.
 
 ---
 
 Hi all,
 
-I've been building [MathGraph](https://mathgraph.org), a research-stage project from **Metalogic Labs** for browsing source-pinned mathematics alongside separately qualified verification evidence. The [source is on GitHub](https://github.com/metalogiclabs/mathgraph) (Apache-2.0 for original MathGraph code, subject to the licensing release gate).
+I've been building [MathGraph](https://mathgraph.org), a research-stage project from **Metalogic Labs** for inspecting source-pinned mathematics alongside separately qualified verification evidence. [Source on GitHub](https://github.com/metalogiclabs/mathgraph); an Apache-2.0 proposal for original MathGraph code is currently under rights review.
 
-**A source index is not independent proof checking.** The current site offers:
+**Source indexing is not independent proof checking.** Today you can:
 
-- **A deliberately small Mathlib slice:** 2,345 declaration occurrences across 13 modules of pinned Mathlib v4.34.1, with permanent source pages and 3,571 typed structural relations. For example, `DECLARES` means a module declares an object, and `TYPE_REFERENCES` records a constant referenced in a declaration's type. Neither is a verified proof-dependency edge. [Try Explore](https://mathgraph.org/explore/).
-- **A reproducible Lean case study:** We checked a pinned revision of [JPL's public L4YAML Lean 4 repository](https://github.com/nasa-jpl/L4YAML) as third-party code, replayed its named Lean proof-object receipts, and matched 48 selected decoded YAML test-suite cases plus four extra guards. The record publishes exact source and verifier pins, while general parser correctness remains unknown. This is not JPL/NASA sponsorship or endorsement. [Inspect the evidence](https://mathgraph.org/records/mg-l4yaml-source-check-20261010/).
-- **Evidence status separate from mathematical truth:** In a historical dependency example, three withdrawn documentary support paths become `STALE`; the associated propositions stay `UNKNOWN`, not disproved. An unrelated bounded L4YAML result keeps its original historical scope. [See Resolve](https://mathgraph.org/resolve/).
+- **Explore a small Mathlib slice:** 2,345 declaration occurrences across 13 modules of pinned Mathlib v4.34.1, with 3,571 typed structural relations and permanent source pages. `DECLARES` links a module to its declaration; `TYPE_REFERENCES` records constants occurring in a declaration type. These are **not** proof-dependency edges. [Explore](https://mathgraph.org/explore/).
+- **Inspect an actual Lean case study:** We used a pinned revision of [JPL's public L4YAML Lean 4 project](https://github.com/nasa-jpl/L4YAML) as third-party code, rechecked its scoped named Lean proofs, and matched 48 decoded YAML test-suite cases plus four additional guards. General parser correctness remains **unknown**; this is not JPL/NASA involvement or endorsement. [Evidence](https://mathgraph.org/records/mg-l4yaml-source-check-20261010/).
+- **See what changes when evidence is withdrawn:** Three documentary support paths become `STALE`, while the associated mathematical propositions remain `UNKNOWN`, not disproved. The unrelated bounded JPL observation retains its historical status. [Resolve](https://mathgraph.org/resolve/).
 
-Unlike doc-gen4, Loogle, LeanSearch, or module import graphs, this is not aimed at better declaration search. It's an experiment in **portable, scope-aware provenance and evidence lifecycle**. It does not yet contain an independently verified full-Mathlib dependency graph or hosted general Lean verifier.
+Unlike doc-gen4, Loogle, LeanSearch or import graphs, MathGraph is **not** trying to improve theorem search. It's experimenting with evidence scope, provenance and status across revisions. Tao's recent [Math 2.0](https://terrytao.wordpress.com/2026/10/10/math-2-0/) talk prompted related questions; [IEANTN](https://github.com/teorth/IEANTN) is independent prior work.
 
-This overlaps with questions raised by [Tao's recent Math 2.0 talk](https://terrytao.wordpress.com/2026/10/10/math-2-0/); [IEANTN](https://github.com/teorth/IEANTN) is relevant, independent prior work.
-
-Two questions for Lean/Mathlib users:
-
-1. Which proof dependencies and axiom assumptions should be captured beyond direct `TYPE_REFERENCES` without making the graph noisy or implying unearned proof support?
-2. When a declaration or environment changes between Mathlib commits, what should make a *previously qualified* receipt stale, and what should still be reusable?
-
-Source and reproductions: https://github.com/metalogiclabs/mathgraph
+Two questions for Lean/Mathlib users: **(1)** What should count as a proof dependency or axiom assumption beyond a simple type reference? **(2)** When a Mathlib declaration or its environment changes, which previously qualified receipts should become stale?
 
 ---
 
-**Channel note:** A public Zulip web viewer did not expose recent topic traffic from this environment. Confirm the community's current preference for project announcements (often `#announce`) before posting. Do not post this draft automatically.
+**Channel note:** Recent Lean Zulip channel traffic could not be confirmed from the public viewer in this environment. Check its `#announce` description or appropriate project-announcement channel before posting.
