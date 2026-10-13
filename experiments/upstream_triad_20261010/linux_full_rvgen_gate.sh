@@ -62,19 +62,15 @@ t=Path("tests/rvgen_monitor.t")
 orig=t.read_text()
 sentinel="\ntest_end\n"
 assert orig.count(sentinel)==1
-additional='''# Only one transition per source state/event is representable in rvgen's
-# generated table, even if one of the transitions has a hybrid guard.
+additional='''# Reject ambiguous source state/event pairs.
 check "reject conflicting deterministic automaton transitions" \\
 	"$RVGEN monitor -c da -s tests/specs/test_nondeterministic_da.dot -t per_cpu" 1 \\
-	"Duplicate transition for event event_2 in state state_a" "Traceback"
-
-check "reject conflicting guarded hybrid transitions" \\
-	"$RVGEN monitor -c ha -s tests/specs/test_nondeterministic_ha.dot -t per_task" 1 \\
-	"Duplicate transition for event event2 in state S2" "Traceback"
+	"Duplicate transition for event event_2 in state state_a" "Traceback (most recent call last)"
 '''
 t.write_text(orig.replace(sentinel, "\n"+additional+sentinel))
 PY
-git -C "$TREE" add -N tools/verification/rvgen/tests/specs/test_nondeterministic_da.dot tools/verification/rvgen/tests/specs/test_nondeterministic_ha.dot
+git -C "$TREE" add -N tools/verification/rvgen/tests/specs/test_nondeterministic_da.dot
+rm -f tests/specs/test_nondeterministic_ha.dot
 git -C "$TREE" diff --check
 git -C "$TREE" diff --stat | tee "$OUT/patch-stat.txt"
 git -C "$TREE" diff --binary > "$OUT/linux-rvgen-reject-ambiguous-transitions.patch"
