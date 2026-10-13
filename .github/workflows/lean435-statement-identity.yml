@@ -11,6 +11,7 @@ on:
       - 'research/lean435_receipt/SourceAnchorHonest.lean'
       - 'research/lean435_receipt/SourceAnchorForged.lean'
       - 'research/lean435_receipt/lakefile.toml'
+      - 'research/lean435_receipt/qualify.py'
       - '.github/workflows/lean435-statement-identity.yml'
   workflow_dispatch:
 
@@ -45,6 +46,20 @@ jobs:
         env:
           GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python3 research/lean435_statement_binding/separate.py
+
+      - name: Requalify original native receipt with mandatory source anchor
+        env:
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 research/lean435_receipt/qualify.py
+
+      - name: Preserve source-bound full receipt, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean435-source-anchored-receipt
+          path: research/lean435_receipt/evidence/
+          if-no-files-found: warn
+          retention-days: 90
 
       - name: Preserve all verdicts including failed runs
         if: always()
