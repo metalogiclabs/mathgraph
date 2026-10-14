@@ -90,7 +90,7 @@ test("source revision changed or App identity mismatch fails closed",async()=>{
 test("absent CI remains advisory and missing revocation remains unresolved",async()=>{
   const m=setup({noCI:true});
   const r=await processQueuedPR(item,m.env,{fetcher:m.fetcher});
-  assert.equal(r.finding,"CURRENT_HEAD_CI_UNESTABLISHED");
+  assert.equal(r.finding,"DECLARED_VERIFICATION_RESIDUAL");
   assert.equal(m.saved[0].conclusion,"neutral");
   const r2=setup({revokeFails:true});
   await assert.rejects(processQueuedPR(item,r2.env,{fetcher:r2.fetcher}),
