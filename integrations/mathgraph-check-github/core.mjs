@@ -7,6 +7,12 @@ import { fileURLToPath } from "node:url";
 
 import { analyze, checkOutput } from "./analysis.mjs";
 export { analyze, checkOutput } from "./analysis.mjs";
+
+// Validate the exact source identity before any GitHub API interaction.
+// These guards must live in this module; analysis.mjs has its own private
+// validators and does not export their lexical constants.
+const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+const SHA = /^[a-f0-9]{40}$/i;
 export class GitHubHttpError extends Error {
   constructor(status) { super("GITHUB_HTTP_"+status); this.status=status; }
 }
