@@ -21,12 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - sample: function
+          - sample: function-current-d20
             module: Mathlib.Logic.Function.Defs
             blob: 565ae3df6b95fa084d60818ab13fab2e80874f3f
-          - sample: nat-choose
+            revision: d20f010dc809f2bb8f94969ccc8ed1691bad2531
+          - sample: nat-choose-current-d20
             module: Mathlib.Data.Nat.Choose.Basic
             blob: 1cd090d71c8175e5f2071d939d30394b4c56d9de
+            revision: d20f010dc809f2bb8f94969ccc8ed1691bad2531
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +48,7 @@ jobs:
           GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MG_SOURCE_MODULE: ${{ matrix.module }}
           MG_SOURCE_BLOB: ${{ matrix.blob }}
+          MG_SOURCE_REVISION: ${{ matrix.revision }}
         run: python3 research/lean435_statement_binding/external_transfer.py
 
       - name: Preserve exact native verdicts and negative controls
