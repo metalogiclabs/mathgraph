@@ -52,6 +52,7 @@ async function verify() {
     x.repository_id===REPO_ID && x.event==="pull_request" &&
     x.action==="opened" && x.delivered_at>=EARLIEST);
   need(plausible.length>0,"OWNED_PR_DELIVERY_NOT_OBSERVED");
+  console.log("MATHGRAPH_HOOK_DELIVERY_LIST_METADATA "+JSON.stringify(plausible.map(x=>({id:x.id,status_code:x.status_code,delivered_at:x.delivered_at,event:x.event,action:x.action,repository_id:x.repository_id,installation_id:x.installation_id}))));
   let accepted=null;
   for(const summary of plausible.slice(0,12)) {
     const entry=await getJSON("/app/hook/deliveries/"+summary.id,jwt);
