@@ -1,0 +1,99 @@
+name: MathGraph Check - Cloudflare approved deployment pilot
+on:
+  push:
+    branches:
+      - mathgraph-check-github-app-shadow-v0
+    paths:
+      - 'integrations/mathgraph-check-github/cloudflare/**'
+      - '.github/workflows/mathgraph-check-cloudflare-deploy-v0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-check-cloudflare-deploy-v0
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: ${{ vars.MATHGRAPH_CF_DEPLOY_APPROVED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Qualify exact source before access to deployment credentials
+        run: |
+          set -euo pipefail
+          node --test integrations/mathgraph-check-github/cloudflare/*.test.mjs
+          npx --yes wrangler@4.129.1 deploy --dry-run \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml \
+            --outdir "$RUNNER_TEMP/cf-qualify"
+      - name: Enforce explicit account and secret scope
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          APP_PEM: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          HOOK_SECRET: ${{ secrets.MATHGRAPH_CHECK_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'CLOUDFLARE_ACCOUNT_ID_NOT_CONFIGURED'; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'CLOUDFLARE_API_TOKEN_NOT_CONFIGURED'; exit 1; }
+          test -n "$APP_PEM" || { echo 'MATHGRAPH_APP_PRIVATE_KEY_NOT_CONFIGURED'; exit 1; }
+          test -n "$HOOK_SECRET" || { echo 'MATHGRAPH_WEBHOOK_SECRET_NOT_CONFIGURED'; exit 1; }
+      - name: Provision exactly two named Queues (idempotent)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node integrations/mathgraph-check-github/cloudflare/provision-queues.mjs
+      - name: Deploy isolated Cloudflare Worker and queue bindings
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.129.1 deploy \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml
+      - name: Set rotated App key as encrypted Cloudflare Worker secret
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          APP_PEM: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          set +x
+          printf '%s' "$APP_PEM" | npx --yes wrangler@4.129.1 secret put GITHUB_APP_PRIVATE_KEY \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml
+      - name: Set matching GitHub webhook secret as encrypted Cloudflare Worker secret
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          HOOK_SECRET: ${{ secrets.MATHGRAPH_CHECK_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          set +x
+          printf '%s' "$HOOK_SECRET" | npx --yes wrangler@4.129.1 secret put GITHUB_WEBHOOK_SECRET \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml
+      - name: Configure existing GitHub App webhook after HTTPS readiness (approval gated)
+        if: ${{ vars.MATHGRAPH_CF_HOOK_ACTIVATE_APPROVED == 'true' }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          MATHGRAPH_CHECK_WEBHOOK_SECRET: ${{ secrets.MATHGRAPH_CHECK_WEBHOOK_SECRET }}
+          MATHGRAPH_CF_HOOK_REPLACE_APPROVED: ${{ vars.MATHGRAPH_CF_HOOK_REPLACE_APPROVED }}
+        run: |
+          set -euo pipefail
+          node integrations/mathgraph-check-github/cloudflare/activate-webhook.mjs
+      - name: Mark cloud deployment done, webhook activation still unqualified
+        run: |
+          {
+            echo '### Cloudflare deployment submitted'
+            echo 'Worker: mathgraph-check-webhook-pilot'
+            echo 'Queue: mathgraph-check-pr-events-v0 (single consumer, bounded retry)'
+            echo 'DLQ: mathgraph-check-pr-events-dlq-v0'
+            echo 'GitHub App signed delivery and exact-SHA Check Run require separate live verification.'
+            echo 'Do not call this a live GitHub webhook without observing GitHub delivery and App-owned Check.'
+          } >> "$GITHUB_STEP_SUMMARY"
