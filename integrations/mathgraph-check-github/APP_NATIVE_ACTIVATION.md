@@ -16,7 +16,7 @@ Never paste the secret into this chat, GitHub code, a PR, a GitHub Actions input
 
 Confirm the App is installed under metalogiclabs, with access to go-ethereum, and has Pull requests read, Actions read, Checks write. If these permissions changed after installation, GitHub requires approval of the updated App installation.
 
-The workflow file mathgraph-check-app-publisher-v0.yml triggers on a push to the protected pilot branch. It has a prior Actions run that can be rerun once the secret is saved. If the key is missing, the run prints NOT_CONFIGURED and only the unit tests qualify. A missing App installation or a permission mismatch fails the action; no alternate token or App is used.
+The workflow file mathgraph-check-app-publisher-v0.yml triggers on a push to the protected pilot branch. It has a prior Actions run that can be rerun once the secret is saved. If the key is missing, the run prints `NOT_CONFIGURED` and intentionally exits nonzero: the **publisher workflow must not appear green without a real registered-App Check Run**. The independent adversarial unit tests can still pass. In the [credential-absent gate #38503497554](https://github.com/metalogiclabs/mathgraph/actions/runs/38503497554), the original tests passed and the publishing steps were skipped; the workflow failed closed as designed. A new key is still required before any live App delivery can be claimed. A missing App installation or a permission mismatch fails the action; no alternate token or App is used.
 
 ## Qualification contract
 
