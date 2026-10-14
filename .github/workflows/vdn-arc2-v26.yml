@@ -1,0 +1,25 @@
+name: VDN ARC-AGI-2 v26 minimal sufficient context
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v26_minimal_sufficient_context.py'
+      - '.github/workflows/vdn-arc2-v26.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  minimal-context:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned ARC-AGI-2
+        run: |
+          git clone --quiet https://github.com/arcprize/ARC-AGI-2.git /tmp/arc2
+          cd /tmp/arc2 && git checkout --quiet f3283f727488ad98fe575ea6a5ac981e4a188e49
+      - name: Search deletion-minimal verified context
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v26_minimal_sufficient_context.py /tmp/arc2/data/evaluation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-arc2-v26
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v26_minimal_sufficient_context/result.json

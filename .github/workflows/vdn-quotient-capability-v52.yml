@@ -1,0 +1,20 @@
+name: VDN Quotient Capability V52
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v52_quotient_capability_compatibility.py'
+      - '.github/workflows/vdn-quotient-capability-v52.yml'
+  workflow_dispatch:
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust quotient-capability compatibility
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v52_quotient_capability_compatibility.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-quotient-capability-v52
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v52_quotient_capability_compatibility/result.json
