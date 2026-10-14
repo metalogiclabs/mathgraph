@@ -20,50 +20,11 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - name: Adversarial App publisher tests without secrets
+      - name: Existing source-bound App publisher tests
         run: node --test integrations/mathgraph-check-github/app-native-check.test.mjs
-      - name: Inspect Actions secret without disclosing it
-        id: key-state
-        shell: bash
+      - name: App key parsing, scoped identity and token-revocation tests
+        run: node --test integrations/mathgraph-check-github/app-authentication.test.mjs
+      - name: Authenticate registered App, publish and independently read back check
         env:
-          APP_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
-        run: |
-          if [ -n "$APP_KEY" ]; then
-            echo 'configured=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'configured=false' >> "$GITHUB_OUTPUT"
-            echo 'MATHGRAPH_APP_GATE=NOT_CONFIGURED; no App API calls were made'
-          fi
-      - name: Mint strictly scoped token for registered MathGraph Check App
-        id: app-token
-        if: steps.key-state.outputs.configured == 'true'
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
-        with:
-          client-id: Iv23lioiUs5KfHD7mkkw
-          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
-          owner: metalogiclabs
-          repositories: go-ethereum
-          permission-checks: write
-          permission-pull-requests: read
-          permission-actions: read
-      - name: Publish and independently verify registered App Check Run
-        if: steps.key-state.outputs.configured == 'true'
-        env:
-          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: node integrations/mathgraph-check-github/app-native-check.mjs
-      - name: Report missing credential as NOT_CONFIGURED
-        if: steps.key-state.outputs.configured != 'true'
-        shell: bash
-        run: |
-          {
-            echo '### Registered MathGraph App: NOT_CONFIGURED'
-            echo 'The Actions secret MATHGRAPH_CHECK_APP_PRIVATE_KEY is absent.'
-            echo 'No JWT was created and no App Check Run was attempted.'
-            echo 'Tests passing do not establish the App is installed or live.'
-            echo 'Add a fresh PEM only in this repository Actions secrets, then rerun this job.'
-          } >> "$GITHUB_STEP_SUMMARY"
-          # A green publisher workflow must mean a real GitHub App Check Run
-          # was created/read back. Green unit tests with no credential are
-          # insufficient evidence of activation.
-          echo 'BLOCKED_NOT_CONFIGURED: registered App publishing did not occur' >&2
-          exit 1
+          MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: node integrations/mathgraph-check-github/app-authentication.mjs

@@ -1,0 +1,11 @@
+# App-native authentication fallback — no private-key output
+
+Earlier signed GitHub App action run 38503848547 attempt 2 detected the newly configured private-key secret, but failed on `Invalid keyData` before minting a token. GitHub's official action already supports escaped `\\n` line breaks; this is either an incompatible representation, an incomplete PEM, or invalid key bytes, not an uninstalled-App finding.
+
+New exact-head App-native gate uses the existing MathGraph worker's RSA JWT signer and source-pinned App publisher. It parses a complete GitHub RSA PEM key directly inside the Actions process, accepting PKCS1, PKCS8, escaped-newline, compacted and Base64-encoded complete PEM values. It never logs private key bytes or stores normalized credentials in step outputs, check runs, artifacts or repository files.
+
+Then GET /app must identify the registered MathGraph Check App `5308912`, owner `metalogiclabs`; GET /repos/metalogiclabs/go-ethereum/installation must identify an installed, unsuspended matching App. It POSTs a token scoped only to `go-ethereum` with Checks write / Pull requests read / Actions read, invokes the pre-qualified exact-PR publisher, independently verifies native Check app ID 5308912, and revokes its short-lived installation token.
+
+Because the existing user key was uploaded to chat earlier, rotate it in GitHub App settings before treating the service as production. The key should be stored ONLY as Actions secret `MATHGRAPH_CHECK_APP_PRIVATE_KEY` in `metalogiclabs/mathgraph`. If the key is truncated, the gate fails `APP_PRIVATE_KEY_UNPARSEABLE_OR_INCOMPLETE`; the complete newly downloaded .pem file needs to be pasted into the Actions secret, not its filename, a screenshot or an excerpt.
+
+Qualification remains exactly one App-authored neutral Check Run at go-ethereum PR 19 head `a04aa77aaebd81d11274560e8d24d90c6f417589`; this test does not activate automatic webhook handling. No Vercel, Render, Cloudflare, mathgraph.org, or upstream Ethereum changes.
