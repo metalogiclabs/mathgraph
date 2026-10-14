@@ -21,7 +21,8 @@ WORK.mkdir(exist_ok=True)
 EVIDENCE.mkdir(exist_ok=True)
 
 SOURCE_REPO = "leanprover-community/mathlib4"
-SOURCE_REVISION = "56a005855ea17e0b0958f73ec801ae140b0a1679"
+DEFAULT_SOURCE_REVISION = "56a005855ea17e0b0958f73ec801ae140b0a1679"
+SOURCE_REVISION = os.environ.get("MG_SOURCE_REVISION", DEFAULT_SOURCE_REVISION)
 SOURCE_MODULE = os.environ.get("MG_SOURCE_MODULE", "Mathlib.Logic.Function.Defs")
 SOURCE_RELATIVE_PATH = SOURCE_MODULE.replace(".", "/") + ".lean"
 SOURCE_BLOB = os.environ.get(
