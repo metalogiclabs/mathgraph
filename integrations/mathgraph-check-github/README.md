@@ -1,6 +1,6 @@
 # MathGraph Check — GitHub App shadow pilot V0
 
-This release is a **candidate GitHub App worker** plus a read-only shadow experiment. It is not a registered, installed or deployed GitHub App. No upstream comments, code changes or merge action. No claim that an AI has independently checked arbitrary source-code correctness.
+This release is a **candidate GitHub App worker**, a read-only shadow experiment, and a separate GitHub Actions App-token publisher qualification route. The owner reported GitHub App registration; installation and actual App-authored publication are not yet confirmed, and the webhook is not deployed. No upstream comments, code changes or merge action. No claim that an AI has independently checked arbitrary source-code correctness.
 
 ## Objective and trust boundary
 
@@ -10,7 +10,7 @@ Real control: metalogiclabs/go-ethereum PR #19, exact head a04aa77aaebd81d112745
 
 ## GitHub App registration / installation preparation
 
-The first controlled GitHub installation is documented in [ACTIVATE.md](ACTIVATE.md), including GitHub's prefilled org registration link, minimum permissions and exact signed-webhook acceptance criteria. **App registration and hosting have not occurred yet.**
+The minimal App-authorized first Check uses [APP_NATIVE_ACTIVATION.md](APP_NATIVE_ACTIVATION.md) and GitHub Actions **without hosting**; see [ACTIVATE.md](ACTIVATE.md) for separate, later signed-webhook requirements. App registration is owner-reported, but the private-key Actions secret, installation and live App-authored Check remain unqualified. The owner has explicitly excluded Render; do not deploy there.
 
 The added `webhook.integration.test.mjs` executes a real local HTTP webhook request, validates its signature and verifies the eventual neutral Check Run against **mock GitHub APIs**. This is deliberately separate from the existing shadow CLI, which reads actual public PRs without writing to GitHub.
 
