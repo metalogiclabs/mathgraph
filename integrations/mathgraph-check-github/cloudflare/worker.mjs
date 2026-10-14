@@ -243,50 +243,79 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
   const token=minted.token;
   let result,failed,revokeOK=false;
   try {
+    // A commit SHA is immutable; PR context and exact-head CI evidence are
+    // not. Do not return EXISTING before re-reading the current evidence.
     const matches=await existingChecks(item,token,api);
-    if(matches.length){
-      ensure(matches.length===1 &&
-        matches[0].head_sha===item.sha &&
-        matches[0].status==="completed" &&
-        matches[0].conclusion==="neutral",
+    ensure(matches.length<=1,"DUPLICATE_APP_CHECK_AUTHORITY");
+    const previous=matches[0];
+    if(previous){
+      ensure(Number.isSafeInteger(previous.id) && previous.id>0 &&
+        previous.head_sha===item.sha &&
+        previous.status==="completed" && previous.conclusion==="neutral",
         "PREVIOUS_APP_CHECK_INVALID");
-      result={outcome:"EXISTING",checkID:matches[0].id};
+    }
+    const snapshot=await getSnapshot(item,token,api);
+    if(!snapshot){
+      result={outcome:"STALE"};
     }else{
-      const snapshot=await getSnapshot(item,token,api);
-      if(!snapshot){
+      const report=analyze(snapshot);
+      ensure(report.authority==="ADVISORY_ONLY" &&
+        report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
+      const check=checkOutput(report);
+      ensure(check.conclusion==="neutral" && check.status==="completed" &&
+        check.name===SCOPE.checkName,"FORBIDDEN_TRUTH_PROMOTION");
+
+      // Reconfirm the original PR/HEAD before creating OR updating authority.
+      const fresh=await api(root+"/pulls/"+item.number,token);
+      if(fresh?.head?.sha!==item.sha || fresh.state!=="open" ||
+          fresh.head?.repo?.full_name!==SCOPE.repository ||
+          fresh.base?.repo?.full_name!==SCOPE.repository){
         result={outcome:"STALE"};
-      }else{
-        const report=analyze(snapshot);
-        ensure(report.authority==="ADVISORY_ONLY" &&
-          report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
-        const check=checkOutput(report);
-        ensure(check.conclusion==="neutral" && check.status==="completed" &&
-          check.name===SCOPE.checkName,"FORBIDDEN_TRUTH_PROMOTION");
-        // Final source and branch check before writing a status.
-        const fresh=await api(root+"/pulls/"+item.number,token);
-        if(fresh?.head?.sha!==item.sha || fresh.state!=="open" ||
-            fresh.head?.repo?.full_name!==SCOPE.repository){
-          result={outcome:"STALE"};
+      }else if(previous){
+        const same=previous.output?.title===check.output.title &&
+          previous.output?.summary===check.output.summary;
+        if(same){
+          result={outcome:"EXISTING",checkID:previous.id};
         }else{
-          const externalID=SCOPE.repository+"#"+item.number+"@"+item.sha;
-          const written=await api(root+"/check-runs",token,{
-            method:"POST",
-            body:{...check,head_sha:item.sha,external_id:externalID}
+          // Same app/check/commit, changed proof standing or CI evidence:
+          // update the original Check instead of creating a duplicate.
+          const changed=await api(root+"/check-runs/"+previous.id,token,{
+            method:"PATCH",
+            body:{status:"completed",conclusion:"neutral",output:check.output}
           });
-          ensure(Number.isSafeInteger(written?.id) &&
-            written.app?.id===SCOPE.appID &&
-            written.head_sha===item.sha &&
-            written.status==="completed" && written.conclusion==="neutral",
-            "CHECK_POST_IDENTITY_NOT_CONFIRMED");
+          ensure(changed?.id===previous.id && changed.app?.id===SCOPE.appID &&
+            changed.head_sha===item.sha && changed.status==="completed" &&
+            changed.conclusion==="neutral","CHECK_REFRESH_IDENTITY_NOT_CONFIRMED");
           const readback=await existingChecks(item,token,api);
-          ensure(readback.length===1 && readback[0].id===written.id &&
+          ensure(readback.length===1 && readback[0].id===previous.id &&
             readback[0].head_sha===item.sha &&
             readback[0].status==="completed" &&
-            readback[0].conclusion==="neutral",
-            "CHECK_READBACK_NOT_CONFIRMED");
-          result={outcome:"CREATED",checkID:written.id,
+            readback[0].conclusion==="neutral" &&
+            readback[0].output?.title===check.output.title &&
+            readback[0].output?.summary===check.output.summary,
+            "CHECK_REFRESH_READBACK_MISMATCH");
+          result={outcome:"UPDATED",checkID:previous.id,
             finding:report.finding.code};
         }
+      }else{
+        const externalID=SCOPE.repository+"#"+item.number+"@"+item.sha;
+        const written=await api(root+"/check-runs",token,{
+          method:"POST",
+          body:{...check,head_sha:item.sha,external_id:externalID}
+        });
+        ensure(Number.isSafeInteger(written?.id) &&
+          written.app?.id===SCOPE.appID &&
+          written.head_sha===item.sha &&
+          written.status==="completed" && written.conclusion==="neutral",
+          "CHECK_POST_IDENTITY_NOT_CONFIRMED");
+        const readback=await existingChecks(item,token,api);
+        ensure(readback.length===1 && readback[0].id===written.id &&
+          readback[0].head_sha===item.sha &&
+          readback[0].status==="completed" &&
+          readback[0].conclusion==="neutral",
+          "CHECK_READBACK_NOT_CONFIRMED");
+        result={outcome:"CREATED",checkID:written.id,
+          finding:report.finding.code};
       }
     }
   }catch(error){failed=error;}
