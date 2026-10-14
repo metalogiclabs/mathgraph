@@ -51,7 +51,7 @@ test("no receipt and failed delivery cannot be promoted to success",async()=>{
   for(const opt of [{missing:true},{failed:true}]) {
     const f=fixture(opt);
     await assert.rejects(auditSignedDeliveryReceipts(f),
-      /NO_GITHUB_ACCEPTED_PR18_SIGNED_DELIVERY/);
+      /NO_GITHUB_ACCEPTED_TARGET_SIGNED_DELIVERY/);
   }
 });
 test("wrong registered App identity rejects before delivery listing",async()=>{
@@ -89,4 +89,39 @@ test("19-digit GitHub delivery IDs retain exact decimal digits through API reque
   });
   assert.equal(r.receipts[0].id,id);
   assert.equal(r.receipts[0].accepted_by_webhook,true);
+});
+
+
+test("real App PR #21 opened target accepts only exact registered PR/commit",async()=>{
+  const f=fixture();
+  const id="3848195435306942688",guid="ab1f6cde-a97f-4ca7-b315-286816ed1992";
+  const fetcher=async(url,opts)=>{
+    const path=new URL(url).pathname;
+    if(path==="/app/hook/deliveries")
+      return new Response('[{"id":'+id+',"guid":"'+guid+'","delivered_at":"2026-10-14T16:36:10Z","event":"pull_request","action":"opened","status_code":202,"redelivery":false}]');
+    if(path==="/app/hook/deliveries/"+id)
+      return new Response(JSON.stringify({status_code:202,request:{payload:{
+        repository:{full_name:"metalogiclabs/go-ethereum"},
+        pull_request:{number:21,head:{sha:"1c6e656e55b82819f36b0e9a6ea38809ce61b40b"}}
+      }}}));
+    return f.fetcher(url,opts);
+  };
+  const result=await auditSignedDeliveryReceipts({
+    privateKey:f.privateKey,fetcher,target:"pr21",
+    since:"2026-10-14T16:30:00Z"
+  });
+  assert.equal(result.pr,21);
+  assert.equal(result.sha,"1c6e656e55b82819f36b0e9a6ea38809ce61b40b");
+  assert.equal(result.receipts[0].action,"opened");
+  assert.equal(result.receipts[0].id,id);
+  assert.equal(result.receipts[0].status_code,202);
+});
+test("PR #21 cannot inherit PR #18 receipts or wrong source SHA",async()=>{
+  const f=fixture();
+  await assert.rejects(auditSignedDeliveryReceipts({
+    privateKey:f.privateKey,fetcher:f.fetcher,target:"pr21"
+  }),/NO_GITHUB_ACCEPTED_TARGET_SIGNED_DELIVERY/);
+  await assert.rejects(auditSignedDeliveryReceipts({
+    privateKey:f.privateKey,fetcher:f.fetcher,target:"unapproved"
+  }),/UNSUPPORTED_AUDIT_TARGET/);
 });

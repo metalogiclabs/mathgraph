@@ -28,3 +28,8 @@ jobs:
           MATHGRAPH_RECEIPT_AUDIT_DIAGNOSTIC: 'true'
           MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
         run: node integrations/mathgraph-check-github/receipt-audit.mjs
+      - name: Independently confirm PR #21 source-pinned webhook opened receipt
+        env:
+          MATHGRAPH_RECEIPT_AUDIT_TARGET: pr21
+          MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: node integrations/mathgraph-check-github/receipt-audit.mjs

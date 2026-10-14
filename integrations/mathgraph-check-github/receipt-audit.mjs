@@ -7,9 +7,12 @@ import { normalizePrivateKey, APP_CLIENT_ID } from "./app-authentication.mjs";
 import { makeJWT } from "./webhook.mjs";
 
 const APP_ID=5308912, OWNER="metalogiclabs";
-const TARGET_REPOSITORY="metalogiclabs/go-ethereum";
-const TARGET_PR=18;
-const TARGET_SHA="7c48a0811a21dad7ff192171e905663966e15c95";
+const TARGETS=Object.freeze({
+  "pr18":Object.freeze({repository:"metalogiclabs/go-ethereum",pr:18,
+    sha:"7c48a0811a21dad7ff192171e905663966e15c95",action:"edited"}),
+  "pr21":Object.freeze({repository:"metalogiclabs/go-ethereum",pr:21,
+    sha:"1c6e656e55b82819f36b0e9a6ea38809ce61b40b",action:"opened"})
+});
 const SINCE="2026-10-14T00:00:00Z";
 const MAX_CANDIDATES=25;
 function requireResult(value,code) { if(!value) throw new Error(code); }
@@ -17,8 +20,12 @@ function requireResult(value,code) { if(!value) throw new Error(code); }
 export async function auditSignedDeliveryReceipts({
   privateKey,
   fetcher=fetch,
-  since=SINCE
+  since=SINCE,
+  target="pr18"
 }={}) {
+  requireResult(Object.prototype.hasOwnProperty.call(TARGETS,target),
+    "UNSUPPORTED_AUDIT_TARGET");
+  const subject=TARGETS[target];
   const key=normalizePrivateKey(privateKey).key;
   const jwt=makeJWT(APP_CLIENT_ID,key);
   const call=async(path)=>{
@@ -62,7 +69,7 @@ export async function auditSignedDeliveryReceipts({
 
   const candidates=listing.filter(x=>
     x.event==="pull_request" &&
-    x.action==="edited" &&
+    x.action===subject.action &&
     typeof x.delivered_at==="string" &&
     x.delivered_at>=since &&
     /^[1-9]\d{0,30}$/.test(String(x.id))
@@ -78,16 +85,16 @@ export async function auditSignedDeliveryReceipts({
         payload_type:typeof payload,
         payload_field_names:payload && typeof payload==="object" ?
           Object.keys(payload).slice(0,18):[],
-        repo_match:payload?.repository?.full_name===TARGET_REPOSITORY,
-        pr_number_top:payload?.number===TARGET_PR,
-        pr_number_nested:payload?.pull_request?.number===TARGET_PR,
-        sha_match:payload?.pull_request?.head?.sha===TARGET_SHA,
+        repo_match:payload?.repository?.full_name===subject.repository,
+        pr_number_top:payload?.number===subject.pr,
+        pr_number_nested:payload?.pull_request?.number===subject.pr,
+        sha_match:payload?.pull_request?.head?.sha===subject.sha,
         status_code:detail.status_code??summary.status_code
       }));
     }
-    if(payload?.repository?.full_name!==TARGET_REPOSITORY ||
-      payload?.pull_request?.number!==TARGET_PR ||
-      payload?.pull_request?.head?.sha!==TARGET_SHA)
+    if(payload?.repository?.full_name!==subject.repository ||
+      payload?.pull_request?.number!==subject.pr ||
+      payload?.pull_request?.head?.sha!==subject.sha)
       continue;
     const status=Number(detail.status_code??summary.status_code);
     const match={
@@ -95,22 +102,22 @@ export async function auditSignedDeliveryReceipts({
       guid:String(summary.guid||detail.guid||""),
       delivered_at:summary.delivered_at,
       event:"pull_request",
-      action:"edited",
+      action:subject.action,
       status_code:status,
       accepted_by_webhook:status===202,
       redelivery:summary.redelivery===true,
-      repository:TARGET_REPOSITORY,pr:TARGET_PR,sha:TARGET_SHA
+      repository:subject.repository,pr:subject.pr,sha:subject.sha
     };
     requireResult(/^[a-f0-9-]{16,80}$/i.test(match.guid),
       "DELIVERY_GUID_INVALID");
     receipts.push(match);
   }
   requireResult(receipts.some(x=>x.accepted_by_webhook),
-    "NO_GITHUB_ACCEPTED_PR18_SIGNED_DELIVERY");
+    "NO_GITHUB_ACCEPTED_TARGET_SIGNED_DELIVERY");
   return {
     authority:"GITHUB_APP_DELIVERY_RECEIPT",
     app_id:APP_ID,
-    repository:TARGET_REPOSITORY,pr:TARGET_PR,sha:TARGET_SHA,
+    repository:subject.repository,pr:subject.pr,sha:subject.sha,
     candidate_window:candidates.length,
     receipts
   };
@@ -119,7 +126,8 @@ export async function auditSignedDeliveryReceipts({
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   try {
     const result=await auditSignedDeliveryReceipts({
-      privateKey:process.env.MATHGRAPH_CHECK_APP_PRIVATE_KEY
+      privateKey:process.env.MATHGRAPH_CHECK_APP_PRIVATE_KEY,
+      target:process.env.MATHGRAPH_RECEIPT_AUDIT_TARGET||"pr18"
     });
     console.log("MATHGRAPH_LIVE_HOOK_RECEIPTS "+JSON.stringify(result));
     if(process.env.GITHUB_STEP_SUMMARY) {
