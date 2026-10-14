@@ -1,6 +1,46 @@
 # MathGraph Check — GitHub App shadow pilot V0
 
-This release is a **candidate GitHub App worker**, a read-only shadow experiment, and a separate GitHub Actions App-token publisher qualification route. The owner reported GitHub App registration; installation and actual App-authored publication are not yet confirmed, and the webhook is not deployed. No upstream comments, code changes or merge action. No claim that an AI has independently checked arbitrary source-code correctness.
+This release is a **candidate GitHub App worker**, a read-only shadow experiment, and a separate GitHub Actions App-token publisher qualification route. The registered App has already published one exact-head neutral Check; automatic signed-webhook delivery remains unqualified and undeployed. No upstream comments, code changes or merge action. No claim that an AI has independently checked arbitrary source-code correctness.
+
+## Current qualified status (14 October 2026)
+
+**Registered App gate CLOSED, automatic event delivery OPEN.**
+[GitHub Actions #38505056995](https://github.com/metalogiclabs/mathgraph/actions/runs/38505056995)
+qualified an independently read back *actual* neutral Check
+[115663454933](https://github.com/metalogiclabs/go-ethereum/runs/115663454933)
+on exact `metalogiclabs/go-ethereum#19@a04aa77aaebd81d11274560e8d24d90c6f417589`
+with publisher `app.id=5308912`. A subsequent App-authenticated retry retained
+**one** Check identity and revoked each short-lived installation token.
+
+**Same-SHA mutable-evidence repair:**
+[Cloudflare Worker dry-run qualification #38508815714](https://github.com/metalogiclabs/mathgraph/actions/runs/38508815714)
+passed **21/21** original-source fixture/negative tests and ran the actual
+local Cloudflare Workerd runtime, but **no Cloudflare deployment**.
+On a source-stable PR head, the signed `pull_request.edited` and
+`workflow_run.completed` inputs are independently narrowed to
+source-validated descriptors. The consumer independently refreshes changed
+CI facts, **PATCHes the original registered-App Check** rather than posting
+a duplicate, and fails closed on stale heads, wrong publisher, denied update,
+untrusted signatures and conflicting duplicate App identities.
+
+**Current subscription observation:**
+[registered App run #38508654185](https://github.com/metalogiclabs/mathgraph/actions/runs/38508654185)
+read back `pull_request=true`, `workflow_run=false` from GitHub's
+authenticated App metadata. The account owner must explicitly subscribe
+to `workflow_run` to enable automatic CI-completion refresh; merely having
+Actions-read permission does not show subscription. No live `workflow_run`
+delivery has been observed. Real `pull_request` delivery is also unobserved.
+
+Cloudflare is a **candidate non-Render** deployment only.
+Deployment is disabled pending explicit account approval, scoped credentials
+and repository variable `MATHGRAPH_CF_DEPLOY_APPROVED=true`; the activation
+worker refuses webhook URL replacement without separate approval. Nothing
+in this branch changes mathgraph.org, production GitHub App webhook settings
+or third-party repository contents.
+
+**Scientific boundary:** This is bounded secure event transport and scoped
+PR decision support, not independent verification of all PR semantics or
+autonomous self-improvement of the generator. `E2E_SYSTEM/L7=UNKNOWN`.
 
 ## Objective and trust boundary
 
@@ -10,7 +50,7 @@ Real control: metalogiclabs/go-ethereum PR #19, exact head a04aa77aaebd81d112745
 
 ## GitHub App registration / installation preparation
 
-The minimal App-authorized first Check uses [APP_NATIVE_ACTIVATION.md](APP_NATIVE_ACTIVATION.md) and GitHub Actions **without hosting**; see [ACTIVATE.md](ACTIVATE.md) for separate, later signed-webhook requirements. App registration is owner-reported, but the private-key Actions secret, installation and live App-authored Check remain unqualified. The owner has explicitly excluded Render; do not deploy there.
+The minimal App-authorized first Check uses [APP_NATIVE_ACTIVATION.md](APP_NATIVE_ACTIVATION.md) and GitHub Actions **without hosting**; see [ACTIVATE.md](ACTIVATE.md) for separate, later signed-webhook requirements. **Historical preparation guidance, superseded:** registered App ID 5308912, private-key-backed Actions authentication, installation and one native App-authored Check have since been independently qualified (see current status above). The owner has explicitly excluded Render; do not deploy there.
 
 The added `webhook.integration.test.mjs` executes a real local HTTP webhook request, validates its signature and verifies the eventual neutral Check Run against **mock GitHub APIs**. This is deliberately separate from the existing shadow CLI, which reads actual public PRs without writing to GitHub.
 
