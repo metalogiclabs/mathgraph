@@ -12,6 +12,7 @@ on:
       - "reproductions/daniel_relational_law_synthesis_v4/**"
       - "reproductions/daniel_law_identity_v5/**"
       - "reproductions/daniel_second_generation_budget_v6/**"
+      - "reproductions/daniel_future_equivalence_v7/**"
       - "reproductions/daniel_obstruction_version_space_v8/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
   pull_request:
@@ -24,6 +25,7 @@ on:
       - "reproductions/daniel_relational_law_synthesis_v4/**"
       - "reproductions/daniel_law_identity_v5/**"
       - "reproductions/daniel_second_generation_budget_v6/**"
+      - "reproductions/daniel_future_equivalence_v7/**"
       - "reproductions/daniel_obstruction_version_space_v8/**"
       - ".github/workflows/daniel-closure-depth-repro.yml"
 
@@ -48,7 +50,7 @@ jobs:
       - name: Compile Python sources
         run: |
           python -m py_compile experiments/closure_relative_developmental_depth_v1/run.py reproductions/daniel_closure_depth_v1/reproduce.py reproductions/daniel_closure_depth_v1/alternate_grammar_audit.py
-          for f in reproductions/daniel_typed_regime_growth_v1/reproduce.py reproductions/daniel_target_independent_regime_growth_v2/reproduce.py reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py reproductions/daniel_coordinate_free_refinement_v3/reproduce.py reproductions/daniel_relational_law_synthesis_v4/reproduce.py reproductions/daniel_law_identity_v5/reproduce.py reproductions/daniel_second_generation_budget_v6/reproduce.py reproductions/daniel_obstruction_version_space_v8/reproduce.py; do
+          for f in reproductions/daniel_typed_regime_growth_v1/reproduce.py reproductions/daniel_target_independent_regime_growth_v2/reproduce.py reproductions/daniel_target_independent_regime_growth_v2/reproduce_v2_1.py reproductions/daniel_coordinate_free_refinement_v3/reproduce.py reproductions/daniel_relational_law_synthesis_v4/reproduce.py reproductions/daniel_law_identity_v5/reproduce.py reproductions/daniel_second_generation_budget_v6/reproduce.py reproductions/daniel_future_equivalence_v7/reproduce.py reproductions/daniel_obstruction_version_space_v8/reproduce.py; do
             if [ -f "$f" ]; then python -m py_compile "$f"; fi
           done
       - name: Reproduce closure-depth certificate
@@ -74,6 +76,9 @@ jobs:
       - name: Reproduce resource-indexed second-generation constructibility
         if: ${{ hashFiles('reproductions/daniel_second_generation_budget_v6/reproduce.py') != '' }}
         run: python reproductions/daniel_second_generation_budget_v6/reproduce.py
+      - name: Reproduce resource-indexed future equivalence
+        if: ${{ hashFiles('reproductions/daniel_future_equivalence_v7/reproduce.py') != '' }}
+        run: python reproductions/daniel_future_equivalence_v7/reproduce.py
       - name: Reproduce sparse-obstruction version-space audit
         if: ${{ hashFiles('reproductions/daniel_obstruction_version_space_v8/reproduce.py') != '' }}
         run: python reproductions/daniel_obstruction_version_space_v8/reproduce.py
