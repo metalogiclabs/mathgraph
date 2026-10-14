@@ -112,13 +112,18 @@ const READ_PATHS=new Set(EVIDENCE.runs.flatMap(r=>
   [PREFIX+"/actions/runs/"+r.id,
     ...(r.artifact?[PREFIX+"/actions/runs/"+r.id+"/artifacts?per_page=100"]:[])]
 ).concat([PREFIX+"/contents/"+EVIDENCE.reportPath+"?ref="+EVIDENCE.reportCommit]));
-async function publicRead(path,fetcher){
+async function publicRead(path,fetcher,readToken){
   requireFact(READ_PATHS.has(path),"EXTERNAL_API_PATH_NOT_ALLOWLISTED");
+  requireFact(typeof readToken==="string" && readToken.length>=10,
+    "NO_SCOPED_GITHUB_TOKEN_FOR_READONLY_PUBLIC_METADATA");
   const result=await fetcher("https://api.github.com"+path,{
     method:"GET",
     headers:{"Accept":"application/vnd.github+json",
       "X-GitHub-Api-Version":"2022-11-28",
-      "User-Agent":"MathGraph-Check-External-Receipt-Reader"},
+      "User-Agent":"MathGraph-Check-External-Receipt-Reader",
+      // Restricted *GitHub-only* static public metadata paths; the token's
+      // installation scope is unchanged and cannot write this other repo.
+      Authorization:"Bearer "+readToken},
     signal:AbortSignal.timeout(15000)
   });
   requireFact(result?.ok===true,"PUBLIC_GITHUB_RECEIPT_HTTP_"+String(result?.status||0));
@@ -181,15 +186,15 @@ export async function appendExternalNativeReceipt(report,check,githubRead,token,
     requireFact(validManifest(pinnedJSON(file,EVIDENCE.manifestBlob)),
       "MANIFEST_SUBJECT_MISMATCH");
     const reportFile=await publicRead(PREFIX+"/contents/"+EVIDENCE.reportPath+
-      "?ref="+EVIDENCE.reportCommit,fetcher);
+      "?ref="+EVIDENCE.reportCommit,fetcher,token);
     requireFact(validResearchReport(pinnedJSON(reportFile,EVIDENCE.reportBlob)),
       "RESEARCH_REPORT_SUBJECT_MISMATCH");
     const checks=await Promise.all(EVIDENCE.runs.map(async pin=>{
-      const run=await publicRead(PREFIX+"/actions/runs/"+pin.id,fetcher);
+      const run=await publicRead(PREFIX+"/actions/runs/"+pin.id,fetcher,token);
       requireFact(validRun(run,pin),"EXTERNAL_NATIVE_RUN_NOT_QUALIFIED");
       if(pin.artifact){
         const a=await publicRead(PREFIX+"/actions/runs/"+pin.id+
-          "/artifacts?per_page=100",fetcher);
+          "/artifacts?per_page=100",fetcher,token);
         requireFact(validArchive(a,pin),"EXTERNAL_ARCHIVE_DIGEST_MISMATCH");
       }
       return pin.id;

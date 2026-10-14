@@ -29,7 +29,7 @@ function mockAPI() {
   calls.push({path,method:options.method||"GET",external:path.startsWith("/repos/heathsanchez/test")});
   const token=options.headers?.Authorization;
   if(path.startsWith("/repos/heathsanchez/test/")) {
-    assert.equal(token,undefined,"scoped App token must not cross repositories");
+    assert.equal(token,"Bearer mock-installation-token-for-public-read");
     if(path.endsWith("/ONE_FINDING_REPORT.json")) {
       assert.equal(url.searchParams.get("ref"),EVIDENCE.reportCommit);
       return sendJson(fileObj(report,EVIDENCE.reportBlob));
@@ -54,7 +54,7 @@ function mockAPI() {
     return sendJson({id:42,app_id:SCOPE.appID,
       account:{login:SCOPE.owner},suspended_at:null,permissions:perms});
   if(path==="/app/installations/42/access_tokens")
-    return sendJson({token:"example-exact-repo-installation-token",
+    return sendJson({token:"mock-installation-token-for-public-read",
       permissions:perms});
   if(path==="/installation/token")return new Response(null,{status:204});
   if(path==="/repos/"+SCOPE.repository+"/pulls/21")

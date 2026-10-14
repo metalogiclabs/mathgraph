@@ -46,7 +46,9 @@ function fixture(options={}){
   const url=new URL(uri);
   assert.equal(url.origin,"https://api.github.com");
   assert.equal(init.method,"GET");
-  assert.ok(!("Authorization" in init.headers),"must not leak scoped token");
+  // An installation-scoped token is sent only to api.github.com for the
+  // exact allowlisted, user-owned research repository's public metadata.
+  assert.equal(init.headers.Authorization,"Bearer short-lived-installation-token");
   external.push(url.pathname+url.search);
   if(options.status403) return new Response("rate limited",{status:403});
   const reportPath="/repos/"+EVIDENCE.reporter+"/contents/"+EVIDENCE.reportPath;
@@ -158,7 +160,7 @@ test("stale run, failed run, changed artifact digest, or 403 refuses native warr
   assert.match(r.check.output.summary,/retain|UNKNOWN|could not|could not be/);
  }
 });
-test("no dynamic GitHub API proxy and no installation credentials sent publicly",async()=>{
+test("no dynamic GitHub API proxy; only exact allowlisted GitHub research-read paths",async()=>{
  const f=fixture();
  await f.run();
  assert.deepEqual([...new Set(f.external)].sort(),
