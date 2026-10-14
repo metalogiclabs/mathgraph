@@ -11,11 +11,11 @@ const event=()=>({
     head:{sha:SHA,repo:{full_name:SCOPE.repository}},
     base:{repo:{full_name:SCOPE.repository}}}
 });
-function signed(obj=event(),secret=SECRET){
+function signed(obj=event(),secret=SECRET,eventName="pull_request"){
   const body=JSON.stringify(obj);
   return new Request("https://pilot.test/github/webhook",{
     method:"POST",headers:{
-      "x-github-event":"pull_request","x-github-delivery":ID,
+      "x-github-event":eventName,"x-github-delivery":ID,
       "x-hub-signature-256":"sha256="+createHmac("sha256",secret).update(body).digest("hex")
     },body
   });
@@ -74,4 +74,37 @@ test("registered App JWT signs exact Client ID with RSA",()=>{
   assert.equal(JSON.parse(Buffer.from(parts[1],"base64url")).iss,SCOPE.clientID);
   assert.equal(verify("RSA-SHA256",Buffer.from(parts[0]+"."+parts[1]),
     keys.publicKey,Buffer.from(parts[2],"base64url")),true);
+});
+
+test("signed first-party CI completion refreshes its exact associated PR only",async()=>{
+  const {pending,env}=testEnv();
+  const completed=()=>({
+    action:"completed",
+    repository:{full_name:SCOPE.repository},
+    installation:{id:42},
+    workflow_run:{
+      id:8801,event:"pull_request",head_sha:SHA,
+      head_repository:{full_name:SCOPE.repository},
+      pull_requests:[{number:19,
+        head:{sha:SHA,repo:{full_name:SCOPE.repository}},
+        base:{repo:{full_name:SCOPE.repository}}}]
+    }
+  });
+  assert.equal((await receiveWebhook(signed(completed(),SECRET,"workflow_run"),env)).status,202);
+  assert.deepEqual(pending,[{
+    schema:"mathgraph.github-pr-delivery.v0",repository:SCOPE.repository,
+    number:19,installationID:42,sha:SHA,delivery:ID,action:"ci_completed"
+  }]);
+  const tampered=completed();
+  tampered.workflow_run.pull_requests[0].head.sha="f".repeat(40);
+  assert.equal((await receiveWebhook(signed(tampered,SECRET,"workflow_run"),env)).status,202);
+  tampered.workflow_run.pull_requests[0].head.sha=SHA;
+  tampered.workflow_run.head_repository.full_name="outsider/repo";
+  assert.equal((await receiveWebhook(signed(tampered,SECRET,"workflow_run"),env)).status,202);
+  tampered.workflow_run.head_repository.full_name=SCOPE.repository;
+  tampered.workflow_run.pull_requests.push(structuredClone(tampered.workflow_run.pull_requests[0]));
+  assert.equal((await receiveWebhook(signed(tampered,SECRET,"workflow_run"),env)).status,202);
+  tampered.workflow_run.pull_requests=[];
+  assert.equal((await receiveWebhook(signed(tampered,SECRET,"workflow_run"),env)).status,202);
+  assert.equal(pending.length,1);
 });
