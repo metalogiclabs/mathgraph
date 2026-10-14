@@ -1,0 +1,52 @@
+name: MathGraph Check - GitHub App shadow V0
+on:
+  push:
+    branches:
+      - mathgraph-check-github-app-shadow-v0
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-head-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run deterministic adversarial tests
+        run: node --test integrations/mathgraph-check-github/test.mjs
+      - name: Replay two real fork PR snapshots
+        env:
+          GH_PUBLIC_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-check"
+          node integrations/mathgraph-check-github/core.mjs \
+            --repo metalogiclabs/go-ethereum --pr 19 --out "$RUNNER_TEMP/mathgraph-check/pr19.json"
+          node integrations/mathgraph-check-github/core.mjs \
+            --repo metalogiclabs/go-ethereum --pr 16 --out "$RUNNER_TEMP/mathgraph-check/pr16.json"
+          node - "$RUNNER_TEMP/mathgraph-check/pr19.json" "$RUNNER_TEMP/mathgraph-check/pr16.json" <<'NODE'
+          const fs = require('node:fs');
+          const a=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          const b=JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
+          if(a.source.sha!=='a04aa77aaebd81d11274560e8d24d90c6f417589') throw Error('PIN_MOVED');
+          if(a.ci.state!=='GITHUB_REPORTED_SUCCESS_AT_EXACT_HEAD') throw Error('PR19_CI_NOT_GREEN');
+          if(a.finding.code!=='DECLARED_VERIFICATION_RESIDUAL') throw Error('NO_PR19_RESIDUAL');
+          const names=a.declared_limits.map(x=>x.name);
+          if(!names.includes('remote_conflicting_fcu') || !names.includes('concurrent_fcu'))
+            throw Error('MISSING_DECLARED_SCOPE');
+          if(b.ci.state!=='GITHUB_REPORTED_SUCCESS_AT_EXACT_HEAD') throw Error('PR16_CONTROL');
+          if(a.authority!=='ADVISORY_ONLY' || b.authority!=='ADVISORY_ONLY')
+            throw Error('FORGED_WARRANT');
+          console.log('MATHGRAPH_CHECK_BOUNDARY_GREEN exact-head CI plus declared limits only');
+          NODE
+          sha256sum "$RUNNER_TEMP"/mathgraph-check/*.json \
+            "$RUNNER_TEMP"/mathgraph-check/*.md > "$RUNNER_TEMP/mathgraph-check/transport.sha256"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-github-shadow-v0
+          path: ${{ runner.temp }}/mathgraph-check/
+          if-no-files-found: ignore
