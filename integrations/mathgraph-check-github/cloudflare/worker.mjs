@@ -20,7 +20,12 @@ const UUID = /^[0-9a-f-]{16,80}$/i;
 const PR_ACTIONS = new Set([
   "opened", "reopened", "synchronize", "ready_for_review", "edited"
 ]);
-const QUEUE_ACTIONS = new Set([...PR_ACTIONS,"ci_completed"]);
+const QUEUE_ACTIONS = new Set([...PR_ACTIONS,"ci_completed","ci_recheck"]);
+// Signed PR delivery remains the sole external authority. This limited
+// internal queue follow-up handles mutable CI evidence without a webhook
+// subscription to workflow_run.completed. Never poll indefinitely.
+const CI_RECHECK_MAX = 4;
+const CI_RECHECK_BASE_DELAY_SECONDS = 60;
 const PERMS = { checks: "write", pull_requests: "read", actions: "read" };
 
 function ensure(ok, code) {
@@ -188,7 +193,11 @@ function validQueueItem(item) {
     Number.isSafeInteger(item.installationID) && item.installationID>0 &&
     SHA.test(item.sha || "") &&
     UUID.test(String(item.delivery || "")) &&
-    QUEUE_ACTIONS.has(item.action);
+    QUEUE_ACTIONS.has(item.action) &&
+    (item.action==="ci_recheck" ?
+      Number.isSafeInteger(item.ciRecheckAttempt) &&
+      item.ciRecheckAttempt>=1 && item.ciRecheckAttempt<=CI_RECHECK_MAX :
+      item.ciRecheckAttempt===undefined);
 }
 async function getSnapshot(item, token, api) {
   const root="/repos/"+SCOPE.repository;
@@ -272,7 +281,7 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
   ensure(typeof minted?.token==="string" && minted.token.length>=10 &&
     permissionsOK(minted.permissions),"SCOPED_APP_TOKEN_NOT_ISSUED");
   const token=minted.token;
-  let result,failed,revokeOK=false;
+  let result,failed,revokeOK=false,pendingCI=false;
   try {
     // A commit SHA is immutable; PR context and exact-head CI evidence are
     // not. Do not return EXISTING before re-reading the current evidence.
@@ -289,6 +298,15 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
     if(!snapshot){
       result={outcome:"STALE"};
     }else{
+      const substantive=snapshot.runs.filter(r=>
+        r?.head_sha===item.sha && typeof r.name==="string" &&
+        !/^(PR Format Validation|MathGraph Check(\s|\/|$))/i.test(r.name));
+      // A source SHA does not freeze its CI standing. Recheck only when
+      // substantive CI is absent or still running. Completed failures are
+      // terminal UNRESOLVED until another genuine source event.
+      pendingCI=snapshot.ci_visibility==="COMPLETE" &&
+        (substantive.length===0 ||
+          substantive.some(r=>r.status!=="completed"));
       const report=analyze(snapshot);
       ensure(report.authority==="ADVISORY_ONLY" &&
         report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
@@ -380,14 +398,31 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
   if(failed)throw failed;
   ensure(revokeOK,"TOKEN_REVOCATION_NOT_VERIFIED");
   return { ...result,repository:SCOPE.repository,number:item.number,sha:item.sha,
-    appID:SCOPE.appID,tokenRevoked:true};
+    appID:SCOPE.appID,tokenRevoked:true,pendingCI};
 }
 
 export async function consumePRQueue(batch,env,{fetcher=fetch}={}) {
   for(const message of batch.messages){
     try{
       const r=await processQueuedPR(message.body,env,{fetcher});
-      // No secret or PR body in logs; summary counts only.
+      if(r.pendingCI && r.outcome!=="STALE"){
+        const previousAttempt=message.body.action==="ci_recheck" ?
+          message.body.ciRecheckAttempt : 0;
+        if(previousAttempt<CI_RECHECK_MAX){
+          ensure(typeof env?.PR_EVENTS?.send==="function",
+            "CI_RECHECK_PRODUCER_NOT_CONFIGURED");
+          const nextAttempt=previousAttempt+1;
+          await env.PR_EVENTS.send({
+            ...message.body,action:"ci_recheck",ciRecheckAttempt:nextAttempt
+          },{delaySeconds:CI_RECHECK_BASE_DELAY_SECONDS*nextAttempt});
+          r.ciRecheckScheduled=nextAttempt;
+        }else{
+          // Historic neutral Check remains honest and source-pinned.
+          // A bounded retry budget is not evidence that CI passed.
+          r.ciRecheckExhausted=true;
+        }
+      }
+      // No secrets, PR body or unchecked source content in logs.
       console.log("MATHGRAPH_PR_EVENT "+JSON.stringify(r));
       message.ack();
     }catch(e){
