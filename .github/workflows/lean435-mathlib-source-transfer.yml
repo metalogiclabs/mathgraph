@@ -1,0 +1,61 @@
+name: Lean 4.35 external Mathlib formal-source binding
+
+on:
+  pull_request:
+    branches:
+      - research/lean435-statement-identity-separator-20261014
+    paths:
+      - research/lean435_statement_binding/external_transfer.py
+      - .github/workflows/lean435-mathlib-source-transfer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mathlib-source-transfer:
+    name: ${{ matrix.sample }} source binding
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sample: function-current-d20
+            module: Mathlib.Logic.Function.Defs
+            blob: 565ae3df6b95fa084d60818ab13fab2e80874f3f
+            revision: d20f010dc809f2bb8f94969ccc8ed1691bad2531
+          - sample: nat-choose-current-d20
+            module: Mathlib.Data.Nat.Choose.Basic
+            blob: 1cd090d71c8175e5f2071d939d30394b4c56d9de
+            revision: d20f010dc809f2bb8f94969ccc8ed1691bad2531
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install exact Lean release
+        run: |
+          curl --fail --silent --show-error --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install leanprover/lean4:v4.35.0
+          elan default leanprover/lean4:v4.35.0
+          lean --version
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Pin source, derive independent Mathlib theorem and check source identity
+        env:
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MG_SOURCE_MODULE: ${{ matrix.module }}
+          MG_SOURCE_BLOB: ${{ matrix.blob }}
+          MG_SOURCE_REVISION: ${{ matrix.revision }}
+        run: python3 research/lean435_statement_binding/external_transfer.py
+
+      - name: Preserve exact native verdicts and negative controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-mathlib-source-binding-${{ matrix.sample }}
+          path: research/lean435_statement_binding/external_evidence/
+          if-no-files-found: warn
+          retention-days: 90
