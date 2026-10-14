@@ -179,7 +179,7 @@ test("same-SHA check cannot silently reuse stale PR and bad refresh does not acq
   assert.equal((await processQueuedPR(item,inconsistent.env,{fetcher:inconsistent.fetcher})).outcome,"CREATED");
   inconsistent.setCI("failure");
   await assert.rejects(processQueuedPR(item,inconsistent.env,{fetcher:inconsistent.fetcher}),
-    /CHECK_REFRESH_IDENTITY_NOT_CONFIRMED/);
+    /CHECK_DETAILS_OR_REFRESH_IDENTITY_NOT_CONFIRMED/);
 });
 test("duplicate App-identity Checks at the same source SHA cannot be silently merged",async()=>{
   const m=setup();
