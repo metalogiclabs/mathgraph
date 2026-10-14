@@ -100,7 +100,7 @@ run_cmd do
   let some (.thmInfo source) := (← getEnv).find? originName
     | throwError "SOURCE_THEOREM_NOT_FOUND"
   let levels := source.levelParams.map Lean.Level.param
-  addDecl <| Lean.Declaration.thmDecl {{
+  liftCoreM <| addDecl <| Lean.Declaration.thmDecl {{
     name := `MathGraphImported.checked
     levelParams := source.levelParams
     type := source.type
