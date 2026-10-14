@@ -35,6 +35,39 @@ jobs:
             --config integrations/mathgraph-check-github/cloudflare/wrangler.toml \
             --outdir "$RUNNER_TEMP/mathgraph-check-cloudflare-dry-run"
           test -n "$(find "$RUNNER_TEMP/mathgraph-check-cloudflare-dry-run" -type f -print -quit)"
+      - name: Exercise Cloudflare workerd HTTP runtime without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.129.1 dev --local \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml \
+            --ip 127.0.0.1 --port 8799 \
+            > "$RUNNER_TEMP/mathgraph-workerd.log" 2>&1 &
+          worker_pid="$!"
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          ready="false"
+          for n in $(seq 1 50); do
+            if curl --silent --max-time 2 -o /dev/null \
+              -w '%{http_code}' http://127.0.0.1:8799/health | grep -qx '200'; then
+              ready="true"
+              break
+            fi
+            sleep 0.2
+          done
+          if [ "$ready" != "true" ]; then
+            echo 'CLOUDFLARE_WORKER_DID_NOT_START'
+            exit 1
+          fi
+          status="$(curl --silent --max-time 5 -o /dev/null \
+            -w '%{http_code}' http://127.0.0.1:8799/ready)"
+          test "$status" = "503" || {
+            echo 'CLOUDFLARE_UNCONFIGURED_WORKER_REPORTED_FALSE_READY'
+            exit 1
+          }
+          status="$(curl --silent --max-time 5 -o /dev/null \
+            -w '%{http_code}' http://127.0.0.1:8799/nonexistent)"
+          test "$status" = "404"
+          echo 'MATHGRAPH_CLOUDFLARE_RUNTIME=ALIVE_WITH_SECRETS_FAIL_CLOSED'
       - name: Boundary declaration
         run: |
           echo 'MATHGRAPH_CLOUDFLARE_BOUNDARY=CODE_TESTED_BUNDLE_DRY_RUN_ONLY'
