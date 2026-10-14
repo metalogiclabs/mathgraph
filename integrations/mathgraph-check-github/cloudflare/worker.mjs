@@ -16,9 +16,10 @@ export const SCOPE = Object.freeze({
 });
 const SHA = /^[0-9a-f]{40}$/i;
 const UUID = /^[0-9a-f-]{16,80}$/i;
-const ACTIONS = new Set([
+const PR_ACTIONS = new Set([
   "opened", "reopened", "synchronize", "ready_for_review", "edited"
 ]);
+const QUEUE_ACTIONS = new Set([...PR_ACTIONS,"ci_completed"]);
 const PERMS = { checks: "write", pull_requests: "read", actions: "read" };
 
 function ensure(ok, code) {
@@ -43,25 +44,47 @@ export function verifyWebhookBytes(bytes, signature, secret) {
 }
 
 export function parseSignedEvent(payload, delivery, eventName) {
-  if (eventName !== "pull_request" || !ACTIONS.has(payload?.action))
+  if (!UUID.test(String(delivery || "")) ||
+      payload?.repository?.full_name!==SCOPE.repository)
     return null;
-  if (!UUID.test(String(delivery || ""))) return null;
-  if (payload.repository?.full_name !== SCOPE.repository ||
-      payload.pull_request?.base?.repo?.full_name !== SCOPE.repository ||
-      payload.pull_request?.head?.repo?.full_name !== SCOPE.repository)
+  const installationID=payload.installation?.id;
+  if (!Number.isSafeInteger(installationID) || installationID<1)
     return null;
-  const number = payload.pull_request?.number;
-  const installationID = payload.installation?.id;
-  const sha = payload.pull_request?.head?.sha;
-  if (!Number.isSafeInteger(number) || number < 1 ||
-      !Number.isSafeInteger(installationID) || installationID < 1 ||
+  let number,sha,action;
+  if (eventName==="pull_request" && PR_ACTIONS.has(payload.action)) {
+    const pr=payload.pull_request;
+    if (pr?.base?.repo?.full_name!==SCOPE.repository ||
+        pr?.head?.repo?.full_name!==SCOPE.repository) return null;
+    number=pr.number;
+    sha=pr.head.sha;
+    action=payload.action;
+  } else if (eventName==="workflow_run" && payload.action==="completed") {
+    // GitHub Apps can subscribe with Actions:read. A workflow completion is
+    // the missing input when CI standing changes without a new commit.
+    // Only an unambiguously associated exact-source first-party PR is eligible.
+    const run=payload.workflow_run;
+    const prs=run?.pull_requests;
+    if (run?.event!=="pull_request" ||
+        run?.head_repository?.full_name!==SCOPE.repository ||
+        !Array.isArray(prs) || prs.length!==1) return null;
+    const pr=prs[0];
+    if (pr?.base?.repo?.full_name!==SCOPE.repository ||
+        pr?.head?.repo?.full_name!==SCOPE.repository ||
+        pr?.head?.sha!==run.head_sha) return null;
+    number=pr.number;
+    sha=run.head_sha;
+    action="ci_completed";
+  } else {
+    return null;
+  }
+  if (!Number.isSafeInteger(number) || number<1 ||
       !SHA.test(sha || "")) return null;
-  // The queue gets only this minimal, authenticated event descriptor.
-  // Never enqueue the entire PR or the original signed request.
+  // GitHub-signed input is narrowed to one replayable, source-pinned action.
+  // The consumer always rechecks live PR HEAD/CI through the GitHub API.
   return {
-    schema: "mathgraph.github-pr-delivery.v0",
-    repository: SCOPE.repository,
-    number, installationID, sha, delivery, action: payload.action
+    schema:"mathgraph.github-pr-delivery.v0",
+    repository:SCOPE.repository,number,installationID,
+    sha,delivery,action
   };
 }
 
@@ -164,7 +187,7 @@ function validQueueItem(item) {
     Number.isSafeInteger(item.installationID) && item.installationID>0 &&
     SHA.test(item.sha || "") &&
     UUID.test(String(item.delivery || "")) &&
-    ACTIONS.has(item.action);
+    QUEUE_ACTIONS.has(item.action);
 }
 async function getSnapshot(item, token, api) {
   const root="/repos/"+SCOPE.repository;
