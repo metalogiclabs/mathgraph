@@ -43,7 +43,8 @@ function setup(opts={}){
     if(p==="/repos/"+SCOPE.repository+"/actions/runs")
       return opts.noCI?json({},403):json({total_count:1,workflow_runs:[{
         id:38202260024,name:"BAL V19 native qualification",
-        head_sha:SHA,status:"completed",conclusion:ciConclusion}]});
+        head_sha:SHA,status:ciConclusion==="pending"?"in_progress":"completed",
+        conclusion:ciConclusion==="pending"?null:ciConclusion}]});
     if(p==="/repos/"+SCOPE.repository+"/commits/"+SHA+"/check-runs"){
       assert.equal(u.searchParams.get("filter"),"all");
       assert.equal(u.searchParams.get("check_name"),SCOPE.checkName);
@@ -212,4 +213,105 @@ test("a failed native details patch never claims Check publication",async()=>{
     /GITHUB_HTTP_403/);
   assert.equal(m.saved.length,1);
   assert.equal(m.calls.filter(x=>x.method==="DELETE").length,1);
+});
+
+test("signed PR event schedules bounded CI follow-up and refreshes exact existing Check",async()=>{
+  const m=setup(),scheduled=[];
+  m.setCI("pending");
+  m.env.PR_EVENTS={async send(body,opts){scheduled.push({body,opts});}};
+  let ack=0,retry=0;
+  const msg=body=>({body,ack(){ack++;},retry(){retry++;}});
+  await consumePRQueue({messages:[msg(item)]},m.env,{fetcher:m.fetcher});
+  assert.equal(ack,1);assert.equal(retry,0);
+  assert.equal(m.saved.length,1);
+  const originalId=m.saved[0].id;
+  assert.equal(m.saved[0].output.title,"CURRENT_HEAD_CI_UNRESOLVED");
+  assert.equal(m.saved[0].conclusion,"neutral");
+  assert.equal(scheduled.length,1);
+  assert.equal(scheduled[0].body.action,"ci_recheck");
+  assert.equal(scheduled[0].body.ciRecheckAttempt,1);
+  assert.equal(scheduled[0].body.sha,SHA);
+  assert.equal(scheduled[0].opts.delaySeconds,60);
+  m.setCI("success");
+  await consumePRQueue({messages:[msg(scheduled[0].body)]},
+    m.env,{fetcher:m.fetcher});
+  assert.equal(ack,2);assert.equal(retry,0);
+  assert.equal(scheduled.length,1);
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].id,originalId);
+  assert.equal(m.saved[0].app.id,SCOPE.appID);
+  assert.equal(m.saved[0].output.title,"DECLARED_VERIFICATION_RESIDUAL");
+  assert.equal(m.calls.filter(x=>x.method==="POST" &&
+    x.path.endsWith("/check-runs")).length,1);
+});
+
+test("pending CI exhausts precisely four delayed probes, never endless polling",async()=>{
+  const m=setup(),scheduled=[];
+  m.setCI("pending");
+  m.env.PR_EVENTS={async send(body,opts){scheduled.push({body,opts});}};
+  let ack=0,retry=0;
+  let next=item;
+  for(let n=0;n<=4;n++){
+    await consumePRQueue({messages:[{
+      body:next,ack(){ack++;},retry(){retry++;}
+    }]},m.env,{fetcher:m.fetcher});
+    if(n<4){
+      assert.equal(scheduled.length,n+1);
+      const candidate=scheduled[n];
+      assert.equal(candidate.body.action,"ci_recheck");
+      assert.equal(candidate.body.ciRecheckAttempt,n+1);
+      assert.equal(candidate.opts.delaySeconds,60*(n+1));
+      assert.equal(candidate.body.sha,SHA);
+      next=candidate.body;
+    }
+  }
+  assert.equal(ack,5);
+  assert.equal(retry,0);
+  assert.equal(scheduled.length,4);
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].output.title,"CURRENT_HEAD_CI_UNRESOLVED");
+});
+
+test("invalid internal follow-up budget cannot mint App token or post a check",async()=>{
+  const m=setup();
+  for(const attempt of [undefined,-1,0,5,100,"1"]){
+    const invalid={...item,action:"ci_recheck",ciRecheckAttempt:attempt};
+    assert.equal((await processQueuedPR(invalid,m.env,{fetcher:m.fetcher})).outcome,
+      "IGNORED_INVALID_EVENT");
+  }
+  assert.equal((await processQueuedPR(
+    {...item,ciRecheckAttempt:1},m.env,{fetcher:m.fetcher})).outcome,
+    "IGNORED_INVALID_EVENT");
+  assert.equal(m.calls.length,0);
+  assert.equal(m.saved.length,0);
+});
+
+test("stale PR does not start another CI timer and cannot gain new head authority",async()=>{
+  const m=setup(),scheduled=[];
+  m.setCI("pending");
+  m.env.PR_EVENTS={async send(body,opts){scheduled.push({body,opts});}};
+  let ack=0;
+  const msg=body=>({body,ack(){ack++;},retry(){throw Error("retry unexpected");}});
+  await consumePRQueue({messages:[msg(item)]},m.env,{fetcher:m.fetcher});
+  assert.equal(scheduled.length,1);
+  m.setStale(true);
+  await consumePRQueue({messages:[msg(scheduled[0].body)]},
+    m.env,{fetcher:m.fetcher});
+  assert.equal(ack,2);
+  assert.equal(scheduled.length,1);
+  assert.equal(m.saved.length,1);
+});
+
+test("failed delayed-queue enqueue retries safely and cannot claim fresh CI",async()=>{
+  const m=setup();
+  m.setCI("pending");
+  m.env.PR_EVENTS={async send(){throw Error("producer unavailable");}};
+  let ack=0,retry=0;
+  await consumePRQueue({messages:[{
+    body:item,ack(){ack++;},retry(){retry++;}
+  }]},m.env,{fetcher:m.fetcher});
+  assert.equal(ack,0);assert.equal(retry,1);
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].conclusion,"neutral");
+  assert.equal(m.saved[0].output.title,"CURRENT_HEAD_CI_UNRESOLVED");
 });
