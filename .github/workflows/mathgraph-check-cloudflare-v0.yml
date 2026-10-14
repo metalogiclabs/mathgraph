@@ -1,0 +1,41 @@
+name: MathGraph Check - Cloudflare Workers and Queues qualification
+on:
+  push:
+    branches:
+      - mathgraph-check-github-app-shadow-v0
+    paths:
+      - 'integrations/mathgraph-check-github/cloudflare/**'
+      - 'integrations/mathgraph-check-github/analysis.mjs'
+      - '.github/workflows/mathgraph-check-cloudflare-v0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-check-cloudflare-v0
+  cancel-in-progress: false
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Real-event shape negative controls and App identity simulations
+        run: |
+          set -euo pipefail
+          node --test integrations/mathgraph-check-github/cloudflare/ingress.test.mjs integrations/mathgraph-check-github/cloudflare/consumer.test.mjs
+      - name: Check Workers runtime bundle without Cloudflare credentials
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.129.1 deploy --dry-run \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml \
+            --outdir "$RUNNER_TEMP/mathgraph-check-cloudflare-dry-run"
+          test -n "$(find "$RUNNER_TEMP/mathgraph-check-cloudflare-dry-run" -type f -print -quit)"
+      - name: Boundary declaration
+        run: |
+          echo 'MATHGRAPH_CLOUDFLARE_BOUNDARY=CODE_TESTED_BUNDLE_DRY_RUN_ONLY'
+          echo 'No Cloudflare worker or queue deployed; no GitHub webhook changed.'
