@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {generateKeyPairSync} from "node:crypto";
+import {URL as NodeURL} from "node:url";
 import {activateWebhook} from "./activate-webhook.mjs";
 const TARGET_URL="https://mathgraph-check-webhook-pilot.cf-test.workers.dev/github/webhook";
 function fixture({existing="",notReady=false,wrongApp=false,noEvent=false}={}){
@@ -9,7 +10,7 @@ function fixture({existing="",notReady=false,wrongApp=false,noEvent=false}={}){
   const calls=[];
   const json=x=>new Response(JSON.stringify(x),{status:200});
   const fetcher=async(raw,opts={})=>{
-    const u=new URL(raw);calls.push(u.host+u.pathname+":"+(opts.method||"GET"));
+    const u=new NodeURL(raw);calls.push(u.host+u.pathname+":"+(opts.method||"GET"));
     if(u.host==="api.cloudflare.com" &&
        u.pathname.endsWith("/workers/subdomain"))
       return json({success:true,result:{subdomain:"cf-test"}});
