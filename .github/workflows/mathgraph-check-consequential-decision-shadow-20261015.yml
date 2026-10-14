@@ -1,0 +1,22 @@
+name: MathGraph Check source-bound decision shadow
+on:
+  push:
+    branches:
+      - research/mathgraph-consequential-decision-closure-20261015
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scoped-decision-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout isolated MathGraph App branch
+        uses: actions/checkout@v4
+      - name: Static Node source qualification
+        run: |
+          node --version
+          node --check integrations/mathgraph-check-github/consequential-decision-closure.mjs
+      - name: Source-bound decision smoke and inherited App tests
+        run: |
+          node --test integrations/mathgraph-check-github/consequential-decision-closure.smoke.test.mjs integrations/mathgraph-check-github/native-receipt-bridge.test.mjs integrations/mathgraph-check-github/app-native-check.test.mjs
