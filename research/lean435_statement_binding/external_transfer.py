@@ -22,9 +22,10 @@ EVIDENCE.mkdir(exist_ok=True)
 
 SOURCE_REPO = "leanprover-community/mathlib4"
 SOURCE_REVISION = "56a005855ea17e0b0958f73ec801ae140b0a1679"
-SOURCE_MODULE = "Mathlib.Logic.Function.Defs"
-SOURCE_RELATIVE_PATH = "Mathlib/Logic/Function/Defs.lean"
-SOURCE_BLOB = "565ae3df6b95fa084d60818ab13fab2e80874f3f"
+SOURCE_MODULE = os.environ.get("MG_SOURCE_MODULE", "Mathlib.Logic.Function.Defs")
+SOURCE_RELATIVE_PATH = SOURCE_MODULE.replace(".", "/") + ".lean"
+SOURCE_BLOB = os.environ.get(
+    "MG_SOURCE_BLOB", "565ae3df6b95fa084d60818ab13fab2e80874f3f")
 LEAN_VERSION = "4.35.0"
 STEPS = []
 
