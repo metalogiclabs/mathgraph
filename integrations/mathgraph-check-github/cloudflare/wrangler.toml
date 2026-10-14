@@ -1,0 +1,21 @@
+name = "mathgraph-check-webhook-pilot"
+main = "worker.mjs"
+compatibility_date = "2026-10-14"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+GITHUB_APP_ID = "5308912"
+GITHUB_APP_CLIENT_ID = "Iv23lioiUs5KfHD7mkkw"
+
+[[queues.producers]]
+binding = "PR_EVENTS"
+queue = "mathgraph-check-pr-events-v0"
+
+[[queues.consumers]]
+queue = "mathgraph-check-pr-events-v0"
+max_batch_size = 1
+max_batch_timeout = 1
+max_retries = 3
+max_concurrency = 1
+dead_letter_queue = "mathgraph-check-pr-events-dlq-v0"
