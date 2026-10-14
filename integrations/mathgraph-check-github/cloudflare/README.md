@@ -8,6 +8,49 @@ A GitHub App `pull_request` webhook hits the Cloudflare Worker path `/github/web
 
 Single-message queue consumer (`max_batch_size=1`, `max_concurrency=1`) and existing exact-SHA, external-ID reconciliation reduce duplicate writes. Transient failures are retried up to 3 times and then placed on the dead-letter queue. This is not exactly-once consensus across deployment races, not whole-repository exhaustive verification and not source-to-intent semantic equivalence.
 
+## Freshness and webhook event qualification (14 October 2026)
+
+The exact commit SHA is immutable, but the **current exact-head CI evidence
+can change without changing the commit**. A previously published neutral
+Check must not be silently reused as current advice when a workflow later
+fails or succeeds. The original Check ID and `external_id` are retained:
+
+- Signed `pull_request` events are confined to installed, first-party
+  `metalogiclabs/go-ethereum` PR heads.
+- A signed `workflow_run.completed` event is accepted **only** when the
+  original GitHub payload names exactly one source-matching first-party PR
+  and its head SHA equals the completed workflow's head SHA.
+- The queued method re-reads the live PR and exact-source CI, compares
+  the desired neutral output with the existing App-authored Check, and
+  returns `EXISTING` only for identical evidence. Otherwise it
+  `PATCH`-updates the original Check ID and independently reads it back.
+  An updated Check does **not** become a new check or a correctness proof.
+- A stale head, failed patch, wrong App identity, inconsistent Check
+  inventory or invalid signature receives no unwarranted status; failed
+  processing retries, rather than prematurely ACKing.
+
+[Source-exact GitHub Actions #38508815714](https://github.com/metalogiclabs/mathgraph/actions/runs/38508815714)
+qualified **21/21** mock source/permission/negative tests,
+Wrangler's real bundle dry run, and live local Workerd `/health` 200
+and unconfigured `/ready` 503. The old `REPO is not defined` runtime
+regression was fixed earlier in the shared source loader and separately
+requalified by the actual registered-App publisher.
+
+[Authenticated registered-App publisher run #38508654185](https://github.com/metalogiclabs/mathgraph/actions/runs/38508654185)
+confirmed the real App's **configured webhook subscriptions**:
+`pull_request=true`, `workflow_run=false`. Consequently
+automatic CI-completion updates are **NOT LIVE**. App settings must
+subscribe to `workflow_run` (already authorized by Actions read)
+before this route can receive such signed events. Webhook delivery,
+running Cloudflare queues and external reporter adoption remain
+unobserved regardless of source/test success.
+
+**No deployment occurred:** the separate Cloudflare provisioning job is
+gated by an explicit owner-controlled approval variable and account-scoped
+encrypted credentials. Deploying or altering a GitHub App webhook URL is
+not part of this source qualification, and Render is excluded by owner
+instruction.
+
 ## Account configuration, not in chat
 
 [Cloudflare Workers dashboard](https://dash.cloudflare.com/) → select the Cloudflare account to own the pilot. The existing GitHub Actions secret `MATHGRAPH_CHECK_APP_PRIVATE_KEY` contains the correct *rotated* App credential. In **metalogiclabs/mathgraph** GitHub repository [Actions secrets](https://github.com/metalogiclabs/mathgraph/settings/secrets/actions), additionally set:
