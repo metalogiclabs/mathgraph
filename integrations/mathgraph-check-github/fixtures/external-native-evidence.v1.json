@@ -1,0 +1,56 @@
+{
+  "schema": "mathgraph.external-native-evidence.v1",
+  "authority": "RESEARCH_EVIDENCE_CARRIER_ONLY",
+  "carrier": {
+    "repository": "metalogiclabs/go-ethereum",
+    "purpose": "Exercise installed MathGraph Check GitHub App on a first-party research-only draft PR",
+    "subject_matches_carrier_code": false
+  },
+  "subject": {
+    "repository": "goccy/go-yaml",
+    "pr": 958,
+    "base_sha": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+    "head_sha": "a34b94ecb553bb5a693296c30232a89026db79ca",
+    "inherited_issue": "https://github.com/goccy/go-yaml/issues/872"
+  },
+  "one_finding": {
+    "code": "INHERITED_KEEP_CHOMPING_BEHAVIOR_WITH_SEPARATE_NATIVE_REPAIR",
+    "priority": "SEPARATE_FOLLOWUP_NOT_PR_INTRODUCED",
+    "introduced_pr_regressions": 0,
+    "author_pr_repairs": 69,
+    "inherited_failing_nested_cases": 20,
+    "independent_one_file_patch_repairs_nested_cases": 20,
+    "native_cases": 130,
+    "evidence_authority": "HUMAN_ORCHESTRATED_SOURCE_PINNED_GO_TESTS",
+    "maintainer_action": "Do not hold upstream PR #958 solely for known out-of-scope issue #872. Review a separate keep-chomping fix with source-native evidence."
+  },
+  "receipt": {
+    "repository": "heathsanchez/test",
+    "commit": "20864090c084efc0511cffcf47aae556b4003fea",
+    "report_path": "research/mathgraph_pr958_one_finding_20261015/ONE_FINDING_REPORT.json",
+    "report_blob": "1aa1a916df72fbcf6a62abea5c4160c257e205f3",
+    "native_pr_run": {
+      "id": 38559572638,
+      "head_sha": "0edf9eed9cdd9fd076e5f0e4395a97f04898580c",
+      "artifact_id": 11891727361,
+      "artifact_digest": "sha256:f36a2f6fb0027ead5885354f18cdf019c7bd9bf590ac4e26ce3d810e6dcbc35a"
+    },
+    "native_repair_run": {
+      "id": 38560167831,
+      "head_sha": "332e3119498bd080b195ac33d200707569313b7d",
+      "artifact_id": 11891373353,
+      "artifact_digest": "sha256:bc150693a314107764c59d7f395deb2c2ce4d4107f83324fdfe425d58b353d04"
+    },
+    "independent_patch_run": {
+      "id": 38560825707,
+      "head_sha": "20864090c084efc0511cffcf47aae556b4003fea"
+    }
+  },
+  "not_claims": [
+    "This manifest is NOT evidence of any defect in go-ethereum.",
+    "The experimental native Go tests were human-orchestrated and are not rerun by the Cloudflare GitHub App.",
+    "GitHub run and artifact metadata readback does not independently reexecute native Go tests.",
+    "The PR is an evidence-consumption test fixture, not an upstream Ethereum contribution.",
+    "No general safe-to-merge approval, independent novelty, autonomous method invention or external upstream adoption is claimed."
+  ]
+}
