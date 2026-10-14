@@ -36,6 +36,20 @@ export function normalizePrivateKey(raw) {
     add("QUOTED_PEM", inside);
     add("QUOTED_ESCAPED_NEWLINES",
       inside.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n"));
+    // A JSON-quoted PEM has doubled backslashes; decode only valid JSON
+    // string literals, never execute or print the secret.
+    if (value.startsWith('"')) {
+      try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed === "string") {
+          add("JSON_QUOTED_PEM", parsed);
+          add("JSON_QUOTED_ESCAPED_NEWLINES",
+            parsed.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n"));
+        }
+      } catch {
+        // Other quoting styles remain safe to reject.
+      }
+    }
   }
   if (/^[A-Za-z0-9+/=\s]+$/.test(value) && value.replace(/\s/g, "").length % 4 === 0) {
     const decoded = Buffer.from(value.replace(/\s+/g, ""), "base64").toString("utf8");
