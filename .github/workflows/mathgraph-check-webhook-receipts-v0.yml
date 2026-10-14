@@ -1,0 +1,29 @@
+name: MathGraph Check - live GitHub App webhook receipt audit
+on:
+  push:
+    branches:
+      - mathgraph-check-github-app-shadow-v0
+    paths:
+      - integrations/mathgraph-check-github/receipt-audit.mjs
+      - integrations/mathgraph-check-github/receipt-audit.test.mjs
+      - .github/workflows/mathgraph-check-webhook-receipts-v0.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Verify delivery-receipt audit fail-closed behavior
+        run: node --test integrations/mathgraph-check-github/receipt-audit.test.mjs
+      - name: Read actual signed GitHub App delivery receipts (no writes)
+        env:
+          MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: node integrations/mathgraph-check-github/receipt-audit.mjs
