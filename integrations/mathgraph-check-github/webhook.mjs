@@ -38,18 +38,32 @@ async function handlePR(payload,config) {
   const report=analyze(snapshot);
   const fresh=await githubAPI("/repos/"+repository+"/pulls/"+number,auth.token);
   if (fresh.head.sha!==originalHead) return; // race guard
+  const check=checkOutput(report);
+  const externalId=repository+"#"+number+"@"+originalHead;
+  // Reconcile with GitHub's durable Check Run state before a fresh write.
+  // This avoids duplicates after worker restarts; it is not an exactly-once queue.
+  const checks=await githubAPI("/repos/"+repository+"/commits/"+originalHead+
+    "/check-runs?check_name="+encodeURIComponent(check.name)+"&filter=all&per_page=100",auth.token);
+  if (!Array.isArray(checks?.check_runs) ||
+      !Number.isSafeInteger(checks.total_count) ||
+      checks.total_count>checks.check_runs.length) throw new Error("CHECK_RECONCILIATION_INCOMPLETE");
+  const existing=checks.check_runs.find(item=>
+    item.name===check.name && item.external_id===externalId &&
+    item.app?.id===config.appID);
+  if (existing) return; // a retry / restarted worker already published it
   await githubAPI("/repos/"+repository+"/check-runs",auth.token,"POST",{
-    ...checkOutput(report),head_sha:originalHead,
-    external_id:repository+"#"+number+"@"+originalHead
+    ...check,head_sha:originalHead,external_id:externalId
   });
 }
 export function start(env=process.env) {
   const key=String(env.GITHUB_APP_PRIVATE_KEY||"").replace(/\\n/g,"\n");
   const secret=env.GITHUB_WEBHOOK_SECRET;
   const id=env.GITHUB_APP_CLIENT_ID || env.GITHUB_APP_ID;
+  const appID=Number(env.GITHUB_APP_ID);
   const allow=new Set(String(env.MATHGRAPH_ALLOWED_REPOS||"").split(",").map(s=>s.trim()).filter(Boolean));
-  if (!key || !secret || !id || !allow.size) throw new Error("MISSING_APP_CONFIG");
-  const deliveries=new Set(),config={key,id};
+  if (!key || !secret || !id || !allow.size ||
+      !Number.isSafeInteger(appID) || appID<1) throw new Error("MISSING_APP_CONFIG");
+  const deliveries=new Set(),inFlight=new Set(),config={key,id,appID};
   const server=http.createServer(async(req,res)=>{
     if (req.method==="GET" && req.url==="/health") {
       res.writeHead(200);res.end("ok");return;
@@ -80,10 +94,18 @@ export function start(env=process.env) {
       }
       deliveries.add(delivery);
       if(deliveries.size>1000) deliveries.clear();
+      // Serialize same-SHA work within this single process, even for new deliveries.
+      const identity=payload.repository.full_name+"#"+payload.pull_request.number+
+        "@"+payload.pull_request.head.sha;
+      if(inFlight.has(identity)){
+        res.writeHead(202);res.end("already-processing");return;
+      }
+      inFlight.add(identity);
       res.writeHead(202);res.end("queued");
-      // Requires an always-running worker, not a terminating serverless request.
+      // Requires an always-running worker; acknowledged events have no durable queue.
       void handlePR(payload,config).catch(err=>
-        console.error("MATHGRAPH_CHECK_WORKER_FAILURE",err.message));
+        console.error("MATHGRAPH_CHECK_WORKER_FAILURE",err.message))
+        .finally(()=>inFlight.delete(identity));
     } catch {
       if(!res.headersSent) {res.writeHead(400);res.end("invalid payload");}
     }

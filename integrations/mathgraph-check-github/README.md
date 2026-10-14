@@ -33,7 +33,7 @@ Register a GitHub App in an authorized Metalogic account and select only Pull re
 
     node integrations/mathgraph-check-github/webhook.mjs
 
-It validates HMAC SHA-256 signatures, obtains a short-lived installation token, reads permitted PR evidence, rechecks the exact SHA and writes a **neutral** check. It never commits, merges, comments or runs uploaded code. Webhook response is acknowledged before work, so deployment must support a persistent process. It presently has in-memory delivery deduplication only; add a persistent queue, idempotency and retries before outside-owner installations. Keep secrets out of repository files.
+It validates HMAC SHA-256 signatures, obtains a short-lived installation token, reads permitted PR evidence, rechecks the exact SHA and writes a **neutral** check. It never commits, merges, comments or runs uploaded code. Webhook response is acknowledged before work, so deployment must support a persistent process. It has bounded in-memory same-source work serialization **and** durable GitHub Check Run reconciliation by exact source SHA, external ID and App ID. These protect against ordinary duplicate delivery and worker restarts, but **do not** provide an atomic cross-instance exactly-once guarantee. Add a durable queue, bounded retries and cancellation handling before outside-owner installations. Keep secrets out of repository files.
 
 ## Next decisive gate
 

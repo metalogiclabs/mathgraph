@@ -47,8 +47,14 @@ test('signed actual HTTP delivery gives one neutral exact-head Check Run',async(
     if(url.pathname==='/repos/'+REPO+'/actions/runs')
       return json({total_count:1,workflow_runs:[{id:1001,name:'BAL qualifier',
         head_sha:SHA,status:'completed',conclusion:'success'}]});
+    if(url.pathname==='/repos/'+REPO+'/commits/'+SHA+'/check-runs'){
+      assert.equal(url.searchParams.get('check_name'),'MathGraph Check / evidence scope');
+      assert.equal(url.searchParams.get('filter'),'all');
+      return json({total_count:checks.length,check_runs:checks});
+    }
     if(url.pathname==='/repos/'+REPO+'/check-runs' && opts.method==='POST'){
-      checks.push(JSON.parse(opts.body));
+      const check=JSON.parse(opts.body);
+      checks.push({...check,id:1002,app:{id:5308912}});
       return json({id:1002});
     }
     throw Error('UNEXPECTED_GITHUB_API_REQUEST: '+url.pathname);
@@ -71,6 +77,10 @@ test('signed actual HTTP delivery gives one neutral exact-head Check Run',async(
     assert.equal(checks[0].name,'MathGraph Check / evidence scope');
     assert.match(checks[0].output.summary,/remote_conflicting_fcu=UNKNOWN/);
     assert.equal((await deliver(send,'delivery-1',payload)).status,202);
+    // A different delivery ID for the same source SHA must not create a second check.
+    assert.equal((await deliver(send,'delivery-2',payload)).status,202);
+    await new Promise(r=>setTimeout(r,70));
+    assert.equal(checks.length,1,'same-source redelivery must reuse published App Check');
     assert.equal((await deliver(send,'bad-signature',payload,'wrong-secret')).status,401);
     assert.equal((await deliver(send,'other-repository',
       {...payload,repository:{full_name:'ethereum/go-ethereum'}})).status,202);
@@ -80,6 +90,19 @@ test('signed actual HTTP delivery gives one neutral exact-head Check Run',async(
     assert.equal((await deliver(send,'stale-head',payload)).status,202);
     await new Promise(r=>setTimeout(r,70));
     assert.equal(checks.length,1,'stale PR head must not receive a check');
+    // Reopen a fresh worker with empty in-memory state. Durable GitHub Check
+    // lookup, not process-local delivery memory, prevents duplicate publication.
+    liveHead=SHA;
+    await new Promise(done=>server.close(done));
+    server=start({PORT:'0',GITHUB_APP_ID:'5308912',
+      GITHUB_APP_CLIENT_ID:'Iv23lioiUs5KfHD7mkkw',
+      GITHUB_APP_PRIVATE_KEY:keys.privateKey.export({type:'pkcs8',format:'pem'}),
+      GITHUB_WEBHOOK_SECRET:SECRET,MATHGRAPH_ALLOWED_REPOS:REPO});
+    if(!server.listening)await once(server,'listening');
+    const freshSend=(path,opts)=>realFetch('http://127.0.0.1:'+server.address().port+path,opts);
+    assert.equal((await deliver(freshSend,'delivery-after-restart',payload)).status,202);
+    await new Promise(r=>setTimeout(r,90));
+    assert.equal(checks.length,1,'worker restart must not duplicate App Check');
   }finally{
     globalThis.fetch=realFetch;
     if(server) await new Promise(resolve=>server.close(resolve));
