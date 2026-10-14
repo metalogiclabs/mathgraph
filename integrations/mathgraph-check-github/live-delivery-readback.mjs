@@ -23,7 +23,10 @@ async function getJSON(path, jwt) {
       "X-GitHub-Api-Version":"2022-11-28"},
     signal:AbortSignal.timeout(20000)
   });
-  need(response.ok,"GITHUB_READBACK_HTTP_"+response.status);
+  const endpointLabel=path==="/app"?"APP":
+    path==="/app/hook/config"?"HOOK_CONFIG":
+    path.startsWith("/app/hook/deliveries/")?"DELIVERY_DETAIL":"DELIVERY_LIST";
+  need(response.ok,"GITHUB_"+endpointLabel+"_HTTP_"+response.status);
   return response.json();
 }
 async function verify() {
