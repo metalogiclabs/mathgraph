@@ -50,6 +50,18 @@ test("queue failure returns 503 rather than prematurely acknowledging",async()=>
   assert.equal((await receiveWebhook(new Request("https://pilot.test/health"),env)).status,200);
   assert.equal((await receiveWebhook(new Request("https://pilot.test/no"),env)).status,404);
 });
+test("separate liveness and readiness prevent false active-status claims",async()=>{
+  const {env}=testEnv();
+  assert.equal((await receiveWebhook(new Request("https://pilot.test/health"),env)).status,200);
+  assert.equal((await receiveWebhook(new Request("https://pilot.test/ready"),env)).status,503);
+  const keys=generateKeyPairSync("rsa",{modulusLength:2048});
+  const configured={...env,GITHUB_APP_ID:String(SCOPE.appID),
+    GITHUB_APP_CLIENT_ID:SCOPE.clientID,
+    GITHUB_APP_PRIVATE_KEY:keys.privateKey.export({type:"pkcs1",format:"pem"}).toString()};
+  assert.equal((await receiveWebhook(new Request("https://pilot.test/ready"),configured)).status,200);
+  configured.GITHUB_APP_PRIVATE_KEY="not a valid PEM";
+  assert.equal((await receiveWebhook(new Request("https://pilot.test/ready"),configured)).status,503);
+});
 test("malformed event does not acquire work authority",()=>{
   assert.equal(parseSignedEvent({action:"closed"},ID,"pull_request"),null);
   assert.equal(parseSignedEvent(event(),"invalid","pull_request"),null);
