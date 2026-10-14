@@ -4,6 +4,7 @@
 import { createHmac, timingSafeEqual, createPrivateKey, sign } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { analyze, checkOutput } from "../analysis.mjs";
+import { appendGethV19NativeEvidence } from "../geth-v19-evidence.mjs";
 
 export const SCOPE = Object.freeze({
   appID: 5308912,
@@ -291,7 +292,9 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
       const report=analyze(snapshot);
       ensure(report.authority==="ADVISORY_ONLY" &&
         report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
-      const check=checkOutput(report);
+      const genericCheck=checkOutput(report);
+      const nativeEvidence=await appendGethV19NativeEvidence(report,genericCheck,api,token);
+      const check=nativeEvidence.check;
       ensure(check.conclusion==="neutral" && check.status==="completed" &&
         check.name===SCOPE.checkName,"FORBIDDEN_TRUTH_PROMOTION");
 
