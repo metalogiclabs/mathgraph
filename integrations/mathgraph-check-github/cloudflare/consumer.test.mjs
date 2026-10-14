@@ -15,7 +15,7 @@ function setup(opts={}){
   };
   const saved=[],calls=[];
   const json=(x,status=200)=>new Response(JSON.stringify(x),{status});
-  let seq=1000;
+  let seq=1000,ciConclusion="success",staleHead=Boolean(opts.stale);
   const fetcher=async(raw,init={})=>{
     const u=new URL(raw);assert.equal(u.origin,"https://api.github.com");
     calls.push({path:u.pathname,method:init.method||"GET"});
@@ -35,7 +35,7 @@ function setup(opts={}){
       return opts.revokeFails?json({},403):new Response(null,{status:204});
     if(p==="/repos/"+SCOPE.repository+"/pulls/19")
       return json({state:"open",base:{repo:{full_name:SCOPE.repository}},
-        head:{sha:opts.stale?"f".repeat(40):SHA,
+        head:{sha:staleHead?"f".repeat(40):SHA,
           repo:{full_name:SCOPE.repository}}});
     if(p==="/repos/"+SCOPE.repository+"/pulls/19/files")
       return json([{filename:".github/workflows/bal-v19.yml",
@@ -43,7 +43,7 @@ function setup(opts={}){
     if(p==="/repos/"+SCOPE.repository+"/actions/runs")
       return opts.noCI?json({},403):json({total_count:1,workflow_runs:[{
         id:38202260024,name:"BAL V19 native qualification",
-        head_sha:SHA,status:"completed",conclusion:"success"}]});
+        head_sha:SHA,status:"completed",conclusion:ciConclusion}]});
     if(p==="/repos/"+SCOPE.repository+"/commits/"+SHA+"/check-runs"){
       assert.equal(u.searchParams.get("filter"),"all");
       assert.equal(u.searchParams.get("check_name"),SCOPE.checkName);
@@ -54,9 +54,23 @@ function setup(opts={}){
         app:{id:opts.badPublisher?15368:SCOPE.appID}};
       saved.push(result);return json(result);
     }
+    if(/^\/repos\/metalogiclabs\/go-ethereum\/check-runs\/[0-9]+$/.test(p) &&
+       init.method==="PATCH"){
+      if(opts.failRefresh) return json({message:"blocked"},403);
+      const match=saved.find(x=>String(x.id)===p.split("/").at(-1));
+      assert.ok(match);
+      const fields=JSON.parse(init.body);
+      assert.deepEqual(Object.keys(fields).sort(),["conclusion","output","status"]);
+      assert.equal(fields.conclusion,"neutral");
+      assert.equal(fields.status,"completed");
+      Object.assign(match,fields);
+      return json({...match,app:{id:opts.badRefreshPublisher?15368:SCOPE.appID}});
+    }
     throw Error("UNKNOWN_FIXTURE_ROUTE");
   };
-  return {env,saved,calls,fetcher};
+  return {env,saved,calls,fetcher,
+    setCI(state){ciConclusion=state;},setStale(value){staleHead=value;}};
+
 }
 test("queue publishes one neutral App-owned exact-head check",async()=>{
   const m=setup();
@@ -109,4 +123,57 @@ test("queue ACKs valid work, retries a failed App identity and drops invalid eve
     ack(){ack++;},retry(){retry++;}}]},ignored.env,{fetcher:ignored.fetcher});
   assert.equal(ack,2);
   assert.equal(ignored.calls.length,0);
+});
+
+test("same-SHA mutable CI evidence updates one App Check, then returns to previous warrant",async()=>{
+  const m=setup();
+  const before=await processQueuedPR(item,m.env,{fetcher:m.fetcher});
+  assert.equal(before.outcome,"CREATED");
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].output.title,"DECLARED_VERIFICATION_RESIDUAL");
+  const originalID=m.saved[0].id;
+  m.setCI("failure");
+  const revised=await processQueuedPR({...item,action:"edited"},m.env,{fetcher:m.fetcher});
+  assert.equal(revised.outcome,"UPDATED");
+  assert.equal(revised.checkID,originalID);
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].output.title,"CURRENT_HEAD_CI_UNRESOLVED");
+  assert.equal(m.saved[0].head_sha,SHA);
+  assert.equal(m.saved[0].conclusion,"neutral");
+  m.setCI("success");
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"UPDATED");
+  assert.equal(m.saved[0].output.title,"DECLARED_VERIFICATION_RESIDUAL");
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"EXISTING");
+  assert.equal(m.calls.filter(c=>c.method==="POST" && c.path.endsWith("/check-runs")).length,1);
+  assert.equal(m.calls.filter(c=>c.method==="PATCH").length,2);
+  assert.equal(m.calls.filter(c=>c.method==="DELETE").length,4);
+});
+test("same-SHA check cannot silently reuse stale PR and bad refresh does not acquire authority",async()=>{
+  const stale=setup();
+  assert.equal((await processQueuedPR(item,stale.env,{fetcher:stale.fetcher})).outcome,"CREATED");
+  stale.setStale(true);
+  assert.equal((await processQueuedPR(item,stale.env,{fetcher:stale.fetcher})).outcome,"STALE");
+  assert.equal(stale.saved.length,1);
+  assert.equal(stale.calls.filter(c=>c.method==="PATCH").length,0);
+  const denied=setup({failRefresh:true});
+  assert.equal((await processQueuedPR(item,denied.env,{fetcher:denied.fetcher})).outcome,"CREATED");
+  denied.setCI("failure");
+  await assert.rejects(processQueuedPR(item,denied.env,{fetcher:denied.fetcher}),
+    /GITHUB_HTTP_403/);
+  assert.equal(denied.saved.length,1);
+  assert.equal(denied.saved[0].output.title,"DECLARED_VERIFICATION_RESIDUAL");
+  assert.equal(denied.calls.filter(c=>c.method==="DELETE").length,2);
+  const inconsistent=setup({badRefreshPublisher:true});
+  assert.equal((await processQueuedPR(item,inconsistent.env,{fetcher:inconsistent.fetcher})).outcome,"CREATED");
+  inconsistent.setCI("failure");
+  await assert.rejects(processQueuedPR(item,inconsistent.env,{fetcher:inconsistent.fetcher}),
+    /CHECK_REFRESH_IDENTITY_NOT_CONFIRMED/);
+});
+test("duplicate App-identity Checks at the same source SHA cannot be silently merged",async()=>{
+  const m=setup();
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  m.saved.push({...m.saved[0],id:333});
+  await assert.rejects(processQueuedPR(item,m.env,{fetcher:m.fetcher}),
+    /DUPLICATE_APP_CHECK_AUTHORITY/);
+  assert.equal(m.calls.filter(c=>c.method==="PATCH").length,0);
 });
