@@ -82,3 +82,7 @@ Live webhook delivery is **UNKNOWN** until those observations exist. The dry-run
 `npx wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml`
 
 These exercises need no Cloudflare credentials. Cloudflare's Worker Free tier has a queue operation allowance, but queue message retention and Worker CPU limits are bounded. This deployment is a controlled evaluation, not a production SLA.
+
+## Activation checkpoint — 14 October 2026
+
+The operator has confirmed configuring the GitHub repository approval variables and secrets. Deployment is still evidence-gated: the Cloudflare deployment workflow must authenticate to the correct account, verify queues and Worker readiness, and inspect the existing GitHub App webhook URL before modifying it. A commit to this reviewed pilot document initiates that already-approved workflow. Do not treat workflow commencement as live webhook qualification; require the actual GitHub delivery and an App-owned check on the exact source SHA.
