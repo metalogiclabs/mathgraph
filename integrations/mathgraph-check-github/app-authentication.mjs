@@ -138,6 +138,12 @@ export async function authenticateAndPublish({
   must(app?.id === PILOT.appID && app.owner?.login === TARGET_OWNER,
     "WRONG_REGISTERED_GITHUB_APP");
   permits(app.permissions, "APP");
+  // Read-only subscription diagnostics. GET /app lists configured event
+  // types, not proof that any real webhook has reached our worker.
+  const subscriptions = Array.isArray(app.events) ? {
+    pull_request: app.events.includes("pull_request"),
+    workflow_run: app.events.includes("workflow_run")
+  } : { pull_request: "UNKNOWN", workflow_run: "UNKNOWN" };
 
   const installation = await api(
     "/repos/" + PILOT.repository + "/installation", jwt);
@@ -188,7 +194,8 @@ export async function authenticateAndPublish({
     outcome: published.outcome,
     appID: PILOT.appID, checkId: published.checkId,
     repository: PILOT.repository, pr: PILOT.pr, sha: PILOT.sha,
-    conclusion: "neutral", keyEncoding: material.encoding, tokenRevoked: true
+    conclusion: "neutral", keyEncoding: material.encoding, tokenRevoked: true,
+    appWebhookSubscriptions: subscriptions
   };
 }
 
