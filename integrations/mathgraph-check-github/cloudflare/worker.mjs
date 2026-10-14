@@ -69,8 +69,20 @@ export async function receiveWebhook(request, env) {
   const url = new URL(request.url);
   if (request.method === "GET" && url.pathname === "/health")
     return new Response(JSON.stringify({
-      status: "ready", name: "mathgraph-check-webhook-pilot"
+      status: "alive", name: "mathgraph-check-webhook-pilot"
     }), { status: 200, headers: { "content-type":"application/json" } });
+  if (request.method === "GET" && url.pathname === "/ready") {
+    let configured=!!(env?.GITHUB_WEBHOOK_SECRET && env?.GITHUB_APP_PRIVATE_KEY &&
+      env?.PR_EVENTS && env?.GITHUB_APP_CLIENT_ID===SCOPE.clientID &&
+      String(env?.GITHUB_APP_ID)===String(SCOPE.appID));
+    if(configured){
+      try { configured=createPrivateKey(env.GITHUB_APP_PRIVATE_KEY).asymmetricKeyType==="rsa"; }
+      catch { configured=false; }
+    }
+    return new Response(configured?"ready":"not configured",{
+      status:configured?200:503
+    });
+  }
   if (request.method !== "POST" || url.pathname !== "/github/webhook")
     return new Response("Not found", { status: 404 });
 
