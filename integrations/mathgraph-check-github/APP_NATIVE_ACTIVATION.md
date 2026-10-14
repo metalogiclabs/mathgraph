@@ -1,6 +1,6 @@
 # GitHub App-authorized first Check Run: no hosting dependency
 
-This isolated acceptance gate lives on the existing MathGraph draft PR #167 branch. It is not a deployment and it does not alter mathgraph.org, Vercel, Render or an upstream Ethereum repository.
+This isolated acceptance gate lives on the existing MathGraph draft PR #167 branch. It uses GitHub Actions, **not an external hosting provider**, and does not deploy a service or modify mathgraph.org or an upstream Ethereum repository. The owner expressly prohibited Render; it is not an activation or hosting option.
 
 The official GitHub action actions/create-github-app-token (v3, pinned commit) creates a short-lived token with only Checks write, Pull requests read and Actions read for the Metalogic go-ethereum fork. The workflow's built-in GITHUB_TOKEN has only Contents read; it cannot silently substitute for the registered App.
 
@@ -22,4 +22,4 @@ The workflow file mathgraph-check-app-publisher-v0.yml triggers on a push to the
 
 Live acceptance requires an actual GitHub Check Runs API response at the precise PR head with name MathGraph Check / evidence scope, app.id 5308912, conclusion neutral and exact external ID. Readback must independently confirm the same tuple. Success under the github-actions App ID 15368 is explicitly insufficient.
 
-This one-time GitHub Actions path does not receive future PR webhooks on arbitrary repositories. Automatic all-repository operation still needs separately qualified webhook ingress, rate controls and a retry queue. Cloudflare Workers and Queues are candidates for that later operational gate, without replacing the existing verifier.
+This one-time GitHub Actions path does not receive future PR webhooks on arbitrary repositories. Automatic all-repository operation still needs separately qualified webhook ingress, rate controls and a retry queue. Hosting for later automatic webhooks remains **unselected** and needs separate owner approval. The current App-identity qualification does not require hosting.
