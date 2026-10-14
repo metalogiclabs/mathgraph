@@ -46,16 +46,20 @@ jobs:
           worker_pid="$!"
           trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
           ready="false"
-          for n in $(seq 1 50); do
+          for n in $(seq 1 130); do
             if curl --silent --max-time 2 -o /dev/null \
               -w '%{http_code}' http://127.0.0.1:8799/health | grep -qx '200'; then
               ready="true"
               break
             fi
-            sleep 0.2
+            if ! kill -0 "$worker_pid" 2>/dev/null; then break; fi
+            sleep 0.3
           done
           if [ "$ready" != "true" ]; then
             echo 'CLOUDFLARE_WORKER_DID_NOT_START'
+            # This job has no runtime secrets. Show only startup diagnostics.
+            grep -Ei 'error|failed|not found|refused|incompatible|missing' \
+              "$RUNNER_TEMP/mathgraph-workerd.log" | tail -n 22 || true
             exit 1
           fi
           status="$(curl --silent --max-time 5 -o /dev/null \
