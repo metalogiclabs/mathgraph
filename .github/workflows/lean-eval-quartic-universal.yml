@@ -1,0 +1,102 @@
+# Force quartic-universal verification after narrowed residual fix
+name: LeanEval quartic universal
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quartic-universal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build frozen Abel-Ruffini workspace
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+      - name: Compile universal quartic solver
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
+          cp "$GITHUB_WORKSPACE/competitions/lean_eval/QuarticUniversal.lean" QuarticUniversal.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('QuarticUniversal.lean')
+          s = p.read_text()
+
+          old = '''  have hresdeg_le : resolvent.natDegree ≤ 3 := by
+    rw [natDegree_le_iff_coeff_eq_zero]
+    intro N hN
+    have hN3 : N ≠ 3 := by omega
+    have hN2 : N ≠ 2 := by omega
+    have hN1 : N ≠ 1 := by omega
+    have hN0 : N ≠ 0 := by omega
+    have hN1' : 1 ≠ N := by omega
+    have hN0' : 0 ≠ N := by omega
+    simp [resolvent, coeff_X_pow, coeff_C_mul_X, hN3, hN2, hN1, hN0, hN1', hN0', ← C_pow]
+  have hrescoeff : resolvent.coeff 3 = 1 := by
+    simp [resolvent, coeff_X_pow, coeff_C_mul_X, ← C_pow]
+'''
+          new = '''  have hresdeg_le : resolvent.natDegree ≤ 3 := by
+    rw [natDegree_le_iff_coeff_eq_zero]
+    intro N hN
+    have hN3 : N ≠ 3 := by omega
+    have hN2 : N ≠ 2 := by omega
+    have hN1 : N ≠ 1 := by omega
+    have hN0 : N ≠ 0 := by omega
+    simp only [resolvent, coeff_add, coeff_sub, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
+    simp [hN3, hN2, hN1, hN0]
+  have hrescoeff : resolvent.coeff 3 = 1 := by
+    simp only [resolvent, coeff_add, coeff_sub, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
+    norm_num
+'''
+          assert old in s
+          s = s.replace(old, new)
+
+          old = '''      field_simp [hs0]
+      rw [hs4]
+      rw [hQsq]
+      ring'''
+          new = '''      field_simp [hs0]
+      rw [hs2]
+      ring_nf
+      rw [hQsq]
+      ring'''
+          assert old in s
+          s = s.replace(old, new)
+
+          old = '''      simp [q, coeff_X_pow, coeff_C_mul_X, hn4, hn3, hn2, hn1, hn0, hn1', hn0']'''
+          new = '''      simp only [q, coeff_add, coeff_C_mul, coeff_X_pow, coeff_X, coeff_C]
+      simp [hn4, hn3, hn2, hn1, hn0]'''
+          assert old in s
+          s = s.replace(old, new)
+
+          p.write_text(s)
+          PY
+          mkdir -p .lake/build/lib/lean
+          set +e
+          lake env lean -o .lake/build/lib/lean/CubicUniversal.olean CubicUniversal.lean > /tmp/cubic-dependency.log 2>&1
+          dep=$?
+          echo "cubic_dependency_exit=$dep"
+          if [ "$dep" -ne 0 ]; then tail -n 120 /tmp/cubic-dependency.log; exit 0; fi
+          lake env lean QuarticUniversal.lean > /tmp/quartic-universal.log 2>&1
+          code=$?
+          echo "quartic_universal_exit=$code"
+          tail -n 220 /tmp/quartic-universal.log
+          exit 0

@@ -1,0 +1,202 @@
+name: LeanEval capability ladder
+
+on:
+  push:
+    branches:
+      - lean-eval-multitarget-sweep
+    paths:
+      - '.github/workflows/lean-eval-capability-ladder.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  relational-interface-genesis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      LEAN_EVAL_SHA: 9b82c4083e71e93c7d6aa43a960cd492ae53a35d
+      TARGET: annals_erdos_supersingular_primes
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare frozen target
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
+          cd "/tmp/$TARGET"
+          lake update
+      - name: Verify relational interfaces
+        id: verify
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          cat > /tmp/base.lean <<'LEAN'
+          import ChallengeDeps
+          import Mathlib.Analysis.Complex.Exponential
+
+          set_option autoImplicit false
+          namespace ErdosSupersingularPrimes
+          open Int Real
+
+          def k₀ : ℕ := sorry
+
+          theorem generated_core_bound (k : ℕ) (hk : k ≥ k₀) (s : Solution k)
+              (hs : s.l.Prime) (hy : s.y ≠ 0) (hd : s.d ≠ 0) :
+              s.l ≤ exp (10 ^ k) := by
+            sorry
+          end ErdosSupersingularPrimes
+          LEAN
+
+          cat > /tmp/interfaces.tsv <<'EOF'
+          sham	s.l = s.l	exact rfl
+          factor_coprime_d	∀ i : ℤ, Int.gcd (s.n + i * s.d) s.d = 1	intro i; calc Int.gcd (s.n + i * s.d) s.d = Int.gcd s.n s.d := Int.gcd_add_mul_right_left _ _ _; _ = 1 := s.gcd
+          EOF
+          sed -i 's/^          //' /tmp/interfaces.tsv
+
+          : > /tmp/verified.tsv
+          while IFS=$'\t' read -r name prop proof; do
+            cp /tmp/base.lean Submission.lean
+            PROP="$prop" PROOF="$proof" python3 - <<'PY'
+          import os,re
+          s=open('Submission.lean').read()
+          repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
+                + "    " + os.environ['PROOF'] + "\n"
+                + "  sorry\n"
+                + "end ErdosSupersingularPrimes")
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          if n != 1: raise SystemExit(f'interface replacements={n}')
+          open('Submission.lean','w').write(s)
+          PY
+            pycode=$?
+            if [ "$pycode" -ne 0 ]; then
+              echo "RELATIONAL_HARNESS_FATAL name=$name python_exit=$pycode"
+              exit "$pycode"
+            fi
+            lake build Submission > "/tmp/interface-${name}.log" 2>&1
+            code=$?
+            echo "RELATIONAL_INTERFACE_VERIFY name=$name exit=$code"
+            if [ "$code" -eq 0 ]; then
+              printf '%s\t%s\t%s\n' "$name" "$prop" "$proof" >> /tmp/verified.tsv
+            fi
+          done < /tmp/interfaces.tsv
+          echo "verified=$(wc -l < /tmp/verified.tsv)" >> "$GITHUB_OUTPUT"
+      - name: Replay primitive language
+        id: replay
+        working-directory: /tmp/${{ env.TARGET }}
+        run: |
+          set +e
+          cat > /tmp/tails.tsv <<'EOF'
+          simp	try simp_all
+          aesop	try aesop
+          grind	try grind
+          norm	try norm_num at *
+          linarith	try linarith
+          nlinarith	try nlinarith
+          positivity	try positivity
+          ringnf	try ring_nf
+          fieldsimp	try field_simp
+          elim	try solve_by_elim
+          contra	try contradiction
+          tauto	try tauto
+          EOF
+          sed -i 's/^          //' /tmp/tails.tsv
+          : > /tmp/replay.tsv
+          solved=0
+          winner=''
+          while IFS=$'\t' read -r iname prop proof; do
+            while IFS=$'\t' read -r tname body; do
+              cp /tmp/base.lean Submission.lean
+              PROP="$prop" PROOF="$proof" BODY="$body" python3 - <<'PY'
+          import os,re
+          s=open('Submission.lean').read()
+          repl=("  have hDelta : " + os.environ['PROP'] + " := by\n"
+                + "    " + os.environ['PROOF'] + "\n"
+                + "  " + os.environ['BODY'] + "\n"
+                + "end ErdosSupersingularPrimes")
+          s,n=re.subn(r'  sorry\nend ErdosSupersingularPrimes',lambda _: repl,s,count=1)
+          if n != 1: raise SystemExit(f'replay replacements={n}')
+          open('Submission.lean','w').write(s)
+          PY
+              pycode=$?
+              if [ "$pycode" -ne 0 ]; then
+                echo "RELATIONAL_HARNESS_FATAL replay=$iname:$tname python_exit=$pycode"
+                exit "$pycode"
+              fi
+              lake build Submission > "/tmp/replay-${iname}-${tname}.log" 2>&1
+              code=$?
+              sig=$(python3 - "/tmp/replay-${iname}-${tname}.log" <<'PY'
+          import re,sys,hashlib
+          s=open(sys.argv[1],errors='ignore').read()
+          chunks=re.findall(r'(?:Initial goal:|unsolved goals|⊢)[\s\S]{0,1200}',s)
+          x=(chunks[-1] if chunks else s[-2200:])
+          x=re.sub(r'^hDelta\s*:.*$', '', x, flags=re.M)
+          x=re.sub(r'/tmp/[^ ]+','<PATH>',x)
+          x=re.sub(r'\d+\.\d+s','<TIME>',x)
+          x='\n'.join(line for line in x.splitlines() if line.strip())
+          print(hashlib.sha256(x.encode()).hexdigest()[:16])
+          PY
+          )
+              printf '%s\t%s\t%s\t%s\n' "$iname" "$tname" "$code" "$sig" >> /tmp/replay.tsv
+              if [ "$code" -eq 0 ]; then
+                solved=1
+                winner="${iname}:${tname}"
+                cp Submission.lean /tmp/RELATIONAL-SOLVED.lean
+                break 2
+              fi
+            done < /tmp/tails.tsv
+          done < /tmp/verified.tsv
+          echo "solved=$solved" >> "$GITHUB_OUTPUT"
+          echo "winner=$winner" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          from collections import defaultdict
+          rows=[x.rstrip().split('\t') for x in open('/tmp/replay.tsv') if x.strip()]
+          by=defaultdict(list)
+          for r in rows:
+              if len(r)==4: by[r[0]].append(r)
+          sham=set(r[3] for r in by.get('sham',[]))
+          relational=set(r[3] for r in by.get('factor_coprime_d',[]))
+          print('RELATIONAL_REPLAY_PROGRAMS',len(rows))
+          print('RELATIONAL_SHAM_CLASSES',len(sham))
+          print('RELATIONAL_FACTOR_CLASSES',len(relational))
+          print('RELATIONAL_NOVEL_VS_SHAM',len(relational-sham))
+          changed=int(bool(relational) and relational != sham)
+          open('/tmp/changed.txt','w').write(str(changed))
+          PY
+          changing=$(cat /tmp/changed.txt)
+          echo "changing=$changing" >> "$GITHUB_OUTPUT"
+      - name: Relational interface gate
+        run: |
+          if [ "${{ steps.replay.outputs.solved }}" = "1" ]; then
+            echo 'RELATIONAL_INTERFACE_GATE {"classification":"EXACT_REACHED","winner":"${{ steps.replay.outputs.winner }}"}'
+          elif [ "${{ steps.verify.outputs.verified }}" -lt 2 ]; then
+            echo 'RELATIONAL_INTERFACE_GATE {"classification":"INTERFACE_NOT_VERIFIED"}'
+          elif [ "${{ steps.replay.outputs.changing }}" = "1" ]; then
+            echo 'RELATIONAL_INTERFACE_GATE {"classification":"RELATIONAL_SEPARATION"}'
+          else
+            echo 'RELATIONAL_INTERFACE_GATE {"classification":"RELATIONAL_INTERFACE_STERILE"}'
+          fi
+      - name: Upload relational evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relational-gcd-geometry-erdos-supersingular
+          path: |
+            /tmp/interfaces.tsv
+            /tmp/verified.tsv
+            /tmp/interface-*.log
+            /tmp/tails.tsv
+            /tmp/replay.tsv
+            /tmp/replay-*.log
+            /tmp/changed.txt
+            /tmp/RELATIONAL-SOLVED.lean
+          if-no-files-found: ignore

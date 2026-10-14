@@ -1,0 +1,1 @@
+trigger local valuation portal via pull_request synchronize
