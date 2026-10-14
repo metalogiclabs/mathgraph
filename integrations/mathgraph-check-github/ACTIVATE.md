@@ -1,3 +1,13 @@
+## Direct Render deployment of the qualified pilot branch
+
+[Open the exact MathGraph Check branch in Render's deploy flow](https://render.com/deploy?repo=https://github.com/metalogiclabs/mathgraph/tree/mathgraph-check-github-app-shadow-v0). Render's official deployment URL syntax pins the *repository branch*, so it uses this branch's `render.yaml` instead of the public MathGraph site's `main`.
+
+The no-cost pilot Blueprint creates one isolated Docker web service; the Render Dashboard must obtain the account owner's approval and prompt for `GITHUB_APP_PRIVATE_KEY` and `GITHUB_WEBHOOK_SECRET`. **Do not reuse the PEM uploaded to chat for public operation: rotate it within the existing GitHub App first.** Never supply these values through issues, Actions logs, Git commits, chat, or public status pages.
+
+On successful Render deployment, the actual generated `https://<service>.onrender.com/github/webhook` URL must be configured in the already registered GitHub App settings. Do not assume any hostname until Render issues it. Free services may sleep and fail GitHub's webhook timeout when cold; treat Free as a best-effort pilot, not continuous production uptime. The *first real signed webhook and the Check Run's `app.id=5308912`* are still the decisive unqualified boundary.
+
+**Latest protected source qualification:** [CI #38499648822](https://github.com/metalogiclabs/mathgraph/actions/runs/38499648822) SUCCESS at `f86ad7dc4aa06b45041ac511ba2a8b4d29b7515c`. The integration test now exercises both different delivery IDs and a restarted worker; the worker consults the exact source SHA and App ID in GitHub's existing Check Runs before issuing another write. This provides bounded deduplication, not a durable queue or cross-instance exactly-once guarantee.
+
 # MathGraph Check — GitHub App activation
 
 ## Updated activation path — no Vercel dependency
