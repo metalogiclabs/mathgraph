@@ -44,6 +44,17 @@ export async function auditSignedDeliveryReceipts({
   requireResult(Array.isArray(listing) && listing.length<=100,
     "GITHUB_DELIVERIES_LIST_INVALID");
 
+  if (process.env.MATHGRAPH_RECEIPT_AUDIT_DIAGNOSTIC==="true") {
+    console.log("MATHGRAPH_RECEIPT_LIST_METADATA "+JSON.stringify({
+      total:listing.length,
+      newest:listing.slice(0,20).map(x=>({
+        id:x.id,event:x.event,action:x.action,
+        status_code:x.status_code,delivered_at:x.delivered_at,
+        redelivery:x.redelivery
+      }))
+    }));
+  }
+
   const candidates=listing.filter(x=>
     x.event==="pull_request" &&
     x.action==="edited" &&
@@ -55,6 +66,20 @@ export async function auditSignedDeliveryReceipts({
   for(const summary of candidates) {
     const detail=await call("/app/hook/deliveries/"+summary.id);
     const payload=detail.request?.payload;
+    if (process.env.MATHGRAPH_RECEIPT_AUDIT_DIAGNOSTIC==="true") {
+      console.log("MATHGRAPH_RECEIPT_DETAIL_SHAPE "+JSON.stringify({
+        id:summary.id,
+        payload_present:payload!==undefined && payload!==null,
+        payload_type:typeof payload,
+        payload_field_names:payload && typeof payload==="object" ?
+          Object.keys(payload).slice(0,18):[],
+        repo_match:payload?.repository?.full_name===TARGET_REPOSITORY,
+        pr_number_top:payload?.number===TARGET_PR,
+        pr_number_nested:payload?.pull_request?.number===TARGET_PR,
+        sha_match:payload?.pull_request?.head?.sha===TARGET_SHA,
+        status_code:detail.status_code??summary.status_code
+      }));
+    }
     if(payload?.repository?.full_name!==TARGET_REPOSITORY ||
       payload?.pull_request?.number!==TARGET_PR ||
       payload?.pull_request?.head?.sha!==TARGET_SHA)

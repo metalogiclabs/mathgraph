@@ -25,5 +25,6 @@ jobs:
         run: node --test integrations/mathgraph-check-github/receipt-audit.test.mjs
       - name: Read actual signed GitHub App delivery receipts (no writes)
         env:
+          MATHGRAPH_RECEIPT_AUDIT_DIAGNOSTIC: 'true'
           MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
         run: node integrations/mathgraph-check-github/receipt-audit.mjs
