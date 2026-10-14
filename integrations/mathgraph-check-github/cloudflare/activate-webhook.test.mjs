@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {generateKeyPairSync} from "node:crypto";
 import {activateWebhook} from "./activate-webhook.mjs";
-const URL="https://mathgraph-check-webhook-pilot.cf-test.workers.dev/github/webhook";
+const TARGET_URL="https://mathgraph-check-webhook-pilot.cf-test.workers.dev/github/webhook";
 function fixture({existing="",notReady=false,wrongApp=false,noEvent=false}={}){
   const keys=generateKeyPairSync("rsa",{modulusLength:2048});
   let prior=existing,patches=0;
@@ -46,7 +46,7 @@ test("configures exact GitHub App webhook only after Cloudflare /ready",async()=
   const f=fixture();
   const x=await activateWebhook(f.args);
   assert.equal(x.configured,true);
-  assert.equal(x.target,URL);
+  assert.equal(x.target,TARGET_URL);
   assert.equal(x.app_id,5308912);
   assert.equal(x.secret_verified_by_live_delivery,false);
   assert.equal(f.patches,1);
