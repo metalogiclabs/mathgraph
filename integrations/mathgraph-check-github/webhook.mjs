@@ -13,7 +13,9 @@ export function signatureOK(raw,header,secret) {
   return actual.length===expected.length && timingSafeEqual(actual,expected);
 }
 export function makeJWT(id,key,now=Math.floor(Date.now()/1000)) {
-  if (!/^\d+$/.test(String(id)) || !key) throw new Error("INVALID_APP_AUTH");
+  // GitHub recommends the Client ID as JWT issuer. Numeric App IDs remain valid.
+  if (!/^(?:[1-9]\d*|[A-Za-z][A-Za-z0-9_-]{7,127})$/.test(String(id)) || !key)
+    throw new Error("INVALID_APP_AUTH");
   const header=Buffer.from(JSON.stringify({alg:"RS256",typ:"JWT"})).toString("base64url");
   const payload=Buffer.from(JSON.stringify({iat:now-60,exp:now+540,iss:String(id)})).toString("base64url");
   const message=header+"."+payload;
@@ -43,7 +45,8 @@ async function handlePR(payload,config) {
 }
 export function start(env=process.env) {
   const key=String(env.GITHUB_APP_PRIVATE_KEY||"").replace(/\\n/g,"\n");
-  const secret=env.GITHUB_WEBHOOK_SECRET,id=env.GITHUB_APP_ID;
+  const secret=env.GITHUB_WEBHOOK_SECRET;
+  const id=env.GITHUB_APP_CLIENT_ID || env.GITHUB_APP_ID;
   const allow=new Set(String(env.MATHGRAPH_ALLOWED_REPOS||"").split(",").map(s=>s.trim()).filter(Boolean));
   if (!key || !secret || !id || !allow.size) throw new Error("MISSING_APP_CONFIG");
   const deliveries=new Set(),config={key,id};

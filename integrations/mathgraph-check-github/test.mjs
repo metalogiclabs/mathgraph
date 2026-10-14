@@ -68,6 +68,15 @@ test("signed app JWT independently verifies using generated public key",()=>{
   assert.equal(verify("RSA-SHA256",Buffer.from(parts[0]+"."+parts[1]),
     keys.publicKey,Buffer.from(parts[2],"base64url")),true);
 });
+test("recommended GitHub Client ID works as JWT issuer without a secret leak",()=>{
+  const keys=generateKeyPairSync("rsa",{modulusLength:2048});
+  const issuer="Iv23lioiUs5KfHD7mkkw";
+  const parts=makeJWT(issuer,keys.privateKey,1700000000).split(".");
+  assert.equal(JSON.parse(Buffer.from(parts[1],"base64url")).iss,issuer);
+  assert.equal(verify("RSA-SHA256",Buffer.from(parts[0]+"."+parts[1]),
+    keys.publicKey,Buffer.from(parts[2],"base64url")),true);
+  assert.throws(()=>makeJWT("invalid issuer!",keys.privateKey),/INVALID_APP_AUTH/);
+});
 test("only allowlisted PR events are accepted",()=>{
   const allow=new Set(["metalogiclabs/go-ethereum"]);
   assert.equal(accepted("pull_request","opened","metalogiclabs/go-ethereum",allow),true);

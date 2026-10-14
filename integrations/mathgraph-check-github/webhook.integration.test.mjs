@@ -34,6 +34,8 @@ test('signed actual HTTP delivery gives one neutral exact-head Check Run',async(
     if(url.pathname==='/app/installations/42/access_tokens'){
       assert.equal(opts.method,'POST');
       assert.match(opts.headers.Authorization,/^Bearer /);
+      const jwtPayload=JSON.parse(Buffer.from(opts.headers.Authorization.slice(7).split('.')[1],'base64url'));
+      assert.equal(jwtPayload.iss,'Iv23lioiUs5KfHD7mkkw');
       return json({token:'test-install-token'});
     }
     assert.equal(opts.headers.Authorization,'Bearer test-install-token');
@@ -53,7 +55,8 @@ test('signed actual HTTP delivery gives one neutral exact-head Check Run',async(
   };
   let server;
   try{
-    server=start({PORT:'0',GITHUB_APP_ID:'123',
+    server=start({PORT:'0',GITHUB_APP_ID:'5308912',
+      GITHUB_APP_CLIENT_ID:'Iv23lioiUs5KfHD7mkkw',
       GITHUB_APP_PRIVATE_KEY:keys.privateKey.export({type:'pkcs8',format:'pem'}),
       GITHUB_WEBHOOK_SECRET:SECRET,MATHGRAPH_ALLOWED_REPOS:REPO});
     if(!server.listening) await once(server,'listening');
