@@ -81,7 +81,7 @@ export async function appendGethV19NativeEvidence(report, check, githubRead, tok
     "- **Native tests.log SHA-256:** "+V19.logSha256,
     "- **Native boundary.txt SHA-256:** "+V19.boundarySha256,
     "- **Original qualified scope:** predicate plus valid authenticated Engine controls.",
-    "- **Still UNKNOWN:** "+V19.openResiduals.join("; ")+
+    "- **Still UNKNOWN:** "+V19.openResiduals.map(x=>x+"=UNKNOWN").join("; ")+
       ". These were not exercised by the original remote competing-fork/concurrency test.",
     "",
     "**Evidence boundary:** an original source-pinned GitHub run and its archive"+
