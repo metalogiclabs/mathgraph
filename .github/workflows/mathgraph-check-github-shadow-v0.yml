@@ -17,6 +17,8 @@ jobs:
           node-version: '22'
       - name: Run deterministic adversarial tests
         run: node --test integrations/mathgraph-check-github/test.mjs integrations/mathgraph-check-github/webhook.integration.test.mjs
+      - name: Reject cross-PR native receipt authority laundering
+        run: node --test integrations/mathgraph-check-github/native-receipt-bridge.test.mjs
       - name: Build isolated webhook worker image
         run: docker build -f integrations/mathgraph-check-github/Dockerfile integrations/mathgraph-check-github
 
