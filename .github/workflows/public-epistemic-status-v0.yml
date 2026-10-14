@@ -1,0 +1,38 @@
+name: Public Epistemic Status V0
+
+on:
+  push:
+    branches:
+      - feature/epistemic-status-surface-v0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install MathGraph
+        run: python -m pip install -e ".[all]"
+      - name: Run public epistemic status gate
+        run: |
+          python -m pytest -q             tests/test_public_epistemic_status.py             tests/test_epistemic_orthogonality.py             tests/test_demo_release.py             tests/test_api_service.py             tests/test_release_candidate.py
+      - name: Record qualification
+        if: success()
+        run: |
+          mkdir -p evidence/public_epistemic_status_v0
+          {
+            echo "PUBLIC_EPISTEMIC_STATUS_V0=PASS"
+            echo "commit=$GITHUB_SHA"
+            echo "boundary=read-only product projection; verifier authority unchanged"
+          } > evidence/public_epistemic_status_v0/qualification.txt
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: public-epistemic-status-v0
+          path: evidence/public_epistemic_status_v0/qualification.txt

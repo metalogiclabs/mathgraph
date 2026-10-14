@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from typing import Any,Mapping,Sequence
 from mathgraph.hashing import content_id
+from mathgraph.epistemic_status import build_epistemic_status_view
 from mathgraph.lawbook import LawbookEntry,LawbookEntryStatus
 from mathgraph.semantic_intake import *
 from mathgraph.formal_world_adapters import build_formal_world_adapter_report
@@ -111,7 +112,7 @@ def extract_boundary_evidence_from_objects(objs):
  return {"certificate_ids":tuple(dict.fromkeys(cert)),"terminal_forms":tuple(dict.fromkeys(terms)),"boundary_evidence":tuple(ev),"verifier_boundary_crossed":bool(ev)}
 def artifact_to_api_dict(o,artifact_kind=None):
  d=o.to_dict() if hasattr(o,"to_dict") else dict(o) if isinstance(o,Mapping) else {"value":str(o)}; b=extract_boundary_evidence_from_objects([o]); kind=artifact_kind.value if isinstance(artifact_kind,Enum) else artifact_kind or _artifact_kind(o).value
- return {"artifact_kind":kind,"object_type":o.__class__.__name__,"data":d,"advisory":bool(d.get("advisory",True)),"truth_boundary":{k:(list(v) if isinstance(v,tuple) else v) for k,v in b.items() if k!="boundary_evidence"}}
+ return {"artifact_kind":kind,"object_type":o.__class__.__name__,"data":d,"advisory":bool(d.get("advisory",True)),"truth_boundary":{k:(list(v) if isinstance(v,tuple) else v) for k,v in b.items() if k!="boundary_evidence"},"epistemic_status":build_epistemic_status_view(o)}
 def _artifact_kind(o):
  n=o.__class__.__name__
  return {"SemanticIntakeReport":ApiArtifactKind.SEMANTIC_REPORT,"FormalWorldAdapterReport":ApiArtifactKind.FORMAL_WORLD_ADAPTER_REPORT,"ProofSystemIntegrationReport":ApiArtifactKind.PROOF_SYSTEM_REPORT,"VerifierExecutionReport":ApiArtifactKind.VERIFIER_EXECUTION_REPORT,"ProcessMemoryReport":ApiArtifactKind.PROCESS_MEMORY_REPORT}.get(n,ApiArtifactKind.ALIEN)
