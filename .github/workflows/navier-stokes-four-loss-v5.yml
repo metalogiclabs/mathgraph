@@ -1,0 +1,114 @@
+name: Actual inverse four-loss conditional bridge V5
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/FourLossBridge.lean'
+      - '.github/workflows/navier-stokes-four-loss-v5.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/FourLossBridge.lean'
+      - '.github/workflows/navier-stokes-four-loss-v5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: four-loss-v5-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actual-inverse-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Freeze source file and exact upstream project
+        run: |
+          set -euo pipefail
+          mkdir -p .four-loss-env four-loss-v5-evidence
+          git rev-parse HEAD | tee four-loss-v5-evidence/head-sha.txt
+          cp experiments/navier_stokes_semantic_bridge_v1/FourLossBridge.lean .four-loss-env/FourLossBridge.lean
+          cp .four-loss-env/FourLossBridge.lean four-loss-v5-evidence/FourLossBridge.lean
+          sha256sum .four-loss-env/FourLossBridge.lean > four-loss-v5-evidence/lean-source.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .four-loss-env/lean-toolchain
+          cat > .four-loss-env/lakefile.toml <<'EOF'
+          name = "mathgraph_exact_four_loss_v5"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "FourLossBridge"
+          EOF
+      - name: Install pinned Lean and fetch upstream/formal dependencies
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve upstream authority and Mathlib cache
+        working-directory: .four-loss-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          cp lake-manifest.json ../four-loss-v5-evidence/lake-manifest.json
+          lake env lean --version | tee ../four-loss-v5-evidence/lean-version.txt
+          lake exe cache get
+      - name: Compile actual upstream inverse dependency and conditional four-loss proof
+        working-directory: .four-loss-env
+        run: |
+          set -euo pipefail
+          lake build FourLossBridge 2>&1 | tee ../four-loss-v5-evidence/build.log
+          lake env lean -DwarningAsError=true FourLossBridge.lean 2>&1 | tee ../four-loss-v5-evidence/theorems.log
+      - name: Exact-head qualification, axiom check and scoped result
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json,os,re,hashlib
+          from pathlib import Path
+          root=Path('four-loss-v5-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          log=(root/'theorems.log').read_text()
+          want={'MathGraph.FourLossBridge.coefficient_seminorm_bound_three',
+                'MathGraph.FourLossBridge.inverse_four_loss_of_summable_third'}
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+          seen={}
+          for n,x in rows:
+              assert n not in seen,n
+              used={a.strip() for a in x.split(',') if a.strip()}
+              assert used <= {'propext','Classical.choice','Quot.sound'},(n,used)
+              seen[n]=sorted(used)
+          assert set(seen)==want,(set(seen),want)
+          out={
+              'schema':'mathgraph.actual-four-loss-conditional-v5',
+              'source_head':os.environ['EXPECTED_HEAD'],
+              'upstream_pinned_sha':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+              'scope':'ACTUAL_OPENAI_FOURIER_INVERSE_JET_WORD',
+              'source_derivatives':'w.length + 4',
+              'additional_premise':'SummableThirdLattice',
+              'lattice_premise_independently_proved':False,
+              'unconditional_four_loss_warrant':False,
+              'original_nl_semantic_correspondence_approved':False,
+              'axiom_audit':seen,
+              'artifact_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in root.iterdir() if p.is_file()},
+          }
+          (root/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: four-loss-conditional-v5
+          path: four-loss-v5-evidence/
+          if-no-files-found: error
