@@ -8,11 +8,17 @@ The first test is whether a PR has **green CI at its exact head but explicitly d
 
 Real control: metalogiclabs/go-ethereum PR #19, exact head a04aa77aaebd81d11274560e8d24d90c6f417589, source-declared remote_conflicting_fcu=UNKNOWN and concurrent_fcu=UNKNOWN, with green workflow 38202260024 checking narrower predicates. PR #16 has its own bounded, exact-head green CI. Neither is a universal safety proof.
 
+## GitHub App registration / installation preparation
+
+The first controlled GitHub installation is documented in [ACTIVATE.md](ACTIVATE.md), including GitHub's prefilled org registration link, minimum permissions and exact signed-webhook acceptance criteria. **App registration and hosting have not occurred yet.**
+
+The added `webhook.integration.test.mjs` executes a real local HTTP webhook request, validates its signature and verifies the eventual neutral Check Run against **mock GitHub APIs**. This is deliberately separate from the existing shadow CLI, which reads actual public PRs without writing to GitHub.
+
 ## Commands
 
 Node 22; no external dependencies:
 
-    node --test integrations/mathgraph-check-github/test.mjs
+    node --test integrations/mathgraph-check-github/test.mjs integrations/mathgraph-check-github/webhook.integration.test.mjs
 
 Read-only shadow; produces JSON and Markdown (no GitHub writes):
 
