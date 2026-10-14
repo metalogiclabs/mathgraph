@@ -36,7 +36,8 @@ function fixture(options = {}) {
       assert.equal(verify("RSA-SHA256", Buffer.from(pieces[0]+"."+pieces[1]),
         key.publicKey,Buffer.from(pieces[2],"base64url")),true);
       return json({id: options.wrongApp ? 15368 : 5308912,
-        owner:{login:"metalogiclabs"},permissions:grant});
+        owner:{login:"metalogiclabs"},permissions:grant,
+        events:options.events});
     }
     if (path === "/repos/metalogiclabs/go-ethereum/installation") {
       if (options.missingInstallation) return json({},404);
@@ -141,4 +142,28 @@ test("does not send credentials to unallowlisted API URLs",async()=>{
   await assert.rejects(appHttp("/user","any",{
     fetcher:async()=>{throw Error("must not run");}
   }),/INVALID_GITHUB_APP_API_PATH/);
+});
+
+test("registered App event subscriptions are observed without claiming webhook delivery",async()=>{
+  const scoped=fixture({events:["pull_request","workflow_run"]});
+  const a=await authenticateAndPublish({
+    keyText:scoped.key.pkcs1,fetcher:scoped.fetcher,publish:scoped.publish
+  });
+  assert.deepEqual(a.appWebhookSubscriptions,{
+    pull_request:true,workflow_run:true
+  });
+  const incomplete=fixture({events:["pull_request"]});
+  const b=await authenticateAndPublish({
+    keyText:incomplete.key.pkcs8,fetcher:incomplete.fetcher,publish:incomplete.publish
+  });
+  assert.deepEqual(b.appWebhookSubscriptions,{
+    pull_request:true,workflow_run:false
+  });
+  const unavailable=fixture();
+  const c=await authenticateAndPublish({
+    keyText:unavailable.key.pkcs1,fetcher:unavailable.fetcher,publish:unavailable.publish
+  });
+  assert.deepEqual(c.appWebhookSubscriptions,{
+    pull_request:"UNKNOWN",workflow_run:"UNKNOWN"
+  });
 });
