@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run deterministic adversarial tests
-        run: node --test integrations/mathgraph-check-github/test.mjs
+        run: node --test integrations/mathgraph-check-github/test.mjs integrations/mathgraph-check-github/webhook.integration.test.mjs
       - name: Replay two real fork PR snapshots
         env:
           GH_PUBLIC_TOKEN: ${{ github.token }}
