@@ -60,3 +60,33 @@ test("wrong registered App identity rejects before delivery listing",async()=>{
     /WRONG_REGISTERED_APP_IDENTITY/);
   assert.deepEqual(f.calls,["/app"]);
 });
+
+test("19-digit GitHub delivery IDs retain exact decimal digits through API request",async()=>{
+  const f=fixture();
+  const id="3848195435306942569";
+  const guid="ab1f6cde-a97f-4ca7-b315-286816ed1991";
+  const fetcher=async(url,opts)=>{
+    const path=new URL(url).pathname;
+    if(path==="/app/hook/deliveries"){
+      return new Response('[{"id":'+id+
+        ',"guid":"'+guid+'","delivered_at":"2026-10-14T05:27:20Z",'+
+        '"event":"pull_request","action":"edited","status_code":202,"redelivery":false}]',
+        {status:200});
+    }
+    if(path==="/app/hook/deliveries/"+id){
+      return new Response(JSON.stringify({
+        request:{payload:{
+          repository:{full_name:"metalogiclabs/go-ethereum"},
+          pull_request:{number:18,head:{sha}}
+        }},
+        status_code:202
+      }),{status:200});
+    }
+    return f.fetcher(url,opts);
+  };
+  const r=await auditSignedDeliveryReceipts({
+    privateKey:f.privateKey,fetcher
+  });
+  assert.equal(r.receipts[0].id,id);
+  assert.equal(r.receipts[0].accepted_by_webhook,true);
+});

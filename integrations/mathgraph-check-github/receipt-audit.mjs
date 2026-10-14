@@ -35,7 +35,12 @@ export async function auditSignedDeliveryReceipts({
       },signal:AbortSignal.timeout(15000)
     });
     requireResult(r.ok,"GITHUB_DELIVERIES_READ_HTTP_"+r.status);
-    return r.json();
+    const raw=await r.text();
+    // Delivery IDs can exceed Number.MAX_SAFE_INTEGER. Preserve GitHub's
+    // original decimal bytes before JSON.parse loses precision.
+    const lossless=path.startsWith("/app/hook/deliveries") ?
+      raw.replace(/("id"\s*:\s*)([1-9]\d{15,})/g,'$1"$2"') : raw;
+    return JSON.parse(lossless);
   };
   const app=await call("/app");
   requireResult(app.id===APP_ID && app.owner?.login===OWNER,
@@ -60,7 +65,7 @@ export async function auditSignedDeliveryReceipts({
     x.action==="edited" &&
     typeof x.delivered_at==="string" &&
     x.delivered_at>=since &&
-    Number.isSafeInteger(x.id) && x.id>0
+    /^[1-9]\d{0,30}$/.test(String(x.id))
   ).slice(0,MAX_CANDIDATES);
   const receipts=[];
   for(const summary of candidates) {
