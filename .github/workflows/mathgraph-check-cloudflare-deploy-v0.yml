@@ -76,6 +76,17 @@ jobs:
           set +x
           printf '%s' "$HOOK_SECRET" | npx --yes wrangler@4.129.1 secret put GITHUB_WEBHOOK_SECRET \
             --config integrations/mathgraph-check-github/cloudflare/wrangler.toml
+      - name: Configure existing GitHub App webhook after HTTPS readiness (approval gated)
+        if: ${{ vars.MATHGRAPH_CF_HOOK_ACTIVATE_APPROVED == 'true' }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          MATHGRAPH_CHECK_WEBHOOK_SECRET: ${{ secrets.MATHGRAPH_CHECK_WEBHOOK_SECRET }}
+          MATHGRAPH_CF_HOOK_REPLACE_APPROVED: ${{ vars.MATHGRAPH_CF_HOOK_REPLACE_APPROVED }}
+        run: |
+          set -euo pipefail
+          node integrations/mathgraph-check-github/cloudflare/activate-webhook.mjs
       - name: Mark cloud deployment done, webhook activation still unqualified
         run: |
           {
