@@ -29,6 +29,7 @@ test("native result is only an exact-source historical scope; Check remains neut
  assert.equal(r.check.conclusion,"neutral");
  assert.equal(r.check.output.title,"DECLARED_VERIFICATION_RESIDUAL");
  assert.match(r.check.output.summary,/concurrent_fcu.*UNKNOWN/);
+ assert.match(r.check.output.summary,/remote_conflicting_fcu=UNKNOWN; concurrent_fcu=UNKNOWN/);
  assert.match(r.check.output.summary,/remote_conflicting_fcu.*UNKNOWN/);
  assert.match(r.check.output.summary,/original source-pinned GitHub run/);
  assert.match(r.check.output.summary,/generic report/);
