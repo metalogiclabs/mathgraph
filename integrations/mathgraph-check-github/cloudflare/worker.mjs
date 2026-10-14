@@ -5,6 +5,7 @@ import { createHmac, timingSafeEqual, createPrivateKey, sign } from "node:crypto
 import { Buffer } from "node:buffer";
 import { analyze, checkOutput } from "../analysis.mjs";
 import { appendGethV19NativeEvidence } from "../geth-v19-evidence.mjs";
+import { appendExternalNativeReceipt } from "../external-native-receipt.mjs";
 
 export const SCOPE = Object.freeze({
   appID: 5308912,
@@ -312,7 +313,12 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
         report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
       const genericCheck=checkOutput(report);
       const nativeEvidence=await appendGethV19NativeEvidence(report,genericCheck,api,token);
-      const check=nativeEvidence.check;
+      // The external receipt belongs to goccy/go-yaml, NOT to go-ethereum.
+      // The App checks a pinned carrier manifest and public native metadata,
+      // never transferring external correctness claims to this PR's code.
+      const external=await appendExternalNativeReceipt(
+        report,nativeEvidence.check,api,token,snapshot,{fetcher});
+      const check=external.check;
       ensure(check.conclusion==="neutral" && check.status==="completed" &&
         check.name===SCOPE.checkName,"FORBIDDEN_TRUTH_PROMOTION");
 
