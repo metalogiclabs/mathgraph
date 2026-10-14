@@ -82,6 +82,6 @@ try { await verify(); }
 catch(e) {
   const msg=String(e?.message??"UNKNOWN");
   console.error("MATHGRAPH_CHECK_LIVE_DELIVERY_NOT_QUALIFIED "+
-    /^[A-Z0-9_]+$/.test(msg)?msg:"AUDIT_FAILED");
+    (/^[A-Z0-9_]+$/.test(msg)?msg:"AUDIT_FAILED"));
   process.exitCode=1;
 }
