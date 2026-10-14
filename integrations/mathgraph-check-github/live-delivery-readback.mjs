@@ -27,7 +27,13 @@ async function getJSON(path, jwt) {
     path==="/app/hook/config"?"HOOK_CONFIG":
     path.startsWith("/app/hook/deliveries/")?"DELIVERY_DETAIL":"DELIVERY_LIST";
   need(response.ok,"GITHUB_"+endpointLabel+"_HTTP_"+response.status);
-  return response.json();
+  const raw=await response.text();
+  // GitHub webhook delivery IDs may exceed JS Number.MAX_SAFE_INTEGER.
+  // Preserve numeric "id" fields as decimal strings before JSON.parse,
+  // otherwise GET /app/hook/deliveries/{id} requests a rounded, wrong ID.
+  const exact=path.startsWith("/app/hook/deliveries") ?
+    raw.replace(/("id"\s*:\s*)([0-9]{16,})(?=\s*[,}])/g,'$1"$2"') : raw;
+  return JSON.parse(exact);
 }
 async function verify() {
   const material=normalizePrivateKey(process.env.MATHGRAPH_CHECK_APP_PRIVATE_KEY);
