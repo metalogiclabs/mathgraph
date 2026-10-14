@@ -32,7 +32,7 @@ def sha256(raw):
     return hashlib.sha256(raw).hexdigest()
 
 def git_blob(raw):
-    return hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\\0" + raw).hexdigest()
+    return hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
 
 def run(label, argv, expected=0, diagnostic=None, cwd=WORK, timeout=850):
     t = time.monotonic()
@@ -43,7 +43,7 @@ def run(label, argv, expected=0, diagnostic=None, cwd=WORK, timeout=850):
         code, output = p.returncode, p.stdout
     except subprocess.TimeoutExpired as err:
         code, output = 124, str(err)
-    data = ("$ " + " ".join(argv) + "\\n" + output).encode("utf-8")
+    data = ("$ " + " ".join(argv) + "\n" + output).encode("utf-8")
     (EVIDENCE / (label + ".log")).write_bytes(data)
     item = {"label": label, "argv": argv, "code": code,
             "expected_code": expected, "diagnostic": diagnostic,
@@ -59,28 +59,28 @@ def run(label, argv, expected=0, diagnostic=None, cwd=WORK, timeout=850):
 
 def make_environment():
     (WORK / "lean-toolchain").write_text(
-        "leanprover/lean4:v4.35.0\\n", encoding="utf-8")
+        "leanprover/lean4:v4.35.0\n", encoding="utf-8")
     (WORK / "lakefile.toml").write_text(
-        'name = "mathgraph_external_mathlib_binding"\\n'
-        'version = "0.1.0"\\n'
-        '[[require]]\\n'
-        'name = "mathlib"\\n'
-        'git = "https://github.com/leanprover-community/mathlib4.git"\\n'
-        f'rev = "{SOURCE_REVISION}"\\n', encoding="utf-8")
+        'name = "mathgraph_external_mathlib_binding"\n'
+        'version = "0.1.0"\n'
+        '[[require]]\n'
+        'name = "mathlib"\n'
+        'git = "https://github.com/leanprover-community/mathlib4.git"\n'
+        f'rev = "{SOURCE_REVISION}"\n', encoding="utf-8")
 
 def discover_first_source_theorem(raw):
     """A file-scoped syntactic selector, never a configured theorem mapping."""
     ns = []
     for line in raw.decode("utf-8").splitlines():
-        m = re.match(r"^namespace\\s+([A-Za-z_][A-Za-z_0-9.]*)\\s*$", line)
+        m = re.match(r"^namespace\s+([A-Za-z_][A-Za-z_0-9.]*)\s*$", line)
         if m:
             ns.extend(m.group(1).split("."))
             continue
-        m = re.match(r"^end(?:\\s+([A-Za-z_][A-Za-z_0-9.]*))?\\s*$", line)
+        m = re.match(r"^end(?:\s+([A-Za-z_][A-Za-z_0-9.]*))?\s*$", line)
         if m and ns:
             ns.pop()
             continue
-        m = re.match(r"^\\s*(?:theorem|lemma)\\s+([A-Za-z_][A-Za-z_0-9']*)\\b", line)
+        m = re.match(r"^\s*(?:theorem|lemma)\s+([A-Za-z_][A-Za-z_0-9']*)\b", line)
         if m:
             leaf = m.group(1)
             if not ns:
@@ -169,14 +169,14 @@ def main():
         original = (mathlib_path / SOURCE_RELATIVE_PATH).read_bytes()
         if git_blob(original) != SOURCE_BLOB:
             raise RuntimeError("SOURCE_GIT_BLOB_MISMATCH")
-        if git_blob(original + b"\\n") == SOURCE_BLOB:
+        if git_blob(original + b"\n") == SOURCE_BLOB:
             raise RuntimeError("MUTATION_NOT_DETECTED")
         source_name, leaf = discover_first_source_theorem(original)
         evidence["selection"] = {"discovered_name": source_name,
                                   "source_sha256": sha256(original),
                                   "selection_rule": "first syntactically scoped theorem/lemma",
                                   "source_bytes_modified": False,
-                                  "mutated_git_blob": git_blob(original + b"\\n")}
+                                  "mutated_git_blob": git_blob(original + b"\n")}
         print("SELECTED_SOURCE", source_name, flush=True)
         generate_lean(source_name)
         run("mathlib_module_cache",
@@ -197,7 +197,7 @@ def main():
         evidence["source_under_test"] = os.environ.get("GITHUB_HEAD_SHA",
                                                       os.environ.get("GITHUB_SHA", "LOCAL"))
         (EVIDENCE / "report.json").write_text(
-            json.dumps(evidence, indent=2, sort_keys=True) + "\\n",
+            json.dumps(evidence, indent=2, sort_keys=True) + "\n",
             encoding="utf-8")
         print("FINAL", json.dumps({"status": evidence["status"],
                                    "error": evidence["error"],
