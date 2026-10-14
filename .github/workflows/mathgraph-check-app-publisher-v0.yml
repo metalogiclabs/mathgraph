@@ -62,3 +62,8 @@ jobs:
             echo 'Tests passing do not establish the App is installed or live.'
             echo 'Add a fresh PEM only in this repository Actions secrets, then rerun this job.'
           } >> "$GITHUB_STEP_SUMMARY"
+          # A green publisher workflow must mean a real GitHub App Check Run
+          # was created/read back. Green unit tests with no credential are
+          # insufficient evidence of activation.
+          echo 'BLOCKED_NOT_CONFIGURED: registered App publishing did not occur' >&2
+          exit 1
