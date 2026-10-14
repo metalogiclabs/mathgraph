@@ -27,7 +27,7 @@ jobs:
       - name: Real-event shape negative controls and App identity simulations
         run: |
           set -euo pipefail
-          node --test integrations/mathgraph-check-github/cloudflare/ingress.test.mjs integrations/mathgraph-check-github/cloudflare/consumer.test.mjs
+          node --test integrations/mathgraph-check-github/cloudflare/*.test.mjs
       - name: Check Workers runtime bundle without Cloudflare credentials
         run: |
           set -euo pipefail
