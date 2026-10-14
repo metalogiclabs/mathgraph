@@ -1,0 +1,53 @@
+name: Palomar Law43 candidate
+
+on:
+  pull_request:
+    paths:
+      - 'palomar/law43/**'
+      - '.github/workflows/palomar-law43-candidate.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: palomar/law43
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install pinned Lean toolchain
+        run: |
+          $HOME/.elan/bin/elan toolchain install "$(cat lean-toolchain)"
+      - name: Resolve pinned dependencies
+        run: |
+          $HOME/.elan/bin/lake update
+      - name: Build challenge
+        run: |
+          $HOME/.elan/bin/lake build Challenge
+      - name: Build solution
+        run: |
+          $HOME/.elan/bin/lake build Solution
+      - name: Reject accidental sorries in solution
+        run: |
+          if grep -R -nE '\bsorry\b|\badmit\b' Solution.lean; then
+            echo 'Solution contains an admitted proof.'
+            exit 1
+          fi
+      - name: Install Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+      - name: Run Palomar Comparator and NanoDa
+        run: |
+          mkdir -p scripts
+          curl -sSfL https://raw.githubusercontent.com/PalomarRegistry/PalomarTemplate/main/scripts/verify-comparator.sh -o scripts/verify-comparator.sh
+          curl -sSfL https://raw.githubusercontent.com/PalomarRegistry/PalomarTemplate/main/scripts/landrun-wrapper.sh -o scripts/landrun-wrapper.sh
+          # This standalone package has no mathlib dependency/cache executable.
+          # Keep Palomar's pinned checker stack unchanged and skip only its optional mathlib cache fetch.
+          sed -i '/^lake exe cache get$/d' scripts/verify-comparator.sh
+          chmod +x scripts/*.sh
+          bash scripts/verify-comparator.sh

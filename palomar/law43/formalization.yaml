@@ -1,0 +1,28 @@
+title: "Swapped-arguments magma laws define a commutative derived operation"
+short_title: "Swapped-arguments term definability"
+authors:
+  - name: "Heath Sanchez"
+    affiliation: "Metalogic Labs"
+project:
+  name: "MathGraph"
+  url: "https://github.com/metalogiclabs/mathgraph"
+formalization:
+  language: "Lean 4"
+  repository: "https://github.com/metalogiclabs/mathgraph"
+  path: "palomar/law43"
+  source_project: "Equational Theories Project"
+  source_repository: "https://github.com/teorth/equational_theories"
+  source_commit: "54edcda2f320cef0a241f8109fa164f901a69b87"
+  source_pull_request: "https://github.com/teorth/equational_theories/pull/1461"
+provenance:
+  statement_context: "The theorem lives in the Equational Theories definability development. This package isolates the generalized swapped-arguments theorem contributed in upstream PR #1461."
+  contribution: "Proof of Equation43_termDefinableFrom_swapped_args, merged upstream on 2026-08-14."
+  novelty_claim: "No independent novelty claim is made here beyond the machine-checked structural result and its upstream contribution history."
+  ai_assistance: "AI tools were used during development and packaging; the final Lean proof is independently machine checked."
+summary: >-
+  For a two-variable magma law whose right-hand side is obtained by swapping the
+  two variables in the left-hand side, every magma satisfying the law admits a
+  term-defined commutative binary operation. The construction evaluates the
+  law's left-hand-side term on the two input arguments and proves commutativity
+  using the swapped-law hypothesis.
+status: "candidate-preparation"
