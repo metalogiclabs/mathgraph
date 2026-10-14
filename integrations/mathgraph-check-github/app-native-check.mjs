@@ -61,13 +61,35 @@ export async function publishAppCheck({
       x.app?.id === appID);
   };
 
+  const detailsURL = id => {
+    requireCondition(Number.isSafeInteger(id) && id>0,"INVALID_NATIVE_CHECK_ID");
+    return "https://github.com/" + repository + "/runs/" + id;
+  };
   const previous = await matches();
   if (previous.length) {
     requireCondition(previous.length === 1 && previous[0].head_sha === sha &&
       previous[0].status === "completed" && previous[0].conclusion === "neutral",
       "PRIOR_APP_CHECK_INCONSISTENT");
-    return { outcome: "EXISTING", checkId: previous[0].id,
-      appID, repository, pr, sha, conclusion: "neutral" };
+    const id=previous[0].id, link=detailsURL(id);
+    let repaired=false;
+    if(previous[0].details_url!==link){
+      const patched=await request("/repos/"+repository+"/check-runs/"+id,
+        token,"PATCH",{details_url:link});
+      requireCondition(patched?.id===id && patched.app?.id===appID &&
+        patched.head_sha===sha && patched.conclusion==="neutral" &&
+        patched.details_url===link,
+        "NATIVE_DETAILS_PATCH_NOT_CONFIRMED");
+      const checked=await matches();
+      requireCondition(checked.length===1 && checked[0].id===id &&
+        checked[0].head_sha===sha &&
+        checked[0].conclusion==="neutral" &&
+        checked[0].details_url===link,
+        "NATIVE_DETAILS_READBACK_MISMATCH");
+      repaired=true;
+    }
+    return { outcome: "EXISTING", checkId: id,
+      appID, repository, pr, sha, conclusion: "neutral",
+      details_url: link, detailsLinkRepaired: repaired };
   }
 
   const created = await request("/repos/" + repository + "/check-runs",
@@ -78,15 +100,23 @@ export async function publishAppCheck({
     created.status === "completed" && created.conclusion === "neutral",
     "POST_DID_NOT_ESTABLISH_REGISTERED_APP_IDENTITY");
 
+  const link=detailsURL(created.id);
+  const linked=await request("/repos/"+repository+"/check-runs/"+created.id,
+    token,"PATCH",{details_url:link});
+  requireCondition(linked?.id===created.id && linked.app?.id===appID &&
+    linked.head_sha===sha && linked.conclusion==="neutral" &&
+    linked.details_url===link,
+    "NATIVE_DETAILS_POST_LINK_NOT_CONFIRMED");
   const readback = await matches();
   requireCondition(readback.length === 1 &&
     readback[0].id === created.id &&
     readback[0].head_sha === sha &&
     readback[0].conclusion === "neutral" &&
-    readback[0].status === "completed",
+    readback[0].status === "completed" &&
+    readback[0].details_url === link,
     "GITHUB_APP_CHECK_READBACK_MISMATCH");
   return { outcome: "CREATED", checkId: created.id,
-    appID, repository, pr, sha, conclusion: "neutral" };
+    appID, repository, pr, sha, conclusion: "neutral", details_url:link };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

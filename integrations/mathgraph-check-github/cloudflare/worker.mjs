@@ -224,6 +224,13 @@ async function getSnapshot(item, token, api) {
     sha:item.sha,files,runs,files_visibility,ci_visibility};
 }
 
+// Point the GitHub mobile/browser details action at the *native* evidence
+// report. An omitted details_url defaults to the App's generic homepage.
+function nativeDetailsURL(id) {
+  ensure(Number.isSafeInteger(id) && id > 0, "CHECK_ID_INVALID");
+  return "https://github.com/" + SCOPE.repository + "/runs/" + id;
+}
+
 async function existingChecks(item,token,api) {
   const name=SCOPE.checkName;
   const path="/repos/"+SCOPE.repository+"/commits/"+item.sha+
@@ -297,27 +304,35 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
       }else if(previous){
         const same=previous.output?.title===check.output.title &&
           previous.output?.summary===check.output.summary;
-        if(same){
+        const detailsURL=nativeDetailsURL(previous.id);
+        if(same && previous.details_url===detailsURL){
           result={outcome:"EXISTING",checkID:previous.id};
         }else{
-          // Same app/check/commit, changed proof standing or CI evidence:
-          // update the original Check instead of creating a duplicate.
+          // A check can have unchanged evidence but an invalid homepage
+          // link. Repair navigation on the *same* App-owned Check ID,
+          // without changing the evidence or verdict.
+          const patch=same ? {details_url:detailsURL} : {
+            details_url:detailsURL,
+            status:"completed",conclusion:"neutral",output:check.output
+          };
           const changed=await api(root+"/check-runs/"+previous.id,token,{
-            method:"PATCH",
-            body:{status:"completed",conclusion:"neutral",output:check.output}
+            method:"PATCH",body:patch
           });
           ensure(changed?.id===previous.id && changed.app?.id===SCOPE.appID &&
             changed.head_sha===item.sha && changed.status==="completed" &&
-            changed.conclusion==="neutral","CHECK_REFRESH_IDENTITY_NOT_CONFIRMED");
+            changed.conclusion==="neutral" &&
+            changed.details_url===detailsURL,
+            "CHECK_DETAILS_OR_REFRESH_IDENTITY_NOT_CONFIRMED");
           const readback=await existingChecks(item,token,api);
           ensure(readback.length===1 && readback[0].id===previous.id &&
             readback[0].head_sha===item.sha &&
             readback[0].status==="completed" &&
             readback[0].conclusion==="neutral" &&
+            readback[0].details_url===detailsURL &&
             readback[0].output?.title===check.output.title &&
             readback[0].output?.summary===check.output.summary,
-            "CHECK_REFRESH_READBACK_MISMATCH");
-          result={outcome:"UPDATED",checkID:previous.id,
+            "CHECK_DETAILS_OR_REFRESH_READBACK_MISMATCH");
+          result={outcome:same?"LINK_REPAIRED":"UPDATED",checkID:previous.id,
             finding:report.finding.code};
         }
       }else{
@@ -331,12 +346,23 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
           written.head_sha===item.sha &&
           written.status==="completed" && written.conclusion==="neutral",
           "CHECK_POST_IDENTITY_NOT_CONFIRMED");
+        // The native check ID is assigned only after POST. Bind its
+        // details link to that exact GitHub evidence report immediately.
+        const detailsURL=nativeDetailsURL(written.id);
+        const linked=await api(root+"/check-runs/"+written.id,token,{
+          method:"PATCH",body:{details_url:detailsURL}
+        });
+        ensure(linked?.id===written.id && linked.app?.id===SCOPE.appID &&
+          linked.head_sha===item.sha && linked.status==="completed" &&
+          linked.conclusion==="neutral" && linked.details_url===detailsURL,
+          "CHECK_DETAILS_LINK_PATCH_NOT_CONFIRMED");
         const readback=await existingChecks(item,token,api);
         ensure(readback.length===1 && readback[0].id===written.id &&
           readback[0].head_sha===item.sha &&
           readback[0].status==="completed" &&
-          readback[0].conclusion==="neutral",
-          "CHECK_READBACK_NOT_CONFIRMED");
+          readback[0].conclusion==="neutral" &&
+          readback[0].details_url===detailsURL,
+          "CHECK_DETAILS_LINK_READBACK_NOT_CONFIRMED");
         result={outcome:"CREATED",checkID:written.id,
           finding:report.finding.code};
       }

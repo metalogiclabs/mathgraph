@@ -39,6 +39,17 @@ function makeFixture(options = {}) {
       recorded.push(c);
       return c;
     }
+    const prefix="/repos/"+PILOT.repository+"/check-runs/";
+    if(path.startsWith(prefix) && method==="PATCH"){
+      const check=recorded.find(c=>String(c.id)===path.slice(prefix.length));
+      assert.ok(check);
+      assert.deepEqual(Object.keys(body),["details_url"]);
+      assert.equal(body.details_url,
+        "https://github.com/"+PILOT.repository+"/runs/"+check.id);
+      if(options.denyDetailsPatch)throw new Error("GITHUB_HTTP_403");
+      Object.assign(check,body);
+      return check;
+    }
     throw new Error("UNEXPECTED_MOCKED_ROUTE");
   };
   const loadSnapshot = async (repo,pr,token) => {
@@ -65,6 +76,8 @@ test("creates one native neutral Check bound to App 5308912 and exact SHA",async
   assert.equal(fx.recorded[0].conclusion,"neutral");
   assert.match(fx.recorded[0].output.summary,/concurrent_fcu=UNKNOWN/);
   assert.equal(fx.seen.filter(x=>x.method==="POST").length,1);
+  assert.equal(fx.recorded[0].details_url,
+    "https://github.com/"+PILOT.repository+"/runs/"+fx.recorded[0].id);
 });
 
 test("same source and App identity is idempotent on retry",async()=>{
@@ -90,4 +103,24 @@ test("a check attributed to GitHub Actions cannot qualify registered App",async(
 
 test("no App token is a hard blocker",async()=>{
   await assert.rejects(publishAppCheck({token:""}),/INSTALLATION_TOKEN_MISSING/);
+});
+
+test("existing App-owned check repairs homepage navigation without a new Check",async()=>{
+  const fx=makeFixture();
+  await execute(fx);
+  const id=fx.recorded[0].id,output=fx.recorded[0].output;
+  fx.recorded[0].details_url="https://mathgraph.org/";
+  const restored=await execute(fx);
+  assert.equal(restored.outcome,"EXISTING");
+  assert.equal(restored.detailsLinkRepaired,true);
+  assert.equal(fx.recorded.length,1);
+  assert.equal(fx.recorded[0].id,id);
+  assert.deepEqual(fx.recorded[0].output,output);
+  assert.equal(fx.recorded[0].details_url,
+    "https://github.com/"+PILOT.repository+"/runs/"+id);
+});
+test("App-native details patch failure never claims Check readback success",async()=>{
+  const fx=makeFixture({denyDetailsPatch:true});
+  await assert.rejects(execute(fx),/GITHUB_HTTP_403/);
+  assert.equal(fx.recorded.length,1);
 });

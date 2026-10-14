@@ -56,15 +56,25 @@ function setup(opts={}){
     }
     if(/^\/repos\/metalogiclabs\/go-ethereum\/check-runs\/[0-9]+$/.test(p) &&
        init.method==="PATCH"){
-      if(opts.failRefresh) return json({message:"blocked"},403);
+      const fields=JSON.parse(init.body);
+      if(opts.failRefresh && fields.output) return json({message:"blocked"},403);
+      if(opts.failDetails && !fields.output) return json({message:"blocked"},403);
       const match=saved.find(x=>String(x.id)===p.split("/").at(-1));
       assert.ok(match);
-      const fields=JSON.parse(init.body);
-      assert.deepEqual(Object.keys(fields).sort(),["conclusion","output","status"]);
-      assert.equal(fields.conclusion,"neutral");
-      assert.equal(fields.status,"completed");
+      assert.equal(fields.details_url,
+        "https://github.com/"+SCOPE.repository+"/runs/"+match.id);
+      if(fields.output){
+        assert.deepEqual(Object.keys(fields).sort(),
+          ["conclusion","details_url","output","status"]);
+        assert.equal(fields.conclusion,"neutral");
+        assert.equal(fields.status,"completed");
+      }else{
+        assert.deepEqual(Object.keys(fields),["details_url"]);
+      }
       Object.assign(match,fields);
-      return json({...match,app:{id:opts.badRefreshPublisher?15368:SCOPE.appID}});
+      return json({...match,app:{
+        id:opts.badRefreshPublisher && fields.output ? 15368:SCOPE.appID
+      }});
     }
     throw Error("UNKNOWN_FIXTURE_ROUTE");
   };
@@ -82,6 +92,8 @@ test("queue publishes one neutral App-owned exact-head check",async()=>{
   assert.equal(m.saved[0].conclusion,"neutral");
   assert.equal(m.saved[0].head_sha,SHA);
   assert.match(m.saved[0].output.summary,/concurrent_fcu=UNKNOWN/);
+  assert.equal(m.saved[0].details_url,
+    "https://github.com/"+SCOPE.repository+"/runs/"+m.saved[0].id);
   assert.equal(m.calls.filter(x=>x.method==="DELETE").length,1);
 });
 test("redelivery reuses same App Check rather than creating duplicate",async()=>{
@@ -145,7 +157,7 @@ test("same-SHA mutable CI evidence updates one App Check, then returns to previo
   assert.equal(m.saved[0].output.title,"DECLARED_VERIFICATION_RESIDUAL");
   assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"EXISTING");
   assert.equal(m.calls.filter(c=>c.method==="POST" && c.path.endsWith("/check-runs")).length,1);
-  assert.equal(m.calls.filter(c=>c.method==="PATCH").length,2);
+  assert.equal(m.calls.filter(c=>c.method==="PATCH").length,3);
   assert.equal(m.calls.filter(c=>c.method==="DELETE").length,4);
 });
 test("same-SHA check cannot silently reuse stale PR and bad refresh does not acquire authority",async()=>{
@@ -154,7 +166,7 @@ test("same-SHA check cannot silently reuse stale PR and bad refresh does not acq
   stale.setStale(true);
   assert.equal((await processQueuedPR(item,stale.env,{fetcher:stale.fetcher})).outcome,"STALE");
   assert.equal(stale.saved.length,1);
-  assert.equal(stale.calls.filter(c=>c.method==="PATCH").length,0);
+  assert.equal(stale.calls.filter(c=>c.method==="PATCH").length,1);
   const denied=setup({failRefresh:true});
   assert.equal((await processQueuedPR(item,denied.env,{fetcher:denied.fetcher})).outcome,"CREATED");
   denied.setCI("failure");
@@ -175,5 +187,29 @@ test("duplicate App-identity Checks at the same source SHA cannot be silently me
   m.saved.push({...m.saved[0],id:333});
   await assert.rejects(processQueuedPR(item,m.env,{fetcher:m.fetcher}),
     /DUPLICATE_APP_CHECK_AUTHORITY/);
-  assert.equal(m.calls.filter(c=>c.method==="PATCH").length,0);
+  assert.equal(m.calls.filter(c=>c.method==="PATCH").length,1);
+});
+
+test("old check whose details link fell back to MathGraph homepage is repaired in place",async()=>{
+  const m=setup();
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  const originalID=m.saved[0].id;
+  const originalSummary=m.saved[0].output.summary;
+  m.saved[0].details_url="https://mathgraph.org/";
+  const again=await processQueuedPR({...item,action:"edited"},m.env,{fetcher:m.fetcher});
+  assert.equal(again.outcome,"LINK_REPAIRED");
+  assert.equal(again.checkID,originalID);
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].details_url,
+    "https://github.com/"+SCOPE.repository+"/runs/"+originalID);
+  assert.equal(m.saved[0].output.summary,originalSummary);
+  assert.equal(m.saved[0].conclusion,"neutral");
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"EXISTING");
+});
+test("a failed native details patch never claims Check publication",async()=>{
+  const m=setup({failDetails:true});
+  await assert.rejects(processQueuedPR(item,m.env,{fetcher:m.fetcher}),
+    /GITHUB_HTTP_403/);
+  assert.equal(m.saved.length,1);
+  assert.equal(m.calls.filter(x=>x.method==="DELETE").length,1);
 });
