@@ -1,5 +1,15 @@
 # MathGraph Check — GitHub App activation
 
+## Updated activation path — no Vercel dependency
+
+The static [mathgraph.org](https://mathgraph.org/) website and its Vercel permissions have **nothing to do with** the GitHub App's operational authorization. Do not attempt to change Vercel team access or website deployment to activate this checker.
+
+**Already qualified on the real GitHub Checks API:** [native neutral check #115639910465](https://github.com/metalogiclabs/go-ethereum/runs/115639910465) at exactly `metalogiclabs/go-ethereum` PR #19 head `a04aa77aaebd81d11274560e8d24d90c6f417589`, produced by [Actions pilot run #38498578840](https://github.com/metalogiclabs/go-ethereum/actions/runs/38498578840). It uses the unchanged MathGraph Check analyzer, but GitHub records its publisher as `github-actions`, **not** App `5308912`. This qualification does not prove the App is installed or that its webhook is live.
+
+The remaining task is strictly to run the **existing webhook worker under the registered App identity** on an isolated HTTPS service. A no-secret [Render Blueprint](../../render.yaml) has been added at the repo root; use an authorized Render connection and select branch `mathgraph-check-github-app-shadow-v0`. It builds the already qualified Docker image, permits only `metalogiclabs/go-ethereum` and prompts for both secrets without storing them in Git. The Free pilot plan sleeps after inactivity: warm `/health` before testing GitHub delivery; use an always-on plan for any continuous service-level claim.
+
+Before enabling the webhook, generate a fresh private key from the existing App's GitHub settings, then provide the PEM and a new webhook secret **directly to the hosting provider's secure environment-variable interface**, not a chat or Git commit. Configure the same signing secret and the actual assigned HTTPS `/github/webhook` URL in GitHub App settings. App installation, correct Checks/Pull Requests/Actions permissions and a real delivery-to-native-check assertion remain unqualified until separately observed.
+
 ## Current boundary
 
 The shadow pilot runs real source-pinned public PR queries. The webhook's HTTP-to-Check-Run path has passed **mocked GitHub API** integration tests. This is **not** an installed or hosted app. It must not be presented as active until a signed real GitHub webhook produces a neutral Check Run on its exact PR head.
