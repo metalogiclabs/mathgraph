@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHmac,generateKeyPairSync,verify} from "node:crypto";
-import {analyze,checkOutput} from "./core.mjs";
+import {analyze,checkOutput,loadPR} from "./core.mjs";
 import {signatureOK,makeJWT,accepted} from "./webhook.mjs";
 const SHA="a04aa77aaebd81d11274560e8d24d90c6f417589";
 const fixture={
@@ -82,4 +82,43 @@ test("only allowlisted PR events are accepted",()=>{
   assert.equal(accepted("pull_request","opened","metalogiclabs/go-ethereum",allow),true);
   assert.equal(accepted("push","opened","metalogiclabs/go-ethereum",allow),false);
   assert.equal(accepted("pull_request","opened","ethereum/go-ethereum",allow),false);
+});
+
+test("source-pinned GitHub PR loader validates repository and exact head before admission", async()=>{
+  for(const bad of ["https://evil.example/test","../../../other","owner/second/third",""]){
+    await assert.rejects(()=>loadPR(bad,19,"fixture"),/INVALID_REPO_PR/);
+  }
+  await assert.rejects(()=>loadPR("metalogiclabs/go-ethereum",0,"fixture"),
+    /INVALID_REPO_PR/);
+  const originalFetch=globalThis.fetch;
+  const calls=[];
+  const expectedSha="a04aa77aaebd81d11274560e8d24d90c6f417589";
+  globalThis.fetch=async (input,opts)=>{
+    const path=new URL(input).pathname;
+    calls.push(path);
+    assert.equal(opts.headers.Authorization,"Bearer fixture");
+    if(path.endsWith("/pulls/19"))
+      return new Response(JSON.stringify({head:{sha:expectedSha}}),{status:200});
+    if(path.endsWith("/pulls/19/files"))
+      return new Response(JSON.stringify([{filename:"eth/catalyst/check_test.go",
+        patch:"+func TestSourceCase() {}"}]),{status:200});
+    if(path.endsWith("/actions/runs"))
+      return new Response(JSON.stringify({total_count:1,workflow_runs:[{
+        id:12,name:"native source verifier",head_sha:expectedSha,
+        status:"completed",conclusion:"success"}]}),{status:200});
+    throw Error("UNEXPECTED_PATH "+path);
+  };
+  try{
+    const snapshot=await loadPR("metalogiclabs/go-ethereum",19,"fixture");
+    assert.equal(snapshot.sha,expectedSha);
+    assert.equal(snapshot.files_visibility,"COMPLETE");
+    assert.equal(snapshot.ci_visibility,"COMPLETE");
+    assert.equal(snapshot.runs[0].head_sha,expectedSha);
+    assert.equal(calls.length,3);
+    const report=analyze(snapshot);
+    assert.equal(report.source.sha,expectedSha);
+    assert.equal(checkOutput(report).conclusion,"neutral");
+  }finally{
+    globalThis.fetch=originalFetch;
+  }
 });
