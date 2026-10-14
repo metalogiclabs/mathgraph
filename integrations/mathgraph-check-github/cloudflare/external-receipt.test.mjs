@@ -83,7 +83,7 @@ function fixture(options={}){
 test("fixture blobs match exact GitHub source pins",()=>{
  assert.equal(blobHash(manifest),EVIDENCE.manifestBlob);
  assert.equal(blobHash(reportBody),EVIDENCE.reportBlob);
- assert.equal(pinnedJSON(githubFile(manifest,EVIDENCE.manifestBlob)).schema,
+ assert.equal(pinnedJSON(githubFile(manifest,EVIDENCE.manifestBlob),EVIDENCE.manifestBlob).schema,
   "mathgraph.external-native-evidence.v1");
 });
 test("one subject-correct native finding: 3 pinned runs, 2 archives, no merge authority",async()=>{
