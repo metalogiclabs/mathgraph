@@ -1,0 +1,89 @@
+name: JPL L4YAML claim refute V1 (read-only)
+
+on:
+  push:
+    branches:
+      - research/jpl-claim-refute-v1-20261019
+    paths:
+      - 'research/jpl_claim_refute_v1/**'
+      - '.github/workflows/jpl-claim-refute-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  documented-warrant:
+    name: Pinned claim-to-warrant audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout audit harness
+        uses: actions/checkout@v4
+      - name: Checkout immutable JPL upstream
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: bca37392fdcb80481342a186a37ab37a5ede6e46
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Independently classify scope with controls
+        run: |
+          set -euo pipefail
+          python3 research/jpl_claim_refute_v1/claim_audit.py target \
+            --out research/jpl_claim_refute_v1/jpl-claim-audit.json
+          python3 -m json.tool research/jpl_claim_refute_v1/jpl-claim-audit.json
+      - name: Archive exact-source independent receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-claim-warrant-receipt-v1
+          path: research/jpl_claim_refute_v1/jpl-claim-audit.json
+          if-no-files-found: ignore
+
+  native-parser-controls:
+    name: Lean 4.35 real parser controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout independent controls
+        uses: actions/checkout@v4
+      - name: Checkout immutable JPL upstream
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: bca37392fdcb80481342a186a37ab37a5ede6e46
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Verify source and install exact Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "bca37392fdcb80481342a186a37ab37a5ede6e46"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.35.0"
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Build real parser and run source-native Lean guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_file="$GITHUB_WORKSPACE/research/jpl_claim_refute_v1/native_probe.lean"
+          cd target
+          export LEAN_NUM_THREADS=2
+          {
+            "$HOME/.elan/bin/lake" build L4YAML.Parser.Composition
+            "$HOME/.elan/bin/lake" env lean "$audit_file"
+          } 2>&1 | tee "$RUNNER_TEMP/jpl-native-parser.log"
+          printf '{"pinned_upstream":"bca37392fdcb80481342a186a37ab37a5ede6e46","native_controls":"PASS","claim_coverage":"DOES_NOT_CERTIFY_GLOBAL_CONFORMANCE"}\n' \
+            > "$RUNNER_TEMP/jpl-native-parser-result.json"
+      - name: Archive native output even on harness failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-native-parser-controls-v1
+          path: |
+            ${{ runner.temp }}/jpl-native-parser.log
+            ${{ runner.temp }}/jpl-native-parser-result.json
+          if-no-files-found: ignore
