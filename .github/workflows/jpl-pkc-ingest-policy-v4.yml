@@ -1,0 +1,93 @@
+name: JPL PKC actual ingest claim-policy V4
+
+on:
+  push:
+    branches:
+      - research/jpl-pkc-ingest-policy-v4-20261019
+    paths:
+      - 'research/jpl_pkc_statement_v4/**'
+      - '.github/workflows/jpl-pkc-ingest-policy-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-native-ingest:
+    name: Paired real API-JSON ingest / strict patch / causal withdrawal
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout independent frozen protocol and repair
+        uses: actions/checkout@v4
+      - name: Checkout exactly pinned JPL public source without writes
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: e0deb453e05ffa63297d9704ceb47d0855193824
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Verify source/toolchain and evidence inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "e0deb453e05ffa63297d9704ceb47d0855193824"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.34.0"
+          sha256sum research/jpl_pkc_statement_v4/{PROTOCOL.md,generate_api_inputs.lean,strict_patch.py,run_native_ingest_pair.sh,verify_results.py}
+      - name: Install exactly pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+      - name: Hydrate source-declared immutable FloatLib revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="target/.lake/packages/floatlib"
+          mkdir -p "$root"
+          git -C "$root" init -q
+          git -C "$root" remote add origin https://github.com/lean-dojo/FloatLib.git
+          git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags origin \
+            5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
+          git -C "$root" checkout -q --detach 5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
+          test "$(git -C "$root" rev-parse HEAD)" = \
+            "5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5"
+      - name: Optional Mathlib binary cache (never scientific authority)
+        shell: bash
+        timeout-minutes: 10
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" exe cache get 2>&1 \
+            | tee "$RUNNER_TEMP/jpl-pkc-v4-cache.log"
+      - name: Build original PKC importer and author-supplied API fixture constructors
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" build Interchange PropertyKindCalculus.Iso80000.Part3 PropertyKindCalculus.Tests.Interchange.ApiJson \
+            2>&1 | tee "$RUNNER_TEMP/jpl-pkc-v4-build.log"
+      - name: Replay six actual ingest inputs, strict patch and physical withdrawal
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash research/jpl_pkc_statement_v4/run_native_ingest_pair.sh
+      - name: Archive immutable inputs and native evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-pkc-ingest-claim-policy-v4
+          path: |
+            research/jpl_pkc_statement_v4/PROTOCOL.md
+            research/jpl_pkc_statement_v4/generate_api_inputs.lean
+            research/jpl_pkc_statement_v4/strict_patch.py
+            research/jpl_pkc_statement_v4/run_native_ingest_pair.sh
+            research/jpl_pkc_statement_v4/verify_results.py
+            research/jpl_pkc_statement_v4/results/
+            ${{ runner.temp }}/jpl-pkc-v4-build.log
+            ${{ runner.temp }}/jpl-pkc-v4-cache.log
+          if-no-files-found: ignore
