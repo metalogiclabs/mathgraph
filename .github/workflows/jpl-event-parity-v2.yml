@@ -1,0 +1,77 @@
+name: JPL event-parity adversary V2 (frozen finite corpus)
+
+on:
+  push:
+    branches:
+      - research/jpl-event-parity-adversary-v2-20261019
+    paths:
+      - 'research/jpl_event_parity_v2/**'
+      - '.github/workflows/jpl-event-parity-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-interface-parity:
+    name: Frozen source-native parser/event differential
+    runs-on: ubuntu-latest
+    timeout-minutes: 42
+    steps:
+      - name: Checkout frozen, independent research
+        uses: actions/checkout@v4
+      - name: Checkout exact JPL source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: bca37392fdcb80481342a186a37ab37a5ede6e46
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Freeze verification and derive exact corpus source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "bca37392fdcb80481342a186a37ab37a5ede6e46"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.35.0"
+          python3 research/jpl_event_parity_v2/generate_probe.py \
+            research/jpl_event_parity_v2/frozen_cases.json \
+            --out research/jpl_event_parity_v2/frozen_probe.lean \
+            | tee "$RUNNER_TEMP/jpl-fixture-source.json"
+          sha256sum research/jpl_event_parity_v2/frozen_cases.json \
+            research/jpl_event_parity_v2/frozen_probe.lean
+      - name: Install exactly required Lean version
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Build independent legacy and indexed source-native interfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" build L4YAML.Output.EventsIx L4YAML.Parser.Composition \
+            2>&1 | tee "$RUNNER_TEMP/jpl-build.log"
+      - name: Execute frozen native Lean comparator
+        shell: bash
+        run: |
+          set -euo pipefail
+          script="$GITHUB_WORKSPACE/research/jpl_event_parity_v2/frozen_probe.lean"
+          cd target
+          "$HOME/.elan/bin/lake" env lean --run "$script" \
+            2>&1 | tee "$RUNNER_TEMP/jpl-native-parity.log"
+      - name: Archive exact corpus and native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-event-parity-v2-evidence
+          path: |
+            research/jpl_event_parity_v2/PROTOCOL.md
+            research/jpl_event_parity_v2/frozen_cases.json
+            research/jpl_event_parity_v2/frozen_probe.lean
+            ${{ runner.temp }}/jpl-fixture-source.json
+            ${{ runner.temp }}/jpl-build.log
+            ${{ runner.temp }}/jpl-native-parity.log
+          if-no-files-found: ignore
