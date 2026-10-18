@@ -61,7 +61,20 @@ jobs:
           print(f"OPENSYSML_RELEASE_SHA256_VERIFIED {actual}")
           PY
           tar -xzf "$path/sysml-linux-amd64.tar.gz" -C "$path/extract"
-          binary="$(find "$path/extract" -type f -name sysml | head -1)"
+          binary="$(python3 - "$path/extract" <<'PY'
+          from pathlib import Path
+          import sys
+          root=Path(sys.argv[1])
+          candidates=[]
+          for p in root.rglob("*"):
+              if not p.is_file(): continue
+              with p.open("rb") as f: magic=f.read(4)
+              if magic==bytes([0x7f,0x45,0x4c,0x46]): candidates.append(p)
+          if len(candidates)!=1:
+              raise SystemExit(f"OPEN_SYSML_ELF_BINARY_COUNT {len(candidates)}")
+          print(candidates[0])
+          PY
+          )"
           test -n "$binary"
           chmod +x "$binary"
           "$binary" --version 2>&1 | tee "$path/converter-version.txt"
