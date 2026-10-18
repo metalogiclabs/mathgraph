@@ -14,6 +14,10 @@ test -x "$SYSML"
 
 cd "$JPL"
 LAKE="$HOME/.elan/bin/lake"
+# JPL's own ingest-sysml.sh invokes plain 'lake'. Keep the source unchanged;
+# make the pinned toolchain available via the runner environment instead.
+export PATH="$HOME/.elan/bin:$PATH"
+command -v lake >/dev/null
 "$LAKE" env lean "$WORKSPACE/research/jpl_pkc_statement_v4/generate_api_inputs.lean" \
   2>&1 | tee "$RUN/frozen-fixtures.log"
 "$LAKE" env lean "$RESEARCH_DIR/emit_sysml_from_frozen_v4.lean" \
