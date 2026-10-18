@@ -37,8 +37,8 @@ run_meta do
   let data ← Harvest.unverifiedCitations (mkClaimAuditModel "Nat.add" none)
   if data.isEmpty then
     throwError "FAIL_CLOSED_DATA_AS_PROOF_ACCEPTED"
-  let axiom ← Harvest.unverifiedCitations (mkClaimAuditModel "propext" none)
-  if axiom.isEmpty then
+  let axiomIssues ← Harvest.unverifiedCitations (mkClaimAuditModel "propext" none)
+  if axiomIssues.isEmpty then
     throwError "FAIL_CLOSED_AXIOM_AS_PROOF_ACCEPTED"
   IO.println "CONTROL_PASS: valid_proposition; missing_declaration_rejected; data_rejected; axiom_rejected"
 

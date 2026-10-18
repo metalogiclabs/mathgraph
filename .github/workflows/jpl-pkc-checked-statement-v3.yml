@@ -57,6 +57,15 @@ jobs:
           git -C "$repo_dir" checkout -q --detach 5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
           test "$(git -C "$repo_dir" rev-parse HEAD)" = \
             "5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5"
+      - name: Optional immutable Mathlib build cache (acceleration only)
+        shell: bash
+        continue-on-error: true
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" exe cache get 2>&1 \
+            | tee "$RUNNER_TEMP/jpl-pkc-v3-mathlib-cache.log"
       - name: Compile actual PKC interchange and cited type
         shell: bash
         run: |
