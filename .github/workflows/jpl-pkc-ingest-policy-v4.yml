@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           cd target
-          "$HOME/.elan/bin/lake" build Interchange PropertyKindCalculus.Iso80000.Part3 PropertyKindCalculus.Tests.Interchange.ApiJson \
+          "$HOME/.elan/bin/lake" build Interchange Iso80000 PropertyKindCalculus.Tests.Interchange.ApiJson \
             2>&1 | tee "$RUNNER_TEMP/jpl-pkc-v4-build.log"
       - name: Replay six actual ingest inputs, strict patch and physical withdrawal
         shell: bash
