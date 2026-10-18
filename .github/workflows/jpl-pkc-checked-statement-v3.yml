@@ -1,0 +1,83 @@
+name: JPL PKC Checked.statement falsifier V3
+
+on:
+  push:
+    branches:
+      - research/jpl-pkc-checked-statement-v3-20261019
+    paths:
+      - 'research/jpl_pkc_statement_v3/**'
+      - '.github/workflows/jpl-pkc-checked-statement-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-interchange:
+    name: Source-exact JPL PKC import citation negative controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout frozen independent challenge
+        uses: actions/checkout@v4
+      - name: Checkout exact JPL PropertyKindCalculus
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: e0deb453e05ffa63297d9704ceb47d0855193824
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Fail closed on any pin drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "e0deb453e05ffa63297d9704ceb47d0855193824"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.34.0"
+          sha256sum research/jpl_pkc_statement_v3/PROTOCOL.md \
+            research/jpl_pkc_statement_v3/real_importer_probe.lean \
+            | tee "$RUNNER_TEMP/jpl-pkc-v3-sources.sha256"
+      - name: Install exact Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+      - name: Compile actual PKC interchange and cited type
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" build Interchange PropertyKindCalculus.Iso80000.Part3 \
+            2>&1 | tee "$RUNNER_TEMP/jpl-pkc-v3-build.log"
+      - name: Challenge the real citation gate with a false statement
+        shell: bash
+        run: |
+          set -euo pipefail
+          probe="$GITHUB_WORKSPACE/research/jpl_pkc_statement_v3/real_importer_probe.lean"
+          cd target
+          "$HOME/.elan/bin/lake" env lean "$probe" \
+            2>&1 | tee "$RUNNER_TEMP/jpl-pkc-v3-citation.log"
+      - name: Check generated Lean module independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          grep -F -- 'False' .lake/build/sysml/Generated/ClaimAudit.lean
+          "$HOME/.elan/bin/lake" env lean .lake/build/sysml/Generated/ClaimAudit.lean \
+            2>&1 | tee "$RUNNER_TEMP/jpl-pkc-v3-generated.log"
+      - name: Archive all original source and native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-pkc-checked-statement-v3
+          path: |
+            research/jpl_pkc_statement_v3/PROTOCOL.md
+            research/jpl_pkc_statement_v3/real_importer_probe.lean
+            ${{ runner.temp }}/jpl-pkc-v3-sources.sha256
+            ${{ runner.temp }}/jpl-pkc-v3-build.log
+            ${{ runner.temp }}/jpl-pkc-v3-citation.log
+            ${{ runner.temp }}/jpl-pkc-v3-generated.log
+            target/.lake/build/sysml/Generated/ClaimAudit.lean
+          if-no-files-found: ignore
