@@ -44,6 +44,19 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain none
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+      - name: Hydrate exact locked FloatLib commit before Lake resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_dir="target/.lake/packages/floatlib"
+          mkdir -p "$repo_dir"
+          git -C "$repo_dir" init -q
+          git -C "$repo_dir" remote add origin https://github.com/lean-dojo/FloatLib.git
+          git -C "$repo_dir" -c protocol.version=2 fetch --depth=1 --no-tags origin \
+            5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
+          git -C "$repo_dir" checkout -q --detach 5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
+          test "$(git -C "$repo_dir" rev-parse HEAD)" = \
+            "5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5"
       - name: Compile actual PKC interchange and cited type
         shell: bash
         run: |
