@@ -52,7 +52,7 @@ run_meta do
   IO.println s!"TRUE_STATEMENT_ISSUES={repr trueReceipt}"
 
   let code := EmitLean.emit falseModel
-  unless code.splitOn "False" |>.length > 1 do
+  if (code.splitOn "False").length <= 1 then
     throwError "FAIL_CLOSED_FORGED_METADATA_NOT_EMITTED"
   IO.FS.createDirAll ".lake/build/sysml/Generated"
   IO.FS.writeFile ".lake/build/sysml/Generated/ClaimAudit.lean" code
