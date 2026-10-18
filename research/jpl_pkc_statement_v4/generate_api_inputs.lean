@@ -56,7 +56,7 @@ run_meta do
   ]
   let output := ".lake/build/sysml/claim-audit-v4"
   IO.FS.createDirAll output
-  let mut count := 0
+  let mut count : Nat := 0
   for (label, decl, statement) in cases do
     let content := makeFixture decl statement
     let .ok (model, warnings) := ApiJson.read content
@@ -70,9 +70,12 @@ run_meta do
     let expected : List Checked := [{ decl, statement }]
     unless width.checked == expected do
       throwError "API_JSON_CITATION_MISMATCH: {label}: {repr width.checked}"
-    let roundTrip := PkcModel.ofJsonString model.toJsonString
-    unless roundTrip == .ok model do
-      throwError "API_JSON_PIVOT_ROUNDTRIP_FAILED: {label}"
+    match PkcModel.ofJsonString model.toJsonString with
+    | .ok m' =>
+        unless m' == model do
+          throwError "API_JSON_PIVOT_ROUNDTRIP_CHANGED: {label}"
+    | .error err =>
+        throwError "API_JSON_PIVOT_ROUNDTRIP_FAILED: {label}: {err}"
     let target := s!"{output}/{label}.api.json"
     IO.FS.writeFile target content
     count := count + 1
