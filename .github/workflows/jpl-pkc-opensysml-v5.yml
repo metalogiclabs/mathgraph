@@ -1,0 +1,112 @@
+name: JPL PKC OpenSysML real text to Lean V5
+
+on:
+  push:
+    branches:
+      - research/jpl-pkc-opensysml-e2e-v5-20261019
+    paths:
+      - 'research/jpl_pkc_statement_v5/**'
+      - '.github/workflows/jpl-pkc-opensysml-v5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sysml-to-lean-causal:
+    name: Full external OpenSysML conversion and original/strict/withdraw intake
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout frozen independent adversarial protocol
+        uses: actions/checkout@v4
+      - name: Checkout exactly pinned NASA/JPL source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: e0deb453e05ffa63297d9704ceb47d0855193824
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Verify exact source and experiments without drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "e0deb453e05ffa63297d9704ceb47d0855193824"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.34.0"
+          sha256sum research/jpl_pkc_statement_v5/{PROTOCOL.md,emit_sysml_from_frozen_v4.lean,run_full_text_pair.sh,verify_results.py}
+      - name: Install immutable OpenSysML v0.9.1 release and check publisher SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          path="$RUNNER_TEMP/opensysml-v0.9.1"
+          mkdir -p "$path/extract"
+          release="https://github.com/Open-MBEE/OpenSysML/releases/download/v0.9.1"
+          curl -fsSL --retry 2 "$release/SHA256SUMS.txt" -o "$path/SHA256SUMS.txt"
+          curl -fsSL --retry 2 "$release/sysml-linux-amd64.tar.gz" -o "$path/sysml-linux-amd64.tar.gz"
+          grep -E '  (\\./)?sysml-linux-amd64.tar.gz$' "$path/SHA256SUMS.txt" \
+            > "$path/selected-checksum.txt"
+          test "$(wc -l < "$path/selected-checksum.txt")" -eq 1
+          (cd "$path" && sha256sum -c selected-checksum.txt)
+          tar -xzf "$path/sysml-linux-amd64.tar.gz" -C "$path/extract"
+          binary="$(find "$path/extract" -type f -name sysml | head -1)"
+          test -n "$binary"
+          chmod +x "$binary"
+          "$binary" --version 2>&1 | tee "$path/converter-version.txt"
+          grep -F '0.9.1' "$path/converter-version.txt"
+          echo "SYSML=$binary" >> "$GITHUB_ENV"
+      - name: Install source-locked Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+      - name: Hydrate source-declared FloatLib exact commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="target/.lake/packages/floatlib"
+          mkdir -p "$root"
+          git -C "$root" init -q
+          git -C "$root" remote add origin https://github.com/lean-dojo/FloatLib.git
+          git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags origin \
+            5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
+          git -C "$root" checkout -q --detach 5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
+          test "$(git -C "$root" rev-parse HEAD)" = "5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5"
+      - name: Optional authenticated upstream Mathlib cache
+        continue-on-error: true
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" exe cache get 2>&1 \
+            | tee "$RUNNER_TEMP/jpl-pkc-v5-cache.log"
+      - name: Build original JPL PKC text/interchange modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          "$HOME/.elan/bin/lake" build Interchange Iso80000 PropertyKindCalculus.Tests.Interchange.ApiJson \
+            2>&1 | tee "$RUNNER_TEMP/jpl-pkc-v5-build.log"
+      - name: Validate actual SysML text, execute true converter, and prove policy causality
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash research/jpl_pkc_statement_v5/run_full_text_pair.sh
+      - name: Archive full text, verified binary checksum and native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-pkc-opensysml-full-path-v5
+          path: |
+            research/jpl_pkc_statement_v5/PROTOCOL.md
+            research/jpl_pkc_statement_v5/emit_sysml_from_frozen_v4.lean
+            research/jpl_pkc_statement_v5/run_full_text_pair.sh
+            research/jpl_pkc_statement_v5/verify_results.py
+            research/jpl_pkc_statement_v5/results/
+            ${{ runner.temp }}/jpl-pkc-v5-build.log
+            ${{ runner.temp }}/opensysml-v0.9.1/selected-checksum.txt
+            ${{ runner.temp }}/opensysml-v0.9.1/converter-version.txt
+          if-no-files-found: ignore
