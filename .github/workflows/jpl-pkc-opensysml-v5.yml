@@ -48,7 +48,8 @@ jobs:
           import hashlib, pathlib, re, sys
           root=pathlib.Path(sys.argv[1])
           records=[line for line in (root/"SHA256SUMS.txt").read_text().splitlines()
-                   if "sysml-linux-amd64.tar.gz" in line]
+                   if line.split() and line.split()[-1].lstrip("*").rsplit("/",1)[-1]
+                      == "sysml-linux-amd64.tar.gz"]
           if len(records) != 1:
               raise SystemExit(f"CHECKSUM_RECORD_COUNT_MISMATCH {len(records)}")
           matched=re.search(r"(?i)(?<![a-f0-9])[a-f0-9]{64}(?![a-f0-9])",records[0])
