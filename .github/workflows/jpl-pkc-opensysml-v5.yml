@@ -44,10 +44,21 @@ jobs:
           release="https://github.com/Open-MBEE/OpenSysML/releases/download/v0.9.1"
           curl -fsSL --retry 2 "$release/SHA256SUMS.txt" -o "$path/SHA256SUMS.txt"
           curl -fsSL --retry 2 "$release/sysml-linux-amd64.tar.gz" -o "$path/sysml-linux-amd64.tar.gz"
-          grep -E '  (\\./)?sysml-linux-amd64.tar.gz$' "$path/SHA256SUMS.txt" \
-            > "$path/selected-checksum.txt"
-          test "$(wc -l < "$path/selected-checksum.txt")" -eq 1
-          (cd "$path" && sha256sum -c selected-checksum.txt)
+          python3 - "$path" <<'PY'
+          import hashlib, pathlib, re, sys
+          root=pathlib.Path(sys.argv[1])
+          records=[line for line in (root/"SHA256SUMS.txt").read_text().splitlines()
+                   if "sysml-linux-amd64.tar.gz" in line]
+          if len(records) != 1:
+              raise SystemExit(f"CHECKSUM_RECORD_COUNT_MISMATCH {len(records)}")
+          matched=re.search(r"(?i)(?<![a-f0-9])[a-f0-9]{64}(?![a-f0-9])",records[0])
+          if matched is None: raise SystemExit("NO_SHA256_DIGEST_IN_RELEASE_RECORD")
+          expected=matched.group().lower()
+          actual=hashlib.sha256((root/"sysml-linux-amd64.tar.gz").read_bytes()).hexdigest()
+          if expected != actual: raise SystemExit("SIGNED_RELEASE_CHECKSUM_MISMATCH")
+          (root/"selected-checksum.txt").write_text(f"{expected}  sysml-linux-amd64.tar.gz\\n")
+          print(f"OPENSYSML_RELEASE_SHA256_VERIFIED {actual}")
+          PY
           tar -xzf "$path/sysml-linux-amd64.tar.gz" -C "$path/extract"
           binary="$(find "$path/extract" -type f -name sysml | head -1)"
           test -n "$binary"
