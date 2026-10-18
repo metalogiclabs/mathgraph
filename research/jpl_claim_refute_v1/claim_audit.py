@@ -54,10 +54,12 @@ def main():
     package = text["L4YAML/Proofs/Serialization/README.md"]
     lean = text["L4YAML/Proofs/Serialization/ExecutableBoundary.lean"]
 
-    headline = bool(re.search(
-        r"Conformance to the \\[YAML 1\\.2\\.2 specification\\]"
-        r"[\\s\\S]{0,260}?established\\s+by mathematical proof", readme
-    ))
+    header = readme.split("## What it is")[0]
+    headline = all([
+        "Conformance to the [YAML 1.2.2 specification]" in header,
+        "is established" in header,
+        "by mathematical proof, not by testing alone." in header,
+    ])
     residual = all([
         "**Work in progress.** One converse theorem remains open" in readme,
         "-- NOT the target: this statement is false." in readme,
