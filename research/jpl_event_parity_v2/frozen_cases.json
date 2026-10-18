@@ -1,0 +1,5582 @@
+{
+  "protocol": "L4YAML_EVENT_PARITY_REFUTE_FIRST_V2",
+  "upstream": "nasa-jpl/L4YAML",
+  "upstream_sha": "bca37392fdcb80481342a186a37ab37a5ede6e46",
+  "design_scope": "FIXTURE_FROZEN_BEFORE_NATIVE_OUTCOMES; source interfaces inspected; not a blind new repo",
+  "claim": "legacy and indexed event views should be observationally consistent with their source parser acceptance, document counts, and each other on declared finite inputs",
+  "authority": "one pinned YAML implementation plus independently executed API paths; no blanket YAML 1.2.2 correctness proof",
+  "cases": [
+    {
+      "id": "F0000",
+      "kind": "single",
+      "yaml": "foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0001",
+      "kind": "single",
+      "yaml": "foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0002",
+      "kind": "single",
+      "yaml": "foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0003",
+      "kind": "single",
+      "yaml": "foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0004",
+      "kind": "single",
+      "yaml": "a: b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0005",
+      "kind": "single",
+      "yaml": "a: b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0006",
+      "kind": "single",
+      "yaml": "a: b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0007",
+      "kind": "single",
+      "yaml": "a: b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0008",
+      "kind": "single",
+      "yaml": "{a: b, c: d}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0009",
+      "kind": "single",
+      "yaml": "{a: b, c: d}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0010",
+      "kind": "single",
+      "yaml": "{a: b, c: d}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0011",
+      "kind": "single",
+      "yaml": "{a: b, c: d}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0012",
+      "kind": "single",
+      "yaml": "[a, b, c]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0013",
+      "kind": "single",
+      "yaml": "[a, b, c]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0014",
+      "kind": "single",
+      "yaml": "[a, b, c]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0015",
+      "kind": "single",
+      "yaml": "[a, b, c]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0016",
+      "kind": "single",
+      "yaml": "- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0017",
+      "kind": "single",
+      "yaml": "- a\n- b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0018",
+      "kind": "single",
+      "yaml": "- a\n- b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0019",
+      "kind": "single",
+      "yaml": "- a\n- b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0020",
+      "kind": "single",
+      "yaml": "a: &x foo\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0021",
+      "kind": "single",
+      "yaml": "a: &x foo\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0022",
+      "kind": "single",
+      "yaml": "a: &x foo\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0023",
+      "kind": "single",
+      "yaml": "a: &x foo\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0024",
+      "kind": "single",
+      "yaml": "&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0025",
+      "kind": "single",
+      "yaml": "&x [*x]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0026",
+      "kind": "single",
+      "yaml": "&x [*x]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0027",
+      "kind": "single",
+      "yaml": "&x [*x]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0028",
+      "kind": "single",
+      "yaml": "*x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0029",
+      "kind": "single",
+      "yaml": "*x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0030",
+      "kind": "single",
+      "yaml": "*x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0031",
+      "kind": "single",
+      "yaml": "*x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0032",
+      "kind": "single",
+      "yaml": "!e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0033",
+      "kind": "single",
+      "yaml": "!e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0034",
+      "kind": "single",
+      "yaml": "!e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0035",
+      "kind": "single",
+      "yaml": "!e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0036",
+      "kind": "single",
+      "yaml": "a: !e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0037",
+      "kind": "single",
+      "yaml": "a: !e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0038",
+      "kind": "single",
+      "yaml": "a: !e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0039",
+      "kind": "single",
+      "yaml": "a: !e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0040",
+      "kind": "single",
+      "yaml": "a: &x [foo]\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0041",
+      "kind": "single",
+      "yaml": "a: &x [foo]\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0042",
+      "kind": "single",
+      "yaml": "a: &x [foo]\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0043",
+      "kind": "single",
+      "yaml": "a: &x [foo]\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0044",
+      "kind": "single",
+      "yaml": "a:\n  b: c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0045",
+      "kind": "single",
+      "yaml": "a:\n  b: c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0046",
+      "kind": "single",
+      "yaml": "a:\n  b: c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0047",
+      "kind": "single",
+      "yaml": "a:\n  b: c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0048",
+      "kind": "single",
+      "yaml": "|\n  abc\n  def\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0049",
+      "kind": "single",
+      "yaml": "|\n  abc\n  def\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0050",
+      "kind": "single",
+      "yaml": "|\n  abc\n  def\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0051",
+      "kind": "single",
+      "yaml": "|\n  abc\n  def\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0052",
+      "kind": "single",
+      "yaml": "a: 'quoted'\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0053",
+      "kind": "single",
+      "yaml": "a: 'quoted'\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0054",
+      "kind": "single",
+      "yaml": "a: 'quoted'\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0055",
+      "kind": "single",
+      "yaml": "a: 'quoted'\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0056",
+      "kind": "single",
+      "yaml": "a: \"double\\tquoted\"\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0057",
+      "kind": "single",
+      "yaml": "a: \"double\\tquoted\"\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0058",
+      "kind": "single",
+      "yaml": "a: \"double\\tquoted\"\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0059",
+      "kind": "single",
+      "yaml": "a: \"double\\tquoted\"\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0060",
+      "kind": "single",
+      "yaml": "a: # comment\n  b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0061",
+      "kind": "single",
+      "yaml": "a: # comment\n  b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0062",
+      "kind": "single",
+      "yaml": "a: # comment\n  b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0063",
+      "kind": "single",
+      "yaml": "a: # comment\n  b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0064",
+      "kind": "single",
+      "yaml": "{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0065",
+      "kind": "single",
+      "yaml": "{}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0066",
+      "kind": "single",
+      "yaml": "{}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0067",
+      "kind": "single",
+      "yaml": "{}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0068",
+      "kind": "single",
+      "yaml": "[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0069",
+      "kind": "single",
+      "yaml": "[]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0070",
+      "kind": "single",
+      "yaml": "[]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0071",
+      "kind": "single",
+      "yaml": "[]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0072",
+      "kind": "single",
+      "yaml": "a:\n  - b\n  - c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0073",
+      "kind": "single",
+      "yaml": "a:\n  - b\n  - c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0074",
+      "kind": "single",
+      "yaml": "a:\n  - b\n  - c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0075",
+      "kind": "single",
+      "yaml": "a:\n  - b\n  - c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0076",
+      "kind": "single",
+      "yaml": "!<tag:example.org,2026:foo> bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0077",
+      "kind": "single",
+      "yaml": "!<tag:example.org,2026:foo> bar\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0078",
+      "kind": "single",
+      "yaml": "!<tag:example.org,2026:foo> bar\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0079",
+      "kind": "single",
+      "yaml": "!<tag:example.org,2026:foo> bar\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0080",
+      "kind": "single",
+      "yaml": "---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0081",
+      "kind": "single",
+      "yaml": "---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0082",
+      "kind": "single",
+      "yaml": "---\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0083",
+      "kind": "single",
+      "yaml": "---\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0084",
+      "kind": "single",
+      "yaml": "...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0085",
+      "kind": "single",
+      "yaml": "...\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0086",
+      "kind": "single",
+      "yaml": "...\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0087",
+      "kind": "single",
+      "yaml": "...\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0088",
+      "kind": "single",
+      "yaml": "# a comment\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0089",
+      "kind": "single",
+      "yaml": "# a comment\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0090",
+      "kind": "single",
+      "yaml": "# a comment\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0091",
+      "kind": "single",
+      "yaml": "# a comment\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0092",
+      "kind": "single",
+      "yaml": "a: *undefined\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0093",
+      "kind": "single",
+      "yaml": "a: *undefined\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0094",
+      "kind": "single",
+      "yaml": "a: *undefined\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0095",
+      "kind": "single",
+      "yaml": "a: *undefined\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0096",
+      "kind": "single",
+      "yaml": "a: &a\n  k: v\nb: *a\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0097",
+      "kind": "single",
+      "yaml": "a: &a\n  k: v\nb: *a\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0098",
+      "kind": "single",
+      "yaml": "a: &a\n  k: v\nb: *a\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0099",
+      "kind": "single",
+      "yaml": "a: &a\n  k: v\nb: *a\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0100",
+      "kind": "single",
+      "yaml": "a: !!str true\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0101",
+      "kind": "single",
+      "yaml": "a: !!str true\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0102",
+      "kind": "single",
+      "yaml": "a: !!str true\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0103",
+      "kind": "single",
+      "yaml": "a: !!str true\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0104",
+      "kind": "single",
+      "yaml": "a: 0\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0105",
+      "kind": "single",
+      "yaml": "a: 0\nb: yes\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0106",
+      "kind": "single",
+      "yaml": "a: 0\nb: yes\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0107",
+      "kind": "single",
+      "yaml": "a: 0\nb: yes\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0108",
+      "kind": "single",
+      "yaml": "---\nfoo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0109",
+      "kind": "single",
+      "yaml": "---\nfoo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0110",
+      "kind": "single",
+      "yaml": "---\nfoo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0111",
+      "kind": "single",
+      "yaml": "---\nfoo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0112",
+      "kind": "single",
+      "yaml": "---\na: b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0113",
+      "kind": "single",
+      "yaml": "---\na: b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0114",
+      "kind": "single",
+      "yaml": "---\na: b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0115",
+      "kind": "single",
+      "yaml": "---\na: b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0116",
+      "kind": "single",
+      "yaml": "---\n{a: b, c: d}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0117",
+      "kind": "single",
+      "yaml": "---\n{a: b, c: d}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0118",
+      "kind": "single",
+      "yaml": "---\n{a: b, c: d}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0119",
+      "kind": "single",
+      "yaml": "---\n{a: b, c: d}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0120",
+      "kind": "single",
+      "yaml": "---\n[a, b, c]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0121",
+      "kind": "single",
+      "yaml": "---\n[a, b, c]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0122",
+      "kind": "single",
+      "yaml": "---\n[a, b, c]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0123",
+      "kind": "single",
+      "yaml": "---\n[a, b, c]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0124",
+      "kind": "single",
+      "yaml": "---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0125",
+      "kind": "single",
+      "yaml": "---\n- a\n- b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0126",
+      "kind": "single",
+      "yaml": "---\n- a\n- b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0127",
+      "kind": "single",
+      "yaml": "---\n- a\n- b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0128",
+      "kind": "single",
+      "yaml": "---\na: &x foo\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0129",
+      "kind": "single",
+      "yaml": "---\na: &x foo\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0130",
+      "kind": "single",
+      "yaml": "---\na: &x foo\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0131",
+      "kind": "single",
+      "yaml": "---\na: &x foo\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0132",
+      "kind": "single",
+      "yaml": "---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0133",
+      "kind": "single",
+      "yaml": "---\n&x [*x]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0134",
+      "kind": "single",
+      "yaml": "---\n&x [*x]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0135",
+      "kind": "single",
+      "yaml": "---\n&x [*x]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0136",
+      "kind": "single",
+      "yaml": "---\n*x\n",
+      "expected": "reject",
+      "note": "reject_missing_anchor"
+    },
+    {
+      "id": "F0137",
+      "kind": "single",
+      "yaml": "---\n*x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0138",
+      "kind": "single",
+      "yaml": "---\n*x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0139",
+      "kind": "single",
+      "yaml": "---\n*x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0140",
+      "kind": "single",
+      "yaml": "---\n!e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0141",
+      "kind": "single",
+      "yaml": "---\n!e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0142",
+      "kind": "single",
+      "yaml": "---\n!e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0143",
+      "kind": "single",
+      "yaml": "---\n!e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0144",
+      "kind": "single",
+      "yaml": "---\na: !e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0145",
+      "kind": "single",
+      "yaml": "---\na: !e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0146",
+      "kind": "single",
+      "yaml": "---\na: !e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0147",
+      "kind": "single",
+      "yaml": "---\na: !e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0148",
+      "kind": "single",
+      "yaml": "---\na: &x [foo]\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0149",
+      "kind": "single",
+      "yaml": "---\na: &x [foo]\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0150",
+      "kind": "single",
+      "yaml": "---\na: &x [foo]\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0151",
+      "kind": "single",
+      "yaml": "---\na: &x [foo]\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0152",
+      "kind": "single",
+      "yaml": "---\na:\n  b: c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0153",
+      "kind": "single",
+      "yaml": "---\na:\n  b: c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0154",
+      "kind": "single",
+      "yaml": "---\na:\n  b: c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0155",
+      "kind": "single",
+      "yaml": "---\na:\n  b: c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0156",
+      "kind": "single",
+      "yaml": "---\n|\n  abc\n  def\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0157",
+      "kind": "single",
+      "yaml": "---\n|\n  abc\n  def\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0158",
+      "kind": "single",
+      "yaml": "---\n|\n  abc\n  def\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0159",
+      "kind": "single",
+      "yaml": "---\n|\n  abc\n  def\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0160",
+      "kind": "single",
+      "yaml": "---\na: 'quoted'\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0161",
+      "kind": "single",
+      "yaml": "---\na: 'quoted'\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0162",
+      "kind": "single",
+      "yaml": "---\na: 'quoted'\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0163",
+      "kind": "single",
+      "yaml": "---\na: 'quoted'\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0164",
+      "kind": "single",
+      "yaml": "---\na: \"double\\tquoted\"\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0165",
+      "kind": "single",
+      "yaml": "---\na: \"double\\tquoted\"\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0166",
+      "kind": "single",
+      "yaml": "---\na: \"double\\tquoted\"\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0167",
+      "kind": "single",
+      "yaml": "---\na: \"double\\tquoted\"\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0168",
+      "kind": "single",
+      "yaml": "---\na: # comment\n  b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0169",
+      "kind": "single",
+      "yaml": "---\na: # comment\n  b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0170",
+      "kind": "single",
+      "yaml": "---\na: # comment\n  b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0171",
+      "kind": "single",
+      "yaml": "---\na: # comment\n  b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0172",
+      "kind": "single",
+      "yaml": "---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0173",
+      "kind": "single",
+      "yaml": "---\n{}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0174",
+      "kind": "single",
+      "yaml": "---\n{}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0175",
+      "kind": "single",
+      "yaml": "---\n{}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0176",
+      "kind": "single",
+      "yaml": "---\n[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0177",
+      "kind": "single",
+      "yaml": "---\n[]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0178",
+      "kind": "single",
+      "yaml": "---\n[]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0179",
+      "kind": "single",
+      "yaml": "---\n[]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0180",
+      "kind": "single",
+      "yaml": "---\na:\n  - b\n  - c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0181",
+      "kind": "single",
+      "yaml": "---\na:\n  - b\n  - c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0182",
+      "kind": "single",
+      "yaml": "---\na:\n  - b\n  - c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0183",
+      "kind": "single",
+      "yaml": "---\na:\n  - b\n  - c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0184",
+      "kind": "single",
+      "yaml": "---\n!<tag:example.org,2026:foo> bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0185",
+      "kind": "single",
+      "yaml": "---\n!<tag:example.org,2026:foo> bar\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0186",
+      "kind": "single",
+      "yaml": "---\n!<tag:example.org,2026:foo> bar\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0187",
+      "kind": "single",
+      "yaml": "---\n!<tag:example.org,2026:foo> bar\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0188",
+      "kind": "single",
+      "yaml": "---\n---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0189",
+      "kind": "single",
+      "yaml": "---\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0190",
+      "kind": "single",
+      "yaml": "---\n---\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0191",
+      "kind": "single",
+      "yaml": "---\n---\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0192",
+      "kind": "single",
+      "yaml": "---\n...\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0193",
+      "kind": "single",
+      "yaml": "---\n...\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0194",
+      "kind": "single",
+      "yaml": "---\n...\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0195",
+      "kind": "single",
+      "yaml": "---\n# a comment\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0196",
+      "kind": "single",
+      "yaml": "---\n# a comment\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0197",
+      "kind": "single",
+      "yaml": "---\n# a comment\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0198",
+      "kind": "single",
+      "yaml": "---\n# a comment\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0199",
+      "kind": "single",
+      "yaml": "---\na: *undefined\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0200",
+      "kind": "single",
+      "yaml": "---\na: *undefined\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0201",
+      "kind": "single",
+      "yaml": "---\na: *undefined\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0202",
+      "kind": "single",
+      "yaml": "---\na: *undefined\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0203",
+      "kind": "single",
+      "yaml": "---\na: &a\n  k: v\nb: *a\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0204",
+      "kind": "single",
+      "yaml": "---\na: &a\n  k: v\nb: *a\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0205",
+      "kind": "single",
+      "yaml": "---\na: &a\n  k: v\nb: *a\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0206",
+      "kind": "single",
+      "yaml": "---\na: &a\n  k: v\nb: *a\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0207",
+      "kind": "single",
+      "yaml": "---\na: !!str true\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0208",
+      "kind": "single",
+      "yaml": "---\na: !!str true\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0209",
+      "kind": "single",
+      "yaml": "---\na: !!str true\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0210",
+      "kind": "single",
+      "yaml": "---\na: !!str true\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0211",
+      "kind": "single",
+      "yaml": "---\na: 0\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0212",
+      "kind": "single",
+      "yaml": "---\na: 0\nb: yes\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0213",
+      "kind": "single",
+      "yaml": "---\na: 0\nb: yes\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0214",
+      "kind": "single",
+      "yaml": "---\na: 0\nb: yes\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0215",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\nfoo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0216",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\nfoo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0217",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\nfoo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0218",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\nfoo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0219",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0220",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0221",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0222",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0223",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{a: b, c: d}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0224",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{a: b, c: d}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0225",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{a: b, c: d}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0226",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{a: b, c: d}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0227",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[a, b, c]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0228",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[a, b, c]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0229",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[a, b, c]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0230",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[a, b, c]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0231",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0232",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n- a\n- b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0233",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n- a\n- b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0234",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n- a\n- b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0235",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x foo\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0236",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x foo\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0237",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x foo\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0238",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x foo\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0239",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0240",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n&x [*x]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0241",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n&x [*x]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0242",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n&x [*x]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0243",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n*x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0244",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n*x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0245",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n*x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0246",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n*x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0247",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0248",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0249",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0250",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0251",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0252",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0253",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0254",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0255",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x [foo]\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0256",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x [foo]\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0257",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x [foo]\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0258",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &x [foo]\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0259",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  b: c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0260",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  b: c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0261",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  b: c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0262",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  b: c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0263",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n|\n  abc\n  def\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0264",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n|\n  abc\n  def\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0265",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n|\n  abc\n  def\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0266",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n|\n  abc\n  def\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0267",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 'quoted'\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0268",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 'quoted'\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0269",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 'quoted'\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0270",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 'quoted'\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0271",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: \"double\\tquoted\"\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0272",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: \"double\\tquoted\"\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0273",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: \"double\\tquoted\"\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0274",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: \"double\\tquoted\"\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0275",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: # comment\n  b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0276",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: # comment\n  b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0277",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: # comment\n  b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0278",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: # comment\n  b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0279",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0280",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0281",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0282",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n{}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0283",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0284",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0285",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0286",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n[]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0287",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  - b\n  - c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0288",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  - b\n  - c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0289",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  - b\n  - c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0290",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na:\n  - b\n  - c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0291",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0292",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0293",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0294",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0295",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0296",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0297",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n---\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0298",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n---\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0299",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0300",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n...\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0301",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n...\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0302",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n...\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0303",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n# a comment\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0304",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n# a comment\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0305",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n# a comment\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0306",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\n# a comment\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0307",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: *undefined\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0308",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: *undefined\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0309",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: *undefined\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0310",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: *undefined\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0311",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0312",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0313",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0314",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0315",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !!str true\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0316",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !!str true\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0317",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !!str true\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0318",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: !!str true\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0319",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 0\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0320",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 0\nb: yes\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0321",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 0\nb: yes\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0322",
+      "kind": "single",
+      "yaml": "%YAML 1.2\n---\na: 0\nb: yes\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0323",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\nfoo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0324",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\nfoo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0325",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\nfoo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0326",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\nfoo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0327",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0328",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0329",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0330",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0331",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{a: b, c: d}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0332",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{a: b, c: d}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0333",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{a: b, c: d}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0334",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{a: b, c: d}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0335",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[a, b, c]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0336",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[a, b, c]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0337",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[a, b, c]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0338",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[a, b, c]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0339",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0340",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n- a\n- b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0341",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n- a\n- b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0342",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n- a\n- b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0343",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x foo\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0344",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x foo\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0345",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x foo\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0346",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x foo\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0347",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0348",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n&x [*x]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0349",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n&x [*x]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0350",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n&x [*x]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0351",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n*x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0352",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n*x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0353",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n*x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0354",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n*x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0355",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0356",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0357",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0358",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0359",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0360",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0361",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0362",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0363",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x [foo]\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0364",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x [foo]\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0365",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x [foo]\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0366",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &x [foo]\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0367",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  b: c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0368",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  b: c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0369",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  b: c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0370",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  b: c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0371",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n|\n  abc\n  def\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0372",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n|\n  abc\n  def\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0373",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n|\n  abc\n  def\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0374",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n|\n  abc\n  def\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0375",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 'quoted'\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0376",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 'quoted'\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0377",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 'quoted'\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0378",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 'quoted'\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0379",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: \"double\\tquoted\"\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0380",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: \"double\\tquoted\"\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0381",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: \"double\\tquoted\"\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0382",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: \"double\\tquoted\"\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0383",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: # comment\n  b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0384",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: # comment\n  b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0385",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: # comment\n  b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0386",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: # comment\n  b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0387",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0388",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0389",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0390",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n{}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0391",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0392",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0393",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0394",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n[]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0395",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  - b\n  - c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0396",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  - b\n  - c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0397",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  - b\n  - c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0398",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na:\n  - b\n  - c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0399",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!<tag:example.org,2026:foo> bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0400",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!<tag:example.org,2026:foo> bar\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0401",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!<tag:example.org,2026:foo> bar\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0402",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!<tag:example.org,2026:foo> bar\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0403",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0404",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0405",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n---\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0406",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n---\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0407",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0408",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n...\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0409",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n...\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0410",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n...\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0411",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n# a comment\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0412",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n# a comment\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0413",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n# a comment\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0414",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n# a comment\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0415",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: *undefined\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0416",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: *undefined\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0417",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: *undefined\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0418",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: *undefined\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0419",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &a\n  k: v\nb: *a\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0420",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &a\n  k: v\nb: *a\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0421",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &a\n  k: v\nb: *a\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0422",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: &a\n  k: v\nb: *a\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0423",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !!str true\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0424",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !!str true\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0425",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !!str true\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0426",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: !!str true\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0427",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 0\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0428",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 0\nb: yes\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0429",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 0\nb: yes\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0430",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\na: 0\nb: yes\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0431",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\nfoo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0432",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\nfoo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0433",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\nfoo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0434",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\nfoo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0435",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0436",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0437",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0438",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0439",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{a: b, c: d}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0440",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{a: b, c: d}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0441",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{a: b, c: d}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0442",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{a: b, c: d}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0443",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[a, b, c]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0444",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[a, b, c]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0445",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[a, b, c]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0446",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[a, b, c]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0447",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0448",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n- a\n- b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0449",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n- a\n- b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0450",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n- a\n- b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0451",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x foo\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0452",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x foo\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0453",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x foo\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0454",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x foo\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0455",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0456",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n&x [*x]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0457",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n&x [*x]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0458",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n&x [*x]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0459",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n*x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0460",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n*x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0461",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n*x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0462",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n*x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0463",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0464",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0465",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0466",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0467",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0468",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0469",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0470",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0471",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x [foo]\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0472",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x [foo]\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0473",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x [foo]\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0474",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &x [foo]\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0475",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  b: c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0476",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  b: c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0477",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  b: c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0478",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  b: c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0479",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n|\n  abc\n  def\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0480",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n|\n  abc\n  def\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0481",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n|\n  abc\n  def\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0482",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n|\n  abc\n  def\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0483",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 'quoted'\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0484",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 'quoted'\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0485",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 'quoted'\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0486",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 'quoted'\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0487",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: \"double\\tquoted\"\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0488",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: \"double\\tquoted\"\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0489",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: \"double\\tquoted\"\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0490",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: \"double\\tquoted\"\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0491",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: # comment\n  b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0492",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: # comment\n  b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0493",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: # comment\n  b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0494",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: # comment\n  b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0495",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0496",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0497",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0498",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n{}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0499",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0500",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0501",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0502",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n[]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0503",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  - b\n  - c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0504",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  - b\n  - c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0505",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  - b\n  - c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0506",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na:\n  - b\n  - c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0507",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!<tag:example.org,2026:foo> bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0508",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!<tag:example.org,2026:foo> bar\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0509",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!<tag:example.org,2026:foo> bar\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0510",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n!<tag:example.org,2026:foo> bar\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0511",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0512",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0513",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n---\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0514",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n---\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0515",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0516",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n...\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0517",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n...\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0518",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n...\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0519",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n# a comment\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0520",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n# a comment\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0521",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n# a comment\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0522",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\n# a comment\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0523",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: *undefined\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0524",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: *undefined\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0525",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: *undefined\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0526",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: *undefined\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0527",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &a\n  k: v\nb: *a\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0528",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &a\n  k: v\nb: *a\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0529",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &a\n  k: v\nb: *a\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0530",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: &a\n  k: v\nb: *a\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0531",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !!str true\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0532",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !!str true\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0533",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !!str true\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0534",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: !!str true\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0535",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 0\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0536",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 0\nb: yes\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0537",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 0\nb: yes\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0538",
+      "kind": "single",
+      "yaml": "%YAML .2\n---\na: 0\nb: yes\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0539",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\nfoo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0540",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\nfoo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0541",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\nfoo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0542",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\nfoo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0543",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0544",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0545",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0546",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0547",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{a: b, c: d}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0548",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{a: b, c: d}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0549",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{a: b, c: d}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0550",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{a: b, c: d}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0551",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[a, b, c]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0552",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[a, b, c]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0553",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[a, b, c]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0554",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[a, b, c]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0555",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0556",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n- a\n- b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0557",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n- a\n- b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0558",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n- a\n- b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0559",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x foo\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0560",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x foo\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0561",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x foo\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0562",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x foo\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0563",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0564",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n&x [*x]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0565",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n&x [*x]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0566",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n&x [*x]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0567",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n*x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0568",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n*x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0569",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n*x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0570",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n*x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0571",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0572",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0573",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0574",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0575",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !e!x foo\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0576",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !e!x foo\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0577",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !e!x foo\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0578",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !e!x foo\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0579",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x [foo]\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0580",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x [foo]\nb: *x\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0581",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x [foo]\nb: *x\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0582",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &x [foo]\nb: *x\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0583",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  b: c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0584",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  b: c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0585",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  b: c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0586",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  b: c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0587",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n|\n  abc\n  def\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0588",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n|\n  abc\n  def\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0589",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n|\n  abc\n  def\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0590",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n|\n  abc\n  def\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0591",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 'quoted'\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0592",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 'quoted'\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0593",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 'quoted'\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0594",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 'quoted'\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0595",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: \"double\\tquoted\"\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0596",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: \"double\\tquoted\"\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0597",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: \"double\\tquoted\"\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0598",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: \"double\\tquoted\"\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0599",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: # comment\n  b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0600",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: # comment\n  b\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0601",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: # comment\n  b\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0602",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: # comment\n  b\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0603",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0604",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{}\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0605",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{}\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0606",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n{}\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0607",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0608",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[]\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0609",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[]\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0610",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n[]\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0611",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  - b\n  - c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0612",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  - b\n  - c\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0613",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  - b\n  - c\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0614",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na:\n  - b\n  - c\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0615",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0616",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0617",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0618",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n!<tag:example.org,2026:foo> bar\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0619",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0620",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0621",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n---\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0622",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n---\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0623",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0624",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n...\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0625",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n...\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0626",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n...\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0627",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n# a comment\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0628",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n# a comment\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0629",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n# a comment\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0630",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\n# a comment\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0631",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: *undefined\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0632",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: *undefined\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0633",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: *undefined\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0634",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: *undefined\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0635",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0636",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0637",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0638",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: &a\n  k: v\nb: *a\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0639",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !!str true\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0640",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !!str true\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0641",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !!str true\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0642",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: !!str true\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0643",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 0\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0644",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 0\nb: yes\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0645",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 0\nb: yes\n\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0646",
+      "kind": "single",
+      "yaml": "%TAG !e! tag:example.com,2026:\n%YAML 1.2\n---\na: 0\nb: yes\n\n...\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0647",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\nb: *x\n",
+      "expected": "reject",
+      "note": "reject_cross_doc_anchor"
+    },
+    {
+      "id": "F0648",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0649",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "accept",
+      "note": "accept_redeclared_anchor"
+    },
+    {
+      "id": "F0650",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0651",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0652",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0653",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0654",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0655",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0656",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0657",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0658",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0659",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0660",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0661",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0662",
+      "kind": "multi",
+      "yaml": "---\na: &x foo\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0663",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0664",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0665",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0666",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0667",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0668",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0669",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0670",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0671",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0672",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0673",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0674",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0675",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0676",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0677",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0678",
+      "kind": "multi",
+      "yaml": "---\na: &x [a, b]\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0679",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0680",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0681",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0682",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0683",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0684",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0685",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0686",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0687",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0688",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0689",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0690",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0691",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0692",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0693",
+      "kind": "multi",
+      "yaml": "---\none: value\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0694",
+      "kind": "multi",
+      "yaml": "---\none: value\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0695",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0696",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0697",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0698",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0699",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0700",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0701",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0702",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0703",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0704",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0705",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0706",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0707",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0708",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0709",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0710",
+      "kind": "multi",
+      "yaml": "---\n!e!foo bar\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0711",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0712",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0713",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0714",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0715",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0716",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0717",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0718",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0719",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0720",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0721",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0722",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0723",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0724",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0725",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0726",
+      "kind": "multi",
+      "yaml": "---\n- a\n- b\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0727",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0728",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0729",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0730",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0731",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0732",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0733",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0734",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0735",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0736",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0737",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0738",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0739",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0740",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0741",
+      "kind": "multi",
+      "yaml": "---\n{}\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0742",
+      "kind": "multi",
+      "yaml": "---\n{}\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0743",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0744",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0745",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0746",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0747",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0748",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0749",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0750",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0751",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0752",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0753",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0754",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0755",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0756",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0757",
+      "kind": "multi",
+      "yaml": "---\n[]\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0758",
+      "kind": "multi",
+      "yaml": "---\n[]\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0759",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0760",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0761",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0762",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\nb: &x bar\nc: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0763",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0764",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\nb: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0765",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0766",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\n!e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0767",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0768",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\n&x [*x]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0769",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0770",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\nb: !e!foo bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0771",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0772",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\n- a\n- b\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0773",
+      "kind": "multi",
+      "yaml": "---\n*z\n...\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0774",
+      "kind": "multi",
+      "yaml": "---\n*z\n---\n{}\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0775",
+      "kind": "semantic_control",
+      "yaml": "---\na: &x hello\nb: *x\n",
+      "expected": "accept",
+      "note": "accept_local_anchor"
+    },
+    {
+      "id": "F0776",
+      "kind": "semantic_control",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!foo bar\n",
+      "expected": "accept",
+      "note": "accept_declared_tag"
+    },
+    {
+      "id": "F0777",
+      "kind": "semantic_control",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!foo bar\n...\n---\n!e!foo bar\n",
+      "expected": "reject",
+      "note": "reject_cross_doc_tag"
+    },
+    {
+      "id": "F0778",
+      "kind": "semantic_control",
+      "yaml": "%TAG !e! tag:example.com,2026:\n---\n!e!foo bar\n...\n%TAG !e! tag:example.com,2026:\n---\n!e!foo bar\n",
+      "expected": "accept",
+      "note": "accept_redeclared_tag"
+    },
+    {
+      "id": "F0779",
+      "kind": "edge",
+      "yaml": "---\r\nfoo: bar\r\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0780",
+      "kind": "edge",
+      "yaml": "﻿---\nfoo: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0781",
+      "kind": "edge",
+      "yaml": "---\nfoo: bar # trailing\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0782",
+      "kind": "edge",
+      "yaml": "%TAG !x! tag:example.org,2026:\n---\n!x!data 42\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0783",
+      "kind": "edge",
+      "yaml": "%TAG !x! tag:example.org,2026:\n---\n!x!data 42\n...\n---\n!x!data 42\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0784",
+      "kind": "edge",
+      "yaml": "---\na: &x x\n...\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0785",
+      "kind": "edge",
+      "yaml": "---\na: &x [a]\n---\nb: *x\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0786",
+      "kind": "edge",
+      "yaml": "---\n[]\n...\n...\n---\n[]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0787",
+      "kind": "edge",
+      "yaml": "---\n...\n---\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0788",
+      "kind": "edge",
+      "yaml": "---\n!h!missing data\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0789",
+      "kind": "edge",
+      "yaml": "---\na: &x \"quoted\"\nb: *x\n...",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0790",
+      "kind": "edge",
+      "yaml": "---\na: >-\n  text\n\nb: yes\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0791",
+      "kind": "edge",
+      "yaml": "---\na:\n  b: c\n  c: &c d\n...\n---\nb: *c\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0792",
+      "kind": "edge",
+      "yaml": "---\na: [x, {k: v}]\n...\n---\na: [x, {k: v}]\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0793",
+      "kind": "edge",
+      "yaml": "---\na: &x x\n...\n%TAG !e! tag:example.org,2026:\n---\n!e!y z\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0794",
+      "kind": "edge",
+      "yaml": "\n---\nfoo: bar\n",
+      "expected": "unknown",
+      "note": ""
+    },
+    {
+      "id": "F0795",
+      "kind": "edge",
+      "yaml": "# one\n---\na: b\n# two\n...\n",
+      "expected": "unknown",
+      "note": ""
+    }
+  ]
+}
