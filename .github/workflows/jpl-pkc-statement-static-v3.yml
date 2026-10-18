@@ -1,0 +1,70 @@
+name: JPL PKC statement authority static source gate V3
+
+on:
+  push:
+    branches:
+      - research/jpl-pkc-checked-statement-v3-20261019
+    paths:
+      - '.github/workflows/jpl-pkc-statement-static-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-source-semantics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read only pinned JPL PKC source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: e0deb453e05ffa63297d9704ceb47d0855193824
+          persist-credentials: false
+      - name: Independently inspect citation logic and negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, subprocess
+          sha="e0deb453e05ffa63297d9704ceb47d0855193824"
+          assert subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()==sha
+          paths={
+            "model":Path("interchange/PropertyKindCalculus/Interchange/Model.lean"),
+            "harvest":Path("interchange/PropertyKindCalculus/Interchange/Harvest.lean"),
+            "emitter":Path("interchange/PropertyKindCalculus/Interchange/EmitLean.lean"),
+            "ingest":Path("scripts/ingest-sysml.lean"),
+            "dsl":Path("sysml/PKC.sysml")
+          }
+          s={k:p.read_text() for k,p in paths.items()}
+          verifier=s["harvest"].split("def unverifiedCitations (m : PkcModel)")[1].split("/-! ## Entry point")[0]
+          emitter=s["emitter"].split("def citationComment")[1].split("/-- The module's principle definitions.")[0]
+          checks={
+            "checked_statement_is_model_field": "statement : Option String := none" in s["model"],
+            "model_claims_statement_checked": "checked against the environment on import, never trusted" in s["model"],
+            "verifier_only_looks_up_c_decl": "let n := c.decl.toName" in verifier and "notEvidence env n" in verifier,
+            "verifier_does_not_reference_statement": "c.statement" not in verifier,
+            "emitter_renders_statement_in_comment": "c.statement.map" in emitter and "-- checked:" in emitter,
+            "ingest_uses_actual_verifier": "Harvest.unverifiedCitations m" in s["ingest"],
+            "dsl_exposes_statement": "attribute statement : String[0..1]" in s["dsl"],
+          }
+          def detector(code): return "c.statement" not in code
+          checks["detector_rejects_injected_use"]=(not detector(verifier+"\nlet x := c.statement"))
+          checks["detector_accepts_absence"]=detector(verifier)
+          assert all(checks.values()), checks
+          receipt={"source":sha,"verdict":"SOURCE_CONFIRMED_UNCHECKED_OPTIONAL_STATEMENT",
+                   "qualification":"STATIC_SOURCE_CONTROL_ONLY; native behavior not claimed",
+                   "source_sha256":{k:hashlib.sha256(p.read_bytes()).hexdigest() for k,p in paths.items()},
+                   "controls":checks}
+          Path("pkc-statement-source-v3.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"verdict":receipt["verdict"],"checks":len(checks),"all_pass":all(checks.values())}))
+          PY
+      - name: Archive source-authority receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jpl-pkc-static-source-v3
+          path: pkc-statement-source-v3.json
+          if-no-files-found: ignore
