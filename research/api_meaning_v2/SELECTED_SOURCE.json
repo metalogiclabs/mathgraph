@@ -1,0 +1,18 @@
+{
+  "protocol": "API_MEANING_PROSPECTIVE_V2",
+  "selected_ordinal": 1,
+  "repo": "simplejson/simplejson",
+  "sha": "9950b7e5f4443fff8defb51e80e41ab40d0a36b9",
+  "language": "Python",
+  "archived": false,
+  "disabled": false,
+  "default_branch": "main",
+  "module": "simplejson",
+  "selection_procedure": "first eligible in preregistered pool by public repository metadata only; no API files, tests or outcomes were viewed before selection",
+  "frozen_method_sha": "59ac640702a51a19367802adf4869a5174880a80",
+  "frozen_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39219056538",
+  "frozen_artifact_sha256": "32f8fb428aad568e50caa153970da0394574f93e6374da6ad8a747f7b4f9142c",
+  "prior_source": "python-hyper/hpack (EXPOSED TRAINING)",
+  "prospective_separation": "new source relative to V2 freeze; not a claim it is globally unseen by every researcher",
+  "no_fallback_after_results": true
+}
