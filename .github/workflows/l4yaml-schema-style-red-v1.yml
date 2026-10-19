@@ -3,7 +3,7 @@ name: L4YAML issue 6 - independent original RED semantic roundtrip
 on:
   push:
     branches:
-      - research/l4yaml-schema-style-red-20261019
+      - research/l4yaml-schema-style-red-narrow-20261019
     paths:
       - 'research/l4yaml_schema_style_v1/**'
       - '.github/workflows/l4yaml-schema-style-red-v1.yml'
@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
           cd target
-          lake build L4YAML 2>&1 | tee "$RUNNER_TEMP/l4yaml-original-build.log"
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump 2>&1 | tee "$RUNNER_TEMP/l4yaml-original-build.log"
       - name: Execute original Lean source-native semantic probe
         shell: bash
         run: |
@@ -86,5 +86,5 @@ jobs:
             research/l4yaml_schema_style_v1/Probe.lean
             research/l4yaml_schema_style_v1/analyze.py
             research/l4yaml_schema_style_v1/results/
-            \${{ runner.temp }}/l4yaml-original-build.log
+            ${{ runner.temp }}/l4yaml-original-build.log
           if-no-files-found: ignore
