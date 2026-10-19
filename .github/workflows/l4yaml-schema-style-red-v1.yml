@@ -41,14 +41,14 @@ jobs:
           curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Build source-native YAML module, not unrelated default targets
+      - name: Build source-native typed API, deriving and Dump only
         shell: bash
         timeout-minutes: 40
         run: |
           set -euo pipefail
           export PATH="$HOME/.elan/bin:$PATH"
           cd target
-          lake build L4YAML 2>&1 | tee "$RUNNER_TEMP/l4yaml-original-build.log"
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump 2>&1 | tee "$RUNNER_TEMP/l4yaml-original-build.log"
       - name: Execute original Lean source-native semantic probe
         shell: bash
         run: |
