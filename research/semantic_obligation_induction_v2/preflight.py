@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory() as dirname:
         assert [x["id"] for x in left["obligations"]]==obligations,(label,left)
         assert [x["id"] for x in right["obligations"]]==obligations,(label,right)
         assert left["obligations"]==right["obligations"],(label,left,right)
-        assert (left["status"]=="UNKNOWN_NO_SUPPORTED_RELATION")==not bool(obligations)
+        assert (left["status"] == "UNKNOWN_NO_SUPPORTED_RELATION") == (not bool(obligations))
     path.write_text('from .writer import dumps\n')
     md_ambiguous={**md,"description":"TOML and JSON"}
     assert candidate.propose(md_ambiguous,path)["status"]=="UNKNOWN_NO_SUPPORTED_RELATION"
