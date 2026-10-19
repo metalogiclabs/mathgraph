@@ -4,6 +4,7 @@ import {createHmac,sign,timingSafeEqual} from "node:crypto";
 import {resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {analyze,checkOutput,githubAPI,loadPR} from "./core.mjs";
+import {handlePKCYamlSignedEvent} from "./pkc-yaml-webhook-bridge.mjs";
 
 export function signatureOK(raw,header,secret) {
   if (!secret || typeof header!=="string" || !/^sha256=[a-f0-9]{64}$/i.test(header))
@@ -26,6 +27,19 @@ export function accepted(event,action,repository,allow) {
     ["opened","reopened","edited","synchronize","ready_for_review"].includes(action) &&
     allow.has(repository);
 }
+async function appAPI(path,token,method="GET",body) {
+  if(method!=="GET_BYTES")return githubAPI(path,token,method,body);
+  if(path!=="/repos/metalogiclabs/mathgraph/actions/artifacts/12171240289/zip")
+    throw Error("ZIP_PATH_NOT_ALLOWLISTED");
+  const response=await fetch("https://api.github.com"+path,{method:"GET",
+    headers:{Authorization:"Bearer "+token,Accept:"application/vnd.github+json",
+      "X-GitHub-Api-Version":"2022-11-28","User-Agent":"MathGraph-Check-v0"},
+    signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw Error("ZIP_DOWNLOAD_HTTP_"+response.status);
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.length>2_000_000)throw Error("ZIP_TOO_LARGE");
+  return bytes;
+}
 async function handlePR(payload,config) {
   const repository=payload.repository.full_name,number=payload.pull_request.number;
   const originalHead=payload.pull_request.head.sha;
@@ -33,6 +47,14 @@ async function handlePR(payload,config) {
   const auth=await githubAPI("/app/installations/"+payload.installation.id+
     "/access_tokens",jwt,"POST",{});
   if (!auth?.token) throw new Error("INSTALLATION_TOKEN_UNAVAILABLE");
+  if(config.pkcYamlEnabled && repository==="metalogiclabs/mathgraph") {
+    // Signed and allowlisted before handlePR. Opt-in source-specific App route.
+    // No fallback to a generic Check after a denied PKC/YAML publication.
+    return handlePKCYamlSignedEvent({event:"pull_request",action:payload.action,
+      payload,signatureVerified:true,enabled:true,
+      allowRepos:[...config.allow],githubAPI:appAPI,token:auth.token,
+      appId:config.appID,installed:true});
+  }
   const snapshot=await loadPR(repository,number,auth.token);
   if (snapshot.sha!==originalHead) return; // stale delivery
   const report=analyze(snapshot);
@@ -63,7 +85,8 @@ export function start(env=process.env) {
   const allow=new Set(String(env.MATHGRAPH_ALLOWED_REPOS||"").split(",").map(s=>s.trim()).filter(Boolean));
   if (!key || !secret || !id || !allow.size ||
       !Number.isSafeInteger(appID) || appID<1) throw new Error("MISSING_APP_CONFIG");
-  const deliveries=new Set(),inFlight=new Set(),config={key,id,appID};
+  const deliveries=new Set(),inFlight=new Set(),config={key,id,appID,
+    allow,pkcYamlEnabled:env.MATHGRAPH_PKC_YAML_LIVE==="true"};
   const server=http.createServer(async(req,res)=>{
     if (req.method==="GET" && req.url==="/health") {
       res.writeHead(200);res.end("ok");return;
