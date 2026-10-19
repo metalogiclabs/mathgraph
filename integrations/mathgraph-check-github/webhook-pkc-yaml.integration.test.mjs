@@ -35,7 +35,7 @@ test("signed HTTP delivery with enabled PKC route refuses invalid archive before
     "x-hub-signature-256":signature},body:raw});
   assert.equal(response.status,202);
   for(let i=0;i<100&&metadataReads===0;i++)await new Promise(r=>setTimeout(r,10));
-  assert.equal(metadataReads,1);
+  assert.equal(metadataReads,0,"unqualified carrier must not reach artifact API");
   assert.equal(writes,0);
  }finally{globalThis.fetch=original;if(server)await new Promise(resolve=>server.close(resolve))}
 });
