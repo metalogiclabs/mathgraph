@@ -1,0 +1,91 @@
+name: API V2 source-derived claim warrant retraction and replay
+
+on:
+  push:
+    branches:
+      - research/semantic-obligation-second-source-tomlkit-v2-20261019
+    paths:
+      - 'research/semantic_obligation_induction_v2/warrant_bridge.py'
+      - '.github/workflows/semantic-obligation-v2-warrant-bridge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  independent-original-native-evidence-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout independent bounded auditor
+        uses: actions/checkout@v4
+      - name: Python 3.12 source-neutral audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Authenticate exact immutable workflow source and artifact identities
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171145856 --jq .digest)" = "sha256:970ec878de4695957469bfbfe0dcad434f910127319b2f3dd3009a6d8e70de26"
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12170863639 --jq .digest)" = "sha256:5d0da6f75b424cd8e396a744816605a71e7f99ec34e1b0dac2eb91ed7f8e717c"
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171145856 --jq .expired)" = false
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12170863639 --jq .expired)" = false
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171145856 --jq .workflow_run.head_sha)" = "ef113f185c998ce7913e5fae3e8d0bdcd01ee0ac"
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12170863639 --jq .workflow_run.head_sha)" = "c30e8f8ffaec0b0e996cbecbf7a963de3ed1d9bf"
+          test "$(git hash-object research/semantic_obligation_induction_v2/propose.py)" = "1efeb311582a9d88cd37e75f3656c583322f07ab"
+          test "$(git hash-object research/semantic_obligation_induction_v2/expert_reference.py)" = "55bd59cda8dedc101188c0777b79ed6dce6e643c"
+          test "$(git hash-object research/semantic_obligation_induction_v1/evaluate.py)" = "e70ca1625c5e0dc1b9ff7f31deee024e35f5ad0d"
+          echo "TWO_SOURCE_SOURCE_METHOD_ARTIFACT_AUTHORITIES_AUTHENTICATED"
+      - name: Download only original exact-head source-native evidence archives
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/tomliw evidence/tomlkit
+          gh run download 39219102534 --repo metalogiclabs/mathgraph \
+            --name prospective-semantic-obligations-alias-v2 --dir evidence/tomliw
+          gh run download 39219770458 --repo metalogiclabs/mathgraph \
+            --name prospective-second-source-tomlkit-alias-v2 --dir evidence/tomlkit
+      - name: Independently inspect native JUnit, sealed proposals and both semantic receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/semantic_obligation_induction_v2/dual_source_audit.py \
+            --first evidence/tomliw --second evidence/tomlkit \
+            --output evidence/dual-source-evidence.json
+          echo "WARRANTED_BOUNDED_V2_TWO_SOURCE_SCIENTIFIC_RECEIPT_AUDIT_COMPLETE"
+      - name: Checkout pinned original unchanged cross-domain warrant engine
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e38e73287e82006795d629acbfb13bf7e1895d03
+          path: frozen-warrant-v1
+          persist-credentials: false
+      - name: Admit bounded new semantic obligations and test precise premise withdrawals
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen-warrant-v1 rev-parse HEAD)" = e38e73287e82006795d629acbfb13bf7e1895d03
+          test "$(git -C frozen-warrant-v1 hash-object research/cross_domain_correspondence_v1/protocol.py)" = 2b50c382407cd3da07c95b4863b74947fb489920
+          python research/semantic_obligation_induction_v2/warrant_bridge.py \
+            --first evidence/tomliw --second evidence/tomlkit \
+            --qualified evidence/dual-source-evidence.json \
+            --core frozen-warrant-v1/research/cross_domain_correspondence_v1/protocol.py \
+            --output evidence/dual-source-warrant-bridge.json
+          echo "UNCHANGED_V1_WARRANT_CORE_QUALIFIED_NEW_OBLIGATION_DEPENDENCY_WITHDRAWAL"
+      - name: Preserve bounded claim, negative lineage and original evidence pointers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-api-obligation-v2-claimed-warrants
+          path: |
+            evidence/dual-source-evidence.json
+            evidence/dual-source-warrant-bridge.json
+            research/semantic_obligation_induction_v2/warrant_bridge.py
+            research/semantic_obligation_induction_v2/dual_source_audit.py
+          if-no-files-found: warn
