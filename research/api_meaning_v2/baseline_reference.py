@@ -8,7 +8,7 @@ import argparse,copy,hashlib,importlib,inspect,json,re,subprocess
 from pathlib import Path
 FIXTURES=["hello",b"hello","",b"",0,1,True,None,{"x-mg":"v-mg"},
           [("x-mg","v-mg")],[(b"x-mg",b"v-mg")],[(":method","GET")],
-          [(b":method,b"GET")] if False else [(b":method",b"GET")],
+          [(b":method",b"GET")],
           [("x-mg","v-mg"),("x-other","2")],
           [(b"x-mg",b"v-mg"),(b"x-other",b"2")],
           {"x":[1,2],"z":True},2.5]
