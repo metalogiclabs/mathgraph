@@ -3,16 +3,18 @@
 // This module never changes webhook configuration or deploys a Worker.
 import {publishPKCYaml} from "./pkc-yaml-publish-adapter.mjs";
 import {PIN} from "./pkc-yaml-live-boundary.mjs";
+import {carrierAdmitted} from "./pkc-yaml-carrier-policy.mjs";
 const ALLOW="metalogiclabs/mathgraph";
 const ART="/repos/"+ALLOW+"/actions/artifacts/"+PIN.artifact;
 const ZIP=ART+"/zip";
 export async function consumePKCYaml({githubAPI,repo,pr,head,token,
- appId=5308912,installed=false,enabled=false}={}) {
+ appId=5308912,installed=false,enabled=false,carrierFiles=[]}={}) {
  if(!enabled)return {state:"DISABLED"};
  if(repo!==ALLOW || !Number.isSafeInteger(pr) || pr<1 ||
     !/^[a-f0-9]{40}$/.test(head||"") || !token ||
     appId!==5308912 || !installed)throw Error("APP_CARRIER_NOT_AUTHORIZED");
  if(typeof githubAPI!=="function")throw Error("APP_API_REQUIRED");
+ if(!carrierAdmitted(repo,pr,head,carrierFiles))throw Error("DEDICATED_CARRIER_NOT_QUALIFIED");
  // The caller's GitHub client must return raw Uint8Array ZIP bytes for ZIP,
  // not JSON or a redirect body. Refuse unsupported transport.
  const metadata=await githubAPI(ART,token);
