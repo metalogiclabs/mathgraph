@@ -12,7 +12,7 @@ export function projectPKCYamlCheck(report,{carrierRepo,carrierHead,authorized=f
    "\nNo carrier-code finding, NASA/JPL endorsement, or merge authority."}});
  if(!authorized || carrierRepo!=="metalogiclabs/mathgraph" ||
     !SHA.test(carrierHead||""))return unknown("installation/source authority missing");
- if(report?.schema!==SCHEMA || report?.sourceHead!==carrierHead ||
+ if(report?.schema!==SCHEMA || !SHA.test(report?.sourceHead||"") ||
     report?.authority!=="ARCHIVE_SHA256_VERIFIED_BY_WORKFLOW" ||
     report?.liveAppCheck!==false || report?.merge!=="UNKNOWN" ||
     report?.authorization!=="NONE" ||
@@ -32,6 +32,7 @@ export function projectPKCYamlCheck(report,{carrierRepo,carrierHead,authorized=f
    output:{title:"PKC_L4YAML_HISTORICAL_RESEARCH_BOUNDED",
    summary:["**External research subjects:** pinned NASA/JPL PKC and L4YAML; NOT a defect in this carrier PR.",
      "Historical native evidence replay; four modeled selective withdrawals.",
+     "Research receipt source revision: "+report.sourceHead+". Carrier PR revision: "+carrierHead+". These are distinct identities.",
      ...CLAIMS.map(k=>k+": "+baseline[k]),
      "Restoration native requalification: UNKNOWN. General transfer: UNKNOWN.",
      "Archive digest qualification is asserted by the report producer and must be independently checked by the publisher.",
