@@ -1,0 +1,23 @@
+name: API normalization semantic contract V3 pre-exposure
+on:
+  push:
+    branches: [research/api-semantic-contract-v3-20261019]
+    paths:
+      - 'research/api_semantic_contract_v3/**'
+      - '.github/workflows/api-semantic-contract-preflight-v3.yml'
+  pull_request:
+    paths:
+      - 'research/api_semantic_contract_v3/**'
+      - '.github/workflows/api-semantic-contract-preflight-v3.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic source-neutral normalization/URL contracts only
+        run: python research/api_semantic_contract_v3/preflight.py

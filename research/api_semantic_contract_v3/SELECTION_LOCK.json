@@ -1,0 +1,36 @@
+{
+  "protocol": "API_NORMALIZATION_CONTRACT_V3_SELECTION",
+  "method_sha": "b13f64c3caa2210f8c9aa17423d210063683a119",
+  "synthetic_qualification": "https://github.com/metalogiclabs/mathgraph/actions/runs/39219840949",
+  "ordered_pool": [
+    "un33k/python-slugify",
+    "berkerpeksag/awesome-slugify",
+    "mozillazg/python-pinyin",
+    "pyca/idna"
+  ],
+  "source_exposure_before_lock": false,
+  "native_results_seen_before_lock": false,
+  "first_eligible_rule": "first public, nonarchived Python repo with nonempty default branch and no ROS direct prior native source study",
+  "metadata_only_screen": [
+    {
+      "repo": "un33k/python-slugify",
+      "public": true,
+      "archived": false,
+      "language": "Python",
+      "branch": "master",
+      "source_sha": "35aca63fc2672cba2c739ff6dff685a4f26a4f9a",
+      "novelty": "No direct native study found in ROS search and exact scan of primary four ROS registries",
+      "decision": "SELECTED"
+    }
+  ],
+  "selected": {
+    "repository": "un33k/python-slugify",
+    "source_sha": "35aca63fc2672cba2c739ff6dff685a4f26a4f9a",
+    "description": "Returns unicode slugs",
+    "language": "Python",
+    "default_branch": "master",
+    "private": false,
+    "archived": false
+  },
+  "epistemic_boundary": "ROS negative lookup is bounded; not proof of global novelty. The method is finite and human-authored. No source implementation, test result, or oracle output was inspected at this lock."
+}
