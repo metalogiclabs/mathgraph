@@ -1,0 +1,36 @@
+{
+  "protocol": "SEMANTIC_OBLIGATION_INDUCTION_V2_SELECTION",
+  "freeze_method_commit": "8e6db298f1035288745db8c66861769312c4966f",
+  "freeze_novelty_addendum_commit": "20d338309bc9fe1dc1583f1e7b910e1a86393d89",
+  "ordered_pool": [
+    "uiri/toml",
+    "hukkin/tomli-w",
+    "python-poetry/tomlkit",
+    "simplejson/simplejson"
+  ],
+  "screened": [
+    {
+      "repository": "uiri/toml",
+      "decision": "INELIGIBLE_PRIOR_ROS_NATIVE_SOURCE",
+      "reason": "2026-10-15 Cross-repo coherence transport: uiri/toml six native corrections and stateless comparator tie"
+    },
+    {
+      "repository": "hukkin/tomli-w",
+      "decision": "FIRST_ELIGIBLE",
+      "reason": "Public; not archived; language Python; default master; no direct prior native study found by ROS keyword search"
+    }
+  ],
+  "selected": {
+    "repository": "hukkin/tomli-w",
+    "source_sha": "1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d",
+    "language": "Python",
+    "description": "A lil' TOML writer (counterpart to https://github.com/hukkin/tomli)",
+    "default_branch": "master",
+    "archived": false,
+    "private": false
+  },
+  "source_exposure_before_lock": false,
+  "performance_outcomes_examined_before_lock": false,
+  "baseline": "frozen expert authored standard pair cookbook, equal metadata/API input and native oracle budget",
+  "caution": "ROS search not an exhaustive proof of worldwide or historical source novelty; held-out means not previously source-native studied in located ROS evidence."
+}
