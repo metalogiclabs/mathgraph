@@ -9,7 +9,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
       <div class="eyebrow">Protocol profile</div>
       <StatusTag label="PROPOSED" tone="proposed" />
       <h1>Lean evidence profile</h1>
-      <p class="lede"><code>mathgraph.lean-evidence-profile.draft-1</code> describes how a future record may separate proof validity, statement fidelity, execution, provenance, and generalization. No qualified Lean record currently implements this profile.</p>
+      <p class="lede"><code>mathgraph.lean-evidence-profile.draft-1</code> describes how a future record may separate proof validity, statement fidelity, execution, provenance, and generalization. No qualified Lean record currently implements this profile. The qualified native Lean replay below is a narrower worked example, not a profile adopter.</p>
     </div>
   </header>
 
@@ -21,6 +21,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
         <a href="#declarations">Declarations</a>
         <a href="#toolchain">Toolchain</a>
         <a href="#receipts">Optional receipts</a>
+        <a href="#native-example">Native verification example</a>
         <a href="#maturity">Maturity</a>
       </aside>
       <div class="prose">
@@ -57,6 +58,16 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
           <p>A future record may attach a Comparator receipt, an Independent-kernel receipt, or a review Policy digest. Each receipt must name its URI, digest, and maturity. Absence remains visible.</p>
           <p>Source links and “Open in Lean Playground” links appear only when a future qualified receipt establishes a reproducible environment. Playground convenience is not proof authority.</p>
           <div class="callout callout--unknown"><StatusTag label="Not implemented" tone="unknown" /><p>The current L4YAML public consequence record does not carry this Lean profile, Comparator, Playground, review-policy, or independent-kernel receipts.</p></div>
+        </section>
+
+        <section id="native-example">
+          <div class="eyebrow">Source-pinned verified replay · October 2026</div>
+          <h2>An actual Lean proof receipt, within a narrow declared scope.</h2>
+          <p><StatusTag label="WARRANTED_BOUNDED" tone="bounded" /> A Lean 4.35.0 solution wrapping the existing upstream theorem <code>Nat.gcd_comm</code> passed both <code>lake check --paranoid</code> and <code>lake comparator --paranoid</code> with the default Lean kernel and all bundled independent checkers. The comparator separately rejected a modified statement and an unauthorized added axiom for their intended reasons.</p>
+          <p>Exact checked source: <code>d009cbe2a0094c0df460e892557150847639372f</code>; original Lean source commit: <code>eb6cafb7290e8bd5f2937522d8d804f58f02bafc</code>. The emitted native receipt is SHA-256 <code>9a0bf0cc48f8c88275fc691522509d18ac547e1322fddcf098154e7056e107a0</code>.</p>
+          <p><a href="/evidence/lean435-upstream-gcd-comm-20261014/qualification.json">Machine-readable source and verifier index →</a></p>
+          <p><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/38467582886">Exact-head GitHub Actions run and logs ↗</a> · <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/38467582886/artifacts/11850001218">Native receipt artifact ↗</a></p>
+          <div class="callout callout--unknown"><strong>Bounded replay, not broad proof authority.</strong><p>This reuses an already-proved upstream theorem. It is not novel theorem discovery, natural-language statement alignment, a verification of the indexed MathGraph network or current-source requalification. The source-linked artifact is subject to GitHub Actions retention. The generic Lean profile remains <strong>PROPOSED</strong>; this example is not admitted into the immutable records catalogue.</p></div>
         </section>
 
         <section id="maturity">

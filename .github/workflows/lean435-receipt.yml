@@ -1,0 +1,55 @@
+name: Lean 4.35 independently checked theorem receipt
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'research/lean435_receipt/**'
+      - '.github/workflows/lean435-receipt.yml'
+  push:
+    branches:
+      - research/lean435-source-verified-receipt-20261014
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-paranoid-receipt:
+    name: Source-bound Lean 4.35 native qualification
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install Lean 4.35.0 from the pinned official release
+        run: |
+          curl --fail --silent --show-error --location https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install leanprover/lean4:v4.35.0
+          elan default leanprover/lean4:v4.35.0
+          lean --version
+          lake --version
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Install and check sandbox prerequisite
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap
+          bwrap --version
+          bwrap --ro-bind / / --dev-bind /dev /dev --proc /proc --unshare-net /usr/bin/true
+
+      - name: Native multi-kernel qualification with adversarial controls
+        working-directory: research/lean435_receipt
+        run: python3 qualify.py
+
+      - name: Retain exact logs and fail-closed receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean435-proof-receipt-candidate
+          path: research/lean435_receipt/evidence/
+          if-no-files-found: warn
+          retention-days: 90
