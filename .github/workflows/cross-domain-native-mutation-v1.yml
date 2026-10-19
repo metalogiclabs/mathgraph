@@ -1,0 +1,79 @@
+name: L4YAML source mutation and native restoration V1
+on:
+  pull_request:
+    paths:
+      - research/cross_domain_correspondence_v1/l4yaml_mutation_observer.py
+      - .github/workflows/cross-domain-native-mutation-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-change:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: fdef03caf19e8862792034793da11020b39d6110
+          path: target
+          persist-credentials: false
+      - name: Validate source pin
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = fdef03caf19e8862792034793da11020b39d6110
+          test "$(cat target/lean-toolchain)" = leanprover/lean4:v4.34.0
+      - name: Install source toolchain
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "ruamel.yaml==0.18.17"
+      - name: Baseline original source-native verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          cd target
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump
+          lake env lean ../research/l4yaml_schema_style_v1/Probe.lean > ../verified/original.log
+      - name: One isolated source policy mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          f=Path('target/L4YAML/Output/Dump.lean')
+          s=f.read_text()
+          before='allowReservedPlain : Bool := false'
+          assert s.count(before)==1
+          f.write_text(s.replace(before,'allowReservedPlain : Bool := true'))
+          PY
+          git -C target diff --check
+          git -C target diff -- L4YAML/Output/Dump.lean > verified/source-mutation.patch
+          test -s verified/source-mutation.patch
+          sha256sum verified/source-mutation.patch > verified/source-mutation.sha256
+          cd target
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump
+          lake env lean ../research/l4yaml_schema_style_v1/Probe.lean > ../verified/mutated.log
+      - name: Restore exact original native source then re-execute
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C target restore --source=fdef03caf19e8862792034793da11020b39d6110 -- L4YAML/Output/Dump.lean
+          test -z "$(git -C target diff --name-only)"
+          cd target
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump
+          lake env lean ../research/l4yaml_schema_style_v1/Probe.lean > ../verified/restored.log
+      - name: Independent three-way semantic correspondence audit
+        run: |
+          python research/cross_domain_correspondence_v1/l4yaml_mutation_observer.py --original verified/original.log --mutant verified/mutated.log --restored verified/restored.log --out verified/native-mutation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: l4yaml-native-source-mutation-v1
+          path: verified/
