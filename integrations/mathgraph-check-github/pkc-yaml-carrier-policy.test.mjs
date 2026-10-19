@@ -6,7 +6,7 @@ test("integration PR 176 cannot be a historical evidence-only carrier",()=>{
  [{filename:"integrations/mathgraph-check-github/webhook.mjs"}]),false)});
 test("only dedicated evidence-only carrier admitted",()=>{
  assert.equal(CARRIER.allowedPR,178);
- assert.equal(carrierAdmitted("metalogiclabs/mathgraph",178,"a".repeat(40),
+ assert.equal(carrierAdmitted("metalogiclabs/mathgraph",178,CARRIER.allowedHead,
  [{filename:".mathgraph-check/pkc-yaml/EXTERNAL-RESEARCH-RECEIPT.md"}]),true);
  assert.equal(carrierAdmitted("metalogiclabs/mathgraph",171,"a".repeat(40),
  [{filename:".mathgraph-check/pkc-yaml/receipt.json"}]),false)});
