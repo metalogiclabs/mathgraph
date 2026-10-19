@@ -1,0 +1,23 @@
+{
+  "protocol": "SEMANTIC_OBLIGATION_ALIAS_V2_PROSPECTIVE",
+  "method_freeze_commit": "0f5bf46ba92723f294fbdfcff42a4cc6fe7ad9b9",
+  "method_preflight_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39218709785",
+  "pool": [
+    "hukkin/tomli-w",
+    "python-poetry/tomlkit",
+    "simplejson/simplejson"
+  ],
+  "selected_ordinal": 1,
+  "repository": "hukkin/tomli-w",
+  "description": "A lil' TOML writer (counterpart to https://github.com/hukkin/tomli)",
+  "selected_source_sha": "1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d",
+  "default_branch": "master",
+  "language": "Python",
+  "archived": false,
+  "private": false,
+  "root_api_file": "tomli_w/__init__.py",
+  "chosen_using": "GitHub repository metadata + default branch HEAD only",
+  "source_files_opened_before_freeze": false,
+  "no_fallback": true,
+  "scientific_boundary": "Prospective within this independent V2 lane; global novelty, autonomous semantics, and human advantage are not established."
+}
