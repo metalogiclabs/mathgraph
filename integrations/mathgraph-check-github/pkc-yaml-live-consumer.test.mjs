@@ -11,7 +11,7 @@ test("wrong repository denied",async()=>await assert.rejects(consume({
 test("missing installation token denied",async()=>await assert.rejects(consume({
  githubAPI:async()=>{},enabled:true,repo:"metalogiclabs/mathgraph",pr:171,head,
  installed:true}),/APP_CARRIER_NOT_AUTHORIZED/));
-test("missing artifact authority denied before Check write",async()=>{
+test("unqualified carrier denied before artifact access",async()=>{
  let calls=0;await assert.rejects(consume({githubAPI:async()=>{calls++;return {}},
  enabled:true,repo:"metalogiclabs/mathgraph",pr:171,head,token:"token",
- installed:true}),/ARTIFACT_AUTHORITY_MISMATCH/);assert.equal(calls,1)});
+ installed:true}),/DEDICATED_CARRIER_NOT_QUALIFIED/);assert.equal(calls,0)});
