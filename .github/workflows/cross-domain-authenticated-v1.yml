@@ -1,0 +1,69 @@
+name: Cross-domain V1 authenticated archive replay
+on:
+  push:
+    branches:
+      - research/cross-domain-correspondence-protocol-v1-20261019
+    paths:
+      - research/cross_domain_correspondence_v1/authenticated_receipts.py
+      - .github/workflows/cross-domain-authenticated-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  authenticate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check unmodified frozen protocol
+        run: |
+          set -euo pipefail
+          git show 9c8b427c679398fd80ea56d9a91a1627b2e96b6d:research/cross_domain_correspondence_v1/PROTOCOL.md > /tmp/frozen.md
+          cmp /tmp/frozen.md research/cross_domain_correspondence_v1/PROTOCOL.md
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 4691ae2de91958d5a366f636b4a329a938b76116
+          path: pkc-authority
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 03f8b16d24f4641483f7b3cc1004812dfefb4dbc
+          path: yaml-authority
+          persist-credentials: false
+      - name: Retrieve and SHA256-authenticate both original GitHub artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p original/pkc original/yaml
+          for item in "12155725060 pkc 8546dfc16783f8243329883e12b7a11f49b6d0c7a3634aaa5293e6c32613cbc6" "12156807544 yaml dbe762c882a78e6e49889a7b81d4cd211e6e52dbc17f506fac420bce4e7f298b"; do
+            read -r id label sha <<< "$item"
+            curl --fail --location --retry 3 --header "Authorization: Bearer $GH_TOKEN" --header "Accept: application/vnd.github+json" "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/$id/zip" --output "original/$label.zip"
+            printf '%s  %s\n' "$sha" "original/$label.zip" | sha256sum --check --status
+            unzip -q "original/$label.zip" -d "original/$label"
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Use original native-independent verifier scripts on authenticated raw logs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "PyYAML==6.0.3" "ruamel.yaml==0.18.17"
+          pkc_native="$(find original/pkc -name native-results.tsv -type f -print -quit)"
+          yaml_native="$(find original/yaml -name original-lean.log -type f -print -quit)"
+          test -n "$pkc_native" && test -n "$yaml_native"
+          pkc_dir="$(dirname "$pkc_native")"
+          mkdir -p verified
+          python pkc-authority/research/jpl_pkc_statement_v5/verify_results.py "$pkc_dir"
+          python yaml-authority/research/l4yaml_schema_style_v1/analyze.py --lean-log "$yaml_native" --out verified/yaml.json --expect original-red --upstream-sha fdef03caf19e8862792034793da11020b39d6110
+          python research/cross_domain_correspondence_v1/authenticated_receipts.py "$pkc_dir/PINNED_RESULT.json" verified/yaml.json verified/cross-domain.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-domain-authenticated-v1
+          path: verified/
+          if-no-files-found: warn
