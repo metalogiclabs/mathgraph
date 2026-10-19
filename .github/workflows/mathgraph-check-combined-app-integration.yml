@@ -9,6 +9,7 @@ on:
       - .github/workflows/mathgraph-check-combined-app-integration.yml
 permissions:
   contents: read
+  actions: read
 jobs:
   combined-webhook:
     runs-on: ubuntu-latest
@@ -21,5 +22,13 @@ jobs:
         run: |
           set -euo pipefail
           node --test integrations/mathgraph-check-github/*.test.mjs
+      - name: Rehearse App publisher using real pinned archive bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171240289/zip > /tmp/pkc-yaml-pinned.zip
+          printf '%s  %s\n' '2bbd575f1d93759a734fa459f4f48be599411a44b91d0627b397d02d4f8b98f9' /tmp/pkc-yaml-pinned.zip | sha256sum -c -
+          node integrations/mathgraph-check-github/pkc-yaml-positive-publisher-probe.mjs /tmp/pkc-yaml-pinned.zip
 
 # Live publication remains disabled until a separate evidence-only carrier is pinned.
