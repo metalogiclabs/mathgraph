@@ -33,9 +33,12 @@ jobs:
           printf '%s  %s\n' '073a2759ceb02d759a94766589efa64b76e67348fd420d5280549de693e2f5cf' /tmp/mathgraph-evidence/archive.zip | sha256sum -c -
           unzip -q /tmp/mathgraph-evidence/archive.zip -d /tmp/mathgraph-evidence
           node research/cross_domain_correspondence_v1/check_archive_report.mjs /tmp/mathgraph-evidence/cross-domain.json /tmp/mathgraph-evidence/yaml.json /tmp/mathgraph-evidence/shadow-report.json
+          node integrations/mathgraph-check-github/pkc-yaml-check-render.mjs /tmp/mathgraph-evidence/shadow-report.json /tmp/mathgraph-evidence/check-payload.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mathgraph-check-pkc-yaml-authenticated-shadow
-          path: /tmp/mathgraph-evidence/shadow-report.json
+          path: |
+            /tmp/mathgraph-evidence/shadow-report.json
+            /tmp/mathgraph-evidence/check-payload.json
           if-no-files-found: warn
