@@ -1,0 +1,90 @@
+name: L4YAML V8 physical scalar authority and native warrant requalification
+
+on:
+  push:
+    branches:
+      - research/l4yaml-v8-native-qualification-20261019
+    paths:
+      - 'research/l4yaml_physical_withdrawal_v1/**'
+      - '.github/workflows/l4yaml-physical-source-v8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  three-lane-native-qualification:
+    name: Pinned JPL source BASE-MUTANT-RESTORED plus independent YAML readers
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout owned frozen protocol and unchanged MathGraph V1 warrant core
+        uses: actions/checkout@v4
+      - name: Checkout exactly pinned NASA/JPL L4YAML source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: fdef03caf19e8862792034793da11020b39d6110
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Checkout frozen original RED observer, no changes
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 03f8b16d24f4641483f7b3cc1004812dfefb4dbc
+          path: frozen-original
+          persist-credentials: false
+      - name: Verify source blob, preregistered mutation and frozen observers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "fdef03caf19e8862792034793da11020b39d6110"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.34.0"
+          test "$(git -C target hash-object L4YAML/Output/Dump.lean)" = "e6495cba339246b1954f3d4be9dd286a564cb4c0"
+          test "$(git -C frozen-original rev-parse HEAD)" = "03f8b16d24f4641483f7b3cc1004812dfefb4dbc"
+          test "$(git -C frozen-original hash-object research/l4yaml_schema_style_v1/Probe.lean)" = "81659ba21ccfdf6e1a43879c2318a8010f58ae55"
+          test "$(git -C frozen-original hash-object research/l4yaml_schema_style_v1/analyze.py)" = "1e701edbfac8ef6cd6f2b92dac28d6bc6639e7e2"
+          test "$(git hash-object research/cross_domain_correspondence_v1/protocol.py)" = "2b50c382407cd3da07c95b4863b74947fb489920"
+          sha256sum research/l4yaml_physical_withdrawal_v1/{PROTOCOL.md,mutate.py,audit.py,link_v1.py,run.sh}
+      - name: Install original source-locked Lean 4.34
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install immutable independent external YAML readers
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pin external interpretation versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "PyYAML==6.0.3" "ruamel.yaml==0.18.17"
+          python - <<'PY'
+          import yaml
+          from ruamel.yaml import YAML
+          p=YAML(typ='safe'); p.version=(1,2)
+          assert yaml.__version__ == "6.0.3"
+          assert p.load('"null"') == 'null'
+          assert p.load('null') is None
+          assert yaml.safe_load('"true"')=='true'
+          assert yaml.safe_load('true') is True
+          print("L4YAML_V8_INDEPENDENT_READER_VERSIONS_PINNED")
+          PY
+      - name: Rebuild original native source in three lanes and independently requalify claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash research/l4yaml_physical_withdrawal_v1/run.sh
+      - name: Archive native logs, original mutant diff, exact restoration and independent receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l4yaml-v8-physical-native-source-requalification
+          path: |
+            research/l4yaml_physical_withdrawal_v1/
+          if-no-files-found: warn
