@@ -14,6 +14,7 @@ export function projectPKCYamlCheck(report,{carrierRepo,carrierHead,authorized=f
     !SHA.test(carrierHead||""))return unknown("installation/source authority missing");
  if(report?.schema!==SCHEMA || !SHA.test(report?.sourceHead||"") ||
     report?.authority!=="ARCHIVE_SHA256_VERIFIED_BY_WORKFLOW" ||
+    report?.sourceHead==="0".repeat(40) ||
     report?.liveAppCheck!==false || report?.merge!=="UNKNOWN" ||
     report?.authorization!=="NONE" ||
     report?.restoration!=="UNKNOWN_NATIVE_REPLAY_REQUIRED" ||
