@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: '22'
       - name: Fail-closed advisory regression controls
-        run: node --test research/cross_domain_correspondence_v1/check_advisory.test.mjs
+        run: node --test research/cross_domain_correspondence_v1/check_advisory.test.mjs research/cross_domain_correspondence_v1/check_receipt_gate.test.mjs
