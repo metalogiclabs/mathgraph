@@ -1,0 +1,57 @@
+{
+  "protocol": "DOC_EXAMPLE_METHOD_V6_SELECTION",
+  "frozen_method_commit": "dfcc088ca6f4a280272c361e043dd0f49afa1b5b",
+  "pinned_export_resolver": "7f38aa7029c8d89006db956941767033b09717ca",
+  "preexposure_synthetic_and_exposed_training_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39227491731",
+  "ordered_pool": [
+    "humanize/humanize",
+    "cachetools/cachetools",
+    "more-itertools/more-itertools",
+    "pydash/pydash",
+    "lepture/mistune"
+  ],
+  "screening": [
+    {
+      "repo": "humanize/humanize",
+      "status": "INELIGIBLE_404",
+      "authority": "GitHub public repository metadata not resolvable",
+      "source_opened": false
+    },
+    {
+      "repo": "cachetools/cachetools",
+      "status": "INELIGIBLE_404",
+      "authority": "GitHub public repository metadata not resolvable",
+      "source_opened": false
+    },
+    {
+      "repo": "more-itertools/more-itertools",
+      "status": "INELIGIBLE_ROS_EXPOSED",
+      "authority": "2026-10-16 UDM direct original source training PR 1309; zero native calls but already inspected source",
+      "source_opened": false
+    },
+    {
+      "repo": "pydash/pydash",
+      "status": "INELIGIBLE_NON_PYTHON",
+      "authority": "GitHub metadata language null, description profile config, not Python library",
+      "source_opened": false
+    },
+    {
+      "repo": "lepture/mistune",
+      "status": "FIRST_ELIGIBLE",
+      "authority": "public, Python, not archived, default main; no prior direct source study found in ROS exact search and likely page texts",
+      "source_opened": false
+    }
+  ],
+  "selected": {
+    "repo": "lepture/mistune",
+    "sha": "d449488ce6baf5bcc386186cc01c40bf2afdc82c",
+    "language": "Python",
+    "description": "A fast yet powerful Python Markdown parser with renderers and plugins.",
+    "default_branch": "main",
+    "public": true,
+    "archived": false
+  },
+  "future_source_files_or_tests_inspected_before_selection": false,
+  "outcome_based_selection": false,
+  "limitation": "ROS search no-direct-hit cannot prove unseen globally. Finite doc-example grammar was manually frozen. No actual human expert baseline."
+}
