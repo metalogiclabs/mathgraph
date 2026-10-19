@@ -1,6 +1,8 @@
 -- Source-native red baseline for nasa-jpl/L4YAML issue #6.
 -- Source stays unchanged. This is a legacy file to avoid the separate issue #5.
-import L4YAML
+import L4YAML.Schema.Api
+import L4YAML.Schema.Deriving
+import L4YAML.Output.Dump
 open L4YAML
 
 structure Q where
