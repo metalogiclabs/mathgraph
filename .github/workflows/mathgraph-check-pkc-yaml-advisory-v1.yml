@@ -1,0 +1,22 @@
+name: MathGraph Check PKC L4YAML advisory shadow
+on:
+  push:
+    branches:
+      - research/mathgraph-check-pkc-yaml-advisory-v1-20261019
+  pull_request:
+    paths:
+      - research/cross_domain_correspondence_v1/check_advisory*
+      - .github/workflows/mathgraph-check-pkc-yaml-advisory-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  advisory-shadow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail-closed advisory regression controls
+        run: node --test research/cross_domain_correspondence_v1/check_advisory.test.mjs
