@@ -1,0 +1,42 @@
+{
+  "protocol": "API_EXPORT_CLOSURE_V4_PROSPECTIVE_SELECTION",
+  "frozen_method_commit": "7f38aa7029c8d89006db956941767033b09717ca",
+  "legacy_evaluator_and_baseline_commit": "b13f64c3caa2210f8c9aa17423d210063683a119",
+  "pre_exposure_training_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39221945534",
+  "prior_failed_prospect_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39220171200",
+  "ordered_pool": [
+    "berkerpeksag/awesome-slugify",
+    "mozillazg/python-pinyin",
+    "pyca/idna"
+  ],
+  "metadata_selection": [
+    {
+      "repository": "berkerpeksag/awesome-slugify",
+      "status": "INELIGIBLE_PUBLIC_REPOSITORY_NOT_RESOLVED",
+      "evidence": "GitHub connector repositories.get 404; no source or test inspected"
+    },
+    {
+      "repository": "mozillazg/python-pinyin",
+      "status": "FIRST_ELIGIBLE",
+      "source_sha": "85bf408b3b326676e4e1ffa727f8063774f709f6",
+      "language": "Python",
+      "private": false,
+      "archived": false,
+      "default_branch": "master",
+      "ros_prior_native": "No exact direct native study in canonical state, checkpoints, papers, campaigns via inspected text and targeted Notion search"
+    }
+  ],
+  "selected": {
+    "repository": "mozillazg/python-pinyin",
+    "source_sha": "85bf408b3b326676e4e1ffa727f8063774f709f6",
+    "description": "汉字转拼音(pypinyin)",
+    "default_branch": "master",
+    "language": "Python",
+    "private": false,
+    "archived": false
+  },
+  "source_bytes_inspected_before_selection": false,
+  "native_or_oracle_outcomes_seen_before_selection": false,
+  "reservations": "Static source AST scan may return UNKNOWN for dynamic public imports, API might be incompatible with unary normalization, native test suite might fail. None permits source substitution.",
+  "no_claim": "No automatic grammar construction or real human expert win; V3 negative and prior native JPL evidence remain separate."
+}

@@ -1,0 +1,143 @@
+name: V4 frozen static export closure prospective native
+on:
+  pull_request:
+    paths:
+      - 'research/api_export_closure_v4/**'
+      - '.github/workflows/api-export-closure-v4-prospective.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prospective-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout research branch for frozen-file comparisons
+        uses: actions/checkout@v4
+      - name: Checkout V4 frozen static observer
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 7f38aa7029c8d89006db956941767033b09717ca
+          path: static-authority
+          persist-credentials: false
+      - name: Checkout unchanged V3 relation proposer, expert baseline and verifier
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: b13f64c3caa2210f8c9aa17423d210063683a119
+          path: relation-authority
+          persist-credentials: false
+      - name: Checkout pre-exposure source selection
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: d148301914ab1f88fe70d396205a6246c24c720b
+          path: selection-authority
+          persist-credentials: false
+      - name: Fail closed on changed method/protocol/selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          p=research/api_export_closure_v4
+          for file in resolve.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "static-authority/$p/$file" "$p/$file"
+          done
+          cmp "selection-authority/$p/SELECTION_LOCK.json" "$p/SELECTION_LOCK.json"
+          mkdir -p verified
+          sha256sum "static-authority/$p/"{resolve.py,preflight.py,FROZEN_PROTOCOL.md} > verified/v4-frozen-method-sha256.txt
+          sha256sum "relation-authority/research/api_semantic_contract_v3/"{propose.py,observe.py} > verified/v3-frozen-relation-sha256.txt
+      - name: Checkout untouched metadata-selected source
+        uses: actions/checkout@v4
+        with:
+          repository: mozillazg/python-pinyin
+          ref: 85bf408b3b326676e4e1ffa727f8063774f709f6
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source pin and API export closure only BEFORE native code runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = "85bf408b3b326676e4e1ffa727f8063774f709f6"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('selection-authority/research/api_export_closure_v4/SELECTION_LOCK.json')
+          d=json.loads(p.read_text())
+          assert d['selected']['repository']=='mozillazg/python-pinyin'
+          assert d['selected']['source_sha']=='85bf408b3b326676e4e1ffa727f8063774f709f6'
+          Path('verified/metadata.json').write_text(json.dumps(
+            {'repository':d['selected']['repository'],
+             'source_sha':d['selected']['source_sha'],
+             'description':d['selected']['description']},indent=2,sort_keys=True)+'\n')
+          PY
+          cp research/api_export_closure_v4/SELECTION_LOCK.json verified/source-selection-lock.json
+          python static-authority/research/api_export_closure_v4/resolve.py --source external-native --out verified/api-view.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          api=json.loads(Path('verified/api-view.json').read_text())
+          print('STATIC_EXPORT_ADMISSION',api['status'],api['exports'])
+          if api['status'] != 'STATIC_EXPORT_CLOSURE_BOUNDED':
+            for arm in ('candidate','expert'):
+              Path(f'verified/{arm}.json').write_text(json.dumps({
+                'arm':arm,'status':'UNKNOWN_STATIC_EXPORT_AUTHORITY',
+                'reason':api['status'],'obligations':[]},indent=2)+'\n')
+            Path('verified/method-inapplicable').write_text(api['status']+'\n')
+          PY
+          if test ! -f verified/method-inapplicable; then
+            python relation-authority/research/api_semantic_contract_v3/propose.py --metadata verified/metadata.json --api-view verified/api-view.json --arm candidate --out verified/candidate.json
+            python relation-authority/research/api_semantic_contract_v3/propose.py --metadata verified/metadata.json --api-view verified/api-view.json --arm expert --out verified/expert.json
+          fi
+          sha256sum verified/{candidate,expert,api-view}.json > verified/proposal-and-api-sha256.txt
+          echo "PRE_NATIVE_PROPOSALS_SEALED"
+      - name: Install protected native source/test authority, no guessed test extras
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==8.3.5
+          # Original source-declared test dependency; no semantic source change.
+          python -m pip install pytest-cov
+          python -m pip install -e ./external-native
+      - name: Execute actual unchanged native test suite and retain all failures
+        shell: bash
+        run: |
+          set +e
+          set -uo pipefail
+          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-tests.log
+          native_status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$native_status" > verified/native-exit-code.txt
+          echo "NATIVE_TEST_EXIT=$native_status"
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Judge sealed original proposals under unchanged V3 oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f verified/method-inapplicable; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          d={'state':'UNKNOWN_STATIC_EXPORT_AUTHORITY',
+             'reason':Path('verified/method-inapplicable').read_text().strip(),
+             'candidate_independent_warrants':0,
+             'expert_independent_warrants':0,
+             'comparative_advantage':'INCONCLUSIVE_NOT_TIE',
+             'native_exit_code':Path('verified/native-exit-code.txt').read_text().strip(),
+             'scope':'source-unfamiliar first eligible prospect; cannot promote relation'}
+          Path('verified/prospective-v4.json').write_text(json.dumps(d,indent=2,sort_keys=True)+'\n')
+          print('PROSPECTIVE_SCIENTIFIC_UNKNOWN',d['reason'])
+          PY
+          else
+            python relation-authority/research/api_semantic_contract_v3/observe.py --metadata verified/metadata.json --api-view verified/api-view.json --candidate verified/candidate.json --expert verified/expert.json --source external-native --native-junit verified/native-junit.xml --output verified/prospective-v4.json | tee verified/evaluator.log
+          fi
+      - name: Preserve complete immutable native/semantic receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-export-closure-v4-prospective
+          path: verified/
+          if-no-files-found: warn
