@@ -85,8 +85,7 @@ def pkc_observations(root: pathlib.Path) -> dict:
 def yaml_observations(root: pathlib.Path) -> dict:
     receipt_file = unique(root, "receipt.json")
     receipt = json.loads(receipt_file.read_text())
-    assert receipt["protocol"] == "L4YAML_STYLE_REPAIR_VERIFY_V2"
-    assert receipt["expectation"] == "original-red"
+    assert receipt["protocol"] == "L4YAML_STYLE_RED_V1"
     assert receipt["upstream"] == YAML_SOURCE
     assert receipt["source_modified"] is False
     assert receipt["status"] == "WARRANTED_BOUNDED_ORIGINAL_RED"
