@@ -72,9 +72,9 @@ private def expected : String → Option String
 run_meta do
   let cases := ["typed_match", "false_mismatch", "typed_mismatch",
     "wrong_citation", "unsupported", "true_unsupported", "no_statement"]
-  let prefix := ".lake/build/sysml/typed-v1"
+  let folder := ".lake/build/sysml/typed-v1"
   for c in cases do
-    let raw ← IO.FS.readFile s!"{prefix}/{c}.api.json"
+    let raw ← IO.FS.readFile s!"{folder}/{c}.api.json"
     let .ok (model,warnings) := ApiJson.read raw
       | throwError "PKC_V6_NATIVE_API_READ_FAILED: {c}"
     unless warnings.isEmpty do
