@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '22'
       - name: Fail-closed advisory regression controls
-        run: node --test research/cross_domain_correspondence_v1/check_advisory.test.mjs research/cross_domain_correspondence_v1/check_receipt_gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-check-projection.test.mjs integrations/mathgraph-check-github/pkc-yaml-publisher-gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-live-boundary.test.mjs integrations/mathgraph-check-github/pkc-yaml-publish-adapter.test.mjs integrations/mathgraph-check-github/pkc-yaml-live-consumer.test.mjs
+        run: node --test research/cross_domain_correspondence_v1/check_advisory.test.mjs research/cross_domain_correspondence_v1/check_receipt_gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-check-projection.test.mjs integrations/mathgraph-check-github/pkc-yaml-publisher-gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-live-boundary.test.mjs integrations/mathgraph-check-github/pkc-yaml-publish-adapter.test.mjs integrations/mathgraph-check-github/pkc-yaml-live-consumer.test.mjs integrations/mathgraph-check-github/pkc-yaml-event-gate.test.mjs
       - name: Authenticate pinned historical ZIP and render report
         env:
           GH_TOKEN: ${{ github.token }}
