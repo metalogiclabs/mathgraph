@@ -34,6 +34,8 @@ export async function qualifiedAdvisory({githubRead,receipt,carrierHead,withdraw
   // trusted verifier can be used. No claim that the GitHub metadata proves
   // the content of a caller-supplied object.
   if(receipt?.archive_authenticated!==true)return fail("archive contents not authenticated");
+  // No trusted byte-verifier is wired in V1; a caller boolean is not authority.
+  return fail("archive-byte verification not wired; metadata only");
   const output=advisory(receipt,{sourceHead:carrierHead,expectedHead:AUTHORITY.head,withdrawn});
   if(output.title==="EVIDENCE_UNKNOWN")return fail("advisory scope rejected");
   return {state:"METADATA_VERIFIED_ARCHIVE_ASSERTED_BY_CALLER_NOT_INDEPENDENTLY_AUDITED",
