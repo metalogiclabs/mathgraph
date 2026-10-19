@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Independent original-RED baseline audit, not a repair or a universal YAML theorem."""
-import argparse, hashlib, json
+"""Bounded independent original-RED and prospective fixed-GREEN semantic audit."""
+import argparse, hashlib, json, re
 from pathlib import Path
 import yaml
 from ruamel.yaml import YAML
@@ -9,7 +9,9 @@ ap=argparse.ArgumentParser()
 ap.add_argument("--lean-log",type=Path,required=True)
 ap.add_argument("--out",type=Path,required=True)
 ap.add_argument("--expect",choices=["original-red","fixed-green"],required=True)
+ap.add_argument("--upstream-sha",required=True,help="Fully pinned SHA of the actual upstream checkout")
 a=ap.parse_args()
+assert re.fullmatch(r"[0-9a-f]{40}",a.upstream_sha), "upstream must be a full commit SHA"
 raw=a.lean_log.read_text()
 checks={}; dumps={}
 for line in raw.splitlines():
@@ -55,8 +57,9 @@ if a.expect=="original-red":
 else: assert not failures,failures
 
 result={
-"protocol":"L4YAML_STYLE_RED_V1",
-"upstream":"nasa-jpl/L4YAML@fdef03caf19e8862792034793da11020b39d6110",
+"protocol":"L4YAML_STYLE_REPAIR_VERIFY_V2",
+"expectation":a.expect,
+"upstream":"nasa-jpl/L4YAML@"+a.upstream_sha,
 "verifier":"Original Lean parseAs/toYaml/Dump + ruamel.yaml explicit YAML 1.2 + PyYAML common subset",
 "native_correctness_checks":checks,
 "external_consumer_semantics":consumer,
@@ -65,7 +68,7 @@ result={
 "source_modified":False,
 "lean_stdout_sha256":hashlib.sha256(a.lean_log.read_bytes()).hexdigest(),
 "status":"WARRANTED_BOUNDED_ORIGINAL_RED" if a.expect=="original-red" else "WARRANTED_BOUNDED_FIXED_GREEN",
-"bounds":"Narrow scalar cases only; PyYAML is not general YAML 1.2 authority. No fix or universal law claimed.",
+"bounds":"Narrow scalar cases only; PyYAML is not general YAML 1.2 authority. Fixed-GREEN warrants only tested checks on the pinned revision, not a universal schema law.",
 }
 a.out.parent.mkdir(parents=True,exist_ok=True)
 a.out.write_text(json.dumps(result,sort_keys=True,indent=2)+"\n")

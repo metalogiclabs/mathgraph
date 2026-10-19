@@ -4,10 +4,16 @@ on:
   push:
     branches:
       - research/l4yaml-schema-style-red-20261019
+      - research/l4yaml-schema-style-fixed-20261019
     paths:
       - 'research/l4yaml_schema_style_v1/**'
       - '.github/workflows/l4yaml-schema-style-red-v1.yml'
   workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Exact 40-hex upstream L4YAML candidate commit (blank = RED replay only)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -76,7 +82,27 @@ jobs:
           python research/l4yaml_schema_style_v1/analyze.py \
             --lean-log research/l4yaml_schema_style_v1/results/original-lean.log \
             --out research/l4yaml_schema_style_v1/results/receipt.json \
-            --expect original-red
+            --expect original-red \
+            --upstream-sha fdef03caf19e8862792034793da11020b39d6110
+      - name: Negative control - original defect must not certify as fixed GREEN
+        shell: bash
+        run: |
+          set -euo pipefail
+          if python research/l4yaml_schema_style_v1/analyze.py \
+            --lean-log research/l4yaml_schema_style_v1/results/original-lean.log \
+            --out research/l4yaml_schema_style_v1/results/incorrect-fixed-receipt.json \
+            --expect fixed-green \
+            --upstream-sha fdef03caf19e8862792034793da11020b39d6110; then
+            echo "FAIL: original source was admitted as fixed GREEN"
+            exit 1
+          fi
+          test ! -e research/l4yaml_schema_style_v1/results/incorrect-fixed-receipt.json
+          echo "NEGATIVE_CONTROL_REJECTED: original source cannot certify fixed-GREEN"
+      - name: Verify evidence gate with adversarial synthetic self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/l4yaml_schema_style_v1/test_verifier.py
       - name: Archive original native logs and original-red receipt
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,6 +111,96 @@ jobs:
           path: |
             research/l4yaml_schema_style_v1/Probe.lean
             research/l4yaml_schema_style_v1/analyze.py
+            research/l4yaml_schema_style_v1/test_verifier.py
             research/l4yaml_schema_style_v1/results/
             \${{ runner.temp }}/l4yaml-original-build.log
+          if-no-files-found: ignore
+
+  fixed-green:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_sha != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Validate pinned candidate SHA
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Expected immutable 40-hex commit SHA"; exit 1; }
+      - name: Checkout owned test-only harness
+        uses: actions/checkout@v4
+      - name: Checkout candidate upstream at immutable commit
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ inputs.candidate_sha }}
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Verify exact identity and declared toolchain
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.34.0"
+          sha256sum research/l4yaml_schema_style_v1/Probe.lean research/l4yaml_schema_style_v1/analyze.py
+      - name: Install Lean 4.34
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build source-native API, deriving and Dump
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd target
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump 2>&1 | tee "$RUNNER_TEMP/l4yaml-candidate-build.log"
+      - name: Run independent fixed-candidate semantic probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd target
+          mkdir -p ../research/l4yaml_schema_style_v1/results
+          lake env lean ../research/l4yaml_schema_style_v1/Probe.lean \
+            2>&1 | tee ../research/l4yaml_schema_style_v1/results/candidate-lean.log
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Install pinned independent YAML readers
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned parsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "PyYAML==6.0.3" "ruamel.yaml==0.18.17"
+      - name: Enforce full fixed-GREEN evidence boundary
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          python research/l4yaml_schema_style_v1/test_verifier.py
+          python research/l4yaml_schema_style_v1/analyze.py \
+            --lean-log research/l4yaml_schema_style_v1/results/candidate-lean.log \
+            --out research/l4yaml_schema_style_v1/results/fixed-green-receipt.json \
+            --expect fixed-green \
+            --upstream-sha "$CANDIDATE_SHA"
+      - name: Archive candidate evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l4yaml-style-fixed-candidate-evidence
+          path: |
+            research/l4yaml_schema_style_v1/Probe.lean
+            research/l4yaml_schema_style_v1/analyze.py
+            research/l4yaml_schema_style_v1/test_verifier.py
+            research/l4yaml_schema_style_v1/results/
           if-no-files-found: ignore
