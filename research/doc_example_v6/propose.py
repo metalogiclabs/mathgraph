@@ -23,7 +23,7 @@ def safe_value(node):
     raise ValueError("UNSUPPORTED_LITERAL")
 
 
-def eligible_example(source,expected_text,cls,method):
+def eligible_example(source,expected_text,cls,method,aliases):
     try:
         value=safe_value(ast.parse(expected_text.strip(),mode="eval").body)
         tree=ast.parse(source,mode="exec")
@@ -40,7 +40,13 @@ def eligible_example(source,expected_text,cls,method):
             if not isinstance(fn,ast.Attribute) or fn.attr!=method:
                 return None
             target=fn.value
-            if not isinstance(target,ast.Call) or not isinstance(target.func,ast.Name) or target.func.id!=cls or target.args or target.keywords:
+            if isinstance(target,ast.Name):
+                if aliases.get(target.id)!=cls:
+                    return None
+            elif isinstance(target,ast.Call):
+                if not isinstance(target.func,ast.Name) or target.func.id!=cls or target.args or target.keywords:
+                    return None
+            else:
                 return None
         args=[safe_value(a) for a in call.args]
         kwargs={k.arg:safe_value(k.value) for k in call.keywords if k.arg is not None}
@@ -59,8 +65,23 @@ def mine_examples(doc,cls,method):
     except ValueError:
         return []
     found=[]
+    aliases={}
     for ex in examples[:25]:
-        e=eligible_example(ex.source,ex.want,cls,method)
+        # Recognize only a literal no-argument constructor alias as doc setup.
+        # We do not run that setup while proposing obligations.
+        try:
+            node=ast.parse(ex.source,mode="exec")
+            if cls is not None and len(node.body)==1 and isinstance(node.body[0],ast.Assign):
+                assignment=node.body[0]
+                if (len(assignment.targets)==1 and isinstance(assignment.targets[0],ast.Name)
+                    and isinstance(assignment.value,ast.Call) and isinstance(assignment.value.func,ast.Name)
+                    and assignment.value.func.id==cls and not assignment.value.args and not assignment.value.keywords
+                    and not ex.want.strip()):
+                    aliases[assignment.targets[0].id]=cls
+                    continue
+        except SyntaxError:
+            continue
+        e=eligible_example(ex.source,ex.want,cls,method,aliases)
         if e is not None:
             found.append(e)
     return found
