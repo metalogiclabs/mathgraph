@@ -17,7 +17,7 @@ test("qualified report projects neutral bounded advisory",()=>{
 });
 for(const [name,changes] of [
  ["unapproved",{authorized:false}],["wrong carrier",{carrierRepo:"other/repo"}],
- ["stale head",{carrierHead:"b".repeat(40)}]])test(name+" fails closed",()=>{
+ ["invalid carrier head",{carrierHead:"invalid"}]])test(name+" fails closed",()=>{
  assert.equal(project(report,{...scope,...changes}).output.title,"PKC_L4YAML_EVIDENCE_UNKNOWN");
 });
 test("promoted unknown claim fails closed",()=>assert.equal(
