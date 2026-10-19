@@ -1,0 +1,130 @@
+name: Prospective V2 alias-aware API obligation against first selected source
+
+on:
+  push:
+    branches:
+      - research/semantic-obligation-heldout-alias-v2-20261019
+    paths:
+      - 'research/semantic_obligation_induction_v2/SELECTED_SOURCE.json'
+      - '.github/workflows/semantic-obligation-alias-v2-heldout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-first-source:
+    name: Freeze two proposals before native source execution
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout source-neutral frozen method and selected metadata
+        uses: actions/checkout@v4
+      - name: Checkout exact first-eligible external source unchanged
+        uses: actions/checkout@v4
+        with:
+          repository: hukkin/tomli-w
+          ref: 1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d
+          path: external-native
+          persist-credentials: false
+      - name: Verify immutable method, exact source, and metadata-only selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = 1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d
+          test "$(git -C external-native status --porcelain)" = ""
+          test "$(git hash-object research/semantic_obligation_induction_v2/propose.py)" = 1efeb311582a9d88cd37e75f3656c583322f07ab
+          test "$(git hash-object research/semantic_obligation_induction_v2/expert_reference.py)" = 55bd59cda8dedc101188c0777b79ed6dce6e643c
+          test "$(git hash-object research/semantic_obligation_induction_v2/preflight.py)" = b10753fa1139deeee57404b446cc5423264b7976
+          test "$(git hash-object research/semantic_obligation_induction_v1/evaluate.py)" = e70ca1625c5e0dc1b9ff7f31deee024e35f5ad0d
+          mkdir -p native-evidence
+          python - <<'PY'
+          import json,pathlib
+          x=json.loads(pathlib.Path("research/semantic_obligation_induction_v2/SELECTED_SOURCE.json").read_text())
+          assert x["method_freeze_commit"]=="0f5bf46ba92723f294fbdfcff42a4cc6fe7ad9b9"
+          assert x["repository"]==x["pool"][0]=="hukkin/tomli-w" and x["selected_ordinal"]==1
+          assert x["selected_source_sha"]=="1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d"
+          assert x["language"]=="Python" and x["archived"] is False and x["private"] is False and x["no_fallback"] is True
+          # Generic package-layout resolver, not a target-aware selector.
+          # Both candidate and baseline receive the same resolved public bytes.
+          choices=[pathlib.Path("external-native")/x["root_api_file"],
+                   pathlib.Path("external-native/src")/x["root_api_file"]]
+          hits=[p for p in choices if p.is_file()]
+          assert len(hits)==1,"UNKNOWN_UNSUPPORTED_OR_AMBIGUOUS_PUBLIC_API_LAYOUT"
+          pathlib.Path("native-evidence/public-api-location.txt").write_text(str(hits[0])+"\n")
+          print("V2_FIRST_METADATA_ELIGIBLE_SOURCE_AND_SINGLE_PUBLIC_API_VERIFIED",hits[0])
+          PY
+      - name: Pin Python 3.12 environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen synthetic control without executing external source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/semantic_obligation_induction_v2/preflight.py
+      - name: Emit independent proposal files before package install or import
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="$(cat native-evidence/public-api-location.txt)"
+          python research/semantic_obligation_induction_v2/propose.py \
+            --metadata research/semantic_obligation_induction_v2/SELECTED_SOURCE.json \
+            --api "$api" --output native-evidence/candidate.json
+          python research/semantic_obligation_induction_v2/expert_reference.py \
+            --metadata research/semantic_obligation_induction_v2/SELECTED_SOURCE.json \
+            --api "$api" --output native-evidence/expert.json
+          sha256sum native-evidence/candidate.json native-evidence/expert.json \
+            > native-evidence/pre-native-proposals.sha256
+          python - <<'PY'
+          import json,pathlib
+          a=json.loads(pathlib.Path("native-evidence/candidate.json").read_text())
+          b=json.loads(pathlib.Path("native-evidence/expert.json").read_text())
+          assert a["arm"]=="candidate" and b["arm"]=="expert"
+          assert a["api_sha256"]==b["api_sha256"]
+          assert a["source_sha"]==b["source_sha"]=="1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d"
+          print("V2_SEALED_BOTH_PROPOSALS_BEFORE_NATIVE_EXECUTION",
+                len(a["obligations"]),len(b["obligations"]))
+          PY
+      - name: Install unchanged package and predeclared generic native test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ./external-native "pytest>=8,<10" hypothesis tomli \
+            2>&1 | tee native-evidence/install.log
+      - name: Run the predeclared convention-selected original native tests
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd external-native
+          python -m pytest -q tests/test_*.py \
+            --junitxml="$GITHUB_WORKSPACE/native-evidence/native-junit.xml" \
+            2>&1 | tee "$GITHUB_WORKSPACE/native-evidence/native.log"
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > "$GITHUB_WORKSPACE/native-evidence/native-exit-code.txt"
+          echo "V2_ORIGINAL_NATIVE_SUBSET_EXIT=$status"
+          exit 0
+      - name: Apply unchanged independent V1 oracle and equal-information comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum --check native-evidence/pre-native-proposals.sha256
+          test -f native-evidence/native-junit.xml
+          python research/semantic_obligation_induction_v1/evaluate.py \
+            --metadata research/semantic_obligation_induction_v2/SELECTED_SOURCE.json \
+            --candidate native-evidence/candidate.json \
+            --expert native-evidence/expert.json \
+            --source external-native --native-junit native-evidence/native-junit.xml \
+            --output native-evidence/qualified-claims.json
+          test "$(git -C external-native rev-parse HEAD)" = 1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d
+          test -z "$(git -C external-native diff --name-only)"
+          echo "V2_HOLDOUT_API_SEMANTIC_OBLIGATIONS_INDEPENDENTLY_EVALUATED"
+      - name: Archive pristine proposal digests and all native and independent raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prospective-semantic-obligations-alias-v2
+          path: |
+            research/semantic_obligation_induction_v2/SELECTED_SOURCE.json
+            native-evidence/
+          if-no-files-found: warn
