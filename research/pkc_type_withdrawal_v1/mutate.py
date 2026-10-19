@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -39,7 +40,7 @@ def main():
         changed = before.replace(OLD, NEW).replace(PROOF, PROOF_MUTANT)
         assert changed.count("  | width_length : Edge width.kind height.kind") == 1
         assert changed.count("  | width_length_original : Edge width.kind length.kind") == 1
-        assert changed.count(PROOF) == 0
+        assert re.search(re.escape(PROOF) + r"(?!_original)", changed) is None
         assert changed.count(PROOF_MUTANT) == 3
         source.write_text(changed)
         assert cmd(t, "diff", "--name-only") == str(REL), "modified other source paths"
