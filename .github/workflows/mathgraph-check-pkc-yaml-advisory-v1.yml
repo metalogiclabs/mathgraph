@@ -34,6 +34,13 @@ jobs:
           unzip -q /tmp/mathgraph-evidence/archive.zip -d /tmp/mathgraph-evidence
           node research/cross_domain_correspondence_v1/check_archive_report.mjs /tmp/mathgraph-evidence/cross-domain.json /tmp/mathgraph-evidence/yaml.json /tmp/mathgraph-evidence/shadow-report.json
           node integrations/mathgraph-check-github/pkc-yaml-check-render.mjs /tmp/mathgraph-evidence/shadow-report.json /tmp/mathgraph-evidence/check-payload.json
+      - name: Positive real ZIP to publisher-gate qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171240289/zip > /tmp/mathgraph-evidence/live-candidate.zip
+          node integrations/mathgraph-check-github/pkc-yaml-live-archive-probe.mjs /tmp/mathgraph-evidence/live-candidate.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
