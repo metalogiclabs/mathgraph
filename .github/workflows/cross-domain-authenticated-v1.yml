@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: metalogiclabs/mathgraph
-          ref: 03f8b16d24f4641483f7b3cc1004812dfefb4dbc
+          ref: e48f094fa400c77ab07404645f6e12cfba7ebf45
           path: yaml-authority
           persist-credentials: false
       - name: Retrieve and SHA256-authenticate both original GitHub artifacts
