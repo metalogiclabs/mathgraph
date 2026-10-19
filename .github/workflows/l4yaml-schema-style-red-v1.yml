@@ -1,0 +1,90 @@
+name: L4YAML issue 6 - independent original RED semantic roundtrip
+
+on:
+  push:
+    branches:
+      - research/l4yaml-schema-style-red-20261019
+    paths:
+      - 'research/l4yaml_schema_style_v1/**'
+      - '.github/workflows/l4yaml-schema-style-red-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout owned test-only harness
+        uses: actions/checkout@v4
+      - name: Checkout exact original upstream, no mutations
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: fdef03caf19e8862792034793da11020b39d6110
+          path: target
+          submodules: false
+          persist-credentials: false
+      - name: Verify source and toolchain pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "fdef03caf19e8862792034793da11020b39d6110"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.34.0"
+          sha256sum research/l4yaml_schema_style_v1/Probe.lean research/l4yaml_schema_style_v1/analyze.py
+      - name: Install pinned Lean 4.34
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build source-native YAML module, not unrelated default targets
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd target
+          lake build L4YAML 2>&1 | tee "$RUNNER_TEMP/l4yaml-original-build.log"
+      - name: Execute original Lean source-native semantic probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd target
+          mkdir -p ../research/l4yaml_schema_style_v1/results
+          lake env lean ../research/l4yaml_schema_style_v1/Probe.lean \
+            2>&1 | tee ../research/l4yaml_schema_style_v1/results/original-lean.log
+          test -z "$(git diff --name-only)"
+      - name: Install two independent YAML readers
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pin independent YAML parsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "PyYAML==6.0.3" "ruamel.yaml==0.18.17"
+          python -c "import yaml; from ruamel.yaml import YAML; p=YAML(typ='safe'); p.version=(1,2); assert p.load('\"null\"')=='null' and p.load('null') is None"
+      - name: Independently confirm exact original RED vector
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/l4yaml_schema_style_v1/analyze.py \
+            --lean-log research/l4yaml_schema_style_v1/results/original-lean.log \
+            --out research/l4yaml_schema_style_v1/results/receipt.json \
+            --expect original-red
+      - name: Archive original native logs and original-red receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l4yaml-style-original-red-evidence
+          path: |
+            research/l4yaml_schema_style_v1/Probe.lean
+            research/l4yaml_schema_style_v1/analyze.py
+            research/l4yaml_schema_style_v1/results/
+            \${{ runner.temp }}/l4yaml-original-build.log
+          if-no-files-found: ignore
