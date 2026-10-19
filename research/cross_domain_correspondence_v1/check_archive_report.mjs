@@ -8,7 +8,7 @@ if(!crossPath||!yamlPath||!outPath)throw Error("USAGE: cross-domain.json yaml.js
 const cross=JSON.parse(readFileSync(crossPath,"utf8"));
 const yaml=JSON.parse(readFileSync(yamlPath,"utf8"));
 function check(v,why){if(!v)throw Error("RECEIPT_NOT_ADMITTED:"+why)}
-check(cross.M5==="UNKNOWN: requires native verifier re-execution after source revision restoration","M5");
+check(cross.protocol_commit==="9c8b427c679398fd80ea56d9a91a1627b2e96b6d","protocol");\ncheck(cross.M5==="UNKNOWN: requires native verifier re-execution after source revision restoration","M5");
 check(cross.cross_domain_semantic_acquisition==="UNKNOWN","transfer");
 check(cross.new_native_sources_executed===false,"native execution");
 check(yaml.protocol==="L4YAML_STYLE_REPAIR_VERIFY_V2" && yaml.expectation==="original-red","yaml scope");
