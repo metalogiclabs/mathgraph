@@ -14,7 +14,11 @@ export async function consumePKCYaml({githubAPI,repo,pr,head,token,
     !/^[a-f0-9]{40}$/.test(head||"") || !token ||
     appId!==5308912 || !installed)throw Error("APP_CARRIER_NOT_AUTHORIZED");
  if(typeof githubAPI!=="function")throw Error("APP_API_REQUIRED");
- if(!carrierAdmitted(repo,pr,head,carrierFiles))throw Error("DEDICATED_CARRIER_NOT_QUALIFIED");
+ const fresh=await githubAPI("/repos/"+repo+"/pulls/"+pr,token);
+ if(fresh?.head?.sha!==head)throw Error("STALE_CARRIER_HEAD");
+ const fileData=await githubAPI("/repos/"+repo+"/pulls/"+pr+"/files?per_page=100&page=1",token);
+ if(!Array.isArray(fileData) || fileData.length!==1 ||
+    !carrierAdmitted(repo,pr,head,fileData))throw Error("DEDICATED_CARRIER_NOT_QUALIFIED");
  // The caller's GitHub client must return raw Uint8Array ZIP bytes for ZIP,
  // not JSON or a redirect body. Refuse unsupported transport.
  const metadata=await githubAPI(ART,token);
