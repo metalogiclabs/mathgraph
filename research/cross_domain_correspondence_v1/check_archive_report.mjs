@@ -21,7 +21,7 @@ for(const [id,claims] of Object.entries(expectations)){
 }
 const baseline={P1:"WARRANTED_BOUNDED",P2:"REJECTED_BOUNDED",P3:"UNKNOWN",Y1:"UNKNOWN",Y2:"REJECTED_BOUNDED",Y3:"UNKNOWN"};
 check(JSON.stringify(cross.baseline)===JSON.stringify(baseline),"baseline");
-const head=process.env.GITHUB_SHA;
+const head=process.env.SOURCE_HEAD;
 check(typeof head==="string" && /^[a-f0-9]{40}$/.test(head),"source SHA");
 const view=advisory(cross,{sourceHead:head,expectedHead:head});
 check(view.title==="CROSS_DOMAIN_ADVISORY_BOUNDED" && view.conclusion==="neutral","advisory");
