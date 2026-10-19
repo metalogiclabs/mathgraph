@@ -1,0 +1,50 @@
+name: V4 static public API re-export method preflight
+on:
+  push:
+    branches: [research/api-export-closure-v4-20261019]
+    paths:
+      - 'research/api_export_closure_v4/**'
+      - '.github/workflows/api-export-closure-v4-preflight.yml'
+  pull_request:
+    paths:
+      - 'research/api_export_closure_v4/**'
+      - '.github/workflows/api-export-closure-v4-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-and-exposed-training:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic static export/mutation/restore controls
+        run: python research/api_export_closure_v4/preflight.py
+      - name: Fetch EXPOSED V3 training source only
+        uses: actions/checkout@v4
+        with:
+          repository: un33k/python-slugify
+          ref: 35aca63fc2672cba2c739ff6dff685a4f26a4f9a
+          path: exposed-training
+          persist-credentials: false
+      - name: Run static observer on exposed training (not prospective evidence)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C exposed-training rev-parse HEAD)" = 35aca63fc2672cba2c739ff6dff685a4f26a4f9a
+          mkdir -p verified
+          python research/api_export_closure_v4/resolve.py --source exposed-training --out verified/exposed-v3-api-view.json
+          python - <<'PY'
+          import json
+          d=json.load(open('verified/exposed-v3-api-view.json'))
+          assert d['status']=='STATIC_EXPORT_CLOSURE_BOUNDED',d
+          assert 'slugify' in d['exports'],d
+          assert '*' not in d['exports']
+          assert any(x['kind']=='relative-star' for x in d['api_manifest']['edges'])
+          print('V3_EXPOSED_TRAINING_STATIC_EXPORT_RECOVERED_ONLY')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v4-preflight-static-export-observer
+          path: verified/
