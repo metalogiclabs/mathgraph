@@ -19,11 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout independently frozen protocol revision
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 9c8b427c679398fd80ea56d9a91a1627b2e96b6d
+          path: protocol-authority
+          persist-credentials: false
       - name: Check unmodified frozen protocol
-        run: |
-          set -euo pipefail
-          git show 9c8b427c679398fd80ea56d9a91a1627b2e96b6d:research/cross_domain_correspondence_v1/PROTOCOL.md > /tmp/frozen.md
-          cmp /tmp/frozen.md research/cross_domain_correspondence_v1/PROTOCOL.md
+        run: cmp protocol-authority/research/cross_domain_correspondence_v1/PROTOCOL.md research/cross_domain_correspondence_v1/PROTOCOL.md
       - uses: actions/checkout@v4
         with:
           repository: metalogiclabs/mathgraph
