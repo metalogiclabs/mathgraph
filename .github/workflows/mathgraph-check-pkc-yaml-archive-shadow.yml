@@ -36,3 +36,5 @@ jobs:
         with:
           name: mathgraph-check-pkc-yaml-authenticated-shadow
           path: /tmp/mathgraph-evidence/shadow-report.json
+
+# Archive shadow is advisory only; no Check Runs API write.
