@@ -1,0 +1,45 @@
+{
+  "protocol": "DOC_BOUND_SEMANTIC_OBLIGATION_V5_SOURCE_SELECTION",
+  "frozen_method_commit": "f55ceac001c712449da63fede6a28c091a00ef97",
+  "frozen_v4_export_resolver": "7f38aa7029c8d89006db956941767033b09717ca",
+  "synthetic_qualification_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39225198223",
+  "fixed_order": [
+    "jazzband/inflection",
+    "jaraco/inflect",
+    "unidecode/unidecode",
+    "pyca/idna"
+  ],
+  "screen": [
+    {
+      "repo": "jazzband/inflection",
+      "decision": "INELIGIBLE",
+      "reason": "GitHub repositories API returned 404; no source read"
+    },
+    {
+      "repo": "jaraco/inflect",
+      "decision": "FIRST_ELIGIBLE",
+      "reason": "Public, nonarchived, Python language, default branch main; exact ROS search and primary registry string scan found no prior direct native source study; no code/doc/test inspected",
+      "revision": "0aa3f7a951616101bb67dedc385163e74a3f05e7"
+    }
+  ],
+  "selected": {
+    "repository": "jaraco/inflect",
+    "source_sha": "0aa3f7a951616101bb67dedc385163e74a3f05e7",
+    "description": "Correctly generate plurals, ordinals, indefinite articles; convert numbers to words",
+    "default_branch": "main",
+    "language": "Python",
+    "public": true,
+    "archived": false
+  },
+  "preexposure_assertions": {
+    "source_code_seen": false,
+    "source_docstrings_seen": false,
+    "native_test_outcomes_seen": false,
+    "selected_based_on_outcomes": false
+  },
+  "cautions": [
+    "No ROS hit is not a proof of global prior non-use",
+    "Do not substitute another repo after a scientific negative",
+    "No superiority claimed from an authored rulebook comparator"
+  ]
+}
