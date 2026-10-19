@@ -52,11 +52,14 @@ jobs:
       - name: Run the untouched full source-native pytest collection
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           mkdir -p verified
-          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native.log
+          cd external-native
+          set +e
+          python -m pytest -q --junitxml=../verified/native-junit.xml 2>&1 | tee ../verified/native.log
           code=${PIPESTATUS[0]}
-          echo "$code" > verified/native-exit-code.txt
+          set -e
+          echo "$code" > ../verified/native-exit-code.txt
           echo "NATIVE_EXIT=$code"
           exit 0
       - name: Frozen API-based candidate generator
