@@ -1,0 +1,60 @@
+name: Cross-domain correspondence - pinned native artifact replay
+
+on:
+  push:
+    branches:
+      - research/cross-domain-correspondence-protocol-v1-20261019
+    paths:
+      - 'research/cross_domain_correspondence_v1/**'
+      - '.github/workflows/cross-domain-native-receipt-replay-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-native-receipt-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout owned source-neutral evaluator
+        uses: actions/checkout@v4
+      - name: Source-neutral protocol falsifiers
+        run: python -m unittest discover -s research/cross_domain_correspondence_v1 -p 'test_protocol.py' -v
+      - name: Check authentic historical artifact identities
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12155725060 --jq .digest)" = "sha256:8546dfc16783f8243329883e12b7a11f49b6d0c7a3634aaa5293e6c32613cbc6"
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12156807544 --jq .digest)" = "sha256:dbe762c882a78e6e49889a7b81d4cd211e6e52dbc17f506fac420bce4e7f298b"
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12155725060 --jq .expired)" = false
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12156807544 --jq .expired)" = false
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12155725060 --jq .workflow_run.head_sha)" = 4691ae2de91958d5a366f636b4a329a938b76116
+          test "$(gh api repos/metalogiclabs/mathgraph/actions/artifacts/12156807544 --jq .workflow_run.head_sha)" = 03f8b16d24f4641483f7b3cc1004812dfefb4dbc
+      - name: Download unchanged native results (no JPL execution)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/pkc evidence/l4yaml
+          gh run download 39177893785 --repo metalogiclabs/mathgraph --name jpl-pkc-opensysml-full-path-v5 --dir evidence/pkc
+          gh run download 39183206058 --repo metalogiclabs/mathgraph --name l4yaml-style-original-red-evidence --dir evidence/l4yaml
+      - name: Validate raw receipts and apply same frozen core
+        shell: bash
+        run: |
+          set -euo pipefail
+          python research/cross_domain_correspondence_v1/audit_receipts.py \
+            --pkc-artifact evidence/pkc --yaml-artifact evidence/l4yaml \
+            --output evidence/cross-domain-replay.json
+      - name: Archive bounded receipt-level result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-domain-native-receipt-replay-v1
+          path: |
+            evidence/cross-domain-replay.json
+          if-no-files-found: warn
