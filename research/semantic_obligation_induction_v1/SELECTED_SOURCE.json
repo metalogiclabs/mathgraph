@@ -1,0 +1,24 @@
+{
+  "protocol": "SEMANTIC_OBLIGATION_INDUCTION_V1",
+  "freeze_commit": "8e6db298f1035288745db8c66861769312c4966f",
+  "freeze_preflight_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39217032207",
+  "ordered_pool": [
+    "uiri/toml",
+    "hukkin/tomli-w",
+    "python-poetry/tomlkit",
+    "simplejson/simplejson"
+  ],
+  "selected_ordinal": 1,
+  "repository": "uiri/toml",
+  "source_sha": "65bab7582ce14c55cdeec2244c65ea23039c9e6f",
+  "language": "Python",
+  "default_branch": "master",
+  "archived": false,
+  "private": false,
+  "description": "Python lib for TOML",
+  "source_files_examined_before_freeze": false,
+  "selection_authority": "GitHub public repository metadata and public branch HEAD only",
+  "claims": "Prospectively selected relative to this experiment, not globally never studied",
+  "api_file": "toml/__init__.py",
+  "no_fallback": true
+}
