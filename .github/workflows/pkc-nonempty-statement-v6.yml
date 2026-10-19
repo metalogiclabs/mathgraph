@@ -107,6 +107,18 @@ jobs:
             5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
           git -C "$root" checkout -q --detach 5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
           test "$(git -C "$root" rev-parse HEAD)" = "5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5"
+      - name: Hydrate source-declared TorchLean exact commit (unmodified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="target/.lake/packages/TorchLean"
+          mkdir -p "$root"
+          git -C "$root" init -q
+          git -C "$root" remote add origin https://github.com/NicolasRouquette/TorchLean.git
+          git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags origin \
+            f12547fa82cc55210553d64b88af81ba5df8f6a3
+          git -C "$root" checkout -q --detach f12547fa82cc55210553d64b88af81ba5df8f6a3
+          test "$(git -C "$root" rev-parse HEAD)" = "f12547fa82cc55210553d64b88af81ba5df8f6a3"
       - name: Optional authenticated upstream Mathlib cache
         continue-on-error: true
         timeout-minutes: 10
