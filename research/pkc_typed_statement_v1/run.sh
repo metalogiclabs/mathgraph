@@ -59,4 +59,5 @@ lake env lean "$OWN/Check.lean" > "$RESULTS/independent-typed.log" 2>&1 || {
 cat "$RESULTS/independent-typed.log"
 test -z "$(git diff --name-only)"
 python3 "$OWN/verify.py" "$RESULTS"
+python3 "$OWN/link_v1.py" "$RESULTS"
 echo "PKC_V6_FULL_NATIVE_TYPED_CORRESPONDENCE_AUDIT_COMPLETE"
