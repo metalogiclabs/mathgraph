@@ -60,6 +60,14 @@ run_meta do
       | throwError "V7_NOT_EXACTLY_ONE_CITATION: {{c}}"
     let outcome ← classify citation.decl citation.statement
     IO.println s!"V7_TYPE_RESULT lane={lane} case={{c}} status={{outcome}} decl={{citation.decl}}"
+  let unaffected ← getConstInfo ``PropertyKindCalculus.Iso80000.Part3.Edge.height_length
+  let expectedHeight : Expr := mkAppN
+    (mkConst ``PropertyKindCalculus.Iso80000.Part3.Edge)
+    #[mkConst ``heightK, mkConst ``lengthK]
+  let sameHeight ← withTransparency .all do
+    isDefEq expectedHeight unaffected.type
+  unless sameHeight do throwError "V7_UNEXPECTED_HEIGHT_LENGTH_TYPE_CHANGE"
+  IO.println "V7_UNAFFECTED_HEIGHT_LENGTH_PROOF lane={lane} verified=true"
   IO.println "V7_NATIVE_V6_EXACT_INTERPRETATION_PASS lane={lane} count=7"
 
 end MathGraphPKCTypedV1
