@@ -1,0 +1,47 @@
+name: Third-source held-out MarkupSafe relation V1
+on:
+  pull_request:
+    paths:
+      - research/cross_domain_correspondence_v1/third_source_markup_observer.py
+      - .github/workflows/third-source-markup-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native-heldout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 662b595768d1af4aeb429fbbb3841578c21cecc1
+          path: frozen-challenge
+          persist-credentials: false
+      - name: Assert held-out protocol preregistration unchanged
+        run: cmp frozen-challenge/research/cross_domain_correspondence_v1/THIRD_SOURCE_FROZEN_20261019.md research/cross_domain_correspondence_v1/THIRD_SOURCE_FROZEN_20261019.md
+      - uses: actions/checkout@v4
+        with:
+          repository: pallets/markupsafe
+          ref: 4e111271b1494995708a9e878a10829b5e10c7ba
+          path: external-native
+          persist-credentials: false
+      - name: Verify exact upstream source pin
+        run: test "$(git -C external-native rev-parse HEAD)" = 4e111271b1494995708a9e878a10829b5e10c7ba
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install original source and test runner
+        run: python -m pip install -e ./external-native "pytest>=8,<10"
+      - name: Execute upstream native tests
+        run: |
+          mkdir -p verified
+          python -m pytest -q external-native/tests/test_escape.py external-native/tests/test_markupsafe.py --junitxml=verified/native-junit.xml | tee verified/native-test.log
+      - name: Evaluate independent attribute semantics and withdrawal
+        run: python research/cross_domain_correspondence_v1/third_source_markup_observer.py | tee verified/observer.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heldout-third-domain-v1
+          path: verified/

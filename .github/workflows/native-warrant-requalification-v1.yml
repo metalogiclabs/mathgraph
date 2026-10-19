@@ -1,0 +1,41 @@
+name: Native change to warrant requalification gate
+on:
+  pull_request:
+    paths:
+      - research/cross_domain_correspondence_v1/native_receipt_warrant_gate.py
+      - .github/workflows/native-warrant-requalification-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-warrant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate both independently qualified evidence archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/native evidence/cross verified
+          for item in "12160483329 native 6b842e6e247251fa36a530bb8af3372d133415652cd1e7622ef580d00ef7002d" "12160585927 cross 872001d926a39b65447db55dce4a7328c28ac7a762f73d71198a0c327b765ae2"; do
+            read -r id label sha <<< "$item"
+            curl --fail --location --retry 3 --header "Authorization: Bearer $GH_TOKEN" --header "Accept: application/vnd.github+json" "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/$id/zip" --output "evidence/$label.zip"
+            printf '%s  %s\n' "$sha" "evidence/$label.zip" | sha256sum -c
+            unzip -q "evidence/$label.zip" -d "evidence/$label"
+          done
+      - name: Bind actual native semantic change to warrant withdrawal/requalification
+        shell: bash
+        run: |
+          set -euo pipefail
+          native="$(find evidence/native -name native-mutation.json -print -quit)"
+          cross="$(find evidence/cross -name cross-domain.json -print -quit)"
+          test -n "$native" && test -n "$cross"
+          python research/cross_domain_correspondence_v1/native_receipt_warrant_gate.py --native "$native" --cross-domain "$cross" --out verified/native-warrant.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-warrant-requalification-v1
+          path: verified/
