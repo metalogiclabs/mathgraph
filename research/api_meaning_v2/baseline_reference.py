@@ -44,7 +44,7 @@ def public_reversible(module):
         if (inspect.isfunction(a) and inspect.isfunction(b) and
             a.__module__.startswith(module.__name__) and b.__module__.startswith(module.__name__) and
             can_accept_one(a) and can_accept_one(b)):
-            r.append(("function:"+left+"->"+right,left,right,False))
+            r.append(("function:"+left+"->"+right,a,b,False))
     for name,thing in sorted(symbols.items()):
         if not name.endswith("Encoder") or name.startswith("_") or not inspect.isclass(thing):
             continue
