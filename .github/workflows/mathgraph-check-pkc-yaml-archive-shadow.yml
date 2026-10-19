@@ -1,0 +1,38 @@
+name: MathGraph Check PKC L4YAML authenticated shadow report
+on:
+  push:
+    branches:
+      - research/mathgraph-check-pkc-yaml-advisory-v1-20261019
+    paths:
+      - research/cross_domain_correspondence_v1/check_archive_report.mjs
+      - .github/workflows/mathgraph-check-pkc-yaml-archive-shadow.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archive-advisory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Authenticate exact historical artifact ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathgraph-evidence
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12165351733 --jq '.digest' | grep -Fx 'sha256:073a2759ceb02d759a94766589efa64b76e67348fd420d5280549de693e2f5cf'
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12165351733/zip > /tmp/mathgraph-evidence/archive.zip
+          printf '%s  %s\n' '073a2759ceb02d759a94766589efa64b76e67348fd420d5280549de693e2f5cf' /tmp/mathgraph-evidence/archive.zip | sha256sum -c -
+          unzip -q /tmp/mathgraph-evidence/archive.zip -d /tmp/mathgraph-evidence
+      - name: Verify native receipt scope and render neutral shadow
+        run: |
+          node research/cross_domain_correspondence_v1/check_archive_report.mjs /tmp/mathgraph-evidence/cross-domain.json /tmp/mathgraph-evidence/yaml.json /tmp/mathgraph-evidence/shadow-report.json
+          cat /tmp/mathgraph-evidence/shadow-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-pkc-yaml-authenticated-shadow
+          path: /tmp/mathgraph-evidence/shadow-report.json
