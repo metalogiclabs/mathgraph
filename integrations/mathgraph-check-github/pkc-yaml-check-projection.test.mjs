@@ -28,3 +28,11 @@ test("missing withdrawal fails closed",()=>assert.equal(
  "PKC_L4YAML_EVIDENCE_UNKNOWN"));
 test("merge authority forbidden",()=>assert.equal(
  project({...report,merge:"SAFE"},scope).output.title,"PKC_L4YAML_EVIDENCE_UNKNOWN"));
+
+test("historical source and current carrier may differ without conflation",()=>{
+ const current="b".repeat(40);
+ const x=project({...report,sourceHead:head},{...scope,carrierHead:current});
+ assert.equal(x.output.title,"PKC_L4YAML_HISTORICAL_RESEARCH_BOUNDED");
+ assert.match(x.output.summary,/These are distinct identities/);
+ assert.match(x.output.summary,new RegExp(current));
+});
