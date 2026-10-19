@@ -19,5 +19,6 @@
   "chosen_using": "GitHub repository metadata + default branch HEAD only",
   "source_files_opened_before_freeze": false,
   "no_fallback": true,
-  "scientific_boundary": "Prospective within this independent V2 lane; global novelty, autonomous semantics, and human advantage are not established."
+  "scientific_boundary": "Prospective within this independent V2 lane; global novelty, autonomous semantics, and human advantage are not established.",
+  "source_sha": "1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d"
 }
