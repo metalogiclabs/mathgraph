@@ -1,0 +1,97 @@
+name: Navier-Stokes semantic correspondence (bounded)
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scoped-contract-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Regression test protected contract logic and legacy false confidence
+        run: |
+          python - <<'PY'
+          # Explicitly load the two scoped modules without importing the
+          # monolithic optional-dependency MathGraph package initializer.
+          import sys
+          import types
+          import unittest
+          from pathlib import Path
+          pkg = types.ModuleType("mathgraph")
+          pkg.__path__ = [str(Path("mathgraph").resolve())]
+          sys.modules["mathgraph"] = pkg
+          suite = unittest.defaultTestLoader.discover(
+              "tests", pattern="test_semantic_correspondence.py"
+          )
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          raise SystemExit(0 if result.wasSuccessful() else 1)
+          PY
+      - name: Fetch exact pinned upstream Lean blobs
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/semantic-bridge-upstream
+          curl --fail --location --silent --show-error --retry 3 \
+            'https://raw.githubusercontent.com/openai/NavierStokesAndEuler/f9e8bc5/NavierStokes/SmoothFamilyTorusInverse.lean' \
+            -o /tmp/semantic-bridge-upstream/SmoothFamilyTorusInverse.lean
+          curl --fail --location --silent --show-error --retry 3 \
+            'https://raw.githubusercontent.com/openai/NavierStokesAndEuler/f9e8bc5/NavierStokes/R3/PressureFlux.lean' \
+            -o /tmp/semantic-bridge-upstream/PressureFlux.lean
+          test "$(git hash-object /tmp/semantic-bridge-upstream/SmoothFamilyTorusInverse.lean)" = "c607eb6f2460a3ba55dc2218072cd504bf6253bf"
+          test "$(git hash-object /tmp/semantic-bridge-upstream/PressureFlux.lean)" = "542377decf40306a50ce2170783de99a384b8d41"
+      - name: Anchor the two cited Lean declarations exactly
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/semantic-bridge-upstream')
+          inverse=(p/'SmoothFamilyTorusInverse.lean').read_text()
+          pressure=(p/'PressureFlux.lean').read_text()
+          assert inverse.count('theorem norm_derivativeWord_inverse_le') == 1
+          inv=inverse.split('theorem norm_derivativeWord_inverse_le',1)[1].split('theorem mixedJet_inverse_bound',1)[0]
+          assert inv.count('SmoothFourierData.xJet (w.length + 5)') == 2
+          assert 'coefficient_seminorm_bound' in inv
+          assert pressure.count('theorem exists_uniform_actual_pressure_flux_bound') == 1
+          flux=pressure.split('theorem exists_uniform_actual_pressure_flux_bound',1)[1].split('end NavierStokesR3.PressureFlux',1)[0]
+          assert 'cutoffL6' in flux and 'dissipationRoot' in flux
+          assert 'dissipationRoot (ComparisonCutoffs.cutoff R) (u - v) t / R' in flux
+          d={'schema':'mathgraph.semantic-correspondence-v1',
+             'upstream_commit':'f9e8bc5',
+             'inverse_blob_sha':'c607eb6f2460a3ba55dc2218072cd504bf6253bf',
+             'flux_blob_sha':'542377decf40306a50ce2170783de99a384b8d41',
+             'upstream_decl_checks':'PASS',
+             'pdf_reference':'arxiv:2610.08144v1',
+             'pdf_extract_semantics':'MANUAL_SOURCE_EXTRACTION_NOT_MACHINE_CERTIFIED',
+             'proves_source_paper':False,
+             'proves_mathematical_implication':False,
+             'can_promote_truth':False}
+          Path('semantic-correspondence-result.json').write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(d,sort_keys=True))
+          PY
+      - name: Kernel-check bounded assumption-direction separator
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.24.0
+          "$HOME/.elan/bin/lean" --version
+          "$HOME/.elan/bin/lean" experiments/navier_stokes_semantic_bridge_v1/DerivativeScope.lean
+          sha256sum experiments/navier_stokes_semantic_bridge_v1/DerivativeScope.lean > lean-derivative-scope.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semantic-correspondence-v1
+          path: |
+            semantic-correspondence-result.json
+            lean-derivative-scope.sha256
+          if-no-files-found: warn
