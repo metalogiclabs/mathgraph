@@ -1,0 +1,84 @@
+name: Prospective API obligation — sealed held-out source V1
+on:
+  push:
+    branches:
+      - research/api-obligation-proposal-v1-20261019
+    paths:
+      - research/api_obligation_v1/SELECTED_SOURCE.json
+      - .github/workflows/api-obligation-heldout-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prospective:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load immutable pre-source generator and comparator
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: f0d4868d6dfe67781038772c46f80e4710d40084
+          path: frozen
+          persist-credentials: false
+      - name: Check freeze and metadata-only selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen rev-parse HEAD)" = f0d4868d6dfe67781038772c46f80e4710d40084
+          cmp frozen/research/api_obligation_v1/FROZEN_PROTOCOL.md research/api_obligation_v1/FROZEN_PROTOCOL.md
+          python - <<'PY'
+          import json
+          m=json.load(open('research/api_obligation_v1/SELECTED_SOURCE.json'))
+          assert m["selected_repo"]=="python-hyper/hpack"
+          assert m["sha"]=="c2edbee3b5508e0b1689877fe6f173eafb097aef"
+          assert m["frozen_method_commit"]=="f0d4868d6dfe67781038772c46f80e4710d40084"
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: python-hyper/hpack
+          ref: c2edbee3b5508e0b1689877fe6f173eafb097aef
+          path: external-native
+          submodules: false
+          persist-credentials: false
+      - name: Confirm exact source checkout
+        run: test "$(git -C external-native rev-parse HEAD)" = c2edbee3b5508e0b1689877fe6f173eafb097aef
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install public native package plus general test tools
+        run: python -m pip install -e ./external-native "pytest>=8,<10" hypothesis
+      - name: Run the untouched full source-native pytest collection
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p verified
+          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native.log
+          code=${PIPESTATUS[0]}
+          echo "$code" > verified/native-exit-code.txt
+          echo "NATIVE_EXIT=$code"
+          exit 0
+      - name: Frozen API-based candidate generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen/research/api_obligation_v1/propose.py --module hpack --checkout external-native --source-sha c2edbee3b5508e0b1689877fe6f173eafb097aef --output verified/proposal.json | tee verified/proposal.log
+      - name: Independent equally informed conventional rule baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen/research/api_obligation_v1/baseline_reference.py --module hpack --checkout external-native --source-sha c2edbee3b5508e0b1689877fe6f173eafb097aef --output verified/expert-baseline.json | tee verified/expert.log
+      - name: Compare every candidate and finite seed without changing frozen method
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen/research/api_obligation_v1/compare.py --proposal verified/proposal.json --baseline verified/expert-baseline.json --native-junit verified/native-junit.xml --selected-source research/api_obligation_v1/SELECTED_SOURCE.json --output verified/qualification.json | tee verified/compare.log
+          test -z "$(git -C external-native diff --name-only)"
+          sha256sum frozen/research/api_obligation_v1/*.py frozen/research/api_obligation_v1/FROZEN_PROTOCOL.md > verified/executed-method-sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prospective-api-obligation-v1
+          path: verified/
+          if-no-files-found: warn
