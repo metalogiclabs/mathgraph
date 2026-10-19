@@ -47,7 +47,7 @@ async function handlePR(payload,config) {
   const auth=await githubAPI("/app/installations/"+payload.installation.id+
     "/access_tokens",jwt,"POST",{});
   if (!auth?.token) throw new Error("INSTALLATION_TOKEN_UNAVAILABLE");
-  if(config.pkcYamlEnabled && repository==="metalogiclabs/mathgraph") {
+  if(config.pkcYamlEnabled && repository==="metalogiclabs/mathgraph" && number===178) {
     // Signed and allowlisted before handlePR. Opt-in source-specific App route.
     // No fallback to a generic Check after a denied PKC/YAML publication.
     return handlePKCYamlSignedEvent({event:"pull_request",action:payload.action,
