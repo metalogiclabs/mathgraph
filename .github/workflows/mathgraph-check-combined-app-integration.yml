@@ -21,3 +21,5 @@ jobs:
         run: |
           set -euo pipefail
           node --test integrations/mathgraph-check-github/*.test.mjs
+
+# Live publication remains disabled until a separate evidence-only carrier is pinned.
