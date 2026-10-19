@@ -12,6 +12,7 @@ test("signed HTTP delivery with enabled PKC route refuses invalid archive before
   assert.equal(u.origin,"https://api.github.com");
   if(u.pathname==="/app/installations/42/access_tokens")
     return new Response(JSON.stringify({token:"scoped-test-token"}),{status:200});
+  if(u.pathname.includes("/pulls/171"))return new Response(JSON.stringify({head:{sha:head}}),{status:200});
   if(u.pathname.includes("/actions/artifacts/12171240289")){
     metadataReads++;return new Response(JSON.stringify({id:12171240289,expired:true}),{status:200});
   }
