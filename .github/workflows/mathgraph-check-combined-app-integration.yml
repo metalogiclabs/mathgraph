@@ -1,0 +1,23 @@
+name: MathGraph Check combined App webhook integration
+on:
+  push:
+    branches:
+      - research/mathgraph-check-live-integration-20261019
+  pull_request:
+    paths:
+      - integrations/mathgraph-check-github/**
+      - .github/workflows/mathgraph-check-combined-app-integration.yml
+permissions:
+  contents: read
+jobs:
+  combined-webhook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing App tests and PKC YAML integration
+        run: |
+          set -euo pipefail
+          node --test integrations/mathgraph-check-github/*.test.mjs
