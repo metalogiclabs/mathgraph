@@ -1,0 +1,25 @@
+{
+  "protocol": "SEMANTIC_OBLIGATION_ALIAS_V2_SECOND_SOURCE_PROSPECTIVE",
+  "method_freeze_commit": "0f5bf46ba92723f294fbdfcff42a4cc6fe7ad9b9",
+  "second_source_protocol_commit": "d016cb57e6c89d11e4376dad16c91abc5d25111d",
+  "method_preflight_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39218709785",
+  "original_qualified_first_source_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39219102534",
+  "pool": [
+    "python-poetry/tomlkit",
+    "simplejson/simplejson"
+  ],
+  "repository": "python-poetry/tomlkit",
+  "description": "Style-preserving TOML library for Python",
+  "source_sha": "eddd27e43a62fe58707c311bfad2f52e72493f53",
+  "selected_source_sha": "eddd27e43a62fe58707c311bfad2f52e72493f53",
+  "selected_ordinal": 1,
+  "default_branch": "master",
+  "archived": false,
+  "private": false,
+  "language": "Python",
+  "root_api_file": "tomlkit/__init__.py",
+  "chosen_using": "Public GitHub metadata and default-branch HEAD only after frozen protocol",
+  "first_method_unchanged": true,
+  "no_fallback": true,
+  "source_files_opened_before_pool_freeze": false
+}
