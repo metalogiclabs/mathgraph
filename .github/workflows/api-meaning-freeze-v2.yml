@@ -1,0 +1,34 @@
+name: API meaning V2 pre-source freeze and synthetic checks
+on:
+  push:
+    branches:
+      - research/api-meaning-normalizer-v2-20261019
+    paths:
+      - 'research/api_meaning_v2/**'
+      - '.github/workflows/api-meaning-freeze-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-blind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and execute both independently implemented algorithms
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/api_meaning_v2/{propose.py,baseline_reference.py,compare.py,synthetic_controls.py}
+          python -m unittest discover -s research/api_meaning_v2 -p synthetic_controls.py -v
+      - name: Archive exact frozen method and protocol identities
+        run: |
+          mkdir -p verified
+          git rev-parse HEAD > verified/frozen-head.txt
+          sha256sum research/api_meaning_v2/{FROZEN_PROTOCOL.md,propose.py,baseline_reference.py,compare.py,synthetic_controls.py} > verified/method-hashes.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-meaning-v2-source-blind-freeze
+          path: verified/
