@@ -1,0 +1,53 @@
+name: MathGraph Check PKC L4YAML advisory shadow
+on:
+  push:
+    branches:
+      - research/mathgraph-check-pkc-yaml-advisory-v1-20261019
+  pull_request:
+    paths:
+      - research/cross_domain_correspondence_v1/check_advisory*
+      - .github/workflows/mathgraph-check-pkc-yaml-advisory-v1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  advisory-shadow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail-closed advisory regression controls
+        run: node --test research/cross_domain_correspondence_v1/check_advisory.test.mjs research/cross_domain_correspondence_v1/check_receipt_gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-check-projection.test.mjs integrations/mathgraph-check-github/pkc-yaml-publisher-gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-live-boundary.test.mjs integrations/mathgraph-check-github/pkc-yaml-publish-adapter.test.mjs integrations/mathgraph-check-github/pkc-yaml-live-consumer.test.mjs integrations/mathgraph-check-github/pkc-yaml-event-gate.test.mjs integrations/mathgraph-check-github/pkc-yaml-webhook-bridge.test.mjs integrations/mathgraph-check-github/webhook-pkc-yaml.test.mjs
+      - name: Authenticate pinned historical ZIP and render report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mathgraph-evidence
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12165351733 --jq '.digest' | grep -Fx 'sha256:073a2759ceb02d759a94766589efa64b76e67348fd420d5280549de693e2f5cf'
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12165351733/zip > /tmp/mathgraph-evidence/archive.zip
+          printf '%s  %s\n' '073a2759ceb02d759a94766589efa64b76e67348fd420d5280549de693e2f5cf' /tmp/mathgraph-evidence/archive.zip | sha256sum -c -
+          unzip -q /tmp/mathgraph-evidence/archive.zip -d /tmp/mathgraph-evidence
+          node research/cross_domain_correspondence_v1/check_archive_report.mjs /tmp/mathgraph-evidence/cross-domain.json /tmp/mathgraph-evidence/yaml.json /tmp/mathgraph-evidence/shadow-report.json
+          node integrations/mathgraph-check-github/pkc-yaml-check-render.mjs /tmp/mathgraph-evidence/shadow-report.json /tmp/mathgraph-evidence/check-payload.json
+      - name: Positive real ZIP to publisher-gate qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171240289/zip > /tmp/mathgraph-evidence/live-candidate.zip
+          node integrations/mathgraph-check-github/pkc-yaml-live-archive-probe.mjs /tmp/mathgraph-evidence/live-candidate.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-pkc-yaml-authenticated-shadow
+          path: |
+            /tmp/mathgraph-evidence/shadow-report.json
+            /tmp/mathgraph-evidence/check-payload.json
+          if-no-files-found: warn
+
+# ZIP-to-report parser is tested separately from the historical source replay.
