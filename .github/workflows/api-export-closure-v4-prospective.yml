@@ -99,10 +99,13 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install pytest==8.3.5
+          # Original source-declared test dependency; no semantic source change.
+          python -m pip install pytest-cov
           python -m pip install -e ./external-native
       - name: Execute actual unchanged native test suite and retain all failures
         shell: bash
         run: |
+          set +e
           set -uo pipefail
           python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-tests.log
           native_status=${PIPESTATUS[0]}
