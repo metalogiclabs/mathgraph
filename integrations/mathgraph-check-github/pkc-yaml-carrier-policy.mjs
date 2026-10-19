@@ -6,7 +6,7 @@ export const CARRIER=Object.freeze({repository:"metalogiclabs/mathgraph",
 export function carrierAdmitted(repo,pr,head,files) {
  return CARRIER.allowedPR!==null && repo===CARRIER.repository &&
    pr===CARRIER.allowedPR && head===CARRIER.allowedHead &&
-   Array.isArray(files) && files.length>0 &&
+   Array.isArray(files) && files.length===1 &&
    files.every(f=>typeof f?.filename==="string" &&
-     f.filename.startsWith(".mathgraph-check/pkc-yaml/"));
+     f.filename===".mathgraph-check/pkc-yaml/EXTERNAL-RESEARCH-RECEIPT.md");
 }
