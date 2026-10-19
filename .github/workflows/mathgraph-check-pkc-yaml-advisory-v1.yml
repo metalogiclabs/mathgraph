@@ -42,3 +42,5 @@ jobs:
             /tmp/mathgraph-evidence/shadow-report.json
             /tmp/mathgraph-evidence/check-payload.json
           if-no-files-found: warn
+
+# ZIP-to-report parser is tested separately from the historical source replay.
