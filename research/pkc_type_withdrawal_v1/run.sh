@@ -77,4 +77,5 @@ done
 test "$(git -C "$TARGET" hash-object "$SOURCE")" = "9d3359e126fd76298c99e8f9ff5bd3658ebcf5d4"
 test -z "$(git -C "$TARGET" diff --name-only)"
 python3 "$OWN/audit.py" finalize --out "$RESULTS"
+python3 "$OWN/link_v1.py" "$RESULTS"
 echo "PKC_V7_PHYSICAL_MUTATION_SELECTIVE_WITHDRAWAL_RESTORATION_COMPLETE"
