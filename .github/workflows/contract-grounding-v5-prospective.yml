@@ -1,0 +1,123 @@
+name: V5 prospective source-contract semantic obligation
+on:
+  pull_request:
+    paths:
+      - research/contract_grounding_v5/**
+      - .github/workflows/contract-grounding-v5-prospective.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout research and source lock
+        uses: actions/checkout@v4
+      - name: Checkout exact pre-exposure V5 contract method
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: f55ceac001c712449da63fede6a28c091a00ef97
+          path: frozen-v5
+          persist-credentials: false
+      - name: Checkout frozen V4 source export resolver
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 7f38aa7029c8d89006db956941767033b09717ca
+          path: frozen-v4
+          persist-credentials: false
+      - name: Checkout exact held-out source-selection lock
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 1d495fc748dc1e78f0a8426f64d40357913e2fda
+          path: frozen-selection
+          persist-credentials: false
+      - name: Enforce frozen method and original selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          v5=research/contract_grounding_v5
+          for file in contracts.py propose.py evaluate.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-v5/$v5/$file" "$v5/$file"
+          done
+          cmp "frozen-selection/$v5/SOURCE_LOCK.json" "$v5/SOURCE_LOCK.json"
+          sha256sum frozen-v5/$v5/{contracts.py,propose.py,evaluate.py,FROZEN_PROTOCOL.md} > verified/frozen-v5-method-sha256.txt
+          sha256sum frozen-v4/research/api_export_closure_v4/resolve.py > verified/frozen-v4-resolver-sha256.txt
+      - name: Checkout untouched originally selected upstream source
+        uses: actions/checkout@v4
+        with:
+          repository: jaraco/inflect
+          ref: 0aa3f7a951616101bb67dedc385163e74a3f05e7
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Extract explicit public docstring authorities and freeze both pre-native proposals
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = "0aa3f7a951616101bb67dedc385163e74a3f05e7"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          lock=json.loads(Path('frozen-selection/research/contract_grounding_v5/SOURCE_LOCK.json').read_text())
+          src=lock['selected']
+          assert src['repository']=='jaraco/inflect'
+          assert src['source_sha']=='0aa3f7a951616101bb67dedc385163e74a3f05e7'
+          Path('verified/metadata.json').write_text(json.dumps(
+            {'repository':src['repository'],'source_sha':src['source_sha'],'description':src['description']},
+            sort_keys=True,indent=2)+'\n')
+          PY
+          cp research/contract_grounding_v5/SOURCE_LOCK.json verified/selection.json
+          python frozen-v5/research/contract_grounding_v5/contracts.py --source external-native --resolver frozen-v4/research/api_export_closure_v4/resolve.py --out verified/author-doc-view.json
+          python frozen-v5/research/contract_grounding_v5/propose.py --view verified/author-doc-view.json --metadata verified/metadata.json --arm candidate --out verified/candidate.json
+          python frozen-v5/research/contract_grounding_v5/propose.py --view verified/author-doc-view.json --metadata verified/metadata.json --arm expert --out verified/expert.json
+          sha256sum verified/{author-doc-view,candidate,expert}.json > verified/immutable-proposals-sha256.txt
+          echo 'FROZEN_BOTH_DOC_BOUND_PROPOSALS_BEFORE_NATIVE_EXECUTION'
+      - name: Install original source and fixed general-purpose pytest runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "pytest==8.3.5"
+          python -m pip install -e ./external-native
+      - name: Execute original complete upstream author suite without editing source
+        shell: bash
+        run: |
+          set +e
+          set -uo pipefail
+          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-tests.log
+          code=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$code" > verified/native-exit.txt
+          echo "ORIGINAL_NATIVE_TEST_EXIT=$code"
+          test "$(git -C external-native rev-parse HEAD)" = "0aa3f7a951616101bb67dedc385163e74a3f05e7"
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Verify presealed doc-bound semantic correspondence using independent string operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -s verified/native-junit.xml; then
+            python frozen-v5/research/contract_grounding_v5/evaluate.py --view verified/author-doc-view.json --metadata verified/metadata.json --candidate verified/candidate.json --expert verified/expert.json --source external-native --native-junit verified/native-junit.xml --out verified/prospective-v5.json | tee verified/evaluate.log
+          else
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          v={'scientific_status':'UNKNOWN_NO_AUTHENTIC_NATIVE_JUNIT',
+             'native_exit':Path('verified/native-exit.txt').read_text().strip(),
+             'comparison':'INCONCLUSIVE_NOT_TIE'}
+          Path('verified/prospective-v5.json').write_text(json.dumps(v,indent=2)+'\n')
+          print('PROSPECTIVE_UNKNOWN_NO_NATIVE_JUNIT')
+          PY
+          fi
+      - name: Archive every proposal, source-document authority, native result, and abstention
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-doc-contract-prospective
+          path: verified/
+          if-no-files-found: warn
