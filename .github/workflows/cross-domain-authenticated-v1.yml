@@ -7,6 +7,10 @@ on:
       - research/cross_domain_correspondence_v1/authenticated_receipts.py
       - .github/workflows/cross-domain-authenticated-v1.yml
   workflow_dispatch:
+  pull_request:
+    paths:
+      - research/cross_domain_correspondence_v1/**
+      - .github/workflows/cross-domain-authenticated-v1.yml
 permissions:
   contents: read
   actions: read
