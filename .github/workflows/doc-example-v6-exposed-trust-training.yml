@@ -1,0 +1,49 @@
+name: Exposed Mistune doc-authority HTML trust training
+on:
+  pull_request:
+    paths:
+      - 'research/doc_example_v6/exposed_training_contract_probe.py'
+      - '.github/workflows/doc-example-v6-exposed-trust-training.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exposed-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout known EXPOSED Mistune original source
+        uses: actions/checkout@v4
+        with:
+          repository: lepture/mistune
+          ref: d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          path: exposed-native
+          persist-credentials: false
+      - name: Fetch SHA256-authenticated original native GREEN evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git -C exposed-native rev-parse HEAD)" = d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          mkdir -p verified original
+          curl -fsSL --retry 3 --header "Authorization: Bearer $GH_TOKEN" --header "Accept: application/vnd.github+json" "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/12231735686/zip" -o original/mistune-native-green.zip
+          printf '%s  %s\n' '85cc890df28cebd208ada6b1b6330391da739dc74aba9d5b3573f3125e1aa130' original/mistune-native-green.zip | sha256sum -c
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned native source for read-only independent HTML parser observation
+        run: python -m pip install -e ./exposed-native
+      - name: Actual documentation authority withdrawal and restoration, no code mutation
+        run: |
+          set -euo pipefail
+          python research/doc_example_v6/exposed_training_contract_probe.py --source exposed-native --native-zip original/mistune-native-green.zip --out verified/source-doc-trust-training.json
+          test -z "$(git -C exposed-native diff --name-only)"
+      - name: Archive source-bound raw trust controls and documentation witnesses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exposed-mistune-source-doc-trust-training
+          path: verified/
+          if-no-files-found: warn
