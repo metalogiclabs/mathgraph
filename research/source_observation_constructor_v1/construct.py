@@ -18,7 +18,7 @@ DOCS = ("test/README.md", "test/README.rst", "tests/README.md",
         "CONTRIBUTING.md", "CONTRIBUTING.rst")
 MAX_BYTES = 160000
 DOC_COMMAND = re.compile(r"(?:^|\s)(?:python3?|pytest)(?:\s+|$)", re.I)
-TEST_CONTEXT = re.compile(r"\b(?:to\s+run\s+(?:the\s+)?(?:tests?|test\s+suite)|run\s+(?:the\s+)?(?:tests?|test\s+suite))\b", re.I)
+TEST_CONTEXT = re.compile(r"\b(?:to\s+run\s+(?:the\s+)?(?:full\s+)?(?:tests?|test\s+suite)|run\s+(?:the\s+)?(?:full\s+)?(?:tests?|test\s+suite))\b", re.I)
 NEGATED_AUTHORITY = re.compile(r"\b(?:do\s+not|don't|never|not\s+supported|no\s+longer|deprecated|example\s+only|unsafe|incorrect)\b", re.I)
 SAFE_ARG = re.compile(r"^[A-Za-z0-9_./:=+-]+$")
 BAD = set(";&|$<>{}*?\\")
