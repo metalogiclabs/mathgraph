@@ -1,0 +1,77 @@
+name: V6.1 historical Mistune evaluator schema replay
+on:
+  pull_request:
+    paths:
+      - research/semantic_contract_v7/v6_1_bind.py
+      - .github/workflows/semantic-contract-v6-1-mistune-history.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archived-native-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout exact frozen original V6 evaluator
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: dfcc088ca6f4a280272c361e043dd0f49afa1b5b
+          path: frozen-v6
+          persist-credentials: false
+      - name: Checkout separately source-blind qualified V6.1 adapter
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 41ffa59fc25a354f905497e19ff2eb3f0996e998
+          path: frozen-v6-1
+          persist-credentials: false
+      - name: Require byte-unchanged qualified adapter
+        run: cmp frozen-v6-1/research/semantic_contract_v7/v6_1_bind.py research/semantic_contract_v7/v6_1_bind.py
+      - name: Original already EXPOSED Mistune exact pinned source
+        uses: actions/checkout@v4
+        with:
+          repository: lepture/mistune
+          ref: d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          path: exposed-native
+          persist-credentials: false
+      - name: Authenticate previous original-source native JUnit and sealed proposal archive
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git -C exposed-native rev-parse HEAD)" = d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          mkdir -p historical verified
+          curl --fail --location --retry 3 --header "Authorization: Bearer $GH_TOKEN" --header "Accept: application/vnd.github+json" "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/12231735686/zip" -o historical/native.zip
+          echo "85cc890df28cebd208ada6b1b6330391da739dc74aba9d5b3573f3125e1aa130  historical/native.zip" | sha256sum --check
+          unzip -q historical/native.zip -d historical/receipt
+          echo "91f39a06ceed5bc4f74e7a8d396915b1becef490a013c9dcd8df772695890691  historical/receipt/proposals.json" | sha256sum --check
+          echo "ffd5485ae3a797e848d504cdd50d3db415db9d37dea46d4d9f6e81964fd8acfc  historical/receipt/native-junit.xml" | sha256sum --check
+          test "$(cat historical/receipt/native-exit-code.txt)" = 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact exposed original native source for original evaluator's import boundary
+        run: python -m pip install -e ./exposed-native
+      - name: Run unmodified V6 evaluator with qualified provenance/schema binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen-v6-1/research/semantic_contract_v7/v6_1_bind.py --metadata historical/receipt/metadata.json --proposals historical/receipt/proposals.json --source exposed-native --native-junit historical/receipt/native-junit.xml --evaluator frozen-v6/research/doc_example_v6/evaluate.py --out verified/v6-1-original-source-result.json --bound-proposals verified/v6-1-bound.json | tee verified/v6-1-replay.log
+          python - <<'PY'
+          import json
+          r=json.load(open('verified/v6-1-original-source-result.json'))
+          assert r['native']['admitted'] is True and r['native']['tests']==1183
+          assert r['status']=='UNKNOWN_NO_APPLICABLE_DOC_EXAMPLES'
+          assert r['comparison']=='INCONCLUSIVE_ZERO_CLAIMS'
+          assert r['candidate_source_doc_warrants']==0
+          print('V6_1_AUTHENTIC_ORIGINAL_MISTUNE_SCHEMA_REPLAY_WARRANTED_BOUND_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v6-1-authenticated-original-mistune-replay
+          path: verified/
