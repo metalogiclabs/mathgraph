@@ -1,0 +1,65 @@
+name: Strata exposed SMT/Lean bridge transfer
+on:
+  push:
+    branches:
+      - research/strata-bridge-transfer-20261020
+    paths:
+      - 'research/strata_bridge_v1/**'
+      - '.github/workflows/strata-bridge-transfer-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-lean-replay:
+    name: Native Strata ${{ matrix.variant }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: exposed_main
+            source_sha: 0bbe12d22650dc12dc4adc15249c965ba5ade8e3
+          - variant: proposed_repair
+            source_sha: 4016549f846065b5cab405fc09cff9a35d13512f
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact upstream revision and replay fixed controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash research/strata_bridge_v1/run_revision.sh "${{ matrix.variant }}" "${{ matrix.source_sha }}"
+      - name: Retain native evidence even on apparatus RED
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strata-bridge-${{ matrix.variant }}
+          path: |
+            research/strata_bridge_v1/evidence/${{ matrix.variant }}/*.txt
+            research/strata_bridge_v1/evidence/${{ matrix.variant }}/*.json
+            research/strata_bridge_v1/evidence/${{ matrix.variant }}/*.log
+          if-no-files-found: warn
+          retention-days: 30
+  admitted-consequence:
+    needs: native-lean-replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: strata-bridge-*
+          path: strata_bridge_collected
+      - name: Exact native-identity and MathGraph withdrawal closure audit
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$PWD" python3 research/strata_bridge_v1/audit.py | tee strata_bridge_collected/admission_log.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strata-bridge-consequence-v1
+          path: |
+            strata_bridge_collected/RESULT.json
+            strata_bridge_collected/admission_log.txt
+          if-no-files-found: warn
+          retention-days: 30
