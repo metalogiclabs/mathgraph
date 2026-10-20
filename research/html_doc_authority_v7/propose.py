@@ -8,7 +8,7 @@ def kwargs(s):
  if not s.strip():return {}
  try:
   call=ast.parse("f("+s+")",mode="eval").body
-  if call.args or any(k.arg is None for k in call.keywords):return None
+  if len(call.args)>1 or any(not isinstance(v,(ast.Name,ast.Constant)) for v in call.args) or any(k.arg is None for k in call.keywords):return None
   values={k.arg:ast.literal_eval(k.value) for k in call.keywords}
   return values if len(values)==len(call.keywords) and all(isinstance(v,(str,bool,int,type(None))) for v in values.values()) else None
  except (SyntaxError,ValueError,TypeError):return None
