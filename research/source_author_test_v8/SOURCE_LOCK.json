@@ -1,0 +1,33 @@
+{
+  "protocol": "SOURCE_AUTHOR_TEST_RUNNER_SCOPE_V8_SELECTION",
+  "frozen_method_commit": "bebe52575b5b612914ba4636fe8b5b9830735fe7",
+  "synthetic_and_exposed_preflight": "https://github.com/metalogiclabs/mathgraph/actions/runs/39356539503",
+  "fixed_pool": [
+    "bottlepy/bottle",
+    "sqlparse/sqlparse",
+    "tornadoweb/tornado",
+    "pytest-dev/pluggy",
+    "arrow-py/arrow"
+  ],
+  "selection_filter": "first public, nonarchived, Python primary language, default branch nonempty, no prior directly documented native experiment in canonical ROS exact search",
+  "screened": [
+    {
+      "repository": "bottlepy/bottle",
+      "status": "FIRST_ELIGIBLE",
+      "reason": "Public, nonarchived, Python, default main; exact-string scan of canonical ROS/Checkpoints/Campaign/Papers found no prior direct native study; sources/tests not inspected before lock"
+    }
+  ],
+  "selected": {
+    "repository": "bottlepy/bottle",
+    "source_sha": "8ec5fe29420d14998c0d86885083983eaea8b839",
+    "description": "bottle.py is a fast and simple micro-framework for python web-applications.",
+    "default_branch": "main",
+    "language": "Python",
+    "archived": false,
+    "private": false
+  },
+  "untouchedness_boundary": "Only no direct source study in inspected ROS pages; cannot prove global non-exposure",
+  "no_outcomes_read_before_lock": true,
+  "no_source_file_read_before_lock": true,
+  "no_source_specific_harness_changes_after_outcome": true
+}
