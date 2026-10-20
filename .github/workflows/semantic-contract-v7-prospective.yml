@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install pytest==8.3.5
-          python -m pip install -e './external-native[testing]'
+          python -m pip install -e './external-native[testing,linkify,plugins]'
       - name: Run original native author test collection from correct source CWD
         shell: bash
         run: |
