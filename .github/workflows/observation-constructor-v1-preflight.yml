@@ -6,6 +6,10 @@ on:
     paths:
       - 'research/source_observation_constructor_v1/construct.py'
       - '.github/workflows/observation-constructor-v1-preflight.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/construct.py'
+      - '.github/workflows/observation-constructor-v1-preflight.yml'
   workflow_dispatch:
 permissions:
   contents: read
