@@ -91,7 +91,7 @@ jobs:
             echo 'MUTATION_CONTROL_FAILURE: renamed axiom still permitted original proof to compile'
             exit 1
           fi
-          if ! grep -Eq 'unknown (identifier|constant).*wait_spec' reports/without-wait-spec.log; then
+          if ! grep -Eiq 'unknown (identifier|constant).*wait_spec' reports/without-wait-spec.log; then
             echo 'MUTATION_CAUSE_UNKNOWN: expected missing wait_spec diagnostic not found'
             tail -80 reports/without-wait-spec.log
             exit 1
