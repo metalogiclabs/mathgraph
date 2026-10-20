@@ -1,0 +1,46 @@
+{
+  "schema": "heldout.selection.metadata.v1",
+  "pool": [
+    "Verified-zkEVM/ArkLib",
+    "leanprover-community/iris-lean",
+    "Stavan-Jain/QECLean",
+    "lean-dojo/TorchLean",
+    "lambdaclass/concrete"
+  ],
+  "selection_rule": "FIRST_ELIGIBLE_NO_FALLTHROUGH",
+  "selected": {
+    "repository": "Verified-zkEVM/ArkLib",
+    "eligible": true,
+    "selected_sha": "2817d8c7d2f28d706b17f8de0f885880d0b2eb13",
+    "metadata": {
+      "full_name": "Verified-zkEVM/ArkLib",
+      "private": false,
+      "archived": false,
+      "disabled": false,
+      "fork": false,
+      "pushed_at": "2026-10-19T15:34:36Z",
+      "size": 81319,
+      "default_branch": "main"
+    }
+  },
+  "method_commit": "56659e5d69ffcdf7c2fd193556c8655183630887",
+  "selection_artifact_run": 39381222731,
+  "selection_artifact_id": 12245049196,
+  "screen": [
+    {
+      "repository": "Verified-zkEVM/ArkLib",
+      "eligible": true,
+      "selected_sha": "2817d8c7d2f28d706b17f8de0f885880d0b2eb13",
+      "metadata": {
+        "full_name": "Verified-zkEVM/ArkLib",
+        "private": false,
+        "archived": false,
+        "disabled": false,
+        "fork": false,
+        "pushed_at": "2026-10-19T15:34:36Z",
+        "size": 81319,
+        "default_branch": "main"
+      }
+    }
+  ]
+}
