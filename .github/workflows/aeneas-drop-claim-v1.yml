@@ -28,5 +28,11 @@ jobs:
         if: always()
         with:
           name: aeneas-drop-claim-fidelity-v1
-          path: |\n            research/aeneas_drop_claim_v1/evidence/*.txt\n            research/aeneas_drop_claim_v1/evidence/*.json\n            research/aeneas_drop_claim_v1/evidence/llbc/*.llbc\n            research/aeneas_drop_claim_v1/evidence/generated_drop/*.lean\n            research/aeneas_drop_claim_v1/evidence/generated_control/*.lean\n            research/aeneas_drop_claim_v1/evidence/verified/*.lean
+          path: |
+            research/aeneas_drop_claim_v1/evidence/*.txt
+            research/aeneas_drop_claim_v1/evidence/*.json
+            research/aeneas_drop_claim_v1/evidence/llbc/*.llbc
+            research/aeneas_drop_claim_v1/evidence/generated_drop/*.lean
+            research/aeneas_drop_claim_v1/evidence/generated_control/*.lean
+            research/aeneas_drop_claim_v1/evidence/verified/*.lean
           retention-days: 30
