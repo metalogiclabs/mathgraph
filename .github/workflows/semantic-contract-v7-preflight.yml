@@ -1,0 +1,23 @@
+name: V7 author-documentation semantic observer preflight
+on:
+  push:
+    branches: [research/semantic-contract-v7-20261021]
+    paths:
+      - 'research/semantic_contract_v7/**'
+      - '.github/workflows/semantic-contract-v7-preflight.yml'
+  pull_request:
+    paths:
+      - 'research/semantic_contract_v7/**'
+      - '.github/workflows/semantic-contract-v7-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  preexposure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: No-source V7 public-doc/API semantic, adversarial and selective-withdrawal tests
+        run: python research/semantic_contract_v7/preflight_docs.py
