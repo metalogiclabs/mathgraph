@@ -1,0 +1,11 @@
+{
+  "schema": "mathgraph.cedar_author_declared_corpus_lock.v1",
+  "lock_phase": "after Cedar source README, before corpus source or outcomes",
+  "authority_from": "cedar-spec/cedar-drt/README.md + cedar-lean-ffi/tests/integration_tests.rs + source upstream workflow",
+  "repository": "cedar-policy/cedar-integration-tests",
+  "sha": "b157547fb8856911b293b7214768922c731878de",
+  "selection": "first lexicographic author-declared integration fixture with expected authorization outcome; no fallback, unchanged common-source method",
+  "role": "independent author-provided integration fixture, not proof of real-world user intent",
+  "original_spec_sha": "7893e685a91a6a391d609fd9940a1c13dcdf2472",
+  "original_rust_sha": "34db4c67641172b98e876ce79ef41277e29af433"
+}
