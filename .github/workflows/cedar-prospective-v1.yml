@@ -1,0 +1,35 @@
+name: Cedar prospective Lean Rust author-fixture correspondence
+on:
+  push:
+    branches:
+      - research/cedar-prospective-correspondence-20261020
+    paths:
+      - 'research/cedar_prospective_v1/**'
+      - '.github/workflows/cedar-prospective-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-three-source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay pinned original Rust, Cedar Lean FFI and author fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/cedar_prospective_v1/evidence
+          bash research/cedar_prospective_v1/replay.sh 2>&1 | tee research/cedar_prospective_v1/evidence/job.log
+      - name: Retain evidence and scientific/apparatus failure boundary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cedar-original-fixture-prospective-v1
+          path: |
+            research/cedar_prospective_v1/evidence/*.log
+            research/cedar_prospective_v1/evidence/*.txt
+            research/cedar_prospective_v1/evidence/*.json
+          retention-days: 30
