@@ -1,0 +1,90 @@
+name: Markdown2 exposed native test-harness coverage audit
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/markdown2-test-harness-coverage-audit.yml'
+      - 'research/html_doc_authority_v7/README_TEST_COVERAGE_AUDIT.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: exposed-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Independently retrieve and authenticate original V7 native pytest receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/original verified
+          curl --fail --location --retry 3 --header "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/12234454500/zip" \
+            --output evidence/original-v7.zip
+          echo 'de9be423b0caa9f1ec765d3116ef4d4491240cb172e77ca2063674954a68b060  evidence/original-v7.zip' | sha256sum --check
+          unzip -q evidence/original-v7.zip -d evidence/original
+          test "$(git -C exposed-native rev-parse HEAD)" = a3716b5e0aeba16b6e85965b2e5019d174328f36
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          root=ET.parse("evidence/original/native-junit.xml").getroot()
+          suites=list(root.iter("testsuite"))
+          totals={key:sum(int(t.get(key,"0")) for t in suites) for key in ("tests","skipped","errors","failures")}
+          assert totals=={"tests":29,"skipped":1,"errors":0,"failures":0},totals
+          assert "yield tests were removed" in Path("evidence/original/native-test.log").read_text()
+          Path("verified/pytest-baseline.txt").write_text(str(totals)+"\n")
+          print("ORIGINAL_PYTEST_GAP_REPRODUCED",totals)
+          PY
+      - name: Run original package and original author's documented custom test driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -e ./exposed-native
+          grep -F 'python test.py -- -knownfailure' exposed-native/test/README.md
+          set +e
+          (cd exposed-native/test && python test.py -- -knownfailure) > verified/author-native-driver.log 2>&1
+          code=$?
+          set -e
+          echo "$code" > verified/author-native-exit.txt
+          tail -n 28 verified/author-native-driver.log
+          echo "ORIGINAL_NATIVE_DRIVER_EXIT=$code"
+          test -z "$(git -C exposed-native diff --name-only)"
+      - name: Count actual original generated tests, refuse misleading coverage promotions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          raw=Path("verified/author-native-driver.log").read_text(errors="replace")
+          match=re.findall(r"Ran\s+(\d+)\s+tests?\s+in\s+\d+(?:\.\d+)?s",raw)
+          number=int(match[-1]) if match else None
+          code=int(Path("verified/author-native-exit.txt").read_text())
+          out={"protocol":"MARKDOWN2_NATIVE_TEST_DRIVER_COVERAGE_TRAINING",
+            "upstream":"trentm/python-markdown2@a3716b5e0aeba16b6e85965b2e5019d174328f36",
+            "pytest_original_collected":29,
+            "author_driver_tests":number,
+            "author_driver_exit":code,
+            "native_authority":"AUTHOR_DRIVER_PASS" if number and code==0 else "UNKNOWN_AUTHOR_DRIVER",
+            "coverage_relationship":"AUTHOR_DRIVER_EXECUTED_MORE_THAN_PYTEST" if number and number>29 else "UNKNOWN_NOT_GREATER",
+            "bounds":"EXPOSED source training; author test driver excluding declared knownfailure tags. Does not retroactively admit V7 scientific claims"}
+          Path("verified/coverage-receipt.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("NATIVE_TEST_DRIVER_COVERAGE",json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exposed-markdown2-author-test-driver
+          path: verified/
