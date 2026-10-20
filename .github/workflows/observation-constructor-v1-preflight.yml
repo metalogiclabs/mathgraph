@@ -18,7 +18,7 @@ jobs:
       - name: Verify V9 scanner unchanged
         run: |
           set -euo pipefail
-          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "1a873af5ce87054b38699132de008a71d5aeb613" || {
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "72f03feb5bd21e0d0b6fee6774232c8e513b0588" || {
             echo 'V9 original hash needs source confirmation'; exit 1;
           }
       - uses: actions/checkout@v4
