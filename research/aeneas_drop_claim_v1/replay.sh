@@ -8,6 +8,8 @@ echo "STAGE=PINNED_NATIVE_SETUP"
 printf '%s\n' "Source pin: https://github.com/AeneasVerif/aeneas/tree/d119a474f852781f8ae88a85424f2f8ba8407b82" > "$EV/source_pins.txt"
 printf '%s\n' "Charon pin declared by Aeneas: 798016509139eb51f0d764645f76d068d34ba5f6" >> "$EV/source_pins.txt"
 printf '%s\n' "Lean: v4.31.0; Rust: nightly-2026-09-17" >> "$EV/source_pins.txt"
+python3 -m py_compile "$DIR/audit.py" "$DIR/prepare_checks.py"
+PYTHONPATH="$ROOT" python3 -c "from mathgraph_check.warrant_resolution import Claim, Receipt, Route, resolve_graph; print('MATHGRAPH_CORE_IMPORT_OK')"
 sha256sum "$DIR/one_guard.rs" "$DIR/replay.sh" "$DIR/audit.py" > "$EV/local_source_hashes.txt"
 rustup toolchain install nightly-2026-09-17 --profile minimal --component rustc-dev --component llvm-tools --component rust-src
 rustc +nightly-2026-09-17 --version | tee "$EV/rustc_version.txt"
@@ -74,5 +76,5 @@ lake env lean "$EV/verified/ControlVerified.lean" | tee "$EV/lean_control_check.
 
 echo "STAGE=EXISTING_MATHGRAPH_CLOSURE"
 cd "$ROOT"
-python3 "$DIR/audit.py" "$EV" | tee "$EV/audit_stdout.txt"
+PYTHONPATH="$ROOT" python3 "$DIR/audit.py" "$EV" | tee "$EV/audit_stdout.txt"
 echo "STAGE=FINISHED"
