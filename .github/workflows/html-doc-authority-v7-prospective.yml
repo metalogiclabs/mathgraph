@@ -1,0 +1,152 @@
+name: V7 first prospective source-author HTML contract
+on:
+  pull_request:
+    paths:
+      - 'research/html_doc_authority_v7/**'
+      - '.github/workflows/html-doc-authority-v7-prospective.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  first-heldout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout frozen pre-exposure method and protocol
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: ff205c17c3ed4e5a4f7a1ff35d7c181762a928f2
+          path: frozen-method
+          persist-credentials: false
+      - name: Checkout exact pre-source-selection receipt
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 3b00f8ea9cd2785fc36359f26cef20bf201341ec
+          path: frozen-selection
+          persist-credentials: false
+      - name: Check unchanged prospective apparatus before source exposure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          p=research/html_doc_authority_v7
+          for file in propose.py baseline.py evaluate.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-method/$p/$file" "$p/$file"
+          done
+          cmp "frozen-selection/$p/SOURCE_LOCK.json" "$p/SOURCE_LOCK.json"
+          sha256sum frozen-method/$p/{propose.py,baseline.py,evaluate.py,FROZEN_PROTOCOL.md} > verified/frozen-method-sha256.txt
+      - name: Checkout first selected untouched Markdown parser source
+        uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Extract BOTH original docs-only proposals before importing native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = "a3716b5e0aeba16b6e85965b2e5019d174328f36"
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path('frozen-selection/research/html_doc_authority_v7/SOURCE_LOCK.json').read_text())
+          assert d['selected']['repository']=='trentm/python-markdown2'
+          assert d['selected']['source_sha']=='a3716b5e0aeba16b6e85965b2e5019d174328f36'
+          Path('verified/metadata.json').write_text(json.dumps(d['selected'],sort_keys=True,indent=2)+'\n')
+          PY
+          cp frozen-selection/research/html_doc_authority_v7/SOURCE_LOCK.json verified/selection-lock.json
+          python frozen-method/research/html_doc_authority_v7/propose.py --source external-native --out verified/candidate.json
+          python frozen-method/research/html_doc_authority_v7/baseline.py --source external-native --out verified/expert.json
+          sha256sum verified/{candidate,expert}.json > verified/SEALED_PRE_NATIVE_PROPOSALS_SHA256.txt
+          echo "BOTH_HTML_AUTHORITY_PROPOSALS_SEALED_BEFORE_NATIVE"
+      - name: Install original Python package and generic native-test authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install 'pytest==8.3.5'
+          python -m pip install -e ./external-native
+      - name: Execute full original source-native author tests, never rewrite source
+        shell: bash
+        run: |
+          set +e
+          set -uo pipefail
+          ( cd external-native && python -m pytest -q --junitxml=../verified/native-junit.xml ) > verified/native-test.log 2>&1
+          exit_status=$?
+          set -e
+          echo "$exit_status" > verified/native-exit.txt
+          tail -n 32 verified/native-test.log
+          echo "SOURCE_NATIVE_TEST_EXIT=$exit_status"
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Independently check sealed author attributions against actual HTML parser behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -s verified/native-junit.xml; then
+            python frozen-method/research/html_doc_authority_v7/evaluate.py --source external-native --candidate verified/candidate.json --expert verified/expert.json --junit verified/native-junit.xml --metadata verified/metadata.json --out verified/prospective.json | tee verified/evaluation.log
+          else
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          Path('verified/prospective.json').write_text(json.dumps({'status':'UNKNOWN_NO_NATIVE_JUNIT','comparison':'INCONCLUSIVE','native_exit':Path('verified/native-exit.txt').read_text().strip()},indent=2)+'\n')
+          print('SCIENTIFIC_UNKNOWN_NO_NATIVE_JUNIT')
+          PY
+          fi
+      - name: Physically withdraw exactly one cited author statement and independently restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,subprocess,hashlib
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,str(Path('frozen-method/research/html_doc_authority_v7').resolve()))
+          import propose,baseline
+          root=Path('external-native'); c=json.loads(Path('verified/candidate.json').read_text())
+          if not c['claims']:
+            Path('verified/authority-withdrawal.json').write_text(json.dumps({'status':'UNKNOWN_NO_AUTHORITY_TO_WITHDRAW'},indent=2)+'\n')
+            print('NO_DECLARED_AUTHORITY_TO_WITHDRAW')
+          else:
+            first=c['claims'][0]
+            path=root/first['path']; before=path.read_bytes()
+            lines=before.decode('utf-8').splitlines(keepends=True)
+            line=first['line']-1
+            assert first['authority_sentence'] == lines[line].strip()
+            lines[line]='Documentation sentence withdrawn for protected experiment.\n'
+            path.write_text(''.join(lines))
+            modified=propose.discover(root)
+            baseline_modified=baseline.assess(root)
+            def identities(claims):
+              return {(v['module'],v['function'],v['mode'],json.dumps(v['kwargs'],sort_keys=True),v['authority_sha256']) for v in claims}
+            before_ids=identities(c['claims']); after_ids=identities(modified['claims'])
+            original_selected=(first['module'],first['function'],first['mode'],json.dumps(first['kwargs'],sort_keys=True),first['authority_sha256'])
+            assert original_selected in before_ids
+            assert original_selected not in after_ids,'WITHDRAWN_SOURCE_SENTENCE_STILL_ADMITTED'
+            assert (before_ids-{original_selected}).issubset(after_ids),'UNRELATED_SOURCE_SENTENCE_NOT_REQUALIFIED'
+            assert not after_ids-before_ids,'UNEXPLAINED_NEW_SOURCE_CLAIM'
+            path.write_bytes(before)
+            restored=propose.discover(root)
+            assert identities(restored['claims'])==before_ids
+            assert hashlib.sha256(path.read_bytes()).hexdigest()==hashlib.sha256(before).hexdigest()
+            assert not subprocess.check_output(['git','-C',str(root),'diff','--name-only']).strip()
+            receipt={'status':'WARRANTED_BOUNDED_DOC_SOURCE_WITHDRAW_RESTORE',
+                     'selected':list(original_selected),'claims_before':len(before_ids),
+                     'claims_after':len(after_ids),'restored':True,
+                     'original_file_sha256':hashlib.sha256(before).hexdigest(),
+                     'mutant_file_sha256':hashlib.sha256(''.join(lines).encode()).hexdigest(),
+                     'baseline_claims_mutated':len(baseline_modified['claims'])}
+            Path('verified/authority-withdrawal.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+            print('DOC_AUTHOR_SOURCE_PHYSICAL_WITHDRAW_AND_RESTORE',receipt['claims_before'],receipt['claims_after'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v7-first-author-document-html-prospect
+          path: verified/
+          if-no-files-found: warn
