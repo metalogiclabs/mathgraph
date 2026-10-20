@@ -25,7 +25,7 @@ for role, symbol, output in (
     target.write_text(
         content
         + "\n-- MathGraph preregistered, exact generated function reduction check.\n"
-        + f"theorem mathgraph_{role}_result : {symbol} = ok 0#i32 := by rfl\n"
+        + f"theorem mathgraph_{role}_result : one_guard.{symbol} = ok 0#i32 := by rfl\n"
         + f"#print axioms mathgraph_{role}_result\n"
         + f'#eval "MATHGRAPH_{role.upper()}_LEAN_THEOREM_PASSED"\n'
     )
