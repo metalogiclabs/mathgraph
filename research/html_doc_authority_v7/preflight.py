@@ -11,7 +11,7 @@ expert=load("expert",here/"baseline.py")
 audit=load("audit",here/"evaluate.py")
 with tempfile.TemporaryDirectory() as temp:
  root=Path(temp);pkg=root/"docmark";pkg.mkdir()
- (pkg/"__init__.py").write_text('import html\ndef create_renderer():\n    return lambda text: html.escape(text)\ndef html(text):\n    return text\n')
+ (pkg/"__init__.py").write_text('import html as stdhtml\ndef create_renderer():\n    return lambda text: stdhtml.escape(text)\ndef html(text):\n    return text\n')
  doc=root/"README.rst"
  original='''Source documentation
 ====================
