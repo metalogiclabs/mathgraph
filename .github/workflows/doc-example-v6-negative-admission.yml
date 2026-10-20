@@ -1,0 +1,40 @@
+name: V6 independent first-prospect negative admission
+on:
+  pull_request:
+    paths:
+      - 'research/doc_example_v6/qualify_first_negative.py'
+      - '.github/workflows/doc-example-v6-negative-admission.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit-first-prospect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch SHA-pinned original RED and cwd-only native replay archives
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence verified
+          for tuple in "12231252251 first c9e1893accf55e46c35c555132aa72f4db6be2b63acc482b9e877932cf370da8" "12231735686 replay 85cc890df28cebd208ada6b1b6330391da739dc74aba9d5b3573f3125e1aa130"; do
+            read -r id kind digest <<< "$tuple"
+            curl -fsSL --retry 3 --header "Authorization: Bearer $GH_TOKEN" --header "Accept: application/vnd.github+json" "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/$id/zip" -o "evidence/$kind.zip"
+            printf '%s  %s\n' "$digest" "evidence/$kind.zip" | sha256sum -c
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independently establish native GREEN, presealed empty obligation and comparator INCONCLUSIVE
+        run: |
+          set -euo pipefail
+          python research/doc_example_v6/qualify_first_negative.py --first evidence/first.zip --cwd-replay evidence/replay.zip --out verified/first-prospect-verdict.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v6-negative-scientific-admission
+          path: verified/
+          if-no-files-found: warn
