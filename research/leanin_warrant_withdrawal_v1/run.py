@@ -50,7 +50,12 @@ def parse_axioms(log: str) -> dict[str, set[str]]:
         if m := re.search(r"'(LeanIn\.[^']+)' depends on axioms: \[([^\]]*)\]", line):
             key = m.group(1)
             require(key not in out, f"DUPLICATED_AXIOM_AUDIT:{key}")
-            out[key] = set(m.group(2).split(", ")) if m.group(2) else set()
+            raw = set(m.group(2).split(", ")) if m.group(2) else set()
+            # Lean prints primitive names fully qualified outside the source
+            # namespace. Normalize only names anchored to the pinned contract.
+            out[key] = {a.removeprefix("LeanIn.") if a.startswith("LeanIn.")
+                        and a.removeprefix("LeanIn.") in PRIMITIVES else a
+                        for a in raw}
         elif m := re.search(r"'(LeanIn\.[^']+)' does not depend on any axioms", line):
             key = m.group(1)
             require(key not in out, f"DUPLICATED_AXIOM_AUDIT:{key}")
