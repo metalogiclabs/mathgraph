@@ -1,0 +1,24 @@
+{
+  "schema": "mathgraph.cedar_prospective_source_lock.v1",
+  "frozen_at_date": "2026-10-20",
+  "exposure": "metadata_only_before_protocol_freeze",
+  "first_candidate": {
+    "repo": "cedar-policy/cedar-spec",
+    "sha": "7893e685a91a6a391d609fd9940a1c13dcdf2472",
+    "language": "Lean",
+    "default_branch": "main"
+  },
+  "paired_reference": {
+    "repo": "cedar-policy/cedar",
+    "sha": "34db4c67641172b98e876ce79ef41277e29af433",
+    "default_branch": "main"
+  },
+  "fallback": "none",
+  "source_body_access_prior_to_freeze": false,
+  "method_family": "dual_original_native_source_contract_pairing_or_abstain",
+  "comparison": "identically informed explicit-output rulebook",
+  "training_sources": [
+    "Aeneas issue 1410",
+    "Strata issue 1488"
+  ]
+}
