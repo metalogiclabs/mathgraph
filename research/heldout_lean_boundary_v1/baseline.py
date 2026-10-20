@@ -4,7 +4,7 @@ import os, re, hashlib
 def propose(root):
     records=[]
     for directory,_,names in os.walk(root):
-        segs=os.path.relpath(directory,root).split(os.sep)
+        segs=[] if os.path.samefile(directory,root) else os.path.relpath(directory,root).split(os.sep)
         if any(p.startswith(".") or p in ("target","build","node_modules","_build","out","generated") for p in segs):continue
         for filename in sorted(names):
             if not filename.endswith(".lean"):continue
