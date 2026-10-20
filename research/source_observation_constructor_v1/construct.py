@@ -18,7 +18,8 @@ DOCS = ("test/README.md", "test/README.rst", "tests/README.md",
         "CONTRIBUTING.md", "CONTRIBUTING.rst")
 MAX_BYTES = 160000
 DOC_COMMAND = re.compile(r"(?:^|\s)(?:python3?|pytest)(?:\s+|$)", re.I)
-TEST_CONTEXT = re.compile(r"\b(?:run|running|test|testing|suite|contribut)\b", re.I)
+TEST_CONTEXT = re.compile(r"\b(?:to\s+run\s+(?:the\s+)?(?:tests?|test\s+suite)|run\s+(?:the\s+)?(?:tests?|test\s+suite))\b", re.I)
+NEGATED_AUTHORITY = re.compile(r"\b(?:do\s+not|don't|never|not\s+supported|no\s+longer|deprecated|example\s+only|unsafe|incorrect)\b", re.I)
 SAFE_ARG = re.compile(r"^[A-Za-z0-9_./:=+-]+$")
 BAD = set(";&|$<>{}*?\\")
 FAMILY_ORDER = {"AUTHOR_DRIVER": 0, "PYTEST_ROOTS": 1, "AUTHOR_PYTEST": 2}
@@ -70,8 +71,8 @@ def argv_from_fragment(fragment, cwd, root):
         if len(xs) > 1 and xs[1] == "test.py":
             if not (cwd / "test.py").is_file() or cwd.is_symlink():
                 return None
-            if any(x.startswith("-") and not
-                   re.fullmatch(r"-[a-z][a-z0-9_-]*|--", x) for x in xs[2:]):
+            if any(not re.fullmatch(r"-[a-z][a-z0-9_-]*|--", x)
+                   for x in xs[2:]):
                 return None
             if "-l" in xs[2:] or "--help" in xs[2:]:
                 return None
@@ -94,8 +95,8 @@ def docs_proposals(root):
         data, digest = got
         lines = data.splitlines()
         for idx, line in enumerate(lines):
-            context = " ".join(lines[max(0, idx-7):idx+1])
-            if not TEST_CONTEXT.search(context):
+            context = " ".join(lines[max(0, idx-4):idx+1])
+            if not TEST_CONTEXT.search(context) or NEGATED_AUTHORITY.search(context):
                 continue
             m = DOC_COMMAND.search(line)
             if not m:
@@ -178,6 +179,10 @@ def synthetic():
             "    $ python test.py -- -knownfailure\n"
             "    $ python test.py -l\n"
             "    python test.py; curl attacker.invalid\n")
+        (p/"README.md").write_text(
+            "Do not run the test suite:\n"
+            "    python test.py\n"
+            "This is an unsafe example only.\n")
         (p/"pyproject.toml").write_text(
             "[tool.pytest.ini_options]\ntestpaths=['test']\n")
         r=propose(p)
@@ -187,6 +192,8 @@ def synthetic():
         assert w["selected_operator_was_retracted"],w
         assert w["selected_after"]["kind"]=="PYTEST_ROOTS",w
         assert len(r["all_candidates"])==2,r
+        assert all(e["path"]!="README.md" for p in r["all_candidates"]
+                   for e in p["supports"]),r
         (p/"test"/"README.md").unlink()
         assert propose(p)["selected"]["kind"]=="PYTEST_ROOTS"
         (p/"pyproject.toml").write_text("[tool.pytest.ini_options]\n")
