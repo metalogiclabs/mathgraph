@@ -1,0 +1,36 @@
+name: Strata SMT to Lean meaning and withdrawal replay
+on:
+  push:
+    branches:
+      - research/strata-smt-meaning-withdrawal-20261020
+    paths:
+      - 'research/strata_bridge_v1/**'
+      - '.github/workflows/strata-smt-meaning-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-source-and-patch-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run pinned Strata original and patch, evidence checks and unchanged MathGraph resolver
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/strata_bridge_v1/evidence
+          bash research/strata_bridge_v1/replay.sh 2>&1 | tee research/strata_bridge_v1/evidence/job.log
+      - name: Preserve successes, failures and original native outputs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: strata-smt-meaning-v1
+          path: |
+            research/strata_bridge_v1/evidence/*.log
+            research/strata_bridge_v1/evidence/*.txt
+            research/strata_bridge_v1/evidence/*.json
+            research/strata_bridge_v1/evidence/*.exit
+          retention-days: 30
