@@ -1,0 +1,51 @@
+name: Heldout Lean authority-observer prospective v1
+on:
+  push:
+    branches: [research/heldout-lean-boundary-v1-20261020]
+    paths:
+      - 'research/heldout_lean_boundary_v1/**'
+      - '.github/workflows/heldout-lean-boundary-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freeze-or-prospect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Source-blind method controls
+        run: python3 research/heldout_lean_boundary_v1/synthetic_tests.py
+      - name: Metadata-only deterministic selection at frozen method commit
+        if: ${{ hashFiles('research/heldout_lean_boundary_v1/selection.lock.json') == '' }}
+        run: |
+          set -euo pipefail
+          python3 research/heldout_lean_boundary_v1/selection.py research/heldout_lean_boundary_v1/evidence/METADATA_SELECTION.json
+      - name: Set up Lean with elan for locked source
+        if: ${{ hashFiles('research/heldout_lean_boundary_v1/selection.lock.json') != '' }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/lean-elan-init.sh
+          sh /tmp/lean-elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Native source-heldout verifier and immutable-proposal audit
+        if: ${{ hashFiles('research/heldout_lean_boundary_v1/selection.lock.json') != '' }}
+        run: |
+          set -euo pipefail
+          python3 research/heldout_lean_boundary_v1/assay.py 2>&1 | tee research/heldout_lean_boundary_v1/evidence/ci_audit_log.txt
+      - name: Preserve unknowns, proposals and full evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heldout-lean-boundary-v1
+          path: |
+            research/heldout_lean_boundary_v1/evidence/*.txt
+            research/heldout_lean_boundary_v1/evidence/*.json
+            research/heldout_lean_boundary_v1/evidence/*.lean
+          retention-days: 30
