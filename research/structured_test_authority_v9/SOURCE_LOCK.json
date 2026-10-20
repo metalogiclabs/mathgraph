@@ -1,0 +1,41 @@
+{
+  "protocol": "STRUCTURED_PYTEST_SCOPE_V9_SELECTION_V1",
+  "frozen_method_sha": "d1bf38aa3205db63d61a5f3292058cf5dfa54433",
+  "pre_exposure_synthetic_ci": "https://github.com/metalogiclabs/mathgraph/actions/runs/39395437679",
+  "ordered_pool": [
+    "pallets/itsdangerous",
+    "pytest-dev/pluggy",
+    "python-attrs/attrs",
+    "hynek/structlog",
+    "encode/starlette"
+  ],
+  "metadata_and_ros_screen": [
+    {
+      "repository": "pallets/itsdangerous",
+      "status": "INELIGIBLE_PRIOR_DIRECT_SOURCE_NATIVE",
+      "evidence": "Metalogic ROS 2026-10-18 UDM original author 297 native test experiment pinned pallets/itsdangerous@096c8d42545d3b68ea21a4f890fb2b2d8979c0bd",
+      "opened_current_future_source": false
+    },
+    {
+      "repository": "pytest-dev/pluggy",
+      "status": "FIRST_ELIGIBLE_METADATA_AND_BOUNDED_ROS",
+      "evidence": "Public, nonarchived, primary Python, default main; ROS search lists pluggy PR #755 as prior UNOPENED future, not a previous source-native experiment on default HEAD. Source implementation, tests and current behavior unseen."
+    }
+  ],
+  "selected": {
+    "repository": "pytest-dev/pluggy",
+    "source_sha": "0224f79fc75efadaafe24dbab9deee2ff616ecd7",
+    "default_branch": "main",
+    "description": "A minimalist production ready plugin system",
+    "language": "Python",
+    "private": false,
+    "archived": false
+  },
+  "exposure_boundary": {
+    "selected_repo_code_read": false,
+    "selected_repo_test_config_read": false,
+    "selected_repo_behavior_read": false,
+    "current_source_native_test_outcomes_seen": false
+  },
+  "constraints": "Original frozen scan/evaluate/withdrawal and expert cookbook must remain unchanged. Stop after first eligible native result. Earlier ROS held-out pluggy PR #755 remains uninspected; no claim of globally unused repository."
+}
