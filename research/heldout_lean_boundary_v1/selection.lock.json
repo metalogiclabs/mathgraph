@@ -1,0 +1,47 @@
+{
+  "schema": "heldout.selection.metadata.v1",
+  "pool": [
+    "Verilean/sparkle",
+    "Verified-zkEVM/ArkLib",
+    "leanprover-community/iris-lean",
+    "Stavan-Jain/QECLean",
+    "lean-dojo/TorchLean"
+  ],
+  "selection_rule": "FIRST_ELIGIBLE_NO_FALLTHROUGH",
+  "selected": {
+    "repository": "Verilean/sparkle",
+    "eligible": true,
+    "selected_sha": "1614cee83ac586ca9a0626cd4af13bfef7347c3a",
+    "metadata": {
+      "full_name": "Verilean/sparkle",
+      "private": false,
+      "archived": false,
+      "disabled": false,
+      "fork": false,
+      "pushed_at": "2026-10-19T02:08:30Z",
+      "size": 22030,
+      "default_branch": "main"
+    }
+  },
+  "method_commit": "87f3100d4812001389a9ccae068963f21981a5b1",
+  "selection_artifact_run": 39358151514,
+  "selection_artifact_id": 12236380632,
+  "selection_original_sha256": "0fc30620405e7e12b0b89fa9ec93ee1f56349d9220c61b0ca2a01092bf9477aa",
+  "screen": [
+    {
+      "repository": "Verilean/sparkle",
+      "eligible": true,
+      "selected_sha": "1614cee83ac586ca9a0626cd4af13bfef7347c3a",
+      "metadata": {
+        "full_name": "Verilean/sparkle",
+        "private": false,
+        "archived": false,
+        "disabled": false,
+        "fork": false,
+        "pushed_at": "2026-10-19T02:08:30Z",
+        "size": 22030,
+        "default_branch": "main"
+      }
+    }
+  ]
+}
