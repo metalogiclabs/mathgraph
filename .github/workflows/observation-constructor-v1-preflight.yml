@@ -1,0 +1,65 @@
+name: Observation Constructor V1 - Exposed Preflight
+on:
+  push:
+    branches:
+      - research/source-observation-constructor-v1-20261021
+    paths:
+      - 'research/source_observation_constructor_v1/construct.py'
+      - '.github/workflows/observation-constructor-v1-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify V9 scanner unchanged
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "1a873af5ce87054b38699132de008a71d5aeb613" || {
+            echo 'V9 original hash needs source confirmation'; exit 1;
+          }
+      - uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: exposed-markdown2
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: bottlepy/bottle
+          ref: 8ec5fe29420d14998c0d86885083983eaea8b839
+          path: exposed-bottle
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: pytest-dev/pluggy
+          ref: 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          path: exposed-pluggy
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check typed-constructor grammar and exposed native authorities
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python -m py_compile research/source_observation_constructor_v1/construct.py
+          python research/source_observation_constructor_v1/construct.py \
+            --preflight exposed-markdown2 exposed-bottle exposed-pluggy \
+            --out evidence/exposed_preflight.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/exposed_preflight.json'))
+          assert d['status']=='EXPOSED_PREFLIGHT_GREEN'
+          assert len(d['training'])==3
+          print('EXPOSED_PREFLIGHT_QUALIFIED',[(x['name'],x['status']) for x in d['training']])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-observation-v1-exposed-preflight
+          path: evidence/
+          if-no-files-found: warn
