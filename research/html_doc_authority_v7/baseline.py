@@ -9,7 +9,7 @@ MODCALL=re.compile(r"(?P<module>\b[a-zA-Z_]\w*)\.(?P<function>[a-zA-Z_]\w*)\((?P
 def parse_opts(text):
  try:
   node=ast.parse("f("+text+")",mode="eval").body
-  if node.args or any(k.arg is None for k in node.keywords):return None
+  if len(node.args)>1 or any(not isinstance(v,(ast.Name,ast.Constant)) for v in node.args) or any(k.arg is None for k in node.keywords):return None
   return {k.arg:ast.literal_eval(k.value) for k in node.keywords}
  except (SyntaxError,TypeError,ValueError):return None
 
