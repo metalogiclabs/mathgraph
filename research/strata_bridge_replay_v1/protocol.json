@@ -1,0 +1,29 @@
+{
+  "schema": "mathgraph.strata-bridge-exposed-retrospective-v1",
+  "date": "2026-10-20",
+  "source_status": "EXPOSED_TRAINING_REPLAY_NOT_PROSPECTIVE",
+  "upstream": "strata-org/Strata",
+  "base_sha": "0bbe12d22650dc12dc4adc15249c965ba5ade8e3",
+  "repair_pr": 1490,
+  "repair_sha": "4016549f846065b5cab405fc09cff9a35d13512f",
+  "lean_toolchain": "leanprover/lean4:v4.31.0",
+  "external_authority": "cvc5 v1.3.4 QF_BV SMT-LIB interpretation at division by zero",
+  "expected": {
+    "base_bad_file_compiles": true,
+    "base_bad_axiom_contains": "_genSMTVCs_tcbBridge",
+    "base_false_theorem_has_no_sorry": true,
+    "fixed_bad_file_fails_specifically_on_smt_udiv": true,
+    "fixed_good_upstream_test_passes": true,
+    "smt_bad_output": "unsat",
+    "smt_good_output": "sat",
+    "physical_oracle_withdrawal_invalidates_only_dependent_warrants": true,
+    "physical_baseline_withdrawal_preserves_fixed_result": true
+  },
+  "not_established": [
+    "Lean kernel soundness failure",
+    "Strata universal unsoundness after proposed fix",
+    "source-blind prospective generalization",
+    "human expert baseline superiority",
+    "original code automatically bug-discovered by MathGraph"
+  ]
+}

@@ -1,0 +1,35 @@
+name: Strata bridge source/meaning retrospective replay
+on:
+  push:
+    branches:
+      - research/strata-tcb-boundary-20261020
+    paths:
+      - 'research/strata_bridge_replay_v1/**'
+      - '.github/workflows/strata-tcb-boundary-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stratum-meaning-and-consequence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reproduce pinned Strata base and candidate fix; withdraw exact authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/strata_bridge_replay_v1/evidence
+          bash research/strata_bridge_replay_v1/replay.sh 2>&1 | tee research/strata_bridge_replay_v1/evidence/job_log.txt
+      - name: Preserve source-native receipts and all RED provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strata-tcb-semantic-boundary-v1
+          path: |
+            research/strata_bridge_replay_v1/evidence/*.txt
+            research/strata_bridge_replay_v1/evidence/*.json
+            research/strata_bridge_replay_v1/evidence/*.lean
+          retention-days: 30
