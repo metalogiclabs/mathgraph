@@ -1,0 +1,38 @@
+{
+  "protocol": "HTML_SOURCE_DOC_AUTHORITY_V7_SELECTION",
+  "frozen_method_sha": "ff205c17c3ed4e5a4f7a1ff35d7c181762a928f2",
+  "synthetic_ci_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39354563639",
+  "scientific_claim": "Bounded author-documented HTML raw/escaped policy vs stdlib HTMLParser, not general security",
+  "ordered_pool": [
+    "trentm/python-markdown2",
+    "executablebooks/markdown-it-py",
+    "Python-Markdown/markdown",
+    "miyuchina/mistletoe",
+    "mozilla/bleach"
+  ],
+  "eligibility": "first public nonarchived Python main-language repo with nonempty default branch and no directly attributed prior source-native ROS study",
+  "screening": [
+    {
+      "repository": "trentm/python-markdown2",
+      "decision": "FIRST_ELIGIBLE",
+      "public": true,
+      "archived": false,
+      "language": "Python",
+      "default_branch": "master",
+      "source_sha": "a3716b5e0aeba16b6e85965b2e5019d174328f36",
+      "ros": "No exact repository/string found in four canonical ROS registries; Notion search returned fuzzy page hits but no direct prior native study"
+    }
+  ],
+  "selected": {
+    "repository": "trentm/python-markdown2",
+    "source_sha": "a3716b5e0aeba16b6e85965b2e5019d174328f36",
+    "description": "markdown2: A fast and complete implementation of Markdown in Python",
+    "default_branch": "master",
+    "language": "Python",
+    "archived": false,
+    "private": false
+  },
+  "source_bytes_or_native_results_inspected_before_lock": false,
+  "claim_construction_fixed_before_selection": true,
+  "limitations": "ROS search absence only bounded; cannot infer no previous source exposure in any other channel. Once selected, do not substitute if no eligible docs/unsupported tests/negative result."
+}
