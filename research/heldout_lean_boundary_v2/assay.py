@@ -180,7 +180,7 @@ final={"schema":"heldout.lean.observer.v2","source_repo":repo,"source_sha":pinne
        "limitations":["Prototype source-neutral lexical observer, not a formal source-language parser",
                       "Comparator independently authored expert-rule proxy, not a human expert",
                       "Source file proposition is a formal theorem statement, not independently authored real-world intent",
-                      The source-authored-to-Lean theorem name linkage is exact but not an external semantic bridge",
+                      "The source-authored-to-Lean theorem name linkage is exact but not an external semantic bridge",
                       "Local physically moved snapshots are not upstream authority revocation",
                       "Method run is a new source snapshot, not autonomous method invention",
                       "A native module build qualifies admission only for source formal statements, not hardware/software behavior"]}
