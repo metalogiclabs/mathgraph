@@ -32,7 +32,9 @@ for role in ("drop", "control"):
     expected = f"MATHGRAPH_{role.upper()}_LEAN_THEOREM_PASSED"
     if expected not in read(f"lean_{role}_check.txt"):
         raise RuntimeError(f"NO_KERNEL_CHECK_RECEIPT_{role}")
-    if "sorryAx" in read(f"lean_{role}_check.txt"):\n        raise RuntimeError("LEAN_SORRY_AXIOM_IN_PROOF")\n    if "sorry" in (ev / "verified" / ("DropVerified.lean" if role == "drop" else "ControlVerified.lean")).read_text():
+    if "sorryAx" in read(f"lean_{role}_check.txt"):
+        raise RuntimeError("LEAN_SORRY_AXIOM_IN_PROOF")
+    if "sorry" in (ev / "verified" / ("DropVerified.lean" if role == "drop" else "ControlVerified.lean")).read_text():
         raise RuntimeError("SORRY_IN_CHECKED_FILE")
 if native_drop == 0:
     raise RuntimeError("NEGATIVE_CASE_STOPPED_BEING_NEGATIVE")
