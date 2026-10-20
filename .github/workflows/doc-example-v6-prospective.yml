@@ -1,0 +1,119 @@
+name: V6 first prospect source-declared literal examples
+on:
+  pull_request:
+    paths:
+      - 'research/doc_example_v6/**'
+      - '.github/workflows/doc-example-v6-prospective.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-example-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout selected scientific branch
+        uses: actions/checkout@v4
+      - name: Checkout exact V6 pre-exposure method
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: dfcc088ca6f4a280272c361e043dd0f49afa1b5b
+          path: frozen-v6
+          persist-credentials: false
+      - name: Checkout exact V4 export resolver
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 7f38aa7029c8d89006db956941767033b09717ca
+          path: frozen-v4
+          persist-credentials: false
+      - name: Checkout sealed pre-exposure source selection
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 491dafaacdc52efe609026eaa8d1e6612da94d4b
+          path: frozen-selection
+          persist-credentials: false
+      - name: Enforce original method, protocol and source-selection hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          research=research/doc_example_v6
+          for file in propose.py evaluate.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-v6/$research/$file" "$research/$file"
+          done
+          cmp "frozen-selection/$research/SELECTION_LOCK.json" "$research/SELECTION_LOCK.json"
+          sha256sum frozen-v6/$research/{propose.py,evaluate.py,preflight.py,FROZEN_PROTOCOL.md} > verified/frozen-method-sha256.txt
+          sha256sum frozen-v4/research/api_export_closure_v4/resolve.py > verified/export-resolver-sha256.txt
+      - name: Checkout the exact first-eligible unopened native source
+        uses: actions/checkout@v4
+        with:
+          repository: lepture/mistune
+          ref: d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Produce and SHA256-seal source-bound proposals BEFORE importing native source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          lock=json.loads(Path('research/doc_example_v6/SELECTION_LOCK.json').read_text())
+          sel=lock['selected']
+          assert sel['repo']=='lepture/mistune'
+          assert sel['sha']=='d449488ce6baf5bcc386186cc01c40bf2afdc82c'
+          meta={'repository':sel['repo'],'source_sha':sel['sha'],'description':sel['description']}
+          Path('verified/metadata.json').write_text(json.dumps(meta,sort_keys=True,indent=2)+'\n')
+          PY
+          cp research/doc_example_v6/SELECTION_LOCK.json verified/selection-lock.json
+          python frozen-v6/research/doc_example_v6/propose.py --source external-native --resolver frozen-v4/research/api_export_closure_v4/resolve.py --out verified/proposals.json | tee verified/pre-native-proposal.log
+          sha256sum verified/proposals.json verified/metadata.json > verified/pre-native-proposal-sha256.txt
+          echo 'SEALED_PRE_EXECUTION_AUTHOR_EXAMPLES'
+      - name: Install the same original source and pinned pytest execution environment for both observers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install 'pytest==8.3.5'
+          python -m pip install -e ./external-native
+      - name: Run the unmodified author native suite, archive RED and native JUnit if any
+        shell: bash
+        run: |
+          set +e
+          set -uo pipefail
+          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-test.log
+          code=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$code" > verified/native-exit-code.txt
+          echo "ORIGINAL_NATIVE_EXIT=$code"
+          test "$(git -C external-native rev-parse HEAD)" = d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Reevaluate pre-sealed examples against original native test evidence and stdlib doctest
+        shell: bash
+        run: |
+          set -euo pipefail
+          code="$(cat verified/native-exit-code.txt)"
+          if test "$code" = 0 && test -s verified/native-junit.xml; then
+            python frozen-v6/research/doc_example_v6/evaluate.py --metadata verified/metadata.json --proposals verified/proposals.json --source external-native --native-junit verified/native-junit.xml --out verified/prospective-result.json | tee verified/evaluator.log
+          else
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          state={'status':'UNKNOWN_NATIVE_APPARATUS','native_exit':Path('verified/native-exit-code.txt').read_text().strip(),'candidate_source_doc_warrants':0,'stdlib_doctest_reference_warrants':0,'comparison':'INCONCLUSIVE_NOT_TIE','reason':'Original source test command was not successful; no semantic promotion'}
+          Path('verified/prospective-result.json').write_text(json.dumps(state,sort_keys=True,indent=2)+'\n')
+          print('PROSPECTIVE_UNKNOWN_NATIVE_APPARATUS',state['native_exit'])
+          PY
+          fi
+      - name: Always retain proposal, dependency source authority, original native tests and independent decisions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v6-first-prospect-source-doctest
+          path: verified/
+          if-no-files-found: warn
