@@ -5,6 +5,12 @@ Status: **F0_CANDIDATE_COMMITTED / PREFLIGHT_NOT_VERIFIED**. Do not open a prote
 ## Current objective
 Construct a source-specific, author-declared native verification observation that the V9 testpaths-only scanner could not represent; bind exact source provenance, native consequences, alternate evidence, withdrawal and restoration. The finite parser and constructors are *human-authored*. This can show bounded observer PROGRAM acquisition but does NOT establish automatic new grammar/type invention (G2/G3/L7).
 
+## Pre-source method lineage and epistemic correction
+- First candidate 84aaaca12485417174cebd2b4144c9b26fe96973 attempted documentary command extraction.
+- Before opening any new source, source-language review found a decisive lexical countercontrol: a README can mention a test command under an explicit DO NOT RUN instruction, and arbitrary positional arguments can escape a bounded driver grammar.
+- Guard-repair commit 0e8c6c46b99214d8696f7dd0a49429c8db1ef946 narrows parser to positive explicit testing instructions, refuses negated contexts and disallows arbitrary positional driver arguments. Original candidate remains historical, SUPERSEDED_IN_METHOD. This repair is not a prospective scientific gain or a native executed test.
+- The current method F0 candidate is 0e8c6c46b99214d8696f7dd0a49429c8db1ef946, with qualification still UNKNOWN until a directly inspected and source-authenticated preflight receipt. No protected new source was opened.
+
 ## Exposed-only method qualification
 - Frozen predecessor V9 scanner Git blob: 72f03feb5bd21e0d0b6fee6774232c8e513b0588. Do not change.
 - New source-independent constructor first committed at 84aaaca12485417174cebd2b4144c9b26fe96973.
