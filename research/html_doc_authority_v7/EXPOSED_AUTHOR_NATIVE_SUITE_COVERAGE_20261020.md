@@ -1,0 +1,23 @@
+# Source-native verification-scope recovery: python-markdown2 (EXPOSED training)
+
+**Date:** 20 October 2026 NZ. **State: WARRANTED_BOUNDED_AUTHOR_NATIVE_DRIVER_COVERAGE; V7 SEMANTIC OBJECTION UNKNOWN.**
+
+## Original prospective negative preserved
+V7 [frozen scientific method ff205c17](https://github.com/metalogiclabs/mathgraph/commit/ff205c17c3ed4e5a4f7a1ff35d7c181762a928f2), selected first [trentm/python-markdown2@a3716b5e0aeba16b6e85965b2e5019d174328f36](https://github.com/trentm/python-markdown2/commit/a3716b5e0aeba16b6e85965b2e5019d174328f36) before source opening, [original CI #39354877544](https://github.com/metalogiclabs/mathgraph/actions/runs/39354877544), artifact #12234454500 SHA256 `de9be423b0caa9f1ec765d3116ef4d4491240cb172e77ca2063674954a68b060`, independently verified. Scientific held-out outcome: **both candidate and equally informed authored comparator returned no author-grounded HTML claim**, `UNKNOWN_NO_EXPLICIT_CALL_AND_HTML_CONTRACT`; no source-document withdrawal possible; comparator `INCONCLUSIVE_NO_PROPOSALS`, not TIE. Native pytest green: 28 passed, 1 xfailed, 1 **PytestCollectionWarning** explicitly saying legacy `test_cases` yield-based generator skipped.
+
+## New original-source test authority discovered after exposure
+The source's original `test/README.md` explicitly prescribes `python test.py -- -knownfailure`; its `test/test.py` imports original `testlib` and invokes `testlib.harness`, which discovers `test/test_markdown2.py::test_cases` yielding test-case classes and generated cases. This native runner is a different authority from pytest's default collection.
+
+### Independently rerun exact original author driver
+[GitHub Actions #39355471746](https://github.com/metalogiclabs/mathgraph/actions/runs/39355471746) ran original untouched source at the **same pinned SHA**, first re-downloaded/authenticated the original V7 artifact and asserted original JUnit exactly `tests=29, skipped=1, errors=0, failures=0` + explicit pytest yield-generation warning, then invoked the documented author test driver from `test/` exactly as published.
+
+**Direct original author output:** `Ran 276 tests in 0.536s` followed by `OK`; process exit 0, clean source diff, no upstream writes. Known-failure tags were explicitly excluded by original README command. This does not claim the known-failure-tagged corpus itself passed.
+
+[Raw author's driver and comparison archive #12234792945](https://github.com/metalogiclabs/mathgraph/actions/runs/39355471746/artifacts/12234792945), independently downloaded and checked ZIP SHA256 `3c2803b8213ee2db3b90a20df53015ef9f297c73dce8d6ad0f3345b1a919837e`. Machine receipt counts `author_driver_tests=276`, `author_driver_exit=0`, `pytest_original_collected=29`, `native_authority=AUTHOR_DRIVER_PASS`. The two harnesses may have overlapping cases: do **not** assert exact 247 omitted identities without a per-test-ID intersection audit. The important measured difference is 276 original-source-author runner cases versus 29 default pytest collected cases.
+
+## Epistemic and programme consequence
+- **WARRANTED_BOUNDED:** native original-author test authority is substantially broader than the initial generic pytest receipt. Green generic CI alone did not qualify *author-declared suite completeness*.
+- **SUPERSEDED_SCOPE_ONLY:** prior inference that 28 pytest PASS + one XFAIL represented complete original source-native coverage. It was a true local test execution, merely too narrow.
+- **UNCHANGED UNKNOWN:** original held-out HTML semantic obligation induction, source-claimed escape behavior, absence of source-doc requirement, automatic new observation grammar and baseline advantage. These were never qualified. No retroactive V7 success.
+- **Candidate reusable general rule:** `admissible verification scope requires independently identifying the source-authoritative verifier/test-entrypoint, then confirming its actual coverage rather than merely that a generic test command exits successfully`. This is not a universal theorem and source-aware recovery is TRAINING, not prospective algorithm transfer.
+- **Next decisive new science:** freeze a source-neutral author-test authority census and fail-closed coverage observer before an unopened next Python project, compare to standard native CI and informed reviewer; apply unchanged with both generic and declared runner, source revision/runner authority pin and exact protected test counts. Reuse the existing MathGraph selective-requalification core rather than duplicating it. Any absent original author runner yields UNKNOWN, not fake superiority. General G2/L7 remains UNKNOWN.
