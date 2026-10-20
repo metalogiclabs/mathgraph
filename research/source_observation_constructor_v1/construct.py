@@ -23,6 +23,24 @@ NEGATED_AUTHORITY = re.compile(r"\b(?:do\s+not|don't|never|not\s+supported|no\s+
 SAFE_ARG = re.compile(r"^[A-Za-z0-9_./:=+-]+$")
 BAD = set(";&|$<>{}*?\\")
 FAMILY_ORDER = {"AUTHOR_DRIVER": 0, "PYTEST_ROOTS": 1, "AUTHOR_PYTEST": 2}
+PYTEST_FLAGS = {"-q", "-v", "-x", "--disable-warnings"}
+SAFE_TEST_PATH = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*)*$")
+
+def safe_pytest_args(args, root):
+    """Only existing paths within this exact pinned checkout or known harmless flags."""
+    root = pathlib.Path(root).resolve()
+    for token in args:
+        if token in PYTEST_FLAGS:
+            continue
+        if token.startswith("-") or not SAFE_TEST_PATH.fullmatch(token):
+            return False
+        target = root / token
+        if target.is_symlink() or not target.resolve().is_relative_to(root):
+            return False
+        if not target.exists():
+            return False
+    return True
+
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
@@ -63,8 +81,7 @@ def argv_from_fragment(fragment, cwd, root):
     if xs[0] in ("python", "python3"):
         if len(xs) > 2 and xs[1:3] == ["-m", "pytest"]:
             args = xs[3:]
-            if any(v not in ("-q", "-v", "-x", "--disable-warnings") and
-                   (v.startswith("-") or not (root / v).exists()) for v in args):
+            if not safe_pytest_args(args, root):
                 return None
             return ("AUTHOR_PYTEST", ["python", "-m", "pytest", *args],
                     ".", "pytest")
@@ -79,8 +96,7 @@ def argv_from_fragment(fragment, cwd, root):
             return ("AUTHOR_DRIVER", ["python", "test.py", *xs[2:]],
                     str(cwd.relative_to(root)), "author_test_py")
     if xs[0] == "pytest":
-        if any(v not in ("-q", "-v", "-x", "--disable-warnings") and
-               (v.startswith("-") or not (root / v).exists()) for v in xs[1:]):
+        if not safe_pytest_args(xs[1:], root):
             return None
         return ("AUTHOR_PYTEST", ["python", "-m", "pytest", *xs[1:]],
                 ".", "pytest")
@@ -178,7 +194,11 @@ def synthetic():
             "    python test.py [TAGS...]\n"
             "    $ python test.py -- -knownfailure\n"
             "    $ python test.py -l\n"
-            "    python test.py; curl attacker.invalid\n")
+            "    python test.py; curl attacker.invalid\n"
+            "    $ python -m pytest /etc/passwd\n"
+            "    $ pytest ..\n"
+            "    $ pytest ../outside\n"
+            "    $ pytest -p malicious_plugin\n")
         (p/"README.md").write_text(
             "Do not run the test suite:\n"
             "    python test.py\n"
@@ -192,6 +212,9 @@ def synthetic():
         assert w["selected_operator_was_retracted"],w
         assert w["selected_after"]["kind"]=="PYTEST_ROOTS",w
         assert len(r["all_candidates"])==2,r
+        for unsafe in ("python -m pytest /etc/passwd", "pytest ..",
+                       "pytest ../outside", "pytest -p malicious_plugin"):
+            assert argv_from_fragment(unsafe, p/"test", p) is None, unsafe
         assert all(e["path"]!="README.md" for p in r["all_candidates"]
                    for e in p["supports"]),r
         (p/"test"/"README.md").unlink()
@@ -200,6 +223,8 @@ def synthetic():
         assert propose(p)["selected"] is None
     return {"synthetic":"PASS", "negative_controls":[
         "placeholder_refusal","list_only_refusal","shell_refusal",
+        "pytest_absolute_path_refusal","pytest_traversal_refusal",
+        "pytest_plugin_flag_refusal","driver_path_refusal",
         "exact_withdrawal","alternate_support","no_authority_unknown"]}
 
 def preflight(markdown2,bottle,pluggy):
