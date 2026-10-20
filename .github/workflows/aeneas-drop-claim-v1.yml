@@ -1,0 +1,32 @@
+name: Aeneas Drop claim-fidelity native replay
+on:
+  push:
+    branches:
+      - research/aeneas-drop-claim-fidelity-20261020
+    paths:
+      - 'research/aeneas_drop_claim_v1/**'
+      - '.github/workflows/aeneas-drop-claim-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-proof-consequence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay original Rust, pinned Aeneas translation, Lean and MathGraph
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/aeneas_drop_claim_v1/evidence
+          bash research/aeneas_drop_claim_v1/replay.sh 2>&1 | tee research/aeneas_drop_claim_v1/evidence/job-log.txt
+      - name: Preserve exact successes, failures and source-generated artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aeneas-drop-claim-fidelity-v1
+          path: research/aeneas_drop_claim_v1/evidence/
+          retention-days: 30
