@@ -30,6 +30,7 @@ def discover(root):
   for i,line in enumerate(lines):
    for mode,pat in CLAIM:
     if not pat.search(line):continue
+    if mode=="escape" and re.search(r"does\\s+not\\s+escape|non[- ]escaped|unescaped",line,re.I):continue
     window="\n".join(lines[max(0,i-12):i+1])
     calls=list(CALL.finditer(window))
     favored=[c for c in calls if c.group("function")+"(" in line]
@@ -41,7 +42,10 @@ def discover(root):
      unknown.append({"path":name,"line":i+1,"reason":"UNSUPPORTED_LITERAL_ARGS"});continue
     if opts.get("escape") is False and mode=="escape":
      unknown.append({"path":name,"line":i+1,"reason":"CONTRADICTORY_CONFIG"});continue
-    claims.append({"path":name,"path_sha256":files[name],"line":i+1,"authority_sentence":line.strip(),
+    anchor=line if c.group(0) in line else "\n".join(lines[max(0,i-12):i+1])
+    call_line=next((text for text in anchor.splitlines() if c.group(0) in text),"")
+    factory=bool(re.search(r"^\\s*[A-Za-z_]\\w*\\s*=\\s*"+re.escape(c.group("module")+"."+c.group("function"))+r"\\(",call_line))
+    claims.append({"factory":factory,"path":name,"path_sha256":files[name],"line":i+1,"authority_sentence":line.strip(),
                    "authority_sha256":hashlib.sha256(line.strip().encode()).hexdigest(),
                    "module":c.group("module"),"function":c.group("function"),
                    "kwargs":opts,"mode":mode,"relation":"HTMLParser script tag "+("absent" if mode=="escape" else "present")})
