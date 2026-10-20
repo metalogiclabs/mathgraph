@@ -30,7 +30,7 @@ def discover(root):
   for i,line in enumerate(lines):
    for mode,pat in CLAIM:
     if not pat.search(line):continue
-    if mode=="escape" and re.search(r"does\\s+not\\s+escape|non[- ]escaped|unescaped",line,re.I):continue
+    if mode=="escape" and ("does not escape" in line.lower() or "non-escaped" in line.lower() or "unescaped" in line.lower()):continue
     window="\n".join(lines[max(0,i-12):i+1])
     calls=list(CALL.finditer(window))
     favored=[c for c in calls if c.group("function")+"(" in line]
@@ -44,7 +44,7 @@ def discover(root):
      unknown.append({"path":name,"line":i+1,"reason":"CONTRADICTORY_CONFIG"});continue
     anchor=line if c.group(0) in line else "\n".join(lines[max(0,i-12):i+1])
     call_line=next((text for text in anchor.splitlines() if c.group(0) in text),"")
-    factory=bool(re.search(r"^\\s*[A-Za-z_]\\w*\\s*=\\s*"+re.escape(c.group("module")+"."+c.group("function"))+r"\\(",call_line))
+    factory=("=" in call_line and call_line.split("=",1)[0].strip().isidentifier() and call_line.split("=",1)[1].strip().startswith(c.group("module")+"."+c.group("function")+"("))
     claims.append({"factory":factory,"path":name,"path_sha256":files[name],"line":i+1,"authority_sentence":line.strip(),
                    "authority_sha256":hashlib.sha256(line.strip().encode()).hexdigest(),
                    "module":c.group("module"),"function":c.group("function"),
