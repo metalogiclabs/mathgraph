@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install pytest==8.3.5
-          python -m pip install -e ./external-native
+          python -m pip install -e './external-native[testing]'
       - name: Run original native author test collection from correct source CWD
         shell: bash
         run: |
@@ -84,7 +84,7 @@ jobs:
           set -uo pipefail
           (
             cd external-native
-            python -m pytest -q --junitxml=../verified/native-junit.xml
+            python -m pytest -q tests/ --junitxml=../verified/native-junit.xml
           ) 2>&1 | tee verified/native-stdout.log
           code=${PIPESTATUS[0]}
           set -e
