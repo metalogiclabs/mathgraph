@@ -1,0 +1,113 @@
+name: LeanIn — Native Axiom and Warrant Withdrawal V1
+
+on:
+  push:
+    branches: [research/leanin-warrant-withdrawal-v1-20261021]
+    paths:
+      - 'research/leanin_warrant_withdrawal_v1/**'
+      - '.github/workflows/leanin-warrant-withdrawal-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  native-source-and-withdrawal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout MathGraph resolver and frozen experimental protocol
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout exact source under test
+        uses: actions/checkout@v4
+        with:
+          repository: scidonia/leanin
+          ref: a7e8e9ca4fef75b6eff665925ff17aaf9ff35029
+          path: upstream
+          persist-credentials: false
+      - name: Native Lean 4.35 build of upstream proof library
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: upstream
+          build: 'true'
+          test: 'false'
+          use-github-cache: 'false'
+          use-mathlib-cache: 'false'
+      - name: Generate fresh native Lean axiom dependency transcript
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = a7e8e9ca4fef75b6eff665925ff17aaf9ff35029
+          mkdir -p reports
+          cat > upstream/MathGraphProbe.lean <<'EOF'
+          import LeanIn.Theory.Bridge
+          import LeanIn.Model.Service
+          #print axioms LeanIn.lock_wait_unlock_postcondition
+          #print axioms LeanIn.readings_monotone_across_a_call
+          #print axioms LeanIn.wait_cycle_reachable
+          #print axioms LeanIn.notifyOne_no_additions
+          #print axioms LeanIn.Model.reachable_noDrop
+          EOF
+          (cd upstream && lake env lean MathGraphProbe.lean) | tee reports/axioms.log
+          git -C upstream rev-parse HEAD > reports/upstream-commit.txt
+          sha256sum upstream/LeanIn/Theory/Bridge.lean > reports/bridge-source.sha256
+      - name: Independently read fixed upstream CI job status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/scidonia/leanin/actions/runs/39486730021/jobs?per_page=100' \
+            -o reports/upstream-ci-jobs.json
+      - name: Existing MathGraph resolver — exact selective withdrawal and controls
+        run: |
+          set -euo pipefail
+          python -m research.leanin_warrant_withdrawal_v1.run \
+            --source upstream --axioms reports/axioms.log \
+            --upstream-ci-metadata reports/upstream-ci-jobs.json \
+            --output reports/warrant-result.json
+      - name: Native causal mutation — quarantine wait_spec, control and restore
+        run: |
+          set -euo pipefail
+          cp upstream/LeanIn/Theory/Bridge.lean reports/Bridge.original.lean
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('upstream/LeanIn/Theory/Bridge.lean')
+          text = p.read_text()
+          old = 'axiom wait_spec '
+          assert text.count(old) == 1, 'exact declaration not found'
+          p.write_text(text.replace(old, 'axiom quarantined_wait_spec ', 1))
+          PY
+          set +e
+          (cd upstream && lake build LeanIn.Theory.Bridge) > reports/without-wait-spec.log 2>&1
+          status=$?
+          set -e
+          printf '%s\n' "$status" > reports/without-wait-spec.exit
+          if [ "$status" -eq 0 ]; then
+            echo 'MUTATION_CONTROL_FAILURE: renamed axiom still permitted original proof to compile'
+            exit 1
+          fi
+          if ! grep -Eq 'unknown (identifier|constant).*wait_spec' reports/without-wait-spec.log; then
+            echo 'MUTATION_CAUSE_UNKNOWN: expected missing wait_spec diagnostic not found'
+            tail -80 reports/without-wait-spec.log
+            exit 1
+          fi
+          (cd upstream && lake build LeanIn.Theory.World) > reports/pure-model-still-builds.log 2>&1
+          (cd upstream && lake build LeanIn.Model.Service) > reports/pure-service-still-builds.log 2>&1
+          cp reports/Bridge.original.lean upstream/LeanIn/Theory/Bridge.lean
+          (cd upstream && lake build LeanIn.Theory.Bridge) > reports/restored-bridge.log 2>&1
+          cmp reports/Bridge.original.lean upstream/LeanIn/Theory/Bridge.lean
+          git -C upstream diff --exit-code
+          printf '{"axiom_symbol_withdrawn":"wait_spec","target_lean_module_compiled":false,"expected_missing_identifier_confirmed":true,"pure_world_compiled":true,"pure_service_compiled":true,"restored_bridge_compiled":true,"original_bytes_restored":true}\n' > reports/native-mutation-result.json
+          cat reports/native-mutation-result.json
+      - name: Archive evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leanin-native-authority-withdrawal-v1
+          path: reports/
+          if-no-files-found: warn
