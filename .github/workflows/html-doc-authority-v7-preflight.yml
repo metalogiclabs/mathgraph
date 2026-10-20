@@ -1,0 +1,44 @@
+name: V7 author-doc HTML correspondence pre-exposure
+on:
+  push:
+    branches:
+      - research/html-doc-authority-v7-20261020
+    paths:
+      - 'research/html_doc_authority_v7/**'
+      - '.github/workflows/html-doc-authority-v7-preflight.yml'
+  pull_request:
+    paths:
+      - 'research/html_doc_authority_v7/**'
+      - '.github/workflows/html-doc-authority-v7-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-training:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic native/doc withdrawal contract controls
+        run: python research/html_doc_authority_v7/preflight.py
+      - name: Reapply source-independent static proposal on EXPOSED Mistune only
+        uses: actions/checkout@v4
+        with:
+          repository: lepture/mistune
+          ref: d449488ce6baf5bcc386186cc01c40bf2afdc82c
+          path: exposed-training
+          persist-credentials: false
+      - name: Check trained document mode correspondence without changing code
+        run: |
+          python research/html_doc_authority_v7/propose.py --source exposed-training --out training-candidate.json
+          python research/html_doc_authority_v7/baseline.py --source exposed-training --out training-expert.json
+          python - <<'PY'
+          import json
+          a=json.load(open('training-candidate.json'))
+          b=json.load(open('training-expert.json'))
+          print('EXPOSED_MISTUNE_PROPOSALS',a['status'],[(x['function'],x['mode']) for x in a['claims']])
+          assert len(a['claims'])>=2,a
+          assert {x['mode'] for x in a['claims']}=={'escape','raw'},a
+          assert {x['mode'] for x in b['claims']}=={'escape','raw'},b
+          PY
