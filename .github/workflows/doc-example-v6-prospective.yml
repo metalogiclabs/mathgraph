@@ -87,7 +87,7 @@ jobs:
         run: |
           set +e
           set -uo pipefail
-          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-test.log
+          ( cd external-native && python -m pytest -q . --junitxml=../verified/native-junit.xml ) 2>&1 | tee verified/native-test.log
           code=${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$code" > verified/native-exit-code.txt
