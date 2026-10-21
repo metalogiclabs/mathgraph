@@ -1,0 +1,37 @@
+name: Closed Boundary Native Skip V4
+on:
+  push:
+    branches:
+      - research/closed-boundary-native-skip-v4-20261022
+  pull_request:
+    paths:
+      - 'conformance/resolve_v1/consumer.py'
+      - 'research/closed_boundary_skip_v4/**'
+      - '.github/workflows/closed-boundary-skip-v4.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  genuine-two-suite-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin conventional Python test runner
+        run: python -m pip install pytest==9.0.3
+      - name: Evaluate exact source and dynamic dependency negatives
+        run: |
+          python -m py_compile research/closed_boundary_skip_v4/experiment.py conformance/resolve_v1/consumer.py
+          PYTHONPATH=. python research/closed_boundary_skip_v4/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: closed-boundary-native-skip-v4
+          path: research/closed_boundary_skip_v4/result.json
+          if-no-files-found: warn
