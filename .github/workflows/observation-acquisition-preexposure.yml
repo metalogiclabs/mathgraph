@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Candidate versus independent exhaustive comparator
+        run: python -m unittest discover -s tests -p test_observation_acquisition_blind.py -v
       - name: Verify missing executable lock blocks source exposure
         run: |
           python research/observation_acquisition_external_v1/preexposure_gate.py
