@@ -24,6 +24,8 @@ jobs:
           sparse-checkout: |
             mathgraph_check/
             tests/test_mathgraph_public_evidence_v1.py
+            tests/test_mathgraph_check_pr_reclosure_20261021.py
+            tests/test_mathgraph_evidence_continuity_20261021.py
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
@@ -53,6 +55,10 @@ jobs:
           python -m unittest discover -s tests \
             -p 'test_mathgraph_public_evidence_v1.py' -v
           echo "MATHGRAPH_PUBLIC_RELEASE_ASSERTIONS_GREEN"
+      - name: Verify finite evidence continuity independently against exhaustive oracle
+        run: |
+          python -m unittest discover -s tests -p 'test_mathgraph_evidence_continuity_20261021.py' -v
+          python -m unittest discover -s tests -p 'test_mathgraph_check_pr_reclosure_20261021.py' -v
       - name: Create human, agent and scoped status outputs from checked evidence
         run: |
           set -euo pipefail
