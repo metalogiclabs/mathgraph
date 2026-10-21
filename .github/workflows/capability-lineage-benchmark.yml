@@ -27,7 +27,7 @@ jobs:
       - name: Exact-source paired benchmark
         run: |
           mkdir -p "$RUNNER_TEMP/capability-closure"
-          python experiments/capability_lineage_native_benchmark.py --updates 80 --output "$RUNNER_TEMP/capability-closure/benchmark.csv"
+          python -m experiments.capability_lineage_native_benchmark --updates 80 --output "$RUNNER_TEMP/capability-closure/benchmark.csv"
           git rev-parse HEAD > "$RUNNER_TEMP/capability-closure/commit.txt"
       - name: Upload evidence
         uses: actions/upload-artifact@v4
