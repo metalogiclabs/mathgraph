@@ -1,0 +1,43 @@
+name: MathGraph Check prospective Goldmark native
+on:
+  push:
+    branches: [research/check-warrant-pr-reclosure-20261021]
+    paths:
+      - 'research/mathgraph_check_decision_value_20261021/**'
+      - '.github/workflows/mathgraph-check-goldmark-holdout.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Clone pinned external source into temporary test sandboxes
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/yuin/goldmark-meta.git "$RUNNER_TEMP/original"
+          git -C "$RUNNER_TEMP/original" checkout --detach f5d5bebad44ac55105584283ee742a9e6f3524c0
+          git clone -q https://github.com/yuin/goldmark-meta.git "$RUNNER_TEMP/proposed"
+          git -C "$RUNNER_TEMP/proposed" checkout --detach ad93e759a4ba37c8b548367506f50dfd5bc0ce1a
+          cp research/mathgraph_check_decision_value_20261021/frontmatter_consequence_test.go.txt "$RUNNER_TEMP/original/mathgraph_consequence_test.go"
+          cp research/mathgraph_check_decision_value_20261021/frontmatter_consequence_test.go.txt "$RUNNER_TEMP/proposed/mathgraph_consequence_test.go"
+      - name: Native package suite on proposed head
+        run: (cd "$RUNNER_TEMP/proposed" && go test ./...)
+      - name: Native prospective probe on proposed head
+        run: (cd "$RUNNER_TEMP/proposed" && go test -run 'TestMathGraphProspective' -count=3 -v ./...)
+      - name: Negative control base must fail new feature but preserve existing behavior
+        run: |
+          set -euo pipefail
+          (cd "$RUNNER_TEMP/original" && go test -run 'TestMathGraphProspectiveFrontmatterConsequence/terminator_---$' -count=1 ./...)
+          (cd "$RUNNER_TEMP/original" && go test -run 'TestMathGraphProspectiveOutsideFrontmatterIsNotMetadata' -count=1 ./...)
+          if (cd "$RUNNER_TEMP/original" && go test -run 'TestMathGraphProspectiveFrontmatterConsequence/terminator_\\.\\.\\.$' -count=1 ./...); then
+            echo 'Unexpected base feature PASS — differential claim rejected'
+            exit 1
+          else
+            echo 'Expected base feature RED (new syntax not supported)'
+          fi
