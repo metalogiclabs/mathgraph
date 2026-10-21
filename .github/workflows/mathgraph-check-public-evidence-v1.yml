@@ -86,6 +86,12 @@ jobs:
           python research/mathgraph_check_decision_value_20261021/commercial_gate.py | tee public/mathgraph-check/commercial-gate.json
       - name: Equal-information investigation baseline replay
         run: python -m unittest discover -s tests -p 'test_mathgraph_review_investigation_20261021.py' -v
+      - name: Reviewer packet equality and answer-key isolation
+        run: |
+          python research/mathgraph_check_decision_value_20261021/build_reviewer_calibration.py
+          test -f public/mathgraph-check/reviewer-calibration/A.json
+          test -f public/mathgraph-check/reviewer-calibration/B.json
+          test ! -f public/mathgraph-check/reviewer-calibration/REVIEWER_CALIBRATION_KEY.json
       - name: Create human, agent and scoped status outputs from checked evidence
         run: |
           set -euo pipefail
