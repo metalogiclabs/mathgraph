@@ -51,8 +51,15 @@ with zipfile.ZipFile(a.dataset) as z:
   target=truth[split].inv()*truth[split:]
   return float(np.sqrt(np.mean(np.rad2deg((est.inv()*target).magnitude())**2)))
  raw=score(gyro)
+ # Two conventional low-cost checks: reuse an externally frozen bias
+ # from the previous shapes_rotation startup experiment; and calibrate
+ # from the first 0.3 s of this sequence (not certified stationary).
+ prior_bias=np.array([0.051082811871691926,0.0014642931263633785,0.003074659454040601])
+ frozen_bias_rmse=score(integrate(prior_bias))
+ early=imu[(imu[:,0]>=ts[0]) & (imu[:,0]<ts[0]+0.30),4:7]
+ startup_bias_rmse=score(integrate(np.mean(early,axis=0))) if len(early)>5 else None
  if len(train)<20:
-  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,status="INSUFFICIENT_TRAINING_SUPPORT",fitted_rmse_deg=None)
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,status="INSUFFICIENT_TRAINING_SUPPORT",fitted_rmse_deg=None)
  else:
   sub=train[:20];fits=[]
   for convention in (0,1):
@@ -62,6 +69,6 @@ with zipfile.ZipFile(a.dataset) as z:
    fit=least_squares(residual,np.zeros(6),loss="soft_l1",f_scale=.05,max_nfev=70,bounds=([-3.14]*3+[-.2]*3,[3.14]*3+[.2]*3))
    fits.append((fit.cost,convention,fit))
   cost,k,fit=min(fits,key=lambda v:v[0])
-  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,fitted_rmse_deg=score(integrate(fit.x[3:])),convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
  result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
  open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
