@@ -54,7 +54,7 @@ def canonical(value):
 
 
 def sha(raw):
-    return hashlib.sha256(raw).hexdigest()
+    return hashlib.sha256(raw).digest().hex()
 
 
 def parse_json(raw):
