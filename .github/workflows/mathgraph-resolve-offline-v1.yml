@@ -148,6 +148,57 @@ jobs:
             echo "Expected base RED for requested novel terminator"
           fi
           echo '{"schema":"mathgraph.holdout002.native.v1","base":"f5d5bebad44ac55105584283ee742a9e6f3524c0","head":"ad93e759a4ba37c8b548367506f50dfd5bc0ce1a","claim":"new Pandoc terminator support","provenance":"native Go test run; not novel issue discovery or merge approval"}' > "$RUNNER_TEMP/resolve-evidence/goldmark-native.json"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Independently execute pinned cross-source native A and B probes
+        run: |
+          set -euo pipefail
+          A="$RUNNER_TEMP/cross-source-A"; B="$RUNNER_TEMP/cross-source-B"
+          t0=$(date +%s%N)
+          git clone -q https://github.com/BurntSushi/toml.git "$A"
+          git -C "$A" checkout -q --detach d733fc535e4a9f3c454e421a87b90ade5d49bf31
+          git clone -q https://github.com/go-ini/ini.git "$B"
+          git -C "$B" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/mathgraph_check_decision_value_20261021/cross_source_A_test.go.txt "$A/mathgraph_cross_source_test.go"
+          cp research/mathgraph_check_decision_value_20261021/cross_source_B_test.go.txt "$B/mathgraph_cross_source_test.go"
+          t1=$(date +%s%N)
+          set +e
+          (cd "$A" && go test -count=1 -run '^TestMathGraphCrossSourceStringInvariant
+        if: always()
+        with:
+          name: mathgraph-resolve-independent-offline-v1
+          path: ${{ runner.temp }}/resolve-evidence/
+          if-no-files-found: error
+ .) > "$RUNNER_TEMP/resolve-evidence/cross-A.log" 2>&1
+          a=$?
+          (cd "$B" && go test -count=1 -run '^TestMathGraphCrossSourceStringInvariant
+        if: always()
+        with:
+          name: mathgraph-resolve-independent-offline-v1
+          path: ${{ runner.temp }}/resolve-evidence/
+          if-no-files-found: error
+ .) > "$RUNNER_TEMP/resolve-evidence/cross-B.log" 2>&1
+          b=$?
+          set -e
+          t2=$(date +%s%N)
+          cat "$RUNNER_TEMP/resolve-evidence/cross-A.log"
+          cat "$RUNNER_TEMP/resolve-evidence/cross-B.log"
+          A="$a" B="$b" T0="$t0" T1="$t1" T2="$t2" python - <<'PY'
+          import os,json
+          r={"schema":"mathgraph.cross-source-compounding-apparatus.v1",
+             "source_A":"BurntSushi/toml@d733fc535e4a9f3c454e421a87b90ade5d49bf31",
+             "source_B":"go-ini/ini@e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08",
+             "native_A_pass":os.environ["A"]=="0","native_B_pass":os.environ["B"]=="0",
+             "checkout_seconds":(int(os.environ["T1"])-int(os.environ["T0"]))/1e9,
+             "native_elapsed_seconds":(int(os.environ["T2"])-int(os.environ["T1"]))/1e9,
+             "fully_charged_comparative_gain":"UNKNOWN_NOT_MEASURED",
+             "independent_baseline":"same supplied method/adapter available to equal-information stateless competitor",
+             "not_claimed":"autonomous genesis, total cost advantage, source-general theorem"}
+          print(json.dumps(r,sort_keys=True))
+          with open(os.path.join(os.environ["RUNNER_TEMP"],"resolve-evidence","cross-source.json"),"w") as f:json.dump(r,f,indent=2)
+          PY
+          test "$a" -eq 0 && test "$b" -eq 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
