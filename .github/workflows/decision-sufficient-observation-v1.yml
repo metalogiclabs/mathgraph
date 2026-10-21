@@ -1,0 +1,34 @@
+name: Decision-sufficient observation dual audit V1
+on:
+  push:
+    branches:
+      - research/decision-sufficient-observation-v1-20261021
+    paths:
+      - "research/decision_sufficient_observation_v1/**"
+      - ".github/workflows/decision-sufficient-observation-v1.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-conditional-contract-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Pin original qualified V1 source exact blob
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/consequence_experiment_compiler_v1/compiler.py)" = "d81784e33d015ed28adfe562b684fcc4a0676ff6"
+      - name: Execute original V1 against independent factorization/decision oracle
+        run: |
+          set -euo pipefail
+          python research/decision_sufficient_observation_v1/audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: decision-sufficient-observation-v1-receipt
+          path: out/decision_sufficiency_falsifier/audit.json
+          if-no-files-found: warn
