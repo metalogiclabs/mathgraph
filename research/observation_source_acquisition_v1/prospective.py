@@ -11,12 +11,12 @@ def sample(seed, corrupt):
     if corrupt: raw[30+len(name)+len(data)//2] ^= 1
     return bytes(raw)
 def oracle(raw):
-    e = raw.rfind(b'PK\\x05\\x06')
+    e = raw.rfind(b'PK\x05\x06')
     assert e >= 0
     _,_,_,_,entries,_,cd,_ = struct.unpack_from('<4sHHHHIIH',raw,e)
-    assert entries == 1 and raw[cd:cd+4] == b'PK\\x01\\x02'
+    assert entries == 1 and raw[cd:cd+4] == b'PK\x01\x02'
     crc = struct.unpack_from('<I',raw,cd+16)[0]
-    assert raw[:4] == b'PK\\x03\\x04' and struct.unpack_from('<H',raw,8)[0] == 0
+    assert raw[:4] == b'PK\x03\x04' and struct.unpack_from('<H',raw,8)[0] == 0
     length = struct.unpack_from('<I',raw,18)[0]
     n,x = struct.unpack_from('<HH',raw,26)
     data = raw[30+n+x:30+n+x+length]
