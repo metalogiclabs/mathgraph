@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Frozen algorithm-transfer evaluation on independent UZH DAVIS rotation scenes.
+Per-sequence fit uses visual + gyro only. Motion capture is never used in fit,
+convention selection, or model selection; solely for reporting held-out error.
+Single sequence split, no uncertainty certification or flight claims.
+"""
+import argparse,json,zipfile
+import numpy as np,cv2
+from scipy.spatial.transform import Rotation as R,Slerp
+from scipy.optimize import least_squares
+p=argparse.ArgumentParser();p.add_argument("dataset");p.add_argument("--frames",type=int,default=450);p.add_argument("--output",default="transfer_summary.json");a=p.parse_args()
+with zipfile.ZipFile(a.dataset) as z:
+ imu=np.loadtxt(z.open("imu.txt"));gt=np.loadtxt(z.open("groundtruth.txt"));cal=np.loadtxt(z.open("calib.txt")).ravel()
+ files=set(z.namelist())
+ ents=[(float(t),f) for t,f in (line.split()[:2] for line in z.read("images.txt").decode().splitlines() if line.strip()) if f in files and max(gt[0,0],imu[0,0])<=float(t)<=min(gt[-1,0],imu[-1,0])][:a.frames]
+ if len(ents)<300:raise ValueError("insufficient timestamp-aligned images")
+ ts=np.array([t for t,_ in ents]);dt=np.diff(ts)
+ w=np.stack([np.interp(ts,imu[:,0],imu[:,k]) for k in (4,5,6)],axis=1)
+ incs=(w[:-1]+w[1:])*.5*dt[:,None];truth=Slerp(gt[:,0],R.from_quat(gt[:,4:8]))(ts)
+ gr=[R.identity()]
+ for x in incs:gr.append(gr[-1]*R.from_rotvec(x))
+ gyro=R.concatenate(gr)
+ K=np.array([[cal[0],0,cal[2]],[0,cal[1],cal[3]],[0,0,1.]])
+ orb=cv2.ORB_create(nfeatures=850,fastThreshold=12);matcher=cv2.BFMatcher(cv2.NORM_HAMMING);features=[]
+ for _,f in ents:
+  im=cv2.imdecode(np.frombuffer(z.read(f),np.uint8),0)
+  im=cv2.undistort(im,K,cal[4:9])
+  features.append(orb.detectAndCompute(im,None))
+ edges=[]
+ for i in range(80,len(ts),3):
+  opts=np.arange(0,i-30);diff=(gyro[opts].inv()*gyro[i]).magnitude()
+  j=int(opts[np.argmin(diff)])
+  if np.rad2deg(diff.min())>18:continue
+  ka,da=features[j];kb,db=features[i]
+  if da is None or db is None:continue
+  pairs=matcher.knnMatch(da,db,k=2)
+  mm=[m for pair in pairs if len(pair)==2 for m,n in [pair] if m.distance<.72*n.distance]
+  if len(mm)<15:continue
+  x=np.float32([ka[m.queryIdx].pt for m in mm]);y=np.float32([kb[m.trainIdx].pt for m in mm])
+  H,mask=cv2.findHomography(x,y,cv2.RANSAC,3.)
+  if H is None or int(mask.sum())<15:continue
+  A=np.linalg.inv(K)@H@K;u,_,vt=np.linalg.svd(A);Rc=u@np.diag([1.,1.,np.linalg.det(u@vt)])@vt
+  edges.append((j,i,R.from_matrix(Rc),int(mask.sum())))
+ split=220;train=[e for e in edges if e[1]<split];test=[e for e in edges if e[0]>=split]
+ def integrate(b):
+  rr=[R.identity()]
+  for step,d in zip(incs,dt):rr.append(rr[-1]*R.from_rotvec(step-b*d))
+  return R.concatenate(rr)
+ def score(rr):
+  est=rr[split].inv()*rr[split:]
+  target=truth[split].inv()*truth[split:]
+  return float(np.sqrt(np.mean(np.rad2deg((est.inv()*target).magnitude())**2)))
+ raw=score(gyro)
+ if len(train)<20:
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,status="INSUFFICIENT_TRAINING_SUPPORT",fitted_rmse_deg=None)
+ else:
+  sub=train[:20];fits=[]
+  for convention in (0,1):
+   def residual(v):
+    C=R.from_rotvec(v[:3]);rr=integrate(v[3:])
+    return np.concatenate([((C*(rc if convention==0 else rc.inv())*C.inv()).inv()*(rr[j].inv()*rr[i])).as_rotvec() for j,i,rc,_ in sub])
+   fit=least_squares(residual,np.zeros(6),loss="soft_l1",f_scale=.05,max_nfev=70,bounds=([-3.14]*3+[-.2]*3,[3.14]*3+[.2]*3))
+   fits.append((fit.cost,convention,fit))
+  cost,k,fit=min(fits,key=lambda v:v[0])
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,fitted_rmse_deg=score(integrate(fit.x[3:])),convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
+ result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
+ open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
