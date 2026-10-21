@@ -50,6 +50,7 @@ def main():
             for name in order:
                 record[name+"_seconds"]=checked(name,run(commands[name],source,timeout=240))
             measured.append(record)
+        (source/"mathgraph_consequence_test.go").unlink()
         checked("git checkout base",run(["git","checkout","--quiet","--detach",BASE],source))
         actual=run(["git","rev-parse","HEAD"],source)
         if actual["log_tail"].strip()!=BASE: raise RuntimeError("BASE_IDENTITY_MISMATCH")
