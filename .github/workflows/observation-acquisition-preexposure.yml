@@ -1,0 +1,33 @@
+name: Observation Acquisition Pre-exposure Gate
+on:
+  push:
+    paths:
+      - 'research/observation_acquisition_external_v1/**'
+      - '.github/workflows/observation-acquisition-preexposure.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-blind-stop:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify missing executable lock blocks source exposure
+        run: |
+          python research/observation_acquisition_external_v1/preexposure_gate.py
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'research/observation_acquisition_external_v1')
+          from preexposure_gate import evaluate, REQUIRED
+          result = evaluate({})
+          assert result['status'] == 'BLOCKED_PRELOCK'
+          assert set(result['missing']) == set(REQUIRED)
+          syntactic = evaluate({k: 'a'*64 for k in REQUIRED})
+          assert syntactic['status'] == 'LOCK_FIELDS_PRESENT_NOT_AUTHENTICATED'
+          print('PASS: missing lock correctly blocks, hash-only lock does not authorize')
+          PY
