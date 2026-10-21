@@ -22,13 +22,21 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object research/consequence_experiment_compiler_v1/compiler.py)" = "d81784e33d015ed28adfe562b684fcc4a0676ff6"
-      - name: Execute original V1 against independent factorization/decision oracle
+      - name: Execute unchanged original V1 against independent factorization oracle
         run: |
           set -euo pipefail
           python research/decision_sufficient_observation_v1/audit.py
+      - name: Test new factorizing decision mode against independent oracle and effectful controls
+        run: |
+          set -euo pipefail
+          python research/decision_sufficient_observation_v1/test_decision_mode.py
+      - name: Preserve original qualified exact quotient behavior
+        run: |
+          set -euo pipefail
+          python research/consequence_experiment_compiler_v1/test_protocol.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: decision-sufficient-observation-v1-receipt
-          path: out/decision_sufficiency_falsifier/audit.json
+          path: out/decision_sufficiency_falsifier/
           if-no-files-found: warn
