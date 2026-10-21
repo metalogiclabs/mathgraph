@@ -8,6 +8,9 @@ Effect/permission semantics and source tables are delegated unchanged to V1.
 from __future__ import annotations
 from itertools import combinations
 from typing import Any
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from consequence_experiment_compiler_v1.compiler import (
     parse_model, transformation_closure, compile_profiles, kernels,
