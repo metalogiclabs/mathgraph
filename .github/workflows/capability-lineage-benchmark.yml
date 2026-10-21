@@ -23,6 +23,7 @@ jobs:
       - name: Native differential tests
         run: |
           python -m unittest discover -s tests -p 'test_incremental_closure.py' -v
+          python -m unittest discover -s tests -p 'test_qualified_consequence_closure.py' -v
           python -m unittest discover -s tests -p 'test_capability_lineage_conformance.py' -v
       - name: Exact-source paired benchmark
         run: |
