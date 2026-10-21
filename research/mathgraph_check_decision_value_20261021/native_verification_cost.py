@@ -29,7 +29,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="mathgraph-goldmark-") as temp:
         source=pathlib.Path(temp)/"source"
         checked("git clone",run(["git","clone","--quiet",URL,str(source)],timeout=160))
-        checked("fetch contributed head",run(["git","fetch","--quiet","https://github.com/GreedyC/config.git",HEAD],source,timeout=160))
+        checked("fetch contributed head",run(["git","fetch","--quiet","https://github.com/noerw/goldmark-meta.git",HEAD],source,timeout=160))
         checked("git checkout head",run(["git","checkout","--quiet","--detach",HEAD],source))
         actual=run(["git","rev-parse","HEAD"],source)
         if actual["log_tail"].strip()!=HEAD: raise RuntimeError("HEAD_IDENTITY_MISMATCH")
