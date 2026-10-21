@@ -1,7 +1,7 @@
-"""Experimental incremental warrant closure for validated acyclic graphs.
+"""Experimental incremental warrant closure with canonical semantic fallback.
 
 Receipt admission remains external. This is not a verifier or a replacement
-for resolve_graph. Graphs with cycles or qualified relations are rejected.
+for resolve_graph. Cycles and qualified relations use canonical full reclosure.
 """
 from collections import deque
 import heapq
@@ -11,11 +11,13 @@ from .warrant_resolution import resolve_graph
 
 class IncrementalClosure:
     def __init__(self, claims, routes, receipts, *, withdrawn=frozenset(), relations=()):
-        if relations:
-            raise ValueError("QUALIFIED_RELATIONS_NOT_SUPPORTED_IN_EXPERIMENT")
-        resolve_graph(claims, routes, receipts, withdrawn=withdrawn)
+        initial = resolve_graph(claims, routes, receipts,
+                                withdrawn=withdrawn, relations=relations)
+        self.relations = tuple(relations)
+        self.fallback = bool(relations)
         self.claims = tuple(claims)
         self.routes = tuple(routes)
+        self.receipts = tuple(receipts)
         self.withdrawn = set(withdrawn)
         self.route_children = {c.id: [] for c in claims}
         self.receipt_children = {e.id: [] for e in receipts}
@@ -42,7 +44,10 @@ class IncrementalClosure:
                 if not degree[child]:
                     q.append(child)
         if len(order) != len(claims):
-            raise ValueError("CYCLIC_GRAPH_OUTSIDE_EXPERIMENT_PROFILE")
+            self.fallback = True
+        if self.fallback:
+            self._canonical = initial
+            return
         rank = {node: i for i, node in enumerate(order)}
         route_order = sorted(range(len(routes)), key=lambda i: rank[routes[i].conclusion])
         self.route_rank = {route: i for i, route in enumerate(route_order)}
@@ -60,6 +65,15 @@ class IncrementalClosure:
             raise ValueError("UNKNOWN_RECEIPT")
         if (receipt not in self.withdrawn) == live:
             return 0
+        if self.fallback:
+            if live:
+                self.withdrawn.remove(receipt)
+            else:
+                self.withdrawn.add(receipt)
+            self._canonical = resolve_graph(
+                self.claims, self.routes, self.receipts,
+                withdrawn=frozenset(self.withdrawn), relations=self.relations)
+            return len(self.routes)
         if live:
             self.withdrawn.remove(receipt)
         else:
@@ -91,7 +105,18 @@ class IncrementalClosure:
                         heapq.heappush(heap, (self.route_rank[child], child))
         return visited
 
+    def active_routes(self):
+        if self.fallback:
+            return self._canonical.active_routes
+        return tuple(sorted(
+            (route for i, route in enumerate(self.routes) if self.route_live[i]),
+            key=lambda route: (route.conclusion, route.evidence,
+                               route.premises, route.relation or ""),
+        ))
+
     def states(self):
+        if self.fallback:
+            return dict(self._canonical.states)
         return {
             c.id: ("WARRANTED_BOUNDED" if c.kind == "formal"
                    else "SOURCE_DOCUMENTED") if self.claim_live[c.id] else "UNKNOWN"
