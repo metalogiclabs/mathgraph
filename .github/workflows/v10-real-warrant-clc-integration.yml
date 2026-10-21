@@ -20,7 +20,7 @@ jobs:
         run: |
           python3 --version
           python3 -m py_compile mathgraph_check/warrant_resolution.py research/v10_native_warrant_integration/execute.py
-          python3 research/v10_native_warrant_integration/execute.py
+          PYTHONPATH=. python3 research/v10_native_warrant_integration/execute.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
