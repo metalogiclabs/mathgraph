@@ -1,0 +1,37 @@
+name: Capability Lineage Bounded Benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/capability-closure-lineage-conformance
+
+permissions:
+  contents: read
+
+jobs:
+  exact-resolver-benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native differential tests
+        run: |
+          python -m unittest discover -s tests -p 'test_incremental_closure.py' -v
+          python -m unittest discover -s tests -p 'test_capability_lineage_conformance.py' -v
+      - name: Exact-source paired benchmark
+        run: |
+          mkdir -p "$RUNNER_TEMP/capability-closure"
+          python experiments/capability_lineage_native_benchmark.py --updates 80 --output "$RUNNER_TEMP/capability-closure/benchmark.csv"
+          git rev-parse HEAD > "$RUNNER_TEMP/capability-closure/commit.txt"
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: capability-lineage-native-benchmark
+          path: ${{ runner.temp }}/capability-closure/
+          if-no-files-found: error
