@@ -63,11 +63,15 @@ jobs:
           python -m unittest discover -s tests -p 'test_mathgraph_check_pr_reclosure_20261021.py' -v
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24'
       - name: Real-source native full vs selected Go test cost
         run: |
           mkdir -p public/mathgraph-check
           MATHGRAPH_NATIVE_OUT=public/mathgraph-check/native-verification-cost.json python research/mathgraph_check_decision_value_20261021/native_verification_cost.py
+      - name: Real Compose source continuity versus conventional cache
+        run: |
+          mkdir -p public/mathgraph-check
+          EVIDENCE_CONTINUITY_OUT=public/mathgraph-check/compose-continuity.json python research/mathgraph_check_decision_value_20261021/compose_source_continuity.py
       - name: Create human, agent and scoped status outputs from checked evidence
         run: |
           set -euo pipefail
