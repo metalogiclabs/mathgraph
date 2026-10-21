@@ -54,3 +54,18 @@ jobs:
             research/property_preservation_v2/result.json
             research/property_preservation_v2/benchmark.json
           if-no-files-found: warn
+  formal-liveness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean 4.24
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check universal finite-list liveness theorem and axioms
+        run: |
+          set -euo pipefail
+          lean --version
+          lean research/property_preservation_v2/LivenessAlgebra.lean | tee /tmp/liveness-algebra-axioms.txt
+          if grep -q 'sorryAx' /tmp/liveness-algebra-axioms.txt; then exit 1; fi
