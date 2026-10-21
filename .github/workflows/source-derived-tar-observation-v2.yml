@@ -1,0 +1,19 @@
+name: Source-derived TAR observation V2
+on:
+  push:
+    branches: [research/source-derived-tar-observation-v2-20261022]
+  workflow_dispatch:
+jobs:
+  source-doc-qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Retrieve pinned CPython source documentation
+        run: |
+          curl -fsSL --retry 3 https://raw.githubusercontent.com/python/cpython/v3.13.7/Doc/library/tarfile.rst -o /tmp/tarfile.rst
+          echo "5532ffa1ad27f57765c3d18b55ece72f4e579e19 is Git blob SHA (not SHA256)"
+      - name: Qualify restricted source-derived observation
+        run: python research/source_derived_tar_observation_v2/probe.py /tmp/tarfile.rst
