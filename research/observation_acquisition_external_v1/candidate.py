@@ -18,7 +18,7 @@ def construct(worlds, actions, observation, *, max_depth=4, max_nodes=100000):
         raise ValueError("DUPLICATE_WORLD")
     names=tuple(sorted(actions))
     for name in names:
-        if set(actions[name]) != set(worlds):
+        if set(actions[name]) != set(observation) or not set(actions[name].values()).issubset(set(observation)):
             raise ValueError("UNLAWFUL_TRANSITION_DOMAIN")
     def signature(sequence):
         return tuple(observation[run_program(w,actions,sequence)] for w in worlds)
