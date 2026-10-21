@@ -14,12 +14,14 @@ class AgendaBaseline:
         self.relations = tuple(relations)
         self.withdrawn = set(withdrawn)
         self.children = {c.id: [] for c in claims}
+        self.by_conclusion = {c.id: [] for c in claims}
         self.by_receipt = {e.id: [] for e in receipts}
         self.values = {c.id: initial.states[c.id] != "UNKNOWN" for c in claims}
         self.active = [route in initial.active_routes for route in routes]
         self.fallback = bool(relations)
         deps = {c.id: set() for c in claims}
         for i, r in enumerate(routes):
+            self.by_conclusion[r.conclusion].append(i)
             for p in set(r.premises):
                 self.children[p].append(i)
                 deps[r.conclusion].add(p)
@@ -68,8 +70,7 @@ class AgendaBaseline:
                 continue
             self.active[i] = new
             old_claim = self.values[r.conclusion]
-            new_claim = any(self.active[j] for j, other in enumerate(self.routes)
-                            if other.conclusion == r.conclusion)
+            new_claim = any(self.active[j] for j in self.by_conclusion[r.conclusion])
             self.values[r.conclusion] = new_claim
             if old_claim != new_claim:
                 for j in self.children[r.conclusion]:
