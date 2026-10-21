@@ -76,6 +76,10 @@ jobs:
         run: |
           mkdir -p public/mathgraph-check
           MATHGRAPH_CONTRACT_OUT=public/mathgraph-check/change-contract-native.json python research/mathgraph_check_decision_value_20261021/change_contract_native.py
+      - name: Authentic source-changing preservation contract and strong baseline
+        run: |
+          mkdir -p public/mathgraph-check
+          MATHGRAPH_PRESERVE_OUT=public/mathgraph-check/preservation-contract.json python research/mathgraph_check_decision_value_20261021/preservation_contract_comparison.py
       - name: Create human, agent and scoped status outputs from checked evidence
         run: |
           set -euo pipefail
