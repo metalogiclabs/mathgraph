@@ -26,6 +26,7 @@ class IncrementalClosureTests(unittest.TestCase):
                         rng.sample(range(i), min(i, rng.randrange(3)))
                     )
                     routes.append(Route(f"c{i}", evidence, parents))
+            routes = list(dict.fromkeys(routes))
             candidate = IncrementalClosure(claims, routes, receipts)
             withdrawn = set()
             for step in range(150):
@@ -48,6 +49,11 @@ class IncrementalClosureTests(unittest.TestCase):
                   Route("b", ("r",), ("a",))]
         with self.assertRaisesRegex(ValueError, "CYCLIC"):
             IncrementalClosure(claims, routes, receipts)
+        with self.assertRaisesRegex(ValueError, "QUALIFIED_RELATIONS"):
+            IncrementalClosure(claims, routes, receipts, relations=(object(),))
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_WITHDRAWAL_TARGET"):
+            IncrementalClosure(claims, [Route("a", ("r",))], receipts,
+                               withdrawn=frozenset({"unknown"}))
 
 
 if __name__ == "__main__":
