@@ -156,11 +156,15 @@ def resolve_graph(
             raise ValueError("UNQUALIFIED_RELATION_EVIDENCE")
 
     def evidence_is_live(route: Route) -> bool:
-        required = route.evidence
-        if route.relation is not None:
-            bridge = rel[route.relation]
-            required += (bridge.verifier,) + bridge.evidence
-        return all(x not in withdrawn for x in required)
+        # Short-circuit withdrawn route evidence before inspecting relation
+        # qualifications, without materializing a joined receipt tuple.
+        if not all(x not in withdrawn for x in route.evidence):
+            return False
+        if route.relation is None:
+            return True
+        bridge = rel[route.relation]
+        return (bridge.verifier not in withdrawn
+                and all(x not in withdrawn for x in bridge.evidence))
 
     active: set[str] = set()
     while True:
