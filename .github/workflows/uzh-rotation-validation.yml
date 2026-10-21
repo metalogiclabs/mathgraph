@@ -39,6 +39,8 @@ jobs:
           cp heading_summary.json rotation_only_summary.json
       - name: Evaluate gyro-guided historical visual revisits
         run: python experiments/uzh_rotation/scan_revisit.py shapes_rotation.zip --frames 450
+      - name: Check independent startup bias against oracle diagnostic
+        run: python experiments/uzh_rotation/gyro_bias_diagnostic.py shapes_rotation.zip
       - name: Preserve raw output
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,4 +57,5 @@ jobs:
             rotation_only_summary.json
             revisit_results.csv
             revisit_summary.json
+            gyro_bias_summary.json
           if-no-files-found: warn
