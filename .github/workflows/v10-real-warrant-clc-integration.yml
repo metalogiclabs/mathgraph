@@ -31,6 +31,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     steps:
+      - name: Checkout integration theorem file
+        uses: actions/checkout@v4
+        with:
+          path: mathgraph-integration
       - name: Checkout immutable existing MSI R7.2-CLC source
         uses: actions/checkout@v4
         with:
@@ -73,4 +77,8 @@ jobs:
           lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
           lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
           lean lean/CanonicalRefinement.lean
+          lean ../mathgraph-integration/research/v10_native_warrant_integration/V10WarrantDependency.lean | tee /tmp/v10-specific-axioms.log
+          if grep -qE 'sorryAx' /tmp/v10-specific-axioms.log; then
+            echo 'FAIL: V10-shaped instantiation contains sorryAx'; exit 1
+          fi
           echo 'Unmodified R7.2 / CLC / nondisturbance proofs PASS; V10 evidence NOT formally linked'
