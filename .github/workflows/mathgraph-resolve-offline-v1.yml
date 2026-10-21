@@ -20,6 +20,7 @@ on:
       - 'docs/resolve_bundle_trust_policy_v1.md'
       - 'tests/test_mathgraph_resolve_publication_v1.py'
       - 'tests/test_mathgraph_warrant_resolution_core.py'
+      - 'tests/test_mathgraph_check_pr_reclosure_20261021.py'
       - 'tests/test_mathgraph_living_warrants_v1.py'
       - '.github/workflows/mathgraph-resolve-offline-v1.yml'
 
@@ -86,6 +87,7 @@ jobs:
             conformance/resolve_v1/test_consumer.py \
             tests/test_mathgraph_resolve_publication_v1.py \
             tests/test_mathgraph_warrant_resolution_core.py \
+            tests/test_mathgraph_check_pr_reclosure_20261021.py \
             tests/test_mathgraph_living_warrants_v1.py -q
           git diff --exit-code
       - name: Replay only three inputs with enforced network denial
