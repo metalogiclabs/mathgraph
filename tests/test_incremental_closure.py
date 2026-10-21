@@ -5,7 +5,7 @@ Only externally admitted synthetic receipt values are used here.
 import random
 import unittest
 
-from mathgraph_check.warrant_resolution import Claim, Receipt, Route, resolve_graph
+from mathgraph_check.warrant_resolution import Claim, Receipt, Route, QualifiedRelation, resolve_graph
 from mathgraph_check.incremental_closure import IncrementalClosure
 
 
@@ -41,19 +41,61 @@ class IncrementalClosureTests(unittest.TestCase):
                                           withdrawn=frozenset(withdrawn))
                 self.assertEqual(candidate.states(), dict(reference.states),
                                  (seed, step, eid))
+                self.assertEqual(candidate.active_routes(), reference.active_routes,
+                                 (seed, step, eid, "route lineage"))
 
-    def test_unsupported_semantics_fail_closed(self):
-        claims = [Claim("a", "formal", "s"), Claim("b", "formal", "s")]
+    def test_cycle_and_qualified_relation_fallback(self):
+        claims = [Claim("a", "formal", "target"),
+                  Claim("b", "formal", "target"),
+                  Claim("src", "documentary", "source")]
+        receipts = [Receipt("root", "formal", "target"),
+                    Receipt("verifier", "formal", "target"),
+                    Receipt("qualification", "formal", "target"),
+                    Receipt("source_receipt", "documentary", "source")]
+        cycle = [Route("a", ("root",)),
+                 Route("b", ("root",), ("a",)),
+                 Route("a", ("root",), ("b",))]
+        bridge_route = Route("a", ("source_receipt",), ("src",), "bridge")
+        relation = QualifiedRelation(
+            "bridge", "documentary", "source", "formal", "target",
+            "verifier", ("qualification",), bridge_route)
+        routes = cycle + [Route("src", ("source_receipt",)), bridge_route]
+        candidate = IncrementalClosure(claims, routes, receipts,
+                                        relations=(relation,))
+        self.assertTrue(candidate.fallback)
+        withdrawn = set()
+        for rid in ("root", "qualification", "source_receipt",
+                    "verifier", "root", "qualification",
+                    "source_receipt", "verifier"):
+            enabled = rid in withdrawn
+            if enabled:
+                withdrawn.remove(rid)
+            else:
+                withdrawn.add(rid)
+            candidate.update(rid, enabled)
+            expected = resolve_graph(claims, routes, receipts,
+                                     withdrawn=frozenset(withdrawn),
+                                     relations=(relation,))
+            self.assertEqual(candidate.states(), dict(expected.states))
+            self.assertEqual(candidate.active_routes(), expected.active_routes)
+
+        # Rootless mutual support is not an admitted proof.
+        unrooted = [Route("a", ("root",), ("b",)),
+                    Route("b", ("root",), ("a",))]
+        cyc = IncrementalClosure(claims[:2], unrooted, receipts)
+        self.assertTrue(cyc.fallback)
+        self.assertEqual(cyc.states()["a"], "UNKNOWN")
+        self.assertEqual(cyc.states()["b"], "UNKNOWN")
+
+    def test_invalid_graphs_still_fail_closed(self):
+        claims = [Claim("a", "formal", "s")]
         receipts = [Receipt("r", "formal", "s")]
-        routes = [Route("a", ("r",), ("b",)),
-                  Route("b", ("r",), ("a",))]
-        with self.assertRaisesRegex(ValueError, "CYCLIC"):
-            IncrementalClosure(claims, routes, receipts)
-        with self.assertRaisesRegex(ValueError, "QUALIFIED_RELATIONS"):
-            IncrementalClosure(claims, routes, receipts, relations=(object(),))
         with self.assertRaisesRegex(ValueError, "UNKNOWN_WITHDRAWAL_TARGET"):
             IncrementalClosure(claims, [Route("a", ("r",))], receipts,
                                withdrawn=frozenset({"unknown"}))
+        with self.assertRaisesRegex(ValueError, "CROSS_BOUNDARY"):
+            IncrementalClosure([Claim("a", "formal", "other")],
+                               [Route("a", ("r",))], receipts)
 
 
 if __name__ == "__main__":
