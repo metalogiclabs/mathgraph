@@ -4,7 +4,7 @@ Not a MathGraph runtime component. Immutable graph, externally admitted
 receipts; cycles and relations use canonical reclosure, as in the candidate.
 """
 from collections import deque
-from .warrant_resolution import resolve_graph
+from mathgraph_check.warrant_resolution import resolve_graph
 
 
 class AgendaBaseline:
