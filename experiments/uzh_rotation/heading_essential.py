@@ -56,9 +56,16 @@ def main():
    vv.append(v);counts.append(count);k0,d0=k1,d1
   vv=np.array(vv);counts=np.array(counts)
   good=np.isfinite(vv).all(axis=1)&(counts>=12)
-  train=good[:split];coef=np.linalg.lstsq(vv[:split][train],dg[:split][train],rcond=None)[0]
+  train=good[:split]
+  # Refuse to learn visual calibration from a handful of correspondences.
+  # Fail closed to gyro-only rather than asserting an unjustified model.
+  calibration_supported = int(train.sum()) >= 30
+  if not calibration_supported:
+   good[:] = False
+   train[:] = False
+  coef=np.linalg.lstsq(vv[:split][train],dg[:split][train],rcond=None)[0] if calibration_supported else np.zeros(3)
   visual=np.full(n,np.nan);visual[good]=vv[good]@coef
-  bias=np.median((dg[:split][train]-visual[:split][train])/dt[:split][train])
+  bias=np.median((dg[:split][train]-visual[:split][train])/dt[:split][train]) if calibration_supported else 0.
   corrected=dg-bias*dt
   ground=np.cumsum(truth[split:]);raw=np.cumsum(dg[split:]);corr=np.cumsum(corrected[split:])
   fused=[];state=0.;age=0.;active=[]
@@ -69,7 +76,7 @@ def main():
    state+=increment;fused.append(state);active.append(age<.5)
   fused=np.array(fused)
   rmse=lambda q:float(np.sqrt(np.mean(np.rad2deg(q-ground)**2)))
-  summary=dict(estimator="calibrated-essential-matrix",total_pairs=n,calibration_pairs=split,holdout_pairs=n-split,holdout_visual_coverage=float(np.mean(good[split:])),gyro_only_rmse_deg=rmse(raw),gyro_bias_corrected_rmse_deg=rmse(corr),visual_gyro_fused_rmse_deg=rmse(fused),authorized_fraction=float(np.mean(active)),scope="relative one-dimensional rotation; GT used on training portion for coordinate calibration; no global heading or flight claims")
+  summary=dict(estimator="calibrated-essential-matrix",total_pairs=n,calibration_pairs=split,holdout_pairs=n-split,holdout_visual_coverage=float(np.mean(good[split:])),visual_calibration_supported=bool(calibration_supported),visual_calibration_samples=int(train.sum()),gyro_only_rmse_deg=rmse(raw),gyro_bias_corrected_rmse_deg=rmse(corr),visual_gyro_fused_rmse_deg=rmse(fused),authorized_fraction=float(np.mean(active)),scope="relative one-dimensional rotation; GT used on training portion for coordinate calibration; no global heading or flight claims")
   with open(a.output,"w",newline="") as f:
    w=csv.writer(f);w.writerow(["time","truth_rel_deg","gyro_rel_deg","corrected_rel_deg","fused_rel_deg","inliers","visual_valid"])
    for j,i in enumerate(range(split,n)):w.writerow([frames[i+1][0],np.rad2deg(ground[j]),np.rad2deg(raw[j]),np.rad2deg(corr[j]),np.rad2deg(fused[j]),int(counts[i]),int(good[i])])
