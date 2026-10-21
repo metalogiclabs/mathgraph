@@ -26,8 +26,11 @@ jobs:
           python -m py_compile compiler.py fixtures.py independent_oracle.py test_protocol.py fuzz_independent.py independent_audit.py
           python test_protocol.py | tee run.log
           python fuzz_independent.py | tee -a run.log
-          sha256sum compiler.py fixtures.py independent_oracle.py test_protocol.py fuzz_independent.py independent_audit.py PROTOCOL.md result.json cases.json fuzz_result.json > SHA256SUMS.txt
-          git diff --exit-code -- compiler.py fixtures.py independent_oracle.py test_protocol.py fuzz_independent.py independent_audit.py
+          python test_cli.py | tee -a run.log
+          python compile_cli.py --model example_model.json --output example_receipt.json | tee -a run.log
+          python verify_cli.py --model example_model.json --receipt example_receipt.json | tee -a run.log
+          sha256sum compiler.py fixtures.py independent_oracle.py test_protocol.py fuzz_independent.py independent_audit.py compile_cli.py verify_cli.py test_cli.py PROTOCOL.md example_model.json example_receipt.json result.json cases.json fuzz_result.json > SHA256SUMS.txt
+          git diff --exit-code -- compiler.py fixtures.py independent_oracle.py test_protocol.py fuzz_independent.py independent_audit.py compile_cli.py verify_cli.py test_cli.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -37,6 +40,7 @@ jobs:
             research/consequence_experiment_compiler_v1/result.json
             research/consequence_experiment_compiler_v1/cases.json
             research/consequence_experiment_compiler_v1/fuzz_result.json
+            research/consequence_experiment_compiler_v1/example_receipt.json
             research/consequence_experiment_compiler_v1/SHA256SUMS.txt
           if-no-files-found: warn
   independent-receipt-audit:
@@ -58,7 +62,8 @@ jobs:
           cd research/consequence_experiment_compiler_v1
           # Audit uses only independent_oracle + static fixtures, never imports compiler.py.
           python independent_audit.py ../../audit-artifact | tee audit.log
-          sha256sum ../../audit-artifact/result.json ../../audit-artifact/cases.json ../../audit-artifact/fuzz_result.json ../../audit-artifact/independent_audit_receipt.json > audit-SHA256SUMS.txt
+          python verify_cli.py --model example_model.json --receipt ../../audit-artifact/example_receipt.json | tee -a audit.log
+          sha256sum ../../audit-artifact/result.json ../../audit-artifact/cases.json ../../audit-artifact/fuzz_result.json ../../audit-artifact/example_receipt.json ../../audit-artifact/independent_audit_receipt.json > audit-SHA256SUMS.txt
           grep -q 'INDEPENDENT_REFERENCE_AUDIT_PASS 240 40 GALOIS 983040' audit.log
           git diff --exit-code -- independent_oracle.py fixtures.py independent_audit.py
       - uses: actions/upload-artifact@v4

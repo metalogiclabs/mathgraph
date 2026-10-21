@@ -48,3 +48,7 @@ The mathematical task is to synthesize a **minimum-total-cost collection of obse
 `UNKNOWN`: new instrument *type* acquisition, source-authored intent/physical accessibility beyond supplied tables, stochastic physical back-action, infinite spaces, prospective biology or unseen API contract transfer, superiority over equally optimized native/human baseline, general CLC/Flash soundness beyond pinned existing Lean results.
 
 **STOP:** Do not open any previous source-constructor protected execnet/structlog source merely because this separate *finite* compiler CI turns green. Their original F1 source freeze needs its own exact protocol and human/authority comparator gate. Do not bypass write-action safety rejection.
+
+## Source-bound command-line receipt
+
+`compile_cli.py --model example_model.json --output receipt.json` serializes a content-addressed source-model identifier, the compiled basis or obstruction, and its claim boundary. A completely separate `verify_cli.py --model ... --receipt ...` recomputes minimum costs and closure from the source with the independent conventional oracle. Modified sources, inflated costs, forged output tables and grant/primitive misdiagnoses fail closed. CLI acceptance is **source- and finite-semantic-model-relative**, not authentication of the world, a safe real command runner, or a replacement for source-authoritative external evidence.

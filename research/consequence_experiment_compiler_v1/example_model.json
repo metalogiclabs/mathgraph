@@ -1,0 +1,79 @@
+{
+  "base_readouts": [
+    "read_r"
+  ],
+  "desired_labels": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "grants": [
+    "flip_r",
+    "zero_r",
+    "destroy_h",
+    "couple_h_xor_r",
+    "read_r"
+  ],
+  "name": "hidden-record-four-state",
+  "operations": [
+    {
+      "cost": 1,
+      "image": [
+        1,
+        0,
+        3,
+        2
+      ],
+      "name": "flip_r"
+    },
+    {
+      "cost": 1,
+      "image": [
+        0,
+        0,
+        2,
+        2
+      ],
+      "name": "zero_r"
+    },
+    {
+      "cost": 3,
+      "image": [
+        0,
+        1,
+        3,
+        2
+      ],
+      "name": "couple_h_xor_r"
+    },
+    {
+      "cost": 1,
+      "image": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "name": "destroy_h"
+    }
+  ],
+  "protected": [
+    0,
+    0,
+    1,
+    1
+  ],
+  "readouts": [
+    {
+      "cost": 1,
+      "name": "read_r",
+      "values": [
+        0,
+        1,
+        0,
+        1
+      ]
+    }
+  ]
+}
