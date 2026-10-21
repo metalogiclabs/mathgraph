@@ -29,6 +29,14 @@ jobs:
         run: python experiments/uzh_rotation/evaluate.py shapes_rotation.zip --pairs 300 --output rotation_results.csv
       - name: Evaluate real visual-inertial relative heading
         run: python experiments/uzh_rotation/heading_compare.py shapes_rotation.zip --pairs 300 --output heading.csv
+      - name: Compare calibrated essential matrix baseline
+        run: |
+          python experiments/uzh_rotation/heading_essential.py shapes_rotation.zip --pairs 300 --output essential_heading.csv
+          cp heading_summary.json essential_summary.json
+      - name: Compare calibrated pure rotation baseline
+        run: |
+          python experiments/uzh_rotation/heading_rotation_only.py shapes_rotation.zip --pairs 300 --output rotation_only_heading.csv
+          cp heading_summary.json rotation_only_summary.json
       - name: Preserve raw output
         if: always()
         uses: actions/upload-artifact@v4
@@ -39,4 +47,8 @@ jobs:
             summary.json
             heading.csv
             heading_summary.json
+            essential_heading.csv
+            essential_summary.json
+            rotation_only_heading.csv
+            rotation_only_summary.json
           if-no-files-found: warn
