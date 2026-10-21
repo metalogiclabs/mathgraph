@@ -93,7 +93,7 @@ jobs:
       - name: Generate advisory source-scoped PR warrant delta fixture
         run: |
           set -euo pipefail
-          python scripts/mathgraph_check_pr_reclosure_report_20261021.py
+          PYTHONPATH=. python scripts/mathgraph_check_pr_reclosure_report_20261021.py
           python -m json.tool mathgraph-pr-reclosure-report.json >/dev/null
           cp mathgraph-pr-reclosure-report.json "$RUNNER_TEMP/resolve-evidence/pr-reclosure-report.json"
           rm mathgraph-pr-reclosure-report.json
