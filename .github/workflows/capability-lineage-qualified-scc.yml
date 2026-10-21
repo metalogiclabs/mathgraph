@@ -1,0 +1,31 @@
+name: Qualified SCC Closure Comparison
+on:
+  push:
+    branches: [research/capability-closure-lineage-conformance]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualified-scc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Differential SCC and qualified route tests
+        run: python -m unittest discover -s tests -p test_qualified_consequence_closure.py -v
+      - name: Exact-source comparison with parity checks
+        run: |
+          mkdir -p "$RUNNER_TEMP/scc"
+          python -m experiments.capability_lineage_scc_benchmark --output "$RUNNER_TEMP/scc/results.csv"
+          git rev-parse HEAD > "$RUNNER_TEMP/scc/commit.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qualified-scc-benchmark
+          path: ${{ runner.temp }}/scc/
+          if-no-files-found: warn
