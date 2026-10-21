@@ -1,4 +1,5 @@
 name: MathGraph Resolve — Independent Offline V1
+# Evidence continuity finite oracle qualification 2026-10-21
 
 on:
   workflow_dispatch:
