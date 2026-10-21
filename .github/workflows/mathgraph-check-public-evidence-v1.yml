@@ -1,4 +1,6 @@
 name: MathGraph Check — source-pinned public record and agent API V1
+# Cross-source native evidence prospective apparatus
+# Native head fork identity correction, pinned input unchanged
 on:
   push:
     branches: [mathgraph-check-standalone-public-v1]
@@ -24,6 +26,10 @@ jobs:
           sparse-checkout: |
             mathgraph_check/
             tests/test_mathgraph_public_evidence_v1.py
+            tests/test_mathgraph_check_pr_reclosure_20261021.py
+            tests/test_mathgraph_evidence_continuity_20261021.py
+            tests/test_mathgraph_review_investigation_20261021.py
+            research/mathgraph_check_decision_value_20261021/
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
@@ -53,6 +59,134 @@ jobs:
           python -m unittest discover -s tests \
             -p 'test_mathgraph_public_evidence_v1.py' -v
           echo "MATHGRAPH_PUBLIC_RELEASE_ASSERTIONS_GREEN"
+      - name: Verify finite evidence continuity independently against exhaustive oracle
+        run: |
+          python -m unittest discover -s tests -p 'test_mathgraph_evidence_continuity_20261021.py' -v
+          python -m unittest discover -s tests -p 'test_mathgraph_check_pr_reclosure_20261021.py' -v
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Real-source native full vs selected Go test cost
+        run: |
+          mkdir -p public/mathgraph-check
+          MATHGRAPH_NATIVE_OUT=public/mathgraph-check/native-verification-cost.json python research/mathgraph_check_decision_value_20261021/native_verification_cost.py
+      - name: Real Compose source continuity versus conventional cache
+        run: |
+          mkdir -p public/mathgraph-check
+          EVIDENCE_CONTINUITY_OUT=public/mathgraph-check/compose-continuity.json python research/mathgraph_check_decision_value_20261021/compose_source_continuity.py
+      - name: Native change contract with adversarial control
+        run: |
+          mkdir -p public/mathgraph-check
+          MATHGRAPH_CONTRACT_OUT=public/mathgraph-check/change-contract-native.json python research/mathgraph_check_decision_value_20261021/change_contract_native.py
+      - name: Authentic source-changing preservation contract and strong baseline
+        run: |
+          mkdir -p public/mathgraph-check
+          MATHGRAPH_PRESERVE_OUT=public/mathgraph-check/preservation-contract.json python research/mathgraph_check_decision_value_20261021/preservation_contract_comparison.py
+      - name: Commercial differentiation strongest-baseline falsification
+        run: |
+          python research/mathgraph_check_decision_value_20261021/commercial_gate.py | tee public/mathgraph-check/commercial-gate.json
+      - name: Equal-information investigation baseline replay
+        run: python -m unittest discover -s tests -p 'test_mathgraph_review_investigation_20261021.py' -v
+      - name: Reviewer packet equality and answer-key isolation
+        run: |
+          python research/mathgraph_check_decision_value_20261021/build_reviewer_calibration.py
+          test -f public/mathgraph-check/reviewer-calibration/A.json
+          test -f public/mathgraph-check/reviewer-calibration/B.json
+          test ! -f public/mathgraph-check/reviewer-calibration/REVIEWER_CALIBRATION_KEY.json
+      - name: Source-distinct native metamorphic check with full cost counters
+        run: |
+          set -euo pipefail
+          mkdir -p public/mathgraph-check
+          A="$RUNNER_TEMP/cross-source-A"
+          B="$RUNNER_TEMP/cross-source-B"
+          T0=$(date +%s%N)
+          git clone -q https://github.com/BurntSushi/toml.git "$A"
+          git -C "$A" checkout -q --detach d733fc535e4a9f3c454e421a87b90ade5d49bf31
+          git clone -q https://github.com/go-ini/ini.git "$B"
+          git -C "$B" checkout -q --detach e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08
+          cp research/mathgraph_check_decision_value_20261021/cross_source_A_test.go.txt "$A/mathgraph_cross_source_test.go"
+          cp research/mathgraph_check_decision_value_20261021/cross_source_B_test.go.txt "$B/mathgraph_cross_source_test.go"
+          T1=$(date +%s%N)
+          set +e
+          (cd "$A" && go test -count=1 -run '^TestMathGraphCrossSourceStringInvariant
+        run: |
+          set -euo pipefail
+          python -m mathgraph_check.public_receipts \
+            --v1-zip "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v1.zip" \
+            --v2-zip "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v2.zip" \
+            --out public/mathgraph-check
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph_check.public_http import load_release
+          r=load_release(Path("public/mathgraph-check"))
+          assert r["axes"]["finite_executable"]["matched_external_labels"] == 48
+          assert r["axes"]["finite_executable"]["total_lean_guards"] == 52
+          assert r["axes"]["generalization"]["status"] == "UNKNOWN"
+          assert r["axes"]["statement_fidelity"]["status"] == "UNKNOWN"
+          assert r["admission"]["mathematical_theorem_badge_issued"] is False
+          assert r["axes"]["current_requalification"]["status"] == "NOT_CHECKED_AFTER_SNAPSHOT"
+          print("MATHGRAPH_PUBLIC_EVIDENCE_SOURCE_BOUND_RELEASE_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-public-evidence-v1
+          path: public/mathgraph-check/
+          if-no-files-found: warn
+ .) > public/mathgraph-check/cross-source-A.log 2>&1
+          STATUS_A=$?
+          (cd "$B" && go test -count=1 -run '^TestMathGraphCrossSourceStringInvariant
+        run: |
+          set -euo pipefail
+          python -m mathgraph_check.public_receipts \
+            --v1-zip "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v1.zip" \
+            --v2-zip "$RUNNER_TEMP/mathgraph-evidence/l4yaml-v2.zip" \
+            --out public/mathgraph-check
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph_check.public_http import load_release
+          r=load_release(Path("public/mathgraph-check"))
+          assert r["axes"]["finite_executable"]["matched_external_labels"] == 48
+          assert r["axes"]["finite_executable"]["total_lean_guards"] == 52
+          assert r["axes"]["generalization"]["status"] == "UNKNOWN"
+          assert r["axes"]["statement_fidelity"]["status"] == "UNKNOWN"
+          assert r["admission"]["mathematical_theorem_badge_issued"] is False
+          assert r["axes"]["current_requalification"]["status"] == "NOT_CHECKED_AFTER_SNAPSHOT"
+          print("MATHGRAPH_PUBLIC_EVIDENCE_SOURCE_BOUND_RELEASE_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-public-evidence-v1
+          path: public/mathgraph-check/
+          if-no-files-found: warn
+ .) > public/mathgraph-check/cross-source-B.log 2>&1
+          STATUS_B=$?
+          set -e
+          T2=$(date +%s%N)
+          cat public/mathgraph-check/cross-source-A.log
+          cat public/mathgraph-check/cross-source-B.log
+          STATUS_A="$STATUS_A" STATUS_B="$STATUS_B" T0="$T0" T1="$T1" T2="$T2" python - <<'PY'
+          import json,os
+          a=int(os.environ["STATUS_A"]); b=int(os.environ["STATUS_B"])
+          t0=int(os.environ["T0"]); t1=int(os.environ["T1"]); t2=int(os.environ["T2"])
+          result={"schema":"mathgraph.cross-source-method-v1",
+            "source_a":"BurntSushi/toml@d733fc535e4a9f3c454e421a87b90ade5d49bf31",
+            "source_b":"go-ini/ini@e2db55b0e088fa4ee0c128aa4ade263cdc1d7f08",
+            "a_native_pass":a==0,"b_native_pass":b==0,
+            "checkout_and_test_setup_seconds":(t1-t0)/1e9,
+            "native_test_and_compile_seconds":(t2-t1)/1e9,
+            "conventional_equal_information_baseline":"Same supplied roundtrip generator and native API access",
+            "commercial_gain":"NOT_DEMONSTRATED",
+            "cross_source_acquisition_gain":"UNKNOWN",
+            "cost_boundary":"GitHub runner elapsed phase times; human design, API adaptation, and earlier method acquisition not priced",
+            "interpretation":"PASS only establishes bounded representable-string metamorphism, not acquisition advantage"}
+          with open("public/mathgraph-check/cross-source.json","w") as f:json.dump(result,f,indent=2,sort_keys=True)
+          print(json.dumps(result))
+          PY
+          test "$STATUS_A" -eq 0 && test "$STATUS_B" -eq 0
       - name: Create human, agent and scoped status outputs from checked evidence
         run: |
           set -euo pipefail

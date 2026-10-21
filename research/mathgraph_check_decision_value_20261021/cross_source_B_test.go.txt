@@ -1,0 +1,14 @@
+package ini
+import ("bytes";"testing")
+func TestMathGraphCrossSourceStringInvariant(t *testing.T) {
+ values:=[]string{"plain"," leading","trailing ","has.dot","a=b","has#hash","quote\"value","slash\\value","unicode λ"}
+ for _,v:=range values{
+  cfg:=Empty()
+  if _,err:=cfg.Section("main").NewKey("Value",v);err!=nil{t.Fatalf("new key %q: %v",v,err)}
+  var out bytes.Buffer
+  if _,err:=cfg.WriteTo(&out);err!=nil{t.Fatalf("write %q: %v",v,err)}
+  parsed,err:=Load(out.Bytes());if err!=nil{t.Fatalf("load %q: %v",v,err)}
+  got:=parsed.Section("main").Key("Value").String()
+  if got!=v{t.Fatalf("different value input %q got %q",v,got)}
+ }
+}
