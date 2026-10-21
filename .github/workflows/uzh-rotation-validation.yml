@@ -27,6 +27,8 @@ jobs:
           unzip -Z1 shapes_rotation.zip | grep -q '^imu.txt$'
       - name: Evaluate real camera/IMU pairs
         run: python experiments/uzh_rotation/evaluate.py shapes_rotation.zip --pairs 300 --output rotation_results.csv
+      - name: Evaluate real visual-inertial relative heading
+        run: python experiments/uzh_rotation/heading_compare.py shapes_rotation.zip --pairs 300 --output heading.csv
       - name: Preserve raw output
         if: always()
         uses: actions/upload-artifact@v4
@@ -35,4 +37,6 @@ jobs:
           path: |
             rotation_results.csv
             summary.json
+            heading.csv
+            heading_summary.json
           if-no-files-found: warn
