@@ -1,0 +1,37 @@
+name: Authentic Resolver Source Change V1
+on:
+  push:
+    branches:
+      - research/authentic-resolver-change-release-v1-20261021
+  pull_request:
+    paths:
+      - 'research/authentic_resolver_change_v1/**'
+      - 'mathgraph_check/warrant_resolution.py'
+      - '.github/workflows/authentic-resolver-change-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-source-change:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin native pytest runner
+        run: python -m pip install pytest==9.0.3
+      - name: Actual resolver code change, independent parity and baseline
+        run: |
+          python -m py_compile mathgraph_check/warrant_resolution.py research/authentic_resolver_change_v1/experiment.py
+          PYTHONPATH=. python research/authentic_resolver_change_v1/experiment.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: authentic-resolver-change-v1-native
+          path: research/authentic_resolver_change_v1/result.json
+          if-no-files-found: warn
