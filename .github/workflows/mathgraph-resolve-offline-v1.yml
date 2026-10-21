@@ -107,6 +107,44 @@ jobs:
             > "$RUNNER_TEMP/resolve-evidence/replay.json" \
             2> "$RUNNER_TEMP/resolve-evidence/isolation.json"
           echo "8c7b30e1eb2a24d2960e170d36652ca95aa71b41075f673abe394e154ae66668  $RUNNER_TEMP/resolve-evidence/replay.json" | sha256sum -c -
+      - name: Source-native Goldmark prospective comparison (separate from Resolve evidence)
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/yuin/goldmark-meta.git "$RUNNER_TEMP/goldmark-base"
+          git -C "$RUNNER_TEMP/goldmark-base" checkout -q --detach f5d5bebad44ac55105584283ee742a9e6f3524c0
+          git clone -q https://github.com/yuin/goldmark-meta.git "$RUNNER_TEMP/goldmark-head"
+          git -C "$RUNNER_TEMP/goldmark-head" checkout -q --detach ad93e759a4ba37c8b548367506f50dfd5bc0ce1a
+          for d in "$RUNNER_TEMP/goldmark-base" "$RUNNER_TEMP/goldmark-head"; do
+            cp research/mathgraph_check_decision_value_20261021/frontmatter_consequence_test.go.txt "$d/mathgraph_consequence_test.go"
+          done
+          (cd "$RUNNER_TEMP/goldmark-head" && go test -count=1 ./...)
+          (cd "$RUNNER_TEMP/goldmark-head" && go test -run '^TestMathGraphProspective' -count=3 ./...)
+          (cd "$RUNNER_TEMP/goldmark-base" && go test -run '^TestMathGraphProspectiveFrontmatterConsequence/terminator_---
+        if: always()
+        with:
+          name: mathgraph-resolve-independent-offline-v1
+          path: ${{ runner.temp }}/resolve-evidence/
+          if-no-files-found: error
+ -count=1 ./...)
+          (cd "$RUNNER_TEMP/goldmark-base" && go test -run '^TestMathGraphProspectiveOutsideFrontmatterIsNotMetadata
+        if: always()
+        with:
+          name: mathgraph-resolve-independent-offline-v1
+          path: ${{ runner.temp }}/resolve-evidence/
+          if-no-files-found: error
+ -count=1 ./...)
+          if (cd "$RUNNER_TEMP/goldmark-base" && go test -run '^TestMathGraphProspectiveFrontmatterConsequence/terminator_\\.\\.\\.
+        if: always()
+        with:
+          name: mathgraph-resolve-independent-offline-v1
+          path: ${{ runner.temp }}/resolve-evidence/
+          if-no-files-found: error
+ -count=1 ./...); then
+            echo "Unexpected base PASS" >&2; exit 1
+          else
+            echo "Expected base RED for requested novel terminator"
+          fi
+          echo '{"schema":"mathgraph.holdout002.native.v1","base":"f5d5bebad44ac55105584283ee742a9e6f3524c0","head":"ad93e759a4ba37c8b548367506f50dfd5bc0ce1a","claim":"new Pandoc terminator support","provenance":"native Go test run; not novel issue discovery or merge approval"}' > "$RUNNER_TEMP/resolve-evidence/goldmark-native.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
