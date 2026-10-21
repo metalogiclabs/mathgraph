@@ -1,0 +1,84 @@
+name: V10 Real Warrant + Original R7.2 CLC Qualification
+on:
+  push:
+    branches:
+      - research/v10-native-warrant-integration-20261021
+  pull_request:
+    paths:
+      - 'research/v10_native_warrant_integration/**'
+      - '.github/workflows/v10-real-warrant-clc-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-mathgraph-warrant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute original warrant graph, independent native probe and selective withdrawal
+        run: |
+          python3 --version
+          python3 -m py_compile mathgraph_check/warrant_resolution.py research/v10_native_warrant_integration/execute.py
+          PYTHONPATH=. python3 research/v10_native_warrant_integration/execute.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v10-real-mathgraph-closure
+          path: research/v10_native_warrant_integration/result.json
+          if-no-files-found: warn
+  unchanged-r7-clc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - name: Checkout integration theorem file
+        uses: actions/checkout@v4
+        with:
+          path: mathgraph-integration
+      - name: Checkout immutable existing MSI R7.2-CLC source
+        uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: d4a9ecb2c86f027ad4153f6c6ac128f196b312a1
+          path: pinned-msi
+          persist-credentials: false
+      - name: Verify pinned source identity and unchanged toolchain
+        working-directory: pinned-msi
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'd4a9ecb2c86f027ad4153f6c6ac128f196b312a1'
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.24.0'
+          test "$(git hash-object lean/VerifiedDevelopmentCore.lean)" = '105a4354dd8353a82bb78215247cea7d0b6a4395'
+          test "$(git hash-object lean/ScopedCertificates.lean)" = '1fbb87452c576da280e7c854a84582ba9e9c1aef'
+          test "$(git hash-object lean/FiniteCLC.lean)" = '00f33c608609e735483f323ebac8572a964aff69'
+      - name: Install Lean 4.24 toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Recheck unchanged R7.2 CLC and effectful countercontrol
+        working-directory: pinned-msi
+        env:
+          LEAN_PATH: lean
+        run: |
+          set -euo pipefail
+          lean --version
+          lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
+          lean -o lean/ScopedCertificates.olean lean/ScopedCertificates.lean
+          lean -o lean/VerifiedDevelopmentCore.olean lean/VerifiedDevelopmentCore.lean
+          lean -o lean/FiniteCLC.olean lean/FiniteCLC.lean
+          lean -o lean/VerifiedDevelopmentExample.olean lean/VerifiedDevelopmentExample.lean
+          lean -o lean/DevelopmentalObservationBridge.olean lean/DevelopmentalObservationBridge.lean
+          lean -o lean/DevelopmentalObservationBridgeExample.olean lean/DevelopmentalObservationBridgeExample.lean
+          lean -o lean/EffectfulObservationBridge.olean lean/EffectfulObservationBridge.lean | tee /tmp/v10-effectful-axioms.log
+          lean lean/DevelopmentalObservationBridgeAudit.lean | tee /tmp/v10-clc-axioms.log
+          if grep -qE 'sorryAx' /tmp/v10-clc-axioms.log /tmp/v10-effectful-axioms.log; then
+            echo 'FAIL: sorryAx in Lean bridge'; exit 1
+          fi
+          lean -o lean/TypedBehaviouralCongruence.olean lean/TypedBehaviouralCongruence.lean
+          lean -o lean/DevelopmentalCategory.olean lean/DevelopmentalCategory.lean
+          lean lean/CanonicalRefinement.lean
+          lean ../mathgraph-integration/research/v10_native_warrant_integration/V10WarrantDependency.lean | tee /tmp/v10-specific-axioms.log
+          if grep -qE 'sorryAx' /tmp/v10-specific-axioms.log; then
+            echo 'FAIL: V10-shaped instantiation contains sorryAx'; exit 1
+          fi
+          echo 'Unmodified R7.2 / CLC / nondisturbance proofs PASS; V10 evidence NOT formally linked'
