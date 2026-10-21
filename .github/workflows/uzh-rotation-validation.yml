@@ -41,6 +41,14 @@ jobs:
         run: python experiments/uzh_rotation/scan_revisit.py shapes_rotation.zip --frames 450
       - name: Check independent startup bias against oracle diagnostic
         run: python experiments/uzh_rotation/gyro_bias_diagnostic.py shapes_rotation.zip
+      - name: Transfer to unseen poster and boxes rotation scenes
+        run: |
+          for scene in poster_rotation boxes_rotation; do
+            curl -fLsS --retry 2 --connect-timeout 15 --max-time 600 \
+              "https://rpg.ifi.uzh.ch/datasets/davis/${scene}.zip" -o "${scene}.zip"
+            python experiments/uzh_rotation/joint_transfer.py "${scene}.zip" \
+              --frames 450 --output "${scene}_transfer.json"
+          done
       - name: Preserve raw output
         if: always()
         uses: actions/upload-artifact@v4
@@ -58,4 +66,6 @@ jobs:
             revisit_results.csv
             revisit_summary.json
             gyro_bias_summary.json
+            poster_rotation_transfer.json
+            boxes_rotation_transfer.json
           if-no-files-found: warn
