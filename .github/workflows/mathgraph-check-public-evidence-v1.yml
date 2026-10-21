@@ -72,6 +72,10 @@ jobs:
         run: |
           mkdir -p public/mathgraph-check
           EVIDENCE_CONTINUITY_OUT=public/mathgraph-check/compose-continuity.json python research/mathgraph_check_decision_value_20261021/compose_source_continuity.py
+      - name: Native change contract with adversarial control
+        run: |
+          mkdir -p public/mathgraph-check
+          MATHGRAPH_CONTRACT_OUT=public/mathgraph-check/change-contract-native.json python research/mathgraph_check_decision_value_20261021/change_contract_native.py
       - name: Create human, agent and scoped status outputs from checked evidence
         run: |
           set -euo pipefail
