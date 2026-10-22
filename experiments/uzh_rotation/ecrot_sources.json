@@ -1,0 +1,35 @@
+{
+  "protocol": "ecrot-center-column-real-sensor-v1",
+  "development_source": {
+    "name": "ECRot Charlottenburg Palace, motorized 360-degree nominal rotation",
+    "upstream_repository": "https://github.com/tub-rip/ECRot",
+    "original_google_drive_folder_id": "1_1tGqoZB4BnVk4Vt4OnlNTCKV4oXzWw1",
+    "original_google_drive_file_id": "1Qb0cRIEr6QAjkKEoqYkZR9OkacU7qrdG",
+    "download_filename": "ECRot_Charlottenburg_events.bag",
+    "sha256": "e851b34a76b8b566beeeb24d9d3208de81c8a7d81bc19c02c07966914cb2854e"
+  },
+  "held_out_source_frozen_before_download": {
+    "name": "ECRot Brandenburg Gate, different motorized 360-degree scene",
+    "upstream_repository": "https://github.com/tub-rip/ECRot",
+    "original_google_drive_folder_id": "1k8C2ngoSKyy9yZOoFwEZWAGs2Utygz5Z",
+    "original_google_drive_file_id": "1-pZB1falszAUeNyjyGKA5F-VAiCF5ZvY",
+    "download_filename": "ECRot_Brandenburg_events.bag",
+    "sha256": null,
+    "state": "UNKNOWN: untouched source at settings freeze"
+  },
+  "frozen_settings": {
+    "gyro_axis": "y",
+    "sensor_dimensions": [640, 480],
+    "fixed_event_column": 320,
+    "angular_bins": 64,
+    "vertical_bins": 24,
+    "polarities": 2,
+    "minimum_first_map_events_per_matched_sector": 50,
+    "minimum_revisit_events": 50,
+    "minimum_cosine_similarity": 0.75,
+    "minimum_best_vs_runner_up_cosine_gap": 0.08,
+    "map_freeze_angle_rad": 6.283185307179586,
+    "candidate_ranking_uses_gyro_predicted_sector": false,
+    "navigation_correction_allowed_without_ground_truth_or_independent_invariant": false
+  }
+}

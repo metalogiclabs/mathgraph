@@ -1,0 +1,73 @@
+name: ECRot original-camera one-column revisit audit
+
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/ecrot-original-column-revisit.yml'
+      - 'experiments/uzh_rotation/audit_ecrot_line_revisit.py'
+      - 'experiments/uzh_rotation/test_ecrot_line_revisit.py'
+      - 'experiments/uzh_rotation/ecrot_sources.json'
+      - 'experiments/uzh_rotation/ECROT_SINGLE_COLUMN_PROTOCOL.md'
+  workflow_dispatch:
+
+jobs:
+  replay-original-events-and-imu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned data and ROS bag readers
+        run: pip install numpy==2.1.3 rosbags==0.11.9 gdown==5.2.0
+      - name: Adversarial wire, gyro, map-freeze, sparse-map and ambiguity controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_ecrot_line_revisit.py' -v
+      - name: Acquire unmodified original ECRot development ROS bag
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          manifest = json.load(open('experiments/uzh_rotation/ecrot_sources.json'))
+          source = manifest['development_source']
+          subprocess.run(['gdown', '--id', source['original_google_drive_file_id'],
+                          '-O', source['download_filename']], check=True)
+          PY
+      - name: Independently replay original sensor recording with pinned SHA256
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          source = json.load(open('experiments/uzh_rotation/ecrot_sources.json'))['development_source']
+          subprocess.run(['python', 'experiments/uzh_rotation/audit_ecrot_line_revisit.py',
+                          '--bag', source['download_filename'], '--sha256', source['sha256'],
+                          '--output', 'ecrot_column_report.json'], check=True)
+          PY
+      - name: Audit non-oracular retrieval and observed fail-closed outcome
+        run: |
+          python - <<'PY'
+          import json
+          report = json.load(open('ecrot_column_report.json'))
+          o = report['observation']
+          m = report['visual_retrieval_per_revisit_sector']
+          assert o['total_event_camera_events'] == 97399772, o
+          assert o['events_at_fixed_column'] == 159175, o
+          assert o['first_turn_coverage_bins'] == 64, o
+          assert o['revisit_sector_count'] == 1, o
+          assert 1.0 < o['gyro_integrated_y_turns'] < 1.02, o
+          assert len(m) == 1 and m[0]['events'] >= 50, m
+          assert m[0]['unrestricted_visual_retrieval']['decision'] == 'UNKNOWN', m
+          assert len(m[0]['unrestricted_visual_retrieval']['competing_sectors']) >= 2, m
+          assert report['overall_navigation_decision'] == 'UNKNOWN', report
+          print('REAL ORIGINAL EVENT-COLUMN REVISIT: HIGH COSINE; NON-UNIQUE; WITHHELD')
+          PY
+      - name: Preserve original-source-pinned compact audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecrot-original-column-revisit-development
+          path: ecrot_column_report.json
+          if-no-files-found: warn
