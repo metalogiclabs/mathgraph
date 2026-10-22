@@ -17,7 +17,7 @@ p.add_argument("--dropout-start",type=int,default=2600)
 p.add_argument("--dropout-end",type=int,default=3400)
 a=p.parse_args()
 t0=time.perf_counter();rng=np.random.default_rng(a.seed)
-bins=512;rows=64;per_turn=360
+bins=256;rows=64;per_turn=360
 # Synthetic textured scene, with periodic confuser introduced deliberately.
 base=rng.normal(0,1,(bins,rows))
 for _ in range(3):base=(np.roll(base,1,axis=0)+2*base+np.roll(base,-1,axis=0))/4
@@ -32,18 +32,31 @@ sample=lambda angle: base[np.mod(np.rint(angle/(2*np.pi)*bins).astype(int),bins)
 observations=sample(true)+rng.normal(0,.08,(n,rows))
 gyro_delta=np.diff(true,prepend=true[0])+.014*dt+rng.normal(0,.002*dt,n)
 est=np.cumsum(gyro_delta)
-# Reference map: ONLY first revolution; would require independent map
-# construction on a physical platform. Template supplied from a fixed
-# synthetic world map is an ORACLE and must be described as such.
-# Thus this is a controlled identifiability test, NOT deployed SLAM.
-reference=base.copy()
+# Construct a frozen map ONLY from samples observed in the first
+# gyro-estimated revolution. No hidden scene values, true orientations,
+# or future observations enter the reference. Unobserved bins stay empty.
+map_sum=np.zeros((bins,rows));map_count=np.zeros(bins,dtype=int)
+training_end=next((i for i,x in enumerate(est) if x>=2*np.pi),n)
+if training_end>=n:raise ValueError("No completed initial gyro revolution")
+for i in range(training_end):
+ b=int(round(est[i]/(2*np.pi)*bins))%bins
+ map_sum[b]+=observations[i]
+ map_count[b]+=1
+reference=np.zeros_like(map_sum)
+occupied=map_count>0
+reference[occupied]=map_sum[occupied]/map_count[occupied,None]
+reference[occupied]-=reference[occupied].mean(axis=1,keepdims=True)
+reference[occupied]/=np.maximum(np.linalg.norm(reference[occupied],axis=1,keepdims=True),1e-12)
 def run(use_vision):
  heading=0.;accepted=0;wrong=0;errs=[];reacq=None
  for i in range(n):
   heading+=gyro_delta[i]
-  if use_vision and not(a.dropout_start<=i<a.dropout_end):
+  if use_vision and i>=training_end and not(a.dropout_start<=i<a.dropout_end):
    z=observations[i];pred=int(round(heading/(2*np.pi)*bins))
    idx=(np.arange(pred-10,pred+11)%bins).astype(int)
+   idx=idx[occupied[idx]]
+   if len(idx)<2:
+    errs.append(heading-true[i]);continue
    quality=reference[idx]@z
    order=np.argsort(quality)
    top=order[-1];second=order[-2]
@@ -57,10 +70,10 @@ def run(use_vision):
  e=np.array(errs)
  return {"rmse_deg":float(np.rad2deg(np.sqrt(np.mean(e**2)))),"end_error_deg":float(np.rad2deg(e[-1])),"max_error_deg":float(np.max(np.abs(np.rad2deg(e)))),"accepted":accepted,"unsafe_gt_gt10deg_after_correction":wrong,"first_post_blackout_accepted":reacq}
 fixed=run(False);visual=run(True)
-result=dict(kind="SYNTHETIC_ORACLE_PANORAMA_NOT_REAL_DATA",seed=a.seed,turns=a.turns,
+result=dict(kind="SYNTHETIC_FIRST_REVOLUTION_LEARNED_MAP",seed=a.seed,turns=a.turns,training_end_index=training_end,observed_map_bins=int(occupied.sum()),map_coverage=float(occupied.mean()),
   samples=n,samples_per_turn=per_turn,pixels_per_observation=rows,panorama_bins=bins,
-  dropout=[a.dropout_start,a.dropout_end],gyro_only=fixed,visual_oracle_map=visual,
+  dropout=[a.dropout_start,a.dropout_end],gyro_only=fixed,visual_learned_map=visual,
   processing_seconds=time.perf_counter()-t0,
-  limitation="Template is an oracle synthetic world panorama; heading is scored against hidden truth. Does not prove map acquisition, real event imaging, timing stability, onboard operation or advantage over standard matched-filter sensing.")
+  limitation="Reference learned causally from one-column observations over first gyro-estimated revolution; scene synthesis still idealized. No real camera motion distortion or independent physical measurement; ordinary matched-filter baseline, not a novel MathGraph advantage.")
 open(a.output,"w").write(json.dumps(result,indent=2))
 print(json.dumps(result,indent=2))
