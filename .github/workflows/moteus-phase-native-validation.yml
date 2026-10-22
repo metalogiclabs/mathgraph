@@ -1,0 +1,26 @@
+name: Native moteus phase validation
+on:
+  push:
+    branches:
+      - exp/uzh-rotation-validation-20261021
+    paths:
+      - .github/workflows/moteus-phase-native-validation.yml
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout moteus pinned feature commit
+        run: |
+          git clone --recurse-submodules https://github.com/metalogiclabs/moteus.git moteus
+          cd moteus
+          git checkout 2055adfcc542650dd1bfeffe7385e8bf6096194e
+          git submodule update --init --recursive
+          git rev-parse HEAD
+      - name: Host tests
+        working-directory: moteus
+        run: tools/bazel test --config=host //:host
+      - name: Firmware target build
+        working-directory: moteus
+        run: tools/bazel build --config=target //:target
