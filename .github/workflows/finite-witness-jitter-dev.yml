@@ -1,0 +1,66 @@
+name: Bounded timing-jitter compass acquisition (development)
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/finite_witness_jitter.py'
+      - 'experiments/uzh_rotation/audit_finite_witness_jitter.py'
+      - 'experiments/uzh_rotation/test_finite_witness_jitter.py'
+      - 'experiments/uzh_rotation/FINITE_JITTER_PROTOCOL.md'
+      - '.github/workflows/finite-witness-jitter-dev.yml'
+  workflow_dispatch:
+jobs:
+  jitter-development:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exhaustive timing-jitter invariants and negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_witness_jitter.py' -v
+      - name: Build development traces and independently replay all correction evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p finite_jitter_development_artifacts
+          for seed in 5 11 19 23; do
+            for heading in 0 16 32 48; do
+              for condition in wide missing7 narrow unbreakable; do
+                file="finite_jitter_development_artifacts/${seed}_${heading}_${condition}.json"
+                if [ "$condition" = "missing7" ]; then
+                  python experiments/uzh_rotation/finite_witness_jitter.py --seed "$seed" --true-bin "$heading" --kind wide --occlude 7 --output "$file" > /dev/null
+                else
+                  python experiments/uzh_rotation/finite_witness_jitter.py --seed "$seed" --true-bin "$heading" --kind "$condition" --output "$file" > /dev/null
+                fi
+                python experiments/uzh_rotation/audit_finite_witness_jitter.py "$file"
+              done
+            done
+          done
+      - name: Report refusals, recoveries, observed work and all unexpected acceptances
+        run: |
+          python - <<'PY'
+          import glob,json
+          data=[json.load(open(p)) for p in sorted(glob.glob('finite_jitter_development_artifacts/*.json'))]
+          assert len(data)==64,len(data)
+          violations=[]
+          for r in data:
+              a,c=r['acquired'],r['continuous']
+              kind=('missing7' if r['occluded_steps'] else r['kind'])
+              print('JITTER_DEV',r['seed'],r['true_bin'],kind,'planned',a['status'],a['accepted_bin'],a['acquired_steps'],a['pair_checks'],'conventional',c['status'],c['accepted_bin'],len(c['acquired_steps']),c['decision_step'])
+              if kind in ('wide','missing7') and any(m['status']!='AUTHORIZED' or m['accepted_bin']!=r['true_bin'] for m in (a,c)):
+                  violations.append((r['seed'],r['true_bin'],kind,'wrong-or-unknown'))
+              if kind in ('narrow','unbreakable') and a['status']!='UNKNOWN_OBSTRUCTION':
+                  violations.append((r['seed'],r['true_bin'],kind,'unsupported-plan'))
+              if any(m['accepted_bin'] is not None and m['accepted_bin']!=r['true_bin'] for m in (a,c)):
+                  violations.append((r['seed'],r['true_bin'],kind,'false-correction'))
+          print('JITTER_DEVELOPMENT_VIOLATIONS',violations)
+          assert not violations
+          PY
+      - name: Retain all test traces, including on failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-jitter-development-traces-v1
+          path: finite_jitter_development_artifacts/
