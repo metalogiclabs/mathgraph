@@ -10,6 +10,7 @@ on:
           - mathgraph-check-live-app-first-party-v1
 permissions:
   contents: read
+  actions: write
 jobs:
   dispatch-gate:
     if: ${{ vars.MATHGRAPH_CF_MONITOR_ROLLOUT_APPROVED == 'true' && inputs.source_ref == 'mathgraph-check-live-app-first-party-v1' }}
@@ -20,9 +21,14 @@ jobs:
         with:
           ref: mathgraph-check-live-app-first-party-v1
           persist-credentials: false
-      - name: Inspect approved source (no deployment)
+      - name: Dispatch protected deployment workflow on approved branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "${GITHUB_REF}" = "refs/heads/main"
           test -f integrations/mathgraph-check-github/cloudflare/monitor-transition-v1.mjs
-          echo "Read-only gate passed. Production environment explicitly permits the source branch, not main. No deployment performed."
+          gh api --method POST \
+            repos/${GITHUB_REPOSITORY}/actions/workflows/mathgraph-check-controlled-rollout.yml/dispatches \
+            -f ref=mathgraph-check-live-app-first-party-v1
+          echo "Protected rollout dispatched against approved branch. Deployment still requires the environment gate."
