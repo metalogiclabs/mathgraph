@@ -4,6 +4,10 @@ on:
     branches: [exp/uzh-rotation-validation-20261021]
     paths:
       - 'experiments/uzh_rotation/multiturn_column_sim.py'
+      - 'experiments/uzh_rotation/adversarial_compass.py'
+      - 'experiments/uzh_rotation/audit_adversarial_compass.py'
+      - 'experiments/uzh_rotation/test_adversarial_compass.py'
+      - 'experiments/uzh_rotation/ADVERSARIAL_PROTOCOL.md'
       - '.github/workflows/multiturn-column.yml'
   workflow_dispatch:
 jobs:
@@ -35,3 +39,39 @@ jobs:
         with:
           name: multiturn-qualification
           path: 'multiturn_*.json'
+  adversarial-dev:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy==2.1.3
+      - name: Test causality, ambiguity and independent audit rejection
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_adversarial_compass.py' -v
+      - name: Frozen development cases (NOT untouched holdouts)
+        run: |
+          for stress in clean repeat_exact repeat_near parallax_height moving_objects timing_jitter gyro_drift speed_changes blackout_turns partial_map recovery_confuser combined; do
+            for seed in 5 11; do
+              python experiments/uzh_rotation/adversarial_compass.py --stress "$stress" --seed "$seed" --turns 12 --include-trace --output "adversarial_dev_${stress}_${seed}.json" > /dev/null
+            done
+          done
+          python experiments/uzh_rotation/audit_adversarial_compass.py adversarial_dev_*.json
+          python - <<'PY'
+          import glob,json
+          data=[json.load(open(p)) for p in glob.glob('adversarial_dev_*.json')]
+          assert len(data)==24, len(data)
+          for d in sorted(data,key=lambda x:(x['stress'],x['seed'])):
+              m=d['methods']
+              print(d['stress'],d['seed'],'coverage',round(d['map_coverage'],3),'alias',d['alias_period_bins'],
+                    'gyro/local/robust/evidence RMSE',*[round(m[k]['heading_rmse_deg'],2) for k in ('gyro_only','matched_filter','robust','evidence_aware')],
+                    'wrong',*[m[k]['incorrect_accepted_corrections'] for k in ('matched_filter','robust','evidence_aware')],
+                    'availability',round(m['evidence_aware']['heading_available_fraction'],3))
+          assert all(d['methods'][k]['incorrect_accepted_corrections']==0
+                     for d in data for k in ('robust','evidence_aware'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adversarial-development-traces-v1
+          path: 'adversarial_dev_*.json'
