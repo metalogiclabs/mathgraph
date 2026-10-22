@@ -1,0 +1,15 @@
+name: Typed obligation V9 prospective RFC holdout
+on:
+  push:
+    branches: [research/typed-obligation-v9-20261023]
+  workflow_dispatch:
+jobs:
+  prospective:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python research/typed_obligation_v9/frozen.py
+      - run: python research/typed_obligation_v9/holdout.py
