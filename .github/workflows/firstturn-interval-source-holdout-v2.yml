@@ -1,0 +1,78 @@
+name: Frozen first-turn source-bound V6.1 fresh holdout
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/firstturn-interval-source-holdout-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  freshly-frozen-source-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact v6.1 source, evaluator, controls and protocol freeze
+        run: |
+          git diff --exit-code c94718fb2889283a97c042efae52bd7aac02419d HEAD -- \
+            experiments/uzh_rotation/firstturn_interval_capture.c \
+            experiments/uzh_rotation/firstturn_interval_capture.h \
+            experiments/uzh_rotation/test_firstturn_interval_capture.py \
+            experiments/uzh_rotation/test_firstturn_interval_audit.py \
+            experiments/uzh_rotation/audit_firstturn_interval_capture.py \
+            experiments/uzh_rotation/FIRSTTURN_INTERVAL_CAPTURE_PROTOCOL.md \
+            experiments/uzh_rotation/finite_partial_map.c \
+            experiments/uzh_rotation/finite_partial_map.h \
+            experiments/uzh_rotation/finite_jitter_embedded.c \
+            experiments/uzh_rotation/finite_jitter_embedded.h
+      - name: Original and source-bound regressions before replay
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_firstturn_interval*.py' -v
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_finite_partial_map.py' -v
+      - name: Fresh prospective seeds fixed in source protocol
+        run: |
+          python experiments/uzh_rotation/audit_firstturn_interval_capture.py \
+            --seeds 613 647 691 733 --out firstturn_source_holdout_v2_artifacts
+      - name: Independent safety and fairness grade
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('firstturn_source_holdout_v2_artifacts')
+          d=json.loads((root/'summary.json').read_text())
+          assert d['seeds']==[613,647,691,733]
+          assert not d['failures'],d['failures']
+          assert len(d['conditions'])==6
+          for name,r in d['conditions'].items():
+              assert r['trials']==16,(name,r)
+              for prefix in ('active','continuous','nearest_continuous'):
+                  assert sum(r[prefix+'_'+part] for part in
+                             ('correct','false','unknown','conflict'))==16,(name,prefix,r)
+              if name.startswith('honest_'):
+                  assert r['bound_kept']==16 and r['map_fidelity']==16,(name,r)
+                  for prefix in ('active','continuous'):
+                      assert r[prefix+'_false']==0 and r[prefix+'_conflict']==0,(name,prefix,r)
+              print('SOURCE_FRESH_HOLDOUT',name,'coverage',r['gated_coverage']/16,
+                    'active_correct',r['active_correct'],'active_unknown',r['active_unknown'],
+                    'continuous_correct',r['continuous_correct'],'continuous_unknown',r['continuous_unknown'],
+                    'naive_false',r['nearest_continuous_false'],
+                    'wrong_active',r['active_false'],'wrong_continuous',r['continuous_false'],
+                    'reads',r['active_reads'],r['continuous_reads'])
+          assert d['conditions']['honest_r8_4x']['gated_coverage']==0
+          assert d['conditions']['honest_r8_4x']['active_unknown']==16
+          assert d['conditions']['lied_r3_4x']['bound_kept']==0
+          assert len(list(root.glob('*.json')))==121
+          PY
+      - name: Archive all finite outcomes and source adversaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-firstturn-source-bound-fresh-holdout-v2
+          path: firstturn_source_holdout_v2_artifacts/
