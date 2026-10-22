@@ -1,0 +1,53 @@
+name: ECRot exact source-alternative angular obstruction
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/ecrot-brandenburg-setvalued.yml'
+  workflow_dispatch:
+jobs:
+  independent-source-enumeration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned original-source dependencies
+        run: pip install rosbags==0.11.9 gdown==5.2.0
+      - name: Independent exact finite-model controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_ecrot_brandenburg_setvalued.py' -v
+      - name: Acquire original Brandenburg recording
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          d=json.load(open('experiments/uzh_rotation/ecrot_sources.json'))['held_out_source_frozen_before_download']
+          subprocess.run(['gdown','--id',d['original_google_drive_file_id'],'-O',d['download_filename']],check=True)
+          PY
+      - name: Enumerate recorded gyro alternatives at duplicate timestamps
+        run: |
+          python experiments/uzh_rotation/audit_ecrot_brandenburg_setvalued.py \
+            --bag ECRot_Brandenburg_events.bag --output ecrot_source_alternatives.json
+      - name: Check finite obstruction and reject heading authority
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('ecrot_source_alternatives.json'))
+          x=d['audit']
+          assert d['source_sha256']=='3d8e3284670c94b52919228c2a133586e8e592c07f3a6e1e127fee6acd747455'
+          assert x['source_imu_messages']==6295
+          assert len(x['duplicate_groups'])==5
+          assert x['independent_exact_agreement']
+          assert x['status']=='NO_FULL_TURN_IN_ANY_RECORDED_SOURCE_CHOICE',x
+          assert x['max_abs_y_prefix_turns']<1
+          assert not x['navigation_authorized'] and not x['reference_map_populated']
+          print('SOURCE_FINITE_OBSTRUCTION',x['source_choice_count'],x['max_abs_y_prefix_turns'])
+          PY
+      - name: Retain source-differentiation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecrot-brandenburg-exact-source-alternatives
+          path: ecrot_source_alternatives.json
+          if-no-files-found: warn
