@@ -1,0 +1,29 @@
+name: MathGraph Check — controlled rollout entry
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Approved source branch (fixed)
+        required: true
+        type: choice
+        options:
+          - mathgraph-check-live-app-first-party-v1
+permissions:
+  contents: read
+jobs:
+  dispatch-gate:
+    if: ${{ vars.MATHGRAPH_CF_MONITOR_ROLLOUT_APPROVED == 'true' && inputs.source_ref == 'mathgraph-check-live-app-first-party-v1' }}
+    runs-on: ubuntu-latest
+    environment: mathgraph-check-production
+    steps:
+      - name: Check exact approved source branch
+        uses: actions/checkout@v4
+        with:
+          ref: mathgraph-check-live-app-first-party-v1
+          persist-credentials: false
+      - name: Inspect but never deploy from entrypoint
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test -f integrations/mathgraph-check-github/cloudflare/monitor-transition-v1.mjs
+          echo "Approval and source gate checked. This entrypoint does not deploy. Production must be deployed via an independently qualified, SHA-pinned workflow."
