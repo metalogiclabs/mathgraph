@@ -1,0 +1,17 @@
+name: MathGraph Check advisory publisher qualification
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/advisory-publisher-v1*'
+      - '.github/workflows/mathgraph-check-advisory-publisher.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs integrations/mathgraph-check-github/advisory-publisher-v1.test.mjs
