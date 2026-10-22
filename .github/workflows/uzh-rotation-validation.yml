@@ -49,6 +49,12 @@ jobs:
             python experiments/uzh_rotation/joint_transfer.py "${scene}.zip" \
               --frames 450 --output "${scene}_transfer.json"
           done
+      - name: Evaluate causal visual compass on held-out scenes
+        run: |
+          for scene in poster_rotation boxes_rotation; do
+            python experiments/uzh_rotation/visual_compass.py "${scene}.zip" \
+              --frames 450 --output "${scene}_compass.json"
+          done
       - name: Preserve raw output
         if: always()
         uses: actions/upload-artifact@v4
@@ -68,4 +74,6 @@ jobs:
             gyro_bias_summary.json
             poster_rotation_transfer.json
             boxes_rotation_transfer.json
+            poster_rotation_compass.json
+            boxes_rotation_compass.json
           if-no-files-found: warn
