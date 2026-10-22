@@ -1,0 +1,14 @@
+name: V8 frozen generic obligation extractor holdout
+on:
+  push:
+    branches: [research/generic-obligation-extraction-v8-20261023]
+  workflow_dispatch:
+jobs:
+  untouched-rfc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python research/obligation_extraction_v8/heldout_rfc8259.py
