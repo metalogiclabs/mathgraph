@@ -1,0 +1,27 @@
+name: DARK-GS raw yaw qualification
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/audit_darkgs.py'
+      - '.github/workflows/darkgs-qualification.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned audit tooling
+        run: pip install numpy==2.1.3 scipy==1.14.1 requests==2.32.3 rosbags==0.10.11
+      - name: Download and inspect official DARK-GS yaw archive
+        run: python experiments/uzh_rotation/audit_darkgs.py --sequence 360 --output darkgs_360_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: darkgs-audit
+          path: darkgs_360_audit.json
+          if-no-files-found: warn
