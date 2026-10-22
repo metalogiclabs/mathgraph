@@ -82,6 +82,32 @@ with zipfile.ZipFile(a.dataset) as z:
   selector_margin=0.005
   accepted=bool(fit.success and np.isfinite(candidate_residual) and candidate_residual+selector_margin<prior_residual)
   selected_bias=fit.x[3:] if accepted else prior_bias
-  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
+  # Independent within-training holdout: first 10 revisit edges fit, next
+  # 10 select. No motion capture, and no evaluation-holdout feedback.
+  selection_fit=train[:10]
+  selection_check=train[10:20]
+  def independent_check(v,convention,subset):
+   C=R.from_rotvec(v[:3]);rr=integrate(v[3:])
+   return float(np.sqrt(np.mean([np.linalg.norm(((C*(rc if convention==0 else rc.inv())*C.inv()).inv()*(rr[j].inv()*rr[i])).as_rotvec())**2 for j,i,rc,_ in subset])))
+  competing=[]
+  for convention in (0,1):
+   def first_ten_residual(v):
+    C=R.from_rotvec(v[:3]);rr=integrate(v[3:])
+    return np.concatenate([((C*(rc if convention==0 else rc.inv())*C.inv()).inv()*(rr[j].inv()*rr[i])).as_rotvec() for j,i,rc,_ in selection_fit])
+   fit10=least_squares(first_ten_residual,np.zeros(6),loss="soft_l1",f_scale=.05,max_nfev=70,bounds=([-3.14]*3+[-.2]*3,[3.14]*3+[.2]*3))
+   competing.append((fit10.cost,convention,fit10))
+  _,conv10,fit10=min(competing,key=lambda t:t[0])
+  # Fair prior baseline: optimize its extrinsic orientation on same first
+  # ten samples, but keep its previously measured gyro bias frozen.
+  def prior_first_ten(c):
+   v=np.r_[c,prior_bias]
+   C=R.from_rotvec(c);rr=integrate(prior_bias)
+   return np.concatenate([((C*(rc if conv10==0 else rc.inv())*C.inv()).inv()*(rr[j].inv()*rr[i])).as_rotvec() for j,i,rc,_ in selection_fit])
+  fit_prior=least_squares(prior_first_ten,np.zeros(3),loss="soft_l1",f_scale=.05,max_nfev=70,bounds=(-np.pi*np.ones(3),np.pi*np.ones(3)))
+  held_candidate=independent_check(fit10.x,conv10,selection_check)
+  held_prior=independent_check(np.r_[fit_prior.x,prior_bias],conv10,selection_check)
+  crossfit_accept=bool(fit10.success and fit_prior.success and held_candidate+0.005<held_prior)
+  crossfit_rmse=score(integrate(fit10.x[3:] if crossfit_accept else prior_bias))
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
  result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
  open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
