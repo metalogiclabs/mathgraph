@@ -1,5 +1,5 @@
 // Read-only source-exact verification of already-installed App after PR edit.
-const repo="metalogiclabs/go-ethereum",number=20,sha="b57c5493d2bc066c184cbc9335bdf635f045a026",appID=5308912;
+const repo="metalogiclabs/go-ethereum",number=20,sha="5f17fd1c5b9ea0f1cbcbdfbb3cd283eebcc0a159",appID=5308912;
 const token=process.env.MATHGRAPH_APP_INSTALLATION_TOKEN;
 if(!token)throw Error("NO_SCOPED_APP_TOKEN");
 async function api(path){const r=await fetch("https://api.github.com/repos/"+repo+path,{headers:{Authorization:"Bearer "+token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error("GITHUB_HTTP_"+r.status);return r.json();}
