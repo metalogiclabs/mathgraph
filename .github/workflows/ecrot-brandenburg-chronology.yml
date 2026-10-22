@@ -1,0 +1,43 @@
+name: ECRot Brandenburg original-source chronology diagnostic
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/ecrot-brandenburg-chronology.yml'
+  workflow_dispatch:
+jobs:
+  probe-original-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install locked reproducibility dependencies
+        run: pip install numpy==2.1.3 rosbags==0.11.9 gdown==5.2.0
+      - name: Negative controls before source access
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_ecrot_brandenburg_chronology.py' -v
+      - name: Acquire original second recording
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          p=json.load(open('experiments/uzh_rotation/ecrot_sources.json'))['held_out_source_frozen_before_download']
+          subprocess.run(['gdown', '--id', p['original_google_drive_file_id'],
+                          '-O', p['download_filename']],check=True)
+          PY
+      - name: Audit original source identity, header and bag timestamp differences
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          p=json.load(open('experiments/uzh_rotation/ecrot_sources.json'))['held_out_source_frozen_before_download']
+          subprocess.run(['python','experiments/uzh_rotation/probe_ecrot_brandenburg.py',
+                          '--bag',p['download_filename'],'--output','brandenburg_chronology.json'],check=True)
+          PY
+      - name: Preserve diagnostic even when it disqualifies a sample
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecrot-brandenburg-chronology-original-source
+          path: brandenburg_chronology.json
+          if-no-files-found: warn
