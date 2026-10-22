@@ -17,6 +17,9 @@ from scipy.spatial.transform import Rotation as R, Slerp
 p = argparse.ArgumentParser()
 p.add_argument("dataset")
 p.add_argument("--frames", type=int, default=450)
+p.add_argument("--strip-width",type=int,default=0,help="center pixel strip width; 0=full frame")
+p.add_argument("--blackout-start",type=int,default=-1)
+p.add_argument("--blackout-length",type=int,default=0)
 p.add_argument("--output", default="visual_compass.json")
 a = p.parse_args()
 
@@ -42,7 +45,15 @@ with zipfile.ZipFile(a.dataset) as z:
     features = []
     for _, path in ents:
         im = cv2.imdecode(np.frombuffer(z.read(path), np.uint8), cv2.IMREAD_GRAYSCALE)
-        features.append(orb.detectAndCompute(cv2.undistort(im, K, cal[4:9]), None))
+        im = cv2.undistort(im, K, cal[4:9])
+        # Limited-information vertical-window proxy only.
+        # NOT a time-swept line sensor: no scan-motion geometry.
+        mask = None
+        if a.strip_width:
+            mask = np.zeros_like(im,dtype=np.uint8)
+            x0=max(0,im.shape[1]//2-a.strip_width//2)
+            mask[:,x0:min(im.shape[1],x0+a.strip_width)] = 255
+        features.append(orb.detectAndCompute(im,mask))
 
 prior_bias = np.array([0.051082811871691926,0.0014642931263633785,0.003074659454040601])
 def integrated(b):
@@ -100,6 +111,8 @@ _,convention,extrinsic=min(fits,key=lambda t:t[0])
 C=R.from_rotvec(extrinsic)
 checks={i:[] for i in range(split,len(ts))}
 for j,i,rc,n in test:
+    if a.blackout_start<=i<a.blackout_start+a.blackout_length:
+        continue
     checks[i].append((j,C*(rc if convention==0 else rc.inv())*C.inv(),n))
 
 def simulate(gain):
@@ -131,11 +144,11 @@ def score(xs):
 compass,accepted,rejected=simulate(0.25)
 zero,_,_=simulate(0.)
 result=dict(dataset=a.dataset,frames=len(ts),train_edges=len(train),
-            heldout_revisits=len(test),accepted_revisits=accepted,rejected_revisits=rejected,
+            heldout_revisits=len(test),strip_width=a.strip_width,blackout_start=a.blackout_start,blackout_length=a.blackout_length,accepted_revisits=accepted,rejected_revisits=rejected,
             convention=convention,train_only_extrinsic_rotvec=extrinsic.tolist(),
             gyro_raw=score(raw),gyro_frozen_prior=score(prior),
             zero_visual_gain=score(zero),visual_compass=score(compass),
-            result_scope="Full-frame ORB revisit correction; prior gyro bias externally calibrated, same sensor family; not line-scan, embedded hardware, or flight. Ground truth score-only.")
+            result_scope="ORB revisit correction on full frame or masked static vertical strip (NOT motion-swept line-scan); prior gyro bias externally calibrated, same sensor family; not line-scan, embedded hardware, or flight. Ground truth score-only.")
 with open(a.output,"w") as f:
     json.dump(result,f,indent=2)
 print(json.dumps(result,indent=2))
