@@ -1,0 +1,94 @@
+name: L4YAML current-development source-change semantic transport
+
+on:
+  push:
+    branches:
+      - research/l4yaml-current-source-style-transport-20261023
+
+permissions:
+  contents: read
+
+jobs:
+  exact-head-transport:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout unchanged independent MathGraph probes
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact new development head without upstream writes
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: e19215ada2413feb9021bc54599d26d59d3f0aa2
+          path: target
+          persist-credentials: false
+
+      - name: Verify source authority and declared toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = "e19215ada2413feb9021bc54599d26d59d3f0aa2"
+          test "$(git -C target remote get-url origin)" = "https://github.com/nasa-jpl/L4YAML"
+          test "$(cat target/lean-toolchain)" = "leanprover/lean4:v4.35.0"
+          test -z "$(git -C target status --short)"
+          sha256sum research/l4yaml_schema_style_v1/Probe.lean \
+            research/l4yaml_schema_style_v1/analyze.py \
+            research/l4yaml_schema_style_v1/test_verifier.py
+
+      - name: Install Lean 4.35
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Compile changed upstream semantic path and run independent probe
+        shell: bash
+        timeout-minutes: 38
+        run: |
+          set -euo pipefail
+          mkdir -p research/l4yaml_schema_style_v1/results
+          cd target
+          lake build L4YAML.Schema.Api L4YAML.Schema.Deriving L4YAML.Output.Dump \
+            2>&1 | tee "$RUNNER_TEMP/current-dev-schema-build.log"
+          lake env lean ../research/l4yaml_schema_style_v1/Probe.lean \
+            2>&1 | tee ../research/l4yaml_schema_style_v1/results/current-dev-native.log
+          test -z "$(git status --short)"
+
+      - name: Compare with independent YAML readers and reject original-RED misclassification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "PyYAML==6.0.3" "ruamel.yaml==0.18.17"
+          python research/l4yaml_schema_style_v1/analyze.py \
+            --lean-log research/l4yaml_schema_style_v1/results/current-dev-native.log \
+            --out research/l4yaml_schema_style_v1/results/current-dev-fixed-receipt.json \
+            --expect fixed-green \
+            --upstream-sha e19215ada2413feb9021bc54599d26d59d3f0aa2
+          if python research/l4yaml_schema_style_v1/analyze.py \
+            --lean-log research/l4yaml_schema_style_v1/results/current-dev-native.log \
+            --out research/l4yaml_schema_style_v1/results/invalid-red-receipt.json \
+            --expect original-red \
+            --upstream-sha e19215ada2413feb9021bc54599d26d59d3f0aa2; then
+            echo "FAIL: changed source admitted as original RED"
+            exit 1
+          fi
+          test ! -e research/l4yaml_schema_style_v1/results/invalid-red-receipt.json
+          python research/l4yaml_schema_style_v1/test_verifier.py
+
+      - name: Archive exact-source transfer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l4yaml-current-development-semantic-transport
+          path: |
+            research/l4yaml_schema_style_v1/Probe.lean
+            research/l4yaml_schema_style_v1/analyze.py
+            research/l4yaml_schema_style_v1/test_verifier.py
+            research/l4yaml_schema_style_v1/results/
+            ${{ runner.temp }}/current-dev-schema-build.log
+          if-no-files-found: ignore
