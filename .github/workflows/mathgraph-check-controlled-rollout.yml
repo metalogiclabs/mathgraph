@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mathgraph-check-controlled-rollout
+  group: mathgraph-check-controlled-rollout-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   qualify:
