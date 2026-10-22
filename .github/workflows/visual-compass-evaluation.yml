@@ -22,7 +22,7 @@ jobs:
           for scene in poster_rotation boxes_rotation; do
             curl -fLsS --retry 3 --connect-timeout 15 --max-time 600 "https://rpg.ifi.uzh.ch/datasets/davis/${scene}.zip" -o "${scene}.zip"
             python experiments/uzh_rotation/visual_compass.py "${scene}.zip" --frames 450 --output "${scene}_compass.json"
-            python experiments/uzh_rotation/visual_compass.py "${scene}.zip" --frames 450 --strip-width 256 --output "${scene}_strip256.json"
+            python experiments/uzh_rotation/visual_compass.py "${scene}.zip" --frames 450 --strip-width 48 --output "${scene}_strip48.json"
             python experiments/uzh_rotation/visual_compass.py "${scene}.zip" --frames 450 --blackout-start 280 --blackout-length 90 --output "${scene}_blackout.json"
           done
       - uses: actions/upload-artifact@v4
@@ -31,6 +31,6 @@ jobs:
           name: visual-compass-results
           path: |
             *_compass.json
-            *_strip256.json
+            *_strip48.json
             *_blackout.json
           if-no-files-found: warn
