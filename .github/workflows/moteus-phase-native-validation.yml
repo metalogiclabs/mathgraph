@@ -18,9 +18,15 @@ jobs:
           git checkout 2055adfcc542650dd1bfeffe7385e8bf6096194e
           git submodule update --init --recursive
           git rev-parse HEAD
+      - name: Install system-Python wheel builder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-build
+          /usr/bin/python3 -m build --version
       - name: Host tests
         working-directory: moteus
         run: tools/bazel test --config=host //:host
       - name: Firmware target build
+        if: success() || failure()
         working-directory: moteus
         run: tools/bazel build --config=target //:target
