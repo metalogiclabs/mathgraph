@@ -1,0 +1,57 @@
+name: Adversarial first-turn gyro-index misassignment (development)
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/audit_firstturn_gyro_jitter.py'
+      - 'experiments/uzh_rotation/FIRSTTURN_INDEX_FAILURE_PROTOCOL.md'
+      - '.github/workflows/firstturn-index-misbin-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  firstturn-index-attack:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ensure the challenged C implementation was not changed
+        run: |
+          git diff --exit-code be4e7a65ab428dba332115d68a399133e4bc1ca6 HEAD -- \
+            experiments/uzh_rotation/finite_partial_map.c \
+            experiments/uzh_rotation/finite_partial_map.h \
+            experiments/uzh_rotation/finite_jitter_embedded.c \
+            experiments/uzh_rotation/finite_jitter_embedded.h
+      - name: External source-index grader on development seeds
+        run: |
+          python experiments/uzh_rotation/audit_firstturn_gyro_jitter.py \
+            --seeds 5 11 19 23 --out firstturn_index_development_artifacts
+      - name: Check unaffected control and require explicit negative counterexamples
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('firstturn_index_development_artifacts/summary.json').read_text())
+          assert len(d['conditions'])==7
+          for name,r in d['conditions'].items():
+              assert r['cases']==16,(name,r)
+              print('FIRSTTURN_DEV',name,'active_correct',r['active_correct'],
+                    'active_false',r['active_false'],'active_unknown',r['active_unknown'],
+                    'active_conflict',r['active_conflict'],
+                    'continuous_false',r['continuous_false'])
+          assert d['conditions']['exact_control']['active_correct']==16
+          assert d['conditions']['exact_control']['active_false']==0
+          assert d['conditions']['independent_plusminus1']['active_false']>=1
+          assert d['conditions']['independent_plusminus1']['continuous_false']>=1
+          assert len(list(Path('firstturn_index_development_artifacts').glob('*.json')))==113
+          PY
+      - name: Retain counterexamples, UNKNOWNs and exact-index controls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firstturn-gyro-index-adversary-dev-v1
+          path: firstturn_index_development_artifacts/
