@@ -1,0 +1,71 @@
+name: Frozen bounded timing-jitter compass holdout
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/finite-witness-jitter-holdout.yml'
+  workflow_dispatch:
+jobs:
+  jitter-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze estimator, auditor, regressions and published protocol
+        run: |
+          git diff --exit-code a0a7ecc4453a2688bd5e8930f9a5e6efafa583be HEAD -- \
+            experiments/uzh_rotation/finite_witness_jitter.py \
+            experiments/uzh_rotation/audit_finite_witness_jitter.py \
+            experiments/uzh_rotation/test_finite_witness_jitter.py \
+            experiments/uzh_rotation/FINITE_JITTER_PROTOCOL.md
+      - name: Repeat exhaustive finite audit and both negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_witness_jitter.py' -v
+      - name: Preregistered unseen seeds, independent source and observation audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p finite_jitter_holdout_artifacts
+          for seed in 1031 2039 3049 4093; do
+            for heading in 0 16 32 48; do
+              for condition in wide missing7 narrow unbreakable; do
+                file="finite_jitter_holdout_artifacts/${seed}_${heading}_${condition}.json"
+                if [ "$condition" = "missing7" ]; then
+                  python experiments/uzh_rotation/finite_witness_jitter.py --seed "$seed" --true-bin "$heading" --kind wide --occlude 7 --output "$file" > /dev/null
+                else
+                  python experiments/uzh_rotation/finite_witness_jitter.py --seed "$seed" --true-bin "$heading" --kind "$condition" --output "$file" > /dev/null
+                fi
+                python experiments/uzh_rotation/audit_finite_witness_jitter.py "$file"
+              done
+            done
+          done
+      - name: Report every result and reject false authorized headings
+        run: |
+          python - <<'PY'
+          import glob,json
+          data=[json.load(open(p)) for p in sorted(glob.glob('finite_jitter_holdout_artifacts/*.json'))]
+          assert len(data)==64,len(data)
+          violations=[]
+          for r in data:
+              a,c=r['acquired'],r['continuous']
+              condition=('missing7' if r['occluded_steps'] else r['kind'])
+              print('JITTER_HOLDOUT',r['seed'],r['true_bin'],condition,'planned',a['status'],a['accepted_bin'],a['acquired_steps'],a['pair_checks'],'continuous',c['status'],c['accepted_bin'],len(c['acquired_steps']),c['decision_step'])
+              if condition in ('wide','missing7') and any(m['status']!='AUTHORIZED' or m['accepted_bin']!=r['true_bin'] for m in (a,c)):
+                  violations.append((r['seed'],r['true_bin'],condition,'wrong-or-unknown'))
+              if condition in ('narrow','unbreakable') and a['status']!='UNKNOWN_OBSTRUCTION':
+                  violations.append((r['seed'],r['true_bin'],condition,'unsupported-plan'))
+              if any(m['accepted_bin'] is not None and m['accepted_bin']!=r['true_bin'] for m in (a,c)):
+                  violations.append((r['seed'],r['true_bin'],condition,'false-correction'))
+          print('JITTER_HOLDOUT_VIOLATIONS',violations)
+          assert not violations
+          PY
+      - name: Preserve full evidence even if a test fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-jitter-frozen-holdout-v1
+          path: finite_jitter_holdout_artifacts/
