@@ -1,0 +1,66 @@
+name: Frozen first-turn map and active-acquisition holdout
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/finite-partial-map-holdout.yml'
+  workflow_dispatch:
+
+jobs:
+  partial-first-turn-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify first-turn map acquisition, adaptive planning and grading code stayed frozen
+        run: |
+          git diff --exit-code be4e7a65ab428dba332115d68a399133e4bc1ca6 HEAD -- \
+            experiments/uzh_rotation/finite_partial_map.c \
+            experiments/uzh_rotation/finite_partial_map.h \
+            experiments/uzh_rotation/test_finite_partial_map.py \
+            experiments/uzh_rotation/audit_finite_partial_map.py \
+            experiments/uzh_rotation/PARTIAL_FIRST_TURN_PROTOCOL.md \
+            experiments/uzh_rotation/finite_jitter_embedded.c \
+            experiments/uzh_rotation/finite_jitter_embedded.h
+      - name: Independent exhaustive map-mask planner and directed-observation oracles
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_partial_map.py' -v
+      - name: New seeds 1213 2221 3229 4241 with seven incomplete-source conditions
+        run: |
+          python experiments/uzh_rotation/audit_finite_partial_map.py \
+            --seeds 1213 2221 3229 4241 \
+            --out finite_partial_map_holdout_artifacts
+      - name: Judge false authority, availability and conventional strength separately
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('finite_partial_map_holdout_artifacts')
+          result=json.loads((root/'summary.json').read_text())
+          assert result['seeds']==[1213,2221,3229,4241]
+          assert len(result['conditions'])==7
+          assert not result['failures'],result['failures']
+          for name,row in result['conditions'].items():
+              assert row['trials']==16,(name,row)
+              assert row['planned_correct']<=row['active_correct']<=row['continuous_correct'],(name,row)
+              print('PARTIAL_FROZEN',name,'correct',row['planned_correct'],row['active_correct'],
+                    row['continuous_correct'],'reads',row['planned_reads'],row['active_reads'],
+                    row['continuous_reads'],'pairchecks',row['active_pair_checks'])
+          assert result['conditions']['full']['active_correct']==16
+          assert result['conditions']['one_hole0']['active_correct']==16
+          assert result['conditions']['missing_first_cue']['active_correct']==0
+          assert result['conditions']['random_12']['active_correct']>=1, 'No previously unseen recoveries with 12 missing columns'
+          assert len(list(root.glob('*.json')))==113
+          print('PARTIAL_HOLDOUT_WARRANT','synthetic conditional',112,'cases',
+                'zero false corrections','active_12hole',result['conditions']['random_12']['active_correct'])
+          PY
+      - name: Retain every coverage mask, source witness and unsuccessful observation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-partial-firstturn-holdout-v1
+          path: finite_partial_map_holdout_artifacts/
