@@ -1,0 +1,70 @@
+name: Finite bounded-noise compass acquisition (development)
+
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/finite_witness_compass.py'
+      - 'experiments/uzh_rotation/audit_finite_witness.py'
+      - 'experiments/uzh_rotation/test_finite_witness_compass.py'
+      - 'experiments/uzh_rotation/FINITE_WITNESS_PROTOCOL.md'
+      - '.github/workflows/finite-witness-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  finite-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run finite observation and verifier regression
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_witness_compass.py' -v
+      - name: Run all preregistered development scenarios and independent audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p finite_witness_development_artifacts
+          for seed in 5 11 19 23; do
+            for heading in 0 16 32 48; do
+              for condition in breakable unbreakable occluded7; do
+                filename="finite_witness_development_artifacts/${seed}_${heading}_${condition}.json"
+                if [ "$condition" = "occluded7" ]; then
+                  python experiments/uzh_rotation/finite_witness_compass.py --seed "$seed" --true-bin "$heading" --kind breakable --occlude 7 --output "$filename" > /dev/null
+                else
+                  python experiments/uzh_rotation/finite_witness_compass.py --seed "$seed" --true-bin "$heading" --kind "$condition" --output "$filename" > /dev/null
+                fi
+                python experiments/uzh_rotation/audit_finite_witness.py "$filename"
+              done
+            done
+          done
+      - name: Report failures, recovery, bounded obstruction and observed cost
+        run: |
+          python - <<'PY'
+          import glob,json
+          entries=[json.load(open(p)) for p in sorted(glob.glob('finite_witness_development_artifacts/*.json'))]
+          assert len(entries)==48,len(entries)
+          wrong=[]
+          for r in entries:
+              condition='unbreakable' if r['kind']=='unbreakable' else ('occluded7' if r['occluded_steps'] else 'breakable')
+              a,c=r['acquired'],r['continuous']
+              print('FINITE_DEV',r['seed'],r['true_bin'],condition,
+                    a['status'],a['accepted_bin'],a['acquired_steps'],a['pair_checks'],
+                    'vs_conventional',c['status'],len(c['acquired_steps']),c['decision_step'])
+              if condition=='unbreakable':
+                  assert a['status']=='UNKNOWN_OBSTRUCTION' and c['status']=='UNKNOWN_AMBIGUOUS'
+              else:
+                  for name,method in (('acquired',a),('continuous',c)):
+                      if method['status']!='AUTHORIZED' or method['accepted_bin']!=r['true_bin']:
+                          wrong.append((r['seed'],condition,name,method['status'],method['accepted_bin']))
+          print('FINITE_DEVELOPMENT_WRONG_OR_UNKNOWN',wrong)
+          assert not wrong
+          PY
+      - name: Preserve exact development traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-witness-development-traces-v1
+          path: finite_witness_development_artifacts/
