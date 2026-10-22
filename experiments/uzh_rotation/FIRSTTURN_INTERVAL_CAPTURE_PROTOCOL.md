@@ -71,6 +71,35 @@ bin. End-to-end traces preserve heading outcomes, conflicts, UNKNOWNs, map
 coverage, skipped captures and measurement work. Passing tests certify only
 the finite model and declared assumptions, not actual clock or gyro bounds.
 
+## Exposed holdout and independent audit interpretation correction
+
+Initial predesignated holdout [Actions #39860047334](https://github.com/metalogiclabs/mathgraph/actions/runs/39860047334)
+at commit `48dda20abda95f66a3f2fcfa75a0c746fb64d47c` remains **RED**.
+It checked the exact source hashes and passed all 15 then-existing tests, then
+the frozen audit incorrectly classified a false correction made by the
+intentionally **UNPROTECTED** nearest-bin baseline as a violation of the
+bounded-source gate: seed **431**, true heading **bin 0**, honest ±3 subticks
+and one sample/bin; nearest-bin accepted **bin 16**. In all honest conditions
+across this first 16-case exposed pool, bounded-map MathGraph active and the
+equally source-informed continuous comparator made **zero** false accepted
+corrections. This identifies a faulty *audit interpretation*, not a passed
+first holdout. Original counterexamples and traces remain in
+[artifact #12461910112](https://github.com/metalogiclabs/mathgraph/actions/runs/39860047334/artifacts/12461910112).
+
+The intentionally false-bound case on those exposed seeds produced **5/16**
+MathGraph active and **9/16** conventional continuous wrong accepted
+corrections. The claimed source interval was invalid, so these remain
+important counterevidence against self-authenticated camera/gyro timing.
+
+The V6.1 harness fix classifies only `active` and `continuous` as protected
+users of the bounded map; nearest-bin comparator errors remain explicitly
+counted and traced. C implementation, bounds, timing model and navigation
+policies are unchanged. The first holdout is EXPOSED and may be used for
+retrospective diagnosis, **not** renewed prospective promotion. A new pool,
+**613, 647, 691, 733**, is preregistered before use and requires a fresh
+exact-source commit freeze and Actions run. This supersedes the original
+431/457/479/503 pool **for prospective V6.1 testing only**.
+
 **Next residual:** replace externally supplied angular uncertainty bounds with
 measured real camera/gyro synchronization and spinning-camera angular motion,
 including rate changes and first-turn capture timestamps. No external visual

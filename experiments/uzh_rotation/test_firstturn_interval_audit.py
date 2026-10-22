@@ -5,12 +5,20 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from audit_firstturn_interval_capture import CONDITIONS, build_maps, generate_stream, load_gate
+from audit_firstturn_interval_capture import (CONDITIONS, build_maps,
+    generate_stream, load_gate, protected_failure)
 from audit_finite_partial_map import follow
 from finite_witness_jitter import generate_jitter_trial
 
 
 class FirstTurnReplayTests(unittest.TestCase):
+    def test_unsafe_nearest_baseline_errors_are_not_protected_gate_errors(self):
+        self.assertTrue(protected_failure("active", "false"))
+        self.assertTrue(protected_failure("continuous", "conflict"))
+        self.assertFalse(protected_failure("active", "unknown"))
+        self.assertFalse(protected_failure("nearest_continuous", "false"))
+        self.assertFalse(protected_failure("nearest_continuous", "conflict"))
+
     @classmethod
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory(prefix="mathgraph-firstturn-replay-test-")

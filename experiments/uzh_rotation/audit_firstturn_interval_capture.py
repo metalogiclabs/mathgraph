@@ -116,6 +116,16 @@ def validity(physical_source, stream, declared_radius, record):
     return source_bound, map_fidelity
 
 
+def protected_failure(policy, label):
+    """Only consumers of the source-bound map carry the safety obligation.
+
+    A nearest-bin comparator intentionally rejects that source boundary. Its
+    false correction is a NEGATIVE CONTROL, not a counterexample to a gate it
+    never used. Preserve it in the per-trial trace and comparator totals.
+    """
+    return policy in ("active", "continuous") and label in ("false", "conflict")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seeds", nargs="+", type=int, required=True)
@@ -177,7 +187,7 @@ def main():
                             label = "conflict" if status == "CONFLICT" else "unknown"
                         row[f"{policy}_{label}"] += 1
                         row[f"{policy}_reads"] += len(result["reads"])
-                        if not parameters["lie"] and label in ("false", "conflict"):
+                        if not parameters["lie"] and protected_failure(policy, label):
                             violations.append((seed, heading, condition, policy,
                                                "honest source false correction", result))
                     (args.out / f"heading_{seed}_{heading}_{condition}.json").write_text(
