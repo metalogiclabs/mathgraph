@@ -13,6 +13,7 @@ p=argparse.ArgumentParser()
 p.add_argument("--output",default="multiturn.json")
 p.add_argument("--seed",type=int,default=27)
 p.add_argument("--turns",type=int,default=12)
+p.add_argument("--stress",choices=["clean","repeat","shift","timing","combined"],default="clean")
 p.add_argument("--dropout-start",type=int,default=2600)
 p.add_argument("--dropout-end",type=int,default=3400)
 a=p.parse_args()
@@ -22,6 +23,10 @@ bins=256;rows=64;per_turn=360
 base=rng.normal(0,1,(bins,rows))
 for _ in range(3):base=(np.roll(base,1,axis=0)+2*base+np.roll(base,-1,axis=0))/4
 base=base/np.linalg.norm(base,axis=1)[:,None]
+if a.stress in ("repeat","combined"):
+ # 4 visually identical angular sectors: fundamentally ambiguous without
+ # an additional global reference. Never claim map identification here.
+ base=np.tile(base[:bins//4],(4,1))
 # 12 revolutions, variable speed, and a slowly changing scene.
 n=a.turns*per_turn;dt=.01
 speed=2*np.pi/(per_turn*dt)*(1+.15*np.sin(np.arange(n)*.004))
@@ -29,7 +34,13 @@ true=np.cumsum(speed*dt);true-=true[0]
 measure=true/(2*np.pi)*bins
 # Each output is precisely one detector column per timestamp.
 sample=lambda angle: base[np.mod(np.rint(angle/(2*np.pi)*bins).astype(int),bins)]
-observations=sample(true)+rng.normal(0,.08,(n,rows))
+observation_angles=true.copy()
+if a.stress in ("timing","combined"):
+ observation_angles=true+np.gradient(true)*3.0  # 30ms stale sensing
+observations=sample(observation_angles)+rng.normal(0,.08,(n,rows))
+if a.stress in ("shift","combined"):
+ for i in range(training_end if "training_end" in locals() else per_turn,n):
+  observations[i]=np.roll(observations[i],int(6*np.sin(i*.007)))
 gyro_delta=np.diff(true,prepend=true[0])+.014*dt+rng.normal(0,.002*dt,n)
 est=np.cumsum(gyro_delta)
 # Construct a frozen map ONLY from samples observed in the first
@@ -70,7 +81,7 @@ def run(use_vision):
  e=np.array(errs)
  return {"rmse_deg":float(np.rad2deg(np.sqrt(np.mean(e**2)))),"end_error_deg":float(np.rad2deg(e[-1])),"max_error_deg":float(np.max(np.abs(np.rad2deg(e)))),"accepted":accepted,"unsafe_gt_gt10deg_after_correction":wrong,"first_post_blackout_accepted":reacq}
 fixed=run(False);visual=run(True)
-result=dict(kind="SYNTHETIC_FIRST_REVOLUTION_LEARNED_MAP",seed=a.seed,turns=a.turns,training_end_index=training_end,observed_map_bins=int(occupied.sum()),map_coverage=float(occupied.mean()),
+result=dict(kind="SYNTHETIC_FIRST_REVOLUTION_LEARNED_MAP",seed=a.seed,turns=a.turns,training_end_index=training_end,observed_map_bins=int(occupied.sum()),map_coverage=float(occupied.mean()),stress=a.stress,
   samples=n,samples_per_turn=per_turn,pixels_per_observation=rows,panorama_bins=bins,
   dropout=[a.dropout_start,a.dropout_end],gyro_only=fixed,visual_learned_map=visual,
   processing_seconds=time.perf_counter()-t0,
