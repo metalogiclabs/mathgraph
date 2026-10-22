@@ -1,0 +1,22 @@
+name: MathGraph Check authenticated cycle V1
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/*-v1.mjs'
+      - 'integrations/mathgraph-check-github/*-v1.test.mjs'
+      - '.github/workflows/mathgraph-check-authenticated-cycle-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+  pull-requests: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs
