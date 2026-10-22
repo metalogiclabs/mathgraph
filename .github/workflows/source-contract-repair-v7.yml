@@ -1,0 +1,15 @@
+name: Source-excerpt contract repair V7
+on:
+  push:
+    branches: [research/contract-derived-repair-v7-20261023]
+  workflow_dispatch:
+jobs:
+  bitwise-oracle-and-withdrawal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install Pillow==11.3.0
+      - run: python research/generic_observation_v3/source_contract_v7.py
