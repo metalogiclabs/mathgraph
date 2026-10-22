@@ -14,16 +14,15 @@ jobs:
   dispatch-gate:
     if: ${{ vars.MATHGRAPH_CF_MONITOR_ROLLOUT_APPROVED == 'true' && inputs.source_ref == 'mathgraph-check-live-app-first-party-v1' }}
     runs-on: ubuntu-latest
-    environment: mathgraph-check-production
     steps:
       - name: Check exact approved source branch
         uses: actions/checkout@v4
         with:
           ref: mathgraph-check-live-app-first-party-v1
           persist-credentials: false
-      - name: Inspect but never deploy from entrypoint
+      - name: Inspect approved source (no deployment)
         run: |
           set -euo pipefail
           test "${GITHUB_REF}" = "refs/heads/main"
           test -f integrations/mathgraph-check-github/cloudflare/monitor-transition-v1.mjs
-          echo "Approval and source gate checked. This entrypoint does not deploy. Production must be deployed via an independently qualified, SHA-pinned workflow."
+          echo "Read-only gate passed. Production environment explicitly permits the source branch, not main. No deployment performed."
