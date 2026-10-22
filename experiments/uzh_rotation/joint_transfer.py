@@ -117,6 +117,30 @@ with zipfile.ZipFile(a.dataset) as z:
   obs_pass=bool(singular[-1]>=0.01 and obs_ratio>=0.02)
   observable_accept=bool(crossfit_accept and obs_pass)
   observable_rmse=score(integrate(fit10.x[3:] if observable_accept else prior_bias))
-  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,observability_selected_candidate=observable_accept,observability_rmse_deg=observable_rmse,scaled_jacobian_min_singular=float(singular[-1]),scaled_jacobian_ratio=obs_ratio,observability_pass=obs_pass,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
+  # SVD projection of the *change from prior*, not absolute parameters.
+  # Scale dimensions to comparable perturbation units. The prior extrinsic
+  # is fit using identical fitting edges; no held-out truth is consulted.
+  scales=np.array([.1,.1,.1,.01,.01,.01])
+  _,svals,Vt=np.linalg.svd(fit10.jac*scales[None,:],full_matrices=False)
+  delta=(fit10.x-np.r_[fit_prior.x,prior_bias])/scales
+  strong=svals>=0.01
+  basis=Vt[strong,:]
+  projected_delta=basis.T@(basis@delta) if len(basis) else np.zeros(6)
+  projected=np.r_[fit_prior.x,prior_bias]+scales*projected_delta
+  projected_validation=independent_check(projected,conv10,selection_check)
+  partial_accept=bool(fit10.success and fit_prior.success and projected_validation+.005<held_prior)
+  partial_bias=projected[3:] if partial_accept else prior_bias
+  partial_rmse=score(integrate(partial_bias))
+  # Equally informed conventional Tikhonov filter of the same SVD.
+  # No claim of MathGraph algorithmic novelty without beating this.
+  ridge_strength=.01
+  ridge_gain=svals*svals/(svals*svals+ridge_strength*ridge_strength)
+  ridge_delta=Vt.T@(ridge_gain*(Vt@delta))
+  ridge=np.r_[fit_prior.x,prior_bias]+scales*ridge_delta
+  ridge_validation=independent_check(ridge,conv10,selection_check)
+  ridge_accept=bool(fit10.success and fit_prior.success and ridge_validation+.005<held_prior)
+  ridge_rmse=score(integrate(ridge[3:] if ridge_accept else prior_bias))
+
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,observability_selected_candidate=observable_accept,observability_rmse_deg=observable_rmse,partial_subspace_rmse_deg=partial_rmse,partial_subspace_accepted=partial_accept,partial_subspace_rank=int(strong.sum()),partial_validation_rad=projected_validation,ridge_rmse_deg=ridge_rmse,ridge_accepted=ridge_accept,ridge_validation_rad=ridge_validation,scaled_jacobian_min_singular=float(singular[-1]),scaled_jacobian_ratio=obs_ratio,observability_pass=obs_pass,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
  result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
  open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
