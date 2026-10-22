@@ -1,0 +1,80 @@
+name: RobotEvt original-data continuous-spin qualification
+
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/robotevt-rotation-qualification.yml'
+      - 'experiments/uzh_rotation/audit_robotevt_sweep.py'
+      - 'experiments/uzh_rotation/replay_robotevt.py'
+      - 'experiments/uzh_rotation/test_robotevt_sweep.py'
+      - 'experiments/uzh_rotation/test_robotevt_replay.py'
+      - 'experiments/uzh_rotation/robotevt_sources.json'
+      - 'experiments/uzh_rotation/ROBOTEvt_SOURCE_QUALIFICATION.md'
+  workflow_dispatch:
+
+jobs:
+  independently-replay-originals:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned numerical and acquisition dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 gdown==5.2.0
+      - name: Synthetic positive and adversarial negative controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_robotevt*.py' -v
+      - name: Acquire all six original RobotEvt ZIP archives
+        run: |
+          mkdir -p original_robotevt
+          python - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import time
+
+          manifest = json.loads(pathlib.Path('experiments/uzh_rotation/robotevt_sources.json').read_text())
+          for record in manifest['sequences']:
+              out = f"original_robotevt/{record['name']}.zip"
+              for attempt in range(3):
+                  result = subprocess.run([
+                      'gdown', '--id', record['drive_file_id'], '-O', out,
+                  ], check=False)
+                  if result.returncode == 0:
+                      break
+                  if attempt == 2:
+                      raise RuntimeError(f"Cannot acquire original {record['name']}")
+                  time.sleep(5)
+          PY
+      - name: Check source bytes and independently qualify continuous yaw
+        run: |
+          python experiments/uzh_rotation/replay_robotevt.py \
+            --manifest experiments/uzh_rotation/robotevt_sources.json \
+            --archives-dir original_robotevt \
+            --output robotevt_qualification_report.json
+      - name: Prove preserved negatives and positive integrity controls
+        run: |
+          python - <<'PY'
+          import json
+          report = json.load(open('robotevt_qualification_report.json'))
+          assert len(report['qualification']) == 6
+          for name, entry in report['qualification'].items():
+              m = entry['independent']
+              assert m['admission'] == 'REJECTED', (name, m)
+              assert m['sampling_admissible'] and m['axis_aligned_path_fraction'] > 0.95
+              assert m['absolute_3d_path_turns'] > 3 and m['yaw_excursion_turns'] < 0.5
+              assert m['longest_directional_streak_turns'] < 0.5
+              assert entry['method_excursion_gap_turns'] < 0.0001
+          print('SIX ORIGINAL ROBOTEvt TRAJECTORIES: continuous-2-turn admission 0/6')
+          PY
+      - name: Preserve compact source-pinned evidence (no raw sensor data)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robotevt-original-data-angular-qualification
+          path: robotevt_qualification_report.json
+          if-no-files-found: warn

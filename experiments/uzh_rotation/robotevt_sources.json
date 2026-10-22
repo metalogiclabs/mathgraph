@@ -1,0 +1,55 @@
+{
+  "source": "https://github.com/liudaqikk/RobotEvt",
+  "data_folder": "https://drive.google.com/drive/folders/1uhnCR2iDIEZhVNmL-2a-FWmo1J-Ip_vv",
+  "qualification_intent": "continuous two-turn z-axis trajectory; observational GT only",
+  "sequences": [
+    {
+      "name": "PureRot_Fast_Off",
+      "drive_file_id": "1_5pl2Fa3uP8XwwnrAd5oq0zwbJd1fEoW",
+      "archive_sha256": "3d1756e11d899b968416eb61e13b6645f4b51face8f6b727f36282988932c87b",
+      "gt_member": "PureRot_Fast_Off_GT.txt",
+      "gt_sha256": "42b6914d6094f77aef9d8320de3978b1adf2be550c0f27fc1beac2ade9e291ef",
+      "expected_admission": "REJECTED"
+    },
+    {
+      "name": "PureRot_Fast_On",
+      "drive_file_id": "1GGy4DQ2qYSjlNxSg_3F_pbRV4cJ__gg8",
+      "archive_sha256": "d8f68ccca04c33009601a3fc1cb860ec057a6a7725bced2372ca681314eb7921",
+      "gt_member": "PureRot_Fast_On_GT.txt",
+      "gt_sha256": "9ae7f23f61a98ec2e3221a20cce661c14c7f13d6f8149207327baad59db2a53f",
+      "expected_admission": "REJECTED"
+    },
+    {
+      "name": "PureRot_Mid_Off",
+      "drive_file_id": "1HyeaujXNn3U7KCBWawvgx86Ov4zoaclQ",
+      "archive_sha256": "d138cdaa3191b33527c4195d33736841f0f032de0c6c8af5c532a8e9ad20bf16",
+      "gt_member": "PureRot_Mid_Off_GT.txt",
+      "gt_sha256": "b7ba390571d14c76db880c7d7a22d71e46340ff1775a848702f2c513e278a656",
+      "expected_admission": "REJECTED"
+    },
+    {
+      "name": "PureRot_Mid_On",
+      "drive_file_id": "1XU94219zfIgpPSd5cfoHFMROrCDeDRYL",
+      "archive_sha256": "196798554931c91c25b90fa99ab29a7a8970ef3bbf8fb9c4a67572a02dbbf1b9",
+      "gt_member": "PureRot_Mid_On_GT.txt",
+      "gt_sha256": "cb580cca22e0b981bc51d0e206ff92d69d9a52b99a8ad9b39b813c3d789009d2",
+      "expected_admission": "REJECTED"
+    },
+    {
+      "name": "PureRot_Slow_Off",
+      "drive_file_id": "1SKwhv3l-OQFdvlLg-vdcjLe-oFcni-Y2",
+      "archive_sha256": "dedc5d873b245ff7f86a844d88690a17bdd84f6f4602b64b4594ac69fffdabf0",
+      "gt_member": "PureRot_Slow_Off_GT.txt",
+      "gt_sha256": "40788cb541a7ecb8c060cd56e4e4e723e0dcb85793952da764a6cdd46b4aabc7",
+      "expected_admission": "REJECTED"
+    },
+    {
+      "name": "PureRot_Slow_On",
+      "drive_file_id": "1663d1QpxWa3MIFAxVy5CMtsAXyx6QC3S",
+      "archive_sha256": "1db903da10e17f75a15efa410342e18f33442b36e05c81e72c35dcff195fd6c3",
+      "gt_member": "PureRot_Slow_On_GT.txt",
+      "gt_sha256": "d9939410ea9dfec3ef5fd93c511f16ed93413de4c6eff43cf329c555db5395d8",
+      "expected_admission": "REJECTED"
+    }
+  ]
+}
