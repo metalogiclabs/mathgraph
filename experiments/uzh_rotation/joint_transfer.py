@@ -59,45 +59,6 @@ with zipfile.ZipFile(a.dataset) as z:
  early=imu[(imu[:,0]>=ts[0]) & (imu[:,0]<ts[0]+0.30),4:7]
  startup_bias_rmse=score(integrate(np.mean(early,axis=0))) if len(early)>5 else None
  if len(train)<20:
-  # Causal replay: proposed calibration becomes available only after
-  # training. Revisit checks are released at their actual end index.
-  # A previous accepted update cannot retroactively change past state.
-  # This is a lightweight bias-only replay, not a flight controller.
-  def replay(candidate, policy):
-   estimated=R.identity();prior_est=R.identity()
-   current=prior_bias.copy();active=False;accepted=0;withdrawn=0
-   tracker=[];time_errors=[]
-   visible=sorted(test,key=lambda e:e[1]);ptr=0
-   for i in range(split,len(incs)):
-    # The test residual uses only revisits ending at/before i.
-    while ptr<len(visible) and visible[ptr][1]<=i:
-     ptr+=1
-    recent=visible[max(0,ptr-5):ptr]
-    if policy!="fixed" and len(recent)>=3:
-     # Evaluate candidate/prior against independent, matured checks.
-     cand_err=independent_check(np.r_[fit10.x[:3],candidate],conv10,recent)
-     base_err=independent_check(np.r_[fit_prior.x,prior_bias],conv10,recent)
-     should_use=bool(cand_err+0.005<base_err)
-     if policy=="gradual":should_use=True
-     if should_use and not active:accepted+=1
-     if not should_use and active:withdrawn+=1
-     active=should_use
-    target=prior_bias if not active else prior_bias+0.25*(candidate-prior_bias)
-    # Bounded per-timestep change; this makes rollback gradual.
-    max_step=.002
-    step=np.clip(target-current,-max_step,max_step)
-    current=current+step
-    estimated=estimated*R.from_rotvec(incs[i]-current*dt[i])
-    prior_est=prior_est*R.from_rotvec(incs[i]-prior_bias*dt[i])
-    true_rel=truth[split].inv()*truth[i+1]
-    time_errors.append(np.rad2deg((estimated.inv()*true_rel).magnitude()))
-    tracker.append(np.linalg.norm(current-prior_bias))
-   return dict(rmse_deg=float(np.sqrt(np.mean(np.square(time_errors)))),
-               accepted=accepted,withdrawn=withdrawn,
-               active_final=active,mean_delta_rad_s=float(np.mean(tracker)))
-  replay_fixed=replay(fit10.x[3:],"fixed")
-  replay_conventional=replay(fit10.x[3:],"gradual")
-  replay_evidence=replay(fit10.x[3:],"evidence")
   result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,status="INSUFFICIENT_TRAINING_SUPPORT",fitted_rmse_deg=None)
  else:
   sub=train[:20];fits=[]
@@ -216,6 +177,45 @@ with zipfile.ZipFile(a.dataset) as z:
   # Conventional gradual adaptation baseline: identical interpolation.
   # A different label cannot constitute an independent advantage.
   conventional_25_rmse=bounded_25_rmse
+  # Causal replay: proposed calibration becomes available only after
+  # training. Revisit checks are released at their actual end index.
+  # A previous accepted update cannot retroactively change past state.
+  # This is a lightweight bias-only replay, not a flight controller.
+  def replay(candidate, policy):
+   estimated=R.identity();prior_est=R.identity()
+   current=prior_bias.copy();active=False;accepted=0;withdrawn=0
+   tracker=[];time_errors=[]
+   visible=sorted(test,key=lambda e:e[1]);ptr=0
+   for i in range(split,len(incs)):
+    # The test residual uses only revisits ending at/before i.
+    while ptr<len(visible) and visible[ptr][1]<=i:
+     ptr+=1
+    recent=visible[max(0,ptr-5):ptr]
+    if policy!="fixed" and len(recent)>=3:
+     # Evaluate candidate/prior against independent, matured checks.
+     cand_err=independent_check(np.r_[fit10.x[:3],candidate],conv10,recent)
+     base_err=independent_check(np.r_[fit_prior.x,prior_bias],conv10,recent)
+     should_use=bool(cand_err+0.005<base_err)
+     if policy=="gradual":should_use=True
+     if should_use and not active:accepted+=1
+     if not should_use and active:withdrawn+=1
+     active=should_use
+    target=prior_bias if not active else prior_bias+0.25*(candidate-prior_bias)
+    # Bounded per-timestep change; this makes rollback gradual.
+    max_step=.002
+    step=np.clip(target-current,-max_step,max_step)
+    current=current+step
+    estimated=estimated*R.from_rotvec(incs[i]-current*dt[i])
+    prior_est=prior_est*R.from_rotvec(incs[i]-prior_bias*dt[i])
+    true_rel=truth[split].inv()*truth[i+1]
+    time_errors.append(np.rad2deg((estimated.inv()*true_rel).magnitude()))
+    tracker.append(np.linalg.norm(current-prior_bias))
+   return dict(rmse_deg=float(np.sqrt(np.mean(np.square(time_errors)))),
+               accepted=accepted,withdrawn=withdrawn,
+               active_final=active,mean_delta_rad_s=float(np.mean(tracker)))
+  replay_fixed=replay(fit10.x[3:],"fixed")
+  replay_conventional=replay(fit10.x[3:],"gradual")
+  replay_evidence=replay(fit10.x[3:],"evidence")
   result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,observability_selected_candidate=observable_accept,observability_rmse_deg=observable_rmse,partial_subspace_rmse_deg=partial_rmse,evidence_diverse_rmse_deg=diverse_rmse,bounded_25_rmse_deg=bounded_25_rmse,causal_replay_fixed=replay_fixed,causal_replay_conventional=replay_conventional,causal_replay_evidence=replay_evidence,bounded_50_rmse_deg=bounded_50_rmse,bounded_subspace_25_rmse_deg=bounded_subspace_25_rmse,conventional_gradual_25_rmse_deg=conventional_25_rmse,evidence_diverse_accepted=diverse_accept,evidence_diverse_supported_families=supported_families,evidence_diverse_family_sizes=[len(families[x]) for x in (0,1)],evidence_diverse_family_validation=family_stats,partial_subspace_accepted=partial_accept,partial_subspace_rank=int(strong.sum()),partial_validation_rad=projected_validation,ridge_rmse_deg=ridge_rmse,ridge_accepted=ridge_accept,ridge_validation_rad=ridge_validation,scaled_jacobian_min_singular=float(singular[-1]),scaled_jacobian_ratio=obs_ratio,observability_pass=obs_pass,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
  result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
  open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
