@@ -4,8 +4,8 @@ import {check,resolve,monitor} from "./check-resolve-monitor-v1.mjs";
 const sha=x=>x.repeat(40);
 const subject={repository:"metalogiclabs/mathgraph",pr:194,head_sha:sha("a")};
 function report(statuses=["OBSERVED","OBSERVED"],opts={}) {
- return {subject:{...subject,...opts.subject},results:statuses.map((status,i)=>({id:"c"+i,status})),
- claim_dependencies:[{id:"c0",requires:["e0"]},{id:"c1",requires:["e1"]}],...opts};
+ return {...opts,subject:{...subject,...(opts.subject??{})},results:statuses.map((status,i)=>({id:"c"+i,status})),
+ claim_dependencies:[{id:"c0",requires:["e0"]},{id:"c1",requires:["e1"]}]};
 }
 test("product CHECK refuses unsupported scope",()=>assert.equal(check({},{}).status,"UNKNOWN"));
 test("RESOLVE selects cheapest permitted and source-authoritative plan",()=>{
