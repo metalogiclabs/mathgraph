@@ -1,0 +1,57 @@
+name: Freestanding finite-jitter visual compass (C development)
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/finite_jitter_embedded.c'
+      - 'experiments/uzh_rotation/finite_jitter_embedded.h'
+      - 'experiments/uzh_rotation/test_finite_jitter_embedded.py'
+      - 'experiments/uzh_rotation/EMBEDDED_JITTER_PROTOCOL.md'
+      - '.github/workflows/finite-jitter-embedded-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  finite-jitter-c-development:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen Python-independent-oracle regressions
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_witness_jitter.py' -v
+      - name: C versus frozen Python, 64 scenarios, randomized maps, and physical invariant
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_jitter_embedded.py' -v
+      - name: Compile freestanding host and inspect memory and external calls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p finite_jitter_embedded_artifacts
+          gcc -std=c99 -Wall -Wextra -Werror -Os -ffreestanding -fno-builtin \
+            -Wstack-usage=640 -fstack-usage -c \
+            experiments/uzh_rotation/finite_jitter_embedded.c \
+            -o finite_jitter_embedded_artifacts/finite_jitter_host.o
+          size finite_jitter_embedded_artifacts/finite_jitter_host.o | tee finite_jitter_embedded_artifacts/host_size.txt
+          nm -u finite_jitter_embedded_artifacts/finite_jitter_host.o | tee finite_jitter_embedded_artifacts/undefined_symbols.txt
+          test ! -s finite_jitter_embedded_artifacts/undefined_symbols.txt
+          cp finite_jitter_embedded_artifacts/finite_jitter_host.su finite_jitter_embedded_artifacts/host_stack.txt
+          cat finite_jitter_embedded_artifacts/host_stack.txt
+      - name: Cross-compile source for ARM Cortex-M4 Thumb
+        shell: bash
+        run: |
+          set -euo pipefail
+          clang --version | head -n 1
+          clang --target=armv7m-none-eabi -mcpu=cortex-m4 -mthumb \
+            -std=c99 -Wall -Wextra -Werror -Os -ffreestanding -fno-builtin \
+            -c experiments/uzh_rotation/finite_jitter_embedded.c \
+            -o finite_jitter_embedded_artifacts/finite_jitter_arm_cortex_m4.o
+          readelf -h finite_jitter_embedded_artifacts/finite_jitter_arm_cortex_m4.o | tee finite_jitter_embedded_artifacts/arm_elf_header.txt
+          grep -q 'Machine:.*ARM' finite_jitter_embedded_artifacts/arm_elf_header.txt
+          size finite_jitter_embedded_artifacts/finite_jitter_arm_cortex_m4.o | tee finite_jitter_embedded_artifacts/arm_size.txt
+      - name: Preserve compiler measurements including any failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-jitter-embedded-dev-c99-v1
+          path: finite_jitter_embedded_artifacts/
