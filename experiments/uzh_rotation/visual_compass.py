@@ -43,9 +43,13 @@ with zipfile.ZipFile(a.dataset) as z:
     orb = cv2.ORB_create(nfeatures=850, fastThreshold=12)
     matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
     features = []
+    image_dimensions = None
+    effective_strip_width = None
     for _, path in ents:
         im = cv2.imdecode(np.frombuffer(z.read(path), np.uint8), cv2.IMREAD_GRAYSCALE)
         im = cv2.undistort(im, K, cal[4:9])
+        image_dimensions = list(im.shape)
+        effective_strip_width = min(a.strip_width,im.shape[1]) if a.strip_width else im.shape[1]
         # Limited-information vertical-window proxy only.
         # NOT a time-swept line sensor: no scan-motion geometry.
         mask = None
@@ -144,7 +148,7 @@ def score(xs):
 compass,accepted,rejected=simulate(0.25)
 zero,_,_=simulate(0.)
 result=dict(dataset=a.dataset,frames=len(ts),train_edges=len(train),
-            heldout_revisits=len(test),strip_width=a.strip_width,blackout_start=a.blackout_start,blackout_length=a.blackout_length,accepted_revisits=accepted,rejected_revisits=rejected,
+            heldout_revisits=len(test),strip_width=a.strip_width,image_dimensions=image_dimensions,effective_strip_width=effective_strip_width,blackout_start=a.blackout_start,blackout_length=a.blackout_length,accepted_revisits=accepted,rejected_revisits=rejected,
             convention=convention,train_only_extrinsic_rotvec=extrinsic.tolist(),
             gyro_raw=score(raw),gyro_frozen_prior=score(prior),
             zero_visual_gain=score(zero),visual_compass=score(compass),
