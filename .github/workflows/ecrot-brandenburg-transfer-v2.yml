@@ -1,0 +1,55 @@
+name: ECRot exposed second-scene fail-closed V2 replay
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/ecrot-brandenburg-transfer-v2.yml'
+  workflow_dispatch:
+jobs:
+  independently-qualify-brandenburg:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Locked dependencies
+        run: pip install numpy==2.1.3 rosbags==0.11.9 gdown==5.2.0
+      - name: Regression and adversarial controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_ecrot_brandenburg_v2.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_ecrot_line_revisit.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_ecrot_brandenburg_chronology.py' -v
+      - name: Download untouched original second-scene source
+        run: |
+          python - <<'PY'
+          import json,subprocess
+          source=json.load(open('experiments/uzh_rotation/ecrot_sources.json'))['held_out_source_frozen_before_download']
+          subprocess.run(['gdown','--id',source['original_google_drive_file_id'],'-O',source['download_filename']],check=True)
+          PY
+      - name: Independently replay source-pinned timing and cycle gate
+        run: |
+          python experiments/uzh_rotation/audit_ecrot_brandenburg_v2.py \
+            --bag ECRot_Brandenburg_events.bag --out ecrot_brandenburg_v2_report.json
+      - name: Check preservation of failed transfer and authorization boundary
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('ecrot_brandenburg_v2_report.json'))
+          x=d['imap']
+          assert d['source_sha256']=='3d8e3284670c94b52919228c2a133586e8e592c07f3a6e1e127fee6acd747455'
+          assert x['original_imu_messages']==6295, x
+          assert x['status'] in ('INSUFFICIENT_FIRST_REVOLUTION','AMBIGUOUS_IMU_TIMESTAMP'), x
+          assert not x['estimated_map_turn_complete']
+          assert not x['first_turn_map_populated'] and not x['heading_correction_authorized']
+          assert d['navigation_authorization']=='UNKNOWN; no correction'
+          print("BRANDENBURG_TRANSFER_REJECTED",x['status'],x['exact_retransmissions'],x['clock_collisions'],x['gyro_y_turns'])
+          PY
+      - name: Archive source identity and negative outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecrot-brandenburg-exposed-fail-closed-v2
+          path: ecrot_brandenburg_v2_report.json
+          if-no-files-found: warn
