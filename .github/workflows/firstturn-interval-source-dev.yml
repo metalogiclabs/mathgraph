@@ -1,0 +1,82 @@
+name: First-turn source-bounded interval capture (development)
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/firstturn_interval_capture.c'
+      - 'experiments/uzh_rotation/firstturn_interval_capture.h'
+      - 'experiments/uzh_rotation/test_firstturn_interval_capture.py'
+      - 'experiments/uzh_rotation/test_firstturn_interval_audit.py'
+      - 'experiments/uzh_rotation/audit_firstturn_interval_capture.py'
+      - 'experiments/uzh_rotation/FIRSTTURN_INTERVAL_CAPTURE_PROTOCOL.md'
+      - '.github/workflows/firstturn-interval-source-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  source-bound-dev:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independently exhaust 8192 phase intervals and stress map replay
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_firstturn_interval*.py' -v
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_finite_partial_map.py' -v
+      - name: Run fixed synthetic development scenarios and exact baselines
+        run: |
+          python experiments/uzh_rotation/audit_firstturn_interval_capture.py \
+            --seeds 5 11 19 23 --out firstturn_source_development_artifacts
+      - name: Check declared-source boundaries and retain negative case
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('firstturn_source_development_artifacts/summary.json').read_text())
+          r=data['conditions']
+          assert not data['failures'],data['failures']
+          assert len(r)==6
+          for name,row in r.items():
+              assert row['trials']==16,(name,row)
+              assert not name.startswith('honest_') or row['bound_kept']==16
+              assert not name.startswith('honest_') or row['map_fidelity']==16
+              print('SOURCE_DEV',name,'map',row['gated_coverage']/16,
+                    'active_correct',row['active_correct'],
+                    'active_false',row['active_false'],
+                    'continuous_correct',row['continuous_correct'],
+                    'continuous_false',row['continuous_false'])
+          assert r['honest_r3_4x']['active_correct']==16
+          assert r['honest_r3_4x']['continuous_correct']==16
+          assert r['honest_r8_4x']['gated_coverage']==0
+          assert r['honest_r8_4x']['active_unknown']==16
+          assert r['lied_r3_4x']['bound_kept']==0
+          assert r['lied_r3_4x']['active_false']>=1
+          assert r['lied_r3_4x']['continuous_false']>=1
+          assert len(list(Path('firstturn_source_development_artifacts').glob('*.json')))==121
+          PY
+      - name: Freestanding C99 host and ARM Cortex-M4 compile and resource audit
+        run: |
+          mkdir -p firstturn_source_compiler_artifacts
+          gcc -std=c99 -Os -ffreestanding -fno-builtin -Wall -Wextra -Werror \
+            -fstack-usage -c experiments/uzh_rotation/firstturn_interval_capture.c \
+            -o firstturn_source_compiler_artifacts/interval_host.o
+          size firstturn_source_compiler_artifacts/interval_host.o
+          cat firstturn_source_compiler_artifacts/interval_host.su
+          clang --target=armv7em-none-eabi -mcpu=cortex-m4 -mthumb \
+            -std=c99 -Os -ffreestanding -fno-builtin -Wall -Wextra -Werror \
+            -c experiments/uzh_rotation/firstturn_interval_capture.c \
+            -o firstturn_source_compiler_artifacts/interval_arm.o
+          readelf -h firstturn_source_compiler_artifacts/interval_arm.o | grep -F 'Machine:                           ARM'
+          size firstturn_source_compiler_artifacts/interval_arm.o
+      - name: Preserve finite evidence and resource output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firstturn-source-interval-dev-v1
+          path: |
+            firstturn_source_development_artifacts/
+            firstturn_source_compiler_artifacts/
