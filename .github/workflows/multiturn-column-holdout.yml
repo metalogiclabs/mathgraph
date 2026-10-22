@@ -1,0 +1,58 @@
+name: Frozen adversarial single-column compass holdout
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/multiturn-column-holdout.yml'
+  workflow_dispatch:
+jobs:
+  holdout:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy==2.1.3
+      - name: Verify estimator, verifier, test and protocol frozen before holdout
+        run: |
+          git diff --exit-code ea16bcb264de4acd4e5fc310789d52fe3e88b4c9 HEAD -- \
+            experiments/uzh_rotation/adversarial_compass.py \
+            experiments/uzh_rotation/audit_adversarial_compass.py \
+            experiments/uzh_rotation/test_adversarial_compass.py \
+            experiments/uzh_rotation/ADVERSARIAL_PROTOCOL.md
+      - name: Recheck fixed invariants
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_adversarial_compass.py' -v
+      - name: Execute preregistered untouched holdouts
+        run: |
+          for stress in clean repeat_exact repeat_near parallax_height moving_objects timing_jitter gyro_drift speed_changes blackout_turns partial_map recovery_confuser combined; do
+            for seed in 101 211 307 401; do
+              python experiments/uzh_rotation/adversarial_compass.py --stress "$stress" --seed "$seed" --turns 12 --include-trace --output "adversarial_holdout_${stress}_${seed}.json" > /dev/null
+            done
+          done
+          python experiments/uzh_rotation/audit_adversarial_compass.py adversarial_holdout_*.json
+          python - <<'PY'
+          import glob,json
+          data=[json.load(open(p)) for p in glob.glob('adversarial_holdout_*.json')]
+          assert len(data)==48, len(data)
+          bad=[]
+          for d in sorted(data,key=lambda x:(x['stress'],x['seed'])):
+              m=d['methods']
+              print(d['stress'],d['seed'],'coverage',round(d['map_coverage'],3),'alias',d['alias_period_bins'],
+                    'gyro/local/robust/evidence RMSE',*[round(m[k]['heading_rmse_deg'],2) for k in ('gyro_only','matched_filter','robust','evidence_aware')],
+                    'wrong',*[m[k]['incorrect_accepted_corrections'] for k in ('matched_filter','robust','evidence_aware')],
+                    'availability',round(m['evidence_aware']['heading_available_fraction'],3),
+                    'recovery',m['evidence_aware']['recovery_samples'])
+              for method in ('robust','evidence_aware'):
+                  if m[method]['incorrect_accepted_corrections']:
+                      bad.append((d['stress'],d['seed'],method,m[method]['incorrect_accepted_corrections']))
+          print('HOLDOUT_UNSAFE_ACCEPTANCES',bad)
+          assert not bad, 'Frozen holdout falsified zero incorrect corrections; preserve artifact and treat claim as REJECTED'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adversarial-frozen-holdout-traces-v1
+          path: 'adversarial_holdout_*.json'
