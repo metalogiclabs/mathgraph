@@ -1,0 +1,34 @@
+name: MathGraph Check live Monitor readback
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/monitor-live-readback-v1.mjs'
+      - '.github/workflows/mathgraph-check-monitor-live-readback.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: ${{ github.event.pull_request.head.repo.full_name == 'metalogiclabs/mathgraph' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mint read-only MathGraph GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 5308912
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: go-ethereum
+          permission-checks: read
+          permission-pull-requests: read
+      - name: Check source exact-head and native App Check identity
+        env:
+          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node integrations/mathgraph-check-github/monitor-live-readback-v1.mjs
