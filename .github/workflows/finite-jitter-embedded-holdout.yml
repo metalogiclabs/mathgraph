@@ -1,0 +1,61 @@
+name: Frozen C99 visual-compass holdout and source-fidelity adversary
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/finite-jitter-embedded-holdout.yml'
+  workflow_dispatch:
+
+jobs:
+  embedded-c-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reject any changes to qualified C, Python estimator or original protocol
+        run: |
+          git diff --exit-code c71bc0131e530cb5702508e6166fa1cf26d32ece HEAD -- \
+            experiments/uzh_rotation/finite_jitter_embedded.c \
+            experiments/uzh_rotation/finite_jitter_embedded.h \
+            experiments/uzh_rotation/test_finite_jitter_embedded.py \
+            experiments/uzh_rotation/finite_witness_jitter.py \
+            experiments/uzh_rotation/EMBEDDED_JITTER_PROTOCOL.md
+      - name: Frozen C differential and truth-retention regressions
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_jitter_embedded.py' -v
+      - name: Fresh seeds 1061, 2069, 3067, 4079; replay all native decisions, track source deception
+        run: |
+          python experiments/uzh_rotation/audit_finite_jitter_embedded_holdout.py \
+            --seeds 1061 2069 3067 4079 \
+            --output finite_jitter_embedded_holdout_artifacts
+      - name: Enforce both in-bound safety and an observed out-of-bound failure mode
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          directory = Path('finite_jitter_embedded_holdout_artifacts')
+          records = json.loads((directory/'summary.json').read_text())
+          t = records['totals']
+          assert records['holdout_seeds'] == [1061, 2069, 3067, 4079]
+          assert t['ordinary'] == 64
+          assert t['warranted_corrections'] == 32
+          assert t['obstructions'] == 32
+          assert t['missing_recoveries'] == 16
+          assert t['scene_identity_negative_controls'] == 16
+          assert t['negative_false_corrections'] >= 1, 'Negative scene test did not expose false authority'
+          assert not records['violations'], records['violations']
+          assert len(list(directory.glob('*.json'))) == 81
+          print('C_HOLDOUT_WARRANT', t)
+          print('C_HOLDOUT_SOURCE_FIDELITY_OUTSIDE_BOUND',
+                'false authorized corrections', t['negative_false_corrections'])
+          PY
+      - name: Preserve every successful, failed, unknown and adversarial trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-jitter-embedded-frozen-holdout-v1
+          path: finite_jitter_embedded_holdout_artifacts/
