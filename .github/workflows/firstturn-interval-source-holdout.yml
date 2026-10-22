@@ -1,0 +1,80 @@
+name: Frozen first-turn source-bound interval holdout
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/firstturn-interval-source-holdout.yml'
+  workflow_dispatch:
+
+jobs:
+  independent-frozen-source-holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Needed for the frozen-source comparison below.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Enforce exact sealed first-turn source/test/protocol version
+        run: |
+          git diff --exit-code 963cc62d0452b4e695641894fd2a90e2ed422be9 HEAD -- \
+            experiments/uzh_rotation/firstturn_interval_capture.c \
+            experiments/uzh_rotation/firstturn_interval_capture.h \
+            experiments/uzh_rotation/test_firstturn_interval_capture.py \
+            experiments/uzh_rotation/test_firstturn_interval_audit.py \
+            experiments/uzh_rotation/audit_firstturn_interval_capture.py \
+            experiments/uzh_rotation/FIRSTTURN_INTERVAL_CAPTURE_PROTOCOL.md \
+            experiments/uzh_rotation/finite_partial_map.c \
+            experiments/uzh_rotation/finite_partial_map.h \
+            experiments/uzh_rotation/finite_jitter_embedded.c \
+            experiments/uzh_rotation/finite_jitter_embedded.h
+      - name: Recheck finite interval oracle and original map regressions
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_firstturn_interval*.py' -v
+          python -m unittest discover -s experiments/uzh_rotation \
+            -p 'test_finite_partial_map.py' -v
+      - name: Replay PREDECLARED unused synthetic source seeds
+        run: |
+          python experiments/uzh_rotation/audit_firstturn_interval_capture.py \
+            --seeds 431 457 479 503 --out firstturn_source_holdout_artifacts
+      - name: Independently check source fidelity, false accepts and availability
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('firstturn_source_holdout_artifacts')
+          summary=json.loads((root/'summary.json').read_text())
+          assert summary['seeds']==[431,457,479,503]
+          assert not summary['failures'],summary['failures']
+          assert len(summary['conditions'])==6
+          for name,row in summary['conditions'].items():
+              assert row['trials']==16,(name,row)
+              assert row['active_correct']+row['active_false']+row['active_unknown']+row['active_conflict']==16
+              assert row['continuous_correct']+row['continuous_false']+row['continuous_unknown']+row['continuous_conflict']==16
+              assert row['nearest_continuous_correct']+row['nearest_continuous_false']+row['nearest_continuous_unknown']+row['nearest_continuous_conflict']==16
+              if name.startswith('honest_'):
+                  assert row['bound_kept']==16,(name,row)
+                  assert row['map_fidelity']==16,(name,row)
+                  assert row['active_false']==row['continuous_false']==0,(name,row)
+                  assert row['active_conflict']==row['continuous_conflict']==0,(name,row)
+              print('SOURCE_HOLDOUT',name,'coverage',row['gated_coverage']/16,
+                    'active',row['active_correct'],row['active_unknown'],
+                    'continuous',row['continuous_correct'],row['continuous_unknown'],
+                    'wrong',row['active_false'],row['continuous_false'],
+                    'reads',row['active_reads'],row['continuous_reads'],
+                    'out_of_bound',row['bound_kept']!=16)
+          assert summary['conditions']['honest_r8_4x']['gated_coverage']==0
+          assert summary['conditions']['honest_r8_4x']['active_unknown']==16
+          assert summary['conditions']['lied_r3_4x']['bound_kept']==0
+          assert len(list(root.glob('*.json')))==121
+          PY
+      - name: Archive full trial evidence, including all negative outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-firstturn-source-bound-holdout-v1
+          path: firstturn_source_holdout_artifacts/
