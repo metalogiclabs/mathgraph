@@ -18,10 +18,12 @@ jobs:
       - name: Install pinned audit tooling
         run: pip install numpy==2.1.3 scipy==1.14.1 requests==2.32.3 mcap==1.3.0 mcap-ros2-support==0.5.7
       - name: Download and inspect official DARK-GS yaw archive
-        run: python experiments/uzh_rotation/audit_darkgs.py --sequence 360 --output darkgs_360_audit.json
+        run: |
+          python experiments/uzh_rotation/audit_darkgs.py --sequence 360 --output darkgs_360_audit.json
+          python experiments/uzh_rotation/audit_darkgs.py --sequence 360_2 --output darkgs_360_2_audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: darkgs-audit
-          path: darkgs_360_audit.json
+          path: 'darkgs_*_audit.json'
           if-no-files-found: warn
