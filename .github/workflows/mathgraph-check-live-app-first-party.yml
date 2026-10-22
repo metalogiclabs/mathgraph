@@ -1,8 +1,9 @@
 name: MathGraph Check live registered-App first-party qualification
 on:
-  push:
-    branches:
-      - mathgraph-check-live-app-first-party-v1
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/live-first-party-qualification-v1.mjs'
+      - '.github/workflows/mathgraph-check-live-app-first-party.yml'
 permissions:
   contents: read
 concurrency:
@@ -10,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   qualify:
+    if: github.head_ref == 'mathgraph-check-live-app-first-party-v1' && github.event.pull_request.head.repo.full_name == 'metalogiclabs/mathgraph'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
