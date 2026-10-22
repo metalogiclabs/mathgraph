@@ -1,0 +1,89 @@
+name: First-revolution partial reference and active sensing (development)
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/finite_partial_map.c'
+      - 'experiments/uzh_rotation/finite_partial_map.h'
+      - 'experiments/uzh_rotation/test_finite_partial_map.py'
+      - 'experiments/uzh_rotation/audit_finite_partial_map.py'
+      - 'experiments/uzh_rotation/PARTIAL_FIRST_TURN_PROTOCOL.md'
+      - '.github/workflows/finite-partial-map-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  partial-map-development:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact independent combinatorial oracle and partial-map regressions
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_partial_map.py' -v
+      - name: Re-run frozen C99 and jitter safeguards
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_jitter_embedded.py' -v
+      - name: Physical-source external grade and equally informed continuous baseline
+        run: |
+          python experiments/uzh_rotation/audit_finite_partial_map.py \
+            --seeds 5 11 19 23 \
+            --out finite_partial_map_development_artifacts
+      - name: Reject false corrections and distinguish observation savings from availability
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('finite_partial_map_development_artifacts/summary.json').read_text())
+          assert not data['failures'],data['failures']
+          assert len(data['conditions'])==7
+          for name,r in data['conditions'].items():
+              assert r['trials']==16,(name,r)
+              assert r['planned_correct']<=r['active_correct']<=r['continuous_correct'],(name,r)
+              print('MAP_DEV',name,'guaranteed',r['planned_correct'],'active',r['active_correct'],
+                    'continuous',r['continuous_correct'],'active_reads',r['active_reads'],
+                    'continuous_reads',r['continuous_reads'],'active_pair_checks',r['active_pair_checks'])
+          assert data['conditions']['full']['active_correct']==16
+          assert data['conditions']['random_12']['active_correct']>0
+          assert data['conditions']['missing_first_cue']['active_correct']==0
+          print('MAP_DEV_TOTAL_CASES',sum(x['trials'] for x in data['conditions'].values()))
+          PY
+      - name: Build portable host objects and check defined symbols and stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p finite_partial_map_compiler_artifacts
+          for component in finite_jitter_embedded finite_partial_map; do
+            gcc -std=c99 -Wall -Wextra -Werror -Os -ffreestanding -fno-builtin \
+              -Wstack-usage=800 -fstack-usage -c \
+              "experiments/uzh_rotation/${component}.c" \
+              -o "finite_partial_map_compiler_artifacts/${component}_host.o"
+            nm -u "finite_partial_map_compiler_artifacts/${component}_host.o" | \
+              tee "finite_partial_map_compiler_artifacts/${component}_externals.txt"
+            test ! -s "finite_partial_map_compiler_artifacts/${component}_externals.txt"
+            cp "finite_partial_map_compiler_artifacts/${component}_host.su" \
+              "finite_partial_map_compiler_artifacts/${component}_stack.txt"
+          done
+          size finite_partial_map_compiler_artifacts/*_host.o | tee finite_partial_map_compiler_artifacts/host_size.txt
+          cat finite_partial_map_compiler_artifacts/*_stack.txt
+      - name: Cross-compile both components to Cortex-M4 Thumb
+        shell: bash
+        run: |
+          set -euo pipefail
+          for component in finite_jitter_embedded finite_partial_map; do
+            clang --target=armv7m-none-eabi -mcpu=cortex-m4 -mthumb \
+              -std=c99 -Wall -Wextra -Werror -Os -ffreestanding -fno-builtin \
+              -c "experiments/uzh_rotation/${component}.c" \
+              -o "finite_partial_map_compiler_artifacts/${component}_arm.o"
+            readelf -h "finite_partial_map_compiler_artifacts/${component}_arm.o" | \
+              grep 'Machine:.*ARM'
+          done
+          size finite_partial_map_compiler_artifacts/*_arm.o | tee finite_partial_map_compiler_artifacts/arm_size.txt
+      - name: Preserve full development cases and compiler artifacts on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-partial-firstturn-development-v1
+          path: |
+            finite_partial_map_development_artifacts/
+            finite_partial_map_compiler_artifacts/
