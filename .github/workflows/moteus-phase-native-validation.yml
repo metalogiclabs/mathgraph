@@ -21,9 +21,9 @@ jobs:
       - name: Install system-Python wheel builder
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y python3-build python3-importlib-metadata python3-numpy mypy
+          sudo apt-get install -y python3-build python3-importlib-metadata python3-numpy python3-scipy python3-usb python3-pyelftools mypy
           /usr/bin/python3 -m build --version
-          /usr/bin/python3 -c 'import importlib_metadata, numpy; print("Python host dependencies OK")'
+          /usr/bin/python3 -c 'import importlib_metadata, numpy, scipy, usb, elftools; print("Python host dependencies OK")'
           mypy --version
       - name: Host tests
         working-directory: moteus
