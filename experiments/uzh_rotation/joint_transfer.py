@@ -108,6 +108,15 @@ with zipfile.ZipFile(a.dataset) as z:
   held_prior=independent_check(np.r_[fit_prior.x,prior_bias],conv10,selection_check)
   crossfit_accept=bool(fit10.success and fit_prior.success and held_candidate+0.005<held_prior)
   crossfit_rmse=score(integrate(fit10.x[3:] if crossfit_accept else prior_bias))
-  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
+  # Finite-difference observability diagnostic on the same 10 fitting
+  # edges. Dimensionless column scaling corresponds to 0.1 rad
+  # extrinsic changes and 0.01 rad/s gyro bias changes.
+  jac=fit10.jac @ np.diag([.1,.1,.1,.01,.01,.01])
+  singular=np.linalg.svd(jac,compute_uv=False)
+  obs_ratio=float(singular[-1]/singular[0]) if singular[0]>1e-12 else 0.0
+  obs_pass=bool(singular[-1]>=0.01 and obs_ratio>=0.02)
+  observable_accept=bool(crossfit_accept and obs_pass)
+  observable_rmse=score(integrate(fit10.x[3:] if observable_accept else prior_bias))
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,observability_selected_candidate=observable_accept,observability_rmse_deg=observable_rmse,scaled_jacobian_min_singular=float(singular[-1]),scaled_jacobian_ratio=obs_ratio,observability_pass=obs_pass,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
  result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
  open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
