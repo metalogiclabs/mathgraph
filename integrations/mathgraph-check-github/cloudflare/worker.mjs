@@ -6,6 +6,7 @@ import { Buffer } from "node:buffer";
 import { analyze, checkOutput } from "../analysis.mjs";
 import { appendGethV19NativeEvidence } from "../geth-v19-evidence.mjs";
 import { appendExternalNativeReceipt } from "../external-native-receipt.mjs";
+import { transitionReceipt } from "./monitor-transition-v1.mjs";
 
 export const SCOPE = Object.freeze({
   appID: 5308912,
@@ -319,6 +320,12 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
       const external=await appendExternalNativeReceipt(
         report,nativeEvidence.check,api,token,snapshot,{fetcher});
       const check=external.check;
+      const monitorReceipt=transitionReceipt({repository:SCOPE.repository,
+        pr:item.number,headSha:item.sha,previousCheck:previous,currentCheck:check});
+      // Explicit audit-only withdrawal marker: the signed queue event and
+      // authenticated native readback remain the sole publisher authority.
+      if(monitorReceipt.downstream_warrant_status==="REQUALIFICATION_REQUIRED")
+        console.log("MATHGRAPH_MONITOR_WITHDRAWAL "+JSON.stringify(monitorReceipt));
       ensure(check.conclusion==="neutral" && check.status==="completed" &&
         check.name===SCOPE.checkName,"FORBIDDEN_TRUTH_PROMOTION");
 
