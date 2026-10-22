@@ -20,3 +20,15 @@ jobs:
         with:
           node-version: '22'
       - run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs
+      - name: Live first-party PR and Checks API readback
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MATHGRAPH_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node integrations/mathgraph-check-github/run-authenticated-cycle-v1.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-first-party-readback
+          path: mathgraph-check-live.json
+          if-no-files-found: ignore
