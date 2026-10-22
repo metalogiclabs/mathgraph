@@ -1,0 +1,62 @@
+name: L4YAML independent strict-module consumer qualification
+
+on:
+  push:
+    branches:
+      - research/l4yaml-v35-external-consumer-v2-20261023
+
+permissions:
+  contents: read
+
+jobs:
+  strict-consumer:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout independent external package
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install exact Lean 4.35 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve and pin authentic dependency source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/l4yaml_external_consumer_v35
+          test "$(cat lean-toolchain)" = "leanprover/lean4:v4.35.0"
+          lake update 2>&1 | tee "$RUNNER_TEMP/external-lake-update.log"
+          test "$(git -C .lake/packages/L4YAML rev-parse HEAD)" = "c65755071dd91025b043b6f5e51ddb6578e9746b"
+          test "$(git -C .lake/packages/L4YAML remote get-url origin)" = "https://github.com/nasa-jpl/L4YAML.git"
+          test "$(cat .lake/packages/L4YAML/lean-toolchain)" = "leanprover/lean4:v4.35.0"
+
+      - name: Compile external private-named deriving with module system required
+        shell: bash
+        timeout-minutes: 48
+        run: |
+          set -euo pipefail
+          cd research/l4yaml_external_consumer_v35
+          lake build Probe 2>&1 | tee "$RUNNER_TEMP/external-lake-build.log"
+          test -f .lake/build/lib/lean/Probe.olean
+          test -z "$(git -C .lake/packages/L4YAML status --short)"
+          echo "INDEPENDENT_STRICT_MODULE_DERIVING_BUILD_PASS"
+
+      - name: Preserve source and native build evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l4yaml-strict-external-module-consumer
+          path: |
+            research/l4yaml_external_consumer_v35/Probe.lean
+            research/l4yaml_external_consumer_v35/lakefile.lean
+            research/l4yaml_external_consumer_v35/lean-toolchain
+            ${{ runner.temp }}/external-lake-update.log
+            ${{ runner.temp }}/external-lake-build.log
+          if-no-files-found: ignore

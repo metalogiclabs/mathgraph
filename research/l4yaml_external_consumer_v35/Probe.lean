@@ -9,15 +9,18 @@ structure ExternalQ where
   y : Bool
 deriving BEq, L4YAML.Schema.FromYaml, L4YAML.Schema.ToYaml
 
-#guard ((parseAs ExternalQ "x: \"null\"\ny: true\n").toOption ==
-  some ({ x := some "null", y := true } : ExternalQ))
-#guard ((parseAs ExternalQ "x: null\ny: false\n").toOption ==
-  some ({ x := none, y := false } : ExternalQ))
-
--- Derived ToYaml, emitter and typed reparse must agree on distinct payloads.
-#guard ((parseAs ExternalQ (Dump.dump (toYaml
-  ({ x := some "null", y := true } : ExternalQ)))).toOption ==
-  some ({ x := some "null", y := true } : ExternalQ))
-#guard ((parseAs ExternalQ (Dump.dump (toYaml
-  ({ x := none, y := true } : ExternalQ)))).toOption ==
-  some ({ x := none, y := true } : ExternalQ))
+-- No #guard/#eval here: those are meta programs, requiring additional
+-- meta imports not needed by an ordinary compiled downstream consumer.
+-- The source-native 125-case suite tests runtime values separately.
+def sourceFacingChecks : Array Bool := #[
+  (parseAs ExternalQ "x: \"null\"\ny: true\n").toOption ==
+    some ({ x := some "null", y := true } : ExternalQ),
+  (parseAs ExternalQ "x: null\ny: false\n").toOption ==
+    some ({ x := none, y := false } : ExternalQ),
+  (parseAs ExternalQ (Dump.dump (toYaml
+    ({ x := some "null", y := true } : ExternalQ)))).toOption ==
+    some ({ x := some "null", y := true } : ExternalQ),
+  (parseAs ExternalQ (Dump.dump (toYaml
+    ({ x := none, y := true } : ExternalQ)))).toOption ==
+    some ({ x := none, y := true } : ExternalQ)
+]
