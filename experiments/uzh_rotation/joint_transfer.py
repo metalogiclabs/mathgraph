@@ -59,6 +59,28 @@ with zipfile.ZipFile(a.dataset) as z:
  early=imu[(imu[:,0]>=ts[0]) & (imu[:,0]<ts[0]+0.30),4:7]
  startup_bias_rmse=score(integrate(np.mean(early,axis=0))) if len(early)>5 else None
  if len(train)<20:
+  # Evidence-diversity test: evaluate the proposed partial update on
+  # separate motion families defined WITHOUT truth or validation residuals.
+  # These are two gyro-derived duration / rotation-excitation categories.
+  # Abstain if either category has fewer than 3 validation observations.
+  def family(e):
+   j,i,_,_=e
+   gyro_vec=(gyro[j].inv()*gyro[i]).as_rotvec()
+   # Orientation-independent angular excursion magnitude; threshold
+   # declared before observing either unseen-scene result.
+   return int(np.linalg.norm(gyro_vec)>=np.deg2rad(12))
+  families={g:[e for e in selection_check if family(e)==g] for g in (0,1)}
+  supported_families=all(len(group)>=3 for group in families.values())
+  family_stats=[]
+  if supported_families:
+   for group in families.values():
+    candidate_err=independent_check(projected,conv10,group)
+    old_err=independent_check(np.r_[fit_prior.x,prior_bias],conv10,group)
+    family_stats.append(dict(n=len(group),candidate_rad=candidate_err,prior_rad=old_err,
+                             improvement_rad=old_err-candidate_err))
+  diverse_accept=bool(partial_accept and supported_families and
+                      all(x["improvement_rad"]>=0.005 for x in family_stats))
+  diverse_rmse=score(integrate(projected[3:] if diverse_accept else prior_bias))
   result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,status="INSUFFICIENT_TRAINING_SUPPORT",fitted_rmse_deg=None)
  else:
   sub=train[:20];fits=[]
@@ -141,6 +163,6 @@ with zipfile.ZipFile(a.dataset) as z:
   ridge_accept=bool(fit10.success and fit_prior.success and ridge_validation+.005<held_prior)
   ridge_rmse=score(integrate(ridge[3:] if ridge_accept else prior_bias))
 
-  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,observability_selected_candidate=observable_accept,observability_rmse_deg=observable_rmse,partial_subspace_rmse_deg=partial_rmse,partial_subspace_accepted=partial_accept,partial_subspace_rank=int(strong.sum()),partial_validation_rad=projected_validation,ridge_rmse_deg=ridge_rmse,ridge_accepted=ridge_accept,ridge_validation_rad=ridge_validation,scaled_jacobian_min_singular=float(singular[-1]),scaled_jacobian_ratio=obs_ratio,observability_pass=obs_pass,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
+  result=dict(dataset=a.dataset,frames=len(ts),training_edges=len(train),test_edges=len(test),gyro_rmse_deg=raw,frozen_prior_bias_rmse_deg=frozen_bias_rmse,startup_window_rmse_deg=startup_bias_rmse,fitted_rmse_deg=score(integrate(fit.x[3:])),selected_rmse_deg=score(integrate(selected_bias)),selected_candidate=accepted,crossfit_selected_candidate=crossfit_accept,observability_selected_candidate=observable_accept,observability_rmse_deg=observable_rmse,partial_subspace_rmse_deg=partial_rmse,evidence_diverse_rmse_deg=diverse_rmse,evidence_diverse_accepted=diverse_accept,evidence_diverse_supported_families=supported_families,evidence_diverse_family_sizes=[len(families[x]) for x in (0,1)],evidence_diverse_family_validation=family_stats,partial_subspace_accepted=partial_accept,partial_subspace_rank=int(strong.sum()),partial_validation_rad=projected_validation,ridge_rmse_deg=ridge_rmse,ridge_accepted=ridge_accept,ridge_validation_rad=ridge_validation,scaled_jacobian_min_singular=float(singular[-1]),scaled_jacobian_ratio=obs_ratio,observability_pass=obs_pass,crossfit_rmse_deg=crossfit_rmse,crossfit_validation_candidate_rad=held_candidate,crossfit_validation_prior_rad=held_prior,training_prior_residual_rad=prior_residual,training_candidate_residual_rad=candidate_residual,selector_margin_rad=selector_margin,convention=k,training_cost=float(cost),fit_success=bool(fit.success),bias_rad_s=fit.x[3:].tolist(),status="CANDIDATE" if fit.success else "OPTIMIZER_NOT_CONVERGED")
  result["verification_boundary"]="Same predeclared method/settings on new scenes; GT used only for score, still per-sequence calibration. Not real spinning-drone flight or standard VIO benchmark."
  open(a.output,"w").write(json.dumps(result,indent=2));print(json.dumps(result,indent=2))
