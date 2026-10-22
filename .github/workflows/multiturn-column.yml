@@ -17,15 +17,17 @@ jobs:
       - run: pip install numpy==2.1.3
       - name: Synthetic 12-turn single-column benchmark
         run: |
-          for seed in 27 41 73 109; do
-            python experiments/uzh_rotation/multiturn_column_sim.py --seed "${seed}" --turns 12 --output "multiturn_${seed}.json"
+          for stress in clean repeat shift timing combined; do
+            for seed in 27 41 73 109; do
+              python experiments/uzh_rotation/multiturn_column_sim.py --seed "${seed}" --turns 12 --stress "${stress}" --output "multiturn_${stress}_${seed}.json"
+            done
           done
           python - <<'PY'
           import json,glob
           results=[json.load(open(p)) for p in sorted(glob.glob("multiturn_*.json"))]
           for r in results:
-              print(r["seed"],"gyro",round(r["gyro_only"]["rmse_deg"],3),"learned",round(r["visual_learned_map"]["rmse_deg"],3),"map_coverage",r["map_coverage"])
-          assert len(results)==4
+              print(r["stress"],r["seed"],"gyro",round(r["gyro_only"]["rmse_deg"],3),"learned",round(r["visual_learned_map"]["rmse_deg"],3),"map_coverage",r["map_coverage"])
+          assert len(results)==20
           assert all(r["map_coverage"]>0.9 for r in results)
           PY
       - uses: actions/upload-artifact@v4
