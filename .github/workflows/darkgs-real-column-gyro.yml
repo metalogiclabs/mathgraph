@@ -1,0 +1,57 @@
+name: DARK-GS first real UAV single camera-column gyro feasibility
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/darkgs-real-column-gyro.yml'
+      - 'experiments/uzh_rotation/darkgs_camera_gyro_firstturn.py'
+      - 'experiments/uzh_rotation/test_darkgs_real_column.py'
+  workflow_dispatch:
+jobs:
+  source-faithful-diagnostic-firstturn-image-column:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original 360 publisher admission and source identity
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/qualify_darkgs_360.py)" = 4a8138ab153243aa656342e4cf704fb662fd7e46
+      - name: Install pinned ROS2, image and linear array dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 Pillow==11.0.0 requests==2.32.3
+      - name: Synthetic causal nonfuture and source integrity tests
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_darkgs_real_column.py' -v
+      - name: Acquire authenticated original UAV RGB and gyro data
+        run: |
+          python experiments/uzh_rotation/darkgs_camera_gyro_firstturn.py \
+            --out darkgs_original_camera_gyro_column.json
+      - name: Independently ensure source scope is not overstated
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('darkgs_original_camera_gyro_column.json'))
+          assert d["source_SHA256"]=="f0c6bccfe0bd6bf20fb040280b212883c142fac609a70587da26efedd52649c2"
+          assert d["no_navigation_heading_correction_authorized"]
+          assert d["no_reference_pose_or_odometry_payload_used"]
+          assert d["status"].startswith(("UNKNOWN_","DIAGNOSTIC_"))
+          if "result" in d:
+              r=d["result"]
+              assert r["original_frame_samples"]==600
+              assert r["original_imu_samples"]==13434
+              assert not r["warranted_embedded_firstturn_reference"]
+              assert not r["navigation_correction_authorized"]
+              assert r["camera_pixels_are_not_a_hardware_single_line_camera"]
+              print("REAL_DIAGNOSTIC_FIRSTTURN",r["state"],r["diagnostic_nominal_64bin_coverage"],
+                    r["nominal_unquarantined_firstturn_bins"],r["descriptors_source_conflict_bin_count"])
+          else:
+              print("REAL_DIAGNOSTIC_OBSTRUCTION",d.get("failure"))
+          PY
+      - name: Preserve measured real camera/gyro diagnostics, never redistribute frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkgs-physical-rgb-one-column-causal-gyro-firstturn
+          path: darkgs_original_camera_gyro_column.json
+          if-no-files-found: warn
