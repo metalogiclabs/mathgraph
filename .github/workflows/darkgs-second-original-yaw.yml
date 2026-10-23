@@ -1,0 +1,53 @@
+name: DARK-GS source-distinct second original UAV yaw admission
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/darkgs-second-original-yaw.yml'
+  workflow_dispatch:
+jobs:
+  frozen-independent-second-original-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock original source classifier Git blob
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/qualify_darkgs_360.py)" = 4a8138ab153243aa656342e4cf704fb662fd7e46
+      - name: Frozen numerical and ROS2 sources
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 requests==2.32.3 PyYAML==6.0.3
+      - name: Original first source control matrix and source-distinct controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_qualify_darkgs_360.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_qualify_darkgs_360_2.py' -v
+      - name: Retrieve untouched second original 360_2 record
+        run: |
+          python experiments/uzh_rotation/qualify_darkgs_360_2.py \
+            --out darkgs_second_yaw_source_report.json
+      - name: Independent provenance and authorization boundary
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('darkgs_second_yaw_source_report.json'))
+          assert d['source_name']=='360_2.zip'
+          assert d['source_md5_expected']=='9a05e7d528241ad9a4f055170f3a710f'
+          assert d['frozen_original_source_classifier_git_blob']=='4a8138ab153243aa656342e4cf704fb662fd7e46'
+          assert not d['image_values_opened'] and not d['gyro_values_opened']
+          assert not d['source_mocap_externally_independent']
+          assert not d['first_turn_visual_reference_built']
+          assert not d['navigation_correction_authorized']
+          assert d['state'].startswith(('UNKNOWN_','REJECTED_','CANDIDATE_'))
+          if d.get('original_source_md5'):
+              assert d['original_source_md5']=='9a05e7d528241ad9a4f055170f3a710f'
+          print('DARKGS_SECOND_YAW_ORIGINAL',d['state'],d.get('motion',{}).get('world_z_yaw_directional'))
+          PY
+      - name: Preserve alternate original source and all negative values
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkgs-second-original-uav-yaw-source-transfer
+          path: darkgs_second_yaw_source_report.json
+          if-no-files-found: warn
