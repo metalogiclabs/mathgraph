@@ -28,7 +28,7 @@ jobs:
             "imucam_calib.yaml":"1B3mV7_JX70QJBwF9OR3XqCFHU_Udj8ob",
           }
           for name,ident in sources.items():
-              subprocess.run(["gdown","--id",ident,"-O",f"efrd_source_text/{name}"],check=True)
+              subprocess.run(["gdown",ident,"-O",f"efrd_source_text/{name}"],check=True)
           PY
       - name: Source hash and documentation witness
         run: |
