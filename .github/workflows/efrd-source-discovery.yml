@@ -1,0 +1,43 @@
+name: EFRD source metadata qualification before first measurement
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/efrd-source-discovery.yml'
+  workflow_dispatch:
+jobs:
+  independently-screen-authors-source-listing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned listing client
+        run: pip install gdown==6.1.0
+      - name: Source classification negative and positive controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_efrd_sources.py' -v
+      - name: List upstream public EFRD Drive without downloading measurements
+        run: |
+          python experiments/uzh_rotation/qualify_efrd_sources.py --out efrd_source_manifest.json
+      - name: No metadata may authorize multi-turn heading correction
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('efrd_source_manifest.json'))
+          assert d["source"]=="https://drive.google.com/drive/folders/1tOlC-aOPL0YmYcQKetyEFWWRYONG8kF0"
+          assert d["upstream_revision_at_freeze"]=="f8a89a0eb842e5f82b982493e636c200f8bf9dee"
+          assert d["files_count"] > 0
+          assert not d["qualified_multirevolution_dataset"]
+          assert all(not f["independent_heading_verified"] and not f["heading_correction_authorized"]
+                     for f in d["file_records"])
+          print("EFRD_SOURCE_ONLY_NOT_ADMITTED",d["files_count"],d["mocap_file_candidates"])
+          PY
+      - name: Retain source listing including unknown and missing candidates
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-first-author-source-manifest
+          path: efrd_source_manifest.json
+          if-no-files-found: warn
