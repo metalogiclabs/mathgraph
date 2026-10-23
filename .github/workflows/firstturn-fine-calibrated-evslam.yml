@@ -28,6 +28,38 @@ jobs:
           python -m unittest discover -s experiments/uzh_rotation -p 'test_firstturn_fine_capture.py' -v
           python -m unittest discover -s experiments/uzh_rotation -p 'test_firstturn_interval_capture.py' -v
           python -m unittest discover -s experiments/uzh_rotation -p 'test_evslam_source_phase_clock.py' -v
+      - name: Freestanding Cortex-M4 compile and invariant 146-byte map layout
+        run: |
+          cat > /tmp/fine_map_layout.c <<'C'
+          #include "finite_partial_map.h"
+          typedef char mg_fine_layout_must_be_146_bytes[(sizeof(MGReferenceMap) == 146u) ? 1 : -1];
+          C
+          clang --target=armv7em-none-eabi -mcpu=cortex-m4 -mthumb -Os -ffreestanding \
+            -std=c99 -Wall -Wextra -Werror -Iexperiments/uzh_rotation \
+            -c /tmp/fine_map_layout.c -o /tmp/fine_map_layout.o
+          clang --target=armv7em-none-eabi -mcpu=cortex-m4 -mthumb -Os -ffreestanding \
+            -std=c99 -Wall -Wextra -Werror \
+            -c experiments/uzh_rotation/firstturn_fine_capture.c -o /tmp/fine_capture.o
+          clang --target=armv7em-none-eabi -mcpu=cortex-m4 -mthumb -Os -ffreestanding \
+            -std=c99 -Wall -Wextra -Werror \
+            -c experiments/uzh_rotation/firstturn_interval_capture.c -o /tmp/coarse_capture.o
+          readelf -h /tmp/fine_capture.o | grep 'Machine:.*ARM'
+          size -B /tmp/coarse_capture.o /tmp/fine_capture.o
+          python - <<'PY'
+          import subprocess
+          lines=subprocess.check_output(["size","-B","/tmp/coarse_capture.o",
+                                         "/tmp/fine_capture.o"],text=True).splitlines()
+          sizes={}
+          for line in lines[1:]:
+              cols=line.split()
+              sizes[cols[-1]]={"text_bytes":int(cols[0]),"data_bytes":int(cols[1]),
+                               "bss_bytes":int(cols[2])}
+          assert len(sizes)==2,sizes
+          assert sizes["/tmp/fine_capture.o"]["data_bytes"]==0
+          assert sizes["/tmp/fine_capture.o"]["bss_bytes"]==0
+          assert sizes["/tmp/fine_capture.o"]["text_bytes"]<2048
+          print("FREESTANDING_CORTEX_M4_CODE_ONLY",sizes)
+          PY
       - name: Authenticate original published pose references
         run: |
           mkdir -p original_evslam
