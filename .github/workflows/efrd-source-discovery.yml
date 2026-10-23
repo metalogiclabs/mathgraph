@@ -4,6 +4,8 @@ on:
     branches: [exp/uzh-rotation-validation-20261021]
     paths:
       - '.github/workflows/efrd-source-discovery.yml'
+      - 'experiments/uzh_rotation/qualify_efrd_sources.py'
+      - 'experiments/uzh_rotation/test_efrd_sources.py'
   workflow_dispatch:
 jobs:
   independently-screen-authors-source-listing:
