@@ -1,0 +1,50 @@
+name: DARK-GS original real UAV 360 yaw source admission
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/darkgs-real-uav-360-source.yml'
+      - 'experiments/uzh_rotation/qualify_darkgs_360.py'
+      - 'experiments/uzh_rotation/test_qualify_darkgs_360.py'
+  workflow_dispatch:
+jobs:
+  authenticated-original-yaw-sequence-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned ROS2 and reference-rotation dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 requests==2.32.3 PyYAML==6.0.3
+      - name: Independent original SHA ZIP and false-fullturn adversaries
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_qualify_darkgs_360.py' -v
+      - name: Fetch exact original deposited 360 ZIP or named source obstruction
+        run: |
+          python experiments/uzh_rotation/qualify_darkgs_360.py \
+            --out darkgs_real_yaw_source_admission.json
+      - name: Independent source and no raw visual control claims
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("darkgs_real_yaw_source_admission.json"))
+          assert d["dataset_doi"]=="doi:10.57745/EV12AZ"
+          assert d["author_published_md5"]=="2b6eb3220c82ecab96dc8a4d918464ed"
+          assert d["heldout_360_2_not_opened"]
+          assert not d["any_camera_image_payload_processed"]
+          assert not d["any_imu_payload_processed"]
+          assert not d["heading_correction_authorized"]
+          assert d["state"].startswith(("UNKNOWN_","CANDIDATE_","REJECTED_"))
+          if "source_md5" in d and d["state"]!="UNKNOWN_AUTHENTIC_SOURCE_MD5_MISMATCH":
+              assert d["source_md5"]=="2b6eb3220c82ecab96dc8a4d918464ed"
+          print("DARKGS_ORIGINAL_SOURCE_RESULT",d["state"],
+                d.get("source_sha256"),d.get("motion",{}).get("world_z_yaw_directional"))
+          PY
+      - name: Preserve source-authentic results or named acquisition blockage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkgs-360-original-uav-source-admission
+          path: darkgs_real_yaw_source_admission.json
+          if-no-files-found: warn
