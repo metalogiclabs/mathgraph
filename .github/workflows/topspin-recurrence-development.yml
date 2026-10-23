@@ -1,0 +1,58 @@
+name: TOPSPIN real event-column temporal recurrence development
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/topspin-recurrence-development.yml'
+      - 'experiments/uzh_rotation/audit_topspin_recurrence.py'
+      - 'experiments/uzh_rotation/test_topspin_recurrence.py'
+  workflow_dispatch:
+jobs:
+  real-column-temporal-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned method and matrix dependency
+        run: pip install numpy==2.1.3
+      - name: Period alias and no future leakage tests
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_topspin_recurrence.py' -v
+      - name: Acquire original real camera rotating-object source
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            'https://zenodo.org/records/10884694/files/hubble-perpendicular-slow.tar.gz?download=1' \
+            --output hubble-perpendicular-slow.tar.gz
+      - name: Verify original content before causal temporal evaluation
+        run: |
+          python experiments/uzh_rotation/audit_topspin_recurrence.py \
+            --archive hubble-perpendicular-slow.tar.gz \
+            --sha256 de27852e28ba0ceff828aeda578fb56db8cb5166599324368522cd105b379526 \
+            --output topspin_recurrence_development.json
+      - name: Refuse unsupported heading and future-observation influence
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('topspin_recurrence_development.json'))
+          assert r["original_author_md5"]=="791716392f201526d814267155291147"
+          assert r["original_sha256"]=="de27852e28ba0ceff828aeda578fb56db8cb5166599324368522cd105b379526"
+          assert r["raw_observation"]["source_events"]==4059443
+          assert r["raw_observation"]["center_column_events"]==11088
+          x=r["experiment"]
+          assert not x["navigation_correction_authorized"]
+          assert x["physical_revolution_count"]=="UNKNOWN"
+          assert x["absolute_heading_truth"]=="UNAVAILABLE"
+          assert x["conventional_full_column_descriptor_later"]["validation_not_used_for_selection"]
+          assert x["event_rate_only_baseline_later"]["validation_not_used_for_selection"]
+          print("TOPSPIN_REAL_PERIODICITY",x["conventional_full_column_descriptor_training"],
+                x["conventional_full_column_descriptor_later"],x["event_rate_only_baseline_later"])
+          PY
+      - name: Retain original-source positive, negative and UNKNOWN measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topspin-first-half-to-second-half-real-one-column
+          path: topspin_recurrence_development.json
+          if-no-files-found: warn
