@@ -36,7 +36,7 @@ class TestReferenceTurns(unittest.TestCase):
         r=analyze(a,b,"drone_rot_norm")
         self.assertTrue(r["recorded_body_y_2plus_revolutions_candidate"])
     def test_too_large_pose_step_does_not_prove_continuity(self):
-        a,b=fake(np.linspace(0,6*math.pi,21))
+        a,b=fake(np.linspace(0,12*math.pi,21))  # 108 degrees/step, genuinely above 90
         r=analyze(a,b,"drone_rot_norm")
         self.assertFalse(r["recorded_body_y_2plus_revolutions_candidate"])
         self.assertFalse(r["source_pairwise_sampling_admissible"])
