@@ -1,0 +1,57 @@
+name: UniswapX signed-order evidence evaluation
+on:
+  push:
+    branches: [research/uniswapx-orderfill-test-20261024]
+    paths:
+      - .github/workflows/uniswapx-orderfill-evaluation.yml
+      - research/uniswapx_orderfill_evaluation_20261024/**
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: uniswapx-orderfill-evaluation-20261024
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Arithmetic and scope controls
+        run: node research/uniswapx_orderfill_evaluation_20261024/evaluate.cjs --test
+      - name: Pinned official SDK and ABI library
+        run: |
+          mkdir -p /tmp/orderfill
+          npm install --prefix /tmp/orderfill --ignore-scripts --no-audit --no-fund ethers@5.8.0 @uniswap/uniswapx-sdk@3.1.5
+      - name: Original frozen acquisition artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: uniswapx-orderfill-acquisition
+          path: input
+          run-id: '40026922285'
+          github-token: ${{ github.token }}
+      - name: Source authentication, onchain receipts, read-only exact-output quotes
+        env:
+          NODE_PATH: /tmp/orderfill/node_modules
+        run: |
+          node research/uniswapx_orderfill_evaluation_20261024/evaluate.cjs input/out/orderfill/recent_after.json out/evaluation
+      - name: Save runtime dependency manifest
+        if: always()
+        run: |
+          mkdir -p out/dependencies
+          cp /tmp/orderfill/package*.json out/dependencies/ || true
+      - name: Archive raw evidence and source
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uniswapx-orderfill-evaluation
+          path: |
+            out
+            research/uniswapx_orderfill_evaluation_20261024
+          if-no-files-found: error
+          retention-days: 30
