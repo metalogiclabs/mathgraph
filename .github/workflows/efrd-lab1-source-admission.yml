@@ -1,0 +1,74 @@
+name: EFRD original lab1 source topic admission
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/efrd-lab1-source-admission.yml'
+  workflow_dispatch:
+jobs:
+  original-lab1-source-topic-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned original ROS source dependency
+        run: pip install rosbags==0.11.9 gdown==6.1.0
+      - name: Existing source classification and identity controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_efrd_sources.py' -v
+      - name: Fetch only lexicographically first lab-labelled recording
+        run: gdown 1e-VrEQWKORSoH3aTKH54ArjjBr3ehMXk -O lab1.bag
+      - name: Hash real source and inspect index without event decoding
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          from rosbags.highlevel import AnyReader
+          file=pathlib.Path('lab1.bag')
+          h=hashlib.sha256()
+          with file.open('rb') as src:
+              for chunk in iter(lambda:src.read(16*1024*1024),b''):
+                  h.update(chunk)
+          with AnyReader([file]) as reader:
+              topics=sorted([{"topic":c.topic,"msgtype":c.msgtype,"msgcount":int(c.msgcount)}
+                              for c in reader.connections],key=lambda r:r["topic"])
+              duration=(reader.end_time-reader.start_time)*1e-9
+          has_external=any("PoseStamped" in t["msgtype"] and
+                            t["topic"].startswith("/vrpn_client_node/") for t in topics)
+          report={
+              "source":"EFRD author-hosted lab1.bag",
+              "source_file_id":"1e-VrEQWKORSoH3aTKH54ArjjBr3ehMXk",
+              "source_sha256":h.hexdigest(),"source_bytes":file.stat().st_size,
+              "upstream_code":"shicy17/MSA@f8a89a0eb842e5f82b982493e636c200f8bf9dee",
+              "topics":topics,"duration_sec":duration,
+              "advertised_imu_derived_gt_is_not_independent":True,
+              "external_mocap_pose_stream_present":has_external,
+              "two_uninterrupted_revolutions_qualified":False,
+              "heading_correction_authorized":False,
+              "source_state":("MOCAP_TOPIC_CANDIDATE_ONLY" if has_external else
+                              "UNKNOWN_OR_NOT_INDEPENDENT"),
+              "lab2_unopened":True,
+              "boundary":"source topics authenticated; no pose yaw or event history decoded"
+          }
+          pathlib.Path('efrd_lab1_source_topics.json').write_text(json.dumps(report,indent=2)+"\n")
+          print("EFRD_LAB1_SOURCE",json.dumps(report))
+          PY
+      - name: Fail closed independently on unsupported heading authority
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('efrd_lab1_source_topics.json'))
+          assert len(d['source_sha256'])==64 and d['source_bytes']>0
+          assert not d['two_uninterrupted_revolutions_qualified']
+          assert not d['heading_correction_authorized']
+          assert d['lab2_unopened']
+          assert len(d['topics'])>0
+          PY
+      - name: Retain source identity and full topic list, not raw recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-lab1-original-source-topic-admission
+          path: efrd_lab1_source_topics.json
+          if-no-files-found: warn
