@@ -1,0 +1,60 @@
+name: UZH authentic gyro vs external mocap clock train-holdout
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/uzh-real-gyro-clock.yml'
+      - 'experiments/uzh_rotation/qualify_uzh_gyro_clock.py'
+      - 'experiments/uzh_rotation/test_qualify_uzh_gyro_clock.py'
+  workflow_dispatch:
+jobs:
+  real-imu-versus-independent-source-pose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin source parsing and math dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1
+      - name: Unit clock-fitting positive and negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_qualify_uzh_gyro_clock.py' -v
+      - name: Obtain exact previously frozen source gyro and original mocap
+        run: |
+          curl -fLsS --retry 2 --retry-delay 2 \
+            'https://files.ifi.uzh.ch/rpg/datasets/davis/shapes_rotation.zip' \
+            -o shapes_rotation.zip
+      - name: Independent real gyro-to-mocap chronological lag transfer
+        run: |
+          python experiments/uzh_rotation/qualify_uzh_gyro_clock.py \
+            --zip shapes_rotation.zip --out uzh_real_gyro_clock_report.json
+      - name: Enforce no accidental heading authority from retrospective fit
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('uzh_real_gyro_clock_report.json'))
+          r=d['result']
+          assert d['source_original_archive_sha256']=='56aade6bf53dcf73e8fe40905ccac8385cd7606bc9a85103bf2c9f9045117551'
+          assert r['imu_count']==59667 and r['mocap_count']==11883
+          assert r['validation_influenced_training_choice'] is False
+          assert not r['timing_bound_independently_certified']
+          assert not r['gyro_orientation_phase_bound_certified']
+          assert not r['heading_correction_authorized']
+          assert not r['camera_event_samples_processed']
+          assert not r['this_source_qualifies_continuous_two_turns']
+          assert r['status'] in ('CANDIDATE_WITHIN_UZH_SOURCE_CLOCK_CONSISTENCY',
+                                 'UNKNOWN_SOURCE_CLOCK_NOT_IDENTIFIABLE_STRONGLY')
+          print('REAL_GYRO_CLOCK_NOT_A_CERTIFICATE',r['status'],
+                r['frozen_training_selected_lag_ms'],
+                r['validation_selected_lag_correlation'],
+                r['validation_zero_lag_correlation'],
+                r['validation_cases_exceeding_train_max_magnitude_error'])
+          PY
+      - name: Preserve actual sensor residual and failed-holdout evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uzh-real-gyro-mocap-clock-source-holdout
+          path: uzh_real_gyro_clock_report.json
+          if-no-files-found: warn
