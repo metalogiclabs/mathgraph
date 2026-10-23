@@ -1,0 +1,55 @@
+name: EFRD lab2 frozen external-mocap two-turn admission
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/efrd-lab2-frozen-mocap.yml'
+  workflow_dispatch:
+jobs:
+  independent-external-mocap-lab2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact lab1 qualifier identity (no changed methodology)
+        run: |
+          git hash-object experiments/uzh_rotation/qualify_efrd_mocap_pose.py
+          test "$(git hash-object experiments/uzh_rotation/qualify_efrd_mocap_pose.py)" = b1ec80c906abb04d79f769d1493cde5403145449
+      - name: Install pinned reference geometry/source readers
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 gdown==6.1.0
+      - name: Frozen classifier independent positive and negative controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_efrd_mocap_pose.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_efrd_lab2_pose.py' -v
+      - name: Reacquire unmodified source-distinct lab2 recording
+        run: gdown 1Hef5HuZCSVkoI09Exq5sRBbd3qDArSgb -O lab2.bag
+      - name: Replay original lab2 poses using unchanged world-Z qualifier
+        run: |
+          python experiments/uzh_rotation/qualify_efrd_lab2_pose.py \
+            --bag lab2.bag --output efrd_lab2_mocap_report.json
+      - name: Audit original-source identity and deny unearned control
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('efrd_lab2_mocap_report.json'))
+          assert r['source_sha256']=='69fd0fb8fafcf01cde467904d54baa90b98d5c85cb22bd15034770be3f8ed7c1'
+          assert r['source_bytes']==1394913640
+          assert r['classifier_blob_sha']=='b1ec80c906abb04d79f769d1493cde5403145449'
+          assert r['source_pose_count']==5904
+          assert not r['navigation_correction_authorized']
+          assert r['camera_event_values_not_opened'] and not r['estimator_received_ground_truth']
+          assert r['state'] in ('CANDIDATE_FOR_SEPARATE_CAMERA_IMU_COLUMN_QUALIFICATION',
+                                'REJECTED_FOR_FROZEN_WORLD_Z_TWO_TURN_REQUIREMENT',
+                                'UNKNOWN_INVALID_POSE_SEQUENCE')
+          print('LAB2_SOURCE_DISTINCT_ADMISSION',r['state'],r.get('metrics',{}))
+          PY
+      - name: Retain positive and negative source-authentic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-lab2-frozen-two-turn-qualification
+          path: efrd_lab2_mocap_report.json
+          if-no-files-found: warn
