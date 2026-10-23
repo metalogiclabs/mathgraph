@@ -41,6 +41,6 @@ class DuplicateSourceControls(unittest.TestCase):
                                  obs(2,3,b"c"),obs(3)])
         self.assertEqual(data["same_time_extra_observations"],2)
         self.assertEqual(data["original_messages"],5)
-        self.assertEqual(data["duplicate_group_details"][0]["observations"],3)
+        self.assertEqual(data["duplicate_groups"][0]["observations"],3)
 if __name__=="__main__":
     unittest.main()
