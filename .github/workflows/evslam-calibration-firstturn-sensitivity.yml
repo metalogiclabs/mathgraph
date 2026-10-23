@@ -1,0 +1,76 @@
+name: EvSLAM publisher camera calibration first-turn phase sensitivity
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/evslam-calibration-firstturn-sensitivity.yml'
+      - 'experiments/uzh_rotation/evslam_source_phase_clock.py'
+      - 'experiments/uzh_rotation/test_evslam_source_phase_clock.py'
+  workflow_dispatch:
+jobs:
+  original-calibration-pose-clock-sensitivity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned numerical, YAML and original-source dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 PyYAML==6.0.3 gdown==6.1.0
+      - name: Correctness controls and unchanged native interval C99 oracle
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_evslam_source_phase_clock.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_firstturn_interval_capture.py' -v
+      - name: Fetch and verify original publisher GT bytes at exact revision
+        run: |
+          mkdir -p original_evslam
+          python - <<'PY'
+          import subprocess
+          base="https://raw.githubusercontent.com/NAIL-HNU/EvSLAM_Dataset/f116a9fe305f3ad8b1a379e1bb52becfc87654dc/evaluation/ground_truth"
+          names={"drone_rot_norm_gt.txt":"809d83df4063376d0ee50f62095131e1d8940c00",
+                 "drone_rot_fast_gt.txt":"47a1bd5b54c0843d2535af42ebff0529950a5a6f"}
+          for name,sha in names.items():
+              subprocess.run(["curl","-fsSL","--retry","2",f"{base}/{name}",
+                              "-o",f"original_evslam/{name}"],check=True)
+              actual=subprocess.check_output(["git","hash-object",f"original_evslam/{name}"],text=True).strip()
+              assert actual==sha,(name,actual)
+              print("GT_SOURCE_IDENTITY",name,actual)
+          PY
+      - name: Fetch official batch-2 camera and IMU calibration (not raw bags)
+        run: |
+          gdown 1ZeQokirC1dyB9is8bmm8gCKejxv2V7rD -O original_evslam/camera_calib.yaml
+          gdown 16XWYmUw6NPwe9jD_r5nUKnS4N-0uwJdQ -O original_evslam/imu_calib.yaml
+      - name: Reproduce nominal-shift hypothetical firstturn interval analysis
+        run: |
+          python experiments/uzh_rotation/evslam_source_phase_clock.py \
+            --source-dir original_evslam \
+            --calib original_evslam/camera_calib.yaml \
+            --imu-calib original_evslam/imu_calib.yaml \
+            --out evslam_firstturn_calibration_sensitivity.json
+      - name: Check original sources and unearned authority refusals
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("evslam_firstturn_calibration_sensitivity.json"))
+          assert d["calibration"]["camera_calibration_original_sha256"]=="2aee1692299ae519251e921c087503263e187a3e79cf6c341a31b97bd87a2b72"
+          assert d["calibration"]["imu_calibration_original_sha256"]=="561da3630bce3f7dfd27b7ad134441f5053abaccadfa9cb89771ae8493ac051a"
+          assert not d["calibration"]["nominal_shift_is_verified_error_bound"]
+          assert d["camera_event_and_gyro_sources"]=="NOT_ACQUIRED"
+          for name,p in d["trajectories"].items():
+              assert p["pose_samples"]>200
+              assert p["independent_relative_rotvec_max_disagreement_rad"]<1e-8
+              assert p["C99_compatible_conservative_tick_guard_refusals"]>=p["first_turn_two_sided_time_interval_crosses_angular_bin"]
+              assert not p["navigation_correction_authorized"]
+              print("SOURCE_CALIBRATED_SENSITIVITY_ONLY",name,
+                    p["hypothetical_clock_offset_shift_deg"]["max"],
+                    p["ideal_pinhole_horizontal_pixel_equivalent_at_center"]["max"],
+                    p["first_turn_two_sided_time_interval_crosses_angular_bin"])
+          PY
+      - name: Preserve only source-pinned derived evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evslam-batch2-calibration-firstturn-bin-risk
+          path: evslam_firstturn_calibration_sensitivity.json
+          if-no-files-found: warn
