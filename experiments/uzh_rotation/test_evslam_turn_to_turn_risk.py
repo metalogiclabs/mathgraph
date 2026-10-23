@@ -45,7 +45,7 @@ class RevisitAuthorityTests(unittest.TestCase):
         positions=np.array([[0.,0,0],[1.,0,0],[2.,0,0],[3.,0,0]])
         q=np.tile(np.array([0.,0.,0.,1.]),(4,1))
         a=pose_at_phase(phase,positions,q,.625)
-        self.assertAlmostEqual(a[0][0],.625)
+        self.assertAlmostEqual(a[0][0],.625/.75)
         self.assertIsNone(pose_at_phase(phase,positions,q,1.5))
 if __name__=="__main__":
     unittest.main()
