@@ -1,0 +1,57 @@
+name: EFRD original mocap vs dual-IMU half-split timing qualification
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/efrd-lab1-timing-audit.yml'
+      - 'experiments/uzh_rotation/qualify_efrd_timing.py'
+      - 'experiments/uzh_rotation/test_efrd_timing.py'
+  workflow_dispatch:
+jobs:
+  frozen-development-timing-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned ROS and mathematical source dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 gdown==6.1.0
+      - name: Independent positive, negative and leakage controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_efrd_timing.py' -v
+      - name: Download unchanged original development source
+        run: gdown 1e-VrEQWKORSoH3aTKH54ArjjBr3ehMXk -O lab1.bag
+      - name: Compare external mocap to both original gyroscopes
+        run: |
+          python experiments/uzh_rotation/qualify_efrd_timing.py \
+            --bag lab1.bag --output efrd_lab1_timing_result.json
+      - name: Audit admissible interpretation and complete source identity
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('efrd_lab1_timing_result.json'))
+          assert d['source_sha256']=='2fac73513203739df46fb085a4e67f8f41e7c2aa9ebfdd115d97b34a9929e484'
+          assert d['mocap_pose_samples']==12228
+          assert d['development_source_already_exposed'] and d['lab2_source_values_unopened']
+          assert d['camera_events_not_decoded'] and d['mocap_never_used_as_visual_tracker_input']
+          assert not d['navigation_correction_authorized']
+          assert set(d['sensor_audits'])=={'/dvs/imu','/imu/data'}
+          for name,a in d['sensor_audits'].items():
+              assert a['status'] in (
+                'CANDIDATE_WITHIN_RECORDING_LAG_TRANSFER',
+                'NO_VALIDATED_TIMING_ADVANTAGE',
+                'UNKNOWN_NO_SUFFICIENT_COMMON_CLOCK',
+                'UNKNOWN_INSUFFICIENT_CHRONOLOGICAL_SAMPLES',
+                'UNKNOWN_UNINFORMATIVE_TRAINING',
+                'UNKNOWN_UNINFORMATIVE_VALIDATION',
+                'UNKNOWN_UNQUALIFIED_GYRO_SOURCE')
+              print('SOURCE_TIMING_RESULT',name,a['status'],a.get('timing',{}).get('metrics',{}))
+          PY
+      - name: Archive both IMU outcomes including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-lab1-source-timing-both-imus
+          path: efrd_lab1_timing_result.json
+          if-no-files-found: warn
