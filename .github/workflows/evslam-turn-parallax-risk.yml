@@ -38,7 +38,7 @@ jobs:
         run: |
           python experiments/uzh_rotation/evslam_turn_to_turn_risk.py \
             --source-dir original_evslam --out evslam_revisit_geometry.json
-      - name: Independent promotion boundary: not real camera measurements
+      - name: 'Independent promotion boundary: not real camera measurements'
         run: |
           python - <<'PY'
           import json
