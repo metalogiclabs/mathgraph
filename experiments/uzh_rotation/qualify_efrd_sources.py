@@ -72,7 +72,7 @@ def evaluate_file_manifest(rows):
 
 def enumerate_source():
     import gdown
-    result=gdown.download_folder(url=SOURCE_URL,skip_download=True,quiet=True,remaining_ok=True)
+    result=gdown.download_folder(url=SOURCE_URL,skip_download=True,quiet=True)
     if result is None:
         raise RuntimeError("EFRD public source listing unavailable")
     return [{"id":x.id,"path":x.path} for x in result]
