@@ -140,6 +140,7 @@ def audit(archive):
     with tarfile.open(source,"r:gz") as tf:
         events,meta=inspect_members(tf)
         decoded=json.load(tf.extractfile(meta))
+        print('TOPSPIN_ORIGINAL_META_SCHEMA',json.dumps(decoded,sort_keys=True))
         width,height=metadata_shape(decoded)
         source_result=stream_events(tf.extractfile(events),width,height,source.name)
     return {

@@ -4,6 +4,8 @@ on:
     branches: [exp/uzh-rotation-validation-20261021]
     paths:
       - '.github/workflows/topspin-original-column-preflight.yml'
+      - 'experiments/uzh_rotation/audit_topspin_column.py'
+      - 'experiments/uzh_rotation/test_topspin_column.py'
   workflow_dispatch:
 jobs:
   source-pinned-original-event-column:
