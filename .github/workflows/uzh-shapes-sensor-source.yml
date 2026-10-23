@@ -1,0 +1,49 @@
+name: UZH source-authentic gyro schema admission before clock fitting
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/uzh-shapes-sensor-source.yml'
+      - 'experiments/uzh_rotation/uzh_shapes_sensor_manifest.py'
+      - 'experiments/uzh_rotation/test_uzh_shapes_sensor_manifest.py'
+  workflow_dispatch:
+jobs:
+  inspect-authentic-imu-calibration-and-pose-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source-identity and path traversal tests
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_uzh_shapes_sensor_manifest.py' -v
+      - name: Reacquire previously pinned original UZH sensor archive
+        run: |
+          curl -fLsS --retry 2 --retry-delay 2 \
+            'https://files.ifi.uzh.ch/rpg/datasets/davis/shapes_rotation.zip' \
+            -o shapes_rotation.zip
+      - name: Authenticate and inspect exact original gyro and GT schema
+        run: |
+          python experiments/uzh_rotation/uzh_shapes_sensor_manifest.py \
+            --zip shapes_rotation.zip --out uzh_shapes_sensor_manifest.json
+      - name: Guard retained sensor authority boundary
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('uzh_shapes_sensor_manifest.json'))
+          assert r["source_archive_sha256"]=="56aade6bf53dcf73e8fe40905ccac8385cd7606bc9a85103bf2c9f9045117551"
+          assert not r["source_trajectory_continuous_two_turn_qualifies"]
+          assert not r["source_data_reads"]["events"]
+          assert not r["navigation_correction_authorized"]
+          print("UZH_REAL_IMU_SOURCE",r["named_sources"]["imu.txt"])
+          print("UZH_REAL_GT_SOURCE",r["named_sources"]["groundtruth.txt"])
+          print("UZH_REAL_CAMERA_CALIB",r["named_sources"]["calib.txt"])
+          PY
+      - name: Preserve original source calibration and chronology metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uzh-shapes-real-imu-groundtruth-source-admission
+          path: uzh_shapes_sensor_manifest.json
+          if-no-files-found: warn
