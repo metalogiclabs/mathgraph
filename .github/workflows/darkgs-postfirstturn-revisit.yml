@@ -1,0 +1,93 @@
+name: DARK-GS actual later-image revisit versus frozen first-turn
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/darkgs-postfirstturn-revisit.yml'
+      - 'experiments/uzh_rotation/darkgs_postfirstturn_revisit.py'
+      - 'experiments/uzh_rotation/test_darkgs_postfirstturn_revisit.py'
+  workflow_dispatch:
+jobs:
+  original-uav-real-column-exposed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify original v2 source and descriptor is frozen
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/darkgs_column_v2.py)" = 2a00bf9ec471a0d03edfe85d1622cb78b1c8efb7
+          test "$(git hash-object experiments/uzh_rotation/darkgs_camera_gyro_firstturn.py)" = 3642d669a8895bf789739dd3774f744d14023548
+      - name: Install original-source camera and IMU reader
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 Pillow==11.0.0 requests==2.32.3
+      - name: Run temporal partition leakage and discontinuity controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_darkgs_postfirstturn_revisit.py' -v
+      - name: Replay original publisher source with frozen map and conventional matcher
+        run: |
+          python experiments/uzh_rotation/darkgs_postfirstturn_revisit.py \
+            --source 360.zip --output darkgs_original_360_later_image_support.json
+      - name: Audit later-turn insufficiency and source fidelity
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('darkgs_original_360_later_image_support.json'))
+          assert d['source_state']=='COMPLETE_BOUNDED_REAL_SOURCE_OFFLINE_DIAGNOSTIC',d
+          assert d['source_SHA256']=='f0c6bccfe0bd6bf20fb040280b212883c142fac609a70587da26efedd52649c2'
+          r=d['result']
+          assert r['source_image_samples']==600 and r['source_gyro_samples']==13434
+          assert r['frozen_reference_bins']==33 and r['postfirstturn_original_frames']==150
+          assert not r['navigation_correction_authorized']
+          assert not r['no_heldout_appearance_leaked_to_firstturn_reference'] is False
+          assert not r['independent_heading_ground_truth_used']
+          print('POSTFIRSTTURN_GYRO_ANGLE_SUPPORT',r['state'],
+                r['remaining_progress_to_second_turns'],r['postfirstturn_nominal_gyro_bins'])
+          PY
+      - name: Preserve original source diagnostic without source images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkgs-360-genuine-after-firstturn-visual-revisit-evidence
+          path: darkgs_original_360_later_image_support.json
+          if-no-files-found: warn
+  second-original-frozen-comparison:
+    needs: original-uav-real-column-exposed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock unchanged original descriptor and new experiment byte identity
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/darkgs_column_v2.py)" = 2a00bf9ec471a0d03edfe85d1622cb78b1c8efb7
+      - name: Install identical reader and matcher dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 Pillow==11.0.0 requests==2.32.3
+      - name: Replay genuine second flight, not an invented synthetic rotation
+        run: |
+          python experiments/uzh_rotation/darkgs_postfirstturn_revisit.py \
+            --source 360_2.zip --output darkgs_original_360_2_later_image_support.json
+      - name: Preserve second-flight no-full-turn obstruction
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('darkgs_original_360_2_later_image_support.json'))
+          assert d['source_state']=='COMPLETE_BOUNDED_REAL_SOURCE_OFFLINE_DIAGNOSTIC',d
+          assert d['source_SHA256']=='36da03f876b34c94e34b721e61bf114cfa04ec19857dba1db3899c41c599dfa1'
+          r=d['result']
+          assert r['source_image_samples']==761 and r['source_gyro_samples']==17413
+          assert r['frozen_reference_bins']==20
+          assert r['postfirstturn_original_frames']==0
+          assert r['state']=='NO_FIRST_COMPLETE_GYRO_TURN'
+          assert not r['navigation_correction_authorized']
+          print('SECOND_ORIGINAL_NO_TURN',r['gyro_source_signed_turns'],r['state'])
+          PY
+      - name: Preserve complete source evidence including negative turn
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkgs-360-2-original-no-later-turn-evidence
+          path: darkgs_original_360_2_later_image_support.json
+          if-no-files-found: warn
