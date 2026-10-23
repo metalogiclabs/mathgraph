@@ -1,0 +1,55 @@
+name: UZH original shapes_rotation uninterrupted two-turn admission
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/uzh-shapes-original-sweep.yml'
+      - 'experiments/uzh_rotation/qualify_uzh_shapes_source.py'
+      - 'experiments/uzh_rotation/test_uzh_shapes_source.py'
+  workflow_dispatch:
+jobs:
+  original-shapes-mocap-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pinned geometry/math dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1
+      - name: Adversarial 20Hz pose source qualification controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_uzh_shapes_source.py' -v
+      - name: Fetch unmodified original UZH 2016 event/GT/gyro archive
+        run: |
+          curl -fLsS --retry 3 --retry-delay 2 \
+            'https://files.ifi.uzh.ch/rpg/datasets/davis/shapes_rotation.zip' \
+            -o shapes_rotation.zip
+      - name: Verify archive identity and inspect only original motion-capture poses
+        run: |
+          python experiments/uzh_rotation/qualify_uzh_shapes_source.py \
+            --zip shapes_rotation.zip --out uzh_shapes_trajectory_admission.json
+      - name: Enforce no hidden visual data or unearned heading correction
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('uzh_shapes_trajectory_admission.json'))
+          assert len(d['source_archive_sha256_first_authenticated_receipt'])==64
+          assert d['source_archive_bytes']>50*1024*1024
+          assert d['motion']['source_pose_count']>=100
+          assert d['motion']['resampled_original_pose_count']>=40
+          assert d['motion']['source_quaternion_independent_agreement_rad']<1e-8
+          assert not d['motion']['sensor_event_values_read']
+          assert not d['motion']['sensor_imu_values_read']
+          assert not d['motion']['navigation_heading_correction_authorized']
+          assert d['result'] in ('CANDIDATE_FOR_SEPARATE_REAL_EVENT_IMU_REPLAY',
+                                 'REJECTED_AS_CONTINUOUS_2_TURN_DATASET_IN_DECLARED_MODEL')
+          print("UZH_ORIGINAL_SOURCE_ADMISSION",d['result'],d['motion']['per_body_axis'])
+          PY
+      - name: Retain source fingerprint and actual qualified/rejected poses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uzh-shapes-real-source-rotation-qualification
+          path: uzh_shapes_trajectory_admission.json
+          if-no-files-found: warn
