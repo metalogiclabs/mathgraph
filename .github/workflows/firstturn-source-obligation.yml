@@ -1,0 +1,86 @@
+name: C99 firstturn warrant-gated real sensor acquisition obligations
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/firstturn-source-obligation.yml'
+      - 'experiments/uzh_rotation/firstturn_source_obligation.c'
+      - 'experiments/uzh_rotation/firstturn_source_obligation.h'
+      - 'experiments/uzh_rotation/test_firstturn_source_obligation.py'
+  workflow_dispatch:
+jobs:
+  source-evidence-obligation-finite-c99:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify existing source maps and fine capture are unchanged
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/finite_partial_map.c)" = 08b1b8da9e3420ef3d50b58cd29552c4857e6b29
+          test "$(git hash-object experiments/uzh_rotation/firstturn_fine_capture.c)" = 1e25217918c5011ffb08ad1d5dbed5dfac10c802
+          test "$(git hash-object experiments/uzh_rotation/firstturn_interval_capture.c)" = b7957be414692be82449ff4daa90751011621304
+      - name: Exhaustive conditional acquisition / source-warrant oracle
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_firstturn_source_obligation.py' -v
+      - name: Full old 16-bit finite oracle and coarse adapter regressions
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_firstturn_fine_capture.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_firstturn_interval_capture.py' -v
+      - name: Freestanding Cortex M4, persistent reference map size, code resource
+        run: |
+          cat >/tmp/source_phase_layout.c <<'C'
+          #include "firstturn_source_obligation.h"
+          typedef char mg_original_source_map_must_be_146_bytes[
+               (sizeof(MGReferenceMap)==146u)?1:-1];
+          typedef char mg_ephemeral_warrant_must_be_8_bytes[
+               (sizeof(MGSourcePhaseEvidence)==8u)?1:-1];
+          C
+          clang --target=armv7em-none-eabi -mcpu=cortex-m4 -mthumb -Os \
+            -std=c99 -Wall -Wextra -Werror -ffreestanding \
+            -Iexperiments/uzh_rotation \
+            -c /tmp/source_phase_layout.c -o /tmp/source_phase_layout.o
+          clang --target=armv7em-none-eabi -mcpu=cortex-m4 -mthumb -Os \
+            -std=c99 -Wall -Wextra -Werror -ffreestanding \
+            -c experiments/uzh_rotation/firstturn_source_obligation.c \
+            -o /tmp/source_obligation_arm.o
+          readelf -h /tmp/source_obligation_arm.o | grep 'Machine:.*ARM'
+          size -B /tmp/source_obligation_arm.o
+          python - <<'PY'
+          import subprocess
+          x=subprocess.check_output(["size","-B","/tmp/source_obligation_arm.o"],
+                                    text=True).splitlines()[1].split()
+          assert len(x)>=6,x
+          text_size,data_size,bss_size=map(int,x[:3])
+          assert data_size==0 and bss_size==0
+          assert text_size<2048,(text_size,data_size,bss_size)
+          print("M4_EPHEMERAL_EVIDENCE_GATE",text_size,data_size,bss_size)
+          PY
+      - name: Retain tested authority boundaries as compact machine record
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          r={
+           "exact_finite_source_obligation_checks":7*65536,
+           "existing_16bit_fine_original_oracle_checks":11*65536,
+           "original_146_byte_reference_map_intact":True,
+           "new_clock_bound_independently_authenticated_from_real_sensor":False,
+           "default_missing_evidence_blocks_sensor_column_acquisition":True,
+           "forged_source_witness_negative_control_retained":True,
+           "physical_event_column_acquired":False,
+           "heading_correction_authorized":False,
+           "capability":"C99 conditional evidence-gated capture request",
+           "scope":"software qualification only; external bound verifiers missing"
+          }
+          pathlib.Path("firstturn_source_obligation_results.json").write_text(json.dumps(r,indent=2)+"\n")
+          print("SOURCE_OBLIGATION_QUALIFIED",json.dumps(r))
+          PY
+      - name: Archive finite-source obligation and resource claims
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firstturn-embedded-gyro-clock-source-obligation
+          path: firstturn_source_obligation_results.json
+          if-no-files-found: warn
