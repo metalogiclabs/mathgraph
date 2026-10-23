@@ -41,7 +41,7 @@ class DarkOriginalSourceAdmissionTests(unittest.TestCase):
         x=geometry(*track(axis="x"))
         self.assertFalse(x["two_continuous_world_z_yaw_turns_qualified_in_source_model"])
     def test_sampling_180_degree_alias_refused(self):
-        x=geometry(*track(samples=35))
+        x=geometry(*track(turns=12,samples=35))  # 127deg original step, genuinely > 90
         self.assertFalse(x["pose_sampling_admission"])
     def test_repeated_source_header_time_rejected(self):
         t,q,p=track()
