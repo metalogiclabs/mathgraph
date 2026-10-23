@@ -1,0 +1,57 @@
+name: EFRD original lab2 source identity before pose evaluation
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths: ['.github/workflows/efrd-lab2-source-pin.yml']
+  workflow_dispatch:
+jobs:
+  authenticate-source-without-opening-poses:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin dependency versions
+        run: pip install rosbags==0.11.9 gdown==6.1.0
+      - name: Retrieve original second mocap candidate from frozen author folder
+        run: gdown 1Hef5HuZCSVkoI09Exq5sRBbd3qDArSgb -O lab2.bag
+      - name: Record source checksum and topic identities only
+        run: |
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          from rosbags.highlevel import AnyReader
+          p=Path('lab2.bag')
+          d=hashlib.sha256()
+          with p.open('rb') as f:
+              for data in iter(lambda:f.read(16*1024*1024),b''):
+                  d.update(data)
+          with AnyReader([p]) as reader:
+              topics=sorted([{'topic':c.topic,'msgtype':c.msgtype,'messages':c.msgcount}
+                             for c in reader.connections],key=lambda x:x['topic'])
+          result={'author_repo':'https://github.com/shicy17/MSA',
+                  'author_revision':'f8a89a0eb842e5f82b982493e636c200f8bf9dee',
+                  'drive_folder':'1tOlC-aOPL0YmYcQKetyEFWWRYONG8kF0',
+                  'original_drive_file_id':'1Hef5HuZCSVkoI09Exq5sRBbd3qDArSgb',
+                  'original_filename':'lab2.bag',
+                  'source_bytes':p.stat().st_size,'source_sha256':d.hexdigest(),
+                  'topic_metadata_only':topics,'source_data_examined':False,
+                  'mocap_values_unopened':True,'event_values_unopened':True,
+                  'imu_values_unopened':True,'two_turn_qualification':'UNKNOWN',
+                  'navigation_authority':'WITHHELD'}
+          assert result['source_bytes']>1000000
+          assert len([x for x in topics if x['topic']=='/vrpn_client_node/Rigid0/pose' and 'PoseStamped' in x['msgtype']])==1, result
+          assert len([x for x in topics if x['topic']=='/dvs/events'])==1, result
+          assert len([x for x in topics if x['topic']=='/dvs/imu'])==1, result
+          Path('efrd_lab2_original_source_pin.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('EFRD_LAB2_SOURCE_PIN',json.dumps(result,sort_keys=True))
+          PY
+      - name: Archive only source metadata, never raw sensor bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-lab2-original-source-identity
+          path: efrd_lab2_original_source_pin.json
+          if-no-files-found: warn
