@@ -65,6 +65,9 @@ def metadata_shape(meta):
         width,height=meta["sensor_width"],meta["sensor_height"]
     elif isinstance(meta.get("resolution"),list) and len(meta["resolution"])==2:
         width,height=meta["resolution"]
+    elif (isinstance(meta.get("event-camera"),dict) and isinstance(meta["event-camera"].get("frame"),dict)):
+        frame=meta["event-camera"]["frame"]
+        width,height=frame.get("width"),frame.get("height")
     else:
         raise ValueError("source camera dimensions unavailable; cannot choose center column")
     if (not isinstance(width,int) or not isinstance(height,int)

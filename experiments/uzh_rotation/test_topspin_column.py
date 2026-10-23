@@ -20,6 +20,12 @@ class TopspinOriginalControls(unittest.TestCase):
         self.assertEqual(metadata_shape({"width":640,"height":480}),(640,480))
         with self.assertRaisesRegex(ValueError,"unavailable"):
             metadata_shape({"event_max_x":639,"event_max_y":479})
+    def test_authentic_author_frame_schema(self):
+        source={"event-camera":{"frame":{"width":1280,"height":720}},"timestamp":""}
+        self.assertEqual(metadata_shape(source),(1280,720))
+    def test_nested_schema_cannot_guess_from_unknown_children(self):
+        with self.assertRaisesRegex(ValueError,"unavailable"):
+            metadata_shape({"event-camera":{"wrong":{"width":1280,"height":720}}})
     def test_negative_time_rejected(self):
         with self.assertRaisesRegex(ValueError,"range"):
             stream_events(io.BytesIO(b"-1,1,1,0\n"),10,10,"bad")
