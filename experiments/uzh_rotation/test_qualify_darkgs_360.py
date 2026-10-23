@@ -23,7 +23,7 @@ class DarkOriginalSourceAdmissionTests(unittest.TestCase):
         self.assertEqual(datafile_entry(d)["datafile_id"],50)
     def test_publisher_checksum_mismatch_refused(self):
         d={"data":{"latestVersion":{"files":[{"dataFile":{
-           "filename":"360.zip","id":50,"checksum":{"type":"MD5","value":"0"*32}}]}}}
+           "filename":"360.zip","id":50,"checksum":{"type":"MD5","value":"0"*32}}}]}}}
         with self.assertRaisesRegex(ValueError,"MD5"):
             datafile_entry(d)
     def test_actual_three_turn_worldz_candidate(self):
