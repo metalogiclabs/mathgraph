@@ -115,9 +115,9 @@ def geometry(times,quaternions,positions):
     paths_sum=np.sum(step)
     fractions=[float(np.sum(np.abs(delta[:,i]))/max(paths_sum,1e-15)) for i in range(3)]
     dt=np.diff(ts)*1e-9
-    sampled=(step.max()<math.pi/2 and dt.max()<=.25 and not near_gimbal)
+    sampled=bool(step.max()<math.pi/2 and dt.max()<=.25 and not near_gimbal)
     yaw_z=paths[2]
-    admission=(sampled and yaw_run["longest_turns"]>=MIN_TURN and
+    admission=bool(sampled and yaw_run["longest_turns"]>=MIN_TURN and
                yaw_z["longest_turns"]>=MIN_TURN and fractions[2]>=.90)
     return {
       "n_original_publisher_pose_messages":int(len(ts)),
