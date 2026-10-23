@@ -1,0 +1,7 @@
+# EvSLAM original drone rotation sensor source — admission protocol
+
+Upstream author `NAIL-HNU/EvSLAM_Dataset@f116a9fe305f3ad8b1a379e1bb52becfc87654dc`. The author download page maps `drone_rot_norm` raw bag to Drive object `1NNUZgkzpyR321AFeI1j5Uv2DKV8E_W3u`. Source-independent reference trajectory alone qualified approximately 3.99 directional body-Y turns in [CI 39933938407](https://github.com/metalogiclabs/mathgraph/actions/runs/39933938407), but those 100ms GT poses cannot prove a first-revolution learned camera reference or gyro synchronization.
+
+This new stage is only raw-source acquisition/structure qualification. Download the original file, compute SHA256 and MD5, inspect ROS1 bag magic or explicit archive structure, enumerate topics and counts **without reading event or IMU measurements**. Required source topics: `/dvxplorer_left/events` and `/dvxplorer_left/imu`. If raw container is not a ROS1 bag, do not invent event evidence; retain source hash and a typed UNKNOWN for ZIP/GZIP/ROS2. Never infer a trustworthy gyro time base from ROS bag index metadata or automatically align to GT here.
+
+Next stage only after successful source pin and unique topics: verify source-internal IMU and event timestamps, camera dimensions, physical one-column extraction, gyro-to-GT calibration/offset independent of evaluation sequence, then freeze the first-turn map and compare equally informed conventional and evidence-aware methods over later turns. Preserve translation confounds and negative outcomes. Joshua's repos and moteus PR #1 stay untouched.

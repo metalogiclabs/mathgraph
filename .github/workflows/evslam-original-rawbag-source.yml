@@ -1,0 +1,51 @@
+name: EvSLAM original multi-turn drone camera and gyro source pin
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/evslam-original-rawbag-source.yml'
+      - 'experiments/uzh_rotation/probe_evslam_original_bag.py'
+      - 'experiments/uzh_rotation/test_evslam_original_bag.py'
+  workflow_dispatch:
+jobs:
+  original-raw-drone-camera-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned author-origin acquisition and bag reader
+        run: pip install rosbags==0.11.9 gdown==6.1.0
+      - name: Independent positive/negative source wrapper tests
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_evslam_original_bag.py' -v
+      - name: Confirm temporary storage budget
+        run: df -h . /tmp
+      - name: Acquire original drone_rot_norm author-published raw bag
+        run: gdown 1NNUZgkzpyR321AFeI1j5Uv2DKV8E_W3u -O original_drone_rot_norm.bag
+      - name: Authenticate complete original file and inspect source-level ROS connection index
+        run: |
+          python experiments/uzh_rotation/probe_evslam_original_bag.py \
+            --source original_drone_rot_norm.bag --out evslam_raw_source_pin.json
+      - name: Audit source identity and guarantee no estimator oracle leakage
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('evslam_raw_source_pin.json'))
+          assert d['original_source_drive_file_id']=='1NNUZgkzpyR321AFeI1j5Uv2DKV8E_W3u'
+          assert len(d['original_sha256'])==64 and d['original_bytes']>0
+          assert not d['camera_event_values_opened']
+          assert not d['camera_gyro_values_opened']
+          assert not d['reference_gt_quaternions_opened']
+          assert not d['heading_correction_authorized']
+          assert d['source_status'].startswith(('CANDIDATE_','UNKNOWN_'))
+          print('ORIGINAL_DRONE_SOURCE_PIN',d['original_bytes'],d['original_sha256'],d['source_status'])
+          PY
+      - name: Retain original-source hashes and negative qualification without raw bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evslam-real-rotating-drone-original-raw-source-pin
+          path: evslam_raw_source_pin.json
+          if-no-files-found: warn
