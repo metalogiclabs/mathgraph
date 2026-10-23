@@ -1,0 +1,34 @@
+name: UniswapX read-only orderfill test
+on:
+  push:
+    branches: [research/uniswapx-orderfill-test-20261024]
+    paths:
+      - .github/workflows/uniswapx-orderfill-test.yml
+      - research/uniswapx_orderfill_20261024/**
+permissions:
+  contents: read
+concurrency:
+  group: uniswapx-orderfill-test-20261024
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Scoped acquisition controls
+        run: python3 -m unittest discover -s research/uniswapx_orderfill_20261024/tests -v
+      - name: Public Base signed orders and chain snapshots - no transactions
+        run: python3 research/uniswapx_orderfill_20261024/source/capture.py --out out/orderfill --polls 90
+      - name: Preserve source and raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uniswapx-orderfill-acquisition
+          path: |
+            out/orderfill
+            research/uniswapx_orderfill_20261024
+          if-no-files-found: error
+          retention-days: 30
