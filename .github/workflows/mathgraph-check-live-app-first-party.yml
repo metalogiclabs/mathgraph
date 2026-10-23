@@ -1,0 +1,39 @@
+name: MathGraph Check live registered-App first-party qualification
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/live-first-party-qualification-v1.mjs'
+      - '.github/workflows/mathgraph-check-live-app-first-party.yml'
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-check-live-first-party-v1
+  cancel-in-progress: false
+jobs:
+  qualify:
+    if: github.head_ref == 'mathgraph-check-live-app-first-party-v1' && github.event.pull_request.head.repo.full_name == 'metalogiclabs/mathgraph'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contract and reconciliation tests
+        run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs integrations/mathgraph-check-github/advisory-publisher-v1.test.mjs integrations/mathgraph-check-github/app-token-reconcile-v1.test.mjs
+      - name: Mint scoped registered-App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: 5308912
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: go-ethereum
+          permission-checks: write
+          permission-pull-requests: read
+      - name: Publish neutral first-party check and independently read back
+        env:
+          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node integrations/mathgraph-check-github/live-first-party-qualification-v1.mjs

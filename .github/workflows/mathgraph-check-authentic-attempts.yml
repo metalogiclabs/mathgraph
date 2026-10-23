@@ -1,0 +1,23 @@
+name: MathGraph Check authentic attempt collection
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/github-attempt-live-readback-v1.mjs'
+      - '.github/workflows/mathgraph-check-authentic-attempts.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  readback:
+    if: ${{ github.event.pull_request.head.repo.full_name == 'metalogiclabs/mathgraph' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read authentic run attempts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/github-attempt-live-readback-v1.mjs

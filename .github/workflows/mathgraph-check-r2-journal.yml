@@ -1,0 +1,20 @@
+name: MathGraph Check R2 journal qualification
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/cloudflare/warrant-event-store-v1*'
+      - 'integrations/mathgraph-check-github/cloudflare/worker.mjs'
+      - '.github/workflows/mathgraph-check-r2-journal.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check integrations/mathgraph-check-github/cloudflare/worker.mjs
+      - run: node --test integrations/mathgraph-check-github/cloudflare/warrant-event-store-v1.test.mjs integrations/mathgraph-check-github/cloudflare/consumer.test.mjs integrations/mathgraph-check-github/cloudflare/ingress.test.mjs integrations/mathgraph-check-github/cloudflare/monitor-transition-v1.test.mjs
