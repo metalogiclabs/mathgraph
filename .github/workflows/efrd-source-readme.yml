@@ -1,0 +1,63 @@
+name: EFRD original dataset README and calibration acquisition
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/efrd-source-readme.yml'
+  workflow_dispatch:
+jobs:
+  inspect-original-author-data-layout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned source reader
+        run: pip install gdown==6.1.0
+      - name: Fetch original data README and calibration only
+        run: |
+          mkdir -p efrd_source_text
+          python - <<'PY'
+          import subprocess
+          sources={
+            "README.md":"1kd3mN4ewoH0Wn4VU7o_O1-9gwMvVHRoU",
+            "cam_calib.yaml":"1pQZTUkFGlPTQCWRqf0BYwi4ZiOMWX80O",
+            "imu_calib.yaml":"1sH6uIsztt484PkBSA8DhY_jCFlu8lpqe",
+            "imucam_calib.yaml":"1B3mV7_JX70QJBwF9OR3XqCFHU_Udj8ob",
+          }
+          for name,ident in sources.items():
+              subprocess.run(["gdown","--id",ident,"-O",f"efrd_source_text/{name}"],check=True)
+          PY
+      - name: Source hash and documentation witness
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,re
+          root=pathlib.Path("efrd_source_text")
+          report={}
+          for p in sorted(root.iterdir()):
+              content=p.read_bytes()
+              report[p.name]={"sha256":hashlib.sha256(content).hexdigest(),
+                              "bytes":len(content)}
+              print("EFRD_SOURCE_FILE",p.name,report[p.name])
+              if p.name=="README.md":
+                  txt=content.decode("utf-8")
+                  lines=txt.splitlines()
+                  found=[(n+1,line) for n,line in enumerate(lines)
+                         if re.search(r"mahjong|lab.?1|lab.?2|mocap|vrpn|gt|imu|ground.?truth|synch",line,re.I)]
+                  report["relevant_readme_lines"]=found[:150]
+                  print("EFRD_RELEVANT_AUTHOR_README_LINES",json.dumps(found[:150]))
+          report["scientific_state"]="ORIGINAL_SOURCE_DOCUMENTATION_ONLY"
+          report["verified_full_turns"]=False
+          pathlib.Path("efrd_source_mapping.json").write_text(json.dumps(report,indent=2))
+          PY
+      - name: Preserve exact source documentation, not claimed measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-author-readme-and-calibrations
+          path: |
+            efrd_source_mapping.json
+            efrd_source_text/
+          if-no-files-found: warn
