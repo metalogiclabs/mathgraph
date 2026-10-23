@@ -1,0 +1,49 @@
+name: TOPSPIN original real one-column observability preflight
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/topspin-original-column-preflight.yml'
+  workflow_dispatch:
+jobs:
+  source-pinned-original-event-column:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source-integrity and anti-oracle controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_topspin_column.py' -v
+      - name: Download author-hosted original tiny slow scene
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            'https://zenodo.org/records/10884694/files/hubble-perpendicular-slow.tar.gz?download=1' \
+            --output hubble-perpendicular-slow.tar.gz
+      - name: Validate original published digest, archive paths and one-column data
+        run: |
+          python experiments/uzh_rotation/audit_topspin_column.py \
+            --archive hubble-perpendicular-slow.tar.gz --out topspin_original_column_report.json
+      - name: Independently refuse unsupported navigation claims
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('topspin_original_column_report.json'))
+          assert r['source_published_md5']=='791716392f201526d814267155291147'
+          assert r['not_a_rotating_camera'] and r['physical_setup']=='STATIC EVENT CAMERA, SPINNING OBJECT'
+          assert r['camera_dimensions']['width']>=2
+          assert not r['column_audit']['navigation_correction_authorized']
+          assert not r['column_audit']['independent_gyro_available']
+          assert not r['column_audit']['independent_heading_truth_available']
+          assert r['admission_state'] in ('REAL_COLUMN_SIGNAL_CANDIDATE_ONLY',
+                                        'UNKNOWN_INSUFFICIENT_CENTER_COLUMN_EVIDENCE')
+          print('TOPSPIN_SOURCE_QUALIFIED',r['admission_state'],r['column_audit']['fixed_column_events'])
+          PY
+      - name: Preserve source-pinned metrics, never redistribute raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topspin-real-center-column-original-source
+          path: topspin_original_column_report.json
+          if-no-files-found: warn
