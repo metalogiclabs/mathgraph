@@ -19,3 +19,7 @@ max_batch_timeout = 1
 max_retries = 3
 max_concurrency = 1
 dead_letter_queue = "mathgraph-check-pr-events-dlq-v0"
+
+[[r2_buckets]]
+binding = "WARRANT_EVENTS"
+bucket_name = "mathgraph-check-warrant-events-v1"
