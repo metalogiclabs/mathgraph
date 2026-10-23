@@ -1,0 +1,105 @@
+name: TOPSPIN real temporal persistence guard and source-distinct transfer
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/topspin-source-authority-v2.yml'
+  workflow_dispatch:
+jobs:
+  exposed-development-authority-withdrawal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock original v1 estimator source identity
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/audit_topspin_recurrence.py)" = e3f49a33fa0e0c3e4a93a939f272337af2a128a2
+      - name: Install fixed numerical dependency
+        run: pip install numpy==2.1.3
+      - name: Original finite adversaries and new source-guard falsifiers
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_topspin_recurrence.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_topspin_source_authority.py' -v
+      - name: Reacquire source-pinned original development object
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            'https://zenodo.org/records/10884694/files/hubble-perpendicular-slow.tar.gz?download=1' \
+            --output hubble-perpendicular-slow.tar.gz
+      - name: Replay unchanged matcher and new guard on exposed development source
+        run: |
+          python experiments/uzh_rotation/audit_topspin_source_authority.py \
+            --archive hubble-perpendicular-slow.tar.gz \
+            --sha256 de27852e28ba0ceff828aeda578fb56db8cb5166599324368522cd105b379526 \
+            --out topspin_v2_development.json
+      - name: Preserve the actual rejected candidate
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('topspin_v2_development.json'))
+          x=r['source_authority_v2']
+          assert r['source_md5']=='791716392f201526d814267155291147'
+          assert x['training_best_lag_bins']==5
+          assert x['training_only_gate_state']=='UNKNOWN_MINIMUM_LAG_PERSISTENCE_CONFOUNDED'
+          assert not x['navigation_heading_correction_authorized']
+          print('DEV_WRONG_CONFIDENCE_REJECTED',x['training_only_gate_state'])
+          PY
+      - name: Preserve exposed development evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topspin-development-v2-boundary-guard
+          path: topspin_v2_development.json
+          if-no-files-found: warn
+  fresh-object-transfer:
+    needs: exposed-development-authority-withdrawal
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify the frozen v1 matcher before new source exposure
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/audit_topspin_recurrence.py)" = e3f49a33fa0e0c3e4a93a939f272337af2a128a2
+      - name: Pin unchanged evaluation dependencies
+        run: pip install numpy==2.1.3
+      - name: Acquire never-before-opened different-object control
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            'https://zenodo.org/records/10884694/files/switch-perpendicular-slow.tar.gz?download=1' \
+            --output switch-perpendicular-slow.tar.gz
+      - name: Source-authentic second-object replay with both policies frozen
+        run: |
+          python experiments/uzh_rotation/audit_topspin_source_authority.py \
+            --archive switch-perpendicular-slow.tar.gz --out topspin_v2_switch_holdout.json
+      - name: Independent negative/positive authority classification
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('topspin_v2_switch_holdout.json'))
+          x=r['source_authority_v2']
+          assert r['source_md5']=='498aa6f860bd226384a60c773ee8a8a9'
+          assert not x['navigation_heading_correction_authorized']
+          assert x['source_proves_real_periodic_return'] is False
+          assert x['source_proves_full_physical_turns'] is False
+          assert x['special_mathgraph_reliability_advantage']=='UNKNOWN'
+          assert x['validation_cannot_upgrade_training_authority']
+          assert x['training_only_gate_state'] in (
+            'UNKNOWN_OR_REJECTED_BY_ORIGINAL_TRAINING_TEST',
+            'UNKNOWN_MINIMUM_LAG_PERSISTENCE_CONFOUNDED',
+            'UNKNOWN_MAXIMUM_LAG_GRAMMAR_BOUNDARY',
+            'CANDIDATE_NONBOUNDARY_TEMPORAL_RECURRENCE_ONLY')
+          print('NEW_SOURCE_TRANSFER',r['source'],x['training_only_gate_state'],
+                x['training_best_lag_bins'],x['validation_score_offline_only'])
+          PY
+      - name: Retain separate source-distinct transfer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topspin-switch-frozen-v2-source-distinct-transfer
+          path: topspin_v2_switch_holdout.json
+          if-no-files-found: warn
