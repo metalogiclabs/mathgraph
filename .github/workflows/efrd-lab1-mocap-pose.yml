@@ -1,0 +1,50 @@
+name: EFRD real lab1 independently referenced spin admission
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/efrd-lab1-mocap-pose.yml'
+  workflow_dispatch:
+jobs:
+  source-pinned-independent-yaw:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Locked numerical and ROS source dependencies
+        run: pip install numpy==2.1.3 scipy==1.14.1 rosbags==0.11.9 gdown==6.1.0
+      - name: Positive and adversarial independent pose controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_efrd_mocap_pose.py' -v
+      - name: Reacquire and rehash untouched lab1 original source
+        run: gdown 1e-VrEQWKORSoH3aTKH54ArjjBr3ehMXk -O lab1.bag
+      - name: Replay exact original mocap only on predeclared world z axis
+        run: |
+          python experiments/uzh_rotation/qualify_efrd_mocap_pose.py \
+            --bag lab1.bag --output efrd_lab1_mocap_result.json
+      - name: Preserve fail-closed permission and original-source identity
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('efrd_lab1_mocap_result.json'))
+          assert d['original_bag_sha256']=='2fac73513203739df46fb085a4e67f8f41e7c2aa9ebfdd115d97b34a9929e484'
+          assert d['original_bag_bytes']==2956823690
+          assert d['pose_messages_read']==12228
+          assert not d['navigation_correction_permitted'] and d['lab2_unopened']
+          if 'mocap_metrics' in d:
+              m=d['mocap_metrics']
+              assert not m['estimator_saw_source_truth']
+              assert not m['camera_gyro_time_alignment_verified']
+              assert not m['heading_correction_permitted']
+          print("EFRD_LAB1_MOCAP_RESULT",d['source_pose_state'])
+          PY
+      - name: Preserve source-bounded real negative or positive qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efrd-lab1-real-mocap-yaw-qualification
+          path: efrd_lab1_mocap_result.json
+          if-no-files-found: warn
