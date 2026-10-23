@@ -67,6 +67,15 @@ class OriginalSourceRevisitTests(unittest.TestCase):
     def test_nominal_periodic_bin_wrap(self):
         self.assertEqual(expected_bin(2*np.pi+0.01,0),0)
         self.assertEqual(expected_bin(np.pi,0),32)
+        # Must preserve frozen v2 signed-phase modulo on counter-rotation.
+        self.assertEqual(expected_bin(-np.pi/2,0),48)
+        self.assertEqual(expected_bin(-2*np.pi-0.01,0),63)
+    def test_counter_rotating_gyro_uses_frozen_signed_phase_bins(self):
+        t,w,images=sample(rate=-1.,span=7.3)
+        result=classify_revisit(t,w,images)
+        self.assertEqual(result["state"],"NO_SECOND_COMPLETE_GYRO_TURN")
+        self.assertGreater(result["postfirstturn_original_frames"],0)
+        self.assertFalse(result["navigation_correction_authorized"])
     def test_no_unseen_reference_pixels_created(self):
         t,w,images=sample(span=7.3)
         r=classify_revisit(t,w,images)

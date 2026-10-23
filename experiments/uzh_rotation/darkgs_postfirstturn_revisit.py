@@ -31,7 +31,7 @@ NO_REAL_HEADING_TRUTH = True
 
 def expected_bin(phase, start):
     delta=float(phase)-float(start)
-    return int(math.floor((abs(delta)%(2*math.pi))*BINS/(2*math.pi)))%BINS
+    return int(math.floor((delta%(2*math.pi))*BINS/(2*math.pi)))%BINS
 
 
 def cosine(a,b):
@@ -278,6 +278,7 @@ def main():
         "remaining_progress_to_second_turns":result.get("remaining_progress_to_second_turns"),
         "ambiguous_cosine_matches":result.get("offline_cosine_ambiguous_margin_lt_0_02"),
         "cosine_gyro_agreements":result.get("offline_cosine_gyro_agreement_count"),
+        "later_queries_with_nominal_reference":result.get("postfirstturn_nominal_gyro_has_map_reference"),
         "clock_status":result.get("v2_original_frozen_firstturn_summary",{}).get("source_clock_status"),
         "navigation_correction_authorized":False,
     },sort_keys=True))
