@@ -1,0 +1,46 @@
+name: EvSLAM independent fast original source access and obstruction
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/evslam-fast-source-access.yml'
+      - 'experiments/uzh_rotation/probe_evslam_fast_access.py'
+      - 'experiments/uzh_rotation/test_evslam_fast_access.py'
+  workflow_dispatch:
+jobs:
+  publisher-fast-object-source-access:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned Google Drive source client and read-only ROS inspector
+        run: pip install gdown==6.1.0 rosbags==0.11.9
+      - name: Verify source-access failure and positive controls before experiment
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_evslam_fast_access.py' -v
+      - name: One publisher-file download attempt or named quota obstruction
+        run: python experiments/uzh_rotation/probe_evslam_fast_access.py --out evslam_fast_source_result.json
+      - name: Verify no missing source was promoted to navigation evidence
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evslam_fast_source_result.json'))
+          assert r['published_drive_id']=='1t4viDrRV40_uOS3Tfh9-jMbGKgHorTI1'
+          assert r['attempts']==1
+          assert not r['heading_correction_authorized']
+          if r['source_state'].startswith('UNKNOWN'):
+              assert not r['authenticated_original_sensor_contents']
+          else:
+              assert r['source_state']=='SOURCE_ACQUIRED_FOR_RAW_BAG_PROBE'
+              assert r['original_bag_probe']['source_metadata_file_size_bytes']==6551527649
+          print("EVSLAM_FAST_SOURCE_DISPOSITION",r['source_state'])
+          PY
+      - name: Preserve acquisition failures without publishing large raw data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evslam-fast-original-bag-access-or-obstruction
+          path: evslam_fast_source_result.json
+          if-no-files-found: warn
