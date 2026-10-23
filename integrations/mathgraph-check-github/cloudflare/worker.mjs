@@ -7,6 +7,7 @@ import { analyze, checkOutput } from "../analysis.mjs";
 import { appendGethV19NativeEvidence } from "../geth-v19-evidence.mjs";
 import { appendExternalNativeReceipt } from "../external-native-receipt.mjs";
 import { transitionReceipt } from "./monitor-transition-v1.mjs";
+import { recordWarrantEvent } from "./warrant-event-store-v1.mjs";
 
 export const SCOPE = Object.freeze({
   appID: 5308912,
@@ -283,7 +284,7 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
   ensure(typeof minted?.token==="string" && minted.token.length>=10 &&
     permissionsOK(minted.permissions),"SCOPED_APP_TOKEN_NOT_ISSUED");
   const token=minted.token;
-  let result,failed,revokeOK=false,pendingCI=false;
+  let result,failed,revokeOK=false,pendingCI=false,monitorReceipt;
   try {
     // A commit SHA is immutable; PR context and exact-head CI evidence are
     // not. Do not return EXISTING before re-reading the current evidence.
@@ -320,7 +321,7 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
       const external=await appendExternalNativeReceipt(
         report,nativeEvidence.check,api,token,snapshot,{fetcher});
       const check=external.check;
-      const monitorReceipt=transitionReceipt({repository:SCOPE.repository,
+      monitorReceipt=transitionReceipt({repository:SCOPE.repository,
         pr:item.number,headSha:item.sha,previousCheck:previous,currentCheck:check});
       // Explicit audit-only withdrawal marker: the signed queue event and
       // authenticated native readback remain the sole publisher authority.
@@ -411,7 +412,8 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
   if(failed)throw failed;
   ensure(revokeOK,"TOKEN_REVOCATION_NOT_VERIFIED");
   return { ...result,repository:SCOPE.repository,number:item.number,sha:item.sha,
-    appID:SCOPE.appID,tokenRevoked:true,pendingCI};
+    appID:SCOPE.appID,tokenRevoked:true,pendingCI,
+    monitorReceipt:result.outcome!=="STALE"?monitorReceipt:undefined};
 }
 
 export async function consumePRQueue(batch,env,{fetcher=fetch}={}) {
@@ -435,6 +437,13 @@ export async function consumePRQueue(batch,env,{fetcher=fetch}={}) {
           r.ciRecheckExhausted=true;
         }
       }
+      // Explicitly gated journal. No R2 binding means existing pilot behavior.
+      // Durable readback must finish before acknowledging this queue message.
+      if(env?.WARRANT_EVENTS && r.monitorReceipt){
+        const receipt=await recordWarrantEvent(env,r.monitorReceipt);
+        r.journal={state:receipt.state,digest:receipt.digest};
+      }
+      delete r.monitorReceipt;
       // No secrets, PR body or unchecked source content in logs.
       console.log("MATHGRAPH_PR_EVENT "+JSON.stringify(r));
       message.ack();
