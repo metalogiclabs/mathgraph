@@ -1,0 +1,90 @@
+name: EvSLAM original source consequential observation-window compiler
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/evslam-source-observation-windows.yml'
+      - 'experiments/uzh_rotation/evslam_observation_window_compiler.py'
+      - 'experiments/uzh_rotation/test_evslam_observation_window_compiler.py'
+  workflow_dispatch:
+jobs:
+  source-authentic-independent-temporal-window-compilation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify original C99 interval guards unchanged
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/firstturn_fine_capture.c)" = 1e25217918c5011ffb08ad1d5dbed5dfac10c802
+          test "$(git hash-object experiments/uzh_rotation/firstturn_interval_capture.c)" = b7957be414692be82449ff4daa90751011621304
+          test "$(git hash-object experiments/uzh_rotation/finite_partial_map.c)" = 08b1b8da9e3420ef3d50b58cd29552c4857e6b29
+      - name: Install pinned reference-math, YAML and source clients
+        run: pip install numpy==2.1.3 scipy==1.14.1 PyYAML==6.0.3 gdown==6.1.0
+      - name: Independent finite adversarial observation-window controls
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_evslam_observation_window_compiler.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_evslam_source_phase_clock.py' -v
+      - name: Source-authenticate original published camera and IMU calibrations
+        run: |
+          mkdir -p original_evslam
+          gdown 1ZeQokirC1dyB9is8bmm8gCKejxv2V7rD -O original_evslam/camera_calib.yaml
+          gdown 16XWYmUw6NPwe9jD_r5nUKnS4N-0uwJdQ -O original_evslam/imu_calib.yaml
+      - name: Original publisher GT source blobs frozen independently of outcomes
+        run: |
+          python - <<'PY'
+          import subprocess
+          base="https://raw.githubusercontent.com/NAIL-HNU/EvSLAM_Dataset/f116a9fe305f3ad8b1a379e1bb52becfc87654dc/evaluation/ground_truth"
+          expected={
+           "drone_rot_norm_gt.txt":"809d83df4063376d0ee50f62095131e1d8940c00",
+           "drone_rot_fast_gt.txt":"47a1bd5b54c0843d2535af42ebff0529950a5a6f",
+          }
+          for name,source_sha in expected.items():
+              subprocess.run(["curl","-fsSL","--retry","2",f"{base}/{name}",
+                              "-o",f"original_evslam/{name}"],check=True)
+              actual=subprocess.check_output(["git","hash-object",f"original_evslam/{name}"],text=True).strip()
+              assert actual==source_sha, (name,actual,source_sha)
+              print("GT_BLOB_AUTHENTICATED",name,actual)
+          PY
+      - name: Compile minimum feasible clock/cadence observations on real source trajectories
+        run: |
+          python experiments/uzh_rotation/evslam_observation_window_compiler.py \
+            --gt-dir original_evslam \
+            --camera-calib original_evslam/camera_calib.yaml \
+            --imu-calib original_evslam/imu_calib.yaml \
+            --out evslam_source_observation_window_report.json
+      - name: Independently enforce source-vs-action boundary and future-independent result
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("evslam_source_observation_window_report.json"))
+          assert not d["source_error_bound_authenticated"]
+          assert d["no_camera_or_IMU_events_acquired"]
+          assert d["not_online_navigation"]
+          assert set(d["sequences"])=={"drone_rot_norm","drone_rot_fast"}
+          for name,entry in d["sequences"].items():
+              s=entry["nominal_hypothetical_sensitivity"]
+              assert s["phase_grammar_bins"]==64
+              assert s["first_complete_turn_timestamp_s"]>s["source_start_timestamp_s"]
+              assert s["independent_body_quaternion_agreement_rad"]<1e-8
+              assert not s["source_timing_bound_authenticated"]
+              assert not s["navigation_authorized"]
+              assert not s["source_scene_columns_known"]
+              assert s["timestamp_locations_chosen_with_offline_GT_not_online_sensor"]
+              assert s["minimum_bins_guaranteed_at_uniform_rate_hz"]["400"]<=64
+              assert s["bins_with_positive_clock_robust_window"]<=64
+              assert len(s["longest_available_window_per_bin"])==s["bins_with_positive_clock_robust_window"]
+              print("OFFLINE_OBSERVATION_REQUIREMENT_ONLY",name,
+                    s["state"],s["bins_with_positive_clock_robust_window"],
+                    s["cadence_hz_strictly_above_required_for_all_phase_offsets"],
+                    s["shortest_required_window_s"])
+          PY
+      - name: Keep exact candidate windows and named obstructions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evslam-source-pose-clock-observation-compiler
+          path: evslam_source_observation_window_report.json
+          if-no-files-found: warn
