@@ -106,6 +106,14 @@ def score(nav_audit_path,encoder_bundle):
     zero=interp_encoder(start["t_ns"],times,counts,
                         cal["max_interpolation_gap_ns"])
     if zero is None:fail("missing independent encoder gauge anchor")
+    # Physical revolution numbers start at ENCODER CAPTURE, not at the first
+    # navigation estimate (which may arrive in the middle of revolution one).
+    reference_start_tick=counts[0]
+    freeze_tick=interp_encoder(nav["firstturn_freeze_t_ns"],times,counts,
+                               cal["max_interpolation_gap_ns"])
+    freeze_turns=(direction*(freeze_tick-reference_start_tick)/cpr
+                  if freeze_tick is not None else None)
+    true_firstturn_freeze=(freeze_turns is not None and 1.<=freeze_turns<2.)
     gyro_zero=float(start["gyro_heading_rad"])
     fused_zero=float(start["fused_heading_rad"])
     result_by_rev={}
@@ -118,7 +126,7 @@ def score(nav_audit_path,encoder_bundle):
             excluded+=1
             continue
         ref_rad=(reference-zero)/cpr*TWOPI
-        physical_turns=direction*(reference-zero)/cpr
+        physical_turns=direction*(reference-reference_start_tick)/cpr
         revolution=math.floor(physical_turns)+1
         if revolution not in (2,3,4,5):
             continue
@@ -158,6 +166,7 @@ def score(nav_audit_path,encoder_bundle):
         "all_later_revolutions_scored":all(rows[str(r)]["samples"]>0 for r in range(2,6)),
         "gyro_drift_reduced_vs_same_source_gyro_only":bool(reduced),
         "first_turn_map_frozen":nav["firstturn_map_bins"]>0,
+        "first_turn_freeze_not_early_or_in_later_turns":true_firstturn_freeze,
         "sensor_ambiguity_was_observed":stats["unknown_matches"]>0,
         "at_least_one_requested_separating_observation_acquired":stats["requests_acquired"]>0,
         "occlusion_was_present":stats["occluded_columns"]>0,
@@ -183,6 +192,9 @@ def score(nav_audit_path,encoder_bundle):
         "source_nav_manifest_sha256":nav["input_nav_manifest_sha256"],
         "original_encoder_sha256":m["files"]["encoder.jsonl"]["sha256"],
         "optical_encoder_ticks_per_rev":cpr,
+        "encoder_turns_at_source_firstturn_freeze":freeze_turns,
+        "revolutions_indexed_from_encoder_capture_start":True,
+        "heading_displacement_gauge_first_navigation_estimate":True,
         "recorded_total_optical_turns":recorded_turns,
         "physical_encoder_source_samples":len(enc),
         "encoder_interpolation_missing_samples":excluded,

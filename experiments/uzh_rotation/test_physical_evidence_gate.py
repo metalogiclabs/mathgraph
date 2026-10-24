@@ -161,10 +161,27 @@ class PhysicalEvidenceGateTests(unittest.TestCase):
         result=score(path,self.encoder)
         self.assertEqual(result["physical_acceptance"],"FIXTURE_ONLY_NOT_PHYSICAL_VALIDATION")
         self.assertGreater(result["recorded_total_optical_turns"],5)
+        self.assertTrue(result["revolutions_indexed_from_encoder_capture_start"])
+        self.assertAlmostEqual(result["encoder_turns_at_source_firstturn_freeze"],.95,delta=.002)
+        self.assertFalse(result["acceptance_tests"]["first_turn_freeze_not_early_or_in_later_turns"])
         self.assertTrue(result["observed_improvement_over_gyro_only"])
         self.assertGreater(result["per_revolution"]["2"]["samples"],0)
         self.assertGreater(result["per_revolution"]["5"]["samples"],0)
         self.assertFalse(result["acceptance_tests"]["timing_bound_independently_physically_certified"])
+    def test_ambiguous_landmarks_remain_candidate_support(self):
+        from physical_evidence_gate import allowed_after,separates_pair
+        repeat={k:0xAAAA for k in (7,8,9,15,16,17)}
+        self.assertEqual(allowed_after([8,16],0,0xAAAA,repeat),[8,16])
+        self.assertFalse(separates_pair(8,16,0,repeat))
+
+    def test_firstturn_phase_cannot_be_forged_from_oracle(self):
+        rows=[json.loads(x) for x in (self.nav/"decisions.jsonl").read_text().splitlines()]
+        event=next(x for x in rows if x["kind"]=="MAP_CAPTURE")
+        event["phase_u16"]=(event["phase_u16"]+2048)%65536
+        rewrite_nav(self.nav,"decisions.jsonl",rows=rows)
+        with self.assertRaisesRegex(ValueError,"disagrees with causal gyro"):
+            inspect(self.nav)
+
     def test_navigation_bundle_rejects_encoder_present(self):
         (self.nav/"encoder.jsonl").write_text("truth\n")
         with self.assertRaisesRegex(ValueError,"leaked"):
