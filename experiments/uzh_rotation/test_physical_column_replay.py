@@ -10,7 +10,7 @@ from physical_capture_gate import audit
 from physical_column_demo import generate
 from physical_column_replay import Gyro, build_map, camera, replay, validate_map
 from physical_encoder_scorer import score
-from physical_estimator_isolation import execute
+from physical_estimator_isolation import execute, build_map_isolated
 from finite_witness_compass import filter_hypotheses
 
 class ColumnReplayTests(unittest.TestCase):
@@ -87,6 +87,11 @@ class ColumnReplayTests(unittest.TestCase):
                                if (reference[(h+step)%64] ^ bits).bit_count() <= 2)
                 self.assertEqual(canonical, manual)
 
+    def test_future_image_change_does_not_modify_initial_map(self):
+        frozen = (self.root / "frozen_map.json").read_bytes()
+        generate(self.root, change=True)
+        self.assertEqual(frozen, (self.root / "frozen_map.json").read_bytes())
+
     def test_encoder_ground_truth_is_never_passed_to_map(self):
         path = self.root / "encoder.csv"
         path.write_text("corrupted ground truth")
@@ -107,6 +112,10 @@ class ColumnReplayTests(unittest.TestCase):
                          "real isolated replay reserved for dedicated CI job")
     def test_real_docker_complete_six_turn_replay(self):
         estimator = Path(__file__).with_name("physical_column_replay.py")
+        isolated_map = build_map_isolated(estimator, self.root / "camera.csv",
+                                          self.root / "gyro.csv", timeout=120)
+        frozen = json.loads((self.root / "frozen_map.json").read_text())
+        self.assertEqual(isolated_map, frozen)
         result = execute(estimator, self.root / "camera.csv",
                          self.root / "gyro.csv", self.root / "frozen_map.json",
                          timeout=120)
