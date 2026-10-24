@@ -27,6 +27,8 @@ jobs:
           test "$(git hash-object experiments/uzh_rotation/physical_evidence_gate.py)" = fa80088f69115d181853de50e321d00c5b2a4b2a
           test "$(git hash-object experiments/uzh_rotation/physical_encoder_score.py)" = 15f1d0976c2abc7e1b074405b6c4a47ce83f74e2
           python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_evidence_gate.py' -v
+      - name: Source-faithful canonical NAVIGATION bundle adapter and negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_nav_source_adapter.py' -v
       - name: Encoder-blind model replay and independent scoring unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
       - name: Adversarial isolation unit controls
