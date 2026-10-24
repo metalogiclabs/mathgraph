@@ -1,0 +1,139 @@
+name: MathGraph Visual Compass physical evidence gate
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/mathgraph-physical-evidence-gate.yml'
+      - 'experiments/uzh_rotation/physical_evidence_gate.py'
+      - 'experiments/uzh_rotation/physical_encoder_score.py'
+      - 'experiments/uzh_rotation/test_physical_evidence_gate.py'
+      - 'experiments/uzh_rotation/PHYSICAL_EVIDENCE_GATE_PROTOCOL.md'
+  workflow_dispatch:
+    inputs:
+      nav_run_id:
+        description: 'Existing Actions run ID holding mgvc-navigation-raw-v1'
+        required: false
+        type: string
+      encoder_run_id:
+        description: 'Existing Actions run ID holding mgvc-encoder-raw-v1'
+        required: false
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify-audit-harness-not-hardware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Adversarial source, isolation and independent scoring tests
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_evidence_gate.py' -v
+      - name: Demonstrate no physical capture is promoted on test success
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,'experiments/uzh_rotation')
+          from test_physical_evidence_gate import make_fixture,dump
+          from physical_evidence_gate import inspect
+          from physical_encoder_score import score
+          from tempfile import TemporaryDirectory
+          with TemporaryDirectory() as d:
+              n,e=make_fixture(Path(d))
+              x=inspect(n)
+              p=Path(d)/'nav_audit.json'
+              dump(p,x)
+              s=score(p,e)
+              assert s['physical_acceptance']=='FIXTURE_ONLY_NOT_PHYSICAL_VALIDATION'
+              assert s['observed_improvement_over_gyro_only']
+              assert not s['acceptance_tests']['timing_bound_independently_physically_certified']
+              assert x['physical_acceptance']=='UNKNOWN_PENDING_INDEPENDENT_ENCODER_AND_HARDWARE_ATTESTATION'
+              print('HARNESS_QUALIFIED_ONLY_NO_PHYSICAL_DATA',
+                    s['physical_acceptance'],s['recorded_total_optical_turns'])
+          PY
+  navigator-without-encoder:
+    needs: verify-audit-harness-not-hardware
+    if: ${{ inputs.nav_run_id != '' && inputs.encoder_run_id != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acquire ONLY navigation sensor log artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mgvc-navigation-raw-v1
+          run-id: ${{ inputs.nav_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: nav_only
+      - name: Refuse ground-truth leakage into navigator process
+        run: |
+          test ! -e nav_only/encoder.jsonl
+          test ! -e nav_only/encoder_manifest.json
+          test ! -e nav_only/ground_truth.jsonl
+          python experiments/uzh_rotation/physical_evidence_gate.py \
+            --navigation-bundle nav_only --out verified_nav_evidence.json
+      - name: Preserve immutable source-audit result even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgvc-verified-navigation-evidence-v1
+          path: verified_nav_evidence.json
+          if-no-files-found: warn
+  independent-encoder-referee:
+    needs: navigator-without-encoder
+    if: ${{ inputs.nav_run_id != '' && inputs.encoder_run_id != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ONLY independently recorded encoder source
+        uses: actions/download-artifact@v4
+        with:
+          name: mgvc-encoder-raw-v1
+          run-id: ${{ inputs.encoder_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: encoder_only
+      - name: Fetch only the derived navigation audit, not original gyro/camera logs
+        uses: actions/download-artifact@v4
+        with:
+          name: mgvc-verified-navigation-evidence-v1
+          path: navigation_verdict
+      - name: Recompute optical truth errors independently
+        run: |
+          python experiments/uzh_rotation/physical_encoder_score.py \
+            --nav-verdict navigation_verdict/verified_nav_evidence.json \
+            --encoder-bundle encoder_only \
+            --out independently_scored_five_revolutions.json
+      - name: Retain actual scored result separately from hardware approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgvc-independent-optical-encoder-score-v1
+          path: independently_scored_five_revolutions.json
+          if-no-files-found: warn
+  fail-closed-physical-promotion:
+    needs: independent-encoder-referee
+    if: ${{ inputs.nav_run_id != '' && inputs.encoder_run_id != '' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mgvc-independent-optical-encoder-score-v1
+          path: optical_result
+      - name: Require independent hardware and future-time-bound attestation
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('optical_result/independently_scored_five_revolutions.json'))
+          assert r['hardware_and_future_bound_attestation']!='NOT_IMPLEMENTED', \
+              'PHYSICAL EVIDENCE UNKNOWN: hardware provenance and timing bound not independently attested; retain score but DO NOT PROMOTE'
+          assert r['physical_acceptance']=='INDEPENDENTLY_ATTESTED_FIVE_TURN_PASS', \
+              'PHYSICAL EVIDENCE NOT QUALIFIED; do not claim flight result'
+          PY
