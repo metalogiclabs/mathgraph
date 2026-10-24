@@ -1,0 +1,103 @@
+name: MathGraph physical evidence artifact isolation (FIXTURE ONLY)
+on:
+  push:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - '.github/workflows/mathgraph-physical-fixture-isolation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  produce-dummy-physical-format-archives:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create marked synthetic fixture input for code-path testing ONLY
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,"experiments/uzh_rotation")
+          from test_physical_evidence_gate import make_fixture
+          a,b=make_fixture(Path("."),mode="FIXTURE")
+          assert (a/"nav_manifest.json").exists() and (b/"encoder_manifest.json").exists()
+          assert not (a/"encoder.jsonl").exists() and not (b/"sensors.jsonl").exists()
+          print("CREATED_TWO_ROLE_FIXTURES_NOT_PHYSICAL_HARDWARE")
+          PY
+      - name: Upload only synthetic navigation fixture bytes
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-only-navigation-log
+          path: navigation/
+      - name: Upload only synthetic optical encoder fixture bytes
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-only-optical-encoder-log
+          path: encoder/
+  independent-navigator-process-has-no-encoder:
+    needs: produce-dummy-physical-format-archives
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fixture-only-navigation-log
+          path: input_navigation_only
+      - name: Assert encoder source unavailable to navigation-role job
+        run: |
+          test ! -e input_navigation_only/encoder.jsonl
+          test ! -e input_navigation_only/encoder_manifest.json
+          python experiments/uzh_rotation/physical_evidence_gate.py \
+            --navigation-bundle input_navigation_only \
+            --out isolated_navigation_evidence.json
+      - name: Publish ONLY the independently replayed nav evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-only-verified-nav-evidence
+          path: isolated_navigation_evidence.json
+  independent-optical-referee:
+    needs: independent-navigator-process-has-no-encoder
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fixture-only-optical-encoder-log
+          path: input_encoder_only
+      - uses: actions/download-artifact@v4
+        with:
+          name: fixture-only-verified-nav-evidence
+          path: input_nav_verdict_only
+      - name: Reproduce unwrapped optical error from original fixture hashes
+        run: |
+          test ! -e input_encoder_only/sensors.jsonl
+          test ! -e input_nav_verdict_only/sensors.jsonl
+          python experiments/uzh_rotation/physical_encoder_score.py \
+            --nav-verdict input_nav_verdict_only/isolated_navigation_evidence.json \
+            --encoder-bundle input_encoder_only \
+            --out isolated_fixture_score.json
+      - name: Assert fake evidence never qualifies five-revolution hardware
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("isolated_fixture_score.json"))
+          assert d["mode"]=="FIXTURE"
+          assert d["physical_acceptance"]=="FIXTURE_ONLY_NOT_PHYSICAL_VALIDATION"
+          assert d["recorded_total_optical_turns"]>=5
+          assert d["observed_improvement_over_gyro_only"]
+          assert d["revolutions_indexed_from_encoder_capture_start"]
+          assert d["encoder_turns_at_source_firstturn_freeze"]<1
+          assert not d["acceptance_tests"]["first_turn_freeze_not_early_or_in_later_turns"]
+          assert not d["acceptance_tests"]["timing_bound_independently_physically_certified"]
+          assert d["role_separation"]=="ENCODER_READS_NAVIGATION_VERDICT_ONLY"
+          print("INDEPENDENT_ROLE_ISOLATION_VERIFIED_NO_PHYSICAL_ATTESTATION")
+          PY
+      - name: Preserve separate derived fixture report, never hardware evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-only-independent-optical-score
+          path: isolated_fixture_score.json
