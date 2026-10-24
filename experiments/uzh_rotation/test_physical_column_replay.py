@@ -6,7 +6,6 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from physical_capture_gate import audit
 from physical_column_demo import generate
 from physical_column_replay import Gyro, build_map, camera, replay, validate_map
 from physical_encoder_scorer import score
@@ -25,8 +24,10 @@ class ColumnReplayTests(unittest.TestCase):
         return replay(camera(self.root / "camera.csv"),
                       Gyro(self.root / "gyro.csv"), frozen)
 
-    def test_capture_gate_derives_six_turns(self):
-        self.assertEqual(audit(self.root / "manifest.json"), [])
+    def test_model_capture_is_declared_synthetic(self):
+        self.assertEqual(self.manifest["generated_turns"], 6)
+        self.assertTrue(self.manifest["not_a_physical_capture_manifest"])
+        self.assertFalse(self.manifest["independent_physical_timing_warrant"])
 
     def test_map_freeze_and_actual_gyro_improvement_in_model(self):
         filename = self.root / "frozen_map.json"
@@ -100,7 +101,8 @@ class ColumnReplayTests(unittest.TestCase):
         self.assertTrue(result["events"])
         with self.assertRaises(ValueError):
             score(result, path, 64)
-        self.assertTrue(audit(self.root / "manifest.json"))
+        self.assertNotEqual(self.manifest["file_sha256"]["encoder"],
+                            hashlib.sha256(path.read_bytes()).hexdigest())
 
     def test_independent_scorer_rejects_early_map_freeze(self):
         result = self.replay_local()
