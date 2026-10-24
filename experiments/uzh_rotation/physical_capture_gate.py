@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+from physical_clock_envelope import qualify
 
 KINDS = ("camera", "gyro", "encoder")
 
@@ -65,8 +66,7 @@ def audit(path):
                 errors.append(f"invalid encoder edge CSV: {exc}")
     if not isinstance(d.get("independent_timing_calibration_sha256"), str) or len(d["independent_timing_calibration_sha256"]) != 64:
         errors.append("missing independent calibration identity")
-    if d.get("held_out_timing_envelope_passed") is not True:
-        errors.append("unqualified held-out timing envelope")
+    errors.extend(qualify(manifest.parent, d.get("clock_calibration")))
     if not d.get("frozen_first_turn_map_sha256"):
         errors.append("missing frozen map identity")
     if d.get("encoder_used_by_estimator") is not False:
