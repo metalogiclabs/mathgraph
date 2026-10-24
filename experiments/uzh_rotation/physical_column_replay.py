@@ -239,6 +239,12 @@ def replay(columns, gyro, frozen):
 
 
 def main():
+    if len(sys.argv) == 4 and sys.argv[1] == "--print-map":
+        columns, gyro = camera(sys.argv[2]), Gyro(sys.argv[3])
+        frozen = build_map(columns, gyro, gyro_rate_bound=0.03,
+                           firstturn_phase_bound=0.08)
+        print(json.dumps(frozen, sort_keys=True, allow_nan=False))
+        return
     if len(sys.argv) == 5 and sys.argv[1] == "--build-map":
         columns, gyro = camera(sys.argv[2]), Gyro(sys.argv[3])
         Path(sys.argv[4]).write_text(json.dumps(build_map(columns, gyro),
