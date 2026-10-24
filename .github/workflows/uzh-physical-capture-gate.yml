@@ -3,44 +3,66 @@ on:
   push:
     branches: [exp/uzh-physical-gate-integration-20261024]
     paths:
-      - 'experiments/uzh_rotation/physical_capture_gate.py'
-      - 'experiments/uzh_rotation/physical_clock_envelope.py'
-      - 'experiments/uzh_rotation/physical_estimator_isolation.py'
-      - 'experiments/uzh_rotation/test_physical_capture_gate.py'
-      - 'experiments/uzh_rotation/test_physical_estimator_isolation.py'
+      - 'experiments/uzh_rotation/physical_*.py'
+      - 'experiments/uzh_rotation/test_physical_*.py'
       - '.github/workflows/uzh-physical-capture-gate.yml'
   pull_request:
     branches: [exp/uzh-rotation-validation-20261021]
     paths:
-      - 'experiments/uzh_rotation/physical_capture_gate.py'
-      - 'experiments/uzh_rotation/physical_clock_envelope.py'
-      - 'experiments/uzh_rotation/physical_estimator_isolation.py'
-      - 'experiments/uzh_rotation/test_physical_capture_gate.py'
-      - 'experiments/uzh_rotation/test_physical_estimator_isolation.py'
+      - 'experiments/uzh_rotation/physical_*.py'
+      - 'experiments/uzh_rotation/test_physical_*.py'
       - '.github/workflows/uzh-physical-capture-gate.yml'
   workflow_dispatch:
 jobs:
   adversarial-structural-controls:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Run camera/gyro/encoder source admission and isolation unit tests
-        run: |
-          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
-          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
-      - name: Run actual sandbox positive and forbidden encoder negative controls
+      - name: Encoder, camera, gyro, timing and frozen map admission
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
+      - name: Encoder-blind model replay and independent scoring unit controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
+      - name: Adversarial isolation unit controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
+      - name: Real Docker isolated positive and forbidden encoder negative control
         env:
           RUN_DOCKER_ISOLATION_TEST: '1'
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
-      - name: Explicitly keep physical heading recovery UNKNOWN
+      - name: Real Docker complete six-turn synthetic replay
+        env:
+          RUN_DOCKER_REPLAY_TEST: '1'
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
+      - name: Generate independently scored reproducible synthetic artifacts
         run: |
+          python experiments/uzh_rotation/physical_column_demo.py synthetic_capture
+          python experiments/uzh_rotation/physical_capture_gate.py synthetic_capture/manifest.json
+          python experiments/uzh_rotation/physical_estimator_isolation.py \
+            experiments/uzh_rotation/physical_column_replay.py \
+            synthetic_capture/camera.csv synthetic_capture/gyro.csv \
+            synthetic_capture/frozen_map.json --output synthetic_replay.json
+          python experiments/uzh_rotation/physical_encoder_scorer.py \
+            synthetic_replay.json synthetic_capture/encoder.csv 64 synthetic_scoring.json
           python - <<'PY'
-          import pathlib
-          src = pathlib.Path('experiments/uzh_rotation/physical_capture_gate.py').read_text()
-          assert 'STRUCTURAL_CANDIDATE_ONLY' in src and 'UNKNOWN' in src
+          import json
+          s = json.load(open('synthetic_scoring.json'))
+          assert s['state'] == 'OFFLINE_MODEL_SCORING_ONLY_NO_PHYSICAL_PROVENANCE'
+          assert s['physical_heading_correction_warranted'] is False
+          assert s['overall']['mathgraph_estimate_rad']['circular_rmse_deg'] < s['overall']['gyro_only_rad']['circular_rmse_deg']
+          print('SYNTHETIC_MODEL_GYRO_REDUCTION_ONLY', s['overall'])
           print('PHYSICAL_HEADING_RECOVERY=UNKNOWN')
           PY
+      - name: Retain bounded synthetic source lineage and independent scoring
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uzh-column-six-turn-synthetic-model-evidence
+          path: |
+            synthetic_capture/manifest.json
+            synthetic_capture/frozen_map.json
+            synthetic_replay.json
+            synthetic_scoring.json
+          if-no-files-found: warn
