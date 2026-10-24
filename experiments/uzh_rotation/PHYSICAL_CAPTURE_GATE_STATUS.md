@@ -1,32 +1,33 @@
-# UZH physical capture gate — evidence snapshot (2026-10-24)
+# Supplemental visual compass replay — reconciliation (2026-10-24)
 
-Lineage: `exp/uzh-rotation-validation-20261021` → `exp/uzh-physical-gate-integration-20261024` → draft [PR #200](https://github.com/metalogiclabs/mathgraph/pull/200).
+## Canonical authority: existing physical-evidence gate, NOT this PR
 
-## WARRANTED within the declared CI boundary
+The [canonical UZH branch](https://github.com/metalogiclabs/mathgraph/tree/exp/uzh-rotation-validation-20261021) already contained `PHYSICAL_EVIDENCE_GATE_PROTOCOL.md`, `physical_evidence_gate.py`, `physical_encoder_score.py` and `.github/workflows/mathgraph-physical-evidence-gate.yml` **before** this integration branch. Its [Actions 40047078690](https://github.com/metalogiclabs/mathgraph/actions/runs/40047078690) exercised 16 adversarial tests and [Actions 40047078699](https://github.com/metalogiclabs/mathgraph/actions/runs/40047078699) qualified separate navigation/referee artifact jobs. Its encoder referee scores **unwrapped** revolutions 2–5 and checks actual optical first-turn freeze. These are the canonical physical evidence and safety boundaries; do not replace them with this branch's weaker CSV manifest gate or a modulo-360 scoreboard.
 
-[GitHub Actions run #40056737614](https://github.com/metalogiclabs/mathgraph/actions/runs/40056737614), job `120761252877`, on PR #200 after head commit `e4ad7087b63207cf9612e8db1722511c2b9b2c82`:
-- 18/18 unit controls passed for structural sensor admission.
-- 6/6 tests passed in the dedicated real-Docker isolation job, including an actual positive run and attempted forbidden encoder file access.
-- All job steps concluded successfully. The workflow prints `PHYSICAL_HEADING_RECOVERY=UNKNOWN`.
+This draft [PR #200](https://github.com/metalogiclabs/mathgraph/pull/200) is a **supplemental estimator-replay experiment**, not a replacement of the original physical gate. Duplicate manifest and calibration code should be removed or explicitly scoped to synthetic test infrastructure before any merge. No upstream Joshua drone repository has been changed.
 
-The capture preflight now recomputes SHA-256 on camera, gyro, encoder and frozen-map files; reads and verifies native CSV timestamps for each stream, detects collisions and source/manifests disagreements; derives at least five turns from contiguous encoder source counters and a declared pulses-per-revolution; verifies independent calibration/holdout trace hashes, disjoint time windows, and numeric residuals against a declared frozen time offset and envelope. Negative tests reject relevant source forgery and corruption.
+## New bounded result: WARRANTED in CI, SYNTHETIC only
 
-`physical_estimator_isolation.py` launches a separate Docker process with only estimator, camera, gyro and frozen map mounted as files. The run uses `--network none`, read-only filesystem, non-root uid, dropped capabilities and no host-workspace mount. The real-container test proves that the forbidden `/encoder.csv` is unreadable **in this test configuration**. This is process-level isolation for executions through that runner, not proof about arbitrary alternate estimator invocations.
+[Actions 40058373670](https://github.com/metalogiclabs/mathgraph/actions/runs/40058373670) passed original 16 protected hardware-gate tests **unchanged**, plus 18 supplemental source preflight tests, 13 replay controls, 6 isolation controls, a real Docker encoder-denial test and a real Docker full six-turn synthetic replay. The physically separate firstturn-map and heading-estimator Docker invocations expose only camera, gyro and first-turn map; an encoder is not passed into either. Original-source identities and hardware attestation remain outside this test.
 
-## UNKNOWN / remaining physical obligations
+Synthetic generator `physical_column_demo.py` creates six simulated turns, 16-bit columns and gyro bias (no physical recordings). Causal `physical_column_replay.py` builds the first-turn map and then produces a **model-only** heading estimate and an equally informed conventional nearest-column baseline. Independent `physical_encoder_scorer.py` reads synthetic encoder counts **only after** estimator output is frozen. It refuses a first-turn freeze before optical revolution 1 and reports unwrapped heading errors so a 360-degree slip cannot be concealed by circular normalization. Real-container and adversarial tests exercise firstturn map reconstruction, changing future images without changing firstturn contents, scene changes, occlusions, repeated scenes, source timestamp tampering, encoder denial and false physical authority claims.
 
-- The inputs used by these gate tests are **synthetic fixtures**; no independently authenticated five-turn camera/gyro/encoder physical capture has been acquired.
-- Encoder resolution and physical pulse integrity, index, mounting, gyro/camera clock reference and instrument authentication remain external assumptions.
-- The calibrated numeric envelope is checked against supplied independent-reference CSVs, but those references are not cryptographically or physically authenticated, and a finite held-out pass is not a universal clock-error guarantee.
-- Real onboard first-turn map construction through the new isolation runner, actual MathGraph heading-correction execution, benchmark baseline fairness, and encoder-only independent scoring remain untested.
-- Map hash integrity does not establish that map construction was encoder-blind.
-- The Docker image uses a mutable `python:3.11-slim` tag; freeze its digest before release qualification.
-- Existing DARK-GS recordings do not supply two uninterrupted, gyro-measured rotations, much less this gate's five, and remain insufficient for corrected-heading claims.
+Deterministic 320 held-out model frames:
+- Gyro-only unwrapped heading RMSE: **8.3455507002 degrees**
+- MathGraph bounded witness/abstention estimate: **3.0280012441 degrees**
+- Equal-information conventional nearest-column baseline: **2.8125000000 degrees**
+- MathGraph versus gyro-only: **63.72% error reduction** (synthetic model, not hardware).
+- Conventional accuracy advantage: **0.21550 degrees lower RMSE**. A MathGraph heading-accuracy advantage is **REJECTED for this frozen fixture**, not broadly disproved.
+- Correction authority: `navigation_correction_authorized=false` for every event; no onboard correction was sent. The planner makes requests but the fixture does NOT establish prospective physical sensor acquisition.
 
-## Current objective → residual → next experiment
+## Epistemic classification
 
-Objective: demonstrate correction of drift over five camera-observed complete physical revolutions.
+- **WARRANTED (bounded software):** firstturn map and estimator are encoder-blind for these Docker invocations; reproducible causal model replay and independent unwrapped synthetic scoring, with source-integrity, occlusion and ambiguity negative controls. Existing canonical source/role gate protected.
+- **REJECTED (specific frozen fixture):** claimed synthetic heading-RMSE superiority over an equally informed conventional nearest-column tracker.
+- **CANDIDATE:** single-column finite-witness model implementation and distinguishing-observation requests.
+- **UNKNOWN:** encoder/clock physical authenticity and bounded future timing error, real five-turn source capture, genuine heading recovery, request-triggered sensor acquisition, independent physical accuracy, runtime/power on Joshua's hardware.
+- **SUPERSEDED as merge scope:** any notion that supplemental CSV manifest gate replaces canonical v1.1 original NAVIGATION/ENCODER role-disjoint contract.
 
-Residual: no five-turn independent ground-truth capture or corresponding estimator-vs-baseline scoring.
+## Next decisive experiment
 
-Cheapest decisive next experiment: collect camera-column, gyro and encoder data with independently checked timing; retain encoder exclusively for an independent scorer; freeze map after turn one; run a real MathGraph estimator and conventional baseline on identical allowed inputs inside the tested isolation boundary; publish paired angular errors and abstention/witness traces. Physical heading-correction status remains UNKNOWN.
+Use the canonical separate `mgvc-navigation-raw-v1` and `mgvc-encoder-raw-v1` hardware bundles. Capture five uninterrupted secured-rotor revolutions with independently bounded camera/gyro/encoder clocks, freeze first-turn reference from navigation inputs alone, and invoke existing [physical evidence workflow](https://github.com/metalogiclabs/mathgraph/actions/workflows/mathgraph-physical-evidence-gate.yml). Apply the supplemental column estimator and conventional comparison on identical camera/gyro observations, then let the independent optical referee adjudicate. Preserve UNKNOWN if clock/hardware attestation, source identity, turn coverage or separating-observation causality is missing.
