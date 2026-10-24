@@ -1,76 +1,92 @@
 #!/usr/bin/env python3
-"""Independent encoder edge-count preflight, not a flight-performance proof."""
+"""Five-turn source admission: structural qualification only, not heading recovery."""
 import csv
 import hashlib
 import json
 from pathlib import Path
 import sys
+
 from physical_clock_envelope import qualify
 
 KINDS = ("camera", "gyro", "encoder")
 
-def _positive_int(x):
-    return type(x) is int and x > 0
+def _timestamps(path):
+    with path.open(newline="") as stream:
+        reader = csv.DictReader(stream)
+        if not reader.fieldnames or "timestamp_ns" not in reader.fieldnames:
+            raise ValueError("CSV lacks timestamp_ns")
+        times = [int(row["timestamp_ns"]) for row in reader]
+    if len(times) < 2 or any(t < 0 for t in times):
+        raise ValueError("missing/invalid timestamp samples")
+    if any(a >= b for a, b in zip(times, times[1:])):
+        raise ValueError("timestamps must strictly increase")
+    return times
+
+def _admit_file(root, record, role, errors):
+    if not isinstance(record, dict):
+        errors.append(f"{role}: missing record")
+        return None
+    rel = record.get("path")
+    if not isinstance(rel, str) or not rel:
+        errors.append(f"{role}: missing file path")
+        return None
+    candidate = (root / rel).resolve()
+    if not candidate.is_relative_to(root) or not candidate.is_file():
+        errors.append(f"{role}: missing, escaping or non-file source")
+        return None
+    if hashlib.sha256(candidate.read_bytes()).hexdigest() != record.get("sha256"):
+        errors.append(f"{role}: file hash mismatch")
+    return candidate
 
 def audit(path):
     manifest = Path(path).resolve()
     d = json.loads(manifest.read_text())
     errors = []
-    streams = d.get("streams", {})
+    root = manifest.parent
+    streams = d.get("streams")
     if not isinstance(streams, dict):
-        return ["invalid streams"]
+        return ["missing streams"]
+    admitted = {}
     for kind in KINDS:
-        s = streams.get(kind)
-        if not isinstance(s, dict):
-            errors.append(f"{kind}: missing stream")
+        record = streams.get(kind)
+        file = _admit_file(root, record, kind, errors)
+        if file is None:
             continue
-        rel = s.get("path")
-        if not isinstance(rel, str) or not rel:
-            errors.append(f"{kind}: missing file path")
-            continue
-        f = (manifest.parent / rel).resolve()
-        if not f.is_relative_to(manifest.parent) or not f.is_file():
-            errors.append(f"{kind}: missing or escaping file")
-            continue
-        if hashlib.sha256(f.read_bytes()).hexdigest() != s.get("sha256"):
-            errors.append(f"{kind}: hash mismatch")
-        ts = s.get("timestamps_ns")
-        if not isinstance(ts, list) or len(ts) < 2 or any(type(t) is not int for t in ts) or any(a >= b for a, b in zip(ts, ts[1:])):
-            errors.append(f"{kind}: nonmonotonic timestamps")
-        if not isinstance(s.get("clock_id"), str) or not s["clock_id"]:
+        admitted[kind] = file
+        if not isinstance(record.get("clock_id"), str) or not record["clock_id"]:
             errors.append(f"{kind}: missing clock identity")
-    encoder = streams.get("encoder")
-    if isinstance(encoder, dict) and isinstance(encoder.get("path"), str):
-        ef = (manifest.parent / encoder["path"]).resolve()
-        if ef.is_relative_to(manifest.parent) and ef.is_file():
-            try:
-                with ef.open(newline="") as h:
-                    rows = list(csv.DictReader(h))
-                pulses = d.get("encoder_pulses_per_revolution")
-                if not _positive_int(pulses):
-                    errors.append("invalid encoder resolution")
-                elif len(rows) < 2:
-                    errors.append("insufficient encoder edges")
-                else:
-                    times = [int(row["timestamp_ns"]) for row in rows]
-                    counts = [int(row["unwrapped_count"]) for row in rows]
-                    if any(a >= b for a, b in zip(times, times[1:])):
-                        errors.append("encoder timestamps not strictly increasing")
-                    if any(b - a != 1 for a, b in zip(counts, counts[1:])):
-                        errors.append("encoder count gaps/reversal; no verified full turns")
-                    elif (counts[-1] - counts[0]) // pulses < 5:
-                        errors.append("fewer than five encoder-derived complete turns")
-                    if encoder.get("timestamps_ns") != times:
-                        errors.append("encoder manifest timestamps differ from source")
-            except (OSError, ValueError, KeyError, TypeError) as exc:
-                errors.append(f"invalid encoder edge CSV: {exc}")
-    if not isinstance(d.get("independent_timing_calibration_sha256"), str) or len(d["independent_timing_calibration_sha256"]) != 64:
-        errors.append("missing independent calibration identity")
-    errors.extend(qualify(manifest.parent, d.get("clock_calibration")))
-    if not d.get("frozen_first_turn_map_sha256"):
-        errors.append("missing frozen map identity")
+        try:
+            native = _timestamps(file)
+            if record.get("timestamps_ns") != native:
+                errors.append(f"{kind}: manifest/source timestamp disagreement")
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.append(f"{kind}: malformed source timestamps: {exc}")
+    if len(set(admitted.values())) != len(admitted):
+        errors.append("distinct sensors share one source file")
+
+    encoder = admitted.get("encoder")
+    pulses = d.get("encoder_pulses_per_revolution")
+    if type(pulses) is not int or pulses <= 0:
+        errors.append("invalid encoder pulses per revolution")
+    elif encoder is not None:
+        try:
+            with encoder.open(newline="") as source:
+                rows = list(csv.DictReader(source))
+            counts = [int(row["unwrapped_count"]) for row in rows]
+            if any(b - a != 1 for a, b in zip(counts, counts[1:])):
+                errors.append("encoder count gap or reversal")
+            elif len(counts) < 2 or (counts[-1] - counts[0]) // pulses < 5:
+                errors.append("fewer than five source-derived encoder turns")
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.append(f"invalid encoder source counts: {exc}")
+
+    errors.extend(qualify(root, d.get("clock_calibration")))
+
+    frozen = _admit_file(root, d.get("frozen_first_turn_map"), "frozen map", errors)
+    if frozen is not None and frozen in admitted.values():
+        errors.append("frozen map shares a raw sensor source")
     if d.get("encoder_used_by_estimator") is not False:
-        errors.append("encoder isolation not attested")
+        errors.append("encoder non-use is not attested; real enforcement requires isolation-run evidence")
     return errors
 
 def main():
@@ -78,7 +94,8 @@ def main():
         issues = audit(sys.argv[1])
     except (IndexError, ValueError, OSError, TypeError, KeyError) as exc:
         issues = [f"invalid manifest: {exc}"]
-    print(json.dumps({"state": "UNKNOWN" if issues else "STRUCTURAL_CANDIDATE_ONLY", "issues": issues}, indent=2))
+    print(json.dumps({"state": "UNKNOWN" if issues else "STRUCTURAL_CANDIDATE_ONLY",
+                      "issues": issues}, indent=2))
     return bool(issues)
 
 if __name__ == "__main__":
