@@ -35,7 +35,27 @@ The projection is only safe after executing the native verifier. Receipt labels,
 
 The adjacent `research/l4yaml_semantic_diff_v2/` expands the audit to **532 generated acyclic inputs** without changing upstream: 180 anchor-interaction variations and 352 ordinary Core YAML variations. Both legacy and indexed native JSON paths are checked against a newly regenerated value oracle from the pinned ruamel wheel on every run. All 352 ordinary cases are also corroborated by a **second byte-checked PyYAML 6.0.3 implementation**; PyYAML is not used as an independent oracle for the duplicate-anchor cases it refuses. Its dynamically supplied Lean inputs are complete JSONL files; the report retains exact source and input hashes, mismatch families, examples, unchanged controls, and `UNKNOWN` on stale source.
 
-At upstream commit `82cdb78e8909f25d9079d9bb05ed7c6f508ee95c` the local exploratory replay yielded 105/180 anchor-family mismatches, 0/352 ordinary-family mismatches, and 0 legacy/indexed disagreements. These variants are **not 105 independent defects**; they are consistent with the previously demonstrated single ordered-binding cause. CI evidence must be inspected separately before treating this wider projection as warranted.
+At upstream commit `82cdb78e8909f25d9079d9bb05ed7c6f508ee95c`, independent [GitHub Actions run 40068175209](https://github.com/metalogiclabs/mathgraph/actions/runs/40068175209) reproduced 105/180 anchor-family mismatches, 0/352 ordinary-family mismatches, and 0 legacy/indexed disagreements. These variants are **not 105 independent defects**; they are consistent with the previously demonstrated single ordered-binding cause. Qualification is bounded to the exact native run and its artifact.
+
+## Source-revision transition and style-sensitive typed controls
+
+`SchemaProbe.lean` and `schema_continuity.py` add eight independently checked
+`parseTyped` value controls for quoted/plain `true`, `null`, `42` and two
+explicit tags. The integration-branch workflow re-runs these controls on each
+new frozen upstream SHA; they guard a behavior that is correct at the pinned
+baseline, rather than suggesting an outstanding defect.
+
+The separate owned `mathgraph-check-l4yaml-pr89-transition.yml` workflow replays
+two immutable upstream revisions and compares their **same 532** value cases,
+eight typed controls and 19 source-derived scanner accept/reject witnesses.
+Its local prospective PR #89 experiment observed 11 accepted→refused changes,
+eight unchanged acceptance controls, no disagreement between L4YAML's two
+native parser paths, and no movement in the older 532-case value residual.
+The two independent YAML parsers themselves disagree on 11 of the 19 new flow
+inputs; `flow_transition.py` retains those conflicts without granting either
+implementation normative specification authority. PR #89 is an **unmerged
+prospective** change at this snapshot. The newer paired workflow's GitHub CI
+qualification must be inspected separately; local results are not CI receipts.
 
 ## Local replay
 

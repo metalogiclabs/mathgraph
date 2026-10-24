@@ -21,3 +21,29 @@ Extend MathGraph Check from 13 handpicked anchor witnesses to a deterministic, i
 ## Acceptance
 
 Independent owned Actions run, raw logs/oracles/strict verifier/report as artifacts, adversarial verifier tests, and a research OS checkpoint with explicit source lineage. No new GitHub App installation, upstream PR or message.
+
+## Prospective PR #89 source transition and typed-schema retention (extension)
+
+The upstream integration branch has not yet advanced. Prospective PR #89 at
+`364a80d4f6790175e06e29c59708da3b50c20049` is instead one commit beyond
+our pinned baseline `82cdb78e8909f25d9079d9bb05ed7c6f508ee95c` and changes
+scanner behavior. The cheapest decisive cross-revision qualification is two
+isolated clean native builds, running the *same* 532-source grammar plus eight
+typed-schema controls on both, and 19 source-derived scanner-acceptance inputs
+from PR #89's guard exhibit. A source-level inference or a downstream Python
+library's acceptance is not a substitute for a native observation.
+
+The candidate has eleven expected accept→refuse changes and eight retained
+acceptance controls across both native parser implementations. Independently
+qualified ruamel.yaml and PyYAML disagree on eleven of the nineteen flow
+inputs; retain every disagreement rather than manufacturing YAML 1.2
+specification authority from parser consensus. The source transition is
+bounded behavioral evidence of a prospective PR, **not** a merged upstream
+repair, universal compliance proof, production authority or JPL endorsement.
+The 532-case anchor discrepancy must be carried forward, even if scanner
+behavior improves. The eight `parseTyped` scalar-style controls preserve an
+already-correct behavior distinct from the still-incorrect anchor family.
+
+The paired CI workflow uses exact known source SHAs for its historical
+comparison, plus an optional future immutable candidate input. Ongoing
+integration-branch monitoring remains separate and must requalify any new SHA.

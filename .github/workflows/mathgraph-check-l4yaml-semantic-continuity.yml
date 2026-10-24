@@ -72,6 +72,8 @@ jobs:
           python -m pytest -q \
             tests/test_mathgraph_l4yaml_continuity.py \
             tests/test_mathgraph_l4yaml_semantic_diff_v2.py \
+            tests/test_mathgraph_l4yaml_schema_continuity.py \
+            tests/test_mathgraph_l4yaml_flow_transition.py \
             tests/test_mathgraph_l4yaml_strict_verifier.py \
             tests/test_mathgraph_warrant_resolution_core.py
       - name: Acquire and verify independent ruamel.yaml oracle bytes
@@ -103,7 +105,7 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           mkdir -p evidence-out/l4yaml-continuity
           cd l4yaml-upstream
-          env -u L4YAML_LEANCOPILOT lake build L4YAML.Output.Json L4YAML.Output.Events L4YAML.Output.JsonIx \
+          env -u L4YAML_LEANCOPILOT lake build L4YAML.Output.Json L4YAML.Output.Events L4YAML.Output.JsonIx L4YAML.Schema.Api \
             2>&1 | tee "$GITHUB_WORKSPACE/evidence-out/l4yaml-continuity/upstream-build.log"
           env -u L4YAML_LEANCOPILOT lake env lean --run \
             "$GITHUB_WORKSPACE/research/l4yaml_anchor_continuity_v1/Probe.lean" \
@@ -234,6 +236,38 @@ jobs:
           assert all(v == 'UNKNOWN' for v in r['claims'].values())
           print('STALE_SOURCE_AUTHORITY_WITHDRAWN')
           PY
+      - name: Preserve previously corrected typed-schema interpretation across revisions
+        shell: bash
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          oracle='research/l4yaml_anchor_continuity_v1'
+          second='research/l4yaml_semantic_diff_v2'
+          out='evidence-out/l4yaml-differential-v2'
+          (cd l4yaml-upstream && env -u L4YAML_LEANCOPILOT lake env lean --run \
+            "$GITHUB_WORKSPACE/$second/SchemaProbe.lean") \
+            > "$out/schema_native.jsonl" 2> "$out/schema_stderr.log"
+          test ! -s "$out/schema_stderr.log"
+          python -m research.l4yaml_semantic_diff_v2.schema_continuity \
+            --native "$out/schema_native.jsonl" \
+            --checkout l4yaml-upstream \
+            --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+            --expected-head "$TARGET_SHA" \
+            --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+            --ruamel-path "$oracle/install" \
+            --pyyaml-wheel "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+            --pyyaml-path "$second/pyyaml_install" \
+            --out "$out/schema_report.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('evidence-out/l4yaml-differential-v2/schema_report.json').read_text())
+          assert report['status'] == 'BOUNDED_TYPED_SCHEMA_AGREEMENT'
+          assert report['native']['matched'] == 8
+          assert report['decision_authority'] == 'NOT_AUTHORIZED'
+          print('PINNED_TYPED_SCHEMA_INTERPRETATION_RETAINED')
+          PY
       - name: Archive independent observations and lineage for replay
         uses: actions/upload-artifact@v4
         if: always()
@@ -247,4 +281,6 @@ jobs:
             research/l4yaml_anchor_continuity_v1/oracle_results.json
             research/l4yaml_semantic_diff_v2/BatchProbe.lean
             research/l4yaml_semantic_diff_v2/differential.py
+            research/l4yaml_semantic_diff_v2/SchemaProbe.lean
+            research/l4yaml_semantic_diff_v2/schema_continuity.py
           if-no-files-found: warn

@@ -57,6 +57,15 @@ def test_real_repair_must_be_recognized_as_bounded_match():
     assert classify_native(oracle, lines)["mismatched"] == 0
 
 
+def test_native_bool_cannot_masquerade_as_integer_under_python_equality():
+    oracle, lines = fixture()
+    oracle[0]["expected"] = [True]
+    # The native value is still JSON integer 1, not Boolean true.
+    result = classify_native(oracle, lines)
+    assert result["matched"] == 0
+    assert result["mismatched"] == 2
+
+
 @pytest.mark.parametrize("tamper", [
     lambda lines: lines.pop(),
     lambda lines: lines.append(lines[0]),
@@ -101,6 +110,13 @@ def test_second_parser_corroborates_only_the_declared_ordinary_subset():
     qualified = [{"input": "[1]", "suite": "ordinary", "family": "simple", "expected": [1]}]
     assert corroborate_ordinary_with_pyyaml(qualified) == 1
     qualified[0]["expected"] = [2]
+    with pytest.raises(ValueError, match="SECOND_PARSER_DISAGREES"):
+        corroborate_ordinary_with_pyyaml(qualified)
+
+
+def test_second_parser_bool_vs_integer_must_be_distinct():
+    # YAML "true" is Boolean, whereas Python compares True == 1.
+    qualified = [{"input": "true\n", "suite": "ordinary", "family": "bool", "expected": 1}]
     with pytest.raises(ValueError, match="SECOND_PARSER_DISAGREES"):
         corroborate_ordinary_with_pyyaml(qualified)
 

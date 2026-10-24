@@ -131,6 +131,14 @@ def strict_json(text: str):
     return json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
 
 
+def typed_json_equal(left, right) -> bool:
+    """Require JSON type identity (Python otherwise equates True and 1)."""
+    return json.dumps(left, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+                      allow_nan=False) == json.dumps(
+                          right, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+                          allow_nan=False)
+
+
 def classify_native(oracle_cases: list[dict], native_lines: list[str]) -> dict:
     require(len(oracle_cases) == len(native_lines), "INCOMPLETE_NATIVE_ROWS")
     matches = 0
@@ -159,10 +167,10 @@ def classify_native(oracle_cases: list[dict], native_lines: list[str]) -> dict:
                 require(set(result) == {"status", "error"} and type(result["error"]) is str
                         and result["error"], "INVALID_NATIVE_ERROR")
                 results.append({"native_refusal": result["error"]})
-        agrees = all(result == expected["expected"] for result in results)
+        agrees = all(typed_json_equal(result, expected["expected"]) for result in results)
         matches += agrees
         mismatches += not agrees
-        divergences += results[0] != results[1]
+        divergences += not typed_json_equal(results[0], results[1])
         suite = expected["suite"]
         family = f"{suite}.{expected['family']}"
         for target, key in ((by_suite, suite), (by_family, family)):
@@ -178,7 +186,7 @@ def classify_native(oracle_cases: list[dict], native_lines: list[str]) -> dict:
     renaming_residuals = [
         {"family": family, "value": value}
         for (family, value), results in sorted(renaming.items())
-        if len(results) != 3 or any(r != results[0] for r in results[1:])
+        if len(results) != 3 or any(not typed_json_equal(r, results[0]) for r in results[1:])
     ]
     return {"cases": len(native_lines), "matched": matches, "mismatched": mismatches,
             "legacy_indexed_disagreement": divergences, "by_suite": by_suite,
@@ -229,7 +237,7 @@ def corroborate_ordinary_with_pyyaml(qualified: list[dict]) -> int:
             observed = yaml.safe_load(case["input"])
         except yaml.YAMLError as exc:
             raise ValueError("SECOND_PARSER_REFUSED_ORDINARY_CASE") from exc
-        require(observed == case["expected"], "SECOND_PARSER_DISAGREES")
+        require(typed_json_equal(observed, case["expected"]), "SECOND_PARSER_DISAGREES")
         matched += 1
     return matched
 
@@ -324,7 +332,7 @@ def verified_report(
     generated = write_generated(root / "reconstructed", wheel, package_path,
                                 pyyaml_wheel, pyyaml_package_path)
     original = strict_json((root / "independent_oracle.json").read_text())
-    require(original == generated, "ORACLE_EXPECTATION_TAMPERED")
+    require(typed_json_equal(original, generated), "ORACLE_EXPECTATION_TAMPERED")
     for name in ("anchor", "ordinary"):
         require((root / f"{name}_inputs.jsonl").read_bytes()
                 == (root / "reconstructed" / f"{name}_inputs.jsonl").read_bytes(),
