@@ -60,6 +60,9 @@ jobs:
             assert.equal(qualifyLiveCheck({...args,liveHead:"a".repeat(40)}).admitted,false);
             console.log("PINNED_NATIVE_RECEIPT=AUTHENTICATED;TAMPER=DENIED;STALE=DENIED");
           '
+          MATHGRAPH_PKC_ZIP="$RUNNER_TEMP/pkc-yaml-artifact.zip" \
+          MATHGRAPH_PKC_META="$RUNNER_TEMP/pkc-yaml-artifact.json" \
+            node --test integrations/mathgraph-check-github/cloudflare/pkc-yaml-authentic-artifact.test.mjs
       - name: Bundle actual production entrypoint with Wrangler, without credentials
         run: |
           set -euo pipefail
