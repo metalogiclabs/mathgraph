@@ -17,7 +17,7 @@ class PhysicalGateTests(unittest.TestCase):
                 p.write_text("timestamp_ns,unwrapped_count\n" + "".join(f"{i+1},{i}\n" for i in range(11)))
                 stamps = list(range(1, 12))
             else:
-                p.write_text("sample\n")
+                p.write_text("timestamp_ns,sample\n1,0\n2,0\n3,0\n")
                 stamps = [1, 2, 3]
             self.streams[kind] = {"path": p.name, "sha256": hashlib.sha256(p.read_bytes()).hexdigest(), "timestamps_ns": stamps, "clock_id": kind + "-clock"}
         for role, base in (("calibration", 100), ("holdout", 200)):
@@ -25,7 +25,12 @@ class PhysicalGateTests(unittest.TestCase):
             p.write_text("reference_timestamp_ns,sensor_timestamp_ns\n" + "".join(f"{base+i},{base+i+2}\n" for i in range(3)))
         self.clock = {"frozen_offset_ns": 2, "frozen_max_abs_residual_ns": 0}
         self.refresh_clock_hashes()
-        self.data = {"clock_calibration": self.clock, "streams": self.streams, "encoder_pulses_per_revolution": 2, "independent_timing_calibration_sha256": "a"*64, "held_out_timing_envelope_passed": True, "frozen_first_turn_map_sha256": "b"*64, "encoder_used_by_estimator": False}
+        frozen = self.root / "frozen_map.json"
+        frozen.write_text('{"bins": []}\\n')
+        self.frozen = {"path": frozen.name, "sha256": hashlib.sha256(frozen.read_bytes()).hexdigest()}
+        self.data = {"clock_calibration": self.clock, "streams": self.streams,
+                     "encoder_pulses_per_revolution": 2, "frozen_first_turn_map": self.frozen,
+                     "encoder_used_by_estimator": False}
     def refresh_clock_hashes(self):
         for role in ("calibration", "holdout"):
             p = self.root / (role + "_clock.csv")
@@ -46,7 +51,7 @@ class PhysicalGateTests(unittest.TestCase):
     def test_nominal_timing_not_enough(self):
         self.clock["frozen_max_abs_residual_ns"] = 0
         p = self.root / "holdout_clock.csv"
-        p.write_text(p.read_text().replace("200,202", "200,203"))
+        p.write_text(p.read_text().replace("200,202", "200,201"))
         self.refresh_clock_hashes()
         self.assertTrue(self.check())
     def test_overlapping_clock_windows_rejected(self):
@@ -56,6 +61,26 @@ class PhysicalGateTests(unittest.TestCase):
         self.assertTrue(self.check())
     def test_missing_clock_trace_rejected(self):
         (self.root / "holdout_clock.csv").unlink()
+        self.assertTrue(self.check())
+    def test_tampered_frozen_map_rejected(self):
+        (self.root / "frozen_map.json").write_text("modified")
+        self.assertTrue(self.check())
+    def test_manifest_camera_timestamp_forgery_rejected(self):
+        self.streams["camera"]["timestamps_ns"] = [1, 2, 4]
+        self.assertTrue(self.check())
+    def test_source_camera_timestamp_collision_rejected(self):
+        p = self.root / "camera.csv"
+        p.write_text(p.read_text().replace("2,0\\n", "1,0\\n"))
+        self.streams["camera"]["sha256"] = hashlib.sha256(p.read_bytes()).hexdigest()
+        self.assertTrue(self.check())
+    def test_missing_native_timestamp_header_rejected(self):
+        p = self.root / "gyro.csv"
+        p.write_text("sample\\n0\\n1\\n2\\n")
+        self.streams["gyro"]["sha256"] = hashlib.sha256(p.read_bytes()).hexdigest()
+        self.assertTrue(self.check())
+    def test_source_alias_rejected(self):
+        self.streams["gyro"]["path"] = self.streams["camera"]["path"]
+        self.streams["gyro"]["sha256"] = self.streams["camera"]["sha256"]
         self.assertTrue(self.check())
     def test_encoder_leak_rejected(self):
         self.data["encoder_used_by_estimator"] = True
