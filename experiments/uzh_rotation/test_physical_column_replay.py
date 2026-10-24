@@ -102,6 +102,23 @@ class ColumnReplayTests(unittest.TestCase):
             score(result, path, 64)
         self.assertTrue(audit(self.root / "manifest.json"))
 
+    def test_independent_scorer_rejects_early_map_freeze(self):
+        result = self.replay_local()
+        result["firstturn_end_ns"] = 58 * 50_000_000  # recorder lied
+        with self.assertRaisesRegex(ValueError, "freeze contradicted"):
+            score(result, self.root / "encoder.csv", 64)
+
+    def test_independent_scorer_reveals_full_turn_slip(self):
+        result = self.replay_local()
+        ordinary = score(result, self.root / "encoder.csv", 64)
+        result["events"][4]["mathgraph_estimate_rad"] += 2 * 3.141592653589793
+        perturbed = score(result, self.root / "encoder.csv", 64)
+        base = ordinary["overall"]["mathgraph_estimate_rad"]
+        slipped = perturbed["overall"]["mathgraph_estimate_rad"]
+        self.assertAlmostEqual(base["circular_rmse_deg"], slipped["circular_rmse_deg"])
+        self.assertGreater(slipped["unwrapped_rmse_deg"], base["unwrapped_rmse_deg"])
+        self.assertEqual(slipped["potential_full_turn_slip_samples"], 1)
+
     def test_scorer_refuses_authority_forgery(self):
         result = self.replay_local()
         result["physical_navigation_authorized"] = True
