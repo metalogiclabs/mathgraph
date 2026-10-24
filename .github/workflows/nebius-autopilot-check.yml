@@ -1,0 +1,38 @@
+name: Nebius Autopilot Bounded Verification
+on:
+  pull_request:
+    paths:
+      - 'experiments/nebius_warranted_agent/**'
+      - '.github/workflows/nebius-autopilot-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-finite-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independent adversarial test suite
+        run: python -m unittest -v test_autopilot test_cockpit
+        working-directory: experiments/nebius_warranted_agent
+      - name: Reproduce offline agent loop and receipt withdrawal
+        working-directory: experiments/nebius_warranted_agent
+        run: |
+          python autopilot.py --provider scripted --report offline-report.json > /dev/null
+          python cockpit.py offline-report.json --output offline-cockpit.html
+      - name: Retain offline audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebius-autopilot-offline-evidence
+          path: |
+            experiments/nebius_warranted_agent/offline-report.json
+            experiments/nebius_warranted_agent/offline-cockpit.html
+          if-no-files-found: error
