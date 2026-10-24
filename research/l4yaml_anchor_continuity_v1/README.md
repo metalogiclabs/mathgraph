@@ -31,6 +31,12 @@ The warrant projection (`mathgraph_check/l4yaml_continuity.py`) distinguishes:
 
 The projection is only safe after executing the native verifier. Receipt labels, SHA strings or GitHub success badges alone are not authentication. A later source commit must earn its own native replay; byte-identical `Types.lean` does not transfer a whole-run receipt automatically.
 
+## Broader V2 differential qualification
+
+The adjacent `research/l4yaml_semantic_diff_v2/` expands the audit to **532 generated acyclic inputs** without changing upstream: 180 anchor-interaction variations and 352 ordinary Core YAML variations. Both legacy and indexed native JSON paths are checked against a newly regenerated value oracle from the pinned ruamel wheel on every run. All 352 ordinary cases are also corroborated by a **second byte-checked PyYAML 6.0.3 implementation**; PyYAML is not used as an independent oracle for the duplicate-anchor cases it refuses. Its dynamically supplied Lean inputs are complete JSONL files; the report retains exact source and input hashes, mismatch families, examples, unchanged controls, and `UNKNOWN` on stale source.
+
+At upstream commit `82cdb78e8909f25d9079d9bb05ed7c6f508ee95c` the local exploratory replay yielded 105/180 anchor-family mismatches, 0/352 ordinary-family mismatches, and 0 legacy/indexed disagreements. These variants are **not 105 independent defects**; they are consistent with the previously demonstrated single ordered-binding cause. CI evidence must be inspected separately before treating this wider projection as warranted.
+
 ## Local replay
 
 1. Clone `https://github.com/nasa-jpl/L4YAML` at an exact commit, without editing upstream.
