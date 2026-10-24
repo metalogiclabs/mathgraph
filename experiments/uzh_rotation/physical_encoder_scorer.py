@@ -40,12 +40,17 @@ def wrap(x):
 def stats(values):
     if not values:
         raise ValueError("empty scoring class")
-    z = sorted(abs(x) * 180 / math.pi for x in values)
+    absolute = sorted(abs(x) * 180 / math.pi for x in values)
+    circular = sorted(abs(wrap(x)) * 180 / math.pi for x in values)
     return {
-        "circular_rmse_deg": math.sqrt(sum(x * x for x in z) / len(z)),
-        "circular_median_abs_deg": statistics.median(z),
-        "circular_p95_abs_deg": z[min(len(z)-1, math.ceil(.95*len(z))-1)],
-        "samples": len(z)
+        "unwrapped_rmse_deg": math.sqrt(sum(x*x for x in absolute)/len(absolute)),
+        "unwrapped_median_abs_deg": statistics.median(absolute),
+        "unwrapped_p95_abs_deg": absolute[min(len(absolute)-1, math.ceil(.95*len(absolute))-1)],
+        "circular_rmse_deg": math.sqrt(sum(x*x for x in circular)/len(circular)),
+        "circular_median_abs_deg": statistics.median(circular),
+        "circular_p95_abs_deg": circular[min(len(circular)-1, math.ceil(.95*len(circular))-1)],
+        "potential_full_turn_slip_samples": sum(abs(x) >= math.pi for x in values),
+        "samples": len(values)
     }
 
 def score(output, encoder_path, pulses_per_revolution):
@@ -60,6 +65,12 @@ def score(output, encoder_path, pulses_per_revolution):
     origin_count = interp(edges, start)
     if (edges[-1][1] - origin_count) < 5 * pulses_per_revolution:
         raise ValueError("fewer than five full encoder turns after first map origin")
+    freeze = output.get("firstturn_end_ns")
+    if type(freeze) is not int:
+        raise ValueError("missing frozen map chronology")
+    freeze_revolutions = (interp(edges, freeze) - origin_count) / pulses_per_revolution
+    if not 1.0 <= freeze_revolutions < 2.0:
+        raise ValueError("firstturn map freeze contradicted by encoder truth")
     events = output.get("events")
     if not isinstance(events, list) or len(events) < 5:
         raise ValueError("insufficient held-out predictions")
@@ -93,14 +104,14 @@ def score(output, encoder_path, pulses_per_revolution):
             value = e[name]
             if type(value) not in (int, float) or not math.isfinite(value):
                 raise ValueError("invalid numerical heading")
-            err = wrap(value - truth)
+            err = value - truth  # Keep UNWRAPPED; wrap hides a full-turn slip.
             traces[name].append(err)
             groups.setdefault(turn, {}).setdefault(name, []).append(err)
     return {
         "state": "OFFLINE_MODEL_SCORING_ONLY_NO_PHYSICAL_PROVENANCE",
         "encoder_sha256": hashlib.sha256(Path(encoder_path).read_bytes()).hexdigest(),
         "encoder_complete_turns_from_origin": (edges[-1][1]-origin_count)//pulses_per_revolution,
-        "heldout_frames": len(events),
+        "heldout_frames": len(events),\n        "firstturn_encoder_freeze_turns": freeze_revolutions,
         "unknown_fraction": unknown / len(events),
         "separating_observation_requests_not_automatically_acquired": requests,
         "overall": {key: stats(values) for key, values in traces.items()},
