@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 70
     env:
-      PKC_SHA: '7d4c6b6fc26f1e0d01b0bba3319bb296f31afc11'
+      PKC_SHA: 'c792a6aa7609f057022a272019c639ee4de04d84'
     steps:
       - name: Checkout owner-authored probe only
         uses: actions/checkout@v4
