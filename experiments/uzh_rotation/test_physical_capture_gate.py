@@ -44,7 +44,10 @@ class PhysicalGateTests(unittest.TestCase):
         self.data["encoder_pulses_per_revolution"] = 3
         self.assertTrue(self.check())
     def test_nominal_timing_not_enough(self):
-        self.clock["frozen_max_abs_residual_ns"] = 0\n        p = self.root / "holdout_clock.csv"\n        p.write_text(p.read_text().replace("200,202", "200,203"))\n        self.refresh_clock_hashes()
+        self.clock["frozen_max_abs_residual_ns"] = 0
+        p = self.root / "holdout_clock.csv"
+        p.write_text(p.read_text().replace("200,202", "200,203"))
+        self.refresh_clock_hashes()
         self.assertTrue(self.check())
     def test_overlapping_clock_windows_rejected(self):
         p = self.root / "holdout_clock.csv"
