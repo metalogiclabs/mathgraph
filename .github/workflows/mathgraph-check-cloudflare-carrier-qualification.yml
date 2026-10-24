@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: mathgraph-check-cloudflare-carrier-qualification
   cancel-in-progress: false
@@ -28,6 +29,37 @@ jobs:
           set -euo pipefail
           node --test integrations/mathgraph-check-github/cloudflare/*.test.mjs \
             integrations/mathgraph-check-github/pkc-yaml*.test.mjs
+      - name: Authenticate the exact historical native receipt ZIP (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171240289 \
+            > "$RUNNER_TEMP/pkc-yaml-artifact.json"
+          gh api repos/metalogiclabs/mathgraph/actions/artifacts/12171240289/zip \
+            > "$RUNNER_TEMP/pkc-yaml-artifact.zip"
+          printf '%s  %s\n' \
+            '2bbd575f1d93759a734fa459f4f48be599411a44b91d0627b397d02d4f8b98f9' \
+            "$RUNNER_TEMP/pkc-yaml-artifact.zip" | sha256sum -c -
+          node --input-type=module -e '
+            import assert from "node:assert/strict";
+            import {readFileSync} from "node:fs";
+            import {qualifyLiveCheck} from "./integrations/mathgraph-check-github/pkc-yaml-live-boundary.mjs";
+            const bytes=readFileSync(process.env.RUNNER_TEMP+"/pkc-yaml-artifact.zip");
+            const meta=JSON.parse(readFileSync(process.env.RUNNER_TEMP+"/pkc-yaml-artifact.json","utf8"));
+            assert.equal(meta.workflow_run?.head_sha,"4c12cd67f251993e08885c04d9d6896db364a0df");
+            const args={zipBytes:bytes,artifactMetadata:meta,repo:"metalogiclabs/mathgraph",
+              pr:178,head:"05a6057e94d899ded94374db4a831963034aea93",
+              liveHead:"05a6057e94d899ded94374db4a831963034aea93",
+              appId:5308912,installed:true,existingChecks:[]};
+            const admitted=qualifyLiveCheck(args);
+            assert.equal(admitted.admitted,true);
+            assert.equal(admitted.check.conclusion,"neutral");
+            const corrupt=Buffer.from(bytes);corrupt[10]^=1;
+            assert.equal(qualifyLiveCheck({...args,zipBytes:corrupt}).admitted,false);
+            assert.equal(qualifyLiveCheck({...args,liveHead:"a".repeat(40)}).admitted,false);
+            console.log("PINNED_NATIVE_RECEIPT=AUTHENTICATED;TAMPER=DENIED;STALE=DENIED");
+          '
       - name: Bundle actual production entrypoint with Wrangler, without credentials
         run: |
           set -euo pipefail
