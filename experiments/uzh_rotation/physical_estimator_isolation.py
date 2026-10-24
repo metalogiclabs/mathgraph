@@ -37,6 +37,51 @@ def command(estimator, camera, gyro, first_turn_map, image=IMAGE):
     # Encoder is not among the permitted mounts. No host directories are mounted.
     return args
 
+def map_build_command(builder, camera, gyro, image=IMAGE):
+    """Three-file-only map construction; encoder and future scoring are absent."""
+    paths = [_file(x) for x in (builder, camera, gyro)]
+    dest = ("/estimator.py", "/camera.csv", "/gyro.csv")
+    args = [
+        "docker", "run", "--rm", "--network", "none", "--read-only",
+        "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+        "--pids-limit", "64", "--memory", "256m", "--cpus", "1",
+        "--user", "65534:65534",
+        "--tmpfs", "/tmp:rw,nosuid,noexec,size=8m"
+    ]
+    for source, target in zip(paths, dest):
+        args += ["--mount", f"type=bind,src={source},dst={target},readonly"]
+    return args + [image, "python", "/estimator.py", "--print-map",
+                   "/camera.csv", "/gyro.csv"]
+
+
+def build_map_isolated(builder, camera, gyro, *, timeout=120):
+    """Construct first-turn map in a process with no encoder mounted.
+
+    Only the camera/gyro CSV and builder script are mounted. The algorithm
+    must stop at first-turn completion; dataset provenance remains external.
+    """
+    try:
+        result = subprocess.run(
+            map_build_command(builder, camera, gyro),
+            capture_output=True, text=True, timeout=timeout, check=False
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise IsolationError(f"isolated map build unavailable: {exc}") from exc
+    if result.returncode:
+        raise IsolationError(
+            f"isolated map build failed (exit {result.returncode}): "
+            f"{result.stderr[:1000]}")
+    try:
+        frozen = json.loads(result.stdout)
+    except ValueError as exc:
+        raise IsolationError("map builder returned non-JSON") from exc
+    if (not isinstance(frozen, dict)
+        or frozen.get("encoder_used_in_map") is not False
+        or frozen.get("physical_error_bounds_independently_certified") is not False):
+        raise IsolationError("map builder made unsupported authority claims")
+    return frozen
+
+
 def execute(estimator, camera, gyro, first_turn_map, *, timeout=30):
     args = command(estimator, camera, gyro, first_turn_map)
     try:
