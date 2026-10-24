@@ -24,6 +24,11 @@ jobs:
           python-version: '3.11'
       - name: Encoder, camera, gyro, timing and frozen map admission
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
+      - name: Protect canonical physical evidence gate v1.1 and its negative controls
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/physical_evidence_gate.py)" = fa80088f69115d181853de50e321d00c5b2a4b2a
+          test "$(git hash-object experiments/uzh_rotation/physical_encoder_score.py)" = 15f1d0976c2abc7e1b074405b6c4a47ce83f74e2
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_evidence_gate.py' -v
       - name: Encoder-blind model replay and independent scoring unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
       - name: Adversarial isolation unit controls
@@ -64,8 +69,10 @@ jobs:
           s = json.load(open('synthetic_scoring.json'))
           assert s['state'] == 'OFFLINE_MODEL_SCORING_ONLY_NO_PHYSICAL_PROVENANCE'
           assert s['physical_heading_correction_warranted'] is False
-          assert s['overall']['mathgraph_estimate_rad']['circular_rmse_deg'] < s['overall']['gyro_only_rad']['circular_rmse_deg']
+          assert s['overall']['mathgraph_estimate_rad']['unwrapped_rmse_deg'] < s['overall']['gyro_only_rad']['unwrapped_rmse_deg']
+          assert s['overall']['conventional_nearest_rad']['unwrapped_rmse_deg'] <= s['overall']['mathgraph_estimate_rad']['unwrapped_rmse_deg']
           print('SYNTHETIC_MODEL_GYRO_REDUCTION_ONLY', s['overall'])
+          print('EQUAL_INFORMATION_CONVENTIONAL_TRACKER_IS_AT_LEAST_AS_ACCURATE')
           print('PHYSICAL_HEADING_RECOVERY=UNKNOWN')
           PY
       - name: Retain bounded synthetic source lineage and independent scoring
