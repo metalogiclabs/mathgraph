@@ -2,7 +2,7 @@
 MathGraph Check: source-native scope/gate consistency witness.
 
 Immutable source under test: nasa-jpl/PropertyKindCalculus
-@ 7d4c6b6fc26f1e0d01b0bba3319bb296f31afc11 (merged main).
+@ c792a6aa7609f057022a272019c639ee4de04d84 (merged main).
 
 Adversarial edit is data only; no upstream source modified.
 The question is whether #kind_requirement accepts a gate over PairState .P
@@ -21,7 +21,7 @@ import all PropertyKindCalculus.Provenance
 open HCP.L6_Requirements
 open PropertyKindCalculus
 
-/-- Unmodified P-scope positive control. -/
+-- Unmodified P-scope positive control.
 #kind_requirement r3CouplingSpringRange
 
 /--
