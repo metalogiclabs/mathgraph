@@ -4,6 +4,9 @@ on:
     branches: [exp/uzh-rotation-validation-20261021]
     paths:
       - '.github/workflows/mathgraph-physical-fixture-isolation.yml'
+      - 'experiments/uzh_rotation/physical_evidence_gate.py'
+      - 'experiments/uzh_rotation/physical_encoder_score.py'
+      - 'experiments/uzh_rotation/test_physical_evidence_gate.py'
   workflow_dispatch:
 permissions:
   contents: read

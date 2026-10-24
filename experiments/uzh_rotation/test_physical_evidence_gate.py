@@ -148,6 +148,11 @@ def rewrite_nav(nav,filename,rows=None,edit=None):
     m=json.loads((nav/"nav_manifest.json").read_text())
     m["files"][filename]={"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
                           "bytes":p.stat().st_size}
+    if filename=="sensors.jsonl":
+        # This test must keep the independent comparator's declared
+        # identical-input digest synchronized, so timestamp corruption is
+        # reached and rejected by the SOURCE CLOCK gate itself.
+        m["conventional_visual_baseline"]["source_sensor_sha256"]=m["files"][filename]["sha256"]
     dump(nav/"nav_manifest.json",m)
 
 
