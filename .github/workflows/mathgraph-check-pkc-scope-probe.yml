@@ -1,0 +1,83 @@
+name: MathGraph Check - PKC scoped empirical requirement native probe
+
+on:
+  push:
+    branches:
+      - research/pkc-requirement-scope-native-probe-20261025
+    paths:
+      - '.github/workflows/mathgraph-check-pkc-scope-probe.yml'
+      - 'research/pkc_scope_native_probe/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-pkc-scope-gate-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      PKC_SHA: '7d4c6b6fc26f1e0d01b0bba3319bb296f31afc11'
+    steps:
+      - name: Checkout owner-authored probe only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout upstream immutable source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: ${{ env.PKC_SHA }}
+          path: pkc-upstream
+          persist-credentials: false
+          submodules: false
+      - name: Validate revision and Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C pkc-upstream rev-parse HEAD)" = "$PKC_SHA"
+          test "$(cat pkc-upstream/lean-toolchain)" = 'leanprover/lean4:v4.35.0'
+          test -z "$(git -C pkc-upstream status --porcelain --untracked-files=no)"
+          mkdir -p research/pkc_scope_native_probe/evidence
+          echo "$PKC_SHA" > research/pkc_scope_native_probe/evidence/upstream-revision.txt
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Acquire upstream pinned Mathlib caches
+        timeout-minutes: 35
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          (cd pkc-upstream && lake exe cache get)             > research/pkc_scope_native_probe/evidence/cache.log 2>&1
+      - name: Build untouched upstream HCP requirement module
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          (cd pkc-upstream && lake build HCP.L6_Requirements)             > research/pkc_scope_native_probe/evidence/build.log 2>&1
+      - name: Replay original P scope and adversarial Q scope
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          out="$GITHUB_WORKSPACE/research/pkc_scope_native_probe/evidence"
+          (cd pkc-upstream && lake env lean             "$GITHUB_WORKSPACE/research/pkc_scope_native_probe/ScopeProbe.lean")             > "$out/scope-native.log" 2> "$out/scope-stderr.log"
+          test ! -s "$out/scope-stderr.log"
+          grep -F 'scope: objects HCP.L6_Requirements.PairId.P' "$out/scope-native.log"
+          grep -F 'scope: objects HCP.L6_Requirements.PairId.Q' "$out/scope-native.log"
+          test "$(grep -c 'gate: HCP.L6_Requirements.withinRatedRange' "$out/scope-native.log")" = '2'
+          test "$(grep -c 'spot check: HCP.L6_Requirements.pairP_earlierWithinRatedRange = true' "$out/scope-native.log")" = '2'
+          test "$(grep -c 'spot check: HCP.L6_Requirements.pairP_laterWithinRatedRange = true' "$out/scope-native.log")" = '2'
+          echo "PINNED_NATIVE_P_SCOPE_AND_Q_SCOPE_SAME_P_GATE_ACCEPTED"
+      - name: Retain source-native output and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-pkc-scope-native-probe
+          path: |
+            research/pkc_scope_native_probe/ScopeProbe.lean
+            research/pkc_scope_native_probe/evidence/
+          if-no-files-found: warn
