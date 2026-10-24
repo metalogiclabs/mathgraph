@@ -116,6 +116,13 @@ def score(nav_audit_path,encoder_bundle):
     true_firstturn_freeze=(freeze_turns is not None and 1.<=freeze_turns<2.)
     gyro_zero=float(start["gyro_heading_rad"])
     fused_zero=float(start["fused_heading_rad"])
+    cmp_zero=float(start["conventional_visual_heading_rad"])
+    baseline=nav.get("conventional_visual_baseline")
+    if (not isinstance(baseline,dict) or
+        baseline.get("source_sensor_sha256")!=nav["input_hashes"]["sensors.jsonl"] or
+        baseline.get("identical_sensor_input_declared") is not True or
+        baseline.get("implementation_and_sensor_input_independently_attested") is not False):
+        fail("equal-input conventional visual+gyro comparator not source-pinned")
     result_by_rev={}
     excluded=0
     for e in nav_samples:
@@ -135,13 +142,17 @@ def score(nav_audit_path,encoder_bundle):
         true_delta=ref_rad
         gyro_delta=float(e["gyro_heading_rad"])-gyro_zero
         fused_delta=float(e["fused_heading_rad"])-fused_zero
-        if not math.isfinite(gyro_delta) or not math.isfinite(fused_delta):
+        cmp_delta=float(e["conventional_visual_heading_rad"])-cmp_zero
+        if (not math.isfinite(gyro_delta) or not math.isfinite(fused_delta)
+            or not math.isfinite(cmp_delta)):
             fail("non-finite navigator heading")
         group=result_by_rev.setdefault(revolution,{"gyro_errors_deg":[],
                                                    "fused_errors_deg":[],
+                                                   "conventional_visual_errors_deg":[],
                                                    "warranted":0,"unknown":0})
         group["gyro_errors_deg"].append(math.degrees(gyro_delta-true_delta))
         group["fused_errors_deg"].append(math.degrees(fused_delta-true_delta))
+        group["conventional_visual_errors_deg"].append(math.degrees(cmp_delta-true_delta))
         group["warranted" if e["authority"]=="WARRANTED" else "unknown"]+=1
     rows={}
     for r in (2,3,4,5):
@@ -150,13 +161,19 @@ def score(nav_audit_path,encoder_bundle):
            "samples":len(x["gyro_errors_deg"]) if x else 0,
            "gyro_only_rmse_unwrapped_deg":rmse(x["gyro_errors_deg"]) if x else None,
            "fused_rmse_unwrapped_deg":rmse(x["fused_errors_deg"]) if x else None,
+           "conventional_visual_rmse_unwrapped_deg":rmse(x["conventional_visual_errors_deg"]) if x else None,
            "warranted_samples":x["warranted"] if x else 0,
            "unknown_samples":x["unknown"] if x else 0,
         }
     all_gyro=[e for x in result_by_rev.values() for e in x["gyro_errors_deg"]]
     all_fused=[e for x in result_by_rev.values() for e in x["fused_errors_deg"]]
+    all_cmp=[e for x in result_by_rev.values()
+             for e in x["conventional_visual_errors_deg"]]
     gyro_score=rmse(all_gyro)
     fused_score=rmse(all_fused)
+    cmp_score=rmse(all_cmp)
+    improvement_over_equal_visual=(cmp_score is not None and
+                                   fused_score is not None and fused_score<cmp_score)
     complete=recorded_turns>=5 and all(rows[str(r)]["samples"]>0 for r in range(2,6))
     reduced=(gyro_score is not None and fused_score is not None
              and fused_score<gyro_score)
@@ -165,6 +182,9 @@ def score(nav_audit_path,encoder_bundle):
         "five_complete_encoder_revolutions":bool(recorded_turns>=5),
         "all_later_revolutions_scored":all(rows[str(r)]["samples"]>0 for r in range(2,6)),
         "gyro_drift_reduced_vs_same_source_gyro_only":bool(reduced),
+        "same_sensor_conventional_visual_baseline_scored":cmp_score is not None,
+        "fused_beats_equal_input_conventional_visual_baseline":bool(improvement_over_equal_visual),
+        "baseline_binary_and_equal_data_execution_independently_attested":False,
         "first_turn_map_frozen":nav["firstturn_map_bins"]>0,
         "first_turn_freeze_not_early_or_in_later_turns":true_firstturn_freeze,
         "sensor_ambiguity_was_observed":stats["unknown_matches"]>0,
@@ -201,7 +221,10 @@ def score(nav_audit_path,encoder_bundle):
         "per_revolution":rows,
         "gyro_only_rmse_unwrapped_deg":gyro_score,
         "visual_fused_rmse_unwrapped_deg":fused_score,
+        "conventional_visual_rmse_unwrapped_deg":cmp_score,
         "observed_improvement_over_gyro_only":bool(reduced),
+        "observed_improvement_over_conventional_visual":bool(improvement_over_equal_visual),
+        "equal_camera_gyro_source_hash_declared":baseline["source_sensor_sha256"],
         "acceptance_tests":tests,
         "independent_score_reproducible_from_immutable_logs":True,
         "hardware_and_future_bound_attestation":"NOT_IMPLEMENTED",

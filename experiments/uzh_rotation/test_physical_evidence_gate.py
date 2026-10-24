@@ -65,6 +65,10 @@ def make_fixture(root,mode="FIXTURE",with_encoder=True):
     by_t={x["t_ns"]:x for x in sensor}
     decisions=[]
     def push(t,kind,**kwargs):
+        if kind=="ESTIMATE":
+            # Fixture-only independent conventional vision+gyro comparator
+            # recorded on the same source timeline; not a physical claim.
+            kwargs["conventional_visual_heading_rad"]=OMEGA*((t-T0)/SEC)*.985
         decisions.append({"t_ns":t,"kind":kind,**kwargs})
     for idx,val in seen.items():
         t=T0+round((idx+.5)/64*SEC)
@@ -108,7 +112,13 @@ def make_fixture(root,mode="FIXTURE",with_encoder=True):
     }
     dump(nav/"timing.json",timing)
     add_manifest(nav,"NAVIGATION",mode,
-                 ("sensors.jsonl","decisions.jsonl","timing.json"))
+                 ("sensors.jsonl","decisions.jsonl","timing.json"),
+                 conventional_visual_baseline={
+                     "name":"identical_source_conventional_visual_gyro_fixture",
+                     "source_sensor_sha256":hashlib.sha256((nav/"sensors.jsonl").read_bytes()).hexdigest(),
+                     "source_code_sha256":"f"*64,
+                     "no_encoder_input":True,
+                     "frozen_before_capture":True})
     if with_encoder:
         rows=[]
         for i in range(61):
@@ -165,6 +175,9 @@ class PhysicalEvidenceGateTests(unittest.TestCase):
         self.assertAlmostEqual(result["encoder_turns_at_source_firstturn_freeze"],.95,delta=.002)
         self.assertFalse(result["acceptance_tests"]["first_turn_freeze_not_early_or_in_later_turns"])
         self.assertTrue(result["observed_improvement_over_gyro_only"])
+        self.assertIsNotNone(result["conventional_visual_rmse_unwrapped_deg"])
+        self.assertTrue(result["acceptance_tests"]["same_sensor_conventional_visual_baseline_scored"])
+        self.assertFalse(result["acceptance_tests"]["baseline_binary_and_equal_data_execution_independently_attested"])
         self.assertGreater(result["per_revolution"]["2"]["samples"],0)
         self.assertGreater(result["per_revolution"]["5"]["samples"],0)
         self.assertFalse(result["acceptance_tests"]["timing_bound_independently_physically_certified"])
@@ -180,6 +193,21 @@ class PhysicalEvidenceGateTests(unittest.TestCase):
         event["phase_u16"]=(event["phase_u16"]+2048)%65536
         rewrite_nav(self.nav,"decisions.jsonl",rows=rows)
         with self.assertRaisesRegex(ValueError,"disagrees with causal gyro"):
+            inspect(self.nav)
+
+    def test_conventional_baseline_cannot_claim_different_camera_gyro_source(self):
+        meta=json.loads((self.nav/"nav_manifest.json").read_text())
+        meta["conventional_visual_baseline"]["source_sensor_sha256"]="0"*64
+        dump(self.nav/"nav_manifest.json",meta)
+        with self.assertRaisesRegex(ValueError,"not pinned to identical sensor"):
+            inspect(self.nav)
+
+    def test_missing_conventional_visual_output_is_fail_closed(self):
+        rows=[json.loads(x) for x in (self.nav/"decisions.jsonl").read_text().splitlines()]
+        estimate=next(x for x in rows if x["kind"]=="ESTIMATE")
+        del estimate["conventional_visual_heading_rad"]
+        rewrite_nav(self.nav,"decisions.jsonl",rows=rows)
+        with self.assertRaisesRegex(ValueError,"invalid heading estimate"):
             inspect(self.nav)
 
     def test_navigation_bundle_rejects_encoder_present(self):

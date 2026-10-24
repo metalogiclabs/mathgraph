@@ -217,6 +217,16 @@ def separates_pair(h,k,step,mapping):
 def inspect(bundle):
     m=check_manifest(bundle,"nav_manifest.json","NAVIGATION",
                      ("sensors.jsonl","decisions.jsonl","timing.json"))
+    comparator=m.get("conventional_visual_baseline")
+    if (not isinstance(comparator,dict) or
+        set(comparator)!={"name","source_sensor_sha256","source_code_sha256",
+                          "no_encoder_input","frozen_before_capture"} or
+        not isinstance(comparator["name"],str) or not comparator["name"].strip() or
+        comparator["source_sensor_sha256"]!=m["files"]["sensors.jsonl"]["sha256"] or
+        not SHA_RE.fullmatch(str(comparator["source_code_sha256"])) or
+        comparator["no_encoder_input"] is not True or
+        comparator["frozen_before_capture"] is not True):
+        fail("conventional vision+gyro baseline not pinned to identical sensor source")
     sensors=read_lines(Path(bundle)/"sensors.jsonl")
     camera,max_gyro,first_gyro=camera_source(sensors)
     bound=timing_evidence(bundle,m,sensors,max_gyro)
@@ -336,10 +346,13 @@ def inspect(bundle):
             last_match=None
         elif kind=="ESTIMATE":
             fused=d.get("fused_heading_rad")
+            comparator_heading=d.get("conventional_visual_heading_rad")
             corr=d.get("correction_delta_rad")
             auth=d.get("authority")
             if (type(fused) not in (int,float) or type(corr) not in (int,float)
-                or not math.isfinite(fused) or not math.isfinite(corr)
+                or type(comparator_heading) not in (int,float) or
+                not math.isfinite(fused) or not math.isfinite(corr) or
+                not math.isfinite(comparator_heading)
                 or auth not in ("UNKNOWN","WARRANTED")):
                 fail("invalid heading estimate")
             # Strictly causal gyro-only conventional baseline, ZOH held at last
@@ -369,6 +382,7 @@ def inspect(bundle):
                     fail("UNKNOWN estimate claimed a fresh visual correction")
                 stats["unknown_estimates"]+=1
             samples.append({"t_ns":ts,"gyro_heading_rad":gyro,
+                            "conventional_visual_heading_rad":float(comparator_heading),
                             "fused_heading_rad":float(fused),
                             "authority":auth,
                             "correction_delta_rad":float(corr)})
@@ -387,6 +401,12 @@ def inspect(bundle):
         "firstturn_map_bins":len(mapping),
         "firstturn_quarantined_bins":sorted(quarantined),
         "role_isolation":"NAVIGATION_ONLY_NO_ENCODER_BYTES",
+        "conventional_visual_baseline":{
+            "name":comparator["name"],
+            "source_sensor_sha256":comparator["source_sensor_sha256"],
+            "source_code_sha256":comparator["source_code_sha256"],
+            "identical_sensor_input_declared":True,
+            "implementation_and_sensor_input_independently_attested":False},
         "policy_consistent_with_declared_finite_model":True,
         "physical_visual_heading_accuracy_verified":False,
         "navigation_samples":samples,"statistics":stats,
