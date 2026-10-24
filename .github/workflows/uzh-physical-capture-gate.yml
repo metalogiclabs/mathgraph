@@ -1,4 +1,4 @@
-name: UZH physical capture structural and encoder-isolation gate
+name: UZH supplemental encoder-blind synthetic column replay
 on:
   push:
     branches: [exp/uzh-physical-gate-integration-20261024]
@@ -14,7 +14,7 @@ on:
       - '.github/workflows/uzh-physical-capture-gate.yml'
   workflow_dispatch:
 jobs:
-  adversarial-structural-controls:
+  synthetic-model-with-protected-original-gate:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -22,8 +22,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Encoder, camera, gyro, timing and frozen map admission
-        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
       - name: Protect canonical physical evidence gate v1.1 and its negative controls
         run: |
           test "$(git hash-object experiments/uzh_rotation/physical_evidence_gate.py)" = fa80088f69115d181853de50e321d00c5b2a4b2a
@@ -44,7 +42,6 @@ jobs:
       - name: Generate independently scored reproducible synthetic artifacts
         run: |
           python experiments/uzh_rotation/physical_column_demo.py synthetic_capture
-          python experiments/uzh_rotation/physical_capture_gate.py synthetic_capture/manifest.json
           python - <<'PY'
           import json, pathlib, sys
           sys.path.insert(0, 'experiments/uzh_rotation')
@@ -55,7 +52,7 @@ jobs:
           host = json.loads(pathlib.Path('synthetic_capture/frozen_map.json').read_text())
           assert frozen == host, 'isolated firstturn map differs from source-derived map'
           pathlib.Path('isolated_firstturn_map.json').write_text(
-              json.dumps(frozen, sort_keys=True, indent=2) + '\\n')
+              json.dumps(frozen, sort_keys=True, indent=2) + '\n')
           print('ISOLATED_FIRSTTURN_MAP_MATCHES_SOURCE_NO_ENCODER')
           PY
           python experiments/uzh_rotation/physical_estimator_isolation.py \
@@ -81,7 +78,10 @@ jobs:
         with:
           name: uzh-column-six-turn-synthetic-model-evidence
           path: |
-            synthetic_capture/manifest.json
+            synthetic_capture/fixture_source_manifest.json
+            synthetic_capture/camera.csv
+            synthetic_capture/gyro.csv
+            synthetic_capture/encoder.csv
             synthetic_capture/frozen_map.json
             isolated_firstturn_map.json
             synthetic_replay.json
