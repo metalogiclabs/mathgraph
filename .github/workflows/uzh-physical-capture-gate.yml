@@ -1,28 +1,46 @@
-name: UZH physical capture structural gate
+name: UZH physical capture structural and encoder-isolation gate
 on:
   push:
     branches: [exp/uzh-physical-gate-integration-20261024]
     paths:
       - 'experiments/uzh_rotation/physical_capture_gate.py'
+      - 'experiments/uzh_rotation/physical_clock_envelope.py'
+      - 'experiments/uzh_rotation/physical_estimator_isolation.py'
       - 'experiments/uzh_rotation/test_physical_capture_gate.py'
+      - 'experiments/uzh_rotation/test_physical_estimator_isolation.py'
+      - '.github/workflows/uzh-physical-capture-gate.yml'
+  pull_request:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/physical_capture_gate.py'
+      - 'experiments/uzh_rotation/physical_clock_envelope.py'
+      - 'experiments/uzh_rotation/physical_estimator_isolation.py'
+      - 'experiments/uzh_rotation/test_physical_capture_gate.py'
+      - 'experiments/uzh_rotation/test_physical_estimator_isolation.py'
       - '.github/workflows/uzh-physical-capture-gate.yml'
   workflow_dispatch:
 jobs:
   adversarial-structural-controls:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Test structural preflight and negative controls
-        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
-      - name: Assert real hardware evidence is not claimed
+      - name: Run camera/gyro/encoder source admission and isolation unit tests
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
+      - name: Run actual sandbox positive and forbidden encoder negative controls
+        env:
+          RUN_DOCKER_ISOLATION_TEST: '1'
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
+      - name: Explicitly keep physical heading recovery UNKNOWN
         run: |
           python - <<'PY'
           import pathlib
-          p=pathlib.Path('experiments/uzh_rotation/physical_capture_gate.py').read_text()
-          assert 'STRUCTURAL_CANDIDATE_ONLY' in p
-          assert 'UNKNOWN' in p
+          src = pathlib.Path('experiments/uzh_rotation/physical_capture_gate.py').read_text()
+          assert 'STRUCTURAL_CANDIDATE_ONLY' in src and 'UNKNOWN' in src
           print('PHYSICAL_HEADING_RECOVERY=UNKNOWN')
           PY
