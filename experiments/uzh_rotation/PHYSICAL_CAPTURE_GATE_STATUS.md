@@ -20,6 +20,12 @@ Deterministic 320 held-out model frames:
 - Conventional accuracy advantage: **0.21550 degrees lower RMSE**. A MathGraph heading-accuracy advantage is **REJECTED for this frozen fixture**, not broadly disproved.
 - Correction authority: `navigation_correction_authorized=false` for every event; no onboard correction was sent. The planner makes requests but the fixture does NOT establish prospective physical sensor acquisition.
 
+## Source-faithful entry from the canonical navigation contract
+
+The additive `physical_nav_source_adapter.py` reads existing `MGVC-PHYSICAL-1` NAVIGATION bundles using the original `physical_evidence_gate.check_manifest` and `read_lines` authorities. It never accepts the encoder role. It converts original source-native `GYRO` and `COLUMN` rows to a separately hashed camera/gyro model input and reports `SUPPLEMENTAL_NAVIGATION_SOURCE_ADAPTED_ONLY` with no physical navigation authority. [Clean CI #40058758647](https://github.com/metalogiclabs/mathgraph/actions/runs/40058758647) qualified the five source-entry adversaries: original source translation, manifest byte tampering, forbidden encoder in the navigation bundle, output contamination prevention, and mandatory UNKNOWN for too-sparse source gyro chronology. The 16 canonical physical gate tests, 13 model replay controls, real Docker map/estimator isolation and synthetic scoring remain passing.
+
+The canonical existing `sensors.jsonl` schema now has a direct checked path to supplemental camera/gyro replay; no second hardware evidence format was introduced. Converting real samples does **not** imply a complete gyro turn, bounded physical clock, physical ground truth, or actual heading correction.
+
 ## Epistemic classification
 
 - **WARRANTED (bounded software):** firstturn map and estimator are encoder-blind for these Docker invocations; reproducible causal model replay and independent unwrapped synthetic scoring, with source-integrity, occlusion and ambiguity negative controls. Existing canonical source/role gate protected.
