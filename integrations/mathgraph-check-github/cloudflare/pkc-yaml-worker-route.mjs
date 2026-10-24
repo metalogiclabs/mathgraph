@@ -109,8 +109,65 @@ export async function carrierGitHub(path,token,method="GET",body,{fetcher=fetch}
     return boundedBytes(response);
   }
   if(!response.ok){const error=Error("GITHUB_HTTP_"+response.status);
-    error.status=response.status;throw error;}
+    error.status=response.status;error.apiPath=path;throw error;}
   return response.status===204?{revoked:true}:response.json();
+}
+
+const UNKNOWN_OUTPUT=Object.freeze({
+  title:"PKC_L4YAML_EVIDENCE_UNKNOWN",
+  summary:"Previously displayed historical research evidence is no longer authenticated " +
+    "at the frozen carrier. Any dependent advisory warrant requires independent " +
+    "requalification. No defect is claimed in the carrier and no merge authority exists."
+});
+
+// Withdrawal is authorized by the current App installation + exact live PR head,
+// not by the absent or tampered evidence. Never writes a new Check on failure.
+async function withdrawCarrierCheck(item,token,api){
+  const pr=await api(ROOT+"/pulls/178",token);
+  ensured(pr?.state==="open" && pr.head?.sha===CARRIER.head &&
+    pr.head?.repo?.full_name===CARRIER.repo &&
+    pr.base?.repo?.full_name===CARRIER.repo,"STALE_WITHDRAWAL_SOURCE");
+  const index=await api(ROOT+"/commits/"+CARRIER.head+
+    "/check-runs?check_name="+CHECK_NAME+"&filter=all&per_page=100",token);
+  ensured(Array.isArray(index?.check_runs) &&
+    Number.isSafeInteger(index.total_count) &&
+    index.total_count<=index.check_runs.length,"WITHDRAWAL_CHECK_CENSUS_INCOMPLETE");
+  const external=CARRIER.repo+"#178@"+CARRIER.head;
+  const owned=index.check_runs.filter(c=>c?.name==="MathGraph Check / evidence scope" &&
+    c?.app?.id===5308912 && c?.external_id===external);
+  ensured(owned.length<=1,"DUPLICATE_CARRIER_CHECK_AUTHORITY");
+  if(owned.length===0)return null;
+  const old=owned[0];
+  ensured(Number.isSafeInteger(old.id) && old.id>0 &&
+    old.head_sha===CARRIER.head && old.status==="completed" &&
+    old.conclusion==="neutral","PREVIOUS_CARRIER_CHECK_INVALID");
+  const same=old.output?.title===UNKNOWN_OUTPUT.title &&
+    old.output?.summary===UNKNOWN_OUTPUT.summary;
+  if(same)return {state:"ALREADY_UNKNOWN",checkId:old.id};
+  const path=ROOT+"/check-runs/"+old.id;
+  const details="https://github.com/"+CARRIER.repo+"/runs/"+old.id;
+  const updated=await api(path,token,"PATCH",{
+    status:"completed",conclusion:"neutral",output:UNKNOWN_OUTPUT,
+    details_url:details
+  });
+  ensured(updated?.id===old.id && updated.app?.id===5308912 &&
+    updated.head_sha===CARRIER.head && updated.conclusion==="neutral",
+    "CARRIER_WITHDRAWAL_PATCH_UNCONFIRMED");
+  const readback=await api(path,token);
+  ensured(readback?.id===old.id && readback.app?.id===5308912 &&
+    readback.head_sha===CARRIER.head && readback.external_id===external &&
+    readback.status==="completed" && readback.conclusion==="neutral" &&
+    readback.details_url===details &&
+    readback.output?.title===UNKNOWN_OUTPUT.title &&
+    readback.output?.summary===UNKNOWN_OUTPUT.summary,
+    "CARRIER_WITHDRAWAL_READBACK_MISMATCH");
+  return {state:"WITHDRAWN_TO_UNKNOWN",checkId:old.id};
+}
+
+function nativeReceiptUnavailable(error){
+  return /^(ARTIFACT_|ARCHIVE_|ZIP_|PUBLICATION_DENIED:)/.test(error?.message||"") ||
+    (error?.status===403 || error?.status===404) &&
+      typeof error.apiPath==="string" && error.apiPath.startsWith(ARTIFACT);
 }
 
 export async function processCarrierQueue(item,env,{fetcher=fetch,makeJWT}={}){
@@ -141,7 +198,13 @@ export async function processCarrierQueue(item,env,{fetcher=fetch,makeJWT}={}){
     const {consumePKCYaml}=await import("../pkc-yaml-live-consumer.mjs");
     result=await consumePKCYaml({githubAPI:api,repo:CARRIER.repo,pr:CARRIER.pr,
       head:CARRIER.head,token,appId:5308912,installed:true,enabled:true});
-  }catch(e){failed=e;}
+  }catch(e){
+    if(nativeReceiptUnavailable(e)){
+      try{result=await withdrawCarrierCheck(item,token,api);}
+      catch(withdrawalError){failed=withdrawalError;}
+    }
+    if(!result && !failed)failed=e;
+  }
   finally{
     try{revokeOK=(await api("/installation/token",token,"DELETE")).revoked===true;}
     catch{revokeOK=false;}

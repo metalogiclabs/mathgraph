@@ -64,7 +64,8 @@ function setup(options={}){
     }
     throw Error("UNEXPECTED_FIXTURE_REQUEST:"+m+" "+p);
   };
-  return {env,calls,checks,fetcher};
+  return {env,calls,checks,fetcher,
+    tamperMetadata(value){options.tamperedMetadata=value;}};
 }
 
 test("real archive: signed carrier produces one neutral Check and replay reuses it",
@@ -97,6 +98,28 @@ test("real archive: invalid metadata and incorrect Check readback fail closed",
     const readback=setup({badReadback:true});
     await assert.rejects(processCarrierPR(ITEM,readback.env,{fetcher:readback.fetcher}),
       /APP_CHECK_READBACK_MISMATCH/);
+  });
+
+test("real archive: withdrawal selectively changes own Check to UNKNOWN, then requalifies",
+  {skip:!bytes},async()=>{
+    const m=setup({unrelated:true});
+    assert.equal((await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher})).outcome,
+      "APP_CHECK_VERIFIED");
+    m.tamperMetadata(true);
+    assert.equal((await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher})).outcome,
+      "WITHDRAWN_TO_UNKNOWN");
+    const own=m.checks.find(x=>x.app.id===SCOPE.appID);
+    assert.equal(own.output.title,"PKC_L4YAML_EVIDENCE_UNKNOWN");
+    assert.equal(own.conclusion,"neutral");
+    assert.equal(m.checks[0].output.title,"KEEP");
+    assert.equal((await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher})).outcome,
+      "ALREADY_UNKNOWN");
+    m.tamperMetadata(false);
+    assert.equal((await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher})).outcome,
+      "UPDATED_CHECK");
+    assert.equal(own.output.title,"PKC_L4YAML_HISTORICAL_RESEARCH_BOUNDED");
+    assert.equal(m.checks.length,2);
+    assert.equal(m.checks[0].output.title,"KEEP");
   });
 
 test("real archive: a forged verifier assertion cannot promote a report",

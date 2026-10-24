@@ -58,6 +58,14 @@ const PERMS={checks:"write",pull_requests:"read",actions:"read"};
 function processFixture(options={}){
   const key=generateKeyPairSync("rsa",{modulusLength:2048}).privateKey;
   const calls=[];
+  const checks=options.previous?[{
+    id:401,app:{id:SCOPE.appID},name:SCOPE.checkName,
+    external_id:REPO+"#178@"+HEAD,head_sha:HEAD,
+    status:"completed",conclusion:"neutral",output:{
+      title:"PKC_L4YAML_HISTORICAL_RESEARCH_BOUNDED",summary:"previous archive warrant"}
+  }]:[];
+  if(options.previous)checks.push({id:91,app:{id:999},name:"Unrelated",
+    head_sha:HEAD,output:{title:"KEEP",summary:"unrelated warrant"}});
   const env={GITHUB_APP_ID:String(SCOPE.appID),GITHUB_APP_CLIENT_ID:SCOPE.clientID,
     GITHUB_APP_PRIVATE_KEY:key.export({type:"pkcs1",format:"pem"}).toString(),
     PKC_YAML_CARRIER_ENABLED:options.enabled===false?"false":"true"};
@@ -84,14 +92,23 @@ function processFixture(options={}){
       base:{repo:{full_name:REPO}}});
     if(p==="/repos/"+REPO+"/pulls/178/files")return json([{
       filename:".mathgraph-check/pkc-yaml/EXTERNAL-RESEARCH-RECEIPT.md"}]);
+    if(p==="/repos/"+REPO+"/actions/artifacts/12171240289" && options.artifactDenied)
+      return json({message:"missing"},403);
     if(p==="/repos/"+REPO+"/actions/artifacts/12171240289")return json({
       id:12171240289,expired:false,digest:options.tamperedDigest?
         "sha256:"+"a".repeat(64):
         "sha256:2bbd575f1d93759a734fa459f4f48be599411a44b91d0627b397d02d4f8b98f9",
       workflow_run:{id:39218904172}});
+    if(p==="/repos/"+REPO+"/commits/"+HEAD+"/check-runs")
+      return json({total_count:checks.length,check_runs:checks});
+    if(p==="/repos/"+REPO+"/check-runs/401"){
+      const check=checks[0];
+      if(init.method==="PATCH")Object.assign(check,JSON.parse(init.body));
+      return json(check);
+    }
     throw Error("UNEXPECTED_GITHUB_PATH:"+p);
   };
-  return {env,calls,fetcher};
+  return {env,calls,fetcher,checks};
 }
 test("queue consumer is default off, and rejects foreign installation before token mint",async()=>{
   const disabled=processFixture({enabled:false});
@@ -125,4 +142,23 @@ test("actual queue dispatch retries a denied carrier without entering Geth path"
     m.env,{fetcher:m.fetcher});
   assert.equal(ack,0);assert.equal(retry,1);
   assert.equal(m.calls.some(x=>x.path.includes("go-ethereum")),false);
+});
+test("authenticated prior Check withdraws to neutral UNKNOWN when artifact digest changes",async()=>{
+  const m=processFixture({previous:true,tamperedDigest:true});
+  const first=await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher});
+  assert.equal(first.outcome,"WITHDRAWN_TO_UNKNOWN");
+  assert.equal(m.checks[0].id,401);
+  assert.equal(m.checks[0].conclusion,"neutral");
+  assert.equal(m.checks[0].output.title,"PKC_L4YAML_EVIDENCE_UNKNOWN");
+  assert.equal(m.checks[1].output.title,"KEEP");
+  const again=await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher});
+  assert.equal(again.outcome,"ALREADY_UNKNOWN");
+  assert.equal(m.calls.filter(x=>x.method==="PATCH").length,1);
+  assert.equal(m.calls.filter(x=>x.method==="DELETE").length,2);
+});
+test("authenticated prior Check withdraws to UNKNOWN on artifact API denial",async()=>{
+  const m=processFixture({previous:true,artifactDenied:true});
+  const r=await processCarrierPR(ITEM,m.env,{fetcher:m.fetcher});
+  assert.equal(r.outcome,"WITHDRAWN_TO_UNKNOWN");
+  assert.equal(m.checks[1].output.title,"KEEP");
 });
