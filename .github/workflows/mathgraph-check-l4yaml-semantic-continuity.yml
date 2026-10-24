@@ -1,0 +1,250 @@
+name: MathGraph Check - L4YAML source-native semantic continuity
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-l4yaml-warrant-continuity-20261024
+    paths:
+      - '.github/workflows/mathgraph-check-l4yaml-semantic-continuity.yml'
+      - 'mathgraph_check/l4yaml_continuity.py'
+      - 'mathgraph_check/warrant_resolution.py'
+      - 'research/l4yaml_anchor_continuity_v1/**'
+      - 'research/l4yaml_semantic_diff_v2/**'
+      - 'tests/test_mathgraph_l4yaml_*.py'
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Optional immutable 40-hex L4YAML source commit; blank tracks integration branch HEAD"
+        required: false
+        type: string
+  schedule:
+    - cron: '37 2 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-warrant-continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout Metalogic-owned checker only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Freeze immutable source commit for this run
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$CANDIDATE_SHA" ]; then
+            sha="$CANDIDATE_SHA"
+          else
+            sha="$(git ls-remote https://github.com/nasa-jpl/L4YAML.git refs/heads/fix-a-grammar-completeness | awk '{print $1}')"
+          fi
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "UNKNOWN: upstream SHA not qualified"; exit 1; }
+          echo "TARGET_SHA=$sha" >> "$GITHUB_ENV"
+          echo "Pinned L4YAML SHA: $sha"
+      - name: Checkout untouched upstream at frozen identity
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ env.TARGET_SHA }}
+          path: l4yaml-upstream
+          persist-credentials: false
+          submodules: false
+      - name: Inspect exact checkout and Lean source declaration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C l4yaml-upstream rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(cat l4yaml-upstream/lean-toolchain)" = "leanprover/lean4:v4.35.0"
+          test -z "$(git -C l4yaml-upstream status --porcelain --untracked-files=no)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Regression and adversarial authority controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.1.1 PyYAML==6.0.3
+          python -m pytest -q \
+            tests/test_mathgraph_l4yaml_continuity.py \
+            tests/test_mathgraph_l4yaml_semantic_diff_v2.py \
+            tests/test_mathgraph_l4yaml_strict_verifier.py \
+            tests/test_mathgraph_warrant_resolution_core.py
+      - name: Acquire and verify independent ruamel.yaml oracle bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          oracle="research/l4yaml_anchor_continuity_v1"
+          python -m pip download --no-deps --only-binary=:all: --dest "$oracle" 'ruamel.yaml==0.18.17'
+          echo "9c8ba9eb3e793efdf924b60d521820869d5bf0cb9c6f1b82d82de8295e290b9d  $oracle/ruamel_yaml-0.18.17-py3-none-any.whl" | sha256sum -c -
+          python -m pip install --no-deps --target "$oracle/install" "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl"
+          python "$oracle/run_oracle.py" > "$RUNNER_TEMP/oracle-run.log"
+          second="research/l4yaml_semantic_diff_v2"
+          python -m pip download --no-deps --only-binary=:all: --dest "$second" 'PyYAML==6.0.3'
+          echo "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc  $second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" | sha256sum -c -
+          python -m pip install --no-deps --target "$second/pyyaml_install" \
+            "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl"
+      - name: Install upstream-declared Lean 4.35.0 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build original upstream modules and execute 13-case native probe
+        shell: bash
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence-out/l4yaml-continuity
+          cd l4yaml-upstream
+          env -u L4YAML_LEANCOPILOT lake build L4YAML.Output.Json L4YAML.Output.Events L4YAML.Output.JsonIx \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence-out/l4yaml-continuity/upstream-build.log"
+          env -u L4YAML_LEANCOPILOT lake env lean --run \
+            "$GITHUB_WORKSPACE/research/l4yaml_anchor_continuity_v1/Probe.lean" \
+            > "$GITHUB_WORKSPACE/evidence-out/l4yaml-continuity/native_results.jsonl" \
+            2> "$GITHUB_WORKSPACE/evidence-out/l4yaml-continuity/native_stderr.log"
+          test "$(wc -l < "$GITHUB_WORKSPACE/evidence-out/l4yaml-continuity/native_results.jsonl")" -eq 13
+          test ! -s "$GITHUB_WORKSPACE/evidence-out/l4yaml-continuity/native_stderr.log"
+      - name: Qualify exact native observations and resolve MathGraph Check warrants
+        shell: bash
+        run: |
+          set -euo pipefail
+          oracle="research/l4yaml_anchor_continuity_v1"
+          out="evidence-out/l4yaml-continuity"
+          python -m mathgraph_check.l4yaml_continuity \
+            --verifier-script "$oracle/analyze.py" \
+            --native "$out/native_results.jsonl" \
+            --oracle "$oracle/oracle_results.json" \
+            --stderr "$out/native_stderr.log" \
+            --checkout l4yaml-upstream \
+            --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+            --expected-head "$TARGET_SHA" \
+            --receipt-out "$out/native-qualification.json" \
+            --report-out "$out/mathgraph-check-report.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from mathgraph_check.l4yaml_continuity import project_qualified_receipt
+          p = Path('evidence-out/l4yaml-continuity/mathgraph-check-report.json')
+          report = json.loads(p.read_text())
+          receipt = json.loads(Path('evidence-out/l4yaml-continuity/native-qualification.json').read_text())
+          assert report['decision_authority'] == 'NOT_AUTHORIZED'
+          assert report['status'] in ('BOUNDED_NONCONFORMANCE_OBSERVED', 'BOUNDED_REPAIR_OBSERVED')
+          assert receipt['status'] in ('BOUNDED_DEFECT_REPRODUCED', 'BOUNDED_PARTIAL_DEFECT', 'BOUNDED_FIX_OBSERVED')
+          pin = receipt['source']['commit']
+          stale = project_qualified_receipt(receipt, expected_head=pin, current_head='f' * 40)
+          withdrawn = project_qualified_receipt(receipt, expected_head=pin, current_head=pin,
+                                                withdrawn=frozenset({'oracle'}))
+          assert stale['status'] == 'UNKNOWN'
+          assert withdrawn['status'] == 'UNKNOWN'
+          assert withdrawn['claims']['native_controls'] == 'WARRANTED_BOUNDED'
+          assert withdrawn['claims']['source_identity'] == 'SOURCE_DOCUMENTED'
+          Path('evidence-out/l4yaml-continuity/stale-simulation.json').write_text(json.dumps(stale, indent=2))
+          Path('evidence-out/l4yaml-continuity/oracle-withdrawal.json').write_text(json.dumps(withdrawn, indent=2))
+          print('SEMANTIC_WARRANT_AND_SELECTIVE_WITHDRAWAL_BOUNDED')
+          PY
+      - name: Generate fixed 532-case independent YAML oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          oracle="research/l4yaml_anchor_continuity_v1"
+          out="evidence-out/l4yaml-differential-v2"
+          python -m research.l4yaml_semantic_diff_v2.differential generate \
+            --root "$out" \
+            --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+            --package-path "$oracle/install" \
+            --pyyaml-wheel "research/l4yaml_semantic_diff_v2/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+            --pyyaml-package-path "research/l4yaml_semantic_diff_v2/pyyaml_install"
+          test "$(wc -l < "$out/anchor_inputs.jsonl")" -eq 180
+          test "$(wc -l < "$out/ordinary_inputs.jsonl")" -eq 352
+      - name: Run two source-native differential populations on original L4YAML
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd l4yaml-upstream
+          for suite in anchor ordinary; do
+            env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/BatchProbe.lean" \
+              "$GITHUB_WORKSPACE/evidence-out/l4yaml-differential-v2/${suite}_inputs.jsonl" \
+              > "$GITHUB_WORKSPACE/evidence-out/l4yaml-differential-v2/${suite}_native.jsonl" \
+              2> "$GITHUB_WORKSPACE/evidence-out/l4yaml-differential-v2/${suite}_stderr.log"
+            test ! -s "$GITHUB_WORKSPACE/evidence-out/l4yaml-differential-v2/${suite}_stderr.log"
+            test "$(wc -l < "$GITHUB_WORKSPACE/evidence-out/l4yaml-differential-v2/${suite}_native.jsonl")" \
+              -eq "$(wc -l < "$GITHUB_WORKSPACE/evidence-out/l4yaml-differential-v2/${suite}_inputs.jsonl")"
+          done
+      - name: Qualify 532-case source-native semantic differential and stale-source guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          oracle="research/l4yaml_anchor_continuity_v1"
+          out="evidence-out/l4yaml-differential-v2"
+          python -m research.l4yaml_semantic_diff_v2.differential verify \
+            --root "$out" \
+            --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+            --package-path "$oracle/install" \
+            --pyyaml-wheel "research/l4yaml_semantic_diff_v2/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+            --pyyaml-package-path "research/l4yaml_semantic_diff_v2/pyyaml_install" \
+            --checkout l4yaml-upstream \
+            --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+            --expected-head "$TARGET_SHA" --current-head "$TARGET_SHA" \
+            --out "$out/mathgraph-check-differential-v2.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('evidence-out/l4yaml-differential-v2/mathgraph-check-differential-v2.json')
+          r = json.loads(p.read_text())
+          assert r['total'] == 532
+          assert r['matched'] + r['mismatched'] == 532
+          assert r['legacy_indexed_disagreement'] == 0
+          assert not r['anchor_renaming_residuals']
+          assert r['second_parser']['ordinary_cases_agreed'] == 352
+          assert r['claims']['source_identity'] == 'SOURCE_DOCUMENTED'
+          assert r['decision_authority'] == 'NOT_AUTHORIZED'
+          # The source-native semantic residual is not a whole-YAML proof.
+          assert r['mathematical_terminal_form'] is None
+          print('QUALIFIED_532_NATIVE_CASES_WITH_RETAINED_BOUNDARIES')
+          PY
+          set +e
+          python -m research.l4yaml_semantic_diff_v2.differential verify \
+            --root "$out" \
+            --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+            --package-path "$oracle/install" \
+            --pyyaml-wheel "research/l4yaml_semantic_diff_v2/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+            --pyyaml-package-path "research/l4yaml_semantic_diff_v2/pyyaml_install" \
+            --checkout l4yaml-upstream \
+            --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+            --expected-head "$TARGET_SHA" --current-head 'ffffffffffffffffffffffffffffffffffffffff' \
+            --out "$out/stale-source-simulation.json"
+          exit_code=$?
+          set -e
+          test "$exit_code" -eq 1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('evidence-out/l4yaml-differential-v2/stale-source-simulation.json').read_text())
+          assert r['status'] == 'UNKNOWN'
+          assert all(v == 'UNKNOWN' for v in r['claims'].values())
+          print('STALE_SOURCE_AUTHORITY_WITHDRAWN')
+          PY
+      - name: Archive independent observations and lineage for replay
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-l4yaml-source-native-continuity
+          path: |
+            evidence-out/l4yaml-continuity/
+            evidence-out/l4yaml-differential-v2/
+            research/l4yaml_anchor_continuity_v1/Probe.lean
+            research/l4yaml_anchor_continuity_v1/analyze.py
+            research/l4yaml_anchor_continuity_v1/oracle_results.json
+            research/l4yaml_semantic_diff_v2/BatchProbe.lean
+            research/l4yaml_semantic_diff_v2/differential.py
+          if-no-files-found: warn
