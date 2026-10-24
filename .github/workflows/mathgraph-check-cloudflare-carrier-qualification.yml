@@ -1,0 +1,96 @@
+name: MathGraph Check - frozen PKC/L4YAML Worker qualification (no deploy)
+on:
+  push:
+    branches:
+      - research/mathgraph-check-cloudflare-pkc-carrier-20261024
+    paths:
+      - 'integrations/mathgraph-check-github/**'
+      - '.github/workflows/mathgraph-check-cloudflare-carrier-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-check-cloudflare-carrier-qualification
+  cancel-in-progress: false
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Source-bound Worker and legacy Geth regression tests
+        run: |
+          set -euo pipefail
+          node --test integrations/mathgraph-check-github/cloudflare/*.test.mjs \
+            integrations/mathgraph-check-github/pkc-yaml*.test.mjs
+      - name: Bundle actual production entrypoint with Wrangler, without credentials
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.129.1 deploy --dry-run \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml \
+            --outdir "$RUNNER_TEMP/mathgraph-carrier-dry-run"
+          test -n "$(find "$RUNNER_TEMP/mathgraph-carrier-dry-run" -type f -print -quit)"
+      - name: Exercise actual Worker in local workerd with signed carrier event
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.129.1 dev --local \
+            --config integrations/mathgraph-check-github/cloudflare/wrangler.toml \
+            --ip 127.0.0.1 --port 8799 \
+            --var GITHUB_WEBHOOK_SECRET:local-carrier-hmac-fixture \
+            --var PKC_YAML_CARRIER_ENABLED:true \
+            > "$RUNNER_TEMP/mathgraph-carrier-workerd.log" 2>&1 &
+          worker_pid="$!"
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          ready="false"
+          for n in $(seq 1 130); do
+            if curl --silent --max-time 2 -o /dev/null \
+              -w '%{http_code}' http://127.0.0.1:8799/health | grep -qx '200'; then
+              ready="true"
+              break
+            fi
+            if ! kill -0 "$worker_pid" 2>/dev/null; then break; fi
+            sleep 0.3
+          done
+          if [ "$ready" != "true" ]; then
+            echo 'CARRIER_WORKERD_START_FAILED'
+            grep -Ei 'error|failed|not found|incompatible|missing' \
+              "$RUNNER_TEMP/mathgraph-carrier-workerd.log" | tail -n 22 || true
+            exit 1
+          fi
+          node --input-type=module -e '
+            import {createHmac} from "node:crypto";
+            const repo="metalogiclabs/mathgraph";
+            const head="05a6057e94d899ded94374db4a831963034aea93";
+            const payload={action:"opened",repository:{full_name:repo},installation:{id:42},
+              pull_request:{number:178,head:{sha:head,repo:{full_name:repo}},
+                base:{repo:{full_name:repo}}}};
+            async function send(p,secret="local-carrier-hmac-fixture"){
+              const body=JSON.stringify(p);
+              const signature="sha256="+createHmac("sha256",secret).update(body).digest("hex");
+              return fetch("http://127.0.0.1:8799/github/webhook",{method:"POST",body,
+                headers:{"x-github-event":"pull_request","x-github-delivery":
+                  "123e4567-e89b-12d3-a456-426614174000",
+                  "x-hub-signature-256":signature}});
+            }
+            const live=await send(payload);
+            if(live.status!==202 || await live.text()!=="Queued")
+              throw Error("WORKERD_SIGNED_CARRIER_NOT_QUEUED");
+            const bad=await send(payload,"wrong-fixture-key");
+            if(bad.status!==401)throw Error("WORKERD_BAD_SIGNATURE_NOT_REJECTED");
+            const foreign=await send({...payload,repository:{full_name:"other/repo"}});
+            if(foreign.status!==202 || await foreign.text()!=="Ignored")
+              throw Error("WORKERD_FOREIGN_REPO_NOT_IGNORED");
+            const ready=await fetch("http://127.0.0.1:8799/ready");
+            if(ready.status!==503)throw Error("WORKERD_FALSE_READINESS");
+            console.log("WORKERD_SIGNED_CARRIER=QUEUED;BAD_SIGNATURE=DENIED;FOREIGN=IGNORED");
+          '
+      - name: Boundary declaration
+        run: |
+          echo 'QUALIFICATION_ONLY: no Cloudflare deployment, no App configuration or installation changes.'
+          echo 'Local workerd ingestion and mocked queue API do not prove live evidence receipt.'
