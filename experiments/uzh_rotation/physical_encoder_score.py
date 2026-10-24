@@ -162,6 +162,7 @@ def score(nav_audit_path,encoder_bundle):
         "at_least_one_requested_separating_observation_acquired":stats["requests_acquired"]>0,
         "occlusion_was_present":stats["occluded_columns"]>0,
         "timing_pulse_evidence_present":True,
+        "all_navigator_estimates_have_bracketed_encoder_truth":excluded==0,
         "timing_bound_independently_physically_certified":False,
         "on_device_encoder_isolation_independently_attested":False,
     }

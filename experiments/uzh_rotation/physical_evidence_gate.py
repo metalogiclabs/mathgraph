@@ -223,7 +223,7 @@ def inspect(bundle):
     decisions=read_lines(Path(bundle)/"decisions.jsonl")
     # No source GT or encoder input even accidentally.
     by_camera={v["seq"]:v for v in camera.values()}
-    mapping={};quarantined=set()
+    mapping={};quarantined=set();used_firstturn_cameras=set()
     pending={};last_match=None
     frozen=False; freeze_at=None
     samples=[]
@@ -246,8 +246,21 @@ def inspect(bundle):
             if frozen:fail("map modified after first-turn freeze")
             cam=by_camera.get(d.get("camera_seq"))
             if not cam or cam["t_ns"]>ts:fail("map capture from missing/future camera")
+            # All asserted first-turn phase bins must agree with a causal
+            # integration of the gyro-only source; no encoder-oracle phase.
+            if cam["seq"] in used_firstturn_cameras:
+                fail("source camera observation reused to create map evidence")
+            used_firstturn_cameras.add(cam["seq"])
+            if cam["_causal_gyro_angle"] is None:
+                fail("camera sample precedes authenticated gyro")
             rad=d.get("radius_u16")
             phase=d.get("phase_u16")
+            if type(phase) is not int or not 0<=phase<TICKS:
+                fail("invalid source reported camera phase")
+            predicted=int(round((cam["_causal_gyro_angle"]%TWOPI)*TICKS/TWOPI))%TICKS
+            shortest=min((predicted-phase)%TICKS,(phase-predicted)%TICKS)
+            if shortest>rad+2:
+                fail("reported firstturn source phase disagrees with causal gyro integral")
             if type(rad) is not int or rad<bound["minimum_source_phase_radius_u16"]:
                 fail("unjustifiably tight reported source phase interval")
             idx=single_bin(phase,rad)

@@ -79,7 +79,7 @@ def make_fixture(root,mode="FIXTURE",with_encoder=True):
     # later actual camera sample, not a predicted measurement.
     push(T0+SEC+150_000_001,"MATCH",
          camera_seq=by_t[T0+SEC+150_000_000]["seq"],
-         before=[8,16],after=[8],step_bins=0,request_seq=None)
+         before=[8,16],after=[8],step_bins=0,request_seq=8)
     push(T0+SEC+160_000_000,"ESTIMATE",
          fused_heading_rad=OMEGA*1.16*.95,
          correction_delta_rad=-.1,authority="WARRANTED",
@@ -153,6 +153,7 @@ class PhysicalEvidenceGateTests(unittest.TestCase):
         self.assertEqual(audit["role_isolation"],"NAVIGATION_ONLY_NO_ENCODER_BYTES")
         self.assertGreater(audit["firstturn_map_bins"],0)
         self.assertEqual(audit["statistics"]["warranted_estimates"],1)
+        self.assertEqual(audit["statistics"]["requests_acquired"],1)
         self.assertGreater(audit["statistics"]["occluded_columns"],0)
         self.assertFalse(audit["physical_visual_heading_accuracy_verified"])
         path=Path(self.tmp.name)/"nav_audit.json"
@@ -240,8 +241,10 @@ class PhysicalEvidenceGateTests(unittest.TestCase):
         meta["files"]["encoder.jsonl"]={"sha256":hashlib.sha256(raw).hexdigest(),
                                          "bytes":len(raw)}
         dump(self.encoder/"encoder_manifest.json",meta)
-        with self.assertRaisesRegex(ValueError,"gauge anchor|enclose|source manifest mismatch"):
-            score(path,self.encoder)  # any unsupported time gap must not score as success
+        report=score(path,self.encoder)
+        self.assertGreater(report["encoder_interpolation_missing_samples"],0)
+        self.assertFalse(report["acceptance_tests"]["all_navigator_estimates_have_bracketed_encoder_truth"])
+        self.assertEqual(report["physical_acceptance"],"FIXTURE_ONLY_NOT_PHYSICAL_VALIDATION")
     def test_empty_encoder_source_cannot_be_a_five_turn_success(self):
         audit=inspect(self.nav);path=Path(self.tmp.name)/"nav_audit.json";dump(path,audit)
         self.assertFalse(audit["physical_visual_heading_accuracy_verified"])
