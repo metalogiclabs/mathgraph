@@ -56,32 +56,22 @@ def generate(root, *, scene="distinct", blackout=False, change=False):
                        timing_error_ns=0, gyro_rate_bound=0.03,
                        firstturn_phase_bound=0.08)
     map_path.write_text(json.dumps(frozen, indent=2, sort_keys=True) + "\n")
-    traces = {}
-    for role, base in (("calibration", 100), ("holdout", 200)):
-        fp = root / (role + "_clock.csv")
-        write_rows(fp, ["reference_timestamp_ns", "sensor_timestamp_ns"],
-                   ((base+i, base+i+2) for i in range(3)))
-        traces[role + "_path"] = fp.name
-        traces[role + "_sha256"] = sha(fp)
-    traces["frozen_offset_ns"] = 2
-    traces["frozen_max_abs_residual_ns"] = 0
     manifest = {
-        "provenance": "DETERMINISTIC_SYNTHETIC_NO_HARDWARE_WARRANT",
-        "streams": {kind: {
-            "path": name,
-            "sha256": sha(root / name),
-            "timestamps_ns": times,
-            "clock_id": kind + "-synthetic",
-        } for kind, name in filenames.items()},
-        "clock_calibration": traces,
+        "provenance": "DETERMINISTIC_SYNTHETIC_NO_PHYSICAL_AUTHORITY",
+        "scene": scene, "blackout": bool(blackout), "change": bool(change),
+        "generated_turns": TURNS,
         "encoder_pulses_per_revolution": PULSES_PER_REV,
-        "frozen_first_turn_map": {
-            "path": map_path.name,
-            "sha256": sha(map_path),
-        },
+        "gyro_bias_rad_s": GYRO_BIAS_RAD_S,
+        "sample_interval_ns": STEP_NS,
+        "file_sha256": {kind: sha(root / name)
+                        for kind, name in filenames.items()},
+        "frozen_first_turn_map_sha256": sha(map_path),
+        "independent_physical_timing_warrant": False,
         "encoder_used_by_estimator": False,
+        "not_a_physical_capture_manifest": True,
     }
-    (root / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    (root / "fixture_source_manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     return manifest
 
 def main():
