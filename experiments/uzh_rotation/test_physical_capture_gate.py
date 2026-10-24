@@ -22,7 +22,7 @@ class PhysicalGateTests(unittest.TestCase):
             self.streams[kind] = {"path": p.name, "sha256": hashlib.sha256(p.read_bytes()).hexdigest(), "timestamps_ns": stamps, "clock_id": kind + "-clock"}
         for role, base in (("calibration", 100), ("holdout", 200)):
             p = self.root / (role + "_clock.csv")
-            p.write_text("reference_timestamp_ns,sensor_timestamp_ns\\n" + "".join(f"{base+i},{base+i+2}\\n" for i in range(3)))
+            p.write_text("reference_timestamp_ns,sensor_timestamp_ns\n" + "".join(f"{base+i},{base+i+2}\n" for i in range(3)))
         self.clock = {"frozen_offset_ns": 2, "frozen_max_abs_residual_ns": 0}
         self.refresh_clock_hashes()
         self.data = {"clock_calibration": self.clock, "streams": self.streams, "encoder_pulses_per_revolution": 2, "independent_timing_calibration_sha256": "a"*64, "held_out_timing_envelope_passed": True, "frozen_first_turn_map_sha256": "b"*64, "encoder_used_by_estimator": False}
