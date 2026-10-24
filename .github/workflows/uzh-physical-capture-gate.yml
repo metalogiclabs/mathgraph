@@ -40,6 +40,19 @@ jobs:
         run: |
           python experiments/uzh_rotation/physical_column_demo.py synthetic_capture
           python experiments/uzh_rotation/physical_capture_gate.py synthetic_capture/manifest.json
+          python - <<'PY'
+          import json, pathlib, sys
+          sys.path.insert(0, 'experiments/uzh_rotation')
+          from physical_estimator_isolation import build_map_isolated
+          frozen = build_map_isolated(
+              'experiments/uzh_rotation/physical_column_replay.py',
+              'synthetic_capture/camera.csv', 'synthetic_capture/gyro.csv')
+          host = json.loads(pathlib.Path('synthetic_capture/frozen_map.json').read_text())
+          assert frozen == host, 'isolated firstturn map differs from source-derived map'
+          pathlib.Path('isolated_firstturn_map.json').write_text(
+              json.dumps(frozen, sort_keys=True, indent=2) + '\\n')
+          print('ISOLATED_FIRSTTURN_MAP_MATCHES_SOURCE_NO_ENCODER')
+          PY
           python experiments/uzh_rotation/physical_estimator_isolation.py \
             experiments/uzh_rotation/physical_column_replay.py \
             synthetic_capture/camera.csv synthetic_capture/gyro.csv \
@@ -63,6 +76,7 @@ jobs:
           path: |
             synthetic_capture/manifest.json
             synthetic_capture/frozen_map.json
+            isolated_firstturn_map.json
             synthetic_replay.json
             synthetic_scoring.json
           if-no-files-found: warn
