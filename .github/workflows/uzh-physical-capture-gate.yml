@@ -1,0 +1,28 @@
+name: UZH physical capture structural gate
+on:
+  push:
+    branches: [exp/uzh-physical-gate-integration-20261024]
+    paths:
+      - 'experiments/uzh_rotation/physical_capture_gate.py'
+      - 'experiments/uzh_rotation/test_physical_capture_gate.py'
+      - '.github/workflows/uzh-physical-capture-gate.yml'
+  workflow_dispatch:
+jobs:
+  adversarial-structural-controls:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test structural preflight and negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_capture_gate.py' -v
+      - name: Assert real hardware evidence is not claimed
+        run: |
+          python - <<'PY'
+          import pathlib
+          p=pathlib.Path('experiments/uzh_rotation/physical_capture_gate.py').read_text()
+          assert 'STRUCTURAL_CANDIDATE_ONLY' in p
+          assert 'UNKNOWN' in p
+          print('PHYSICAL_HEADING_RECOVERY=UNKNOWN')
+          PY
