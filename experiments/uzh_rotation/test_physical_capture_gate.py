@@ -26,7 +26,7 @@ class PhysicalGateTests(unittest.TestCase):
         self.clock = {"frozen_offset_ns": 2, "frozen_max_abs_residual_ns": 0}
         self.refresh_clock_hashes()
         frozen = self.root / "frozen_map.json"
-        frozen.write_text('{"bins": []}\\n')
+        frozen.write_text('{"bins": []}\n')
         self.frozen = {"path": frozen.name, "sha256": hashlib.sha256(frozen.read_bytes()).hexdigest()}
         self.data = {"clock_calibration": self.clock, "streams": self.streams,
                      "encoder_pulses_per_revolution": 2, "frozen_first_turn_map": self.frozen,
@@ -70,12 +70,12 @@ class PhysicalGateTests(unittest.TestCase):
         self.assertTrue(self.check())
     def test_source_camera_timestamp_collision_rejected(self):
         p = self.root / "camera.csv"
-        p.write_text(p.read_text().replace("2,0\\n", "1,0\\n"))
+        p.write_text(p.read_text().replace("2,0\n", "1,0\n"))
         self.streams["camera"]["sha256"] = hashlib.sha256(p.read_bytes()).hexdigest()
         self.assertTrue(self.check())
     def test_missing_native_timestamp_header_rejected(self):
         p = self.root / "gyro.csv"
-        p.write_text("sample\\n0\\n1\\n2\\n")
+        p.write_text("sample\n0\n1\n2\n")
         self.streams["gyro"]["sha256"] = hashlib.sha256(p.read_bytes()).hexdigest()
         self.assertTrue(self.check())
     def test_source_alias_rejected(self):
