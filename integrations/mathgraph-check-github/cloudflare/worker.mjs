@@ -8,6 +8,7 @@ import { appendGethV19NativeEvidence } from "../geth-v19-evidence.mjs";
 import { appendExternalNativeReceipt } from "../external-native-receipt.mjs";
 import { transitionReceipt } from "./monitor-transition-v1.mjs";
 import { recordWarrantEvent } from "./warrant-event-store-v1.mjs";
+import { parseCarrierSignedEvent, CARRIER, processCarrierQueue } from "./pkc-yaml-worker-route.mjs";
 
 export const SCOPE = Object.freeze({
   appID: 5308912,
@@ -132,9 +133,11 @@ export async function receiveWebhook(request, env) {
   try { payload=JSON.parse(bytes.toString("utf8")); }
   catch { return new Response("Invalid JSON", { status: 400 }); }
 
-  const item = parseSignedEvent(payload,
-    request.headers.get("x-github-delivery"),
-    request.headers.get("x-github-event"));
+  const delivery=request.headers.get("x-github-delivery");
+  const eventName=request.headers.get("x-github-event");
+  const item = parseSignedEvent(payload,delivery,eventName) ||
+    parseCarrierSignedEvent(payload,delivery,eventName,
+      env.PKC_YAML_CARRIER_ENABLED==="true");
   if (!item) return new Response("Ignored", { status: 202 });
   try {
     // Acknowledge only after durable queue acceptance, not before it.
@@ -416,9 +419,19 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
     monitorReceipt:result.outcome!=="STALE"?monitorReceipt:undefined};
 }
 
+export async function processCarrierPR(item,env,{fetcher=fetch}={}){
+  return processCarrierQueue(item,env,{fetcher,makeJWT:appJWT});
+}
+
 export async function consumePRQueue(batch,env,{fetcher=fetch}={}) {
   for(const message of batch.messages){
     try{
+      if(message.body?.schema===CARRIER.schema){
+        const carrier=await processCarrierPR(message.body,env,{fetcher});
+        console.log("MATHGRAPH_CARRIER_EVENT "+JSON.stringify(carrier));
+        message.ack();
+        continue;
+      }
       const r=await processQueuedPR(message.body,env,{fetcher});
       if(r.pendingCI && r.outcome!=="STALE"){
         const previousAttempt=message.body.action==="ci_recheck" ?
