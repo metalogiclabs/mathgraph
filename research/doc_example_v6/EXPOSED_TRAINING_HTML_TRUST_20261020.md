@@ -1,0 +1,20 @@
+# Mistune exposed-training trust boundary: documentation authority vs native behavior (20 October 2026)
+
+**State:** `WARRANTED_BOUNDED_EXPOSED_TRAINING_DOC_AUTHORITY_WITHDRAWAL`. **NOT** V6 prospective transfer, independent new observation-grammar acquisition or general web-application security.
+
+## Evidence authorities
+
+- Exact original `lepture/mistune@d449488ce6baf5bcc386186cc01c40bf2afdc82c` and its source-declared `docs/guide.rst`. The guide says that the default `create_markdown()` escapes raw HTML and that the compatibility helper `mistune.html()` does not escape raw HTML.
+- [Source-native V6 corrected suite #39346969256](https://github.com/metalogiclabs/mathgraph/actions/runs/39346969256): original 1,183/1,183 pytest cases passed on exact pinned source; archive #12231735686 independently SHA256-matched `85cc890df28cebd208ada6b1b6330391da739dc74aba9d5b3573f3125e1aa130`, native JUnit SHA256 `ffd5485ae3a797e848d504cdd50d3db415db9d37dea46d4d9f6e81964fd8acfc`.
+- [Source-aware TRAINING execution #39348220662](https://github.com/metalogiclabs/mathgraph/actions/runs/39348220662), original source pinned unchanged, original-native archive SHA verified. [Raw resulting artifact #12232032240](https://github.com/metalogiclabs/mathgraph/actions/runs/39348220662/artifacts/12232032240), GitHub ZIP SHA256 `400a4cdb901cc7b5e72788f3034d41f020f2c977312bea296d5bcb1e2579698d`.
+- Tested actual untrusted HTML input `<script>alert(1)</script>`. Independent stdlib Python 3.12 `HTMLParser` confirmed script start tag **absent** in `mistune.create_markdown()` output but **present** in `mistune.html()` output. Explicit parser positive/negative controls distinguished raw from escaped script syntax. This is only raw-HTML escaping in one bounded input, **not** sanitizer safety generally or the entire unsafe URL scheme claim.
+- Temporary source-runner changes to `docs/guide.rst` removed exactly **one documented assertion at a time**; no native code changed. Three-way observation: baseline both source-declared attributions; with default-mode sentence withdrawn, only safe-mode attribution becomes `UNKNOWN_WITHDRAWN` while legacy remains; with legacy sentence withdrawn, only legacy attribution becomes `UNKNOWN_WITHDRAWN` while default remains. Runtime observations stay identical. Byte-for-byte original documentation restored, sha/claim warrants recovered and `git diff` verified clean.
+
+## Epistemic reconciliation
+
+- The original [V6 first prospective Mistune](https://github.com/metalogiclabs/mathgraph/blob/530ac9bd516a996e5c4348a725013cdcf9c596a6/research/doc_example_v6/V6_FIRST_PROSPECTIVE_RESULT_20261020.md) remains **UNKNOWN_NO_SAFE_LITERAL_SOURCE_EXAMPLE**, 0 admissible source-bound doctest obligations. No retroactive promotion.
+- This follow-up is **source-aware exposed TRAINING**, not the unchanged V6 source-neutral method. It establishes a separable semantic **authority** dimension: independently observed behavior may remain true while an author-attributed warrant disappears when its documentation premise is withdrawn.
+- This structure also appeared with the previously pinned PKC attributed proposition vs valid declaration, L4YAML typed-meaning interchange, and MarkupSafe trust-label/HTML attribute behavior. The shared obligation interface is a **CANDIDATE** general law. The different bespoke observers and absence of prospective transfer prevent promotion of autonomous cross-domain semantic relation acquisition.
+- Next smallest meaningful scientific test: freeze a generalized author-documentation-to-observer constructor *before* opening another Markdown renderer, use the same independent HTML tag oracle and a separately coded, fully informed conventional rule baseline; select first eligible ROS-unexposed source by metadata, one native trial only, preserve UNKNOWN and incorrect author attribution as distinct statuses. Still would be predeclared human-coded grammar, not G2.
+
+No third-party repository edits, deployment, external messages or PRs. Source/document edits occurred only in ephemeral GitHub Actions runner and were restored.

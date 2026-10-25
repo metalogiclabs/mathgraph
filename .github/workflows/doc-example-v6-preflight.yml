@@ -1,0 +1,38 @@
+name: V6 safe documented callable pre-exposure qualification
+on:
+  push:
+    branches:
+      - research/doc-example-method-v6-20261019
+    paths:
+      - research/doc_example_v6/**
+      - .github/workflows/doc-example-v6-preflight.yml
+  pull_request:
+    paths:
+      - research/doc_example_v6/**
+      - .github/workflows/doc-example-v6-preflight.yml
+permissions:
+  contents: read
+jobs:
+  source-blind-and-exposed-training:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 7f38aa7029c8d89006db956941767033b09717ca
+          path: v4-exports
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: jaraco/inflect
+          ref: 0aa3f7a951616101bb67dedc385163e74a3f05e7
+          path: exposed-training
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Synthetic, negative and source-document withdrawal plus EXPOSED jaraco training
+        run: |
+          set -euo pipefail
+          python research/doc_example_v6/preflight.py --resolver v4-exports/research/api_export_closure_v4/resolve.py --training exposed-training
