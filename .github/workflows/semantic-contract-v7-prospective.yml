@@ -1,0 +1,124 @@
+name: V7 documentation-grounded HTML correspondence prospective
+on:
+  pull_request:
+    paths:
+      - 'research/semantic_contract_v7/**'
+      - '.github/workflows/semantic-contract-v7-prospective.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-and-independent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout research PR
+        uses: actions/checkout@v4
+      - name: Checkout exact source-independent method and frozen protocol
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: b32ac92f80d9093f8c694f09cc504533433b8951
+          path: method-authority
+          persist-credentials: false
+      - name: Checkout exact pre-exposure source-selection authority
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: a6d03d377954bd0a129f13f38c0017304f8f4ff4
+          path: selection-authority
+          persist-credentials: false
+      - name: Verify frozen method, protocol and source selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          prefix=research/semantic_contract_v7
+          for f in doc_inventory.py candidate.py expert_rules.py evaluate_html.py withdraw_docs.py preflight_docs.py FROZEN_PROTOCOL.md; do
+            cmp "method-authority/$prefix/$f" "$prefix/$f"
+          done
+          cmp "selection-authority/$prefix/SOURCE_LOCK.json" "$prefix/SOURCE_LOCK.json"
+          sha256sum method-authority/$prefix/{doc_inventory.py,candidate.py,expert_rules.py,evaluate_html.py,withdraw_docs.py,FROZEN_PROTOCOL.md} > verified/frozen-method-sha256.txt
+      - name: Checkout exact preselected unfamiliar source
+        uses: actions/checkout@v4
+        with:
+          repository: executablebooks/markdown-it-py
+          ref: 6f586542653a56d2ee8549a0dccfaa6ba5ebe14a
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independently pin source and seal both documentation-grounded proposals BEFORE source execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = "6f586542653a56d2ee8549a0dccfaa6ba5ebe14a"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('selection-authority/research/semantic_contract_v7/SOURCE_LOCK.json').read_text())
+          assert x['selected']['repository']=='executablebooks/markdown-it-py'
+          assert x['selected']['source_sha']=='6f586542653a56d2ee8549a0dccfaa6ba5ebe14a'
+          Path('verified/metadata.json').write_text(json.dumps({
+              'repository':x['selected']['repository'],
+              'source_sha':x['selected']['source_sha'],
+              'description':x['selected']['description']},indent=2,sort_keys=True)+'\n')
+          PY
+          cp research/semantic_contract_v7/SOURCE_LOCK.json verified/selection-lock.json
+          python method-authority/research/semantic_contract_v7/doc_inventory.py --source external-native --out verified/public-document-inventory.json
+          python method-authority/research/semantic_contract_v7/candidate.py --view verified/public-document-inventory.json --metadata verified/metadata.json --out verified/candidate.json
+          python method-authority/research/semantic_contract_v7/expert_rules.py --view verified/public-document-inventory.json --metadata verified/metadata.json --out verified/expert.json
+          sha256sum verified/{public-document-inventory,candidate,expert}.json > verified/pre-native-receipts-sha256.txt
+          echo "PRE_NATIVE_SCIENTIFIC_PROPOSALS_SEALED"
+      - name: Install fixed general-purpose test runner and untouched pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==8.3.5
+          python -m pip install -e './external-native[testing,linkify,plugins]'
+      - name: Run original native author test collection from correct source CWD
+        shell: bash
+        run: |
+          set +e
+          set -uo pipefail
+          (
+            cd external-native
+            python -m pytest -q tests/ --junitxml=../verified/native-junit.xml
+          ) 2>&1 | tee verified/native-stdout.log
+          code=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$code" > verified/native-exit.txt
+          echo "NATIVE_SOURCE_TEST_EXIT=$code"
+          test "$(git -C external-native rev-parse HEAD)" = "6f586542653a56d2ee8549a0dccfaa6ba5ebe14a"
+          git -C external-native diff --exit-code
+      - name: Independent HTML semantic comparison on presealed claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -s verified/native-junit.xml; then
+            python method-authority/research/semantic_contract_v7/evaluate_html.py --metadata verified/metadata.json --view verified/public-document-inventory.json --candidate verified/candidate.json --expert verified/expert.json --source external-native --native-junit verified/native-junit.xml --native-exit verified/native-exit.txt --out verified/v7-result.json | tee verified/independent-oracle.log
+          else
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          result={'science_status':'UNKNOWN_NO_NATIVE_JUNIT',
+                  'native_exit':Path('verified/native-exit.txt').read_text().strip(),
+                  'comparison':'INCONCLUSIVE_NO_NATIVE_AUTHORITY'}
+          Path('verified/v7-result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(result)
+          PY
+          fi
+      - name: Selective documentation-only authority withdrawal, restoration, or explicit UNKNOWN
+        shell: bash
+        run: |
+          set -euo pipefail
+          python method-authority/research/semantic_contract_v7/withdraw_docs.py --source external-native --metadata verified/metadata.json --view verified/public-document-inventory.json --candidate-script method-authority/research/semantic_contract_v7/candidate.py --inventory-script method-authority/research/semantic_contract_v7/doc_inventory.py --out verified/document-authority-withdrawal.json | tee verified/withdrawal.log
+          git -C external-native diff --exit-code
+      - name: Archive source-pinned reports and all negative outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-doc-semantic-heldout
+          path: verified/
+          if-no-files-found: warn

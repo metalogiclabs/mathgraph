@@ -1,0 +1,40 @@
+name: V6.1 source-qualified proposal evaluator contract
+on:
+  push:
+    branches: [research/semantic-contract-v7-20261021]
+    paths:
+      - research/semantic_contract_v7/v6_1_bind.py
+      - research/semantic_contract_v7/preflight_v6_1.py
+      - .github/workflows/semantic-contract-v6-1-preflight.yml
+  pull_request:
+    paths:
+      - research/semantic_contract_v7/v6_1_bind.py
+      - research/semantic_contract_v7/preflight_v6_1.py
+      - .github/workflows/semantic-contract-v6-1-preflight.yml
+permissions:
+  contents: read
+jobs:
+  exact-evaluator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout unchanged V6 original science
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: dfcc088ca6f4a280272c361e043dd0f49afa1b5b
+          path: frozen-v6
+          persist-credentials: false
+      - name: Checkout pinned V4 static public API resolver
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 7f38aa7029c8d89006db956941767033b09717ca
+          path: frozen-v4
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: End-to-end synthetic V6.1 interface before prospective source
+        run: |
+          python research/semantic_contract_v7/preflight_v6_1.py --frozen-v6 frozen-v6/research/doc_example_v6 --frozen-v4 frozen-v4/research/api_export_closure_v4

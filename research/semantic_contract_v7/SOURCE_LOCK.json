@@ -1,0 +1,36 @@
+{
+  "protocol": "DOCUMENTED_HTML_ESCAPING_V7_SOURCE_SELECTION",
+  "frozen_method_and_protocol_commit": "b32ac92f80d9093f8c694f09cc504533433b8951",
+  "v7_source_blind_preflight": "https://github.com/metalogiclabs/mathgraph/actions/runs/39499675341",
+  "v6_1_interface_preflight": "https://github.com/metalogiclabs/mathgraph/actions/runs/39498372831",
+  "ordered_pool": [
+    "trentm/python-markdown2",
+    "executablebooks/markdown-it-py",
+    "Python-Markdown/markdown",
+    "miyuchina/mistletoe"
+  ],
+  "metadata_and_ros_screen": [
+    {
+      "repository": "trentm/python-markdown2",
+      "outcome": "INELIGIBLE_PRIOR_DIRECT_SOURCE_NATIVE_WORK",
+      "reason": "ROS canonical source shows Oct 20 prior V7 source-native experiment on original trentm/python-markdown2, including published fixed source revision and author-driver coverage, so this is EXPOSED TRAINING; no new source bytes read."
+    },
+    {
+      "repository": "executablebooks/markdown-it-py",
+      "outcome": "FIRST_ELIGIBLE",
+      "reason": "Public; Python; not archived; master branch; no direct source-native work found via exact identifier search in primary four ROS registries. This bounded negative lookup does not establish global novelty."
+    }
+  ],
+  "selected": {
+    "repository": "executablebooks/markdown-it-py",
+    "source_sha": "6f586542653a56d2ee8549a0dccfaa6ba5ebe14a",
+    "description": "Markdown parser, done right. 100% CommonMark support, extensions, syntax plugins & high speed. Now in Python!",
+    "language": "Python",
+    "archived": false,
+    "public": true,
+    "default_branch": "master"
+  },
+  "original_source_code_or_docs_opened_before_lock": false,
+  "original_native_or_semantic_results_seen_before_lock": false,
+  "science_boundary": "Do not replace source after observing source behavior or missing safe-mode API. Unsupported contract remains UNKNOWN. Any method change requires next frozen version and new source."
+}
