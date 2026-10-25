@@ -112,3 +112,20 @@ public def maskedGateSpot : Provenance.Requirement :=
 #mathgraph_empirical_scope maskedGateSpot
 
 end MathGraphAutoScope20261026
+
+/-! A deliberately falsifiable universality hypothesis on an unobserved P record.
+The regression must first show this supposed all-record satisfaction is false.
+The failure is not a PKC defect: requirements may be normative. -/
+namespace MathGraphUnseenP20261026
+
+open HCP.L6_Requirements
+
+public def pOutsideRatedRange : PairState .P where
+  massA := ⟨3⟩
+  massB := ⟨5⟩
+  couplingExtension := ⟨7⟩
+
+-- RED: the two original green spots do not entail a third record is in range.
+example : withinRatedRange pOutsideRatedRange = true := by decide
+
+end MathGraphUnseenP20261026
