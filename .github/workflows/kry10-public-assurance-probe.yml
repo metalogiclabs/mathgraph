@@ -6,6 +6,10 @@ on:
     paths:
       - .github/workflows/kry10-public-assurance-probe.yml
       - experiments/kry10_public_assurance/**
+  pull_request:
+    paths:
+      - .github/workflows/kry10-public-assurance-probe.yml
+      - experiments/kry10_public_assurance/**
   workflow_dispatch:
 
 permissions:
