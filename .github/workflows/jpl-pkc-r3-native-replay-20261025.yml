@@ -130,9 +130,9 @@ jobs:
           test "$audit_code" != "0" || exit 1
           test "$(grep -Fc 'MATHGRAPH_SCOPE_MATCH' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "1" || exit 1
           test "$(grep -Fc 'MATHGRAPH_SCOPE_MISMATCH' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "1" || exit 1
-          test "$(grep -Fc 'MATHGRAPH_SCOPE_UNKNOWN' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "2" || exit 1
-          test "$(grep -c 'error:' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "3" || exit 1
-          echo 'MATHGRAPH_AUTOSCOPE_VERDICT BOUNDED_MATCH_MISMATCH_UNKNOWN_UNKNOWN'
+          test "$(grep -Fc 'MATHGRAPH_SCOPE_UNKNOWN' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "3" || exit 1
+          test "$(grep -c 'error:' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "4" || exit 1
+          echo 'MATHGRAPH_AUTOSCOPE_VERDICT BOUNDED_MATCH_MISMATCH_THREE_UNKNOWN'
 
       - name: Retain exact evidence even if replay fails
         if: always()
