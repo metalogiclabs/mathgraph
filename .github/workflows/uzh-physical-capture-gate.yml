@@ -5,8 +5,6 @@ on:
     paths:
       - 'experiments/uzh_rotation/physical_*.py'
       - 'experiments/uzh_rotation/test_physical_*.py'
-      - 'experiments/uzh_rotation/finite_witness_embedded.*'
-      - 'experiments/uzh_rotation/test_finite_witness_embedded.py'
       - '.github/workflows/uzh-physical-capture-gate.yml'
   pull_request:
     branches: [exp/uzh-rotation-validation-20261021]
@@ -33,8 +31,10 @@ jobs:
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_nav_source_adapter.py' -v
       - name: Encoder-blind model replay and independent scoring unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
-      - name: Native C99 exact witness compiler and independent Python equivalence
-        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_witness_embedded.py' -v
+      - name: Qualify existing 146-byte sparse native map under timing uncertainty
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_native_witness_replay.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_partial_map.py' -v
       - name: Independent active camera witness acquisition controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_active_acquisition.py' -v
       - name: Frozen 32-seed active-vs-continuous acquisition census
@@ -66,6 +66,26 @@ jobs:
                  'unbreakable_unknown':blocked['active_unknown'],
                  'all_separating_views_blocked_unknown':allblock['active_unknown']})
           print('NO_REAL_HARDWARE_ACQUISITION_OR_HEADING_AUTHORITY')
+          PY
+      - name: Original C99 native versus frozen Python acquired-evidence census
+        run: |
+          python experiments/uzh_rotation/physical_native_witness_replay.py \
+            --seeds 32 --output native_active_acquisition_census.json
+          python - <<'PY'
+          import json
+          r=json.load(open('native_active_acquisition_census.json'))
+          clean=next(x for x in r['conditions'] if x['condition']=='breakable_clean')
+          blocked=next(x for x in r['conditions'] if x['condition']=='breakable_occlude_all_witnesses')
+          assert r['source']=='EXISTING_FINITE_PARTIAL_MAP_C99_NO_DUPLICATE_IMPLEMENTATION'
+          assert r['native_vs_python_agreement_in_all_jitter0_trials']
+          assert clean['trials']==128
+          assert clean['jitter_0_unique']==128
+          assert clean['jitter_0_camera_attempts']==256
+          assert clean['jitter_1_unique']==0
+          assert blocked['jitter_0_unique']==0
+          assert r['hardware_observation_acquisitions']==0
+          print('ORIGINAL_C99_MINIMAL_ACQUISITION_PARITY_QUALIFIED', clean)
+          print('ONE_BIN_JITTER_BLOCKS_GUARANTEED_VISUAL_SEPARATION')
           PY
       - name: Adversarial isolation unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
@@ -126,4 +146,5 @@ jobs:
             synthetic_scoring.json
             active_acquisition_census.json
             active_acquisition_audit.json
+            native_active_acquisition_census.json
           if-no-files-found: warn
