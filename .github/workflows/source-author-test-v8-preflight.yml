@@ -1,0 +1,32 @@
+name: V8 source-author test-entrypoint synthetic and exposed preflight
+on:
+  push:
+    branches:
+      - research/source-author-test-entrypoint-v8-20261020
+    paths:
+      - research/source_author_test_v8/**
+      - .github/workflows/source-author-test-v8-preflight.yml
+  pull_request:
+    paths:
+      - research/source_author_test_v8/**
+      - .github/workflows/source-author-test-v8-preflight.yml
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: exposed-training
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify source-blind and exposed source author-native runner grammar
+        run: |
+          set -euo pipefail
+          python research/source_author_test_v8/preflight.py exposed-training

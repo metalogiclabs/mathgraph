@@ -1,0 +1,83 @@
+name: V8 prospective source-author native test scope
+on:
+  pull_request:
+    paths:
+      - research/source_author_test_v8/**
+      - .github/workflows/source-author-test-v8-prospective.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout frozen source-independent authority discovery method
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: bebe52575b5b612914ba4636fe8b5b9830735fe7
+          path: frozen-method
+          persist-credentials: false
+      - name: Checkout separately sealed metadata-only future selection
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 9b2dd0e48e489b9003fef1a8de8e7b6aaa5c1853
+          path: sealed-selection
+          persist-credentials: false
+      - name: Fail closed on frozen method and source lock divergence
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          for file in propose.py evaluate.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-method/research/source_author_test_v8/$file" "research/source_author_test_v8/$file"
+          done
+          cmp "sealed-selection/research/source_author_test_v8/SOURCE_LOCK.json" "research/source_author_test_v8/SOURCE_LOCK.json"
+          sha256sum frozen-method/research/source_author_test_v8/{propose.py,evaluate.py,FROZEN_PROTOCOL.md} > verified/frozen-method-sha256.txt
+      - name: Checkout originally selected untouched external source
+        uses: actions/checkout@v4
+        with:
+          repository: bottlepy/bottle
+          ref: 8ec5fe29420d14998c0d86885083983eaea8b839
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze original source-authored native test runner proposals BEFORE installation or tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = "8ec5fe29420d14998c0d86885083983eaea8b839"
+          python - <<'PY'
+          import json,pathlib
+          lock=json.loads(pathlib.Path('sealed-selection/research/source_author_test_v8/SOURCE_LOCK.json').read_text())
+          assert lock['selected']['repository']=='bottlepy/bottle'
+          assert lock['selected']['source_sha']=='8ec5fe29420d14998c0d86885083983eaea8b839'
+          pathlib.Path('verified/source-metadata.json').write_text(json.dumps(lock['selected'],sort_keys=True,indent=2)+'\n')
+          PY
+          python frozen-method/research/source_author_test_v8/propose.py --source external-native --metadata verified/source-metadata.json --out verified/source-author-proposals.json
+          sha256sum verified/source-author-proposals.json > verified/proposal-before-native.sha256
+          cp sealed-selection/research/source_author_test_v8/SOURCE_LOCK.json verified/source-lock.json
+      - name: Install original source and fixed common test runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==8.3.5
+          python -m pip install -e ./external-native
+      - name: Compare declared original native runner and generic pytest; physically withdraw source authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen-method/research/source_author_test_v8/evaluate.py --source external-native --selection verified/source-lock.json --proposal verified/source-author-proposals.json --observer frozen-method/research/source_author_test_v8/propose.py --out verified/v8-prospective-result.json | tee verified/evaluation.log
+          test "$(git -C external-native rev-parse HEAD)" = "8ec5fe29420d14998c0d86885083983eaea8b839"
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Retain native source/authority evidence and failure cases
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v8-source-author-test-authority-heldout
+          path: verified/
+          if-no-files-found: warn
