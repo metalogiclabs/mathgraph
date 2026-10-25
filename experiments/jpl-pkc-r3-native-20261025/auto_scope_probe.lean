@@ -61,9 +61,12 @@ elab "#mathgraph_empirical_scope " r:ident : command => liftTermElabM do
       | throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} is absent"
     let some value := info.value? (allowOpaque := true)
       | throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} has no inspectable body"
-    let refs := value.foldConsts ({} : NameSet) fun c names => names.insert c
-    unless refs.contains req.gate do
-      throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} does not directly reference gate"
+    let .app checkedGate observation := value
+      | throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} does not return a direct gate application"
+    unless checkedGate.isConstOf req.gate do
+      throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} does not return the declared gate"
+    unless ← Meta.isDefEq (← Meta.inferType observation) input do
+      throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} has the wrong observation type"
   logInfo m!"MATHGRAPH_SCOPE_MATCH: requirement '{req.name}' object {claimed} is gate-bound"
 
 end MathGraphAutoScopeGuard20261026
