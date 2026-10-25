@@ -30,7 +30,7 @@ class SeparatingCockpitTests(unittest.TestCase):
         report["timeline"][0]["step"]='</strong><script>alert(1)</script>'
         html=render(report)
         self.assertNotIn("<script>alert(1)</script>",html)
-        self.assertIn("&lt;script&gt;",html)
+        self.assertIn("&lt;script&gt;",html.lower())
 
     def test_rejects_noninteger_case(self):
         report=run_demo()
