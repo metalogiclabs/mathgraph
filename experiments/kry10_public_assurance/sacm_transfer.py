@@ -52,6 +52,19 @@ def parse_case(data: bytes, *, pin: str = OASC_BLOB) -> Case:
                 raise ValueError(f"duplicate SACM identifier: {identity}")
             by_id[identity] = e
             names[identity] = local(e.tag)
+    # SACM AssertedRelationship supports counter-evidence/counter-inference.
+    # These may NOT be silently counted as supporting premises. Likewise an
+    # assumption or defeated declaration cannot become accepted evidence.
+    # We only support a positive, asserted sublanguage in this finite audit.
+    for identity, element in by_id.items():
+        declaration = element.get("assertionDeclaration")
+        if declaration is not None and declaration != "asserted":
+            raise ValueError(
+                f"unsupported assertion declaration for {identity}: {declaration}"
+            )
+        counter = element.get("isCounter")
+        if counter is not None and counter.strip().lower() not in ("false", "0"):
+            raise ValueError(f"unsupported counter relationship for {identity}: {counter}")
     claims = {k: el.get("content", "") for k, el in by_id.items()
               if names[k] == "claim"}
     artifacts = {k: el.get("name", "") for k, el in by_id.items()
