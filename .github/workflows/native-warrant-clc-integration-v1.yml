@@ -1,0 +1,70 @@
+name: Actual MathGraph Warrant and R7.2 CLC Integration V1
+on:
+  push:
+    branches:
+      - research/native-warrant-clc-integration-v1-20261021
+  pull_request:
+    paths:
+      - 'research/native_warrant_clc_integration_v1/**'
+      - '.github/workflows/native-warrant-clc-integration-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-warrant-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run actual unchanged MathGraph warrant resolver and native controls
+        run: |
+          PYTHONPATH=. python3 research/native_warrant_clc_integration_v1/test_integration.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actual-mathgraph-warrant-runtime
+          path: research/native_warrant_clc_integration_v1/result.json
+          if-no-files-found: warn
+  pinned-original-lean-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact existing original R7.2-CLC bridge
+        uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/Minimal-Sufficient-Interface
+          ref: d4a9ecb2c86f027ad4153f6c6ac128f196b312a1
+          path: msi
+      - name: Verify pinned original source blobs
+        working-directory: msi
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.24.0'
+          test "$(git hash-object lean/VerifiedDevelopmentCore.lean)" = '105a4354dd8353a82bb78215247cea7d0b6a4395'
+          test "$(git hash-object lean/ScopedCertificates.lean)" = '1fbb87452c576da280e7c854a84582ba9e9c1aef'
+          test "$(git hash-object lean/FiniteCLC.lean)" = '00f33c608609e735483f323ebac8572a964aff69'
+          echo 'R7.2 CLC originals unchanged'
+      - name: Install pinned Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile original R7.2 CLC effectful and authority bridge
+        working-directory: msi
+        env:
+          LEAN_PATH: lean
+        run: |
+          set -euo pipefail
+          lean --version
+          lean -o lean/BehaviouralCongruence.olean lean/BehaviouralCongruence.lean
+          lean -o lean/ScopedCertificates.olean lean/ScopedCertificates.lean
+          lean -o lean/VerifiedDevelopmentCore.olean lean/VerifiedDevelopmentCore.lean
+          lean -o lean/FiniteCLC.olean lean/FiniteCLC.lean
+          lean -o lean/VerifiedDevelopmentExample.olean lean/VerifiedDevelopmentExample.lean
+          lean -o lean/DevelopmentalObservationBridge.olean lean/DevelopmentalObservationBridge.lean
+          lean -o lean/DevelopmentalObservationBridgeExample.olean lean/DevelopmentalObservationBridgeExample.lean
+          lean -o lean/EffectfulObservationBridge.olean lean/EffectfulObservationBridge.lean | tee /tmp/effectful_axioms.log
+          lean lean/DevelopmentalObservationBridgeAudit.lean | tee /tmp/bridge_axioms.log
+          if grep -q 'sorryAx' /tmp/effectful_axioms.log /tmp/bridge_axioms.log; then
+            echo 'FAIL sorryAx detected'; exit 1
+          fi
+          echo 'ORIGINAL R7.2 CLC THEOREM COMPILATION PASS — SEPARATE FROM PYTHON'
