@@ -2,6 +2,7 @@
 import ctypes
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 from audit_finite_partial_map import build_map, load_library, Plan
@@ -56,7 +57,7 @@ class NativeActiveReuseTests(unittest.TestCase):
 
     def test_native_already_unique_is_not_a_camera_authority(self):
         t = generate_finite_trial(3, true_bin=0, kind="breakable")
-        m = build_map(self.native, t.reference, range(64))
+        m = build_map(self.native, SimpleNamespace(reference=t.reference), range(64))
         plan = Plan()
         rc = self.native.mg_sparse_plan(ctypes.byref(m), 1, 1, 32, 2, 0,
                                          ctypes.byref(plan))
