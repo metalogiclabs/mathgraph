@@ -113,6 +113,10 @@ jobs:
           python3 experiments/kry10_public_assurance/sacm_transfer.py "$f" \
             > evidence/kry10/oasc_transfer_result.json
           cat evidence/kry10/oasc_transfer_result.json
+          python3 -m unittest discover -v -s experiments/kry10_public_assurance -p 'test_assurance_policy_envelope.py'
+          python3 experiments/kry10_public_assurance/assurance_policy_envelope.py "$f" \
+            > evidence/kry10/oasc_policy_envelope.json
+          cat evidence/kry10/oasc_policy_envelope.json
       - name: Publish bounded audit receipt
         uses: actions/upload-artifact@v4
         with:
@@ -120,4 +124,5 @@ jobs:
           path: |
             evidence/kry10/public_assurance_result.json
             evidence/kry10/oasc_transfer_result.json
+            evidence/kry10/oasc_policy_envelope.json
           if-no-files-found: error
