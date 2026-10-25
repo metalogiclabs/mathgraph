@@ -1,0 +1,33 @@
+name: V5 source-contract obligation pre-exposure qualification
+on:
+  push:
+    branches:
+      - research/contract-grounded-obligations-v5-20261019
+    paths:
+      - 'research/contract_grounding_v5/**'
+      - '.github/workflows/contract-grounding-v5-preflight.yml'
+  pull_request:
+    paths:
+      - 'research/contract_grounding_v5/**'
+      - '.github/workflows/contract-grounding-v5-preflight.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned independent V4 export grammar
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 7f38aa7029c8d89006db956941767033b09717ca
+          path: v4-authority
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Original synthetic contract + mutant + restoration
+        run: |
+          set -euo pipefail
+          python research/contract_grounding_v5/preflight.py --resolver v4-authority/research/api_export_closure_v4/resolve.py
