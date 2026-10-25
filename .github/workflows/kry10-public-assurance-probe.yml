@@ -98,9 +98,24 @@ jobs:
           Path("evidence/kry10/public_assurance_result.json").write_text(json.dumps(output,indent=2)+"\n")
           print(json.dumps(output,indent=2))
           PY
+      - name: Acquire and independently replay the public SACM safety-case template
+        shell: bash
+        run: |
+          set -euo pipefail
+          f="$(mktemp)"
+          trap 'rm -f "$f"' EXIT
+          curl --fail --location --silent --show-error --retry 2 \
+            'https://raw.githubusercontent.com/EdgeCaseResearch/oasc/abf48ef74d07ff485ef759c5f6f5390953ca45c6/open-autonomy-safety-case.sacm.xml' \
+            --output "$f"
+          actual="$(git hash-object "$f")"
+          test "$actual" = '8b838d1cc4ed709cda65d2a38d366c95925cc34f' || { echo 'OASC external Git blob mismatch'; exit 1; }
+          python3 -m unittest discover -v -s experiments/kry10_public_assurance -p 'test_sacm_transfer.py'
+          python3 experiments/kry10_public_assurance/sacm_transfer.py "$f" \
+            > evidence/kry10/oasc_transfer_result.json
+          cat evidence/kry10/oasc_transfer_result.json
       - name: Publish bounded audit receipt
         uses: actions/upload-artifact@v4
         with:
-          name: kry10-public-source-assurance-receipt
+          name: kry10-public-source-and-sacm-receipts
           path: evidence/kry10/public_assurance_result.json
           if-no-files-found: error
