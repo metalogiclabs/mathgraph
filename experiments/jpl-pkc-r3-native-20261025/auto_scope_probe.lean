@@ -12,6 +12,62 @@ import all PropertyKindCalculus.Provenance
 open HCP.L6_Requirements
 open PropertyKindCalculus
 
+set_option compiler.relaxedMetaCheck true
+
+namespace MathGraphAutoScopeGuard20261026
+
+open Lean Meta
+
+/-!
+A deliberately fail-closed, source-native MathGraph scope-to-gate check.
+It cannot infer scientific truth from a Boolean. The only MATCH warrant is
+that an already PKC-accepted empirical requirement names one object and the
+declared gate expects exactly that object's PairState, with each Bool spot
+check explicitly naming this same gate in its definition body.
+-/
+open Elab Command in
+elab "#mathgraph_empirical_scope " r:ident : command => liftTermElabM do
+  let rname ← realizeGlobalConstNoOverload r
+  let _ ← PropertyKindCalculus.KindRequirement.checkRequirement rname
+  let req ← PropertyKindCalculus.KindRequirement.requirementValueOf rname
+  unless req.kind == .empirical do
+    throwError "MATHGRAPH_SCOPE_UNKNOWN: requirement is not empirical"
+  let claimed ← match req.scope with
+    | .objects [object] => pure object
+    | _ => throwError "MATHGRAPH_SCOPE_UNKNOWN: requires one explicit object"
+  if req.gate.isAnonymous then
+    throwError "MATHGRAPH_SCOPE_UNKNOWN: empirical gate is absent"
+  let env ← getEnv
+  let some gateInfo := env.find? req.gate
+    | throwError "MATHGRAPH_SCOPE_UNKNOWN: empirical gate not found"
+  let gateType ← Meta.whnf gateInfo.type
+  let .forallE _ input output _ := gateType
+    | throwError "MATHGRAPH_SCOPE_UNKNOWN: gate is not a unary predicate"
+  unless output.isConstOf ``Bool do
+    throwError "MATHGRAPH_SCOPE_UNKNOWN: gate return type is not Bool"
+  let input ← Meta.whnf input
+  let .app family indexed := input
+    | throwError "MATHGRAPH_SCOPE_UNKNOWN: gate input is not an indexed observation"
+  unless family.isConstOf ``HCP.L6_Requirements.PairState do
+    throwError "MATHGRAPH_SCOPE_UNKNOWN: unsupported observation family"
+  let .const observed _ := indexed
+    | throwError "MATHGRAPH_SCOPE_UNKNOWN: object index is not a closed declaration"
+  if observed != claimed then
+    throwError "MATHGRAPH_SCOPE_MISMATCH: requirement object {claimed}, gate object {observed}"
+  if req.spotChecks.isEmpty then
+    throwError "MATHGRAPH_SCOPE_UNKNOWN: no spot-check evidence"
+  for s in req.spotChecks do
+    let some info := env.find? s
+      | throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} is absent"
+    let some value := info.value? (allowOpaque := true)
+      | throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} has no inspectable body"
+    let refs := value.foldConsts ({} : NameSet) fun c names => names.insert c
+    unless refs.contains req.gate do
+      throwError "MATHGRAPH_SCOPE_UNKNOWN: spot check {s} does not directly reference gate"
+  logInfo m!"MATHGRAPH_SCOPE_MATCH: requirement '{req.name}' object {claimed} is gate-bound"
+
+end MathGraphAutoScopeGuard20261026
+
 namespace MathGraphAutoScope20261026
 
 public def wrongObjectQ : Provenance.Requirement :=
