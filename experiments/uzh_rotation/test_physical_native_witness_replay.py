@@ -70,7 +70,7 @@ class NativeActiveReuseTests(unittest.TestCase):
         for seed in range(12):
             for true in HYPOTHESES:
                 t = generate_finite_trial(seed, true_bin=true, kind="breakable")
-                m = build_map(self.native, t.reference, range(64))
+                m = build_map(self.native, SimpleNamespace(reference=t.reference), range(64))
                 for step in (1, 7, 13, 23, 29):
                     mask = self.native.mg_sparse_filter(
                         ctypes.byref(m), 15, step, t.columns[step], 2, 1)
