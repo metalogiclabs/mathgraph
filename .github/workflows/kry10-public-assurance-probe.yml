@@ -117,5 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kry10-public-source-and-sacm-receipts
-          path: evidence/kry10/public_assurance_result.json
+          path: |
+            evidence/kry10/public_assurance_result.json
+            evidence/kry10/oasc_transfer_result.json
           if-no-files-found: error
