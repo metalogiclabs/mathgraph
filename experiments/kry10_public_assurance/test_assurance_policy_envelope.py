@@ -1,7 +1,8 @@
 """Adversarial conditional support-policy tests. No physical or safety claims."""
 import random
 import unittest
-from assurance_policy_envelope import Rule, evaluate, oracle_recursive
+from assurance_policy_envelope import (Rule, evaluate, oracle_recursive, mixed_policy_evaluation,
+                                       mixed_oracle, minimal_policy_question)
 
 class PolicyEnvelopeTests(unittest.TestCase):
     def setUp(self):
@@ -103,6 +104,39 @@ class PolicyEnvelopeTests(unittest.TestCase):
     def test_separate_condition_no_receipts_no_approval(self):
         self.assertEqual(len(self.check(set(),"all")),0)
         self.assertEqual(len(self.check(set(),"any")),0)
+
+    def test_mixed_policy_matches_independent_recursive(self):
+        for mask in range(8):
+            active={f"E{i+1}" for i in range(3) if (mask>>i)&1}
+            for policy in ("all","any"):
+                settings={"C2":policy}
+                a=mixed_policy_evaluation(self.rules,active,self.claims,settings)
+                b=mixed_oracle(self.rules,active,self.claims,settings)
+                self.assertEqual(a,b)
+
+    def test_minimal_policy_question_one_bit(self):
+        result=minimal_policy_question(self.rules,{"E1","E2","E3"},
+                                        self.claims,"E3",target="C3")
+        self.assertEqual(result["finite_policy_space"],2)
+        self.assertEqual(result["minimum_number_of_policy_questions"],1)
+        self.assertEqual(result["all_minimal_question_sets"],[["C2"]])
+        self.assertFalse(result["consequential_action_authorized"])
+
+    def test_unsupported_mixed_policy_rejected(self):
+        with self.assertRaises(ValueError):
+            mixed_policy_evaluation(self.rules,{"E1","E2"},self.claims,
+                                    {"C2":"assume_true"})
+        with self.assertRaises(ValueError):
+            mixed_oracle(self.rules,{"E1","E2"},self.claims,
+                         {"C2":"assume_true"})
+
+    def test_full_policy_assignments_enveloped_by_extremes(self):
+        base={"E1","E2"}
+        low=evaluate(self.rules,base,policy="all",claims=self.claims)
+        high=evaluate(self.rules,base,policy="any",claims=self.claims)
+        for policy in ("all","any"):
+            this=mixed_policy_evaluation(self.rules,base,self.claims,{"C2":policy})
+            self.assertTrue(low<=this<=high)
 
 if __name__ == "__main__":
     unittest.main()
