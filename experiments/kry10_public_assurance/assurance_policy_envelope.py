@@ -152,6 +152,106 @@ def conditional_minimum_evidence_sets(rules, evidence, claims, *, target="G1"):
     }
 
 
+def mixed_policy_evaluation(rules, evidence, claims, choices):
+    """Least supported fixpoint given explicit per-claim assumptions."""
+    accepted = set(evidence)
+    supported = set()
+    for _ in range(len(claims) + 1):
+        changed = set(supported)
+        for claim in claims:
+            rule_list = rules.get(claim, ())
+            if not rule_list:
+                continue
+            satisfied = [all(x in accepted or x in supported for x in rel.inputs)
+                         for rel in rule_list]
+            mode = choices.get(claim, "all")
+            if mode not in ("all", "any"):
+                raise ValueError(f"unsupported rule-combination policy for {claim}")
+            if all(satisfied) if mode == "all" else any(satisfied):
+                changed.add(claim)
+        if changed == supported:
+            return frozenset(changed)
+        supported = changed
+    raise ValueError("mixed policy closure did not converge")
+
+def mixed_oracle(rules, evidence, claims, choices):
+    """Independent recursive evaluator, separate from iterative closure."""
+    accepted = set(evidence)
+    memo = {}
+    pending = set()
+    def check(c):
+        if c in memo:
+            return memo[c]
+        if c in pending:
+            raise ValueError("cyclic support graph")
+        pending.add(c)
+        inc = rules.get(c, ())
+        flags = []
+        for rel in inc:
+            flags.append(all((x in accepted) if x not in claims else check(x)
+                             for x in rel.inputs))
+        mode = choices.get(c, "all")
+        if mode not in ("all", "any"):
+            raise ValueError("unrecognized policy")
+        answer = bool(flags) and (all(flags) if mode == "all" else any(flags))
+        pending.remove(c)
+        memo[c] = answer
+        return answer
+    return frozenset(c for c in claims if check(c))
+
+def minimal_policy_question(rules, evidence, claims, withdrawal, target="G1"):
+    """Enumerate the finite per-claim policy grammar; find smallest query.
+
+    This is a *policy-ambiguity separating question*, not proof of source
+    semantics, real sufficiency of alternatives or real safety.
+    """
+    from itertools import combinations, product
+    ambiguous = sorted(c for c,r in rules.items() if len(r)>1)
+    if len(ambiguous) > 12:
+        raise ValueError("finite enumeration limit; result UNKNOWN")
+    outcomes = {}
+    for modes in product(("any","all"), repeat=len(ambiguous)):
+        choice = dict(zip(ambiguous,modes))
+        active = set(evidence)-{withdrawal}
+        out = mixed_policy_evaluation(rules,active,claims,choice)
+        independent = mixed_oracle(rules,active,claims,choice)
+        if out != independent:
+            raise AssertionError(f"mixed-policy oracle mismatch {choice}")
+        key = tuple(modes)
+        outcomes[key] = target in out
+    minima=[]
+    for k in range(len(ambiguous)+1):
+        for subset in combinations(range(len(ambiguous)),k):
+            partition = {}
+            for assignment, outcome in outcomes.items():
+                x = tuple(assignment[i] for i in subset)
+                partition.setdefault(x,set()).add(outcome)
+            if all(len(v)==1 for v in partition.values()):
+                minima.append(tuple(ambiguous[i] for i in subset))
+        if minima:
+            break
+    if not minima:
+        raise AssertionError("full policy assignment should determine result")
+    counts = {"conditional_support_present":sum(outcomes.values()),
+              "no_conditional_support":sum(not o for o in outcomes.values())}
+    return {
+        "finite_policy_space":len(outcomes),
+        "claims_with_multiple_incoming_relations":ambiguous,
+        "conditional_top_claim_outcomes":counts,
+        "minimum_number_of_policy_questions":len(minima[0]),
+        "all_minimal_question_sets":[list(q) for q in minima],
+        "first_minimum_question_wording":(
+            "For claim "+minima[0][0]+
+            ", are all incoming argument relationships mandatory, or may"
+            " one complete relationship suffice, and what exact reviewed"
+            " safety-case policy authorizes that choice?"
+        ) if len(minima[0]) == 1 else "Clarify source-authoritative aggregation policy",
+        "independently_checked_assignments":len(outcomes),
+        "source_policy_authority": "NOT_AVAILABLE",
+        "actual_claim_verdict":"UNKNOWN",
+        "consequential_action_authorized":False
+    }
+
 def audit(case, withdrawal="EV_63"):
     rules, evidence = compile_rules(case)
     if withdrawal not in evidence:
@@ -169,6 +269,7 @@ def audit(case, withdrawal="EV_63"):
                 raise AssertionError(f"independent oracle mismatch: {policy}:{flag}")
     lost = {k:before[k]-after[k] for k in before}
     minimum = conditional_minimum_evidence_sets(rules, evidence, case.claims)
+    question = minimal_policy_question(rules, evidence, case.claims, withdrawal)
     intersection = set.intersection(*(set(x) for x in lost.values()))
     union = set.union(*(set(x) for x in lost.values()))
     alternative = sorted(union - intersection)
@@ -193,6 +294,7 @@ def audit(case, withdrawal="EV_63"):
                                else "NO_CONDITIONAL_PATH" for p in after},
         "independently_checked_with": "recursive_DAG_oracle",
         "conditional_minimum_support_ambiguity": minimum,
+        "smallest_separating_policy_question": question,
         "actual_warrant": "UNKNOWN",
         "safety_certification": "NOT_ASSESSED",
         "Kry10_deployed_system": "NOT_TESTED"
