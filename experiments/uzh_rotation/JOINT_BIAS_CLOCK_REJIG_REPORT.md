@@ -46,6 +46,16 @@ These are scenario means, not independent field trials; the underlying synthetic
 4. **Sub-bin sensor gap**: optical phase is directly simulated and quantized to one-sixteenth of a 64-bin cell. The previous source-native `MGVC-PHYSICAL-1` camera-column matcher does not yet generate these inputs with calibrated sub-bin uncertainty.
 5. **Equal-information baseline**: a robust estimator with an appropriately tuned bias-drift model may outperform every method here. Do not compare only against the original weak nearest-bin baseline.
 
+## Independent vectorization oracle follow-up
+
+[GitHub Actions run #40244770158](https://github.com/metalogiclabs/mathgraph/actions/runs/40244770158), source commit `c39a04a20cd6bd2c78dd2059a249d782bd520cc8`, completed **SUCCESS**. Both independent scalar tests in `test_physical_joint_bias_clock_oracle.py` passed:
+- A separately written nested-loop exact oracle enumerated **all 3,993 finite (bias, camera-clock) candidates** for three source conditions, matching the optimized vectorized feasibility calculation.
+- A corrupted acquired optical phase observation caused the strict joint feasible set to be empty in both implementations.
+
+The same Actions run requalified the 32-seed × 7-condition matched conventional benchmark and the previously protected canonical physical gate, source adapter, native C99 and actual Docker isolation/replay. [Retained artifact #12618805061](https://github.com/metalogiclabs/mathgraph/actions/runs/40244770158/artifacts/12618805061) (SHA256 `f97214a063963c419fda71389721c008a1dee38a08aa2bec8525b59fa3657863`).
+
+No independent **physical** sensor calibration, sub-bin image correspondence or gyro-clock hardware correctness is claimed by this software oracle.
+
 ## Recommended next *software* experiment (no hardware needed)
 
 Integrate the bounded joint hypothesis set with **a source-native visual phase extraction path** that is learned from the FIRST camera revolution only, and evaluate it against an equally informed robust bias-plus-clock baseline (including changing bias, outlier handling and ambiguous landmarks). Gate any physical NAVIGATION output through the existing canonical `physical_evidence_gate.py`, never through a new permissive scoreboard. Require a prospective, genuine five-turn hardware source with isolated encoder to promote any physical claim.
