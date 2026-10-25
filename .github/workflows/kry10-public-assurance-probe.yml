@@ -1,0 +1,102 @@
+name: Kry10 public-source assurance probe
+on:
+  push:
+    branches:
+      - exp/kry10-public-assurance-20261025
+    paths:
+      - .github/workflows/kry10-public-assurance-probe.yml
+      - experiments/kry10_public_assurance/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-finite-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin external Kry10 original source bytes and reproduce finite audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/kry10
+          source_file="$(mktemp)"
+          trap 'rm -f "$source_file"' EXIT
+          curl --fail --location --silent --show-error --retry 2 \
+            'https://raw.githubusercontent.com/Kry10-NZ/kos_am335x_starterware/f6758778682a1c9f998feab6e2e976920dec81ee/lib/manifest.ex' \
+            --output "$source_file"
+          actual="$(git hash-object "$source_file")"
+          expected="a61cd6b21996b4dc4af818c3d378c3c283104c7b"
+          test "$actual" = "$expected" || { echo "Kry10 external Git blob mismatch"; exit 1; }
+          export KRY10_SOURCE_BLOB="$actual"
+          export KRY10_SOURCE_FILE="$source_file"
+          python3 - <<'PY'
+          import os, json, itertools
+          from pathlib import Path
+          source = Path(os.environ["KRY10_SOURCE_FILE"]).read_bytes()
+          tokens = [b'def include_gpio(', b'def include_pwm(',
+                    b'device_frames:', b'@gpio_clock_setups', b'@pwm_resources']
+          if not all(t in source for t in tokens):
+              raise SystemExit("Pinned GPIO/PWM source semantics not found")
+          # Synthetic worlds in order: freshness, ack, power cutoff, wheel stillness.
+          worlds = {
+              "normal":(1,1,1,1), "stale":(0,1,1,1),
+              "dropped":(1,0,0,0), "stuck":(1,1,0,0),
+              "coasting":(1,1,1,0),
+          }
+          names = ("sensor_freshness","gpio_ack","power_feedback","wheel_motion")
+          costs = (1,1,2,3)  # illustrative, not Kry10 or actual financial costs
+          winners = []
+          for k in range(5):
+              for sel in itertools.combinations(range(4), k):
+                  if all(tuple(worlds["normal"][i] for i in sel) !=
+                         tuple(row[i] for i in sel)
+                         for key,row in worlds.items() if key != "normal"):
+                      winners.append((sum(costs[i] for i in sel), sel))
+          if not winners:
+              raise SystemExit("OBSTRUCTION: model has no separating sensor subset")
+          brute = min(winners)
+          # Independent dynamic programming oracle by fault-coverage bitmasks.
+          coverage = {0:(0,())}
+          for i in range(len(names)):
+              mask = sum(1 << bit for bit, name in enumerate(("stale","dropped","stuck","coasting"))
+                         if worlds["normal"][i] != worlds[name][i])
+              next_coverage = dict(coverage)
+              for key, (cost, indices) in coverage.items():
+                  newkey = key | mask
+                  candidate = (cost + costs[i], indices + (i,))
+                  if newkey not in next_coverage or candidate < next_coverage[newkey]:
+                      next_coverage[newkey] = candidate
+              coverage = next_coverage
+          dp = coverage[15]
+          assert brute == dp == (4,(0,3)), (brute,dp)
+          # Historical collision can leave all PRESENT observations identical.
+          historical = tuple(worlds["normal"])
+          assert historical == worlds["normal"]
+          output = {
+              "source_status":"EXACT_EXTERNAL_GIT_BLOB_ACQUIRED_BY_ACTIONS",
+              "repo":"Kry10-NZ/kos_am335x_starterware",
+              "source_commit":"f6758778682a1c9f998feab6e2e976920dec81ee",
+              "blob":os.environ["KRY10_SOURCE_BLOB"],
+              "source_scope":"published GPIO/PWM manifest, NOT Kry10 cart deployed configuration",
+              "documentary_source":"https://sel4.systems/Summit/2026/slides/kry10-os.pdf",
+              "pdf_bytes_authenticated":False,
+              "finite_model_scope":"handwritten synthetic faults, costs and observations",
+              "min_cost":brute[0],"min_observations":[names[i] for i in brute[1]],
+              "oracles":["exhaustive","independent_bitset_dynamic_programming"],
+              "present_snapshot_cannot_disprove_past_collision":True,
+              "actual_kry10_safety_claim":"UNKNOWN",
+              "kry10_existing_controls_compared":"NOT_CHECKED",
+              "no_upstream_changes":True
+          }
+          Path("evidence/kry10/public_assurance_result.json").write_text(json.dumps(output,indent=2)+"\n")
+          print(json.dumps(output,indent=2))
+          PY
+      - name: Publish bounded audit receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: kry10-public-source-assurance-receipt
+          path: evidence/kry10/public_assurance_result.json
+          if-no-files-found: error
