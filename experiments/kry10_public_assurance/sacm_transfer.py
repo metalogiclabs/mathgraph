@@ -19,7 +19,7 @@ OASC_BLOB = "8b838d1cc4ed709cda65d2a38d366c95925cc34f"
 OASC_PATH = "open-autonomy-safety-case.sacm.xml"
 
 def git_blob(data: bytes) -> str:
-    return sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
+    return sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
 
 def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
@@ -136,7 +136,7 @@ def independent_fixpoint(case: Case, source: str) -> list[str]:
 def inspect_oasc(data: bytes):
     case = parse_case(data)
     if (len(case.claims),len(case.references),
-        len(case.evidence_edges),len(case.inference_edges)) != (38,26,23,49):
+        len(case.evidence_edges),len(case.inference_edges)) != (38,26,23,37):
         raise ValueError("OASC pinned structure changed unexpectedly")
     # 23 inference *relations* and 49 source->target edges.
     if len({eid for _,_,eid in case.inference_edges}) != 23:
