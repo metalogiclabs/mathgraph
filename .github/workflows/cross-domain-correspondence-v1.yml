@@ -1,0 +1,27 @@
+name: Cross-domain correspondence V1 receipt-model checks
+on:
+  push:
+    branches:
+      - research/cross-domain-correspondence-protocol-v1-20261019
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-receipt-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # exact historical frozen protocol commit must be available
+      - name: Confirm frozen protocol SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show 9c8b427c679398fd80ea56d9a91a1627b2e96b6d:research/cross_domain_correspondence_v1/PROTOCOL.md > /tmp/protocol-frozen.md
+          cmp /tmp/protocol-frozen.md research/cross_domain_correspondence_v1/PROTOCOL.md
+      - name: Evaluate imported historical receipts and selective withdrawal
+        run: node research/cross_domain_correspondence_v1/receipt_model.js --receipt receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-domain-receipt-model-v1
+          path: receipt.json
