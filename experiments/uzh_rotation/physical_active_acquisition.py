@@ -19,6 +19,7 @@ KINDS = (
     ("breakable_occlude_7", "breakable", (7,)),
     ("breakable_occlude_13", "breakable", (13,)),
     ("breakable_occlude_7_13", "breakable", (7, 13)),
+    ("breakable_occlude_all_witnesses", "breakable", (7, 13, 23, 29)),
     ("unbreakable_clean", "unbreakable", ()),
 )
 
