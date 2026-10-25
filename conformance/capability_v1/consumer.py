@@ -84,7 +84,7 @@ def artifact(value):
 
 
 def reference(identifier, locator, raw, media_type="application/json"):
-    return {"id": identifier, "locator": locator, "sha256": hashlib.sha256(raw).hexdigest(),
+    return {"id": identifier, "locator": locator, "sha256": hashlib.sha256(raw).digest().hex(),
             "size_bytes": len(raw), "media_type": media_type}
 
 
