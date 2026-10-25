@@ -43,7 +43,7 @@ jobs:
           import json
           r=json.load(open('active_acquisition_census.json'))
           a=json.load(open('active_acquisition_audit.json'))
-          assert a['trial_traces_replayed']==32*4*5
+          assert a['trial_traces_replayed']==32*4*len(r['cases'])
           assert a['physical_validation']=='UNKNOWN'
           clean=next(c for c in r['cases'] if c['case']=='breakable_clean')
           blocked=next(c for c in r['cases'] if c['case']=='unbreakable_clean')
@@ -51,13 +51,16 @@ jobs:
           assert clean['continuous_unique']==clean['trials']
           assert clean['active_attempts'] < clean['continuous_attempts']
           assert not clean['active_false_unique'] and not clean['continuous_false_unique']
+          allblock=next(c for c in r['cases'] if c['case']=='breakable_occlude_all_witnesses')
           assert blocked['active_unique']==0 and blocked['continuous_unique']==0
+          assert allblock['active_unique']==0 and allblock['continuous_unique']==0
           assert r['hardware_acquisitions']==0
           print('ACTIVE_ACQUISITION_VERIFIED_SYNTHETIC_ONLY',
                 {'clean':{k:clean[k] for k in ('trials','active_attempts',
                    'continuous_attempts','active_resolution_step_total',
                    'continuous_resolution_step_total')},
-                 'unbreakable_unknown':blocked['active_unknown']})
+                 'unbreakable_unknown':blocked['active_unknown'],
+                 'all_separating_views_blocked_unknown':allblock['active_unknown']})
           print('NO_REAL_HARDWARE_ACQUISITION_OR_HEADING_AUTHORITY')
           PY
       - name: Adversarial isolation unit controls
