@@ -54,6 +54,7 @@ jobs:
         working-directory: pkc
         shell: bash
         run: |
+          set +e
           set -uo pipefail
           control=../experiments/jpl-pkc-r3-native-20261025
           lake env lean "$control/baseline.lean" > "$RUNNER_TEMP/pkc-r3-baseline.log" 2>&1
