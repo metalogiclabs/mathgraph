@@ -29,3 +29,20 @@ Acquire from an authorized engineer one redacted actual cart/safety case: requir
 
 ## Action boundaries
 Read-only analysis; no changes to Kry10 repos, no robot movement, no enforced release gate, no unsolicited outreach or safety certification assertions.
+
+
+## External transfer, not Kry10 production testing (2026-10-25)
+
+A second, source-distinct public example, [EdgeCaseResearch/oasc at immutable commit abf48ef](https://github.com/EdgeCaseResearch/oasc/blob/abf48ef74d07ff485ef759c5f6f5390953ca45c6/open-autonomy-safety-case.sacm.xml), provides a genuine SACM 2.2 XML argument template, not a Kry10 artifact or an audited deployed safety case.
+
+`sacm_transfer.py` independently checks exact downloaded Git blob, XML identifiers, artifact references, evidence edges, inference endpoints, reasoning references, and absence of dependency cycles. It then computes the documentary downstream reach of each evidence reference with (a) BFS and (b) a separately coded fixed-point oracle. The native workflow runs 16 adversarial parser tests. The pinned template declares **38 claims, 26 artifact references, 23 evidence links and 23 asserted inference relationships (37 inference source edges)**. Both traversal algorithms agree for all 23 evidence references.
+
+**Hypothetical change**: treating `EV_63` (an ISO 26262 assessment *reference*) as withdrawn yields affected documentary claim IDs `G55, G39, G4, G1`; 34 other claims have no path from `EV_63`. This is not a real withdrawn assessment, proof of safety, completeness, or a warranted claim. The published XML contains no authenticated underlying assessments, so **root safety claim UNKNOWN**, and evidence provenance is unqualified. A competent baseline graph traversal can produce the same structural result; comparative method advantage remains UNKNOWN.
+
+To replay: `python3 -m unittest discover -v -s experiments/kry10_public_assurance -p 'test_sacm_transfer.py'`; then download the pinned upstream XML and run `python3 experiments/kry10_public_assurance/sacm_transfer.py OASC.xml`. The pinned SHA-1 is a Git blob identification check; it does not independently authenticate original author identity or assess certification validity.
+
+**Status:** two separate primary sources were acquired in CI, Kry10's AM335x resource manifest and Edge Case Research's assurance template. They must not be linked as a single deployed system. Inference: no Kry10 deficiency, commercial advantage, independent physical validation or safety approval has been established.
+
+## Minimal evidence request to Kry10 engineering (not sent)
+
+Would Kry10 be willing to share a **redacted, non-operational** example of: (1) one real system-level safety claim and its assumptions; (2) one exact deployed configuration/source identity; (3) linked formal assurance and physical verification receipts (with dates and source IDs); and (4) one version change together with Kry10's current requalification verdict? No raw credentials, personal or export-restricted information, proprietary internals or production control interface are required. We would compare MathGraph's selective warrant/UNKNOWN classification against Kry10's existing assurance process under equal inputs, read-only and privately, and report no differentiated benefit if Kry10 already does this. The public template is available to demonstrate the format without asking for their data first.
