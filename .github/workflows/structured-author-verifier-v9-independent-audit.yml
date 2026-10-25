@@ -1,0 +1,99 @@
+name: V9 exposed Pluggy independent native census recovery
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/structured-author-verifier-v9-independent-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: pytest-dev/pluggy
+          ref: 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          path: original-native
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: d1bf38aa3205db63d61a5f3292058cf5dfa54433
+          path: frozen-v9
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Authenticate prior RED-scoped science record ZIP and original native terminal log
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p previous verified
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/12250584947/zip' \
+            -o previous/prior-v9.zip
+          echo 'b3b5512a15b46333d4f51942484ecb5c5916f119cf25d6c1babb1c0726ae8332  previous/prior-v9.zip' | sha256sum -c
+          unzip -q previous/prior-v9.zip -d previous/content
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('previous/content/default.log').read_text()
+          assert '225 passed' in p and 'generated xml file' in p
+          assert not Path('previous/content/default.xml').exists()
+          print('ORIGINAL_PRIOR_ARCHIVE_AUTHENTICATED_AND_MISSING_JUNIT_CONFIRMED')
+          PY
+      - name: Install identical original test environment
+        run: |
+          python -m pip install 'pytest==8.3.5' 'pytest-cov==6.2.1'
+          python -m pip install -e ./original-native
+      - name: Re-execute only original source test suite with absolute JUnit path
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C original-native rev-parse HEAD)" = 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          cd original-native
+          python -m pytest -q --junitxml="$GITHUB_WORKSPACE/verified/native-junit.xml" \
+            2>&1 | tee "$GITHUB_WORKSPACE/verified/native-stdout.log"
+          cd ..
+          test -z "$(git -C original-native diff --name-only)"
+      - name: Independent exact native testcase-ID census, including negative controls
+        shell: bash
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET,json,hashlib,pathlib
+          root=ET.parse('verified/native-junit.xml').getroot()
+          suites=[root] if root.tag=='testsuite' else list(root.iter('testsuite'))
+          counts={k:sum(int(s.attrib.get(k,0)) for s in suites) for k in ('tests','failures','errors','skipped')}
+          cases=[(x.attrib.get('file',''),x.attrib.get('classname',''),x.attrib.get('name',''))
+                 for x in root.iter('testcase')]
+          assert counts['tests']>0 and len(cases)==counts['tests']
+          assert not (counts['failures'] or counts['errors'])
+          assert len(set(cases))==len(cases), 'duplicate original testcase identities'
+          assert '225 passed' in pathlib.Path('verified/native-stdout.log').read_text()
+          assert counts['tests']==225 and counts['skipped']==0,counts
+          data={'source_repo':'pytest-dev/pluggy',
+                'source_sha':'0224f79fc75efadaafe24dbab9deee2ff616ecd7',
+                'mode':'EXPOSED_INDEPENDENT_REPLAY_ONLY',
+                'prior_run':'https://github.com/metalogiclabs/mathgraph/actions/runs/39395818121',
+                'prior_archive_sha256':'b3b5512a15b46333d4f51942484ecb5c5916f119cf25d6c1babb1c0726ae8332',
+                'native':counts,'case_ids':sorted(cases),
+                'junit_sha256':hashlib.sha256(pathlib.Path('verified/native-junit.xml').read_bytes()).hexdigest(),
+                'status':'WARRANTED_BOUNDED_EXPOSED_NATIVE_CENSUS',
+                'V9_original_authority_result':'UNKNOWN_NO_STRUCTURED_AUTHOR_PYTEST_ROOTS',
+                'future_source_discovery':'NOT_A_NEW_PROSPECTIVE_EXPERIMENT'}
+          pathlib.Path('verified/independent-native-census.json').write_text(json.dumps(data,sort_keys=True,indent=2)+'\n')
+          print('ORIGINAL_225_NATIVE_CASE_IDS_INDEPENDENTLY_REPLAYED; V9_SCIENCE_STILL_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v9-exposed-pluggy-native-census
+          path: verified/
+          if-no-files-found: warn

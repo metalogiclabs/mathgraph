@@ -1,0 +1,107 @@
+name: V9 structured author test scope first prospective
+on:
+  pull_request:
+    paths:
+      - 'research/structured_test_authority_v9/**'
+      - '.github/workflows/structured-author-verifier-v9-prospective.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+      - name: Independently checkout frozen V9 method/protocol
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: d1bf38aa3205db63d61a5f3292058cf5dfa54433
+          path: frozen-v9
+          persist-credentials: false
+      - name: Independently checkout pre-exposure source metadata lock
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: e91b41d80fe73a45e87179201293803adc09db70
+          path: frozen-selection
+          persist-credentials: false
+      - name: Verify method, corpus and source selection did not change
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          p=research/structured_test_authority_v9
+          for f in scan.py evaluate.py withdraw.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-v9/$p/$f" "$p/$f"
+          done
+          cmp "frozen-selection/$p/SOURCE_LOCK.json" "$p/SOURCE_LOCK.json"
+          sha256sum frozen-v9/$p/{scan.py,evaluate.py,withdraw.py,FROZEN_PROTOCOL.md} > verified/method-sha256.txt
+          sha256sum frozen-selection/$p/SOURCE_LOCK.json > verified/selection-sha256.txt
+      - name: Checkout exact selected first-eligible original Python source
+        uses: actions/checkout@v4
+        with:
+          repository: pytest-dev/pluggy
+          ref: 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Enforce exact source and seal candidate and expert rulebook BEFORE native execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          d=json.loads(Path('research/structured_test_authority_v9/SOURCE_LOCK.json').read_text())
+          assert d['selected']['repository']=='pytest-dev/pluggy'
+          assert d['selected']['source_sha']=='0224f79fc75efadaafe24dbab9deee2ff616ecd7'
+          Path('verified/metadata.json').write_text(json.dumps({
+              'repository':d['selected']['repository'],
+              'description':d['selected']['description'],
+              'source_sha':d['selected']['source_sha']
+          },sort_keys=True,indent=2)+'\n')
+          PY
+          cp research/structured_test_authority_v9/SOURCE_LOCK.json verified/selection.json
+          python frozen-v9/research/structured_test_authority_v9/scan.py \
+            --source external-native --metadata verified/metadata.json --out verified/sealed-proposals.json
+          sha256sum verified/sealed-proposals.json > verified/sealed-proposals-sha256.txt
+          echo "BOTH_ARMS_PROPOSED_AND_SHA_SEALED_BEFORE_NATIVE"
+      - name: Install frozen generic Python test environment, never target-specific repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install 'pytest==8.3.5' 'pytest-cov==6.2.1'
+          python -m pip install -e ./external-native
+      - name: Execute default pytest, candidate explicit roots and independently coded expert cookbook
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen-v9/research/structured_test_authority_v9/evaluate.py \
+            --source external-native \
+            --selection research/structured_test_authority_v9/SOURCE_LOCK.json \
+            --proposal verified/sealed-proposals.json \
+            --out verified/prospective-v9.json | tee verified/evaluation-summary.log
+      - name: Physically withdraw selected structured evidence edge then restore source exactly
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen-v9/research/structured_test_authority_v9/withdraw.py \
+            --source external-native \
+            --proposal verified/sealed-proposals.json \
+            --scanner frozen-v9/research/structured_test_authority_v9/scan.py \
+            --out verified/source-authority-withdrawal.json | tee verified/withdrawal-summary.log
+          test "$(git -C external-native rev-parse HEAD)" = 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Archive original native JUnit, exact test identities, proposal hashes, withdrawal and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: structured-author-test-v9-heldout
+          path: verified/
+          if-no-files-found: warn
