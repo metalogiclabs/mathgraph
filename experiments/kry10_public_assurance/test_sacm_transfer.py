@@ -85,4 +85,29 @@ class SACMTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"blob"):
             parse_case(newer,pin=git_blob(d))
 
+    def test_counter_evidence_must_not_become_support(self):
+        d=fixture().replace(b'<assertedEvidence id="e1">',
+                            b'<assertedEvidence id="e1" isCounter="true">')
+        with self.assertRaisesRegex(ValueError,"counter|unsupported"):
+            self.parsed(d)
+    def test_counter_inference_must_not_become_support(self):
+        d=fixture().replace(b'<assertedInference id="e2">',
+                            b'<assertedInference id="e2" isCounter="1">')
+        with self.assertRaisesRegex(ValueError,"counter|unsupported"):
+            self.parsed(d)
+    def test_claim_assumption_must_not_become_evidence(self):
+        d=fixture().replace(b'<claim id="G2"',
+                            b'<claim id="G2" assertionDeclaration="assumed"')
+        with self.assertRaisesRegex(ValueError,"assertion|assumed|unsupported"):
+            self.parsed(d)
+    def test_defeated_declaration_rejected(self):
+        d=fixture().replace(b'<claim id="G2"',
+                            b'<claim id="G2" assertionDeclaration="defeated"')
+        with self.assertRaisesRegex(ValueError,"assertion|defeated|unsupported"):
+            self.parsed(d)
+    def test_explicit_neutral_flags_allowed(self):
+        d=fixture().replace(b'<assertedEvidence id="e1">',
+                            b'<assertedEvidence id="e1" isCounter="false">')
+        self.assertEqual(bfs_consequences(self.parsed(d),"EV1"),["G1","G2"])
+
 if __name__ == "__main__":unittest.main()
