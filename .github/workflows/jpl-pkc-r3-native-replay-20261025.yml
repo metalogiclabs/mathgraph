@@ -88,6 +88,34 @@ jobs:
             exit 1
           fi
 
+      - name: MathGraph typed empirical gate scope spike
+        working-directory: pkc
+        shell: bash
+        run: |
+          set +e
+          gate_dir=../experiments/jpl-pkc-r3-native-20261025
+          lake env lean "$gate_dir/typed_gate_p.lean" > "$RUNNER_TEMP/pkc-r3-typed-p.log" 2>&1
+          typed_p=$?
+          lake env lean "$gate_dir/typed_gate_q_refusal.lean" > "$RUNNER_TEMP/pkc-r3-typed-q.log" 2>&1
+          typed_q=$?
+          echo "PKC_TYPED_GATE_EXIT P=$typed_p Q=$typed_q"
+          echo 'PKC_TYPED_GATE_P_BEGIN'
+          sed -n '1,60p' "$RUNNER_TEMP/pkc-r3-typed-p.log"
+          echo 'PKC_TYPED_GATE_P_END'
+          echo 'PKC_TYPED_GATE_Q_BEGIN'
+          sed -n '1,80p' "$RUNNER_TEMP/pkc-r3-typed-q.log"
+          echo 'PKC_TYPED_GATE_Q_END'
+          if [[ "$typed_p" != "0" || "$typed_q" == "0" ]]; then
+            echo 'PKC_TYPED_GATE_VERDICT UNKNOWN: positive or negative control failed'
+            exit 1
+          fi
+          if ! grep -Eq 'type mismatch|application type mismatch' "$RUNNER_TEMP/pkc-r3-typed-q.log" ||
+             ! grep -Fq 'PairState' "$RUNNER_TEMP/pkc-r3-typed-q.log"; then
+            echo 'PKC_TYPED_GATE_VERDICT UNKNOWN: negative control failed for unrelated reason'
+            exit 1
+          fi
+          echo 'PKC_TYPED_GATE_VERDICT BOUNDED_TYPED_Q_EVIDENCE_REJECTED'
+
       - name: Retain exact evidence even if replay fails
         if: always()
         uses: actions/upload-artifact@v4
