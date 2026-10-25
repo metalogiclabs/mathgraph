@@ -1,0 +1,112 @@
+name: Prospective unfamiliar API obligation induction V2
+on:
+  pull_request:
+    paths:
+      - research/semantic_obligation_induction_v1/**
+      - .github/workflows/semantic-obligation-prospective-v2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prospective:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout sealed selection manifest
+        uses: actions/checkout@v4
+      - name: Checkout frozen proposer, comparator and oracle method
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 8e6db298f1035288745db8c66861769312c4966f
+          path: frozen-method
+          persist-credentials: false
+      - name: Checkout V2 preregistered novelty guard
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 20d338309bc9fe1dc1583f1e7b910e1a86393d89
+          path: frozen-novelty
+          persist-credentials: false
+      - name: Checkout exact pre-exposure selection record
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 029e05664da655ea866baf68e62fdd0567494611
+          path: frozen-selection
+          persist-credentials: false
+      - name: Enforce exact unchanged method and pool after selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=research/semantic_obligation_induction_v1
+          for file in propose.py evaluate.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-method/$root/$file" "$root/$file"
+          done
+          cmp "frozen-novelty/$root/V2_SELECTION_NOVELTY_ADDENDUM.md" "$root/V2_SELECTION_NOVELTY_ADDENDUM.md"
+          cmp "frozen-selection/$root/SELECTION_LOCK_V2.json" "$root/SELECTION_LOCK_V2.json"
+          sha256sum "frozen-method/$root/"{propose.py,evaluate.py,FROZEN_PROTOCOL.md} > frozen-code-checksums.txt
+      - uses: actions/checkout@v4
+        with:
+          repository: hukkin/tomli-w
+          ref: 1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d
+          path: external-native
+          persist-credentials: false
+      - name: Pin source and freeze API-only proposal before execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = "1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d"
+          mkdir -p verified
+          cp frozen-code-checksums.txt verified/
+          python - <<'PY'
+          import json,pathlib
+          obj=json.loads(pathlib.Path('research/semantic_obligation_induction_v1/SELECTION_LOCK_V2.json').read_text())
+          assert obj['selected']['repository']=='hukkin/tomli-w'
+          assert obj['selected']['source_sha']=='1210bb6f5708a4dc084cc3deb4a3a3e3939f4d6d'
+          pathlib.Path('verified/metadata.json').write_text(json.dumps({'repository':obj['selected']['repository'],'description':obj['selected']['description'],'source_sha':obj['selected']['source_sha']},sort_keys=True,indent=2)+'\n')
+          PY
+          if test -f external-native/src/tomli_w/__init__.py; then
+            api=external-native/src/tomli_w/__init__.py
+          elif test -f external-native/tomli_w/__init__.py; then
+            api=external-native/tomli_w/__init__.py
+          else
+            echo "UNKNOWN_NO_PUBLIC_API_ENTRYPOINT" >&2; exit 1
+          fi
+          cp "$api" verified/api-export-snapshot.py
+          sha256sum "$api" > verified/api-export-sha256.txt
+          python frozen-method/research/semantic_obligation_induction_v1/propose.py --metadata verified/metadata.json --api "$api" --arm candidate --output verified/candidate.json
+          python frozen-method/research/semantic_obligation_induction_v1/propose.py --metadata verified/metadata.json --api "$api" --arm expert --output verified/expert.json
+          python - <<'PY'
+          import json,pathlib
+          for arm in ('candidate','expert'):
+            p=json.loads(pathlib.Path('verified/'+arm+'.json').read_text())
+            print('FROZEN_PRE_EXECUTION_PROPOSAL',arm,p['status'],p['obligations'])
+          PY
+          sha256sum verified/{candidate,expert}.json > verified/proposals-sha256.txt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install source package and pinned original-test runner
+        run: |
+          python -m pip install "pytest==8.3.5"
+          python -m pip install -e ./external-native
+      - name: Execute complete native author test folder (same for both arms)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d external-native/tests
+          python -m pytest -q external-native/tests --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-tests.log
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Judge original pre-execution proposals with independent standard library
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen-method/research/semantic_obligation_induction_v1/evaluate.py --metadata verified/metadata.json --candidate verified/candidate.json --expert verified/expert.json --source external-native --native-junit verified/native-junit.xml --output verified/prospective-result.json | tee verified/evaluation.log
+      - name: Archive source pinned proposals, native tests, independent observations, failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-obligation-induction-v2-heldout
+          path: verified/
+          if-no-files-found: warn
