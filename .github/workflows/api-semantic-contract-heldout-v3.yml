@@ -1,0 +1,103 @@
+name: API normalization V3 source-native prospective
+on:
+  pull_request:
+    paths:
+      - 'research/api_semantic_contract_v3/**'
+      - '.github/workflows/api-semantic-contract-heldout-v3.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prospective-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout research selection record and proposed experiment
+        uses: actions/checkout@v4
+      - name: Checkout exact pre-exposure method authority
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: b13f64c3caa2210f8c9aa17423d210063683a119
+          path: frozen-method
+          persist-credentials: false
+      - name: Checkout exact pre-exposure metadata selection
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 4f7651416ff59af1c1a69c7d14647a25576f4fc4
+          path: frozen-selection
+          persist-credentials: false
+      - name: Fail closed on changed method/protocol/selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=research/api_semantic_contract_v3
+          for name in api_scan.py propose.py observe.py preflight.py FROZEN_PROTOCOL.md; do
+            cmp "frozen-method/$base/$name" "$base/$name"
+          done
+          cmp "frozen-selection/$base/SELECTION_LOCK.json" "$base/SELECTION_LOCK.json"
+          mkdir -p verified
+          sha256sum "frozen-method/$base/"{api_scan.py,propose.py,observe.py,FROZEN_PROTOCOL.md} > verified/frozen-method-sha256.txt
+      - name: Checkout first eligible future at exact pinned source SHA
+        uses: actions/checkout@v4
+        with:
+          repository: un33k/python-slugify
+          ref: 35aca63fc2672cba2c739ff6dff685a4f26a4f9a
+          path: external-native
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze *both* API-only proposals before native installation/tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external-native rev-parse HEAD)" = 35aca63fc2672cba2c739ff6dff685a4f26a4f9a
+          python - <<'PY'
+          from pathlib import Path
+          import importlib.util,json
+          lock=json.loads(Path('frozen-selection/research/api_semantic_contract_v3/SELECTION_LOCK.json').read_text())
+          assert lock['selected']['repository']=='un33k/python-slugify'
+          assert lock['selected']['source_sha']=='35aca63fc2672cba2c739ff6dff685a4f26a4f9a'
+          p=Path('frozen-method/research/api_semantic_contract_v3/api_scan.py')
+          spec=importlib.util.spec_from_file_location('frozen_api_scan',p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          api=m.identify_public_entrypoint('external-native')
+          if api is None: raise SystemExit('UNKNOWN_NO_PUBLIC_API_ENTRYPOINT')
+          Path('verified/api-view.json').write_text(json.dumps(api,indent=2,sort_keys=True)+'\n')
+          # Only the public entrypoint is read, not imported functionality or native tests.
+          Path('verified/api-only-snapshot.py').write_bytes((Path('external-native')/api['relative_api_path']).read_bytes())
+          meta={'repository':lock['selected']['repository'],'source_sha':lock['selected']['source_sha'],
+                'description':lock['selected']['description']}
+          Path('verified/metadata.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n')
+          print('PUBLIC_API_ONLY_BEFORE_NATIVE',api['module'],api['exports'])
+          PY
+          python frozen-method/research/api_semantic_contract_v3/propose.py --metadata verified/metadata.json --api-view verified/api-view.json --arm candidate --out verified/candidate.json
+          python frozen-method/research/api_semantic_contract_v3/propose.py --metadata verified/metadata.json --api-view verified/api-view.json --arm expert --out verified/expert.json
+          sha256sum verified/{candidate,expert}.json > verified/frozen-proposals-sha256.txt
+          cp research/api_semantic_contract_v3/SELECTION_LOCK.json verified/selection-lock.json
+      - name: Install original native package and equal-arm test authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install "pytest==8.3.5"
+          python -m pip install -e ./external-native
+      - name: Run complete original author tests on unchanged source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q external-native --junitxml=verified/native-junit.xml 2>&1 | tee verified/native-test.log
+          test -z "$(git -C external-native diff --name-only)"
+      - name: Independently evaluate original pre-execution obligations against native evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen-method/research/api_semantic_contract_v3/observe.py --metadata verified/metadata.json --api-view verified/api-view.json --candidate verified/candidate.json --expert verified/expert.json --source external-native --native-junit verified/native-junit.xml --output verified/prospective-v3.json | tee verified/evaluator.log
+      - name: Retain raw precommit, native outcomes, independent oracle and UNKNOWNs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-normalization-prospective-v3
+          path: verified/
+          if-no-files-found: warn

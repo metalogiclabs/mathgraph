@@ -1,0 +1,38 @@
+# V3 prospective semantic correspondence induction — normalization as new observation family
+
+**Status at freeze: CANDIDATE, source unopened, zero native outcomes seen.**
+Date: 19 Oct 2026 NZ. Source-independent V3 method at this commit supersedes NO earlier evidence or protocol. Preserve:
+- Qualified V2 TOML first prospect: [GREEN #39217686929](https://github.com/metalogiclabs/mathgraph/actions/runs/39217686929), 269 PASS/2 XFAIL, 1 independent bounded warrant for each arm, expert-rule TIE. V2 candidate `hukkin/tomli-w` is now exposed TRAINING. V2 first pool member `uiri/toml` was SUPERSEDED_FOR_NOVELTY due to prior ROS use. Do not run either as a prospective future again.
+- PKC V7 physical source-declaration type requalification: [GREEN #39208993375](https://github.com/metalogiclabs/mathgraph/actions/runs/39208993375), already independently warranted; not in this trial.
+
+## Objective and falsifier
+Does an unchanged **new finite observation family** infer and qualify two API-level semantic correspondence obligations (idempotence and independent URL-component no-extra-encoding) on a genuinely ROS-unexposed Python source, and does it yield any useful additional obligation against an equally informed *strong conventional expert-rule cookbook*? A TIE, zero applicable export, authentic failure or counterexample is admissible. This tests a larger but still **predeclared** observation grammar, NOT autonomous invention of that grammar or arbitrary author intent.
+
+## Method frozen before source exposure
+- `api_scan.py` reads only candidate repository root package `__init__.py` public symbols/import aliases and `__all__`; it may enumerate `src/*/__init__.py` and `*/__init__.py` but MUST NOT open other implementation or test content at proposal time. Select one entrypoint deterministically by exposed lexical normalizer relation, then alphabetical path. Exact API file snapshot digest must be retained. This API gate is a frozen *part of* the method, not evidence of semantic correctness.
+- Both candidate and expert receive *identical* public API snapshot, package name, description and exact selected commit SHA. Neither receives implementation bodies, native suite behavior, output values, or hidden references at proposal time.
+- Candidate `propose.py --arm candidate`: detect slug / normalization / canonicalization / standardization stems in public exported symbol. For the deterministic first applicable function propose `f(f(x))=f(x)` (native metamorphic) and, for slug family only, `urllib.parse.quote(f(x), safe='')=f(x)` (external stdlib URL percent-encoding oracle).
+- Conventional expert baseline `propose.py --arm expert`: independent frozen conventional cookbook mapping exact public API names to idempotence and for slug constructors to URL path-component no-extra-encoding. Same source and oracle budget. **This is not a recruited blind human, and a result MUST NOT be described as human-expert performance.** Equal-info rulebook comparison is narrower.
+- If source does not expose an eligible public unary string-to-string function, abstain `UNKNOWN_NO_SUPPORTED_RELATION`; do not patch the method to match a newly read source. Non-callable, unsupported argument/type, absent pinned source, unrun/failing original author tests must return named UNKNOWN.
+- `observe.py` has exactly six frozen ASCII samples; original public function is executed on each only after **both proposals are written and SHA256 sealed**, and after actual original source installation/native-test admission. The independent URL observer is `urllib.parse.quote` in Python 3.12. The native metamorphic idempotence check is explicitly *weaker* than independent meaning verification.
+- Independent oracle negative control: perturb observed output by appending `!`; the independent percent-encoder MUST detect the extra encoding requirement for every eligible sample before any positive independent verdict can be issued. This is synthetic corruption, NOT physical upstream source mutation. Unexpected failure means `UNKNOWN_INDEPENDENT_NEGATIVE_CONTROL`; no false promotion.
+- Verdicts: `WARRANTED_BOUNDED_INDEPENDENT_URL`, `WARRANTED_BOUNDED_NATIVE_METAMORPHIC`, `REJECTED_BOUNDED_DECLARED_RELATION`, or explicitly named UNKNOWN. Passing tests do not guarantee author-intended URL policy. Independent percent oracle does **not** warrant browser/security safety, semantic injectivity, or full text normalization.
+
+## Pre-exposure first-eligible source pool and novelty
+Ordered metadata-only pool (do not reorder after outcomes):
+1. `un33k/python-slugify`
+2. `berkerpeksag/awesome-slugify`
+3. `mozillazg/python-pinyin`
+4. `pyca/idna`
+
+Before opening implementation/tests, screen **Notion Metalogic ROS for direct previous native source studies** of each repository in order. Exclude any previously source-native studied candidate regardless of result. Select the first public, nonarchived, Python-language repository with nonempty default branch and no direct previous ROS source-native study found. Pin the exact public GitHub commit SHA **before any source bytes are opened**. Merely no ROS search hit is NOT proof of global novelty. If no eligible repository exists, report `UNKNOWN_NO_ELIGIBLE_SOURCE` with the exact screening ledger. Do not choose based on discovered implementation, tests or outcomes.
+
+## Execution and parity
+- Freeze this protocol and all four method scripts (including synthetic preflight) before metadata/ROS selection. Qualify preflight on *synthetic-only* sources prior to opening held-out source. Freeze a separate V3 selection manifest referencing this exact method/protocol commit and original metadata facts.
+- Source may be checked out read-only into GitHub Actions only after manifest lock. Run `python -m pip install -e ./external-native` and `pytest==8.3.5`, execute the repository's original author pytest collection against the full directory (nonzero executed test count, no unexpected failures/errors). Preserve native JUnit plus raw test output. Do NOT silently add guessed package dependencies or test selectors after outcomes.
+- Produce and SHA256 seal both arm proposal receipts after scanning API **before installation or test execution**; evaluate unchanged original author API and both proposals using `observe.py` only after original suite. Exact selected source SHA and API digest bound to every receipt.
+- Report per-arm positive/negative/UNKNOWN verdicts, false promotions and independent count. Declare superiority only with a directly observed meaningful independent warrant difference **and** a competent genuine human expert comparison — latter not supplied by this baseline. An authored-rule cookbook tie gives no advantage. A method-only advantage is at most a bounded within-benchmark rule comparison, not proof of superior reasoning.
+- Preserve all negative outcomes and lineages. No JPL or third-party writes, announcements, credential/deployment changes or automatic research promotion. Keep [MathGraph V1 cross-domain correspondence protocol](https://github.com/metalogiclabs/mathgraph/commit/9c8b427c679398fd80ea56d9a91a1627b2e96b6d) unchanged.
+
+## Scientific stopping rule
+One **first eligible** source; no retuning of algorithm, corpus, baseline, oracle or source selector once native outcomes are visible. Post-exposure fixes of syntax/CI apparatus may be performed only as explicitly labeled non-scientific recovery, retaining first failed run and the original unchanged method; no source substitution. Any new scientific method needs V4 and a different previously unopened source. Full autonomous observation-grammar invention G2/L7 remains UNKNOWN on a V3 GREEN.
