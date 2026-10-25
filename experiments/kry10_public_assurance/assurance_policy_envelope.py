@@ -98,6 +98,60 @@ def oracle_recursive(rules, accepted_evidence, *, policy, claims):
         return answer
     return frozenset(c for c in claims if visit(c))
 
+def conditional_minimum_evidence_sets(rules, evidence, claims, *, target="G1"):
+    """Exact unit-cost set minimization, no actual evidence qualification.
+
+    Exhaustive baseline enumerates subsets in cardinality order. A separate
+    recursive DAG oracle agrees for each tested subset. Minimality is therefore
+    certified only inside these hand-chosen AND/OR semantics and unit costs.
+    """
+    from itertools import combinations
+    refs = tuple(sorted(evidence))
+    if target not in claims:
+        raise ValueError("target is not a claim")
+    tested = 0
+    winning = []
+    for count in range(len(refs) + 1):
+        for combination in combinations(refs, count):
+            tested += 1
+            accepted = set(combination)
+            fast = target in evaluate(rules, accepted, policy="any", claims=claims)
+            independent = target in oracle_recursive(
+                rules, accepted, policy="any", claims=claims)
+            if fast != independent:
+                raise AssertionError("minimum-set oracle divergence")
+            if fast:
+                winning.append(list(combination))
+        if winning:
+            break
+    if not winning:
+        return {"obstruction": "NO_ALLOWED_SUPPORT_SET", "tested": tested}
+    all_assumed = set(refs)
+    all_policy_initial = target in evaluate(
+        rules, all_assumed, policy="all", claims=claims)
+    if not all_policy_initial:
+        raise AssertionError("all-relations baseline is not supported")
+    necessary_under_all = [
+        ref for ref in refs if target not in evaluate(
+            rules, all_assumed - {ref}, policy="all", claims=claims)]
+    # A monotone formula with every input individually necessary cannot be
+    # supported by any proper subset. This is a finite combinatorial fact,
+    # not a conclusion about the real meaning of the SACM argument.
+    return {
+        "unit_cost_only": True,
+        "all_source_receipts_hypothetically_qualified": True,
+        "any_policy_minimum_number": len(winning[0]),
+        "any_policy_minimal_sets": winning,
+        "exhaustive_subsets_evaluated": tested,
+        "independent_recursive_baseline_for_every_tested_subset": True,
+        "all_policy_individually_necessary_evidence_references": necessary_under_all,
+        "all_policy_minimum_number_if_all_necessary": len(necessary_under_all)
+            if len(necessary_under_all) == len(refs) else "NOT_DETERMINED",
+        "unsafe_to_use_for_release": True,
+        "actual_evidence_warrants": "UNKNOWN"
+    }
+
+
 def audit(case, withdrawal="EV_63"):
     rules, evidence = compile_rules(case)
     if withdrawal not in evidence:
@@ -114,6 +168,7 @@ def audit(case, withdrawal="EV_63"):
             if got != independent:
                 raise AssertionError(f"independent oracle mismatch: {policy}:{flag}")
     lost = {k:before[k]-after[k] for k in before}
+    minimum = conditional_minimum_evidence_sets(rules, evidence, case.claims)
     intersection = set.intersection(*(set(x) for x in lost.values()))
     union = set.union(*(set(x) for x in lost.values()))
     alternative = sorted(union - intersection)
@@ -137,6 +192,7 @@ def audit(case, withdrawal="EV_63"):
         "root_support_after": {p:"CONDITIONAL_PATH_PRESENT" if "G1" in after[p]
                                else "NO_CONDITIONAL_PATH" for p in after},
         "independently_checked_with": "recursive_DAG_oracle",
+        "conditional_minimum_support_ambiguity": minimum,
         "actual_warrant": "UNKNOWN",
         "safety_certification": "NOT_ASSESSED",
         "Kry10_deployed_system": "NOT_TESTED"
