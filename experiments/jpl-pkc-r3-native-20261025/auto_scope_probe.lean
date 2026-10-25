@@ -125,7 +125,17 @@ public def pOutsideRatedRange : PairState .P where
   massB := ⟨5⟩
   couplingExtension := ⟨7⟩
 
--- RED: the two original green spots do not entail a third record is in range.
-example : withinRatedRange pOutsideRatedRange = true := by decide
+-- GREEN: this distinct valid P state is outside the modeled rated interval.
+public theorem outside_record_rejected_by_gate :
+    withinRatedRange pOutsideRatedRange = false := by decide
+
+-- The unrestricted universal gate-satisfaction proposition is false.
+-- A normative requirement may still forbid such states: this does not refute
+-- the requirement, only the promotion of two checks to a theorem over all states.
+public theorem no_unrestricted_all_P_gate_satisfaction :
+    ¬ (∀ s : PairState .P, withinRatedRange s = true) := by
+  intro h
+  have hTrue := h pOutsideRatedRange
+  simp [outside_record_rejected_by_gate] at hTrue
 
 end MathGraphUnseenP20261026
