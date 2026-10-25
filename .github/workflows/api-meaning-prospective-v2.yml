@@ -1,0 +1,88 @@
+name: API meaning V2 prospectively sealed source
+on:
+  push:
+    branches:
+      - research/api-meaning-normalizer-v2-20261019
+    paths:
+      - research/api_meaning_v2/SELECTED_SOURCE.json
+      - .github/workflows/api-meaning-prospective-v2.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  heldout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout immutable source-blind method
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 59ac640702a51a19367802adf4869a5174880a80
+          path: frozen
+          persist-credentials: false
+      - name: Verify exact freeze and selected-source metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C frozen rev-parse HEAD)" = 59ac640702a51a19367802adf4869a5174880a80
+          cmp frozen/research/api_meaning_v2/FROZEN_PROTOCOL.md research/api_meaning_v2/FROZEN_PROTOCOL.md
+          python - <<'PY'
+          import json
+          d=json.load(open('research/api_meaning_v2/SELECTED_SOURCE.json'))
+          assert d['repo']=='simplejson/simplejson'
+          assert d['sha']=='9950b7e5f4443fff8defb51e80e41ab40d0a36b9'
+          assert d['frozen_method_sha']=='59ac640702a51a19367802adf4869a5174880a80'
+          assert d['no_fallback_after_results'] is True
+          PY
+      - name: Exact selected independent publisher checkout
+        uses: actions/checkout@v4
+        with:
+          repository: simplejson/simplejson
+          ref: 9950b7e5f4443fff8defb51e80e41ab40d0a36b9
+          path: external-native
+          persist-credentials: false
+          submodules: false
+      - name: Verify source commit
+        run: test "$(git -C external-native rev-parse HEAD)" = 9950b7e5f4443fff8defb51e80e41ab40d0a36b9
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install original package and conventional test tools
+        run: python -m pip install -e ./external-native "pytest>=8,<10" hypothesis
+      - name: Execute untouched source-native tests, preserving all failures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          cd external-native
+          set +e
+          python -m pytest -q --junitxml=../verified/native-junit.xml 2>&1 | tee ../verified/native.log
+          ret=${PIPESTATUS[0]}
+          set -e
+          echo "$ret" > ../verified/native-exit-code.txt
+          echo "ORIGINAL_NATIVE_EXIT=$ret"
+      - name: Execute exact V2 frozen proposer and independent JSON observer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen/research/api_meaning_v2/propose.py --module simplejson --checkout external-native --source-sha 9950b7e5f4443fff8defb51e80e41ab40d0a36b9 --output verified/proposal.json | tee verified/proposal.log
+      - name: Execute equally informed independent expert-rule comparator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen/research/api_meaning_v2/baseline_reference.py --module simplejson --checkout external-native --source-sha 9950b7e5f4443fff8defb51e80e41ab40d0a36b9 --output verified/baseline.json | tee verified/baseline.log
+      - name: Independently adjudicate comparison and native test evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python frozen/research/api_meaning_v2/compare.py --proposal verified/proposal.json --baseline verified/baseline.json --native-junit verified/native-junit.xml --selected research/api_meaning_v2/SELECTED_SOURCE.json --out verified/qualification.json | tee verified/qualification.log
+          test -z "$(git -C external-native diff --name-only)"
+          sha256sum frozen/research/api_meaning_v2/{FROZEN_PROTOCOL.md,propose.py,baseline_reference.py,compare.py,synthetic_controls.py} > verified/immutable-executor-sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-meaning-v2-heldout-receipt
+          path: verified/
+          if-no-files-found: warn
