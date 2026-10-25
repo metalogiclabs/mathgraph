@@ -11,6 +11,7 @@ import ctypes
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 
 from audit_finite_partial_map import build_map, load_library, Plan
 from finite_witness_compass import HYPOTHESES, generate_finite_trial
@@ -26,7 +27,8 @@ def native_follow(native, reference, columns, *, jitter=0, known=None,
     horizon = len(columns) - 1
     if not 1 <= horizon <= 32:
         raise ValueError("invalid finite observation horizon")
-    m = build_map(native, reference, range(64) if known is None else known)
+    m = build_map(native, SimpleNamespace(reference=reference),
+                  range(64) if known is None else known)
     mask = 15
     cursor = 1
     events = []
@@ -118,7 +120,7 @@ def experiment(seeds=32):
         "source": "EXISTING_FINITE_PARTIAL_MAP_C99_NO_DUPLICATE_IMPLEMENTATION",
         "boundary": "FINITE_16BIT_ASSUMED_NOISE_AND_EXACT_PHASE_BIN",
         "native_vs_python_agreement_in_all_jitter0_trials": True,
-        "jitter_1_is_an_assUMED_BOUND_NOT_A_MEASURED_CLOCK": True,
+        "jitter_1_is_assumed_not_measured": True,
         "hardware_observation_acquisitions": 0,
         "physical_heading_authorized": False,
         "conditions": totals,
