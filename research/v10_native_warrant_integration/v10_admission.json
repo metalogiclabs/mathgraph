@@ -1,0 +1,24 @@
+{
+  "schema": "mathgraph.v10.external-receipt-admission.v1",
+  "provenance": {
+    "repo": "heathsanchez/test",
+    "run_id": 39567659722,
+    "source_url": "https://docs.python.org/3/library/functools.html",
+    "source_sha256": "29db6bef935f8536636443f26e842a399ed2d74d456e75b6f836b068e0446b9e",
+    "artifact_zip_sha256": "28bfb0cf833d9eb3d5945e4e96683a37a305ef17f0ae4046ce1cd16861b852f7",
+    "head_sha": "7594e38fc1fa1e17128f3d98ce71fe938b62d300"
+  },
+  "admitted_claims": {
+    "cache_owner": "functools.cache",
+    "lru_owner": "functools.lru_cache",
+    "equivalence": "same as lru_cache(maxsize=None)",
+    "no_eviction": "never needs to evict old values"
+  },
+  "native_observation": {
+    "test_keys": 33,
+    "cache_function_evaluations": 33,
+    "unbounded_lru_function_evaluations": 33,
+    "first_result": 1
+  },
+  "admission_notice": "Historical source and receipt metadata prequalified externally by the caller; fixture self-hash is not a trust root or bytewise source authentication."
+}
