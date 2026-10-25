@@ -31,6 +31,35 @@ jobs:
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_nav_source_adapter.py' -v
       - name: Encoder-blind model replay and independent scoring unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
+      - name: Independent active camera witness acquisition controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_active_acquisition.py' -v
+      - name: Frozen 32-seed active-vs-continuous acquisition census
+        run: |
+          python experiments/uzh_rotation/physical_active_acquisition.py \
+            --seeds 32 --output active_acquisition_census.json
+          python experiments/uzh_rotation/audit_physical_active_acquisition.py \
+            active_acquisition_census.json --output active_acquisition_audit.json
+          python - <<'PY'
+          import json
+          r=json.load(open('active_acquisition_census.json'))
+          a=json.load(open('active_acquisition_audit.json'))
+          assert a['trial_traces_replayed']==32*4*5
+          assert a['physical_validation']=='UNKNOWN'
+          clean=next(c for c in r['cases'] if c['case']=='breakable_clean')
+          blocked=next(c for c in r['cases'] if c['case']=='unbreakable_clean')
+          assert clean['active_unique']==clean['trials']
+          assert clean['continuous_unique']==clean['trials']
+          assert clean['active_attempts'] < clean['continuous_attempts']
+          assert not clean['active_false_unique'] and not clean['continuous_false_unique']
+          assert blocked['active_unique']==0 and blocked['continuous_unique']==0
+          assert r['hardware_acquisitions']==0
+          print('ACTIVE_ACQUISITION_VERIFIED_SYNTHETIC_ONLY',
+                {'clean':{k:clean[k] for k in ('trials','active_attempts',
+                   'continuous_attempts','active_resolution_step_total',
+                   'continuous_resolution_step_total')},
+                 'unbreakable_unknown':blocked['active_unknown']})
+          print('NO_REAL_HARDWARE_ACQUISITION_OR_HEADING_AUTHORITY')
+          PY
       - name: Adversarial isolation unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
       - name: Real Docker isolated positive and forbidden encoder negative control
@@ -88,4 +117,6 @@ jobs:
             isolated_firstturn_map.json
             synthetic_replay.json
             synthetic_scoring.json
+            active_acquisition_census.json
+            active_acquisition_audit.json
           if-no-files-found: warn
