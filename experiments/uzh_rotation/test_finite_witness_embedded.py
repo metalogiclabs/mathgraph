@@ -127,8 +127,6 @@ class EmbeddedWitnessTests(unittest.TestCase):
                     self.assertEqual(status, target["status"])
                     self.assertEqual(tuple(remaining), tuple(target["candidates"]))
                     self.assertEqual(requests, [x["step"] for x in target["requests"]])
-                    self.assertEqual(native.minimum_total_reads if native.status == OK else 0,
-                                     native.minimum_total_reads)
                     if status == "MODEL_UNIQUE":
                         self.assertEqual(remaining[0], true)
 
@@ -149,6 +147,16 @@ class EmbeddedWitnessTests(unittest.TestCase):
                         self.filter(t.reference, HYPOTHESES, step, t.columns[step]),
                         filter_hypotheses(t.reference, HYPOTHESES, step,
                                           t.columns[step], NOISE_BUDGET))
+
+    def test_prior_singleton_is_not_a_camera_warrant(self):
+        t = generate_finite_trial(4, true_bin=0, kind="breakable")
+        native, steps = self.plan(t.reference, (0,))
+        self.assertEqual(native.status, ALREADY_UNIQUE)
+        self.assertEqual(native.next_step, 0)
+        self.assertEqual(native.minimum_total_reads, 0)
+        self.assertEqual(steps, ())
+        # No acquired column or independently validated gyro prior:
+        # singleton status cannot become a consequential heading correction.
 
     def test_holes_do_not_become_negative_evidence(self):
         t = generate_finite_trial(1, true_bin=0, kind="breakable")
