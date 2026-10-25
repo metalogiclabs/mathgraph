@@ -87,6 +87,28 @@ jobs:
           print('ORIGINAL_C99_MINIMAL_ACQUISITION_PARITY_QUALIFIED', clean)
           print('ONE_BIN_JITTER_BLOCKS_GUARANTEED_VISUAL_SEPARATION')
           PY
+      - name: Passive landmark-width versus declared phase-jitter controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_landmark_width_design.py' -v
+      - name: Freeze independently shifted passive landmark source-design grid
+        run: |
+          python experiments/uzh_rotation/physical_landmark_width_design.py \
+            --seeds 16 --output passive_landmark_width_grid.json
+          python - <<'PY'
+          import json
+          r=json.load(open('passive_landmark_width_grid.json'))
+          assert r['physical_heading_correction_authorized'] is False
+          assert r['hardware_acquisitions']==0
+          assert len(r['all_conditions'])==16
+          for row in r['all_conditions']:
+              assert row['model_false_unique']==0
+              is_wide=row['landmark_width_bins']>=2*row['phase_error_radius_bins']+1
+              if is_wide:
+                  assert row['model_unique']==row['trials']
+              else:
+                  assert row['model_unknown']==row['trials']
+          print('SYNTHETIC_PASSIVE_LANDMARK_WIDTH_BOUND_VALIDATED')
+          print('PHYSICAL_SENSOR_AND_CLOCK_WARRANT=UNKNOWN')
+          PY
       - name: Adversarial isolation unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
       - name: Real Docker isolated positive and forbidden encoder negative control
@@ -147,4 +169,5 @@ jobs:
             active_acquisition_census.json
             active_acquisition_audit.json
             native_active_acquisition_census.json
+            passive_landmark_width_grid.json
           if-no-files-found: warn
