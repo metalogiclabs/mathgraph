@@ -1,42 +1,67 @@
-# Visual Compass: minimum-witness camera scheduling (synthetic qualification)
+# MathGraph Visual Compass — active sensing and robust passive landmarks
 
-**Purpose for Joshua Bird's single-propeller drone:** a small, source-bounded selector that can determine which future body-angle view would resolve competing headings, request that camera observation, and refuse an unjustified correction. This research must not touch motor control, flight authorization or the IR-beacon fallback.
+**Status: WARRANTED in finite synthetic CI only. Physical gyro-correction and autonomous camera scheduling remain UNKNOWN.** This is an additive research deliverable for Joshua Bird's single-propeller drone. No changes were made to his ArduPilot or moteus repositories, and nothing here authorizes flight.
 
-## The smallest reusable contribution
+## Which evidence is authoritative?
 
-- `finite_witness_embedded.c/.h`: standalone C99, no heap, no sensor or encoder access, exact minimum-cardinality nonadaptive future-observation basis within the declared **64-bin / four-heading / 16-bit / Hamming-error<=2 / horizon<=32** grammar. The 64-state DP uses 640 bytes of temporary arrays plus caller-owned 128-byte signatures and 64-byte presence flags. `mgw_plan` returns a future step or bounded obstruction; `mgw_filter` eliminates candidates only **after** an observation arrives.
-- `physical_active_acquisition.py`: executable, callback-only camera-source model. It never provides future columns to the policy before the recorded request. Continuous set-valued conventional comparator uses the same firstturn map, gyro-derived candidate prior and noise assumptions, but elects to read every frame.
-- `audit_physical_active_acquisition.py`: independent exhaustive subset cover oracle, causal acquisition trace replay, contradiction/refusal checks and hidden-truth referee. It reads source/hidden truth **only after** policies have finished; unlike the planner it does not call the planner's implementation.
-- `test_finite_witness_embedded.py`: native cc `-std=c99 -Wall -Wextra -Werror -pedantic` and Python-vs-C99 equivalence across generated heading priors, missed witnesses, map holes, obstructions and 100 randomly generated frozen scenes.
+The original `exp/uzh-rotation-validation-20261021` branch already has the **canonical** role-disjoint physical experiment contract: `PHYSICAL_EVIDENCE_GATE_PROTOCOL.md`, `physical_evidence_gate.py`, `physical_encoder_score.py` and `mathgraph-physical-evidence-gate.yml`, including independent encoder ground truth and unwrapped heading errors. It also **already** has the production-oriented, jitter-aware 146-byte `MGReferenceMap` and minimum-witness C99 selector in `finite_partial_map.c/.h`. That source predates this supplemental PR and is unchanged. The initially drafted duplicate standalone C99 scheduler was deliberately withdrawn from the PR; its exploratory commits remain in history.
 
-## Independent source-linked result
+Supplemental [PR #200](https://github.com/metalogiclabs/mathgraph/pull/200) supplies independent synthetic experiments, source-faithful NAVIGATION/JSONL conversion, Docker-isolated firstturn replay and independent test harnesses. The existing reference-map guard and physical referee remain authoritative.
 
-[Qualified Actions run #40148622260](https://github.com/metalogiclabs/mathgraph/actions/runs/40148622260) (before the small follow-up singleton test) passed all previously protected canonical physical-gate tests, 8 C99 equivalence tests, 14 independent active-acquisition adversaries, 13 isolated-replay controls, 5 role-disjoint source-adapter tests and real Docker map/estimator isolation. The C99 implementation is source-compatible with the existing Python finite witness compiler on the tested grammar; it is **not** yet built into ArduPilot/moteus.
+## 1. Active sensing with equal-model continuous reference
 
-The frozen 32-seed x 4-heading x 6-stress-condition model census **768/768** is independently audited:
-- 128 clean breakable synthetic source trials: both active and continuous identify the true heading by angular **step 13**. Active camera requests 256 total exposures (2 per trial) versus 1,664 for continuous (13 per trial) = **84.615% fewer camera attempts**. There are zero false unique decisions under the assumed total Hamming noise bound.
-- Occlusion of one planned witness sometimes permits recovery at a later angular step. Complete blockade of all separating witness steps (7,13,23,29) yields UNKNOWN (128/128); intrinsically unbreakable repeated scenes also yield UNKNOWN (128/128).
-- An adversarial changed-scene column that violates the assumed noise bound can induce a wrong unique heading; a dedicated test **demonstrates** that the bound/source-stationarity premise is indispensable. The independent referee catches this false conclusion after the fact; the runtime policy cannot detect every spoof.
-- Exact minimum means minimum **static pair-cover basis in the finite grammar**, not globally optimal adaptive sensing or a unique algorithmic advantage over any equally informed optimized conventional scheduler.
-- The continuous comparator receives **more observations** by design; it has the same model, prior and timeline. The result concerns observation cost for equal clean-case identification time, **not improved heading accuracy, battery power or sensing advantage over an optimized active baseline**.
+[Independent CI 40148357936](https://github.com/metalogiclabs/mathgraph/actions/runs/40148357936) and [latest integrated CI 40149309813](https://github.com/metalogiclabs/mathgraph/actions/runs/40149309813) verify a frozen census of **768 synthetic trials**: 32 seeds, four heading candidates, six stress conditions.
 
-## Correct authority boundary
+- In 128 clean distinctive-landmark trials, MathGraph requested 2 camera observations per trial and identified heading at angular step 13; a conventional continuous set-valued tracker with the same frozen firstturn map, candidate prior and noise model used 13 frames and resolved at the same step. **256 versus 1,664 requested/attempted observations = 84.615% reduction**; no incorrect model-unique decisions.
+- Missing landmark at step 7, step 13, or both could be overcome by later separating views in the bounded repeating-scene model. All 128 trials blocking every useful step (7, 13, 23, 29) returned UNKNOWN; all 128 intrinsically unbreakable scenes returned UNKNOWN.
+- `audit_physical_active_acquisition.py` independently replays every requested source observation and candidate elimination, exhaustively checks minimum nonadaptive pair-cover basis sizes within the declared grammar, and refuses forged requests, false obstructions, incorrect heading evidence or physical claims.
+- The equal-model conventional tracker **receives more observations**. Savings in the model are not evidence of measured battery savings or superiority over an equally informed *optimized active* conventional sensor scheduler. The minimum is for this **finite nonadaptive pair-cover grammar**, not a globally optimal adaptive sensing theorem.
 
-The actual hardware contract is already on the original `exp/uzh-rotation-validation-20261021` branch: `PHYSICAL_EVIDENCE_GATE_PROTOCOL.md`, `physical_evidence_gate.py`, `physical_encoder_score.py`, `mathgraph-physical-evidence-gate.yml`. It enforces independent NAVIGATION/ENCODER artifact roles and unwrapped per-turn optical scoring. This supplemental C99 scheduler adds NO physical authorization and MUST NOT replace the canonical gate.
+## 2. Existing C99 core under assumed phase uncertainty
 
-Model inputs require: frozen first-turn 16-bit signatures and admitted map bins, an independently valid gyro-derived candidate heading set containing truth, an actual gyro phase-to-future-step clock authority, a total camera reference/observation error bound, a stationary scene and a permitted temporal horizon. Failure of ANY physical assumption means UNKNOWN. `MGW_ALREADY_UNIQUE` means only a singleton assumed candidate prior; it is never a camera warrant by itself. No physical clock instrument, encoder, dynamic sensor scheduling, GPU/CPU energy, flight, or five physical revolutions were tested.
+The original `finite_partial_map.c` (146-byte map, memory-bounded exact pair-cover DP, map holes/quarantine) is reused through `physical_native_witness_replay.py`. No duplicate C99 implementation survives in the supplemental PR.
 
-## Reproduce (research checkout)
+[Native run 40149085303](https://github.com/metalogiclabs/mathgraph/actions/runs/40149085303) and latest [40149309813](https://github.com/metalogiclabs/mathgraph/actions/runs/40149309813) pass the existing original C99 regression suite, six new native bridge controls, and the exact 768-trial Python/native parity census for **jitter=0**. Under **assumed ±1 bin uncertainty** the original narrow landmark scene has 0/128 guaranteed identifications and 128/128 UNKNOWN: the planner correctly refuses to infer a robust heading.
+
+These are model phase-error envelopes; the source timing is not independently calibrated or physically warranted.
+
+## 3. Passive landmark width required by a deliberately controlled test scene
+
+The `physical_landmark_width_design.py` experiment constructs a **four-sector synthetic passive fiducial**. Each sector repeats a broad 16-bit vertical-column marker drawn from `0x0000, 0xFFFF, 0x0F0F, 0xF0F0`. Training and later observations independently contain at most one corrupt bit each (assumed total Hamming difference ≤2). The original native C99 planner considers every allowed actual phase shift in ±j angular bins. Each bin is 360°/64 = 5.625°.
+
+For this deliberately isolated-marker geometry, **width ≥ 2j+1 bins** guarantees each heading is separated at the marker center:
+
+| Assumed phase uncertainty | Minimum tested broad marker | Shift-swept model correct | Narrower tested markers |
+| --- | --- | --- | --- |
+| 0 bins | 1 bin = 5.625° | 64/64 | — |
+| ±1 bin | 3 bins = 16.875° | 192/192 | UNKNOWN |
+| ±2 bins | 5 bins = 28.125° | 320/320 | UNKNOWN |
+| ±3 bins | 7 bins = 39.375° | 448/448 | UNKNOWN |
+
+Across all sixteen width–jitter conditions and 4,096 synthetic source-shift cases, no false unique headings were admitted under the declared noise envelope. [Independent CI 40149309813](https://github.com/metalogiclabs/mathgraph/actions/runs/40149309813), retained [artifact 12581607445](https://github.com/metalogiclabs/mathgraph/actions/runs/40149309813/artifacts/12581607445).
+
+This is a **sufficient construction for this artificial four-sector source**, NOT a universally necessary landmark width for real-world camera observations. Neither real camera contrast, optics, image blur, yaw/body dynamics, sensor throughput nor phase calibration has been measured. Broad visual markers could make an early secured test stand easier, but are not proof of beacon-free natural-scene flight.
+
+## 4. Important negative control
+
+A deliberately changed source observation that exceeds the assumed noise bound can produce a **wrong model-unique heading**. The independent post-hoc grader catches that false correction, but the online estimator cannot generally distinguish a coordinated scene spoof from a real heading change. Accordingly physical stationarity, calibrated timing and genuine source-error bounds remain indispensable. All runtime outputs in these experiments keep `physical_navigation_authorized=false`.
+
+## 5. Reproduce the evidence
 
 ```bash
-python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_witness_embedded.py' -v
 python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_active_acquisition.py' -v
 python experiments/uzh_rotation/physical_active_acquisition.py --seeds 32 --output active_acquisition_census.json
 python experiments/uzh_rotation/audit_physical_active_acquisition.py active_acquisition_census.json --output active_acquisition_audit.json
+python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_native_witness_replay.py' -v
+python experiments/uzh_rotation/physical_native_witness_replay.py --seeds 32 --output native_active_acquisition_census.json
+python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_landmark_width_design.py' -v
+python experiments/uzh_rotation/physical_landmark_width_design.py --seeds 16 --output passive_landmark_width_grid.json
 ```
 
-## Next independent physical test (requires genuine data)
+The original [canonical physical evidence gate](https://github.com/metalogiclabs/mathgraph/blob/exp/uzh-rotation-validation-20261021/experiments/uzh_rotation/PHYSICAL_EVIDENCE_GATE_PROTOCOL.md) remains separately verified and cannot be bypassed by passing any of these commands.
 
-Keep the rotor safely secured. Have the camera/gyro module make its own first-turn map, schedule/record actual column exposures and retain UNKNOWN when evidence is insufficient. Independently log encoder and calibration reference, freeze timing bounds before holdout, then score revolutions 2–5 through the canonical role-disjoint gate. Match both the always-on and an equally informed optimized active-tracker baseline. Use encoder only in the independent referee, never in navigation or sensor selection.
+## Smallest decisive real-world next experiment
 
-**Status:** WARRANTED bounded finite C99 and synthetic acquisition pipeline; physical compass UNKNOWN.
+Once independent hardware is available, build a *secured, unpowered or guarded rotating* camera/gyro fixture with an isolated optical encoder. Start with a broad 3-bin high-contrast passive marker for a declared ±1-bin phase model, but independently measure and freeze camera/gyro/encoder timing error before interpreting physical results. Record at least five complete revolutions, build/freeze map on the first, then compare MathGraph's active requests with continuous and optimized active conventional baselines on heldout turns; validate per-turn unwrapped heading error through the canonical separated encoder referee.
+
+**Not yet obtained:** real camera observations spanning five turns, a calibrated future-valid source error bound, hardware benchmark, actual triggered sensor-acquisition proof, qualified heading correction, or flight-readiness evidence. The physical conclusion remains UNKNOWN.
