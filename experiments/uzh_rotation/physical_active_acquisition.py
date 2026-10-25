@@ -144,7 +144,7 @@ def experiment(seeds=32):
                 t["resolution_step"] for t in active if t["resolution_step"] is not None),
             "continuous_resolution_step_total": sum(
                 t["resolution_step"] for t in baseline if t["resolution_step"] is not None),
-            "retained_trial_examples": [trials[0], trials[len(trials) // 2]],
+            "retained_trials_for_independent_audit": trials,
         })
     return {
         "boundary": "SYNTHETIC_FINITE_16BIT_GYRO_CANDIDATES_ASSUMED_NOISE_2",
