@@ -88,14 +88,24 @@ public def unrelatedSpot : Provenance.Requirement :=
     name := "MathGraph-Unlinked-Spot"
     spotChecks := [``unrelatedTrue] }
 
+public def maskedGateResult : Bool :=
+  (withinRatedRange pairP_earlier) == (withinRatedRange pairP_earlier)
+
+public def maskedGateSpot : Provenance.Requirement :=
+  { HCP.L6_Requirements.r3CouplingSpringRange with
+    name := "MathGraph-Masked-Gate"
+    spotChecks := [``maskedGateResult] }
+
 -- Existing PKC semantics alone admit these declarations.
 #kind_requirement wrongObjectQ
 #kind_requirement unrelatedSpot
+#kind_requirement maskedGateSpot
 
 -- MathGraph tests below must be driven by requirement metadata, not hand-provided P/Q.
 #mathgraph_empirical_scope HCP.L6_Requirements.r3CouplingSpringRange
 #mathgraph_empirical_scope wrongObjectQ
 #mathgraph_empirical_scope unsupportedAll
 #mathgraph_empirical_scope unrelatedSpot
+#mathgraph_empirical_scope maskedGateSpot
 
 end MathGraphAutoScope20261026
