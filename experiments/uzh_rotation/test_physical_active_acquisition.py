@@ -31,12 +31,28 @@ class ActiveAcquisitionTests(unittest.TestCase):
             self.assertEqual(t["continuous"]["status"], "UNKNOWN_AMBIGUOUS")
             self.assertEqual(audit_trial(t)["active_unknown"], 1)
 
-    def test_missing_critical_witness_refuses_correction(self):
+    def test_missed_witness_replans_or_returns_unknown(self):
         for missing in ((7,), (13,), (7, 13)):
             t = run_trial(12, HYPOTHESES[0], "breakable", missing)
-            self.assertTrue(t["active"]["status"].startswith("UNKNOWN"))
-            self.assertTrue(t["continuous"]["status"].startswith("UNKNOWN"))
+            self.assertIn(t["active"]["status"], ("MODEL_UNIQUE", "UNKNOWN_OBSTRUCTION"))
+            self.assertIn(t["continuous"]["status"], ("MODEL_UNIQUE", "UNKNOWN_AMBIGUOUS"))
+            if t["active"]["status"] == "MODEL_UNIQUE":
+                self.assertEqual(t["active"]["accepted_bin"], HYPOTHESES[0])
             audit_trial(t)
+
+    def test_all_future_separating_views_blocked_is_obstruction(self):
+        t = run_trial(12, HYPOTHESES[0], "breakable", (7, 13, 23, 29))
+        self.assertEqual(t["active"]["status"], "UNKNOWN_OBSTRUCTION")
+        self.assertEqual(t["continuous"]["status"], "UNKNOWN_AMBIGUOUS")
+        self.assertIsNone(t["active"]["accepted_bin"])
+        audit_trial(t)
+
+    def test_repeated_landmark_can_restore_missing_first_witness(self):
+        t = run_trial(12, HYPOTHESES[0], "breakable", (7,))
+        self.assertEqual(t["active"]["status"], "MODEL_UNIQUE")
+        self.assertEqual(t["active"]["accepted_bin"], HYPOTHESES[0])
+        self.assertGreater(t["active"]["resolution_step"], 7)
+        audit_trial(t)
 
     def test_adaptive_plan_never_reads_unrequested_source(self):
         t = run_trial(11, HYPOTHESES[-1], "breakable", ())
@@ -100,7 +116,7 @@ class ActiveAcquisitionTests(unittest.TestCase):
     def test_complete_aggregate_replays_independently(self):
         result = experiment(seeds=3)
         proof = audit_experiment(result)
-        self.assertEqual(proof["trial_traces_replayed"], 3 * 4 * 5)
+        self.assertEqual(proof["trial_traces_replayed"], 3 * 4 * len(result["cases"]))
         self.assertEqual(proof["physical_validation"], "UNKNOWN")
         self.assertEqual(proof["status"], "WARRANTED_WITHIN_FROZEN_SYNTHETIC_GRAMMAR")
         self.assertTrue(all(not c["active_false_unique"]
