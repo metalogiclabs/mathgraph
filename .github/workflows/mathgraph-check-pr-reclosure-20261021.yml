@@ -1,0 +1,18 @@
+name: MathGraph Check PR reclosure isolated evidence
+on:
+  push:
+    branches:
+      - research/check-warrant-pr-reclosure-20261021
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Actual repository resolver regression
+        run: python -m unittest discover -s tests -p test_mathgraph_check_pr_reclosure_20261021.py -v

@@ -1,0 +1,33 @@
+package meta
+
+import (
+ "bytes"
+ "strings"
+ "testing"
+ "github.com/yuin/goldmark"
+ "github.com/yuin/goldmark/parser"
+)
+
+func TestMathGraphProspectiveFrontmatterConsequence(t *testing.T) {
+ for _, term := range []string{"---","..."} {
+  t.Run("terminator_"+term,func(t *testing.T) {
+   src := "---\nTitle: proof\nCount: 2\n"+term+"\n\n# Body\n"
+   m:=goldmark.New(goldmark.WithExtensions(Meta))
+   context:=parser.NewContext()
+   var out bytes.Buffer
+   if err:=m.Convert([]byte(src),&out,parser.WithContext(context));err!=nil {t.Fatal(err)}
+   got:=Get(context)
+   if got==nil || got["Title"]!="proof" {t.Fatalf("frontmatter not preserved for %q: %#v",term,got)}
+   if !strings.Contains(out.String(),"<h1>Body</h1>") {t.Fatalf("body lost for %q: %q",term,out.String())}
+  })
+ }
+}
+
+func TestMathGraphProspectiveOutsideFrontmatterIsNotMetadata(t *testing.T) {
+ m:=goldmark.New(goldmark.WithExtensions(Meta))
+ context:=parser.NewContext()
+ var out bytes.Buffer
+ if err:=m.Convert([]byte("# Body\n\n...\n"),&out,parser.WithContext(context));err!=nil {t.Fatal(err)}
+ if Get(context)!=nil {t.Fatal("unexpected metadata from body terminator")}
+ if !strings.Contains(out.String(),"<h1>Body</h1>") {t.Fatal("body lost")}
+}
