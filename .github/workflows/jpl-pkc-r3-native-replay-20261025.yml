@@ -116,6 +116,24 @@ jobs:
           fi
           echo 'PKC_TYPED_GATE_VERDICT BOUNDED_TYPED_Q_EVIDENCE_REJECTED'
 
+      - name: MathGraph automatic empirical scope audit
+        working-directory: pkc
+        shell: bash
+        run: |
+          set +e
+          lake env lean ../experiments/jpl-pkc-r3-native-20261025/auto_scope_probe.lean > "$RUNNER_TEMP/pkc-r3-autoscope.log" 2>&1
+          audit_code=$?
+          echo "MATHGRAPH_AUTOSCOPE_EXIT=$audit_code"
+          echo 'MATHGRAPH_AUTOSCOPE_BEGIN'
+          sed -n '1,140p' "$RUNNER_TEMP/pkc-r3-autoscope.log"
+          echo 'MATHGRAPH_AUTOSCOPE_END'
+          test "$audit_code" != "0" || exit 1
+          test "$(grep -Fc 'MATHGRAPH_SCOPE_MATCH' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "1" || exit 1
+          test "$(grep -Fc 'MATHGRAPH_SCOPE_MISMATCH' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "1" || exit 1
+          test "$(grep -Fc 'MATHGRAPH_SCOPE_UNKNOWN' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "2" || exit 1
+          test "$(grep -c 'error:' "$RUNNER_TEMP/pkc-r3-autoscope.log")" = "3" || exit 1
+          echo 'MATHGRAPH_AUTOSCOPE_VERDICT BOUNDED_MATCH_MISMATCH_UNKNOWN_UNKNOWN'
+
       - name: Retain exact evidence even if replay fails
         if: always()
         uses: actions/upload-artifact@v4
