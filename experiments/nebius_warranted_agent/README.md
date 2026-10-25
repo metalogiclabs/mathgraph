@@ -41,6 +41,22 @@ Evidence captured in the JSON report includes model ID, response hash, request I
 
 The bounded task validates the generated Python AST to allow only a single-return pure `clamp` function using `min` and `max`. **Do not broaden this to arbitrary repositories or execute unrestricted generated code without a real execution sandbox and stronger supply-chain controls.** The local test receipt is trusted only within the orchestrator that invokes the runner; it is not a cryptographically signed attestation. The included `evidence_gate.py` from the first research commit is a **SUPERSEDED** boolean-gate sketch, not the authority used in Autopilot.
 
+## Evidence-seeking differentiator — independently verified offline
+
+The finite `separating_experiments.py` module tests the precise weakness of the fixed-test baseline. Three explicitly predeclared defective clamp hypotheses (`cap10`, `cap11`, `floor0`) pass the four original tests. The independent order-comparison oracle spans a frozen **195-case** integer domain. The minimum-total-cost subset-DP selector, independently checked against brute-force alternatives, chooses **two** separating tests at declared synthetic cost **34**: `clamp(-1,-2,5) == -1` and `clamp(12,0,12) == 12`. The test file changes, so the earlier test receipt is invalidated; the new tests reject the deceptive implementation; a scripted repair is accepted only after fresh tests, with agreement on all 195 cases.
+
+Reproduce:
+
+```sh
+python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit
+python separating_experiments.py --report separating-report.json
+python separating_cockpit.py separating-report.json --output separating-cockpit.html
+```
+
+**CI evidence:** [GitHub Actions run #40151184773](https://github.com/metalogiclabs/mathgraph/actions/runs/40151184773), 33/33 tests, exact branch head `2b59eb48b5b63ed31ff9c9aa5a202bef610cc6e7`, [retained four-file artifact](https://github.com/metalogiclabs/mathgraph/actions/runs/40151184773/artifacts/12582549744), ZIP SHA-256 `b86d2e58cc7d1a8d41abe2c3e0a38ba7a2cb6f150322af39f7e3631cef2e0fa7`.
+
+**Limits:** Both the version space and the finite test domain are constructed fixtures. The oracle is independently implemented but its contract is human-specified. The minimum is exact only within those constraints and the declared synthetic cost, not an optimization claim about wall-clock time. The repair remains scripted and no real Nebius/NVIDIA inference or unfamiliar GitHub repair is qualified. The original `evidence_gate.py` remains SUPERSEDED by the source-bound runner; no claim of general correctness or formal Lean proof.
+
 ## Actual scope and research lineage
 
 | Component | Epistemic state | Authority |
@@ -48,7 +64,7 @@ The bounded task validates the generated Python AST to allow only a single-retur
 | Earlier finite `evidence_gate.py` sketch | SUPERSEDED | No independent test runner |
 | Autopilot deterministic repair/test loop | REUSABLE, bounded | Local unittest + committed code; check CI |
 | Tamper, stale-receipt and UNKNOWN scenarios | REUSABLE, bounded | Adversarial regression tests |
-| Nebius/NVIDIA live API integration | CANDIDATE, untested with credentials | Source adapter only |
+| Finite missing-experiment acquisition | REUSABLE, bounded | CI #40151184773; exact 195-case grammar and independent exact minimum |\n| Nebius/NVIDIA live API integration | CANDIDATE, untested with credentials | Source adapter only |
 | General-repository repair capability | UNKNOWN | Not implemented |
 | Real third-party externally hosted demo | UNKNOWN | Not deployed |
 | Tavily evidence-retrieval integration | UNKNOWN | Not implemented; never claim bonus eligibility |
