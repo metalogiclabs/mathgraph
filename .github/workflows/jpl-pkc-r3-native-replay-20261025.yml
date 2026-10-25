@@ -1,0 +1,97 @@
+name: MathGraph independent PKC R3 native replay
+
+on:
+  push:
+    branches:
+      - research/jpl-pkc-r3-replay-20261025
+
+permissions:
+  contents: read
+
+jobs:
+  pkc-r3-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Check out MathGraph controls
+        uses: actions/checkout@v4
+      - name: Read-only checkout of pinned PKC
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: 3869e74ae3fb943aef2f5932c3e736dc9721a183
+          path: pkc
+          persist-credentials: false
+
+      - name: Require exact public-source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C pkc rev-parse HEAD)" = "3869e74ae3fb943aef2f5932c3e736dc9721a183"
+          printf '%s\n' '04cad2124bdb07cb861103a615a1a5ba0f4547efe53c0c484afdf6c01026d28d  pkc/HCP/L6_Requirements.lean' | sha256sum -c -
+          printf '%s\n' 'bfbb80af34843afeb3d26094ec82db0cca27ab3535632b611312f092577a49a2  pkc/PropertyKindCalculus/KindRequirement.lean' | sha256sum -c -
+          echo 'PKC_SOURCE_PIN_VERIFIED 3869e74'
+
+      - name: Install pinned Lean and cache dependencies
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: pkc
+          auto-config: "false"
+          build: "false"
+          test: "false"
+          lint: "false"
+          use-mathlib-cache: "true"
+
+      - name: Native PKC requirements module build
+        working-directory: pkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean --version
+          lake build HCP.L6_Requirements
+
+      - name: Positive, adversarial and causal-withdrawal replays
+        working-directory: pkc
+        shell: bash
+        run: |
+          set -uo pipefail
+          control=../experiments/jpl-pkc-r3-native-20261025
+          lake env lean "$control/baseline.lean" > "$RUNNER_TEMP/pkc-r3-baseline.log" 2>&1
+          base_code=$?
+          lake env lean "$control/paired_q.lean" > "$RUNNER_TEMP/pkc-r3-paired.log" 2>&1
+          paired_code=$?
+          lake env lean "$control/q_only.lean" > "$RUNNER_TEMP/pkc-r3-qonly.log" 2>&1
+          qonly_code=$?
+          echo "PKC_R3_NATIVE_EXIT baseline=$base_code paired=$paired_code qonly=$qonly_code"
+          for section in baseline paired qonly; do
+            echo "PKC_R3_${section}_BEGIN"
+            sed -n '1,130p' "$RUNNER_TEMP/pkc-r3-$section.log"
+            echo "PKC_R3_${section}_END"
+          done
+          if [[ "$base_code" != "0" ]]; then
+            echo 'PKC_R3_VERDICT UNKNOWN: genuine P baseline did not compile'
+            exit 1
+          fi
+          if [[ "$qonly_code" == "0" ]]; then
+            echo 'PKC_R3_VERDICT UNKNOWN: Q-only causal negative was not refused'
+            exit 1
+          fi
+          if ! grep -Fq 'UNGOVERNED' "$RUNNER_TEMP/pkc-r3-qonly.log"; then
+            echo 'PKC_R3_VERDICT UNKNOWN: negative control failed without a coverage obstruction'
+            exit 1
+          fi
+          if [[ "$paired_code" == "0" ]]; then
+            echo 'PKC_R3_VERDICT BOUNDED_PAIRED_Q_ADMITTED_WITH_CAUSAL_WITHDRAWAL'
+          else
+            echo 'PKC_R3_VERDICT PAIRED_Q_REJECTED_OR_SOURCE_ERROR_REVIEW_LOG'
+            exit 1
+          fi
+
+      - name: Retain exact evidence even if replay fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkc-r3-native-3869e74
+          path: ${{ runner.temp }}/pkc-r3-*.log
+          retention-days: 14
+          if-no-files-found: warn
