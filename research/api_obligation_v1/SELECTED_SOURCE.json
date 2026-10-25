@@ -1,0 +1,15 @@
+{
+  "selection_protocol": "API_OBLIGATION_V1_METADATA_ONLY",
+  "selected_ordinal": 1,
+  "selected_repo": "python-hyper/hpack",
+  "sha": "c2edbee3b5508e0b1689877fe6f173eafb097aef",
+  "module": "hpack",
+  "language": "Python",
+  "archived": false,
+  "default_branch": "master",
+  "source_inspection_preselection": false,
+  "frozen_method_commit": "f0d4868d6dfe67781038772c46f80e4710d40084",
+  "frozen_method_run": "https://github.com/metalogiclabs/mathgraph/actions/runs/39216625119",
+  "selection_basis": "first eligible in precommitted ordered metadata-only pool",
+  "scope": "Held out relative to V1 experiment, not proof globally never studied"
+}

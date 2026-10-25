@@ -1,0 +1,33 @@
+name: API obligation V1 frozen method self-tests
+on:
+  push:
+    branches:
+      - research/api-obligation-proposal-v1-20261019
+    paths:
+      - 'research/api_obligation_v1/**'
+      - '.github/workflows/api-obligation-freeze-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-blind-freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile frozen generator and comparator
+        run: |
+          python -m py_compile research/api_obligation_v1/{propose.py,baseline_reference.py,compare.py,synthetic_controls.py}
+      - name: Execute synthetic controls before any held-out source
+        run: python -m unittest discover -s research/api_obligation_v1 -p synthetic_controls.py -v
+      - name: Archive pre-source method fingerprints
+        run: |
+          mkdir -p verified
+          sha256sum research/api_obligation_v1/FROZEN_PROTOCOL.md research/api_obligation_v1/propose.py research/api_obligation_v1/baseline_reference.py research/api_obligation_v1/compare.py research/api_obligation_v1/synthetic_controls.py > verified/frozen-sha256.txt
+          git rev-parse HEAD > verified/frozen-git-head.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-obligation-v1-source-blind-freeze
+          path: verified/
