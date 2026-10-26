@@ -35,6 +35,21 @@ jobs:
           python upstream_encoding_transfer.py --upstream-checkout upstream_itsdangerous --report upstream-transfer-report.json
           python upstream_transfer_cockpit.py upstream-transfer-report.json --output upstream-transfer-cockpit.html
           python upstream_nebius_agent.py --provider scripted --upstream-checkout upstream_itsdangerous --report upstream-scripted-report.json
+      - name: Independently check public no-login demo
+        run: |
+          python - <<'PY'
+          from urllib.request import Request, urlopen
+          url="https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/"
+          req=Request(url,headers={"User-Agent":"MathGraph-qualification/1.0"})
+          with urlopen(req,timeout=25) as res:
+              page=res.read(100000)
+              assert res.status==200, res.status
+              assert res.headers.get("Content-Type","").startswith("text/html")
+          assert b"MathGraph Autopilot" in page
+          assert b"OFFLINE" in page
+          assert b"<select" in page
+          print("PUBLIC_ANONYMOUS_DEMO_GREEN bytes=",len(page))
+          PY
       - name: Package scoped MIT-licensed source (deterministic bytes)
         run: |
           python - <<'PY'
