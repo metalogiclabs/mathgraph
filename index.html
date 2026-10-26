@@ -65,7 +65,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMo
       </div>
     </div>
   </div>
-  <p class="footnote" style="margin:18px 0 0">This interface replays an audited **offline source-native test experiment**; it does not merge an upstream pull request or perform a new Nebius inference. The model-generated repair is independently evidenced by <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641" target="_blank" rel="noopener">the authenticated Nemotron run</a>. The three-outcome source receipt is independently replayed in <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693" target="_blank" rel="noopener">41/41-test GitHub Actions #40286531693</a>.</p>
+  <p class="footnote" style="margin:18px 0 0">This interface replays an audited offline source-native test experiment; it does not merge an upstream pull request or perform a new Nebius inference. The model-generated repair is independently evidenced by <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641" target="_blank" rel="noopener">the authenticated Nemotron run</a>. The three-outcome source receipt is independently replayed in <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693" target="_blank" rel="noopener">41/41-test GitHub Actions #40286531693</a>.</p>
 </section>
 <style>@media(max-width:720px){#merge-review-lab .merge-review-grid,#merge-review-lab .merge-review-switches{grid-template-columns:1fr!important}}#merge-review-lab .merge-review-switches button[aria-pressed=true]{border-color:#69ebc0;box-shadow:inset 0 0 0 1px #69ebc0}#merge-review-lab .pill.unknown{color:#ffd184}#merge-review-lab .pill.no{color:#ff9b9e}#merge-review-lab .pill.ok{color:#69ebc0}</style>
 
@@ -249,7 +249,7 @@ function render(){
  for(const line of entries){const li=document.createElement('li');li.textContent=line;timeline.append(li);}
  const button=el('merge-review-next');
  button.disabled=active==='forbidden'&&phase>=1;
- button.textContent=phase===0?'Acquire distinguishing evidence':
+ button.textContent=active==='forbidden'&&phase>=1?'OBSTRUCTION — no permitted next test':phase===0?'Acquire distinguishing evidence':
   phase===1?'Change source after testing':phase===2?'Recheck exact source bytes':'Restart evidence review';
 }
 root.querySelectorAll('[data-merge-case]').forEach(x=>x.addEventListener('click',()=>{active=x.dataset.mergeCase;phase=0;render()}));
