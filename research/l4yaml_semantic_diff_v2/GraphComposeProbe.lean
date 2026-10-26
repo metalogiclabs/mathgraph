@@ -350,10 +350,10 @@ theorem instrumentedStep_refines (s : GraphState) (a : RawAction) :
   | nodeStart anchor =>
       cases anchor <;>
         simp [instrumentedStep, sourceStep, receiptProjection,
-          allocateNodeStart, alloc, bind]
+          allocateNodeStart, alloc, bind, Except.map]
   | aliasUse name =>
       simp [instrumentedStep, sourceStep, receiptProjection,
-        modelTarget, aliasTarget]
+        modelTarget, aliasTarget, Except.map]
 
 def machineRun (s : GraphState) : List RawAction → Except String GraphState
   | [] => .ok s
@@ -375,13 +375,13 @@ theorem machineRun_refines (s : GraphState) (actions : List RawAction) :
       cases h : instrumentedStep s a with
       | error err =>
           have hs : sourceStep (receiptProjection s) a = .error err := by
-            simpa [h] using step.symm
-          simp [machineRun, modelRun, h, hs]
+            simpa [h, Except.map] using step.symm
+          simp [machineRun, modelRun, h, hs, Except.map, Except.bind]
       | ok s' =>
           have hs : sourceStep (receiptProjection s) a =
               .ok (receiptProjection s') := by
-            simpa [h] using step.symm
-          simpa [machineRun, modelRun, h, hs] using ih s'
+            simpa [h, Except.map] using step.symm
+          simpa [machineRun, modelRun, h, hs, Except.map, Except.bind] using ih s'
 
 /-- Selective source-to-action extraction from the JPL serialization tree.
 This function is EXECUTABLE, not yet a kernel-side proof that arbitrary
