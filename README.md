@@ -7,6 +7,20 @@ An agent's tests can all pass while critical behavior remains unchecked. MathGra
 
 **Verified real-model demonstration:** [GitHub Actions #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) ran one genuine **NVIDIA Nemotron 3 Super 120B** inference through **Nebius Token Factory** and qualified its one-function repair against independently executed native tests and the acquired separating tests. This is one *bounded* successful repair of a deliberately injected fault, not proof of arbitrary code correctness. [Credential-free source-linked evidence artifact](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949).
 
+## New: authenticated Nemotron-selected merge evidence — three outcomes
+
+**Live NVIDIA/Nebius qualification:** [Source-pinned one-shot GitHub Actions #40289255597](https://github.com/metalogiclabs/mathgraph/actions/runs/40289255597), executing exact tested standalone source `7bd3679543b5fd4d67bc4555cd45dcc13876e8e7`, offline-independent [54/54 qualification #40289131662](https://github.com/metalogiclabs/mathgraph/actions/runs/40289131662), with a separately pinned Pallets `itsdangerous@672971d66a2ef9f85151e53283113f33d642dabd` checkout. Authenticated **NVIDIA Nemotron 3 Super via Nebius Token Factory** selected one of several **source-derived, typed finite observation plans** for each review case. Its chosen plan could not change the native oracle, mutate arbitrary repositories, approve a merge or authorize release. MathGraph independently checked permitted observations, exact finite cost and source-native pytest receipts.
+
+| Actual model-selected case | Selected evidence | Source-native final decision | Merge permission |
+| --- | --- | --- | --- |
+| Green original suite hides deliberately injected encoding fault | `00`, `f80000` (hex), cost 6 | **REJECTED**, expanded tests exit 1 | NONE |
+| Correct reference change but original tests don't distinguish alternatives | `00`, `f80000` (hex), cost 6 | **WARRANTED_BOUNDED**, expanded tests exit 0; post-test edit withdraws, fresh test reacquires | REVIEW_ONLY_BOUNDED |
+| Correct candidate with only three-byte inputs permitted | Model-selected typed **OBSTRUCTION**, missing `unstripped_padding` distinction | **UNKNOWN** | NONE |
+
+Each decision was accepted on the **first authenticated model attempt**. [Retained credential-free evidence artifact #12635700459](https://github.com/metalogiclabs/mathgraph/actions/runs/40289255597/artifacts/12635700459), ZIP SHA256 `d437c7aaedb567849bd4a43c2edb052b54f8de1af9117a756a1209b8a8484f56`. [Full replay/evidence context](./LIVE_MODEL_MERGE_EVIDENCE_20261026.md).
+
+**Boundary:** The finite plan menu and defective-candidate family are predeclared, and the model chooses a typed option; it did not synthesize arbitrary tests or analyze an unfamiliar pull request. The original independent [live model-generated *code repair*](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) is a separate experiment. No GitHub merge occurs. Results are bounded to the declared source, test scope and permitted observation grammar.
+
 ## See the demonstration
 
 **Public hosted judge demo:** https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/ (read-only interactive replay, no login or Nebius billing required). Its public route is served by a dedicated Cloudflare Worker; no authentication secrets are deployed with the HTML.
