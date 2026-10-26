@@ -1,0 +1,108 @@
+name: Observer F1 V2 - Source Bound Exposed Preflight
+on:
+  push:
+    branches:
+      - research/source-observer-f1-guard-v2-20261026
+    paths:
+      - 'research/source_observation_constructor_v1/construct.py'
+      - 'research/source_observation_constructor_v1/test_source_bound_v2.py'
+      - '.github/workflows/observer-f1-source-bound-v2.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/construct.py'
+      - 'research/source_observation_constructor_v1/test_source_bound_v2.py'
+      - '.github/workflows/observer-f1-source-bound-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-bound-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve original V9 independent scanner identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "72f03feb5bd21e0d0b6fee6774232c8e513b0588"
+      - name: Exact-source guard, synthetic negative and independent filesystem oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python -m py_compile research/source_observation_constructor_v1/construct.py research/source_observation_constructor_v1/test_source_bound_v2.py
+          python research/source_observation_constructor_v1/test_source_bound_v2.py --out evidence/source_bound.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/source_bound.json').read_text())
+          assert r['status']=='PASS_EXPOSED_SOURCE_BOUND_PREFLIGHT'
+          assert r['independent_filesystem_oracle_cases']==256
+          assert r['heldout_sources_opened'] is False
+          PY
+          git rev-parse HEAD > evidence/source-head.txt
+          git hash-object research/source_observation_constructor_v1/construct.py > evidence/constructor-blob.txt
+          git hash-object research/source_observation_constructor_v1/test_source_bound_v2.py > evidence/guard-test-blob.txt
+          sha256sum evidence/* > evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v2-source-bound-guard
+          path: evidence/
+          if-no-files-found: warn
+
+  prior-exposed-authorities:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: exposed-markdown2
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: bottlepy/bottle
+          ref: 8ec5fe29420d14998c0d86885083983eaea8b839
+          path: exposed-bottle
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: pytest-dev/pluggy
+          ref: 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          path: exposed-pluggy
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Requalify unchanged science on three previously exposed sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python research/source_observation_constructor_v1/construct.py \
+            --preflight exposed-markdown2 exposed-bottle exposed-pluggy \
+            --out evidence/exposed_v2.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/exposed_v2.json').read_text())
+          assert r['status']=='EXPOSED_PREFLIGHT_GREEN'
+          assert len(r['training'])==3
+          assert r['training'][0]['selection']['kind']=='AUTHOR_DRIVER'
+          print("F1_V2_EXPOSED_ONLY_PASS")
+          PY
+          git rev-parse HEAD > evidence/source-head.txt
+          sha256sum evidence/* > evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v2-exposed-authorities
+          path: evidence/
+          if-no-files-found: warn
