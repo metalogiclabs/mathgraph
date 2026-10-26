@@ -457,7 +457,9 @@ def indexedRawSourcePlanAllowed (input : String) : Bool :=
   checkFrom ({} : Env) ([AnchorEvent.defineAnchor "x" 0, .useAlias "x"].map
     AnchorEvent.asSerializationEvent)
 
-partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × GraphState) :=
+/-! The original production graph composition body, now submitted to Lean's
+termination checker rather than accepted as a partial opaque definition. -/
+def build (v : YamlValue) (s : GraphState) : Except String (Nat × GraphState) :=
   match v with
   | .scalar data => do
       let (id, s) := allocateNodeStart s data.anchor
