@@ -96,7 +96,7 @@ jobs:
           "[&x 1, *x, &x 9, *x]"
           "[*x]"
           "&x [*x, *y]"
-          "---\\n&x 1\\n---\\n*x\\n"
+          "---\n&x 1\n---\n*x\n"
           EOF
           (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
             "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
