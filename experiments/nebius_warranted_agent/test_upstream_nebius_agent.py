@@ -82,8 +82,32 @@ class ContractTests(unittest.TestCase):
                 self.assertEqual(result.request_id,"mock-id")
                 self.assertEqual(result.provider,"nebius-token-factory")
                 self.assertEqual(open_request.call_args.kwargs["timeout"],60)
-                self.assertIn(b"nvidia/",open_request.call_args.args[0].data)
+                request_body=json.loads(open_request.call_args.args[0].data)
+                self.assertEqual(request_body["model"],DEFAULT_MODEL)
+                self.assertEqual(request_body["chat_template_kwargs"],
+                                 {"enable_thinking":False})
+                self.assertEqual(request_body["max_tokens"],2048)
             self.assertNotIn("test-not-a-secret",repr(result))
+
+    def test_null_text_diagnostic_is_safe_and_fail_closed(self):
+        class FakeResponse:
+            headers = {"x-request-id":"mock-empty"}
+            def __enter__(self): return self
+            def __exit__(self,*_): return False
+            def read(self,_):
+                return json.dumps({
+                    "model":DEFAULT_MODEL,
+                    "choices":[{"finish_reason":"length",
+                        "message":{"content":None,"reasoning_content":"private thought"}}]
+                }).encode()
+        with patch.dict(os.environ,{"NEBIUS_API_KEY":"test-not-a-secret"}):
+            provider=NebiusProvider(DEFAULT_MODEL)
+            with patch("upstream_nebius_agent.request.urlopen",return_value=FakeResponse()):
+                with self.assertRaisesRegex(ValueError,
+                    "NEBIUS_RESPONSE_NOT_TEXT:finish=length:reasoning_present=1") as err:
+                    provider.propose("buggy",[],1)
+                self.assertNotIn("private thought",str(err.exception))
+                self.assertNotIn("test-not-a-secret",str(err.exception))
 
 class SourceNativeTests(unittest.TestCase):
     def setUp(self):
