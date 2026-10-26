@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - research/mathgraph-check-l4yaml-warrant-continuity-20261024
+      - research/l4yaml-selected-ast-receipt-simulation-20261026
     paths:
       - '.github/workflows/mathgraph-check-l4yaml-graph-identity.yml'
       - 'research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean'
