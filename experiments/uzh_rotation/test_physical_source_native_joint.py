@@ -1,10 +1,14 @@
 """Independent adverse source-native camera/gyro model tests (synthetic only)."""
+import csv
 import math
+import tempfile
 import unittest
+from pathlib import Path
 import numpy as np
 
 from physical_source_native_joint import (
     Source, Truth, make_fixture, map_from_source, integrated,
+    read_navigation_csv, past_only_gyro_phase,
     model_candidate_step, replay, grade, benchmark,
     BIAS, CLOCK, DRIFT, POPCOUNT, ANGULAR_BIN, TAU, SCENARIOS,
 )
@@ -35,6 +39,42 @@ class Raw16BitJointTests(unittest.TestCase):
         bits=s.camera_bits.copy();bits[5]=65536
         with self.assertRaisesRegex(ValueError,"16-bit"):
             map_from_source(Source(s.gyro_ns,s.gyro_rate,s.camera_ns,bits))
+
+    def test_causal_gyro_source_staleness_blocks_map(self):
+        s,_=make_fixture(0,"varying")
+        # Only 10% of the packets remain: many camera frames have no
+        # gyro sample within the predeclared maximum causal age.
+        thinned=Source(s.gyro_ns[::10],s.gyro_rate[::10],s.camera_ns,s.camera_bits)
+        with self.assertRaisesRegex(ValueError,"stale gyro source"):
+            map_from_source(thinned)
+
+    def test_source_native_navigation_csv_roundtrip_without_encoder(self):
+        source,_=make_fixture(0,"varying")
+        with tempfile.TemporaryDirectory() as directory:
+            camera_path=Path(directory)/"camera.csv"
+            gyro_path=Path(directory)/"gyro.csv"
+            with camera_path.open("w",newline="") as file:
+                writer=csv.writer(file);writer.writerow(("timestamp_ns","bits16","usable"))
+                writer.writerows((int(t),int(max(v,0)),int(v>=0))
+                                 for t,v in zip(source.camera_ns,source.camera_bits))
+            with gyro_path.open("w",newline="") as file:
+                writer=csv.writer(file);writer.writerow(("timestamp_ns","gyro_z_rad_s"))
+                writer.writerows((int(t),repr(float(w)))
+                                 for t,w in zip(source.gyro_ns,source.gyro_rate))
+            loaded=read_navigation_csv(camera_path,gyro_path)
+            self.assertTrue(np.array_equal(loaded.camera_bits,source.camera_bits))
+            self.assertTrue(np.array_equal(loaded.camera_ns,source.camera_ns))
+            self.assertTrue(np.allclose(loaded.gyro_rate,source.gyro_rate))
+            self.assertFalse(hasattr(loaded,"truth"))
+
+    def test_minimum_clock_wait_refuses_instantaneous_decision(self):
+        source,_=make_fixture(0,"varying")
+        result=replay(source)
+        for row in result["events"]:
+            self.assertEqual(row["gyro_clock_decision_not_before_ns"]-row["timestamp_ns"],
+                             40_000_000)
+            self.assertFalse(row["navigation_correction_authorized"])
+        self.assertTrue(result["retrospective_analysis_only"])
 
     def test_corrupted_columns_create_false_narrow_interval_without_sensitivity(self):
         source,truth=make_fixture(0,"outliers")
