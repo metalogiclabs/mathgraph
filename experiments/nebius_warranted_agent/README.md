@@ -99,6 +99,24 @@ The authentic model mode uses `NEBIUS_API_KEY` from a private environment or a p
 
 **UNKNOWN:** Actual NVIDIA inference provenance, true model autonomy, general-repository repair, original real-world bug discovery, comparison against optimized property-based testing, hosted functional app, public YouTube video and Devpost submission.
 
+## Exact-source real-project transfer and guarded Nemotron repair
+
+The [independent Actions run #40251263700](https://github.com/metalogiclabs/mathgraph/actions/runs/40251263700) qualified source-native offline transfer against immutable `pallets/itsdangerous@672971d66a2ef9f85151e53283113f33d642dabd`: 41/41 tests, three deliberately injected faults invisible to the existing encoding tests, a two-test exact minimum basis over 1,026 finite inputs (declared synthetic cost 6), and real pytest plus receipt withdrawal. [Artifact 12620921422](https://github.com/metalogiclabs/mathgraph/actions/runs/40251263700/artifacts/12620921422), archive SHA256 `9997393a9c4bff0a63803e8d20585cce428522886906ed1772b2b23ff3cf1e0a`.
+
+**New CANDIDATE:** `upstream_nebius_agent.py` accepts restricted one-function patches from NVIDIA Nemotron via Nebius Token Factory. The independently selected separating tests gate completion; malformed or unsafe proposals are refused, and source/test changes revoke older receipts. Scripted mode is an offline controlled baseline, not a genuine model call.
+
+From the experiment directory, with a separately checked out and source-pinned upstream repository:
+
+```sh
+python -m unittest -v test_upstream_nebius_agent test_upstream_encoding_transfer
+python upstream_nebius_agent.py --provider scripted --upstream-checkout ../../upstream_itsdangerous --report upstream-agent-report.json
+# Live: configure NEBIUS_API_KEY privately; never publish tokens.
+python upstream_nebius_agent.py --provider nebius --model nvidia/nemotron-3-super-120b-a12b --upstream-checkout ../../upstream_itsdangerous --report upstream-live-nebius-report.json
+```
+
+GitHub Actions provides an optional manual workflow-dispatch route using a private `NEBIUS_API_KEY` secret; ordinary pull-request checks must never spend inference credits.
+
+**Explicit limits:** constructed mutations and oracle, not a discovered upstream bug; no verified real Nebius response or general-repository autonomy, no public live judge build, and no competition submission yet. Preserve signed-source and retained CI artifacts as authority, not the prose description.
 ## Actual scope and research lineage
 
 | Component | Epistemic state | Authority |
