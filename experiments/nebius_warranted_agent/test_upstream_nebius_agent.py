@@ -56,14 +56,14 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(only_function(output).strip(), WRONG_FIRST.strip())
 
     def test_outer_code_fence_unwrapped_but_explanations_rejected(self):
-        fenced = "```python\\n" + ORIGINAL_FUNCTION + "```"
+        fenced = "```python\n" + ORIGINAL_FUNCTION + "```"
         self.assertEqual(normalize_function_text(fenced).strip(),
                          ORIGINAL_FUNCTION.strip())
-        code = b"import base64\\n\\n" + WRONG_FIRST.encode()
+        code = b"import base64\n\n" + WRONG_FIRST.encode()
         self.assertIn(b'.rstrip(b"=")', replace_function(code, fenced))
-        for untrusted in ["Here is a fix:\\n" + ORIGINAL_FUNCTION,
-                          "```python\\n" + ORIGINAL_FUNCTION + "```\\nMore text",
-                          "```json\\n" + ORIGINAL_FUNCTION + "```"]:
+        for untrusted in ["Here is a fix:\n" + ORIGINAL_FUNCTION,
+                          "```python\n" + ORIGINAL_FUNCTION + "```\nMore text",
+                          "```json\n" + ORIGINAL_FUNCTION + "```"]:
             with self.subTest(untrusted=untrusted):
                 with self.assertRaises(ValueError):
                     replace_function(code, untrusted)
