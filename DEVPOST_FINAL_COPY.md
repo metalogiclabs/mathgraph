@@ -78,6 +78,8 @@ Our first real attempts exposed concrete integration issues: an initially empty 
 
 Only one live model-generated injected-fault repair was qualified. The observed minimum belongs to a constructed finite grammar and synthetic test price, not latency or financial cost. A deliberately withheld four-byte failure outside that grammar remains undetected. The hosted UI replays real evidence but does not call Nebius or execute untrusted source live. We make no claim of a novel underlying set-cover algorithm, a discovered upstream Pallets bug, general software verification, or demonstrated advantage on unseen repositories.
 
+**Additional, separately scoped negative experiment:** We also implemented an optional model-selected observation-planning adapter with deterministic minimum-cost certification. Its offline tests passed, but live typed Nemotron proposals did not satisfy its strict action schema or named obstruction obligations, so no model-planned observation was authorized in those attempts. These results are linked in [EVIDENCE.md](./EVIDENCE.md) and are not represented as an additional successful model capability. The only authenticated successful model outcome claimed here remains the one-function repair in run #40255882641.
+
 ## Publication checklist
 
 - [ ] Create a new **public** repository with `LICENSE` on its **default branch**, and upload the exact scoped MIT-licensed source distribution
