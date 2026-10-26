@@ -287,7 +287,7 @@ class NebiusMenuPlanner:
             },sort_keys=True)}
         ]
         body={"model":self.model,"messages":messages,
-              "temperature":0.0,"max_tokens":120,
+              "temperature":0.0,"max_tokens":350,
               "chat_template_kwargs":{"enable_thinking":False},
               "guided_json":schema,"response_format":{"type":"json_object"}}
         req=request.Request(ENDPOINT,data=json.dumps(body,sort_keys=True).encode(),
@@ -303,20 +303,27 @@ class NebiusMenuPlanner:
         try:
             response=json.loads(raw)
             if response.get("model") and response["model"]!=self.model:
-                raise ValueError("MODEL_ID_MISMATCH")
+                raise ValueError("NEBIUS_MODEL_ID_MISMATCH")
             choice=response["choices"][0]
-            text=choice["message"]["content"]
+            text=choice["message"].get("content")
             if not isinstance(text,str) or not text.strip():
-                raise ValueError("MODEL_EMPTY_CHOICE")
+                raise ValueError("NEBIUS_EMPTY_CHOICE")
             if choice.get("finish_reason") not in ("stop",None):
-                raise ValueError("MODEL_INCOMPLETE_CHOICE")
-            parsed=json.loads(text)
+                raise ValueError("NEBIUS_INCOMPLETE_CHOICE")
+            # A single exact menu ID is an admissible *typed action* even if
+            # a particular model refuses JSON formatting. Arbitrary prose
+            # remains inadmissible, and every selected plan is independently
+            # checked against native source and the exact minimum.
+            try:
+                parsed=json.loads(text)
+            except json.JSONDecodeError:
+                parsed={"choice_id":text.strip()} if text.strip() in options else None
             if not isinstance(parsed,dict) or set(parsed)!={"choice_id"}:
-                raise ValueError("MODEL_WRONG_CHOICE_SCHEMA")
+                raise ValueError("NEBIUS_WRONG_CHOICE_SCHEMA")
             selected=parsed["choice_id"]
             if not isinstance(selected,str) or selected not in options:
-                raise ValueError("MODEL_CHOICE_NOT_IN_MENU")
-        except (ValueError,TypeError,KeyError,IndexError):
+                raise ValueError("NEBIUS_CHOICE_NOT_IN_MENU")
+        except (TypeError,KeyError,IndexError,json.JSONDecodeError):
             raise ValueError("NEBIUS_MENU_RESPONSE_MALFORMED") from None
         return ProposedAction(options[selected]["action"],"nebius-token-factory",
                               self.model,digest(raw),
@@ -342,7 +349,15 @@ def run_review(checkout: Path, provider, max_attempts: int = 2) -> dict:
             selected=None
             for attempt in range(1,max_attempts+1):
                 prev_feedback=history[-1].get("reason","") if history else ""
-                proposal = provider.propose(case_id, menu, permitted, attempt, prev_feedback)
+                try:
+                    proposal = provider.propose(case_id, menu, permitted, attempt, prev_feedback)
+                except ValueError as exc:
+                    # Preserve fail-closed diagnostics without model output,
+                    # secrets, or guessed provider-generated code.
+                    history.append({"attempt": attempt,"state":"REJECTED",
+                                    "reason":str(exc),"provider":type(provider).__name__,
+                                    "model":getattr(provider,"model","none")})
+                    continue
                 event={"attempt": attempt, "provider": proposal.provider,
                        "model": proposal.model, "request_id": proposal.request_id,
                        "response_sha256": proposal.response_sha256,
