@@ -356,8 +356,8 @@ theorem instrumentedStep_refines (s : GraphState) (a : RawAction) :
           aliasTarget s name := rfl
       simp only [instrumentedStep, sourceStep, hlookup]
       cases h : aliasTarget s name with
-      | none => simp [h, Except.map]
-      | some id => simp [h, receiptProjection, Except.map]
+      | none => simp [Except.map]
+      | some id => simp [receiptProjection, Except.map]
 
 def machineRun (s : GraphState) : List RawAction → Except String GraphState
   | [] => .ok s
