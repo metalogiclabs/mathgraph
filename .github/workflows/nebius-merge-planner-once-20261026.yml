@@ -20,7 +20,7 @@ jobs:
       - name: Checkout exact qualified standalone reviewer
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ed922d22d8d8378b2d6533e653da21dd9d30d952
+          ref: 7bd3679543b5fd4d67bc4555cd45dcc13876e8e7
           persist-credentials: false
       - name: Checkout independently pinned public upstream
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
