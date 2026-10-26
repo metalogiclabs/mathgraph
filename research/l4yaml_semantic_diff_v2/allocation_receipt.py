@@ -137,19 +137,20 @@ def main():
     require(exemplar is not None, "NO_CORRUPTION_TARGET")
     row, source = exemplar
     counterfeit = copy.deepcopy(row)
-    changed = False
+    changes = 0
     for path_name in ("legacy", "indexed"):
+        modified = False
         for graph in counterfeit[path_name]["graphs"]:
             for item in graph["receipts"]:
-                if item["event"] == "aliasTo" and not changed:
+                if item["event"] == "aliasTo" and not modified:
                     item["target"] += 9999
-                    changed = True
+                    changes += 1
+                    modified = True
                     break
-            if changed:
+            if modified:
                 break
-        if changed:
-            break
-    require(changed, "NO_ALIAS_TARGET_TAMPERED")
+    require(changes == 2 and counterfeit["legacy"] == counterfeit["indexed"],
+            "TAMPER_NOT_PATH_CONSISTENT")
     try:
         inspect_row(counterfeit, source)
     except ValueError:
