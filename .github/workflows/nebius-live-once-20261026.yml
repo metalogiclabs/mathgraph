@@ -1,0 +1,79 @@
+# Intentionally single-triggered live qualification experiment.
+# This workflow is on an isolated branch and uses *only* a frozen reviewed source
+# commit. It never runs for pull_request and never exposes model secrets to
+# untrusted PR code. No arbitrary LLM-generated shell may execute.
+name: Nebius Autopilot One-Shot Authenticated Qualification
+on:
+  push:
+    branches:
+      - exp/nebius-live-once-20261026
+    paths:
+      - .github/workflows/nebius-live-once-20261026.yml
+
+permissions:
+  contents: read
+
+jobs:
+  one-shot-nebius:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact reviewed MathGraph source (not triggering branch HEAD)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 47bf4b1924722fb0419ce4945aba0805e2e0727e
+          persist-credentials: false
+      - name: Checkout immutable upstream Pallets source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream_itsdangerous
+          persist-credentials: false
+      - name: Set up reviewed Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install bounded upstream-test dependency
+        run: python -m pip install pytest==8.4.2
+      - name: Verify offline source-native controls before credential-bearing step
+        working-directory: experiments/nebius_warranted_agent
+        env:
+          MATHGRAPH_PINNED_UPSTREAM: ../../upstream_itsdangerous
+        run: python -m unittest -v test_upstream_encoding_transfer test_upstream_nebius_agent
+      - name: Authenticated Nemotron proposal with a strict two-attempt limit
+        id: infer
+        working-directory: experiments/nebius_warranted_agent
+        env:
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${NEBIUS_API_KEY:-}" ]; then
+            echo 'NEBIUS_KEY_NOT_CONFIGURED: no model request attempted'
+            printf '%s\n' '{"schema":"mathgraph.nebius.live-attempt.v1","status":"UNKNOWN","reason":"NEBIUS_API_KEY_NOT_CONFIGURED","real_inference_attempted":false}' > upstream-live-nebius-status.json
+            exit 0
+          fi
+          echo 'NEBIUS_KEY_PRESENT: attempting real inference (credential never printed)'
+          printf '%s\n' '{"schema":"mathgraph.nebius.live-attempt.v1","status":"UNKNOWN","reason":"model_execution_in_progress","real_inference_attempted":true}' > upstream-live-nebius-status.json
+          if python upstream_nebius_agent.py \
+              --upstream-checkout ../../upstream_itsdangerous \
+              --provider nebius \
+              --model nvidia/nemotron-3-super-120b-a12b \
+              --max-attempts 2 \
+              --report upstream-live-nebius-report.json; then
+            printf '%s\n' '{"schema":"mathgraph.nebius.live-attempt.v1","status":"CANDIDATE","reason":"model_execution_returned_success_review_report_before_promotion","real_inference_attempted":true}' > upstream-live-nebius-status.json
+          else
+            exit_code=$?
+            printf '%s\n' '{"schema":"mathgraph.nebius.live-attempt.v1","status":"UNKNOWN","reason":"inference_or_qualification_failed_see_logs","real_inference_attempted":true}' > upstream-live-nebius-status.json
+            exit "$exit_code"
+          fi
+      - name: Retain credential-free evidence and missing-key obstruction
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nebius-one-shot-real-inference-evidence
+          path: |
+            experiments/nebius_warranted_agent/upstream-live-nebius-status.json
+            experiments/nebius_warranted_agent/upstream-live-nebius-report.json
+          if-no-files-found: warn
