@@ -20,8 +20,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Checkout independently pinned upstream Pallets source
+        uses: actions/checkout@v4
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream_itsdangerous
+          persist-credentials: false
+      - name: Install pinned upstream test runner
+        run: python -m pip install pytest==8.4.2
       - name: Independent adversarial test suite
-        run: python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit
+        run: python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit test_upstream_encoding_transfer
         working-directory: experiments/nebius_warranted_agent
       - name: Reproduce offline agent loop and receipt withdrawal
         working-directory: experiments/nebius_warranted_agent
@@ -30,6 +39,10 @@ jobs:
           python cockpit.py offline-report.json --output offline-cockpit.html
           python separating_experiments.py --report separating-report.json
           python separating_cockpit.py separating-report.json --output separating-cockpit.html
+      - name: Source-native upstream mutation transfer and independent witness acquisition
+        working-directory: experiments/nebius_warranted_agent
+        run: |
+          python upstream_encoding_transfer.py --upstream-checkout ../../upstream_itsdangerous --report upstream-transfer-report.json
       - name: Retain offline audit artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -39,4 +52,5 @@ jobs:
             experiments/nebius_warranted_agent/offline-cockpit.html
             experiments/nebius_warranted_agent/separating-report.json
             experiments/nebius_warranted_agent/separating-cockpit.html
+            experiments/nebius_warranted_agent/upstream-transfer-report.json
           if-no-files-found: error
