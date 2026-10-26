@@ -1,0 +1,139 @@
+name: Observer F1 V7 - Decision-Relative Novelty Gate
+on:
+  push:
+    branches: [research/source-observer-f1-guard-v2-20261026]
+    paths:
+      - 'research/source_observation_constructor_v1/observer_gain_v7.py'
+      - 'research/source_observation_constructor_v1/test_observer_gain_v7.py'
+      - '.github/workflows/observer-f1-v7-decision-novelty.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/observer_gain_v7.py'
+      - 'research/source_observation_constructor_v1/test_observer_gain_v7.py'
+      - '.github/workflows/observer-f1-v7-decision-novelty.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-finite-oracle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify source identity and exhaustive finite partition oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/f1-v7-finite
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git hash-object research/source_observation_constructor_v1/observer_gain_v7.py)" = 3ef551c557d6c8cc2a3724afd5893883ebccebc7
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = 72f03feb5bd21e0d0b6fee6774232c8e513b0588
+          python -B research/source_observation_constructor_v1/test_observer_gain_v7.py \
+            --out evidence/f1-v7-finite/result.json
+          python - <<'PY'
+          import json,pathlib
+          d=json.loads(pathlib.Path('evidence/f1-v7-finite/result.json').read_text())
+          assert d['status']=='PASS_F1_V7_FINITE_PARTITION_ORACLE'
+          assert d['exhaustive_binary_models']==4096 and d['randomized_models']==2000
+          assert d['protected_heldout_sources_accessed'] is False
+          print('F1_V7_FINITE_INDEPENDENT_ORACLE_GREEN')
+          PY
+          git rev-parse HEAD > evidence/f1-v7-finite/head.txt
+          git hash-object research/source_observation_constructor_v1/observer_gain_v7.py > evidence/f1-v7-finite/algorithm-blob.txt
+          sha256sum evidence/f1-v7-finite/{result.json,head.txt,algorithm-blob.txt} > evidence/f1-v7-finite/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v7-finite-partition-oracle
+          path: evidence/f1-v7-finite/
+          if-no-files-found: error
+
+  frozen-real-source-no-gain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check exact V6 verifier and V7 selection source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git hash-object research/source_observation_constructor_v1/consequence_referee_v6.py)" = e14df677308076670f1b81d5b70a769e8703298a
+          test "$(git hash-object research/source_observation_constructor_v1/observer_gain_v7.py)" = 3ef551c557d6c8cc2a3724afd5893883ebccebc7
+          mkdir -p evidence/f1-v7-reality
+      - name: Retrieve and SHA-bind original previously exposed V5 receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            'https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/12631886174/zip' \
+            -o evidence/f1-v7-reality/original-v5.zip
+          echo '5972b81991a5a75b4813c20bec35802a0f1090af6daee90ddbd49d78487c7418  evidence/f1-v7-reality/original-v5.zip' | sha256sum -c
+      - name: Independently verify raw V5 evidence before modeling modalities
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/source_observation_constructor_v1/consequence_referee_v6.py \
+            --archive evidence/f1-v7-reality/original-v5.zip \
+            --out evidence/f1-v7-reality/v6-verified.json
+          python -B research/source_observation_constructor_v1/test_observer_gain_v7.py \
+            --v5 evidence/f1-v7-reality/original-v5.zip \
+            --out evidence/f1-v7-reality/v7-oracle.json
+          python -B research/source_observation_constructor_v1/observer_gain_v7.py \
+            --v5 evidence/f1-v7-reality/original-v5.zip \
+            --out evidence/f1-v7-reality/v7-solver.json
+          python - <<'PY'
+          from pathlib import Path
+          import json,importlib.util
+          p=Path('evidence/f1-v7-reality')
+          v6=json.loads((p/'v6-verified.json').read_text())
+          v7=json.loads((p/'v7-oracle.json').read_text())
+          solver=json.loads((p/'v7-solver.json').read_text())
+          assert v6['status']=='WARRANTED_BOUNDED_EXPOSED_FAULT_WITH_CONVENTIONAL_TIE'
+          assert (v6['native_unique_cases'],v6['native_failed_cases'])==(276,56)
+          assert v6['conventional']=='TIE_ON_CLEAN_VS_FAULT_DECISION'
+          assert v7['historical_exposed_v5']['classification']=='NO_NEW_DECISION_INFORMATION'
+          assert solver['authentic_exposed_v5']['classification']=='NO_NEW_DECISION_INFORMATION'
+          assert solver['authentic_exposed_v5']['old_basis']==solver['authentic_exposed_v5']['extended_basis']
+          assert solver['authentic_exposed_v5']['old_basis'][2]==['generic_pytest']
+          assert solver['authentic_exposed_v5']['old_basis'] is not None
+          assert v7['historical_exposed_v5']['author_doc_withdrawal']=='NO_NEW_DECISION_INFORMATION'
+          assert v7['exhaustive_binary_models']==4096
+          source='research/source_observation_constructor_v1/consequence_referee_v6.py'
+          spec=importlib.util.spec_from_file_location('independent_referee_f1_v6',source)
+          m=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          tampered=bytearray((p/'original-v5.zip').read_bytes())
+          tampered[len(tampered)//2]^=1
+          try: m.verify(bytes(tampered))
+          except m.Refusal as ex:
+              assert str(ex)=='ARCHIVE_DIGEST_MISMATCH'
+          else: raise AssertionError('tampered V5 evidence wrongly accepted')
+          print('F1_V7_AUTHENTIC_EXPOSED_NO_NEW_DECISION_INFORMATION')
+          print('G2_AUTONOMOUS_NEW_GRAMMAR_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/f1-v7-reality/head.txt
+          sha256sum evidence/f1-v7-reality/{original-v5.zip,v6-verified.json,v7-oracle.json,v7-solver.json,head.txt} > evidence/f1-v7-reality/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v7-source-bound-no-gain
+          path: evidence/f1-v7-reality/
+          if-no-files-found: error
