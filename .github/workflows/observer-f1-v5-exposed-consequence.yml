@@ -96,7 +96,9 @@ jobs:
           assert d['status']=='WARRANTED_BOUNDED_INDUCED_FAULT_CONSEQUENCE',d['status']
           assert all(d['checks'][x] for x in ('original_passes_target',
                     'mutant_fails_protected_target','all_native_case_IDs_authenticated',
-                    'equal_information_comparator_tie','original_source_unmodified')),d['checks']
+                    'equal_information_comparator_tie','original_source_unmodified',
+                    'conventional_clean_passes_and_fault_fails')),d['checks']
+          assert d['generic_decision_separation']=='TIE_ON_CLEAN_VS_FAULT_DECISION'
           before=(out/'original.log').read_text()
           after=(out/'candidate.log').read_text()
           informed=(out/'informed.log').read_text()
@@ -114,12 +116,14 @@ jobs:
           print('EXACT_SOURCE_PROTECTED_CONSEQUENCE_WITH_INFORMED_TIE')
           print('ORIGINAL_CASES',d['original']['identity']['declared'])
           print('MUTATED_CASES',d['candidate']['identity']['declared'])
-          print('GENERIC_EXIT',d['fixed_generic']['exit'])
+          print('GENERIC_CLEAN_EXIT',d['generic_original']['exit'])
+          print('GENERIC_MUTANT_EXIT',d['fixed_generic']['exit'])
+          print('CONVENTIONAL_DECISION_COMPARISON',d['generic_decision_separation'])
           PY
           test -z "$(git -C exposed-markdown2 status --porcelain=v1 --untracked-files=all)"
           git rev-parse HEAD > evidence/f1-v5-real/head.txt
           git hash-object research/source_observation_constructor_v1/exposed_consequence_v5.py > evidence/f1-v5-real/experiment-blob.txt
-          sha256sum evidence/f1-v5-real/{result.json,original.log,generic.log,candidate.log,informed.log,head.txt,experiment-blob.txt} > evidence/f1-v5-real/SHA256SUMS
+          sha256sum evidence/f1-v5-real/{result.json,original.log,generic_original.log,generic.log,candidate.log,informed.log,head.txt,experiment-blob.txt} > evidence/f1-v5-real/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -127,6 +131,7 @@ jobs:
           path: |
             evidence/f1-v5-real/result.json
             evidence/f1-v5-real/original.log
+            evidence/f1-v5-real/generic_original.log
             evidence/f1-v5-real/generic.log
             evidence/f1-v5-real/candidate.log
             evidence/f1-v5-real/informed.log
