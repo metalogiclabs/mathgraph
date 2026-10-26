@@ -226,7 +226,7 @@ theorem rawActionCheck_agrees_with_JPL (env : Env) (s : GraphState)
     rawActionCheck s actions = checkFrom env (projectedEvents actions) := by
   induction actions generalizing env s with
   | nil =>
-      simp [rawActionCheck, projectedEvents]
+      simp [rawActionCheck, projectedEvents, checkFrom]
   | cons action rest ih =>
       cases action with
       | beginDocument =>
