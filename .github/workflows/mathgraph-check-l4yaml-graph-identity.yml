@@ -8,6 +8,7 @@ on:
       - '.github/workflows/mathgraph-check-l4yaml-graph-identity.yml'
       - 'research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean'
       - 'research/l4yaml_semantic_diff_v2/graph_comparison.py'
+      - 'research/l4yaml_semantic_diff_v2/trace_provenance.py'
   workflow_dispatch:
 
 permissions:
@@ -105,6 +106,27 @@ jobs:
             > evidence-out/graph/special_graph.jsonl \
             2> evidence-out/graph/special_stderr.log
           test ! -s evidence-out/graph/special_stderr.log
+      - name: Replay scanner-versus-raw-AST source anchor event provenance
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for suite in anchor ordinary special; do
+            (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
+              --trace "$GITHUB_WORKSPACE/evidence-out/graph/${suite}_inputs.jsonl") \
+              > "evidence-out/graph/${suite}_trace.jsonl" \
+              2> "evidence-out/graph/${suite}_trace_stderr.log"
+            test ! -s "evidence-out/graph/${suite}_trace_stderr.log"
+          done
+          python -m research.l4yaml_semantic_diff_v2.trace_provenance \
+            --oracle evidence-out/graph/independent_oracle.json \
+            --anchor evidence-out/graph/anchor_trace.jsonl \
+            --ordinary evidence-out/graph/ordinary_trace.jsonl \
+            --special evidence-out/graph/special_trace.jsonl \
+            --report evidence-out/graph/trace_report.json \
+            --source-sha "$JPL_SHA"
       - name: Check graph topology, cycles, rebinding, native parity and value projection
         shell: bash
         run: |
@@ -129,4 +151,5 @@ jobs:
             evidence-out/graph/
             research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean
             research/l4yaml_semantic_diff_v2/graph_comparison.py
+            research/l4yaml_semantic_diff_v2/trace_provenance.py
           if-no-files-found: warn
