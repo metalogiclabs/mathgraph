@@ -88,6 +88,10 @@ def indexedEventTime (input : String) : Except ScanError String :=
   | .ok docs => .ok (Json.docsToJson (docs.map composeStart))
   | .error e => .error e
 
+end MathGraph.L4YAMLExperiment
+
+open MathGraph.L4YAMLExperiment
+
 def main (args : List String) : IO Unit := do
   let some path := args.head?
     | throw (IO.userError "JSONL input path required")
@@ -104,7 +108,5 @@ def main (args : List String) : IO Unit := do
             ("event_indexed", asJson (indexedEventTime source))
           ]).compress
       | _ => throw (IO.userError "invalid non-string JSONL row")
-
-end MathGraph.L4YAMLExperiment
 
 end
