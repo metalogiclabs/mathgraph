@@ -1,0 +1,64 @@
+{
+  "protocol": "MATHGRAPH_OBSERVER_F1_V2_PREEXPOSURE_SOURCE_LOCK",
+  "epoch": "2026-10-26",
+  "status": "METADATA_ONLY_LOCK_NO_PROTECTED_SOURCE_READ",
+  "method": {
+    "source_commit": "c1b13c3aa3df8a5b942c16394962214db9647f8b",
+    "constructor_blob": "a5ec70238a05c545f991d784dc5685dd6dbf64a3",
+    "guard_test_blob": "ab78bb2cd3bbe638e63be243051564d6c9203b1c",
+    "workflow_blob": "6207ab10f34a80af26bd4076df76be331522dca6",
+    "prior_v9_blob": "72f03feb5bd21e0d0b6fee6774232c8e513b0588",
+    "qualified_workflow_runs": [
+      40251847088,
+      40251847182,
+      40251847264
+    ]
+  },
+  "ordered_eligible_candidates": [
+    {
+      "order": 1,
+      "repository": "pytest-dev/execnet",
+      "source_commit": "ddd76287420c73cc3677de55378d92705ae27e15",
+      "evidence_scope": "prior canonical metadata only"
+    },
+    {
+      "order": 2,
+      "repository": "hynek/structlog",
+      "source_commit": "19c4f21059e853114efa7a93b6e675d93bf7934e",
+      "evidence_scope": "prior canonical metadata only"
+    }
+  ],
+  "selection_rule": "Take candidates in prior ordered pool sequence only; exclude exact source-native exposure recorded in canonical OS before checkout; do not replace after outcome inspection.",
+  "method_frozen_before_source_contents": true,
+  "native_execution_permitted_now": false,
+  "permission_gate": "Requires independently checked versioned prospective evaluator, source-authoritative runner identity, source-exact test ID capture, controlled environmental dependencies, protected source-document withdrawal and restoration, no arbitrary shell execution.",
+  "prospective_arms": {
+    "candidate": "Frozen human-authored observer V2 (author-driver/doc/testpaths grammar), exact constructor blob above; no target-specific edits",
+    "conventional_mechanical": "Generic python -m pytest on the identical original source and pinned environment; not a claim of complete author test suite",
+    "conventional_rulebook": "Explicitly author-grounded test entrypoint interpreted from the same source documents/config with the same execution and identity checks as candidate",
+    "human_expert": "NOT_AVAILABLE_COMPARATIVE_ADVANTAGE_UNKNOWN"
+  },
+  "outcomes": [
+    "WARRANTED_BOUNDED_SOURCE_INSTANCE",
+    "UNKNOWN_INAPPLICABLE",
+    "UNKNOWN_TEST_IDENTITY",
+    "UNKNOWN_SOURCE_AUTHORITY",
+    "UNKNOWN_ENVIRONMENT",
+    "REJECTED_PREQUALIFICATION"
+  ],
+  "metrics": [
+    "exact source and runner identity",
+    "source-authorized observation/test ID delta",
+    "protected consequential difference",
+    "selective evidence withdrawal",
+    "transferred same method to second source",
+    "acquisition + runtime + verification + restart cost"
+  ],
+  "explicit_nonclaims": [
+    "No protected source contents viewed at lock time",
+    "No original native test run",
+    "No previously unformable grammar-type invention",
+    "No end-to-end CLC mechanization or empirical sensor guarantee",
+    "No equal-human reviewer win"
+  ]
+}
