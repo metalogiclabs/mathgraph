@@ -1,4 +1,4 @@
-# Credential-gated repeat authorized 2026-10-26 after user configured NEBIUS_API_KEY.
+# Retry: independently CI-qualified Nemotron non-thinking response handling.
 # Intentionally single-triggered live qualification experiment.
 # This workflow is on an isolated branch and uses *only* a frozen reviewed source
 # commit. It never runs for pull_request and never exposes model secrets to
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout exact reviewed MathGraph source (not triggering branch HEAD)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 47bf4b1924722fb0419ce4945aba0805e2e0727e
+          ref: cd243aa28ee65d17c8f2ca57f9cfa4c911ad47f5
           persist-credentials: false
       - name: Checkout immutable upstream Pallets source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
