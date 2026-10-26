@@ -65,7 +65,7 @@ jobs:
               ".github/workflows/qualification.yml", ".gitignore",
               "LICENSE", "README.md", "EVIDENCE.md", "BENCHMARK_PROTOCOL_20261026.md",
               "BENCHMARK_RESULTS_20261026.md", "NEBIUS_NVIDIA_FEEDBACK.md",
-              "DEVPOST_FINAL_COPY.md", "requirements-dev.txt",
+              "DEVPOST_FINAL_COPY.md", "LIVE_MODEL_MERGE_EVIDENCE_20261026.md", "requirements-dev.txt",
               "paired_benchmark.py", "test_paired_benchmark.py",
               "permitted_witness_audit.py", "test_permitted_witness_audit.py",
               "merge_decision_lab.py", "test_merge_decision_lab.py",
