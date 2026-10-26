@@ -42,6 +42,19 @@ This manifest links exact external evidence. It is not a signed external attesta
 - **Adversarial source continuity:** The earlier [Actions #40277440823](https://github.com/metalogiclabs/mathgraph/actions/runs/40277440823) failed when the native checker erroneously assumed the excluded longer controls were uninformative. That false precondition was corrected, permission scope tightened explicitly, and the 35-test source-native suite requalified. This failure is a useful demonstration of why admissible observation scope must be declared and checked.
 - **Authority boundary:** This finite JavaScript computation and source-native Python replay are *not* a live LLM request, a universal test oracle, or permission for uncontrolled deployment. A separate [authenticated Nebius/NVIDIA repair](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) remains the model-execution evidence.
 
+## Three-way evidence-seeking merge review (source-native; no actual merge)
+
+**Qualified:** [GitHub Actions #40286531693](https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693) GREEN **41/41 tests** on commit `641f2df3893d6fe6047aa2cb19b57436bc2fc6cf`. [Source/HTML requalification #40286783200](https://github.com/metalogiclabs/mathgraph/actions/runs/40286783200) GREEN. Both operate on the pinned Pallets `itsdangerous@672971d66a2ef9f85151e53283113f33d642dabd` reference and intentionally injected isolated faults.
+
+The independent `merge_decision_lab.py` gate produces three source-and-test-bound paths:
+- `defective_green_tests`: source-native original tests GREEN but stronger target UNKNOWN; acquire minimal separating tests; newly expanded suite fails → **REJECTED**, release permission NONE. Post-test source edit invalidates previous receipt.
+- `correct_but_initially_unknown`: original suite GREEN yet target UNKNOWN; acquire same two tests, rerun on exactly the pinned source → **WARRANTED_BOUNDED**, scoped review only. Post-test source edit withdraws that authorization; rerun after restoring source bytes reacquires the receipt.
+- `correct_but_observation_forbidden`: source-native original tests GREEN, but only 3-byte probes may be selected. The `unstripped_padding` rival remains unidentifiable within the declared grammar → **UNKNOWN**, named OBSTRUCTION, release permission NONE.
+
+The original suite being green is *not* represented as general approval in any of these three cases. `WARRANTED_BOUNDED` means only the exact pinned test relation; **no GitHub PR was actually merged**. The source-native replay also does **not** call Nebius: genuine Nemotron inference belongs to [its separate authenticated qualified run #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641).
+
+The new browser [Merge Review Lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#merge-review-lab) is a read-only interactive **replay** of those source-native results, not a general GitHub App. The new CI includes the structured `merge-decision-report.json` as a retained artifact so every displayed outcome can be reconciled with source/test SHA256 receipts.
+
 ## Caveats
 
 The live model's proposal was tested only against the declared original native tests and two newly acquired separating tests for a deliberately injected defect. A passing source-native receipt is not a theorem of software correctness. The solver's finite minimum is relative to the predeclared hypothesis grammar and synthetic cost. Source codes are not originally Pallets defects. Do not attribute the browser replay to actual live inference.
