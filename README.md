@@ -50,6 +50,6 @@ The native `pallets/itsdangerous` encoding tests at `672971d66a2ef9f85151e532831
 
 ## License and provenance
 
-The **files in this standalone submission distribution** are offered under the accompanying MIT `LICENSE`, subject to the project owner's confirmation of rights. This is NOT a license of the whole [metalogiclabs/mathgraph](https://github.com/metalogiclabs/mathgraph) research repository or its other branches. Pallets `itsdangerous` is independently owned and licensed under BSD-3-Clause; no upstream code is bundled in this distribution. See [Pallets license](https://github.com/pallets/itsdangerous/blob/672971d66a2ef9f85151e53283113f33d642dabd/LICENSE.txt).
+The **files in this standalone submission distribution** are licensed under the accompanying MIT `LICENSE`. No other MathGraph repository source files or branches are included in this license grant. This is NOT a license of the whole [metalogiclabs/mathgraph](https://github.com/metalogiclabs/mathgraph) research repository or its other branches. Pallets `itsdangerous` is independently owned and licensed under BSD-3-Clause; no upstream code is bundled in this distribution. See [Pallets license](https://github.com/pallets/itsdangerous/blob/672971d66a2ef9f85151e53283113f33d642dabd/LICENSE.txt).
 
 Developed during the hackathon entry period as a product-specific implementation based on pre-existing MathGraph research. [Competition rules](https://nebiusglobalaihackathon.devpost.com/rules).
