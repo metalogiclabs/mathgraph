@@ -146,6 +146,30 @@ class ObservationContractTests(unittest.TestCase):
             self.assertEqual([p["reason"] for p in case["proposals"]],
                              ["NEBIUS_EMPTY_CHOICE","NEBIUS_EMPTY_CHOICE"])
 
+    def test_semantic_obstruction_request_never_bypasses_exact_check(self):
+        class FakeResponse:
+            headers={"x-request-id":"mock-obstruction"}
+            def __enter__(self): return self
+            def __exit__(self,*_): return False
+            def read(self,_):
+                return json.dumps({"model":"nvidia/nemotron-3-super-120b-a12b",
+                    "choices":[{"finish_reason":"stop",
+                                "message":{"content":json.dumps({"choice_id":"OBSTRUCTION"})}}]}).encode()
+        with patch.dict(os.environ,{"NEBIUS_API_KEY":"test-secret-placeholder"}):
+            provider=NebiusMenuPlanner()
+            with patch("model_observation_merge.request.urlopen",return_value=FakeResponse()):
+                allowed=menu_from_native(self.inputs,self.table,(3,))
+                forbidden=provider.propose("correct_but_observation_forbidden",allowed,(3,),1)
+                self.assertEqual(forbidden.choice_id,"OBSTRUCTION")
+                exact=_select(self.inputs,self.table,(3,))
+                self.assertEqual(certify_action(forbidden.action,allowed,exact)["status"],
+                                 "ACCEPTED_OBSTRUCTION")
+                permitted=menu_from_native(self.inputs,self.table,(1,2,3))
+                unearned=provider.propose("correct_but_initially_unknown",permitted,(1,2,3),1)
+                with self.assertRaisesRegex(ValueError,"EXPERIMENT_PROPOSAL_REQUIRED"):
+                    certify_action(unearned.action,permitted,
+                                   _select(self.inputs,self.table,(1,2,3)))
+
     def test_no_model_fabricated_approval_is_admitted(self):
         lengths=(1,2,3)
         exact=_select(self.inputs,self.table,lengths)
