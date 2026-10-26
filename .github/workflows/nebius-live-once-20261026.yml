@@ -1,3 +1,4 @@
+# Credential-gated repeat authorized 2026-10-26 after user configured NEBIUS_API_KEY.
 # Intentionally single-triggered live qualification experiment.
 # This workflow is on an isolated branch and uses *only* a frozen reviewed source
 # commit. It never runs for pull_request and never exposes model secrets to
