@@ -316,10 +316,22 @@ if __name__=="__main__":
     import argparse
     p=argparse.ArgumentParser()
     p.add_argument("--seeds",type=int,default=8)
+    p.add_argument("--camera-csv",default=None)
+    p.add_argument("--gyro-csv",default=None)
     p.add_argument("--output",required=True)
     args=p.parse_args()
-    result=benchmark(args.seeds)
+    if bool(args.camera_csv) != bool(args.gyro_csv):
+        p.error("camera and gyro source CSV must be supplied together")
+    if args.camera_csv:
+        # Source must first be checked by the already qualified canonical
+        # NAVIGATION-role manifest gate. No encoder is accepted here.
+        nav=read_navigation_csv(args.camera_csv,args.gyro_csv)
+        result=replay(nav)
+        result["navigation_only_offline_source_replay"]=True
+        print("NO_ENCODER_INPUT_OFFLINE_SOURCE_MODEL_ONLY")
+    else:
+        result=benchmark(args.seeds)
+        for item in result["scenarios"]:
+            print("SOURCE_NATIVE_FINITE",item["condition"],item["mean"])
     Path(args.output).write_text(json.dumps(result,indent=2)+"\n")
-    for item in result["scenarios"]:
-        print("SOURCE_NATIVE_FINITE",item["condition"],item["mean"])
     print("NO_PHYSICAL_NAVIGATION_WARRANT")
