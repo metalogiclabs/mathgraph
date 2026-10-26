@@ -1,0 +1,73 @@
+name: Observer F1 V2 - Metadata Source Lock
+on:
+  push:
+    branches:
+      - research/source-observer-f1-guard-v2-20261026
+    paths:
+      - 'research/source_observation_constructor_v1/F1_V2_SOURCE_LOCK.json'
+      - '.github/workflows/observer-f1-v2-source-lock.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/F1_V2_SOURCE_LOCK.json'
+      - '.github/workflows/observer-f1-v2-source-lock.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metadata-only-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify unchanged prequalified method and native-blind two-source metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git hash-object research/source_observation_constructor_v1/construct.py)" = "a5ec70238a05c545f991d784dc5685dd6dbf64a3"
+          test "$(git hash-object research/source_observation_constructor_v1/test_source_bound_v2.py)" = "ab78bb2cd3bbe638e63be243051564d6c9203b1c"
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "72f03feb5bd21e0d0b6fee6774232c8e513b0588"
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          p=Path("research/source_observation_constructor_v1/F1_V2_SOURCE_LOCK.json")
+          d=json.loads(p.read_text())
+          assert d["protocol"]=="MATHGRAPH_OBSERVER_F1_V2_PREEXPOSURE_SOURCE_LOCK"
+          assert d["status"]=="METADATA_ONLY_LOCK_NO_PROTECTED_SOURCE_READ"
+          assert d["method_frozen_before_source_contents"] is True
+          assert d["native_execution_permitted_now"] is False
+          assert d["method"]["constructor_blob"]=="a5ec70238a05c545f991d784dc5685dd6dbf64a3"
+          assert d["method"]["source_commit"]=="c1b13c3aa3df8a5b942c16394962214db9647f8b"
+          assert d["method"]["guard_test_blob"]=="ab78bb2cd3bbe638e63be243051564d6c9203b1c"
+          c=d["ordered_eligible_candidates"]
+          assert [(x["repository"],x["source_commit"]) for x in c]==[
+            ("pytest-dev/execnet","ddd76287420c73cc3677de55378d92705ae27e15"),
+            ("hynek/structlog","19c4f21059e853114efa7a93b6e675d93bf7934e")
+          ]
+          assert all(re.fullmatch("[0-9a-f]{40}",x["source_commit"]) for x in c)
+          assert d["prospective_arms"]["human_expert"]=="NOT_AVAILABLE_COMPARATIVE_ADVANTAGE_UNKNOWN"
+          result={
+            "status":"PASS_F1_V2_METADATA_ONLY_PREEXPOSURE_LOCK",
+            "source_contents_accessed":False,
+            "native_execution_permitted":False,
+            "source_commit_pair":[x["source_commit"] for x in c],
+            "full_expert_advantage":"UNKNOWN",
+            "next_gate":"source-native evaluator prequalification prior to original native execution"
+          }
+          Path("evidence/metadata-only-result.json").write_text(json.dumps(result,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/current-commit.txt
+          git hash-object research/source_observation_constructor_v1/F1_V2_SOURCE_LOCK.json > evidence/lock-blob.txt
+          sha256sum evidence/* > evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v2-metadata-source-lock
+          path: evidence/
+          if-no-files-found: error
