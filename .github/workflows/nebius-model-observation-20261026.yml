@@ -1,0 +1,74 @@
+# Manual-safe single-trigger experiment on an isolated branch.
+# Review source SHA is frozen independently of this triggering workflow revision.
+# Credentials reach only typed model inference after source-native offline tests.
+name: Nebius Model-Selected Evidence One-Shot
+on:
+  push:
+    branches:
+      - exp/nebius-live-once-20261026
+    paths:
+      - .github/workflows/nebius-model-observation-20261026.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-model-observation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact reviewed standalone source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: b90f65deca060df5359f4db10061b34b9bdfb670
+          persist-credentials: false
+      - name: Checkout exact pinned source-native test target
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream_itsdangerous
+          persist-credentials: false
+      - name: Set up reviewed Python runtime
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install only bounded native test dependency
+        run: python -m pip install pytest==8.4.2
+      - name: Run independent adversarial controls without credentials
+        env:
+          MATHGRAPH_PINNED_UPSTREAM: upstream_itsdangerous
+        run: python -m unittest -v test_model_observation_merge test_merge_decision_lab test_upstream_nebius_agent
+      - name: Ask Nebius Nemotron for exactly three typed evidence decisions
+        working-directory: .
+        shell: bash
+        env:
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NEBIUS_API_KEY:-}" ]; then
+            echo 'NEBIUS_API_KEY_MISSING: model evaluation NOT performed'
+            printf '%s\n' '{"schema":"mathgraph.observation-live-status.v1","state":"UNKNOWN","reason":"NEBIUS_API_KEY_MISSING","real_model_calls_started":false}' > model-observation-live-status.json
+            exit 1
+          fi
+          echo 'NEBIUS_SECRET_PRESENT: three scoped typed evidence decisions requested; no raw response logging'
+          printf '%s\n' '{"schema":"mathgraph.observation-live-status.v1","state":"UNKNOWN","reason":"MODEL_EVALUATION_STARTED","real_model_calls_started":true}' > model-observation-live-status.json
+          if python model_observation_merge.py \
+              --upstream-checkout upstream_itsdangerous \
+              --provider nebius \
+              --max-attempts 1 \
+              --report model-observation-live-report.json; then
+            printf '%s\n' '{"schema":"mathgraph.observation-live-status.v1","state":"CANDIDATE","reason":"MODEL_PROPOSALS_AND_NATIVE_TESTS_COMPLETE_REVIEW_ARTIFACT","real_model_calls_started":true}' > model-observation-live-status.json
+          else
+            printf '%s\n' '{"schema":"mathgraph.observation-live-status.v1","state":"UNKNOWN","reason":"MODEL_ACTION_OR_NATIVE_TEST_REJECTED_SEE_REPORT","real_model_calls_started":true}' > model-observation-live-status.json
+            exit 1
+          fi
+      - name: Preserve credential-free model decision receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nebius-typed-evidence-merge-review
+          path: |
+            model-observation-live-status.json
+            model-observation-live-report.json
+          if-no-files-found: error
