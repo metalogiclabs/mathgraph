@@ -4,6 +4,16 @@
 
 MathGraph Autopilot has a planner/repair-proposal interface (NVIDIA Nemotron on Nebius Token Factory in live mode) and a separate bounded local evidence-acquisition/qualification component. It proposes a repair, executes declared tests independently, invalidates old test evidence after code changes, and withholds completion until a fresh receipt is bound to the precise tested file bytes.
 
+## 2026-10-26: first authenticated Nemotron repair (bounded)
+
+**WARRANTED for the exact declared test scope:** [One-shot authenticated GitHub Actions #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) passed on isolated execution branch `exp/nebius-live-once-20261026`, checkout of MathGraph code at `56315d382a5b439ffee9dc5a73320e25b2d1757c` (independently qualified by [59/59 offline regression tests](https://github.com/metalogiclabs/mathgraph/actions/runs/40255832893)), against pristine upstream Pallets `itsdangerous@672971d66a2ef9f85151e53283113f33d642dabd`. **One authenticated `nvidia/nemotron-3-super-120b-a12b` proposal** was accepted by the restricted single-function AST policy and passed the source-native encoding tests plus both predeclared minimum-cost separating tests. Exact-byte source/test receipts were invalidated by a post-test edit and reacquired after reverting to checked bytes. The one-shot runner itself also passed 21/21 source-native preliminary tests.
+
+**Evidence:** [retained two-file artifact #12621789949](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949), ZIP SHA-256 `2d5fb2f3b77a4a9e5947b8d51812762a8eb9ff6fa592c00f1debf9957e4c8109`; provider request ID `474bcea32c45d24df22a5e657206685a`; exact response SHA-256 `8b43aaa9f1388ff98babbe1129dab553c08993e8598b44720157bb8df2a4b292`; candidate SHA-256 `c4da532733d3aaab18d3b98b53fc35f0e58eb4cf15957fb61f591d1384791f45`. No credentials or raw prompt/response are included in the public report; request authenticity is grounded in the trusted GitHub Actions execution log and private runtime environment, not in a cryptographic third-party attestation.
+
+**Lineage:** first run [#40253221809](https://github.com/metalogiclabs/mathgraph/actions/runs/40253221809) had no configured key; [#40254932826](https://github.com/metalogiclabs/mathgraph/actions/runs/40254932826) returned null completion content; [#40255193578](https://github.com/metalogiclabs/mathgraph/actions/runs/40255193578) returned malformed JSON; [#40255411025](https://github.com/metalogiclabs/mathgraph/actions/runs/40255411025) obtained two real but REJECTED code proposals. The newest guarded prompting, provider response contract and verifier feedback succeeded on the first attempt without relaxing exact source/test authority. These earlier negative outcomes remain part of the preserved lineage.
+
+**Still UNKNOWN:** an actual upstream bug (all defects were deliberately injected), unfamiliar-repository repair/generalization, advantage against competitive property-based testing, independent external model-response attestation, competition-compliant licensed distribution, publicly accessible functional live execution and a public video/Devpost submission. This is one bounded successful attempt, not a measured success rate.
+
 ## Run locally (Python 3.11+; no pip dependencies)
 
 From this directory:
