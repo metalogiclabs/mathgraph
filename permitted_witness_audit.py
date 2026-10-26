@@ -40,13 +40,12 @@ def permission_audit(checkout: Path) -> dict:
     if observations["reference"] != [oracle(x) for x in all_inputs]:
         raise AssertionError("PINNED_NATIVE_ORACLE_DISAGREEMENT")
 
-    # Control inputs outside 1-, 2-, 3-byte channels have no discrimination
-    # under the fixed mutant family. The browser offers them as inert controls.
-    controls = [i for i,v in enumerate(all_inputs) if len(v) not in (1,2,3)]
-    for i in controls:
-        if any(observations[name][i] != observations["reference"][i]
-               for name in MUTANTS):
-            raise AssertionError("INERT_CONTROL_PRECONDITION_INVALID")
+    # Deliberately exclude lengths outside 1,2,3 from this permission
+    # grammar. Some longer control inputs actually distinguish some mutants:
+    # that is why the permissible-input scope must be stated precisely.
+    controls = [v for v in all_inputs if len(v) not in (1,2,3)]
+    if len(controls) != 3:
+        raise AssertionError("FROZEN_CONTROL_SCOPE_CHANGED")
 
     scenarios = {}
     for name, lengths in SCENARIOS.items():
@@ -92,6 +91,8 @@ def permission_audit(checkout: Path) -> dict:
                    "original_encoding_sha256": digest(original),
                    "file_evidence": pins},
         "full_domain_size": len(all_inputs),
+        "observation_grammar": "only input lengths 1,2,3 may be selected",
+        "excluded_controls_hex": [v.hex() for v in controls],
         "cost": "synthetic 1 + input byte length",
         "scenarios": scenarios,
         "model_inference": "NOT_PERFORMED",
