@@ -86,7 +86,12 @@ def argv_from_fragment(fragment, cwd, root):
             return ("AUTHOR_PYTEST", ["python", "-m", "pytest", *args],
                     ".", "pytest")
         if len(xs) > 1 and xs[1] == "test.py":
-            if not (cwd / "test.py").is_file() or cwd.is_symlink():
+            driver = cwd / "test.py"
+            # Do not let a documented native entrypoint execute aliased or
+            # out-of-checkout script bytes under the original source identity.
+            if (not driver.is_file() or cwd.is_symlink()
+                    or driver.is_symlink()
+                    or not driver.resolve().is_relative_to(root.resolve())):
                 return None
             if any(not re.fullmatch(r"-[a-z][a-z0-9_-]*|--", x)
                    for x in xs[2:]):
