@@ -297,6 +297,92 @@ theorem rawActionCheck_agrees_with_JPL (env : Env) (s : GraphState)
                   exact False.elim (ha ((aliasTarget_exists_iff_allowed env s name h).1 hs))
             simp [rawActionCheck, projectedEvents, RawAction.events, checkFrom, ha, ht]
 
+/-!
+Selected-AST receipt simulation, deliberately weaker than a whole-YAML
+source-to-graph theorem. The pure model counts node starts and resolves the
+latest anchor without using GraphState.alloc/bind/allocateNodeStart.
+The executable transition calls the actual GraphState allocator and lookup.
+-/
+
+structure ReceiptModel where
+  count : Nat
+  anchors : List (String × Nat)
+  log : Array AllocationReceipt
+  deriving Inhabited
+
+def receiptProjection (s : GraphState) : ReceiptModel :=
+  ⟨s.nodes.size, s.anchors, s.receipts⟩
+
+def modelTarget (m : ReceiptModel) (name : String) : Option Nat :=
+  m.anchors.findSome? (fun (n, id) => if n == name then some id else none)
+
+def sourceStep (m : ReceiptModel) : RawAction → Except String ReceiptModel
+  | .beginDocument => .ok { m with anchors := [] }
+  | .endDocument => .ok { m with anchors := [] }
+  | .nodeStart anchor =>
+      let anchors := match anchor with
+        | none => m.anchors
+        | some name => (name, m.count) :: m.anchors
+      .ok { m with count := m.count + 1,
+                   anchors := anchors,
+                   log := m.log.push (.nodeStart m.count anchor) }
+  | .aliasUse name =>
+      match modelTarget m name with
+      | some id => .ok { m with log := m.log.push (.aliasTo name id) }
+      | none => .error ("UNBOUND_ALIAS:" ++ name)
+
+def instrumentedStep (s : GraphState) : RawAction → Except String GraphState
+  | .beginDocument => .ok { s with anchors := [] }
+  | .endDocument => .ok { s with anchors := [] }
+  | .nodeStart anchor => .ok (allocateNodeStart s anchor).2
+  | .aliasUse name =>
+      match aliasTarget s name with
+      | some id => .ok { s with receipts := s.receipts.push (.aliasTo name id) }
+      | none => .error ("UNBOUND_ALIAS:" ++ name)
+
+/-- One action preserves the independent count, latest binding, and ID receipt. -/
+theorem instrumentedStep_refines (s : GraphState) (a : RawAction) :
+    (instrumentedStep s a).map receiptProjection =
+      sourceStep (receiptProjection s) a := by
+  cases a with
+  | beginDocument => rfl
+  | endDocument => rfl
+  | nodeStart anchor =>
+      cases anchor <;>
+        simp [instrumentedStep, sourceStep, receiptProjection,
+          allocateNodeStart, alloc, bind]
+  | aliasUse name =>
+      simp [instrumentedStep, sourceStep, receiptProjection,
+        modelTarget, aliasTarget]
+
+def machineRun (s : GraphState) : List RawAction → Except String GraphState
+  | [] => .ok s
+  | a :: rest => (instrumentedStep s a).bind (fun t => machineRun t rest)
+
+def modelRun (m : ReceiptModel) : List RawAction → Except String ReceiptModel
+  | [] => .ok m
+  | a :: rest => (sourceStep m a).bind (fun t => modelRun t rest)
+
+/-- All chosen action streams agree with the independent receipt model.
+    This is not an assertion that a YAML source has a unique event trace. -/
+theorem machineRun_refines (s : GraphState) (actions : List RawAction) :
+    (machineRun s actions).map receiptProjection =
+      modelRun (receiptProjection s) actions := by
+  induction actions generalizing s with
+  | nil => rfl
+  | cons a rest ih =>
+      have step := instrumentedStep_refines s a
+      cases h : instrumentedStep s a with
+      | error err =>
+          have hs : sourceStep (receiptProjection s) a = .error err := by
+            simpa [h] using step.symm
+          simp [machineRun, modelRun, h, hs]
+      | ok s' =>
+          have hs : sourceStep (receiptProjection s) a =
+              .ok (receiptProjection s') := by
+            simpa [h] using step.symm
+          simpa [machineRun, modelRun, h, hs] using ih s'
+
 /-- Selective source-to-action extraction from the JPL serialization tree.
 This function is EXECUTABLE, not yet a kernel-side proof that arbitrary
 YAML source has a unique or faithful TraceOf derivation. -/
@@ -309,6 +395,29 @@ partial def rawTreeActions (value : YamlValue) : List RawAction :=
       .nodeStart anchor :: pairs.toList.flatMap
         (fun (key, value) => rawTreeActions key ++ rawTreeActions value)
   | .alias name => [.aliasUse name]
+
+/-- For every SELECTED raw AST, the extracted action stream refines the
+    standalone count-and-receipt model. Actual build graph edges are not
+    established by this theorem; the separate native replay checks them. -/
+theorem selectedRawTree_receipts_refine (value : YamlValue) (s : GraphState) :
+    (machineRun s (rawTreeActions value)).map receiptProjection =
+      modelRun (receiptProjection s) (rawTreeActions value) :=
+  machineRun_refines s (rawTreeActions value)
+
+#guard (match machineRun ({} : GraphState)
+      [.nodeStart (some "x"), .aliasUse "x"] with
+  | .ok s => decide (s.receipts.toList =
+      [.nodeStart 0 (some "x"), .aliasTo "x" 0])
+  | .error _ => false)
+#guard (match machineRun ({} : GraphState)
+      [.nodeStart (some "x"), .nodeStart (some "x"), .aliasUse "x"] with
+  | .ok s => decide (s.receipts.toList =
+      [.nodeStart 0 (some "x"), .nodeStart 1 (some "x"), .aliasTo "x" 1])
+  | .error _ => false)
+#guard (match machineRun ({} : GraphState)
+      [.nodeStart (some "x"), .endDocument, .beginDocument, .aliasUse "x"] with
+  | .error "UNBOUND_ALIAS:x" => true
+  | _ => false)
 
 def rawDocumentPlan (document : YamlDocument) : List RawAction :=
   .beginDocument :: rawTreeActions document.value ++ [.endDocument]
