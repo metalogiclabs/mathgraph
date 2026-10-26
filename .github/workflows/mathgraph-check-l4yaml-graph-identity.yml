@@ -72,7 +72,8 @@ jobs:
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT "$HOME/.elan/bin/lake" build \
-            L4YAML.Output.Json L4YAML.Parser.Composition L4YAML.Parser.IndexedComposition) \
+            L4YAML.Output.Json L4YAML.Parser.Composition L4YAML.Parser.IndexedComposition \
+            L4YAML.Proofs.Serialization.SerializationWellFormed) \
             > evidence-out/graph/upstream-build.log 2>&1
           echo SOURCE_PINNED_NATIVE_BUILD_PASSED
       - name: Execute Lean graph compositor on unchanged native raw YAML trees
