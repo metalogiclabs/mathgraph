@@ -60,7 +60,7 @@ class Proposal:
 class ScriptedProvider:
     """A controlled baseline; does not claim model generation."""
     def propose(self, current: str, evidence: list[tuple[str, str]],
-                attempt: int) -> Proposal:
+                attempt: int, feedback: str = "") -> Proposal:
         source = WRONG_FIRST if attempt == 1 else ORIGINAL_FUNCTION
         return Proposal(source, "SCRIPTED_OFFLINE_FIXTURE_NOT_NEBIUS", "none",
                         digest(source.encode()), None, utc())
@@ -77,20 +77,27 @@ class NebiusProvider:
         self.model = model
 
     def propose(self, current: str, evidence: list[tuple[str, str]],
-                attempt: int) -> Proposal:
+                attempt: int, feedback: str = "") -> Proposal:
         messages = [
             {"role": "system", "content":
              "You are a code repair agent. Reply with one JSON object with exactly "
-             "one key 'function_source'. The value must be the complete Python "
-             "definition for def base64_encode(string: str | bytes) -> bytes. "
-             "Do not include imports, tests, markdown, shell commands, or other code."},
+             "one string key 'function_source'. The value must be a Python function "
+             "with this exact two-statement body: "
+             "def base64_encode(string: str | bytes) -> bytes; "
+             "statement one: string = want_bytes(string); "
+             "statement two: return EXPRESSION. "
+             "Choose EXPRESSION from base64.urlsafe_b64encode(string) or "
+             "base64.b64encode(string), optionally followed by .rstrip(b'='). "
+             "No extra statements, comments, docstrings, helpers, markdown or tests. "
+             "Encode newline characters as escaped JSON newlines."},
             {"role": "user", "content":
              f"Source authority: {UPSTREAM_COMMIT}\n"
              f"Objective: {TASK}\nAttempt: {attempt}\n"
              f"Current function:\n{current}\n"
              f"Independently generated failing counterexamples (input hex, expected output hex): "
              f"{json.dumps(evidence, separators=(',', ':'))}\n"
-             "Return a complete function preserving compatibility with source-native tests."},
+             f"Verifier feedback on previous proposal: {feedback or 'none'}\\n"
+             "Return only the exact two-statement function source in JSON."},
         ]
         # Nemotron 3 Super reasons by default. With a small max_tokens budget,
         # all output can be spent on reasoning, leaving message.content null.
@@ -227,7 +234,19 @@ def only_function(code: bytes) -> str:
     return "".join(lines[f.lineno-1:f.end_lineno])
 
 
+def normalize_function_text(proposal: str) -> str:
+    """Remove only an exact outer Python code fence, never extract arbitrary code."""
+    raw = proposal.strip()
+    if raw.startswith("```"):
+        lines = raw.splitlines()
+        if len(lines) < 3 or lines[0] not in ("```", "```python", "```py") or lines[-1] != "```":
+            raise ValueError("MODEL_CODE_FENCE_NOT_EXACT")
+        raw = "\n".join(lines[1:-1]).strip()
+    return raw + "\n"
+
+
 def replace_function(code: bytes, proposal: str) -> bytes:
+    proposal = normalize_function_text(proposal)
     validate_function(proposal)
     lines = code.decode("utf-8").splitlines(keepends=True)
     tree = ast.parse(code)
@@ -291,14 +310,17 @@ def perform(checkout: Path, provider, max_attempts: int = 3) -> dict:
              "receipt":asdict(failing)},
         ]
         success = False
+        last_feedback = ""
         for attempt in range(1, max_attempts+1):
             current = (sandbox / "src" / "itsdangerous" / "encoding.py").read_bytes()
             evidence = [(x.hex(), oracle(x).hex()) for x in acquired]
-            proposal = provider.propose(only_function(current), evidence, attempt)
+            proposal = provider.propose(only_function(current), evidence, attempt, last_feedback)
+            last_feedback = ""
             # A bad proposal is recorded as REJECTED, but cannot alter the source.
             try:
                 proposed_bytes = replace_function(current, proposal.source)
             except ValueError as exc:
+                last_feedback = str(exc)
                 events.append({"step":"rejected_proposal","attempt":attempt,
                                "state":"REJECTED","reason":str(exc),
                                "provider":proposal.provider,"model":proposal.model,
@@ -319,6 +341,8 @@ def perform(checkout: Path, provider, max_attempts: int = 3) -> dict:
                            "candidate_sha256":digest(proposed_bytes),
                            "receipt":asdict(receipt)})
             failing = receipt
+            if state != "WARRANTED":
+                last_feedback = reason
             if state == "WARRANTED":
                 success = True
                 break
