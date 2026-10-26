@@ -4,6 +4,25 @@
 
 MathGraph Autopilot has a planner/repair-proposal interface (NVIDIA Nemotron on Nebius Token Factory in live mode) and a separate bounded local evidence-acquisition/qualification component. It proposes a repair, executes declared tests independently, invalidates old test evidence after code changes, and withholds completion until a fresh receipt is bound to the precise tested file bytes.
 
+## 2026-10-26 source-native transfer and model adapter — current verification
+
+**WARRANTED (bounded offline):** [GitHub Actions run #40252245020](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020), branch commit `2184e0cf0e636b0f87ea13e89eedc6f2989affb7`, **55/55 tests passed**, [seven-file retained artifact #12620369151](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020/artifacts/12620369151), ZIP SHA-256 `9e92d8822cafd46caad8ce2d8baddd2cd5a9dd61e64be2b0d993dc352488cfe3`. This is distinct from genuine model inference.
+
+The `upstream_encoding_transfer.py` experiment checks out the actual Pallets `itsdangerous` repository at **`672971d66a2ef9f85151e53283113f33d642dabd`**, verifies the Git blob hashes of its native encoding source and test file, then deliberately introduces three **synthetic defects in isolated copies**. Every modified candidate passes the original upstream encoding tests. The independent evaluator compares the real source-native implementation against Python's standard-library URL-safe unpadded Base64 oracle over 1,026 frozen byte inputs. Exact minimum-cost selection finds two test inputs (`00` and `f80000`, hex; synthetic cost 6), which distinguish all three injected mutations. The newly acquired native tests expose the defect, invalidate stale receipts, and admit the scripted correction only after fresh native test execution. **No defect is alleged in upstream Pallets.**
+
+The `upstream_nebius_agent.py` adapter now supports constrained Nemotron-generated repair proposals for this same pinned repository, preserving exact function boundaries and running source-native tests outside the model. Its **scripted** proposals are verified in CI; authenticated real Nebius execution remains **UNKNOWN**. The CI has a manual `workflow_dispatch` input `run_live_nebius` and requires the privately configured GitHub Actions secret `NEBIUS_API_KEY`. It is off by default; every ordinary PR CI run skips the live step. Do not interpret mocked requests or offline scripted proposals as provider evidence.
+
+To reproduce without external model credentials: run the repository's **Nebius Autopilot Bounded Verification** workflow or locally check out the exact Pallets upstream commit and execute:
+
+```sh
+python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent
+python upstream_encoding_transfer.py --upstream-checkout ../../upstream_itsdangerous --report upstream-transfer-report.json
+python upstream_transfer_cockpit.py upstream-transfer-report.json --output upstream-transfer-cockpit.html
+python upstream_nebius_agent.py --upstream-checkout ../../upstream_itsdangerous --provider scripted --report upstream-agent-report.json
+```
+
+**Unresolved competition conditions:** authenticated Nemotron inference receipt, genuine model-generated repair, independently frozen holdout/generalization beyond preselected mutations, publicly accessible functional demo, public YouTube video, and Devpost submission. The minimum-cost claim is exact only for the declared finite grammar and synthetic price function. The local Python/test runner is not a hardened sandbox for arbitrary third-party code.
+
 ## Run locally (Python 3.11+; no pip dependencies)
 
 From this directory:
