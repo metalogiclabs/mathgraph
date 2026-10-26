@@ -63,6 +63,18 @@ The source distribution includes `model_observation_merge.py`, a typed Nebius Ne
 
 The lesson is architectural: an LLM may propose a target/candidate hypothesis, but the exact minimum-cost experiment is better compiled and justified by the deterministic evidence engine. No claim that a model autonomously invented the missing tests has been validated.
 
+## Authenticated model-chosen three-way merge review (26 October)
+
+**Final qualified:** [Actions #40289255597](https://github.com/metalogiclabs/mathgraph/actions/runs/40289255597), trigger `79a4afffb65aae842dc4605798f0e1a808d3c4b1`, executing exact pinned source `7bd3679543b5fd4d67bc4555cd45dcc13876e8e7`. The immutable Pallets encoding/test Git blobs were checked; no upstream mutation or merge occurred. Real `nvidia/nemotron-3-super-120b-a12b` inference chose **trusted finite experiment-plan IDs** in three separate requests, each admitted on the first attempt. The independent exact selector and source-native pytest receipts—not the model—decided merge-review authority:
+
+- Deliberately defective existing-green code: cost-6 `00,f80000` separating tests, native test exit 1 → **REJECTED**, no merge.
+- Correct pinned source with initial insufficient evidence: same cost-6 tests, native test exit 0 → **WARRANTED_BOUNDED**, `REVIEW_ONLY_BOUNDED` (not an actual merge); post-test edit withdrew and fresh tests reacquired the receipt.
+- Correct candidate, only three-byte probes permitted: the model selected typed **OBSTRUCTION**; the checker independently proved `unstripped_padding` observationally inseparable under that restricted grammar → **UNKNOWN**, no merge.
+
+Retained [credential-free artifact #12635700459](https://github.com/metalogiclabs/mathgraph/actions/runs/40289255597/artifacts/12635700459), archive SHA256 `d437c7aaedb567849bd4a43c2edb052b54f8de1af9117a756a1209b8a8484f56`. Read the exact model request IDs, response hashes, cases, native receipts and preserved failed attempts in [LIVE_MODEL_MERGE_EVIDENCE_20261026.md](./LIVE_MODEL_MERGE_EVIDENCE_20261026.md). Offline [54/54 model-action/false-obstruction regression tests #40289131662](https://github.com/metalogiclabs/mathgraph/actions/runs/40289131662). Model-generated *source patching* was separately previously shown in [Actions #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641).
+
+This is a bounded closed-pool demonstration, **not** automatic analysis of arbitrary code, source-native authorization to actually merge, unseen-task efficacy, or proof of advantage over informed mutation testing.
+
 ## Caveats
 
 The live model's proposal was tested only against the declared original native tests and two newly acquired separating tests for a deliberately injected defect. A passing source-native receipt is not a theorem of software correctness. The solver's finite minimum is relative to the predeclared hypothesis grammar and synthetic cost. Source codes are not originally Pallets defects. Do not attribute the browser replay to actual live inference.
