@@ -1,6 +1,14 @@
 # Nebius × NVIDIA submission package — MathGraph Autopilot
 
-**As of 26 October 2026: AUTHENTICATED MODEL INFERENCE AND ONE BOUNDED REPAIR VERIFIED; SUBMISSION STILL INCOMPLETE.** The public judge-accessible build, distribution license, short video and Devpost submission remain outstanding. The evidence supports only the declared pinned source-native test boundary.
+**As of 26 October 2026: AUTHENTICATED MODEL REPAIR VERIFIED, PUBLIC JUDGE DEMO LIVE, AND STANDALONE LICENSED SOURCE STAGED; SUBMISSION NOT YET ENTERED.** Public YouTube upload, independent dedicated repository with a default-branch LICENSE, and Devpost submission remain outstanding. The evidence supports only the declared pinned source-native test boundary.
+
+## Final distribution and hosted demonstration
+
+- Public, anonymously accessible interactive demo: **https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/**. The page clearly states that browser interactions are an offline replay, not live model execution.
+- An independent GitHub Actions runner retrieved the public page anonymously with HTTP 200 and checked for the authenticated run reference: [standalone CI #40262381087](https://github.com/metalogiclabs/mathgraph/actions/runs/40262381087), 26/26 package tests + public web smoke. Source commit `f4b5c266ddab29ca18c756ad8d2a8b76e7651186`.
+- Scoped MIT-licensed standalone source staging branch: [submission/nebius-autopilot-20261026](https://github.com/metalogiclabs/mathgraph/tree/submission/nebius-autopilot-20261026); [CI source ZIP artifact #12624757490](https://github.com/metalogiclabs/mathgraph/actions/runs/40262381087/artifacts/12624757490), ZIP archive SHA-256 `d665b6b8e9d16870646d965762db8395e05673b09189a78644a806c4cbc2e238`. **This is not a separate repository** and may not satisfy the requirement that the root license is detectable on the repository's default branch. Do not claim that prerequisite is met until the standalone files are published in a new repository whose default branch contains the LICENSE.
+- Authenticated NVIDIA Nemotron source-bound repaired task: [Actions #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641), [source-linked report artifact](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949).
+- A **1:43 captioned video cut** and voiceover script have been generated locally but **not uploaded to public YouTube**, so the video rule remains open. The browser interactions are marked OFFLINE, and the separate genuine inference evidence is called out in the recording.
 
 ## Suggested title
 
@@ -46,9 +54,9 @@ The source-bound Autopilot experiment, finite separating-test generator, source-
 - [x] Private `NEBIUS_API_KEY` configured in GitHub Actions; credential not printed.
 - [x] Authentic Nebius/NVIDIA Nemotron call with request identity, response hash and test receipt retained in CI artifact.
 - [x] Model-generated proposal passed the exact declared source-native and acquired separating tests; post-test alteration correctly withdrew the receipt.
-- [ ] Publish a functional public demo URL that remains usable for judges through 15 December 2026
-- [ ] Publish a public YouTube recording of the actual working app, under three minutes
-- [ ] Provide a competition-specific open-source licensed repository, visibly licensed at its root. The parent `metalogiclabs/mathgraph` currently lacks a confirmed project-wide license; **do not add a blanket license covering unrelated research without an intentional rights decision**
+- [x] Publish an anonymously accessible static interactive demo URL; preserve availability through 15 December 2026
+- [ ] Upload the locally generated 1:43 captioned demo video to public YouTube (ideally with human narration), then add the exact URL
+- [ ] Publish the already prepared MIT-licensed standalone distribution to a **separate public repository with LICENSE visible on its default branch**. The parent `metalogiclabs/mathgraph` remains project-wide unlicensed; do not alter unrelated research rights.
 - [ ] Add feedback on Nebius/NVIDIA technology in the submission
 - [ ] Register and submit on Devpost before **30 October 2026 at 10:00 am Pacific Time** (31 October 2026 at 6:00 am NZDT)
 
