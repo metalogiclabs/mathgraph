@@ -163,6 +163,145 @@ theorem graphTraceCheck_agrees_with_JPL
                   exact False.elim (ha ((aliasTarget_exists_iff_allowed env s name h).1 hs))
             simp [graphTraceCheck, checkFrom, AnchorEvent.asSerializationEvent, ha, ht]
 
+/-!
+Raw-node-start provenance bridge (conditional on the selected JPL raw tree).
+Each .nodeStart allocates its own graph ID from the ACTUAL GraphState allocator.
+The projection to JPL's Event omits only this local ID, not the declaration.
+This does not claim uniqueness or even existence of a source TraceOf derivation.
+-/
+
+inductive RawAction where
+  | beginDocument
+  | endDocument
+  | nodeStart (anchor : Option String)
+  | aliasUse (name : String)
+  deriving Repr, DecidableEq
+
+def RawAction.events : RawAction → List Event
+  | .beginDocument => [.beginDocument]
+  | .endDocument => [.endDocument]
+  | .nodeStart none => []
+  | .nodeStart (some name) => [.defineAnchor name]
+  | .aliasUse name => [.useAlias name]
+
+def projectedEvents (actions : List RawAction) : List Event :=
+  actions.flatMap RawAction.events
+
+/-- Same two graph operations performed by each original GraphCompose.build
+node constructor, factored into an executable allocation transition. -/
+def allocateNodeStart (s : GraphState) (anchor : Option String) : Nat × GraphState :=
+  let (id, s') := alloc s
+  (id, bind s' anchor id)
+
+theorem allocateNodeStart_fresh (s : GraphState) (anchor : Option String) :
+    (allocateNodeStart s anchor).1 = s.nodes.size := rfl
+
+theorem allocateNodeStart_visible (s : GraphState) (name : String) :
+    aliasTarget (allocateNodeStart s (some name)).2 name =
+      some (allocateNodeStart s (some name)).1 := by
+  simp [allocateNodeStart, alloc, bind, aliasTarget]
+
+/-- The source-plan checker exercises REAL graph allocation and resets.
+Only alias existence matters for this Boolean contract; the full graph
+composer below also retains the chosen ID and emits actual reference edges. -/
+def rawActionCheck (s : GraphState) : List RawAction → Bool
+  | [] => true
+  | .beginDocument :: rest =>
+      rawActionCheck { s with anchors := [] } rest
+  | .endDocument :: rest =>
+      rawActionCheck { s with anchors := [] } rest
+  | .nodeStart anchor :: rest =>
+      rawActionCheck (allocateNodeStart s anchor).2 rest
+  | .aliasUse name :: rest =>
+      (aliasTarget s name).isSome && rawActionCheck s rest
+
+/-- For EVERY event-action list, JPL's actual name-only well-formedness
+checker agrees with the graph ID authorization checker, provided their
+initial environments name the same anchors. Unlike the earlier theorem,
+definition events receive fresh IDs via the actual graph allocator; callers
+cannot choose their IDs. -/
+theorem rawActionCheck_agrees_with_JPL (env : Env) (s : GraphState)
+    (actions : List RawAction)
+    (h : env.anchors = s.anchors.map Prod.fst) :
+    rawActionCheck s actions = checkFrom env (projectedEvents actions) := by
+  induction actions generalizing env s with
+  | nil =>
+      simp [rawActionCheck, projectedEvents]
+  | cons action rest ih =>
+      cases action with
+      | beginDocument =>
+          have h' : (env.reset).anchors =
+              ({ s with anchors := [] } : GraphState).anchors.map Prod.fst := rfl
+          simpa [rawActionCheck, projectedEvents, RawAction.events, checkFrom] using
+            ih env.reset { s with anchors := [] } h'
+      | endDocument =>
+          have h' : (env.reset).anchors =
+              ({ s with anchors := [] } : GraphState).anchors.map Prod.fst := rfl
+          simpa [rawActionCheck, projectedEvents, RawAction.events, checkFrom] using
+            ih env.reset { s with anchors := [] } h'
+      | nodeStart anchor =>
+          cases anchor with
+          | none =>
+              have h' : env.anchors =
+                  (allocateNodeStart s none).2.anchors.map Prod.fst := by
+                simpa [allocateNodeStart, alloc, bind] using h
+              simpa [rawActionCheck, projectedEvents, RawAction.events, checkFrom] using
+                ih env (allocateNodeStart s none).2 h'
+          | some name =>
+              have h' : ({env with anchors := name :: env.anchors} : Env).anchors =
+                  (allocateNodeStart s (some name)).2.anchors.map Prod.fst := by
+                simp [allocateNodeStart, alloc, bind, h]
+              simpa [rawActionCheck, projectedEvents, RawAction.events, checkFrom] using
+                ih {env with anchors := name :: env.anchors}
+                   (allocateNodeStart s (some name)).2 h'
+      | aliasUse name =>
+          by_cases ha : AliasAllowed env name
+          · have ht : (aliasTarget s name).isSome = true :=
+              (aliasTarget_exists_iff_allowed env s name h).2 ha
+            simpa [rawActionCheck, projectedEvents, RawAction.events,
+                   checkFrom, ha, ht] using ih env s h
+          · have ht : (aliasTarget s name).isSome = false := by
+              cases hs : (aliasTarget s name).isSome with
+              | false => rfl
+              | true =>
+                  exact False.elim (ha ((aliasTarget_exists_iff_allowed env s name h).1 hs))
+            simp [rawActionCheck, projectedEvents, RawAction.events, checkFrom, ha, ht]
+
+/-- Selective source-to-action extraction from the JPL serialization tree.
+This function is EXECUTABLE, not yet a kernel-side proof that arbitrary
+YAML source has a unique or faithful TraceOf derivation. -/
+partial def rawTreeActions (value : YamlValue) : List RawAction :=
+  match value with
+  | .scalar scalar => [.nodeStart scalar.anchor]
+  | .sequence _ items _ anchor =>
+      .nodeStart anchor :: items.toList.flatMap rawTreeActions
+  | .mapping _ pairs _ anchor =>
+      .nodeStart anchor :: pairs.toList.flatMap
+        (fun (key, value) => rawTreeActions key ++ rawTreeActions value)
+  | .alias name => [.aliasUse name]
+
+def rawDocumentPlan (document : YamlDocument) : List RawAction :=
+  .beginDocument :: rawTreeActions document.value ++ [.endDocument]
+
+def rawSourcePlanAllowed (input : String) : Bool :=
+  match TokenParser.parseYamlRaw input with
+  | .error _ => false
+  | .ok docs => docs.all fun doc => rawActionCheck {} (rawDocumentPlan doc)
+
+def indexedRawSourcePlanAllowed (input : String) : Bool :=
+  match TokenParser.Indexed.parseYamlRawIx input with
+  | .error _ => false
+  | .ok docs => docs.all fun doc => rawActionCheck {} (rawDocumentPlan doc)
+
+#guard rawSourcePlanAllowed "&x [*x]"
+#guard indexedRawSourcePlanAllowed "&x [*x]"
+#guard rawSourcePlanAllowed "[&x [&x 1], *x]"
+#guard indexedRawSourcePlanAllowed "[&x [&x 1], *x]"
+#guard rawSourcePlanAllowed "[&x 1, *x, &x 9, *x]"
+#guard !(rawSourcePlanAllowed "[*x]")
+#guard !(indexedRawSourcePlanAllowed "[*x]")
+#guard !(rawSourcePlanAllowed "---\n&x 1\n---\n*x\n")
+
 -- Finite adversarial event controls (the theorem itself quantifies over traces).
 #guard graphTraceCheck {} [AnchorEvent.defineAnchor "x" 0, .useAlias "x"]
 #guard graphTraceCheck {} [AnchorEvent.defineAnchor "x" 0,
