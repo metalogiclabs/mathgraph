@@ -498,6 +498,45 @@ where
         let (rest, s) ← buildPairs t s
         return (#[(k, v)] ++ rest, s)
 
+/-!
+The builder above is now a terminating Lean definition with unchanged code.
+These are the first generic semantic lemmas about the ACTUAL builder,
+not about a separate event-plan executable.
+-/
+
+/-- An alias returns the latest node ID without allocating a second node. -/
+theorem build_alias_exact (s : GraphState) (name : String) (id : Nat)
+    (h : aliasTarget s name = some id) :
+    build (.alias name) s =
+      .ok (id, { s with receipts := s.receipts.push (.aliasTo name id) }) := by
+  simp [build, h]
+
+/-- An unavailable alias is rejected by the actual builder. -/
+theorem build_alias_unbound (s : GraphState) (name : String)
+    (h : aliasTarget s name = none) :
+    build (.alias name) s = .error ("UNBOUND_ALIAS:" ++ name) := by
+  simp [build, h]
+
+/-- Registering the current anchor at node start makes a back-edge target
+    the exact newly allocated node ID even before its children exist. -/
+theorem build_alias_of_newly_started_node (s : GraphState) (name : String) :
+    build (.alias name) (allocateNodeStart s (some name)).2 =
+      .ok ((allocateNodeStart s (some name)).1,
+        { (allocateNodeStart s (some name)).2 with
+          receipts := (allocateNodeStart s (some name)).2.receipts.push
+            (.aliasTo name (allocateNodeStart s (some name)).1) }) := by
+  apply build_alias_exact
+  exact allocateNodeStart_visible s name
+
+/-- The scalar constructor starts and finishes one actual graph node. -/
+theorem build_scalar_exact (s : GraphState) (data : Scalar) :
+    build (.scalar data) s =
+      let (id, t) := allocateNodeStart s data.anchor
+      .ok (id, assign t id
+        (jsonNode "scalar"
+          [("json", .str (L4YAML.Json.yamlToJson (.scalar data)))])) := by
+  rfl
+
 def graphOf (doc : YamlDocument) : Except String Lean.Json := do
   let (root, s) ← build doc.value {}
   return Lean.Json.mkObj [
