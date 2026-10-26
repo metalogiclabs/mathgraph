@@ -20,7 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Assert source checkout matches the qualified PR head
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -64,10 +72,14 @@ jobs:
           PY
           git rev-parse HEAD > evidence/current-commit.txt
           git hash-object research/source_observation_constructor_v1/F1_V2_SOURCE_LOCK.json > evidence/lock-blob.txt
-          sha256sum evidence/* > evidence/SHA256SUMS
+          sha256sum evidence/metadata-only-result.json evidence/current-commit.txt evidence/lock-blob.txt > evidence/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: f1-v2-metadata-source-lock
-          path: evidence/
+          path: |
+            evidence/metadata-only-result.json
+            evidence/current-commit.txt
+            evidence/lock-blob.txt
+            evidence/SHA256SUMS
           if-no-files-found: error
