@@ -39,7 +39,7 @@ def main():
         as_log([e[0],e[0]]),
         as_log(e,True).replace(b"WARNING:test:skipping emoji",b"WARNING:test:skipping something"),
         as_log(e).replace(b"cli/fixture/a ... ok",b"cli/fixture/a ... BROKEN"),
-        as_log(e).replace(b"Ran 2 tests",b"Ran 2 tests\nRan 2 tests"),
+        as_log(e).replace(b"Ran 2 tests in 0.01s",b"Ran 2 tests in 0.01s\nRan 2 tests in 0.01s"),
         as_log(e).replace(b"Ran 2 tests",b"summary missing"),
     ]
     for data in negatives:
