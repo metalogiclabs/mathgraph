@@ -17,16 +17,22 @@ def legacyAccept (input : String) : Bool :=
 def indexedAccept (input : String) : Bool :=
   (TokenParser.Indexed.parseYamlSingleIx input).isOk
 
--- Deliberately stale historical assertion for the RED characterization run:
--- an older parser epoch refused this legal self-alias.
-#guard legacyAccept "&x [*x]" == false
-#guard indexedAccept "&x [*x]" == false
+-- Current source declares anchors at node start and resolves them at completion.
+-- These self-cycles are legal; historical RED witness: CI run 40249383652.
+#guard legacyAccept "&x [*x]"
+#guard indexedAccept "&x [*x]"
+#guard legacyAccept "&x {a: *x}"
+#guard indexedAccept "&x {a: *x}"
+#guard legacyAccept "&x\n- *x\n"
+#guard indexedAccept "&x\n- *x\n"
 
 -- Independent positive/negative controls.
 #guard legacyAccept "[&x 1, *x]"
 #guard indexedAccept "[&x 1, *x]"
 #guard !legacyAccept "[*x]"
 #guard !indexedAccept "[*x]"
+#guard !legacyAccept "&x [*x, *y]"
+#guard !indexedAccept "&x [*x, *y]"
 
 def cases : Array (String × String) := #[
   ("flow-sequence-self", "&x [*x]"),
