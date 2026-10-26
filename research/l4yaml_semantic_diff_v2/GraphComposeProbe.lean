@@ -384,23 +384,72 @@ def resultJson : Except String Lean.Json → Lean.Json
   | .ok data => Lean.Json.mkObj [("status", .str "ok"), ("graphs", data)]
   | .error err => Lean.Json.mkObj [("status", .str "error"), ("error", .str err)]
 
+/-- Native scanner tokens are a source-linked authority boundary independent
+from the parser's reconstructed YAML serialization tree. -/
+def scannerAnchorOrder (source : String) : Except String (List String) :=
+  match Scanner.scanFiltered source with
+  | .error err => .error (toString err)
+  | .ok tokens =>
+      .ok (tokens.toList.filterMap fun pos =>
+        match pos.val with
+        | .anchor name => some ("&" ++ name)
+        | .alias name => some ("*" ++ name)
+        | _ => none)
+
+/-- This is a parser-structure projection, not a theorem of source
+TraceOf uniqueness. Only anchor/alias event order is compared. -/
+def parsedAnchorOrder (docs : Array YamlDocument) : List String :=
+  docs.toList.flatMap fun doc =>
+    (rawTreeActions doc.value).filterMap fun a =>
+      match a with
+      | .nodeStart (some name) => some ("&" ++ name)
+      | .aliasUse name => some ("*" ++ name)
+      | _ => none
+
+def traceOrderRecord (input : String) : Lean.Json := Id.run do
+  let scanned := scannerAnchorOrder input
+  let parsed := TokenParser.parseYamlRaw input
+  let parsedIx := TokenParser.Indexed.parseYamlRawIx input
+  let status := match scanned, parsed, parsedIx with
+    | .ok a, .ok docs, .ok docsIx =>
+        if a == parsedAnchorOrder docs &&
+           parsedAnchorOrder docs == parsedAnchorOrder docsIx
+        then "MATCH" else "MISMATCH"
+    | _, _, _ => "REFUSED"
+  let scannerEvents := match scanned with | .ok v => v | .error _ => []
+  let treeEvents := match parsed with
+    | .ok docs => parsedAnchorOrder docs
+    | .error _ => []
+  return Lean.Json.mkObj [
+    ("input", .str input),
+    ("status", .str status),
+    ("scanner", Lean.toJson scannerEvents),
+    ("raw_tree", Lean.toJson treeEvents)
+  ]
+
+#guard (traceOrderRecord "&x [*x]").getObjValAs? String "status" == .ok "MATCH"
+#guard (traceOrderRecord "[&x [&x 1], *x]").getObjValAs? String "status" == .ok "MATCH"
+
 end MathGraph.GraphCompose
 
 open MathGraph.GraphCompose
 
 def main (args : List String) : IO Unit := do
-  let some path := args.head?
+  let traceMode := args.head? == some "--trace"
+  let pathOpt := if traceMode then (args.drop 1).head? else args.head?
+  let some path := pathOpt
     | throw (IO.userError "pass JSONL input path")
   let data ← IO.FS.readFile path
   for line in data.splitOn "\n" do
     if line != "" then
       match Lean.Json.parse line with
       | .ok (.str source) =>
-          let record := Lean.Json.mkObj [
-            ("input", .str source),
-            ("legacy", resultJson (graphLegacy source)),
-            ("indexed", resultJson (graphIndexed source))
-          ]
+          let record := if traceMode then traceOrderRecord source else
+            Lean.Json.mkObj [
+              ("input", .str source),
+              ("legacy", resultJson (graphLegacy source)),
+              ("indexed", resultJson (graphIndexed source))
+            ]
           IO.println record.compress
       | _ => throw (IO.userError "non-string JSONL input")
 
