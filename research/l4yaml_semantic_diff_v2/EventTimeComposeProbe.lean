@@ -4,6 +4,9 @@ public import L4YAML.Output.Json
 public import L4YAML.Output.JsonIx
 public import L4YAML.Parser.IndexedComposition
 public import Lean.Data.Json
+public meta import L4YAML.Output.Json
+public meta import L4YAML.Output.JsonIx
+public meta import L4YAML.Parser.IndexedComposition
 
 @[expose] public section
 
