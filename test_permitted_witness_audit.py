@@ -54,6 +54,8 @@ class PermissionWitnessTests(unittest.TestCase):
             self.skipTest("requires separately checked out source")
         r=permission_audit(Path(upstream))
         self.assertEqual(r["full_domain_size"],1026)
+        self.assertEqual(r["observation_grammar"],"only input lengths 1,2,3 may be selected")
+        self.assertEqual(len(r["excluded_controls_hex"]),3)
         self.assertEqual(r["source"]["commit"],"672971d66a2ef9f85151e53283113f33d642dabd")
         s=r["scenarios"]
         self.assertEqual(s["all_permitted"]["tests_hex"],["00","f80000"])
