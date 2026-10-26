@@ -427,8 +427,13 @@ def traceOrderRecord (input : String) : Lean.Json := Id.run do
     ("raw_tree", Lean.toJson treeEvents)
   ]
 
-#guard decide ((traceOrderRecord "&x [*x]").getObjValAs? String "status" = .ok "MATCH")
-#guard decide ((traceOrderRecord "[&x [&x 1], *x]").getObjValAs? String "status" = .ok "MATCH")
+def traceOrderMatched (source : String) : Bool :=
+  match (traceOrderRecord source).getObjValAs? String "status" with
+  | .ok status => status == "MATCH"
+  | .error _ => false
+
+#guard traceOrderMatched "&x [*x]"
+#guard traceOrderMatched "[&x [&x 1], *x]"
 
 end MathGraph.GraphCompose
 
