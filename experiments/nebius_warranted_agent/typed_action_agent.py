@@ -59,7 +59,7 @@ class ScriptedTypedProvider:
         self.actions: list[dict] = []
 
     def propose(self, current: str, evidence: list[tuple[str, str]],
-                attempt: int) -> Proposal:
+                attempt: int, feedback: str = "") -> Proposal:
         action = {"encoder": "b64encode", "padding": "retain"} if attempt == 1 else {
             "encoder": "urlsafe_b64encode", "padding": "strip"
         }
@@ -85,7 +85,7 @@ class NebiusTypedProvider:
         self.actions: list[dict] = []
 
     def propose(self, current: str, evidence: list[tuple[str, str]],
-                attempt: int) -> Proposal:
+                attempt: int, feedback: str = "") -> Proposal:
         if not 1 <= attempt <= 2:
             raise ValueError("MODEL_ATTEMPT_OUT_OF_BUDGET")
         messages = [
@@ -104,7 +104,9 @@ class NebiusTypedProvider:
              f"Current code:\n{current}\n"
              f"Observed counterexamples as input/required-output hex: "
              f"{json.dumps(evidence, separators=(',', ':'))}\n"
-             f"Attempt: {attempt}. Reply with only the two-field JSON action."},
+             f"Attempt: {attempt}. Previous independent verification feedback: "
+             f"{feedback[:350] if feedback else 'none'}. "
+             "Reply with only the two-field JSON action."},
         ]
         body = {
             "model": self.model, "messages": messages,
