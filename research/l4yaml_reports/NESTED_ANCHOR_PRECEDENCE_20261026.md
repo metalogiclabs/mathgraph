@@ -2,6 +2,18 @@
 
 **Status:** bounded differential WARRANTED; source-level causal explanation CANDIDATE; repair UNKNOWN; full YAML correctness UNKNOWN; release authority NOT_AUTHORIZED.
 
+## Promotion — successful source-native intervention (2026-10-26)
+
+**WARRANTED (finite native experiment):** A MathGraph-owned Lean `resolveStart` counterfactual, applied to the *unchanged native JPL raw parser output* for both legacy and indexed pipelines at `L4YAML@264e050653cb6f39c1de0e752262819e84cbaf45`, changes the 532-case value-oracle agreement from **427/532 to 532/532**. Exactly **105 repairs, zero regressions**; each of seven nested repeated-anchor families improves 15/15, five control anchor families retain their 75/75 agreement, all 352 ordinary controls stay green. The original source was not patched. [Green CI 40252659793](https://github.com/metalogiclabs/mathgraph/actions/runs/40252659793) at owned code commit `ab79137b2f7fd4dd22ec0fbe7d9678e64619fdbc`; [artifact 12620869167](https://github.com/metalogiclabs/mathgraph/actions/runs/40252659793/artifacts/12620869167) contains both complete 532-case native logs, oracle manifests, family report and 4 alias/cycle controls.
+
+**Mechanism:** the experimental Compose inserts a collection's raw anchor binding into an ordered environment *at the start of the collection* instead of after recursively composing its children. Since this single intervention explains all seven previously failing families, the postorder/preorder cause is supported by an actual source-native intervention (stronger than a source-reading conjecture). The alternative algorithm is still an **experimental CANDIDATE**, not a proved general equivalence or merged JPL repair.
+
+**Separate REFUSAL / UNKNOWN:** cycles remain unrepresented as faithful graph identities. For `&x [*x]`, unchanged JPL JSON is `[null]` and the experimental JSON is `[[null]]`; for `&x {a: *x}`, unchanged JSON is `{"a":null}` and experimental JSON is `{"a":{"a":null}}`. Both accept the input syntactically; neither serialized tree establishes a real cyclic graph. External PyYAML creates actual object-identity cycles. The alias `[*x]` and cross-document `---\\n&x 1\\n---\\n*x\\n` are rejected by both native pipelines and both compositions. **No graph-identity, full YAML conformance, theorem or release warrant is promoted.**
+
+**Preserved failed harness iterations:** [run 40252118754](https://github.com/metalogiclabs/mathgraph/actions/runs/40252118754) failed because executable `main` was namespace-scoped; [run 40252426617](https://github.com/metalogiclabs/mathgraph/actions/runs/40252426617) failed because interpreter `meta import` declarations were missing. These are experiment-harness failures, not source claims. Both fixed before the green native result.
+
+**Next cheapest consequential experiment:** a minimal, ID-addressed graph Compose for self-reference and rebinding, independent of upstream, together with a round-trip graph-identity checker and an explicit acyclic projection; validate equivalence on the 532 cases and constructively verify `&x [*x]` / `&x {a: *x}` point to their own node IDs. Distinguish actual graph-node identity from JSON value comparisons. No upstream write, PR, comment, or contact with Nicolas.
+
 ## Objective and immutable evidence
 
 Determine whether the 105/532 remaining YAML oracle disagreements are heterogeneous defects or one isolatable residual, without modifying JPL's source.
