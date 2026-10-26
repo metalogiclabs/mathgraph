@@ -8,7 +8,7 @@ MathGraph Autopilot — The Agent That Knows When It Isn't Finished
 
 ## Elevator pitch
 
-A green test suite can still hide a broken AI-generated repair. MathGraph Autopilot asks what evidence is missing, acquires the cheapest separating tests it can justify within a finite hypothesis grammar, and refuses to call a coding task complete until independent results are bound to the exact source revision.
+Green tests don't prove the *right things* were tested. MathGraph Autopilot turns missing evidence into the **cheapest permitted separating experiment**, acquires it, and refuses unsupported completion. Judges can even **forbid an observation channel** in our live finite lab and watch MathGraph return an explicit obstruction rather than a false approval. A genuine NVIDIA Nemotron repair through Nebius Token Factory is independently qualified in GitHub Actions.
 
 ## Track
 
@@ -21,6 +21,14 @@ A coding model proposes a source change, but cannot authorize its own success. M
 We demonstrate on an exact pinned checkout of the open-source Python project Pallets `itsdangerous`. We deliberately inject three isolated encoding defects; **these are experimental faults, not defects in upstream Pallets**. All three pass its original native encoding tests. MathGraph independently evaluates 1,026 frozen byte inputs, finds two separating observations, and exposes the defects. Its exact minimum cost is independently cross-checked.
 
 **Authentic Nebius/NVIDIA:** Through Nebius Token Factory, **NVIDIA Nemotron 3 Super 120B** generated a correct one-function repair for one injected fault. Its source proposal was constrained by an AST admission policy and independently passed the original native tests and newly acquired tests. Evidence withdrawal and fresh requalification were both reproduced in [GitHub Actions run #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641); its credential-free artifact preserves provider request/response hashes and test receipts. This is one bounded source-native repair, not evidence of arbitrary-repository correctness.
+
+## Challenge the verifier yourself — interactive active-observation lab
+
+In the public judge demo, select the permitted experimental channels for the frozen encoding repair task. The browser recomputes a minimum-cost separating basis in real time over the same 1,026 finite inputs. With one-, two- and three-byte probes permitted, it finds two tests at synthetic cost 6. Forbid one-byte probes and it finds an alternative at cost 7. Allow only three-byte probes and it reports **OBSTRUCTION**: the padding mutant is indistinguishable within that observation grammar. Re-enable the missing channel and the target becomes distinguishable again.
+
+[Try the active-observation lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#observation-lab).
+
+This is real client-side finite computation and a permission/sensor experiment; it is not a hosted LLM completion or general software-correctness proof. The separately linked source-pinned GitHub Actions run establishes the actual Nebius inference.
 
 ## What makes the approach different?
 
