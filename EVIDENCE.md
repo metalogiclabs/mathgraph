@@ -17,6 +17,14 @@ This manifest links exact external evidence. It is not a signed external attesta
 | Independent offline qualification | [59/59 tests, Actions 40255832893](https://github.com/metalogiclabs/mathgraph/actions/runs/40255832893) |
 | Current research | [MathGraph draft PR 203](https://github.com/metalogiclabs/mathgraph/pull/203) |
 
+## Public demonstration deployment
+
+- Static, interactive, read-only browser replay: [MathGraph Autopilot demo](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/)
+- Cloudflare Worker: `mathgraph-autopilot-nebius-demo` under the existing `metalogiclabs-check.workers.dev` subdomain
+- Cloudflare API confirmed route enabled and Worker deployment `f6e046a2-f134-41ad-8cb5-81f3f45ec768` serving version `1be57e3e-2bb3-439a-b251-6ec51123491f` at 100% traffic
+- Independent Cloudflare Browser Rendering API returned HTTP 200 and HTML containing the Autopilot title and interactive controls
+- This is deliberately not live code execution or a second NVIDIA inference call. The real model execution is the source-pinned GitHub Actions run above.
+
 ## Caveats
 
 The live model's proposal was tested only against the declared original native tests and two newly acquired separating tests for a deliberately injected defect. A passing source-native receipt is not a theorem of software correctness. The solver's finite minimum is relative to the predeclared hypothesis grammar and synthetic cost. Source codes are not originally Pallets defects. Do not attribute the browser replay to actual live inference.
