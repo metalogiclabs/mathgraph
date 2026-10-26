@@ -260,12 +260,28 @@ def grade(nav,truth,output):
     narrow=[r for r in output["events"] if r["model_state"]=="MODEL_INTERVAL_NARROW"]
     wrong=sum(not r["interval_min_rad"]-1e-10<=true[r["camera_index"]]<=
                  r["interval_max_rad"]+1e-10 for r in narrow)
+    # Post-hoc risk/coverage diagnostics only. Thresholds are NOT tuned
+    # into a flight policy. The hidden synthetic grader alone sees truth.
+    frontier={}
+    for width in (.07,.10,.20,.30,.50):
+        eligible=[e for e in output["events"] if
+                  e["interval_width_rad"] is not None and
+                  e["sensitivity_width_rad"] is not None and
+                  e["interval_width_rad"]<=width and
+                  e["sensitivity_width_rad"]<=width]
+        false=sum(not (e["interval_min_rad"]-1e-10<=true[e["camera_index"]]<=
+                       e["interval_max_rad"]+1e-10) for e in eligible)
+        frontier[f"{width:.2f}"]={
+            "eligible_frames":len(eligible),
+            "false_intervals_grader_only":int(false),
+            "fraction_of_scored_frames":len(eligible)/len(indexes)}
     return {"gyro_rmse_deg":rmse("gyro_only_rad"),
             "mathgraph_diagnostic_rmse_deg":rmse("diagnostic_midpoint_rad"),
             "conventional_capped_hamming_rmse_deg":rmse("conventional_capped_hamming_rad"),
             "model_narrow_fraction":len(narrow)/len(indexes),
             "model_narrow_frames":len(narrow),
             "false_model_narrow_frames_grader_only":int(wrong),
+            "retrospective_risk_coverage_only":frontier,
             "firstturn_truth_revolutions_grader_only":
                 float(true[output["firstturn_end_camera_index"]]/TAU),
             "hardware_warrant":False}
@@ -283,7 +299,12 @@ def benchmark(seeds=8):
                 "conventional_capped_hamming_rmse_deg","model_narrow_fraction",
                 "false_model_narrow_frames_grader_only")
         means={k:round(float(np.mean([s[k] for s in scores])),4) for k in labels}
+        frontier={key:{
+            "eligible_frames":sum(row["retrospective_risk_coverage_only"][key]["eligible_frames"] for row in scores),
+            "false_intervals_grader_only":sum(row["retrospective_risk_coverage_only"][key]["false_intervals_grader_only"] for row in scores)}
+            for key in scores[0]["retrospective_risk_coverage_only"]}
         rows.append({"condition":case,"trials":seeds,"mean":means,
+                     "posthoc_threshold_frontier":frontier,
                      "seed_scores":scores})
     return {"boundary":"ACTUAL_SYNTHETIC_16BIT_COLUMNS_NOT_IDEALIZED_OPTICAL_PHASE",
             "same_gyro_and_source_columns_for_both_estimation_methods":True,
