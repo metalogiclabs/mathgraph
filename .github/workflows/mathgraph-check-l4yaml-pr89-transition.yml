@@ -25,7 +25,7 @@ jobs:
     env:
       BASE_SHA: '82cdb78e8909f25d9079d9bb05ed7c6f508ee95c'
       PR89_SHA: '364a80d4f6790175e06e29c59708da3b50c20049'
-      CURRENT_INTEGRATION_SHA: 'e859cef6cf58ca0f2a9353920e52639dbb26cf6f'
+      CURRENT_INTEGRATION_SHA: '264e050653cb6f39c1de0e752262819e84cbaf45'
     steps:
       - name: Checkout owned checker
         uses: actions/checkout@v4
