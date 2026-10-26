@@ -24,9 +24,27 @@ No universal YAML proof is claimed. The finite tests independently compare
 node-edge identity with a byte-pinned ruamel.yaml composer.
 -/
 
+inductive AllocationReceipt where
+  | nodeStart (id : Nat) (anchor : Option String)
+  | aliasTo (name : String) (target : Nat)
+  deriving Repr, DecidableEq
+
+def AllocationReceipt.toJson : AllocationReceipt → Lean.Json
+  | .nodeStart id anchor => Lean.Json.mkObj [
+      ("event", .str "nodeStart"),
+      ("id", Lean.toJson id),
+      ("anchor", match anchor with
+        | some name => .str name
+        | none => .null)]
+  | .aliasTo name target => Lean.Json.mkObj [
+      ("event", .str "aliasTo"),
+      ("name", .str name),
+      ("target", Lean.toJson target)]
+
 structure GraphState where
   nodes : Array Lean.Json := #[]
   anchors : List (String × Nat) := []
+  receipts : Array AllocationReceipt := #[]
   deriving Inhabited
 
 def jsonNode (kind : String) (extra : List (String × Lean.Json)) : Lean.Json :=
@@ -191,7 +209,8 @@ def projectedEvents (actions : List RawAction) : List Event :=
 node constructor, factored into an executable allocation transition. -/
 def allocateNodeStart (s : GraphState) (anchor : Option String) : Nat × GraphState :=
   let (id, s') := alloc s
-  (id, bind s' anchor id)
+  let s'' := bind s' anchor id
+  (id, { s'' with receipts := s''.receipts.push (.nodeStart id anchor) })
 
 theorem allocateNodeStart_fresh (s : GraphState) (anchor : Option String) :
     (allocateNodeStart s anchor).1 = s.nodes.size := rfl
@@ -200,6 +219,16 @@ theorem allocateNodeStart_visible (s : GraphState) (name : String) :
     aliasTarget (allocateNodeStart s (some name)).2 name =
       some (allocateNodeStart s (some name)).1 := by
   simp [allocateNodeStart, alloc, bind, aliasTarget]
+
+theorem allocateNodeStart_records (s : GraphState) (anchor : Option String) :
+    (allocateNodeStart s anchor).2.receipts =
+      s.receipts.push (.nodeStart s.nodes.size anchor) := rfl
+
+theorem newest_binding_target (s : GraphState) (name : String)
+    (oldId newId : Nat) :
+    aliasTarget (bind (bind s (some name) oldId) (some name) newId) name =
+      some newId := by
+  simp [aliasTarget, bind]
 
 /-- The source-plan checker exercises REAL graph allocation and resets.
 Only alias existence matters for this Boolean contract; the full graph
@@ -317,19 +346,16 @@ def indexedRawSourcePlanAllowed (input : String) : Bool :=
 partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × GraphState) :=
   match v with
   | .scalar data => do
-      let (id, s) := alloc s
-      let s := bind s data.anchor id
+      let (id, s) := allocateNodeStart s data.anchor
       let json := L4YAML.Json.yamlToJson (.scalar data)
       return (id, assign s id (jsonNode "scalar" [("json", .str json)]))
   | .sequence _ items _ anchor => do
-      let (id, s) := alloc s
-      let s := bind s anchor id
+      let (id, s) := allocateNodeStart s anchor
       let (children, s) ← buildList items.toList s
       let node := jsonNode "sequence" [("items", Lean.toJson children)]
       return (id, assign s id node)
   | .mapping _ pairs _ anchor => do
-      let (id, s) := alloc s
-      let s := bind s anchor id
+      let (id, s) := allocateNodeStart s anchor
       let (children, s) ← buildPairs pairs.toList s
       let edges := children.map fun (k, v) =>
         Lean.Json.arr #[Lean.toJson k, Lean.toJson v]
@@ -337,7 +363,7 @@ partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × Graph
       return (id, assign s id node)
   | .alias name =>
       match aliasTarget s name with
-      | some id => .ok (id, s)
+      | some id => .ok (id, { s with receipts := s.receipts.push (.aliasTo name id) })
       | none => .error ("UNBOUND_ALIAS:" ++ name)
 where
   buildList : List YamlValue → GraphState → Except String (Array Nat × GraphState)
@@ -362,6 +388,33 @@ def graphOf (doc : YamlDocument) : Except String Lean.Json := do
     ("root", Lean.toJson root),
     ("nodes", Lean.Json.arr s.nodes)
   ]
+
+/-- Audit witness from the SAME state returned by the real graph builder.
+This is not a duplicate reconstruction of node IDs. -/
+def graphReceiptOf (doc : YamlDocument) : Except String Lean.Json := do
+  let (root, s) ← build doc.value {}
+  return Lean.Json.mkObj [
+    ("root", Lean.toJson root),
+    ("nodes", Lean.Json.arr s.nodes),
+    ("receipts", Lean.Json.arr (s.receipts.map AllocationReceipt.toJson))
+  ]
+
+def graphsReceiptOf (docs : Array YamlDocument) : Except String Lean.Json := do
+  let mut graphs : Array Lean.Json := #[]
+  for doc in docs do
+    let graph ← graphReceiptOf doc
+    graphs := graphs.push graph
+  return Lean.Json.arr graphs
+
+def graphLegacyReceipt (input : String) : Except String Lean.Json := do
+  match L4YAML.TokenParser.parseYamlRaw input with
+  | .ok docs => graphsReceiptOf docs
+  | .error err => .error (toString err)
+
+def graphIndexedReceipt (input : String) : Except String Lean.Json := do
+  match L4YAML.TokenParser.Indexed.parseYamlRawIx input with
+  | .ok docs => graphsReceiptOf docs
+  | .error err => .error (toString err)
 
 def graphsOf (docs : Array YamlDocument) : Except String Lean.Json := do
   let mut graphs : Array Lean.Json := #[]
@@ -441,7 +494,8 @@ open MathGraph.GraphCompose
 
 def main (args : List String) : IO Unit := do
   let traceMode := args.head? == some "--trace"
-  let pathOpt := if traceMode then (args.drop 1).head? else args.head?
+  let witnessMode := args.head? == some "--witness"
+  let pathOpt := if traceMode || witnessMode then (args.drop 1).head? else args.head?
   let some path := pathOpt
     | throw (IO.userError "pass JSONL input path")
   let data ← IO.FS.readFile path
@@ -449,12 +503,22 @@ def main (args : List String) : IO Unit := do
     if line != "" then
       match Lean.Json.parse line with
       | .ok (.str source) =>
-          let record := if traceMode then traceOrderRecord source else
-            Lean.Json.mkObj [
-              ("input", .str source),
-              ("legacy", resultJson (graphLegacy source)),
-              ("indexed", resultJson (graphIndexed source))
-            ]
+          let record := if traceMode then traceOrderRecord source
+            else if witnessMode then
+              Lean.Json.mkObj [
+                ("input", .str source),
+                ("scanner", match scannerAnchorOrder source with
+                  | .ok ev => Lean.toJson ev
+                  | .error _ => .null),
+                ("legacy", resultJson (graphLegacyReceipt source)),
+                ("indexed", resultJson (graphIndexedReceipt source))
+              ]
+            else
+              Lean.Json.mkObj [
+                ("input", .str source),
+                ("legacy", resultJson (graphLegacy source)),
+                ("indexed", resultJson (graphIndexed source))
+              ]
           IO.println record.compress
       | _ => throw (IO.userError "non-string JSONL input")
 
