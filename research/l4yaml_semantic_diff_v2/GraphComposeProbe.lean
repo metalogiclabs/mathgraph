@@ -49,7 +49,7 @@ def aliasTarget (s : GraphState) (name : String) : Option Nat :=
     even before any child has been traversed. -/
 theorem started_anchor_visible (s : GraphState) (name : String) (id : Nat) :
     aliasTarget (bind s (some name) id) name = some id := by
-  simp [aliasTarget, bind, List.findSome?]
+  simp [aliasTarget, bind]
 
 /-- The new graph node's ID is allocated before processing children. -/
 theorem allocation_is_fresh (s : GraphState) :
