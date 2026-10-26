@@ -25,7 +25,7 @@ jobs:
     env:
       BASE_SHA: '82cdb78e8909f25d9079d9bb05ed7c6f508ee95c'
       PR89_SHA: '364a80d4f6790175e06e29c59708da3b50c20049'
-      CURRENT_INTEGRATION_SHA: 'b2790e23b6633b57d2a98f2e436db0ff69c850db'
+      CURRENT_INTEGRATION_SHA: 'e859cef6cf58ca0f2a9353920e52639dbb26cf6f'
     steps:
       - name: Checkout owned checker
         uses: actions/checkout@v4
@@ -111,6 +111,19 @@ jobs:
               L4YAML.Output.Json L4YAML.Output.JsonIx L4YAML.Schema.Api) \
               > "evidence-out/pr89-transition/${label}-build.log" 2>&1
             echo "SOURCE_NATIVE_BUILT:$label"
+          done
+      - name: Probe alias declaration epoch in both native parsers
+        shell: bash
+        timeout-minutes: 7
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for label in base candidate; do
+            (cd "l4yaml-$label" && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/AliasEpochProbe.lean") \
+              >"evidence-out/pr89-transition/$label-alias-epoch.jsonl" \
+              2>"evidence-out/pr89-transition/$label-alias-epoch-stderr.log"
+            test ! -s "evidence-out/pr89-transition/$label-alias-epoch-stderr.log"
           done
       - name: Replay identical 532-case value grammar on both sources
         shell: bash
