@@ -17,6 +17,15 @@ This manifest links exact external evidence. It is not a signed external attesta
 | Independent offline qualification | [59/59 tests, Actions 40255832893](https://github.com/metalogiclabs/mathgraph/actions/runs/40255832893) |
 | Current research | [MathGraph draft PR 203](https://github.com/metalogiclabs/mathgraph/pull/203) |
 
+## Frozen comparative benchmark (26 October 2026)
+
+- **Prospective protocol:** [Frozen benchmark protocol](./BENCHMARK_PROTOCOL_20261026.md) committed at `4c9009cedf362a9e50ba8437614c75b330ecd8fb` before implementing the comparator.
+- **Independent GitHub runner:** [Actions #40268881457](https://github.com/metalogiclabs/mathgraph/actions/runs/40268881457), 32/32 tests, pinned source commit `159c418f576c17a34dc8bdaedcc0a5636474589e`.
+- **Source-linked evidence ZIP:** [Artifact #12627522966](https://github.com/metalogiclabs/mathgraph/actions/runs/40268881457/artifacts/12627522966), ZIP SHA-256 `384d6a8b2f784b80a4f8bf89d9704ad9239e7596f7b36e5a0a067971e90b39ed`.
+- **Actual finite results:** MathGraph 2 tests, 3/3 detected, synthetic cost 6. Informed conventional mutation-aware greedy **ties cost 6** and 3/3. Fixed edge-case pair 2/3; supplemented third test 3/3 at cost 8. Uniform random 2-test selection fully separates 19/1,000 fixed seeds. Deterministic random rates at 4/8/16 tests are 60/151/314 of 1,000.
+- **Known limitation:** input `ffffffff` (hex) activates a constructed, out-of-grammar mutation not detectable by the frozen finite experiment, disproving any universal correctness claim.
+- See [complete experimental report](./BENCHMARK_RESULTS_20261026.md) for scope, sampling, price units and baselines. Do not describe this as advantage over informed, optimized mutation testing, unseen real-world defects, or arbitrary agent tasks.
+
 ## Public demonstration deployment
 
 - Static, interactive, read-only browser replay: [MathGraph Autopilot demo](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/)
