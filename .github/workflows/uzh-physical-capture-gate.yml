@@ -140,6 +140,29 @@ jobs:
                     'joint_fraction',c[name]['mean_joint_clock_bounded_fraction'])
           print('NO_RAW_CAMERA_SENSOR_PROVENANCE_OR_PHYSICAL_CLOCK_AUTHORITY')
           PY
+      - name: Original 16-bit source-column joint bias-clock interval adversaries
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_source_native_joint.py' -v
+      - name: Same-source 32-seed source-native bias-clock comparison
+        run: |
+          python experiments/uzh_rotation/physical_source_native_joint.py \
+            --seeds 32 --output source_native_joint_32seeds.json
+          python - <<'PY'
+          import json
+          r=json.load(open('source_native_joint_32seeds.json'))
+          assert r['boundary']=='ACTUAL_SYNTHETIC_16BIT_COLUMNS_NOT_IDEALIZED_OPTICAL_PHASE'
+          assert r['same_gyro_and_source_columns_for_both_estimation_methods']
+          assert r['hidden_truth_excluded_from_estimators']
+          assert r['real_sensors_tested'] is False
+          assert r['physical_navigation_authorized'] is False
+          assert len(r['scenarios'])==7
+          for c in r['scenarios']:
+              assert c['trials']==32
+              assert c['mean']['false_model_narrow_frames_grader_only']==0
+              assert c['mean']['model_narrow_fraction']==0
+          print('SOURCE_NATIVE_16BIT_JOINT_REPLAY_TESTED_NO_PHYSICAL_AUTHORITY')
+          for c in r['scenarios']:
+              print('RAW16',c['condition'],c['mean'])
+          PY
       - name: Adversarial isolation unit controls
         run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
       - name: Real Docker isolated positive and forbidden encoder negative control
@@ -202,4 +225,5 @@ jobs:
             native_active_acquisition_census.json
             passive_landmark_width_grid.json
             joint_bias_clock_32seeds.json
+            source_native_joint_32seeds.json
           if-no-files-found: warn
