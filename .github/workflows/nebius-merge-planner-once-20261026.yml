@@ -20,7 +20,7 @@ jobs:
       - name: Checkout exact qualified standalone reviewer
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: b90f65deca060df5359f4db10061b34b9bdfb670
+          ref: 6ddd5028515c801b1fa7962ee5c9a0349f08ed69
           persist-credentials: false
       - name: Checkout independently pinned public upstream
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -49,7 +49,7 @@ jobs:
             exit 1
           fi
           printf '%s\n' '{"status":"UNKNOWN","reason":"model_selection_in_progress","real_inference_attempted":true}' > model-observation-live-status.json
-          if python model_observation_merge.py --provider nebius \
+          if python model_observation_merge.py --provider nebius_menu \
              --upstream-checkout upstream_itsdangerous --max-attempts 2 \
              --report model-observation-live-report.json; then
             printf '%s\n' '{"status":"CANDIDATE","reason":"model_proposed_actions_verified_review_full_report","real_inference_attempted":true}' > model-observation-live-status.json
