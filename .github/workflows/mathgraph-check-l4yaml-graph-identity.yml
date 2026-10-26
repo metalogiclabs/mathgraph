@@ -9,6 +9,7 @@ on:
       - 'research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean'
       - 'research/l4yaml_semantic_diff_v2/graph_comparison.py'
       - 'research/l4yaml_semantic_diff_v2/trace_provenance.py'
+      - 'research/l4yaml_semantic_diff_v2/allocation_receipt.py'
   workflow_dispatch:
 
 permissions:
@@ -127,6 +128,27 @@ jobs:
             --special evidence-out/graph/special_trace.jsonl \
             --report evidence-out/graph/trace_report.json \
             --source-sha "$JPL_SHA"
+      - name: Verify IDs emitted by the actual Lean graph allocation path
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for suite in anchor ordinary special; do
+            (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
+              --witness "$GITHUB_WORKSPACE/evidence-out/graph/${suite}_inputs.jsonl") \
+              > "evidence-out/graph/${suite}_witness.jsonl" \
+              2> "evidence-out/graph/${suite}_witness_stderr.log"
+            test ! -s "evidence-out/graph/${suite}_witness_stderr.log"
+          done
+          python -m research.l4yaml_semantic_diff_v2.allocation_receipt \
+            --oracle evidence-out/graph/independent_oracle.json \
+            --anchor evidence-out/graph/anchor_witness.jsonl \
+            --ordinary evidence-out/graph/ordinary_witness.jsonl \
+            --special evidence-out/graph/special_witness.jsonl \
+            --report evidence-out/graph/allocation_receipt.json \
+            --source-sha "$JPL_SHA"
       - name: Check graph topology, cycles, rebinding, native parity and value projection
         shell: bash
         run: |
@@ -152,4 +174,5 @@ jobs:
             research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean
             research/l4yaml_semantic_diff_v2/graph_comparison.py
             research/l4yaml_semantic_diff_v2/trace_provenance.py
+            research/l4yaml_semantic_diff_v2/allocation_receipt.py
           if-no-files-found: warn
