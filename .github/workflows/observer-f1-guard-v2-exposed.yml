@@ -1,0 +1,112 @@
+name: Observer F1 V2 - Exposed Guard Preflight
+on:
+  push:
+    branches:
+      - research/source-observer-f1-guard-v2-20261026
+    paths:
+      - 'research/source_observation_constructor_v1/construct.py'
+      - 'research/source_observation_constructor_v1/test_guard_preflight_v2.py'
+      - '.github/workflows/observer-f1-guard-v2-exposed.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/construct.py'
+      - 'research/source_observation_constructor_v1/test_guard_preflight_v2.py'
+      - '.github/workflows/observer-f1-guard-v2-exposed.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exposed-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact checked-out source head
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Freeze earlier V9 checker identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "72f03feb5bd21e0d0b6fee6774232c8e513b0588"
+      - name: Source-free source-bound executable identity gate
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/observer-f1-v2
+          python -m py_compile research/source_observation_constructor_v1/construct.py research/source_observation_constructor_v1/test_guard_preflight_v2.py
+          python research/source_observation_constructor_v1/test_guard_preflight_v2.py > evidence/observer-f1-v2/source_bound_guard.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/observer-f1-v2/source_bound_guard.json'))
+          assert r['status']=='PASS_EXPOSED_GUARD_V2'
+          assert r['independent_path_oracle_cases']==256
+          assert r['protected_heldout_source_access']=='NONE'
+          print('F1_V2_SOURCE_BOUND_GUARD_EXPOSED_GREEN')
+          PY
+      - uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: exposed-markdown2
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: bottlepy/bottle
+          ref: 8ec5fe29420d14998c0d86885083983eaea8b839
+          path: exposed-bottle
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: pytest-dev/pluggy
+          ref: 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          path: exposed-pluggy
+          persist-credentials: false
+      - name: Original frozen exposed F0 source authority regression
+        run: |
+          set -euo pipefail
+          test "$(git -C exposed-markdown2 rev-parse HEAD)" = a3716b5e0aeba16b6e85965b2e5019d174328f36
+          test "$(git -C exposed-bottle rev-parse HEAD)" = 8ec5fe29420d14998c0d86885083983eaea8b839
+          test "$(git -C exposed-pluggy rev-parse HEAD)" = 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          python research/source_observation_constructor_v1/construct.py \
+            --preflight exposed-markdown2 exposed-bottle exposed-pluggy \
+            --out evidence/observer-f1-v2/exposed_preflight.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/observer-f1-v2/exposed_preflight.json'))
+          assert r['status']=='EXPOSED_PREFLIGHT_GREEN'
+          assert len(r['training'])==3
+          print('F1_V2_F0_EXPOSED_REGRESSION_GREEN')
+          PY
+      - name: Preserve exact source, compiler and observed version
+        if: always()
+        run: |
+          mkdir -p evidence/observer-f1-v2
+          git rev-parse HEAD > evidence/observer-f1-v2/HEAD.txt
+          git hash-object research/source_observation_constructor_v1/construct.py > evidence/observer-f1-v2/constructor_git_blob.txt
+          sha256sum research/source_observation_constructor_v1/construct.py \
+            research/source_observation_constructor_v1/test_guard_preflight_v2.py \
+            .github/workflows/observer-f1-guard-v2-exposed.yml > evidence/observer-f1-v2/source_sha256.txt
+          python --version > evidence/observer-f1-v2/python_version.txt
+      - name: Reject unexpected evidence files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          actual={p.name for p in Path('evidence/observer-f1-v2').iterdir() if p.is_file()}
+          expected={'HEAD.txt','constructor_git_blob.txt','source_sha256.txt',
+                    'python_version.txt','source_bound_guard.json','exposed_preflight.json'}
+          assert actual==expected,(actual,expected)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: observer-f1-v2-exposed-guard-evidence
+          path: evidence/observer-f1-v2/
+          if-no-files-found: error

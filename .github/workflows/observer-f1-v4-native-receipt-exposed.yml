@@ -1,0 +1,181 @@
+name: Observer F1 V4 - Native Receipt Exposed Only
+on:
+  push:
+    branches:
+      - research/source-observer-f1-guard-v2-20261026
+    paths:
+      - 'research/source_observation_constructor_v1/native_receipt_v4.py'
+      - 'research/source_observation_constructor_v1/test_native_receipt_v4.py'
+      - '.github/workflows/observer-f1-v4-native-receipt-exposed.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/native_receipt_v4.py'
+      - 'research/source_observation_constructor_v1/test_native_receipt_v4.py'
+      - '.github/workflows/observer-f1-v4-native-receipt-exposed.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pure-certificate-referee:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-free negative/positive case identity and support tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/f1-v4-pure
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = 72f03feb5bd21e0d0b6fee6774232c8e513b0588
+          python -B research/source_observation_constructor_v1/test_native_receipt_v4.py > evidence/f1-v4-pure/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/f1-v4-pure/result.json'))
+          assert d['status']=='PASS_F1_V4_NATIVE_RECEIPT_SOURCE_FREE'
+          assert d['independent_support_oracle_trials']==512
+          assert d['previously_unseen_source_exposure']=='NONE'
+          print('PASS_INDEPENDENT_SOURCE_FREE_V4')
+          PY
+          git rev-parse HEAD > evidence/f1-v4-pure/source-head.txt
+          git hash-object research/source_observation_constructor_v1/native_receipt_v4.py > evidence/f1-v4-pure/verifier-blob.txt
+          sha256sum evidence/f1-v4-pure/{result.json,source-head.txt,verifier-blob.txt} > evidence/f1-v4-pure/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v4-pure-verifier
+          path: evidence/f1-v4-pure/
+          if-no-files-found: error
+
+  previously-exposed-native-pluggy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: pytest-dev/pluggy
+          ref: 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          path: exposed-pluggy
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pin checked out source identity before any original code execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git -C exposed-pluggy rev-parse HEAD)" = 0224f79fc75efadaafe24dbab9deee2ff616ecd7
+          test -z "$(git -C exposed-pluggy status --porcelain=v1 --untracked-files=all)"
+          mkdir -p evidence/f1-v4-native
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,'research/source_observation_constructor_v1')
+          from source_identity_guard_v3 import verify_source
+          from pathlib import Path
+          d=verify_source(Path('exposed-pluggy'), '0224f79fc75efadaafe24dbab9deee2ff616ecd7')
+          assert d['status']=='CHECKED_EXACT_GIT_WORKTREE'
+          print('PRE_EXECUTION_ORIGINAL_SOURCE_BYTES_CLEAN')
+          PY
+      - name: Install previously exposed original test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install 'pytest==8.3.5' 'pytest-cov==6.2.1'
+          python -m pip install ./exposed-pluggy
+      - name: Run pinned original native suite without custom README shell commands
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import subprocess, os, pathlib, json, hashlib, time, sys
+          out=pathlib.Path('evidence/f1-v4-native')
+          out.mkdir(parents=True,exist_ok=True)
+          root=pathlib.Path('exposed-pluggy').resolve()
+          cmd=[sys.executable,'-m','pytest','-q','-p','no:cacheprovider','--junitxml='+str((out/'native.xml').resolve())]
+          env={k:v for k,v in os.environ.items() if not any(t in k.upper() for t in ('TOKEN','SECRET','PASSWORD','PRIVATE_KEY'))}
+          start=time.monotonic()
+          try:
+              r=subprocess.run(cmd,cwd=root,env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=420)
+              rc=r.returncode; log=r.stdout
+          except subprocess.TimeoutExpired as e:
+              rc=124; log=e.stdout or b''
+          (out/'native.log').write_bytes(log)
+          data={'argv':['python','-m','pytest','-q','-p','no:cacheprovider'],
+                'source_commit':'0224f79fc75efadaafe24dbab9deee2ff616ecd7',
+                'exit_code':rc,
+                'duration_sec':round(time.monotonic()-start,3),
+                'stdout_sha256':hashlib.sha256(log).hexdigest(),
+                'scope':'EXPOSED_ORIGINAL_NATIVE_EXECUTION_ONLY'}
+          (out/'runner.json').write_text(json.dumps(data,sort_keys=True,indent=2)+'\n')
+          print('EXPOSED_PLUGGY_NATIVE_EXIT',rc)
+          PY
+      - name: Independently inspect full executed-case identities, scope and source mutation
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib,json,hashlib,sys,subprocess
+          sys.path.insert(0,'research/source_observation_constructor_v1')
+          from native_receipt_v4 import read_native_receipt, materialize_result, EvidenceObstruction
+          original='0224f79fc75efadaafe24dbab9deee2ff616ecd7'
+          out=pathlib.Path('evidence/f1-v4-native')
+          raw=out/'native.xml'
+          runner=out/'runner.json'
+          if not raw.is_file() or not runner.is_file():
+              materialize_result({'status':'UNKNOWN_NATIVE_RECEIPT_NOT_PRODUCED','no_promotion':True},out/'verification.json')
+              print('UNKNOWN_NATIVE_RECEIPT_NOT_PRODUCED')
+              sys.exit(0)
+          data=json.loads(runner.read_text())
+          assert data['source_commit']==original
+          assert hashlib.sha256((out/'native.log').read_bytes()).hexdigest()==data['stdout_sha256']
+          repo_sha=subprocess.check_output(['git','-C','exposed-pluggy','rev-parse','HEAD'],text=True).strip()
+          try:
+              result=read_native_receipt(raw.read_bytes(),original_sha=original,git_head=repo_sha,
+                  argv=data['argv'],exit_code=data['exit_code'],
+                  original_case_scope='EXPOSED_DEFAULT_PYTEST_NOT_AUTHOR_COMPLETE_SUITE')
+          except EvidenceObstruction as e:
+              result={'status':str(e),'no_promotion':True}
+          result['source_repository']='pytest-dev/pluggy'
+          result['source_worktree_status']=subprocess.check_output(['git','-C','exposed-pluggy','status','--porcelain=v1','--untracked-files=all'],text=True)
+          result['source_worktree_modified']=bool(result['source_worktree_status'].strip())
+          if result['source_worktree_modified']:
+              result['status']='UNKNOWN_SOURCE_MODIFIED_BY_NATIVE_EXECUTION'
+          result['author_complete_suite']='UNKNOWN'
+          result['comparison_vs_competent_human']='UNKNOWN_NOT_RUN'
+          result['protected_heldout_access']='NONE'
+          materialize_result(result,out/'verification.json')
+          print('F1_V4_NATIVE_STATUS',result['status'])
+          print('F1_V4_ORIGINAL_CASE_COUNT',len(result.get('evidence',{}).get('case_ids',[])))
+          assert result['protected_heldout_access']=='NONE'
+          PY
+          git rev-parse HEAD > evidence/f1-v4-native/head.txt
+          git -C exposed-pluggy rev-parse HEAD > evidence/f1-v4-native/exposed-source.txt
+          sha256sum evidence/f1-v4-native/{runner.json,native.log,verification.json,head.txt,exposed-source.txt} > evidence/f1-v4-native/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v4-exposed-native-case-identities
+          path: |
+            evidence/f1-v4-native/native.xml
+            evidence/f1-v4-native/native.log
+            evidence/f1-v4-native/runner.json
+            evidence/f1-v4-native/verification.json
+            evidence/f1-v4-native/head.txt
+            evidence/f1-v4-native/exposed-source.txt
+            evidence/f1-v4-native/SHA256SUMS
+          if-no-files-found: warn

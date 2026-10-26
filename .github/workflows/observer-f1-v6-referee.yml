@@ -1,0 +1,95 @@
+name: Observer F1 V6 - Independent Consequence Referee
+on:
+  push:
+    branches: [research/source-observer-f1-guard-v2-20261026]
+    paths:
+      - 'research/source_observation_constructor_v1/consequence_referee_v6.py'
+      - 'research/source_observation_constructor_v1/test_consequence_referee_v6.py'
+      - '.github/workflows/observer-f1-v6-referee.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/consequence_referee_v6.py'
+      - 'research/source_observation_constructor_v1/test_consequence_referee_v6.py'
+      - '.github/workflows/observer-f1-v6-referee.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-referee:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact method code and source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = 72f03feb5bd21e0d0b6fee6774232c8e513b0588
+          mkdir -p evidence/f1-v6
+      - name: Independently obtain ORIGINAL previously EXPOSED source-consequence artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/12631886174/zip" \
+            -o evidence/f1-v6/original-exposed.zip
+          echo "5972b81991a5a75b4813c20bec35802a0f1090af6daee90ddbd49d78487c7418  evidence/f1-v6/original-exposed.zip" | sha256sum -c
+      - name: Run independent source-bound raw-log referee + adversarial controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/source_observation_constructor_v1/consequence_referee_v6.py \
+            --archive evidence/f1-v6/original-exposed.zip \
+            --out evidence/f1-v6/referee.json
+          python -B research/source_observation_constructor_v1/test_consequence_referee_v6.py \
+            --archive evidence/f1-v6/original-exposed.zip \
+            --out evidence/f1-v6/negatives.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          a=json.loads(Path("evidence/f1-v6/referee.json").read_text())
+          b=json.loads(Path("evidence/f1-v6/negatives.json").read_text())
+          assert a["status"]=="WARRANTED_BOUNDED_EXPOSED_FAULT_WITH_CONVENTIONAL_TIE"
+          assert a["native_unique_cases"]==276
+          assert a["native_failed_cases"]==56
+          assert a["conventional"]=="TIE_ON_CLEAN_VS_FAULT_DECISION"
+          assert b["status"]=="PASS_F1_V6_EXPOSED_REFEREE"
+          assert b["oracle_support_trials"]==1024 and b["oracle_native_log_trials"]==512
+          assert b["protected_heldout_read"] is False
+          print("V6_QUALIFIED_EXPOSED_CONSEQUENCE_AND_NO_ADVANTAGE")
+          PY
+      - name: Archive allowlisted SHA-bound original and independent receipts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/f1-v6
+          git rev-parse HEAD > evidence/f1-v6/source-head.txt
+          git hash-object research/source_observation_constructor_v1/consequence_referee_v6.py > evidence/f1-v6/referee-blob.txt
+          sha256sum evidence/f1-v6/{original-exposed.zip,referee.json,negatives.json,source-head.txt,referee-blob.txt} > evidence/f1-v6/SHA256SUMS
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("evidence/f1-v6")
+          found={x.name for x in p.iterdir() if x.is_file()}
+          expected={"original-exposed.zip","referee.json","negatives.json",
+                    "source-head.txt","referee-blob.txt","SHA256SUMS"}
+          assert found==expected,(found,expected)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v6-independent-consequence-referee
+          path: evidence/f1-v6/
+          if-no-files-found: warn

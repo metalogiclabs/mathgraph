@@ -1,0 +1,92 @@
+name: Observer F1 V3 - Source Identity Exposed Preflight
+on:
+  push:
+    branches:
+      - research/source-observer-f1-guard-v2-20261026
+    paths:
+      - 'research/source_observation_constructor_v1/source_identity_guard_v3.py'
+      - 'research/source_observation_constructor_v1/test_source_identity_guard_v3.py'
+      - '.github/workflows/observer-f1-v3-source-identity-exposed.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/source_identity_guard_v3.py'
+      - 'research/source_observation_constructor_v1/test_source_identity_guard_v3.py'
+      - '.github/workflows/observer-f1-v3-source-identity-exposed.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  byte-identity-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact Git source identity and frozen V9 scanner
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+          test "$(git hash-object research/structured_test_authority_v9/scan.py)" = "72f03feb5bd21e0d0b6fee6774232c8e513b0588"
+      - name: Independent source-free clean-worktree and native-driver byte checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/f1-v3
+          python -B research/source_observation_constructor_v1/test_source_identity_guard_v3.py > evidence/f1-v3/identity_results.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('evidence/f1-v3/identity_results.json').read_text())
+          assert data['status']=='PASS_F1_V3_SOURCE_IDENTITY_PREQUALIFICATION'
+          assert data['randomized_executable_mutations']==128
+          assert data['actual_heldout_source_access']=='NONE'
+          print('F1_V3_EXACT_SOURCE_IDENTITY_EXPOSED_GREEN')
+          PY
+      - name: Earlier V2 source-bound regression is preserved
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B research/source_observation_constructor_v1/test_guard_preflight_v2.py > evidence/f1-v3/v2_guard.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/f1-v3/v2_guard.json').read_text())
+          assert r['status']=='PASS_EXPOSED_GUARD_V2'
+          assert r['independent_path_oracle_cases']==256
+          print('F1_V2_GUARD_REGRESSION_GREEN')
+          PY
+      - name: Record exact source and allowlisted evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/f1-v3
+          git rev-parse HEAD > evidence/f1-v3/HEAD.txt
+          git hash-object research/source_observation_constructor_v1/source_identity_guard_v3.py > evidence/f1-v3/guard_blob.txt
+          sha256sum research/source_observation_constructor_v1/source_identity_guard_v3.py \
+            research/source_observation_constructor_v1/test_source_identity_guard_v3.py \
+            research/source_observation_constructor_v1/construct.py \
+            .github/workflows/observer-f1-v3-source-identity-exposed.yml > evidence/f1-v3/source_sha256.txt
+          python --version > evidence/f1-v3/python_version.txt
+          python - <<'PY'
+          from pathlib import Path
+          expected={'identity_results.json','v2_guard.json','HEAD.txt','guard_blob.txt',
+                    'source_sha256.txt','python_version.txt'}
+          found={p.name for p in Path('evidence/f1-v3').iterdir() if p.is_file()}
+          assert found==expected,(found,expected)
+          print('F1_V3_EVIDENCE_ALLOWLIST_PASSED')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: observer-f1-v3-source-identity-exposed-only
+          path: evidence/f1-v3/
+          if-no-files-found: error
