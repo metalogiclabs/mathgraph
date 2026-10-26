@@ -1,0 +1,70 @@
+name: Observer F1 V4b - Exposed Native Author Driver
+on:
+  push:
+    branches: [research/source-observer-f1-guard-v2-20261026]
+    paths:
+      - 'research/source_observation_constructor_v1/exposed_driver_replay_v4.py'
+      - '.github/workflows/observer-f1-v4b-exposed-author-driver.yml'
+  pull_request:
+    paths:
+      - 'research/source_observation_constructor_v1/exposed_driver_replay_v4.py'
+      - '.github/workflows/observer-f1-v4b-exposed-author-driver.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  author-native-exposed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: trentm/python-markdown2
+          ref: a3716b5e0aeba16b6e85965b2e5019d174328f36
+          path: exposed-markdown2
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replay already-exposed source author driver under exact frozen scope
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PYTHONNOUSERSITE: '1'
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git -C exposed-markdown2 rev-parse HEAD)" = a3716b5e0aeba16b6e85965b2e5019d174328f36
+          mkdir -p evidence/f1-v4b
+          python -B research/source_observation_constructor_v1/exposed_driver_replay_v4.py \
+            --source exposed-markdown2 --out evidence/f1-v4b
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('evidence/f1-v4b/result.json').read_text())
+          assert d['protected_heldout_source_read']=='NONE'
+          assert d['author_complete_suite'].startswith('UNKNOWN')
+          assert d['human_expert_advantage']=='UNKNOWN_NOT_MEASURED'
+          print('V4B_AUTHOR_NATIVE_SCOPE',d['status'],d['comparison'],
+                d['candidate']['observation'].get('count'))
+          PY
+          git rev-parse HEAD > evidence/f1-v4b/head.txt
+          git hash-object research/source_observation_constructor_v1/exposed_driver_replay_v4.py > evidence/f1-v4b/observer-blob.txt
+          test -z "$(git -C exposed-markdown2 status --porcelain=v1 --untracked-files=all)"
+          sha256sum evidence/f1-v4b/{result.json,candidate.log,same_info_rulebook.log,head.txt,observer-blob.txt} > evidence/f1-v4b/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: f1-v4b-exposed-author-native-observations
+          path: |
+            evidence/f1-v4b/result.json
+            evidence/f1-v4b/candidate.log
+            evidence/f1-v4b/same_info_rulebook.log
+            evidence/f1-v4b/head.txt
+            evidence/f1-v4b/observer-blob.txt
+            evidence/f1-v4b/SHA256SUMS
+          if-no-files-found: warn
