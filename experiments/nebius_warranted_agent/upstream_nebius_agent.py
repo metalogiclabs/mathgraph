@@ -96,9 +96,19 @@ class NebiusProvider:
         # all output can be spent on reasoning, leaving message.content null.
         # Disable thinking explicitly for this short, strictly bounded repair.
         # NVIDIA documents chat_template_kwargs.enable_thinking=False.
+        # Token Factory guided JSON schema (per its official cookbook):
+        # grammar-constrain the one-field response before AST validation.
+        output_schema = {
+            "type": "object",
+            "properties": {"function_source": {"type": "string"}},
+            "required": ["function_source"],
+            "additionalProperties": False,
+        }
         payload = json.dumps({"model": self.model, "messages": messages,
                               "temperature": 0.1, "max_tokens": 2048,
-                              "chat_template_kwargs": {"enable_thinking": False}},
+                              "chat_template_kwargs": {"enable_thinking": False},
+                              "guided_json": output_schema,
+                              "response_format": {"type": "json_object"}},
                              sort_keys=True).encode()
         req = request.Request(
             ENDPOINT, data=payload, method="POST",
@@ -128,7 +138,11 @@ class NebiusProvider:
                 f"NEBIUS_RESPONSE_NOT_TEXT:finish={finish}:"
                 f"reasoning_present={int(has_reasoning)}"
             )
-        parsed = json.loads(message)
+        try:
+            parsed = json.loads(message)
+        except json.JSONDecodeError:
+            # Model output is untrusted; never repair malformed JSON by guesses.
+            raise ValueError("NEBIUS_PROPOSAL_INVALID_JSON") from None
         if not isinstance(parsed, dict) or set(parsed) != {"function_source"}:
             raise ValueError("NEBIUS_PROPOSAL_WRONG_SCHEMA")
         function = parsed["function_source"]
