@@ -4,10 +4,12 @@ on:
     branches: [research/source-observer-f1-guard-v2-20261026]
     paths:
       - 'research/source_observation_constructor_v1/exposed_driver_replay_v4.py'
+      - 'research/source_observation_constructor_v1/test_exposed_driver_parser_v4.py'
       - '.github/workflows/observer-f1-v4b-exposed-author-driver.yml'
   pull_request:
     paths:
       - 'research/source_observation_constructor_v1/exposed_driver_replay_v4.py'
+      - 'research/source_observation_constructor_v1/test_exposed_driver_parser_v4.py'
       - '.github/workflows/observer-f1-v4b-exposed-author-driver.yml'
   workflow_dispatch:
 permissions:
@@ -40,6 +42,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
           test "$(git -C exposed-markdown2 rev-parse HEAD)" = a3716b5e0aeba16b6e85965b2e5019d174328f36
           mkdir -p evidence/f1-v4b
+          python -B research/source_observation_constructor_v1/test_exposed_driver_parser_v4.py > evidence/f1-v4b/parser_controls.json
           python -B research/source_observation_constructor_v1/exposed_driver_replay_v4.py \
             --source exposed-markdown2 --out evidence/f1-v4b
           python - <<'PY'
@@ -55,13 +58,14 @@ jobs:
           git rev-parse HEAD > evidence/f1-v4b/head.txt
           git hash-object research/source_observation_constructor_v1/exposed_driver_replay_v4.py > evidence/f1-v4b/observer-blob.txt
           test -z "$(git -C exposed-markdown2 status --porcelain=v1 --untracked-files=all)"
-          sha256sum evidence/f1-v4b/{result.json,candidate.log,same_info_rulebook.log,head.txt,observer-blob.txt} > evidence/f1-v4b/SHA256SUMS
+          sha256sum evidence/f1-v4b/{result.json,parser_controls.json,candidate.log,same_info_rulebook.log,head.txt,observer-blob.txt} > evidence/f1-v4b/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: f1-v4b-exposed-author-native-observations
           path: |
             evidence/f1-v4b/result.json
+            evidence/f1-v4b/parser_controls.json
             evidence/f1-v4b/candidate.log
             evidence/f1-v4b/same_info_rulebook.log
             evidence/f1-v4b/head.txt
