@@ -262,6 +262,19 @@ class NebiusMenuPlanner:
 
     def propose(self,case,menu,lengths,attempt,feedback="") -> ProposedAction:
         options=finite_plan_options(menu,case)
+        # A semantic action label is much clearer than a random letter when no
+        # permitted observation basis exists. It is deliberately present in
+        # *both* possible and impossible cases: the trusted exact solver
+        # rejects a false obstruction despite what the model requests.
+        obstruction=next((x for x in options.values()
+                          if x["action"]["decision"]=="obstruction"
+                          and sorted(x["action"]["unseparable"])==
+                              sorted(set(RIVALS)-set().union(
+                                  *(set(v["separates"]) for v in menu)))),None)
+        if obstruction is None:
+            obstruction=next(x for x in options.values()
+                             if x["action"]["decision"]=="obstruction")
+        options["OBSTRUCTION"]=obstruction
         schema={"type":"object","properties":{
             "choice_id":{"type":"string","enum":list(options)}},
             "required":["choice_id"],"additionalProperties":False}
@@ -276,8 +289,10 @@ class NebiusMenuPlanner:
                 "Choose exactly one provided OPTION ID. Every required rival must be "
                 "distinguished using allowed tests at minimum total synthetic cost. "
                 "A plan's 'covers' lists which rival defects its proposed tests expose. "
-                "If no listed acquisition covers all required rivals, choose the "
-                "obstruction with the exact set of uncovered rivals. "
+                "If no listed acquisition covers all required rivals, choose "
+                "choice_id='OBSTRUCTION'. The separate exact verifier will check "
+                "whether the obstruction is real and name the unseen rival. "
+                "Do NOT choose OBSTRUCTION if any permitted full-cover set exists. "
                 "Return only JSON with choice_id. No explanation or source code.")},
             {"role":"user","content":json.dumps({
                 "review_case":case,"admitted_lengths":list(lengths),
