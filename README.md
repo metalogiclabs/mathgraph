@@ -19,6 +19,8 @@ The public demo now contains a **live finite experiment compiler**, not merely a
 
 [Open the public active observation lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#observation-lab).
 
+**Permission scope:** Only input lengths 1, 2 and 3 may be selected in this lab. Three empty/longer control inputs from the 1,026-input benchmark are deliberately excluded; some longer controls could also reveal defects if permitted. Every OBSTRUCTION verdict is conditional on this explicitly restricted observation grammar.
+
 - All 1-, 2- and 3-byte observations permitted: `00` and `f80000` (hex), total synthetic cost 6.
 - One-byte observations forbidden: `0000` and `f80000`, total cost 7.
 - Only three-byte observations permitted: **OBSTRUCTION**, because the unstripped-padding mutant is observationally indistinguishable on this permitted subset.
