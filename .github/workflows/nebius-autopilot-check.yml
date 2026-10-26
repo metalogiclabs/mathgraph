@@ -36,7 +36,7 @@ jobs:
       - name: Install pinned upstream test runner
         run: python -m pip install pytest==8.4.2
       - name: Independent adversarial test suite
-        run: python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent
+        run: python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent test_typed_action_agent
         env:
           MATHGRAPH_PINNED_UPSTREAM: ../../upstream_itsdangerous
         working-directory: experiments/nebius_warranted_agent
@@ -70,6 +70,7 @@ jobs:
         working-directory: experiments/nebius_warranted_agent
         run: |
           python upstream_nebius_agent.py --provider scripted --upstream-checkout ../../upstream_itsdangerous --report upstream-agent-report.json
+          python typed_action_agent.py --provider scripted --upstream-checkout ../../upstream_itsdangerous --report typed-agent-offline-report.json
       - name: Retain offline audit artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -82,4 +83,5 @@ jobs:
             experiments/nebius_warranted_agent/upstream-transfer-report.json
             experiments/nebius_warranted_agent/upstream-transfer-cockpit.html
             experiments/nebius_warranted_agent/upstream-agent-report.json
+            experiments/nebius_warranted_agent/typed-agent-offline-report.json
           if-no-files-found: error
