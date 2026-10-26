@@ -102,15 +102,17 @@ private theorem first_match_some_iff (xs : List (String × Nat)) (name : String)
       obtain ⟨key, id⟩ := pair
       by_cases h : key = name
       · subst key
-        simp [List.findSome?, ih]
-      · simp [List.findSome?, h, ih]
+        simp [List.findSome?]
+      · have hrev : name ≠ key := Ne.symm h
+        simp_all [List.findSome?]
 
 theorem aliasTarget_exists_iff_allowed
     (env : Env) (s : GraphState) (name : String)
     (h : env.anchors = s.anchors.map Prod.fst) :
     (aliasTarget s name).isSome = true ↔ AliasAllowed env name := by
-  simpa [aliasTarget, AliasAllowed, h] using
-    (first_match_some_iff s.anchors name)
+  unfold aliasTarget AliasAllowed
+  rw [h]
+  exact first_match_some_iff s.anchors name
 
 /-- A full-list conditional correspondence between the actual JPL
 well-formedness checker and the GraphState's node-ID availability checker.
