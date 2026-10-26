@@ -6,6 +6,7 @@ invented sub-bin phase detector. The scorer alone sees hidden headings.
 No physical clock certificate, encoder or flight authority is provided.
 """
 from dataclasses import dataclass
+import csv
 import json
 import math
 from pathlib import Path
@@ -89,10 +90,47 @@ def integrated(src):
     steps=np.diff(src.gyro_ns)*1e-9*(src.gyro_rate[:-1]+src.gyro_rate[1:])*.5
     return np.r_[0.,np.cumsum(steps)]
 
+MAX_GYRO_AGE_NS=20_000_000
+
+def past_only_gyro_phase(src,cumulative,stamps):
+    """Integrate only gyro packets available at each requested timestamp."""
+    stamps=np.asarray(stamps,dtype=np.int64)
+    last=np.searchsorted(src.gyro_ns,stamps,side="right")-1
+    if np.any(last<0):
+        raise ValueError("camera before first gyro packet")
+    age=stamps-src.gyro_ns[last]
+    if np.any(age<0) or np.any(age>MAX_GYRO_AGE_NS):
+        raise ValueError("stale gyro source: causal phase unavailable")
+    return cumulative[last]+src.gyro_rate[last]*age*1e-9
+
+def read_navigation_csv(camera_path,gyro_path):
+    """Read exact camera/gyro CSVs from canonical NAVIGATION-only adapter."""
+    with open(camera_path,newline="") as file:
+        reader=csv.DictReader(file)
+        if not reader.fieldnames or not {"timestamp_ns","bits16","usable"}<=set(reader.fieldnames):
+            raise ValueError("missing camera CSV columns")
+        cameras=list(reader)
+    with open(gyro_path,newline="") as file:
+        reader=csv.DictReader(file)
+        if not reader.fieldnames or not {"timestamp_ns","gyro_z_rad_s"}<=set(reader.fieldnames):
+            raise ValueError("missing gyro CSV columns")
+        gyros=list(reader)
+    if len(cameras)<10 or len(gyros)<10:
+        raise ValueError("insufficient source samples")
+    if any(row["usable"] not in ("0","1") for row in cameras):
+        raise ValueError("invalid camera usability")
+    source=Source(
+        np.asarray([int(row["timestamp_ns"]) for row in gyros],dtype=np.int64),
+        np.asarray([float(row["gyro_z_rad_s"]) for row in gyros]),
+        np.asarray([int(row["timestamp_ns"]) for row in cameras],dtype=np.int64),
+        np.asarray([int(row["bits16"]) if row["usable"]=="1" else -1 for row in cameras],dtype=np.int32))
+    validate_source(source)
+    return source
+
 def map_from_source(src):
     validate_source(src)
     g=integrated(src)
-    camera_g=np.interp(src.camera_ns,src.gyro_ns,g)
+    camera_g=past_only_gyro_phase(src,g,src.camera_ns)
     first=np.nonzero((camera_g-camera_g[0])>=TAU)[0]
     if len(first)==0:
         raise ValueError("no first measured gyro revolution")
@@ -122,7 +160,8 @@ def model_candidate_step(src,frozen,frame,jitter=1):
     base=src.camera_ns[0]*1e-9
     g=frozen["gyro_integral"]
     shifted=np.asarray([
-        np.interp(base+t+delta,timeline,g)-np.interp(base+delta,timeline,g)
+        past_only_gyro_phase(src,g,[int(src.camera_ns[frame]+round(delta*1e9))])[0]-
+        past_only_gyro_phase(src,g,[int(src.camera_ns[0]+round(delta*1e9))])[0]
         for delta in CLOCK])
     predicted=shifted[:,None,None]-t*BIAS[None,:,None]-.5*t*t*DRIFT[None,None,:]
     bins=np.floor(np.mod(predicted,TAU)/ANGULAR_BIN).astype(int)%BINS
@@ -150,7 +189,7 @@ def replay(src,*,stride=12,jitter=1,outlier_budget=1,
     robust_loss=np.zeros(shape,dtype=float)
     bg=np.broadcast_to(BIAS[None,:,None],shape)
     dg=np.broadcast_to(DRIFT[None,None,:],shape)
-    g=np.interp(src.camera_ns,src.gyro_ns,frozen["gyro_integral"])
+    g=past_only_gyro_phase(src,frozen["gyro_integral"],src.camera_ns)
     g=g-g[0]
     end=frozen["frozen_at_camera_index"]
     events=[];reads=[]
@@ -189,6 +228,7 @@ def replay(src,*,stride=12,jitter=1,outlier_budget=1,
         robust=g[i]-BIAS[bidx]*t-.5*DRIFT[didx]*t*t
         events.append({
             "camera_index":int(i),"timestamp_ns":int(src.camera_ns[i]),
+            "gyro_clock_decision_not_before_ns":int(src.camera_ns[i]+round(float(max(CLOCK))*1e9)),
             "model_state":state,"diagnostic_midpoint_rad":float(midpoint),
             "conventional_capped_hamming_rad":float(robust),
             "gyro_only_rad":float(g[i]),"interval_min_rad":lo,
@@ -206,6 +246,7 @@ def replay(src,*,stride=12,jitter=1,outlier_budget=1,
             "assumed_outlier_budget":outlier_budget,
             "assumed_jitter_bins":jitter,
             "sensitivity_budget":robustness_budget,
+            "retrospective_analysis_only":True,
             "events":events}
 
 def grade(nav,truth,output):
