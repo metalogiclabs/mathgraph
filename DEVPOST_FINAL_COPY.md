@@ -30,6 +30,12 @@ In the public judge demo, select the permitted experimental channels for the fro
 
 This is real client-side finite computation and a permission/sensor experiment; it is not a hosted LLM completion or general software-correctness proof. The separately linked source-pinned GitHub Actions run establishes the actual Nebius inference.
 
+## The three-way merge review — the strongest current product demonstration
+
+The public [interactive Merge Review Lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#merge-review-lab) lets a judge select three source-native replay outcomes. **All three starting candidates pass the original upstream tests**. A deliberately defective candidate is REJECTED after MathGraph acquires distinguishing tests. The correctly behaving pinned reference becomes **WARRANTED_BOUNDED** only when those acquired tests pass against exact source and test bytes. If an essential observation channel is forbidden, even a correct candidate stays **UNKNOWN** with a named `unstripped_padding` obstruction. Editing code after testing withdraws the old receipt; fresh test execution is needed to requalify.
+
+These three paths are **independently reproduced on source-native Python by [41/41-test Actions #40286531693](https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693)**, including the original suite and added separating tests. The browser visually replays the results; it does not run arbitrary code, merge a GitHub PR or make another live model call. The separately linked [authenticated Nemotron repair #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) supplies the actual NVIDIA/Nebius inference evidence. The demonstration is conditional on the frozen three-mutant finite grammar; no general correctness or unseen task advantage is claimed.
+
 ## What makes the approach different?
 
 Unlike a completion wrapper that trusts its current green CI result, Autopilot separates the model's proposed code, what the tests actually establish, and permission to call the job done. When evidence is insufficient, it turns that insufficiency into a concrete test-acquisition action and preserves the exact-source evidence lineage.
