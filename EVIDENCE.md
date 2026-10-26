@@ -55,6 +55,14 @@ The original suite being green is *not* represented as general approval in any o
 
 The new browser [Merge Review Lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#merge-review-lab) is a read-only interactive **replay** of those source-native results, not a general GitHub App. The new CI includes the structured `merge-decision-report.json` as a retained artifact so every displayed outcome can be reconciled with source/test SHA256 receipts.
 
+## Model-proposed observation actions — unresolved authenticated experiment
+
+The source distribution includes `model_observation_merge.py`, a typed Nebius Nemotron observation-action provider whose proposals are checked against the independent exact finite selector and never directly authorize merges. Its scripted provider and adversarial schema controls pass [49/49 independent standalone tests, Actions #40287890753](https://github.com/metalogiclabs/mathgraph/actions/runs/40287890753).
+
+**Authentic NEGATIVE controls (not a successful model planner):** [Actions #40288064254](https://github.com/metalogiclabs/mathgraph/actions/runs/40288064254) ran genuine Nebius/Nemotron proposal inference with up to two attempts per case. The three source-native review cases all remained `REJECTED_OR_MISSING`: invalid action shapes for the two ordinary cases and an unsupported obstruction claim for the permission-limited case. No model-selected source-native merge review was executed or approved. A second independently pinned [one-shot Actions #40288288516](https://github.com/metalogiclabs/mathgraph/actions/runs/40288288516) using one attempt per case reproduced those negative outcomes, retained credential-free reports, and exited nonzero. The separate prior [genuine one-function repair #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) remains qualified only for its exact declared injected-fault test scope. **Do not conflate the original successful model-generated repair with the unsuccessful newer observation-planning model calls.**
+
+The lesson is architectural: an LLM may propose a target/candidate hypothesis, but the exact minimum-cost experiment is better compiled and justified by the deterministic evidence engine. No claim that a model autonomously invented the missing tests has been validated.
+
 ## Caveats
 
 The live model's proposal was tested only against the declared original native tests and two newly acquired separating tests for a deliberately injected defect. A passing source-native receipt is not a theorem of software correctness. The solver's finite minimum is relative to the predeclared hypothesis grammar and synthetic cost. Source codes are not originally Pallets defects. Do not attribute the browser replay to actual live inference.
