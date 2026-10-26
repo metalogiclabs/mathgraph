@@ -21,6 +21,16 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checkout is the intended source commit
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -47,12 +57,17 @@ jobs:
           git rev-parse HEAD > evidence/source-head.txt
           git hash-object research/source_observation_constructor_v1/construct.py > evidence/constructor-blob.txt
           git hash-object research/source_observation_constructor_v1/test_source_bound_v2.py > evidence/guard-test-blob.txt
-          sha256sum evidence/* > evidence/SHA256SUMS
+          sha256sum evidence/source_bound.json evidence/source-head.txt evidence/constructor-blob.txt evidence/guard-test-blob.txt > evidence/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: f1-v2-source-bound-guard
-          path: evidence/
+          path: |
+            evidence/source_bound.json
+            evidence/source-head.txt
+            evidence/constructor-blob.txt
+            evidence/guard-test-blob.txt
+            evidence/SHA256SUMS
           if-no-files-found: warn
 
   prior-exposed-authorities:
@@ -60,6 +75,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checkout is the intended source commit
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
       - uses: actions/checkout@v4
         with:
           repository: trentm/python-markdown2
@@ -99,10 +124,13 @@ jobs:
           print("F1_V2_EXPOSED_ONLY_PASS")
           PY
           git rev-parse HEAD > evidence/source-head.txt
-          sha256sum evidence/* > evidence/SHA256SUMS
+          sha256sum evidence/exposed_v2.json evidence/source-head.txt > evidence/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: f1-v2-exposed-authorities
-          path: evidence/
+          path: |
+            evidence/exposed_v2.json
+            evidence/source-head.txt
+            evidence/SHA256SUMS
           if-no-files-found: warn
