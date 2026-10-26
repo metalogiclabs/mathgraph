@@ -143,6 +143,26 @@ class Raw16BitJointTests(unittest.TestCase):
                             metric["gyro_rmse_deg"])
             self.assertFalse(metric["hardware_warrant"])
 
+    def test_posthoc_risk_coverage_exposes_corrupted_source_false_narrowing(self):
+        source,truth=make_fixture(0,"outliers")
+        report=grade(source,truth,replay(source))
+        frontier=report["retrospective_risk_coverage_only"]
+        self.assertEqual(frontier["0.07"]["eligible_frames"],0)
+        self.assertGreater(frontier["0.30"]["eligible_frames"],0)
+        self.assertGreater(frontier["0.30"]["false_intervals_grader_only"],0)
+        self.assertEqual(report["false_model_narrow_frames_grader_only"],0)
+        self.assertFalse(report["hardware_warrant"])
+
+    def test_posthoc_risk_coverage_is_not_authorization(self):
+        source,truth=make_fixture(0,"varying")
+        result=replay(source)
+        frontier=grade(source,truth,result)["retrospective_risk_coverage_only"]
+        self.assertEqual(frontier["0.07"]["eligible_frames"],0)
+        self.assertGreater(frontier["0.30"]["eligible_frames"],0)
+        self.assertEqual(frontier["0.30"]["false_intervals_grader_only"],0)
+        self.assertTrue(all(not row["navigation_correction_authorized"]
+                            for row in result["events"]))
+
     def test_frozen_benchmark_retains_all_seven_model_conditions(self):
         report=benchmark(4)
         self.assertEqual(set(row["condition"] for row in report["scenarios"]),
