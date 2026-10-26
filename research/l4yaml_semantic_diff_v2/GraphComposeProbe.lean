@@ -161,6 +161,18 @@ theorem graphTraceCheck_agrees_with_JPL
                   exact False.elim (ha ((aliasTarget_exists_iff_allowed env s name h).1 hs))
             simp [graphTraceCheck, checkFrom, AnchorEvent.asSerializationEvent, ha, ht]
 
+-- Finite adversarial event controls (the theorem itself quantifies over traces).
+#guard graphTraceCheck {} [AnchorEvent.defineAnchor "x" 0, .useAlias "x"]
+#guard graphTraceCheck {} [AnchorEvent.defineAnchor "x" 0,
+                            AnchorEvent.defineAnchor "x" 1, .useAlias "x"]
+#guard !(graphTraceCheck {} [AnchorEvent.useAlias "x"])
+#guard !(graphTraceCheck {} [AnchorEvent.defineAnchor "x" 0,
+                            .endDocument, .beginDocument, .useAlias "x"])
+#guard aliasTarget (bind (bind ({} : GraphState) (some "x") 0) (some "x") 1) "x" == some 1
+#guard (graphTraceCheck {} [AnchorEvent.defineAnchor "x" 0, .useAlias "x"]) ==
+  checkFrom ({} : Env) ([AnchorEvent.defineAnchor "x" 0, .useAlias "x"].map
+    AnchorEvent.asSerializationEvent)
+
 partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × GraphState) :=
   match v with
   | .scalar data => do
