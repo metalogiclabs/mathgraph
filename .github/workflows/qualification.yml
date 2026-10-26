@@ -61,7 +61,8 @@ jobs:
           paths = [
               ".github/workflows/qualification.yml", ".gitignore",
               "LICENSE", "README.md", "EVIDENCE.md", "BENCHMARK_PROTOCOL_20261026.md",
-              "BENCHMARK_RESULTS_20261026.md", "NEBIUS_NVIDIA_FEEDBACK.md", "requirements-dev.txt",
+              "BENCHMARK_RESULTS_20261026.md", "NEBIUS_NVIDIA_FEEDBACK.md",
+              "DEVPOST_FINAL_COPY.md", "requirements-dev.txt",
               "paired_benchmark.py", "test_paired_benchmark.py",
               "index.html", "upstream_encoding_transfer.py", "upstream_nebius_agent.py",
               "upstream_transfer_cockpit.py", "test_upstream_encoding_transfer.py",
