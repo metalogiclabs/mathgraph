@@ -92,8 +92,13 @@ class NebiusProvider:
              f"{json.dumps(evidence, separators=(',', ':'))}\n"
              "Return a complete function preserving compatibility with source-native tests."},
         ]
+        # Nemotron 3 Super reasons by default. With a small max_tokens budget,
+        # all output can be spent on reasoning, leaving message.content null.
+        # Disable thinking explicitly for this short, strictly bounded repair.
+        # NVIDIA documents chat_template_kwargs.enable_thinking=False.
         payload = json.dumps({"model": self.model, "messages": messages,
-                              "temperature": 0.1, "max_tokens": 1200},
+                              "temperature": 0.1, "max_tokens": 2048,
+                              "chat_template_kwargs": {"enable_thinking": False}},
                              sort_keys=True).encode()
         req = request.Request(
             ENDPOINT, data=payload, method="POST",
@@ -110,9 +115,19 @@ class NebiusProvider:
         result = json.loads(raw)
         if result.get("model") and result["model"] != self.model:
             raise ValueError("NEBIUS_MODEL_ID_MISMATCH")
-        message = result["choices"][0]["message"]["content"]
-        if not isinstance(message, str):
-            raise ValueError("NEBIUS_RESPONSE_NOT_TEXT")
+        choice = result["choices"][0]
+        message = choice["message"].get("content")
+        if not isinstance(message, str) or not message.strip():
+            # Never print the returned raw text or reasoning. These allowlisted
+            # diagnostics identify empty generation without disclosing content.
+            finish = choice.get("finish_reason")
+            finish = finish if finish in ("stop", "length", "content_filter",
+                                          "tool_calls", "function_call") else "other"
+            has_reasoning = bool(choice["message"].get("reasoning_content"))
+            raise ValueError(
+                f"NEBIUS_RESPONSE_NOT_TEXT:finish={finish}:"
+                f"reasoning_present={int(has_reasoning)}"
+            )
         parsed = json.loads(message)
         if not isinstance(parsed, dict) or set(parsed) != {"function_source"}:
             raise ValueError("NEBIUS_PROPOSAL_WRONG_SCHEMA")
