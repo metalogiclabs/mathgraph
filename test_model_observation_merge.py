@@ -14,7 +14,8 @@ from unittest.mock import patch
 
 from model_observation_merge import (
     ACTION_SCHEMA, NemotronObservationPlanner, ProposedAction, RIVALS,
-    ScriptedPlanner, certify_action, menu_from_native, run_review,
+    ScriptedPlanner, NebiusMenuPlanner, finite_plan_options,
+    certify_action, menu_from_native, run_review,
 )
 from merge_decision_lab import _select
 from upstream_encoding_transfer import domain, oracle
@@ -53,6 +54,58 @@ class ObservationContractTests(unittest.TestCase):
                 else:
                     self.assertEqual(result["status"],"ACCEPTED_MINIMUM_BASIS")
                     self.assertEqual(result["cost"],6)
+
+    def test_finite_menu_contains_one_warrantable_plan(self):
+        for case,lengths in (
+            ("defective_green_tests",(1,2,3)),
+            ("correct_but_initially_unknown",(1,2,3)),
+            ("correct_but_observation_forbidden",(3,)),
+        ):
+            with self.subTest(case=case):
+                menu=menu_from_native(self.inputs,self.table,lengths)
+                options=finite_plan_options(menu,case)
+                exact=_select(self.inputs,self.table,lengths)
+                valid=[]
+                invalid=0
+                for entry in options.values():
+                    try:
+                        valid.append(certify_action(entry["action"],menu,exact))
+                    except ValueError:
+                        invalid+=1
+                self.assertEqual(len(valid),1)
+                self.assertGreaterEqual(invalid,1)
+                if exact["status"]=="OBSTRUCTION":
+                    self.assertEqual(valid[0]["status"],"ACCEPTED_OBSTRUCTION")
+                else:
+                    self.assertEqual(valid[0]["cost"],exact["synthetic_cost"])
+
+    def test_mock_typed_plan_id_calls_real_provenance_schema(self):
+        case="defective_green_tests"
+        menu=menu_from_native(self.inputs,self.table,(1,2,3))
+        options=finite_plan_options(menu,case)
+        exact=_select(self.inputs,self.table,(1,2,3))
+        selected=next(k for k,v in options.items() if v["action"]["decision"]=="acquire"
+                      and v["cost"]==exact["synthetic_cost"]
+                      and set(v["covers"])==set(RIVALS))
+        class FakeResponse:
+            headers={"x-request-id":"mock-id"}
+            def __enter__(self):return self
+            def __exit__(self,*_):return False
+            def read(self,_):
+                return json.dumps({"model":"nvidia/nemotron-3-super-120b-a12b",
+                    "choices":[{"finish_reason":"stop",
+                                "message":{"content":json.dumps({"choice_id":selected})}}]}).encode()
+        with patch.dict(os.environ,{"NEBIUS_API_KEY":"fake-do-not-leak"}):
+            provider=NebiusMenuPlanner()
+            with patch("model_observation_merge.request.urlopen",return_value=FakeResponse()) as call:
+                response=provider.propose(case,menu,(1,2,3),1)
+                self.assertEqual(response.choice_id,selected)
+                self.assertEqual(response.request_id,"mock-id")
+                self.assertEqual(certify_action(response.action,menu,exact)["cost"],6)
+                payload=json.loads(call.call_args.args[0].data)
+                self.assertEqual(payload["guided_json"]["required"],["choice_id"])
+                self.assertEqual(payload["chat_template_kwargs"],{"enable_thinking":False})
+                self.assertNotIn("fake-do-not-leak",json.dumps(payload))
 
     def test_no_model_fabricated_approval_is_admitted(self):
         lengths=(1,2,3)
