@@ -1,0 +1,69 @@
+# Isolated, bounded authenticated model-selected observation experiment.
+# The triggering branch supplies only this workflow; executed code is pinned
+# to an independently checked standalone-source commit.
+name: Nebius Autopilot Model-Selected Merge Evidence
+on:
+  push:
+    branches:
+      - exp/nebius-live-once-20261026
+    paths:
+      - .github/workflows/nebius-merge-planner-once-20261026.yml
+
+permissions:
+  contents: read
+
+jobs:
+  model-selected-merge-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact qualified standalone reviewer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: b90f65deca060df5359f4db10061b34b9bdfb670
+          persist-credentials: false
+      - name: Checkout independently pinned public upstream
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: pallets/itsdangerous
+          ref: 672971d66a2ef9f85151e53283113f33d642dabd
+          path: upstream_itsdangerous
+          persist-credentials: false
+      - name: Set up approved Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Pin native-test runtime
+        run: python -m pip install -r requirements-dev.txt
+      - name: Independent offline controls before any secret is made available
+        env:
+          MATHGRAPH_PINNED_UPSTREAM: upstream_itsdangerous
+        run: python -m unittest -v test_model_observation_merge
+      - name: Authenticated Nemotron observation planning with independent native admission
+        env:
+          NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NEBIUS_API_KEY:-}" ]; then
+            printf '%s\n' '{"status":"UNKNOWN","reason":"NEBIUS_API_KEY_NOT_CONFIGURED","real_inference_attempted":false}' > model-observation-live-status.json
+            exit 1
+          fi
+          printf '%s\n' '{"status":"UNKNOWN","reason":"model_selection_in_progress","real_inference_attempted":true}' > model-observation-live-status.json
+          if python model_observation_merge.py --provider nebius \
+             --upstream-checkout upstream_itsdangerous --max-attempts 2 \
+             --report model-observation-live-report.json; then
+            printf '%s\n' '{"status":"CANDIDATE","reason":"model_proposed_actions_verified_review_full_report","real_inference_attempted":true}' > model-observation-live-status.json
+          else
+            code=$?
+            printf '%s\n' '{"status":"UNKNOWN","reason":"rejected_or_incomplete_model_observation_actions","real_inference_attempted":true}' > model-observation-live-status.json
+            exit "$code"
+          fi
+      - name: Retain credential-free model choices and source-native receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mathgraph-live-model-chosen-evidence
+          if-no-files-found: warn
+          path: |
+            model-observation-live-report.json
+            model-observation-live-status.json
