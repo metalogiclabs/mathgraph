@@ -48,6 +48,8 @@ jobs:
           assert b"MathGraph Autopilot" in page
           assert b"OFFLINE" in page
           assert b"<select" in page
+          assert b"40255882641" in page
+          assert b"remains UNKNOWN until a valid private API credential" not in page
           print("PUBLIC_ANONYMOUS_DEMO_GREEN bytes=",len(page))
           PY
       - name: Package scoped MIT-licensed source (deterministic bytes)
