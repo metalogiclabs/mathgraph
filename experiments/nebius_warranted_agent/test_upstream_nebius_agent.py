@@ -87,6 +87,11 @@ class ContractTests(unittest.TestCase):
                 self.assertEqual(request_body["chat_template_kwargs"],
                                  {"enable_thinking":False})
                 self.assertEqual(request_body["max_tokens"],2048)
+                self.assertEqual(request_body["response_format"],{"type":"json_object"})
+                schema=request_body["guided_json"]
+                self.assertEqual(schema["required"],["function_source"])
+                self.assertEqual(schema["properties"]["function_source"]["type"],"string")
+                self.assertFalse(schema["additionalProperties"])
             self.assertNotIn("test-not-a-secret",repr(result))
 
     def test_null_text_diagnostic_is_safe_and_fail_closed(self):
@@ -108,6 +113,23 @@ class ContractTests(unittest.TestCase):
                     provider.propose("buggy",[],1)
                 self.assertNotIn("private thought",str(err.exception))
                 self.assertNotIn("test-not-a-secret",str(err.exception))
+
+    def test_invalid_json_refused_without_repair(self):
+        class FakeResponse:
+            headers = {}
+            def __enter__(self): return self
+            def __exit__(self,*_): return False
+            def read(self,_):
+                return json.dumps({
+                    "model":DEFAULT_MODEL,
+                    "choices":[{"message":{"content":
+                        '{"function_source":"def base64_encode(string):\\n broken' }}]
+                }).encode()
+        with patch.dict(os.environ,{"NEBIUS_API_KEY":"test-not-a-secret"}):
+            provider=NebiusProvider(DEFAULT_MODEL)
+            with patch("upstream_nebius_agent.request.urlopen",return_value=FakeResponse()):
+                with self.assertRaisesRegex(ValueError,"NEBIUS_PROPOSAL_INVALID_JSON"):
+                    provider.propose("buggy",[],1)
 
 class SourceNativeTests(unittest.TestCase):
     def setUp(self):
