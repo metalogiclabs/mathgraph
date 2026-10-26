@@ -1,6 +1,6 @@
 # Nebius × NVIDIA submission package — MathGraph Autopilot
 
-**As of 26 October 2026: NOT READY TO SUBMIT.** This is a copy-ready submission package **only after** authentic Nebius/NVIDIA inference and public deployment are independently checked. Never claim those checks passed merely because CI is green.
+**As of 26 October 2026: AUTHENTICATED MODEL INFERENCE AND ONE BOUNDED REPAIR VERIFIED; SUBMISSION STILL INCOMPLETE.** The public judge-accessible build, distribution license, short video and Devpost submission remain outstanding. The evidence supports only the declared pinned source-native test boundary.
 
 ## Suggested title
 
@@ -18,9 +18,9 @@ AI coding agents can pass every existing test and still ship a defective change.
 
 MathGraph Autopilot connects agent-generated repair proposals to an independent test-and-evidence gate. Rather than treating a successful test command as blanket authorization, it binds results to exact source and test bytes, distinguishes UNKNOWN from REJECTED, and revokes stale receipts whenever the candidate changes.
 
-The current independent demonstration works against a publicly pinned Pallets `itsdangerous` source and its genuine native Python encoding tests. We deliberately inject three synthetic defects into isolated copies. All three pass the original upstream encoding suite. MathGraph then searches 1,026 finite binary observations and selects a provably minimum-cost two-test separating basis (under a declared synthetic cost function). Executing those new native tests exposes the defect; running the tests again after a scripted repair produces a fresh source-bound qualification.
+The current independent demonstration works against a publicly pinned Pallets `itsdangerous` source and its genuine native Python encoding tests. We deliberately inject three synthetic defects into isolated copies. All three pass the original upstream encoding suite. MathGraph then searches 1,026 finite binary observations and selects a provably minimum-cost two-test separating basis (under a declared synthetic cost function). Executing those new native tests exposes the defect; a scripted control and, subsequently, a genuine NVIDIA-model-generated repair each reacquired a passing source-bound receipt against the declared tests.
 
-An AST-constrained model adapter can request a bounded repair from NVIDIA Nemotron on Nebius Token Factory, and reverify the result against the same independently generated test suite. **However, as of this draft no authenticated Nebius API request has been demonstrated. Do not imply that the adapter alone satisfies the platform requirement.**
+An AST-constrained agent used the authentic NVIDIA Nemotron 3 Super model through Nebius Token Factory. On [independent source-pinned Actions run #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641), it generated one admitted repair proposal, passed original upstream and acquired separating tests, demonstrated post-test receipt withdrawal, then reacquired valid tests. **This is one successful injected-fault repair, not evidence of general-repository coding accuracy.**
 
 The product addresses AI-assisted software repair, CI reliability and release authorization. Its differentiated capability is not another layer of prompting: it turns insufficient evidence into a concrete missing test, acquires that evidence, and retracts outdated authorization when source or tests change.
 
@@ -35,17 +35,17 @@ The product addresses AI-assisted software repair, CI reliability and release au
 - Finite selection: 1,026 inputs, two witnesses `00` and `f80000` (hex), synthetic minimum cost 6
 - Independent GitHub Actions evidence: [run 40252245020](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020), 55/55 tests; [retained artifact](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020/artifacts/12620369151)
 - Browser-only interactive review: `website/public/autopilot/index.html`; this does not independently run the Python source or invoke a model
-- One-shot attempt: [Actions 40253221809](https://github.com/metalogiclabs/mathgraph/actions/runs/40253221809) recorded **NEBIUS_API_KEY_NOT_CONFIGURED** and did not attempt inference
+- Authentic qualification: [Actions 40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641), one Nemotron response, valid code proposal and source-native test receipt; [credential-free evidence artifact 12621789949](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949), ZIP SHA256 `2d5fb2f3b77a4a9e5947b8d51812762a8eb9ff6fa592c00f1debf9957e4c8109`. Earlier missing-key [Actions 40253221809](https://github.com/metalogiclabs/mathgraph/actions/runs/40253221809) preserved as superseded historical obstruction.
 
 ## What is new within the hackathon period
 
 The source-bound Autopilot experiment, finite separating-test generator, source-native upstream transfer, restricted NVIDIA-model adapter, independent CI and evidence cockpit were developed after the start of the competition. This work is distinct from pre-existing MathGraph research. Retain exact commits and PR history as evidence.
 
-## Required live qualification before using this submission text
+## Remaining steps before submitting
 
-- [ ] Configure a private `NEBIUS_API_KEY` in the intended execution environment; never post the key to chat or commit it
-- [ ] Execute an authentic NVIDIA Nemotron inference request through Nebius Token Factory and retain safe request/model identifiers, response hash and test receipt
-- [ ] Confirm a model-generated proposal (not scripted) passed the source-native expanded tests; otherwise report its honest failure or UNKNOWN
+- [x] Private `NEBIUS_API_KEY` configured in GitHub Actions; credential not printed.
+- [x] Authentic Nebius/NVIDIA Nemotron call with request identity, response hash and test receipt retained in CI artifact.
+- [x] Model-generated proposal passed the exact declared source-native and acquired separating tests; post-test alteration correctly withdrew the receipt.
 - [ ] Publish a functional public demo URL that remains usable for judges through 15 December 2026
 - [ ] Publish a public YouTube recording of the actual working app, under three minutes
 - [ ] Provide a competition-specific open-source licensed repository, visibly licensed at its root. The parent `metalogiclabs/mathgraph` currently lacks a confirmed project-wide license; **do not add a blanket license covering unrelated research without an intentional rights decision**
@@ -62,17 +62,17 @@ The source-bound Autopilot experiment, finite separating-test generator, source-
 
 01:10–01:35 — The expanded tests fail, with exact counterexample bytes on screen.
 
-01:35–02:05 — **Only after authentic Nebius inference succeeds:** show the real Nemotron-generated proposal, request/model provenance and actual native repair test receipts.
+01:35–02:05 — Show the **actual authenticated Nebius run #40255882641**, request/model provenance and source-bound native repair test receipts.
 
 02:05–02:25 — Modify the tested code post-receipt; demonstrate withdrawal, fresh evidence acquisition and bounded requalification.
 
 02:25–02:40 — Source commits, GitHub Actions results, honest scope and final product framing.
 
-If no authentic Nebius call is available, label this an offline research demonstration rather than recording simulated inference as live.
+The browser replay remains explicitly OFFLINE; only the separately linked source-pinned GitHub Actions run is a real Nebius model execution. Do not splice scripted-browser visuals into the recording as if they were a live model run.
 
 ## Current source links
 
 - [Research draft PR #203](https://github.com/metalogiclabs/mathgraph/pull/203)
 - [Verified pinned upstream transfer](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020)
-- [One-shot credential obstruction](https://github.com/metalogiclabs/mathgraph/actions/runs/40253221809)
+- [Authenticated Nemotron repair](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641)
 - [Official competition rules](https://nebiusglobalaihackathon.devpost.com/rules)
