@@ -1,3 +1,0 @@
-obstruction_id,obstruction_name,support_pairs,sample_support,root_score,description,next_action
-OBS_b53bd4063027,UNCANCELLED_PRIMITIVE_DIVISOR_GROWTH,4999,1099780,126.99664500159416,Reduced denominator R_r repeatedly contributes fresh divisor mass not explained by rolling prior R-values.,Promote to proof-template candidate. Replace rolling novelty proxy with exact primitive-divisor lemma.
-OBS_3ca92d7f5e78,LOW_NOVELTY_RECURRENCE_RESIDUAL,1,220,4.434868437320833,R_r > 1 but novelty is weak; exact gcd cancellation structure should be studied.,Move to exact gcd cancellation recurrence analysis.

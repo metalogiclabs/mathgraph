@@ -1,7 +1,0 @@
-declaration_id,route_suggestion,trust_status,advisory_only,can_promote_truth,notes
-Demo/Basic.lean:3:theorem:add_zero_demo,import_dependency_route,imported_verified_candidate,True,False,Route suggestion only; no textual digest route is a verifier.
-Demo/Basic.lean:6:lemma:unfinished_demo,sorry_repair_candidate,incomplete_proof,True,False,Route suggestion only; no textual digest route is a verifier.
-Demo/Basic.lean:9:axiom:external_axiom_demo,axiom_boundary_candidate,trusted_assumption_or_external_axiom,True,False,Route suggestion only; no textual digest route is a verifier.
-Demo/Basic.lean:11:def:risky_demo,import_dependency_route,unsafe_requires_warning,True,False,Route suggestion only; no textual digest route is a verifier.
-Demo/Basic.lean:13:def:helper_demo,import_dependency_route,imported_definition_metadata,True,False,Route suggestion only; no textual digest route is a verifier.
-Demo/Basic.lean:15:example:anonymous_15,import_dependency_route,imported_verified_candidate,True,False,Route suggestion only; no textual digest route is a verifier.

@@ -1,1 +1,0 @@
-{"allowlist_id":"curated-real-mathlib-manifest-example","files":[],"metadata":{"note":"Template only; no declarations are verified by this manifest."},"module_prefix":"Mathlib","name":"Curated Real Mathlib Manifest Example","project_root":null,"proof_system":"lean","source_kind":"LOCAL_MATHLIB_PROJECT","trust_policy":"LOCAL_VERIFIER_REQUIRED","version":"0.1"}

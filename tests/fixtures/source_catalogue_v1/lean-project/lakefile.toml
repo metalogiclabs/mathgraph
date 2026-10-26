@@ -1,6 +1,0 @@
-name = "catalogue_fixture"
-version = "0.1.0"
-defaultTargets = ["CatalogueFixture"]
-
-[[lean_lib]]
-name = "CatalogueFixture"
