@@ -131,8 +131,12 @@ def conduct(root,out):
         env.update(PYTHONNOUSERSITE="1",PYTHONDONTWRITEBYTECODE="1",PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
         native=[sys.executable,"test.py","--","-knownfailure"]
         original_obs=run(native,original/"test",env,out/"original.log",True)
+        # Match original author runner's explicit source-library discovery.
+        # The previous generic arm failed collection due to missing lib path:
+        # environment UNKNOWN, not evidence that the observer lacked tests.
+        generic_env=dict(env,PYTHONPATH=str(mutant/"lib"))
         generic_obs=run([sys.executable,"-m","pytest","-q","-p","no:cacheprovider"],
-                        mutant,env,out/"generic.log",False)
+                        mutant,generic_env,out/"generic.log",False)
         new_obs=run(native,mutant/"test",env,out/"candidate.log",True)
         reference_obs=run(native,mutant/"test",env,out/"informed.log",True)
     source_clean=((root/"lib/markdown2.py").read_bytes()==original_bytes
@@ -145,8 +149,19 @@ def conduct(root,out):
     recognized=(all_identities and target_different and same_cases and informed_tie
                 and original_obs["exit"]==0 and new_obs["exit"]!=0
                 and reference_obs["exit"]!=0 and source_clean)
+    generic_text=(out/"generic.log").read_text(encoding="utf8",errors="replace")
+    if "ModuleNotFoundError" in generic_text or "ImportError while importing" in generic_text:
+        generic_evidence_status="UNKNOWN_COLLECTION_ENVIRONMENT"
+    elif generic_obs["exit"] in (0,1) and " passed" in generic_text or generic_obs["exit"] in (0,1) and " failed" in generic_text:
+        generic_evidence_status="EXECUTED_GENERIC_PYTEST_CASES"
+    elif generic_obs["exit"]==5 and "no tests ran" in generic_text:
+        generic_evidence_status="UNKNOWN_NO_GENERIC_CASES"
+    else:
+        generic_evidence_status="UNKNOWN_GENERIC_RECEIPT"
     result={
         "status":"WARRANTED_BOUNDED_INDUCED_FAULT_CONSEQUENCE" if recognized else "UNKNOWN_CONSEQUENTIAL_OBSERVATION",
+        "generic_evidence_status":generic_evidence_status,
+        "generic_import_root":"source/lib (original native test bootstrap equivalent)",
         "source":"trentm/python-markdown2","pinned_source":SOURCE_SHA,
         "source_module_blob":MODULE_BLOB,"target_original_case":TARGET,
         "author_documented_command":DRIVER,
