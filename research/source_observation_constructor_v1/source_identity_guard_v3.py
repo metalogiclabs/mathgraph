@@ -77,11 +77,11 @@ def verify_driver(root: Path, pinned_sha: str, proposal: dict) -> dict:
         or not all(isinstance(x, str) for x in args)
         or args[:2] != ["python", "test.py"]):
         raise SourceIdentityObstruction("UNSUPPORTED_DRIVER_COMMAND")
+    if any(arg in ("-l", "--help") for arg in args[2:]):
+        raise SourceIdentityObstruction("LIST_ONLY_DRIVER_NOT_ADMITTED")
     if any(not re.fullmatch(r"-[a-z][a-z0-9_-]*|--", arg)
            for arg in args[2:]):
         raise SourceIdentityObstruction("UNSUPPORTED_DRIVER_ARGUMENT")
-    if any(arg in ("-l", "--help") for arg in args[2:]):
-        raise SourceIdentityObstruction("LIST_ONLY_DRIVER_NOT_ADMITTED")
     cwd = proposal.get("cwd")
     if not isinstance(cwd, str):
         raise SourceIdentityObstruction("BAD_CWD")
