@@ -7,6 +7,7 @@ No physical clock certificate, encoder or flight authority is provided.
 """
 from dataclasses import dataclass
 import csv
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -102,6 +103,29 @@ def past_only_gyro_phase(src,cumulative,stamps):
     if np.any(age<0) or np.any(age>MAX_GYRO_AGE_NS):
         raise ValueError("stale gyro source: causal phase unavailable")
     return cumulative[last]+src.gyro_rate[last]*age*1e-9
+
+def verify_canonical_adapter_evidence(camera_path,gyro_path,evidence_path):
+    """Require canonical NAVIGATION adapter source-byte provenance in CLI mode.
+
+    Manifest is not hardware attestation; caller must retain the original
+    role-disjoint navigation bundle and its canonical verification receipt.
+    """
+    evidence=json.loads(Path(evidence_path).read_text())
+    if (evidence.get("state")!="SUPPLEMENTAL_NAVIGATION_SOURCE_ADAPTED_ONLY" or
+        evidence.get("source_format")!="MGVC-PHYSICAL-1" or
+        evidence.get("encoder_input_provided") is not False or
+        evidence.get("physical_navigation_authorized") is not False):
+        raise ValueError("unqualified source adapter evidence")
+    for source,key in ((camera_path,"converted_camera_sha256"),
+                       (gyro_path,"converted_gyro_sha256")):
+        digest=hashlib.sha256(Path(source).read_bytes()).hexdigest()
+        if digest!=evidence.get(key):
+            raise ValueError("source bytes differ from canonical NAVIGATION adapter")
+    for key in ("original_nav_manifest_sha256","original_sensor_sha256"):
+        digest=evidence.get(key)
+        if not isinstance(digest,str) or len(digest)!=64:
+            raise ValueError("missing original navigation source identity")
+    return evidence
 
 def read_navigation_csv(camera_path,gyro_path):
     """Read exact camera/gyro CSVs from canonical NAVIGATION-only adapter."""
@@ -318,16 +342,21 @@ if __name__=="__main__":
     p.add_argument("--seeds",type=int,default=8)
     p.add_argument("--camera-csv",default=None)
     p.add_argument("--gyro-csv",default=None)
+    p.add_argument("--adapter-evidence",default=None)
     p.add_argument("--output",required=True)
     args=p.parse_args()
     if bool(args.camera_csv) != bool(args.gyro_csv):
         p.error("camera and gyro source CSV must be supplied together")
     if args.camera_csv:
-        # Source must first be checked by the already qualified canonical
-        # NAVIGATION-role manifest gate. No encoder is accepted here.
+        if not args.adapter_evidence:
+            p.error("original canonical NAVIGATION adapter evidence is required")
+        verified=verify_canonical_adapter_evidence(
+            args.camera_csv,args.gyro_csv,args.adapter_evidence)
         nav=read_navigation_csv(args.camera_csv,args.gyro_csv)
         result=replay(nav)
         result["navigation_only_offline_source_replay"]=True
+        result["original_nav_manifest_sha256"]=verified["original_nav_manifest_sha256"]
+        result["original_sensor_sha256"]=verified["original_sensor_sha256"]
         print("NO_ENCODER_INPUT_OFFLINE_SOURCE_MODEL_ONLY")
     else:
         result=benchmark(args.seeds)
