@@ -111,7 +111,11 @@ class Raw16BitJointTests(unittest.TestCase):
         src,_=make_fixture(0,"varying")
         m=map_from_source(src)
         g=integrated(src)
-        stamp=src.gyro_ns*1e-9;origin=src.camera_ns[0]*1e-9
+        def scalar_causal_gyro(when_ns):
+            k=int(np.searchsorted(src.gyro_ns,when_ns,side="right")-1)
+            if k<0 or when_ns-src.gyro_ns[k]>20_000_000:
+                raise ValueError("scalar stale gyro")
+            return float(g[k]+src.gyro_rate[k]*(when_ns-src.gyro_ns[k])*1e-9)
         for idx in (96,132,204,312):
             valid,_=model_candidate_step(src,m,idx,jitter=1)
             t=(src.camera_ns[idx]-src.camera_ns[0])*1e-9
@@ -119,8 +123,10 @@ class Raw16BitJointTests(unittest.TestCase):
             for clock_i,bias_i,drift_i in ((0,0,0),(8,20,2),(16,40,4)):
                 dt=float(CLOCK[clock_i])
                 b=float(BIAS[bias_i]);d=float(DRIFT[drift_i])
-                theta=(float(np.interp(origin+t+dt,stamp,g))-
-                       float(np.interp(origin+dt,stamp,g))-b*t-.5*d*t*t)
+                offset_ns=int(round(dt*1e9))
+                theta=(scalar_causal_gyro(int(src.camera_ns[idx])+offset_ns)-
+                       scalar_causal_gyro(int(src.camera_ns[0])+offset_ns)-
+                       b*t-.5*d*t*t)
                 center=int(math.floor((theta%TAU)/ANGULAR_BIN))%64
                 cells=((center-1)%64,center,(center+1)%64)
                 oracle=any(not m["present"][c] or
