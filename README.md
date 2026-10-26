@@ -51,6 +51,14 @@ python merge_decision_lab.py --upstream-checkout upstream_itsdangerous --report 
 
 The previously authenticated [Nebius/NVIDIA Nemotron repair #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) is a **separate real model inference**. The three-way merge-review workflow is a source-native offline demonstration of what decisions independent evidence can justify, not another authenticated model run.
 
+## Experimental typed evidence planner — do not claim success yet
+
+The optional `model_observation_merge.py` adapter asks NVIDIA Nemotron to select an admissible **typed observation proposal** from predeclared source-native candidate probes. The deterministic exact solver independently checks coverage, cost, permitted channels and named obstructions; it alone controls native test execution and scoped merge-review permission. No generated shell or direct GitHub merge action is accepted.
+
+**Offline adapter qualification:** [49/49 tests, Actions #40287890753](https://github.com/metalogiclabs/mathgraph/actions/runs/40287890753). **Authenticated model-planning attempts:** [#40288064254](https://github.com/metalogiclabs/mathgraph/actions/runs/40288064254) and [#40288288516](https://github.com/metalogiclabs/mathgraph/actions/runs/40288288516) all returned invalid or unsupported typed proposals for the three finite cases; the checker refused them, so **the new model-chosen observation-planning task is NOT verified**. This is a useful safe-failure demonstration, not autonomous evidence-planning success.
+
+The existing [genuine one-function Nemotron repair](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) is a separate successful injected-fault repair; the [three-way merge-review experiment](https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693) is independently verified **offline**. Those distinct authorities must not be merged into a single invented success claim.
+
 ## Reproduce
 
 Requirements: **Python 3.11+**, `git`, `pytest==8.4.2`. The external Pallets upstream repository is NOT included; source and tests are fetched from its public licensed repository at one exact commit and verified by original Git blobs.
