@@ -41,6 +41,14 @@ python upstream_nebius_agent.py --provider nebius --model nvidia/nemotron-3-supe
 
 The native `pallets/itsdangerous` encoding tests at `672971d66a2ef9f85151e53283113f33d642dabd` are checked against three **deliberately injected** defects in isolated workspaces, not defects in upstream Pallets. All three mutants pass the original native tests. A frozen **1,026-input** finite grammar admits an exact minimum synthetic-cost two-test basis (**`00`** and **`f80000`**, hexadecimal, cost **6**) that distinguishes them. Independent brute-force minimization agrees. Source/test changes automatically revoke older passing receipts.
 
+## Measured difference: evidence-seeking versus other testing
+
+In a source-pinned, frozen **constructed** encoding-fault family, MathGraph selected two minimum-cost tests that distinguish all three mutants. With the same two-test budget, deterministic uniform-random input selection achieved complete separation in **19 of 1,000 seeds (1.9%)**. Both a strong mutation-aware conventional greedy selector and MathGraph attained the **same synthetic cost of 6** when equally informed. A hand-selected three-boundary-test suite also worked at cost 8.
+
+**What the result actually supports:** finite minimum separating evidence + source-bound authorization, **not** a superior test-selection algorithm over optimized mutation testing, not a runtime speed claim, and not general repair success. The held-out four-byte fault outside the declared input domain remains an explicit obstruction.
+
+[Full frozen comparative report](./BENCHMARK_RESULTS_20261026.md) · [Pre-registered protocol](./BENCHMARK_PROTOCOL_20261026.md) · [Independent CI #40268881457](https://github.com/metalogiclabs/mathgraph/actions/runs/40268881457)
+
 ## Evidence and limits
 
 - [Authenticated Nemotron run](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) · [retained artifact](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949)
