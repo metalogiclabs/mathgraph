@@ -28,6 +28,29 @@ The public demo now contains a **live finite experiment compiler**, not merely a
 
 This demonstrates **permission-aware active identification**, not a new universal scientific algorithm. As the fair comparison below establishes, an equally informed conventional mutation-testing selector can match the finite minimum, and any out-of-domain fault remains UNKNOWN.
 
+## New: the evidence-seeking merge-review agent (three outcomes)
+
+**[Try the interactive three-way merge lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#merge-review-lab).** The interface replays a **genuine pinned-source native-test experiment** (not live Python execution in your browser and not a new Nebius inference). Unlike an ordinary all-green test badge, the report distinguishes the protected target relation from what those existing tests actually warrant:
+
+| Source-native scenario | Original upstream suite | Evidence acquired | Bounded review outcome |
+| --- | --- | --- | --- |
+| Deliberately defective encoding change | Green | Minimum two separating tests reveal the defect | **REJECTED** (no merge) |
+| Correct pinned reference implementation | Green | Same two tests pass; exact source/test receipt acquired | **WARRANTED_BOUNDED** (scoped review only) |
+| Correct code, only three-byte probes permitted | Green | Padding behavior cannot be distinguished by any permitted probe | **UNKNOWN** with named obstruction (no merge) |
+
+The native replay also edits the source **after testing**. Old evidence is invalidated; fresh source-native test execution is necessary before a previous review verdict can be reacquired. **Nothing is actually merged or submitted upstream.** All non-reference faults are deliberately injected, and the complete candidate/observation grammar is declared in advance. General new-code repair and blind tasks remain UNKNOWN.
+
+**Independent evidence:** [41/41 tests and source-native replay, Actions #40286531693](https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693). [Latest green UI/source qualification](https://github.com/metalogiclabs/mathgraph/actions/runs/40286783200). The source-linked `merge-decision-report.json` is retained among the standalone audit artifacts.
+
+Reproduce on the separately checked out immutable Pallets source, after installing the pinned test dependency:
+
+```sh
+MATHGRAPH_PINNED_UPSTREAM=upstream_itsdangerous python -m unittest -v test_merge_decision_lab
+python merge_decision_lab.py --upstream-checkout upstream_itsdangerous --report merge-decision-report.json
+```
+
+The previously authenticated [Nebius/NVIDIA Nemotron repair #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) is a **separate real model inference**. The three-way merge-review workflow is a source-native offline demonstration of what decisions independent evidence can justify, not another authenticated model run.
+
 ## Reproduce
 
 Requirements: **Python 3.11+**, `git`, `pytest==8.4.2`. The external Pallets upstream repository is NOT included; source and tests are fetched from its public licensed repository at one exact commit and verified by original Git blobs.
