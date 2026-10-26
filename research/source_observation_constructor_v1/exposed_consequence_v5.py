@@ -131,12 +131,14 @@ def conduct(root,out):
         env.update(PYTHONNOUSERSITE="1",PYTHONDONTWRITEBYTECODE="1",PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
         native=[sys.executable,"test.py","--","-knownfailure"]
         original_obs=run(native,original/"test",env,out/"original.log",True)
-        # Match original author runner's explicit source-library discovery.
-        # The previous generic arm failed collection due to missing lib path:
-        # environment UNKNOWN, not evidence that the observer lacked tests.
-        generic_env=dict(env,PYTHONPATH=str(mutant/"lib"))
-        generic_obs=run([sys.executable,"-m","pytest","-q","-p","no:cacheprovider"],
-                        mutant,generic_env,out/"generic.log",False)
+        # Match the original author runner's source-library discovery for
+        # BOTH clean and mutated conventional arms. The first generically
+        # failed collection only because its import root was not configured.
+        generic_cmd=[sys.executable,"-m","pytest","-q","-p","no:cacheprovider"]
+        generic_clean_env=dict(env,PYTHONPATH=str(original/"lib"))
+        generic_clean=run(generic_cmd,original,generic_clean_env,out/"generic_original.log",False)
+        generic_mutant_env=dict(env,PYTHONPATH=str(mutant/"lib"))
+        generic_obs=run(generic_cmd,mutant,generic_mutant_env,out/"generic.log",False)
         new_obs=run(native,mutant/"test",env,out/"candidate.log",True)
         reference_obs=run(native,mutant/"test",env,out/"informed.log",True)
     source_clean=((root/"lib/markdown2.py").read_bytes()==original_bytes
@@ -158,9 +160,16 @@ def conduct(root,out):
         generic_evidence_status="UNKNOWN_NO_GENERIC_CASES"
     else:
         generic_evidence_status="UNKNOWN_GENERIC_RECEIPT"
+    clean_generic_text=(out/"generic_original.log").read_text(encoding="utf8",errors="replace")
+    generic_pair_qualified=(generic_clean["exit"]==0 and generic_obs["exit"]==1
+                            and " passed" in clean_generic_text
+                            and " failed" in generic_text)
     result={
         "status":"WARRANTED_BOUNDED_INDUCED_FAULT_CONSEQUENCE" if recognized else "UNKNOWN_CONSEQUENTIAL_OBSERVATION",
         "generic_evidence_status":generic_evidence_status,
+        "generic_decision_separation":("TIE_ON_CLEAN_VS_FAULT_DECISION"
+                                        if generic_pair_qualified and recognized
+                                        else "UNKNOWN_CONVENTIONAL_CLEAN_FAULT_DECISION"),
         "generic_import_root":"source/lib (original native test bootstrap equivalent)",
         "source":"trentm/python-markdown2","pinned_source":SOURCE_SHA,
         "source_module_blob":MODULE_BLOB,"target_original_case":TARGET,
@@ -169,13 +178,15 @@ def conduct(root,out):
                                "pristine_sha256":sha(original_bytes),
                                "mutated_sha256":sha(altered),
                                "mutation_is_real_bug":False},
-        "original":original_obs,"fixed_generic":generic_obs,
+        "original":original_obs,"generic_original":generic_clean,
+        "fixed_generic":generic_obs,
         "candidate":new_obs,"same_information_rulebook":reference_obs,
         "checks":{"original_passes_target":a["cases"].get(TARGET)=="ok",
                   "mutant_fails_protected_target":target_different,
                   "all_native_case_IDs_authenticated":bool(same_cases),
                   "equal_information_comparator_tie":bool(informed_tie),
                   "original_source_unmodified":source_clean,
+                  "conventional_clean_passes_and_fault_fails":bool(generic_pair_qualified),
                   "generic_zero_collection":generic_obs["exit"]==5 and generic_obs["generic_no_tests"]},
         "not_warranted":["authentic upstream defect","full author-test coverage",
                           "human baseline superiority","general-purpose intervention safety",
