@@ -29,7 +29,7 @@ jobs:
       - name: Run independent test suite
         env:
           MATHGRAPH_PINNED_UPSTREAM: upstream_itsdangerous
-        run: python -m unittest -v test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent test_paired_benchmark test_permitted_witness_audit test_merge_decision_lab
+        run: python -m unittest -v test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent test_paired_benchmark test_permitted_witness_audit test_merge_decision_lab test_model_observation_merge
       - name: Reproduce upstream separator and scripted repair
         run: |
           python upstream_encoding_transfer.py --upstream-checkout upstream_itsdangerous --report upstream-transfer-report.json
@@ -38,6 +38,7 @@ jobs:
           python paired_benchmark.py --upstream-checkout upstream_itsdangerous --report paired-benchmark-report.json
           python permitted_witness_audit.py --upstream-checkout upstream_itsdangerous --report permitted-witness-report.json
           python merge_decision_lab.py --upstream-checkout upstream_itsdangerous --report merge-decision-report.json
+          python model_observation_merge.py --provider scripted --upstream-checkout upstream_itsdangerous --report model-observation-offline-report.json
       - name: Independently check public no-login demo
         run: |
           python - <<'PY'
@@ -68,6 +69,7 @@ jobs:
               "paired_benchmark.py", "test_paired_benchmark.py",
               "permitted_witness_audit.py", "test_permitted_witness_audit.py",
               "merge_decision_lab.py", "test_merge_decision_lab.py",
+              "model_observation_merge.py", "test_model_observation_merge.py",
               "index.html", "upstream_encoding_transfer.py", "upstream_nebius_agent.py",
               "upstream_transfer_cockpit.py", "test_upstream_encoding_transfer.py",
               "test_upstream_nebius_agent.py", "test_upstream_transfer_cockpit.py",
@@ -99,3 +101,4 @@ jobs:
             paired-benchmark-report.json
             permitted-witness-report.json
             merge-decision-report.json
+            model-observation-offline-report.json
