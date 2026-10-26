@@ -21,7 +21,9 @@ KNOWN_SOURCE = "a3716b5e0aeba16b6e85965b2e5019d174328f36"
 KNOWN_DRIVER = "test/test.py"
 KNOWN_DOC = "test/README.md"
 KNOWN_ARGS = ["python", "test.py", "--", "-knownfailure"]
-CASE = re.compile(r"^\s*(markdown2/.*?)\s+\.\.\.\s+(ok|FAIL|ERROR|skipped)\s*$")
+CASE = re.compile(r"^\s*((?:markdown2|cli)/.*?)\s+\.\.\.\s+(ok|FAIL|ERROR|skipped)\s*$")
+INTERRUPTED = re.compile(r"^\s*((?:markdown2|cli)/.*?)\s+\.\.\.\s+(WARNING:test:skipping .*)$")
+SKIP_WARNING = re.compile(r"^WARNING:test:skipping (?:pygments|wavedrom|latex2mathml|emoji) tests .*")
 SUMMARY = re.compile(r"\bRan\s+(\d+)\s+tests?\s+in\s+")
 
 
@@ -46,23 +48,58 @@ def digest(data):
 
 
 def extract_native_ids(log):
-    """Independently extract original native testlib outputs, never fabricate IDs."""
-    found = []
+    """Strict source-specific parser. Never infer a missing test-case identity.
+
+    The original author harness can interleave four named optional-dependency
+    warnings within a test result. Only these known warnings may be removed.
+    """
+    found, interrupted, warnings, malformed = [], None, 0, []
     for line in log.splitlines():
-        m = CASE.fullmatch(line.rstrip())
+        line = line.rstrip()
+        if interrupted is not None:
+            if SKIP_WARNING.fullmatch(line):
+                warnings += 1
+                continue
+            if line.strip() == "ok":
+                found.append((interrupted, "ok"))
+                interrupted = None
+                continue
+            malformed.append(line)
+            interrupted = None
+        m = CASE.fullmatch(line)
         if m:
             found.append((m.group(1), m.group(2)))
+            continue
+        m = INTERRUPTED.fullmatch(line)
+        if m:
+            if not SKIP_WARNING.fullmatch(m.group(2)):
+                malformed.append(line)
+            else:
+                interrupted = m.group(1)
+                warnings += 1
+            continue
+        if SKIP_WARNING.fullmatch(line):
+            warnings += 1
+            continue
+        if " ... " in line or line.strip() in ("ok", "FAIL", "ERROR"):
+            malformed.append(line)
     totals = SUMMARY.findall(log)
     if len(totals) != 1:
-        return {"status":"UNKNOWN_AUTHOR_NATIVE_CASE_SUMMARY", "candidate_rows":len(found)}
+        return {"status":"UNKNOWN_AUTHOR_NATIVE_CASE_SUMMARY",
+                "candidate_rows":len(found), "warnings":warnings}
     count = int(totals[0])
-    if not found or len(found) != count or len(set(n for n, _ in found)) != count:
+    if (interrupted is not None or malformed or not found
+            or len(found) != count
+            or len(set(name for name, _ in found)) != count):
         return {"status":"UNKNOWN_AUTHOR_NATIVE_TEST_IDENTITIES",
-                "declared":count, "observed":len(found)}
+                "declared":count, "observed":len(found),
+                "interrupted":interrupted is not None,
+                "unmatched_lines":len(malformed), "warnings":warnings}
     if any(status != "ok" for _, status in found):
         return {"status":"UNKNOWN_NATIVE_FAILURE", "declared":count}
     return {"status":"WARRANTED_BOUNDED_EXECUTED_NATIVE_IDS",
-            "case_ids": sorted(n for n, _ in found), "count":count}
+            "case_ids": sorted(name for name, _ in found),
+            "count":count, "recognized_optional_dependency_warnings":warnings}
 
 
 def run_native(source, out, name):
