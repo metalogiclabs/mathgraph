@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -25,12 +25,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMo
 <div class="eyebrow">The missing-experiment engine</div>
 <h1>The tests were green.<br><em>The code was wrong.</em></h1>
 <p class="lead">Ordinary coding agents can finish when the tests pass. MathGraph asks whether the tests were capable of distinguishing a correct repair from a hidden defect — and acquires the missing evidence before granting authorization.</p>
-<div class="stats" aria-label="Verified experiment statistics"><div class="stat"><strong>1,026</strong><small>Finite inputs evaluated</small></div><div class="stat"><strong>3 / 3</strong><small>Injected defects missed by native tests</small></div><div class="stat"><strong>2</strong><small>Minimum separating inputs</small></div><div class="stat"><strong class="ref">55/55 PASS</strong><small>Source-native CI regression tests</small></div></div>
+<div class="stats" role="group" aria-label="Verified experiment statistics"><div class="stat"><strong>1,026</strong><small>Finite inputs evaluated</small></div><div class="stat"><strong>3 / 3</strong><small>Injected defects missed by native tests</small></div><div class="stat"><strong>2</strong><small>Minimum separating inputs</small></div><div class="stat"><strong class="ref">55/55 PASS</strong><small>Source-native CI regression tests</small></div></div>
 <div class="layout" id="demonstration"><section class="card"><div class="eyebrow">Try the bounded experiment</div><h2>Observe the authority transition</h2><p class="help">Choose a deliberately mutated encoder from a source-pinned real library. This browser replay mirrors the retained CI witness; it does not run Python, an LLM, or external services.</p>
 <div class="controlrow"><div><label for="mutation">Deliberately injected defect</label><select id="mutation"><option value="standard_alphabet">Uses standard (+/) Base64 alphabet</option><option value="unstripped_padding">Leaves Base64 '=' padding</option><option value="trailing_zero_loss">Silently drops trailing zero bytes</option></select></div><span id="scope-pill" class="pill unknown">TARGET CLAIM: UNKNOWN</span></div>
-<div class="steps" role="group" aria-label="Evidence sequence"><button class="step selected" data-stage="0" aria-pressed="true"><small>01 / Baseline</small><strong>Run original tests</strong></button><button class="step" data-stage="1" aria-pressed="false"><small>02 / Separation</small><strong>Acquire missing tests</strong></button><button class="step" data-stage="2" aria-pressed="false"><small>03 / Requalification</small><strong>Apply repair + retest</strong></button></div>
-<div aria-live="polite" class="result"><div id="decision" class="state unknown">UNKNOWN</div><p id="decision-explanation" class="help"></p><pre id="trace" aria-label="Evidence trace"></pre></div>
-<div class="actions"><button class="primary" id="advance">Acquire separating evidence</button><button class="secondary" id="restart">Reset demonstration</button></div></section>
+<div class="steps" role="group" aria-label="Evidence sequence"><button type="button" class="step selected" data-stage="0" aria-pressed="true"><small>01 / Baseline</small><strong>Run original tests</strong></button><button type="button" class="step" data-stage="1" aria-pressed="false"><small>02 / Separation</small><strong>Acquire missing tests</strong></button><button type="button" class="step" data-stage="2" aria-pressed="false"><small>03 / Requalification</small><strong>Apply repair + retest</strong></button></div>
+<div aria-live="polite" class="result"><div id="decision" class="state unknown">UNKNOWN</div><p id="decision-explanation" class="help"></p><pre id="trace"></pre></div>
+<div class="actions"><button type="button" class="primary" id="advance">Acquire separating evidence</button><button type="button" class="secondary" id="restart">Reset demonstration</button></div></section>
 <aside class="card"><div class="eyebrow">Independently sourced witnesses</div><h2>Two observations, no guesswork</h2><p class="help">The exact-cost selector chose this basis from 1,026 frozen candidate byte sequences. A separate brute-force comparator confirmed the synthetic minimum cost of 6.</p>
 <div id="case-container" aria-live="polite"></div>
 <div class="meter"><div class="meter-line"><strong>Reference rule</strong><span class="pill ok">SOURCE-PINNED</span></div><div class="hint">Python's URL-safe, unpadded Base64 encoding contract</div></div>
