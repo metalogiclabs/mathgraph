@@ -1,0 +1,239 @@
+name: UZH supplemental encoder-blind synthetic column replay
+on:
+  push:
+    branches: [exp/uzh-physical-gate-integration-20261024]
+    paths:
+      - 'experiments/uzh_rotation/physical_*.py'
+      - 'experiments/uzh_rotation/test_physical_*.py'
+      - '.github/workflows/uzh-physical-capture-gate.yml'
+  pull_request:
+    branches: [exp/uzh-rotation-validation-20261021]
+    paths:
+      - 'experiments/uzh_rotation/physical_*.py'
+      - 'experiments/uzh_rotation/test_physical_*.py'
+      - '.github/workflows/uzh-physical-capture-gate.yml'
+  workflow_dispatch:
+jobs:
+  synthetic-model-with-protected-original-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Protect canonical physical evidence gate v1.1 and its negative controls
+        run: |
+          test "$(git hash-object experiments/uzh_rotation/physical_evidence_gate.py)" = fa80088f69115d181853de50e321d00c5b2a4b2a
+          test "$(git hash-object experiments/uzh_rotation/physical_encoder_score.py)" = 15f1d0976c2abc7e1b074405b6c4a47ce83f74e2
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_evidence_gate.py' -v
+      - name: Source-faithful canonical NAVIGATION bundle adapter and negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_nav_source_adapter.py' -v
+      - name: Encoder-blind model replay and independent scoring unit controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
+      - name: Qualify existing 146-byte sparse native map under timing uncertainty
+        run: |
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_native_witness_replay.py' -v
+          python -m unittest discover -s experiments/uzh_rotation -p 'test_finite_partial_map.py' -v
+      - name: Independent active camera witness acquisition controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_active_acquisition.py' -v
+      - name: Frozen 32-seed active-vs-continuous acquisition census
+        run: |
+          python experiments/uzh_rotation/physical_active_acquisition.py \
+            --seeds 32 --output active_acquisition_census.json
+          python experiments/uzh_rotation/audit_physical_active_acquisition.py \
+            active_acquisition_census.json --output active_acquisition_audit.json
+          python - <<'PY'
+          import json
+          r=json.load(open('active_acquisition_census.json'))
+          a=json.load(open('active_acquisition_audit.json'))
+          assert a['trial_traces_replayed']==32*4*len(r['cases'])
+          assert a['physical_validation']=='UNKNOWN'
+          clean=next(c for c in r['cases'] if c['case']=='breakable_clean')
+          blocked=next(c for c in r['cases'] if c['case']=='unbreakable_clean')
+          assert clean['active_unique']==clean['trials']
+          assert clean['continuous_unique']==clean['trials']
+          assert clean['active_attempts'] < clean['continuous_attempts']
+          assert not clean['active_false_unique'] and not clean['continuous_false_unique']
+          allblock=next(c for c in r['cases'] if c['case']=='breakable_occlude_all_witnesses')
+          assert blocked['active_unique']==0 and blocked['continuous_unique']==0
+          assert allblock['active_unique']==0 and allblock['continuous_unique']==0
+          assert r['hardware_acquisitions']==0
+          print('ACTIVE_ACQUISITION_VERIFIED_SYNTHETIC_ONLY',
+                {'clean':{k:clean[k] for k in ('trials','active_attempts',
+                   'continuous_attempts','active_resolution_step_total',
+                   'continuous_resolution_step_total')},
+                 'unbreakable_unknown':blocked['active_unknown'],
+                 'all_separating_views_blocked_unknown':allblock['active_unknown']})
+          print('NO_REAL_HARDWARE_ACQUISITION_OR_HEADING_AUTHORITY')
+          PY
+      - name: Original C99 native versus frozen Python acquired-evidence census
+        run: |
+          python experiments/uzh_rotation/physical_native_witness_replay.py \
+            --seeds 32 --output native_active_acquisition_census.json
+          python - <<'PY'
+          import json
+          r=json.load(open('native_active_acquisition_census.json'))
+          clean=next(x for x in r['conditions'] if x['condition']=='breakable_clean')
+          blocked=next(x for x in r['conditions'] if x['condition']=='breakable_occlude_all_witnesses')
+          assert r['source']=='EXISTING_FINITE_PARTIAL_MAP_C99_NO_DUPLICATE_IMPLEMENTATION'
+          assert r['native_vs_python_agreement_in_all_jitter0_trials']
+          assert clean['trials']==128
+          assert clean['jitter_0_unique']==128
+          assert clean['jitter_0_camera_attempts']==256
+          assert clean['jitter_1_unique']==0
+          assert blocked['jitter_0_unique']==0
+          assert r['hardware_observation_acquisitions']==0
+          print('ORIGINAL_C99_MINIMAL_ACQUISITION_PARITY_QUALIFIED', clean)
+          print('ONE_BIN_JITTER_BLOCKS_GUARANTEED_VISUAL_SEPARATION')
+          PY
+      - name: Passive landmark-width versus declared phase-jitter controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_landmark_width_design.py' -v
+      - name: Freeze independently shifted passive landmark source-design grid
+        run: |
+          python experiments/uzh_rotation/physical_landmark_width_design.py \
+            --seeds 16 --output passive_landmark_width_grid.json
+          python - <<'PY'
+          import json
+          r=json.load(open('passive_landmark_width_grid.json'))
+          assert r['physical_heading_correction_authorized'] is False
+          assert r['hardware_acquisitions']==0
+          assert len(r['all_conditions'])==16
+          for row in r['all_conditions']:
+              assert row['model_false_unique']==0
+              is_wide=row['landmark_width_bins']>=2*row['phase_error_radius_bins']+1
+              if is_wide:
+                  assert row['model_unique']==row['trials']
+              else:
+                  assert row['model_unknown']==row['trials']
+          print('SYNTHETIC_PASSIVE_LANDMARK_WIDTH_BOUND_VALIDATED')
+          print('PHYSICAL_SENSOR_AND_CLOCK_WARRANT=UNKNOWN')
+          PY
+      - name: Install pinned numerical model dependency
+        run: python -m pip install --disable-pip-version-check numpy==2.1.3
+      - name: Joint gyro-bias and camera-clock synthetic model negative controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_joint_bias_clock_model.py' -v
+      - name: Independent exact scalar bias-clock candidate oracle
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_joint_bias_clock_oracle.py' -v
+      - name: Frozen 32-seed matched LS and Huber comparison
+        run: |
+          python experiments/uzh_rotation/physical_joint_bias_clock_model.py \
+            --seeds 32 --stride 8 --out joint_bias_clock_32seeds.json
+          python - <<'PY'
+          import json
+          r=json.load(open('joint_bias_clock_32seeds.json'))
+          assert r['physical_heading_authorized'] is False
+          assert r['same_camera_and_gyro_for_all_compared_estimators']
+          assert r['same_fixed_acquisition_schedule_for_all_estimators']
+          assert r['boundary']=='SYNTHETIC_PHASE_FRONTEND_NO_RAW_CAMERA_NO_PHYSICAL_CLOCK'
+          c={x['condition']:x for x in r['conditions']}
+          assert len(c)==7 and all(x['seeds']==32 for x in c.values())
+          assert c['steady']['mean_joint_clock_bounded_fraction']==0
+          assert c['varying']['mean_joint_clock_bounded_fraction']>0
+          assert c['varying']['mean_unwrapped_rmse_deg']['mathgraph']<c['varying']['mean_unwrapped_rmse_deg']['conventional_ls']
+          assert c['varying_outliers']['mean_unwrapped_rmse_deg']['conventional_huber']<c['varying_outliers']['mean_unwrapped_rmse_deg']['mathgraph']
+          assert c['varying_outliers']['mean_conflict_fraction']>0.60
+          assert not c['varying_drift']['all_bounded_bias_intervals_contain_hidden_true_bias']
+          print('JOINT_BIAS_CLOCK_SYNTHETIC_COMPARISON_QUALIFIED')
+          for name in c:
+              print('COMPARE',name,c[name]['mean_unwrapped_rmse_deg'],
+                    'joint_fraction',c[name]['mean_joint_clock_bounded_fraction'])
+          print('NO_RAW_CAMERA_SENSOR_PROVENANCE_OR_PHYSICAL_CLOCK_AUTHORITY')
+          PY
+      - name: Original 16-bit source-column joint bias-clock interval adversaries
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_source_native_joint.py' -v
+      - name: Same-source 32-seed source-native bias-clock comparison
+        run: |
+          python experiments/uzh_rotation/physical_source_native_joint.py \
+            --seeds 32 --output source_native_joint_32seeds.json
+          python - <<'PY'
+          import json
+          r=json.load(open('source_native_joint_32seeds.json'))
+          assert r['boundary']=='ACTUAL_SYNTHETIC_16BIT_COLUMNS_NOT_IDEALIZED_OPTICAL_PHASE'
+          assert r['same_gyro_and_source_columns_for_both_estimation_methods']
+          assert r['hidden_truth_excluded_from_estimators']
+          assert r['real_sensors_tested'] is False
+          assert r['physical_navigation_authorized'] is False
+          assert len(r['scenarios'])==7
+          for c in r['scenarios']:
+              assert c['trials']==32
+              assert c['mean']['false_model_narrow_frames_grader_only']==0
+              assert c['mean']['model_narrow_fraction']==0
+          case={x['condition']:x for x in r['scenarios']}
+          clean=case['varying']['posthoc_threshold_frontier']
+          corrupt=case['outliers']['posthoc_threshold_frontier']
+          assert clean['0.07']['eligible_frames']==0
+          assert corrupt['0.07']['eligible_frames']==0
+          assert clean['0.30']['eligible_frames']>0
+          assert clean['0.30']['false_intervals_grader_only']==0
+          assert corrupt['0.30']['false_intervals_grader_only']>0
+          print('SOURCE_NATIVE_16BIT_JOINT_REPLAY_TESTED_NO_PHYSICAL_AUTHORITY')
+          print('RETROSPECTIVE_FRONTIER_IS_NOT_SAFE_THRESHOLD_SELECTION',
+                {'clean':clean,'corrupted':corrupt})
+          for c in r['scenarios']:
+              print('RAW16',c['condition'],c['mean'])
+          PY
+      - name: Adversarial isolation unit controls
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
+      - name: Real Docker isolated positive and forbidden encoder negative control
+        env:
+          RUN_DOCKER_ISOLATION_TEST: '1'
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_estimator_isolation.py' -v
+      - name: Real Docker complete six-turn synthetic replay
+        env:
+          RUN_DOCKER_REPLAY_TEST: '1'
+        run: python -m unittest discover -s experiments/uzh_rotation -p 'test_physical_column_replay.py' -v
+      - name: Generate independently scored reproducible synthetic artifacts
+        run: |
+          python experiments/uzh_rotation/physical_column_demo.py synthetic_capture
+          python - <<'PY'
+          import json, pathlib, sys
+          sys.path.insert(0, 'experiments/uzh_rotation')
+          from physical_estimator_isolation import build_map_isolated
+          frozen = build_map_isolated(
+              'experiments/uzh_rotation/physical_column_replay.py',
+              'synthetic_capture/camera.csv', 'synthetic_capture/gyro.csv')
+          host = json.loads(pathlib.Path('synthetic_capture/frozen_map.json').read_text())
+          assert frozen == host, 'isolated firstturn map differs from source-derived map'
+          pathlib.Path('isolated_firstturn_map.json').write_text(
+              json.dumps(frozen, sort_keys=True, indent=2) + '\n')
+          print('ISOLATED_FIRSTTURN_MAP_MATCHES_SOURCE_NO_ENCODER')
+          PY
+          python experiments/uzh_rotation/physical_estimator_isolation.py \
+            experiments/uzh_rotation/physical_column_replay.py \
+            synthetic_capture/camera.csv synthetic_capture/gyro.csv \
+            synthetic_capture/frozen_map.json --output synthetic_replay.json
+          python experiments/uzh_rotation/physical_encoder_scorer.py \
+            synthetic_replay.json synthetic_capture/encoder.csv 64 synthetic_scoring.json
+          python - <<'PY'
+          import json
+          s = json.load(open('synthetic_scoring.json'))
+          assert s['state'] == 'OFFLINE_MODEL_SCORING_ONLY_NO_PHYSICAL_PROVENANCE'
+          assert s['physical_heading_correction_warranted'] is False
+          assert s['overall']['mathgraph_estimate_rad']['unwrapped_rmse_deg'] < s['overall']['gyro_only_rad']['unwrapped_rmse_deg']
+          assert s['overall']['conventional_nearest_rad']['unwrapped_rmse_deg'] <= s['overall']['mathgraph_estimate_rad']['unwrapped_rmse_deg']
+          print('SYNTHETIC_MODEL_GYRO_REDUCTION_ONLY', s['overall'])
+          print('EQUAL_INFORMATION_CONVENTIONAL_TRACKER_IS_AT_LEAST_AS_ACCURATE')
+          print('PHYSICAL_HEADING_RECOVERY=UNKNOWN')
+          PY
+      - name: Retain bounded synthetic source lineage and independent scoring
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uzh-column-six-turn-synthetic-model-evidence
+          path: |
+            synthetic_capture/fixture_source_manifest.json
+            synthetic_capture/camera.csv
+            synthetic_capture/gyro.csv
+            synthetic_capture/encoder.csv
+            synthetic_capture/frozen_map.json
+            isolated_firstturn_map.json
+            synthetic_replay.json
+            synthetic_scoring.json
+            active_acquisition_census.json
+            active_acquisition_audit.json
+            native_active_acquisition_census.json
+            passive_landmark_width_grid.json
+            joint_bias_clock_32seeds.json
+            source_native_joint_32seeds.json
+          if-no-files-found: warn
