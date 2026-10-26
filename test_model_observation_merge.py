@@ -107,6 +107,45 @@ class ObservationContractTests(unittest.TestCase):
                 self.assertEqual(payload["chat_template_kwargs"],{"enable_thinking":False})
                 self.assertNotIn("fake-do-not-leak",json.dumps(payload))
 
+    def test_short_exact_choice_id_is_allowed_but_no_prose(self):
+        case="defective_green_tests"
+        menu=menu_from_native(self.inputs,self.table,(1,2,3))
+        options=finite_plan_options(menu,case)
+        valid=next(k for k,v in options.items() if v["action"]["decision"]=="acquire"
+                   and v["cost"]==6 and set(v["covers"])==set(RIVALS))
+        class FakeResponse:
+            headers={"x-request-id":"plain-id"}
+            def __init__(self,value):self.value=value
+            def __enter__(self):return self
+            def __exit__(self,*_):return False
+            def read(self,_):
+                return json.dumps({"model":"nvidia/nemotron-3-super-120b-a12b",
+                     "choices":[{"finish_reason":"stop","message":{"content":self.value}}]}).encode()
+        with patch.dict(os.environ,{"NEBIUS_API_KEY":"fake-do-not-leak"}):
+            p=NebiusMenuPlanner()
+            with patch("model_observation_merge.request.urlopen",return_value=FakeResponse(valid)):
+                result=p.propose(case,menu,(1,2,3),1)
+                self.assertEqual(result.choice_id,valid)
+            with patch("model_observation_merge.request.urlopen",return_value=FakeResponse("Choose "+valid)):
+                with self.assertRaisesRegex(ValueError,"NEBIUS_WRONG_CHOICE_SCHEMA"):
+                    p.propose(case,menu,(1,2,3),1)
+
+    def test_rejected_provider_response_never_grants_authority(self):
+        checkout=os.environ.get("MATHGRAPH_PINNED_UPSTREAM")
+        if not checkout:
+            self.skipTest("needs pinned upstream checkout")
+        class EmptyProvider:
+            model="nvidia/test-mock"
+            def propose(self,*_args,**_kwargs):
+                raise ValueError("NEBIUS_EMPTY_CHOICE")
+        result=run_review(Path(checkout),EmptyProvider(),max_attempts=2)
+        for case in result["cases"].values():
+            self.assertEqual(case["proposal_state"],"REJECTED_OR_MISSING")
+            self.assertEqual(case["merge_permission"],"NONE")
+            self.assertEqual(case["source_native_verdict"],"NOT_EXECUTED")
+            self.assertEqual([p["reason"] for p in case["proposals"]],
+                             ["NEBIUS_EMPTY_CHOICE","NEBIUS_EMPTY_CHOICE"])
+
     def test_no_model_fabricated_approval_is_admitted(self):
         lengths=(1,2,3)
         exact=_select(self.inputs,self.table,lengths)
