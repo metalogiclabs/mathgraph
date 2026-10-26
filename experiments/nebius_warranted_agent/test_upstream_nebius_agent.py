@@ -13,7 +13,7 @@ from unittest.mock import patch
 from upstream_nebius_agent import (
     DEFAULT_MODEL, ENDPOINT, NebiusProvider, ORIGINAL_FUNCTION,
     Proposal, ScriptedProvider, WRONG_FIRST, only_function,
-    replace_function, validate_function, perform,
+    replace_function, normalize_function_text, validate_function, perform,
 )
 from upstream_encoding_transfer import (
     ENCODING_PATH, UPSTREAM_COMMIT, mutate, pinned_source
@@ -54,6 +54,19 @@ class ContractTests(unittest.TestCase):
         self.assertIn(b"return base64.urlsafe_b64encode(string)\n", output)
         self.assertNotIn(b'.rstrip(b"=")', output)
         self.assertEqual(only_function(output).strip(), WRONG_FIRST.strip())
+
+    def test_outer_code_fence_unwrapped_but_explanations_rejected(self):
+        fenced = "```python\\n" + ORIGINAL_FUNCTION + "```"
+        self.assertEqual(normalize_function_text(fenced).strip(),
+                         ORIGINAL_FUNCTION.strip())
+        code = b"import base64\\n\\n" + WRONG_FIRST.encode()
+        self.assertIn(b'.rstrip(b"=")', replace_function(code, fenced))
+        for untrusted in ["Here is a fix:\\n" + ORIGINAL_FUNCTION,
+                          "```python\\n" + ORIGINAL_FUNCTION + "```\\nMore text",
+                          "```json\\n" + ORIGINAL_FUNCTION + "```"]:
+            with self.subTest(untrusted=untrusted):
+                with self.assertRaises(ValueError):
+                    replace_function(code, untrusted)
 
     def test_missing_api_key_fails_before_any_model_claim(self):
         with patch.dict(os.environ, {}, clear=True):
@@ -155,6 +168,20 @@ class SourceNativeTests(unittest.TestCase):
         self.assertEqual(report["frozen_experiment"]["minimum_synthetic_cost"],6)
         self.assertEqual([e["state"] for e in report["events"][-2:]],
                          ["REJECTED","WARRANTED"])
+
+    def test_verifier_feedback_drives_next_scripted_proposal(self):
+        class FeedbackProvider:
+            def __init__(self):
+                self.feedback = []
+            def propose(self,current,evidence,attempt,feedback=""):
+                self.feedback.append(feedback)
+                code = "not valid Python : : : " if attempt == 1 else ORIGINAL_FUNCTION
+                return Proposal(code,"SCRIPTED_OFFLINE_FIXTURE_NOT_NEBIUS","none",
+                                "scripted-sha",None,"now")
+        provider=FeedbackProvider()
+        outcome=perform(self.checkout,provider,max_attempts=2)
+        self.assertEqual(outcome["final_state"],"WARRANTED")
+        self.assertEqual(provider.feedback,["","MODEL_SOURCE_NOT_PYTHON"])
 
     def test_one_attempt_cannot_falsely_warrant(self):
         report=perform(self.checkout,ScriptedProvider(),max_attempts=1)
