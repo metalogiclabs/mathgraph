@@ -41,6 +41,20 @@ def bind (s : GraphState) (name : Option String) (id : Nat) : GraphState :=
   | none => s
   | some a => { s with anchors := (a, id) :: s.anchors }
 
+/-- The same most-recent-first lookup used by the actual alias branch. -/
+def aliasTarget (s : GraphState) (name : String) : Option Nat :=
+  s.anchors.findSome? (fun (n, idx) => if n == name then some idx else none)
+
+/-- A just-started anchor is immediately visible to its descendants,
+    even before any child has been traversed. -/
+theorem started_anchor_visible (s : GraphState) (name : String) (id : Nat) :
+    aliasTarget (bind s (some name) id) name = some id := by
+  simp [aliasTarget, bind, List.findSome?]
+
+/-- The new graph node's ID is allocated before processing children. -/
+theorem allocation_is_fresh (s : GraphState) :
+    (alloc s).1 = s.nodes.size := rfl
+
 partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × GraphState) :=
   match v with
   | .scalar data => do
@@ -63,7 +77,7 @@ partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × Graph
       let node := jsonNode "mapping" [("pairs", Lean.Json.arr edges)]
       return (id, assign s id node)
   | .alias name =>
-      match s.anchors.findSome? (fun (n, idx) => if n == name then some idx else none) with
+      match aliasTarget s name with
       | some id => .ok (id, s)
       | none => .error ("UNBOUND_ALIAS:" ++ name)
 where
