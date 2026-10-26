@@ -222,7 +222,8 @@ theorem allocateNodeStart_visible (s : GraphState) (name : String) :
 
 theorem allocateNodeStart_records (s : GraphState) (anchor : Option String) :
     (allocateNodeStart s anchor).2.receipts =
-      s.receipts.push (.nodeStart s.nodes.size anchor) := rfl
+      s.receipts.push (.nodeStart s.nodes.size anchor) := by
+  cases anchor <;> rfl
 
 theorem newest_binding_target (s : GraphState) (name : String)
     (oldId newId : Nat) :
