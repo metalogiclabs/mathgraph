@@ -24,7 +24,7 @@ We demonstrate on an exact pinned checkout of the open-source Python project Pal
 
 ## Challenge the verifier yourself — interactive active-observation lab
 
-In the public judge demo, select the permitted experimental channels for the frozen encoding repair task. The browser recomputes a minimum-cost separating basis in real time over the same 1,026 finite inputs. With one-, two- and three-byte probes permitted, it finds two tests at synthetic cost 6. Forbid one-byte probes and it finds an alternative at cost 7. Allow only three-byte probes and it reports **OBSTRUCTION**: the padding mutant is indistinguishable within that observation grammar. Re-enable the missing channel and the target becomes distinguishable again.
+In the public judge demo, select the permitted experimental channels for the frozen encoding repair task. The browser recomputes a minimum-cost separating basis in real time over the selected 1-, 2- and 3-byte observations from the frozen 1,026-input benchmark. Three empty/longer controls are intentionally excluded; some could reveal defects if permitted. Obstruction results are strictly conditional on this permission grammar. With one-, two- and three-byte probes permitted, it finds two tests at synthetic cost 6. Forbid one-byte probes and it finds an alternative at cost 7. Allow only three-byte probes and it reports **OBSTRUCTION**: the padding mutant is indistinguishable within that observation grammar. Re-enable the missing channel and the target becomes distinguishable again.
 
 [Try the active-observation lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#observation-lab).
 
