@@ -13,6 +13,19 @@ An agent's tests can all pass while critical behavior remains unchecked. MathGra
 
 Open **`index.html`** locally or host this directory on any static web host. The page is interactive but intentionally a **read-only OFFLINE replay**; it does not execute arbitrary Python or consume Nebius credits. The authenticated run is evidenced separately by the GitHub Actions link above.
 
+## New: Permission-aware active observation lab
+
+The public demo now contains a **live finite experiment compiler**, not merely a preset replay. Select which input lengths are legally or operationally permissible to observe. The browser independently computes the exact minimum synthetic-cost set of observations that distinguishes the three predeclared encoding fault hypotheses, or returns a **named obstruction** when no permitted observations can separate them. Clicking **Execute missing observations** evaluates the chosen cases locally and exposes defective behavior; changing observation permissions invalidates the displayed result.
+
+[Open the public active observation lab](https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/#observation-lab).
+
+- All 1-, 2- and 3-byte observations permitted: `00` and `f80000` (hex), total synthetic cost 6.
+- One-byte observations forbidden: `0000` and `f80000`, total cost 7.
+- Only three-byte observations permitted: **OBSTRUCTION**, because the unstripped-padding mutant is observationally indistinguishable on this permitted subset.
+- The original source-native external tests, Nebius provider response and GitHub Actions evidence are separate from this browser simulation. No arbitrary code or model is executed in the page.
+
+This demonstrates **permission-aware active identification**, not a new universal scientific algorithm. As the fair comparison below establishes, an equally informed conventional mutation-testing selector can match the finite minimum, and any out-of-domain fault remains UNKNOWN.
+
 ## Reproduce
 
 Requirements: **Python 3.11+**, `git`, `pytest==8.4.2`. The external Pallets upstream repository is NOT included; source and tests are fetched from its public licensed repository at one exact commit and verified by original Git blobs.
