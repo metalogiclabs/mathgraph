@@ -6,9 +6,12 @@ import unittest
 from pathlib import Path
 import numpy as np
 
+from physical_nav_source_adapter import convert
+from test_physical_evidence_gate import make_fixture
+
 from physical_source_native_joint import (
     Source, Truth, make_fixture, map_from_source, integrated,
-    read_navigation_csv, past_only_gyro_phase,
+    read_navigation_csv, verify_canonical_adapter_evidence, past_only_gyro_phase,
     model_candidate_step, replay, grade, benchmark,
     BIAS, CLOCK, DRIFT, POPCOUNT, ANGULAR_BIN, TAU, SCENARIOS,
 )
@@ -66,6 +69,25 @@ class Raw16BitJointTests(unittest.TestCase):
             self.assertTrue(np.array_equal(loaded.camera_ns,source.camera_ns))
             self.assertTrue(np.allclose(loaded.gyro_rate,source.gyro_rate))
             self.assertFalse(hasattr(loaded,"truth"))
+
+    def test_canonical_navigation_adapter_hash_verifies_and_withdraws_on_tamper(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            nav_bundle,encoder_bundle=make_fixture(root)
+            outdir=root/"adapted"
+            evidence=convert(nav_bundle,outdir)
+            camera=outdir/"camera.csv";gyro=outdir/"gyro.csv"
+            receipt=outdir/"adapter_evidence.json"
+            self.assertEqual(
+                verify_canonical_adapter_evidence(camera,gyro,receipt)["capture_id"],
+                evidence["capture_id"])
+            # Authenticated source fixture is sparse, not a 5-turn capture.
+            with self.assertRaises(ValueError):
+                read_navigation_csv(camera,gyro)
+            camera.write_bytes(camera.read_bytes()+b"# forged change\\n")
+            with self.assertRaisesRegex(ValueError,"source bytes differ"):
+                verify_canonical_adapter_evidence(camera,gyro,receipt)
+            self.assertTrue((encoder_bundle/"encoder.jsonl").is_file())
 
     def test_minimum_clock_wait_refuses_instantaneous_decision(self):
         source,_=make_fixture(0,"varying")
