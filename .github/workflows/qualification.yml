@@ -29,12 +29,13 @@ jobs:
       - name: Run independent test suite
         env:
           MATHGRAPH_PINNED_UPSTREAM: upstream_itsdangerous
-        run: python -m unittest -v test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent
+        run: python -m unittest -v test_upstream_encoding_transfer test_upstream_transfer_cockpit test_upstream_nebius_agent test_paired_benchmark
       - name: Reproduce upstream separator and scripted repair
         run: |
           python upstream_encoding_transfer.py --upstream-checkout upstream_itsdangerous --report upstream-transfer-report.json
           python upstream_transfer_cockpit.py upstream-transfer-report.json --output upstream-transfer-cockpit.html
           python upstream_nebius_agent.py --provider scripted --upstream-checkout upstream_itsdangerous --report upstream-scripted-report.json
+          python paired_benchmark.py --upstream-checkout upstream_itsdangerous --report paired-benchmark-report.json
       - name: Independently check public no-login demo
         run: |
           python - <<'PY'
@@ -59,7 +60,8 @@ jobs:
           from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
           paths = [
               ".github/workflows/qualification.yml", ".gitignore",
-              "LICENSE", "README.md", "EVIDENCE.md", "requirements-dev.txt",
+              "LICENSE", "README.md", "EVIDENCE.md", "BENCHMARK_PROTOCOL_20261026.md", "requirements-dev.txt",
+              "paired_benchmark.py", "test_paired_benchmark.py",
               "index.html", "upstream_encoding_transfer.py", "upstream_nebius_agent.py",
               "upstream_transfer_cockpit.py", "test_upstream_encoding_transfer.py",
               "test_upstream_nebius_agent.py", "test_upstream_transfer_cockpit.py",
@@ -88,3 +90,4 @@ jobs:
             upstream-transfer-report.json
             upstream-transfer-cockpit.html
             upstream-scripted-report.json
+            paired-benchmark-report.json
