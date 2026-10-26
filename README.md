@@ -9,6 +9,8 @@ An agent's tests can all pass while critical behavior remains unchecked. MathGra
 
 ## See the demonstration
 
+**Public hosted judge demo:** https://mathgraph-autopilot-nebius-demo.metalogiclabs-check.workers.dev/ (read-only interactive replay, no login or Nebius billing required). Its public route is served by a dedicated Cloudflare Worker; no authentication secrets are deployed with the HTML.
+
 Open **`index.html`** locally or host this directory on any static web host. The page is interactive but intentionally a **read-only OFFLINE replay**; it does not execute arbitrary Python or consume Nebius credits. The authenticated run is evidenced separately by the GitHub Actions link above.
 
 ## Reproduce
