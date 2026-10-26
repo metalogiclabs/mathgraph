@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      JPL_SHA: '4458c26e9a69411eadc1b35a4eea6968b1eb7f28'
+      JPL_SHA: '3a7670c8170304977bc327ed740854828b8f693d'
     steps:
       - name: Checkout MathGraph graph experiment
         uses: actions/checkout@v4
