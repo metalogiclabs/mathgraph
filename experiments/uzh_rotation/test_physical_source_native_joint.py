@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from physical_nav_source_adapter import convert
-from test_physical_evidence_gate import make_fixture
+from test_physical_evidence_gate import make_fixture as make_canonical_bundle_fixture
 
 from physical_source_native_joint import (
     Source, Truth, make_fixture, map_from_source, integrated,
@@ -73,7 +73,7 @@ class Raw16BitJointTests(unittest.TestCase):
     def test_canonical_navigation_adapter_hash_verifies_and_withdraws_on_tamper(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
-            nav_bundle,encoder_bundle=make_fixture(root)
+            nav_bundle,encoder_bundle=make_canonical_bundle_fixture(root)
             outdir=root/"adapted"
             evidence=convert(nav_bundle,outdir)
             camera=outdir/"camera.csv";gyro=outdir/"gyro.csv"
