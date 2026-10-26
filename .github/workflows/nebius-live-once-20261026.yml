@@ -1,4 +1,4 @@
-# Retry: independently CI-qualified grammar-constrained Nemotron JSON response.
+# Retry: CI-qualified strict grammar prompt with failure feedback and bounded fence handling.
 # Intentionally single-triggered live qualification experiment.
 # This workflow is on an isolated branch and uses *only* a frozen reviewed source
 # commit. It never runs for pull_request and never exposes model secrets to
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout exact reviewed MathGraph source (not triggering branch HEAD)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 788b1532f27867b9c9c247f9187bd98b7606e369
+          ref: 56315d382a5b439ffee9dc5a73320e25b2d1757c
           persist-credentials: false
       - name: Checkout immutable upstream Pallets source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
