@@ -37,6 +37,38 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMo
 <div class="meter"><div class="meter-line"><strong>Candidate implementation</strong><span id="candidate-status" class="pill unknown">NOT DISAMBIGUATED</span></div><div class="hint">Real upstream source, altered only in isolated experimental copies</div></div>
 <div class="meter"><div class="meter-line"><strong>Source identity</strong><span class="pill ok">EXACT SHA</span></div><div class="hint" style="overflow-wrap:anywhere">pallets/itsdangerous @ 672971d66a2ef9f85151e53283113f33d642dabd</div></div></aside></div>
 <div class="layout more"><section class="card"><div class="eyebrow">Why the result matters</div><h2>From an answer to an evidence requirement</h2><p>MathGraph preserves three different meanings: the agent's proposal, the tests that were actually run, and the permission to call the engineering task complete. A passing receipt is scoped to the specific source and test bytes it covers.</p><div class="timeline"><div class="item"><strong>Existing tests pass</strong><span>Declared-suite PASS, target still UNKNOWN</span></div><div class="item"><strong>Selected evidence is acquired</strong><span>Source-bound receipt becomes stale</span></div><div class="item"><strong>Separating tests expose the defect</strong><span>REJECTED</span></div><div class="item"><strong>Fresh tests after scripted repair</strong><span>WARRANTED within test scope</span></div></div></section><section class="card"><div class="eyebrow">Reproducibility</div><h2>Not a green badge without evidence</h2><p>The underlying CI checks out exact upstream Git objects, independently executes the native pytest suite, acquires the new tests, and retains source-bound receipts. The experiment has an intentionally constructed mutation grammar; it is not a discovered Pallets vulnerability or a general proof of correctness.</p><div class="links"><a href="https://github.com/metalogiclabs/mathgraph/pull/203">Implementation PR</a><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40262033428">Standalone CI</a><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641">Authenticated Nebius run</a><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949">Live model evidence</a></div><p class="footnote">A real NVIDIA Nemotron 3 Super repair via Nebius Token Factory was independently test-qualified in source-pinned GitHub Actions run #40255882641. This interactive page is an OFFLINE replay of predeclared injected variants, NOT itself a live model execution. A single successful repair does not establish general coding reliability.</p></section></div>
+
+<section id="observation-lab" aria-labelledby="observation-title" class="card" style="margin:30px 0;background:linear-gradient(140deg,#182c46,#101b2d);border-color:#5876a1">
+  <div class="eyebrow">TRY TO DEFEAT THE WARRANT · REAL FINITE CALCULATION IN THIS BROWSER</div>
+  <h2 id="observation-title" style="font-size:clamp(25px,4vw,35px);margin:9px 0 12px">What if the crucial evidence is forbidden?</h2>
+  <p class="help">Choose which observations the agent is permitted to acquire. MathGraph recomputes a minimum-cost separating experiment over the same 1,026 frozen byte inputs and three predeclared injected faults. If permitted observations cannot distinguish them, it returns a named obstruction rather than inventing approval.</p>
+  <div class="observation-layout" style="display:grid;grid-template-columns:1fr 1.1fr;gap:24px;margin:22px 0;align-items:start">
+    <fieldset id="observation-permissions" style="border:1px solid #526982;border-radius:13px;padding:17px;margin:0;min-width:0">
+      <legend style="color:#a9caff;font-weight:750;padding:0 8px">Permitted observation channels</legend>
+      <label style="display:flex;gap:10px;align-items:center;margin:10px 0"><input type="checkbox" data-byte-length="1" checked> One-byte probes <small style="color:#adbed6">(price 2)</small></label>
+      <label style="display:flex;gap:10px;align-items:center;margin:10px 0"><input type="checkbox" data-byte-length="2" checked> Two-byte probes <small style="color:#adbed6">(price 3)</small></label>
+      <label style="display:flex;gap:10px;align-items:center;margin:10px 0"><input type="checkbox" data-byte-length="3" checked> Three-byte probes <small style="color:#adbed6">(price 4)</small></label>
+      <p class="footnote" style="margin-top:12px">Empty and longer control inputs remain available, but cannot by themselves separate all three defects.</p>
+      <button type="button" class="button button--secondary" id="block-short" style="margin:8px 5px 5px 0">Block short probes</button>
+      <button type="button" class="button button--secondary" id="restore-channels">Restore all</button>
+    </fieldset>
+    <div class="card" style="padding:20px;background:#081522;border-color:#456584">
+      <div class="eyebrow">PERMITTED EXPERIMENT COMPILER</div>
+      <div id="observation-status" class="state unknown" aria-live="polite">UNKNOWN</div>
+      <p id="observation-reason" class="help">Calculating the permitted separating basis…</p>
+      <div id="observation-cases" style="color:#c5e0fa;line-height:1.8"></div>
+      <div class="actions" style="margin-top:16px"><button id="observation-acquire" class="button" type="button">Execute missing observations</button></div>
+      <p class="footnote" id="observation-note" style="margin-top:12px"></p>
+    </div>
+  </div>
+  <p class="footnote">A finite JavaScript evaluation of predeclared synthetic faults, not Nebius inference or release authorization. Synthetic test price = 1 + number of input bytes. Minimum cost is exact only for the declared finite grammar; an informed conventional mutation-testing solver ties that minimum.</p>
+</section>
+<style>
+  #observation-lab input[type=checkbox]{accent-color:#69ebc0;width:19px;height:19px;flex:none}
+  #observation-lab .obs-case{padding:9px 0;border-bottom:1px solid #364760;overflow-wrap:anywhere;font:14px ui-monospace,monospace}
+  @media(max-width:720px){#observation-lab .observation-layout{grid-template-columns:1fr!important}}
+</style>
+
 <footer>MathGraph Labs · A bounded demonstration of evidence acquisition. Costs are synthetic input-size costs, not runtime or financial savings. One real Nemotron-generated repair passed source-native tests on an injected fault; no claim of an upstream Pallets bug, general agent reliability, or unrestricted autonomous deployment is made by this page.</footer>
 <section id="benchmark" aria-labelledby="benchmark-title" style="background:#111f34;border:1px solid #3b5471;border-radius:18px;padding:27px;margin:28px 0;">
   <div class="eyebrow">INDEPENDENTLY VERIFIED · PRE-REGISTERED FINITE COMPARISON</div>
@@ -67,5 +99,86 @@ function render(){const [verdict,detail,trace]=stageText();const decision=$('dec
 $('mutation').addEventListener('change',()=>{stage=0;render();});document.querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>{stage=Number(button.dataset.stage);render();}));$('advance').addEventListener('click',()=>{stage=(stage+1)%3;render();});$('restart').addEventListener('click',()=>{stage=0;render();});render();
 })();
 </script>
+
+<script>
+(()=>{'use strict';
+const section=document.getElementById('observation-lab');if(!section)return;
+const el=id=>document.getElementById(id);
+const boxes=[...section.querySelectorAll('[data-byte-length]')];
+const allowed=()=>new Set(boxes.filter(x=>x.checked).map(x=>Number(x.dataset.byteLength)));
+function b64(bytes){let s='';for(const b of bytes)s+=String.fromCharCode(b);return btoa(s);}
+function expected(bytes){return b64(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function mutant(bytes,k){
+ if(k===0)return b64(bytes).replace(/=+$/,'');
+ if(k===1)return b64(bytes).replace(/\+/g,'-').replace(/\//g,'_');
+ if(k===2){let v=bytes;if(bytes.length%3===0){let j=bytes.length;while(j>0&&bytes[j-1]===0)j--;v=bytes.slice(0,j);}return expected(v);}
+ throw new Error('unknown predefined hypothesis');
+}
+const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+function makeDomain(){
+ const seen=new Set(),domain=[];
+ function add(a){const h=hex(a);if(!seen.has(h)){seen.add(h);domain.push({hex:h,bytes:a,price:1+a.length});}}
+ add(new Uint8Array());add(new TextEncoder().encode('infinite'));add(new TextEncoder().encode('無限'));
+ for(let i=0;i<256;i++)add(Uint8Array.from([i]));
+ for(let i=0;i<256;i++){add(Uint8Array.from([i,0]));add(Uint8Array.from([0,i]));}
+ for(let i=0;i<256;i++)add(Uint8Array.from([i,0,0]));
+ domain.sort((a,b)=>a.bytes.length-b.bytes.length||a.hex.localeCompare(b.hex));
+ return domain;
+}
+const domain=makeDomain();if(domain.length!==1026)throw new Error('frozen finite domain identity changed');
+const masks=domain.map(x=>{const oracle=expected(x.bytes);let m=0;for(let k=0;k<3;k++)if(mutant(x.bytes,k)!==oracle)m|=1<<k;return m;});
+let selected=[],status='UNKNOWN';
+function selectBasis(){
+ const permit=allowed(),best=Array(8).fill(null),covers=new Set();
+ best[0]={cost:0,cases:[]};
+ for(let i=0;i<domain.length;i++){
+  const x=domain[i],m=masks[i];if(!m||!permit.has(x.bytes.length))continue;
+  covers.add(m);const next=best.slice();
+  for(let j=0;j<8;j++){
+   if(!best[j])continue;
+   const proposal={cost:best[j].cost+x.price,cases:[...best[j].cases,x]},target=j|m,old=next[target];
+   if(!old||proposal.cost<old.cost||(proposal.cost===old.cost&&(
+    proposal.cases.length<old.cases.length||(proposal.cases.length===old.cases.length&&
+    proposal.cases.map(v=>v.hex).join(',')<old.cases.map(v=>v.hex).join(',')))))next[target]=proposal;
+  }
+  for(let j=0;j<8;j++)best[j]=next[j];
+ }
+ const observable=[0,0,0];for(const m of covers)for(let k=0;k<3;k++)if(m&(1<<k))observable[k]=1;
+ const blocked=['standard alphabet','unstripped padding','trailing-zero loss'].filter((_,i)=>!observable[i]);
+ return {basis:best[7],blocked};
+}
+function draw(){
+ const result=selectBasis();selected=result.basis?.cases||[];
+ const state=el('observation-status'),reason=el('observation-reason'),cases=el('observation-cases'),note=el('observation-note'),go=el('observation-acquire');
+ cases.replaceChildren();
+ if(!result.basis){
+  state.textContent='OBSTRUCTION';state.className='state unknown';
+  reason.textContent='No permitted combination of observations distinguishes all three declared faults.';
+  note.textContent='Unseparable: '+result.blocked.join(', ')+'. No consequential approval is justified.';
+  go.disabled=true;return;
+ }
+ go.disabled=false;
+ state.textContent=status;state.className='state '+(status==='REJECTED'?'no':'unknown');
+ reason.textContent=status==='REJECTED'?
+  'Acquired counterexamples distinguish the declared candidate defects: reject the defective implementation.':
+  'Minimum basis: '+selected.length+' observation(s), total synthetic cost '+result.basis.cost+'. Evidence remains UNKNOWN until acquired.';
+ for(const x of selected){const div=document.createElement('div');div.className='obs-case';div.textContent='0x'+x.hex+' → oracle '+expected(x.bytes)+' · cost '+x.price;cases.append(div);}
+ note.textContent='Exact finite subset optimization across '+domain.length+' inputs. Permitted lengths: '+[...allowed()].sort().join(', ')+'.';
+}
+function invalidate(){status='UNKNOWN';draw();}
+for(const box of boxes)box.addEventListener('change',invalidate);
+el('block-short').addEventListener('click',()=>{for(const box of boxes)box.checked=box.dataset.byteLength==='3';invalidate();});
+el('restore-channels').addEventListener('click',()=>{for(const box of boxes)box.checked=true;invalidate();});
+el('observation-acquire').addEventListener('click',()=>{
+ if(!selectBasis().basis)return;
+ let covered=0;
+ for(const x of selected){const at=domain.findIndex(y=>y.hex===x.hex);covered|=masks[at];}
+ if(covered!==7)throw new Error('finite separating certificate failed independent check');
+ status='REJECTED';draw();
+});
+draw();
+})();
+</script>
+
 </body>
 </html>
