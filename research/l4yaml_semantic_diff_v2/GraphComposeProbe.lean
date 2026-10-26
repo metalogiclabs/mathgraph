@@ -52,14 +52,14 @@ partial def build (v : YamlValue) (s : GraphState) : Except String (Nat × Graph
       let (id, s) := alloc s
       let s := bind s anchor id
       let (children, s) ← buildList items.toList s
-      let node := jsonNode "sequence" [("items", toJson children)]
+      let node := jsonNode "sequence" [("items", Lean.toJson children)]
       return (id, assign s id node)
   | .mapping _ pairs _ anchor => do
       let (id, s) := alloc s
       let s := bind s anchor id
       let (children, s) ← buildPairs pairs.toList s
       let edges := children.map fun (k, v) =>
-        Lean.Json.arr #[toJson k, toJson v]
+        Lean.Json.arr #[Lean.toJson k, Lean.toJson v]
       let node := jsonNode "mapping" [("pairs", Lean.Json.arr edges)]
       return (id, assign s id node)
   | .alias name =>
@@ -86,7 +86,7 @@ where
 def graphOf (doc : YamlDocument) : Except String Lean.Json := do
   let (root, s) ← build doc.value {}
   return Lean.Json.mkObj [
-    ("root", toJson root),
+    ("root", Lean.toJson root),
     ("nodes", Lean.Json.arr s.nodes)
   ]
 
