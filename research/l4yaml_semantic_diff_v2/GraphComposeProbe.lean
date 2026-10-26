@@ -537,6 +537,18 @@ theorem build_scalar_exact (s : GraphState) (data : Scalar) :
           [("json", .str (L4YAML.Json.yamlToJson (.scalar data)))])) := by
   rfl
 
+/-- For any initial graph state and anchor name, a sequence whose only
+    child is an alias to its own start anchor obtains a real self-edge.
+    The newly allocated node is the target; no extra node is allocated
+    for the alias. This is a family theorem, not a fixed YAML example. -/
+theorem build_single_self_cycle (s : GraphState) (name : String) :
+    build (.sequence .flow #[.alias name] none (some name)) s =
+      let (id, t) := allocateNodeStart s (some name)
+      let t' := { t with receipts := t.receipts.push (.aliasTo name id) }
+      .ok (id, assign t' id
+        (jsonNode "sequence" [("items", Lean.toJson (#[id] : Array Nat))])) := by
+  simp [build, build.buildList, build_alias_of_newly_started_node]
+
 def graphOf (doc : YamlDocument) : Except String Lean.Json := do
   let (root, s) ← build doc.value {}
   return Lean.Json.mkObj [
