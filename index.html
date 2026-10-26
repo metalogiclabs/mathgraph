@@ -38,6 +38,37 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMo
 <div class="meter"><div class="meter-line"><strong>Source identity</strong><span class="pill ok">EXACT SHA</span></div><div class="hint" style="overflow-wrap:anywhere">pallets/itsdangerous @ 672971d66a2ef9f85151e53283113f33d642dabd</div></div></aside></div>
 <div class="layout more"><section class="card"><div class="eyebrow">Why the result matters</div><h2>From an answer to an evidence requirement</h2><p>MathGraph preserves three different meanings: the agent's proposal, the tests that were actually run, and the permission to call the engineering task complete. A passing receipt is scoped to the specific source and test bytes it covers.</p><div class="timeline"><div class="item"><strong>Existing tests pass</strong><span>Declared-suite PASS, target still UNKNOWN</span></div><div class="item"><strong>Selected evidence is acquired</strong><span>Source-bound receipt becomes stale</span></div><div class="item"><strong>Separating tests expose the defect</strong><span>REJECTED</span></div><div class="item"><strong>Fresh tests after scripted repair</strong><span>WARRANTED within test scope</span></div></div></section><section class="card"><div class="eyebrow">Reproducibility</div><h2>Not a green badge without evidence</h2><p>The underlying CI checks out exact upstream Git objects, independently executes the native pytest suite, acquires the new tests, and retains source-bound receipts. The experiment has an intentionally constructed mutation grammar; it is not a discovered Pallets vulnerability or a general proof of correctness.</p><div class="links"><a href="https://github.com/metalogiclabs/mathgraph/pull/203">Implementation PR</a><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40262033428">Standalone CI</a><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641">Authenticated Nebius run</a><a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949">Live model evidence</a></div><p class="footnote">A real NVIDIA Nemotron 3 Super repair via Nebius Token Factory was independently test-qualified in source-pinned GitHub Actions run #40255882641. This interactive page is an OFFLINE replay of predeclared injected variants, NOT itself a live model execution. A single successful repair does not establish general coding reliability.</p></section></div>
 
+
+<section id="merge-review-lab" class="card" aria-labelledby="merge-review-heading" style="margin:30px 0;background:linear-gradient(125deg,#101e32,#14243c);border-color:#6287b2">
+  <div class="eyebrow">SOURCE-NATIVE EXPERIMENT · THREE-WAY MERGE REVIEW</div>
+  <h2 id="merge-review-heading" style="font-size:clamp(27px,4vw,37px);margin:10px 0">Can the agent justify this merge?</h2>
+  <p class="help">Every starting candidate passes the original upstream tests. Select a real source-native replay case and decide whether acquiring new evidence should approve, reject, or hold the change. The outcomes are independently reproduced in pinned GitHub Actions, not inferred from the browser.</p>
+  <div class="merge-review-switches" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:22px 0">
+    <button type="button" class="step" data-merge-case="broken">Defective change<br><small>Existing tests green</small></button>
+    <button type="button" class="step" data-merge-case="correct">Correct change<br><small>Existing tests green</small></button>
+    <button type="button" class="step" data-merge-case="forbidden">Forbidden observation<br><small>Correct change, sensor blocked</small></button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1.1fr;gap:18px" class="merge-review-grid">
+    <div class="card" style="background:#0b1829;padding:22px">
+      <div class="eyebrow">MERGE AUTHORITY</div>
+      <div id="merge-review-verdict" class="state unknown" aria-live="polite">UNKNOWN</div>
+      <p id="merge-review-reason" class="help">Passing the original tests does not settle the protected claim.</p>
+      <div id="merge-review-permission" class="pill unknown">MERGE: NOT AUTHORIZED</div>
+      <p id="merge-review-testcase" class="footnote" style="margin-top:15px"></p>
+    </div>
+    <div class="card" style="background:#0b1829;padding:22px">
+      <div class="eyebrow">EXPERIMENT AND RECEIPT LINEAGE</div>
+      <ol id="merge-review-timeline" style="padding-left:23px;margin:15px 0;line-height:2;color:#d6e7ff"></ol>
+      <div class="actions" style="margin-top:19px;display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="button" id="merge-review-next">Acquire distinguishing evidence</button>
+        <button type="button" class="button button--secondary" id="merge-review-reset">Restart review</button>
+      </div>
+    </div>
+  </div>
+  <p class="footnote" style="margin:18px 0 0">This interface replays an audited **offline source-native test experiment**; it does not merge an upstream pull request or perform a new Nebius inference. The model-generated repair is independently evidenced by <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641" target="_blank" rel="noopener">the authenticated Nemotron run</a>. The three-outcome source receipt is independently replayed in <a href="https://github.com/metalogiclabs/mathgraph/actions/runs/40286531693" target="_blank" rel="noopener">41/41-test GitHub Actions #40286531693</a>.</p>
+</section>
+<style>@media(max-width:720px){#merge-review-lab .merge-review-grid,#merge-review-lab .merge-review-switches{grid-template-columns:1fr!important}}#merge-review-lab .merge-review-switches button[aria-pressed=true]{border-color:#69ebc0;box-shadow:inset 0 0 0 1px #69ebc0}#merge-review-lab .pill.unknown{color:#ffd184}#merge-review-lab .pill.no{color:#ff9b9e}#merge-review-lab .pill.ok{color:#69ebc0}</style>
+
 <section id="observation-lab" aria-labelledby="observation-title" class="card" style="margin:30px 0;background:linear-gradient(140deg,#182c46,#101b2d);border-color:#5876a1">
   <div class="eyebrow">TRY TO DEFEAT THE WARRANT · REAL FINITE CALCULATION IN THIS BROWSER</div>
   <h2 id="observation-title" style="font-size:clamp(25px,4vw,35px);margin:9px 0 12px">What if the crucial evidence is forbidden?</h2>
@@ -177,6 +208,57 @@ el('observation-acquire').addEventListener('click',()=>{
  status='REJECTED';draw();
 });
 draw();
+})();
+</script>
+
+
+<script>
+(()=>{
+'use strict';
+const root=document.getElementById('merge-review-lab');if(!root)return;
+const el=id=>document.getElementById(id);
+const cases={
+ broken:{name:'Injected defective change',final:'REJECTED',reason:'New source-native tests expose the injected standard-alphabet defect. Do not approve.',permission:'MERGE: NO',cost:'2 separating tests · synthetic cost 6',obstruction:null},
+ correct:{name:'Pinned reference change',final:'WARRANTED_BOUNDED',reason:'Fresh source-native tests and the two acquired distinguishing tests pass for the exact candidate bytes. Scoped review is justified, not automatic merge.',permission:'REVIEW: BOUNDED',cost:'2 separating tests · synthetic cost 6',obstruction:null},
+ forbidden:{name:'Missing permitted observation',final:'UNKNOWN',reason:'A three-byte-only policy cannot distinguish the unstripped-padding behavior. Approval requires an observation this policy forbids.',permission:'MERGE: NO',cost:'OBSTRUCTION: unstripped_padding',obstruction:'unstripped_padding'}
+};
+let active='broken',phase=0;
+function describe(){
+ const c=cases[active];
+ if(phase===0)return ['UNKNOWN','Existing tests pass, but cannot distinguish the target behavior. Permission to merge is not established.','MERGE: NO'];
+ if(phase===1)return [c.final,c.reason,c.permission];
+ if(phase===2)return active==='forbidden'?['UNKNOWN',c.reason,'MERGE: NO']:['REJECTED','Source bytes changed after the tested receipt. Earlier authorization is stale.','MERGE: NO'];
+ return [c.final,c.reason,c.permission];
+}
+function render(){
+ const current=cases[active],[verdict,reason,permission]=describe();
+ const state=el('merge-review-verdict');state.textContent=verdict;state.className='state '+(verdict==='REJECTED'?'no':verdict==='WARRANTED_BOUNDED'?'ok':'unknown');
+ el('merge-review-reason').textContent=reason;
+ const pill=el('merge-review-permission');pill.textContent=permission;pill.className='pill '+(verdict==='WARRANTED_BOUNDED'?'ok':verdict==='REJECTED'?'no':'unknown');
+ el('merge-review-testcase').textContent=current.name+' · '+current.cost+' · experimental replay, not an actual merge';
+ root.querySelectorAll('[data-merge-case]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.mergeCase===active)));
+ const timeline=el('merge-review-timeline');timeline.replaceChildren();
+ const entries=['Original native suite: PASS (only original tests warranted)','Target distinction: UNKNOWN'];
+ if(phase>=1)entries.push(current.obstruction?
+  'Permitted observations: OBSTRUCTION ('+current.obstruction+')':
+  'Selected two tests: acquired and executed → '+current.final);
+ if(phase>=2)entries.push(current.obstruction?
+  'No source modification or approval attempted':
+  'Post-test source edit: old receipt REJECTED');
+ if(phase>=3&&!current.obstruction)entries.push('Fresh exact-byte test receipt → '+current.final);
+ for(const line of entries){const li=document.createElement('li');li.textContent=line;timeline.append(li);}
+ const button=el('merge-review-next');
+ button.disabled=active==='forbidden'&&phase>=1;
+ button.textContent=phase===0?'Acquire distinguishing evidence':
+  phase===1?'Change source after testing':phase===2?'Recheck exact source bytes':'Restart evidence review';
+}
+root.querySelectorAll('[data-merge-case]').forEach(x=>x.addEventListener('click',()=>{active=x.dataset.mergeCase;phase=0;render()}));
+el('merge-review-next').addEventListener('click',()=>{
+ if(active==='forbidden'&&phase>=1)return;
+ phase=(phase+1)%4;render();
+});
+el('merge-review-reset').addEventListener('click',()=>{phase=0;render()});
+render();
 })();
 </script>
 
