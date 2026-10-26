@@ -42,6 +42,7 @@ class ProposedAction:
     model: str
     response_sha256: str
     request_id: str | None
+    choice_id: str | None = None
 
 
 def menu_from_native(inputs, observations, lengths) -> list[dict]:
@@ -198,6 +199,131 @@ class NemotronObservationPlanner:
                               digest(raw), str(req_id or data.get("id") or "") or None)
 
 
+
+def finite_plan_options(menu: list[dict], case: str) -> dict[str, dict]:
+    """Offer trusted finite choices; an untrusted model only selects an ID.
+
+    This avoids parsing model-authored source code or arbitrary hex arrays.
+    Plans and prices are derived solely from the pinned native behavior table.
+    The independent exact verifier still owns all admission decisions.
+    """
+    from itertools import combinations
+    items=[]
+    for count in range(1,min(3,len(menu))+1):
+        for subset in combinations(menu,count):
+            covered=set().union(*(set(x["separates"]) for x in subset))
+            action={"decision":"acquire",
+                    "tests_hex":[x["hex"] for x in subset],"unseparable":[]}
+            items.append({"action":action,
+                          "cost":sum(x["cost"] for x in subset),
+                          "covers":sorted(covered),
+                          "complete":covered==set(RIVALS)})
+    full=sorted((x for x in items if x["complete"]),
+                key=lambda x:(x["cost"],len(x["action"]["tests_hex"]),
+                              x["action"]["tests_hex"]))
+    partial=sorted((x for x in items if not x["complete"]),
+                   key=lambda x:(x["cost"],x["action"]["tests_hex"]))
+    covered=set().union(*(set(x["separates"]) for x in menu))
+    blocked=sorted(set(RIVALS)-covered)
+    correct_obstruction={"action":{"decision":"obstruction","tests_hex":[],
+                                    "unseparable":blocked},
+                         "cost":None,"covers":sorted(covered),
+                         "complete":False}
+    false_obstruction={"action":{"decision":"obstruction","tests_hex":[],
+                                  "unseparable":[next((r for r in RIVALS
+                                                    if r not in blocked),RIVALS[0])]},
+                       "cost":None,"covers":sorted(covered),"complete":False}
+    options=[]
+    if partial:options.append(partial[0])
+    if full:
+        options.append(full[0])
+        more=next((p for p in full[1:] if p["cost"]>full[0]["cost"]),None)
+        if more:options.append(more)
+        options.append(false_obstruction)
+    else:
+        options.append(correct_obstruction)
+        options.append(false_obstruction)
+    # Shuffle without randomness, creating a stable ID that does not always
+    # reveal the correct answer by position. Published source fixes the order.
+    items_by_digest=sorted(options,key=lambda p:digest(
+        (case+"|"+json.dumps(p["action"],sort_keys=True)).encode()))
+    ids="ABCDEFGH"
+    return {ids[i]:item for i,item in enumerate(items_by_digest)}
+
+
+class NebiusMenuPlanner:
+    """Model selects one constrained option; only trusted code constructs tests."""
+    def __init__(self,model: str=DEFAULT_MODEL):
+        key=os.environ.get("NEBIUS_API_KEY")
+        if not key:raise RuntimeError("NEBIUS_API_KEY_NOT_CONFIGURED")
+        if not model.startswith("nvidia/"):raise ValueError("NVIDIA_OPEN_MODEL_REQUIRED")
+        self._key=key
+        self.model=model
+
+    def propose(self,case,menu,lengths,attempt,feedback="") -> ProposedAction:
+        options=finite_plan_options(menu,case)
+        schema={"type":"object","properties":{
+            "choice_id":{"type":"string","enum":list(options)}},
+            "required":["choice_id"],"additionalProperties":False}
+        visible=[{"id":k,"decision":v["action"]["decision"],
+                  "tests_hex":v["action"]["tests_hex"],
+                  "unseparable":v["action"]["unseparable"],
+                  "covers":v["covers"],"cost":v["cost"]}
+                 for k,v in options.items()]
+        messages=[
+            {"role":"system","content":(
+                "You are an evidence-seeking code review planner, not a merge authority. "
+                "Choose exactly one provided OPTION ID. Every required rival must be "
+                "distinguished using allowed tests at minimum total synthetic cost. "
+                "A plan's 'covers' lists which rival defects its proposed tests expose. "
+                "If no listed acquisition covers all required rivals, choose the "
+                "obstruction with the exact set of uncovered rivals. "
+                "Return only JSON with choice_id. No explanation or source code.")},
+            {"role":"user","content":json.dumps({
+                "review_case":case,"admitted_lengths":list(lengths),
+                "required_rivals":list(RIVALS),"options":visible,
+                "independent_verifier_feedback":feedback[:160] or "none",
+                "attempt":attempt
+            },sort_keys=True)}
+        ]
+        body={"model":self.model,"messages":messages,
+              "temperature":0.0,"max_tokens":120,
+              "chat_template_kwargs":{"enable_thinking":False},
+              "guided_json":schema,"response_format":{"type":"json_object"}}
+        req=request.Request(ENDPOINT,data=json.dumps(body,sort_keys=True).encode(),
+                            method="POST",headers={
+                            "Content-Type":"application/json",
+                            "Authorization":"Bearer "+self._key})
+        try:
+            with request.urlopen(req,timeout=60) as response:
+                raw=response.read(1024*1024)
+                header_id=response.headers.get("x-request-id")
+        except Exception as exc:
+            raise RuntimeError("NEBIUS_PLAN_UNVERIFIED:"+type(exc).__name__) from None
+        try:
+            response=json.loads(raw)
+            if response.get("model") and response["model"]!=self.model:
+                raise ValueError("MODEL_ID_MISMATCH")
+            choice=response["choices"][0]
+            text=choice["message"]["content"]
+            if not isinstance(text,str) or not text.strip():
+                raise ValueError("MODEL_EMPTY_CHOICE")
+            if choice.get("finish_reason") not in ("stop",None):
+                raise ValueError("MODEL_INCOMPLETE_CHOICE")
+            parsed=json.loads(text)
+            if not isinstance(parsed,dict) or set(parsed)!={"choice_id"}:
+                raise ValueError("MODEL_WRONG_CHOICE_SCHEMA")
+            selected=parsed["choice_id"]
+            if not isinstance(selected,str) or selected not in options:
+                raise ValueError("MODEL_CHOICE_NOT_IN_MENU")
+        except (ValueError,TypeError,KeyError,IndexError):
+            raise ValueError("NEBIUS_MENU_RESPONSE_MALFORMED") from None
+        return ProposedAction(options[selected]["action"],"nebius-token-factory",
+                              self.model,digest(raw),
+                              str(header_id or response.get("id") or "") or None,
+                              choice_id=selected)
+
+
 def run_review(checkout: Path, provider, max_attempts: int = 2) -> dict:
     """Execute all three decisions; report every rejected model proposal."""
     if max_attempts not in (1, 2):
@@ -219,7 +345,8 @@ def run_review(checkout: Path, provider, max_attempts: int = 2) -> dict:
                 proposal = provider.propose(case_id, menu, permitted, attempt, prev_feedback)
                 event={"attempt": attempt, "provider": proposal.provider,
                        "model": proposal.model, "request_id": proposal.request_id,
-                       "response_sha256": proposal.response_sha256}
+                       "response_sha256": proposal.response_sha256,
+                       "choice_id": proposal.choice_id}
                 try:
                     chosen=certify_action(proposal.action,menu,exact)
                     event["state"]="ACCEPTED"
@@ -268,11 +395,14 @@ def run_review(checkout: Path, provider, max_attempts: int = 2) -> dict:
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--upstream-checkout",type=Path,required=True)
-    parser.add_argument("--provider",choices=("scripted","nebius"),default="scripted")
+    parser.add_argument("--provider",choices=("scripted","nebius","nebius_menu"),
+                        default="scripted")
     parser.add_argument("--max-attempts",type=int,default=2)
     parser.add_argument("--report",type=Path,default=Path("model-observation-review.json"))
     args=parser.parse_args()
-    provider=(ScriptedPlanner() if args.provider=="scripted" else NemotronObservationPlanner())
+    provider=(ScriptedPlanner() if args.provider=="scripted"
+              else NebiusMenuPlanner() if args.provider=="nebius_menu"
+              else NemotronObservationPlanner())
     report=run_review(args.upstream_checkout.resolve(),provider,args.max_attempts)
     args.report.write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
     overview={k:{"proposal":v["proposal_state"],
