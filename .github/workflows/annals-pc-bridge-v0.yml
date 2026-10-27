@@ -1,0 +1,57 @@
+name: Annals exact probability bridge V0 (candidate)
+on:
+  push:
+    branches: [exp/annals-pc-bridge-20261027]
+    paths:
+      - 'experiments/annals_pc_bridge_v0/**'
+      - '.github/workflows/annals-pc-bridge-v0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-probability-definition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ImperialCollegeLondon/AnnalsChallenge
+          ref: e32eb1411db0d700ca874dd695aea92f78699db8
+          path: external/AnnalsChallenge
+          persist-credentials: false
+      - name: Verify exact source identity
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/annals-pc-bridge-v0
+          test "$(git -C external/AnnalsChallenge rev-parse HEAD)" = e32eb1411db0d700ca874dd695aea92f78699db8
+          grep -F 'leanprover/lean4:v4.33.0-rc1' external/AnnalsChallenge/lean-toolchain
+          grep -F '"rev": "d1ddae43a4db43e0acf2d9d9e18b54037dbe3ea0"' external/AnnalsChallenge/lake-manifest.json
+      - name: Compile native probability theorem against pinned definitions
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.33.0-rc1
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd external/AnnalsChallenge
+          lean --version | tee ../../evidence/annals-pc-bridge-v0/lean-version.txt
+          lake exe cache get 2>&1 | tee ../../evidence/annals-pc-bridge-v0/cache.log
+          lake build AnnalsChallenge.AnnalsOfMathematics.«2021-194-2-FractionalExpectationThresholds» \
+            2>&1 | tee ../../evidence/annals-pc-bridge-v0/target-build.log
+          lake env lean ../../experiments/annals_pc_bridge_v0/SingletonProbability.lean \
+            2>&1 | tee ../../evidence/annals-pc-bridge-v0/native-lean.log
+          if grep -E 'sorryAx|error:' ../../evidence/annals-pc-bridge-v0/native-lean.log; then
+            echo 'PROBABILITY_BRIDGE_NOT_VERIFIED'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: annals-pc-bridge-v0
+          path: evidence/annals-pc-bridge-v0/
+          if-no-files-found: warn
