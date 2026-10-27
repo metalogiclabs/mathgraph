@@ -1,0 +1,42 @@
+name: MathGraph source-authorized C alias versus safe Rust signature
+on:
+  push:
+    branches:
+      - research/acsl-old-frame-prospective-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  direct-aliased-call-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout isolated source-only technical branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout authentic pinned C and generated Rust
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Independently exercise admissible C alias and Rust native borrower
+        run: python3 research/acsl_old_frame_v1/alias_witness.py upstream research/acsl_old_frame_v1/alias-evidence
+      - name: Seal lineage and confirm external source unchanged
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/acsl_old_frame_v1/alias-evidence
+          git rev-parse HEAD > research/acsl_old_frame_v1/alias-evidence/mathgraph_head.txt
+          git -C upstream rev-parse HEAD > research/acsl_old_frame_v1/alias-evidence/source_head.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Keep both compile successes and rejection diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-alias-safe-rust-interface-v1
+          path: research/acsl_old_frame_v1/alias-evidence/
+          retention-days: 90
+          if-no-files-found: warn
