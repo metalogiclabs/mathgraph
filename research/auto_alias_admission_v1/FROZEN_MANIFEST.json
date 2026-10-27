@@ -1,0 +1,71 @@
+{
+  "protocol": "SOURCE_ONLY_ALIAS_CALL_ADMISSION_V1",
+  "revision": "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3",
+  "upstream": "ZoneOut12/C2VerifiableRust",
+  "selection": "Original C contract and target-path existence ONLY; targets unopened",
+  "sources": [
+    {
+      "id": "add_read",
+      "c": "data/tutorial_wp/ex-3-add-ptr-answer-1.c",
+      "blob": "b25f75b0d29850001f61b99a9e1a0e65887ac4da",
+      "fn": "add",
+      "target": "transpiled_rust/tutorial_wp/ex-3-add-ptr-answer-1.rs"
+    },
+    {
+      "id": "add_output",
+      "c": "data/tutorial_wp/ex-3-add-ptr-answer-2.c",
+      "blob": "19885148b93beadcb25ae5278c8bf9f7a947e3d6",
+      "fn": "add",
+      "target": "transpiled_rust/tutorial_wp/ex-3-add-ptr-answer-2.rs"
+    },
+    {
+      "id": "max_mut_behaviors",
+      "c": "data/tutorial_wp/ex-4-max-ptr-answer.c",
+      "blob": "46c97bab14e1ebb6b18ea97db56353c63412ab95",
+      "fn": "max_ptr",
+      "target": "transpiled_rust/tutorial_wp/ex-4-max-ptr-answer.rs"
+    },
+    {
+      "id": "max_read",
+      "c": "data/tutorial_wp/ex-4-max-ptr-answer-1.c",
+      "blob": "8ae191e12e3b5bace20f25f33dbabd29c5b6f069",
+      "fn": "max_ptr",
+      "target": "transpiled_rust/tutorial_wp/ex-4-max-ptr-answer-1.rs"
+    },
+    {
+      "id": "max_mut_old",
+      "c": "data/tutorial_wp/ex-4-max-ptr-answer-2.c",
+      "blob": "24d3b5be329243c597596ae2ea136de647bd234b",
+      "fn": "max_ptr",
+      "target": "transpiled_rust/tutorial_wp/ex-4-max-ptr-answer-2.rs"
+    },
+    {
+      "id": "max_read_cases",
+      "c": "data/tutorial_wp/ex-4-max-ptr-answer-3.c",
+      "blob": "67f9e514996d3c1b5fc6228eefa82df19edeaf9a",
+      "fn": "max_ptr",
+      "target": "transpiled_rust/tutorial_wp/ex-4-max-ptr-answer-3.rs"
+    },
+    {
+      "id": "max_nullable",
+      "c": "data/tutorial_wp/ex-4-max-ptr-answer-4.c",
+      "blob": "275ebc2ee79f231bc35936fac96463444c2a3365",
+      "fn": "max_ptr",
+      "target": "transpiled_rust/tutorial_wp/ex-4-max-ptr-answer-4.rs"
+    },
+    {
+      "id": "array_equal",
+      "c": "data/tutorial_wp/ex-2-equal-answer.c",
+      "blob": "788b8a29abc808b62fa3041f7e89f8e28d6691dd",
+      "fn": "equal",
+      "target": "transpiled_rust/tutorial_wp/ex-2-equal-answer.rs"
+    },
+    {
+      "id": "vector_sum",
+      "c": "data/tutorial_wp/ex-4-add-vectors-answer.c",
+      "blob": "1e262211ad2945f47e44ea8397ab050256088511",
+      "fn": "add_vectors",
+      "target": "transpiled_rust/tutorial_wp/ex-4-add-vectors-answer.rs"
+    }
+  ]
+}
