@@ -1,0 +1,56 @@
+name: MathGraph native ACSL old-state and frame prospective replay
+on:
+  push:
+    branches:
+      - research/acsl-old-frame-prospective-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-to-rust-old-state-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout frozen MathGraph source-only research
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 16
+          persist-credentials: false
+      - name: Checkout pinned untouched C and Qwen-translated Rust
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Confirm source-only CI seal as an ancestor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 'b07952616efd4403f3e7dcf44c82fc417997e91a^{commit}'
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Run source-only source contract normalization regression tests
+        run: python3 -m unittest discover -s research/acsl_old_frame_v1 -p 'test_*.py' -v
+      - name: Compile and execute unmodified C and Qwen Rust on sealed finite corpus
+        run: python3 research/acsl_old_frame_v1/native.py upstream research/acsl_old_frame_v1/evidence
+      - name: Independent source-aware conventional comparator with equal evidence
+        run: python3 research/acsl_old_frame_v1/conventional_baseline.py research/acsl_old_frame_v1/evidence
+      - name: Preserve provenance and source cleanliness
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/acsl_old_frame_v1/evidence
+          git rev-parse HEAD > research/acsl_old_frame_v1/evidence/mathgraph_head.txt
+          git -C upstream rev-parse HEAD > research/acsl_old_frame_v1/evidence/upstream_head.txt
+          git -C upstream status --porcelain > research/acsl_old_frame_v1/evidence/upstream-status.txt
+          sha256sum research/acsl_old_frame_v1/*.py > research/acsl_old_frame_v1/evidence/python_sha256.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain exact verifier failures and positive native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: old-frame-prospective-native-v1
+          path: research/acsl_old_frame_v1/
+          retention-days: 90
+          if-no-files-found: warn
