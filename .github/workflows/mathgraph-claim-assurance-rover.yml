@@ -1,0 +1,102 @@
+name: MathGraph Claim Assurance - authentic JPL rover transfer
+
+on:
+  push:
+    branches:
+      - research/claim-assurance-rover-transfer-20261027
+    paths:
+      - 'research/claim_assurance_autonomy_v1/**'
+      - '.github/workflows/mathgraph-claim-assurance-rover.yml'
+  pull_request:
+    branches:
+      - research/claim-assurance-v1-pkc-sysml-20261027
+    paths:
+      - 'research/claim_assurance_autonomy_v1/**'
+      - '.github/workflows/mathgraph-claim-assurance-rover.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-source-native-rover-assurance:
+    name: Pinned JPL rover source, author tests, independent geometry and claim refusal
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout MathGraph independent checker
+        uses: actions/checkout@v4
+
+      - name: Checkout exact public JPL Open Source Rover revision without writes
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/osr-rover-code
+          ref: 7aaf18512c9e8a997931f0caae28b63c8c6e9a78
+          path: source/osr
+          persist-credentials: false
+
+      - name: Enforce immutable upstream/test identities and stdlib-only checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/claim_assurance_autonomy_v1/results
+          test "$(git -C source/osr rev-parse HEAD)" = "7aaf18512c9e8a997931f0caae28b63c8c6e9a78"
+          test "$(git -C source/osr rev-parse HEAD:ROS/osr_control/osr_control/kinematics.py)" = "38e35e5823111808177d78427a1595d27d0ebe00"
+          test "$(git -C source/osr rev-parse HEAD:ROS/osr_control/test/test_kinematics.py)" = "5860abcdd690f4c62f912e79ebfdd84d0817b4ae"
+          python3 -m py_compile research/claim_assurance_autonomy_v1/execute.py
+          python3 -m py_compile research/claim_assurance_autonomy_v1/independent_checker.py
+          git rev-parse HEAD > research/claim_assurance_autonomy_v1/results/mathgraph-source-revision.txt
+          git -C source/osr rev-parse HEAD > research/claim_assurance_autonomy_v1/results/upstream-source-revision.txt
+
+      - name: Install source-test runtime and record its exact environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check pytest==8.4.2
+          python3 -m pip freeze > research/claim_assurance_autonomy_v1/results/python-dependencies.txt
+          python3 --version > research/claim_assurance_autonomy_v1/results/python-version.txt
+
+      - name: Run authentic rover tests, independent finite model and original-test mutant
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONDONTWRITEBYTECODE=1
+          python3 research/claim_assurance_autonomy_v1/execute.py \
+            source/osr research/claim_assurance_autonomy_v1/results
+
+      - name: Qualify correct claim and independently reject wrong or stale warrants
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONDONTWRITEBYTECODE=1
+          python3 research/claim_assurance_autonomy_v1/independent_checker.py \
+            --checkout source/osr \
+            --evidence research/claim_assurance_autonomy_v1/results \
+            --output research/claim_assurance_autonomy_v1/results/CLAIM_ASSURANCE_RESULT.json
+
+      - name: Freeze provenance, check immutable checkout and hash evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git -C source/osr status --porcelain)"
+          sha256sum research/claim_assurance_autonomy_v1/execute.py \
+            research/claim_assurance_autonomy_v1/independent_checker.py \
+            source/osr/ROS/osr_control/osr_control/kinematics.py \
+            source/osr/ROS/osr_control/test/test_kinematics.py \
+            research/claim_assurance_autonomy_v1/results/*.json \
+            research/claim_assurance_autonomy_v1/results/*.log \
+            > research/claim_assurance_autonomy_v1/results/source-and-evidence.sha256
+          python3 -m json.tool \
+            research/claim_assurance_autonomy_v1/results/CLAIM_ASSURANCE_RESULT.json >/dev/null
+          echo MATHGRAPH_AUTONOMOUS_SOURCE_TO_CLAIM_V1_GREEN
+
+      - name: Retain positive, induced fault, negative and code-linked evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-autonomous-rover-claim-assurance-v1
+          path: |
+            research/claim_assurance_autonomy_v1/execute.py
+            research/claim_assurance_autonomy_v1/independent_checker.py
+            research/claim_assurance_autonomy_v1/results/
+          if-no-files-found: warn
