@@ -124,6 +124,11 @@ def qualify(root,logs,change=None):
   compiled=read(logs/"native-lean.log")
   check("7 HCPs checked, 0 errors" in validated,"NATIVE_HCP_CHECKER_NOT_GREEN")
   check("Build completed successfully" in compiled,"LEAN_NATIVE_COMPILATION_NOT_GREEN")
+  counterexample=read(logs/"native-r3-counterexample.log")
+  check("MATHGRAPH_R3_P_POSITIVE_AND_NEGATIVE_LEAN_PROOF_CHECKED" in counterexample,
+        "LEAN_P_EMPIRICAL_COUNTEREXAMPLE_NOT_KERNEL_CHECKED")
+  check("out_of_range_record_refused" in counterexample,
+        "LEAN_COUNTEREXAMPLE_AXIOM_PROFILE_NOT_OBSERVED")
  except Missing as exc:return {"status":"WITHDRAWN","reason":str(exc)}
  except Reject as exc:return {"status":"REJECTED_EVIDENCE","reason":str(exc)}
  return {"status":"WARRANTED_BOUNDED_SOURCE_FIDELITY",
@@ -131,6 +136,8 @@ def qualify(root,logs,change=None):
          "anchors":anchors,"semantics":meanings,
          "native_hcp_log_sha256":h(validated),
          "native_lean_log_sha256":h(compiled),
+         "native_r3_counterexample_sha256":h(counterexample),
+         "explicit_finite_counterexample":"type-correct PairState P with extension 7 exceeds model limit 6; Lean checks false gate",
          "worksheet_sorrys":"intentional exercises; not cited as solution proof",
          "historical_scope":"HCP currently L0-L6; requested chapters 6-8 not a literal L6-L8 path"}
 def verdict(record,claim):
