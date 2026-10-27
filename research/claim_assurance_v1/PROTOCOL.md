@@ -80,7 +80,7 @@ hold in **one current CI job**:
 
 **Open:** generalized typed `@Checked.statement` equivalence; real
 device/data measurements; complete end-to-end PKC semantics; full FGM
-comparison; generalized automatic extraction; commercial operational
+comparison; generalized automatic extraction; operational
 adoption. Authority for these remains `UNKNOWN`.
 
 ## Reproduce
