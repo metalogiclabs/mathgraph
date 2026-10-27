@@ -14,23 +14,22 @@ namespace MathGraph.AnnalsSingleton
 def eventProbability (p : Rat) : Rat := (1 - p) * 0 + p * 1
 
 theorem eventProbabilityEq (p : Rat) : eventProbability p = p := by
-  simp [eventProbability]
+  simp [eventProbability, zero_add]
 
 theorem halfIsThreshold : eventProbability (1 / 2) = (1 / 2 : Rat) := by
   simp [eventProbabilityEq]
 
 /-- A zero logarithm factor: log(1)=0 in the source expression. -/
-def zeroLogBound (K q : Rat) : Rat := K * q * 0
+def zeroLogBound (K q : Int) : Int := K * q * 0
 
-theorem zeroLogBoundEq (K q : Rat) : zeroLogBound K q = 0 := by
+theorem zeroLogBoundEq (K q : Int) : zeroLogBound K q = 0 := by
   simp [zeroLogBound]
 
-/-- Counterexample to the unguarded inequality, for ANY finite rational K,q. -/
-theorem unguardedBoundFalse (K q : Rat) :
-    ¬ ((1 / 2 : Rat) ≤ zeroLogBound K q) := by
-  intro h
-  have h0 : (1 / 2 : Rat) ≤ 0 := by simpa [zeroLogBound] using h
-  exact (show ¬ ((1 / 2 : Rat) ≤ 0) from by decide) h0
+/-- Multiply the reduced 1/2 ≤ K*q*0 obstruction by 2.
+    Integer-scaled model: 1 ≤ 2*0 is impossible for arbitrary K,q. -/
+theorem unguardedBoundFalse (K q : Int) :
+    ¬ ((1 : Int) ≤ 2 * zeroLogBound K q) := by
+  simpa [zeroLogBound] using (show ¬ ((1 : Int) ≤ 0) from by decide)
 
 /-- The repaired statement's l(F)≥2 hypothesis excludes the witness l(F)=1. -/
 theorem singletonGuardFails : ¬ (2 ≤ (1 : Nat)) := by decide

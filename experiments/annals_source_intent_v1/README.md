@@ -22,8 +22,10 @@ to `1/2 ≤ 0`, for any finite coefficient. The formalized theorem includes
 
 The Python checker enumerates the singleton sample space and rejects stale,
 missing, mismatched or unrelated source content. Lean separately proves
-the reduced Bernoulli probability and zero-factor obstruction for all rational
-`K,q`, with a deliberately false Lean negative control rejected by the kernel.
+the reduced Bernoulli probability for every rational `p`, and the scaled
+integer zero-factor obstruction for arbitrary integer `K,q`, with a deliberately
+false Lean negative control rejected by the kernel. The integer-scaled theorem
+is a reduced arithmetic witness, not a theorem about Mathlib's real-valued `K`.
 The exact bridge from these reduced definitions to the original Mathlib
 `p_c`, `q_f`, `l` and `Real.log` definitions is **not formally checked**.
 
