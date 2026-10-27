@@ -1,0 +1,61 @@
+{
+  "protocol": "SOURCE_ONLY_AUTONOMOUS_OBSERVATION_V1",
+  "upstream": "ZoneOut12/C2VerifiableRust",
+  "revision": "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3",
+  "selection": "Five source-authored ACSL contracts selected before examining Qwen-generated Rust bytes; metadata establishes only path existence. Nonrandom hand-selected source holdout.",
+  "cases": [
+    {
+      "c": "data/frama_c_problems/array_find.c",
+      "c_blob": "f58f554e4658e54ff40eb36d4b1ef86514d6a32c",
+      "target": "transpiled_rust/frama_c_problems/array_find.rs"
+    },
+    {
+      "c": "data/frama_c_problems/search.c",
+      "c_blob": "5b3c3811c4471f444ecbeae23c04a9b00c3eac7c",
+      "target": "transpiled_rust/frama_c_problems/search.rs"
+    },
+    {
+      "c": "data/frama_c_problems/search_2.c",
+      "c_blob": "e5935f3f2563e5cdb7dd241804e398b45533fee4",
+      "target": "transpiled_rust/frama_c_problems/search_2.rs"
+    },
+    {
+      "c": "data/frama_c_problems/binary_search.c",
+      "c_blob": "1157b9f889bf2bd5b0200fbf166d0881668052da",
+      "target": "transpiled_rust/frama_c_problems/binary_search.rs"
+    },
+    {
+      "c": "data/tutorial_wp/ex-3-binary-search-u-answer.c",
+      "c_blob": "b39c798dcecc4938de0e6bff983bef0c611abb53",
+      "target": "transpiled_rust/tutorial_wp/ex-3-binary-search-u-answer.rs"
+    }
+  ],
+  "domain": {
+    "values": [
+      -2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "keys": [
+      -3,
+      -2,
+      -1,
+      0,
+      1,
+      2,
+      3
+    ],
+    "sorted_max_length": 5,
+    "unsorted_max_length": 4
+  },
+  "expected_families": [
+    "BOOLEAN_PRESENCE",
+    "INDEX_OR_NEGATIVE_ONE",
+    "INDEX_OR_LENGTH",
+    "UNSUPPORTED_NAMED_BEHAVIORS_ABSENT"
+  ],
+  "blind": true,
+  "stopping_rule": "A source-only rule extractor selects at most 3 cheap probes per supported source; if a contract cannot be faithfully recognized, abstain. Execute all valid-domain exhaustive inputs separately and run an equally informed conventional comparator. No retrospective selection."
+}
