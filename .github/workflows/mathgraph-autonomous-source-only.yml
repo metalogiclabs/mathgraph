@@ -1,0 +1,67 @@
+name: MathGraph autonomous source-only preregistration
+on:
+  push:
+    branches:
+      - research/autonomous-source-observation-v1-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-observations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout frozen source-only generator
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Checkout pinned C sources without reading Qwen Rust
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          sparse-checkout: |
+            data/frama_c_problems
+            data/tutorial_wp
+          persist-credentials: false
+      - name: Test source-only classifier and honest abstention
+        shell: bash
+        run: |
+          python3 -m unittest discover -s research/autonomous_source_observation_v1 -p "test_*.py" -v
+      - name: Freeze independently synthesized source observation packet
+        shell: bash
+        run: |
+          mkdir -p research/autonomous_source_observation_v1/results
+          PYTHONPATH=research/autonomous_source_observation_v1 python3 - <<'PY'
+          from discover import extract
+          from pathlib import Path
+          import json
+          packet=extract(Path("upstream"))
+          cases=packet["discovery"]
+          good=[s for s in cases if s["status"]=="DISCOVERED_BOUNDED_CONTRACT"]
+          unknown=[s for s in cases if s["status"]!="DISCOVERED_BOUNDED_CONTRACT"]
+          print(json.dumps([{"source":s["c"],"status":s["status"],"family":s.get("family"),"sorted":s.get("sorted_required"),"probes":s.get("probes"),"full_count":s.get("full_count")} for s in cases],indent=2))
+          assert len(cases)==5
+          assert len(good)==4 and len(unknown)==1
+          assert sum(len(s["probes"]) for s in good)==12
+          assert sum(s["full_count"] for s in good)==14448
+          assert sorted(s["family"] for s in good)==["BOOLEAN_PRESENCE","BOOLEAN_PRESENCE","INDEX_OR_LENGTH","INDEX_OR_NEGATIVE_ONE"]
+          assert sum(bool(s["sorted_required"]) for s in good)==2
+          assert unknown[0]["reason"]=="NO_NAMED_BEHAVIORS"
+          Path("research/autonomous_source_observation_v1/results/SOURCE_ONLY_PACKET.json").write_text(json.dumps(packet,sort_keys=True,indent=2)+"\n")
+          PY
+          git -C upstream status --porcelain > research/autonomous_source_observation_v1/results/upstream_status.txt
+          git rev-parse HEAD > research/autonomous_source_observation_v1/results/mathgraph_commit.txt
+          git -C upstream rev-parse HEAD > research/autonomous_source_observation_v1/results/upstream_commit.txt
+          sha256sum research/autonomous_source_observation_v1/results/SOURCE_ONLY_PACKET.json
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain source-only observation packet before target unblind
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-only-frozen-packet
+          path: research/autonomous_source_observation_v1/
+          retention-days: 90
+          if-no-files-found: warn
