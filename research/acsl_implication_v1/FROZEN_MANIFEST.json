@@ -1,0 +1,42 @@
+{
+  "protocol": "ACSL_IMPLICATION_SOURCE_ONLY_V1",
+  "upstream": "ZoneOut12/C2VerifiableRust",
+  "rev": "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3",
+  "selection": "Five source-only selections; held-out target paths only verified to exist; no target bytes read before this commit.",
+  "values": [
+    -2,
+    -1,
+    0,
+    1,
+    2
+  ],
+  "array_max_n": 4,
+  "double_max_n": 6,
+  "cases": [
+    {
+      "source": "data/frama_c_problems/max.c",
+      "blob": "c2f8aae98b7ad686eeb6d46c3f20af328477602a",
+      "target": "transpiled_rust/frama_c_problems/max.rs"
+    },
+    {
+      "source": "data/frama_c_problems/check_evens_in_array.c",
+      "blob": "8fc9f1d3c6aab280c1cd4cf5819b4856c9ed4977",
+      "target": "transpiled_rust/frama_c_problems/check_evens_in_array.rs"
+    },
+    {
+      "source": "data/frama_c_problems/replace_evens.c",
+      "blob": "5e782d34a1ee68cda1dc21e15777005a666c770c",
+      "target": "transpiled_rust/frama_c_problems/replace_evens.rs"
+    },
+    {
+      "source": "data/frama_c_problems/array_double.c",
+      "blob": "a559b35376d9828823714c19b02afb39a7e1b971",
+      "target": "transpiled_rust/frama_c_problems/array_double.rs"
+    },
+    {
+      "source": "data/frama_c_problems/reset_1st.c",
+      "blob": "70147e46d8d74e10bfe3fbb000d2498b77d9d52b",
+      "target": "transpiled_rust/frama_c_problems/reset_1st.rs"
+    }
+  ]
+}
