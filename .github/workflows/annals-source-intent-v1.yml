@@ -1,0 +1,92 @@
+name: Annals source-intent V1 (external source, bounded)
+on:
+  push:
+    branches: [exp/annals-source-intent-20261027]
+    paths:
+      - 'experiments/annals_source_intent_v1/**'
+      - 'tests/test_annals_source_intent_v1.py'
+      - '.github/workflows/annals-source-intent-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  authentic-source-and-reduced-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout external primary-source formalization at immutable SHA
+        uses: actions/checkout@v4
+        with:
+          repository: ImperialCollegeLondon/AnnalsChallenge
+          ref: e32eb1411db0d700ca874dd695aea92f78699db8
+          path: external/AnnalsChallenge
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Bind pinned authentic statement, verify finite oracle and baseline
+        env:
+          ANNALS_CHECKOUT: external/AnnalsChallenge
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/annals-source-intent-v1
+          test "$(git -C external/AnnalsChallenge rev-parse HEAD)" = e32eb1411db0d700ca874dd695aea92f78699db8
+          sha256sum external/AnnalsChallenge/AnnalsChallenge/AnnalsOfMathematics/2021-194-2-FractionalExpectationThresholds.lean \
+            | tee evidence/annals-source-intent-v1/external-source.sha256
+          python -m unittest discover -s tests -p 'test_annals_source_intent_v1.py' -v \
+            2>&1 | tee evidence/annals-source-intent-v1/python-tests.log
+          python - <<'PY'
+          import json
+          from fractions import Fraction
+          from pathlib import Path
+          from experiments.annals_source_intent_v1.audit import assess, locate_annals_source
+          report = assess(locate_annals_source())
+          assert report['terminal'] == 'FINITE_COUNTERMODEL'
+          assert report['full_paper_theorem'] == 'UNKNOWN'
+          assert not report['source']['theorem_proved']
+          assert not report['release_authorized']
+          report['witness']['critical_probability'] = str(report['witness']['critical_probability'])
+          report['native_lean'] = 'PENDING_SEPARATE_NATIVE_STEP'
+          report['independently_derived_baseline'] = 'COUNTEREXAMPLE_TIE'
+          output = Path('evidence/annals-source-intent-v1/report.json')
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          print(output.read_text())
+          PY
+      - name: Native Lean proofs and deliberately unprovable negative control
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.35.0
+          "$HOME/.elan/bin/lean" --version | tee evidence/annals-source-intent-v1/lean-version.txt
+          "$HOME/.elan/bin/lean" experiments/annals_source_intent_v1/AnnalsSingleton.lean \
+            2>&1 | tee evidence/annals-source-intent-v1/lean-positive.log
+          if grep -E 'sorryAx|error:' evidence/annals-source-intent-v1/lean-positive.log; then
+            echo 'POSITIVE_LEAN_AX_OR_ERROR'
+            exit 1
+          fi
+          set +e
+          "$HOME/.elan/bin/lean" experiments/annals_source_intent_v1/RejectedUnguardedBound.lean \
+            > evidence/annals-source-intent-v1/lean-negative.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'PROTECTED_NEGATIVE_WAS_NOT_REJECTED'
+            exit 1
+          fi
+          grep -F 'error:' evidence/annals-source-intent-v1/lean-negative.log
+          sha256sum experiments/annals_source_intent_v1/*.lean \
+            > evidence/annals-source-intent-v1/lean-source.sha256
+          echo 'NATIVE_REDUCED_PROOFS_PASS_NEGATIVE_REJECTED'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: annals-source-intent-v1
+          path: evidence/annals-source-intent-v1/
+          if-no-files-found: warn
