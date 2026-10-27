@@ -1,0 +1,72 @@
+name: MathGraph source-only old-state frame preregistration
+on:
+  push:
+    branches:
+      - research/acsl-old-frame-prospective-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  c-only-contract-freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source-only protocol
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Checkout pinned ORIGINAL C only, without generated Rust
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          sparse-checkout: |
+            data/frama_c_problems
+            data/tutorial_wp
+          persist-credentials: false
+      - name: Verify inputs and source-only tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          python3 -m unittest discover -s research/acsl_old_frame_v1 -p 'test_*.py' -v
+      - name: Materialize genuinely source-only warrant packet
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/acsl_old_frame_v1/source-evidence
+          PYTHONPATH=research/acsl_old_frame_v1 python3 - <<'PY'
+          from normalizer import extract
+          from pathlib import Path
+          import json,hashlib
+          packet=extract(Path('upstream'))
+          ok=[r for r in packet['cases'] if r['status']=='DISCOVERED_BOUNDED_CONTRACT']
+          un=[r for r in packet['cases'] if r['status']=='UNKNOWN_UNSUPPORTED']
+          assert len(packet['cases'])==7
+          assert len(ok)==6 and len(un)==1
+          assert sum(r['test_count'] for r in ok)==356
+          assert sum(len(r['probes']) for r in ok)==18
+          assert un[0]['reason']=='TWO_STATE_LABEL_QUANTIFICATION'
+          assert len(set(r['family'] for r in ok))==6
+          assert any(r['no_inferred_frame'] for r in ok)
+          assert any(r['distinct_pointer_scope_only'] for r in ok)
+          rendered=(json.dumps(packet,sort_keys=True,indent=2)+'\n').encode()
+          path=Path('research/acsl_old_frame_v1/source-evidence/SOURCE_ONLY_PACKET.json')
+          path.write_bytes(rendered)
+          print(json.dumps({'source_only':True,'families':[r['family'] for r in ok],
+             'finite_input_count':356,'probes':18,'unsupported_reason':un[0]['reason'],
+             'sha256':hashlib.sha256(rendered).hexdigest()},sort_keys=True))
+          PY
+          git rev-parse HEAD > research/acsl_old_frame_v1/source-evidence/mathgraph_head.txt
+          git -C upstream rev-parse HEAD > research/acsl_old_frame_v1/source-evidence/upstream_head.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain packet before target Rust inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acsl-old-frame-source-only-packet
+          path: research/acsl_old_frame_v1/
+          retention-days: 90
+          if-no-files-found: warn
