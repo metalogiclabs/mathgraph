@@ -1,0 +1,248 @@
+name: MathGraph Check - L4YAML two-revision scanner and schema witness
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-l4yaml-warrant-continuity-20261024
+    paths:
+      - '.github/workflows/mathgraph-check-l4yaml-pr89-transition.yml'
+      - 'research/l4yaml_semantic_diff_v2/**'
+      - 'tests/test_mathgraph_l4yaml_*.py'
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: 'Optional full 40-hex candidate commit (default: current frozen integration head)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  two-revision-source-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      BASE_SHA: '82cdb78e8909f25d9079d9bb05ed7c6f508ee95c'
+      PR89_SHA: '364a80d4f6790175e06e29c59708da3b50c20049'
+      CURRENT_INTEGRATION_SHA: '264e050653cb6f39c1de0e752262819e84cbaf45'
+    steps:
+      - name: Checkout owned checker
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Freeze candidate revision without making upstream writes
+        shell: bash
+        env:
+          REQUESTED_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          sha="${REQUESTED_SHA:-$CURRENT_INTEGRATION_SHA}"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'UNKNOWN: invalid source identity'; exit 1; }
+          test "$sha" != "$BASE_SHA"
+          echo "CANDIDATE_SHA=$sha" >> "$GITHUB_ENV"
+          echo "Immutable candidate: $sha"
+      - name: Checkout baseline immutable source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ env.BASE_SHA }}
+          path: l4yaml-base
+          persist-credentials: false
+          submodules: false
+      - name: Checkout independent candidate immutable source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: l4yaml-candidate
+          persist-credentials: false
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run adversarial checker regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pytest==9.1.1 PyYAML==6.0.3
+          python -m pytest -q \
+            tests/test_mathgraph_l4yaml_flow_transition.py \
+            tests/test_mathgraph_l4yaml_schema_continuity.py \
+            tests/test_mathgraph_l4yaml_semantic_diff_v2.py \
+            tests/test_mathgraph_l4yaml_continuity.py \
+            tests/test_mathgraph_l4yaml_strict_verifier.py \
+            tests/test_mathgraph_warrant_resolution_core.py
+      - name: Acquire byte-checked independent parsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          oracle='research/l4yaml_anchor_continuity_v1'
+          second='research/l4yaml_semantic_diff_v2'
+          python -m pip download --no-deps --only-binary=:all: --dest "$oracle" 'ruamel.yaml==0.18.17'
+          echo "9c8ba9eb3e793efdf924b60d521820869d5bf0cb9c6f1b82d82de8295e290b9d  $oracle/ruamel_yaml-0.18.17-py3-none-any.whl" | sha256sum -c -
+          python -m pip install --no-deps --target "$oracle/install" "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl"
+          python -m pip download --no-deps --only-binary=:all: --dest "$second" 'PyYAML==6.0.3'
+          echo "ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc  $second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" | sha256sum -c -
+          python -m pip install --no-deps --target "$second/pyyaml_install" \
+            "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl"
+      - name: Install exact Lean 4.35.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          for label in base candidate; do
+            test "$(cat "l4yaml-$label/lean-toolchain")" = 'leanprover/lean4:v4.35.0'
+            test -z "$(git -C "l4yaml-$label" status --porcelain --untracked-files=no)"
+          done
+          test "$(git -C l4yaml-base rev-parse HEAD)" = "$BASE_SHA"
+          test "$(git -C l4yaml-candidate rev-parse HEAD)" = "$CANDIDATE_SHA"
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build untouched baseline and candidate parser modules
+        shell: bash
+        timeout-minutes: 50
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p evidence-out/pr89-transition
+          for label in base candidate; do
+            (cd "l4yaml-$label" && env -u L4YAML_LEANCOPILOT lake build \
+              L4YAML.Output.Json L4YAML.Output.JsonIx L4YAML.Schema.Api) \
+              > "evidence-out/pr89-transition/${label}-build.log" 2>&1
+            echo "SOURCE_NATIVE_BUILT:$label"
+          done
+      - name: Probe alias declaration epoch in both native parsers
+        shell: bash
+        timeout-minutes: 7
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for label in base candidate; do
+            (cd "l4yaml-$label" && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/AliasEpochProbe.lean") \
+              >"evidence-out/pr89-transition/$label-alias-epoch.jsonl" \
+              2>"evidence-out/pr89-transition/$label-alias-epoch-stderr.log"
+            test ! -s "evidence-out/pr89-transition/$label-alias-epoch-stderr.log"
+          done
+      - name: Replay identical 532-case value grammar on both sources
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          out='evidence-out/pr89-transition'
+          oracle='research/l4yaml_anchor_continuity_v1'
+          second='research/l4yaml_semantic_diff_v2'
+          python -m research.l4yaml_semantic_diff_v2.differential generate \
+            --root "$out/base" --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+            --package-path "$oracle/install" \
+            --pyyaml-wheel "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+            --pyyaml-package-path "$second/pyyaml_install"
+          mkdir -p "$out/candidate"
+          cp "$out/base/independent_oracle.json" "$out/base/anchor_inputs.jsonl" \
+            "$out/base/ordinary_inputs.jsonl" "$out/candidate/"
+          for label in base candidate; do
+            for suite in anchor ordinary; do
+              (cd "l4yaml-$label" && env -u L4YAML_LEANCOPILOT lake env lean --run \
+                "$GITHUB_WORKSPACE/$second/BatchProbe.lean" \
+                "$GITHUB_WORKSPACE/$out/$label/${suite}_inputs.jsonl") \
+                > "$out/$label/${suite}_native.jsonl" 2> "$out/$label/${suite}_stderr.log"
+              test ! -s "$out/$label/${suite}_stderr.log"
+            done
+            sha="$BASE_SHA"
+            if [ "$label" = candidate ]; then sha="$CANDIDATE_SHA"; fi
+            python -m research.l4yaml_semantic_diff_v2.differential verify \
+              --root "$out/$label" --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+              --package-path "$oracle/install" \
+              --pyyaml-wheel "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+              --pyyaml-package-path "$second/pyyaml_install" \
+              --checkout "l4yaml-$label" \
+              --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+              --expected-head "$sha" --current-head "$sha" \
+              --out "$out/$label/mathgraph-check-differential-v2.json"
+          done
+      - name: Replay both typed-schema and source-derived scanner controls
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          out='evidence-out/pr89-transition'
+          oracle='research/l4yaml_anchor_continuity_v1'
+          second='research/l4yaml_semantic_diff_v2'
+          for label in base candidate; do
+            (cd "l4yaml-$label" && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/$second/SchemaProbe.lean") \
+              > "$out/$label/schema_native.jsonl" 2> "$out/$label/schema_stderr.log"
+            (cd "l4yaml-$label" && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/$second/FlowProbe.lean") \
+              > "$out/$label/flow_native.jsonl" 2> "$out/$label/flow_stderr.log"
+            test ! -s "$out/$label/schema_stderr.log"
+            test ! -s "$out/$label/flow_stderr.log"
+            sha="$BASE_SHA"
+            if [ "$label" = candidate ]; then sha="$CANDIDATE_SHA"; fi
+            python -m research.l4yaml_semantic_diff_v2.schema_continuity \
+              --native "$out/$label/schema_native.jsonl" \
+              --checkout "l4yaml-$label" \
+              --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+              --expected-head "$sha" \
+              --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+              --ruamel-path "$oracle/install" \
+              --pyyaml-wheel "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+              --pyyaml-path "$second/pyyaml_install" \
+              --out "$out/$label/schema_report.json"
+          done
+          python -m research.l4yaml_semantic_diff_v2.flow_transition \
+            --base-native "$out/base/flow_native.jsonl" \
+            --candidate-native "$out/candidate/flow_native.jsonl" \
+            --base-checkout l4yaml-base --candidate-checkout l4yaml-candidate \
+            --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.35.0/bin/lean" \
+            --base-sha "$BASE_SHA" --candidate-sha "$CANDIDATE_SHA" \
+            --wheel "$oracle/ruamel_yaml-0.18.17-py3-none-any.whl" \
+            --ruamel-path "$oracle/install" \
+            --pyyaml-wheel "$second/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" \
+            --pyyaml-path "$second/pyyaml_install" \
+            --out "$out/flow-transition-report.json"
+      - name: Qualify finite prospective transition without granting release authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('evidence-out/pr89-transition')
+          read = lambda name: json.loads((root / name).read_text())
+          before = read('base/mathgraph-check-differential-v2.json')
+          after = read('candidate/mathgraph-check-differential-v2.json')
+          delta = read('flow-transition-report.json')
+          assert before['total'] == after['total'] == 532
+          assert before['matched'] == after['matched'] == 427
+          assert before['mismatched'] == after['mismatched'] == 105
+          assert before['legacy_indexed_disagreement'] == after['legacy_indexed_disagreement'] == 0
+          assert all(read(label + '/schema_report.json')['native']['matched'] == 8
+                     for label in ('base', 'candidate'))
+          assert delta['decision_authority'] == 'NOT_AUTHORIZED'
+          assert delta['mathematical_terminal_form'] is None
+          assert delta['native_delta']['legacy_indexed_disagreements'] == 0
+          if delta['source']['candidate']['commit'] in {'364a80d4f6790175e06e29c59708da3b50c20049', 'a2a542569a92566ad8a320247dd7cb00eed0634b'}:
+            assert delta['status'] == 'BOUNDED_TARGETED_SCANNER_CHANGE_OBSERVED'
+            assert delta['native_delta']['accepted_to_refused'] == 11
+            assert delta['native_delta']['accepted_to_accepted'] == 8
+            assert delta['external_parser_observations']['implementation_disagreements'] == 11
+          print('TWO_IMMUTABLE_NATIVE_REVISIONS_AND_TARGETED_SEMANTIC_TRANSITION_QUALIFIED')
+          PY
+      - name: Retain exact evidence, including failures and external-oracle disputes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-l4yaml-pr89-source-delta
+          path: |
+            evidence-out/pr89-transition/
+            research/l4yaml_semantic_diff_v2/BatchProbe.lean
+            research/l4yaml_semantic_diff_v2/SchemaProbe.lean
+            research/l4yaml_semantic_diff_v2/FlowProbe.lean
+            research/l4yaml_semantic_diff_v2/differential.py
+            research/l4yaml_semantic_diff_v2/schema_continuity.py
+            research/l4yaml_semantic_diff_v2/flow_transition.py
+          if-no-files-found: warn
