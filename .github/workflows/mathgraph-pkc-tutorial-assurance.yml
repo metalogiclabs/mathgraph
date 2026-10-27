@@ -152,5 +152,7 @@ jobs:
         with:
           name: mathgraph-pkc-tutorial-independent-assurance-v1
           path: |
-            research/pkc_tutorial_assurance_v1/
+            research/pkc_tutorial_assurance_v1/audit.py
+            research/pkc_tutorial_assurance_v1/R3FiniteCounterexample.lean
+            research/pkc_tutorial_assurance_v1/results/
           if-no-files-found: warn
