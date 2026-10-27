@@ -38,6 +38,10 @@ jobs:
         run: python3 research/prospective_qwen_bsearch_v1/native_replay.py target research/prospective_qwen_bsearch_v1/evidence
       - name: Matched source-aware conventional independent comparator
         run: python3 research/prospective_qwen_bsearch_v1/conventional_baseline.py research/prospective_qwen_bsearch_v1/evidence
+      - name: Synthetic post-unblind sentinel sensitivity check
+        run: python3 research/prospective_qwen_bsearch_v1/mutant_control.py target research/prospective_qwen_bsearch_v1/evidence
+      - name: Matched independent conventional synthetic control
+        run: python3 research/prospective_qwen_bsearch_v1/synthetic_baseline.py research/prospective_qwen_bsearch_v1/evidence
       - name: Retain exact identities and source cleanliness
         if: always()
         shell: bash
