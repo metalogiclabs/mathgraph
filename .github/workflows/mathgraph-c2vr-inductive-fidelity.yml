@@ -37,6 +37,8 @@ jobs:
           test "$(sha256sum c2vr-upstream/RQ3_result/Full_Fixed/ex-2-gcd.rs | cut -d' ' -f1)" = '2536507f61a2fe83a1356c969093be18cd7aee4511c5155cf70753daa4506cab'
           test "$(sha256sum c2vr-upstream/data/tutorial_wp/max_subarray-1.c | cut -d' ' -f1)" = 'ff66b503c6074877c5a764e521d7fbfa15901abfe6e1a70d71d7176a9e4a7e63'
           test "$(sha256sum c2vr-upstream/RQ3_result/Full_Fixed/max_subarray-1.rs | cut -d' ' -f1)" = '0f62e42e58ba8a0c1c95c4825cad3859123436fd0f99466a5d1eabb45eeec468'
+          test "$(sha256sum c2vr-upstream/data/tutorial_wp/ex-N-fibo.c | cut -d' ' -f1)" = '258c311b2e665fab0ffa67c78981ccaa5689b3cad613a560298f6ce7fb5c50ec'
+          test "$(sha256sum c2vr-upstream/RQ3_result/Full_Fixed/ex-N-fibo.rs | cut -d' ' -f1)" = 'e207d24b404f8964bc42bf8a67245ac78dd94c6ace9cd64e04e63a47b3456849'
           test -z "$(git -C c2vr-upstream status --porcelain)"
 
       - name: Create runner-scoped evidence directory
@@ -93,6 +95,21 @@ jobs:
         shell: bash
         run: |
           python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --case axiomatic --output "$C2VR_EVIDENCE_ROOT/AXIOMATIC_BASELINE.json"
+
+      - name: Execute independent authentic Fibonacci inductive control in Verus
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/native.py "$C2VR_SOURCE_ROOT" "$C2VR_VERUS_BIN" "$C2VR_EVIDENCE_ROOT/fibo" --case fibo
+
+      - name: Audit Fibonacci leastness with admitted monotonicity
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/fibo_replication.py "$C2VR_SOURCE_ROOT" --evidence "$C2VR_EVIDENCE_ROOT/fibo" --tool "$C2VR_VERUS_BIN" --output "$C2VR_EVIDENCE_ROOT/FIBO_REPORT.json"
+
+      - name: Independent conventional Fibonacci comparator
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --case fibo --output "$C2VR_EVIDENCE_ROOT/FIBO_BASELINE.json"
 
       - name: Source-native and negative-control regression suite
         shell: bash

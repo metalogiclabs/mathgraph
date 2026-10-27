@@ -17,6 +17,12 @@ CASES = {
         'RQ3_result/Full_Fixed/max_subarray-1.rs',
         '0f62e42e58ba8a0c1c95c4825cad3859123436fd0f99466a5d1eabb45eeec468',
     ),
+    'fibo': (
+        'data/tutorial_wp/ex-N-fibo.c',
+        '258c311b2e665fab0ffa67c78981ccaa5689b3cad613a560298f6ce7fb5c50ec',
+        'RQ3_result/Full_Fixed/ex-N-fibo.rs',
+        'e207d24b404f8964bc42bf8a67245ac78dd94c6ace9cd64e04e63a47b3456849',
+    ),
 }
 
 

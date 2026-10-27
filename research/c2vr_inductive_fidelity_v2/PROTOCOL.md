@@ -73,6 +73,29 @@ preservation of every contract. Native verification remains conditional
 on explicit trust. An equally informed conventional comparator yields
 `BASELINE_TIE`; no superiority claim follows.
 
+## Independent inductive replication — Fibonacci
+
+`data/tutorial_wp/ex-N-fibo.c`
+(SHA-256 `258c311b2e665fab0ffa67c78981ccaa5689b3cad613a560298f6ce7fb5c50ec`)
+defines the least inductive `is_fibo` with two initial cases and a
+successor rule. It also **admits** the separate `fib_monotonic` lemma;
+that source-level trust must remain visible. Published repaired
+`RQ3_result/Full_Fixed/ex-N-fibo.rs`
+(SHA-256 `e207d24b404f8964bc42bf8a67245ac78dd94c6ace9cd64e04e63a47b3456849`)
+uses an uninterpreted `is_fibo`, one trusted introduction proof and one
+trusted monotonicity proof.
+
+Over finite indices `-1..5`, the least relation contains only the six
+nonnegative Fibonacci pairs. A second relation includes those pairs **plus**
+`(-1, 0)`. Both satisfy the bounded introduction and monotonicity checks;
+only the latter admits that extra pair. This is an independent
+`FINITE_COUNTERMODEL` to rule-based identification of the **least**
+relation within that finite scope. It needs no special arithmetic
+totalization, but quantification outside the finite domain is untested.
+Neither source-level admitted monotonicity nor Verus `external_body` is
+an unqualified formal proof. The separate conventional Fibonacci
+recurrence comparator also ties.
+
 ## Reproduction
 
 Checkout pinned upstream source; set `C2VR_SOURCE_ROOT` to its root. Then:
@@ -85,6 +108,9 @@ python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --ou
 python3 research/c2vr_inductive_fidelity_v2/native.py "$C2VR_SOURCE_ROOT" "$C2VR_VERUS_BIN" "$EVIDENCE_ROOT/axiomatic" --case max_subarray
 python3 research/c2vr_inductive_fidelity_v2/axiomatic_control.py "$C2VR_SOURCE_ROOT" --evidence "$EVIDENCE_ROOT/axiomatic" --tool "$C2VR_VERUS_BIN" --output "$EVIDENCE_ROOT/AXIOMATIC_REPORT.json"
 python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --case axiomatic --output "$EVIDENCE_ROOT/AXIOMATIC_BASELINE.json"
+python3 research/c2vr_inductive_fidelity_v2/native.py "$C2VR_SOURCE_ROOT" "$C2VR_VERUS_BIN" "$EVIDENCE_ROOT/fibo" --case fibo
+python3 research/c2vr_inductive_fidelity_v2/fibo_replication.py "$C2VR_SOURCE_ROOT" --evidence "$EVIDENCE_ROOT/fibo" --tool "$C2VR_VERUS_BIN" --output "$EVIDENCE_ROOT/FIBO_REPORT.json"
+python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --case fibo --output "$EVIDENCE_ROOT/FIBO_BASELINE.json"
 ```
 
 Continuous integration retains native exit/log, SHA-256 tool/inputs, both
