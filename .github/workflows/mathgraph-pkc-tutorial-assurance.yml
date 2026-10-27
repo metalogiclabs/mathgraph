@@ -62,7 +62,7 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain none
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
-          "$HOME/.elan/bin/lean" --version
+          "$HOME/.elan/bin/lean" +leanprover/lean4:v4.35.0 --version
 
       - name: Hydrate exact historical TorchLean and FloatLib source trees
         shell: bash
