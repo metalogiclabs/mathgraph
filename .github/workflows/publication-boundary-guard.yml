@@ -1,0 +1,41 @@
+name: Public research content boundary
+
+on:
+  push:
+    branches:
+      - maintenance/publication-boundary-guard-20261027
+    paths:
+      - scripts/publication_boundary_guard.py
+      - .github/workflows/publication-boundary-guard.yml
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  pre-publication-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout all refs for source comparison
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run deterministic positive and negative gate tests
+        run: |
+          python3 -B scripts/publication_boundary_guard.py --selftest
+
+      - name: Inspect proposed public files and PR description without disclosing contents
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_PATH: ${{ github.event_path }}
+        run: |
+          set -euo pipefail
+          python3 -B scripts/publication_boundary_guard.py \
+            --base "$BASE_SHA" --head "$HEAD_SHA" \
+            --event "$EVENT_PATH" --repo .
