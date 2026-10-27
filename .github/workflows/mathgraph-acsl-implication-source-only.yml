@@ -1,0 +1,74 @@
+name: MathGraph ACSL implication source-only preregistration
+on:
+  push:
+    branches:
+      - research/acsl-implication-normalizer-holdout-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout MathGraph frozen source-normalizer
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Checkout only original C sources, exclude all generated Rust
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          sparse-checkout: |
+            data/frama_c_problems
+          persist-credentials: false
+      - name: Check exact source revision and preregistration ancestor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e '767a32366b4a89628a1e9596dc127b0de1326a4b^{commit}'
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Exercise independent source syntax and semantic units
+        run: python3 -m unittest discover -s research/acsl_implication_v1 -p 'test_*.py' -v
+      - name: Seal source-only semantic packet and test counts
+        shell: bash
+        run: |
+          mkdir -p research/acsl_implication_v1/results
+          PYTHONPATH=research/acsl_implication_v1 python3 - <<'PY'
+          from normalizer import discover
+          from pathlib import Path
+          import json,hashlib
+          p=discover(Path('upstream'))
+          good=[s for s in p['cases'] if s['status']=='DISCOVERED_BOUNDED_CONTRACT']
+          unknown=[s for s in p['cases'] if s['status']=='UNKNOWN_UNSUPPORTED']
+          assert len(good)==4 and len(unknown)==1
+          assert [s['family'] for s in good]==['MAX_OF_ARRAY','ALL_EVEN_01','ZERO_EVEN_POSITIONS','DOUBLE_INDEX_INITIALIZED']
+          assert sum(s['full_input_count'] for s in good)==2346
+          assert sum(len(s['probes']) for s in good)==12
+          assert unknown[0]['reason']=='OLD_STATE_POINTER_ALIASING_OUTSIDE_SUBSET'
+          path=Path('research/acsl_implication_v1/results/SOURCE_ONLY_PACKET.json')
+          path.write_text(json.dumps(p,sort_keys=True,indent=2)+'\n')
+          print(json.dumps({'families':[s['family'] for s in good],
+                 'full_count':2346,'probes':12,
+                 'unknown_reason':unknown[0]['reason'],
+                 'sha256':hashlib.sha256(path.read_bytes()).hexdigest()},sort_keys=True))
+          PY
+      - name: Check original source remains unchanged
+        shell: bash
+        run: |
+          test -z "$(git -C upstream status --porcelain)"
+          git rev-parse HEAD > research/acsl_implication_v1/results/mathgraph-commit.txt
+          git -C upstream rev-parse HEAD > research/acsl_implication_v1/results/source-commit.txt
+          git -C upstream status --porcelain > research/acsl_implication_v1/results/source-status.txt
+      - name: Preserve source-only sealed witness packet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-only-acsl-implication-v1
+          path: research/acsl_implication_v1/
+          retention-days: 90
+          if-no-files-found: warn
