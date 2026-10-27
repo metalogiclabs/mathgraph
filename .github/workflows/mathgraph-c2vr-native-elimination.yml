@@ -1,0 +1,63 @@
+name: MathGraph native Verus elimination obligations
+on:
+  push:
+    branches:
+      - research/c2vr-native-elimination-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  proof-obligation-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: target
+          persist-credentials: false
+      - name: Install authenticated Verus toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.85.1 --profile minimal
+          curl -fsSL --retry 3 'https://github.com/verus-lang/verus/releases/download/release%2F0.2025.06.14.9b557d7/verus-0.2025.06.14.9b557d7-x86-linux.zip' -o "$RUNNER_TEMP/verus.zip"
+          mkdir -p "$RUNNER_TEMP/verus"
+          unzip -q "$RUNNER_TEMP/verus.zip" -d "$RUNNER_TEMP/verus"
+          p="$(find "$RUNNER_TEMP/verus" -type f -name verus -print -quit)"
+          test -n "$p"
+          chmod +x "$p"
+          test "$(sha256sum "$p" | cut -d' ' -f1)" = 'a3fe3b37b2ef1b68a6ef3b22490b4e628f442da423cb56fce6afc554e19c5c04'
+          echo "VERUS_BIN=$p" >> "$GITHUB_ENV"
+      - name: Run focused source construction unit tests
+        run: python3 -m unittest discover -s research/c2vr_native_elimination_v1 -p 'test_*.py' -v
+      - name: Produce six real native verifier observations
+        run: python3 research/c2vr_native_elimination_v1/run_native.py target "$VERUS_BIN" research/c2vr_native_elimination_v1/results
+      - name: Independently adjudicate native proof obligations
+        run: python3 research/c2vr_native_elimination_v1/adjudicate.py target "$VERUS_BIN" research/c2vr_native_elimination_v1/results
+      - name: Equally informed conventional source-aware controls
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/baseline.py target --case gcd --output research/c2vr_native_elimination_v1/results/gcd-baseline.json
+          python3 research/c2vr_inductive_fidelity_v2/baseline.py target --case fibo --output research/c2vr_native_elimination_v1/results/fibo-baseline.json
+      - name: Record exact lineages
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/c2vr_native_elimination_v1/results
+          git rev-parse HEAD > research/c2vr_native_elimination_v1/results/mathgraph-head.txt
+          git -C target rev-parse HEAD > research/c2vr_native_elimination_v1/results/target-head.txt
+          git -C target status --porcelain > research/c2vr_native_elimination_v1/results/target-status.txt
+          sha256sum research/c2vr_native_elimination_v1/*.py > research/c2vr_native_elimination_v1/results/source-hashes.txt
+          test -z "$(git -C target status --porcelain)"
+      - name: Retain all native logs, code, results and checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-verus-elimination-v1
+          path: research/c2vr_native_elimination_v1/
+          if-no-files-found: warn
