@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25 (NZDT)  
 **Status:** WARRANTED within the exact, bounded native replay described below; **not** a YAML-wide correctness proof.  
-**Prepared for:** Nicolas F. Rouquette, as independent technical evidence from Heath Sanchez / Metalogic Labs; no JPL endorsement implied.
+**Scope:** Independent, source-pinned technical evidence. No external endorsement or adoption is implied.
 
 ## Exact revision and scope
 
@@ -42,6 +42,6 @@ The typed checks do **not** close the separate `ToYaml`/dump/interoperability qu
 - [MathGraph Check draft PR #202](https://github.com/metalogiclabs/mathgraph/pull/202)
 - [Scanner PR #89 (merged to integration)](https://github.com/nasa-jpl/L4YAML/pull/89)
 - [Previously qualified value/typed-source CI 40122150103](https://github.com/metalogiclabs/mathgraph/actions/runs/40122150103)
-- [Existing MathGraph Research OS checkpoint](https://app.notion.com/p/3f53e523d7ab8111994eee79ec34178a)
 
-**Proposed ongoing use:** a read-only, independent MathGraph Check receipt on consequential L4YAML source revisions, leaving Nicolas's proof-development workflow and upstream repository unchanged unless invited.
+
+**Potential use:** Independent, read-only claim-evidence receipts for significant public-source revisions; outside the native parser's proof development.
