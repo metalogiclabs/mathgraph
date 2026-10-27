@@ -1,0 +1,56 @@
+name: MathGraph ACSL implication native source-fidelity holdout
+on:
+  push:
+    branches:
+      - research/acsl-implication-normalizer-holdout-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-implication:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout sealed MathGraph technical work
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 14
+          persist-credentials: false
+      - name: Checkout pinned authentic C and generated Rust
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Authenticate pre-unblind source-only gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 'b46d92ab7513b7ecf331e18f2a3e90a4bbc9b2fd^{commit}'
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Rerun source-only interpretation tests
+        run: python3 -m unittest discover -s research/acsl_implication_v1 -p 'test_*.py' -v
+      - name: Execute untouched C and Qwen Rust against sealed source packet
+        run: python3 research/acsl_implication_v1/native.py upstream research/acsl_implication_v1/evidence
+      - name: Fully informed independent source contract comparator
+        run: python3 research/acsl_implication_v1/conventional_baseline.py research/acsl_implication_v1/evidence
+      - name: Preserve evidence and unchanged upstream
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/acsl_implication_v1/evidence
+          git rev-parse HEAD > research/acsl_implication_v1/evidence/mathgraph_commit.txt
+          git -C upstream rev-parse HEAD > research/acsl_implication_v1/evidence/upstream_commit.txt
+          git -C upstream status --porcelain > research/acsl_implication_v1/evidence/upstream_status.txt
+          sha256sum research/acsl_implication_v1/*.py > research/acsl_implication_v1/evidence/code_sha256.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain exact independent evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acsl-implication-native-v1
+          path: research/acsl_implication_v1/
+          retention-days: 90
+          if-no-files-found: warn
