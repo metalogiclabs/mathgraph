@@ -1,0 +1,67 @@
+name: MathGraph source-only alias admission pre-registration
+on:
+  push:
+    branches:
+      - research/auto-alias-admissibility-v1-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  freeze-source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout ORIGINAL C only, never the Rust target bytes
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: original
+          sparse-checkout: |
+            data/tutorial_wp
+          persist-credentials: false
+      - name: Test source-only normalizer logic
+        run: python3 -m unittest discover -s research/auto_alias_admission_v1 -p 'test_*.py' -v
+      - name: Seal observed C-source pairwise claim and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/auto_alias_admission_v1/source-only-evidence
+          test "$(git -C original rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          PYTHONPATH=research/auto_alias_admission_v1 python3 - <<'PY'
+          from analyzer import scan
+          from pathlib import Path
+          import hashlib,json
+          r=scan(Path("original"))
+          assert len(r["tasks"])==9
+          supported=[t for t in r["tasks"] if t["status"]=="SOURCE_ONLY_PAIRWISE_WARRANT"]
+          unsupported=[t for t in r["tasks"] if t["status"]!="SOURCE_ONLY_PAIRWISE_WARRANT"]
+          assert len(supported)>=7, supported
+          pairs=[p for t in supported for p in t["obligations"]]
+          yes=[p for p in pairs if p["source_alias_admission"]=="PERMITTED_ABSENT_SEPARATION"]
+          no=[p for p in pairs if p["source_alias_admission"]=="FORBIDDEN_EXPLICIT_SEPARATION"]
+          nulls=[p for p in pairs if p["source_nullable"]]
+          assert len(yes)>=5 and len(no)>=2 and len(nulls)>=1
+          doc=(json.dumps(r,indent=2,sort_keys=True)+"\n").encode()
+          location=Path("research/auto_alias_admission_v1/source-only-evidence/FROZEN_PACKET.json")
+          location.write_bytes(doc)
+          print(json.dumps({"source_only":True,"supported":len(supported),"unsupported":len(unsupported),
+             "permitted_pair_count":len(yes),"forbidden_pair_count":len(no),
+             "nullable_pairs":len(nulls),"sha256":hashlib.sha256(doc).hexdigest(),
+             "individual":[{"id":t["id"],"status":t["status"],"obligations":t.get("obligations")} for t in r["tasks"]]},sort_keys=True))
+          PY
+          git -C original status --porcelain > research/auto_alias_admission_v1/source-only-evidence/source_status.txt
+          git rev-parse HEAD > research/auto_alias_admission_v1/source-only-evidence/mathgraph_commit.txt
+          git -C original rev-parse HEAD > research/auto_alias_admission_v1/source-only-evidence/source_commit.txt
+          test -z "$(git -C original status --porcelain)"
+      - name: Retain frozen source-only assertions before target inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automatic-alias-source-only-v1
+          path: research/auto_alias_admission_v1/
+          retention-days: 90
+          if-no-files-found: warn
