@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 import shutil
@@ -7,6 +6,7 @@ import unittest
 
 from baseline import compare
 from checker import check
+from native import run_verus
 
 
 ORIGINAL = os.environ.get('C2VR_SOURCE_ROOT')
@@ -56,16 +56,20 @@ class AuthenticSourceTests(unittest.TestCase):
 
     def test_forged_native_log_is_rejected(self):
         evidence = self.root / 'evidence'
-        evidence.mkdir()
-        (evidence / 'verus.exit').write_text('0\n')
-        (evidence / 'verus.log').write_text('fake success\n')
-        (evidence / 'native-receipt.json').write_text(json.dumps({
-            'exit': 0,
-            'log_sha256': '0' * 64,
-            'tool_sha256': '0' * 64,
-            'target_sha256': '0' * 64,
-        }))
-        self.assertEqual(check(self.root, evidence)['native_verdict'], 'REJECTED_EVIDENCE')
+        run_verus(self.root, Path('/usr/bin/true'), evidence)
+        original = (evidence / 'verus.log').read_text()
+        (evidence / 'verus.log').write_text(original + 'forged proof marker\n')
+        self.assertEqual(check(self.root, evidence, Path('/usr/bin/true'))['native_verdict'], 'REJECTED_EVIDENCE')
+
+    def test_substituted_native_executable_is_rejected(self):
+        evidence = self.root / 'evidence'
+        run_verus(self.root, Path('/usr/bin/true'), evidence)
+        self.assertEqual(check(self.root, evidence, Path('/usr/bin/false'))['native_verdict'], 'REJECTED_EVIDENCE')
+
+    def test_valid_receipt_without_tool_bytes_remains_unknown(self):
+        evidence = self.root / 'evidence'
+        run_verus(self.root, Path('/usr/bin/true'), evidence)
+        self.assertEqual(check(self.root, evidence)['native_verdict'], 'UNKNOWN_TOOL_BYTES')
 
 
 if __name__ == '__main__':
