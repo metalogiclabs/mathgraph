@@ -1,6 +1,6 @@
 # JPL L4YAML — independent graph-composition assurance handoff (2026-10-26)
 
-**Audience:** Internal MathGraph / prospective NFM 2027 coauthor evidence. Not sent to JPL. Not an endorsement by Nicolas Rouquette, JPL, Caltech or NASA.
+**Scope:** Source-pinned independent technical analysis of public L4YAML interfaces. Not an upstream implementation or institutional endorsement.
 
 ## 2026-10-27 — Qualified parametric self-cycle theorem and newer JPL merge-head replay
 
@@ -21,7 +21,7 @@
 
 **Current combined green evidence:** [Actions 40263571041](https://github.com/metalogiclabs/mathgraph/actions/runs/40263571041) and [artifact 12624694385](https://github.com/metalogiclabs/mathgraph/actions/runs/40263571041/artifacts/12624694385). Existing 532/532 graph topology, 532/532 value agreement, genuine cyclic sequence and mapping self-ID, nested and sequential rebinding, and three invalid-alias refusals all remained green. The exact source-native run completed with **no failing step**. Original JPL source unchanged.
 
-**The essential counterevidence:** On 26 October, Nicolas merged [L4YAML PR #119](https://github.com/nasa-jpl/L4YAML/pull/119), formally **refuting unrestricted `TraceOf` uniqueness** with two block/document ambiguity pairs. A subsequent open [PR #120](https://github.com/nasa-jpl/L4YAML/pull/120) addresses the `[173]` scalar-indent tail; no source-wide unique trace should be assumed. MathGraph's theorem therefore **requires a selected, authenticated event trace** and is restricted to anchor/name events. It does not claim source→unique trace, that the graph IDs supplied to the trace arise from the real source positions, that JPL's entire parser agrees with those events, or that the tag-handle fragment is covered. These remain **UNKNOWN**, not consequences of a passing graph test.
+**The essential counterevidence:** On 26 October, The upstream maintainer merged [L4YAML PR #119](https://github.com/nasa-jpl/L4YAML/pull/119), formally **refuting unrestricted `TraceOf` uniqueness** with two block/document ambiguity pairs. A subsequent open [PR #120](https://github.com/nasa-jpl/L4YAML/pull/120) addresses the `[173]` scalar-indent tail; no source-wide unique trace should be assumed. MathGraph's theorem therefore **requires a selected, authenticated event trace** and is restricted to anchor/name events. It does not claim source→unique trace, that the graph IDs supplied to the trace arise from the real source positions, that JPL's entire parser agrees with those events, or that the tag-handle fragment is covered. These remain **UNKNOWN**, not consequences of a passing graph test.
 
 **Open proof gap after this milestone:** (1) trace provenance/selection from actual scanner+parser, (2) correspondence between event `defineAnchor(name,nodeId)` and the graph composer's real node-start ID assignment (not merely an externally supplied ID), (3) expansion to tag/flow/block events with ambiguity exclusions, (4) independent native audit at each newer JPL commit rather than transplanting the old full-commit warrant. No source-wide YAML completeness or NASA/JPL endorsement claim is authorized.
 
@@ -33,11 +33,11 @@
 
 **WARRANTED — new family-level Lean theorem:** rawActionCheck_agrees_with_JPL proves agreement between MathGraph's ID-addressed graph alias availability and JPL's existing SerializationWellFormed.checkFrom, for every chosen sequence of node-start/alias/document-reset actions whose initial environments agree on declared names. Each node-start executes the actual alloc+bind operations and derives its ID from the current graph size; IDs are not supplied externally. allocateNodeStart_fresh and allocateNodeStart_visible separately prove fresh allocation and immediate binding. This is a conditional action/event-level simulation, not a theorem that every input's source trace is unique or faithfully inferred.
 
-**Material upstream counterevidence:** Nicolas merged [PR #119](https://github.com/nasa-jpl/L4YAML/pull/119) establishing source-level trace non-uniqueness in the then-current grammar. [PR #120](https://github.com/nasa-jpl/L4YAML/pull/120) repairs the block-scalar indentation cause, but explicitly retains the implicitContinue stream-level refutation. [PR #121](https://github.com/nasa-jpl/L4YAML/pull/121) remained open when inspected. Hence unconditional source-to-unique-trace is REFUTED at this pin, while general source-to-selected-trace, arbitrary YAML graph semantics, tag-event transport, and release authority remain UNKNOWN.
+**Material upstream counterevidence:** The upstream maintainer merged [PR #119](https://github.com/nasa-jpl/L4YAML/pull/119) establishing source-level trace non-uniqueness in the then-current grammar. [PR #120](https://github.com/nasa-jpl/L4YAML/pull/120) repairs the block-scalar indentation cause, but explicitly retains the implicitContinue stream-level refutation. [PR #121](https://github.com/nasa-jpl/L4YAML/pull/121) remained open when inspected. Hence unconditional source-to-unique-trace is REFUTED at this pin, while general source-to-selected-trace, arbitrary YAML graph semantics, tag-event transport, and release authority remain UNKNOWN.
 
 **Failure lineage retained:** initial proof red [40264481452](https://github.com/metalogiclabs/mathgraph/actions/runs/40264481452) (missing base-case simplification); source-order test guard reds [40265355513](https://github.com/metalogiclabs/mathgraph/actions/runs/40265355513) and [40265581450](https://github.com/metalogiclabs/mathgraph/actions/runs/40265581450) (Except equality instance), corrected without changing the oracle. Historic green [40264762802](https://github.com/metalogiclabs/mathgraph/actions/runs/40264762802) and [40265820586](https://github.com/metalogiclabs/mathgraph/actions/runs/40265820586) are separate immutable receipts; the latest full pin is run 40266112100.
 
-**Next proof obligation:** prove that a selected authenticated raw-AST event traversal and its source positions match the node-start IDs emitted by MathGraph's actual graph builder for a delimited YAML fragment. Do not infer that from 532 passing observations. No upstream PR, issue, review, or contact with Nicolas.
+**Next proof obligation:** prove that a selected authenticated raw-AST event traversal and its source positions match the node-start IDs emitted by MathGraph's actual graph builder for a delimited YAML fragment. Do not infer that from 532 passing observations. No upstream PR, issue, review, or upstream contact.
 
 ## Verdict
 
@@ -66,16 +66,16 @@ This new graph-level experiment allocates IDs at the event start, records anchor
 
 **Historical negatives retained:** [first red harness 40254125559](https://github.com/metalogiclabs/mathgraph/actions/runs/40254125559) (`toJson` namespace issue); [second red harness 40254365428](https://github.com/metalogiclabs/mathgraph/actions/runs/40254365428) (cross-document JSONL escape); [third red harness 40255129035](https://github.com/metalogiclabs/mathgraph/actions/runs/40255129035) (Lean `simp` linter warning contaminated strict JSONL). The third actually compiled the new Lean theorem; the warning was removed before the final green run. None of these failures implicates JPL source.
 
-**Freshness:** After this pinned replay, Nicolas's active branch advanced to `cf3e3607a3962cbfff4673d98c37ef54c5886877`. Independent blob comparisons show `Spec/Types.lean`, `Parser/State.lean`, `Parser/Composition.lean`, `Parser/IndexedComposition.lean`, and `Output/Json.lean` are byte-identical to the tested revision, but this does **not** substitute for a new native CI replay on `cf3e3607`; the exact-revision warrant stays at `4458c26e`.
+**Freshness:** After this pinned replay, The active upstream branch advanced to `cf3e3607a3962cbfff4673d98c37ef54c5886877`. Independent blob comparisons show `Spec/Types.lean`, `Parser/State.lean`, `Parser/Composition.lean`, `Parser/IndexedComposition.lean`, and `Output/Json.lean` are byte-identical to the tested revision, but this does **not** substitute for a new native CI replay on `cf3e3607`; the exact-revision warrant stays at `4458c26e`.
 
-## NFM 2027 claim recommendation
+## Bounded technical conclusion
 
 > A source-pinned independent audit identified 105 related alias-rebinding discrepancies in a finite YAML differential corpus. A separately implemented event-time graph composer, tested against the unchanged Lean parser and independent YAML graph oracles, resolved the finite corpus and preserved selected cyclic-reference identity. The audit distinguishes source-level proof/acceptance, graph composition, and the remaining universal correctness obligations.
 
-Do not say: "L4YAML corrected upstream," "fully YAML-compliant," "all graph semantics formally proved," "JPL accepts MathGraph Check," or "NASA endorsed this result."
+These bounded experiments do not establish complete YAML conformance, arbitrary graph semantics, or upstream adoption.
 
-## Next residual, if warranted by the manuscript
+## Remaining proof obligation
 
 The cheapest consequential proof goal is to connect JPL's emerging `TraceOf`/event sequence with the experimental node-ID model via a stated precondition (well-formed, unique trace; supported YAML fragment). Establish invariant preservation and alias-target correspondence without relying on JSON value equality. The current tiny Lean lemmas are ingredients, not that full theorem.
 
-**No email, issue, PR, review request or modification to the JPL repositories was made.**
+**No upstream repository modifications were made.**
