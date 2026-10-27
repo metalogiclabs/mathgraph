@@ -128,7 +128,7 @@ def replay(root,out):
 if __name__=="__main__":
     if len(sys.argv)!=3:raise SystemExit("usage: native_replay.py UPSTREAM_DIR EVIDENCE_DIR")
     verdict=replay(sys.argv[1],sys.argv[2])
-    if verdict["verdict"]=="UNKNOWN_NOT_EXECUTABLE":
+    if verdict.get("verdict")=="UNKNOWN_NOT_EXECUTABLE":
         raise SystemExit(2)
     if any(v["verdict"]!="WARRANTED_BOUNDED_MATCH" for v in verdict["cases"].values()):
         raise SystemExit(1)
