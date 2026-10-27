@@ -1,0 +1,57 @@
+name: MathGraph prospective Qwen binary search source fidelity
+on:
+  push:
+    branches:
+      - research/prospective-qwen-bsearch-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-to-target-blind-preregistered:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout isolated MathGraph technical audit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout pinned published Qwen3 C-to-Rust migration
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: target
+          persist-credentials: false
+      - name: Validate chronological preregistration and immutable upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 1e3a26bad8f7fb0cec3157129bf29f2e15313f3a^{commit}
+          test "$(git -C target rev-parse HEAD)" = "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3"
+          test "$(git -C target hash-object data/tutorial_wp/ex-4-binary-search-answer.c)" = "c31d685b159f072d75212aa48ba98e1e19a0f207"
+          test "$(git -C target hash-object transpiled_rust/tutorial_wp/ex-4-binary-search-answer.rs)" = "2286ec1d646fd1c5ae90a5aafe95ff48d2420188"
+          test -z "$(git -C target status --porcelain)"
+      - name: Test fixed blind source contract before native execution
+        run: python3 -m unittest discover -s research/prospective_qwen_bsearch_v1 -p 'test_*.py' -v
+      - name: Compile and exhaustively compare untouched source C and generated Rust
+        run: python3 research/prospective_qwen_bsearch_v1/native_replay.py target research/prospective_qwen_bsearch_v1/evidence
+      - name: Matched source-aware conventional independent comparator
+        run: python3 research/prospective_qwen_bsearch_v1/conventional_baseline.py research/prospective_qwen_bsearch_v1/evidence
+      - name: Retain exact identities and source cleanliness
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/prospective_qwen_bsearch_v1/evidence
+          git rev-parse HEAD > research/prospective_qwen_bsearch_v1/evidence/mathgraph-head.txt
+          git -C target rev-parse HEAD > research/prospective_qwen_bsearch_v1/evidence/upstream-head.txt
+          git -C target status --porcelain > research/prospective_qwen_bsearch_v1/evidence/upstream-status.txt
+          sha256sum research/prospective_qwen_bsearch_v1/*.py > research/prospective_qwen_bsearch_v1/evidence/audit-sha256.txt
+          test -z "$(git -C target status --porcelain)"
+      - name: Preserve original source, native results and baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prospective-qwen-bsearch-v1
+          path: research/prospective_qwen_bsearch_v1/
+          retention-days: 90
+          if-no-files-found: warn
