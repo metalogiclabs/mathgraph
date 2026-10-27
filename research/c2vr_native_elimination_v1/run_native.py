@@ -8,22 +8,21 @@ CASES={
 "gcd":("data/tutorial_wp/ex-2-gcd.c","acd6ca718d61d14d709599d7961436ec136c13a94261d40f38911a190bc20d2d",
 "RQ3_result/Full_Fixed/ex-2-gcd.rs","2536507f61a2fe83a1356c969093be18cd7aee4511c5155cf70753daa4506cab",
 """proof fn mg_gcd_positive() {
-    is_gcd_inductive();
+    broadcast use is_gcd_inductive;
     assert(is_gcd(2, 0, 2));
 }""",
 """proof fn mg_gcd_exclusion() {
-    is_gcd_inductive();
+    broadcast use is_gcd_inductive;
     assert(!is_gcd(2, 0, 1));
 }"""),
 "fibo":("data/tutorial_wp/ex-N-fibo.c","258c311b2e665fab0ffa67c78981ccaa5689b3cad613a560298f6ce7fb5c50ec",
 "RQ3_result/Full_Fixed/ex-N-fibo.rs","e207d24b404f8964bc42bf8a67245ac78dd94c6ace9cd64e04e63a47b3456849",
 """proof fn mg_fibo_positive() {
-    is_fibo_inductive();
+    broadcast use is_fibo_inductive;
     assert(is_fibo(0, 1));
 }""",
 """proof fn mg_fibo_exclusion() {
-    is_fibo_inductive();
-    fib_monotonic();
+    broadcast use is_fibo_inductive, fib_monotonic;
     assert(!is_fibo(-1, 0));
 }""")}
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
