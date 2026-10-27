@@ -8,6 +8,7 @@ on:
       - scripts/publication_boundary_guard.py
       - .github/workflows/publication-boundary-guard.yml
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches:
       - main
 
