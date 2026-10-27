@@ -36,6 +36,8 @@ jobs:
         run: python3 research/acsl_implication_v1/native.py upstream research/acsl_implication_v1/evidence
       - name: Fully informed independent source contract comparator
         run: python3 research/acsl_implication_v1/conventional_baseline.py research/acsl_implication_v1/evidence
+      - name: Independently challenge genuine native observations with positive and negative controls
+        run: python3 research/acsl_implication_v1/challenge.py research/acsl_implication_v1/evidence
       - name: Preserve evidence and unchanged upstream
         if: always()
         shell: bash
