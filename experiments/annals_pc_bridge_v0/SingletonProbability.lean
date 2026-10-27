@@ -72,7 +72,9 @@ theorem singletonUnguardedCounterexample (K : ℝ) :
     ¬ (((FractionalExpectationThresholds.p_c singletonFamily : I) : ℝ) ≤
       K * ((FractionalExpectationThresholds.q_f singletonFamily : I) : ℝ) *
         Real.log (FractionalExpectationThresholds.l singletonFamily : ℝ)) := by
-  rfl
+  intro h
+  rw [singletonCriticalProbability, singletonLargestMinimalSize] at h
+  norm_num at h
 
 #print axioms singletonBernoulliProbability
 #print axioms singletonCriticalProbability
