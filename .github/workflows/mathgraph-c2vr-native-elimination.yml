@@ -39,6 +39,8 @@ jobs:
         run: python3 research/c2vr_native_elimination_v1/run_native.py target "$VERUS_BIN" research/c2vr_native_elimination_v1/results
       - name: Independently adjudicate native proof obligations
         run: python3 research/c2vr_native_elimination_v1/adjudicate.py target "$VERUS_BIN" research/c2vr_native_elimination_v1/results
+      - name: Falsify real native evidence with six adversarial controls
+        run: python3 research/c2vr_native_elimination_v1/challenge.py target "$VERUS_BIN" research/c2vr_native_elimination_v1/results
       - name: Equally informed conventional source-aware controls
         shell: bash
         run: |

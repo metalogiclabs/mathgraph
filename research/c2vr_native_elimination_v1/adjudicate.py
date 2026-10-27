@@ -11,6 +11,30 @@ FILES={
 "fibo":("data/tutorial_wp/ex-N-fibo.c","258c311b2e665fab0ffa67c78981ccaa5689b3cad613a560298f6ce7fb5c50ec",
 "RQ3_result/Full_Fixed/ex-N-fibo.rs","e207d24b404f8964bc42bf8a67245ac78dd94c6ace9cd64e04e63a47b3456849",
 "assert(is_fibo(0, 1));","assert(!is_fibo(-1, 0));")}
+
+EXACT_PROOFS = {
+ "gcd": {
+  "positive": """proof fn mg_gcd_positive() {
+    broadcast use is_gcd_inductive;
+    assert(is_gcd(2, 0, 2));
+}""",
+  "negative": """proof fn mg_gcd_exclusion() {
+    broadcast use is_gcd_inductive;
+    assert(!is_gcd(2, 0, 1));
+}"""
+ },
+ "fibo": {
+  "positive": """proof fn mg_fibo_positive() {
+    broadcast use is_fibo_inductive;
+    assert(is_fibo(0, 1));
+}""",
+  "negative": """proof fn mg_fibo_exclusion() {
+    broadcast use is_fibo_inductive, fib_monotonic;
+    assert(!is_fibo(-1, 0));
+}"""
+ }
+}
+
 def raw(p):
     p=Path(p)
     if not p.is_file():raise ValueError("MISSING:"+str(p))
@@ -42,10 +66,8 @@ def check(root,tool,out):
             if lane=="original":
                 ensure(source==original,"ORIGINAL_TAMPER:"+key)
             else:
-                ensure(source.split(marker)[0].startswith(original.split(marker)[0]),"MODIFIED_PREEXISTING_SOURCE:"+key)
-                sentence=(pos if lane=="positive" else neg).encode()
-                ensure(sentence in source,"MISSING_PROOF_OBLIGATION:"+key)
-                ensure((neg if lane=="positive" else pos).encode() not in source,"CROSS_CONTAMINATION:"+key)
+                expected=original.replace(marker,b"\n"+EXACT_PROOFS[name][lane].encode()+b"\n"+marker)
+                ensure(source==expected,"UNAUTHORIZED_SOURCE_ADDITION:"+key)
             log=logs.decode("utf-8","replace")
             ensure("verification results::" in log,"NO_VERUS_SUMMARY:"+key)
             if lane=="negative":
