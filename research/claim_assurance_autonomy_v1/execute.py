@@ -30,11 +30,11 @@ TEST_REVERSE = "test_body_speed_for_radius_clamps_reverse"
 TEST_UNRELATED = "test_twist_to_radius_infinite_when_no_yaw"
 SELECTOR = f"{TEST_PRIMARY} or {TEST_REVERSE}"
 
-def run(cmd: list[str], name: str, folder: Path, *, env=None, timeout=240) -> dict:
+def run(cmd: list[str], name: str, folder: Path, *, env=None, cwd=None, timeout=240) -> dict:
     try:
         p = subprocess.run(cmd, text=True, encoding="utf-8", errors="replace",
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           env=env, timeout=timeout, check=False)
+                           env=env, cwd=cwd, timeout=timeout, check=False)
     except subprocess.TimeoutExpired as e:
         raise RuntimeError(f"APPARATUS_TIMEOUT:{name}") from e
     (folder / (name + ".log")).write_text(p.stdout, encoding="utf-8")
@@ -160,14 +160,28 @@ def main() -> None:
         raise RuntimeError("MUTANT_SITE_NOT_UNIQUE")
     modified = implementation.replace(PROTECTED, MUTATION, 1)
     (package/"kinematics.py").write_text(modified)
+    isolated_tests = mutant / "test"
+    isolated_tests.mkdir(parents=True, exist_ok=True)
+    # Same exact authored tests, physically separated so pytest cannot
+    # re-import target's unchanged package from its original collection root.
+    isolated_testfile = isolated_tests / "test_kinematics.py"
+    isolated_testfile.write_bytes((root/TEST).read_bytes())
+    if isolated_testfile.read_bytes() != (root/TEST).read_bytes():
+        raise RuntimeError("AUTHORED_TEST_COPY_CHANGED")
     (output/"mutation.diff.txt").write_text(
         f"- {PROTECTED}\n+ {MUTATION}\n")
     altered_env = os.environ.copy()
     altered_env["PYTHONPATH"] = str(mutant)
     altered_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    import_check = run([sys.executable,"-c",
+        "import osr_control.kinematics as k; print(k.__file__)"],
+        "mutant-import-resolution",output,env=altered_env,cwd=mutant)
+    imported = (output/"mutant-import-resolution.log").read_text().strip()
+    if import_check["exit"] != 0 or Path(imported).resolve() != (package/"kinematics.py").resolve():
+        raise RuntimeError("MUTANT_IMPORT_PATH_NOT_AUTHENTIC:" + imported)
     mutant_result = run([sys.executable,"-m","pytest","-q","-p","no:cacheprovider",
-                         testfile,"-k",SELECTOR], "mutation-protected-test",
-                         output, env=altered_env)
+                         str(isolated_testfile),"-k",SELECTOR], "mutation-protected-test",
+                         output, env=altered_env,cwd=mutant)
     mutant_log = (output/"mutation-protected-test.log").read_text()
     if mutant_result["exit"] == 0 or TEST_PRIMARY not in mutant_log or \
        "FAILED" not in mutant_log:
