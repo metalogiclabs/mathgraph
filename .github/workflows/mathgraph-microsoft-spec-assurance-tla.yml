@@ -18,7 +18,6 @@ jobs:
     timeout-minutes: 15
     env:
       MATHGRAPH_TLA_SOURCE_DIR: target/specifications/lamport_mutex
-      MATHGRAPH_TLA_RESULT_DIR: ${{ runner.temp }}/spec-assurance-evidence
     steps:
       - name: Checkout isolated MathGraph research source
         uses: actions/checkout@v4
@@ -40,6 +39,11 @@ jobs:
           test -z "$(git -C target status --porcelain --untracked-files=no)"
           grep -F 'Mutex == \A p,q \in crit : p = q' "$MATHGRAPH_TLA_SOURCE_DIR/LamportMutex.tla"
           grep -F 'INVARIANTS TypeOK BoundedNetwork Mutex' "$MATHGRAPH_TLA_SOURCE_DIR/MCLamportMutex.cfg"
+
+      - name: Set the runner-owned evidence directory
+        shell: bash
+        run: |
+          echo "MATHGRAPH_TLA_RESULT_DIR=$RUNNER_TEMP/spec-assurance-evidence" >> "$GITHUB_ENV"
 
       - name: Download TLC and authenticate exact executable bytes
         shell: bash
