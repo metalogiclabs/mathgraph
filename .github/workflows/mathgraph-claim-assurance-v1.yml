@@ -107,6 +107,29 @@ jobs:
             5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
           git -C "$root" checkout -q --detach 5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5
           test "$(git -C "$root" rev-parse HEAD)" = "5f8218dc571c01d6f8bd070c65bcd0de3a40b3c5"
+      - name: Hydrate the exact historical TorchLean commit from public upstream mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="target/.lake/packages/TorchLean"
+          sha="f12547fa82cc55210553d64b88af81ba5df8f6a3"
+          mkdir -p "$root"
+          git -C "$root" init -q
+          git -C "$root" remote add origin https://github.com/NicolasRouquette/TorchLean.git
+          # The saved PKC manifest explicitly pins this commit. GitHub's fork
+          # shallow auto-checkout currently reports an unreadable tree; use the
+          # author's corresponding upstream object as fallback without moving
+          # the declared commit identity.
+          if ! git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags \
+            https://github.com/lean-dojo/TorchLean.git "$sha"; then
+            git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags \
+              https://github.com/NicolasRouquette/TorchLean.git "$sha"
+          fi
+          git -C "$root" checkout --detach "$sha"
+          test "$(git -C "$root" rev-parse HEAD)" = "$sha"
+          git -C "$root" fsck --no-reflogs --no-progress
+          echo "EXACT_TORCHLEAN_HISTORICAL_SHA_VERIFIED=$sha"
+
       - name: Optional authenticated upstream Mathlib cache
         continue-on-error: true
         timeout-minutes: 10
