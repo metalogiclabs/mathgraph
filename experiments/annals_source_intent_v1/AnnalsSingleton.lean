@@ -14,7 +14,7 @@ namespace MathGraph.AnnalsSingleton
 def eventProbability (p : Rat) : Rat := (1 - p) * 0 + p * 1
 
 theorem eventProbabilityEq (p : Rat) : eventProbability p = p := by
-  simp [eventProbability, zero_add]
+  simp [eventProbability, Rat.zero_add]
 
 theorem halfIsThreshold : eventProbability (1 / 2) = (1 / 2 : Rat) := by
   simp [eventProbabilityEq]
