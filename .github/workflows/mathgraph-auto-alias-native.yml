@@ -1,0 +1,55 @@
+name: MathGraph native automatic pointer-alias admissibility
+on:
+  push:
+    branches:
+      - research/auto-alias-admissibility-v1-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Checkout authentic C and generated Rust after preregistered source gate
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Verify source-only seal and original revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 'df9a797710a091a852f9d513af05623f9bd147c1^{commit}'
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Source-only classifier unit tests
+        run: python3 -m unittest discover -s research/auto_alias_admission_v1 -p 'test_*.py' -v
+      - name: Compile direct Rust calls and execute same-pointer source C
+        run: python3 research/auto_alias_admission_v1/native.py upstream research/auto_alias_admission_v1/evidence
+      - name: Strong independent source-aware conventional comparator
+        run: python3 research/auto_alias_admission_v1/baseline.py research/auto_alias_admission_v1/evidence
+      - name: Preserve exact checker and upstream lineage
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/auto_alias_admission_v1/evidence
+          git rev-parse HEAD > research/auto_alias_admission_v1/evidence/mathgraph-head.txt
+          git -C upstream rev-parse HEAD > research/auto_alias_admission_v1/evidence/upstream-head.txt
+          git -C upstream status --porcelain > research/auto_alias_admission_v1/evidence/upstream-status.txt
+          sha256sum research/auto_alias_admission_v1/*.py > research/auto_alias_admission_v1/evidence/python-sha256.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain real compiler admission and refutation witnesses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automatic-source-rust-call-admission-v1
+          path: research/auto_alias_admission_v1/
+          retention-days: 90
+          if-no-files-found: warn
