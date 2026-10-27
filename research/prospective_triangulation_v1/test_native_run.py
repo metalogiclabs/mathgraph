@@ -42,6 +42,12 @@ class NativeProtocolTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     native.parse_native_rows(text, rows, 2)
 
+    def test_external_rust_wrapper_reports_only_mutable_output_and_frame(self):
+        native = importlib.import_module("native_run")
+        self.assertIn("let output=&row[..];", native.rust_wrapper("conditional_reset"))
+        self.assertIn("let output=&row[1..];", native.rust_wrapper("vector_addition"))
+        self.assertIn("let output=&row[1..4];", native.rust_wrapper("search_replace"))
+
 
 if __name__ == "__main__":
     unittest.main()
