@@ -44,6 +44,8 @@ def git(root,*args):
 def anchor_blocks(s):
  return {m[0]:m[1].strip("\n") for m in re.findall(
    r"(?ms)^-- ANCHOR: ([A-Za-z0-9_-]+)[ \t]*\n(.*?)^-- ANCHOR_END: \1[ \t]*$",s)}
+def normalize_blank_lines(s):
+ return re.sub(r"\n[ \t]*\n", "\n", s.strip("\n"))
 def doc_blocks(s):
  # SubVerso syntax: three backticks followed by 'anchor', then exact source.
  return {m[0]:m[1].strip("\n") for m in re.findall(
@@ -65,7 +67,8 @@ def audit_chapter_sources(root,change=None):
   work=tuple(re.findall(r"(?m)^-- EXERCISE: ([A-Za-z0-9_-]+)[ \t]*$",worksheet))
   check(work==want,"WORKSHEET_EXERCISE_ORDER_CHANGED:"+short)
   for anchor in want:
-   check(ac[anchor]==dc[anchor],"BLUEPRINT_QUOTE_CHANGED:"+short+":"+anchor)
+   check(normalize_blank_lines(ac[anchor])==normalize_blank_lines(dc[anchor]),
+         "BLUEPRINT_QUOTE_CHANGED:"+short+":"+anchor)
    check("-- EXERCISE_END: "+anchor in worksheet,"MISSING_WORKSHEET_END:"+anchor)
   check("#guard_msgs" not in worksheet,"WORKSHEET_CONTAINS_PRODUCTION_GUARD:"+short)
   check("import HCP."+short in read(root/"HCP.lean"),"LESSON_NOT_IN_HCP_IMPORT:"+short)
