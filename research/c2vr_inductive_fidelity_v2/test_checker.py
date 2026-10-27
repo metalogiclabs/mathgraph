@@ -69,7 +69,7 @@ class AuthenticSourceTests(unittest.TestCase):
     def test_valid_receipt_without_tool_bytes_remains_unknown(self):
         evidence = self.root / 'evidence'
         run_verus(self.root, Path('/usr/bin/true'), evidence)
-        self.assertEqual(check(self.root, evidence)['native_verdict'], 'UNKNOWN_TOOL_BYTES')
+        self.assertEqual(check(self.root, evidence, Path('/nonexistent-verus-for-this-test'))['native_verdict'], 'UNKNOWN_TOOL_BYTES')
 
 
 if __name__ == '__main__':
