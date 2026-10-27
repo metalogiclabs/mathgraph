@@ -37,8 +37,8 @@ def rust_wrapper(root,metadata,out):
        "max(values[0],values[1]) as i64",
        "arraymax(values.as_slice(),values.len() as i32) as i64",
        "areElementsEven(values.as_slice(),values.len() as i32) as i64",
-       "{func(values.as_mut_slice(),values.len() as i32);0}",
-       "{arrayDouble(values.as_mut_slice(),values.len() as i32);0}"]
+       "{let n=values.len() as i32;func(values.as_mut_slice(),n);0}",
+       "{let n=values.len() as i32;arrayDouble(values.as_mut_slice(),n);0}"]
     segments=[]
     for i,m in enumerate(metadata):
         target=(root/m["target"]).resolve()
