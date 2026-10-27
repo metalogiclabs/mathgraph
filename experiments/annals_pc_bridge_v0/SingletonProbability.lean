@@ -26,7 +26,18 @@ theorem singletonBernoulliProbability (p : I) :
 /-- The exact AnnalsChallenge `p_c` chooses the unique half-probability value. -/
 theorem singletonCriticalProbability :
     ((FractionalExpectationThresholds.p_c singletonFamily : I) : ℝ) = 1 / 2 := by
-  rfl
+  classical
+  let half : I := ⟨(1 / 2 : ℝ), by constructor <;> norm_num⟩
+  have hex : ∃ p : I,
+      setBer((Set.univ : Set Unit), p).real singletonFamily = (2⁻¹ : ℝ) := by
+    refine ⟨half, ?_⟩
+    rw [singletonBernoulliProbability]
+    norm_num [half]
+  have hchosen : ((Classical.choose hex : I) : ℝ) = (1 / 2 : ℝ) := by
+    have h := Classical.choose_spec hex
+    rw [singletonBernoulliProbability] at h
+    simpa using h
+  simpa [FractionalExpectationThresholds.p_c, dif_pos hex] using hchosen
 
 #print axioms singletonBernoulliProbability
 #print axioms singletonCriticalProbability
