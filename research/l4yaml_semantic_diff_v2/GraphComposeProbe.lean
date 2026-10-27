@@ -547,7 +547,8 @@ theorem build_single_self_cycle (s : GraphState) (name : String) :
       let t' := { t with receipts := t.receipts.push (.aliasTo name id) }
       .ok (id, assign t' id
         (jsonNode "sequence" [("items", Lean.toJson (#[id] : Array Nat))])) := by
-  simp [build, build.buildList, allocateNodeStart_visible, Except.bind, Except.map]
+  simp [build, build.buildList, allocateNodeStart_visible]
+  rfl
 
 def graphOf (doc : YamlDocument) : Except String Lean.Json := do
   let (root, s) ← build doc.value {}
