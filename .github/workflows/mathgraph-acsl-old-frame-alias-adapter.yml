@@ -1,0 +1,42 @@
+name: MathGraph bounded safe alias-aware Rust adapter
+on:
+  push:
+    branches:
+      - research/acsl-old-frame-prospective-20261028
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  alias-adapter-repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Compare direct C alias and constructed safe Rust adapter
+        run: python3 research/acsl_old_frame_v1/alias_bridge.py upstream research/acsl_old_frame_v1/bridge-evidence
+      - name: Independently check same-location and distinct-location semantics
+        run: python3 research/acsl_old_frame_v1/bridge_baseline.py research/acsl_old_frame_v1/bridge-evidence
+      - name: Preserve exact lineage and original source cleanliness
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/acsl_old_frame_v1/bridge-evidence
+          git rev-parse HEAD > research/acsl_old_frame_v1/bridge-evidence/mathgraph_head.txt
+          git -C upstream rev-parse HEAD > research/acsl_old_frame_v1/bridge-evidence/upstream_head.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain separate evidence of constructed repair
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: constructed-safe-alias-adapter-v1
+          path: research/acsl_old_frame_v1/bridge-evidence/
+          retention-days: 90
+          if-no-files-found: warn
