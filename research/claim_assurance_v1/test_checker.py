@@ -45,9 +45,14 @@ def test(v4: pathlib.Path, v5: pathlib.Path, out: pathlib.Path) -> None:
 
         shutil.copytree(v5, root / "altered", dirs_exist_ok=False)
         alter = root / "altered" / "convert-false_statement-api.json"
-        text = alter.read_text()
-        require("False" in text, "NO_AUTHENTIC_CLAIM_IN_CONVERTER_OUTPUT")
-        alter.write_text(text.replace("False", "NotFalse", 1))
+        converted = json.loads(alter.read_text())
+        hits = [x for x in converted
+                if isinstance(x, dict)
+                and x.get("@type") == "LiteralString"
+                and x.get("value") == "False"]
+        require(len(hits) == 1, "NOT_ONE_AUTHENTIC_FALSE_LITERAL")
+        hits[0]["value"] = "NotFalse"
+        alter.write_text(json.dumps(converted, separators=(",", ":"), sort_keys=True))
         try:
             assess(v4, root / "altered", PIN)
         except Corrupt as ex:
