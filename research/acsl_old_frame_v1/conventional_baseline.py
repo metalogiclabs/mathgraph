@@ -16,6 +16,13 @@ BLOBS=("b22649522e7f9ebac53a08f01ac2328ec9165ac9",
 "1f65adb2da4cbf2d3c45216737f548ebf56eea07",
 "210074be2f34602e4cac03c714375944b12bdff1",
 "8b137891791fe96927ad78e64b0aad7bded08bdc")
+SOURCE_BLOBS=("70147e46d8d74e10bfe3fbb000d2498b77d9d52b",
+"ba53e415d8a68276a1a71e26a9756cb8f54318cf",
+"318943f87c2faffa9a4aa3e6cd0bd5be9dcc2286",
+"117d6f05e60ef146c94c2e1323c6f5c04d055eb1",
+"bc9fe7c71d4079a8bfa1173edcf951726e912ca8",
+"2ec0b5ab03f572237fc370b6d230493df9295904",
+"6a3c32fee4927d20cf747c60668810c95b167e4d")
 def digest(x):return hashlib.sha256(x).hexdigest()
 def expected_cases(idx):
  if idx==0:
@@ -66,6 +73,14 @@ def check(root):
   raise ValueError("IDENTITY_CENSUS")
  if [x["rust_blob"] for x in identities]!=list(BLOBS):
   raise ValueError("TARGET_BLOB_DRIFT")
+ if [x["c_blob"] for x in identities]!=list(SOURCE_BLOBS):
+  raise ValueError("C_SOURCE_IDENTITY_CHANGED")
+ native_cases=report.get("cases",[])
+ if len(native_cases)!=7 or [x["id"] for x in native_cases]!=list(IDS):
+  raise ValueError("NATIVE_CASE_CENSUS_CHANGED")
+ if (native_cases[-1].get("verdict")!="UNKNOWN_UNSUPPORTED" or
+     native_cases[-1].get("native_count")!=0):
+  raise ValueError("UNSUPPORTED_RELATIONAL_CLAIM_PROMOTED")
  raw=(root/"observations.jsonl").read_bytes()
  if digest(raw)!=report.get("observations_sha256"):raise ValueError("OBSERVATION_RECEIPT_DRIFT")
  rows=[json.loads(line) for line in raw.decode().splitlines()]

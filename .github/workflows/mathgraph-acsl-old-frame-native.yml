@@ -36,6 +36,8 @@ jobs:
         run: python3 research/acsl_old_frame_v1/native.py upstream research/acsl_old_frame_v1/evidence
       - name: Independent source-aware conventional comparator with equal evidence
         run: python3 research/acsl_old_frame_v1/conventional_baseline.py research/acsl_old_frame_v1/evidence
+      - name: Check 12 real-evidence adversarial and permissive controls
+        run: python3 research/acsl_old_frame_v1/challenge.py research/acsl_old_frame_v1/evidence
       - name: Preserve provenance and source cleanliness
         if: always()
         shell: bash
