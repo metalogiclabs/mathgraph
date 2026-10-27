@@ -9,6 +9,12 @@ on:
       - 'research/jpl_pkc_statement_v4/**'
       - 'research/jpl_pkc_statement_v5/**'
       - '.github/workflows/mathgraph-claim-assurance-v1.yml'
+  pull_request:
+    branches:
+      - research/jpl-pkc-opensysml-e2e-v5-20261019
+    paths:
+      - 'research/claim_assurance_v1/**'
+      - '.github/workflows/mathgraph-claim-assurance-v1.yml'
   workflow_dispatch:
 
 permissions:
