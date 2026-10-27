@@ -42,6 +42,10 @@ jobs:
         shell: bash
         run: |
           python3 research/autonomous_source_observation_v1/conventional_baseline.py research/autonomous_source_observation_v1/evidence
+      - name: Challenge authentic evidence with eight synthetic controls
+        shell: bash
+        run: |
+          python3 research/autonomous_source_observation_v1/challenge.py research/autonomous_source_observation_v1/evidence
       - name: Preserve verification and source identity
         if: always()
         shell: bash
