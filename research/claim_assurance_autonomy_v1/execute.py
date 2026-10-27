@@ -116,6 +116,8 @@ def finite_independent_oracle(root: Path) -> dict:
     return {"status":"PASS_BOUNDED", "cases":len(checks),
             "radii":list(radii), "commanded_speeds":list(speeds),
             "grid_sha256":digest,
+            "measurements":checks,
+            "max_vel_mps":rover.max_vel,
             "claimed_universal_proof":False,
             "scope":"valid finite nonzero turning radii, exact authored rover dimensions and rpm"}
 
@@ -137,6 +139,8 @@ def main() -> None:
     alignment = source_test_alignment(implementation,authored_tests)
     env = os.environ.copy()
     env["PYTHONPATH"] = str(root / "ROS/osr_control")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    sys.dont_write_bytecode = True
     testfile = str(root/TEST)
     baseline = run([sys.executable,"-m","pytest","-q","-p","no:cacheprovider",
                     testfile], "upstream-authored-tests", output, env=env)
@@ -160,6 +164,7 @@ def main() -> None:
         f"- {PROTECTED}\n+ {MUTATION}\n")
     altered_env = os.environ.copy()
     altered_env["PYTHONPATH"] = str(mutant)
+    altered_env["PYTHONDONTWRITEBYTECODE"] = "1"
     mutant_result = run([sys.executable,"-m","pytest","-q","-p","no:cacheprovider",
                          testfile,"-k",SELECTOR], "mutation-protected-test",
                          output, env=altered_env)
