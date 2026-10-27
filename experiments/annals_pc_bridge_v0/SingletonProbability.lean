@@ -18,7 +18,10 @@ def singletonFamily : Set (Set Unit) := {Set.univ}
 /-- The sole member is selected precisely when the single element is present. -/
 theorem singletonBernoulliProbability (p : I) :
     setBer((Set.univ : Set Unit), p).real singletonFamily = (p : ℝ) := by
-  rfl
+  classical
+  simpa [singletonFamily] using
+    (setBernoulli_real_singleton (u := (Set.univ : Set Unit))
+      (s := (Set.univ : Set Unit)) p (by exact subset_rfl) Set.finite_univ)
 
 #print axioms singletonBernoulliProbability
 

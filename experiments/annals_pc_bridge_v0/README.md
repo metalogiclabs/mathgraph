@@ -11,7 +11,9 @@ Pinned external authority: ImperialCollegeLondon/AnnalsChallenge commit
 Lineage: [source-native `l=1`, `log l=0` green](https://github.com/metalogiclabs/mathgraph/actions/runs/40451809112),
 [earlier reduced countermodel green](https://github.com/metalogiclabs/mathgraph/actions/runs/40448158887).
 
-The target starts deliberately **RED** to confirm Lean does not treat the
-nontrivial probability identity as definitional equality. The mathematical
-target is the test. Once proved, inspect its axiom report; imported upstream
+The initial [RED run](https://github.com/metalogiclabs/mathgraph/actions/runs/40452403338)
+confirmed Lean does not treat the nontrivial probability identity as
+definitional equality. The repaired candidate uses pinned Mathlib's
+`setBernoulli_real_singleton` theorem. Inspect its native axiom report;
+imported upstream
 `K` and main theorem contain `sorry` and are excluded from warrant.
