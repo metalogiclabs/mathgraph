@@ -98,6 +98,5 @@ jobs:
           path: |
             research/claim_assurance_autonomy_v1/execute.py
             research/claim_assurance_autonomy_v1/independent_checker.py
-            research/claim_assurance_autonomy_v1/PROTOCOL.md
             research/claim_assurance_autonomy_v1/results/
           if-no-files-found: warn
