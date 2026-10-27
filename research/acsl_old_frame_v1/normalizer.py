@@ -54,7 +54,7 @@ def cases(family):
 def probes(f):
  if f=="CONDITIONAL_RESET_OLD_FRAME":return [(-3,0),(5,1),(0,-2)]
  if f=="INCREMENT_OLD_FRAME":return [(-5,2),(0,0),(3,-3)]
- if f=="TWO_POINTER_SWAP_DISTINCT_SCOPE":return [(-3,5),(0,0),(2,-1)]
+ if f=="TWO_POINTER_SWAP_DISTINCT_SCOPE":return [(-3,5),(0,0),(2,-3)]
  if f=="WEAK_DUPLICATE_ARRAY_POST":return [((-2,0,2),0,2),((2,-2),0,0),((0,2,-2),2,1)]
  if f=="POINTER_SUM_UNCHANGED":return [(-5,3),(0,0),(5,-5)]
  if f=="POINTER_PLUS_FIVE_UNCHANGED":return [(-5,),(0,),(5,)]
