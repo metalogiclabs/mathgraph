@@ -1,0 +1,62 @@
+name: MathGraph autonomous source-observation native holdout
+on:
+  push:
+    branches:
+      - research/autonomous-source-observation-v1-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-derived-separators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - name: Checkout MathGraph frozen source-only generation and runtime
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - name: Checkout exact authentic Qwen-generated migration corpus
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Establish prospective source-only gate as ancestor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e '458e134928d713812715456176ef2db74cb8d149^{commit}'
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Recheck source-only discovery tests
+        shell: bash
+        run: |
+          python3 -m unittest discover -s research/autonomous_source_observation_v1 -p 'test_*.py' -v
+      - name: Native original C and unchanged Qwen Rust, source-discovered probes
+        shell: bash
+        run: |
+          python3 research/autonomous_source_observation_v1/native.py upstream research/autonomous_source_observation_v1/evidence
+      - name: Strong independent conventional source-aware comparator
+        shell: bash
+        run: |
+          python3 research/autonomous_source_observation_v1/conventional_baseline.py research/autonomous_source_observation_v1/evidence
+      - name: Preserve verification and source identity
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/autonomous_source_observation_v1/evidence
+          git rev-parse HEAD > research/autonomous_source_observation_v1/evidence/mathgraph-commit.txt
+          git -C upstream rev-parse HEAD > research/autonomous_source_observation_v1/evidence/upstream-commit.txt
+          git -C upstream status --porcelain > research/autonomous_source_observation_v1/evidence/upstream-status.txt
+          sha256sum research/autonomous_source_observation_v1/*.py > research/autonomous_source_observation_v1/evidence/technical-source-digests.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain native outputs, frozen packet and complete observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-autonomous-observations-v1
+          path: research/autonomous_source_observation_v1/
+          if-no-files-found: warn
+          retention-days: 90
