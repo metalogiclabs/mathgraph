@@ -23,6 +23,12 @@ theorem singletonBernoulliProbability (p : I) :
     (setBernoulli_real_singleton (u := (Set.univ : Set Unit))
       (s := (Set.univ : Set Unit)) p (by exact subset_rfl) Set.finite_univ)
 
+/-- The exact AnnalsChallenge `p_c` chooses the unique half-probability value. -/
+theorem singletonCriticalProbability :
+    ((FractionalExpectationThresholds.p_c singletonFamily : I) : ℝ) = 1 / 2 := by
+  rfl
+
 #print axioms singletonBernoulliProbability
+#print axioms singletonCriticalProbability
 
 end MathGraph.AnnalsPCBridgeV0
