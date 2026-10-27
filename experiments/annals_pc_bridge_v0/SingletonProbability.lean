@@ -33,11 +33,12 @@ theorem singletonCriticalProbability :
     refine ⟨half, ?_⟩
     rw [singletonBernoulliProbability]
     norm_num [half]
-  have hchosen : ((Classical.choose hex : I) : ℝ) = (1 / 2 : ℝ) := by
-    have h := Classical.choose_spec hex
-    rw [singletonBernoulliProbability] at h
-    simpa using h
-  simpa [FractionalExpectationThresholds.p_c, dif_pos hex] using hchosen
+  unfold FractionalExpectationThresholds.p_c
+  split_ifs with h
+  · have hc := Classical.choose_spec h
+    rw [singletonBernoulliProbability] at hc
+    simpa using hc
+  · exact (h hex).elim
 
 #print axioms singletonBernoulliProbability
 #print axioms singletonCriticalProbability
