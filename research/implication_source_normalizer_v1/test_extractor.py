@@ -5,11 +5,11 @@ class ACSLImplicationTests(unittest.TestCase):
   c=r"""/*@ ensures \result == x || \result == y; ensures \result >= x && \result >= y; */"""
   self.assertEqual(classify(c)["family"],"SCALAR_PAIR_MAX")
  def test_array_quantifier_entailment(self):
-  c=r"""/*@ requires n > 0; ensures \forall integer k; 0 <= k < n ==> \result >= a[k];
+  c=r"""/*@ requires n > 0; requires \valid_read(a + (0..n-1)); assigns \nothing; ensures \forall integer k; 0 <= k < n ==> \result >= a[k];
            ensures \exists integer k; 0 <= k < n && \result == a[k]; */"""
   self.assertEqual(classify(c)["family"],"QUANTIFIED_ARRAY_MAX")
  def test_conjunctive_implication_does_not_overconstrain_odd(self):
-  c=r"""/*@ requires n > 0; ensures \forall integer k; (0<=k<n) && (k%2==0) ==> (a[k] == 0); */"""
+  c=r"""/*@ requires n > 0; requires \valid(a + (0..n-1)); ensures \forall integer k; (0<=k<n) && (k%2==0) ==> (a[k] == 0); */"""
   v=classify(c);self.assertEqual(v["family"],"EVEN_INDEX_ZERO_ONLY")
   self.assertTrue(v["partial_spec"])
   self.assertTrue(authorized(v["family"],(1,2,3,4),(0,999,0,-999),None))
