@@ -22,7 +22,7 @@ theorem singletonUniverseSize : (Set.univ : Set Unit).ncard = 1 := by
 /-- First missing authentic-definition bridge: does `l` reduce to 1? -/
 theorem singletonLargestMinimalSize : l singletonFamily = 1 := by
   classical
-  simp [FractionalExpectationThresholds.l, singletonFamily]
+  simp [FractionalExpectationThresholds.l, singletonFamily, IsMin]
 
 /-- If the exact `l` theorem compiles, this follows in Mathlib's real log. -/
 theorem singletonLogVanishes : Real.log (l singletonFamily : ℝ) = 0 := by
