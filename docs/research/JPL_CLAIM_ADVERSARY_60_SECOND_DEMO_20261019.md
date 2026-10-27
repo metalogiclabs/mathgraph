@@ -48,7 +48,7 @@ declaration, data/function, and axiom) across the change.
 not Lean proving falsehood; not a blanket attack on PKC's other proofs.
 This is a concrete case of independent, adversarial testing **above the kernel**.
 
-**One scientific design question for Nicolas:** Should
+**Unresolved field contract:** Should
 `@Checked.statement` be (A) explicitly untrusted commentary, or
 (B) an authoritative proposition whose typed semantics must be matched to
 the actual checked Lean declaration? The temporary refusal rule is safe
