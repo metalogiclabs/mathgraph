@@ -1,0 +1,58 @@
+name: MathGraph prospective Qwen search cohort
+on:
+  push:
+    branches:
+      - research/prospective-qwen-search-cohort-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-c-rust-holdouts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: target
+          persist-credentials: false
+      - name: Freeze chronology and authentic source bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e 3cc513da55a7211a96df9abd55fa070a6891998e^{commit}
+          test "$(git -C target rev-parse HEAD)" = "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3"
+          test "$(git -C target hash-object data/tutorial_wp/ex-3-search-answer.c)" = "72d7eafa47c1e4914101ee1a088ffd15688e6369"
+          test "$(git -C target hash-object data/tutorial_wp/ex-3-binary-search-answer.c)" = "b4f00cac89395f618671bcd73f5b2828e4df3858"
+          test "$(git -C target hash-object transpiled_rust/tutorial_wp/ex-3-search-answer.rs)" = "ba64d22cf4f6b6861e0c8af5bb203c47b4fd5fdf"
+          test "$(git -C target hash-object transpiled_rust/tutorial_wp/ex-3-binary-search-answer.rs)" = "ca7bb488b2de916812715c790ed3b7cdf8c84e3d"
+          test -z "$(git -C target status --porcelain)"
+      - name: Verify source-only frozen test oracle
+        run: python3 -m unittest discover -s research/prospective_qwen_search_cohort_v1 -p 'test_*.py' -v
+      - name: Compile and compare original C and Qwen Rust for all 7231 inputs
+        run: python3 research/prospective_qwen_search_cohort_v1/native_cohort.py target research/prospective_qwen_search_cohort_v1/evidence
+      - name: Run independent equally informed conventional comparator
+        run: python3 research/prospective_qwen_search_cohort_v1/conventional_baseline.py research/prospective_qwen_search_cohort_v1/evidence
+      - name: Freeze identity and unchanged external source
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/prospective_qwen_search_cohort_v1/evidence
+          git rev-parse HEAD > research/prospective_qwen_search_cohort_v1/evidence/mathgraph-head.txt
+          git -C target rev-parse HEAD > research/prospective_qwen_search_cohort_v1/evidence/upstream-head.txt
+          git -C target status --porcelain > research/prospective_qwen_search_cohort_v1/evidence/upstream-status.txt
+          sha256sum research/prospective_qwen_search_cohort_v1/*.py > research/prospective_qwen_search_cohort_v1/evidence/checkers-sha256.txt
+          test -z "$(git -C target status --porcelain)"
+      - name: Retain all native results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prospective-qwen-search-cohort-v1
+          path: research/prospective_qwen_search_cohort_v1/
+          retention-days: 90
+          if-no-files-found: warn
