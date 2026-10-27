@@ -12,7 +12,7 @@ JPL `scripts/ingest-sysml.sh` and external OpenSysML 0.9.1 CLI accept the
 source text and produce a compilable Lean file where `False` appears in a
 comment, not as a kernel-checked proposition. The independent checker must
 not promote that comment as a proof or infer that the user intended the
-optional field to be authoritative; Nicolas's intended contract is unresolved.
+optional field to be authoritative; The intended field contract is unresolved.
 
 ### Exact provenance
 
@@ -94,5 +94,4 @@ Review output:
 
 The existing V5 workflow and its real-source V4 dependency remain unchanged.
 The CI source checkout is local and is never pushed to JPL. Do not construe
-this demonstration, the co-authored research, or source reuse as endorsement
-by NASA/JPL, Caltech or Nicolas Rouquette.
+this demonstration or source reuse as institutional endorsement.
