@@ -66,7 +66,7 @@ jobs:
           "$HOME/.elan/bin/lean" --version | tee evidence/proof-intent-v1/lean-version.txt
           "$HOME/.elan/bin/lean" experiments/proof_intent_separator_v1/ProofIntentV1.lean \
             2>&1 | tee evidence/proof-intent-v1/lean-positive.log
-          if rg 'sorryAx|error:' evidence/proof-intent-v1/lean-positive.log; then
+          if grep -E 'sorryAx|error:' evidence/proof-intent-v1/lean-positive.log; then
             echo 'UNEXPECTED_POSITIVE_AXIOM_OR_ERROR'
             exit 1
           fi
@@ -79,7 +79,7 @@ jobs:
             echo 'PROTECTED_NEGATIVE_WAS_NOT_REJECTED'
             exit 1
           fi
-          rg 'error:' evidence/proof-intent-v1/lean-negative.log
+          grep -F 'error:' evidence/proof-intent-v1/lean-negative.log
           sha256sum experiments/proof_intent_separator_v1/*.lean \
             > evidence/proof-intent-v1/lean-source.sha256
           echo 'NATIVE_LEAN_PASS_AND_NEGATIVE_REJECTED'
