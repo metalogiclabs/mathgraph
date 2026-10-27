@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Source-aware, independent conventional comparator; no MathGraph import."""
+"""Source-aware direct conventional comparator independent of MathGraph oracle."""
 from itertools import combinations_with_replacement,product
 import hashlib,json,sys
 from pathlib import Path
-
+SOURCE_COMMIT="6c8b35b5dd8e94473b713b7edcf4bf4142f214e3"
+SOURCE_BLOBS={"sorted_minus_one":"b4f00cac89395f618671bcd73f5b2828e4df3858",
+              "unsorted_uintmax":"72d7eafa47c1e4914101ee1a088ffd15688e6369"}
+TARGET_BLOBS={"sorted_minus_one":"ca7bb488b2de916812715c790ed3b7cdf8c84e3d",
+              "unsorted_uintmax":"ba64d22cf4f6b6861e0c8af5bb203c47b4fd5fdf"}
 def sha(data):return hashlib.sha256(data).hexdigest()
 def expected():
     for length in range(6):
@@ -18,6 +22,10 @@ def allowed(kind,row,key,r):
 def run(directory):
     directory=Path(directory)
     report=json.loads((directory/"native_report.json").read_text())
+    if (report.get("source_commit")!=SOURCE_COMMIT or
+            report.get("source_blob_ids")!=SOURCE_BLOBS or
+            report.get("target_blob_ids")!=TARGET_BLOBS):
+        raise ValueError("SOURCE_OR_TARGET_PROVENANCE_INVALID")
     raw=(directory/"observations.jsonl").read_bytes()
     if sha(raw)!=report.get("observations_sha256"):raise ValueError("OBSERVATION_EVIDENCE_CHANGED")
     records=[json.loads(x) for x in raw.decode().splitlines()]

@@ -40,6 +40,8 @@ jobs:
         run: python3 research/prospective_qwen_sentinels_v2/native_replay.py target research/prospective_qwen_sentinels_v2/evidence
       - name: Independent conventional contract comparator
         run: python3 research/prospective_qwen_sentinels_v2/conventional_baseline.py research/prospective_qwen_sentinels_v2/evidence
+      - name: Falsify six real-output evidence perturbations
+        run: python3 research/prospective_qwen_sentinels_v2/challenge.py research/prospective_qwen_sentinels_v2/evidence
       - name: Retain source, test, and build provenance
         if: always()
         shell: bash
