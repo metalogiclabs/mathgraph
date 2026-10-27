@@ -43,9 +43,8 @@ def classify(c_text):
     if not clauses: return dict(sig,status="UNKNOWN_UNSUPPORTED_CONTRACT",reason="NO_NAMED_BEHAVIORS")
     exists=[];absent=[]
     for label,body in clauses.items():
-        m=re.search(r"\bassumes\s+([\s\S]*?);",body)
-        if not m:continue
-        assume=m.group(1)
+        if "assumes" not in body:continue
+        assume=body.split("assumes",1)[1].split("ensures",1)[0]
         if r"\exists" in assume: exists.append(body)
         elif r"\forall" in assume and "!=" in assume: absent.append(body)
     if len(exists)!=1 or len(absent)!=1:
