@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - research/mathgraph-check-l4yaml-warrant-continuity-20261024
+      - research/l4yaml-selected-ast-receipt-simulation-20261026
+    paths:
+      - '.github/workflows/mathgraph-check-l4yaml-graph-identity.yml'
+      - 'research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean'
+      - 'research/l4yaml_semantic_diff_v2/graph_comparison.py'
+      - 'research/l4yaml_semantic_diff_v2/trace_provenance.py'
+      - 'research/l4yaml_semantic_diff_v2/allocation_receipt.py'
+  pull_request:
+    branches:
+      - research/mathgraph-check-l4yaml-warrant-continuity-20261024
     paths:
       - '.github/workflows/mathgraph-check-l4yaml-graph-identity.yml'
       - 'research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean'
@@ -20,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      JPL_SHA: 'b50ae1ecd139800051d76655d8c006fbea1844f2'
+      JPL_SHA: '5c5fa864483029ff7da32af869bb485515131ab8'
     steps:
       - name: Checkout MathGraph graph experiment
         uses: actions/checkout@v4
