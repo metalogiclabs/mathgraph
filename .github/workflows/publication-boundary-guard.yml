@@ -9,8 +9,6 @@ on:
       - .github/workflows/publication-boundary-guard.yml
   pull_request:
     types: [opened, synchronize, reopened, edited]
-    branches:
-      - main
 
 permissions:
   contents: read
