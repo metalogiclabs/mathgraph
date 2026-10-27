@@ -5,8 +5,10 @@ on:
     branches:
       - research/claim-assurance-v1-pkc-sysml-20261027
     paths:
+      - 'research/claim_assurance_v1/**'
+      - 'research/jpl_pkc_statement_v4/**'
       - 'research/jpl_pkc_statement_v5/**'
-      - '.github/workflows/jpl-pkc-opensysml-v5.yml'
+      - '.github/workflows/mathgraph-claim-assurance-v1.yml'
   workflow_dispatch:
 
 permissions:
