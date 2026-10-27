@@ -35,6 +35,8 @@ jobs:
           test "$(git -C c2vr-upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
           test "$(sha256sum c2vr-upstream/data/tutorial_wp/ex-2-gcd.c | cut -d' ' -f1)" = 'acd6ca718d61d14d709599d7961436ec136c13a94261d40f38911a190bc20d2d'
           test "$(sha256sum c2vr-upstream/RQ3_result/Full_Fixed/ex-2-gcd.rs | cut -d' ' -f1)" = '2536507f61a2fe83a1356c969093be18cd7aee4511c5155cf70753daa4506cab'
+          test "$(sha256sum c2vr-upstream/data/tutorial_wp/max_subarray-1.c | cut -d' ' -f1)" = 'ff66b503c6074877c5a764e521d7fbfa15901abfe6e1a70d71d7176a9e4a7e63'
+          test "$(sha256sum c2vr-upstream/RQ3_result/Full_Fixed/max_subarray-1.rs | cut -d' ' -f1)" = '0f62e42e58ba8a0c1c95c4825cad3859123436fd0f99466a5d1eabb45eeec468'
           test -z "$(git -C c2vr-upstream status --porcelain)"
 
       - name: Create runner-scoped evidence directory
@@ -58,6 +60,7 @@ jobs:
           verus_path="$(find "$RUNNER_TEMP/verus-dist" -type f -name verus -print -quit)"
           test -n "$verus_path"
           chmod +x "$verus_path"
+          test "$(sha256sum "$verus_path" | cut -d' ' -f1)" = 'a3fe3b37b2ef1b68a6ef3b22490b4e628f442da423cb56fce6afc554e19c5c04'
           echo "C2VR_VERUS_BIN=$verus_path" >> "$GITHUB_ENV"
           sha256sum "$verus_path" > "$RUNNER_TEMP/c2vr-evidence/verus-tool-sha256.txt"
 
@@ -75,6 +78,21 @@ jobs:
         shell: bash
         run: |
           python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --output "$C2VR_EVIDENCE_ROOT/BASELINE_REPORT.json"
+
+      - name: Execute authentic source-axiomatic positive control in Verus
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/native.py "$C2VR_SOURCE_ROOT" "$C2VR_VERUS_BIN" "$C2VR_EVIDENCE_ROOT/axiomatic" --case max_subarray
+
+      - name: Check axiomatic trust preservation within declared scope
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/axiomatic_control.py "$C2VR_SOURCE_ROOT" --evidence "$C2VR_EVIDENCE_ROOT/axiomatic" --tool "$C2VR_VERUS_BIN" --output "$C2VR_EVIDENCE_ROOT/AXIOMATIC_REPORT.json"
+
+      - name: Independent conventional axiomatic comparator
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --case axiomatic --output "$C2VR_EVIDENCE_ROOT/AXIOMATIC_BASELINE.json"
 
       - name: Source-native and negative-control regression suite
         shell: bash

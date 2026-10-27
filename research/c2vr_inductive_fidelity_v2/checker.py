@@ -26,7 +26,8 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def native_verdict(evidence: Path, verus_binary: Path | None = None) -> str:
+def native_verdict(evidence: Path, verus_binary: Path | None = None,
+                   source_sha: str = SOURCE_SHA256, target_sha: str = TARGET_SHA256) -> str:
     filenames = ('verus.exit', 'verus.log', 'native-receipt.json')
     if not all((evidence / f).is_file() for f in filenames):
         return 'WITHDRAWN_NATIVE_RECEIPT'
@@ -35,8 +36,8 @@ def native_verdict(evidence: Path, verus_binary: Path | None = None) -> str:
         log = (evidence / 'verus.log').read_text()
         exit_code = int((evidence / 'verus.exit').read_text().strip())
         if (receipt['exit'] != exit_code or
-                receipt['source_sha256'] != SOURCE_SHA256 or
-                receipt['target_sha256'] != TARGET_SHA256 or
+                receipt['source_sha256'] != source_sha or
+                receipt['target_sha256'] != target_sha or
                 receipt['release'] != VERUS_RELEASE or
                 receipt['log_sha256'] != sha256(evidence / 'verus.log') or
                 not re.fullmatch(r'[a-f0-9]{64}', receipt['tool_sha256'])):
