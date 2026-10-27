@@ -1,0 +1,44 @@
+name: Prospective triangulation pinned C to Rust V1
+on:
+  push:
+    branches:
+      - exp/prospective-triangulation-20261027
+    paths:
+      - 'research/prospective_triangulation_v1/**'
+      - '.github/workflows/prospective-triangulation-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-source-native-triangulation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify prospective preregistration remains byte identical
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/prospective_triangulation_v1/LOCK.json)" = '40db1b1ade4a703fc8735fc5b6d949685751a006'
+      - name: Verify native C and Rust compilers
+        run: |
+          set -euo pipefail
+          gcc --version
+          rustc --version
+      - name: Contract and refusal tests
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s research/prospective_triangulation_v1 -p 'test_*.py' -v
+      - name: Compare pinned original C and unchanged Rust across full frozen cohort
+        run: |
+          set -euo pipefail
+          python3 research/prospective_triangulation_v1/native_run.py
+      - name: Preserve transcripts, witnesses and bounded status
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prospective-triangulation-v1-native-evidence
+          path: out/prospective_triangulation_v1/
+          if-no-files-found: warn
