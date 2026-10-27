@@ -32,6 +32,8 @@ jobs:
         run: python3 research/implication_source_normalizer_v1/native.py upstream research/implication_source_normalizer_v1/evidence
       - name: Independent source-aware conventional reviewer
         run: python3 research/implication_source_normalizer_v1/conventional_baseline.py research/implication_source_normalizer_v1/evidence
+      - name: Challenge real native evidence with 9 negative and 1 positive control
+        run: python3 research/implication_source_normalizer_v1/challenge.py research/implication_source_normalizer_v1/evidence
       - name: Preserve exact source and artifact identities
         if: always()
         shell: bash

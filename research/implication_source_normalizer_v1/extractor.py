@@ -44,6 +44,22 @@ def classify(text):
     matched=[name for name,patterns in rules if satisfies(flat,patterns)]
     if len(matched)!=1:return {"status":"UNKNOWN_UNSUPPORTED_CONTRACT","reason":"AMBIGUOUS_OR_UNRECOGNIZED_FORMULA","matched_rules":matched}
     kind=matched[0]
+    # Reject unparsed additional clauses, including preconditions that
+    # invalidate the fixed source-valid input domain.
+    expected_ensures={"SCALAR_PAIR_MAX":2,"QUANTIFIED_ARRAY_MAX":2,
+        "ALL_EVEN_BOOLEAN":2,"EVEN_INDEX_ZERO_ONLY":1,"INDEX_DOUBLE_GUARDED":1}
+    expected_requires={"SCALAR_PAIR_MAX":0,"QUANTIFIED_ARRAY_MAX":2,
+        "ALL_EVEN_BOOLEAN":2,"EVEN_INDEX_ZERO_ONLY":2,"INDEX_DOUBLE_GUARDED":3}
+    if (len(re.findall(r"\bensures\b",flat))!=expected_ensures[kind] or
+            len(re.findall(r"\brequires\b",flat))!=expected_requires[kind] or
+            len(re.findall(r"\bbehavior\s+[A-Za-z_]\w*\s*:",flat))!=(2 if kind=="ALL_EVEN_BOOLEAN" else 0)):
+        return {"status":"UNKNOWN_UNSUPPORTED_CONTRACT","reason":"ADDITIONAL_OR_MISSING_CLAUSES"}
+    if kind in ("QUANTIFIED_ARRAY_MAX","ALL_EVEN_BOOLEAN") and not re.search(
+            r"\bassigns\s+\\nothing\s*;",flat):
+        return {"status":"UNKNOWN_UNSUPPORTED_CONTRACT","reason":"MISSING_NONMUTATION_FRAME"}
+    if kind in ("QUANTIFIED_ARRAY_MAX","ALL_EVEN_BOOLEAN","EVEN_INDEX_ZERO_ONLY","INDEX_DOUBLE_GUARDED") and not re.search(
+            r"\brequires\s+\\valid(?:_read)?\s*\(",flat):
+        return {"status":"UNKNOWN_UNSUPPORTED_CONTRACT","reason":"ARRAY_PRECONDITION_MISSING"}
     # The partial frame: no assigns in replace_evens; never silently
     # demand preservation of unspecified odd-indexed array positions.
     return {"status":"SOURCE_CONTRACT_RECOGNIZED","family":kind,"partial_spec":kind=="EVEN_INDEX_ZERO_ONLY",
