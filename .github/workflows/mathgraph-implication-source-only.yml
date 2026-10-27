@@ -1,0 +1,56 @@
+name: MathGraph implication-aware source-only holdout
+on:
+  push:
+    branches:
+      - research/implication-source-normalizer-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-preregistration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          sparse-checkout: |
+            data/frama_c_problems
+          persist-credentials: false
+      - name: Source-only regression tests
+        run: python3 -m unittest discover -s research/implication_source_normalizer_v1 -p 'test_*.py' -v
+      - name: Seal source-only classified packets without Rust contents
+        shell: bash
+        run: |
+          mkdir -p research/implication_source_normalizer_v1/observations
+          PYTHONPATH=research/implication_source_normalizer_v1 python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from extractor import packet
+          doc=packet("upstream")
+          a=doc["cases"]
+          print(json.dumps([{"file":x["source"],"status":x["status"],"family":x.get("family"),"size":x.get("finite_domain_size"),"probes":x.get("probe_inputs")} for x in a],indent=2))
+          assert len(a)==5
+          assert all(x["status"]=="SOURCE_CONTRACT_RECOGNIZED" for x in a)
+          assert sum(x["finite_domain_size"] for x in a)==2394
+          assert sum(len(x["probe_inputs"]) for x in a)==15
+          Path("research/implication_source_normalizer_v1/observations/SOURCE_ONLY.json").write_text(json.dumps(doc,sort_keys=True,indent=2)+"\n")
+          PY
+          sha256sum research/implication_source_normalizer_v1/observations/SOURCE_ONLY.json
+          git rev-parse HEAD > research/implication_source_normalizer_v1/observations/mathgraph-commit.txt
+          git -C upstream rev-parse HEAD > research/implication_source_normalizer_v1/observations/upstream-commit.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain pre-unblind packet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: implication-source-only-v1
+          path: research/implication_source_normalizer_v1/
+          if-no-files-found: warn
+          retention-days: 90

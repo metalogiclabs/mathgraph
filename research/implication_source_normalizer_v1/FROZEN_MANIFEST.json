@@ -1,0 +1,67 @@
+{
+  "protocol": "IMPLICATION_AWARE_SOURCE_ONLY_V1",
+  "source_repository": "ZoneOut12/C2VerifiableRust",
+  "source_revision": "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3",
+  "selection": "Five previously unaudited source-authored ACSL contracts; target paths known only by directory listing, not opened before source-only source+tests+packet were frozen.",
+  "cases": [
+    {
+      "source": "data/frama_c_problems/max_of_2.c",
+      "blob": "0b26b5ce3d6e296485f13d70099961bbd8298302",
+      "target": "transpiled_rust/frama_c_problems/max_of_2.rs"
+    },
+    {
+      "source": "data/frama_c_problems/max.c",
+      "blob": "c2f8aae98b7ad686eeb6d46c3f20af328477602a",
+      "target": "transpiled_rust/frama_c_problems/max.rs"
+    },
+    {
+      "source": "data/frama_c_problems/check_evens_in_array.c",
+      "blob": "8fc9f1d3c6aab280c1cd4cf5819b4856c9ed4977",
+      "target": "transpiled_rust/frama_c_problems/check_evens_in_array.rs"
+    },
+    {
+      "source": "data/frama_c_problems/replace_evens.c",
+      "blob": "5e782d34a1ee68cda1dc21e15777005a666c770c",
+      "target": "transpiled_rust/frama_c_problems/replace_evens.rs"
+    },
+    {
+      "source": "data/frama_c_problems/array_double.c",
+      "blob": "a559b35376d9828823714c19b02afb39a7e1b971",
+      "target": "transpiled_rust/frama_c_problems/array_double.rs"
+    }
+  ],
+  "domain": {
+    "values": [
+      -2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "pair_values": [
+      -3,
+      -2,
+      -1,
+      0,
+      1,
+      2,
+      3
+    ],
+    "array_max_length": 4,
+    "array_double_max_length": 5
+  },
+  "verdicts": [
+    "WARRANTED_BOUNDED_MATCH",
+    "FINITE_COUNTEREXAMPLE",
+    "UNKNOWN_NOT_EXECUTABLE",
+    "UNKNOWN_UNSUPPORTED_CONTRACT",
+    "REJECTED_SOURCE_BASELINE"
+  ],
+  "primary_metric": "source-derived requirements covered and defended, no false authorizations",
+  "baseline": "equally informed separate direct rule-based conventional reviewer",
+  "nonclaims": [
+    "formal general equivalence",
+    "superiority over reviewer",
+    "real defects in absent synthetic controls"
+  ]
+}
