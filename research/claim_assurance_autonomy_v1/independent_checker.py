@@ -232,7 +232,7 @@ def run(root:Path,folder:Path)->dict:
                 "No certified safety case, motor hardware/ROS execution, real-time liveness, proof for all real input values or end-to-end NASA approval.",
                 "A fully informed conventional reviewer may detect all these mismatches; added commercial value is not independently measured.",
                 "Failures of locally mutated implementations are induced controls, not reported defects in JPL upstream."],
-            "upstream_write":False,"contacted_Nicolas":False,
+            "upstream_write":False,"external_contact":False,
             "release_permission":"NOT_AUTHORIZED"}
     return result
 
