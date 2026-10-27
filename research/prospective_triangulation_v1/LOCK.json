@@ -1,0 +1,63 @@
+{
+  "protocol_version": "prospective-triangulation-v1-20261027",
+  "source_repository": "ZoneOut12/C2VerifiableRust",
+  "source_commit": "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3",
+  "selection_rule": "Three source ACSL tutorial contracts selected using path/metadata and source-only contents before reading paired Rust target bodies.",
+  "cases": [
+    {
+      "id": "conditional_reset",
+      "source_path": "data/tutorial_wp/ex-2-reset-on-cond-answer.c",
+      "source_git_blob": "68b380d0d9510239f7989e9736362c30c9522873",
+      "target_path": "transpiled_rust/tutorial_wp/ex-2-reset-on-cond-answer.rs",
+      "target_git_blob": "7083aa38a421886dc3159090fdab92a67accc3e0",
+      "source_function": "reset_1st_if_2nd_is_true",
+      "domain": {"a": [-2, 0, 3], "b": [-1, 0, 1]},
+      "contract": "Separate live integer pointers; a becomes 0 iff b is nonzero, otherwise a unchanged; b unchanged."
+    },
+    {
+      "id": "vector_addition",
+      "source_path": "data/tutorial_wp/ex-4-vec-inc-answer.c",
+      "source_git_blob": "5b9fae2b1cacd9ae181fa9d04e8c421374cd1b12",
+      "target_path": "transpiled_rust/tutorial_wp/ex-4-vec-inc-answer.rs",
+      "target_git_blob": "ab6f18a9f5033fb8ac7fd5ecec2ef4cf7bcfbb64",
+      "source_function": "vec_add",
+      "domain": {"length": [0, 1, 2, 3], "a_elements": [-1, 0, 1], "b_elements": [-1, 0, 1]},
+      "contract": "Separate arrays; each a[i] becomes its old value plus b[i]; all b elements unchanged."
+    },
+    {
+      "id": "search_replace",
+      "source_path": "data/tutorial_wp/ex-5-search-and-replace-answer.c",
+      "source_git_blob": "f9330c13f2c0992e785a5297cf3313f67aca3784",
+      "target_path": "transpiled_rust/tutorial_wp/ex-5-search-and-replace-answer.rs",
+      "target_git_blob": "0afc2db0230097024708ccc7cec3e8512d1113cd",
+      "source_function": "search_and_replace",
+      "domain": {"length": [0, 1, 2, 3], "elements": [-1, 0, 1], "old": [-1, 0, 1], "new": [-1, 0, 1]},
+      "contract": "Replace every equal-to-old element with new; all other elements unchanged."
+    }
+  ],
+  "expected_counts": {"conditional_reset": 9, "vector_addition": 820, "search_replace": 360, "total": 1189},
+  "comparison": {
+    "source": "Pinned original C and ACSL contracts, compiled unmodified with an external test wrapper",
+    "target": "Pinned unchanged generated Rust, compiled unmodified with an external test wrapper; no semantic target edits allowed",
+    "reference": "Independently coded conventional source-aware exhaustive value and frame-condition checker, given the identical input population",
+    "novelty_gate": "Only measured decision-relevant distinctions unavailable to a fully informed conventional comparator count toward distinctive advantage.",
+    "stop_rule": "Missing original source, hash mismatch, target build/binding failure or unsupported type adaptation yields UNKNOWN, never an inferred implementation defect."
+  },
+  "negative_controls": [
+    "Wrong result in the reset-true branch",
+    "Incorrectly clear the reset-false branch",
+    "Mutate vector input b despite correct vector output",
+    "Skip one vector element",
+    "Skip one replacement position",
+    "Replace an unequal position"
+  ],
+  "positive_controls": ["Untouched compiled source", "Untouched compiled target if compatible"],
+  "withdrawal_controls": ["Alter pinned source blob", "Alter pinned target blob", "Remove target native execution receipt", "Revoke one source-contract claim"],
+  "action_authority": false,
+  "limitations": [
+    "The three source contracts were seen before preregistration; Rust target bodies were not.",
+    "The finite value populations are exhaustive only within the declared grids.",
+    "An observation primitive or test grammar furnished by the protocol is not autonomous new-sensor invention.",
+    "No release permission, human-intent certification, universal refinement theorem or human-review superiority follows from this experiment."
+  ]
+}
