@@ -27,9 +27,10 @@ theorem singletonLargestMinimalSize : l singletonFamily = 1 := by
     have ha : (a : Set Unit) = Set.univ := by
       simpa [singletonFamily] using a.property
     exact le_of_eq (Subtype.ext ha.symm)
-  haveI : Nonempty (IsMin (⟨Set.univ, by simp [singletonFamily]⟩ : singletonFamily)) :=
-    ⟨hmin⟩
   simp [FractionalExpectationThresholds.l, singletonFamily]
+  apply le_antisymm
+  · exact iSup_le (fun _ => le_rfl)
+  · exact le_iSup_of_le hmin le_rfl
 
 /-- If the exact `l` theorem compiles, this follows in Mathlib's real log. -/
 theorem singletonLogVanishes : Real.log (l singletonFamily : ℝ) = 0 := by
