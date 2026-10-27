@@ -1,0 +1,97 @@
+name: MathGraph C2VR Inductive Contract Fidelity
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/c2vr-inductive-contract-fidelity-20261027
+
+permissions:
+  contents: read
+
+jobs:
+  finite-native-fidelity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout MathGraph technical checker
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            research/c2vr_inductive_fidelity_v2
+          persist-credentials: false
+
+      - name: Checkout pinned external ACSL and Verus outputs
+        uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: c2vr-upstream
+          persist-credentials: false
+
+      - name: Authenticate exact external bytes and provenance
+        shell: bash
+        run: |
+          test "$(git -C c2vr-upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+          test "$(sha256sum c2vr-upstream/data/tutorial_wp/ex-2-gcd.c | cut -d' ' -f1)" = 'acd6ca718d61d14d709599d7961436ec136c13a94261d40f38911a190bc20d2d'
+          test "$(sha256sum c2vr-upstream/RQ3_result/Full_Fixed/ex-2-gcd.rs | cut -d' ' -f1)" = '2536507f61a2fe83a1356c969093be18cd7aee4511c5155cf70753daa4506cab'
+          test -z "$(git -C c2vr-upstream status --porcelain)"
+
+      - name: Create runner-scoped evidence directory
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/c2vr-evidence"
+          echo "C2VR_SOURCE_ROOT=$GITHUB_WORKSPACE/c2vr-upstream" >> "$GITHUB_ENV"
+          echo "C2VR_EVIDENCE_ROOT=$RUNNER_TEMP/c2vr-evidence" >> "$GITHUB_ENV"
+          git rev-parse HEAD > "$RUNNER_TEMP/c2vr-evidence/mathgraph-commit.txt"
+          git -C c2vr-upstream rev-parse HEAD > "$RUNNER_TEMP/c2vr-evidence/upstream-commit.txt"
+
+      - name: Install published Verus verifier
+        shell: bash
+        run: |
+          rustup toolchain install 1.85.1 --profile minimal
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/verus-lang/verus/releases/download/release%2F0.2025.06.14.9b557d7/verus-0.2025.06.14.9b557d7-x86-linux.zip' \
+            --output "$RUNNER_TEMP/verus-dist.zip"
+          mkdir -p "$RUNNER_TEMP/verus-dist"
+          unzip -q "$RUNNER_TEMP/verus-dist.zip" -d "$RUNNER_TEMP/verus-dist"
+          verus_path="$(find "$RUNNER_TEMP/verus-dist" -type f -name verus -print -quit)"
+          test -n "$verus_path"
+          chmod +x "$verus_path"
+          echo "C2VR_VERUS_BIN=$verus_path" >> "$GITHUB_ENV"
+          sha256sum "$verus_path" > "$RUNNER_TEMP/c2vr-evidence/verus-tool-sha256.txt"
+
+      - name: Execute authentic published repaired Verus program
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/native.py "$C2VR_SOURCE_ROOT" "$C2VR_VERUS_BIN" "$C2VR_EVIDENCE_ROOT"
+
+      - name: Independent finite claim-fidelity checker
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/checker.py "$C2VR_SOURCE_ROOT" --evidence "$C2VR_EVIDENCE_ROOT" --output "$C2VR_EVIDENCE_ROOT/MATHGRAPH_REPORT.json"
+
+      - name: Strong equally informed conventional comparator
+        shell: bash
+        run: |
+          python3 research/c2vr_inductive_fidelity_v2/baseline.py "$C2VR_SOURCE_ROOT" --output "$C2VR_EVIDENCE_ROOT/BASELINE_REPORT.json"
+
+      - name: Source-native and negative-control regression suite
+        shell: bash
+        run: |
+          python3 -m unittest discover -s research/c2vr_inductive_fidelity_v2 -p 'test_*.py' -v 2>&1 | tee "$C2VR_EVIDENCE_ROOT/unit-tests.log"
+
+      - name: Check upstream tree retained clean
+        shell: bash
+        run: |
+          test -z "$(git -C c2vr-upstream status --porcelain)"
+          git -C c2vr-upstream status --porcelain > "$C2VR_EVIDENCE_ROOT/upstream-tracked-status.txt"
+
+      - name: Retain evidence even when verifier refuses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-c2vr-inductive-fidelity-${{ github.sha }}
+          path: ${{ runner.temp }}/c2vr-evidence
+          if-no-files-found: warn
+          retention-days: 90
