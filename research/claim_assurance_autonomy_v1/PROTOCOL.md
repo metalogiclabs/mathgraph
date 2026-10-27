@@ -1,7 +1,7 @@
 # MathGraph Claim Assurance: independent rover software-contract transfer
 
 Status: source-native research. **No JPL upstream writes/contact, no deployed rover
-test, no Nicolas/NASA endorsement.** Draft MathGraph only, no release authority.
+test, no institutional endorsement.** Draft MathGraph only, no release authority.
 
 ## Why this authentic case
 
@@ -88,18 +88,3 @@ all source/evidence hashes and the exact pytest environment. GitHub Actions
 archives them on both success and failure. A source-test mismatch or missing
 receipt must fail closed. Deliberately mutated code runs from a separate
 local \`results/mutant/\` package and is never applied to the authentic repo.
-
-## Nicolas collaboration obligations preserved, not silently acted upon
-
-The original NFM 2027 co-author PDF/LaTeX/evidence package was **sent** on
-October 11; Nicolas answered that he would carefully review and incorporate
-contributions. The October 18 SysML \`@Checked.statement\` contract question
-was already **sent**; do not resend it without new response/authority.
-He specifically requested eyes on PKC tutorial chapters 6–8 as they
-became available; a complete native review remains owed. The FGM comparison
-requires released or independently approved classification receipts and
-cannot disclose protected implementation. JCP's CPU/GPU generated-code
-behavioural equivalence is a separate research direction, not established
-by either this software test or the bounded PKC SysML citation checker.
-Co-authorship is not NASA/JPL endorsement and grants no deployment or access
-permission. No external communication or upstream PRs performed here.
