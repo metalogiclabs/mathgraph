@@ -213,7 +213,7 @@ def main():
                    "not complete literal chapters 6-8 of historical outline",
                    "not a safety certification or independent science measurement",
                    "no direct FGM replay or CPU/GPU equivalence established"],
-         "contacted_Nicolas":False,"upstream_modified":False,
+         "external_contact":False,"upstream_modified":False,
          "release_authorized":False}
  a.output.parent.mkdir(parents=True,exist_ok=True)
  a.output.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
