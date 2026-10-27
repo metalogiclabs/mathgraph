@@ -14,16 +14,17 @@ def targetProperty (n : Nat) : Prop := n + n > n + 1
 
 /-- An entirely valid theorem with a stronger scope than the intended claim. -/
 theorem validGuardThree (n : Nat) (h : 3 ≤ n) : targetProperty n := by
-  have h' : 1 < n := lt_of_lt_of_le (by decide : 1 < 3) h
+  have h' : 1 < n := Nat.lt_of_lt_of_le (by decide : 1 < 3) h
   exact Nat.add_lt_add_left h' n
 
 /-- Machine-proved proposed repair for the threshold-guard family. -/
 theorem repairGuardTwo (n : Nat) (h : 2 ≤ n) : targetProperty n := by
-  have h' : 1 < n := lt_of_lt_of_le (by decide : 1 < 2) h
+  have h' : 1 < n := Nat.lt_of_lt_of_le (by decide : 1 < 2) h
   exact Nat.add_lt_add_left h' n
 
 /-- The source claim with the omitted lower bound really is false. -/
 theorem counterexampleOne : ¬ targetProperty 1 := by
+  unfold targetProperty
   decide
 
 theorem intendedClaimFalse : ¬ (∀ n : Nat, 1 ≤ n → targetProperty n) := by
