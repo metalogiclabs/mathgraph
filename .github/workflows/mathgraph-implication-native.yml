@@ -1,0 +1,51 @@
+name: MathGraph implication-aware authentic C and Qwen Rust native replay
+on:
+  push:
+    branches:
+      - research/implication-source-normalizer-20261027
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-implication-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 12
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ZoneOut12/C2VerifiableRust
+          ref: 6c8b35b5dd8e94473b713b7edcf4bf4142f214e3
+          path: upstream
+          persist-credentials: false
+      - name: Establish green source-only stage as ancestor
+        shell: bash
+        run: |
+          git cat-file -e 'e0ac483b763100a76ee84bb60ee2f6ab92072482^{commit}'
+          test "$(git -C upstream rev-parse HEAD)" = '6c8b35b5dd8e94473b713b7edcf4bf4142f214e3'
+      - name: Repeat source-only classifier mutation tests
+        run: python3 -m unittest discover -s research/implication_source_normalizer_v1 -p 'test_*.py' -v
+      - name: Execute 2394 native C and unchanged generated Rust cases
+        run: python3 research/implication_source_normalizer_v1/native.py upstream research/implication_source_normalizer_v1/evidence
+      - name: Independent source-aware conventional reviewer
+        run: python3 research/implication_source_normalizer_v1/conventional_baseline.py research/implication_source_normalizer_v1/evidence
+      - name: Preserve exact source and artifact identities
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p research/implication_source_normalizer_v1/evidence
+          git rev-parse HEAD > research/implication_source_normalizer_v1/evidence/mathgraph-head.txt
+          git -C upstream rev-parse HEAD > research/implication_source_normalizer_v1/evidence/upstream-head.txt
+          sha256sum research/implication_source_normalizer_v1/*.py > research/implication_source_normalizer_v1/evidence/checker-hashes.txt
+          test -z "$(git -C upstream status --porcelain)"
+      - name: Retain evidence even when native run refuses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: implication-aware-fidelity-v1
+          path: research/implication_source_normalizer_v1/
+          retention-days: 90
+          if-no-files-found: warn
