@@ -29,6 +29,8 @@ a decision procedure, not proof that *every* P state satisfies it. -/
 theorem out_of_range_record_refused :
     withinRatedRange beyondRatedP = false := by decide
 
+#eval "MATHGRAPH_R3_P_POSITIVE_AND_NEGATIVE_LEAN_PROOF_CHECKED"
+
 #print axioms rated_record_passes
 #print axioms out_of_range_record_refused
 
