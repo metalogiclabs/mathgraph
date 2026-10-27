@@ -1,0 +1,91 @@
+name: Proof-to-intent separator V1 (bounded research)
+on:
+  push:
+    branches: [exp/proof-intent-separator-20261027]
+    paths:
+      - 'experiments/proof_intent_separator_v1/**'
+      - 'tests/test_proof_intent_separator_v1.py'
+      - '.github/workflows/proof-intent-separator-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-and-native-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Real Python tests and independently derived strong finite comparator
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/proof-intent-v1
+          python -m unittest discover -s tests -p 'test_proof_intent_separator_v1.py' -v
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from experiments.proof_intent_separator_v1.separator import assess_threshold_claim, assess_compression_claim, identity
+          trial = assess_threshold_claim(source_min=1, proof_min=3, upper_bound=12)
+          control = assess_compression_claim(identity, identity)
+          # Actually run an equally informed conventional exhaustive baseline.
+          source = [n for n in range(1, 13)]
+          wrong = [n for n in source if not (n > 1)]
+          repairs = [k for k in range(1, 13) if all(n > 1 for n in range(k, 13))]
+          baseline = {'counterexample': wrong[0], 'minimal_repair_guard': f'n >= {repairs[0]}'}
+          assert baseline == {k: trial[k] for k in baseline}
+          assert trial['formal_finite_check'] == 'PASS' and not trial['action_authorized']
+          assert control['roundtrip_finite_pass'] and control['size_counterexample'] == '0000'
+          report = {
+              'status': 'WARRANTED_BOUNDED_FINITE_ONLY',
+              'universe': 'Nat[0..12] and binary strings length[0..4]',
+              'source_intent': 'MANUALLY_DECLARED_NOT_NL_VERIFIED',
+              'threshold': trial,
+              'identity_compressor': control,
+              'strong_conventional_baseline': baseline,
+              'comparative_advantage': 'TIE_ON_OBSERVED_FINITE_TASK',
+              'native_lean': 'PENDING_SEPARATE_STEP',
+              'source_fidelity_generalization': 'UNKNOWN',
+          }
+          p = Path('evidence/proof-intent-v1/finite.json')
+          p.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(report, indent=2, sort_keys=True))
+          PY
+      - name: Install pinned Lean and verify proofs plus protected rejection
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0
+          export LEAN_TOOLCHAIN=leanprover/lean4:v4.35.0
+          "$HOME/.elan/bin/lean" --version | tee evidence/proof-intent-v1/lean-version.txt
+          "$HOME/.elan/bin/lean" experiments/proof_intent_separator_v1/ProofIntentV1.lean \
+            2>&1 | tee evidence/proof-intent-v1/lean-positive.log
+          if rg 'sorryAx|error:' evidence/proof-intent-v1/lean-positive.log; then
+            echo 'UNEXPECTED_POSITIVE_AXIOM_OR_ERROR'
+            exit 1
+          fi
+          set +e
+          "$HOME/.elan/bin/lean" experiments/proof_intent_separator_v1/RejectedFalseClaim.lean \
+            > evidence/proof-intent-v1/lean-negative.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo 'PROTECTED_NEGATIVE_WAS_NOT_REJECTED'
+            exit 1
+          fi
+          rg 'error:' evidence/proof-intent-v1/lean-negative.log
+          sha256sum experiments/proof_intent_separator_v1/*.lean \
+            > evidence/proof-intent-v1/lean-source.sha256
+          echo 'NATIVE_LEAN_PASS_AND_NEGATIVE_REJECTED'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-intent-separator-v1
+          path: evidence/proof-intent-v1/
+          if-no-files-found: warn
