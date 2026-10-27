@@ -137,6 +137,7 @@ def rust_wrapper(case: str) -> str:
             + f"  assert_eq!(row.len(),{2 if case=='conditional_reset' else 7 if case=='vector_addition' else 6});\n"
             + "  original::apply(&mut row);\n"
             + ("  let output=&row[..];\n" if case == "conditional_reset"
+               else "  let output=&row[1..4];\n" if case == "search_replace"
                else "  let output=&row[1..];\n")
             + "  println!(\"{}\",output.iter().map(|x|x.to_string()).collect::<Vec<_>>().join(\" \"));\n"
             + " }\n}\n")
