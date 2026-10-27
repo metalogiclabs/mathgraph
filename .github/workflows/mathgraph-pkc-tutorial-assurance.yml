@@ -1,0 +1,145 @@
+name: MathGraph independent PKC tutorial assurance V1
+
+on:
+  push:
+    branches:
+      - research/pkc-tutorial-assurance-audit-20261027
+    paths:
+      - 'research/pkc_tutorial_assurance_v1/**'
+      - '.github/workflows/mathgraph-pkc-tutorial-assurance.yml'
+  pull_request:
+    branches:
+      - research/claim-assurance-rover-transfer-20261027
+    paths:
+      - 'research/pkc_tutorial_assurance_v1/**'
+      - '.github/workflows/mathgraph-pkc-tutorial-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tutorial-check:
+    name: Source-native PKC HCP L4-L6, independent claim/scope/withdrawal audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout MathGraph-owned independent audit
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned unchanged original PKC
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/PropertyKindCalculus
+          ref: 023ff7e730e86260871c1adb7411dee12848d006
+          path: source/pkc
+          persist-credentials: false
+
+      - name: Pin original source, lesson, checker and blueprint identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source/pkc rev-parse HEAD)" = "023ff7e730e86260871c1adb7411dee12848d006"
+          test "$(cat source/pkc/lean-toolchain)" = "leanprover/lean4:v4.35.0"
+          mkdir -p research/pkc_tutorial_assurance_v1/results
+          git rev-parse HEAD > research/pkc_tutorial_assurance_v1/results/mathgraph-source-revision.txt
+          git -C source/pkc rev-parse HEAD > research/pkc_tutorial_assurance_v1/results/pkc-source-revision.txt
+          sha256sum research/pkc_tutorial_assurance_v1/audit.py \
+            > research/pkc_tutorial_assurance_v1/results/checker-sha256.txt
+
+      - name: Run original published HCP source, worksheet, documentation checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source/pkc
+          python3 HCP/check-hcp.py 2>&1 \
+            | tee ../../research/pkc_tutorial_assurance_v1/results/hcp-validator.log
+
+      - name: Install original Lean 4.35.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          "$HOME/.elan/bin/lean" --version
+
+      - name: Hydrate exact historical TorchLean and FloatLib source trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          for dependency in \
+            "TorchLean f274d957609b230046bd23f887ab878b29081a1a" \
+            "floatlib 1f5771b3e36a98f17fcac2c6d76aaa024b36aa37"; do
+            set -- $dependency
+            package="$1"
+            sha="$2"
+            root="source/pkc/.lake/packages/$package"
+            mkdir -p "$root"
+            git -C "$root" init -q
+            if [ "$package" = "TorchLean" ]; then
+              upstream="https://github.com/lean-dojo/TorchLean.git"
+              fallback="https://github.com/NicolasRouquette/TorchLean.git"
+            else
+              upstream="https://github.com/lean-dojo/FloatLib.git"
+              fallback="$upstream"
+            fi
+            if ! git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags "$upstream" "$sha"; then
+              git -C "$root" -c protocol.version=2 fetch --depth=1 --no-tags "$fallback" "$sha"
+            fi
+            git -C "$root" checkout --detach "$sha"
+            test "$(git -C "$root" rev-parse HEAD)" = "$sha"
+            echo "$package $sha exact historical tree"
+          done
+
+      - name: Acquire pinned Mathlib binary cache when available
+        continue-on-error: true
+        timeout-minutes: 12
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source/pkc
+          "$HOME/.elan/bin/lake" exe cache get 2>&1 \
+            | tee ../../research/pkc_tutorial_assurance_v1/results/mathlib-cache.log
+
+      - name: Kernel-build exact L4 L5 L6 Lean lesson solutions and pinned refusal messages
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source/pkc
+          "$HOME/.elan/bin/lake" build \
+            HCP.L4_OutOfTheLine HCP.L5_Damping HCP.L6_Requirements 2>&1 \
+            | tee ../../research/pkc_tutorial_assurance_v1/results/native-lean.log
+
+      - name: Independent claim identity and source vs tutorial vs worksheet assurance
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONDONTWRITEBYTECODE=1
+          python3 research/pkc_tutorial_assurance_v1/audit.py \
+            --source source/pkc \
+            --logs research/pkc_tutorial_assurance_v1/results \
+            --output research/pkc_tutorial_assurance_v1/results/AUDIT.json
+
+      - name: Freeze source/checker and retained evidence provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source/pkc rev-parse HEAD)" = "023ff7e730e86260871c1adb7411dee12848d006"
+          test -z "$(git -C source/pkc diff --name-only)"
+          sha256sum research/pkc_tutorial_assurance_v1/audit.py \
+            research/pkc_tutorial_assurance_v1/results/AUDIT.json \
+            research/pkc_tutorial_assurance_v1/results/hcp-validator.log \
+            research/pkc_tutorial_assurance_v1/results/native-lean.log \
+            > research/pkc_tutorial_assurance_v1/results/evidence.sha256
+          python3 -m json.tool research/pkc_tutorial_assurance_v1/results/AUDIT.json >/dev/null
+          echo MATHGRAPH_PKC_TUTORIAL_NATIVE_INDEPENDENT_ASSURANCE_GREEN
+
+      - name: Retain exact success or failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-pkc-tutorial-independent-assurance-v1
+          path: |
+            research/pkc_tutorial_assurance_v1/
+          if-no-files-found: warn
