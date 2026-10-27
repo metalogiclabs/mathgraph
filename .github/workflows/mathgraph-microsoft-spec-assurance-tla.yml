@@ -1,0 +1,121 @@
+name: MathGraph specification assurance - authentic TLA+ safety
+
+on:
+  push:
+    branches:
+      - research/microsoft-specification-assurance-tla-20261027
+    paths:
+      - 'research/microsoft_spec_assurance_tla_v1/**'
+      - '.github/workflows/mathgraph-microsoft-spec-assurance-tla.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-bound-specification-assurance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      MATHGRAPH_TLA_SOURCE_DIR: target/specifications/lamport_mutex
+      MATHGRAPH_TLA_RESULT_DIR: ${{ runner.temp }}/spec-assurance-evidence
+    steps:
+      - name: Checkout isolated MathGraph research source
+        uses: actions/checkout@v4
+
+      - name: Checkout exact public TLA+ Examples source without credentials
+        uses: actions/checkout@v4
+        with:
+          repository: tlaplus/Examples
+          ref: 53955cf52c9cbe417b2bde68ab72edf2b9096cfc
+          path: target
+          sparse-checkout: specifications/lamport_mutex
+          persist-credentials: false
+
+      - name: Validate source pin and author property
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C target rev-parse HEAD)" = '53955cf52c9cbe417b2bde68ab72edf2b9096cfc'
+          test -z "$(git -C target status --porcelain --untracked-files=no)"
+          grep -F 'Mutex == \A p,q \in crit : p = q' "$MATHGRAPH_TLA_SOURCE_DIR/LamportMutex.tla"
+          grep -F 'INVARIANTS TypeOK BoundedNetwork Mutex' "$MATHGRAPH_TLA_SOURCE_DIR/MCLamportMutex.cfg"
+
+      - name: Download TLC and authenticate exact executable bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -o "$RUNNER_TEMP/tla2tools.jar"
+          echo '78f7e2c6bf9a8b65eda665a23e94431255587e0b43a834a4e2af1723562d9b4a  '"$RUNNER_TEMP/tla2tools.jar" | sha256sum -c -
+          java -version
+
+      - name: Run focused RED/GREEN-protected unit cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s research/microsoft_spec_assurance_tla_v1 -p 'test_*.py' -v \
+            2>&1 | tee "$RUNNER_TEMP/unit-tests.log"
+
+      - name: Execute three actual TLA+ model-checking cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/microsoft_spec_assurance_tla_v1/run_native.py \
+            --source "$MATHGRAPH_TLA_SOURCE_DIR" \
+            --jar "$RUNNER_TEMP/tla2tools.jar" \
+            --output "$MATHGRAPH_TLA_RESULT_DIR"
+
+      - name: Independently adjudicate native source-to-claim authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/microsoft_spec_assurance_tla_v1/independent_checker.py \
+            --source "$MATHGRAPH_TLA_SOURCE_DIR" \
+            --results "$MATHGRAPH_TLA_RESULT_DIR" \
+            --tool-jar "$RUNNER_TEMP/tla2tools.jar" \
+            --output "$MATHGRAPH_TLA_RESULT_DIR/MATHGRAPH_REPORT.json"
+
+      - name: Independently run source-aware conventional baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/microsoft_spec_assurance_tla_v1/conventional_baseline.py \
+            --source "$MATHGRAPH_TLA_SOURCE_DIR" \
+            --results "$MATHGRAPH_TLA_RESULT_DIR" \
+            --output "$MATHGRAPH_TLA_RESULT_DIR/BASELINE_REPORT.json"
+
+      - name: Challenge copies of actual native outputs and prevent false green
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/microsoft_spec_assurance_tla_v1/challenge_native.py \
+            --source "$MATHGRAPH_TLA_SOURCE_DIR" \
+            --results "$MATHGRAPH_TLA_RESULT_DIR" \
+            --output "$MATHGRAPH_TLA_RESULT_DIR/NEGATIVE_CONTROLS.json"
+          python3 -m unittest discover -s research/microsoft_spec_assurance_tla_v1 \
+            -p 'test_*.py' -v 2>&1 | tee "$RUNNER_TEMP/native-negative-tests.log"
+
+      - name: Freeze source, software, selected configs and clean upstream identity
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$MATHGRAPH_TLA_RESULT_DIR"
+          git rev-parse HEAD > "$MATHGRAPH_TLA_RESULT_DIR/mathgraph-commit.txt"
+          git -C target rev-parse HEAD > "$MATHGRAPH_TLA_RESULT_DIR/tlaplus-commit.txt"
+          git -C target status --porcelain --untracked-files=no > "$MATHGRAPH_TLA_RESULT_DIR/upstream-tracked-status.txt"
+          sha256sum research/microsoft_spec_assurance_tla_v1/*.py \
+            "$MATHGRAPH_TLA_SOURCE_DIR"/{README.md,LamportMutex.tla,MCLamportMutex.tla,MCLamportMutex.cfg,manifest.json} \
+            > "$MATHGRAPH_TLA_RESULT_DIR/input-source-sha256.txt"
+          test -z "$(git -C target status --porcelain --untracked-files=no)"
+
+      - name: Retain actual model traces, all reports, tamper outcomes and source
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-tla-specification-assurance-v1
+          path: |
+            ${{ runner.temp }}/spec-assurance-evidence/
+            ${{ runner.temp }}/unit-tests.log
+            ${{ runner.temp }}/native-negative-tests.log
+            research/microsoft_spec_assurance_tla_v1/
+          if-no-files-found: warn
