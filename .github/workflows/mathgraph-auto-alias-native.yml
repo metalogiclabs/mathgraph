@@ -35,6 +35,8 @@ jobs:
         run: python3 research/auto_alias_admission_v1/native.py upstream research/auto_alias_admission_v1/evidence
       - name: Strong independent source-aware conventional comparator
         run: python3 research/auto_alias_admission_v1/baseline.py research/auto_alias_admission_v1/evidence
+      - name: Native C and unmodified Rust nullable-pointer runtime positive controls
+        run: python3 research/auto_alias_admission_v1/nullable_native.py upstream research/auto_alias_admission_v1/evidence
       - name: Preserve exact checker and upstream lineage
         if: always()
         shell: bash
