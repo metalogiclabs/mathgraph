@@ -29,8 +29,11 @@ theorem singletonLargestMinimalSize : l singletonFamily = 1 := by
     exact le_of_eq (Subtype.ext ha.symm)
   simp [FractionalExpectationThresholds.l, singletonFamily]
   apply le_antisymm
-  · exact iSup_le (fun _ => le_rfl)
-  · exact le_iSup_of_le hmin le_rfl
+  · apply iSup_le
+    intro _
+    exact le_rfl
+  · apply le_iSup_of_le hmin
+    exact le_rfl
 
 /-- If the exact `l` theorem compiles, this follows in Mathlib's real log. -/
 theorem singletonLogVanishes : Real.log (l singletonFamily : ℝ) = 0 := by
