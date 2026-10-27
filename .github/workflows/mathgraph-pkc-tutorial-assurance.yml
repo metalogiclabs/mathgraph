@@ -45,6 +45,7 @@ jobs:
           git rev-parse HEAD > research/pkc_tutorial_assurance_v1/results/mathgraph-source-revision.txt
           git -C source/pkc rev-parse HEAD > research/pkc_tutorial_assurance_v1/results/pkc-source-revision.txt
           sha256sum research/pkc_tutorial_assurance_v1/audit.py \
+            research/pkc_tutorial_assurance_v1/R3FiniteCounterexample.lean \
             > research/pkc_tutorial_assurance_v1/results/checker-sha256.txt
 
       - name: Run original published HCP source, worksheet, documentation checker
@@ -111,6 +112,15 @@ jobs:
             HCP.L4_OutOfTheLine HCP.L5_Damping HCP.L6_Requirements 2>&1 \
             | tee ../../research/pkc_tutorial_assurance_v1/results/native-lean.log
 
+      - name: Prove in Lean that an authentic P empirical gate does not hold for every record
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source/pkc
+          "$HOME/.elan/bin/lake" env lean \
+            ../../research/pkc_tutorial_assurance_v1/R3FiniteCounterexample.lean 2>&1 \
+            | tee ../../research/pkc_tutorial_assurance_v1/results/native-r3-counterexample.log
+
       - name: Independent claim identity and source vs tutorial vs worksheet assurance
         shell: bash
         run: |
@@ -131,6 +141,7 @@ jobs:
             research/pkc_tutorial_assurance_v1/results/AUDIT.json \
             research/pkc_tutorial_assurance_v1/results/hcp-validator.log \
             research/pkc_tutorial_assurance_v1/results/native-lean.log \
+            research/pkc_tutorial_assurance_v1/results/native-r3-counterexample.log \
             > research/pkc_tutorial_assurance_v1/results/evidence.sha256
           python3 -m json.tool research/pkc_tutorial_assurance_v1/results/AUDIT.json >/dev/null
           echo MATHGRAPH_PKC_TUTORIAL_NATIVE_INDEPENDENT_ASSURANCE_GREEN
