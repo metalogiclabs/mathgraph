@@ -1,0 +1,60 @@
+name: Annals exact Mathlib definition bridge V0 (candidate)
+on:
+  push:
+    branches: [exp/annals-mathlib-bridge-20261027]
+    paths:
+      - 'experiments/annals_mathlib_bridge_v0/**'
+      - 'tests/test_annals_mathlib_bridge_v0.py'
+      - '.github/workflows/annals-mathlib-bridge-v0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-mathlib-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ImperialCollegeLondon/AnnalsChallenge
+          ref: e32eb1411db0d700ca874dd695aea92f78699db8
+          path: external/AnnalsChallenge
+          persist-credentials: false
+      - name: Local source controls
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/annals-mathlib-bridge-v0
+          python -m unittest discover -s tests -p 'test_annals_mathlib_bridge_v0.py' -v \
+            2>&1 | tee evidence/annals-mathlib-bridge-v0/python-tests.log
+          test "$(git -C external/AnnalsChallenge rev-parse HEAD)" = e32eb1411db0d700ca874dd695aea92f78699db8
+          grep -F 'leanprover/lean4:v4.33.0-rc1' external/AnnalsChallenge/lean-toolchain
+          grep -F '"rev": "d1ddae43a4db43e0acf2d9d9e18b54037dbe3ea0"' external/AnnalsChallenge/lake-manifest.json
+      - name: Install externally pinned Lean, retrieve exact Mathlib cache, compile genuine definition bridge
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.33.0-rc1
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd external/AnnalsChallenge
+          lean --version | tee ../../evidence/annals-mathlib-bridge-v0/lean-version.txt
+          lake exe cache get 2>&1 | tee ../../evidence/annals-mathlib-bridge-v0/cache.log
+          lake build AnnalsChallenge.AnnalsOfMathematics.«2021-194-2-FractionalExpectationThresholds» \
+            2>&1 | tee ../../evidence/annals-mathlib-bridge-v0/imported-target.log
+          lake env lean ../../experiments/annals_mathlib_bridge_v0/SingletonBridge.lean \
+            2>&1 | tee ../../evidence/annals-mathlib-bridge-v0/lean-bridge.log
+          if grep -E 'sorryAx|error:' ../../evidence/annals-mathlib-bridge-v0/lean-bridge.log; then
+            echo 'BRIDGE_NOT_VERIFIED'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: annals-mathlib-bridge-v0
+          path: evidence/annals-mathlib-bridge-v0/
+          if-no-files-found: warn
