@@ -196,14 +196,14 @@ jobs:
         with:
           name: mathgraph-claim-assurance-v1-pkc-sysml
           path: |
-            research/claim_assurance_v1/
-            research/jpl_pkc_statement_v4/PROTOCOL.md
+            research/claim_assurance_v1/independent_checker.py
+            research/claim_assurance_v1/test_checker.py
+            research/claim_assurance_v1/results/
             research/jpl_pkc_statement_v4/generate_api_inputs.lean
             research/jpl_pkc_statement_v4/strict_patch.py
             research/jpl_pkc_statement_v4/run_native_ingest_pair.sh
             research/jpl_pkc_statement_v4/verify_results.py
             research/jpl_pkc_statement_v4/results/
-            research/jpl_pkc_statement_v5/PROTOCOL.md
             research/jpl_pkc_statement_v5/emit_sysml_from_frozen_v4.lean
             research/jpl_pkc_statement_v5/run_full_text_pair.sh
             research/jpl_pkc_statement_v5/verify_results.py
