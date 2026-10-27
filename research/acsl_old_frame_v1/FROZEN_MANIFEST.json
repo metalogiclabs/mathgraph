@@ -1,0 +1,72 @@
+{
+  "protocol": "SOURCE_ONLY_ACSL_OLD_FRAME_V1",
+  "upstream": "ZoneOut12/C2VerifiableRust",
+  "revision": "6c8b35b5dd8e94473b713b7edcf4bf4142f214e3",
+  "source_only_selection": true,
+  "values": [
+    -5,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    2,
+    3,
+    5
+  ],
+  "small_values": [
+    -2,
+    0,
+    2
+  ],
+  "cases": [
+    {
+      "id": "reset",
+      "c": "data/frama_c_problems/reset_1st.c",
+      "blob": "70147e46d8d74e10bfe3fbb000d2498b77d9d52b",
+      "target": "transpiled_rust/frama_c_problems/reset_1st.rs"
+    },
+    {
+      "id": "increment",
+      "c": "data/frama_c_problems/incr_a_by_b.c",
+      "blob": "ba53e415d8a68276a1a71e26a9756cb8f54318cf",
+      "target": "transpiled_rust/frama_c_problems/incr_a_by_b.rs"
+    },
+    {
+      "id": "swap",
+      "c": "data/frama_c_problems/swap.c",
+      "blob": "318943f87c2faffa9a4aa3e6cd0bd5be9dcc2286",
+      "target": "transpiled_rust/frama_c_problems/swap.rs"
+    },
+    {
+      "id": "array_swap",
+      "c": "data/frama_c_problems/array_swap.c",
+      "blob": "117d6f05e60ef146c94c2e1323c6f5c04d055eb1",
+      "target": "transpiled_rust/frama_c_problems/array_swap.rs"
+    },
+    {
+      "id": "sum",
+      "c": "data/frama_c_problems/add_pointers.c",
+      "blob": "bc9fe7c71d4079a8bfa1173edcf951726e912ca8",
+      "target": "transpiled_rust/frama_c_problems/add_pointers.rs"
+    },
+    {
+      "id": "plus_five",
+      "c": "data/tutorial_wp/assigns-nothing.c",
+      "blob": "2ec0b5ab03f572237fc370b6d230493df9295904",
+      "target": "transpiled_rust/tutorial_wp/assigns-nothing.rs"
+    },
+    {
+      "id": "relational_unknown",
+      "c": "data/tutorial_wp/unchanged-sorted.c",
+      "blob": "6a3c32fee4927d20cf747c60668810c95b167e4d",
+      "target": "transpiled_rust/tutorial_wp/unchanged-sorted.rs"
+    }
+  ],
+  "notes": [
+    "Freeze source-only requirements and probes before reading Rust bytes.",
+    "Distinguish actual C behavior from weaker written postconditions.",
+    "Untested overlapping mutable-pointer calls remain UNKNOWN.",
+    "Do not invent two-label relational semantics."
+  ]
+}
