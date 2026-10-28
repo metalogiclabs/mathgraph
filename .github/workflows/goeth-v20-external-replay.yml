@@ -15,7 +15,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: metalogiclabs/go-ethereum
-          ref: be33043dc27407a62471bfde1d50b6f99bfc9e6
+          # Cross-repository checkout resolves branch refs; the exact SHA
+          # assertion in the next step rejects any moved branch head.
+          ref: bal-engine-concurrent-v20
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-go@v5
