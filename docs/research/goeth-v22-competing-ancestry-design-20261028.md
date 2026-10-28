@@ -67,6 +67,27 @@ Artifact `12803828946`, GitHub-reported ZIP SHA-256
 fixture's B extra-data field to `BAL V22 competing B` (under 32 bytes).
 This is setup repair, not a data-dependent adjustment to the expected result.
 
+**Actual RED observed after the fixture correction:**
+[Actions #40663001502](https://github.com/metalogiclabs/mathgraph/actions/runs/40663001502),
+job `122730405780`, source commit
+`9d01abadce65275626db57f21ef7fa9d13cf7d9a`, formatted V22 test Git blob
+`f569f9a935a0d12fd762d63f156b7ab3340bbc65`. Two real Geth TCP peers
+and both proposed exact head/real-parent/final headers were fetched in the
+setup. Authenticated A reached its ancestry-qualified preadmission barrier;
+authenticated B completed and positively admitted distinct finalized hash
+`0x2446cb7c5c7da07e11586cdb86a388f3e11bef432d75b8538d2d4dbdf1883449`.
+After releasing A, the old unguarded adapter replaced B with finalized A
+`0x5a8c82459a56bd92a4f5621981651586ef30bd3af84711bd17c899563136dcb2`,
+`admissions=2`. Native V22 test **FAIL** exactly on the
+`MG_BAL_V22_RED_OLDER_A_REPLACED_NEWER_B` marker, while the five earlier
+native controls PASS (including full 3-arm remote fork). Workflow classified
+this expected nonzero Go exit as `EXPECTED_RED`; both Engine statuses were
+`SYNCING`, not `VALID`. [Artifact 12803824579](https://github.com/metalogiclabs/mathgraph/actions/runs/40663001502),
+GitHub-reported ZIP SHA256
+`f530cf571383ccf4cf3f6b986873f1dd00e04bb29d90073eaa79fd9f2475912d`
+(not independently rehashed). This negative is **WARRANTED_BOUNDED** for the
+unpatched adapter and exact schedule, independently of the later replay.
+
 Only after actual RED, apply the exact byte-pinned V21 **test-only** adapter
 patch `bal_pending_fcu_epoch_fence_v21.patch` with original adapter blob
 `7c41562e93516b6f35792083c2c05bc6eca019d4`. Re-run the identical

@@ -48,19 +48,24 @@ jobs:
           git merge --no-edit FETCH_HEAD
           test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
           echo "GOETH_V22_MERGED_SOURCE_TREE=$(git rev-parse HEAD^{tree})" | tee -a evidence-v22/source.txt
-      - name: Install V22 concurrent and V20 remote competing-fork tests (RED)
+      - name: Install identical V22/V20 tests with exact V21 guard (GREEN)
         shell: bash
         run: |
           set -euo pipefail
           cp integrations/mathgraph-check-github/native-probes/bal_engine_competing_overlap_v22_test.go native-goeth/eth/catalyst/
           cp integrations/mathgraph-check-github/native-probes/bal_engine_crossfork_v20_test.go native-goeth/eth/catalyst/
           cd native-goeth
-          gofmt -w eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go
-          test -z "$(gofmt -l eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go)"
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go)"
+          echo "V22_GUARD_PATCH_BLOB=$(git hash-object ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch)" | tee -a evidence-v22/source.txt
+          echo "V22_GUARDED_ADAPTER_BLOB=$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" | tee -a evidence-v22/source.txt
           echo "V22_TEST_BLOB=$(git hash-object eth/catalyst/bal_engine_competing_overlap_v22_test.go)" | tee -a evidence-v22/source.txt
           echo "V20_REMOTE_CONTROL_BLOB=$(git hash-object eth/catalyst/bal_engine_crossfork_v20_test.go)" | tee -a evidence-v22/source.txt
           git diff --check
-      - name: Execute native RED and source-independent positive controls
+      - name: Execute native GREEN and source-independent positive controls
         shell: bash
         run: |
           set -euo pipefail
@@ -71,7 +76,9 @@ jobs:
           set -e
           echo "$test_exit" > evidence-v22/go_test_exit.txt
           for control in TestBALV20SerialInvalidFCUClearsPending TestBALV20AuthenticatedRemoteCrossFork TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
-            if ! grep -q -- "--- PASS: $control" evidence-v22/tests.log; then
+            # Require a top-level PASS, not merely a passing subtest of a
+            # top-level FAIL (which would also contain the prefix).
+            if ! grep -Fq -- "--- PASS: $control (" evidence-v22/tests.log; then
               echo "V22_RESULT=UNKNOWN;reason=missing_control:$control" | tee evidence-v22/boundary.txt
               exit 1
             fi
@@ -80,20 +87,21 @@ jobs:
             echo 'V22_RESULT=UNKNOWN;reason=missing_remote_crossfork_native_control' | tee evidence-v22/boundary.txt
             exit 1
           fi
-          if [ "$test_exit" -ne 0 ] &&
-             grep -q -- '--- FAIL: TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness' evidence-v22/tests.log &&
+          if [ "$test_exit" -eq 0 ] &&
+             grep -q -- '--- PASS: TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness' evidence-v22/tests.log &&
              grep -q 'MG_BAL_V22_ORDER older_A_verified_paused_before_pending_admission' evidence-v22/tests.log &&
              grep -q 'MG_BAL_V22_ORDER newer_B_admitted_exact_ancestry' evidence-v22/tests.log &&
-             grep -q 'MG_BAL_V22_RED_OLDER_A_REPLACED_NEWER_B' evidence-v22/tests.log; then
-            echo 'V22_RESULT=EXPECTED_RED;scope=competing_ancestry_qualified_forks;engine_status=SYNCING;guard_not_applied' | tee evidence-v22/boundary.txt
+             grep -q 'MG_BAL_V22_COMPETING_ANCESTRY_PASS' evidence-v22/tests.log &&
+             ! grep -q 'MG_BAL_V22_RED_OLDER_A_REPLACED_NEWER_B' evidence-v22/tests.log; then
+            echo 'V22_RESULT=BOUNDED_COMPETING_ANCESTRY_GREEN;scope=shared_adapter_two_remote_ancestry_qualified_forks;engine_status=SYNCING;engine_VALID=UNKNOWN' | tee evidence-v22/boundary.txt
           else
-            echo 'V22_RESULT=UNKNOWN;reason=missing_exact_expected_falsifier' | tee evidence-v22/boundary.txt
+            echo 'V22_RESULT=UNKNOWN;reason=missing_exact_positive_or_failed_controls' | tee evidence-v22/boundary.txt
             exit 1
           fi
       - name: Retain exact native logs and source evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: goeth-v22-competing-ancestry-red-research
+          name: goeth-v22-competing-ancestry-green-research
           path: native-goeth/evidence-v22/
           if-no-files-found: warn
