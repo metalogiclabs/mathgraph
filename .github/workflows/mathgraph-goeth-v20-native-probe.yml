@@ -1,0 +1,77 @@
+name: MathGraph - GOETH V20 authenticated native cross-fork research
+
+'on':
+  push:
+    branches:
+      - research/goeth-v20-engine-crossfork-native-probe
+  workflow_dispatch:
+
+# Exact-source, test-only Go execution. No external action permission.
+permissions:
+  contents: read
+
+jobs:
+  source-native-observation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout independent research overlay
+        uses: actions/checkout@v4
+        with:
+          path: mathgraph
+          persist-credentials: false
+      - name: Checkout unmodified GOETH V19 source at exact PR head
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: a04aa77aaebd81d11274560e8d24d90c6f417589
+          path: goeth
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Go native test compiler
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+          cache: false
+      - name: Pin upstream and overlay test-only source
+        working-directory: goeth
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/goeth-v20"
+          test "$(git rev-parse HEAD)" = a04aa77aaebd81d11274560e8d24d90c6f417589
+          git config user.name "Metalogic research CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          {
+            echo "MATHGRAPH_OVERLAY_COMMIT=$(git -C ../mathgraph rev-parse HEAD)"
+            echo "GO_VERSION=$(go version)"
+            echo 'GOETH_ORIGINAL_SHA=a04aa77aaebd81d11274560e8d24d90c6f417589'
+            echo 'OFFICIAL_UPSTREAM_SHA=3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c'
+            echo "GOETH_NATIVE_TREE_BEFORE_OVERLAY=$(git rev-parse HEAD^{tree})"
+          } | tee "$RUNNER_TEMP/goeth-v20/source-pins.txt"
+          cp ../mathgraph/integrations/mathgraph-check-github/native-probes/bal_engine_crossfork_v20_test.go eth/catalyst/
+          gofmt -w eth/catalyst/bal_engine_crossfork_v20_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_engine_crossfork_v20_test.go)"
+          echo "GOETH_OVERLAY_BLOB_SHA=$(git hash-object eth/catalyst/bal_engine_crossfork_v20_test.go)" \
+            | tee -a "$RUNNER_TEMP/goeth-v20/source-pins.txt"
+      - name: Execute original predicate and three native remote-fork arms
+        working-directory: goeth
+        run: |
+          set -euo pipefail
+          go test -tags balexperiment ./eth/catalyst \
+            -run '^(TestBALV19CrossForkAdmissionPredicate|TestBALV20AuthenticatedRemoteCrossFork)$' \
+            -count=1 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v20/tests.log"
+          test "$(grep -c 'MG_BAL_V20_NATIVE_ARM' "$RUNNER_TEMP/goeth-v20/tests.log")" -eq 3
+          grep -q 'MG_BAL_V19_PREDICATE CROSS_FORK_AND_MISSING_ANCESTRY_REJECTED' "$RUNNER_TEMP/goeth-v20/tests.log"
+          grep -q 'MG_BAL_V20_NATIVE_BOUNDARY REMOTE_CROSS_FORK_PENDING_AUTHORITY_QUALIFIED_ONLY;CONCURRENT_FCU=UNKNOWN' \
+            "$RUNNER_TEMP/goeth-v20/tests.log"
+          echo 'V20_BOUNDARY=two_remote_fork_negative_arms_plus_positive_control;concurrent_fcu=UNKNOWN;authorization=NONE' \
+            | tee "$RUNNER_TEMP/goeth-v20/boundary.txt"
+      - name: Retain exact native logs and pins even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goeth-v20-authenticated-remote-crossfork-research
+          path: ${{ runner.temp }}/goeth-v20/
+          if-no-files-found: ignore
