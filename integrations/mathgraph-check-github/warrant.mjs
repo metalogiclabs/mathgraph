@@ -16,7 +16,63 @@ const validIdentifier=x=>typeof x==="string" && IDENT.test(x);
 const validMoment=x=>Number.isSafeInteger(x) && x>=0;
 const hasOwn=(x,k)=>Object.prototype.hasOwnProperty.call(x,k);
 
-export function assessWarrant(snapshot,ownerContract,asOf) {
+// A protected frame must be supplied by a separate, qualified policy/evidence
+// route. Neither a PR nor its signed owner packet is allowed to populate it.
+// This checks frame consistency, NOT the provenance of the caller's evidence.
+function protectedConditions(snapshot,c,frame) {
+  const invalid=code=>({error:code});
+  if (!frame || typeof frame!=="object" || Array.isArray(frame) ||
+      frame.schema!=="mathgraph.protected-frame.v0" ||
+      !frame.subject || frame.subject.repository!==snapshot.repository ||
+      frame.subject.pr!==snapshot.number || frame.subject.sha!==snapshot.sha ||
+      frame.policy_version!==c.policy_version || frame.action!==c.action ||
+      frame.scope!==c.scope)
+    return invalid("UNRESOLVED_PROTECTED_POLICY_BINDING");
+  if (!Array.isArray(frame.requirements) || !frame.requirements.length ||
+      frame.requirements.length>64 || !Array.isArray(frame.qualified) ||
+      frame.qualified.length>64)
+    return invalid("UNRESOLVED_PROTECTED_FRAME");
+
+  const required=new Map(),observed=new Map(),claimed=new Map();
+  for (const x of frame.requirements) {
+    if (!x || !validIdentifier(x.name) || !validIdentifier(x.scope) ||
+        !/^FAIL_[A-Z0-9_]+$/.test(x.on_false) ||
+        !/^UNRESOLVED_[A-Z0-9_]+$/.test(x.on_unresolved) ||
+        x.scope!==frame.scope || required.has(x.name))
+      return invalid("UNRESOLVED_PROTECTED_FRAME");
+    required.set(x.name,x);
+  }
+  for (const x of frame.qualified) {
+    if (!x || !validIdentifier(x.name) || !validIdentifier(x.scope) ||
+        !validIdentifier(x.source) || x.scope!==frame.scope ||
+        !["WARRANTED_TRUE","WARRANTED_FALSE","CONFLICTING"].includes(x.status) ||
+        !required.has(x.name) || observed.has(x.name))
+      return invalid("UNRESOLVED_PROTECTED_FRAME");
+    observed.set(x.name,x);
+  }
+  for (const x of c.conditions) {
+    if (!required.has(x.name))
+      return invalid("UNRESOLVED_PROTECTED_POLICY_EXTENSION");
+    claimed.set(x.name,x);
+  }
+  const conditions=[];
+  for (const [name,r] of required) {
+    const claim=claimed.get(name),observation=observed.get(name);
+    // Positive and negative evidence both require independent qualification.
+    // A signed-but-unverified negative cannot manufacture a definitive FAIL.
+    const status=observation?.status==="WARRANTED_FALSE" ? "WARRANTED_FALSE" :
+      observation?.status==="WARRANTED_TRUE" &&
+      claim?.status==="WARRANTED_TRUE" ? "WARRANTED_TRUE" :
+      observation?.status==="CONFLICTING" ||
+      claim?.status==="CONFLICTING" ||
+      (observation?.status==="WARRANTED_TRUE" &&
+        claim?.status==="WARRANTED_FALSE") ? "CONFLICTING" : "INSUFFICIENT";
+    conditions.push({...r,status,source:observation?.source||"unqualified"});
+  }
+  return {conditions};
+}
+
+export function assessWarrant(snapshot,ownerContract,asOf,protectedFrame) {
   // No PR-authored field is ever an independent owner contract.
   if (ownerContract===undefined || ownerContract===null)
     return unresolved("UNRESOLVED_OWNER_CONTRACT");
@@ -55,6 +111,11 @@ export function assessWarrant(snapshot,ownerContract,asOf) {
     names.add(condition.name);
   }
 
+  const protectedResult=protectedFrame===undefined ? {conditions:c.conditions} :
+    protectedConditions(snapshot,c,protectedFrame);
+  if (protectedResult.error) return unresolved(protectedResult.error);
+  const effectiveConditions=protectedResult.conditions;
+
   const residuals=[];
   if (g.actor!==c.actor || g.action!==c.action || g.scope!==c.scope)
     residuals.push(residual("UNRESOLVED_AUTHORITY"));
@@ -65,7 +126,7 @@ export function assessWarrant(snapshot,ownerContract,asOf) {
   else if (asOf<g.issued_at)
     residuals.push(residual("UNRESOLVED_CURRENT_GRANT_STATUS"));
 
-  for (const condition of c.conditions) {
+  for (const condition of effectiveConditions) {
     if (condition.scope!==c.scope) residuals.push(residual("UNRESOLVED_SOURCE_OUT_OF_SCOPE"));
     else if (condition.status==="WARRANTED_FALSE")
       residuals.push(residual(condition.on_false));
@@ -75,11 +136,12 @@ export function assessWarrant(snapshot,ownerContract,asOf) {
   const decision=residuals.some(r=>r.code.startsWith("FAIL_")) ? "REFUSE" :
     residuals.length ? "ABSTAIN" : "ADMIT";
   return {
-    boundary:"OPERATOR_CONFIGURED_PACKET_ONLY",decision,residuals,
+    boundary:protectedFrame===undefined ? "OPERATOR_CONFIGURED_PACKET_ONLY" :
+      "PROTECTED_FRAME_CALLER_QUALIFIED_ONLY",decision,residuals,
     future:{grant_expires_at:g.expires_at,grant_revoked_at:g.revoked_at??null},
     policy_version:c.policy_version,action:c.action,scope:c.scope,
     // Source labels are retained for private diagnostics, not emitted into
     // a public GitHub Check summary.
-    evidence:c.conditions.map(x=>({name:x.name,scope:x.scope,status:x.status,source:x.source}))
+    evidence:effectiveConditions.map(x=>({name:x.name,scope:x.scope,status:x.status,source:x.source}))
   };
 }

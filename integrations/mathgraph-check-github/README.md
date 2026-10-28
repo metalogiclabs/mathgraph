@@ -1,5 +1,28 @@
 # MathGraph Check — GitHub App shadow pilot V0
 
+## Research extension: protected obligation frame V0 (synthetic qualification only)
+
+The GOETH V19 replay now tests an **independently supplied** protected frame:
+exact source and policy binding, a frozen list of required conditions, and
+source-qualified observations separate from the owner's signed assertions.
+The signer cannot omit a required condition, assert unobserved success, or
+invent a definite observed failure to satisfy that frame. Missing, conflicting,
+foreign, extended or malformed frame content stays unresolved. A source-qualified
+positive is admitted only within the synthetic fixture; grant expiry remains
+effective. The existing legacy packet-only diagnostic deliberately remains in
+the replay to preserve the original two negative counterexamples.
+
+This is an **opt-in research evaluator input**, not a new verification service:
+the code does not authenticate who constructed a protected frame or independently
+inspect arbitrary future Go tests. The Cloudflare Worker does **not** receive
+such a qualified frame in production. Accordingly, even a validly signed
+owner packet that would otherwise claim `ADMIT` is now rendered `ABSTAIN` with
+`UNRESOLVED_INDEPENDENT_EVIDENCE` in the candidate Worker until a separate
+qualification path exists. A signed negative can still refuse or revoke only
+within its packet boundary; every public GitHub Check remains NEUTRAL. No
+owner-approved GOETH release policy, real new FCU observation, deployment or
+upstream modification is implied.
+
 ## Research extension: signed owner-contract packet V1.1 (candidate)
 
 The existing GitHub App can optionally evaluate an owner-contract packet

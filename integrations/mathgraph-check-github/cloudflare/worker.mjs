@@ -319,6 +319,16 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
         report.warrant={boundary:"UNVERIFIED_OWNER_CONTRACT",decision:"ABSTAIN",
           residuals:[{code:owner.code}],future:{grant_expires_at:null}};
       }
+      // An authentic signature authenticates declared bytes, not their truth
+      // or the completeness of the required policy frame. This Worker has no
+      // independently qualified protected frame yet: never publish a signed-
+      // packet ADMIT as an actionable assessment. Keep genuine negatives.
+      if (owner.verified && report.warrant.decision==="ADMIT") {
+        report.warrant={...report.warrant,
+          boundary:"SIGNED_PACKET_WITHOUT_QUALIFIED_EVIDENCE",
+          decision:"ABSTAIN",
+          residuals:[{code:"UNRESOLVED_INDEPENDENT_EVIDENCE"}]};
+      }
       report.warrant.provenance=owner.verified ?
         "PINNED_OWNER_KEY_SIGNATURE_VERIFIED" : "NOT_VERIFIED";
       ensure(report.authority==="ADVISORY_ONLY" &&

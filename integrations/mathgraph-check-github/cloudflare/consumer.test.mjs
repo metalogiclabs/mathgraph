@@ -103,7 +103,7 @@ test("queue publishes one neutral App-owned exact-head check",async()=>{
     "https://github.com/"+SCOPE.repository+"/runs/"+m.saved[0].id);
   assert.equal(m.calls.filter(x=>x.method==="DELETE").length,1);
 });
-test("privileged owner contract is assessed and revised on the same head without release authority",async()=>{
+test("signed packet cannot claim public admission without independent evidence; revocation still refuses",async()=>{
   const m=setup();
   const ownerKeys=generateKeyPairSync("rsa",{modulusLength:2048});
   m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=ownerKeys.publicKey.export({type:"spki",format:"pem"}).toString();
@@ -120,7 +120,8 @@ test("privileged owner contract is assessed and revised on the same head without
   };
   m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(signedOwnerPacket(contract,ownerKeys.privateKey));
   assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
-  assert.match(m.saved[0].output.summary,/Owner-contract assessment:\*\* ADMIT/);
+  assert.match(m.saved[0].output.summary,/Owner-contract assessment:\*\* ABSTAIN/);
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_INDEPENDENT_EVIDENCE/);
   assert.doesNotMatch(m.saved[0].output.summary,/confidential-owner-review/);
   assert.equal(m.saved[0].conclusion,"neutral");
   const checkID=m.saved[0].id;

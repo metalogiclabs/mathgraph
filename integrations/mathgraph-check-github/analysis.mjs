@@ -7,7 +7,7 @@ const TEST=/(^|\/)(test(s)?\/|[^/]*[._-](test|spec)\.[^/]+$)|_test\.go$/i;
 const CODE=/\.(go|py|lean|rs|ts|tsx|js|jsx|java|c|cc|cpp|cs|sol)$/i;
 export const VERSION="mathgraph.github-pr-evidence.v0";
 
-export function analyze(s,operatorConfiguredContract,asOf=Math.floor(Date.now()/1000)) {
+export function analyze(s,operatorConfiguredContract,asOf=Math.floor(Date.now()/1000),protectedFrame) {
   if (!s || !REPO.test(s.repository) || !Number.isSafeInteger(s.number) ||
       s.number<1 || !SHA.test(s.sha) || !Array.isArray(s.files) ||
       !Array.isArray(s.runs)) throw new Error("INVALID_PINNED_SNAPSHOT");
@@ -69,7 +69,7 @@ export function analyze(s,operatorConfiguredContract,asOf=Math.floor(Date.now()/
       url:"https://github.com/"+s.repository+"/pull/"+s.number},
     ci:{state:ci,exact_head_runs:current},changed,
     declared_limits:limits, finding:{code:finding,next_action:action},
-    warrant:assessWarrant(s,operatorConfiguredContract,asOf),
+    warrant:assessWarrant(s,operatorConfiguredContract,asOf,protectedFrame),
     inputs:{files:s.files_visibility||"UNKNOWN",actions:s.ci_visibility||"UNKNOWN"},
     non_claims:["Green CI does not imply all claimed behavior was verified.",
       "An UNKNOWN marker is a source declaration, not an independent proof.",

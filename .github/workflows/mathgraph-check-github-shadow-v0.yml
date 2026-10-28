@@ -5,6 +5,7 @@ on:
       - mathgraph-check-github-app-shadow-v0
       - research/mathgraph-check-owner-contract-v1
       - research/mathgraph-check-owner-signature-v1
+      - research/mathgraph-check-protected-frame-v0
   workflow_dispatch:
 permissions:
   contents: read
