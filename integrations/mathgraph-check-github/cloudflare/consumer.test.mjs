@@ -1,12 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {generateKeyPairSync} from "node:crypto";
+import {generateKeyPairSync,sign} from "node:crypto";
 import {processQueuedPR,consumePRQueue,SCOPE} from "./worker.mjs";
 const SHA="a04aa77aaebd81d11274560e8d24d90c6f417589";
 const item={schema:"mathgraph.github-pr-delivery.v0",
   repository:SCOPE.repository,number:19,installationID:42,sha:SHA,
   delivery:"123e4567-e89b-12d3-a456-426614174000",action:"opened"};
 const grant={checks:"write",pull_requests:"read",actions:"read"};
+function signedOwnerPacket(contract,privateKey){
+  const payload_b64=Buffer.from(JSON.stringify(contract)).toString("base64url");
+  const message=Buffer.from("MathGraph owner-contract v1\n"+payload_b64);
+  return {schema:"mathgraph.signed-owner-contract.v1",payload_b64,
+    signature_b64:sign("RSA-SHA256",message,privateKey).toString("base64url")};
+}
 function setup(opts={}){
   const keys=generateKeyPairSync("rsa",{modulusLength:2048});
   const env={
@@ -99,6 +105,8 @@ test("queue publishes one neutral App-owned exact-head check",async()=>{
 });
 test("privileged owner contract is assessed and revised on the same head without release authority",async()=>{
   const m=setup();
+  const ownerKeys=generateKeyPairSync("rsa",{modulusLength:2048});
+  m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=ownerKeys.publicKey.export({type:"spki",format:"pem"}).toString();
   const now=Math.floor(Date.now()/1000);
   const contract={
     schema:"mathgraph.owner-contract.v1",
@@ -110,14 +118,14 @@ test("privileged owner contract is assessed and revised on the same head without
       source:"confidential-owner-review",on_false:"FAIL_SAFETY_VIOLATION",
       on_unresolved:"UNRESOLVED_SAFETY_EVIDENCE"}]
   };
-  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(contract);
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(signedOwnerPacket(contract,ownerKeys.privateKey));
   assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
   assert.match(m.saved[0].output.summary,/Owner-contract assessment:\*\* ADMIT/);
   assert.doesNotMatch(m.saved[0].output.summary,/confidential-owner-review/);
   assert.equal(m.saved[0].conclusion,"neutral");
   const checkID=m.saved[0].id;
   contract.grant.revoked_at=now-1;
-  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(contract);
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(signedOwnerPacket(contract,ownerKeys.privateKey));
   assert.equal((await processQueuedPR({...item,action:"edited"},m.env,{fetcher:m.fetcher})).outcome,"UPDATED");
   assert.equal(m.saved.length,1);
   assert.equal(m.saved[0].id,checkID);
@@ -126,10 +134,59 @@ test("privileged owner contract is assessed and revised on the same head without
 });
 test("malformed operator contract remains unresolved instead of causing a false ADMIT",async()=>{
   const m=setup();
+  m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=generateKeyPairSync("rsa",{modulusLength:2048})
+    .publicKey.export({type:"spki",format:"pem"}).toString();
   m.env.MATHGRAPH_OWNER_CONTRACT_JSON="{not valid json";
   assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
-  assert.match(m.saved[0].output.summary,/UNRESOLVED_MODEL_COVERAGE/);
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_OWNER_SIGNATURE/);
   assert.equal(m.saved[0].conclusion,"neutral");
+});
+test("an unsigned operator assertion cannot promote a packet decision",async()=>{
+  const m=setup();
+  m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=generateKeyPairSync("rsa",{modulusLength:2048})
+    .publicKey.export({type:"spki",format:"pem"}).toString();
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify({schema:"mathgraph.owner-contract.v1"});
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_OWNER_SIGNATURE/);
+  assert.doesNotMatch(m.saved[0].output.summary,/assessment:\*\* ADMIT/);
+});
+test("wrong pinned owner key and changed signed bytes cannot acquire authority",async()=>{
+  const m=setup();
+  const signer=generateKeyPairSync("rsa",{modulusLength:2048});
+  const wrong=generateKeyPairSync("rsa",{modulusLength:2048});
+  m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=wrong.publicKey.export({type:"spki",format:"pem"}).toString();
+  const contract={schema:"mathgraph.owner-contract.v1",subject:{repository:SCOPE.repository,pr:19,sha:SHA}};
+  const packet=signedOwnerPacket(contract,signer.privateKey);
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(packet);
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_OWNER_SIGNATURE/);
+  m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=signer.publicKey.export({type:"spki",format:"pem"}).toString();
+  packet.payload_b64=Buffer.from('{"tampered":true}').toString("base64url");
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(packet);
+  assert.equal((await processQueuedPR({...item,action:"edited"},m.env,{fetcher:m.fetcher})).outcome,"EXISTING");
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_OWNER_SIGNATURE/);
+});
+test("an authentic signature over ambiguous duplicate JSON keys cannot confer packet admission",async()=>{
+  const m=setup();
+  const keys=generateKeyPairSync("rsa",{modulusLength:2048});
+  m.env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM=keys.publicKey.export({type:"spki",format:"pem"}).toString();
+  const now=Math.floor(Date.now()/1000);
+  const contract={schema:"mathgraph.owner-contract.v1",
+    subject:{repository:SCOPE.repository,pr:19,sha:SHA},
+    policy_version:"pilot-1",actor:"release-operator",action:"deploy",scope:"a",
+    grant:{id:"g1",issuer:"owner",actor:"release-operator",action:"deploy",
+      scope:"a",issued_at:now-1,expires_at:now+3600},
+    conditions:[{name:"safety",scope:"a",status:"WARRANTED_TRUE",source:"signed-source",
+      on_false:"FAIL_SAFETY_VIOLATION",on_unresolved:"UNRESOLVED_SAFETY_EVIDENCE"}]};
+  const raw=JSON.stringify(contract).replace('"policy_version":"pilot-1"',
+    '"policy_version":"pilot-1","policy_version":"pilot-2"');
+  const payload_b64=Buffer.from(raw).toString("base64url");
+  const signature_b64=sign("RSA-SHA256",
+    Buffer.from("MathGraph owner-contract v1\n"+payload_b64),keys.privateKey).toString("base64url");
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify({
+    schema:"mathgraph.signed-owner-contract.v1",payload_b64,signature_b64});
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_OWNER_SIGNATURE/);
 });
 test("redelivery reuses same App Check rather than creating duplicate",async()=>{
   const m=setup();

@@ -1,17 +1,26 @@
 # MathGraph Check — GitHub App shadow pilot V0
 
-## Research extension: operator-configured owner contract V1 (candidate)
+## Research extension: signed owner-contract packet V1.1 (candidate)
 
 The existing GitHub App can optionally evaluate an owner-contract packet
 configured **outside PR-controlled content**, as a privileged Worker environment
-variable named `MATHGRAPH_OWNER_CONTRACT_JSON`. It is disabled when absent.
-This is a **packet-relative advisory assessment**, not a new GitHub permission,
-an owner-signature verifier, or independent proof that the declared policy is
-complete or semantically correct. GitHub Checks remain **neutral** regardless of
+variable named `MATHGRAPH_OWNER_CONTRACT_JSON`, authenticated against a separate
+Worker configuration value `MATHGRAPH_OWNER_PUBLIC_KEY_PEM`. Both must come from
+the deployment owner, never the PR author. The feature is disabled when absent.
+The verifier accepts only RSA-SHA256 signatures under the **pinned public key**;
+it does not discover or delegate trust roots. This is still a **packet-relative
+advisory assessment**, not a new GitHub permission or independent proof that the
+declared policy is complete or semantically correct. Checks stay **neutral** regardless of
 the packet decision. A PR author cannot gain authority by adding a policy-like
 file or `owner_contract` field to their PR.
 
-The JSON contract must use `schema: "mathgraph.owner-contract.v1"` and contain:
+The configured JSON envelope must use `schema: "mathgraph.signed-owner-contract.v1"`,
+with `payload_b64` (base64url of exact UTF-8 JSON contract bytes) and
+`signature_b64` (base64url RSASSA-PKCS1-v1_5/SHA-256 signature over UTF-8 bytes
+of the ASCII prefix `MathGraph owner-contract v1\n` followed by `payload_b64`).
+The payload text must round-trip through `JSON.stringify(JSON.parse(text))`
+without changing bytes; this rejects signed duplicate-key and ambiguous JSON.
+The signed inner contract uses `schema: "mathgraph.owner-contract.v1"` and contains:
 
 - `subject`: exact `repository`, integer `pr`, and 40-character commit `sha`;
 - `policy_version`, `actor`, `action`, `scope`;
@@ -21,8 +30,10 @@ The JSON contract must use `schema: "mathgraph.owner-contract.v1"` and contain:
   `on_false`, `on_unresolved`. Supported statuses are `WARRANTED_TRUE`,
   `WARRANTED_FALSE`, `INSUFFICIENT`, `CONFLICTING`, and `OUT_OF_SCOPE`.
 
-Missing configuration retains `UNRESOLVED_OWNER_CONTRACT`. Malformed or
-unsupported input retains `UNRESOLVED_MODEL_COVERAGE`; wrong PR/commit retains
+Missing configuration retains `UNRESOLVED_OWNER_CONTRACT`. An absent pinned
+public key retains `UNRESOLVED_OWNER_TRUST_ROOT`; an unsigned, forged, changed,
+or malformed envelope retains `UNRESOLVED_OWNER_SIGNATURE`. Authenticated but
+unsupported inner content retains `UNRESOLVED_MODEL_COVERAGE`; wrong PR/commit retains
 `UNRESOLVED_OWNER_CONTRACT_BINDING`. An expired or revoked exact-scoped grant
 returns a fail residual; independent failures and unresolved conditions remain
 visible simultaneously. The grant's expiration remains in the structured
@@ -31,8 +42,11 @@ Check outputs **residual codes only**, never the raw configured policy or
 private source labels.
 
 These tests establish deterministic behavior for declared finite inputs. The
-Worker currently does **not** authenticate the human issuer or reconcile the
-contract against an independent source-of-truth registry. Configure only with
+Worker verifies the signature of the packet bytes under the configured key,
+but does **not** independently establish that the key belongs to the legitimate
+human policy owner or reconcile revocation against a live source-of-truth registry.
+Even a genuinely signed statement can misstate permission or evidence meaning.
+Configure only with
 owner-approved material and do not use a packet-level `ADMIT` as merge or
 deployment authorization. No production configuration or deployment is changed
 by the research extension.

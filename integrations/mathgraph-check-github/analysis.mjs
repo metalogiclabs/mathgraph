@@ -98,6 +98,7 @@ export function checkOutput(report) {
       " ([run]("+r.url+"))");
   o.push("","**Owner-contract assessment:** "+report.warrant.decision+
     " (packet-relative, never a GitHub release grant)");
+  o.push("**Packet provenance:** "+(report.warrant.provenance||"NOT_VERIFIED"));
   for (const x of report.warrant.residuals)
     o.push("- "+x.code);
   o.push("The operator-configured packet is not independent confirmation of the owner's intent, evidence truth or completeness.");

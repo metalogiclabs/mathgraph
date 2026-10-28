@@ -4,6 +4,7 @@
 import { createHmac, timingSafeEqual, createPrivateKey, sign } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { analyze, checkOutput } from "../analysis.mjs";
+import { verifyConfiguredOwnerContract } from "./owner-auth.mjs";
 import { appendGethV19NativeEvidence } from "../geth-v19-evidence.mjs";
 import { appendExternalNativeReceipt } from "../external-native-receipt.mjs";
 
@@ -308,15 +309,18 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
       pendingCI=snapshot.ci_visibility==="COMPLETE" &&
         (substantive.length===0 ||
           substantive.some(r=>r.status!=="completed"));
-      // The optional contract is privileged Worker configuration, never
-      // parsed from the PR's diff, body, or a self-asserted source field.
-      // A malformed configured contract remains unresolved, not admitted.
-      let ownerContract;
-      if(env.MATHGRAPH_OWNER_CONTRACT_JSON!==undefined){
-        try { ownerContract=JSON.parse(env.MATHGRAPH_OWNER_CONTRACT_JSON); }
-        catch { ownerContract={}; }
+      // The owner contract is outside PR-controlled content. Only the exact
+      // signed bytes under the separately configured pinned key are eligible.
+      const owner=verifyConfiguredOwnerContract(env.MATHGRAPH_OWNER_CONTRACT_JSON,
+        env.MATHGRAPH_OWNER_PUBLIC_KEY_PEM);
+      const report=analyze(snapshot,owner.verified?owner.contract:undefined,
+        Math.floor(Date.now()/1000));
+      if (!owner.verified && owner.code!=="UNRESOLVED_OWNER_CONTRACT") {
+        report.warrant={boundary:"UNVERIFIED_OWNER_CONTRACT",decision:"ABSTAIN",
+          residuals:[{code:owner.code}],future:{grant_expires_at:null}};
       }
-      const report=analyze(snapshot,ownerContract,Math.floor(Date.now()/1000));
+      report.warrant.provenance=owner.verified ?
+        "PINNED_OWNER_KEY_SIGNATURE_VERIFIED" : "NOT_VERIFIED";
       ensure(report.authority==="ADVISORY_ONLY" &&
         report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
       const genericCheck=checkOutput(report);
