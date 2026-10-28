@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/goeth-v21"
-          test "$(git rev-parse HEAD)" = "88f582e4d5910d7052177349d87c6d3aec1dda3f"
+          test "$(git rev-parse HEAD)" = "f5e7383b793731aed29e7bebf6cb70b5b0cfb3e9"
           {
             echo "MATHGRAPH_QUALIFICATION_SOURCE=${GITHUB_SHA}"
             echo "GOETH_RESEARCH_COMMIT=$(git rev-parse HEAD)"
