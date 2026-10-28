@@ -42,36 +42,10 @@ jobs:
       - name: Execute authenticated serial and concurrent FCU schedules
         run: |
           set -euo pipefail
-          gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v21_test.go
-          test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v21_test.go)"
+          gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v20_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v20_test.go)"
           set +e
-          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentInvalidationSuppressesOldAdmission) -count=1 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v21/tests.log"
-          result=${PIPESTATUS[0]}
-          set -e
-          echo "$result" > "$RUNNER_TEMP/goeth-v21/go_test_exit.txt"
-          if ! grep -q 'MG_BAL_V20_SERIAL_CONTROL_PASS authenticated_valid_then_invalid_clear' "$RUNNER_TEMP/goeth-v21/tests.log"; then
-            echo "V21_RESULT=UNKNOWN;reason=missing_serial_positive_control" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
-            exit 1
-          fi
-          if [ "$result" -ne 0 ] &&
-             grep -q 'MG_BAL_V21_ORDER first_authenticated_fcu_waiting_before_admission' "$RUNNER_TEMP/goeth-v21/tests.log" &&
-             grep -q 'MG_BAL_V21_ORDER second_authenticated_fcu_completed_invalidated_empty_witness' "$RUNNER_TEMP/goeth-v21/tests.log" &&
-             grep -q 'MG_BAL_V21_OBSTRUCTION STALE_FCU_ADMITTED' "$RUNNER_TEMP/goeth-v21/tests.log"; then
-            echo "V21_RESULT=RED_REPRODUCED;scope=fork_only_authenticated_invalid_supersession;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
-          elif [ "$result" -eq 0 ] &&
-               grep -q 'MG_BAL_V21_SUPERSESSION_PASS pending_empty_after_older_fcu_completed' "$RUNNER_TEMP/goeth-v21/tests.log"; then
-            echo "V21_RESULT=GREEN_BOUNDED;scope=fork_only_authenticated_invalid_supersession;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
-          else
-            echo "V21_RESULT=UNKNOWN;reason=unclassified_failure_or_regression;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
-            exit 1
-          fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: goeth-v21-external-native-evidence
-          path: ${{ runner.temp }}/goeth-v21/
-          if-no-files-found: ignore
- -count=1 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v21/tests.log"
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentInvalidationSuppressesOldAdmission)$' -count=1 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v21/tests.log"
           result=${PIPESTATUS[0]}
           set -e
           echo "$result" > "$RUNNER_TEMP/goeth-v21/go_test_exit.txt"
