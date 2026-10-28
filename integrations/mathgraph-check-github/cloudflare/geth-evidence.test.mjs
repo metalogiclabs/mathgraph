@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {appendGethV19NativeEvidence as append,V19} from "../geth-v19-evidence.mjs";
+import {assessWarrant} from "../warrant.mjs";
 const assessment={authority:"ADVISORY_ONLY",source:{repository:V19.repository,pr:V19.pr,sha:V19.sha},
   ci:{state:"GITHUB_REPORTED_SUCCESS_AT_EXACT_HEAD"}};
 const check={name:"MathGraph Check / evidence scope",status:"completed",conclusion:"neutral",
@@ -34,6 +35,39 @@ test("native result is only an exact-source historical scope; Check remains neut
  assert.match(r.check.output.summary,/original source-pinned GitHub run/);
  assert.match(r.check.output.summary,/generic report/);
  assert.equal(f.calls.length,2);
+});
+test("qualified original archive produces only the exact historical predicate observation",async()=>{
+ const f=fx();const r=await append(f.report,f.check,f.githubRead,f.token);
+ assert.deepEqual(r.historicalTestObservations,[{
+   name:"predicate",scope:"bal-v19",status:"WARRANTED_TRUE",
+   source:"V19_NATIVE_ARTIFACT_11725753900"
+ }]);
+ assert.deepEqual(r.stillUnqualified,["remote_conflicting_fcu","concurrent_fcu"]);
+ const failed=fx({artifact:{expired:true}});
+ const denied=await append(failed.report,failed.check,failed.githubRead,failed.token);
+ assert.equal(denied.historicalTestObservations,undefined);
+});
+test("authentic historical native scope cannot clear two synthetic protected merge obligations",async()=>{
+ const f=fx();const archive=await append(f.report,f.check,f.githubRead,f.token);
+ const subject={repository:V19.repository,pr:V19.pr,sha:V19.sha};
+ const contract={schema:"mathgraph.owner-contract.v1",subject,
+   policy_version:"synthetic-goeth-v0",actor:"synthetic-owner",action:"merge",scope:"bal-v19",
+   grant:{id:"synthetic-g",issuer:"synthetic-owner",actor:"synthetic-owner",
+     action:"merge",scope:"bal-v19",issued_at:100,expires_at:300},
+   conditions:["predicate","remote_conflicting_fcu","concurrent_fcu"].map(name=>({
+     name,scope:"bal-v19",source:"SYNTHETIC_CLAIM",status:"WARRANTED_TRUE",
+     on_false:"FAIL_"+name.toUpperCase(),on_unresolved:"UNRESOLVED_"+name.toUpperCase()
+   }))};
+ const frame={schema:"mathgraph.protected-frame.v0",subject,
+   policy_version:"synthetic-goeth-v0",action:"merge",scope:"bal-v19",
+   requirements:contract.conditions.map(({name,scope,on_false,on_unresolved})=>({
+     name,scope,on_false,on_unresolved
+   })),qualified:archive.historicalTestObservations};
+ const result=assessWarrant({repository:V19.repository,number:V19.pr,sha:V19.sha},
+   contract,200,frame);
+ assert.equal(result.decision,"ABSTAIN");
+ assert.deepEqual(result.residuals.map(x=>x.code),[
+   "UNRESOLVED_REMOTE_CONFLICTING_FCU","UNRESOLVED_CONCURRENT_FCU"]);
 });
 test("no cross-PR evidence transport and no gratuitous API reads",async()=>{
  for(const source of [

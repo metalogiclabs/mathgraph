@@ -97,5 +97,10 @@ export async function appendGethV19NativeEvidence(report, check, githubRead, tok
   if(!safeCheck(updated) || updated.output.title!==check.output.title)
     throw Error("NATIVE_RECEIPT_ESCALATED_CHECK");
   return {state:"WARRANTED_BOUNDED_HISTORICAL_NATIVE_ARTIFACT",
-    check:updated,source:V19.sha,appAuthority:"ADVISORY_ONLY"};
+    check:updated,source:V19.sha,appAuthority:"ADVISORY_ONLY",
+    // The original archive supports this exact historical TEST outcome,
+    // not general remote-FCU correctness or contemporary release permission.
+    historicalTestObservations:[{name:"predicate",scope:"bal-v19",
+      status:"WARRANTED_TRUE",source:"V19_NATIVE_ARTIFACT_11725753900"}],
+    stillUnqualified:[...V19.openResiduals]};
 }
