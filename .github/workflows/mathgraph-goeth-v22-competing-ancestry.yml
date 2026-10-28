@@ -1,0 +1,99 @@
+name: MathGraph GOETH V22 Competing Ancestry Overlap Native Research
+
+on:
+  push:
+    branches:
+      - research/goeth-v22-competing-ancestry-overlap
+
+permissions:
+  contents: read
+
+jobs:
+  independently-sourced-overlap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout test overlay and preregistration
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout exact owned Geth negative baseline
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Pin Geth and official merged source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v22
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          {
+            echo "MATHGRAPH_V22_OVERLAY_COMMIT=${GITHUB_SHA}"
+            echo "GOETH_V22_BASE_COMMIT=$(git rev-parse HEAD)"
+            echo "GOETH_V22_BASE_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v22/source.txt
+          git config user.name "Metalogic CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          echo "GOETH_V22_MERGED_SOURCE_TREE=$(git rev-parse HEAD^{tree})" | tee -a evidence-v22/source.txt
+      - name: Install V22 concurrent and V20 remote competing-fork tests (RED)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_competing_overlap_v22_test.go native-goeth/eth/catalyst/
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_crossfork_v20_test.go native-goeth/eth/catalyst/
+          cd native-goeth
+          gofmt -w eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go)"
+          echo "V22_TEST_BLOB=$(git hash-object eth/catalyst/bal_engine_competing_overlap_v22_test.go)" | tee -a evidence-v22/source.txt
+          echo "V20_REMOTE_CONTROL_BLOB=$(git hash-object eth/catalyst/bal_engine_crossfork_v20_test.go)" | tee -a evidence-v22/source.txt
+          git diff --check
+      - name: Execute native RED and source-independent positive controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV20SerialInvalidFCUClearsPending|TestBALV20AuthenticatedRemoteCrossFork|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=35m 2>&1 | tee evidence-v22/tests.log
+          test_exit=${PIPESTATUS[0]}
+          set -e
+          echo "$test_exit" > evidence-v22/go_test_exit.txt
+          for control in TestBALV20SerialInvalidFCUClearsPending TestBALV20AuthenticatedRemoteCrossFork TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if ! grep -q -- "--- PASS: $control" evidence-v22/tests.log; then
+              echo "V22_RESULT=UNKNOWN;reason=missing_control:$control" | tee evidence-v22/boundary.txt
+              exit 1
+            fi
+          done
+          if ! grep -q 'MG_BAL_V20_NATIVE_BOUNDARY REMOTE_CROSS_FORK_PENDING_AUTHORITY_QUALIFIED_ONLY' evidence-v22/tests.log; then
+            echo 'V22_RESULT=UNKNOWN;reason=missing_remote_crossfork_native_control' | tee evidence-v22/boundary.txt
+            exit 1
+          fi
+          if [ "$test_exit" -ne 0 ] &&
+             grep -q -- '--- FAIL: TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness' evidence-v22/tests.log &&
+             grep -q 'MG_BAL_V22_ORDER older_A_verified_paused_before_pending_admission' evidence-v22/tests.log &&
+             grep -q 'MG_BAL_V22_ORDER newer_B_admitted_exact_ancestry' evidence-v22/tests.log &&
+             grep -q 'MG_BAL_V22_RED_OLDER_A_REPLACED_NEWER_B' evidence-v22/tests.log; then
+            echo 'V22_RESULT=EXPECTED_RED;scope=competing_ancestry_qualified_forks;engine_status=SYNCING;guard_not_applied' | tee evidence-v22/boundary.txt
+          else
+            echo 'V22_RESULT=UNKNOWN;reason=missing_exact_expected_falsifier' | tee evidence-v22/boundary.txt
+            exit 1
+          fi
+      - name: Retain exact native logs and source evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goeth-v22-competing-ancestry-red-research
+          path: native-goeth/evidence-v22/
+          if-no-files-found: warn
