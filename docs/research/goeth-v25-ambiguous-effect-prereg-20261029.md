@@ -1,0 +1,13 @@
+# GOETH V25 — native ambiguous effect before acknowledgement: frozen test-first research
+
+Status: CANDIDATE, 29 October 2026. No production code, owner grant or Geth bug claim.
+
+V24 predecessor MathGraph PR #217 was qualified in native GitHub Actions 40768970492 attempt 2, 33/33 root executions under synthetic signed epochs; it remained bypassable and the first protected attempt had a retained historical V22 synchronization failure. V25 targets only the previously declared acknowledgement gap, not Ethereum Engine message-ordering compliance.
+
+Pre-registered causal schedule: native JWT-authenticated Engine V4 grant B epoch 2 executes and returns actual VALID, with canonical B head and final. An injected exception after the native result but before the gateway records its epoch simulates lost acknowledgement. The gateway object is reconstructed, while the Geth process remains alive, and an older signed epoch 1 A is replayed. If A is admitted and native Engine returns VALID, overwriting B, log MG_V25_RED_STALE_EPOCH1_REAPPLIED_AFTER_B_VALID_ACK_LOSS and fail the Go test. Distinguish this injected post-success fault from a real network outage or OS-process crash.
+
+Exact original baseline: MathGraph V24 head 69555d3949fea8fceb6a4b3e1f0b04a6593614b5; V25 frozen test blob bc7646371638f57b117414394066acfab0811bb4 and separately editable RED adapter blob 731bdd232a64c655d849160e279237a397988cfa. Geth source be33043dc27407a62471bfde1d50b6f99bfc9e6b plus official upstream 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c yields tree a61594923136563d50964d7aa96a44c778bf9441. Go 1.27.3. Eleven historical V24/V23/V22/V20/V17/V18/V19 roots must pass and the Go test must fail with the exact expected marker. Arbitrary test failure is UNKNOWN, not RED.
+
+Only after a witnessed RED: introduce a test-only write-ahead PREPARED reservation fsynced before the native call. The reopening constructor must load and quarantine ambiguous state, reject stale/duplicate grants, use exact local Geth canonical head/final as a limited observation to mark RECONCILED_OBSERVED, and permit a new signed epoch 3. An existing malformed journal or native state mismatch must fail closed. Keep the V25 test source unchanged between RED and GREEN and preserve all native receipts and negative controls.
+
+Residual boundaries: complete native API mediation is false in V24; journal deletion/tampering, real OS crash/restart, multi-process locks, live owner keys and policy, Geth receive-order compliance and production release authority remain UNKNOWN. No production merge or deployment.

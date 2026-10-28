@@ -1,0 +1,99 @@
+name: MathGraph GOETH V25 ambiguous native effect RED (research)
+on:
+  push:
+    branches:
+      - research/goeth-v25-ambiguous-native-effect
+permissions:
+  contents: read
+jobs:
+  native-ack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Assert source pin and upstream merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v25
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          git config user.name "MathGraph CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          {
+            echo "V25_MATHGRAPH_COMMIT=$GITHUB_SHA"
+            echo "V25_MATHGRAPH_TREE=$(git -C .. rev-parse HEAD^{tree})"
+            echo "V25_NATIVE_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v25/source.txt
+      - name: Install exact frozen tests and inherited controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in bal_owner_epoch_journal_v25_test.go bal_owner_ambiguous_v25_test.go bal_owner_grant_fence_v24_test.go bal_engine_imported_valid_v23_test.go bal_engine_competing_overlap_v22_test.go bal_engine_crossfork_v20_test.go; do
+            cp "integrations/mathgraph-check-github/native-probes/$f" "native-goeth/eth/catalyst/$f"
+          done
+          cd native-goeth
+          test "$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)" = "731bdd232a64c655d849160e279237a397988cfa"
+          test "$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)" = "bc7646371638f57b117414394066acfab0811bb4"
+          test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          gofmt -w eth/catalyst/bal_owner_epoch_journal_v25_test.go eth/catalyst/bal_owner_ambiguous_v25_test.go eth/catalyst/bal_owner_grant_fence_v24_test.go eth/catalyst/bal_engine_imported_valid_v23_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go eth/catalyst/bal_pending_engine_witness_v13_test.go
+          {
+            echo "V25_TEST_BLOB=$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)"
+            echo "V25_RED_GATE_BLOB=$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)"
+            echo "V24_CONTROL_BLOB=$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)"
+          } | tee -a evidence-v25/source.txt
+          git diff --check
+      - name: Observe precise native RED and protected independent roots
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v25/native.log
+          native_exit=$?
+          set -e
+          echo "$native_exit" > evidence-v25/go_test_exit.txt
+          for root in TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority TestBALV24ExternalOwnerEpochFencePreservesNativeValidB TestBALV24ForgeryScopeReplayAndFreshHigherGrant TestBALV24DirectNativeEngineRemainsAnExplicitBypass TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if ! grep -Fq -- "--- PASS: $root (" evidence-v25/native.log; then
+              echo "V25_RESULT=UNKNOWN;reason=historical_control_failed:$root" | tee evidence-v25/boundary.txt
+              exit 1
+            fi
+          done
+          if [ "$native_exit" -ne 0 ] &&
+             grep -Fq -- '--- FAIL: TestBALV25LostAckCannotReenableOlderSignedForkchoice (' evidence-v25/native.log &&
+             grep -Fq 'MG_V25_ORDER_NATIVE_B_ENGINE_VALID_ACK_LOST_BEFORE_EPOCH_COMMIT' evidence-v25/native.log &&
+             grep -Fq 'MG_V25_RED_STALE_EPOCH1_REAPPLIED_AFTER_B_VALID_ACK_LOSS' evidence-v25/native.log &&
+             grep -Fq 'MG_V24_GREEN_SIGNED_EPOCH_FENCE' evidence-v25/native.log &&
+             grep -Fq 'MG_V24_BYPASS_WITNESS' evidence-v25/native.log; then
+            echo 'V25_RESULT=EXPECTED_RED_AMBIGUOUS_EFFECT_REPLAY;Go_test_failed_intentionally=true;production_authority=false' | tee evidence-v25/boundary.txt
+          else
+            echo 'V25_RESULT=UNKNOWN;reason=missing_exact_red_marker' | tee evidence-v25/boundary.txt
+            exit 1
+          fi
+      - name: Retain original failing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goeth-v25-ambiguous-native-RED
+          path: native-goeth/evidence-v25/
+          if-no-files-found: warn
