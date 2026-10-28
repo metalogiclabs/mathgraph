@@ -20,6 +20,18 @@ with `payload_b64` (base64url of exact UTF-8 JSON contract bytes) and
 of the ASCII prefix `MathGraph owner-contract v1\n` followed by `payload_b64`).
 The payload text must round-trip through `JSON.stringify(JSON.parse(text))`
 without changing bytes; this rejects signed duplicate-key and ambiguous JSON.
+An approved owner can create the envelope locally without uploading a private
+key to the App or the repository:
+
+```bash
+node integrations/mathgraph-check-github/owner-sign.mjs \
+  --contract owner-contract.json --key owner-private.pem --out owner-envelope.json
+```
+
+The signer verifies the packet's structural contract, refuses to overwrite an
+existing envelope, emits only a fixed success/error code, and writes the signed
+output as a local restricted file. It never creates a grant or makes a policy
+decision on behalf of the owner; approval and private-key custody are external.
 The signed inner contract uses `schema: "mathgraph.owner-contract.v1"` and contains:
 
 - `subject`: exact `repository`, integer `pr`, and 40-character commit `sha`;
