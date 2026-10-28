@@ -1,0 +1,98 @@
+name: MathGraph GOETH V24 synthetic signed epoch fence (research-only)
+on:
+  push:
+    branches:
+      - research/goeth-v24-synthetic-owner-epoch
+permissions:
+  contents: read
+jobs:
+  source-native-epoch-fence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Pin native Geth and spec references
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v24
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          git config user.name "MathGraph CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          {
+            echo "V24_MATHGRAPH_COMMIT=$GITHUB_SHA"
+            echo "V24_GETH_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v24/source.txt
+      - name: Install exact test-only controller envelope and inherited controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp integrations/mathgraph-check-github/native-probes/bal_owner_grant_fence_v24_test.go native-goeth/eth/catalyst/
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_imported_valid_v23_test.go native-goeth/eth/catalyst/
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_competing_overlap_v22_test.go native-goeth/eth/catalyst/
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_crossfork_v20_test.go native-goeth/eth/catalyst/
+          cd native-goeth
+          test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_owner_grant_fence_v24_test.go eth/catalyst/bal_engine_imported_valid_v23_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go
+          test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
+          {
+            echo "V24_TEST_BLOB=$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)"
+            echo "V23_HELPER_BLOB=$(git hash-object eth/catalyst/bal_engine_imported_valid_v23_test.go)"
+            echo "V21_PATCH_BLOB=$(git hash-object ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch)"
+          } | tee -a evidence-v24/source.txt
+          git diff --check
+      - name: Run actual native Engine calls, protected and bypass controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v24/native.log
+          native_exit=${PIPESTATUS[0]}
+          set -e
+          echo "$native_exit" > evidence-v24/go_test_exit.txt
+          if [ "$native_exit" -ne 0 ]; then
+            echo 'V24_RESULT=UNKNOWN;reason=native_go_test_failed' | tee evidence-v24/boundary.txt
+            exit 1
+          fi
+          for root in TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority TestBALV24ExternalOwnerEpochFencePreservesNativeValidB TestBALV24ForgeryScopeReplayAndFreshHigherGrant TestBALV24DirectNativeEngineRemainsAnExplicitBypass TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if ! grep -Fq -- "--- PASS: $root (" evidence-v24/native.log; then
+              echo "V24_RESULT=UNKNOWN;reason=missing_top_level_control:$root" | tee evidence-v24/boundary.txt
+              exit 1
+            fi
+          done
+          for marker in MG_V24_RED_UNFENCED_SIGNED_GRANTS MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_CONTROLS MG_V24_BYPASS_WITNESS MG_BAL_V23_SERIAL_VALID MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
+            if ! grep -Fq "$marker" evidence-v24/native.log; then
+              echo "V24_RESULT=UNKNOWN;reason=missing_marker:$marker" | tee evidence-v24/boundary.txt
+              exit 1
+            fi
+          done
+          echo 'V24_RESULT=BOUNDED_TEST_GATEWAY_EPOCH_SUPERSESSION_WITH_NATIVE_BYPASS;authority=synthetic_only;production_security=false' | tee evidence-v24/boundary.txt
+      - name: Retain source and failure evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goeth-v24-synthetic-owner-epoch-research
+          path: native-goeth/evidence-v24/
+          if-no-files-found: warn
