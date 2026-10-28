@@ -1,4 +1,4 @@
-name: MathGraph GOETH V25 native ambiguous effect RED-to-GREEN (research)
+name: MathGraph GOETH V25 native ambiguous effect protected 3x (research)
 on:
   push:
     branches:
@@ -69,12 +69,12 @@ jobs:
           set -euo pipefail
           cd native-goeth
           set +e
-          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV25NativeMismatchCannotBeMisreportedAsReconciled|TestBALV25MalformedJournalFailsClosed|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v25/native.log
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV25NativeMismatchCannotBeMisreportedAsReconciled|TestBALV25MalformedJournalFailsClosed|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=3 -v -timeout=40m 2>&1 | tee evidence-v25/native.log
           native_exit=$?
           set -e
           echo "$native_exit" > evidence-v25/go_test_exit.txt
           for root in TestBALV25LostAckCannotReenableOlderSignedForkchoice TestBALV25NativeMismatchCannotBeMisreportedAsReconciled TestBALV25MalformedJournalFailsClosed TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority TestBALV24ExternalOwnerEpochFencePreservesNativeValidB TestBALV24ForgeryScopeReplayAndFreshHigherGrant TestBALV24DirectNativeEngineRemainsAnExplicitBypass TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
-            if ! grep -Fq -- "--- PASS: $root (" evidence-v25/native.log; then
+            if [ "$(grep -Fc -- "--- PASS: $root (" evidence-v25/native.log || true)" -ne 3 ]; then
               echo "V25_RESULT=UNKNOWN;reason=historical_control_failed:$root" | tee evidence-v25/boundary.txt
               exit 1
             fi
@@ -83,21 +83,25 @@ jobs:
             echo 'V25_RESULT=UNKNOWN;reason=native_Go_failed' | tee evidence-v25/boundary.txt
             exit 1
           fi
-          for marker in MG_V25_ORDER_NATIVE_B_ENGINE_VALID_ACK_LOST_BEFORE_EPOCH_COMMIT MG_V25_GREEN_DURABLE_PREPARE_REFUSES_OLDER_EPOCH_AFTER_REOPEN MG_V25_NATIVE_HEAD_FINAL_RECONCILED_AS_OBSERVATION MG_V25_GREEN_RECONCILED_REPLAY_REJECTED_FRESH_EPOCH3_ENGINE_VALID MG_V25_NEGATIVE_NATIVE_BYPASS_CAUSES_MISMATCH_AND_FAIL_CLOSED MG_V25_NEGATIVE_CORRUPT_OWNER_JOURNAL_FAIL_CLOSED MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_BYPASS_WITNESS MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
-            if ! grep -Fq "$marker" evidence-v25/native.log; then
+          for marker in MG_V25_GREEN_DURABLE_PREPARE_REFUSES_OLDER_EPOCH_AFTER_REOPEN MG_V25_NATIVE_HEAD_FINAL_RECONCILED_AS_OBSERVATION MG_V25_GREEN_RECONCILED_REPLAY_REJECTED_FRESH_EPOCH3_ENGINE_VALID MG_V25_NEGATIVE_NATIVE_BYPASS_CAUSES_MISMATCH_AND_FAIL_CLOSED MG_V25_NEGATIVE_CORRUPT_OWNER_JOURNAL_FAIL_CLOSED MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_BYPASS_WITNESS MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
+            if [ "$(grep -Fc -- "$marker" evidence-v25/native.log || true)" -ne 3 ]; then
               echo "V25_RESULT=UNKNOWN;reason=missing_marker:$marker" | tee evidence-v25/boundary.txt
               exit 1
             fi
           done
+          if [ "$(grep -Fc 'MG_V25_ORDER_NATIVE_B_ENGINE_VALID_ACK_LOST_BEFORE_EPOCH_COMMIT' evidence-v25/native.log || true)" -ne 9 ]; then
+            echo 'V25_RESULT=UNKNOWN;reason=ambiguous_native_receipt_count' | tee evidence-v25/boundary.txt
+            exit 1
+          fi
           if grep -Fq 'MG_V25_RED_STALE_EPOCH1_REAPPLIED_AFTER_B_VALID_ACK_LOSS' evidence-v25/native.log; then
             echo 'V25_RESULT=UNKNOWN;reason=original_failure_recurs' | tee evidence-v25/boundary.txt
             exit 1
           fi
-          echo 'V25_RESULT=BOUNDED_WRITE_AHEAD_AMBIGUOUS_EFFECT_RECOVERY;native_roots=14/14;gateway_object_reopen_only=true;owner_key=synthetic;direct_Engine_bypass=true' | tee evidence-v25/boundary.txt
+          echo 'V25_RESULT=BOUNDED_WRITE_AHEAD_AMBIGUOUS_EFFECT_RECOVERY;native_roots=42/42;gateway_object_reopen_only=true;owner_key=synthetic;direct_Engine_bypass=true' | tee evidence-v25/boundary.txt
       - name: Retain native exact-source GREEN evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: goeth-v25-ambiguous-native-GREEN
+          name: goeth-v25-ambiguous-native-PROTECTED3
           path: native-goeth/evidence-v25/
           if-no-files-found: warn
