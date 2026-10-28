@@ -51,12 +51,19 @@ class PublicPilotTests(unittest.TestCase):
         self.assertEqual(result["requirement_verdict"], "WARRANTED_LOCAL_BOUNDED")
         self.assertEqual(self.target.read_text(), self.original)
 
-    def test_wrong_candidate_rejected_even_with_zero_exit(self):
+    def test_wrong_candidate_rejected_by_unicode_assertion(self):
         self.proposal("def prepare_value(self, value):\n    return json.dumps(value)\n")
         with patch("public_external_pilot.EXPECTED_HEAD", self.head), patch(
                 "public_external_pilot.EXPECTED_SHA256", hashlib.sha256(self.original.encode()).hexdigest()):
             result = evaluate_candidate(self.root, self.path, self.output)
-        self.assertEqual(result["exit_code"], 0)
+        self.assertNotEqual(result["exit_code"], 0)
+        self.assertEqual(result["requirement_verdict"], "REJECTED")
+
+    def test_hardcoded_first_example_is_rejected_by_independent_cases(self):
+        self.proposal("def prepare_value(self, value):\n    return '{\"name\": \"中国\"}'\n")
+        with patch("public_external_pilot.EXPECTED_HEAD", self.head), patch(
+                "public_external_pilot.EXPECTED_SHA256", hashlib.sha256(self.original.encode()).hexdigest()):
+            result = evaluate_candidate(self.root, self.path, self.output)
         self.assertEqual(result["requirement_verdict"], "REJECTED")
 
     def test_mismatched_proposal_cannot_modify_checkout(self):

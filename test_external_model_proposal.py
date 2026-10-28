@@ -71,6 +71,22 @@ class ExternalProposalTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "TASK_INPUT_TOO_LARGE"):
             ExternalNemotronProposal(api_key="fixture").propose(too_large)
 
+    def test_conventional_arm_has_same_budget_and_task_information(self):
+        response = {"choices": [{"finish_reason": "stop", "message": {
+            "content": '{"function_source":"def prepare_value(self, value):\\n    return value"}'}}]}
+        seen = []
+        def capture(req, timeout):
+            seen.append(json.loads(req.data))
+            return FakeResponse(response)
+        with patch("external_model_proposal.request.urlopen", side_effect=capture):
+            ExternalNemotronProposal(api_key="fixture", style="source_bound").propose(self.task)
+            ExternalNemotronProposal(api_key="fixture", style="conventional").propose(self.task)
+        self.assertEqual(len(seen), 2)
+        for field in ("model", "temperature", "max_tokens", "guided_json"):
+            self.assertEqual(seen[0][field], seen[1][field])
+        self.assertEqual(seen[0]["messages"][1], seen[1]["messages"][1])
+        self.assertNotEqual(seen[0]["messages"][0], seen[1]["messages"][0])
+
 
 if __name__ == "__main__":
     unittest.main()

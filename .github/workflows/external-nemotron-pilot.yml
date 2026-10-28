@@ -10,6 +10,9 @@ jobs:
   inference:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    strategy:
+      matrix:
+        arm: [source_bound, conventional]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -26,10 +29,10 @@ jobs:
       - name: Authenticated inference only; never execute generated source here
         env:
           NEBIUS_API_KEY: ${{ secrets.NEBIUS_API_KEY }}
-        run: python public_external_pilot.py propose --root source_django --output proposal.json
+        run: python public_external_pilot.py propose --arm "${{ matrix.arm }}" --root source_django --output proposal.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: untrusted-nemotron-function
+          name: untrusted-nemotron-function-${{ matrix.arm }}
           path: proposal.json
           if-no-files-found: error
 
@@ -38,6 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions: {}
+    strategy:
+      matrix:
+        arm: [source_bound, conventional]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -53,14 +59,14 @@ jobs:
           python-version: '3.11'
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: untrusted-nemotron-function
+          name: untrusted-nemotron-function-${{ matrix.arm }}
       - name: Install source-native Django runtime dependencies
         run: python -m pip install 'asgiref>=3.2,<4' 'sqlparse>=0.2,<1' pytz
       - name: Evaluate in disposable runner without inference secret
-        run: python public_external_pilot.py evaluate --root source_django --input proposal.json --output external-pilot-result.json
+        run: python public_external_pilot.py evaluate --arm "${{ matrix.arm }}" --root source_django --input proposal.json --output external-pilot-result.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: external-native-pilot-receipt
+          name: external-native-pilot-receipt-${{ matrix.arm }}
           path: external-pilot-result.json
           if-no-files-found: warn

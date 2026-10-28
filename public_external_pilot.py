@@ -50,7 +50,7 @@ def source_task(root, expected_head=EXPECTED_HEAD):
                         function_excerpt=function_excerpt)
 
 
-def evaluate_candidate(root, input_path, output_path):
+def evaluate_candidate(root, input_path, output_path, arm="source_bound"):
     if os.environ.get("NEBIUS_API_KEY"):
         raise RuntimeError("SECRET_PRESENT_IN_EVALUATION_JOB")
     root = Path(root).resolve()
@@ -76,22 +76,33 @@ def evaluate_candidate(root, input_path, output_path):
                    if key not in ("NEBIUS_API_KEY", "GITHUB_TOKEN", "GH_TOKEN")}
             env["PYTHONPATH"] = str(root)
             process = subprocess.run(
-                [sys.executable, "-c", "from django.forms.fields import JSONField; "
-                 "print(JSONField().prepare_value({'name': '中国'}))"],
+                [sys.executable, "-c", (
+                    "import json\n"
+                    "from django.forms.fields import JSONField\n"
+                    "field = JSONField()\n"
+                    "cases = [({'name': '中国'}, '中国'), "
+                    "({'emoji': '🙂', 'items': ['café']}, '🙂'), "
+                    "(['東京', '¿'], '東京'), ({'ascii': 'ok'}, 'ok')]\n"
+                    "for value, literal in cases:\n"
+                    "    encoded = field.prepare_value(value)\n"
+                    "    assert isinstance(encoded, str)\n"
+                    "    assert json.loads(encoded) == value\n"
+                    "    assert literal in encoded\n"
+                    "print('MULTICASE_NATIVE_ACCEPTANCE_PASSED')\n")],
                 cwd=root, env=env, capture_output=True, timeout=30)
         finally:
             target.write_bytes(original)
     output = process.stdout.decode("utf8", errors="replace")
-    verdict = ("WARRANTED_LOCAL_BOUNDED" if process.returncode == 0 and "中国" in output
-               and "\\u4e2d" not in output else "REJECTED")
-    receipt = {"task_id": task.task_id, "source_commit": task.source_commit,
+    verdict = ("WARRANTED_LOCAL_BOUNDED" if process.returncode == 0 and
+               "MULTICASE_NATIVE_ACCEPTANCE_PASSED" in output else "REJECTED")
+    receipt = {"arm": arm, "task_id": task.task_id, "source_commit": task.source_commit,
                "source_sha256": task.source_file_sha256,
                "candidate_sha256": metadata["candidate_sha256"],
                "exit_code": process.returncode,
                "stdout_sha256": sha256(process.stdout).hexdigest(),
                "stderr_sha256": sha256(process.stderr).hexdigest(),
                "requirement_verdict": verdict,
-               "scope": "SINGLE_VISIBLE_UNICODE_PROBE_NO_GENERAL_CORRECTNESS_CLAIM"}
+               "scope": "FOUR_VISIBLE_MULTICASE_UNICODE_PROBES_NO_GENERAL_CORRECTNESS_CLAIM"}
     Path(output_path).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     return receipt
 
@@ -102,10 +113,12 @@ def main():
     parser.add_argument("--root", required=True)
     parser.add_argument("--input")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--arm", choices=("source_bound", "conventional"),
+                        default="source_bound")
     args = parser.parse_args()
     if args.operation == "propose":
         task = source_task(args.root)
-        suggestion = ExternalNemotronProposal().propose(task)
+        suggestion = ExternalNemotronProposal(style=args.arm).propose(task)
         public = {"status": suggestion.status, "task_id": task.task_id,
                   "source_commit": task.source_commit,
                   "function_source": suggestion.function_source}
@@ -114,7 +127,7 @@ def main():
     else:
         if not args.input:
             parser.error("--input required for evaluate")
-        receipt = evaluate_candidate(args.root, args.input, args.output)
+        receipt = evaluate_candidate(args.root, args.input, args.output, arm=args.arm)
         print("EXTERNAL_PILOT_RECEIPT", json.dumps(receipt, sort_keys=True))
 
 
