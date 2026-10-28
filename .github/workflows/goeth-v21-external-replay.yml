@@ -45,7 +45,7 @@ jobs:
           gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v20_test.go
           test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v20_test.go)"
           set +e
-          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentInvalidationSuppressesOldAdmission)$' -count=1 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v21/tests.log"
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALEngineV13VolatilePendingWitness|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate|TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentInvalidationSuppressesOldAdmission)$' -count=3 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v21/tests.log"
           result=${PIPESTATUS[0]}
           set -e
           echo "$result" > "$RUNNER_TEMP/goeth-v21/go_test_exit.txt"
@@ -53,16 +53,23 @@ jobs:
             echo "V21_RESULT=UNKNOWN;reason=missing_serial_positive_control" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
             exit 1
           fi
-          if [ "$result" -ne 0 ] &&
-             grep -q 'MG_BAL_V21_ORDER first_authenticated_fcu_waiting_before_admission' "$RUNNER_TEMP/goeth-v21/tests.log" &&
-             grep -q 'MG_BAL_V21_ORDER second_authenticated_fcu_completed_invalidated_empty_witness' "$RUNNER_TEMP/goeth-v21/tests.log" &&
-             grep -q 'MG_BAL_V21_OBSTRUCTION STALE_FCU_ADMITTED' "$RUNNER_TEMP/goeth-v21/tests.log"; then
-            echo "V21_RESULT=RED_REPRODUCED;scope=fork_only_authenticated_invalid_supersession;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
-          elif [ "$result" -eq 0 ] &&
-               grep -q 'MG_BAL_V21_SUPERSESSION_PASS pending_empty_after_older_fcu_completed' "$RUNNER_TEMP/goeth-v21/tests.log"; then
-            echo "V21_RESULT=GREEN_BOUNDED;scope=fork_only_authenticated_invalid_supersession;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
+          if [ "$result" -ne 0 ]; then
+            echo "V21_RESULT=UNKNOWN;reason=native_protected_regression_failed" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
+            exit 1
+          fi
+          for test_case in TestBALEngineV13VolatilePendingWitness TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate TestBALV20SerialInvalidFCUClearsPending TestBALV21ConcurrentInvalidationSuppressesOldAdmission; do
+            passes="$(grep -Ec "^[[:space:]]*--- PASS: ${test_case} \(" "$RUNNER_TEMP/goeth-v21/tests.log" || true)"
+            if [ "$passes" -ne 3 ]; then
+              echo "V21_RESULT=UNKNOWN;reason=protected_test_count_mismatch;test=${test_case};passes=${passes}" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
+              exit 1
+            fi
+          done
+          if grep -q "MG_BAL_V21_ORDER first_authenticated_fcu_waiting_before_admission" "$RUNNER_TEMP/goeth-v21/tests.log" &&
+             grep -q "MG_BAL_V21_ORDER second_authenticated_fcu_completed_invalidated_empty_witness" "$RUNNER_TEMP/goeth-v21/tests.log" &&
+             grep -q "MG_BAL_V21_SUPERSESSION_PASS pending_empty_after_older_fcu_completed" "$RUNNER_TEMP/goeth-v21/tests.log"; then
+            echo "V21_RESULT=PROTECTED_GREEN;source=guarded_fork_only;repeat=3;top_level_tests=6;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
           else
-            echo "V21_RESULT=UNKNOWN;reason=unclassified_failure_or_regression;general_concurrent_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
+            echo "V21_RESULT=UNKNOWN;reason=missing_order_or_supersession_witness" | tee "$RUNNER_TEMP/goeth-v21/boundary.txt"
             exit 1
           fi
       - uses: actions/upload-artifact@v4
