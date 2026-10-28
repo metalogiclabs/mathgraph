@@ -107,15 +107,28 @@ def evaluate_candidate(root, input_path, output_path, arm="source_bound"):
     return receipt
 
 
+def emit_no_result(arm, output_path):
+    receipt = {"arm": arm, "task_id": TASK_ID,
+               "requirement_verdict": "NO_RESULT",
+               "reason": "INFERENCE_ARTIFACT_UNAVAILABLE"}
+    Path(output_path).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    return receipt
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("operation", choices=("propose", "evaluate"))
-    parser.add_argument("--root", required=True)
+    parser.add_argument("operation", choices=("propose", "evaluate", "no-result"))
+    parser.add_argument("--root")
     parser.add_argument("--input")
     parser.add_argument("--output", required=True)
     parser.add_argument("--arm", choices=("source_bound", "conventional"),
                         default="source_bound")
     args = parser.parse_args()
+    if args.operation == "no-result":
+        print("MISSING_ARM_RECEIPT", json.dumps(emit_no_result(args.arm, args.output)))
+        return
+    if not args.root:
+        parser.error("--root required")
     if args.operation == "propose":
         task = source_task(args.root)
         suggestion = ExternalNemotronProposal(style=args.arm).propose(task)

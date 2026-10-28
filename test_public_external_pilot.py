@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from public_external_pilot import evaluate_candidate, source_task
+from public_external_pilot import evaluate_candidate, source_task, emit_no_result
 
 
 class PublicPilotTests(unittest.TestCase):
@@ -76,6 +76,12 @@ class PublicPilotTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "PROPOSAL_IDENTITY_MISMATCH"):
                 evaluate_candidate(self.root, self.path, self.output)
         self.assertEqual(self.target.read_text(), self.original)
+
+    def test_missing_arm_artifact_is_recorded_as_no_result(self):
+        receipt = emit_no_result("source_bound", self.output)
+        self.assertEqual(receipt["requirement_verdict"], "NO_RESULT")
+        self.assertEqual(receipt["reason"], "INFERENCE_ARTIFACT_UNAVAILABLE")
+        self.assertEqual(json.loads(self.output.read_text()), receipt)
 
 
 if __name__ == "__main__":
