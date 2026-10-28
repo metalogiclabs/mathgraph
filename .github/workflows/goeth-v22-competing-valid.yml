@@ -1,4 +1,4 @@
-name: GOETH V22 Competing Valid FCU Replay (Fork Only)
+name: GOETH V22 Protected Competing Valid FCU Replay (Fork Only)
 on:
   push:
     branches:
@@ -45,7 +45,7 @@ jobs:
           gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v20_test.go
           test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v20_test.go)"
           set +e
-          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentInvalidationSuppressesOldAdmission|TestBALV22ConcurrentNewerValidWitnessPrevails)$' -count=1 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v22/tests.log"
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALEngineV13VolatilePendingWitness|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate|TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentInvalidationSuppressesOldAdmission|TestBALV22ConcurrentNewerValidWitnessPrevails)$' -count=3 -v -timeout=35m 2>&1 | tee "$RUNNER_TEMP/goeth-v22/tests.log"
           result=${PIPESTATUS[0]}
           set -e
           echo "$result" > "$RUNNER_TEMP/goeth-v22/go_test_exit.txt"
@@ -59,9 +59,9 @@ jobs:
             echo "V22_RESULT=UNKNOWN;reason=native_test_failed_or_setup_incomplete" | tee "$RUNNER_TEMP/goeth-v22/boundary.txt"
             exit 1
           fi
-          for test_case in TestBALV20SerialInvalidFCUClearsPending TestBALV21ConcurrentInvalidationSuppressesOldAdmission TestBALV22ConcurrentNewerValidWitnessPrevails; do
+          for test_case in TestBALEngineV13VolatilePendingWitness TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate TestBALV20SerialInvalidFCUClearsPending TestBALV21ConcurrentInvalidationSuppressesOldAdmission TestBALV22ConcurrentNewerValidWitnessPrevails; do
             passes="$(grep -Ec "^[[:space:]]*--- PASS: ${test_case} \(" "$RUNNER_TEMP/goeth-v22/tests.log" || true)"
-            if [ "$passes" -ne 1 ]; then
+            if [ "$passes" -ne 3 ]; then
               echo "V22_RESULT=UNKNOWN;reason=positive_test_count_mismatch;test=${test_case};passes=${passes}" | tee "$RUNNER_TEMP/goeth-v22/boundary.txt"
               exit 1
             fi
@@ -71,7 +71,7 @@ jobs:
              grep -q "MG_BAL_V22_ORDER older_valid_fcu_paused_before_admission" "$RUNNER_TEMP/goeth-v22/tests.log" &&
              grep -q "MG_BAL_V22_ORDER newer_valid_fcu_admitted_different_finalized_hash" "$RUNNER_TEMP/goeth-v22/tests.log" &&
              grep -q "MG_BAL_V22_COMPETING_VALID_PASS newer_witness_preserved_after_older_fcu_completed" "$RUNNER_TEMP/goeth-v22/tests.log"; then
-            echo "V22_RESULT=BOUNDED_POSITIVE;scope=same_source_two_authenticated_valid_fcus;general_cross_fork_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v22/boundary.txt"
+            echo "V22_RESULT=PROTECTED_GREEN;repeat=3;top_level_tests=7;scope=same_source_two_authenticated_valid_fcus;general_cross_fork_fcu=UNKNOWN" | tee "$RUNNER_TEMP/goeth-v22/boundary.txt"
           else
             echo "V22_RESULT=UNKNOWN;reason=missing_positive_order_or_witness" | tee "$RUNNER_TEMP/goeth-v22/boundary.txt"
             exit 1
