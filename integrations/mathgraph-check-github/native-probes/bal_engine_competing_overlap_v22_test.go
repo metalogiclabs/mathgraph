@@ -32,7 +32,7 @@ func TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness(t *testing.T) {
 	genesis, chainA, _, _ := makeBALEngineV11Corpus(t)
 	_, chainB, _ := core.GenerateChainWithGenesis(genesis,
 		beacon.New(ethash.NewFaker()), len(chainA), func(_ int, block *core.BlockGen) {
-			block.SetExtra([]byte("BAL V22 independent competing fork B"))
+			block.SetExtra([]byte("BAL V22 competing B"))
 		})
 	chains := [2][]*types.Block{chainA, chainB}
 	heads := [2]*types.Block{chainA[len(chainA)-1], chainB[len(chainB)-1]}

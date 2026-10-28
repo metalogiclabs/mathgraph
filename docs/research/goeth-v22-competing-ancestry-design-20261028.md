@@ -54,6 +54,19 @@ Timeout, unavailable source, failed controls, missing V22 marker or arbitrary
 Go failure is **UNKNOWN**, not expected RED. Preserve the unmodified source
 and native logs in the artifact.
 
+**First execution, rejected as setup-only:** [Actions #40662557901](https://github.com/metalogiclabs/mathgraph/actions/runs/40662557901),
+source commit `0994acaaba84a0935749c013e5371a323c9f159f`,
+recorded `UNKNOWN/setup: source-1 imported 0/260: extra-data longer than
+32 bytes (36)`. Geth refused the intended B source chain, so the scheduled
+overlap was **not executed** and no concurrent-behavior verdict is warranted.
+All five earlier controls passed; the workflow exited failure with
+`V22_RESULT=UNKNOWN;reason=missing_exact_expected_falsifier`.
+Artifact `12803828946`, GitHub-reported ZIP SHA-256
+`56516e89f9a4602333632ef8ac70ea1f8ea48dfeca890bea2bd102972b71c4ec`
+(not independently rehashed). The next commit narrows **only** the test
+fixture's B extra-data field to `BAL V22 competing B` (under 32 bytes).
+This is setup repair, not a data-dependent adjustment to the expected result.
+
 Only after actual RED, apply the exact byte-pinned V21 **test-only** adapter
 patch `bal_pending_fcu_epoch_fence_v21.patch` with original adapter blob
 `7c41562e93516b6f35792083c2c05bc6eca019d4`. Re-run the identical
