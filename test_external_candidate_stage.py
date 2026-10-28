@@ -77,6 +77,18 @@ class CandidateStageTests(unittest.TestCase):
             self.stage(destination=self.root / "candidate.py")
         self.assertFalse((self.root / "candidate.py").exists())
 
+    def test_preserves_existing_classmethod_decorator_of_target(self):
+        decorated = ("class coth:\n"
+                     "    @classmethod\n"
+                     "    def eval(cls, arg):\n"
+                     "        return arg\n")
+        self.target.write_text(decorated)
+        receipt = self.stage(qualified_name="coth.eval",
+                             expected_sha256=hashlib.sha256(decorated.encode()).hexdigest(),
+                             function_source="def eval(cls, arg):\n    return arg + 1\n")
+        self.assertIn("    @classmethod\n    def eval(cls, arg):\n        return arg + 1", self.output.read_text())
+        self.assertEqual(receipt["status"], "STAGED_UNTRUSTED_NOT_EXECUTED")
+
 
 if __name__ == "__main__":
     unittest.main()

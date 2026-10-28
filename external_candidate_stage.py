@@ -53,8 +53,8 @@ def stage_function_candidate(*, root, expected_head, source_file, expected_sha25
     if len(nodes) != 1 or proposed.name != parts[-1]:
         raise ValueError("TARGET_FUNCTION_NOT_UNIQUE")
     target = nodes[0]
-    if target.decorator_list:
-        raise ValueError("TARGET_DECORATORS_UNSUPPORTED")
+    # The target's original decorator lines are outside the replaced def span.
+    # Preserve them verbatim; never accept new decorators from model output.
     if type(target) is not type(proposed):
         raise ValueError("FUNCTION_KIND_MISMATCH")
 
