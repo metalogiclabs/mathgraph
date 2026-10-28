@@ -70,6 +70,7 @@ def evaluate_candidate(root, input_path, output_path, arm="source_bound"):
             source_file=SOURCE_FILE, expected_sha256=task.source_file_sha256,
             qualified_name="JSONField.prepare_value",
             function_source=proposal["function_source"], destination=staged)
+        source_mutated_during_run = False
         try:
             shutil.copyfile(staged, target)
             env = {key: value for key, value in os.environ.items()
@@ -91,9 +92,11 @@ def evaluate_candidate(root, input_path, output_path, arm="source_bound"):
                     "print('MULTICASE_NATIVE_ACCEPTANCE_PASSED')\n")],
                 cwd=root, env=env, capture_output=True, timeout=30)
         finally:
+            source_mutated_during_run = sha256(target.read_bytes()).hexdigest() != metadata["candidate_sha256"]
             target.write_bytes(original)
     output = process.stdout.decode("utf8", errors="replace")
-    verdict = ("WARRANTED_LOCAL_BOUNDED" if process.returncode == 0 and
+    verdict = ("REJECTED_SOURCE_MUTATED_DURING_EVALUATION" if source_mutated_during_run
+               else "WARRANTED_LOCAL_BOUNDED" if process.returncode == 0 and
                "MULTICASE_NATIVE_ACCEPTANCE_PASSED" in output else "REJECTED")
     receipt = {"arm": arm, "task_id": task.task_id, "source_commit": task.source_commit,
                "source_sha256": task.source_file_sha256,

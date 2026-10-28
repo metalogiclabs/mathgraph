@@ -66,6 +66,19 @@ class PublicPilotTests(unittest.TestCase):
             result = evaluate_candidate(self.root, self.path, self.output)
         self.assertEqual(result["requirement_verdict"], "REJECTED")
 
+    def test_self_mutating_successful_candidate_cannot_keep_warrant(self):
+        self.proposal(
+            "def prepare_value(self, value):\n"
+            "    from pathlib import Path\n"
+            "    target = Path(__file__)\n"
+            "    target.write_text(target.read_text() + '\\n# altered while tested\\n')\n"
+            "    return json.dumps(value, ensure_ascii=False)\n")
+        with patch("public_external_pilot.EXPECTED_HEAD", self.head), patch(
+                "public_external_pilot.EXPECTED_SHA256", hashlib.sha256(self.original.encode()).hexdigest()):
+            result = evaluate_candidate(self.root, self.path, self.output)
+        self.assertEqual(result["requirement_verdict"], "REJECTED_SOURCE_MUTATED_DURING_EVALUATION")
+        self.assertEqual(self.target.read_text(), self.original)
+
     def test_mismatched_proposal_cannot_modify_checkout(self):
         self.proposal("def prepare_value(self, value):\n    return 'x'\n")
         data = json.loads(self.path.read_text())
