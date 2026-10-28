@@ -93,8 +93,7 @@ func (g *balV25Gateway) save(rec balV25JournalRecord) error {
 		_ = file.Close()
 		return err
 	}
-	if _, err := file.Write(append(payload, '
-')); err != nil {
+	if _, err := file.Write(append(payload, byte(10))); err != nil {
 		_ = file.Close()
 		return err
 	}

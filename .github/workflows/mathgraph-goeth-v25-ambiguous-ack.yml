@@ -50,7 +50,7 @@ jobs:
             cp "integrations/mathgraph-check-github/native-probes/$f" "native-goeth/eth/catalyst/$f"
           done
           cd native-goeth
-          test "$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)" = "228e6a01dd66d620d376dd5d0d6b0122c7365849"
+          test "$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)" = "3c6415c027e5c072a8affc12131da6626d46aeb6"
           test "$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)" = "bc7646371638f57b117414394066acfab0811bb4"
           test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
           test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
