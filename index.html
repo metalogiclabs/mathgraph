@@ -131,6 +131,23 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMo
   </div>
 </section>
 
+<section id="external-native-pilot" class="card" style="margin:30px 0;background:linear-gradient(125deg,#142941,#0c1b2e);border-color:#668eac" aria-labelledby="external-native-title">
+  <div class="eyebrow">REAL EXTERNAL REPOSITORY · AUTHENTICATED NEMOTRON · INDEPENDENT CHECKS</div>
+  <h2 id="external-native-title" style="font-size:clamp(26px,4vw,36px);margin:10px 0">A real Django repair. An honest tie. A new way to catch false warrants.</h2>
+  <p class="help">Unlike the deliberately injected Pallets defects above, this pilot uses a historical externally curated Django issue pinned to an exact upstream commit. Two separate Nemotron 3 Super requests on Nebius received the same issue, code, output schema and token budget. Their generated repairs were evaluated in isolated GitHub runners without the Nebius credential.</p>
+  <div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:20px 0">
+    <div class="stat"><strong style="color:#69ebc0">4 / 4</strong><small>Source-bound Nemotron: Unicode/JSON checks passed</small></div>
+    <div class="stat"><strong style="color:#69ebc0">4 / 4</strong><small>Conventional Nemotron: same source bytes and result — TIE</small></div>
+    <div class="stat"><strong style="color:#ff9b9e">REJECTED</strong><small>Adversarial candidate passes behavior but modifies tested source</small></div>
+  </div>
+  <p class="help">The integrity test first exposed a concrete evaluator bug: behavior-green code could rewrite its own source during observation and still receive a green warrant. The corrected gate verifies the candidate's exact file hash again after execution and refuses that stale receipt. Both the attack and correction are independently regression-tested in CI. This is bounded source-file protection, not a general sandbox or merge authorization.</p>
+  <div class="actions">
+    <a class="button" href="https://github.com/metalogiclabs/mathgraph/actions/runs/40661734332" target="_blank" rel="noopener">Inspect authenticated paired CI and adversarial tests</a>
+    <a class="button button--secondary" href="https://github.com/metalogiclabs/mathgraph/blob/experiment/nebius-public-pilot-20261028/public_external_pilot.py" target="_blank" rel="noopener">Read exact source-bound evaluator</a>
+  </div>
+  <p class="footnote" style="margin-top:15px">This section reports independently retained GitHub Actions evidence; no live Django code executes in this browser. The four visible probes are not the full Django test suite. Identical source hashes mean there is no demonstrated comparative coding advantage on this case.</p>
+</section>
+
 </main>
 <script>
 (() => {
