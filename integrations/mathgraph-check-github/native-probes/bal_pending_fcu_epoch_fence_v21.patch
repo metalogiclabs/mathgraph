@@ -1,0 +1,56 @@
+diff --git a/eth/catalyst/bal_pending_engine_witness_v13_test.go b/eth/catalyst/bal_pending_engine_witness_v13_test.go
+--- a/eth/catalyst/bal_pending_engine_witness_v13_test.go
++++ b/eth/catalyst/bal_pending_engine_witness_v13_test.go
+@@ -15,8 +15,9 @@ import (
+ 	"context"
+ 	"encoding/json"
++	"sync"
+ 	"testing"
+ 
+ 	"github.com/ethereum/go-ethereum/beacon/engine"
+ 	"github.com/ethereum/go-ethereum/common"
+ 	"github.com/ethereum/go-ethereum/core/types"
+ 	"github.com/ethereum/go-ethereum/eth"
+@@ -26,7 +27,9 @@ type balV13PendingEngineAPI struct {
+ 	*ConsensusAPI
+ 	service *eth.Ethereum
+ 	onAdmit func()
+ 	beforeAdmit func()
++	pendingMu sync.Mutex
++	pendingGeneration uint64
+ }
+ 
+ // balV18ProveFinalizedAncestor requires an exact hash-linked path from the
+@@ -61,8 +64,13 @@ func (a *balV13PendingEngineAPI) ForkchoiceUpdatedV4(ctx context.Context, update engine.ForkchoiceStateV1, attrs *engine.PayloadAttributes, custody *types.CustodyBitmap) (engine.ForkChoiceResponse, error) {
+ 	bc := a.service.BlockChain()
++	// Serialize the newer FCU's revocation with any earlier delayed admission.
++	a.pendingMu.Lock()
++	a.pendingGeneration++
++	generation := a.pendingGeneration
+ 	// Every FCU revokes the previous pending witness. A known canonical
+ 	// finalized pointer, once set by Geth, is never changed by this observer.
+ 	bc.SetExperimentalPendingBALFinality(nil)
++	a.pendingMu.Unlock()
+ 
+ 	// Deliberate fail-closed envelope: non-nil payload attributes require
+ 	// Engine API validation (fork version, withdrawals, slot, beacon root)
+ 	// before any speculative pending authority may be admitted. We do NOT
+@@ -101,11 +109,15 @@ func (a *balV13PendingEngineAPI) ForkchoiceUpdatedV4(ctx context.Context, update engine.ForkchoiceStateV1, attrs *engine.PayloadAttributes, custody *types.CustodyBitmap) (engine.ForkChoiceResponse, error) {
+ 			// Test-only synchronization point; nil in all existing controls.
+ 			if a.beforeAdmit != nil {
+ 				a.beforeAdmit()
+ 			}
+-			bc.SetExperimentalPendingBALFinality(finalHeader)
+-			if a.onAdmit != nil {
+-				a.onAdmit()
++			a.pendingMu.Lock()
++			if a.pendingGeneration == generation {
++				bc.SetExperimentalPendingBALFinality(finalHeader)
++				if a.onAdmit != nil {
++					a.onAdmit()
++				}
+ 			}
++			a.pendingMu.Unlock()
+ 		}
+ 	}
+ 	return a.ConsensusAPI.ForkchoiceUpdatedV4(ctx, update, attrs, custody)

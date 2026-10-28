@@ -34,6 +34,22 @@ actual `go test` nonzero exit and an exact stale-restoration marker, together
 with ordered interleaving markers; a compile error, timeout, missing control
 or arbitrary failure is UNKNOWN, not an expected red result.
 
+**Observed RED on the untouched adapter (after preregistration):**
+[Actions #40660706170](https://github.com/metalogiclabs/mathgraph/actions/runs/40660706170),
+job `122722737262`, exact MathGraph commit
+`f600f5dc0ca633518f40642b2d8172b764789866` / tree
+`793da7b5f338497ab1cc3f3988671a3579e6a0e0`, Geth original merged
+tree `a61594923136563d50964d7aa96a44c778bf9441` and Go 1.27.3.
+The native test logged `MG_BAL_V21_RED_STALE_REINSTALL` with exact stale
+finalized hash `0x5a8c82459a56bd92a4f5621981651586ef30bd3af84711bd17c899563136dcb2`
+and 1 stale admission, then failed. Serial/V17/V18/V19 controls all passed.
+The workflow classified the expected failing Go test as `EXPECTED_RED` only
+after checking both ordering markers and positive controls. [Artifact
+12803831097](https://github.com/metalogiclabs/mathgraph/actions/runs/40660706170),
+GitHub-reported ZIP SHA-256
+`26ed68251db4814d59f4afc44b6e674713a298487656fd78b04c57f918b2bf9a`
+(not independently rehashed). That RED commit and artifact remain immutable.
+
 ## GREEN: minimum repair and decisive controls
 
 Only after observed RED, apply a byte-pinned, test-only patch to
