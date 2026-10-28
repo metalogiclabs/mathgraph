@@ -21,6 +21,8 @@ jobs:
         run: node --test integrations/mathgraph-check-github/test.mjs integrations/mathgraph-check-github/webhook.integration.test.mjs
       - name: Qualify offline owner signature onboarding without permanent keys
         run: node --test integrations/mathgraph-check-github/owner-sign.test.mjs
+      - name: Replay GOETH V19 synthetic decisions and retain signed-packet semantic gaps
+        run: node integrations/mathgraph-check-github/goeth-v19-pilot.test.mjs
       - name: Reject cross-PR native receipt authority laundering
         run: node --test integrations/mathgraph-check-github/native-receipt-bridge.test.mjs
       - name: Build isolated webhook worker image
