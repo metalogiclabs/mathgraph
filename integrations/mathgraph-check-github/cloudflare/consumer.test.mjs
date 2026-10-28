@@ -97,6 +97,40 @@ test("queue publishes one neutral App-owned exact-head check",async()=>{
     "https://github.com/"+SCOPE.repository+"/runs/"+m.saved[0].id);
   assert.equal(m.calls.filter(x=>x.method==="DELETE").length,1);
 });
+test("privileged owner contract is assessed and revised on the same head without release authority",async()=>{
+  const m=setup();
+  const now=Math.floor(Date.now()/1000);
+  const contract={
+    schema:"mathgraph.owner-contract.v1",
+    subject:{repository:SCOPE.repository,pr:19,sha:SHA},
+    policy_version:"pilot-1",actor:"release-operator",action:"deploy",scope:"a",
+    grant:{id:"g1",issuer:"release-owner",actor:"release-operator",
+      action:"deploy",scope:"a",issued_at:now-100,expires_at:now+3600},
+    conditions:[{name:"safety",scope:"a",status:"WARRANTED_TRUE",
+      source:"confidential-owner-review",on_false:"FAIL_SAFETY_VIOLATION",
+      on_unresolved:"UNRESOLVED_SAFETY_EVIDENCE"}]
+  };
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(contract);
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  assert.match(m.saved[0].output.summary,/Owner-contract assessment:\*\* ADMIT/);
+  assert.doesNotMatch(m.saved[0].output.summary,/confidential-owner-review/);
+  assert.equal(m.saved[0].conclusion,"neutral");
+  const checkID=m.saved[0].id;
+  contract.grant.revoked_at=now-1;
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON=JSON.stringify(contract);
+  assert.equal((await processQueuedPR({...item,action:"edited"},m.env,{fetcher:m.fetcher})).outcome,"UPDATED");
+  assert.equal(m.saved.length,1);
+  assert.equal(m.saved[0].id,checkID);
+  assert.match(m.saved[0].output.summary,/FAIL_GRANT_REVOKED/);
+  assert.equal(m.saved[0].conclusion,"neutral");
+});
+test("malformed operator contract remains unresolved instead of causing a false ADMIT",async()=>{
+  const m=setup();
+  m.env.MATHGRAPH_OWNER_CONTRACT_JSON="{not valid json";
+  assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");
+  assert.match(m.saved[0].output.summary,/UNRESOLVED_MODEL_COVERAGE/);
+  assert.equal(m.saved[0].conclusion,"neutral");
+});
 test("redelivery reuses same App Check rather than creating duplicate",async()=>{
   const m=setup();
   assert.equal((await processQueuedPR(item,m.env,{fetcher:m.fetcher})).outcome,"CREATED");

@@ -308,7 +308,15 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
       pendingCI=snapshot.ci_visibility==="COMPLETE" &&
         (substantive.length===0 ||
           substantive.some(r=>r.status!=="completed"));
-      const report=analyze(snapshot);
+      // The optional contract is privileged Worker configuration, never
+      // parsed from the PR's diff, body, or a self-asserted source field.
+      // A malformed configured contract remains unresolved, not admitted.
+      let ownerContract;
+      if(env.MATHGRAPH_OWNER_CONTRACT_JSON!==undefined){
+        try { ownerContract=JSON.parse(env.MATHGRAPH_OWNER_CONTRACT_JSON); }
+        catch { ownerContract={}; }
+      }
+      const report=analyze(snapshot,ownerContract,Math.floor(Date.now()/1000));
       ensure(report.authority==="ADVISORY_ONLY" &&
         report.source.sha===item.sha,"CHECK_AUTHORITY_MISMATCH");
       const genericCheck=checkOutput(report);

@@ -1,5 +1,42 @@
 # MathGraph Check — GitHub App shadow pilot V0
 
+## Research extension: operator-configured owner contract V1 (candidate)
+
+The existing GitHub App can optionally evaluate an owner-contract packet
+configured **outside PR-controlled content**, as a privileged Worker environment
+variable named `MATHGRAPH_OWNER_CONTRACT_JSON`. It is disabled when absent.
+This is a **packet-relative advisory assessment**, not a new GitHub permission,
+an owner-signature verifier, or independent proof that the declared policy is
+complete or semantically correct. GitHub Checks remain **neutral** regardless of
+the packet decision. A PR author cannot gain authority by adding a policy-like
+file or `owner_contract` field to their PR.
+
+The JSON contract must use `schema: "mathgraph.owner-contract.v1"` and contain:
+
+- `subject`: exact `repository`, integer `pr`, and 40-character commit `sha`;
+- `policy_version`, `actor`, `action`, `scope`;
+- `grant`: `id`, `issuer`, matching `actor`, `action`, `scope`, integer
+  `issued_at` and `expires_at` (Unix seconds), and optional `revoked_at`;
+- `conditions`: a nonempty list of `name`, `scope`, `source`, `status`,
+  `on_false`, `on_unresolved`. Supported statuses are `WARRANTED_TRUE`,
+  `WARRANTED_FALSE`, `INSUFFICIENT`, `CONFLICTING`, and `OUT_OF_SCOPE`.
+
+Missing configuration retains `UNRESOLVED_OWNER_CONTRACT`. Malformed or
+unsupported input retains `UNRESOLVED_MODEL_COVERAGE`; wrong PR/commit retains
+`UNRESOLVED_OWNER_CONTRACT_BINDING`. An expired or revoked exact-scoped grant
+returns a fail residual; independent failures and unresolved conditions remain
+visible simultaneously. The grant's expiration remains in the structured
+assessment even when two packets give the same present decision. The public
+Check outputs **residual codes only**, never the raw configured policy or
+private source labels.
+
+These tests establish deterministic behavior for declared finite inputs. The
+Worker currently does **not** authenticate the human issuer or reconcile the
+contract against an independent source-of-truth registry. Configure only with
+owner-approved material and do not use a packet-level `ADMIT` as merge or
+deployment authorization. No production configuration or deployment is changed
+by the research extension.
+
 This release is a **candidate GitHub App worker**, a read-only shadow experiment, and a separate GitHub Actions App-token publisher qualification route. The registered App has already published one exact-head neutral Check; automatic signed-webhook delivery remains unqualified and undeployed. No upstream comments, code changes or merge action. No claim that an AI has independently checked arbitrary source-code correctness.
 
 ## Current qualified status (14 October 2026)

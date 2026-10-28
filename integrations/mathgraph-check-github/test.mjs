@@ -15,6 +15,78 @@ const fixture={
     {id:38202263201,name:"PR Format Validation",head_sha:SHA,
     status:"completed",conclusion:"success"}]
 };
+const ownerContract={
+  schema:"mathgraph.owner-contract.v1",
+  subject:{repository:fixture.repository,pr:fixture.number,sha:SHA},
+  policy_version:"release-policy-v1",actor:"release-operator",
+  action:"deploy",scope:"a",
+  grant:{id:"g-a",issuer:"independent-release-owner",actor:"release-operator",
+    action:"deploy",scope:"a",issued_at:100,expires_at:300},
+  conditions:[
+    {name:"safety",scope:"a",status:"WARRANTED_TRUE",source:"safety-assessment-v1",
+      on_false:"FAIL_SAFETY_VIOLATION",on_unresolved:"UNRESOLVED_SAFETY_EVIDENCE"},
+    {name:"viability",scope:"a",status:"WARRANTED_TRUE",source:"viability-assessment-v1",
+      on_false:"FAIL_VIABILITY",on_unresolved:"UNRESOLVED_VIABILITY"}
+  ]
+};
+
+test("green CI or PR-authored owner claims cannot grant admission",()=>{
+  const x=structuredClone(fixture);
+  x.owner_contract=structuredClone(ownerContract);
+  const r=analyze(x);
+  assert.equal(r.warrant.decision,"ABSTAIN");
+  assert.deepEqual(r.warrant.residuals.map(x=>x.code),["UNRESOLVED_OWNER_CONTRACT"]);
+  assert.equal(checkOutput(r).conclusion,"neutral");
+});
+test("externally configured exact-head grant with qualified conditions is packet-admitted only",()=>{
+  const r=analyze(structuredClone(fixture),structuredClone(ownerContract),200);
+  assert.equal(r.warrant.decision,"ADMIT");
+  assert.deepEqual(r.warrant.residuals,[]);
+  assert.equal(r.warrant.boundary,"OPERATOR_CONFIGURED_PACKET_ONLY");
+  assert.equal(r.warrant.future.grant_expires_at,300);
+  assert.equal(checkOutput(r).conclusion,"neutral");
+  assert.match(checkOutput(r).output.summary,/not independent confirmation of the owner's intent/i);
+});
+test("wrong PR head and cross-scope grants fail closed without claiming definite absence",()=>{
+  const stale=structuredClone(ownerContract);
+  stale.subject.sha="f".repeat(40);
+  const mismatch=analyze(structuredClone(fixture),stale,200).warrant;
+  assert.equal(mismatch.decision,"ABSTAIN");
+  assert.deepEqual(mismatch.residuals.map(x=>x.code),["UNRESOLVED_OWNER_CONTRACT_BINDING"]);
+  const scope=structuredClone(ownerContract);
+  scope.grant.scope="b";
+  const wrongScope=analyze(structuredClone(fixture),scope,200).warrant;
+  assert.equal(wrongScope.decision,"ABSTAIN");
+  assert.ok(wrongScope.residuals.some(x=>x.code==="UNRESOLVED_AUTHORITY"));
+});
+test("the same present admissibility retains a different future expiration",()=>{
+  const later=structuredClone(ownerContract);
+  later.grant.expires_at=900;
+  const today=analyze(structuredClone(fixture),ownerContract,200).warrant;
+  const other=analyze(structuredClone(fixture),later,200).warrant;
+  assert.equal(today.decision,"ADMIT");
+  assert.equal(other.decision,"ADMIT");
+  assert.notEqual(today.future.grant_expires_at,other.future.grant_expires_at);
+  assert.equal(analyze(structuredClone(fixture),ownerContract,300).warrant.decision,"REFUSE");
+  assert.equal(analyze(structuredClone(fixture),later,300).warrant.decision,"ADMIT");
+});
+test("revocation and evidence failures are retained, without losing unresolved obligations",()=>{
+  const x=structuredClone(ownerContract);
+  x.grant.revoked_at=180;
+  x.conditions[0].status="WARRANTED_FALSE";
+  x.conditions[1].status="CONFLICTING";
+  const r=analyze(structuredClone(fixture),x,200).warrant;
+  assert.equal(r.decision,"REFUSE");
+  assert.deepEqual(r.residuals.map(x=>x.code),[
+    "FAIL_GRANT_REVOKED","FAIL_SAFETY_VIOLATION","UNRESOLVED_VIABILITY"]);
+});
+test("bad operator packet never authorizes and names coverage uncertainty",()=>{
+  const x=structuredClone(ownerContract);
+  x.conditions[0].on_false="ADMIT_ANYTHING";
+  const r=analyze(structuredClone(fixture),x,200).warrant;
+  assert.equal(r.decision,"ABSTAIN");
+  assert.deepEqual(r.residuals.map(x=>x.code),["UNRESOLVED_MODEL_COVERAGE"]);
+});
 test("green exact-head CI plus two explicit UNKNOWN scopes remains advisory",()=>{
   const r=analyze(structuredClone(fixture));
   assert.equal(r.ci.state,"GITHUB_REPORTED_SUCCESS_AT_EXACT_HEAD");

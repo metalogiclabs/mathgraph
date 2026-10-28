@@ -1,4 +1,5 @@
 // Exact-source shared MathGraph Check advisory analyzer. No runtime/network/secret imports.
+import {assessWarrant} from "./warrant.mjs";
 const REPO=/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const SHA=/^[a-f0-9]{40}$/i;
 const LIMIT=/\b([a-z][a-z0-9_]{2,79})\s*=\s*(UNKNOWN|NOT_TESTED|NOT_CHECKED)\b/g;
@@ -6,7 +7,7 @@ const TEST=/(^|\/)(test(s)?\/|[^/]*[._-](test|spec)\.[^/]+$)|_test\.go$/i;
 const CODE=/\.(go|py|lean|rs|ts|tsx|js|jsx|java|c|cc|cpp|cs|sol)$/i;
 export const VERSION="mathgraph.github-pr-evidence.v0";
 
-export function analyze(s) {
+export function analyze(s,operatorConfiguredContract,asOf=Math.floor(Date.now()/1000)) {
   if (!s || !REPO.test(s.repository) || !Number.isSafeInteger(s.number) ||
       s.number<1 || !SHA.test(s.sha) || !Array.isArray(s.files) ||
       !Array.isArray(s.runs)) throw new Error("INVALID_PINNED_SNAPSHOT");
@@ -68,6 +69,7 @@ export function analyze(s) {
       url:"https://github.com/"+s.repository+"/pull/"+s.number},
     ci:{state:ci,exact_head_runs:current},changed,
     declared_limits:limits, finding:{code:finding,next_action:action},
+    warrant:assessWarrant(s,operatorConfiguredContract,asOf),
     inputs:{files:s.files_visibility||"UNKNOWN",actions:s.ci_visibility||"UNKNOWN"},
     non_claims:["Green CI does not imply all claimed behavior was verified.",
       "An UNKNOWN marker is a source declaration, not an independent proof.",
@@ -94,6 +96,11 @@ export function checkOutput(report) {
   for (const r of report.ci.exact_head_runs.slice(0,10))
     o.push("- "+String(r.name).replace(/[<>]/g,"")+": "+r.conclusion+
       " ([run]("+r.url+"))");
+  o.push("","**Owner-contract assessment:** "+report.warrant.decision+
+    " (packet-relative, never a GitHub release grant)");
+  for (const x of report.warrant.residuals)
+    o.push("- "+x.code);
+  o.push("The operator-configured packet is not independent confirmation of the owner's intent, evidence truth or completeness.");
   o.push("","**Boundary:** ADVISORY_ONLY. CI conclusions and author declarations are not correctness proofs.");
   return {name:"MathGraph Check / evidence scope",status:"completed",
     conclusion:"neutral",output:{title:report.finding.code,summary:o.join("\n").slice(0,60000)}};
