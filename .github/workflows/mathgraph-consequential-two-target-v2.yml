@@ -1,0 +1,50 @@
+name: MathGraph - two-target protected-frame research v2
+
+'on':
+  push:
+    branches:
+      - research/metatron-consequential-two-target-v2
+  pull_request:
+    branches:
+      - research/mathgraph-check-protected-frame-v0
+  workflow_dispatch:
+
+# This checks historical source-bound research only. No deployment, release,
+# owner-grant issuance, GitHub Check write, or production authorization.
+permissions:
+  contents: read
+
+jobs:
+  exact-source-research-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout MathGraph proposed research source
+        uses: actions/checkout@v4
+        with:
+          path: mathgraph
+          persist-credentials: false
+      - name: Checkout unmodified trusted Metatron Nucleus at exact SHA
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/metatron
+          ref: b9d1b5cc10477188be6e55617699be60e70f6dad
+          path: metatron
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify unmodified Metatron Nucleus exhaustive suite
+        working-directory: metatron
+        run: python3 -m unittest discover -s tests -p 'test_nucleus_exhaustive.py' -v
+      - name: Verify MathGraph Check complete regression and cold Nucleus replay
+        working-directory: mathgraph
+        env:
+          METATRON_SOURCE_CHECKOUT: ${{ github.workspace }}/metatron
+          METATRON_REQUIRED: '1'
+        run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
