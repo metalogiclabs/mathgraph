@@ -1,0 +1,119 @@
+name: MathGraph GOETH V23 Imported Engine VALID Arrival-Order Research
+
+on:
+  push:
+    branches:
+      - research/goeth-v23-imported-valid-overlap
+
+permissions:
+  contents: read
+
+jobs:
+  native-imported-valid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout immutable research overlay
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout owned Geth negative baseline
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Assert exact source and official upstream merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v23
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          {
+            echo "MATHGRAPH_V23_OVERLAY_COMMIT=${GITHUB_SHA}"
+            echo "GOETH_V23_OWNED_BASE_COMMIT=$(git rev-parse HEAD)"
+            echo "GOETH_V23_OWNED_BASE_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v23/source.txt
+          git config user.name "Metalogic CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          echo "GOETH_V23_MERGED_SOURCE_TREE=$(git rev-parse HEAD^{tree})" | tee -a evidence-v23/source.txt
+      - name: Install V23 native-characterization probe and independently verified historic guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_imported_valid_v23_test.go native-goeth/eth/catalyst/
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_competing_overlap_v22_test.go native-goeth/eth/catalyst/
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_crossfork_v20_test.go native-goeth/eth/catalyst/
+          cd native-goeth
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          echo "V23_TEST_RAW_BLOB=$(git hash-object eth/catalyst/bal_engine_imported_valid_v23_test.go)" | tee -a evidence-v23/source.txt
+          gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go eth/catalyst/bal_engine_imported_valid_v23_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go eth/catalyst/bal_engine_imported_valid_v23_test.go)"
+          {
+            echo "V23_TEST_FORMATTED_BLOB=$(git hash-object eth/catalyst/bal_engine_imported_valid_v23_test.go)"
+            echo "V22_CONTROL_BLOB=$(git hash-object eth/catalyst/bal_engine_competing_overlap_v22_test.go)"
+            echo "V20_REMOTE_CONTROL_BLOB=$(git hash-object eth/catalyst/bal_engine_crossfork_v20_test.go)"
+            echo "V21_GUARD_PATCH_BLOB=$(git hash-object ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch)"
+            echo "V21_GUARDED_ADAPTER_BLOB=$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)"
+          } | tee -a evidence-v23/source.txt
+          git diff --check
+      - name: Run two-client native Engine VALID probe and protected historical controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v23/tests.log
+          test_exit=${PIPESTATUS[0]}
+          set -e
+          echo "$test_exit" > evidence-v23/go_test_exit.txt
+          for control in TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if ! grep -Fq -- "--- PASS: $control (" evidence-v23/tests.log; then
+              echo "V23_RESULT=UNKNOWN;reason=missing_top_level_control:$control" | tee evidence-v23/boundary.txt
+              exit 1
+            fi
+          done
+          if ! grep -q 'MG_BAL_V23_SERIAL_VALID fork=0' evidence-v23/tests.log ||
+             ! grep -q 'MG_BAL_V23_SERIAL_VALID fork=1' evidence-v23/tests.log ||
+             ! grep -q 'MG_BAL_V22_COMPETING_ANCESTRY_PASS' evidence-v23/tests.log ||
+             ! grep -q 'MG_BAL_V20_NATIVE_BOUNDARY REMOTE_CROSS_FORK_PENDING_AUTHORITY_QUALIFIED_ONLY' evidence-v23/tests.log; then
+            echo 'V23_RESULT=UNKNOWN;reason=missing_positive_serial_or_remote_native_control' | tee evidence-v23/boundary.txt
+            exit 1
+          fi
+          if ! grep -q 'MG_BAL_V23_ORDER older_A_entered_authenticated_RPC_paused_before_native_handler' evidence-v23/tests.log ||
+             ! grep -q 'MG_BAL_V23_ORDER newer_B_engine_VALID_canonical' evidence-v23/tests.log; then
+            echo 'V23_RESULT=UNKNOWN;reason=missing_order_or_newer_ENGINE_VALID' | tee evidence-v23/boundary.txt
+            exit 1
+          fi
+          if [ "$test_exit" -ne 0 ] &&
+             grep -Fq -- '--- FAIL: TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal (' evidence-v23/tests.log &&
+             grep -q 'MG_BAL_V23_RED_OLDER_A_REPLACED_B_AFTER_ENGINE_VALID' evidence-v23/tests.log; then
+            echo 'V23_RESULT=NAMED_OBSTRUCTION_EXTERNAL_ARRIVAL_ORDER;scope=two_imported_native_ENGINE_VALID_forks;not_a_Geth_Engine_spec_or_security_defect' | tee evidence-v23/boundary.txt
+          elif [ "$test_exit" -eq 0 ] &&
+               grep -Fq -- '--- PASS: TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal (' evidence-v23/tests.log &&
+               grep -q 'MG_BAL_V23_BOUNDED_PROTECTED' evidence-v23/tests.log; then
+            echo 'V23_RESULT=BOUNDED_PROTECTED;scope=two_imported_native_ENGINE_VALID_forks;external_authority_not_established' | tee evidence-v23/boundary.txt
+          else
+            echo 'V23_RESULT=UNKNOWN;reason=unclassified_native_result' | tee evidence-v23/boundary.txt
+            exit 1
+          fi
+      - name: Preserve exact execution and source provenance
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goeth-v23-imported-engine-valid-research
+          path: native-goeth/evidence-v23/
+          if-no-files-found: warn
