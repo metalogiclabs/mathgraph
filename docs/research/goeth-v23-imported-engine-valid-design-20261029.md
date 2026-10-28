@@ -30,3 +30,7 @@ The proposed *external arrival-order authority rule* is: B supersedes A when B i
 - `UNKNOWN` for invalid imports, non-`VALID` B, absence of ordered markers, missing top-level controls, compilation failure, timeout, or any other branch.
 
 This test probes a missing *external controller-authority rule*. Even a reproducible negative must not be promoted to a Geth consensus defect or a release decision without that declared rule and source-controlled proof.
+
+## Protected repeat after first native result
+
+After preserving the first qualifying native RED or positive as its own immutable GitHub Actions artifact, rerun the **identical V23 Go test blob** and all seven controls with `go test -count=3`. Require exactly three top-level passes per control, three serial A and B `VALID` markers, three ordered A-before-B/barrier markers, and either exactly three V23 expected RED failures with exact marker or three bounded positives. Any partial, mixed, or unrelated result remains `UNKNOWN`. The protected workflow also records its own GitHub overlay tree and workflow blob; GitHub artifact ZIP digests are checked as post-upload metadata, not manufactured by the runner.

@@ -38,6 +38,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
           {
             echo "MATHGRAPH_V23_OVERLAY_COMMIT=${GITHUB_SHA}"
+            echo "MATHGRAPH_V23_OVERLAY_TREE=$(git -C .. rev-parse HEAD^{tree})"
+            echo "MATHGRAPH_V23_WORKFLOW_BLOB=$(git -C .. hash-object .github/workflows/mathgraph-goeth-v23-imported-valid-overlap.yml)"
             echo "GOETH_V23_OWNED_BASE_COMMIT=$(git rev-parse HEAD)"
             echo "GOETH_V23_OWNED_BASE_TREE=$(git rev-parse HEAD^{tree})"
             go version
@@ -76,36 +78,32 @@ jobs:
           set -euo pipefail
           cd native-goeth
           set +e
-          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v23/tests.log
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=3 -v -timeout=40m 2>&1 | tee evidence-v23/tests.log
           test_exit=${PIPESTATUS[0]}
           set -e
           echo "$test_exit" > evidence-v23/go_test_exit.txt
           for control in TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
-            if ! grep -Fq -- "--- PASS: $control (" evidence-v23/tests.log; then
-              echo "V23_RESULT=UNKNOWN;reason=missing_top_level_control:$control" | tee evidence-v23/boundary.txt
+            count=$(grep -Fc -- "--- PASS: $control (" evidence-v23/tests.log || true)
+            if [ "$count" -ne 3 ]; then
+              echo "V23_RESULT=UNKNOWN;reason=control_repeat_count:$control:$count" | tee evidence-v23/boundary.txt
               exit 1
             fi
           done
-          if ! grep -q 'MG_BAL_V23_SERIAL_VALID fork=0' evidence-v23/tests.log ||
-             ! grep -q 'MG_BAL_V23_SERIAL_VALID fork=1' evidence-v23/tests.log ||
-             ! grep -q 'MG_BAL_V22_COMPETING_ANCESTRY_PASS' evidence-v23/tests.log ||
-             ! grep -q 'MG_BAL_V20_NATIVE_BOUNDARY REMOTE_CROSS_FORK_PENDING_AUTHORITY_QUALIFIED_ONLY' evidence-v23/tests.log; then
-            echo 'V23_RESULT=UNKNOWN;reason=missing_positive_serial_or_remote_native_control' | tee evidence-v23/boundary.txt
-            exit 1
-          fi
-          if ! grep -q 'MG_BAL_V23_ORDER older_A_entered_authenticated_RPC_paused_before_native_handler' evidence-v23/tests.log ||
-             ! grep -q 'MG_BAL_V23_ORDER newer_B_engine_VALID_canonical' evidence-v23/tests.log; then
-            echo 'V23_RESULT=UNKNOWN;reason=missing_order_or_newer_ENGINE_VALID' | tee evidence-v23/boundary.txt
-            exit 1
-          fi
+          for marker in 'MG_BAL_V23_SERIAL_VALID fork=0' 'MG_BAL_V23_SERIAL_VALID fork=1' 'MG_BAL_V22_COMPETING_ANCESTRY_PASS' 'MG_BAL_V20_NATIVE_BOUNDARY REMOTE_CROSS_FORK_PENDING_AUTHORITY_QUALIFIED_ONLY' 'MG_BAL_V23_ORDER older_A_entered_authenticated_RPC_paused_before_native_handler' 'MG_BAL_V23_ORDER newer_B_engine_VALID_canonical'; do
+            count=$(grep -Fc -- "$marker" evidence-v23/tests.log || true)
+            if [ "$count" -ne 3 ]; then
+              echo "V23_RESULT=UNKNOWN;reason=source_or_order_marker_repeat_count:$marker:$count" | tee evidence-v23/boundary.txt
+              exit 1
+            fi
+          done
           if [ "$test_exit" -ne 0 ] &&
-             grep -Fq -- '--- FAIL: TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal (' evidence-v23/tests.log &&
-             grep -q 'MG_BAL_V23_RED_OLDER_A_REPLACED_B_AFTER_ENGINE_VALID' evidence-v23/tests.log; then
-            echo 'V23_RESULT=NAMED_OBSTRUCTION_EXTERNAL_ARRIVAL_ORDER;scope=two_imported_native_ENGINE_VALID_forks;not_a_Geth_Engine_spec_or_security_defect' | tee evidence-v23/boundary.txt
+             [ "$(grep -Fc -- '--- FAIL: TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal (' evidence-v23/tests.log || true)" -eq 3 ] &&
+             [ "$(grep -Fc -- 'MG_BAL_V23_RED_OLDER_A_REPLACED_B_AFTER_ENGINE_VALID' evidence-v23/tests.log || true)" -eq 3 ]; then
+            echo 'V23_RESULT=PROTECTED_3X_NAMED_OBSTRUCTION_EXTERNAL_ARRIVAL_ORDER;roots=7x3_PASS_plus_V23x3_EXPECTED_RED;scope=two_imported_native_ENGINE_VALID_forks;not_a_Geth_Engine_spec_or_security_defect' | tee evidence-v23/boundary.txt
           elif [ "$test_exit" -eq 0 ] &&
-               grep -Fq -- '--- PASS: TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal (' evidence-v23/tests.log &&
-               grep -q 'MG_BAL_V23_BOUNDED_PROTECTED' evidence-v23/tests.log; then
-            echo 'V23_RESULT=BOUNDED_PROTECTED;scope=two_imported_native_ENGINE_VALID_forks;external_authority_not_established' | tee evidence-v23/boundary.txt
+               [ "$(grep -Fc -- '--- PASS: TestBALV23DelayedOlderImportedFCUDoesNotReplaceNewerValidFinal (' evidence-v23/tests.log || true)" -eq 3 ] &&
+               [ "$(grep -Fc -- 'MG_BAL_V23_BOUNDED_PROTECTED' evidence-v23/tests.log || true)" -eq 3 ]; then
+            echo 'V23_RESULT=PROTECTED_3X_BOUNDED_POSITIVE;roots=8x3_PASS;scope=two_imported_native_ENGINE_VALID_forks;external_authority_not_established' | tee evidence-v23/boundary.txt
           else
             echo 'V23_RESULT=UNKNOWN;reason=unclassified_native_result' | tee evidence-v23/boundary.txt
             exit 1
