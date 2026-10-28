@@ -1,0 +1,99 @@
+name: MathGraph GOETH V21 Generation Fence Native Research
+
+on:
+  push:
+    branches:
+      - research/goeth-v21-epoch-fence-native-probe
+
+permissions:
+  contents: read
+
+jobs:
+  epoch-fence-red-or-green:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout candidate overlay and preregistration
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout exact owned Geth V20 negative baseline
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Assert source and merge pinned official upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v21
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          {
+            echo "MATHGRAPH_V21_OVERLAY_COMMIT=${GITHUB_SHA}"
+            echo "GOETH_V20_BASE_COMMIT=$(git rev-parse HEAD)"
+            echo "GOETH_V20_BASE_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v21/source.txt
+          git config user.name "Metalogic CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          echo "GOETH_V20_MERGED_SOURCE_TREE=$(git rev-parse HEAD^{tree})" | tee -a evidence-v21/source.txt
+      - name: Install byte-pinned test-only generation guard (GREEN)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp integrations/mathgraph-check-github/native-probes/bal_engine_concurrent_v21_test.go native-goeth/eth/catalyst/
+          cd native-goeth
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          gofmt -w eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v21_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_pending_engine_witness_v13_test.go eth/catalyst/bal_engine_concurrent_v21_test.go)"
+          echo "V21_GUARD_PATCH_GIT_BLOB=$(git hash-object ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch)" | tee -a evidence-v21/source.txt
+          echo "V21_GUARDED_ADAPTER_GIT_BLOB=$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" | tee -a evidence-v21/source.txt
+          echo "V21_TEST_OVERLAY_GIT_BLOB=$(git hash-object eth/catalyst/bal_engine_concurrent_v21_test.go)" | tee -a evidence-v21/source.txt
+          git diff --check
+      - name: Execute GREEN test and independent earlier controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV20SerialInvalidFCUClearsPending|TestBALV21ConcurrentStaleFCUDoesNotReinstatePending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=35m 2>&1 | tee evidence-v21/tests.log
+          test_exit=${PIPESTATUS[0]}
+          set -e
+          echo "$test_exit" > evidence-v21/go_test_exit.txt
+          for control in TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if ! grep -q -- "--- PASS: $control" evidence-v21/tests.log; then
+              echo "V21_RESULT=UNKNOWN;reason=missing_control:$control" | tee evidence-v21/boundary.txt
+              exit 1
+            fi
+          done
+          if [ "$test_exit" -eq 0 ] &&
+             grep -q -- '--- PASS: TestBALV21ConcurrentStaleFCUDoesNotReinstatePending' evidence-v21/tests.log &&
+             grep -q 'MG_BAL_V21_ORDER older_authenticated_fcu_verified_paused_before_admission' evidence-v21/tests.log &&
+             grep -q 'MG_BAL_V21_ORDER newer_authenticated_invalid_fcu_completed_pending_empty' evidence-v21/tests.log &&
+             grep -q 'MG_BAL_V21_GENERATION_FENCE_PASS pending_empty_admissions_zero_after_stale_fcu' evidence-v21/tests.log &&
+             ! grep -q 'MG_BAL_V21_RED_STALE_REINSTALL' evidence-v21/tests.log; then
+            echo 'V21_RESULT=BOUNDED_GENERATION_FENCE_GREEN;scope=fork_only_invalid_fcu_stale_admission;general_concurrent_fcu=UNKNOWN' | tee evidence-v21/boundary.txt
+          else
+            echo 'V21_RESULT=UNKNOWN;reason=unexpected_test_result_or_missing_controls' | tee evidence-v21/boundary.txt
+            exit 1
+          fi
+      - name: Retain native logs, source and boundary even after failure
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goeth-v21-epoch-fence-green-research
+          path: native-goeth/evidence-v21/
+          if-no-files-found: warn
