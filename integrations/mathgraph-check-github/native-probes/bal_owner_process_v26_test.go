@@ -359,7 +359,7 @@ func TestBALV26ActualGatewaySIGKILLAndSeparateProcessRecovery(t *testing.T) {
 	}
 	t.Log("MG_V26_DURABLE_PREPARED_SURVIVED_SIGKILL")
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "guard", a), "MG_V26_RESTART_REFUSED_IN_DOUBT")
-	fresh := balV24Sign(key, a.Genesis, 3, a.Head, a.Final)
+	fresh := balV24Sign(key, b.Genesis, 3, b.Head, b.Final)
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "guard", fresh), "MG_V26_RESTART_REFUSED_IN_DOUBT")
 	balV26ExpectCanonical(t, h, b)
 	t.Log("MG_V26_TWO_SEPARATE_GATEWAY_PROCESSES_FAIL_CLOSED_BEFORE_RECONCILE")
@@ -368,7 +368,7 @@ func TestBALV26ActualGatewaySIGKILLAndSeparateProcessRecovery(t *testing.T) {
 	balV26ExpectCanonical(t, h, b)
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "apply", fresh), "MG_V26_CHILD_NEW_NATIVE_VALID_EPOCH_3")
 	balV26ExpectCanonical(t, h, fresh)
-	t.Log("MG_V26_RECOVERED_NATIVE_OBSERVATION_AND_FRESH_EPOCH3_VALID")
+	t.Log("MG_V26_RECOVERED_NATIVE_OBSERVATION_AND_FRESH_EPOCH3_SAME_HEAD_VALID")
 }
 
 func TestBALV26DirectNativeBypassForcesReconciliationAbstention(t *testing.T) {
@@ -405,7 +405,7 @@ func TestBALV26DeletingJournalReenablesStaleSignedNativeAction(t *testing.T) {
 	t.Log("MG_V26_NEGATIVE_JOURNAL_DELETION_REENABLES_STALE_SIGNED_GRANT")
 }
 
-func TestBALV26RollingBackJournalReenablesSupersededSignedAction(t *testing.T) {
+func TestBALV26RollingBackJournalReissuesSupersededSignedAction(t *testing.T) {
 	h, _, a, b, key := balV24Environment(t, true, nil)
 	journal := filepath.Join(t.TempDir(), "v26-owner-journal.json")
 	balV26KillChild(t, balV26Config(t, h, key, journal, "kill", b))
@@ -414,8 +414,8 @@ func TestBALV26RollingBackJournalReenablesSupersededSignedAction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := balV24Sign(key, a.Genesis, 3, a.Head, a.Final)
-	d := balV24Sign(key, a.Genesis, 4, b.Head, b.Final)
+	c := balV24Sign(key, b.Genesis, 3, b.Head, b.Final)
+	d := balV24Sign(key, b.Genesis, 4, b.Head, b.Final)
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "apply", c), "MG_V26_CHILD_NEW_NATIVE_VALID_EPOCH_3")
 	balV26ExpectCanonical(t, h, c)
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "apply", d), "MG_V26_CHILD_NEW_NATIVE_VALID_EPOCH_4")
@@ -427,7 +427,7 @@ func TestBALV26RollingBackJournalReenablesSupersededSignedAction(t *testing.T) {
 	}
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "apply", c), "MG_V26_CHILD_NEW_NATIVE_VALID_EPOCH_3")
 	balV26ExpectCanonical(t, h, c)
-	t.Log("MG_V26_NEGATIVE_JOURNAL_ROLLBACK_REENABLES_EPOCH3_AFTER_EPOCH4")
+	t.Log("MG_V26_NEGATIVE_JOURNAL_ROLLBACK_REISSUES_STALE_EPOCH3_VALID_SAME_HEAD")
 }
 
 func TestBALV26MalformedJournalFailsClosedAcrossProcesses(t *testing.T) {

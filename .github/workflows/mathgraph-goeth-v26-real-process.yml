@@ -49,7 +49,7 @@ jobs:
             cp "integrations/mathgraph-check-github/native-probes/$f" "native-goeth/eth/catalyst/$f"
           done
           cd native-goeth
-          test "$(git hash-object eth/catalyst/bal_owner_process_v26_test.go)" = "342a61a52d1b98e19672e5c61a08319e2a5278e5"
+          test "$(git hash-object eth/catalyst/bal_owner_process_v26_test.go)" = "3b5550ce7bb3509193b576c8dac7355e0165dead"
           test "$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)" = "3c6415c027e5c072a8affc12131da6626d46aeb6"
           test "$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)" = "bc7646371638f57b117414394066acfab0811bb4"
           test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           cd native-goeth
           set +e
-          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV26ActualGatewaySIGKILLAndSeparateProcessRecovery|TestBALV26DirectNativeBypassForcesReconciliationAbstention|TestBALV26DeletingJournalReenablesStaleSignedNativeAction|TestBALV26RollingBackJournalReenablesSupersededSignedAction|TestBALV26MalformedJournalFailsClosedAcrossProcesses|TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV25NativeMismatchCannotBeMisreportedAsReconciled|TestBALV25MalformedJournalFailsClosed|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v26/native.log
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV26ActualGatewaySIGKILLAndSeparateProcessRecovery|TestBALV26DirectNativeBypassForcesReconciliationAbstention|TestBALV26DeletingJournalReenablesStaleSignedNativeAction|TestBALV26RollingBackJournalReissuesSupersededSignedAction|TestBALV26MalformedJournalFailsClosedAcrossProcesses|TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV25NativeMismatchCannotBeMisreportedAsReconciled|TestBALV25MalformedJournalFailsClosed|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v26/native.log
           native_exit=$?
           set -e
           echo "$native_exit" > evidence-v26/native_exit.txt
@@ -84,7 +84,7 @@ jobs:
               exit 1
             fi
           done
-          for marker in MG_V26_DURABLE_PREPARED_SURVIVED_SIGKILL MG_V26_TWO_SEPARATE_GATEWAY_PROCESSES_FAIL_CLOSED_BEFORE_RECONCILE MG_V26_RECOVERED_NATIVE_OBSERVATION_AND_FRESH_EPOCH3_VALID MG_V26_NEGATIVE_RAW_ENGINE_BYPASS_MISMATCH_FAIL_CLOSED MG_V26_NEGATIVE_JOURNAL_DELETION_REENABLES_STALE_SIGNED_GRANT MG_V26_NEGATIVE_JOURNAL_ROLLBACK_REENABLES_EPOCH3_AFTER_EPOCH4 MG_V26_NEGATIVE_MALFORMED_JOURNAL_FAIL_CLOSED_ACROSS_PROCESSES MG_V25_GREEN_DURABLE_PREPARE_REFUSES_OLDER_EPOCH_AFTER_REOPEN MG_V25_NEGATIVE_NATIVE_BYPASS_CAUSES_MISMATCH_AND_FAIL_CLOSED MG_V25_NEGATIVE_CORRUPT_OWNER_JOURNAL_FAIL_CLOSED MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_BYPASS_WITNESS MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
+          for marker in MG_V26_DURABLE_PREPARED_SURVIVED_SIGKILL MG_V26_TWO_SEPARATE_GATEWAY_PROCESSES_FAIL_CLOSED_BEFORE_RECONCILE MG_V26_RECOVERED_NATIVE_OBSERVATION_AND_FRESH_EPOCH3_SAME_HEAD_VALID MG_V26_NEGATIVE_RAW_ENGINE_BYPASS_MISMATCH_FAIL_CLOSED MG_V26_NEGATIVE_JOURNAL_DELETION_REENABLES_STALE_SIGNED_GRANT MG_V26_NEGATIVE_JOURNAL_ROLLBACK_REISSUES_STALE_EPOCH3_VALID_SAME_HEAD MG_V26_NEGATIVE_MALFORMED_JOURNAL_FAIL_CLOSED_ACROSS_PROCESSES MG_V25_GREEN_DURABLE_PREPARE_REFUSES_OLDER_EPOCH_AFTER_REOPEN MG_V25_NEGATIVE_NATIVE_BYPASS_CAUSES_MISMATCH_AND_FAIL_CLOSED MG_V25_NEGATIVE_CORRUPT_OWNER_JOURNAL_FAIL_CLOSED MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_BYPASS_WITNESS MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
             if [ "$(grep -Fc -- "$marker" evidence-v26/native.log || true)" -ne 1 ]; then
               echo "V26_RESULT=UNKNOWN;reason=missing_exact_marker:$marker" | tee evidence-v26/boundary.txt
               exit 1
