@@ -22,4 +22,17 @@ jobs:
           node --test \
             integrations/mathgraph-check-github/intent-contract-v1.test.mjs \
             integrations/mathgraph-check-github/evidence-contract-v1.test.mjs \
-            integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs
+            integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs \
+            integrations/mathgraph-check-github/demo/intent-green-ci-demo.test.mjs
+      - name: Render synthetic green-tests/wrong-intent exhibit
+        run: |
+          set -euo pipefail
+          node integrations/mathgraph-check-github/demo/intent-green-ci-demo.mjs "$RUNNER_TEMP/mathgraph-intent-demo"
+          test -s "$RUNNER_TEMP/mathgraph-intent-demo/report.html"
+          test -s "$RUNNER_TEMP/mathgraph-intent-demo/report.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-check-intent-gap-synthetic-demo
+          path: ${{ runner.temp }}/mathgraph-intent-demo/
+          if-no-files-found: warn
