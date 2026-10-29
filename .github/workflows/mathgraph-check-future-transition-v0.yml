@@ -1,0 +1,23 @@
+name: MathGraph Check future-transition boundary V0
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-future-transition-20261029
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-advisory-transition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert direct Node subtests, including the new continuation probes
+        run: |
+          set -eu
+          for file in integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs integrations/mathgraph-check-github/demo/*.test.mjs; do
+            node "$file"
+          done
