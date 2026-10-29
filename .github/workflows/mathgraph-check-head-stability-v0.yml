@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           files=0
-          for test_file in integrations/mathgraph-check-github/*.test.mjs; do
+          for test_file in integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs integrations/mathgraph-check-github/demo/*.test.mjs; do
             node "$test_file"
             files=$((files+1))
           done
