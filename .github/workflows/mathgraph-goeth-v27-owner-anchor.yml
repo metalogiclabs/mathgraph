@@ -1,0 +1,103 @@
+name: MathGraph GOETH V27 synthetic owner high-water versus journal rollback (research)
+on:
+  push:
+    branches:
+      - research/goeth-v27-owner-highwater-anchor
+permissions:
+  contents: read
+jobs:
+  native-owner-highwater:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Pin native Geth source including pinned official upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v27
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          git config user.name "MathGraph CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          {
+            echo "MATHGRAPH_V27_COMMIT=$GITHUB_SHA"
+            echo "MATHGRAPH_V27_TREE=$(git -C .. rev-parse HEAD^{tree})"
+            echo "GOETH_PINNED_COMBINED_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v27/source.txt
+      - name: Install exact V27 and all frozen V26-to-V17 native sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in bal_owner_anchor_v27_test.go bal_owner_process_v26_test.go bal_owner_epoch_journal_v25_test.go bal_owner_ambiguous_v25_test.go bal_owner_grant_fence_v24_test.go bal_engine_imported_valid_v23_test.go bal_engine_competing_overlap_v22_test.go bal_engine_crossfork_v20_test.go; do
+            cp "integrations/mathgraph-check-github/native-probes/$f" "native-goeth/eth/catalyst/$f"
+          done
+          cd native-goeth
+          test "$(git hash-object eth/catalyst/bal_owner_anchor_v27_test.go)" = "a5ba88d70d81d766817a0e3152ccbd90854dffee"
+          test "$(git hash-object eth/catalyst/bal_owner_process_v26_test.go)" = "011f32ab6626678048559fa1265a4e02930e3684"
+          test "$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)" = "3c6415c027e5c072a8affc12131da6626d46aeb6"
+          test "$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)" = "bc7646371638f57b117414394066acfab0811bb4"
+          test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          gofmt -w eth/catalyst/bal_owner_anchor_v27_test.go eth/catalyst/bal_owner_process_v26_test.go eth/catalyst/bal_owner_epoch_journal_v25_test.go eth/catalyst/bal_owner_ambiguous_v25_test.go eth/catalyst/bal_owner_grant_fence_v24_test.go eth/catalyst/bal_engine_imported_valid_v23_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go eth/catalyst/bal_pending_engine_witness_v13_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_owner_anchor_v27_test.go)"
+          {
+            echo "V27_TEST_FORMATTED_BLOB=$(git hash-object eth/catalyst/bal_owner_anchor_v27_test.go)"
+            echo "V26_FROZEN_TEST_BLOB=$(git hash-object eth/catalyst/bal_owner_process_v26_test.go)"
+            echo "V25_FROZEN_TEST_BLOB=$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)"
+            echo "V25_GATEWAY_BLOB=$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)"
+          } | tee -a evidence-v27/source.txt
+          git diff --check
+      - name: Native V26 negative comparison and V27 signed independent owner floor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV27DeletedJournalRefusesStaleAndRecoversHigherEpoch|TestBALV27JournalRollbackRefusesSupersededGrantThenRecovers|TestBALV27ForgedOrReplayedOwnerReceiptFailsClosed|TestBALV27DirectEngineBypassStillDefeatsOptionalOwnerGateway|TestBALV26DeletingJournalReenablesStaleSignedNativeAction|TestBALV26RollingBackJournalReissuesSupersededSignedAction|TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV25NativeMismatchCannotBeMisreportedAsReconciled|TestBALV25MalformedJournalFailsClosed|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v27/native.log
+          native_exit=$?
+          set -e
+          echo "$native_exit" > evidence-v27/native_exit.txt
+          if [ "$native_exit" -ne 0 ]; then
+            echo 'V27_RESULT=UNKNOWN;reason=native_Go_test_failed' | tee evidence-v27/boundary.txt
+            exit 1
+          fi
+          for root in TestBALV27DeletedJournalRefusesStaleAndRecoversHigherEpoch TestBALV27JournalRollbackRefusesSupersededGrantThenRecovers TestBALV27ForgedOrReplayedOwnerReceiptFailsClosed TestBALV27DirectEngineBypassStillDefeatsOptionalOwnerGateway TestBALV26DeletingJournalReenablesStaleSignedNativeAction TestBALV26RollingBackJournalReissuesSupersededSignedAction TestBALV25LostAckCannotReenableOlderSignedForkchoice TestBALV25NativeMismatchCannotBeMisreportedAsReconciled TestBALV25MalformedJournalFailsClosed TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority TestBALV24ExternalOwnerEpochFencePreservesNativeValidB TestBALV24ForgeryScopeReplayAndFreshHigherGrant TestBALV24DirectNativeEngineRemainsAnExplicitBypass TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if [ "$(grep -Fc -- "--- PASS: $root (" evidence-v27/native.log || true)" -ne 1 ]; then
+              echo "V27_RESULT=UNKNOWN;reason=missing_root:$root" | tee evidence-v27/boundary.txt
+              exit 1
+            fi
+          done
+          for marker in MG_V27_JOURNAL_DELETION_NO_STALE_NATIVE_EXECUTION MG_V27_DELETED_HISTORY_RECONCILED_AND_FRESH_EPOCH3_NATIVE_VALID MG_V27_ROLLED_BACK_JOURNAL_CANNOT_REISSUE_EPOCH3 MG_V27_ROLLBACK_RECOVERED_FROM_OWNER_AND_EPOCH5_NATIVE_VALID MG_V27_FORGED_OWNER_RECEIPT_AND_OWNER_EPOCH_ROLLBACK_REJECTED MG_V27_RAW_ENGINE_EFFECT_PATH_STILL_BYPASSABLE MG_V26_NEGATIVE_JOURNAL_DELETION_REENABLES_STALE_SIGNED_GRANT MG_V26_NEGATIVE_JOURNAL_ROLLBACK_REISSUES_STALE_EPOCH3_VALID_SAME_HEAD MG_V25_GREEN_DURABLE_PREPARE_REFUSES_OLDER_EPOCH_AFTER_REOPEN MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_BYPASS_WITNESS MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
+            if [ "$(grep -Fc -- "$marker" evidence-v27/native.log || true)" -ne 1 ]; then
+              echo "V27_RESULT=UNKNOWN;reason=missing_marker:$marker" | tee evidence-v27/boundary.txt
+              exit 1
+            fi
+          done
+          echo 'V27_RESULT=BOUNDED_OWNER_PARENT_SIGNED_HIGHWATER_PREVENTS_GATEWAY_JOURNAL_DELETION_AND_ROLLBACK;roots=20/20;owner_process_alive=true;anchor_in_memory_only=true;native_API_bypass=true;synthetic_owner=true' | tee evidence-v27/boundary.txt
+      - name: Retain original logs and source pins even on UNKNOWN
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goeth-v27-owner-highwater-source-native-research
+          path: native-goeth/evidence-v27/
+          if-no-files-found: warn
