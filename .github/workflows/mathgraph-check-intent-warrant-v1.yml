@@ -23,7 +23,8 @@ jobs:
             integrations/mathgraph-check-github/intent-contract-v1.test.mjs \
             integrations/mathgraph-check-github/evidence-contract-v1.test.mjs \
             integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs \
-            integrations/mathgraph-check-github/demo/intent-green-ci-demo.test.mjs
+            integrations/mathgraph-check-github/demo/intent-green-ci-demo.test.mjs \
+            integrations/mathgraph-check-github/finite-warrant-quotient-v1.test.mjs
       - name: Render synthetic green-tests/wrong-intent exhibit
         run: |
           set -euo pipefail
