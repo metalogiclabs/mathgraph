@@ -292,8 +292,7 @@ func gateway(args []string)error{
  }
  if current.Phase!=observed&&*action!="reconcile"{return errors.New("MG_V28_UNKNOWN_OWNER_PHASE")}
  if *action=="status" {
-  fmt.Printf("MG_V28_GATEWAY_OWNER_SIGNED_CURRENT_EPOCH_%d
-",current.Grant.Epoch)
+  fmt.Println("MG_V28_GATEWAY_OWNER_SIGNED_CURRENT_EPOCH_"+strconv.FormatUint(current.Grant.Epoch,10))
   return nil
  }
  if *action=="apply" && g.Epoch<=current.Grant.Epoch {
@@ -305,8 +304,7 @@ func gateway(args []string)error{
  if e!=nil {return fmt.Errorf("MG_V28_OWNER_EFFECT_UNCERTAIN status=%d: %w",status,e)}
  if receipt.Phase!=observed{return errors.New("MG_V28_OWNER_DID_NOT_OBSERVE_NATIVE")}
  if *action=="reconcile" {fmt.Println("MG_V28_GATEWAY_NATIVE_RECONCILED_AFTER_OWNER_RESTART");return nil}
- fmt.Printf("MG_V28_GATEWAY_NATIVE_VALID_APPLIED_EPOCH_%d
-",receipt.Grant.Epoch)
+ fmt.Println("MG_V28_GATEWAY_NATIVE_VALID_APPLIED_EPOCH_"+strconv.FormatUint(receipt.Grant.Epoch,10))
  return nil
 }
 func probe(args []string)error{

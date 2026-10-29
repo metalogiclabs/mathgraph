@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git hash-object integrations/mathgraph-check-github/native-probes/v28_owner_service.go)" = "bd0ccafd18d6b3853a0d7b39ecb73d7bc8a17a71"
+          test "$(git hash-object integrations/mathgraph-check-github/native-probes/v28_owner_service.go)" = "326deaec293d86c7c6d2512c0cade8e6b2ab38f8"
           gofmt -w integrations/mathgraph-check-github/native-probes/v28_owner_service.go
           go build -o /tmp/mathgraph-v28-owner-service integrations/mathgraph-check-github/native-probes/v28_owner_service.go
           chmod 0755 /tmp/mathgraph-v28-owner-service
