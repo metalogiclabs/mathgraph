@@ -1,0 +1,25 @@
+name: MathGraph Check - bounded intent probe contract V1
+on:
+  push:
+    branches: [mathgraph-check-intent-warrant-v1-20261029]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  intent-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail-closed intent, trusted caller and monitor controls
+        run: |
+          set -euo pipefail
+          node --test \
+            integrations/mathgraph-check-github/intent-contract-v1.test.mjs \
+            integrations/mathgraph-check-github/evidence-contract-v1.test.mjs \
+            integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs
