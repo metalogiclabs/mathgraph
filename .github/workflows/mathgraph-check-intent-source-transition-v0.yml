@@ -1,0 +1,29 @@
+name: MathGraph Check source-bound intent transition V0
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-intent-source-transition-v0-20261029
+  workflow_dispatch:
+
+jobs:
+  exact-source-probe-qualification:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run all real MathGraph Check tests including nested suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=0
+          for test_file in integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs integrations/mathgraph-check-github/demo/*.test.mjs; do
+            node "$test_file"
+            files=$((files+1))
+          done
+          test "$files" -eq 19
+          echo "MATHGRAPH_CHECK_INTENT_SOURCE_FILES=$files"
