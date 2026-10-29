@@ -1,0 +1,104 @@
+name: MathGraph GOETH V26 actual gateway SIGKILL & rollback (research-only)
+on:
+  push:
+    branches: [research/goeth-v26-real-process-crash]
+permissions:
+  contents: read
+jobs:
+  native-real-gateway-crash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/go-ethereum
+          ref: bal-engine-concurrent-v20
+          fetch-depth: 0
+          persist-credentials: false
+          path: native-goeth
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Pin exact owned Geth and official upstream tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          mkdir -p evidence-v26
+          test "$(git rev-parse HEAD)" = "be33043dc27407a62471bfde1d50b6f99bfc9e6b"
+          git config user.name "Metalogic CI"
+          git config user.email "ci@mathgraph.org"
+          git fetch --no-tags https://github.com/ethereum/go-ethereum.git 3a6c2e3b35ef8caa3d39dcbea3fe9f09099cca8c
+          git merge --no-edit FETCH_HEAD
+          test "$(git rev-parse HEAD^{tree})" = "a61594923136563d50964d7aa96a44c778bf9441"
+          {
+            echo "V26_OVERLAY_COMMIT=$GITHUB_SHA"
+            echo "V26_OVERLAY_TREE=$(git -C .. rev-parse HEAD^{tree})"
+            echo "V26_NATIVE_GETH_TREE=$(git rev-parse HEAD^{tree})"
+            go version
+          } | tee evidence-v26/source.txt
+      - name: Overlay immutable V26 and inherited V25/V24 native controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in bal_owner_process_v26_test.go bal_owner_epoch_journal_v25_test.go bal_owner_ambiguous_v25_test.go bal_owner_grant_fence_v24_test.go bal_engine_imported_valid_v23_test.go bal_engine_competing_overlap_v22_test.go bal_engine_crossfork_v20_test.go; do
+            cp "integrations/mathgraph-check-github/native-probes/$f" "native-goeth/eth/catalyst/$f"
+          done
+          cd native-goeth
+          test "$(git hash-object eth/catalyst/bal_owner_process_v26_test.go)" = "342a61a52d1b98e19672e5c61a08319e2a5278e5"
+          test "$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)" = "3c6415c027e5c072a8affc12131da6626d46aeb6"
+          test "$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)" = "bc7646371638f57b117414394066acfab0811bb4"
+          test "$(git hash-object eth/catalyst/bal_owner_grant_fence_v24_test.go)" = "c322610f171a079b9f6877a55c282ee00bb76bde"
+          test "$(git hash-object eth/catalyst/bal_pending_engine_witness_v13_test.go)" = "7c41562e93516b6f35792083c2c05bc6eca019d4"
+          git apply --check ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          git apply ../integrations/mathgraph-check-github/native-probes/bal_pending_fcu_epoch_fence_v21.patch
+          gofmt -w eth/catalyst/bal_owner_process_v26_test.go eth/catalyst/bal_owner_epoch_journal_v25_test.go eth/catalyst/bal_owner_ambiguous_v25_test.go eth/catalyst/bal_owner_grant_fence_v24_test.go eth/catalyst/bal_engine_imported_valid_v23_test.go eth/catalyst/bal_engine_competing_overlap_v22_test.go eth/catalyst/bal_engine_crossfork_v20_test.go eth/catalyst/bal_pending_engine_witness_v13_test.go
+          test -z "$(gofmt -l eth/catalyst/bal_owner_process_v26_test.go)"
+          {
+            echo "V26_GO_TEST_FORMATTED_BLOB=$(git hash-object eth/catalyst/bal_owner_process_v26_test.go)"
+            echo "V25_GATEWAY_BLOB=$(git hash-object eth/catalyst/bal_owner_epoch_journal_v25_test.go)"
+            echo "V25_FROZEN_TEST_BLOB=$(git hash-object eth/catalyst/bal_owner_ambiguous_v25_test.go)"
+          } | tee -a evidence-v26/source.txt
+          git diff --check
+      - name: Native actual SIGKILL and tamper negatives, all controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd native-goeth
+          set +e
+          go test -tags balexperiment ./eth/catalyst -run '^(TestBALV26ActualGatewaySIGKILLAndSeparateProcessRecovery|TestBALV26DirectNativeBypassForcesReconciliationAbstention|TestBALV26DeletingJournalReenablesStaleSignedNativeAction|TestBALV26RollingBackJournalReenablesSupersededSignedAction|TestBALV26MalformedJournalFailsClosedAcrossProcesses|TestBALV25LostAckCannotReenableOlderSignedForkchoice|TestBALV25NativeMismatchCannotBeMisreportedAsReconciled|TestBALV25MalformedJournalFailsClosed|TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority|TestBALV24ExternalOwnerEpochFencePreservesNativeValidB|TestBALV24ForgeryScopeReplayAndFreshHigherGrant|TestBALV24DirectNativeEngineRemainsAnExplicitBypass|TestBALV23SerialTwoImportedForksBothEngineValid|TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness|TestBALV20AuthenticatedRemoteCrossFork|TestBALV20SerialInvalidFCUClearsPending|TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority|TestBALV18CompetingForkFinalityFailsClosed|TestBALV19CrossForkAdmissionPredicate)$' -count=1 -v -timeout=40m 2>&1 | tee evidence-v26/native.log
+          native_exit=$?
+          set -e
+          echo "$native_exit" > evidence-v26/native_exit.txt
+          if [ "$native_exit" -ne 0 ]; then
+            echo 'V26_RESULT=UNKNOWN;reason=native_test_failed' | tee evidence-v26/boundary.txt
+            exit 1
+          fi
+          for root in TestBALV26ActualGatewaySIGKILLAndSeparateProcessRecovery TestBALV26DirectNativeBypassForcesReconciliationAbstention TestBALV26DeletingJournalReenablesStaleSignedNativeAction TestBALV26RollingBackJournalReenablesSupersededSignedAction TestBALV26MalformedJournalFailsClosedAcrossProcesses TestBALV25LostAckCannotReenableOlderSignedForkchoice TestBALV25NativeMismatchCannotBeMisreportedAsReconciled TestBALV25MalformedJournalFailsClosed TestBALV24UnfencedSignedGrantsDoNotEstablishTemporalAuthority TestBALV24ExternalOwnerEpochFencePreservesNativeValidB TestBALV24ForgeryScopeReplayAndFreshHigherGrant TestBALV24DirectNativeEngineRemainsAnExplicitBypass TestBALV23SerialTwoImportedForksBothEngineValid TestBALV22ConcurrentCompetingAncestryPreservesNewerWitness TestBALV20AuthenticatedRemoteCrossFork TestBALV20SerialInvalidFCUClearsPending TestBALInvalidFCUV17MalformedAttributesCannotAdmitPendingAuthority TestBALV18CompetingForkFinalityFailsClosed TestBALV19CrossForkAdmissionPredicate; do
+            if [ "$(grep -Fc -- "--- PASS: $root (" evidence-v26/native.log || true)" -ne 1 ]; then
+              echo "V26_RESULT=UNKNOWN;reason=missing_top_level_root:$root" | tee evidence-v26/boundary.txt
+              exit 1
+            fi
+          done
+          for marker in MG_V26_DURABLE_PREPARED_SURVIVED_SIGKILL MG_V26_TWO_SEPARATE_GATEWAY_PROCESSES_FAIL_CLOSED_BEFORE_RECONCILE MG_V26_RECOVERED_NATIVE_OBSERVATION_AND_FRESH_EPOCH3_VALID MG_V26_NEGATIVE_RAW_ENGINE_BYPASS_MISMATCH_FAIL_CLOSED MG_V26_NEGATIVE_JOURNAL_DELETION_REENABLES_STALE_SIGNED_GRANT MG_V26_NEGATIVE_JOURNAL_ROLLBACK_REENABLES_EPOCH3_AFTER_EPOCH4 MG_V26_NEGATIVE_MALFORMED_JOURNAL_FAIL_CLOSED_ACROSS_PROCESSES MG_V25_GREEN_DURABLE_PREPARE_REFUSES_OLDER_EPOCH_AFTER_REOPEN MG_V25_NEGATIVE_NATIVE_BYPASS_CAUSES_MISMATCH_AND_FAIL_CLOSED MG_V25_NEGATIVE_CORRUPT_OWNER_JOURNAL_FAIL_CLOSED MG_V24_GREEN_SIGNED_EPOCH_FENCE MG_V24_BYPASS_WITNESS MG_BAL_V22_COMPETING_ANCESTRY_PASS MG_BAL_V20_NATIVE_BOUNDARY; do
+            if [ "$(grep -Fc -- "$marker" evidence-v26/native.log || true)" -ne 1 ]; then
+              echo "V26_RESULT=UNKNOWN;reason=missing_exact_marker:$marker" | tee evidence-v26/boundary.txt
+              exit 1
+            fi
+          done
+          if [ "$(grep -Fc -- 'MG_V26_ACTUAL_GATEWAY_OS_PROCESS_SIGKILL_AFTER_NATIVE_VALID' evidence-v26/native.log || true)" -ne 5 ]; then
+            echo 'V26_RESULT=UNKNOWN;reason=SIGKILL_count' | tee evidence-v26/boundary.txt
+            exit 1
+          fi
+          echo 'V26_RESULT=BOUNDED_GATEWAY_OS_SIGKILL_RECOVERY_WITH_JOURNAL_TAMPER_NEGATIVES;roots=19/19;Geth_not_restarted=true;native_API_bypass=true;synthetic_owner=true' | tee evidence-v26/boundary.txt
+      - name: Retain native source and all negative observations
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goeth-v26-real-process-crash-research
+          path: native-goeth/evidence-v26/
+          if-no-files-found: warn
