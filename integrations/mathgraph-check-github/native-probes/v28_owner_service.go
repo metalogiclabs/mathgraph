@@ -286,11 +286,11 @@ func gateway(args []string)error{
  var g Grant
  if e=json.Unmarshal(b,&g);e!=nil{return e}
  current,e:=getReceipt(*owner,ed25519.PublicKey(pub));if e!=nil{return e}
- if current.Phase==prepared {
+ if current.Phase==prepared && *action!="reconcile" {
   fmt.Println("MG_V28_GATEWAY_ABSTAIN_DURING_OWNER_IN_DOUBT")
   return nil
  }
- if current.Phase!=observed{return errors.New("MG_V28_UNKNOWN_OWNER_PHASE")}
+ if current.Phase!=observed&&*action!="reconcile"{return errors.New("MG_V28_UNKNOWN_OWNER_PHASE")}
  if *action=="status" {
   fmt.Printf("MG_V28_GATEWAY_OWNER_SIGNED_CURRENT_EPOCH_%d
 ",current.Grant.Epoch)
