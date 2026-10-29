@@ -1,0 +1,131 @@
+name: MathGraph Check YAML #733 independent multi-digit indent edge audit (new exploratory cohort)
+on:
+  push:
+    branches:
+      - research/check-real-yaml733-indent10-v1-20261030
+permissions:
+  contents: read
+jobs:
+  source-native-v1-indicator-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - name: Verify frozen V0 and new V1 source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/yaml733
+          test "$(git hash-object research/real-intent-audit-yaml733/oracle.mjs)" = "7ee58d525b6078d6e78cf57ddf85c71345ae58a4"
+          test "$(git hash-object research/real-intent-audit-yaml733/source-pin.mjs)" = "c1a27f3f1aca6c46833b33c24ccd41d1a0e8406c"
+          test "$(git hash-object research/real-intent-audit-yaml733/classify.mjs)" = "9cb21fa8691aaab9a5af52ae9d19648e632b548f"
+          test "$(git hash-object research/real-intent-audit-yaml733/edge-width-v1.mjs)" = "4f6d3bcd8c64e6f4d575bab7bbe9366a72c9f349"
+          test "$(git hash-object research/real-intent-audit-yaml733/edge-classify-v1.mjs)" = "0380c018a50ffd05f7ea87c1feba7c8349c2a673"
+          for p in research/real-intent-audit-yaml733/*.mjs; do node --check "$p"; done
+          {
+            echo "MATHGRAPH_V1_SOURCE_SHA=$(git rev-parse HEAD)"
+            echo "MATHGRAPH_V1_TREE=$(git rev-parse HEAD^{tree})"
+            echo "V0_ORACLE_GIT_BLOB=$(git hash-object research/real-intent-audit-yaml733/oracle.mjs)"
+            echo "V1_EDGE_ORACLE_GIT_BLOB=$(git hash-object research/real-intent-audit-yaml733/edge-width-v1.mjs)"
+            node --version
+          } | tee evidence/yaml733/source-pins.txt
+      - name: Read real GitHub issue and PR current source BEFORE native test
+        run: node research/real-intent-audit-yaml733/source-pin.mjs before > evidence/yaml733/source-before.json
+      - uses: actions/checkout@v4
+        with:
+          repository: eemeli/yaml
+          ref: 528ef30d6ded4bd9f2c3521b670eb2b29d503c5c
+          path: pinned-base
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: eemeli/yaml
+          ref: 9a1c4bd1a5c76272fd66a7a75c3aa37c54fd129d
+          path: pinned-head
+          persist-credentials: false
+      - name: Pin both native YAML trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C pinned-base rev-parse HEAD)" = "528ef30d6ded4bd9f2c3521b670eb2b29d503c5c"
+          test "$(git -C pinned-head rev-parse HEAD)" = "9a1c4bd1a5c76272fd66a7a75c3aa37c54fd129d"
+          test "$(git -C pinned-base rev-parse HEAD^{tree})" = "0e7eaa608b2712aa4a4b5780af316278df698be6"
+          test "$(git -C pinned-head rev-parse HEAD^{tree})" = "4819feb68aa45c20401c20767d84a73ef5ab7cb0"
+          {
+            echo "UPSTREAM_BASE_TREE=$(git -C pinned-base rev-parse HEAD^{tree})"
+            echo "UPSTREAM_HEAD_TREE=$(git -C pinned-head rev-parse HEAD^{tree})"
+          } | tee -a evidence/yaml733/source-pins.txt
+      - name: Build native YAML base and PR head; run upstream's named tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for phase in base head; do
+            (
+              cd "pinned-$phase"
+              npm ci --no-audit --no-fund
+              npm run build
+              npm test -- tests/doc/stringify.ts
+            ) 2>&1 | tee "evidence/yaml733/native-$phase-build-tests.log"
+          done
+      - name: Replay original frozen V0 455 cases and NEW V1 separate 168 cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/real-intent-audit-yaml733/oracle.mjs pinned-base BASE > evidence/yaml733/base.json
+          node research/real-intent-audit-yaml733/oracle.mjs pinned-head HEAD > evidence/yaml733/head.json
+          node research/real-intent-audit-yaml733/edge-width-v1.mjs pinned-base BASE > evidence/yaml733/edge-base.json
+          node research/real-intent-audit-yaml733/edge-width-v1.mjs pinned-head HEAD > evidence/yaml733/edge-head.json
+          node -e 'const fs=require("fs");for(const p of ["edge-base","edge-head"]){const r=JSON.parse(fs.readFileSync("evidence/yaml733/"+p+".json")); console.log("EDGE_"+p+" total="+r.total+" pass="+r.pass+" invalid="+r.invalidOutput+" optionRejected="+r.optionRejected+" byWidth="+JSON.stringify(r.byWidth))}'
+      - name: Print precise unchanged-oracle width 10+ native witness for reviewer
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=commonjs <<'NODE'
+          const fs = require('node:fs')
+          const head = JSON.parse(fs.readFileSync('evidence/yaml733/edge-head.json','utf8'))
+          const base = JSON.parse(fs.readFileSync('evidence/yaml733/edge-base.json','utf8'))
+          const summary = obj => Object.fromEntries(
+            ['PASS','VALUE_MISMATCH','UNPARSEABLE_SUCCESSFUL_STRINGIFY','OPTION_REJECTED_OR_STRINGIFY_ERROR']
+              .map(kind => [kind, obj.counterexamples.filter(x => x.result===kind).length]))
+          console.log('V1_HEAD_FAILURE_TYPES='+JSON.stringify(summary(head)))
+          console.log('V1_BASE_FAILURE_TYPES='+JSON.stringify(summary(base)))
+          for (const width of [9,10,11,12,16]) {
+            const id='issue-exact:'+width+':default:mapping'
+            const finding=head.counterexamples.find(x=>x.id===id)
+            if (width===9 && finding) throw new Error('INDENT_9_CONTROL_SHOULD_PASS')
+            if (width>9 && !finding) throw new Error('MISSING_WIDTH_WITNESS_'+width)
+            console.log('V1_HEAD_EXACT_WITNESS_'+width+'='+JSON.stringify(finding??{id,result:'PASS'}))
+          }
+          NODE
+      - name: Re-read live GitHub source after both native runs
+        run: node research/real-intent-audit-yaml733/source-pin.mjs after > evidence/yaml733/source-after.json
+      - name: Rebind historical MathGraph contract and qualify separate edge cohort
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/real-intent-audit-yaml733/classify.mjs evidence/yaml733 | tee evidence/yaml733/v0-conclusion.txt
+          node research/real-intent-audit-yaml733/edge-classify-v1.mjs evidence/yaml733 | tee evidence/yaml733/v1-conclusion.txt
+          node -e 'const x=require("./evidence/yaml733/edge-audit.json");if(x.permission!=="ADVISORY_ONLY"||x.intentOwnerAuth!=="UNKNOWN"||x.v0QualifyingResult!=="HEAD_455_OF_455_NO_FAIL_MUST_REMAIN_SEPARATE"||x.classification!==x.baseline.verdict)process.exit(1)'
+      - name: Retain MathGraph Check unmodified source-transition controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=0
+          for f in integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs integrations/mathgraph-check-github/demo/*.test.mjs; do
+            node "$f"
+            files=$((files+1))
+          done
+          test "$files" -eq 19
+          echo "MATHGRAPH_CHECK_ORIGINAL_19_FILES=$files"
+      - name: Preserve source, native and separate exploratory observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-yaml733-new-multidigit-edge-v1
+          path: evidence/yaml733/
+          if-no-files-found: warn
