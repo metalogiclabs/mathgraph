@@ -1,0 +1,118 @@
+name: MathGraph Check real AI-assisted YAML PR #738 third-target audit (advisory research)
+on:
+  push:
+    branches:
+      - research/check-real-ai-pr-yaml733-v0-20261030
+permissions:
+  contents: read
+jobs:
+  source-pinned-yaml733:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: MathGraph frozen research source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - name: Source pin exact independent oracle and active MathGraph base
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/yaml733
+          test "$(git hash-object research/real-intent-audit-yaml733/oracle.mjs)" = "7ee58d525b6078d6e78cf57ddf85c71345ae58a4"
+          test "$(git hash-object research/real-intent-audit-yaml733/source-pin.mjs)" = "c1a27f3f1aca6c46833b33c24ccd41d1a0e8406c"
+          test "$(git hash-object research/real-intent-audit-yaml733/classify.mjs)" = "9cb21fa8691aaab9a5af52ae9d19648e632b548f"
+          node --check research/real-intent-audit-yaml733/oracle.mjs
+          node --check research/real-intent-audit-yaml733/source-pin.mjs
+          node --check research/real-intent-audit-yaml733/classify.mjs
+          {
+            echo "MATHGRAPH_RESEARCH_SHA=$(git rev-parse HEAD)"
+            echo "MATHGRAPH_RESEARCH_TREE=$(git rev-parse HEAD^{tree})"
+            echo "ORACLE_GIT_BLOB=$(git hash-object research/real-intent-audit-yaml733/oracle.mjs)"
+            node --version
+          } | tee evidence/yaml733/source-pins.txt
+      - name: Read exact live public reporter/PR source BEFORE test
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/real-intent-audit-yaml733/source-pin.mjs before > evidence/yaml733/source-before.json
+      - name: Checkout upstream YAML original PR base
+        uses: actions/checkout@v4
+        with:
+          repository: eemeli/yaml
+          ref: 528ef30d6ded4bd9f2c3521b670eb2b29d503c5c
+          path: pinned-base
+          persist-credentials: false
+      - name: Checkout upstream YAML AI-assisted candidate PR HEAD
+        uses: actions/checkout@v4
+        with:
+          repository: eemeli/yaml
+          ref: 9a1c4bd1a5c76272fd66a7a75c3aa37c54fd129d
+          path: pinned-head
+          persist-credentials: false
+      - name: Exact Git source-tree assertion for third-party base and head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C pinned-base rev-parse HEAD)" = "528ef30d6ded4bd9f2c3521b670eb2b29d503c5c"
+          test "$(git -C pinned-head rev-parse HEAD)" = "9a1c4bd1a5c76272fd66a7a75c3aa37c54fd129d"
+          test "$(git -C pinned-base rev-parse HEAD^{tree})" = "0e7eaa608b2712aa4a4b5780af316278df698be6"
+          test "$(git -C pinned-head rev-parse HEAD^{tree})" = "4819feb68aa45c20401c20767d84a73ef5ab7cb0"
+          {
+            echo "THIRD_PARTY_BASE_SHA=$(git -C pinned-base rev-parse HEAD)"
+            echo "THIRD_PARTY_BASE_TREE=$(git -C pinned-base rev-parse HEAD^{tree})"
+            echo "THIRD_PARTY_HEAD_SHA=$(git -C pinned-head rev-parse HEAD)"
+            echo "THIRD_PARTY_HEAD_TREE=$(git -C pinned-head rev-parse HEAD^{tree})"
+            git -C pinned-head diff --check
+          } | tee -a evidence/yaml733/source-pins.txt
+      - name: Re-run YAML repository's own named stringify tests on both exact trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          for phase in base head; do
+            (
+              cd "pinned-$phase"
+              npm ci --no-audit --no-fund
+              npm run build
+              npm test -- tests/doc/stringify.ts
+            ) 2>&1 | tee "evidence/yaml733/yaml-$phase-build-and-own-tests.log"
+          done
+      - name: Run separately authored same-input finite oracle on both trees
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/real-intent-audit-yaml733/oracle.mjs pinned-base BASE > evidence/yaml733/base.json
+          node research/real-intent-audit-yaml733/oracle.mjs pinned-head HEAD > evidence/yaml733/head.json
+          node -e 'const fs=require("fs");for(const p of ["base","head"]){const r=JSON.parse(fs.readFileSync("evidence/yaml733/"+p+".json")); console.log("ORACLE "+p+" "+r.pass+"/"+r.total+" failures="+r.fail+" reporter="+r.perGroup["reporter-exact"].fail+" matrix="+r.perGroup["pr733-mapping-matrix"].fail+" outside_scope_692="+r.outsideScopeIssue692.result)}'
+      - name: Recheck public issue and PR HEAD after native oracle execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/real-intent-audit-yaml733/source-pin.mjs after > evidence/yaml733/source-after.json
+      - name: Call native MathGraph Check contract gate and equal-information baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          node research/real-intent-audit-yaml733/classify.mjs evidence/yaml733 | tee evidence/yaml733/conclusion.txt
+          node -e 'const x=require("./evidence/yaml733/audit.json");if(x.mathgraph.permission!=="ADVISORY_ONLY"||x.mathgraph.intentVerification!=="NOT_ESTABLISHED"||x.proofOfSuperiority!=="NOT_ESTABLISHED"||x.mathgraph.verdict!==x.conventionalEqualInformationBaseline.verdict)process.exit(1)'
+      - name: Historical MathGraph source-transition regression tests (unmodified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=0
+          for file in integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs integrations/mathgraph-check-github/demo/*.test.mjs; do
+            node "$file"
+            files=$((files+1))
+          done
+          test "$files" -eq 19
+          echo "MATHGRAPH_CHECK_SOURCE_TRANSITION_FILES=$files"
+      - name: Retain all source pins, native logs, report and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-check-real-yaml733-issue-pr-advisory-evidence
+          path: evidence/yaml733/
+          if-no-files-found: warn
