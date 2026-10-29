@@ -35,3 +35,44 @@ From the existing live-app source branch, the scoped CI runs Node 22 tests:
     node --test integrations/mathgraph-check-github/intent-contract-v1.test.mjs integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs
 
 No permissions or cloud deployment required. Future work: a separately qualified GitHub App adapter must fetch exact-head evidence and independently execute selected oracles, retain artifacts and witness bytes in external storage, enforce a customer-authored intent contract, and add gated publishing. The present adapter **does not implement** that live integration.
+
+## Warrant-preserving reuse: finite quotient collision gate
+
+The companion pure consumer finite-warrant-quotient-v1.mjs checks the finite restriction of:
+
+    ker(alpha) restricted to U  subseteq  ker(Phi_protected) restricted to U
+
+Here alpha is a proposed compressed/merged representation, and the protected
+observation Phi consists of the **exact source SHA and warrant status**.
+A source swap or a change from OBSERVED to BLOCKED cannot be hidden behind the
+same green-CI summary. When two explicitly enumerated rows have the same
+alpha_key but different protected observations, the consumer returns
+FINITE_COUNTEREXAMPLE with the two concrete rows. When there is no collision it
+returns FINITE_PRESERVED **only for the supplied authenticated finite universe**.
+No table self-hash authorizes a universal claim; an independently admitted
+expectedUniverseSha256 and source allowlist are required.
+
+Use this finite contract to audit proposed caches, provenance compression and
+monitoring state merges before using them to decide which evidence can carry
+forward. Do not infer that every possible run was checked.
+
+## Reproducible synthetic product demo
+
+The demo under demo/ has two independent programs. The deliberately buggy
+agent's happy-path refund test passes. The separately written customer intent
+oracle checks already-refunded orders and finds a concrete double-refund
+counterexample. The demo runner executes both, binds the input and witness
+bytes, and emits report.html and report.json with status BLOCKED.
+
+The example is **SYNTHETIC**, with synthetic PR identity and a simulated
+out-of-band authority. It establishes no live customer finding or actual GitHub
+authentication. The CI retains an inspectable ZIP named
+mathgraph-check-intent-gap-synthetic-demo. No comments or deploy actions run.
+
+Full isolated tests:
+
+    node --test integrations/mathgraph-check-github/intent-contract-v1.test.mjs \
+      integrations/mathgraph-check-github/finite-warrant-quotient-v1.test.mjs \
+      integrations/mathgraph-check-github/demo/intent-green-ci-demo.test.mjs \
+      integrations/mathgraph-check-github/evidence-contract-v1.test.mjs \
+      integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs
