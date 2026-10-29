@@ -81,6 +81,27 @@ jobs:
           node research/real-intent-audit-yaml733/edge-width-v1.mjs pinned-base BASE > evidence/yaml733/edge-base.json
           node research/real-intent-audit-yaml733/edge-width-v1.mjs pinned-head HEAD > evidence/yaml733/edge-head.json
           node -e 'const fs=require("fs");for(const p of ["edge-base","edge-head"]){const r=JSON.parse(fs.readFileSync("evidence/yaml733/"+p+".json")); console.log("EDGE_"+p+" total="+r.total+" pass="+r.pass+" invalid="+r.invalidOutput+" optionRejected="+r.optionRejected+" byWidth="+JSON.stringify(r.byWidth))}'
+      - name: Print precise unchanged-oracle width 10+ native witness for reviewer
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=commonjs <<'NODE'
+          const fs = require('node:fs')
+          const head = JSON.parse(fs.readFileSync('evidence/yaml733/edge-head.json','utf8'))
+          const base = JSON.parse(fs.readFileSync('evidence/yaml733/edge-base.json','utf8'))
+          const summary = obj => Object.fromEntries(
+            ['PASS','VALUE_MISMATCH','UNPARSEABLE_SUCCESSFUL_STRINGIFY','OPTION_REJECTED_OR_STRINGIFY_ERROR']
+              .map(kind => [kind, obj.counterexamples.filter(x => x.result===kind).length]))
+          console.log('V1_HEAD_FAILURE_TYPES='+JSON.stringify(summary(head)))
+          console.log('V1_BASE_FAILURE_TYPES='+JSON.stringify(summary(base)))
+          for (const width of [9,10,11,12,16]) {
+            const id='issue-exact:'+width+':default:mapping'
+            const finding=head.counterexamples.find(x=>x.id===id)
+            if (width===9 && finding) throw new Error('INDENT_9_CONTROL_SHOULD_PASS')
+            if (width>9 && !finding) throw new Error('MISSING_WIDTH_WITNESS_'+width)
+            console.log('V1_HEAD_EXACT_WITNESS_'+width+'='+JSON.stringify(finding??{id,result:'PASS'}))
+          }
+          NODE
       - name: Re-read live GitHub source after both native runs
         run: node research/real-intent-audit-yaml733/source-pin.mjs after > evidence/yaml733/source-after.json
       - name: Rebind historical MathGraph contract and qualify separate edge cohort
