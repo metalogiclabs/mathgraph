@@ -22,7 +22,7 @@ test("authenticated GitHub readback yields observation but not proof",async()=>{
  const m=mock({runs:[run(1,"native")]});
  const r=await githubSnapshot({...args,fetcher:m.fetcher});
  assert.equal(r.result.status,"OBSERVED");assert.equal(r.result.permission,"ADVISORY_ONLY");
- assert.equal(r.result.subject.head_sha,a);assert.equal(m.got.length,2);
+ assert.equal(r.result.subject.head_sha,a);assert.equal(m.got.length,3);
 });
 test("untrusted extra-head checks are ignored",async()=>{
  const m=mock({runs:[run(1,"native","success","completed",b)]});

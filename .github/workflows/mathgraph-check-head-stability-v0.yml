@@ -1,0 +1,29 @@
+name: MathGraph Check source-head stability V0
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-source-stability-v0-20261029
+  workflow_dispatch:
+
+jobs:
+  bounded-read-window:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run each real MathGraph Check test file
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=0
+          for test_file in integrations/mathgraph-check-github/*.test.mjs; do
+            node "$test_file"
+            files=$((files+1))
+          done
+          test "$files" -eq 18
+          echo "MATHGRAPH_CHECK_HEAD_STABILITY_FILES=$files"

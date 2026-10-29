@@ -50,6 +50,14 @@ export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={}
  const result=check(input,{allowedRepositories:[repository],
   authenticatedEvidenceIds:evidence.map(e=>e.id)});
  result.claim_dependencies=input.claims.map(c=>({id:c.id,requires:c.requires}));
+ // A PR may advance while check-run pages for its former head are read.
+ // Recheck the exact PR source before returning a current-head observation.
+ // This bounds the read window; it is not an atomic GitHub transaction.
+ const confirmation=await api("/pulls/"+pr);
+ if(confirmation?.base?.repo?.full_name!==repository||
+    confirmation?.head?.repo?.full_name!==target.head.repo.full_name||
+    confirmation?.base?.sha!==target.base.sha||
+    confirmation?.head?.sha!==sha)throw Error("PR_SOURCE_MOVED_DURING_CHECKS");
  return {input,result,plans:resolve(result,plans)};
 }
 export function compareSnapshots(before,after,{changedEvidenceIds=[]}={}){
