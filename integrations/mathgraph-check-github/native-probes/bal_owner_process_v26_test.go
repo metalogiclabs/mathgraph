@@ -406,7 +406,7 @@ func TestBALV26DeletingJournalReenablesStaleSignedNativeAction(t *testing.T) {
 }
 
 func TestBALV26RollingBackJournalReissuesSupersededSignedAction(t *testing.T) {
-	h, _, a, b, key := balV24Environment(t, true, nil)
+	h, _, _, b, key := balV24Environment(t, true, nil)
 	journal := filepath.Join(t.TempDir(), "v26-owner-journal.json")
 	balV26KillChild(t, balV26Config(t, h, key, journal, "kill", b))
 	balV26ExpectChild(t, balV26Config(t, h, key, journal, "reconcile", b), "MG_V26_RESTART_RECONCILED_EXACT_NATIVE_OBSERVATION")
