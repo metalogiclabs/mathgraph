@@ -1,0 +1,33 @@
+name: MathGraph Check - math source GitHub host V1
+on:
+  push:
+    branches:
+      - 'research/mathgraph-check-github-host-*'
+  pull_request:
+    paths:
+      - '.github/workflows/mathgraph-check-math-source-host-v1.yml'
+      - 'integrations/mathgraph-check-github/math-source-github-host-v1.mjs'
+      - 'integrations/mathgraph-check-github/math-source-github-host-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/math-source-check-v1.mjs'
+      - 'integrations/mathgraph-check-github/intent-contract-v1.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-host-negative-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exact-head provenance and separate human-review tests
+        run: |
+          set -euo pipefail
+          node --test \
+            integrations/mathgraph-check-github/math-source-github-host-v1.test.mjs \
+            integrations/mathgraph-check-github/math-source-check-v1.test.mjs \
+            integrations/mathgraph-check-github/intent-contract-v1.test.mjs
