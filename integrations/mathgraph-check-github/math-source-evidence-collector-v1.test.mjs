@@ -6,6 +6,10 @@ import {join} from 'node:path';
 import {ARTIN_PIN} from './proofnet-artin-replay-v1.mjs';
 import {collectMathSourceEvidence}
   from './math-source-evidence-collector-v1.mjs';
+import {makeArtinEnvironmentReport}
+  from './math-source-environment-closure-v1.mjs';
+import {collectMathSourceEvidenceWithEnvironment}
+  from './math-source-environment-correlation-v1.mjs';
 
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const h=x=>x.repeat(64);
@@ -21,7 +25,8 @@ function crc32(bytes){let c=0xffffffff;for(const b of bytes){c^=b;
 function zip(files){
   const local=[],central=[];let offset=0;
   for(const [name,content] of files){
-    const n=Buffer.from(name),b=Buffer.from(JSON.stringify(content));
+    const n=Buffer.from(name),b=Buffer.isBuffer(content)?content:
+      Buffer.from(JSON.stringify(content));
     const crc=crc32(b),l=Buffer.alloc(30),c=Buffer.alloc(46);
     l.writeUInt32LE(0x04034b50,0);l.writeUInt16LE(20,4);
     l.writeUInt32LE(crc,14);l.writeUInt32LE(b.length,18);
@@ -91,7 +96,7 @@ function fixture(){
   const dir=process.env.MATHGRAPH_PROOFNET_FIXTURE_DIR;
   const originalSource=dir?readFileSync(join(dir,ARTIN_PIN.sourcePath)):Buffer.from('unavailable');
   const originalJsonl=dir?readFileSync(join(dir,ARTIN_PIN.jsonlPath)):Buffer.from('{}');
-  let source=originalSource,jsonl=originalJsonl;
+  let source=originalSource,jsonl=originalJsonl,envEvidence=null;
   let apiPrReads=0,apiRunReads=0;
   const fetcher=async(url,init)=>{
     const prefix='https://api.github.com/repos/'+repository;
@@ -102,6 +107,9 @@ function fixture(){
       if(path===`/actions/runs/${runId}`)apiRunReads++;
       if(path==='/actions/artifacts/7000/zip')
         return new Response(null,{status:302,headers:{Location:signed}});
+      if(path==='/actions/artifacts/7001/zip')
+        return new Response(null,{status:302,headers:{
+          Location:'https://proof-results.blob.core.windows.net/results/environment.zip?sig=opaque'}});
       if(!(path in data))return new Response(null,{status:404});
       return new Response(JSON.stringify(data[path]),{status:200,
         headers:{'content-type':'application/json'}});
@@ -109,6 +117,10 @@ function fixture(){
     if(url===signed){
       assert.equal(init.headers.Authorization,undefined);
       return new Response(evidence,{status:200});
+    }
+    if(url==='https://proof-results.blob.core.windows.net/results/environment.zip?sig=opaque'){
+      assert.equal(init.headers.Authorization,undefined);
+      return new Response(envEvidence,{status:200});
     }
     const raw=`https://raw.githubusercontent.com/${ARTIN_PIN.repository}/${ARTIN_PIN.commit}/`;
     if(url===raw+ARTIN_PIN.sourcePath)return new Response(source);
@@ -118,7 +130,43 @@ function fixture(){
   const input={repository,pr,runId,token,trusted,fetcher};
   return {input,trusted,data,evidence,fetcher,
     setSource:x=>{source=x;},setJsonl:x=>{jsonl=x;},
+    setEnvironment:x=>{envEvidence=x;},
     prReads:()=>apiPrReads,runReads:()=>apiRunReads};
+}
+
+function environmentFixture(x){
+  const v2='.github/workflows/mathgraph-check-proofnet-artin-replay-v2.yml';
+  x.trusted.workflowPath=v2;
+  x.data['/actions/runs/991'].path=v2+'@refs/heads/research/fixture';
+  x.data[`/contents/${v2}?ref=${head}`]=
+    x.data[`/contents/${workflowPath}?ref=${head}`];
+  const envSource={
+    manifestBytes:Buffer.from(JSON.stringify({version:'1.1.0',
+      packagesDir:'.lake/packages',packages:[{
+        name:'mathlib',type:'git',
+        url:'https://github.com/leanprover-community/mathlib4.git',
+        rev:'8f9d9cff6bd728b17a24e163c9402775d9e6a365',inputRev:'v4.28.0'}]})),
+    toolchainBytes:Buffer.from('leanprover/lean4:v4.28.0\n'),
+    leanVersionBytes:Buffer.from('Lean (version 4.28.0, linux)\n'),
+    lakeVersionBytes:Buffer.from('Lake version 5.0.0-src (Lean version 4.28.0)\n'),
+  };
+  const report=makeArtinEnvironmentReport(envSource);
+  const envBytes=zip([
+    ['lake-manifest.json',envSource.manifestBytes],
+    ['artin-toolchain.txt',envSource.toolchainBytes],
+    ['artin-lean-version.txt',envSource.leanVersionBytes],
+    ['artin-lake-version.txt',envSource.lakeVersionBytes],
+    ['artin-environment.json',report],
+  ]);
+  x.setEnvironment(envBytes);
+  x.trusted.environmentSha256=report.environment_sha256;
+  const a=x.data['/actions/runs/991/artifacts?per_page=100'];
+  a.artifacts.push({id:7001,name:'mathgraph-proofnet-artin-environment',
+    expired:false,created_at:'2026-11-01T20:06:00Z',
+    size_in_bytes:envBytes.length,digest:'sha256:'+sha(envBytes),
+    workflow_run:{id:runId,head_sha:head,repository_id:55}});
+  a.total_count=2;
+  return {envBytes,report};
 }
 
 test('real host+ZIP+upstream produce correlated advisory evidence without a reviewer',async t=>{
@@ -152,6 +200,20 @@ test('allowlisted APPROVED declaration may attest review but never mathematicall
   assert.equal(r.status,'EVIDENCE_BYTES_CORRELATED');
   assert.equal(r.review.status,'SOURCE_TO_FORMAL_REVIEWED');
   assert.equal(r.intent_verification,'NOT_ESTABLISHED');
+  assert.equal(r.permission,'ADVISORY_ONLY');
+});
+
+test('the separately pinned V2 replay workflow is eligible for the same bounded primary ZIP check',async t=>{
+  if(!process.env.MATHGRAPH_PROOFNET_FIXTURE_DIR){t.skip('Pinned upstream checkout supplied by CI');return;}
+  const x=fixture();
+  const v2='.github/workflows/mathgraph-check-proofnet-artin-replay-v2.yml';
+  x.trusted.workflowPath=v2;
+  x.data['/actions/runs/991'].path=v2+'@refs/heads/research/fixture';
+  x.data[`/contents/${v2}?ref=${head}`]=
+    x.data[`/contents/${workflowPath}?ref=${head}`];
+  const r=await collectMathSourceEvidence(x.input);
+  assert.equal(r.status,'EVIDENCE_BYTES_CORRELATED');
+  assert.equal(r.environment,'REQUESTED_LEAN_AND_MATHLIB_TAGS_ONLY');
   assert.equal(r.permission,'ADVISORY_ONLY');
 });
 
@@ -198,4 +260,35 @@ test('changed attempt, artifact digest or head on second readback withdraws resu
     assert.equal(r.status,'UNKNOWN',kind);
     assert.equal(r.permission,'ADVISORY_ONLY',kind);
   }
+});
+
+test('full V2 collector binds both authenticated artifacts and pinned resolved environment',async t=>{
+  if(!process.env.MATHGRAPH_PROOFNET_FIXTURE_DIR){t.skip('Pinned upstream checkout supplied by CI');return;}
+  const x=fixture(),y=environmentFixture(x);
+  const r=await collectMathSourceEvidenceWithEnvironment(x.input);
+  assert.equal(r.status,'ENVIRONMENT_AND_REPLAY_CORRELATED');
+  assert.equal(r.replay.run_id,991);
+  assert.equal(r.environment_artifact_id,7001);
+  assert.equal(r.environment.environment_sha256,y.report.environment_sha256);
+  assert.equal(r.review.status,'UNKNOWN');
+  assert.equal(r.intent_verification,'NOT_ESTABLISHED');
+  assert.equal(r.permission,'ADVISORY_ONLY');
+});
+
+test('V2 collector rejects changing environment digest on final readback or wrong admin pin',async t=>{
+  if(!process.env.MATHGRAPH_PROOFNET_FIXTURE_DIR){t.skip('Pinned upstream checkout supplied by CI');return;}
+  const wrong=fixture();environmentFixture(wrong);
+  wrong.trusted.environmentSha256='f'.repeat(64);
+  assert.equal((await collectMathSourceEvidenceWithEnvironment(wrong.input)).status,'UNKNOWN');
+  const changed=fixture();environmentFixture(changed);
+  const original=changed.fetcher;let count=0;
+  changed.input.fetcher=async(url,init)=>{
+    if(url.endsWith('/actions/runs/991/artifacts?per_page=100')&&++count>=6){
+      const record=structuredClone(changed.data['/actions/runs/991/artifacts?per_page=100']);
+      record.artifacts[1].digest='sha256:'+'f'.repeat(64);
+      return new Response(JSON.stringify(record),{status:200});
+    }
+    return original(url,init);
+  };
+  assert.equal((await collectMathSourceEvidenceWithEnvironment(changed.input)).status,'UNKNOWN');
 });
