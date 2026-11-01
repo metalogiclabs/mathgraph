@@ -1,0 +1,135 @@
+name: MathGraph Check - native Artin replay with resolved environment (research)
+on:
+  push:
+    branches:
+      - 'research/mathgraph-check-math-source-environment-*'
+    paths:
+      - '.github/workflows/mathgraph-check-proofnet-artin-replay-v2.yml'
+      - 'integrations/mathgraph-check-github/math-source-environment-closure-v1.mjs'
+      - 'integrations/mathgraph-check-github/math-source-environment-closure-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/math-source-evidence-bytes-v1.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-artin-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch exactly pinned third-party audited benchmark
+        run: |
+          set -euo pipefail
+          git clone --no-checkout --filter=blob:none \
+            https://github.com/marcusm117/ProofNet-Verified.git \
+            "$RUNNER_TEMP/proofnet-upstream"
+          git -C "$RUNNER_TEMP/proofnet-upstream" checkout --detach \
+            14879cb23e078d122adecd9578dd26a7304f753b
+          OBSERVED="$(git -C "$RUNNER_TEMP/proofnet-upstream" rev-parse HEAD)"
+          test "$OBSERVED" = 14879cb23e078d122adecd9578dd26a7304f753b
+          echo "PROOFNET_OBSERVED_COMMIT=$OBSERVED" >> "$GITHUB_ENV"
+      - name: Bind exact source, theorem statement and archived proof hashes
+        env:
+          MATHGRAPH_PROOFNET_FIXTURE_DIR: ${{ runner.temp }}/proofnet-upstream
+        run: |
+          set -euo pipefail
+          node --test \
+            integrations/mathgraph-check-github/proofnet-artin-replay-v1.test.mjs \
+            integrations/mathgraph-check-github/proofnet-artin-axioms-v1.test.mjs \
+            integrations/mathgraph-check-github/math-source-environment-closure-v1.test.mjs
+          mkdir -p "$RUNNER_TEMP/mathgraph-artin-replay"
+          node integrations/mathgraph-check-github/proofnet-artin-replay-v1.mjs \
+            "$MATHGRAPH_PROOFNET_FIXTURE_DIR" \
+            "$RUNNER_TEMP/mathgraph-artin-replay/ArtinReplay.lean" \
+            > "$RUNNER_TEMP/artin-preflight.json"
+          sha256sum "$RUNNER_TEMP/mathgraph-artin-replay/ArtinReplay.lean"
+      - name: Build isolated archived Lean 4.28 environment
+        run: |
+          set -euo pipefail
+          REPLAY="$RUNNER_TEMP/mathgraph-artin-replay"
+          printf '%s\n' 'leanprover/lean4:v4.28.0' > "$REPLAY/lean-toolchain"
+          printf '%s\n' \
+            'import Lake' \
+            'open Lake DSL' \
+            'package MathSourceReplay where' \
+            'require mathlib from git "https://github.com/leanprover-community/mathlib4.git" @ "v4.28.0"' \
+            'lean_lib ArtinReplay where' \
+            > "$REPLAY/lakefile.lean"
+      - name: Resolve pinned Mathlib dependency manifest
+        working-directory: ${{ runner.temp }}/mathgraph-artin-replay
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake update
+          test -s lake-manifest.json
+      - name: Install pinned Lean/Mathlib and its cached dependencies
+        uses: leanprover/lean-action@v1
+        env:
+          LEAN_NUM_THREADS: '1'
+        with:
+          lake-package-directory: ${{ runner.temp }}/mathgraph-artin-replay
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'true'
+          use-github-cache: 'false'
+      - name: Native Lean replay and scoped theorem axiom audit
+        working-directory: ${{ runner.temp }}/mathgraph-artin-replay
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: |
+          set -euo pipefail
+          printf '\n#print axioms Artin_exercise_2_2_9\n' >> ArtinReplay.lean
+          lake env lean ArtinReplay.lean 2>&1 | tee "$RUNNER_TEMP/artin-axiom-report.txt"
+          node "$GITHUB_WORKSPACE/integrations/mathgraph-check-github/proofnet-artin-axioms-v1.mjs" \
+            < "$RUNNER_TEMP/artin-axiom-report.txt" \
+            > "$RUNNER_TEMP/artin-axiom-audit.json"
+          lean --version > "$RUNNER_TEMP/artin-lean-version.txt"
+          lake --version > "$RUNNER_TEMP/artin-lake-version.txt"
+          lean --version
+          lake --version
+      - name: Capture exact resolved Lake environment closure
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/mathgraph-artin-replay/lake-manifest.json" \
+            "$RUNNER_TEMP/lake-manifest.json"
+          cp "$RUNNER_TEMP/mathgraph-artin-replay/lean-toolchain" \
+            "$RUNNER_TEMP/artin-toolchain.txt"
+          node integrations/mathgraph-check-github/math-source-environment-closure-v1.mjs \
+            "$RUNNER_TEMP/lake-manifest.json" \
+            "$RUNNER_TEMP/artin-toolchain.txt" \
+            "$RUNNER_TEMP/artin-lean-version.txt" \
+            "$RUNNER_TEMP/artin-lake-version.txt" \
+            > "$RUNNER_TEMP/artin-environment.json"
+          sha256sum "$RUNNER_TEMP/lake-manifest.json" \
+            "$RUNNER_TEMP/artin-environment.json"
+      - name: Save bounded machine evidence (never the gold proof)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-proofnet-artin-evidence
+          path: |
+            ${{ runner.temp }}/artin-preflight.json
+            ${{ runner.temp }}/artin-axiom-audit.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Save bounded resolved environment evidence (never the gold proof)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-proofnet-artin-environment
+          path: |
+            ${{ runner.temp }}/lake-manifest.json
+            ${{ runner.temp }}/artin-toolchain.txt
+            ${{ runner.temp }}/artin-lean-version.txt
+            ${{ runner.temp }}/artin-lake-version.txt
+            ${{ runner.temp }}/artin-environment.json
+          if-no-files-found: error
+          retention-days: 14

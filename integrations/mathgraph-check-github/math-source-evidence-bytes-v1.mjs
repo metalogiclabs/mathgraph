@@ -29,7 +29,7 @@ const crc32=bytes=>{
   return (c^0xffffffff)>>>0;
 };
 
-function unzipEvidence(bytes){
+function unzipEvidence(bytes,files=FILES){
   requireFact(Buffer.isBuffer(bytes)&&bytes.length>=22&&bytes.length<=ARCHIVE_MAX,
     'ARTIFACT_ZIP_SIZE_INVALID');
   const endMin=Math.max(0,bytes.length-65557);
@@ -42,7 +42,7 @@ function unzipEvidence(bytes){
   const count=bytes.readUInt16LE(end+10),directorySize=bytes.readUInt32LE(end+12);
   const directoryOffset=bytes.readUInt32LE(end+16);
   requireFact(bytes.readUInt16LE(end+4)===0&&bytes.readUInt16LE(end+6)===0&&
-    bytes.readUInt16LE(end+8)===count&&count===2&&
+    bytes.readUInt16LE(end+8)===count&&count===files.size&&
     directoryOffset!==0xffffffff&&directorySize!==0xffffffff&&
     directoryOffset+directorySize===end&&directoryOffset<=end,
   'ARTIFACT_ZIP_DIRECTORY_INVALID');
@@ -71,7 +71,7 @@ function unzipEvidence(bytes){
       ((madeBy>>>8)!==3||(external>>>16&0xf000)!==0xa000),
     'ARTIFACT_ZIP_ENTRY_UNSAFE');
     const name=bytes.subarray(cursor+46,cursor+46+nameLength).toString('utf8');
-    requireFact(FILES.has(name)&&!names.has(name),'ARTIFACT_ZIP_FILE_SET_INVALID');
+    requireFact(files.has(name)&&!names.has(name),'ARTIFACT_ZIP_FILE_SET_INVALID');
     names.add(name);
     requireFact(localOffset+30<=directoryOffset&&
       bytes.readUInt32LE(localOffset)===0x04034b50,
@@ -102,11 +102,19 @@ function unzipEvidence(bytes){
     cursor=next;
   }
   bounds.sort((a,b)=>a[0]-b[0]);
-  requireFact(cursor===end&&names.size===2&&
+  requireFact(cursor===end&&names.size===files.size&&
     bounds.every(([start,stop],i)=>start>=0&&stop<=directoryOffset&&
       (i===0||start>=bounds[i-1][1])),
   'ARTIFACT_ZIP_STRUCTURE_INVALID');
   return items;
+}
+
+/** Strict reusable ZIP member reader; caller independently pins ZIP digest. */
+export function readStrictEvidenceZip(bytes,filenames){
+  requireFact(Array.isArray(filenames)&&filenames.length>0&&filenames.length<=8&&
+    filenames.every(n=>typeof n==='string'&&/^[A-Za-z0-9_.-]{1,80}$/.test(n))&&
+    new Set(filenames).size===filenames.length,'ARTIFACT_ZIP_EXPECTED_NAMES_INVALID');
+  return unzipEvidence(bytes,new Set(filenames));
 }
 
 function parseReport(bytes,reason){
