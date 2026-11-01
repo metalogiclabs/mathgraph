@@ -1,0 +1,50 @@
+name: MathGraph Check - read-only math source collector V1
+on:
+  push:
+    branches:
+      - 'research/mathgraph-check-math-source-collector-*'
+    paths:
+      - '.github/workflows/mathgraph-check-math-source-collector-v1.yml'
+      - 'integrations/mathgraph-check-github/math-source-evidence-fetch-v1.mjs'
+      - 'integrations/mathgraph-check-github/math-source-evidence-collector-v1.mjs'
+      - 'integrations/mathgraph-check-github/run-math-source-evidence-collector-v1.mjs'
+      - 'integrations/mathgraph-check-github/*-collector-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/math-source-evidence-fetch-v1.test.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/mathgraph-check-math-source-collector-v1.yml'
+      - 'integrations/mathgraph-check-github/math-source-evidence-fetch-v1.mjs'
+      - 'integrations/mathgraph-check-github/math-source-evidence-collector-v1.mjs'
+      - 'integrations/mathgraph-check-github/run-math-source-evidence-collector-v1.mjs'
+      - 'integrations/mathgraph-check-github/*-collector-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/math-source-evidence-fetch-v1.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-read-only-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch exact third-party source for positive control
+        run: |
+          set -euo pipefail
+          git clone --no-checkout --filter=blob:none \
+            https://github.com/marcusm117/ProofNet-Verified.git \
+            "$RUNNER_TEMP/proofnet-upstream"
+          git -C "$RUNNER_TEMP/proofnet-upstream" checkout --detach \
+            14879cb23e078d122adecd9578dd26a7304f753b
+          test "$(git -C "$RUNNER_TEMP/proofnet-upstream" rev-parse HEAD)" = \
+            14879cb23e078d122adecd9578dd26a7304f753b
+      - name: Host, artifact stream, source and stale-head regression tests
+        env:
+          MATHGRAPH_PROOFNET_FIXTURE_DIR: ${{ runner.temp }}/proofnet-upstream
+        run: |
+          set -euo pipefail
+          node --test integrations/mathgraph-check-github/*.test.mjs
