@@ -82,11 +82,26 @@ The pinned external `marcusm117/ProofNet-Verified` `Artin_exercise_2_2_9`
 fixture, commit `14879cb23e078d122adecd9578dd26a7304f753b`, includes
 three changed statement controls. They all remain `UNKNOWN` with no
 independent authority. That benchmark's public statement ends in `sorry`;
-**we did not run Lean or obtain a new human source-to-formal review**.
+**we have not obtained a new human source-to-formal review**.
+
+The separate research workflow
+`.github/workflows/mathgraph-check-proofnet-artin-replay-v1.yml` attempts a
+**real, isolated Lean 4.28 replay** of the archived Artin gold proof. It pins
+the upstream commit, exact source, extracted gold proof, and proof archive
+hashes. Its small preflight reads one member from the zip at runtime without
+publishing the gold proof, checks against altered source/archive/formal text,
+then uses Mathlib `v4.28.0` and parses `#print axioms` for the theorem. An
+unrecognized or missing axiom report fails closed; only `propext`,
+`Classical.choice`, and `Quot.sound` are accepted. The intended output is
+machine-only preflight and axiom evidence, never an automatic human review or
+`qualifiedLeanReplayReceiptId`. **Until the native CI run succeeds and is
+independently authenticated, replay evidence remains `UNKNOWN`.** The latest
+ProofNet statement project instead targets Lean 4.34, so this archived replay
+is not proof of a 4.34 replay.
 
 This finite experiment does not outperform exact-text comparison or prove
 semantic fidelity. Before offering this to the Open Math Model community,
-qualify a real reviewer-authenticated statement mapping, replay a native
-Lean proof with an audited axiom report, implement the independently sourced
+qualify a real reviewer-authenticated statement mapping, authenticate and bind
+a successful archived Lean replay run with its full environment hash, implement the independently sourced
 host, and test against a comparably informed strong baseline on untouched
 third-party formalizations. Public source use requires license/consent review.
