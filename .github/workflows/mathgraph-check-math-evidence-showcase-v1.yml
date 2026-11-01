@@ -1,0 +1,54 @@
+name: MathGraph Check - mathematical evidence showcase V1
+on:
+  push:
+    branches:
+      - 'research/mathgraph-check-math-review-surface-*'
+    paths:
+      - '.github/workflows/mathgraph-check-math-evidence-showcase-v1.yml'
+      - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.mjs'
+      - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/MATH_EVIDENCE_CHECK_RUN_V1.md'
+  pull_request:
+    paths:
+      - '.github/workflows/mathgraph-check-math-evidence-showcase-v1.yml'
+      - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.mjs'
+      - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  advisory-review-surface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full MathGraph Check contract and negative-control suite
+        run: |
+          set -euo pipefail
+          node --test integrations/mathgraph-check-github/*.test.mjs
+      - name: Publish a read-only research evidence summary
+        run: |
+          set -euo pipefail
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## MathGraph Check · mathematical source assurance (research)
+
+          | Boundary | Evidence | Status |
+          | :-- | :-- | :-- |
+          | Pinned mathematical source | ProofNet-Verified Artin exercise, immutable Git SHA | Recorded |
+          | Native Lean 4.28 proof replay | [Authenticated run #41356752114](https://github.com/metalogiclabs/mathgraph/actions/runs/41356752114) | Previously reproduced |
+          | Resolved Mathlib/Lake environment | 9 Git dependencies, exact SHA-256 in [PR #229](https://github.com/metalogiclabs/mathgraph/pull/229) | Previously reproduced |
+          | Source-to-formal human judgment | Independent qualified reviewer not yet obtained | **UNKNOWN** |
+          | Intent equivalence | Not established by proof checking | **NOT ESTABLISHED** |
+          | Live GitHub App installation and Check Run publishing | Not activated; current tests use simulated GitHub responses | **NOT DEPLOYED** |
+
+          **This workflow only tests a proposed advisory Check Run renderer.**
+          A green unit test is not proof of an independently reviewed theorem.
+          A real publisher still requires a separately approved, repository-scoped
+          GitHub App installation with Checks:write. No permissions beyond
+          Contents:read are granted to this research workflow.
+          SUMMARY
