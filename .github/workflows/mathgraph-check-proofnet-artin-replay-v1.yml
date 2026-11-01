@@ -57,6 +57,16 @@ jobs:
             'require mathlib from git "https://github.com/leanprover-community/mathlib4.git" @ "v4.28.0"' \
             'lean_lib ArtinReplay where' \
             > "$REPLAY/lakefile.lean"
+      - name: Resolve pinned Mathlib dependency manifest
+        working-directory: ${{ runner.temp }}/mathgraph-artin-replay
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL \
+            https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake update
+          test -s lake-manifest.json
       - name: Install pinned Lean/Mathlib and its cached dependencies
         uses: leanprover/lean-action@v1
         env:
