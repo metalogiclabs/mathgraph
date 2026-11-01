@@ -28,7 +28,9 @@ function validPin(t){
     t.sourceSha256===ARTIN_PIN.sourceSha256&&
     t.claimSha256===CLAIM_SHA256&&
     t.formalSha256===ARTIN_PIN.formalSha256&&
-    t.workflowPath==='.github/workflows/mathgraph-check-proofnet-artin-replay-v1.yml'&&
+    ['.github/workflows/mathgraph-check-proofnet-artin-replay-v1.yml',
+      '.github/workflows/mathgraph-check-proofnet-artin-replay-v2.yml']
+      .includes(t.workflowPath)&&
     t.jobName==='pinned-artin-replay'&&
     t.artifactName==='mathgraph-proofnet-artin-evidence'&&
     SHA40.test(t.headSha??'');
