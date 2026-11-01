@@ -7,12 +7,16 @@ on:
       - '.github/workflows/mathgraph-check-math-evidence-showcase-v1.yml'
       - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.mjs'
       - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/run-math-evidence-check-v1.mjs'
+      - 'integrations/mathgraph-check-github/run-math-evidence-check-v1.test.mjs'
       - 'integrations/mathgraph-check-github/MATH_EVIDENCE_CHECK_RUN_V1.md'
   pull_request:
     paths:
       - '.github/workflows/mathgraph-check-math-evidence-showcase-v1.yml'
       - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.mjs'
       - 'integrations/mathgraph-check-github/math-evidence-check-run-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/run-math-evidence-check-v1.mjs'
+      - 'integrations/mathgraph-check-github/run-math-evidence-check-v1.test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
