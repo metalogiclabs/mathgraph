@@ -10,6 +10,8 @@ import {makeArtinEnvironmentReport}
   from './math-source-environment-closure-v1.mjs';
 import {collectMathSourceEvidenceWithEnvironment}
   from './math-source-environment-correlation-v1.mjs';
+import {collectAndPublishMathEvidence}
+  from './math-evidence-check-run-v1.mjs';
 
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const h=x=>x.repeat(64);
@@ -291,4 +293,29 @@ test('V2 collector rejects changing environment digest on final readback or wron
     return original(url,init);
   };
   assert.equal((await collectMathSourceEvidenceWithEnvironment(changed.input)).status,'UNKNOWN');
+});
+
+
+test('actual V2 collector observation renders a neutral meaning-pending GitHub Check preview',async t=>{
+  if(!process.env.MATHGRAPH_PROOFNET_FIXTURE_DIR){
+    t.skip('Exact pinned upstream source required for source-to-check integration');return;
+  }
+  const x=fixture();environmentFixture(x);
+  const result=await collectAndPublishMathEvidence(x.input);
+  assert.equal(result.mode,'PREVIEW');
+  assert.equal(result.request.conclusion,'neutral');
+  assert.equal(result.request.head_sha,head);
+  assert.match(result.request.output.title,/review pending/);
+  assert.match(result.request.output.summary,/NOT ESTABLISHED/);
+  assert.match(result.request.output.summary,/resolved Lake environment/i);
+  assert.match(result.request.output.summary,/41356752114|991/);
+});
+
+test('actual V2 collector failure cannot be promoted by the report or publisher',async()=>{
+  const x=fixture();environmentFixture(x);
+  x.data['/actions/runs/991'].run_attempt=2;
+  const result=await collectAndPublishMathEvidence(x.input,{publish:true});
+  assert.equal(result.mode,'UNKNOWN');
+  assert.equal(result.intent_verification,'NOT_ESTABLISHED');
+  assert.equal(result.permission,'ADVISORY_ONLY');
 });
