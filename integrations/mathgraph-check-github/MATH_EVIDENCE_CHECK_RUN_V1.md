@@ -24,32 +24,21 @@ An operator can use the **existing registered MathGraph Check GitHub App** only 
 
 The read-only collector does not require Checks:write. The current go-ethereum-specific writer worker must **not** be reused for Open Math Model repositories. A separate mathematical job with independent repository allowlisting, reviewer configuration, webhook identity verification (if events are used), and private operator trust manifests is required.
 
-The trusted host first executes `collectMathSourceEvidenceWithEnvironment` with independently configured source, theorem, workflow, environment and reviewer pins. Do not pass a PR-authored JSON body directly to this Check Run renderer. For a separately authenticated observation:
+The **operator entry point** is `collectAndPublishMathEvidence`: it executes `collectMathSourceEvidenceWithEnvironment` itself, so no caller-supplied report can be substituted for authenticated GitHub observations. The pure renderer remains useful for unit tests and previewing an already authenticated observation, but **must not be exposed directly to untrusted clients**. The operator's source, theorem, workflow, environment and reviewer pins must be configured independently of the PR. Example:
 
 ```js
-import {
-  buildMathEvidenceCheck,publishMathEvidenceCheck
-} from './math-evidence-check-run-v1.mjs';
+import {collectAndPublishMathEvidence} from './math-evidence-check-run-v1.mjs';
 
-const check = buildMathEvidenceCheck(observation, {
-  repository: trustedRepository,
-  headSha: authenticatedHeadSha,
-});
+// input comes from an authenticated installation handler and private
+// administrator trust configuration, NEVER from the PR body.
+const preview = await collectAndPublishMathEvidence(adminInput);
+// No network write; preview.mode === 'PREVIEW' only after full V2 correlation.
 
-// Default is PREVIEW; this never calls GitHub.
-const preview = await publishMathEvidenceCheck(observation, {
-  repository: trustedRepository,
-  headSha: authenticatedHeadSha,
+// Only after repository-owner opt-in and Checks:write provisioned:
+const published = await collectAndPublishMathEvidence(adminInput,{
+  publish: true,
 });
-
-// Only after repository-owner opt-in, verified App permissions,
-// and privileged token provisioning:
-const published = await publishMathEvidenceCheck(observation, {
-  repository: trustedRepository,
-  headSha: authenticatedHeadSha,
-  token: shortLivedRepositoryScopedInstallationToken,
-  dryRun: false,
-});
+// The renderer still posts only a neutral, exact-head advisory check.
 ```
 
 In live mode the publisher re-reads the current PR head from GitHub and requires the same repository before posting a **neutral** Check Run. It checks the GitHub write response for the exact identity and expected neutral conclusion. The token stays out of output. A successful publication still does **not** automatically imply meaning equivalence or general correctness of the paper.
