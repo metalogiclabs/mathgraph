@@ -171,3 +171,17 @@ test('a new rerun attempt during the readback withdraws replay evidence',async()
   assert.equal(r.status,'UNKNOWN');
   assert.equal(r.replay.status,'UNKNOWN');
 });
+
+
+test('a successful rerun cannot inherit artifact evidence from another attempt',async()=>{
+  const x=fixture();
+  // Same immutable head and successful job metadata, but GitHub artifact
+  // records expose run identity rather than an authenticated attempt ID.
+  // A prior-attempt artifact must therefore not be promoted.
+  x.data['/actions/runs/991'].run_attempt=2;
+  const r=await observeGitHubMathSource(x.input);
+  assert.equal(r.status,'UNKNOWN');
+  assert.equal(r.replay.status,'UNKNOWN');
+  assert.equal(r.review.status,'UNKNOWN');
+  assert.equal(r.reason,'GITHUB_RUN_OR_HEAD_UNVERIFIED');
+});

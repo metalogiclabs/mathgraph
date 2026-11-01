@@ -23,6 +23,8 @@ The host independently checks five things:
    source/claim/theorem/environment hash declaration. A later dismissal or
    change request withdraws the observation. Ordinary `LGTM` is insufficient.
 
+The current observation contract accepts only **GitHub Actions attempt 1**. The artifacts API associates artifacts with a workflow *run* but provides no dependable artifact-to-attempt identity; a successful rerun must not inherit an earlier artifact. Start a fresh run instead. This deliberately conservative restriction can be relaxed only after attempt-specific evidence is authenticated.
+
 Before returning, the host re-fetches the PR head and workflow run to detect
 head changes or reruns during observation. Missing APIs, pagination limits,
 duplicates, unreviewed workflow bytes, stale artifacts, revocations, and forged
