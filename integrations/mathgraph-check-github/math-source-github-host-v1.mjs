@@ -63,7 +63,9 @@ function validateRun(pr,run,trust,runId){
     run.head_repository?.id===run.repository.id&&
     typeof run.path==='string'&&run.path.startsWith(trust.workflowPath+'@')&&
     ['push','pull_request','workflow_dispatch'].includes(run.event)&&
-    Number.isSafeInteger(run.run_attempt)&&run.run_attempt>=1&&
+    // GitHub's artifact list does not carry a trustworthy per-attempt ID.
+    // Until the artifact is attempt-bound, never reuse a run that was rerun.
+    Number.isSafeInteger(run.run_attempt)&&run.run_attempt===1&&
     DATES(run.run_started_at)&&run.status==='completed'&&run.conclusion==='success',
   'GITHUB_REPLAY_RUN_UNQUALIFIED');
 }
