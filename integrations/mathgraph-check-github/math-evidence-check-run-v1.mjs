@@ -4,6 +4,7 @@
  * Default is dry-run; publishing requires a separately scoped GitHub App token.
  */
 import {buildAdvisoryCheck} from './advisory-publisher-v1.mjs';
+import {collectMathSourceEvidenceWithEnvironment} from './math-source-environment-correlation-v1.mjs';
 import {ARTIN_PIN} from './proofnet-artin-replay-v1.mjs';
 
 const SHA40=/^[a-f0-9]{40}$/;
@@ -120,4 +121,28 @@ export async function publishMathEvidenceCheck(observation,{
     check.name!==request.name||check.conclusion!=='neutral')
     error('GITHUB_CHECK_READBACK_UNVERIFIED');
   return {mode:'PUBLISHED',check_run_id:check.id,url:check.html_url??null};
+}
+
+
+/**
+ * Production-boundary entry: always re-run the authenticated collector before
+ * rendering or publishing. No externally supplied observation objects accepted.
+ * Input must come from a trusted operator/installation handler, never a PR.
+ */
+export async function collectAndPublishMathEvidence(input,{publish=false}={}){
+  if(!input||typeof input!=='object'||publish!==true&&publish!==false||
+    typeof input.token!=='string'||input.token.length<10||
+    !REPO.test(input.repository??'')||
+    input.trusted?.repository!==input.repository||
+    input.trusted?.pr!==input.pr||
+    !SHA40.test(input.trusted?.headSha??''))
+    error('INVALID_OPERATOR_TRUST_SCOPE');
+  const observed=await collectMathSourceEvidenceWithEnvironment(input);
+  if(observed.status!=='ENVIRONMENT_AND_REPLAY_CORRELATED')
+    return {mode:'UNKNOWN',reason:observed.reason??'UNQUALIFIED_COLLECTOR_OBSERVATION',
+      permission:'ADVISORY_ONLY',intent_verification:'NOT_ESTABLISHED'};
+  return publishMathEvidenceCheck(observed,{
+    repository:input.repository,headSha:input.trusted.headSha,
+    token:input.token,fetcher:input.fetcher??fetch,dryRun:!publish,
+  });
 }
