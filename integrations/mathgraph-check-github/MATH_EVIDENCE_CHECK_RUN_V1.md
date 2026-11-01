@@ -43,6 +43,37 @@ const published = await collectAndPublishMathEvidence(adminInput,{
 
 In live mode the publisher re-reads the current PR head from GitHub and requires the same repository before posting a **neutral** Check Run. It checks the GitHub write response for the exact identity and expected neutral conclusion. The token stays out of output. A successful publication still does **not** automatically imply meaning equivalence or general correctness of the paper.
 
+
+## One-command operator preview (no GitHub writes)
+
+The read-only collector's administrative trust-file schema is documented in
+[MATH_SOURCE_ENVIRONMENT_CORRELATION_V1.md](MATH_SOURCE_ENVIRONMENT_CORRELATION_V1.md).
+Store the JSON outside the repository, owned by the operator and mode `0600`
+(on Unix); never commit credentials or the administrator whitelist. The app
+installation token is a short-lived separate environment variable:
+
+```sh
+MATHGRAPH_GITHUB_APP_TOKEN="$TOKEN" \
+node integrations/mathgraph-check-github/run-math-evidence-check-v1.mjs \
+  /private/mathgraph-admin-trust.json
+```
+
+This prints a **PREVIEW** of the neutral Check Run only after re-fetching
+and correlating the authentic two-artifact V2 replay. It makes no GitHub write.
+When the owner has explicitly authorized checks:write and a test installation
+has been independently reviewed, **the only write opt-in is**:
+
+```sh
+MATHGRAPH_GITHUB_APP_TOKEN="$TOKEN" \
+node integrations/mathgraph-check-github/run-math-evidence-check-v1.mjs \
+  /private/mathgraph-admin-trust.json --publish
+```
+
+No webhook, bot, cron, account-discovery loop, automatic PR approval or
+installation mutation is present. The CLI refuses extra JSON fields,
+insecure file permissions, missing tokens, and unrecognized modes; the publish
+path independently rereads the PR HEAD and only POSTs a neutral check.
+
 ## What is independently reproducible now
 
 - Historical native Lean 4.28 replay with an axiom audit: [run #41346277520](https://github.com/metalogiclabs/mathgraph/actions/runs/41346277520).
