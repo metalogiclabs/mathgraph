@@ -1,0 +1,169 @@
+name: UDM G2 source-native residual to observer pilot
+on:
+  push:
+    branches: [research/udm-g2-native-observer-v1-20261103]
+    paths:
+      - 'research/udm_g2_observer_v1/**'
+      - '.github/workflows/udm-g2-native-observer-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: e906829e5620c5d216ce162cc8290b04b46a56ce
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: rs/zerolog
+          ref: 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Independently reproduce immutable genuine native residual
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C source fetch --no-tags origin 'refs/pull/811/head:refs/remotes/origin/pr-811-head'
+          test "$(git -C source rev-parse 'refs/remotes/origin/pr-811-head')" = '7256558c748b0cadd81deffdd80e1809cb12707a'
+          test "$(git -C source rev-parse HEAD)" = '5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830'
+          mkdir -p qualification packet/base_source
+          python tooling/research/g2_native_residual/qualify.py \
+            --repo source \
+            --base 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830 \
+            --head 7256558c748b0cadd81deffdd80e1809cb12707a \
+            --test-file log_test.go --output qualification
+          python - <<'PY'
+          import json,shutil
+          from pathlib import Path
+          r=json.load(open('qualification/qualification.json'))
+          assert r['status']=='WARRANTED_BOUNDED_AUTHENTIC_AUTHOR_NATIVE_RED_GREEN',r['status']
+          assert 'TestOutputPreservesGoContext' in r['matched_failed_tests']
+          shutil.copyfile('qualification/learner-residual.json','packet/learner-residual.json')
+          for f in ('log.go','context.go'):
+              shutil.copyfile(Path('source')/f,Path('packet/base_source')/f)
+          print('NATIVE_RED_GREEN_ADMITTED',len(r['matched_failed_tests']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-preparation-author-native
+          path: qualification
+          retention-days: 60
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-source-only-proposer-packet
+          path: packet
+          retention-days: 60
+
+  propose:
+    needs: [prepare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-source-only-proposer-packet
+          path: packet
+      - name: Frozen two-call, equal-information model proposals (NO source execution)
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          node code/research/udm_g2_observer_v1/propose.mjs \
+            packet/learner-residual.json packet/base_source proposals
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-two-equal-information-proposals
+          path: proposals
+          retention-days: 60
+
+  independent-native:
+    needs: [propose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: rs/zerolog
+          ref: 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-two-equal-information-proposals
+          path: proposals
+      - name: Independent static and native test-count regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd code/research/udm_g2_observer_v1
+          python -m unittest -v test_validate.py test_evaluate.py 2>&1 | tee /tmp/native-apparatus.log
+          grep -q 'Ran 9 tests' /tmp/native-apparatus.log
+          grep -q '^OK$' /tmp/native-apparatus.log
+      - name: Reconfirm exact original and contributor source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C source fetch --no-tags origin 'refs/pull/811/head:refs/remotes/origin/pr-811-head'
+          test "$(git -C source rev-parse 'refs/remotes/origin/pr-811-head')" = '7256558c748b0cadd81deffdd80e1809cb12707a'
+          test "$(git -C source rev-parse HEAD)" = '5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830'
+      - name: Source-native independent base/head comparison, ablation and restoration (NO model key)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          python code/research/udm_g2_observer_v1/evaluate.py \
+            --source source \
+            --base 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830 \
+            --head 7256558c748b0cadd81deffdd80e1809cb12707a \
+            --proposals proposals \
+            --output evaluation | tee evaluation-stdout.txt
+          python - <<'PY'
+          import json
+          p=json.load(open('evaluation/evaluation.json'))
+          assert p['schema']=='mathgraph.g2.go-native-qualification.v1'
+          print('NATIVE_QUALIFICATION',p['status'])
+          print('STRICT_G2',p['strict_g2'],'STRICT_G3',p['strict_g3'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-independent-native-observer-qualification
+          path: |
+            evaluation
+            evaluation-stdout.txt
+            /tmp/native-apparatus.log
+          retention-days: 60
