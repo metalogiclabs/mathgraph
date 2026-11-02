@@ -34,3 +34,13 @@ test('CLI binds the downloaded source before the compiler transport and excludes
   assert.equal(JSON.parse(r.stdout).status,'ARTIN_CONTROLS_VERIFIED');const receipt=JSON.parse(await readFile(join(dir,'artin-mention-native-receipt.json'),'utf8'));assert.equal(receipt.published.source_sha256,'a9ea15e08b984edb0690348b953a11bf0a1c2cd2541131323c26c243f21ee7fc');
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('live Artin adapter refuses arbitrary sources and audits the original Group consumer',async()=>{
+ let calls=0;await assert.rejects(m.nativeArtin({source:'import Unsafe',publishedSource,run:async()=>{calls++;}}),/UNSUPPORTED_ARTIN_SOURCE/);assert.equal(calls,0);
+ const strong=await m.nativeArtin({source:m.artinStrongSource,publishedSource,run:async name=>({code:name==='Consumer'?1:0,output:'failed to synthesize CommGroup G'})});assert.equal(strong.status,'CLAIM_NOT_ESTABLISHED');
+ const good=await m.nativeArtin({source:m.artinRepairSource,publishedSource,run:async name=>({code:0,output:name==='Consumer'?"'Artin_exercise_2_2_9' depends on axioms: [propext]":''})});assert.equal(good.status,'ORIGINAL_TARGET_VERIFIED');assert.equal(good.published.informal_equivalence,'NOT_CERTIFIED');
+});
+
+test('the pinned strong-assumption consumer can report a native type mismatch',async()=>{
+ const r=await m.qualifyArtin({publishedSource,run:async name=>({code:name==='StrongConsumer'?1:0,output:name==='StrongConsumer'?'error: Type mismatch':name==='RepairConsumer'?"'Artin_exercise_2_2_9' depends on axioms: [propext]":''})});assert.equal(r.status,'ARTIN_CONTROLS_VERIFIED');
+});

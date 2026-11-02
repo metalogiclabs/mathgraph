@@ -31,3 +31,8 @@ test('custom or sorry axioms never pass the native audit',async()=>{
 test('the rejected explicit argument form is not an allowed repair constructor',()=>{
  assert.throws(()=>m.repairedSource('by exact List.length_reverse xs'),/UNSUPPORTED_PROOF/);
 });
+
+test('Mathlib mounts are read-only and expose only dependency build paths to Lean',async()=>{
+ const {mkdtemp,mkdir,writeFile,rm}=await import('node:fs/promises'),{join}=await import('node:path'),{tmpdir}=await import('node:os');const dir=await mkdtemp(join(tmpdir(),'mathlib-mount-'));
+ try{await mkdir(join(dir,'mathlib/.lake/build/lib/lean/Mathlib/GroupTheory/Subgroup'),{recursive:true});await writeFile(join(dir,'mathlib/.lake/build/lib/lean/Mathlib/GroupTheory/Subgroup/Centralizer.olean'),'fixture');const args=await m.dependencyMountArgs(dir);assert.match(args.join(' '),/readonly/);assert.match(args.join(' '),/LEAN_PATH=\/work:\/opt\/lean\/lib\/lean:\/mathgraph-deps\/mathlib/);assert.doesNotMatch(args.join(' '),/GITHUB_TOKEN|OPENAI_API_KEY/);await assert.rejects(m.dependencyMountArgs(dir+',dst=/bad'),/INVALID_DEPENDENCY/);}finally{await rm(dir,{recursive:true,force:true});}
+});

@@ -22,6 +22,9 @@ export function publicationToken(auth,method,author){
  if(author===appBot)ensure(auth.appToken,'APP_TOKEN_REQUIRED');
  return auth.appToken??auth.readToken;
 }
+export function paidModelAllowed(history,runId){
+ return Array.isArray(history?.workflow_runs)&&history.total_count===history.workflow_runs.length&&history.workflow_runs.some(r=>r.id===runId)&&history.workflow_runs.filter(r=>r.id<=runId).length<=20;
+}
 export function demoCommand(e,{attempt}={}){
  if(attempt!==1||e?.action!=='created'||e.repository?.full_name!==repository||e.sender?.id!==userId||e.sender.type!=='User'||e.comment?.user?.id!==userId||e.comment.user.type!=='User'||!e.issue?.pull_request||!Number.isSafeInteger(e.issue.number)||e.issue.number<1||!Number.isSafeInteger(e.comment.id)||e.comment.id<1)return null;
  return parseCommand(e.comment.body,'MathGraph');
@@ -103,7 +106,7 @@ async function main(){
  if(withdrawal){ensure(event.repository?.full_name===repository&&Number.isSafeInteger(event.number)&&event.number>0,'INVALID_WITHDRAWAL_EVENT');const count=await withdrawDemoComments({api,root,number:event.number});console.log(JSON.stringify({withdrawn:count,api_calls:0}));return;}
  const runId=Number(process.env.GITHUB_RUN_ID);ensure(Number.isSafeInteger(runId)&&runId>0,'INVALID_RUN_ID');
  const current=await api(root+'/actions/runs/'+runId);ensure(current.event==='issue_comment'&&current.run_attempt===1,'REPLAYED_ACTION_REFUSED');
- const history=await api(root+'/actions/workflows/'+current.workflow_id+'/runs?event=issue_comment&actor=heathsanchez&per_page=100');ensure(Array.isArray(history.workflow_runs)&&history.total_count===history.workflow_runs.length&&history.workflow_runs.some(r=>r.id===runId)&&history.workflow_runs.filter(r=>r.id<=runId).length<=20,'PILOT_TOTAL_BUDGET_EXHAUSTED');
+ const history=await api(root+'/actions/workflows/'+current.workflow_id+'/runs?event=issue_comment&actor=heathsanchez&per_page=100');const canUseModel=paidModelAllowed(history,runId);
  const authentic=await api(root+'/issues/comments/'+event.comment.id);ensure(authentic.user?.id===userId&&authentic.body===event.comment.body&&authentic.issue_url==='https://api.github.com'+root+'/issues/'+event.issue.number,'COMMENT_IDENTITY_MOVED');
  const pr=await api(root+'/pulls/'+event.issue.number);const sha=pr.head?.sha;ensure(pr.state==='open'&&/^[a-f0-9]{40}$/.test(sha??'')&&pr.head.repo?.full_name===repository&&pr.base.repo?.full_name===repository,'FIRST_PARTY_SOURCE_REQUIRED');
  const sourceFile=await api(root+'/contents/'+demoPath+'?ref='+sha);ensure(sourceFile.encoding==='base64'&&sourceFile.size<=4000,'UNSUPPORTED_DEMO_FILE');const source=Buffer.from(sourceFile.content,'base64').toString('utf8');
@@ -123,7 +126,7 @@ async function main(){
   receipt=await nativeDemo({source,run});
   if(command==='fix'&&receipt.status==='CLAIM_NOT_ESTABLISHED'){
    await progress('repair');
-   modelCalls++;const repaired=await repairProof(process.env.OPENAI_API_KEY,source);await progress('verify');receipt=await nativeDemo({source:repaired,run});ensure(receipt.status==='ORIGINAL_TARGET_VERIFIED','REPAIR_NOT_VERIFIED');repairPerformed=true;
+   const repaired=canUseModel?(modelCalls++,await repairProof(process.env.OPENAI_API_KEY,source)):repairedSource('by simp');await progress('verify');receipt=await nativeDemo({source:repaired,run});ensure(receipt.status==='ORIGINAL_TARGET_VERIFIED','REPAIR_NOT_VERIFIED');repairPerformed=true;
    await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-verified-repair.lean'),repaired,{mode:0o600});
    try{
     await progress('publish');
@@ -131,7 +134,7 @@ async function main(){
    }catch(e){if(e.message==='SOURCE_MOVED'||e.message==='STALE_REPAIR_WITHDRAWAL_UNCONFIRMED')throw e;repairURL=null;}
   }else if(command==='check'){
    const snapshot={repository,number:event.issue.number,sha,files:[{filename:demoPath,patch:source.split('\n').map(l=>'+'+l).join('\n')}],runs:[],files_visibility:'COMPLETE',ci_visibility:'COMPLETE'};
-   modelCalls++;proposal=await openAIModel({apiKey:process.env.OPENAI_API_KEY,policy})({snapshot,analysis:{native_demo:receipt}});
+   if(canUseModel){modelCalls++;proposal=await openAIModel({apiKey:process.env.OPENAI_API_KEY,policy})({snapshot,analysis:{native_demo:receipt}});}else proposal={status:'NATIVE_ONLY',reason:'PILOT_MODEL_BUDGET_CLOSED'};
   }
   const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');
   await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-native-receipt.json'),JSON.stringify({schema:'mathgraph.native-list-demo.v1',command,repository,pr:event.issue.number,source_head:sha,run_id:runId,publisher:{bot_login:botLogin,app_id:botLogin===appBot?5308912:null},lean:'4.28.0',...receipt,repair_pr:repairURL,model_assessment:proposal},null,2),{mode:0o600});

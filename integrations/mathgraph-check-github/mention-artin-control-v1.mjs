@@ -36,13 +36,25 @@ export function bindPublishedArtin(source,{target=artinTarget}={}){
  if(start<0||!declaration||normalize(declaration[1])!==normalize(target))throw Error('PUBLISHED_TARGET_MISMATCH');
  return {repository:'marcusm117/ProofNet-Verified',commit:'14879cb23e078d122adecd9578dd26a7304f753b',path:'data/archive/proofnet-verified-4.28/proofnet-1.lean',source_sha256:hash,formal_statement_sha256:createHash('sha256').update(normalize(target)).digest('hex'),informal_equivalence:'NOT_CERTIFIED'};
 }
+export async function nativeArtin({source,run,publishedSource}){
+ const published=bindPublishedArtin(publishedSource);
+ if(![artinStrongSource,artinRepairSource].includes(source))throw Error('UNSUPPORTED_ARTIN_SOURCE');
+ const binding={published,source_sha256:createHash('sha256').update(source).digest('hex'),target_sha256:createHash('sha256').update(artinTarget).digest('hex')};
+ const candidate=await run('Candidate',source);
+ if(candidate.code!==0)return {...binding,status:'UNKNOWN',source_compiles:false,original_claim_satisfied:false,axioms:null};
+ const consumer=await run('Consumer',artinConsumer);
+ const audit=consumer.output.match(/^'Artin_exercise_2_2_9' (?:does not depend on any axioms|depends on axioms: \[([^\]]*)\])\s*$/m);
+ const axioms=audit?(audit[1]?audit[1].split(',').map(x=>x.trim()):[]):null;
+ const clean=consumer.code===0&&axioms!==null&&axioms.every(x=>['propext','Classical.choice','Quot.sound'].includes(x))&&new Set(axioms).size===axioms.length;
+ return {...binding,status:clean?'ORIGINAL_TARGET_VERIFIED':consumer.code===1&&/(?:failed to synthesize[\s\S]*CommGroup|type mismatch)/i.test(consumer.output)?'CLAIM_NOT_ESTABLISHED':'UNKNOWN',source_compiles:true,original_claim_satisfied:clean,axioms:clean?axioms:null};
+}
 export async function qualifyArtin({run,publishedSource}){
  const published=bindPublishedArtin(publishedSource);const trace=[];
  const invoke=async(name,source)=>{const r=await run(name,source);trace.push({unit:name,code:r.code,output:r.output.slice(0,12000)});return r;};
  const strong=await invoke('StrongCandidate',artinStrongSource);
  if(strong.code!==0)return {status:'UNKNOWN',published,trace};
  const rejected=await invoke('StrongConsumer',artinConsumer);
- if(rejected.code!==1||!/failed to synthesize[\s\S]*CommGroup/i.test(rejected.output))return {status:'UNKNOWN',published,trace};
+ if(rejected.code!==1||!/(?:failed to synthesize[\s\S]*CommGroup|type mismatch)/i.test(rejected.output))return {status:'UNKNOWN',published,trace};
  const repair=await invoke('RepairCandidate',artinRepairSource);
  if(repair.code!==0)return {status:'UNKNOWN',published,trace};
  const accepted=await invoke('RepairConsumer',artinConsumer);

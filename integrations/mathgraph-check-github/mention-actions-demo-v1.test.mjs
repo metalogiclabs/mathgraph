@@ -123,3 +123,10 @@ test('source withdrawal understands the compact receipt marker',async()=>{
  const api=async(path,options={})=>{if(path.endsWith('/pulls/1'))return {head:{sha:head}};if(path.includes('/comments?'))return [c];patched.push(options.body.body);return {};};
  assert.equal(await m.withdrawDemoComments({api,root:'/repos/metalogiclabs/mathgraph',number:1}),1);assert.match(patched[0],/Source changed/);
 });
+
+test('paid-model gate closes on exhausted or incomplete history without disabling native capabilities',()=>{
+ const runs=Array.from({length:20},(_,i)=>({id:i+1}));assert.equal(m.paidModelAllowed({total_count:20,workflow_runs:runs},20),true);
+ assert.equal(m.paidModelAllowed({total_count:21,workflow_runs:[...runs,{id:21}]},21),false);
+ assert.equal(m.paidModelAllowed({total_count:21,workflow_runs:runs},20),false);
+ assert.equal(m.paidModelAllowed({total_count:20,workflow_runs:runs},30),false);
+});
