@@ -1,0 +1,28 @@
+name: Frozen Check unfamiliar input admission
+on:
+  push:
+    branches: [test/check-cold-routing-20261103]
+    paths: ['experiments/check-cold-routing/**', '.github/workflows/check-cold-routing.yml']
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Unchanged controller admission and generic fix capability
+        run: node experiments/check-cold-routing/probe.mjs
+      - name: Existing mention regression suite
+        run: node --test integrations/mathgraph-check-github/mention-*.test.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: cold-routing-observations
+          path: cold-routing-results/

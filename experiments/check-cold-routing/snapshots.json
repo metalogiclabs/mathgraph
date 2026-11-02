@@ -1,0 +1,67 @@
+[
+  {
+    "repository": "leanprover-community/mathlib4",
+    "pr": 45597,
+    "base_sha": "428aa8288d061ec3ae75c1b85ac178e2cb9def23",
+    "head_sha": "5c93a96ee7542528c02389f79ce4e6856355f356",
+    "url": "https://github.com/leanprover-community/mathlib4/pull/45597",
+    "files": [
+      {
+        "filename": "Mathlib/GroupTheory/Coset/Card.lean",
+        "status": "modified",
+        "sha": "00f11fd9397e6f551b8a86b9cb49ec5fb291cdd5"
+      }
+    ],
+    "patches_inspected": false
+  },
+  {
+    "repository": "pallets/click",
+    "pr": 3902,
+    "base_sha": "6d34602f4b0668a61873af1c547bfd40cb7deffc",
+    "head_sha": "7d84462db5afe67431e74f9f2cdf6fb6bd0a8116",
+    "url": "https://github.com/pallets/click/pull/3902",
+    "files": [
+      {
+        "filename": "CHANGES.md",
+        "status": "modified",
+        "sha": "a9bee4711de3240dec6ecd5ca7fabc6348ae33a9"
+      },
+      {
+        "filename": "docs/documentation.md",
+        "status": "modified",
+        "sha": "99745fd416e6e79b1217cceafc58b7e629b8ace0"
+      },
+      {
+        "filename": "src/click/formatting.py",
+        "status": "modified",
+        "sha": "2866162a197bb37b02abab864a3d928e77af63a6"
+      },
+      {
+        "filename": "tests/test_formatting.py",
+        "status": "modified",
+        "sha": "5070033bc3a0e5ea0eba9d645ba9f4877eaf4b74"
+      }
+    ],
+    "patches_inspected": false
+  },
+  {
+    "repository": "serde-rs/json",
+    "pr": 1367,
+    "base_sha": "8c535a260ce561eaab4111aafc29038eb9f77ff3",
+    "head_sha": "a7045d3e019543d89c7a76ff8e179f8a1a5b24c3",
+    "url": "https://github.com/serde-rs/json/pull/1367",
+    "files": [
+      {
+        "filename": "src/de.rs",
+        "status": "modified",
+        "sha": "9dc8e79b610a7640d1707a847dc853e70349816b"
+      },
+      {
+        "filename": "tests/test.rs",
+        "status": "modified",
+        "sha": "d0b5fc975170fb21efd9ca32cf77c2e4910dc662"
+      }
+    ],
+    "patches_inspected": false
+  }
+]
