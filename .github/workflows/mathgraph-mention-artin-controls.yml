@@ -44,7 +44,7 @@ jobs:
           LEAN
           lake update
           node --input-type=module -e "import fs from 'node:fs';const d=JSON.parse(fs.readFileSync('lake-manifest.json'));if(d.packages.find(p=>p.name==='mathlib')?.rev!=='8f9d9cff6bd728b17a24e163c9402775d9e6a365')throw Error('MATHLIB_REVISION_MISMATCH')"
-          lake exe cache get Mathlib/GroupTheory/Subgroup/Centralizer.lean
+          lake exe cache get
       - name: Check published original target and stronger-assumption control
         env:
           LEAN_NUM_THREADS: '1'
