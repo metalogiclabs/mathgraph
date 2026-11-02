@@ -126,9 +126,58 @@ files. Even `PASS` with matching environment is *not* candidate repair approval,
 proof-to-paper fidelity, independent review or mathematical warrant.
 `original_target_status` is not upgraded from this diagnostic;
 `intent_fidelity` and `evidence_warrant` remain `UNKNOWN`. Binding the fixture
-to exact elaborated theorem types is future work. The fixture is not executed
+to exact elaborated theorem types is available separately through the
+operator-only binding extension below. The fixture is not executed
 from a GitHub webhook or arbitrary PR. Preserve raw output privately when its
 source is sensitive.
+
+## Optional exact-declaration native type binding
+
+To request a *separate* native binding receipt, add all four names to the
+byte-pinned proof fixture command. These refer to the real theorem declarations
+in the exact reference/candidate source files and in the proof fixture:
+
+```sh
+  --proof-reference-name Original.target \
+  --proof-candidate-name Proposed.candidate \
+  --proof-assumption-name assumed_candidate \
+  --proof-goal-name proof_goal
+```
+
+The binding runner independently compiles the staged exact source bytes into
+`Reference.olean`, `Candidate.olean` and `ProofFixture.olean`, then compiles two
+generated Lean audits: reference versus fixture goal, and candidate versus
+fixture assumption. They require each named constant to be a theorem
+*originating in its nominated staged module*, not merely an imported Mathlib
+declaration. Lean `Meta.isDefEq` compares the full elaborated types, including
+all quantifiers, premises and the conclusion; a textual name match alone never
+qualifies. Separate audit modules allow the original and candidate to use the
+same full theorem name without importing them together.
+
+`proof_type_binding` preserves both type-comparison results, the actual
+compiler trace/exit/logs, exact source hashes and pinned environment. An
+accepted native ProofChecker verdict `PASS`, exact ProofChecker-selected
+assumption and goal names, two native definitionally equal type comparisons,
+byte-identical fixture/source pins and matching toolchain may yield
+`bound_fixture_proof_use: NATIVE_TYPE_BOUND_FIXTURE_USE`. This is a type-bound
+**hypothetical** proof-use result: the fixture assumed a theorem of the
+candidate's type but did not consume the actual candidate proof constant.
+`candidate_dependence` therefore still remains `UNKNOWN`.
+
+This is **not mathematical research-intent warrant**. The candidate may itself
+be sorried or axiom-dependent; the proof target may not express the paper's
+claim; the operator-authored binding does not authenticate independent human
+review. Accordingly `intent_fidelity` and `evidence_warrant` remain `UNKNOWN`.
+A native `false` establishes non-definitional equality, **not** semantic
+inequivalence: the bounded result is `UNKNOWN`, not `ALTERED`. A library bypass
+can have both theorem types bound but still returns `bound_fixture_proof_use:
+UNKNOWN` because ProofChecker rejects essential use.
+
+Supported sources must compile as independent staged modules under the pinned
+toolchain. Extra sibling imports, source-name collisions with the fixture,
+unavailable dependencies and environment drift fail closed. This is not yet a
+general import/repackaging service for the 14-module Kakeya export. No GitHub
+App publication or webhook route was added.
 
 `--output` must not exist. The CLI never overwrites an existing report and
 returns exit code 2 on environment or execution failure. Exit code 0 means the
@@ -144,6 +193,7 @@ node integrations/mathgraph-check-github/generic-claim-audit-v1.test.mjs
 node integrations/mathgraph-check-github/generic-semanteq-cli-v1.test.mjs
 node integrations/mathgraph-check-github/generic-lean-consumer-run-v1.test.mjs
 node integrations/mathgraph-check-github/generic-proof-relevance-run-v1.test.mjs
+node integrations/mathgraph-check-github/generic-proof-type-binding-run-v1.test.mjs
 MATHGRAPH_SEMANTEQ_PROJECT=/trusted/semanteq_upstream \
   node integrations/mathgraph-check-github/generic-semanteq-run-v1.test.mjs
 ```

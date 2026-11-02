@@ -123,3 +123,88 @@ test('native CLI joins a genuine PASS or bypass FAIL without treating either as 
   }
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('type binding names require the complete quartet and a pinned proof fixture',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mathgraph-cli-type-args-'));
+ try{
+  const src='import Init\ntheorem target (n : Nat) : n + 0 = n := by simp\n';
+  const ref=join(dir,'Reference.lean'),cand=join(dir,'Candidate.lean'),out=join(dir,'report.json');
+  await writeFile(ref,src);await writeFile(cand,src);
+  const common=['integrations/mathgraph-check-github/generic-semanteq-cli-v1.mjs',
+   '--reference',ref,'--candidate',cand,'--reference-sha',sha(src),'--project','/missing','--output',out];
+  for(const fragment of [
+   ['--proof-reference-name','target'],
+   ['--proof-reference-name','target','--proof-candidate-name','target',
+    '--proof-assumption-name','assumed','--proof-goal-name','goal']
+  ]){
+   await assert.rejects(exec(process.execPath,[...common,...fragment],
+    {cwd:new URL('../..',import.meta.url).pathname}),{code:2});
+   await assert.rejects(readFile(out,'utf8'),{code:'ENOENT'});
+  }
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('a requested binding with unavailable native environment stays UNKNOWN and separately logged',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mathgraph-cli-type-env-'));
+ try{
+  const reference='import Init\ntheorem trusted (n : Nat) : n + 0 = n := by simp\n';
+  const candidate='import Init\ntheorem candidate (n : Nat) : n + 0 = n := by simp\n';
+  const proof='import Init\ntheorem assumed (n : Nat) : n + 0 = n := by sorry\ntheorem goal (n : Nat) : n + 0 = n := by exact assumed n\n';
+  const ref=join(dir,'Ref.lean'),cand=join(dir,'Cand.lean'),fixture=join(dir,'Proof.lean'),out=join(dir,'report.json');
+  await writeFile(ref,reference);await writeFile(cand,candidate);await writeFile(fixture,proof);
+  const args=['integrations/mathgraph-check-github/generic-semanteq-cli-v1.mjs',
+   '--reference',ref,'--candidate',cand,'--reference-sha',sha(reference),
+   '--proof-fixture',fixture,'--proof-fixture-sha',sha(proof),
+   '--proof-reference-name','trusted','--proof-candidate-name','candidate',
+   '--proof-assumption-name','assumed','--proof-goal-name','goal',
+   '--project','/missing','--output',out];
+  await assert.rejects(exec(process.execPath,args,{cwd:new URL('../..',import.meta.url).pathname}),{code:2});
+  const report=JSON.parse(await readFile(out,'utf8'));
+  assert.equal(report.proof_type_binding.execution_status,'ENVIRONMENT_UNAVAILABLE');
+  assert.equal(report.proof_binding_correlation,'UNKNOWN');
+  assert.equal(report.bound_fixture_proof_use,'UNKNOWN');
+  assert.equal(report.candidate_dependence,'UNKNOWN');
+  assert.equal(report.intent_fidelity,'UNKNOWN');
+  assert.equal(report.evidence_warrant,'UNKNOWN');
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('native CLI promotes only exact bound fixture use, never actual candidate dependence',{
+ skip:!process.env.MATHGRAPH_SEMANTEQ_PROJECT
+},async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mathgraph-cli-native-type-'));
+ try{
+  const reference='import Init\ntheorem shared_target (n : Nat) : n + 0 = n := by simp\n';
+  const candidate='import Init\ntheorem shared_target (n : Nat) : n + 0 = n := by simp\n';
+  const fixtures={
+   Dependent:'import Init\ntheorem assumed_candidate (n : Nat) : n + 0 = n := by sorry\ntheorem proof_goal (n : Nat) : n + 0 = n := by exact assumed_candidate n\n',
+   Strengthened:'import Init\ntheorem assumed_candidate (n : Nat) (h : n + 0 = n) : n + 0 = n := by sorry\ntheorem proof_goal (n : Nat) : n + 0 = n := by exact assumed_candidate n (by simp)\n',
+   Bypass:'import Init\ntheorem assumed_candidate (n : Nat) : n + 0 = n := by sorry\ntheorem proof_goal (n : Nat) : n + 0 = n := by simp\n',
+   WrongProofSelection:'import Init\ntheorem assumed_candidate (n : Nat) : n + 0 = n := by sorry\ntheorem distractor_candidate (n : Nat) : n + 0 = n := by sorry\ntheorem proof_goal (n : Nat) : n + 0 = n := by exact distractor_candidate n\n'
+  };
+  const ref=join(dir,'Reference.lean'),cand=join(dir,'Candidate.lean');
+  await writeFile(ref,reference);await writeFile(cand,candidate);
+  for(const [id,source] of Object.entries(fixtures)){
+   const fixture=join(dir,`${id}.lean`),out=join(dir,`${id}.json`);
+   await writeFile(fixture,source);
+   const args=['integrations/mathgraph-check-github/generic-semanteq-cli-v1.mjs',
+    '--reference',ref,'--candidate',cand,'--reference-sha',sha(reference),
+    '--proof-fixture',fixture,'--proof-fixture-sha',sha(source),
+    '--proof-reference-name','shared_target','--proof-candidate-name','shared_target',
+    '--proof-assumption-name','assumed_candidate','--proof-goal-name','proof_goal',
+    '--project',process.env.MATHGRAPH_SEMANTEQ_PROJECT,'--timeout-ms','90000','--output',out];
+   await exec(process.execPath,args,{cwd:new URL('../..',import.meta.url).pathname,timeout:180000});
+   const report=JSON.parse(await readFile(out,'utf8'));
+   assert.equal(report.proof_type_binding.execution_status,'EXECUTED',id);
+   assert.equal(report.proof_binding_correlation,id==='WrongProofSelection'?'UNKNOWN':
+    'MATCHING_SOURCE_TOOLCHAIN_AND_PROOF_NAMES',id);
+   assert.equal(report.proof_type_binding.candidate_assumption_defeq,id==='Strengthened'?false:true,id);
+   if(id==='WrongProofSelection')assert.equal(report.proof_fixture_audit.native_record.ante,'distractor_candidate');
+   else assert.equal(report.proof_fixture_audit.verdict,id==='Bypass'?'FAIL':'PASS',id);
+   assert.equal(report.bound_fixture_proof_use,id==='Dependent'?'NATIVE_TYPE_BOUND_FIXTURE_USE':'UNKNOWN',id);
+   assert.equal(report.candidate_dependence,'UNKNOWN',id);
+   assert.equal(report.intent_fidelity,'UNKNOWN',id);
+   assert.equal(report.evidence_warrant,'UNKNOWN',id);
+  }
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
