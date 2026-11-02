@@ -32,3 +32,7 @@ class_name = "PilotBudget"
 [[migrations]]
 tag = "pr-pilot-budget-v1"
 new_sqlite_classes = ["PilotBudget"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
