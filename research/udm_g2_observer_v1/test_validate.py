@@ -31,6 +31,23 @@ class LexicalAdmitTests(unittest.TestCase):
             path=Path(td)/"candidate.go";path.write_text(src)
             p=subprocess.run(["go","run",str(BASE/"validate.go"),"--",str(path)],capture_output=True,text=True,timeout=45)
             self.assertEqual(json.loads(p.stdout)["reason"],"unsafe_import")
+    def test_bounded_go_helper_type_and_method_admitted(self):
+        src = ("package zerolog\nimport \"testing\"\n"
+               "type observation struct { seen []string }\n"
+               "func (h *observation) Run(x string) { h.seen = append(h.seen, x) }\n"
+               "func TestMathGraphProposedWitness(t *testing.T){ if 2 != 2 { t.Fatal(\"wrong\") } }\n")
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/"candidate.go";path.write_text(src)
+            p=subprocess.run(["go","run",str(BASE/"validate.go"),"--",str(path)],capture_output=True,text=True,timeout=45)
+            self.assertEqual(json.loads(p.stdout)["status"],"ADMITTED_TEST_ONLY_CANDIDATE")
+    def test_global_state_declaration_remains_rejected(self):
+        src = ("package zerolog\nimport \"testing\"\n"
+               "var injectedState = true\n"
+               "func TestMathGraphProposedWitness(t *testing.T){ t.Fatal(\"x\") }\n")
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/"candidate.go";path.write_text(src)
+            p=subprocess.run(["go","run",str(BASE/"validate.go"),"--",str(path)],capture_output=True,text=True,timeout=45)
+            self.assertEqual(json.loads(p.stdout)["status"],"UNKNOWN_UNTRUSTED_GO_TEST")
     def test_zero_test_rejected(self):
         src='package zerolog\nimport "testing"\nfunc TestAnother(t *testing.T){ t.Fatal("x") }\n'
         with tempfile.TemporaryDirectory() as td:

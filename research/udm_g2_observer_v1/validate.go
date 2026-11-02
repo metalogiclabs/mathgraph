@@ -28,12 +28,43 @@ func main(){
   if len(q)<2 || q[0]!='"'||q[len(q)-1]!='"'||!safe[q[1:len(q)-1]] {out.Reason="unsafe_import";return}
   if imp.Name!=nil && (imp.Name.Name=="."||imp.Name.Name=="_") {out.Reason="side_effect_import";return}
  }
+ helperName:=""
+ for _,decl:=range f.Decls{
+  d,ok:=decl.(*ast.GenDecl)
+  if !ok || d.Tok!=token.TYPE {continue}
+  if helperName!="" || len(d.Specs)!=1 {out.Reason="extra_helper_type";return}
+  spec,ok:=d.Specs[0].(*ast.TypeSpec)
+  if !ok || spec.Assign.IsValid() {out.Reason="helper_type_alias";return}
+  st,ok:=spec.Type.(*ast.StructType)
+  if !ok || st.Fields==nil || len(st.Fields.List)>3 {out.Reason="helper_not_small_struct";return}
+  for _,field:=range st.Fields.List {
+   if len(field.Names)==0 {out.Reason="helper_embedded_field";return}
+   switch field.Type.(type){
+   case *ast.ArrayType,*ast.Ident,*ast.SelectorExpr:
+   default:out.Reason="helper_field_type";return
+   }
+  }
+  helperName=spec.Name.Name
+ }
+ methodCount:=0
  for _,decl:=range f.Decls{
   switch d:=decl.(type){
   case *ast.GenDecl:
-   if d.Tok!=token.IMPORT {out.Reason="unexpected_global_declaration";return}
+   if d.Tok!=token.IMPORT && d.Tok!=token.TYPE {out.Reason="unexpected_global_declaration";return}
   case *ast.FuncDecl:
-   if d.Name.Name!="TestMathGraphProposedWitness"||d.Recv!=nil {out.Reason="unexpected_function";return}
+   if d.Recv!=nil {
+    if helperName==""||len(d.Recv.List)!=1 {out.Reason="unexpected_receiver";return}
+    recv:=d.Recv.List[0].Type
+    star,ok:=recv.(*ast.StarExpr)
+    if !ok {out.Reason="unexpected_receiver_type";return}
+    ident,ok:=star.X.(*ast.Ident)
+    if !ok || ident.Name!=helperName {out.Reason="unexpected_receiver_type";return}
+    if d.Name.Name=="init"||d.Name.Name=="TestMathGraphProposedWitness" {out.Reason="unexpected_method";return}
+    methodCount++
+    if methodCount>2 {out.Reason="too_many_helper_methods";return}
+    continue
+   }
+   if d.Name.Name!="TestMathGraphProposedWitness" {out.Reason="unexpected_function";return}
    if d.Type.Params==nil||len(d.Type.Params.List)!=1||len(d.Type.Params.List[0].Names)!=1 {out.Reason="test_signature";return}
    star,ok:=d.Type.Params.List[0].Type.(*ast.StarExpr)
    if !ok {out.Reason="test_signature";return}

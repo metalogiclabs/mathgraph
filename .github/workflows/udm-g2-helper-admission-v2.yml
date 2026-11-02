@@ -1,0 +1,91 @@
+name: UDM G2 sealed observer helper admission v2
+on:
+  push:
+    branches: [research/udm-g2-helper-admission-v2-20261103]
+    paths:
+      - 'research/udm_g2_observer_v1/validate.go'
+      - 'research/udm_g2_observer_v1/test_validate.py'
+      - '.github/workflows/udm-g2-helper-admission-v2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: rs/zerolog
+          ref: 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Retrieve ORIGINAL sealed proposals from initial CI without any model call
+        uses: actions/download-artifact@v4
+        with:
+          name: g2-two-equal-information-proposals
+          repository: metalogiclabs/mathgraph
+          run-id: 41539272870
+          github-token: ${{ github.token }}
+          path: proposals
+      - name: Verify frozen candidate bytes from prior run and source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C source fetch --no-tags origin 'refs/pull/811/head:refs/remotes/origin/pr-811-head'
+          test "$(git -C source rev-parse HEAD)" = '5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830'
+          test "$(git -C source rev-parse refs/remotes/origin/pr-811-head)" = '7256558c748b0cadd81deffdd80e1809cb12707a'
+          python - <<'PY'
+          import json,hashlib
+          expected={'bridge':'54b16bb4307d3923dbec577d3c30a1c0aa0f700d1187282260ac2a1f0b153041',
+                    'direct':'8fe781d1f908ea845d1581f559d6591c2cc7e558699805431104a8f0c66dfe03'}
+          for mode,digest in expected.items():
+              data=json.load(open('proposals/'+mode+'.json'))
+              assert hashlib.sha256(data['code'].encode()).hexdigest()==digest,'SOURCE_CANDIDATE_CHANGED:'+mode
+          print('ORIGINAL_CANDIDATE_BYTES_MATCH:2')
+          PY
+      - name: Verify generic post-hoc helper grammar red-green control
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd code/research/udm_g2_observer_v1
+          python -m unittest -v test_validate.py test_evaluate.py 2>&1 | tee /tmp/helper-controls.log
+          grep -q 'Ran 11 tests' /tmp/helper-controls.log
+          grep -q '^OK$' /tmp/helper-controls.log
+      - name: Independently rerun same two proposals with helper admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          python code/research/udm_g2_observer_v1/evaluate.py \
+            --source source \
+            --base 5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830 \
+            --head 7256558c748b0cadd81deffdd80e1809cb12707a \
+            --proposals proposals --output evaluation | tee native-summary.txt
+          python - <<'PY'
+          import json
+          d=json.load(open('evaluation/evaluation.json'))
+          assert d['schema']=='mathgraph.g2.go-native-qualification.v1'
+          print('SCIENCE',d['status'],d.get('fair_comparison'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-posthoc-helper-admission-native-replay
+          path: |
+            evaluation
+            native-summary.txt
+            /tmp/helper-controls.log
+          retention-days: 60
