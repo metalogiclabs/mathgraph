@@ -1,0 +1,37 @@
+{
+  "schema": "mathgraph.cold-admission-protocol.v1",
+  "controller_repository": "metalogiclabs/mathgraph",
+  "controller_sha": "64cba8b569dede1fba266e0ec066e524a00c139c",
+  "selection": "Newest created open PR returned by GitHub for each listed repository, one each, before changed-file acquisition; not selected for known defects.",
+  "subjects": [
+    {
+      "repository": "leanprover-community/mathlib4",
+      "pr": 45597,
+      "base_sha": "428aa8288d061ec3ae75c1b85ac178e2cb9def23",
+      "head_sha": "5c93a96ee7542528c02389f79ce4e6856355f356",
+      "url": "https://github.com/leanprover-community/mathlib4/pull/45597"
+    },
+    {
+      "repository": "pallets/click",
+      "pr": 3902,
+      "base_sha": "6d34602f4b0668a61873af1c547bfd40cb7deffc",
+      "head_sha": "7d84462db5afe67431e74f9f2cdf6fb6bd0a8116",
+      "url": "https://github.com/pallets/click/pull/3902"
+    },
+    {
+      "repository": "serde-rs/json",
+      "pr": 1367,
+      "base_sha": "8c535a260ce561eaab4111aafc29038eb9f77ff3",
+      "head_sha": "a7045d3e019543d89c7a76ff8e179f8a1a5b24c3",
+      "url": "https://github.com/serde-rs/json/pull/1367"
+    }
+  ],
+  "objective": "Measure whether the unchanged production route admits unfamiliar changed-file snapshots. Unsupported is not a bug miss; admission is not semantic verification.",
+  "product_changes_permitted": false,
+  "expected_ground_truth": "UNKNOWN",
+  "budget": {
+    "native_execution": 0,
+    "model_calls": 0,
+    "reason": "First test the frozen admission boundary; do not bypass it with custom adapters."
+  }
+}
