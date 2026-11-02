@@ -9,7 +9,7 @@ try{
  if(sanity.code!==0||negative.code!==1)throw Error('NATIVE_CONTROLS_FAILED');
  const baseline=await nativeDemo({source:brokenSource,run});
  const variants=[];
- for(const proof of ['by simp','by simpa','by exact List.length_reverse xs'])variants.push({proof,...await nativeDemo({source:repairedSource(proof),run})});
+ for(const proof of ['by simp','by simpa','by exact List.length_reverse'])variants.push({proof,...await nativeDemo({source:repairedSource(proof),run})});
  const fixed=variants[0];console.log(JSON.stringify({variants},null,2));
  console.log(JSON.stringify({baseline,fixed},null,2));
  if(baseline.status!=='CLAIM_NOT_ESTABLISHED'||variants.some(v=>v.status!=='ORIGINAL_TARGET_VERIFIED'))throw Error('NATIVE_DEMO_BOUNDARY_FAILED');
