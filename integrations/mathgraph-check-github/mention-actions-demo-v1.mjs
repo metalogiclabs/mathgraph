@@ -41,15 +41,29 @@ async function repairProof(apiKey,source){
  ensure(r.ok,'MODEL_REQUEST_FAILED');const d=await r.json();ensure(d.status==='completed'&&Number.isSafeInteger(d.usage?.input_tokens)&&d.usage.input_tokens>=0&&d.usage.input_tokens<=policy.maxInputBytes+8192&&Number.isSafeInteger(d.usage?.output_tokens)&&d.usage.output_tokens>=0&&d.usage.output_tokens<=4096,'MODEL_RESPONSE_INCOMPLETE');
  const texts=(d.output??[]).filter(x=>x.type==='message').flatMap(x=>x.content??[]).filter(x=>x.type==='output_text');ensure(texts.length===1&&texts[0].text.length<1000,'INVALID_REPAIR_OUTPUT');const p=JSON.parse(texts[0].text);ensure(Object.keys(p).length===1,'INVALID_REPAIR_OUTPUT');return repairedSource(p.proof_body);
 }
+export async function withdrawDemoComments({api,root,number}){
+ const live=await api(root+'/pulls/'+number),head=live.head?.sha;
+ ensure(/^[a-f0-9]{40}$/.test(head??''),'INVALID_SOURCE');
+ const comments=await api(root+'/issues/'+number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');let count=0;
+ for(const c of comments){
+  if(c.user?.login!=='github-actions[bot]'||!c.body?.startsWith('<!-- mathgraph-actions-demo-v1:')||c.body.includes('<!-- mathgraph-withdrawn:'))continue;
+  const old=c.body.match(/Revision: `([a-f0-9]{40})`/);if(!old||old[1]===head)continue;
+  const marker=c.body.split('\n',1)[0];
+  const body=marker+'\n<!-- mathgraph-withdrawn:'+head+' -->\n### MathGraph Check\n**Source changed — this result is withdrawn for the current revision.**\n\nRun `@MathGraph -check` again.\n\n<details><summary>Previous bounded result</summary>\n\n'+c.body.slice(marker.length)+'\n\n</details>';
+  await api(root+'/issues/comments/'+c.id,{method:'PATCH',body:{body}});count++;
+ }
+ return count;
+}
 async function main(){
- const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));const command=demoCommand(event,{attempt:Number(process.env.GITHUB_RUN_ATTEMPT)});if(!command)return;
- ensure(process.env.GITHUB_REPOSITORY===repository&&process.env.GITHUB_EVENT_NAME==='issue_comment','INVALID_ACTION_CONTEXT');
+ const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));const withdrawal=process.env.GITHUB_EVENT_NAME==='pull_request_target'&&event.action==='synchronize';const command=demoCommand(event,{attempt:Number(process.env.GITHUB_RUN_ATTEMPT)});if(!command&&!withdrawal)return;
+ ensure(process.env.GITHUB_REPOSITORY===repository&&['issue_comment','pull_request_target'].includes(process.env.GITHUB_EVENT_NAME),'INVALID_ACTION_CONTEXT');
  ensure(reservationCents(policy)<=25,'BUDGET_CONFIGURATION_INVALID');
  const token=process.env.GITHUB_TOKEN;ensure(typeof token==='string'&&token.length>10,'GITHUB_TOKEN_REQUIRED');
  const root='/repos/'+repository;
  const api=async(path,{method='GET',body}={})=>{
   ensure(path.startsWith(root+'/'),'API_SCOPE_REFUSED');const r=await fetch('https://api.github.com'+path,{method,redirect:'error',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});ensure(r.ok,'GITHUB_HTTP_'+r.status);return r.status===204?{}:r.json();
  };
+ if(withdrawal){ensure(event.repository?.full_name===repository&&Number.isSafeInteger(event.number)&&event.number>0,'INVALID_WITHDRAWAL_EVENT');const count=await withdrawDemoComments({api,root,number:event.number});console.log(JSON.stringify({withdrawn:count,api_calls:0}));return;}
  const runId=Number(process.env.GITHUB_RUN_ID);ensure(Number.isSafeInteger(runId)&&runId>0,'INVALID_RUN_ID');
  const current=await api(root+'/actions/runs/'+runId);ensure(current.event==='issue_comment'&&current.run_attempt===1,'REPLAYED_ACTION_REFUSED');
  const history=await api(root+'/actions/workflows/'+current.workflow_id+'/runs?event=issue_comment&actor=heathsanchez&per_page=100');ensure(Array.isArray(history.workflow_runs)&&history.total_count===history.workflow_runs.length&&history.workflow_runs.some(r=>r.id===runId)&&history.workflow_runs.filter(r=>r.id<=runId).length<=20,'PILOT_TOTAL_BUDGET_EXHAUSTED');
