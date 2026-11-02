@@ -1,0 +1,11 @@
+# Generic Python investigator pilot
+
+This isolated pilot replaces problem-specific target selection with a repository capability profile, model-generated pytest probes, offline native comparison and a bounded model-generated repair. The current profile targets an existing public owned GNSS Python fork; the algorithm has no bug-specific counterexample, expected output or repair constructor.
+
+The implementation is frozen before its prepare phase selects a fresh eligible upstream PR. The model receives public source and PR claims as untrusted text. Native jobs receive no model or App credentials. A trusted dependency-only wheel profile is installed in Docker; the target package is never installed or built. Subsequent probe/suite execution uses one acquired environment for base and head, with network disabled, read-only source/test mounts and CPU/memory/PID/time limits. Exact image digest, installed dependencies, source snapshots and generated tests are retained.
+
+At most two model calls are permitted per workflow: investigation, then repair only after a reproduced head failure. A conservative reservation is at most100 US cents per workflow using the configured model price assumption; no paid retry is automatic. Input and output limits are enforced before/after calls. API pricing changes require requalification of that reservation; actual usage is retained.
+
+The source-bound consumer distinguishes native failure, native pass and UNKNOWN. A repair replays unpatched head and patched head in the same repair image. It must preserve frozen probe bytes and all collected testcase IDs, execute assertions, reject skips/unexpected exceptions, and pass both probes and protected tests. Model-selected API intent remains UNVERIFIED: these are interpreter/test-run observations, not formal assurance of arbitrary code, hostile-code resistance or model judgment. Both passing and failing probes remain visible. A clean run is not proof of correctness.
+
+The workflow is opt-in on the isolated pilot branch, not production mention dispatch. Registered App publication is advisory and names both the carrier verifier commit and external subject. Candidate patches remain reviewable artifacts; cross-repository App installation/draft publication is not silently expanded. No upstream comments or merges occur.
