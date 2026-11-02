@@ -1,0 +1,37 @@
+name: Check PR pilot access preflight
+on:
+  push:
+    branches: [feature/check-pr-pilot-v1]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Read App permissions and owned installation coverage
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          import {appJWT} from './integrations/mathgraph-check-github/cloudflare/worker.mjs';
+          const jwt=appJWT(process.env.APP_PRIVATE_KEY);
+          const headers={Authorization:'Bearer '+jwt,Accept:'application/vnd.github+json'};
+          const app=await fetch('https://api.github.com/app',{headers}).then(r=>r.json());
+          const installs=await fetch('https://api.github.com/app/installations?per_page=100',{headers}).then(r=>r.json());
+          const own=installs.filter(i=>i.account?.login==='metalogiclabs');
+          const rows=[];
+          for(const i of own){
+            const r=await fetch(`https://api.github.com/app/installations/${i.id}/access_tokens`,{method:'POST',headers,body:JSON.stringify({permissions:{contents:'read'}})});
+            if(!r.ok){rows.push({installation:i.id,status:r.status});continue;}
+            const t=await r.json();
+            const repos=await fetch('https://api.github.com/installation/repositories?per_page=100',{headers:{Authorization:'Bearer '+t.token,Accept:'application/vnd.github+json'}}).then(r=>r.json());
+            rows.push({installation:i.id,selection:i.repository_selection,repositories:repos.repositories?.map(x=>x.full_name),total:repos.total_count});
+            await fetch('https://api.github.com/installation/token',{method:'DELETE',headers:{Authorization:'Bearer '+t.token}});
+          }
+          console.log(JSON.stringify({app:{id:app.id,slug:app.slug,permissions:app.permissions,events:app.events},owned_installations:rows}));
+          JS
