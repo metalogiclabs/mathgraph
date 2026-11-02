@@ -21,6 +21,16 @@ test('missing Lean environment is UNKNOWN, not Lean rejection',async()=>{
  assert.equal(r.original_target_status,'UNKNOWN');
  assert.equal(r.evidence_warrant,'UNKNOWN');
 });
+test('candidate proof reference requires a safe exact theorem name, and missing native tool preserves UNKNOWN',async()=>{
+ await assert.rejects(runGenericLeanConsumer({...inputs(),candidateName:'candidate\n#eval IO.println "fake"'}),/CANDIDATE_NAME_INVALID/);
+ const r=await runGenericLeanConsumer({...inputs(),candidateName:'candidate',projectDir:'/missing-native-project'});
+ assert.equal(r.execution_status,'ENVIRONMENT_UNAVAILABLE');
+ assert.equal(r.actual_candidate_proof_term_reference,'UNKNOWN');
+ assert.equal(r.normalized_direct_reference,null);
+ assert.equal(r.candidate_dependence,'UNKNOWN');
+ assert.equal(r.intent_fidelity,'UNKNOWN');
+ assert.equal(r.evidence_warrant,'UNKNOWN');
+});
 test('native replay accepts a separately compiled original-target consumer and audits axioms', {skip:!projectDir},async()=>{
  const r=await runGenericLeanConsumer({...inputs(),timeoutMs:60000});
  assert.equal(r.execution_status,'EXECUTED');
@@ -47,4 +57,14 @@ test('native accepted candidate and consumer remain blocked when the axiom audit
  assert.match(r.trace[2].stdout,/sorryAx/);
  assert.equal(r.original_target_status,'UNKNOWN');
  assert.equal(r.evidence_warrant,'UNKNOWN');
+});
+test('native replay identifies a true direct proof-term reference without promoting semantic necessity',{skip:!projectDir},async()=>{
+ const candidate={path:'Candidate.lean',source:'import Init\ntheorem candidate (n : Nat) : n + 0 = n := by simp\n'};
+ const result=await runGenericLeanConsumer({...inputs(candidate),candidateName:'candidate',timeoutMs:60000});
+ assert.equal(result.execution_status,'EXECUTED');
+ assert.equal(result.normalized_direct_reference,true);
+ assert.equal(result.actual_candidate_proof_term_reference,'NATIVE_ZETA_NORMALIZED_DIRECT_REFERENCE');
+ assert.equal(result.candidate_dependence,'UNKNOWN');
+ assert.equal(result.intent_fidelity,'UNKNOWN');
+ assert.equal(result.evidence_warrant,'UNKNOWN');
 });

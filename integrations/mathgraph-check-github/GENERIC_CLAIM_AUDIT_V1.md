@@ -179,6 +179,47 @@ unavailable dependencies and environment drift fail closed. This is not yet a
 general import/repackaging service for the 14-module Kakeya export. No GitHub
 App publication or webhook route was added.
 
+## Optional actual candidate proof-term reference observation
+
+With a separately hash-pinned original-target `--consumer`, `--consumer-sha`,
+and `--consumer-name`, the operator may add:
+
+```sh
+  --consumer-candidate-name Proposed.candidate
+```
+
+This runs in the **same native Consumer replay** as the existing exact-source
+Lean compilation. The generated audit requires the named candidate theorem to
+originate in the staged `Candidate.olean` and the target theorem in the staged
+`Consumer.olean`; imported/library impostors fail. It reads the actual
+elaborated Consumer theorem's proof value, applies Lean `Meta.zetaReduce` to
+discard unused `have`/`let` bindings, and checks for a *direct* occurrence of
+the actual Candidate theorem constant. It also captures separate `#print
+axioms` output for both the candidate and the consumer. Only an exact native
+positive with both axiom sets restricted to `propext`, `Classical.choice`, and
+`Quot.sound` yields `actual_candidate_proof_term_reference:
+NATIVE_ZETA_NORMALIZED_DIRECT_REFERENCE` in the consumer replay receipt.
+
+This is stronger than a text search, raw constant occurrence, or the previous
+hypothetical assumed-fixture binding. A native control with an unused candidate
+`have` retains the candidate's axioms in its *raw* theorem audit but loses the
+candidate constant after zeta reduction; it is correctly not promoted. The
+positive uses the actual compiled candidate theorem and the actual consumer
+proof term. Nonetheless, a remaining reference is **not proof of mathematical
+necessity**: an alternative proof could exist, transitive references via
+helper theorems may not be found, and no paper-to-Lean interpretation is
+authorized. `candidate_dependence`, `intent_fidelity` and `evidence_warrant`
+stay `UNKNOWN`. The operator must not imply that the real source theorem is
+faithful merely because the selected consumer compiled.
+
+The independent native first-party arithmetic test is executable with
+`MATHGRAPH_LEAN_BIN=/trusted/lean node --test
+integrations/mathgraph-check-github/generic-candidate-proof-reference-v1.test.mjs`.
+The script uses exact imported module boundaries and checks dependent, library
+bypass, dead touch and wrong-module cases. No third-party SemantEq native suite
+result is attributed to this standalone test. Unavailable pinned environments
+yield `UNKNOWN`, never a forged Lean rejection or accepted proof.
+
 `--output` must not exist. The CLI never overwrites an existing report and
 returns exit code 2 on environment or execution failure. Exit code 0 means the
 configured tools *ran*, not that the candidate is mathematically warranted.

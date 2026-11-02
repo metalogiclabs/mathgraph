@@ -55,6 +55,28 @@ test('operator CLI joins optional consumer replay only under separate exact sour
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 
+test('actual candidate proof-term observation requires an exact consumer and stays UNKNOWN without Lean',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mathgraph-cli-actual-proof-'));
+ try{
+  const src='import Init\ntheorem candidate (n : Nat) : n + 0 = n := by simp\n';
+  const consumer='import Candidate\ntheorem verified_target (n : Nat) : n + 0 = n := candidate n\n';
+  const ref=join(dir,'Reference.lean'),cand=join(dir,'Candidate.lean'),con=join(dir,'Consumer.lean'),out=join(dir,'report.json');
+  await writeFile(ref,src);await writeFile(cand,src);await writeFile(con,consumer);
+  const common=['integrations/mathgraph-check-github/generic-semanteq-cli-v1.mjs',
+   '--reference',ref,'--candidate',cand,'--reference-sha',sha(src),'--project','/missing','--output',out];
+  await assert.rejects(exec(process.execPath,[...common,'--consumer-candidate-name','candidate'],
+   {cwd:new URL('../..',import.meta.url).pathname}),{code:2});
+  await assert.rejects(readFile(out,'utf8'),{code:'ENOENT'});
+  const args=[...common,'--consumer',con,'--consumer-sha',sha(consumer),'--consumer-name','verified_target',
+   '--consumer-candidate-name','candidate'];
+  await assert.rejects(exec(process.execPath,args,{cwd:new URL('../..',import.meta.url).pathname}),{code:2});
+  const report=JSON.parse(await readFile(out,'utf8'));
+  assert.equal(report.consumer_replay.actual_candidate_proof_term_reference,'UNKNOWN');
+  assert.equal(report.consumer_replay.candidate_dependence,'UNKNOWN');
+  assert.equal(report.evidence_warrant,'UNKNOWN');
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
 test('proof fixture requires both an exact hash and a source path',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'mathgraph-cli-proof-args-'));
  try{

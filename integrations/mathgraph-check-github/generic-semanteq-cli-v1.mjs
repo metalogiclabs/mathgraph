@@ -10,7 +10,7 @@ import {runGenericProofTypeBinding} from './generic-proof-type-binding-run-v1.mj
 
 function argumentsMap(args){
  const accepted=new Set(['--reference','--candidate','--reference-sha','--project','--output','--timeout-ms',
-  '--consumer','--consumer-sha','--consumer-name','--proof-fixture','--proof-fixture-sha',
+  '--consumer','--consumer-sha','--consumer-name','--consumer-candidate-name','--proof-fixture','--proof-fixture-sha',
   '--proof-reference-name','--proof-candidate-name','--proof-assumption-name','--proof-goal-name']);
  const values={};
  if(args.length%2!==0)throw Error('EXPECTED_KEY_VALUE_ARGUMENTS');
@@ -32,6 +32,7 @@ async function main(){
  const [referenceSource,candidateSource]=await Promise.all([readFile(referencePath,'utf8'),readFile(candidatePath,'utf8')]);
  const consumerArgs=['--consumer','--consumer-sha','--consumer-name'];
  if(consumerArgs.some(key=>options[key])&&!consumerArgs.every(key=>options[key]))throw Error('INCOMPLETE_CONSUMER_TRUST_ANCHOR');
+ if(options['--consumer-candidate-name']&&!options['--consumer'])throw Error('CANDIDATE_REFERENCE_REQUIRES_CONSUMER');
  if(options['--consumer']&&resolve(options['--consumer'])===reportPath)throw Error('OUTPUT_MAY_NOT_REPLACE_CONSUMER');
  const proofArgs=['--proof-fixture','--proof-fixture-sha'];
  if(proofArgs.some(key=>options[key])&&!proofArgs.every(key=>options[key]))throw Error('INCOMPLETE_PROOF_FIXTURE_TRUST_ANCHOR');
@@ -50,7 +51,8 @@ async function main(){
  if(options['--consumer']){
   const consumerSource=await readFile(resolve(options['--consumer']),'utf8');
   const replay=await runGenericLeanConsumer({...optionsForNative,consumerSource,
-   expectedConsumerSha:options['--consumer-sha'],consumerName:options['--consumer-name']});
+   expectedConsumerSha:options['--consumer-sha'],consumerName:options['--consumer-name'],
+   candidateName:options['--consumer-candidate-name']});
   const sameRun=report.execution_status==='EXECUTED'&&replay.execution_status==='EXECUTED'&&
    report.reference_sha256===replay.reference_sha256&&report.candidate_sha256===replay.candidate_sha256&&
    report.tool_git===replay.tool_git&&report.mathlib_git===replay.mathlib_git&&
