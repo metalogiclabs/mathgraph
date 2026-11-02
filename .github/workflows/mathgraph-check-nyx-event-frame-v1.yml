@@ -1,0 +1,91 @@
+name: MathGraph Check Nyx event-frame retrospective V1
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-nyx-v1-20261102
+    paths:
+      - '.github/workflows/mathgraph-check-nyx-event-frame-v1.yml'
+      - 'integrations/mathgraph-check-github/nyx-event-frame-v1*'
+      - 'integrations/mathgraph-check-github/run-nyx-event-frame-v1*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-nyx-event-frame-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      NYX_BASE: d1c3598d5ccf4c984a1d3dd82c450e2af363e821
+      NYX_HEAD: ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b
+      NYX_TEST_BLOB: 830919f246536ccc65be4041e9a4b775220f57bb
+      CARGO_NET_RETRY: '2'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Qualify the receipt parser before native source execution
+        run: |
+          node integrations/mathgraph-check-github/nyx-event-frame-v1.test.mjs
+          node integrations/mathgraph-check-github/run-nyx-event-frame-v1.test.mjs
+      - name: Fetch immutable public Nyx source and preserve the exact PR regression test
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/nyx-space/nyx.git "$RUNNER_TEMP/nyx-origin"
+          git -C "$RUNNER_TEMP/nyx-origin" remote add owned-fork https://github.com/metalogiclabs/nyx.git
+          git -C "$RUNNER_TEMP/nyx-origin" fetch origin "$NYX_BASE"
+          git -C "$RUNNER_TEMP/nyx-origin" fetch owned-fork "$NYX_HEAD"
+          git -C "$RUNNER_TEMP/nyx-origin" worktree add --detach "$RUNNER_TEMP/nyx-base" "$NYX_BASE"
+          git -C "$RUNNER_TEMP/nyx-origin" worktree add --detach "$RUNNER_TEMP/nyx-head" "$NYX_HEAD"
+          test "$(git -C "$RUNNER_TEMP/nyx-base" rev-parse HEAD)" = "$NYX_BASE"
+          test "$(git -C "$RUNNER_TEMP/nyx-head" rev-parse HEAD)" = "$NYX_HEAD"
+          test "$(git -C "$RUNNER_TEMP/nyx-head" hash-object nyx-core/tests/propagation/stopcond.rs)" = "$NYX_TEST_BLOB"
+          cp "$RUNNER_TEMP/nyx-head/nyx-core/tests/propagation/stopcond.rs" "$RUNNER_TEMP/nyx-base/nyx-core/tests/propagation/stopcond.rs"
+          test "$(git -C "$RUNNER_TEMP/nyx-base" hash-object nyx-core/tests/propagation/stopcond.rs)" = "$NYX_TEST_BLOB"
+          cmp "$RUNNER_TEMP/nyx-base/Cargo.lock" "$RUNNER_TEMP/nyx-head/Cargo.lock"
+          sha256sum "$RUNNER_TEMP/nyx-base/Cargo.lock" "$RUNNER_TEMP/nyx-head/Cargo.lock"
+          rustc --version
+          cargo --version
+      - name: Run one identical native Rust test on base and PR head
+        run: |
+          set -euo pipefail
+          for mode in base head; do
+            set +e
+            (cd "$RUNNER_TEMP/nyx-$mode" && cargo test -p nyx-space --no-default-features --test lib longitude_event_in_rotating_frame -- --nocapture) \
+              > "$RUNNER_TEMP/nyx-$mode.stdout" 2> "$RUNNER_TEMP/nyx-$mode.stderr"
+            code=$?
+            set -e
+            if [ "$mode" = base ]; then source_sha="$NYX_BASE"; else source_sha="$NYX_HEAD"; fi
+            node integrations/mathgraph-check-github/run-nyx-event-frame-v1.mjs \
+              --mode "$mode" --exit "$code" --source-sha "$source_sha" \
+              --stdout "$RUNNER_TEMP/nyx-$mode.stdout" --stderr "$RUNNER_TEMP/nyx-$mode.stderr" \
+              --out "$RUNNER_TEMP/nyx-$mode.json"
+          done
+          lock_sha="$(sha256sum "$RUNNER_TEMP/nyx-head/Cargo.lock" | cut -d ' ' -f 1)"
+          rustc_version="$(rustc --version)"
+          node integrations/mathgraph-check-github/run-nyx-event-frame-v1.mjs \
+            --mode finalize --base "$RUNNER_TEMP/nyx-base.json" --head "$RUNNER_TEMP/nyx-head.json" \
+            --rustc "$rustc_version" --cargo-lock-sha256 "$lock_sha" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --out "$RUNNER_TEMP/nyx-retrospective-receipt.json"
+      - name: Archive raw logs, exact source pins and bounded decision even if qualification fails
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mathgraph-nyx-event-frame-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/nyx-*.stdout
+            ${{ runner.temp }}/nyx-*.stderr
+            ${{ runner.temp }}/nyx-*.json
+            ${{ runner.temp }}/nyx-retrospective-receipt.json
+          if-no-files-found: warn
+          retention-days: 14
