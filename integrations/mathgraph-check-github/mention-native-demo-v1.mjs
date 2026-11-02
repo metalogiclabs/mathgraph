@@ -9,7 +9,7 @@ const exec=promisify(execFile);
 export const originalTarget='theorem mathgraph_reverse_length (xs : List Nat) : xs.reverse.length = xs.length';
 export const brokenSource='import Std\n\ntheorem mathgraph_reverse_length (xs : List Nat) (h : xs.reverse.length = xs.length) : xs.reverse.length = xs.length := h\n';
 export const demoPath='mathgraph-demo/ReverseLength.lean';
-const bodies=['by simp','by simpa','by exact List.length_reverse xs'];
+const bodies=['by simp','by simpa','by exact List.length_reverse'];
 export function repairedSource(proof){
  if(!bodies.includes(proof))throw Error('UNSUPPORTED_PROOF_CONSTRUCTOR');
  return 'import Std\n\n'+originalTarget+' := '+proof+'\n';
