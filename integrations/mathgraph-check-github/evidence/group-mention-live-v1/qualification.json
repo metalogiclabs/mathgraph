@@ -1,0 +1,101 @@
+{
+  "schema": "mathgraph.group-mention-live-qualification.v1",
+  "status": "WARRANTED_BOUNDED",
+  "trusted_source_commit": "64cba8b569dede1fba266e0ec066e524a00c139c",
+  "workflow_commit": "bb0d0067dffcade8c9583580a7e435f6762b2bcf",
+  "implementation_pr": 244,
+  "demo_pr": 242,
+  "source_head": "6dd3913529750de26a7ced7f7d9d17842bb36dad",
+  "publisher": "mathgraph-check[bot]",
+  "app_id": 5308912,
+  "runs": {
+    "check": 41412203591,
+    "fix": 41412204856,
+    "negative_fix": 41412279568,
+    "withdrawal": 41413426259
+  },
+  "repair_pr": {
+    "number": 245,
+    "user": "mathgraph-check[bot]",
+    "draft": true,
+    "state": "open",
+    "base": "demo/mathgraph-group-identity-v1-20261102",
+    "head_sha": "fedbdd777d38e2e8fb96c28b241692412d037f99",
+    "head": "mathgraph/repair-242-6dd3913529-6572409202",
+    "changed_files": 1,
+    "body": "Applies the frozen native tactic portfolio to the submitted proof, preserving its exact target and assumptions. No model calls or prewritten theorem proof. Lean 4.28.0 checked the unchanged original target and its consumer with its declared axiom audit. Controlled demonstration; no general semantic assurance.\n\nNative verification: https://github.com/metalogiclabs/mathgraph/actions/runs/41412204856"
+  },
+  "repair_diff": [
+    {
+      "sha": "67af6b785dfce93edf8324532af28208cce2bf2b",
+      "filename": "mathgraph-demo/GroupIdentity.lean",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "blob_url": "https://github.com/metalogiclabs/mathgraph/blob/fedbdd777d38e2e8fb96c28b241692412d037f99/mathgraph-demo%2FGroupIdentity.lean",
+      "raw_url": "https://github.com/metalogiclabs/mathgraph/raw/fedbdd777d38e2e8fb96c28b241692412d037f99/mathgraph-demo%2FGroupIdentity.lean",
+      "contents_url": "https://api.github.com/repos/metalogiclabs/mathgraph/contents/mathgraph-demo%2FGroupIdentity.lean?ref=fedbdd777d38e2e8fb96c28b241692412d037f99",
+      "patch": "@@ -1,3 +1,3 @@\n import Mathlib\n \n-theorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹ := by group\n+theorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹ := by simp only [pow_succ, pow_zero, mul_one]; group"
+    }
+  ],
+  "positive_cards": [
+    {
+      "id": 6572415131,
+      "author": "mathgraph-check[bot]",
+      "body": "<!-- mathgraph-actions-demo-v1:6572408895 -->\n### <img src=\"https://raw.githubusercontent.com/metalogiclabs/mathgraph/5a353b197dcc8b4bca66566b5c5b71a226073ce2/website/public/mathgraph-mark-black.png#gh-light-mode-only\" width=\"28\" height=\"28\" alt=\"\" /> MathGraph Check\n\n<!-- mathgraph-source:6dd3913529750de26a7ced7f7d9d17842bb36dad -->\n\n**The proof needs repair.**\n\nThe submitted proof does not establish the frozen group identity.\n\n**Repair it:** comment `@MathGraph -fix`\n\nControlled demo · Native group-identity repair\n\n<details><summary>Verification receipt</summary>\n\nRevision: [6dd3913529](https://github.com/metalogiclabs/mathgraph/commit/6dd3913529750de26a7ced7f7d9d17842bb36dad) · [Verification run](https://github.com/metalogiclabs/mathgraph/actions/runs/41412203591)\n\nLean 4.28.0 · Assumptions: not audited.\n\nScope: four frozen group-identity statements. Restricted proof bodies; at most two prequalified native tactic variants. Zero model calls.\n\nPublisher: `mathgraph-check[bot]`.\n\n</details>",
+      "url": "https://github.com/metalogiclabs/mathgraph/pull/242#issuecomment-6572415131"
+    },
+    {
+      "id": 6572462697,
+      "author": "mathgraph-check[bot]",
+      "body": "<!-- mathgraph-actions-demo-v1:6572409202 -->\n### <img src=\"https://raw.githubusercontent.com/metalogiclabs/mathgraph/5a353b197dcc8b4bca66566b5c5b71a226073ce2/website/public/mathgraph-mark-black.png#gh-light-mode-only\" width=\"28\" height=\"28\" alt=\"\" /> MathGraph Check\n\n<!-- mathgraph-source:6dd3913529750de26a7ced7f7d9d17842bb36dad -->\n\n**Repair verified against the original claim.**\n\n| Before | After |\n|---|---|\n| Proof fails | Natural powers normalized |\n\nLean verified the unchanged statement.\n\n**[Review the repair →](https://github.com/metalogiclabs/mathgraph/pull/245)** · Draft PR\n\nControlled demo · Native group-identity repair\n\n<details><summary>Verification receipt</summary>\n\nRevision: [6dd3913529](https://github.com/metalogiclabs/mathgraph/commit/6dd3913529750de26a7ced7f7d9d17842bb36dad) · [Verification run](https://github.com/metalogiclabs/mathgraph/actions/runs/41412204856)\n\nLean 4.28.0 · Assumptions: propext.\n\nScope: four frozen group-identity statements. Restricted proof bodies; at most two prequalified native tactic variants. Zero model calls.\n\nPublisher: `mathgraph-check[bot]`.\n\n</details>",
+      "url": "https://github.com/metalogiclabs/mathgraph/pull/242#issuecomment-6572462697"
+    }
+  ],
+  "negative_before": [
+    {
+      "id": 6572516783,
+      "author": "mathgraph-check[bot]",
+      "body": "<!-- mathgraph-actions-demo-v1:6572420693 -->\n### <img src=\"https://raw.githubusercontent.com/metalogiclabs/mathgraph/5a353b197dcc8b4bca66566b5c5b71a226073ce2/website/public/mathgraph-mark-black.png#gh-light-mode-only\" width=\"28\" height=\"28\" alt=\"\" /> MathGraph Check\n\n<!-- mathgraph-source:c71366fcbdf1d0047a2771b9ace7a499507da632 -->\n\n**No verified repair found within this bounded check.**\n\nThe submitted proof does not establish the frozen group identity.\n\nControlled demo · Native group-identity repair\n\n<details><summary>Verification receipt</summary>\n\nRevision: [c71366fcbd](https://github.com/metalogiclabs/mathgraph/commit/c71366fcbdf1d0047a2771b9ace7a499507da632) · [Verification run](https://github.com/metalogiclabs/mathgraph/actions/runs/41412279568)\n\nLean 4.28.0 · Assumptions: not audited.\n\nScope: four frozen group-identity statements. Restricted proof bodies; at most two prequalified native tactic variants. Zero model calls.\n\nPublisher: `mathgraph-check[bot]`.\n\n</details>",
+      "url": "https://github.com/metalogiclabs/mathgraph/pull/243#issuecomment-6572516783"
+    }
+  ],
+  "negative_after": [
+    {
+      "id": 6572516783,
+      "author": "mathgraph-check[bot]",
+      "body": "<!-- mathgraph-actions-demo-v1:6572420693 -->\n<!-- mathgraph-withdrawn:c014911368596ded73c536e4e933eb8fc7f17a9a -->\n### MathGraph Check\n**Source changed — this result is withdrawn for the current revision.**\n\nRun `@MathGraph -check` again.\n\n<details><summary>Previous bounded result</summary>\n\n\n### <img src=\"https://raw.githubusercontent.com/metalogiclabs/mathgraph/5a353b197dcc8b4bca66566b5c5b71a226073ce2/website/public/mathgraph-mark-black.png#gh-light-mode-only\" width=\"28\" height=\"28\" alt=\"\" /> MathGraph Check\n\n<!-- mathgraph-source:c71366fcbdf1d0047a2771b9ace7a499507da632 -->\n\n**No verified repair found within this bounded check.**\n\nThe submitted proof does not establish the frozen group identity.\n\nControlled demo · Native group-identity repair\n\n<details><summary>Verification receipt</summary>\n\nRevision: [c71366fcbd](https://github.com/metalogiclabs/mathgraph/commit/c71366fcbdf1d0047a2771b9ace7a499507da632) · [Verification run](https://github.com/metalogiclabs/mathgraph/actions/runs/41412279568)\n\nLean 4.28.0 · Assumptions: not audited.\n\nScope: four frozen group-identity statements. Restricted proof bodies; at most two prequalified native tactic variants. Zero model calls.\n\nPublisher: `mathgraph-check[bot]`.\n\n</details>\n\n</details>",
+      "url": "https://github.com/metalogiclabs/mathgraph/pull/243#issuecomment-6572516783"
+    }
+  ],
+  "negative_child_prs": [],
+  "negative_old_head": "c71366fcbdf1d0047a2771b9ace7a499507da632",
+  "negative_new_head": "c014911368596ded73c536e4e933eb8fc7f17a9a",
+  "api_calls": 0,
+  "artifacts": [
+    {
+      "run": 41412203591,
+      "id": 13126186701,
+      "sha256": "41f101155ada4141e52f04a6d62b9c42d507fe0fa577f381fa71bccc5da68618"
+    },
+    {
+      "run": 41412204856,
+      "id": 13126940003,
+      "sha256": "19061e94d0d3c334a8095999108641fc1d3826faeac0a63c8e3f4a128a27b412"
+    },
+    {
+      "run": 41412279568,
+      "id": 13126910586,
+      "sha256": "3f5d56a9b8183b48675ad00464881cd328202f9942b965a1e3c08dce2491dca3"
+    }
+  ],
+  "artifact_bytes_digest_checked": true,
+  "scope": "Live App qualification on one group identity; four exact headers qualified by prior native matrix. Explicit positive proof grammar, at most two frozen native transformations, secretless isolated verification. No general arbitrary-source support or model-superiority claim.",
+  "limits": [
+    "Owner 32909488 on metalogiclabs/mathgraph only",
+    "Original statement and source-head freshness mandatory",
+    "Draft publication only; no automatic merge",
+    "Race closure has unit coverage; live withdrawal tested on a completed negative result"
+  ]
+}

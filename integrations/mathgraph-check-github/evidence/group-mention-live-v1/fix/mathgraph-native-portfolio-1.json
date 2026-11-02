@@ -1,0 +1,17 @@
+{
+  "attempt": 1,
+  "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+  "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+  "result": {
+    "status": "ORIGINAL_TARGET_VERIFIED",
+    "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+    "axioms": [
+      "propext"
+    ],
+    "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+    "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+    "source_compiles": true,
+    "original_claim_satisfied": true,
+    "target_name": "conjugate_power_2"
+  }
+}
