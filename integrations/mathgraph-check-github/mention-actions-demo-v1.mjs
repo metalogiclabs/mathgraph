@@ -16,11 +16,11 @@ export function demoCommand(e,{attempt}={}){
 export function demoComment({command,sha,native,runURL,repairURL,proposal}={}){
  const lines=['### MathGraph Check'];
  if(command==='check'&&native?.status==='CLAIM_NOT_ESTABLISHED')lines.push('**Proof compiles. The original claim is not established.**','The submitted theorem requires the conclusion as an assumption. Lean accepts that theorem; a consumer asking for the original claim rejects it.','| Check | Result |\n|---|---|\n| Submitted proof | Compiles |\n| Original claim | Not established by this proof |\n| Extra assumption | The conclusion itself |','**Next:** `@MathGraph -fix`');
- else if(native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push(command==='fix'?'**Repair verified against the original claim.**':'**The original claim passes its native check.**','Lean accepted the theorem and its unchanged consumer, with no axioms.');
+ else if(native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push(command==='fix'?'**Repair verified against the original claim.**':'**The original claim passes its native check.**','Lean accepted the theorem and its unchanged consumer, with its declared axiom audit.');
  else lines.push('**Verification is incomplete.**','No verified repair or mathematical conclusion is established.');
  if(repairURL)lines.push('**[Review the repair]('+repairURL+')**');
  else if(command==='fix'&&native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push('The verified patch is available in this run’s artifact. Opening a repair PR was not confirmed.');
- lines.push('<details><summary>Evidence and scope</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Controlled demo: list reversal. The intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions.\n\n</details>');
+ lines.push('<details><summary>Evidence and scope</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Axioms: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'unresolved')+'. Controlled demo: list reversal. The intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions.\n\n</details>');
  return lines.join('\n\n');
 }
 export async function createVerifiedRepair({api,root,pr,sha,sourceFile,repaired,event,runURL}){
@@ -30,7 +30,7 @@ export async function createVerifiedRepair({api,root,pr,sha,sourceFile,repaired,
  await api(root+'/git/refs',{method:'POST',body:{ref:'refs/heads/'+branch,sha}});
  await api(root+'/contents/'+demoPath,{method:'PUT',body:{branch,sha:sourceFile.sha,message:'fix: prove list reversal length without assuming the conclusion',content:Buffer.from(repaired).toString('base64')}});
  await fresh();
- const opened=await api(root+'/pulls',{method:'POST',body:{head:branch,base:pr.head.ref,title:'Prove the original list-reversal claim without an extra assumption',body:'Removes the conclusion supplied as a hypothesis. Lean 4.28.0 checked the unchanged original target and its consumer with no axioms. Controlled demonstration; no general semantic assurance.\n\nNative verification: '+runURL,draft:true}});
+ const opened=await api(root+'/pulls',{method:'POST',body:{head:branch,base:pr.head.ref,title:'Prove the original list-reversal claim without an extra assumption',body:'Removes the conclusion supplied as a hypothesis. Lean 4.28.0 checked the unchanged original target and its consumer with its declared axiom audit. Controlled demonstration; no general semantic assurance.\n\nNative verification: '+runURL,draft:true}});
  ensure(Number.isSafeInteger(opened.number)&&typeof opened.html_url==='string','REPAIR_PR_NOT_CONFIRMED');
  try{await fresh();}catch(e){const closed=await api(root+'/pulls/'+opened.number,{method:'PATCH',body:{state:'closed'}});ensure(closed.state==='closed','STALE_REPAIR_WITHDRAWAL_UNCONFIRMED');throw e;}
  return {url:opened.html_url,number:opened.number};
@@ -52,7 +52,7 @@ async function main(){
  };
  const runId=Number(process.env.GITHUB_RUN_ID);ensure(Number.isSafeInteger(runId)&&runId>0,'INVALID_RUN_ID');
  const current=await api(root+'/actions/runs/'+runId);ensure(current.event==='issue_comment'&&current.run_attempt===1,'REPLAYED_ACTION_REFUSED');
- const history=await api(root+'/actions/workflows/'+current.workflow_id+'/runs?event=issue_comment&per_page=100');ensure(Array.isArray(history.workflow_runs)&&history.total_count===history.workflow_runs.length&&history.workflow_runs.filter(r=>r.id<=runId).length<=20,'PILOT_TOTAL_BUDGET_EXHAUSTED');
+ const history=await api(root+'/actions/workflows/'+current.workflow_id+'/runs?event=issue_comment&actor=heathsanchez&per_page=100');ensure(Array.isArray(history.workflow_runs)&&history.total_count===history.workflow_runs.length&&history.workflow_runs.some(r=>r.id===runId)&&history.workflow_runs.filter(r=>r.id<=runId).length<=20,'PILOT_TOTAL_BUDGET_EXHAUSTED');
  const authentic=await api(root+'/issues/comments/'+event.comment.id);ensure(authentic.user?.id===userId&&authentic.body===event.comment.body&&authentic.issue_url==='https://api.github.com'+root+'/issues/'+event.issue.number,'COMMENT_IDENTITY_MOVED');
  const pr=await api(root+'/pulls/'+event.issue.number);const sha=pr.head?.sha;ensure(pr.state==='open'&&/^[a-f0-9]{40}$/.test(sha??'')&&pr.head.repo?.full_name===repository&&pr.base.repo?.full_name===repository,'FIRST_PARTY_SOURCE_REQUIRED');
  const sourceFile=await api(root+'/contents/'+demoPath+'?ref='+sha);ensure(sourceFile.encoding==='base64'&&sourceFile.size<=4000,'UNSUPPORTED_DEMO_FILE');const source=Buffer.from(sourceFile.content,'base64').toString('utf8');
