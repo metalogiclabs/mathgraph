@@ -37,7 +37,7 @@ async function reserve(stateDir,key,p){
  const [dir,key,rawCost,rawTotal]=process.argv.slice(1);const cost=Number(rawCost),total=Number(rawTotal);
  const used=await readdir(join(dir,'spend'));if(used.length+cost>total){process.stdout.write('BUDGET_EXHAUSTED');}
  else{for(let n=used.length;n<used.length+cost;n++)await writeFile(join(dir,'spend',String(n)),key,{flag:'wx',mode:0o600});process.stdout.write('RESERVED');}`;
- const {stdout}=await exec('flock',['--exclusive','--timeout','5',join(stateDir,'budget.lock'),process.execPath,'--input-type=module','-e',script,stateDir,key,String(cost),String(p.totalCapCents)],{timeout:10000,maxBuffer:1024});
+ const {stdout}=await exec('flock',['--exclusive','--timeout','5',join(stateDir,'budget.lock'),process.execPath,'--input-type=module','-e',script,stateDir,key,String(cost),String(p.totalCapCents)],{timeout:10000,maxBuffer:1024,env:{PATH:process.env.PATH??'/usr/bin:/bin'}});
  return stdout;
 }
 export function validateProposal(p){
