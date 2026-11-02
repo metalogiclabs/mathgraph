@@ -1,0 +1,118 @@
+name: Generic Python Check investigator pilot
+on:
+  push:
+    branches: [pilot/check-investigator-20261103]
+permissions:
+  contents: read
+concurrency:
+  group: check-investigator-pilot
+  cancel-in-progress: false
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/investigator-v1 -p 'test_*.py'
+  prepare:
+    needs: contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Acquire fresh source and generate proposed probes
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/investigator-v1/driver.mjs prepare investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: investigator-plan, path: investigation/}
+  native:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: investigator-plan, path: investigation}
+      - name: Offline base/head execution without model or App credentials
+        run: python3 integrations/mathgraph-check-github/investigator-v1/native.py initial investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: investigator-native, path: investigation/}
+  propose-repair:
+    needs: native
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: investigator-native, path: investigation}
+      - name: Propose repair only for a reproduced head failure
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: node integrations/mathgraph-check-github/investigator-v1/driver.mjs repair investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: investigator-patch, path: investigation/}
+  verify-repair:
+    needs: propose-repair
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: investigator-patch, path: investigation}
+      - name: Verify candidate against frozen probes and protected tests
+        run: python3 integrations/mathgraph-check-github/investigator-v1/native.py repair investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: investigator-final, path: investigation/}
+  assess:
+    needs: verify-repair
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {contents: read, checks: write}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: investigator-final, path: investigation}
+      - name: Independent mechanical evidence admission
+        run: node integrations/mathgraph-check-github/investigator-v1/driver.mjs assess investigation
+      - name: Detect existing App publisher
+        id: publisher
+        env: {APP_PRIVATE_KEY: '${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}'}
+        run: |
+          if [ -n "$APP_PRIVATE_KEY" ]; then echo 'enabled=true' >> "$GITHUB_OUTPUT"; fi
+      - name: Mint existing repository-scoped Check token
+        id: app
+        if: steps.publisher.outputs.enabled == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23lioiUs5KfHD7mkkw
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-checks: write
+      - name: Publish source-bound advisory result
+        env: {GH_TOKEN: '${{ steps.app.outputs.token }}'}
+        run: node integrations/mathgraph-check-github/investigator-v1/publish.mjs investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: investigator-assessment, path: investigation/}

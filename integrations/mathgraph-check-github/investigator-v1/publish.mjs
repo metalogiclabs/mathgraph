@@ -1,0 +1,11 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {buildCheck,admitPublication} from './presentation.mjs';
+const dir=process.argv[2]??'investigation';
+const r=JSON.parse(await readFile(`${dir}/assessment.json`,'utf8'));
+const body=buildCheck(r,{sha:process.env.GITHUB_SHA,runId:Number(process.env.GITHUB_RUN_ID)});
+if(typeof process.env.GH_TOKEN!=='string'||process.env.GH_TOKEN.length<10)throw Error('REGISTERED_APP_TOKEN_REQUIRED');
+const response=await fetch('https://api.github.com/repos/metalogiclabs/mathgraph/check-runs',{method:'POST',headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+if(!response.ok)throw Error('CHECK_PUBLISH_HTTP_'+response.status);
+const c=await response.json();admitPublication(c,process.env.GITHUB_SHA);
+await writeFile(`${dir}/published-check.json`,JSON.stringify({id:c.id,url:c.html_url,app:c.app.slug,head_sha:c.head_sha},null,2)+'\n');
+console.log(JSON.stringify({id:c.id,url:c.html_url,app:c.app.slug}));

@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {requestJSON,reservationCents} from './model.mjs';
+test('two calls have a conservative reservation below one dollar',()=>assert.ok(reservationCents()*2<=100));
+test('oversize packet is refused before HTTP',async()=>{let calls=0;await assert.rejects(requestJSON({apiKey:'not-a-real-key',stage:'investigate',packet:{data:'x'.repeat(64001)},fetcher:async()=>{calls++;}}));assert.equal(calls,0);});
+test('failed or incomplete model output cannot become a proposal',async()=>{await assert.rejects(requestJSON({apiKey:'not-a-real-key',stage:'investigate',packet:{},fetcher:async()=>({ok:true,json:async()=>({status:'incomplete',usage:{input_tokens:1,output_tokens:1},output:[]})})}));});
+test('real protocol admits structured result and retains usage',async()=>{let body;const r=await requestJSON({apiKey:'not-a-real-key',stage:'repair',packet:{code:'untrusted'},fetcher:async(url,options)=>{body=JSON.parse(options.body);return {ok:true,json:async()=>({status:'completed',usage:{input_tokens:15,output_tokens:30},output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({summary:'candidate',files:[]})}]}]})};}});assert.equal(r.proposal.summary,'candidate');assert.equal(r.usage.input_tokens,15);assert.match(body.instructions,/untrusted/i);assert.equal(body.store,false);});
