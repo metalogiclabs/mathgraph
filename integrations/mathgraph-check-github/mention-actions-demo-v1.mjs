@@ -35,7 +35,7 @@ export function ownsDemoProgress(comment,{sha,runId,botLogin=actionsBot}={}){
  return comment?.user?.login===botLogin&&typeof comment.body==='string'&&comment.body.includes('<!-- mathgraph-progress:'+runId+' -->')&&comment.body.includes('Revision: `'+sha+'`')&&!comment.body.includes('<!-- mathgraph-withdrawn:');
 }
 export function demoComment({command,sha,native,runURL,repairURL,proposal,repairPerformed=false,botLogin=actionsBot}={}){
- const lines=[brandHeader];
+ const lines=[brandHeader,'<!-- mathgraph-source:'+String(sha??'unbound')+' -->'];
  if(command==='check'&&native?.status==='CLAIM_NOT_ESTABLISHED')lines.push('**Proof compiles. The original claim is not established.**','The proof assumes the very conclusion it promises to prove.','| Submitted proof | Original claim |\n|---|---|\n| Compiles in Lean | Not established by this proof |','**Repair it:** comment `@MathGraph -fix`');
  else if(native?.status==='ORIGINAL_TARGET_VERIFIED'){
   lines.push(command==='fix'&&repairPerformed?'**Repair verified against the original claim.**':'**The original claim passes its native check.**');
@@ -45,7 +45,7 @@ export function demoComment({command,sha,native,runURL,repairURL,proposal,repair
  if(repairURL)lines.push('**[Review the repair →]('+repairURL+')** · Draft PR');
  else if(command==='fix'&&repairPerformed&&native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push('The verified patch is available in this run’s artifact. Opening a repair PR was not confirmed.');
  lines.push('Controlled demo · List reversal');
- lines.push('<details><summary>Verification receipt</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Lean 4.28.0 · Axioms: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'unresolved')+'.\n\nThe intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions as `'+botLogin+'`.\n\n</details>');
+ lines.push('<details><summary>Verification receipt</summary>\n\nRevision: ['+String(sha??'unbound').slice(0,10)+'](https://github.com/'+repository+'/commit/'+String(sha??'unbound')+')'+(runURL?' · [Verification run]('+runURL+')':'')+'\n\nLean 4.28.0 · Assumptions: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'not audited')+'.\n\nScope: frozen list-reversal claim only. Model suggestions are advisory.\n\nPublisher: `'+botLogin+'`.\n\n</details>');
  return lines.join('\n\n');
 }
 export async function startDemoComment({api,root,number,marker,progressArgs,phase}){
@@ -84,7 +84,7 @@ export async function withdrawDemoComments({api,root,number}){
  const comments=await api(root+'/issues/'+number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');let count=0;
  for(const c of comments){
   if(![actionsBot,appBot].includes(c.user?.login)||!c.body?.startsWith('<!-- mathgraph-actions-demo-v1:')||c.body.includes('<!-- mathgraph-withdrawn:'))continue;
-  const old=c.body.match(/Revision: `([a-f0-9]{40})`/);if(!old||old[1]===head)continue;
+  const old=c.body.match(/<!-- mathgraph-source:([a-f0-9]{40}) -->/)??c.body.match(/Revision: `([a-f0-9]{40})`/);if(!old||old[1]===head)continue;
   const marker=c.body.split('\n',1)[0];
   const body=marker+'\n<!-- mathgraph-withdrawn:'+head+' -->\n### MathGraph Check\n**Source changed — this result is withdrawn for the current revision.**\n\nRun `@MathGraph -check` again.\n\n<details><summary>Previous bounded result</summary>\n\n'+c.body.slice(marker.length)+'\n\n</details>';
   await api(root+'/issues/comments/'+c.id,{method:'PATCH',author:c.user.login,body:{body}});count++;
