@@ -40,3 +40,8 @@ test('the paid epoch accepts only the first owner push on its fixed workflow',()
 test('a resource-limited candidate remains UNKNOWN',async()=>{
  const f=m.freezeTheorem(source,{});const r=await m.verifyFresh({frozen:f,proof:'by rfl',run:async()=>{throw Error('NATIVE_RESOURCE_LIMIT');}});assert.equal(r.status,'UNKNOWN');assert.match(r.diagnostic,/NATIVE_RESOURCE_LIMIT/);
 });
+
+test('unconfirmed native cleanup stops comparison before another paid call',async()=>{
+ const frozen=m.freezeTheorem(source,{});let calls=0;
+ await assert.rejects(m.runFreshComparison({frozen,generate:async()=>{calls++;return {proof_body:'by rfl',usage:{input_tokens:1,output_tokens:1}};},verify:proof=>m.verifyFresh({frozen,proof,run:async()=>{throw Error('NATIVE_CLEANUP_UNCONFIRMED');}})}),/NATIVE_CLEANUP_UNCONFIRMED/);assert.equal(calls,1);
+});

@@ -18,7 +18,7 @@ export function freezeTheorem(source,provenance){
 }
 export function renderCandidate(frozen,proof){
  ensure(typeof proof==='string'&&proof.length<=12000&&/^by(?:\s|$)/.test(proof),'UNSUPPORTED_PROOF_BODY');
- ensure(!/[#`"«»\r]/.test(proof)&&!(/\b(?:sorry|sorryAx|admit|axiom|unsafe|unsafeCast|set_option|run_tac|run_elab|elab|macro|syntax|initialize|attribute|theorem|example|def|opaque|import|namespace|section|end|IO|System|native_decide|ofReduceBool|ofReduceNat)\b/.test(proof)),'UNSUPPORTED_PROOF_BODY');
+ ensure(!/[#`"«»\r]/.test(proof)&&!(/\b(?:sorry|sorryAx|admit|axiom|unsafe|unsafeCast|set_option|run_tac|run_elab|run_meta|elab|macro|syntax|initialize|builtin_initialize|attribute|declare_syntax_cat|notation|infix|prefix|postfix|instance|class|structure|abbrev|export|local|scoped|command_elab|elab_rules|macro_rules|variable|universe|open|mutual|partial|noncomputable|theorem|example|def|opaque|import|namespace|section|end|IO|System|native_decide|ofReduceBool|ofReduceNat)\b/.test(proof)),'UNSUPPORTED_PROOF_BODY');
  return frozen.prelude+frozen.header+' := '+proof.trim()+'\n';
 }
 export function originalConsumer(frozen){return 'import Candidate\n\n'+frozen.prelude.replace(/^import Mathlib\n\n/,'')+'example : '+frozen.target_type+' := @'+frozen.name+'\n#print axioms '+frozen.name+'\n';}
@@ -28,13 +28,13 @@ export function auditFresh(output,name){
 }
 export async function verifyFresh({frozen,proof,run}){
  let candidate;try{candidate=renderCandidate(frozen,proof);}catch(e){return {status:'UNKNOWN',diagnostic:e.message,axioms:null};}
- let compiled;try{compiled=await run('Candidate',candidate);}catch{return {status:'UNKNOWN',diagnostic:'NATIVE_RESOURCE_LIMIT_OR_EXECUTION_INCOMPLETE',axioms:null};}if(compiled.code!==0)return {status:'UNKNOWN',diagnostic:compiled.output.slice(-8000),axioms:null};
- let consumer;try{consumer=await run('Consumer',originalConsumer(frozen));}catch{return {status:'UNKNOWN',diagnostic:'NATIVE_RESOURCE_LIMIT_OR_EXECUTION_INCOMPLETE',axioms:null};}const axioms=auditFresh(consumer.output,frozen.name);
+ let compiled;try{compiled=await run('Candidate',candidate);}catch(e){if(e.message==='NATIVE_CLEANUP_UNCONFIRMED')throw e;return {status:'UNKNOWN',diagnostic:'NATIVE_RESOURCE_LIMIT_OR_EXECUTION_INCOMPLETE',axioms:null};}if(compiled.code!==0)return {status:'UNKNOWN',diagnostic:compiled.output.slice(-8000),axioms:null};
+ let consumer;try{consumer=await run('Consumer',originalConsumer(frozen));}catch(e){if(e.message==='NATIVE_CLEANUP_UNCONFIRMED')throw e;return {status:'UNKNOWN',diagnostic:'NATIVE_RESOURCE_LIMIT_OR_EXECUTION_INCOMPLETE',axioms:null};}const axioms=auditFresh(consumer.output,frozen.name);
  return {status:consumer.code===0&&axioms!==null?'ORIGINAL_TARGET_VERIFIED':'UNKNOWN',diagnostic:consumer.output.slice(-8000),axioms,source_sha256:hash(candidate),target_sha256:frozen.target_sha256};
 }
 export async function runFreshComparison({frozen,generate,verify,onProposal=async()=>{}}){
  let calls=0;const proposals=[];
- const propose=async context=>{ensure(calls<3,'EXPERIMENT_CALL_CAP');calls++;const p=await generate({frozen_target:frozen.header,...context});ensure(typeof p.proof_body==='string'&&p.usage&&Number.isSafeInteger(p.usage.input_tokens)&&p.usage.input_tokens>=0&&p.usage.input_tokens<=24000&&Number.isSafeInteger(p.usage.output_tokens)&&p.usage.output_tokens>=0&&p.usage.output_tokens<=4096,'MODEL_USAGE_INVALID');proposals.push({arm:context.arm,...p});await onProposal(proposals);return p.proof_body;};
+ const propose=async context=>{ensure(calls<3,'EXPERIMENT_CALL_CAP');calls++;const p=await generate({frozen_target:frozen.header,prelude:frozen.prelude,...context});ensure(typeof p.proof_body==='string'&&p.usage&&Number.isSafeInteger(p.usage.input_tokens)&&p.usage.input_tokens>=0&&p.usage.input_tokens<=24000&&Number.isSafeInteger(p.usage.output_tokens)&&p.usage.output_tokens>=0&&p.usage.output_tokens<=4096,'MODEL_USAGE_INVALID');proposals.push({arm:context.arm,...p});await onProposal(proposals);return p.proof_body;};
  const firstProof=await propose({arm:'shared-first'}),first=await verify(firstProof);
  if(first.status==='ORIGINAL_TARGET_VERIFIED')return {schema:'mathgraph.fresh-proof-comparison.v1',comparison:'SHARED_FIRST_CANDIDATE_PASSED_NO_ADVANTAGE_SHOWN',registered_repair_used:false,unique_api_calls:calls,llm_alone:first,mathgraph:first,proposals};
  const baselineProof=await propose({arm:'llm-alone-revision',previous_proof:firstProof,instructions:'Reconsider your proof without compiler feedback. Preserve the exact theorem statement.'});
