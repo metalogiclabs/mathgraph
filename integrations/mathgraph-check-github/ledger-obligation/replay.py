@@ -2,7 +2,7 @@
 from pathlib import Path
 import subprocess, json, hashlib, os, shutil
 BASE='219f133cc93172fea46b08d09edf9b3b6441c0a4'
-REPAIR='ec07454d433ad58ca1bd2156bf99e913ba067b2c'
+REPAIR='de8156e305fb035452a89af74f843049d5d33e1e'
 SUBJECT='metalogiclabs/L4YAML'
 TOOLCHAIN='leanprover/lean4:v4.35.0'
 ROOT=Path.cwd(); OUT=ROOT/'ledger-results'; OUT.mkdir(exist_ok=True)
@@ -50,7 +50,7 @@ for arm,sha in [('original',BASE),('repaired',REPAIR),('withdrawn',BASE)]:
     guards_exit=p.returncode
     if arm!='repaired':
         # The old module built, and the identical guard file fails on actual #guard checks.
-        assert guards_exit==1 and '#guard' in p.stdout and 'unknown identifier' not in p.stdout,p.stdout
+        assert guards_exit==1 and 'did not evaluate to `true`' in p.stdout and 'Fields missing' not in p.stdout and 'sorryAx' not in p.stdout and 'unknown identifier' not in p.stdout,p.stdout
     gate=str(w/'.lake/build/bin/gate');rows=[]
     for name,text,expected in CASES:
         fixture=w/'fixtures'/name;(fixture/'scripts').mkdir(parents=True,exist_ok=True)
