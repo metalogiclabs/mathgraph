@@ -24,7 +24,7 @@ test('native result renders a contiguous readable table with inherited failure a
 });
 test('qualified repair leads with the repair and review action, retaining semantic limits',()=>{
  const s=formatResult({status:'CANDIDATE_ASSERTION_FAILURE',repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE',protected_guards:160},repair_pr:'https://github.com/metalogiclabs/L4YAML/pull/3'}, {...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
- assert.match(s.split('\n\n')[1],/Candidate repair verified/);
+ assert.match(s.split('\n\n').find(x=>x.startsWith('**')),/Candidate repair verified/);
  assert.match(s,/160/);assert.match(s,/Review the draft repair/);assert.match(s,/requirements remain unverified/i);
 });
 test('unsupported scope explains what can be checked and the next action',()=>{
@@ -48,4 +48,9 @@ test('incomplete repair recommends fix retry when original check exists',()=>{
 test('missing original check gives a check-first recovery instruction',()=>{
  const s=formatResult({status:'UNKNOWN',reason:'RUN_CHECK_BEFORE_FIX'},{...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
  assert.match(s,/`@MathGraph -check`/);
+});
+
+test('result links its exact PR when several PRs share a commit',()=>{
+ const s=formatResult({status:'UNKNOWN',reason:'UNSUPPORTED_CHANGED_FILE_SCOPE'},make(),'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ assert.match(s,/\[metalogiclabs\/L4YAML#2\]\(https:\/\/github.com\/metalogiclabs\/L4YAML\/pull\/2\)/);
 });

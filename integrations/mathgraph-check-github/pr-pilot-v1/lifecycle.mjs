@@ -1,5 +1,7 @@
 import {admitRequest,profileFor,formatResult,resultTitle} from './policy.mjs';
 export const APP_ID=5308912,CHECK_NAME='MathGraph Check / PR investigation';
+const checkName=request=>CHECK_NAME+' #'+request.number;
+const RETRYABLE_TITLES=new Set(['Check incomplete','Repair incomplete','Source changed — recheck required']);
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export const logicalIdentity=r=>`mg-pr-v1:${r.repository}#${r.number}@${r.head_sha}~${r.base_sha}:${r.command}`;
 export const identity=r=>logicalIdentity(r)+':'+r.comment_id;
@@ -20,9 +22,9 @@ export async function startCheck(request,api,runURL){
  const existing=checks.filter(c=>c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id?.startsWith(logicalIdentity(request)+':'));
  const queued=existing.find(c=>c.id===request.queued_check_id&&c.status==='in_progress'&&c.output?.title==='Queued for investigation');
  if(queued){const changed=await api(root+'/check-runs/'+queued.id,{method:'PATCH',body:{details_url:runURL,output:{title:'Checking independent probes…',summary:queued.output.summary}}});ensure(changed.app?.id===APP_ID&&changed.head_sha===request.head_sha,'QUEUED_CHECK_CLAIM_MISMATCH');return {state:'STARTED',check_id:queued.id,run_url:runURL};}
- const duplicate=existing.find(c=>c.external_id===identity(request)||c.status==='in_progress'||!['Check incomplete','Repair incomplete'].includes(c.output?.title));
+ const duplicate=existing.find(c=>c.external_id===identity(request)||c.status==='in_progress'||!RETRYABLE_TITLES.has(c.output?.title));
  if(duplicate)return {state:'DUPLICATE',check_id:duplicate.id,run_url:duplicate.details_url};
- const body={name:CHECK_NAME,head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:runURL,output:{title:request.support.supported?'Checking independent probes…':'Unsupported PR scope',summary:`Source: ${request.repository}#${request.number} @ ${request.head_sha}. Selected capability: Scripts.Ledger. Model proposals are advisory; native results will update here.`}};
+ const body={name:checkName(request),head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:runURL,output:{title:request.support.supported?'Checking independent probes…':'Unsupported PR scope',summary:`Source: ${request.repository}#${request.number} @ ${request.head_sha}. Selected capability: Scripts.Ledger. Model proposals are advisory; native results will update here.`}};
  const c=await api(root+'/check-runs',{method:'POST',body});ensure(c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id===identity(request)&&Number.isSafeInteger(c.id),'CHECK_IDENTITY_MISMATCH');
  return {state:'STARTED',check_id:c.id,run_url:runURL};
 }
@@ -50,8 +52,8 @@ export async function withdrawChecks(request,checks,api,{force=false}={}){
 
 export async function queueCheck(request,api){
  const existing=(await listChecks(request,api)).filter(c=>c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id?.startsWith(logicalIdentity(request)+':'));
- const duplicate=existing.find(c=>c.external_id===identity(request)||c.status==='in_progress'||!['Check incomplete','Repair incomplete'].includes(c.output?.title));
+ const duplicate=existing.find(c=>c.external_id===identity(request)||c.status==='in_progress'||!RETRYABLE_TITLES.has(c.output?.title));
  if(duplicate)return {state:'DUPLICATE',check_id:duplicate.id};
- const body={name:CHECK_NAME,head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:'https://github.com/metalogiclabs/mathgraph/actions',output:{title:'Queued for investigation',summary:`Requested by a repository maintainer for ${request.repository}#${request.number}, head ${request.head_sha}, base ${request.base_sha}. Native evidence has not run yet.`}};
+ const body={name:checkName(request),head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:'https://github.com/metalogiclabs/mathgraph/actions',output:{title:'Queued for investigation',summary:`Requested by a repository maintainer for ${request.repository}#${request.number}, head ${request.head_sha}, base ${request.base_sha}. Native evidence has not run yet.`}};
  const c=await api('/repos/'+request.repository+'/check-runs',{method:'POST',body});ensure(c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id===identity(request),'QUEUE_CHECK_IDENTITY_MISMATCH');return {state:'QUEUED',check_id:c.id,run_url:body.details_url};
 }

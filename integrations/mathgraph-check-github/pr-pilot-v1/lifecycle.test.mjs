@@ -32,3 +32,18 @@ test('completed fix Check title describes the qualified repair rather than the o
  await finishCheck(r,p,{status:'CANDIDATE_ASSERTION_FAILURE',repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'},repair_pr:'https://github.com/metalogiclabs/L4YAML/pull/3'},h.api);
  assert.match(h.checks[0].output.title,/Candidate repair verified/);
 });
+
+test('same commit on different PRs has distinct visible Check names',async()=>{
+ const h=harness(),r=await authenticate(payload,h.api);
+ await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ await startCheck({...r,number:3},h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/2');
+ assert.notEqual(h.checks[0].name,h.checks[1].name);assert.match(h.checks[0].name,/#2/);assert.match(h.checks[1].name,/#3/);
+});
+
+test('new command after reopening same source does not reuse withdrawn applicability',async()=>{
+ const h=harness(),r=await authenticate(payload,h.api),p=await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ h.pr.state='closed';await finishCheck(r,p,{status:'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'},h.api);assert.match(h.checks[0].output.title,/Source changed/);
+ h.pr.state='open';
+ const same=await queueCheck(r,h.api);assert.equal(same.state,'DUPLICATE');
+ const next=await queueCheck({...r,comment_id:8},h.api);assert.equal(next.state,'QUEUED');assert.equal(h.checks.length,2);
+});

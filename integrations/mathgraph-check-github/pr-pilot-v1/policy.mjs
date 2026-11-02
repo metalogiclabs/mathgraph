@@ -26,7 +26,7 @@ export function resultTitle(report,request){
 export function formatResult(report,request,runURL){
  const names={NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS:'No counterexample found in the generated probes',CANDIDATE_ASSERTION_FAILURE:'A generated probe fails on this revision',UNKNOWN:'Check incomplete',STALE:'Source changed — this result no longer applies'};
  const repaired=report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED;
- const lines=['### MathGraph Check',`**${repaired?resultTitle(report,{...request,command:'fix'}):names[report.status]??'Evidence incomplete'}**`,`Revision: \`${request.head_sha}\` · Base: \`${request.base_sha}\``, 'Scope: selected ledger module, original guards and repository gate. This does not establish whole-PR correctness.'];
+ const lines=['### MathGraph Check',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`,`**${repaired?resultTitle(report,{...request,command:'fix'}):names[report.status]??'Evidence incomplete'}**`,`Revision: \`${request.head_sha}\` · Base: \`${request.base_sha}\``, 'Scope: selected ledger module, original guards and repository gate. This does not establish whole-PR correctness.'];
  const headQualified=['CANDIDATE_ASSERTION_FAILURE','NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'].includes(report.status)&&report.head_complete!==false&&report.baseline?.complete!==false;
  const execution={GUARD_PASSED:'Pass',CANDIDATE_ASSERTION_FAILURE:'Fail (reproduced)',UNKNOWN:'Unknown'};
  const changes={PRE_EXISTING_FAILURE:'Present before this PR',NEW_FAILURE:'Introduced by this PR',RESOLVED_FAILURE:'Resolved by this PR',BOTH_PASS:'Pass on both revisions',BASE_UNKNOWN:'Base not qualified',HEAD_UNKNOWN:'Head not qualified'};
