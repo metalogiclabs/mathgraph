@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: '22'
       - run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs
+      - name: Generic formal-claim contract (Node-only, no native toolchain)
+        run: node --test integrations/mathgraph-check-github/generic-*.test.mjs
       - name: Live first-party PR and Checks API readback
         if: github.event_name == 'pull_request'
         env:
