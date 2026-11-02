@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ef7c0e013f49454d6846daa0bf00e9c3e165b6f4
+          ref: 64cba8b569dede1fba266e0ec066e524a00c139c
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -87,8 +87,8 @@ jobs:
           tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/mathgraph-lean-image/lean"
           docker build -t mathgraph-lean-demo:v1 -f integrations/mathgraph-check-github/Dockerfile.native-demo "$RUNNER_TEMP/mathgraph-lean-image"
           docker image inspect --format '{{.Id}}' mathgraph-lean-demo:v1
-      - name: Prepare pinned Mathlib for the published Artin exercise
-        if: steps.demo-command.outputs.case == 'artin-generators'
+      - name: Prepare pinned Mathlib for the selected mathematical check
+        if: steps.demo-command.outputs.case == 'artin-generators' || steps.demo-command.outputs.case == 'group-identity'
         run: |
           set -euo pipefail
           export PATH="$RUNNER_TEMP/mathgraph-lean-image/lean/bin:$PATH"
@@ -147,7 +147,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ef7c0e013f49454d6846daa0bf00e9c3e165b6f4
+          ref: 64cba8b569dede1fba266e0ec066e524a00c139c
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
