@@ -14,11 +14,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3b22e4f292069acd4da882b45074a12a4207a86c}
+        with: {persist-credentials: false, ref: 8e8090b155c2a053025c0b0443504309a283e1e0}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - name: Verify actual Worker runtime redirect behavior
+        run: |
+          npm install --prefix "$RUNNER_TEMP/check-worker-runtime" miniflare@4.20260730.0
+          MATHGRAPH_RUNTIME_PREFIX="$RUNNER_TEMP/check-worker-runtime" node integrations/mathgraph-check-github/pr-pilot-v1/worker-runtime-smoke.cjs
       - name: Confirm App events and exact one-fork token scope
         env:
           APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
