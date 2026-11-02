@@ -69,7 +69,7 @@ test('proposal parser rejects verdicts and markdown is escaped',()=>{
 test('OpenAI adapter sends bounded structured request and checks returned usage',async()=>{
  let request;const adapter=mod.openAIModel({apiKey:'test-key',policy,fetcher:async(url,opts)=>{request={url,opts};return new Response(JSON.stringify({status:'completed',usage:{input_tokens:100,output_tokens:200},output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(proposal)}]}]}));}});
  const actual=await adapter({snapshot});assert.deepEqual(actual,proposal);const body=JSON.parse(request.opts.body);
- assert.equal(request.url,'https://api.openai.com/v1/responses');assert.equal(body.store,false);assert.equal(body.max_output_tokens,500);assert.equal(body.model,'test-model');assert.equal(body.text.format.type,'json_schema');
+ assert.equal(request.url,'https://api.openai.com/v1/responses');assert.equal(body.store,false);assert.equal(body.service_tier,'default');assert.equal(body.max_output_tokens,500);assert.equal(body.model,'test-model');assert.equal(body.text.format.type,'json_schema');
 });
 test('missing API key fails before any network request',()=>assert.throws(()=>mod.openAIModel({policy,fetcher:()=>{throw Error('network');}}),/API_KEY/));
 test('input over cap and non-finite rates fail before paid work',()=>setup(async dir=>{
