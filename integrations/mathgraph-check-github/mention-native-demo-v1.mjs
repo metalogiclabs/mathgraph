@@ -21,8 +21,10 @@ export async function nativeDemo({source,run}){
  const compiled=await run('Candidate',source);
  if(compiled.code!==0)return {status:'UNKNOWN',source_sha256:sourceHash,target_sha256:targetHash,source_compiles:false,original_claim_satisfied:false};
  const consumer=await run('Consumer','import Candidate\n\nexample (xs : List Nat) : xs.reverse.length = xs.length := mathgraph_reverse_length xs\n#print axioms mathgraph_reverse_length\n');
- const clean=consumer.code===0&&/^'mathgraph_reverse_length' does not depend on any axioms\s*$/m.test(consumer.output);
- return {status:clean?'ORIGINAL_TARGET_VERIFIED':consumer.code===1&&/type mismatch/i.test(consumer.output)?'CLAIM_NOT_ESTABLISHED':'UNKNOWN',source_sha256:sourceHash,target_sha256:targetHash,source_compiles:true,original_claim_satisfied:clean,axioms:clean?[]:null};
+ const audit=consumer.output.match(/^'mathgraph_reverse_length' (?:does not depend on any axioms|depends on axioms: \[([^\]]*)\])\s*$/m);
+ const axioms=audit?(audit[1]?audit[1].split(',').map(x=>x.trim()):[]):null;
+ const clean=consumer.code===0&&axioms!==null&&axioms.every(x=>x==='propext')&&new Set(axioms).size===axioms.length;
+ return {status:clean?'ORIGINAL_TARGET_VERIFIED':consumer.code===1&&/type mismatch/i.test(consumer.output)?'CLAIM_NOT_ESTABLISHED':'UNKNOWN',source_sha256:sourceHash,target_sha256:targetHash,source_compiles:true,original_claim_satisfied:clean,axioms:clean?axioms:null};
 }
 export async function dockerRunner(directory,{image='mathgraph-lean-demo:v1'}={}){
  await chmod(directory,0o777);
