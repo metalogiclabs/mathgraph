@@ -92,3 +92,7 @@ test('a prior unlocked budget file does not disable new reservations',()=>setup(
  const fs=await import('node:fs/promises');await fs.writeFile(join(dir,'budget.lock'),'old process');
  const {deps,counts}=dependencies(dir);assert.equal((await mod.runMention(event,deps)).state,'COMPLETED');assert.equal(counts.model,1);
 }));
+test('native observation is separate from model assessment and survives model failure',()=>setup(async dir=>{
+ const {deps,published}=dependencies(dir);deps.observeProof=async()=>({status:'NATIVE_REPLAY_OBSERVED',theorem:'Artin_exercise_2_2_9',meaning:'UNVERIFIED',run_url:'https://github.com/metalogiclabs/demo/actions/runs/100'});deps.model=async()=>{throw Error('model unavailable');};
+ const r=await mod.runMention(event,deps);assert.equal(r.state,'UNKNOWN');assert.equal(r.proof.status,'NATIVE_REPLAY_OBSERVED');assert.match(published.at(-1).body,/native replay observed/);assert.match(published.at(-1).body,/Meaning.*unverified/i);
+}));
