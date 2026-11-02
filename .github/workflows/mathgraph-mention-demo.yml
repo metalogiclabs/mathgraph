@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 27f029fb3cc79a26699a3765b1bd25f7ba8300e5
+          ref: dfd87d1e921953badedcfae21ade76bb38f5c04a
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -69,6 +69,7 @@ jobs:
             echo "::warning::MathGraph Check App installation is unavailable. Publishing as github-actions[bot]."
           fi
       - name: Acknowledge the command before Lean setup
+        id: demo-command
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MATHGRAPH_APP_TOKEN: ${{ steps.mathgraph-app.outputs.token }}
@@ -86,6 +87,24 @@ jobs:
           tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/mathgraph-lean-image/lean"
           docker build -t mathgraph-lean-demo:v1 -f integrations/mathgraph-check-github/Dockerfile.native-demo "$RUNNER_TEMP/mathgraph-lean-image"
           docker image inspect --format '{{.Id}}' mathgraph-lean-demo:v1
+      - name: Prepare pinned Mathlib for the published Artin exercise
+        if: steps.demo-command.outputs.case == 'artin-generators'
+        run: |
+          set -euo pipefail
+          export PATH="$RUNNER_TEMP/mathgraph-lean-image/lean/bin:$PATH"
+          mkdir -p "$RUNNER_TEMP/mathgraph-artin-env"
+          cd "$RUNNER_TEMP/mathgraph-artin-env"
+          printf '%s\n' 'leanprover/lean4:v4.28.0' > lean-toolchain
+          cat > lakefile.lean <<'LEAN'
+          import Lake
+          open Lake DSL
+          package MathGraphArtinMention where
+          require mathlib from git "https://github.com/leanprover-community/mathlib4.git" @ "8f9d9cff6bd728b17a24e163c9402775d9e6a365"
+          LEAN
+          lake update
+          node --input-type=module -e "import fs from 'node:fs';const d=JSON.parse(fs.readFileSync('lake-manifest.json'));if(d.packages.find(p=>p.name==='mathlib')?.rev!=='8f9d9cff6bd728b17a24e163c9402775d9e6a365')throw Error('MATHLIB_REVISION_MISMATCH')"
+          lake exe cache get
+          echo "MATHGRAPH_NATIVE_DEPS=$RUNNER_TEMP/mathgraph-artin-env/.lake/packages" >> "$GITHUB_ENV"
       - name: Run one authorized bounded check or repair
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -109,6 +128,7 @@ jobs:
           path: |
             ${{ runner.temp }}/mathgraph-native-*.json
             ${{ runner.temp }}/mathgraph-verified-repair.lean
+            ${{ runner.temp }}/mathgraph-artin-env/lake-manifest.json
           if-no-files-found: ignore
           retention-days: 14
 
@@ -127,7 +147,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 27f029fb3cc79a26699a3765b1bd25f7ba8300e5
+          ref: dfd87d1e921953badedcfae21ade76bb38f5c04a
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
