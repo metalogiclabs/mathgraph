@@ -8,7 +8,9 @@ try{
  const negative=await run('Negative','import Std\nexample : False := by trivial\n');
  if(sanity.code!==0||negative.code!==1)throw Error('NATIVE_CONTROLS_FAILED');
  const baseline=await nativeDemo({source:brokenSource,run});
- const fixed=await nativeDemo({source:repairedSource('by simp'),run});
+ const variants=[];
+ for(const proof of ['by simp','by simpa','by exact List.length_reverse xs'])variants.push({proof,...await nativeDemo({source:repairedSource(proof),run})});
+ const fixed=variants[0];console.log(JSON.stringify({variants},null,2));
  console.log(JSON.stringify({baseline,fixed},null,2));
- if(baseline.status!=='CLAIM_NOT_ESTABLISHED'||fixed.status!=='ORIGINAL_TARGET_VERIFIED')throw Error('NATIVE_DEMO_BOUNDARY_FAILED');
+ if(baseline.status!=='CLAIM_NOT_ESTABLISHED'||variants.some(v=>v.status!=='ORIGINAL_TARGET_VERIFIED'))throw Error('NATIVE_DEMO_BOUNDARY_FAILED');
 }finally{await rm(dir,{recursive:true,force:true});}
