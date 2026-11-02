@@ -1,0 +1,23 @@
+{
+  "schema": "mathgraph.prospective-proof-protocol.v1",
+  "selection_rule": "Next unused published ProofNet ordinal after registered exercise 1; selected before model execution or reference-proof access.",
+  "source": {
+    "repository": "marcusm117/ProofNet-Verified",
+    "commit": "14879cb23e078d122adecd9578dd26a7304f753b",
+    "path": "data/archive/proofnet-verified-4.28/proofnet-2.lean",
+    "sha256": "71bb64393b60fca6b0ec1c0f5338414937a854286bce766554eec5cebfb75f1a"
+  },
+  "reference_proof_access": "NOT_READ_OR_PROVIDED",
+  "registered_repair": false,
+  "model": "gpt-6.1-sol",
+  "service_tier": "default",
+  "max_unique_requests": 3,
+  "reservation_cents_per_request": 25,
+  "total_cap_cents": 100,
+  "max_output_tokens": 4096,
+  "max_input_bytes": 24000,
+  "lean_version": "4.28.0",
+  "mathlib_revision": "8f9d9cff6bd728b17a24e163c9402775d9e6a365",
+  "comparison": "Share the first candidate. If it passes, report a tie and stop. Otherwise each arm gets one revision; only the MathGraph revision receives native feedback. Report single-case outcomes, never population superiority.",
+  "scope": "Unregistered formal target; model may have encountered this public theorem in training. English-to-formal equivalence is not certified."
+}
