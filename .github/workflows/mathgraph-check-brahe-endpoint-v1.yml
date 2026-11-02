@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - research/mathgraph-check-brahe-v1-20261102
+      - research/mathgraph-check-brahe-admission-hardening-20261102
     paths:
       - '.github/workflows/mathgraph-check-brahe-endpoint-v1.yml'
       - 'integrations/mathgraph-check-github/brahe-*.mjs'
