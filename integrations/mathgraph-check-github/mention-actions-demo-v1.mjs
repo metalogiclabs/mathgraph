@@ -1,5 +1,5 @@
 // Repository-local, opt-in Actions pilot. Only the fixed list-reversal demo is
-// supported. The actual response author is github-actions[bot], not an App.
+// supported. Publishing uses the fixed MathGraph App when configured, otherwise Actions.
 import {readFile,writeFile,mkdtemp,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -9,6 +9,19 @@ import {brokenSource,repairedSource,nativeDemo,dockerRunner,demoPath,originalTar
 const repository='metalogiclabs/mathgraph',userId=32909488;
 const policy={repositories:[repository],userIds:[userId],handle:'MathGraph',model:'gpt-6.1-sol',inputCentsPerMillion:500,outputCentsPerMillion:2000,maxOutputTokens:4096,maxInputBytes:8000,jobCapCents:25,totalCapCents:25};
 const ensure=(ok,code)=>{if(!ok)throw Error(code);};
+const appBot='mathgraph-check[bot]',actionsBot='github-actions[bot]';
+export function publicationAuth(env={}){
+ const readToken=env.GITHUB_TOKEN;ensure(typeof readToken==='string'&&readToken.length>10,'GITHUB_TOKEN_REQUIRED');
+ const appToken=env.MATHGRAPH_APP_TOKEN;
+ if(appToken){ensure(typeof appToken==='string'&&appToken.length>10&&env.MATHGRAPH_APP_SLUG==='mathgraph-check','APP_IDENTITY_MISMATCH');return {readToken,appToken,botLogin:appBot};}
+ ensure(!env.MATHGRAPH_APP_SLUG,'APP_TOKEN_REQUIRED');return {readToken,appToken:null,botLogin:actionsBot};
+}
+export function publicationToken(auth,method,author){
+ if(author!==undefined)ensure([actionsBot,appBot].includes(author),'COMMENT_AUTHOR_REFUSED');
+ if(method==='GET'||author===actionsBot)return auth.readToken;
+ if(author===appBot)ensure(auth.appToken,'APP_TOKEN_REQUIRED');
+ return auth.appToken??auth.readToken;
+}
 export function demoCommand(e,{attempt}={}){
  if(attempt!==1||e?.action!=='created'||e.repository?.full_name!==repository||e.sender?.id!==userId||e.sender.type!=='User'||e.comment?.user?.id!==userId||e.comment.user.type!=='User'||!e.issue?.pull_request||!Number.isSafeInteger(e.issue.number)||e.issue.number<1||!Number.isSafeInteger(e.comment.id)||e.comment.id<1)return null;
  return parseCommand(e.comment.body,'MathGraph');
@@ -18,27 +31,27 @@ export function demoProgress({command,sha,runId,stage='prepare',runURL}={}){
  const labels={prepare:'Preparing the independent check',check:'Checking the original claim',repair:'Building a candidate repair',verify:'Verifying the repair with Lean',publish:'Opening the verified repair'};
  return ['<!-- mathgraph-progress:'+runId+' -->',brandHeader,'**'+(labels[stage]??labels.check)+'…**','`'+(command==='fix'?'@MathGraph -fix':'@MathGraph -check')+'` · Revision: `'+sha+'`','The result will update here. '+(runURL?'[Follow the run]('+runURL+').':''),'Controlled demo · List reversal'].join('\n\n');
 }
-export function ownsDemoProgress(comment,{sha,runId}={}){
- return comment?.user?.login==='github-actions[bot]'&&typeof comment.body==='string'&&comment.body.includes('<!-- mathgraph-progress:'+runId+' -->')&&comment.body.includes('Revision: `'+sha+'`')&&!comment.body.includes('<!-- mathgraph-withdrawn:');
+export function ownsDemoProgress(comment,{sha,runId,botLogin=actionsBot}={}){
+ return comment?.user?.login===botLogin&&typeof comment.body==='string'&&comment.body.includes('<!-- mathgraph-progress:'+runId+' -->')&&comment.body.includes('Revision: `'+sha+'`')&&!comment.body.includes('<!-- mathgraph-withdrawn:');
 }
-export function demoComment({command,sha,native,runURL,repairURL,proposal,repairPerformed=false}={}){
+export function demoComment({command,sha,native,runURL,repairURL,proposal,repairPerformed=false,botLogin=actionsBot}={}){
  const lines=[brandHeader];
  if(command==='check'&&native?.status==='CLAIM_NOT_ESTABLISHED')lines.push('**Proof compiles. The original claim is not established.**','The proof assumes the very conclusion it promises to prove.','| Submitted proof | Original claim |\n|---|---|\n| Compiles in Lean | Not established by this proof |','**Repair it:** comment `@MathGraph -fix`');
  else if(native?.status==='ORIGINAL_TARGET_VERIFIED'){
   lines.push(command==='fix'&&repairPerformed?'**Repair verified against the original claim.**':'**The original claim passes its native check.**');
-  if(command==='fix'&&repairPerformed)lines.push('| Before | After |\n|---|---|\n| Conclusion assumed | Conclusion proved |\n| Extra hypothesis required | No extra hypothesis |');
-  lines.push('Lean accepted the theorem and the unchanged consumer that requires the original claim.');
+  if(command==='fix'&&repairPerformed)lines.push('| Before | After |\n|---|---|\n| Conclusion assumed | Conclusion proved |');
+  lines.push('Lean verified the proof against the original claim.');
  }else lines.push('**Verification is incomplete.**','No verified repair or mathematical conclusion is established.');
- if(repairURL)lines.push('**[Review the repair →]('+repairURL+')** · Draft PR · Your review decides the merge');
+ if(repairURL)lines.push('**[Review the repair →]('+repairURL+')** · Draft PR');
  else if(command==='fix'&&repairPerformed&&native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push('The verified patch is available in this run’s artifact. Opening a repair PR was not confirmed.');
  lines.push('Controlled demo · List reversal');
- lines.push('<details><summary>Verification receipt</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Lean 4.28.0 · Axioms: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'unresolved')+'.\n\nThe intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions as `github-actions[bot]`.\n\n</details>');
+ lines.push('<details><summary>Verification receipt</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Lean 4.28.0 · Axioms: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'unresolved')+'.\n\nThe intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions as `'+botLogin+'`.\n\n</details>');
  return lines.join('\n\n');
 }
 export async function startDemoComment({api,root,number,marker,progressArgs,phase}){
  ensure(['prepare','run','finalize'].includes(phase),'INVALID_PHASE');
  const comments=await api(root+'/issues/'+number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');
- const existing=comments.find(c=>c.user?.login==='github-actions[bot]'&&c.body?.startsWith(marker));
+ const existing=comments.find(c=>c.user?.login===(progressArgs.botLogin??actionsBot)&&c.body?.startsWith(marker));
  if(existing&&!ownsDemoProgress(existing,progressArgs))return null;
  if(phase==='finalize'){
   if(existing)await api(root+'/issues/comments/'+existing.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({...progressArgs,native:{status:'UNKNOWN'}})}});
@@ -70,11 +83,11 @@ export async function withdrawDemoComments({api,root,number}){
  ensure(/^[a-f0-9]{40}$/.test(head??''),'INVALID_SOURCE');
  const comments=await api(root+'/issues/'+number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');let count=0;
  for(const c of comments){
-  if(c.user?.login!=='github-actions[bot]'||!c.body?.startsWith('<!-- mathgraph-actions-demo-v1:')||c.body.includes('<!-- mathgraph-withdrawn:'))continue;
+  if(![actionsBot,appBot].includes(c.user?.login)||!c.body?.startsWith('<!-- mathgraph-actions-demo-v1:')||c.body.includes('<!-- mathgraph-withdrawn:'))continue;
   const old=c.body.match(/Revision: `([a-f0-9]{40})`/);if(!old||old[1]===head)continue;
   const marker=c.body.split('\n',1)[0];
   const body=marker+'\n<!-- mathgraph-withdrawn:'+head+' -->\n### MathGraph Check\n**Source changed — this result is withdrawn for the current revision.**\n\nRun `@MathGraph -check` again.\n\n<details><summary>Previous bounded result</summary>\n\n'+c.body.slice(marker.length)+'\n\n</details>';
-  await api(root+'/issues/comments/'+c.id,{method:'PATCH',body:{body}});count++;
+  await api(root+'/issues/comments/'+c.id,{method:'PATCH',author:c.user.login,body:{body}});count++;
  }
  return count;
 }
@@ -82,10 +95,10 @@ async function main(){
  const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));const withdrawal=process.env.GITHUB_EVENT_NAME==='pull_request_target'&&event.action==='synchronize';const command=demoCommand(event,{attempt:Number(process.env.GITHUB_RUN_ATTEMPT)});if(!command&&!withdrawal)return;
  ensure(process.env.GITHUB_REPOSITORY===repository&&['issue_comment','pull_request_target'].includes(process.env.GITHUB_EVENT_NAME),'INVALID_ACTION_CONTEXT');
  ensure(reservationCents(policy)<=25,'BUDGET_CONFIGURATION_INVALID');
- const token=process.env.GITHUB_TOKEN;ensure(typeof token==='string'&&token.length>10,'GITHUB_TOKEN_REQUIRED');
+ const auth=publicationAuth(process.env),botLogin=auth.botLogin;
  const root='/repos/'+repository;
- const api=async(path,{method='GET',body}={})=>{
-  ensure(path.startsWith(root+'/'),'API_SCOPE_REFUSED');const r=await fetch('https://api.github.com'+path,{method,redirect:'error',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});ensure(r.ok,'GITHUB_HTTP_'+r.status);return r.status===204?{}:r.json();
+ const api=async(path,{method='GET',body,author}={})=>{
+  ensure(path.startsWith(root+'/'),'API_SCOPE_REFUSED');const r=await fetch('https://api.github.com'+path,{method,redirect:'error',headers:{Authorization:'Bearer '+publicationToken(auth,method,author),Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});ensure(r.ok,'GITHUB_HTTP_'+r.status);return r.status===204?{}:r.json();
  };
  if(withdrawal){ensure(event.repository?.full_name===repository&&Number.isSafeInteger(event.number)&&event.number>0,'INVALID_WITHDRAWAL_EVENT');const count=await withdrawDemoComments({api,root,number:event.number});console.log(JSON.stringify({withdrawn:count,api_calls:0}));return;}
  const runId=Number(process.env.GITHUB_RUN_ID);ensure(Number.isSafeInteger(runId)&&runId>0,'INVALID_RUN_ID');
@@ -98,7 +111,7 @@ async function main(){
  const phase=process.env.MATHGRAPH_DEMO_PHASE??'run';ensure(['prepare','run','finalize'].includes(phase),'INVALID_PHASE');
  const runURL='https://github.com/'+repository+'/actions/runs/'+runId;
  const marker='<!-- mathgraph-actions-demo-v1:'+event.comment.id+' -->';
- const progressArgs={command,sha,runId,runURL};
+ const progressArgs={command,sha,runId,runURL,botLogin};
  const comment=await startDemoComment({api,root,number:event.issue.number,marker,progressArgs,phase});if(!comment)return;
  const progress=async stage=>{const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoProgress({...progressArgs,stage})}});};
  const work=await mkdtemp(join(tmpdir(),'mathgraph-native-'));let receipt,repairURL=null,repairNumber=null,proposal=null,modelCalls=0,repairPerformed=false;
@@ -121,8 +134,8 @@ async function main(){
    modelCalls++;proposal=await openAIModel({apiKey:process.env.OPENAI_API_KEY,policy})({snapshot,analysis:{native_demo:receipt}});
   }
   const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');
-  await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-native-receipt.json'),JSON.stringify({schema:'mathgraph.native-list-demo.v1',command,repository,pr:event.issue.number,source_head:sha,run_id:runId,lean:'4.28.0',...receipt,repair_pr:repairURL,model_assessment:proposal},null,2),{mode:0o600});
-  await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({command,sha,native:receipt,runURL,repairURL,proposal,repairPerformed})}});
+  await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-native-receipt.json'),JSON.stringify({schema:'mathgraph.native-list-demo.v1',command,repository,pr:event.issue.number,source_head:sha,run_id:runId,publisher:{bot_login:botLogin,app_id:botLogin===appBot?5308912:null},lean:'4.28.0',...receipt,repair_pr:repairURL,model_assessment:proposal},null,2),{mode:0o600});
+  await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({command,sha,native:receipt,runURL,repairURL,proposal,repairPerformed,botLogin})}});
   console.log(JSON.stringify({status:receipt.status,command,source_head:sha,run_id:runId,repair_pr:repairURL,api_calls:modelCalls,scope:'FIXED_LIST_REVERSAL_DEMO_ONLY'}));
  }catch(e){if(repairNumber){const closed=await api(root+'/pulls/'+repairNumber,{method:'PATCH',body:{state:'closed'}});ensure(closed.state==='closed','STALE_REPAIR_WITHDRAWAL_UNCONFIRMED');}
  await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n### MathGraph Check\n**Verification is incomplete.**\n\nNo result is promoted. [Inspect this run]('+runURL+').'}});throw e;}
