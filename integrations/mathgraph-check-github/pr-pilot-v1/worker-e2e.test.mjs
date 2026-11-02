@@ -11,7 +11,7 @@ function harness({failDispatch=false,budget='RESERVED',permission='write'}={}){
  if(p==='/installation/repositories')return Response.json({total_count:1,repositories:[{full_name:o.headers.Authorization==='Bearer source'?repo:'metalogiclabs/mathgraph'}]});
  if(p==='/installation/token'){revoked.push(o.headers.Authorization);return new Response(null,{status:204});}
  if(p===root+'/pulls/2')return Response.json(pr);
- if(p===root+'/issues/comments/7')return Response.json({id:7,body:'@MathGraph -check',issue_url:'https://api.github.com'+root+'/issues/2',user:{id:99,login:'maintainer',type:'User'}});
+ if(p===root+'/issues/comments/7'||p===root+'/issues/comments/8')return Response.json({id:Number(p.split('/').at(-1)),body:'@MathGraph -check',issue_url:'https://api.github.com'+root+'/issues/2',user:{id:99,login:'maintainer',type:'User'}});
  if(p===root+'/collaborators/maintainer/permission')return Response.json({permission});
  if(p===root+'/pulls/2/files')return Response.json([{filename:'Scripts/Ledger.lean',status:'modified'}]);
  if(p.startsWith(root+'/commits/')&&p.endsWith('/check-runs')){const head=p.split('/').at(-2),matching=checks.filter(c=>c.head_sha===head);return Response.json({total_count:matching.length,check_runs:matching});}
@@ -50,6 +50,6 @@ test('closing opted-in PR withdraws current Check and removes automatic subscrip
 test('completed applicable check absorbs later commands without more reservation or dispatch',async()=>{
  const h=harness();await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher});
  Object.assign(h.checks[0],{status:'completed',conclusion:'neutral',output:{title:'No counterexample in generated probes',summary:'Finite evidence'}});
- assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'DUPLICATE');
+ assert.equal((await processPilotDelivery({...item,comment_id:8},h.env,{jwt:'test',fetcher:h.fetcher})).state,'DUPLICATE');
  assert.equal(h.sent.length,1);assert.equal(h.reservations,1);
 });

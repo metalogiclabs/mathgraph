@@ -5,7 +5,7 @@ export function validatePilotSnapshot(s){
  const p=profileFor(s.repository);for(const [k,v]of Object.entries(p))if(s[k]!==v)throw Error('UNTRUSTED_PILOT_PROFILE');
  if(!['check','fix'].includes(s.command)||!Number.isSafeInteger(s.number)||s.number<1||!/^[a-f0-9]{40}$/.test(s.head_sha??'')||!/^[a-f0-9]{40}$/.test(s.base_sha??'')||s.cli_source!==s.base_cli_source)throw Error('INVALID_PILOT_SOURCE');admitPilotSources(s.base_source,s.source);return s;
 }
-export function compareProbeRows(base,head,{complete=true}={}){if(!complete)base=[];return head.map(h=>{const b=base.find(b=>b.id===h.id),ok='GUARD_PASSED',fail='CANDIDATE_ASSERTION_FAILURE';return {id:h.id,base:b?.execution??'UNKNOWN',head:h.execution,change:!b||![ok,fail].includes(b.execution)?'BASE_UNKNOWN':b.execution===ok&&h.execution===fail?'NEW_FAILURE':b.execution===fail&&h.execution===fail?'PRE_EXISTING_FAILURE':b.execution===fail&&h.execution===ok?'RESOLVED_FAILURE':h.execution===ok?'BOTH_PASS':'HEAD_UNKNOWN'};});}
+export function compareProbeRows(base,head,{complete=true}={}){if(!complete)base=[];return head.map(h=>{const b=base.find(b=>b.id===h.id),ok='GUARD_PASSED',fail='CANDIDATE_ASSERTION_FAILURE';return {id:h.id,base:b?.execution??'UNKNOWN',head:h.execution,change:![ok,fail].includes(h.execution)?'HEAD_UNKNOWN':!b||![ok,fail].includes(b.execution)?'BASE_UNKNOWN':b.execution===ok&&h.execution===fail?'NEW_FAILURE':b.execution===fail&&h.execution===fail?'PRE_EXISTING_FAILURE':b.execution===fail&&h.execution===ok?'RESOLVED_FAILURE':h.execution===ok?'BOTH_PASS':'HEAD_UNKNOWN'};});}
 
 export function admitPilotSources(base,head){
  for(const source of [base,head]){

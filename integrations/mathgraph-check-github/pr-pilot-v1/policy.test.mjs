@@ -36,3 +36,16 @@ test('incomplete overall assessment cannot inherit a repair-success headline',()
  const s=formatResult({status:'UNKNOWN',repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'}},{...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
  assert.doesNotMatch(s,/Candidate repair verified/);assert.match(s,/Check incomplete/);
 });
+
+test('unqualified head cannot display reproduced failure or introduced-regression attribution',()=>{
+ const s=formatResult({status:'UNKNOWN',head_complete:false,baseline:{complete:false,controls_ok:false},original:[{id:'candidate',execution:'CANDIDATE_ASSERTION_FAILURE'}],base:[{id:'candidate',execution:'GUARD_PASSED'}],comparison:[{id:'candidate',change:'NEW_FAILURE'}]},make(),'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ assert.doesNotMatch(s,/Fail \(reproduced\)|Introduced by this PR/);assert.match(s,/Head not qualified/);
+});
+test('incomplete repair recommends fix retry when original check exists',()=>{
+ const s=formatResult({status:'UNKNOWN',reason:'REQUEST_DISPATCH_INCOMPLETE'},{...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ assert.match(s,/retry with `@MathGraph -fix`/);
+});
+test('missing original check gives a check-first recovery instruction',()=>{
+ const s=formatResult({status:'UNKNOWN',reason:'RUN_CHECK_BEFORE_FIX'},{...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ assert.match(s,/`@MathGraph -check`/);
+});

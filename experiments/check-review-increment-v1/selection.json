@@ -14,5 +14,8 @@
   "arms": [
     "Devin Review + existing CI",
     "same review + CI + MathGraph Check"
-  ]
+  ],
+  "controller_release": "8f192629a7cc74bab4801812b33ff2520683c561",
+  "scheduler_release": "b281ba0a141cb7e7832b1ffd4b7f429cca60a6ac",
+  "release_role": "Previously qualified deployed baseline; future controller changes require prospective amendment before execution."
 }

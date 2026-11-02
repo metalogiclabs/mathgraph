@@ -14,3 +14,23 @@ for(const stale of [true,false])test(stale?'foreign native run cannot qualify':'
  const r=JSON.parse(await readFile(join(dir,'assessment.json'),'utf8'));assert.equal(r.status,'UNKNOWN');assert.equal(r.subject.head_sha,snapshot.head_sha);if(stale)assert.equal(r.reason,'NATIVE_SOURCE_MISMATCH');
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+import {renderProbe} from './contracts.mjs';
+for(const failure of ['controls','gate','source'])test(`unqualified head ${failure} cannot authorize a new-regression label`,async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mg-head-qualified-'));try{
+ const context={verifier_sha:'a'.repeat(40),run_id:123,attempt:1},source='def x := true\n';
+ const snapshot={repository:'metalogiclabs/L4YAML',head_sha:'b'.repeat(40),base_sha:'c'.repeat(40),base_source:source,path:'Example.lean',module:'Example',namespace:'Example',source,source_sha256:hash(source)};
+ const plan={summary:'probe',tests:[{id:'case_a',hypothesis:'boundary',contract:'API contract',expression:'true'}]};
+ const pass={exit_code:0,guard_false:false,other_errors:false},fail={exit_code:1,guard_false:true,other_errors:false};
+ const arm={build_exit:0,repository_gate_exit:0,source_sha256:hash(source),controls:{pass,fail},probes:[{id:'case_a',...pass,test_file_sha256:hash(renderProbe(snapshot,'true'))}]};
+ const head={...arm,controls:{...arm.controls},probes:[{...arm.probes[0],...fail}]};
+ if(failure==='controls')head.controls.fail=pass;if(failure==='gate')head.repository_gate_exit=1;if(failure==='source')head.source_sha256='d'.repeat(64);
+ const native={context,source_sha:snapshot.head_sha,base_sha:snapshot.base_sha,test_digest:hash(JSON.stringify(plan.tests)),arm:head,base_arm:arm};
+ const values={'snapshot.json':snapshot,'state.json':{context,state:'PROBES_PROPOSED',test_digest:native.test_digest},'plan.json':plan,'native.json':native,'repair-state.json':{state:'NO_REPRODUCED_FAILURE'}},hashes={};
+ for(const [n,v]of Object.entries(values)){const raw=JSON.stringify(v);await writeFile(join(dir,n),raw);hashes[n]=hash(raw);}
+ await writeFile(join(dir,'manifest.json'),JSON.stringify({context,hashes}));
+ const {MATHGRAPH_CONTROLLER_SHA:ambient,...env}=process.env;
+ const run=spawnSync(process.execPath,[new URL('./driver.mjs',import.meta.url).pathname,'assess',dir],{encoding:'utf8',env:{...env,GITHUB_SHA:context.verifier_sha,GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'}});assert.equal(run.status,0,run.stderr);
+ const report=JSON.parse(await readFile(join(dir,'assessment.json'),'utf8'));assert.equal(report.status,'UNKNOWN');assert.equal(report.original[0].execution,'UNKNOWN');assert.equal(report.comparison[0].change,'HEAD_UNKNOWN');
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

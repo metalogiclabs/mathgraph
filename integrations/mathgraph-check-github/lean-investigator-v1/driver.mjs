@@ -50,7 +50,7 @@ try{
    const plan=admitLeanPlan(await load('plan')),native=await load('native'),rs=await load('repair-state');
    nativeIdentity(native,state,snapshot,plan);
    const initial=inspectArm(native.arm,{profile:snapshot,plan,source:snapshot.source});
-   const original=initial.rows.map(p=>({...p,hypothesis:plan.tests.find(t=>t.id===p.id).hypothesis,contract:plan.tests.find(t=>t.id===p.id).contract}));
+   const original=initial.rows.map(p=>({...p,execution:initial.complete?p.execution:'UNKNOWN',hypothesis:plan.tests.find(t=>t.id===p.id).hypothesis,contract:plan.tests.find(t=>t.id===p.id).contract}));
    let repair={status:'NOT_PROPOSED'};
    if(rs.state==='PATCH_PROPOSED'){
     const fixed=await load('native-repair'),patch=await load('patch');const patched=admitLeanPatch(patch,snapshot.source);nativeIdentity(fixed,state,snapshot,plan);
@@ -60,7 +60,7 @@ try{
     repair={status:qualified?'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE':'UNKNOWN',original:old.rows,repaired:after.rows,withdrawn:withdrawn.rows,protected_guards:guardBlocks(snapshot.source).length,repository_gate_exits:[fixed.original.repository_gate_exit,fixed.repaired.repository_gate_exit,fixed.withdrawn.repository_gate_exit],patched_sha256:patch.patched_sha256};
    }
    let base=[],baseComplete=false;if(snapshot.base_source){requireFact(native.base_sha===snapshot.base_sha,'BASE_SOURCE_MISMATCH');const bs={...snapshot,source:snapshot.base_source};const observation=inspectArm(native.base_arm,{profile:bs,plan,source:snapshot.base_source});baseComplete=observation.complete;base=baseComplete?observation.rows:observation.rows.map(p=>({...p,execution:'UNKNOWN'}));}
-   report={context,subject,base,base_complete:baseComplete,comparison:compareProbeRows(base,original,{complete:baseComplete}),status:!initial.complete?'UNKNOWN':initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')?'CANDIDATE_ASSERTION_FAILURE':'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original,repair,baseline:initial,source_guard_count:guardBlocks(snapshot.source).length,original_repository_gate_exit:native.arm.repository_gate_exit,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',scope:'Selected module/CLI build, original native guards, model-generated Boolean probes and repository gate. Not full L4YAML CI or independent validation of inferred requirements.'};
+   report={context,subject,base,base_complete:baseComplete,head_complete:initial.complete,comparison:compareProbeRows(base,original,{complete:baseComplete}),status:!initial.complete?'UNKNOWN':initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')?'CANDIDATE_ASSERTION_FAILURE':'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original,repair,baseline:initial,source_guard_count:guardBlocks(snapshot.source).length,original_repository_gate_exit:native.arm.repository_gate_exit,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',scope:'Selected module/CLI build, original native guards, model-generated Boolean probes and repository gate. Not full L4YAML CI or independent validation of inferred requirements.'};
   }
   await save('assessment',report);await seal();console.log(JSON.stringify(report));
  }else throw Error('UNKNOWN_PHASE');
