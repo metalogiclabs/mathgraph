@@ -2,7 +2,8 @@ import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';impor
 import {nativeDemo,dockerRunner,brokenSource,repairedSource} from './mention-native-demo-v1.mjs';
 const dir=await mkdtemp(join(tmpdir(),'mathgraph-native-controls-'));
 try{
- const run=await dockerRunner(dir);
+ const nativeRun=await dockerRunner(dir);
+ const run=async(name,source)=>{const result=await nativeRun(name,source);console.log(JSON.stringify({unit:name,exit_code:result.code,native_output:result.output.slice(0,8000)}));return result;};
  const sanity=await run('Sanity','import Std\nexample : 1 + 1 = 2 := by decide\n');
  const negative=await run('Negative','import Std\nexample : False := by trivial\n');
  if(sanity.code!==0||negative.code!==1)throw Error('NATIVE_CONTROLS_FAILED');
