@@ -10,8 +10,8 @@ def junit_result(text):
     if any(any(k not in row.attrib for k in keys) for row in rows):raise ValueError('MISSING_JUNIT_COUNTERS')
     return {k:sum(int(row.attrib[k]) for row in rows) for k in keys}
 
-def sandbox_command(image,name,repo,audit,results,command):
-    return ['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','HOME=/tmp','-e','PYTHONPATH=/runner:/repo','-e','PYTHONDONTWRITEBYTECODE=1','-e','MPLCONFIGDIR=/tmp/matplotlib','-v',repo+':/repo:ro','-v',audit+':/audit:ro','-v',results+':/results','-v',str(Path(__file__).parent.resolve())+':/runner:ro','-w','/repo',image]+command
+def sandbox_command(image,name,repo,audit,results,command,data=None):
+    return ['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','HOME=/tmp','-e','PYTHONPATH=/runner:/repo','-e','PYTHONDONTWRITEBYTECODE=1','-e','MPLCONFIGDIR=/tmp/matplotlib','-v',repo+':/repo:ro','-v',audit+':/audit:ro','-v',results+':/results','-v',str(Path(__file__).parent.resolve())+':/runner:ro','-w','/repo']+(['-v',data+':/repo/data:rw'] if data else [])+[image]+command
 
 def sha(data):return hashlib.sha256(data).hexdigest()
 def canonical(x):return json.dumps(x,separators=(',',':'),ensure_ascii=False)
@@ -32,7 +32,7 @@ def main():
         assert '/' not in name and sha((root/name).read_bytes())==h,'ARTIFACT_BYTES_CHANGED'
     if phase=='repair' and load('repair-state')['state']!='PATCH_PROPOSED':return
     snapshot=load('snapshot');plan=load('plan');test_digest=state['test_digest']
-    assert snapshot['repository']=='metalogiclabs/gnss_lib_py' and snapshot['source_repository']=='Stanford-NavLab/gnss_lib_py'
+    assert snapshot['repository']=='metalogiclabs/gnss_lib_py' and snapshot['source_repository'] in ['Stanford-NavLab/gnss_lib_py','metalogiclabs/gnss_lib_py']
     workspace=Path('investigator-native-'+phase).resolve();workspace.mkdir(exist_ok=True)
     logs=root/'native-logs';logs.mkdir(exist_ok=True)
     def checkout(label,rev):
@@ -74,9 +74,14 @@ def main():
         return sha(''.join(str(p.relative_to(repo))+'\0'+sha(p.read_bytes())+'\n' for p in files).encode())
     def pytest(repo,label,path,subject,test_hash,timeout=180):
         name='mg-'+phase+'-'+label.replace('_','-');xml=results/(label+'.xml')
+        data=None
+        if (repo/'data').is_dir():
+            data_path=workspace/('data-'+label);shutil.copytree(repo/'data',data_path,dirs_exist_ok=True)
+            for f in [data_path,*data_path.rglob('*')]:f.chmod(0o777 if f.is_dir() else 0o666)
+            data=str(data_path)
         command=['env','MG_CASES_FILE=/results/'+label+'-cases.json','python','-m','pytest','-q','-p','mg_native_plugin','-p','no:cacheprovider',path,'--junitxml=/results/'+xml.name]
         timed_out=False
-        try:p=execute(sandbox_command(image,name,str(repo),str(audit),str(results),command),timeout)
+        try:p=execute(sandbox_command(image,name,str(repo),str(audit),str(results),command,data=data),timeout)
         except subprocess.TimeoutExpired as e:
             timed_out=True;p=subprocess.CompletedProcess([],124,(e.stdout or b'').decode() if isinstance(e.stdout,bytes) else (e.stdout or ''),(e.stderr or b'').decode() if isinstance(e.stderr,bytes) else (e.stderr or ''))
         finally:execute(['docker','rm','-f',name],20)

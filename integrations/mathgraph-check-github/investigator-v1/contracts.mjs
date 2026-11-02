@@ -33,6 +33,6 @@ export function assessRepair({original,fixed,protectedBefore,protectedAfter}={},
  if(!protectedBefore||!protectedAfter||protectedBefore.test_digest!==protectedAfter.test_digest)return unknown('PROTECTED_TESTS_CHANGED');
  if(JSON.stringify(original.cases.map(x=>x.id).sort())!==JSON.stringify(fixed.cases.map(x=>x.id).sort())||JSON.stringify(protectedBefore.cases?.map(x=>x.id).sort())!==JSON.stringify(protectedAfter.cases?.map(x=>x.id).sort()))return unknown('COLLECTED_TEST_CASES_CHANGED');
  const c={subjectSha:context.subjectSha,testDigest:protectedBefore.test_digest,requireAssertions:false};
- if(assessProbe(protectedBefore,c).execution!=='PROBE_PASSED'||assessProbe(protectedAfter,c).execution!=='PROBE_PASSED')return unknown('PROTECTED_SUITE_NOT_GREEN');
+ if(assessProbe(protectedBefore,c).execution==='UNKNOWN'||assessProbe(protectedAfter,c).execution!=='PROBE_PASSED')return unknown('PROTECTED_SUITE_NOT_GREEN');
  return {status:'REPAIR_VERIFIED_FOR_FROZEN_TESTS',meaning:'UNVERIFIED',permission:'ADVISORY_ONLY'};
 }

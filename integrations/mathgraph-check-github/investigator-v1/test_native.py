@@ -36,3 +36,11 @@ class MetadataTests(unittest.TestCase):
             output=native.initialize_metadata(root)
             self.assertEqual(PathDistribution(output).version,'1.2.3')
             self.assertFalse((root/'example_package').exists())
+
+class FixtureMountTests(unittest.TestCase):
+    def test_only_fixture_data_mount_is_writable(self):
+        from native import sandbox_command
+        cmd=sandbox_command('image','n','/tmp/repo','/tmp/audit','/tmp/results',['python'],data='/tmp/data')
+        self.assertIn('/tmp/data:/repo/data:rw',cmd)
+        self.assertIn('/tmp/repo:/repo:ro',cmd)
+        self.assertIn('/tmp/audit:/audit:ro',cmd)

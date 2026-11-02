@@ -2,9 +2,10 @@
 import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {requestJSON,reservationCents} from './model.mjs';
+import {subjectPolicy} from './policy.mjs';
 import {admitPlan,admitPatch,assessProbe,assessRepair} from './contracts.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'investigation';
-const config={repository:'metalogiclabs/gnss_lib_py',source_repository:'Stanford-NavLab/gnss_lib_py',implementation_prefix:'gnss_lib_py/',max_prs:10};
+const config=subjectPolicy(process.env);
 const digest=x=>createHash('sha256').update(typeof x==='string'?x:JSON.stringify(x)).digest('hex');
 const ensure=(x,code)=>{if(!x)throw Error(code);};
 const context={verifier_sha:process.env.GITHUB_SHA,run_id:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT)};
@@ -20,10 +21,10 @@ try {
 if(phase==='prepare'){
  ensure(reservationCents()*2<=100,'BUDGET_POLICY_INVALID');
  // This acquisition happens only after the investigator implementation is frozen.
- const prs=await api('/repos/'+config.source_repository+'/pulls?state=open&sort=created&direction=desc&per_page=10');
+ const prs=config.requested_pr?[await api('/repos/'+config.source_repository+'/pulls/'+config.requested_pr)]:await api('/repos/'+config.source_repository+'/pulls?state=open&sort=created&direction=desc&per_page=10');
  let snapshot;
  for(const pr of prs.slice(0,config.max_prs)){
-  if(pr.user?.login==='heathsanchez'||pr.draft)continue;
+  if(!config.requested_pr&&config.source_repository!==config.repository&&(pr.user?.login==='heathsanchez'||pr.draft))continue;
   const changed=await api(`/repos/${config.source_repository}/pulls/${pr.number}/files?per_page=100`);
   if(changed.length>=100)continue;
   const selected=changed.filter(f=>f.status==='modified'&&f.filename.startsWith(config.implementation_prefix)&&f.filename.endsWith('.py')).slice(0,2);
