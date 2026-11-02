@@ -2,7 +2,10 @@ name: MathGraph native claim and repair controls
 on:
   push:
     branches: ['feat/mathgraph-mention-agent-v1-20261102']
-    paths: ['.github/workflows/mathgraph-mention-native-demo-v1.yml']
+    paths:
+      - '.github/workflows/mathgraph-mention-native-demo-v1.yml'
+      - 'integrations/mathgraph-check-github/run-mention-native-controls-v1.mjs'
+      - 'integrations/mathgraph-check-github/mention-native-demo-v1.mjs'
 permissions:
   contents: read
 jobs:
