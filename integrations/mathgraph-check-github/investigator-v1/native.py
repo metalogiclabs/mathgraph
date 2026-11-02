@@ -60,7 +60,7 @@ def main():
     must(['docker','pull','python:3.12-slim-bookworm'],180)
     base_digest=must(['docker','image','inspect','python:3.12-slim-bookworm','--format','{{index .RepoDigests 0}}'])
     dependencies=['pytest==8.3.5','pytest-env==1.1.5','pytest-cov==6.1.1','numpy>=2.1,<3','pandas>=2,<3','georinex<=1.16.1','unlzw3>=0.2.3,<0.3','pynmea2>=1.19,<2','scipy>=1.14,<2','matplotlib>=3.10,<4','plotly>=5.24,<6','kaleido==0.2.1','requests>=2.32,<3','xarray<=2024.7.0']
-    (build/'Dockerfile').write_text('FROM '+base_digest+'\nRUN python -m pip install --only-binary=:all: --no-cache-dir '+' '.join("'"+d+"'" for d in dependencies)+'\nWORKDIR /repo\n')
+    (build/'Dockerfile').write_text('FROM '+base_digest+'\nRUN python -m pip wheel --wheel-dir /wheels '+' '.join("'"+d+"'" for d in dependencies)+'\nRUN python -m pip install --no-index --find-links /wheels '+' '.join("'"+d+"'" for d in dependencies)+'\nWORKDIR /repo\n')
     image='mathgraph-investigator:'+phase
     p=execute(['docker','build','-t',image,str(build)],600);(logs/(phase+'-build.log')).write_text(p.stdout+p.stderr)
     assert p.returncode==0,(p.stdout+p.stderr)[-4000:]
