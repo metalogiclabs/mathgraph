@@ -80,6 +80,11 @@ test('matching test names and counts without each genuine assertion panic cannot
     'assertion failed: unrelated_data_error'),mode:'base'}).reason,'UNEXPECTED_FAILURE');
 });
 
+test('a crashed Cargo process or contradictory success trailer cannot become a bounded pass',()=>{
+  assert.equal(parseBraheNativeV1({exitCode:139,stdout:output(true),stderr:basePanic,mode:'base'}).reason,'UNEXPECTED_FAILURE');
+  assert.equal(parseBraheNativeV1({exitCode:0,stdout:output(false),stderr:'error: test failed, to rerun pass `-p brahe --lib`',mode:'head'}).reason,'UNEXPECTED_FAILURE');
+});
+
 test('setup failures, wrong test name, zero tests and unexpected failures are UNKNOWN rather than regressions',()=>{
   assert.equal(parseBraheNativeV1({exitCode:101,stdout:'',stderr:'error[E0432]: unresolved import',mode:'base'}).reason,'SETUP_FAILED');
   assert.equal(parseBraheNativeV1({exitCode:0,stdout:'running 0 tests\ntest result: ok. 0 passed; 0 failed;',mode:'head'}).reason,'ZERO_TESTS');
@@ -101,4 +106,5 @@ test('combined before/after stays CANDIDATE until independent run readback; swap
   assert.equal(combineBraheReceiptsV1(opts).verdict.status,'CANDIDATE_BOUNDED');
   assert.ok(combineBraheReceiptsV1(opts).verdict.unknowns.includes('RECEIPT_AUTHENTICITY_NOT_CHECKED'));
   assert.equal(combineBraheReceiptsV1({...opts,base:{...base,sourceSha:head.sourceSha}}).verdict.status,'UNKNOWN');
+  assert.equal(combineBraheReceiptsV1({...opts,base:{...base,exitCode:139}}).verdict.status,'UNKNOWN');
 });

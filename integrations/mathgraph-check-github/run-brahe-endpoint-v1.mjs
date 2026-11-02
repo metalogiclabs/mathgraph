@@ -48,6 +48,8 @@ export function parseBraheNativeV1({exitCode,stdout,stderr,mode}={}) {
     /^error(?:\[[A-Z]\d+\])?:/i.test(line.trim()) &&
     !/^error: test failed, to rerun pass\b/i.test(line.trim()));
   if (SETUP_FAILURE.test(text)||unexpectedError) return {...empty,reason:'SETUP_FAILED'};
+  if (mode==='head'&&/^error: test failed, to rerun pass\b/m.test(text))
+    return {...empty,reason:'UNEXPECTED_FAILURE'};
   if (/^running 0 tests?$/m.test(text)) return {...empty,reason:'ZERO_TESTS'};
   if (!/^running 17 tests$/m.test(text)) return {...empty,reason:'UNEXPECTED_FAILURE'};
 
@@ -62,7 +64,7 @@ export function parseBraheNativeV1({exitCode,stdout,stderr,mode}={}) {
   const summaryBase=/test result: FAILED\. 13 passed; 4 failed;/.test(text);
   const knownAssertionFailures=NEGATIVE.every((name,index)=>
     text.includes(`thread '${NS}${name}'`) && text.includes(NEGATIVE_ASSERTIONS[index]));
-  if (mode==='base'&&exitCode!==0&&summaryBase&&fails.length===4&&
+  if (mode==='base'&&exitCode===101&&summaryBase&&fails.length===4&&
       NEGATIVE.every(name=>observed.get(name)==='FAILED')&&
       POSITIVE.every(name=>observed.get(name)==='ok')&&knownAssertionFailures)
     return {...count,reason:'EXPECTED_REGRESSION'};
@@ -83,7 +85,7 @@ export function combineBraheReceiptsV1({base,head,rustc,cargoLockSha256,workflow
   const source={...BRAHE_SOURCE_V1,basePatchedBlobSha};
   const receipt={source,base,head,toolchain:{rustc,cargoLockSha256},runner:{workflowRunUrl}};
   const valid=base?.sourceSha===source.baseSha&&head?.sourceSha===source.headSha&&
-    base?.reason==='EXPECTED_REGRESSION'&&base?.exitCode!==0&&base?.testCount===17&&base?.regressionCount===4&&
+    base?.reason==='EXPECTED_REGRESSION'&&base?.exitCode===101&&base?.testCount===17&&base?.regressionCount===4&&
     head?.reason==='PASSED'&&head?.exitCode===0&&head?.testCount===17&&head?.regressionCount===0&&
     SHA256.test(base?.logSha256??'')&&SHA256.test(head?.logSha256??'')&&
     typeof rustc==='string'&&/^rustc \d/.test(rustc)&&
