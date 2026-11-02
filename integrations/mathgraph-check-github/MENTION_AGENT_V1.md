@@ -2,7 +2,7 @@
 
 A separate, opt-in service for `@MathGraph -check` on pull requests. It reads the PR title/body, up to 30 changed-file patches from an immutable base/head comparison, and exact-head Actions observations; makes one structured model request; and updates one comment with at most three candidate findings and a next step. The configured handle must match the actual GitHub App identity. GitHub App mentions do not install the App.
 
-**Current boundary:** source-bound LLM advisory analysis. No Lean execution, proof verdict, qualified paper-to-theorem correspondence, or verified repair is performed by this service. `-fix` explicitly reports that the isolated repair executor is not connected and spends no model tokens. The existing mathematical source/environment collectors remain separate and unchanged. Repository contents, suggested commands and model text are never executed.
+**Current boundary:** source-bound LLM advisory analysis, optionally joined to the existing pinned Artin native replay/environment collector. The service itself does not execute Lean, certify paper-to-theorem correspondence, or perform verified repair. The collector observes authenticated, pinned historical native proof execution; this does not qualify arbitrary theorems or current OpenAI mathematics claims. `-fix` explicitly reports that the isolated repair executor is not connected and spends no model tokens. The existing mathematical source/environment collectors remain separate and unchanged. Repository contents, suggested commands and model text are never executed.
 
 ## Run
 
@@ -23,6 +23,7 @@ Non-secret deployment settings:
 - `MATHGRAPH_APP_ID`: registered App's numeric ID.
 - `MATHGRAPH_APP_OWNER`: expected GitHub login owning that App.
 - `MATHGRAPH_STATE_DIR`: absolute persistent directory, private to this service.
+- `MATHGRAPH_PROOF_TRUST_FILE`: optional operator-owned JSON array of exact subject/run trust manifests accepted by the existing Artin environment collector. Keep it outside the checkout; never populate it from PR text or model output. No manifest means no native proof observation.
 - `PORT`: defaults to 8080; terminate HTTPS at the host ingress.
 
 Create a separate minimal-permission App for the pilot, subscribe to **Issue comments**, and set its webhook to `https://<service>/github/webhook`. Permissions: Contents read, Pull requests read, Actions read, Issues write. Install on only the operator's chosen demo repository. No merge, source-write or upstream installation permission is needed. Do not repurpose a differently scoped production App without reviewing that change.
@@ -56,7 +57,7 @@ Ingress stores accepted events before returning 202, then runs a sequential work
 
 Only standalone `@<handle> -check` or `@<handle> -fix` comments from approved human IDs qualify. Edited comments, bot comments, quoted commands, prose surrounding a command, and unapproved repositories/users are ignored. The webhook signature is checked before parsing. App identity and installation are independently read from GitHub, and a repository-scoped installation token is revoked after the job.
 
-Model findings remain proposals even if they use confident language. The deterministic report always says proof was not replayed and meaning is unverified. Untrusted model Markdown, raw HTML and mentions are escaped. Both comparison SHAs are recorded. Only first-party branches in the configured repository are accepted. Final publication rechecks the live PR head; changed revisions withhold model findings. GitHub has no atomic compare-and-comment operation, so every result retains its explicit revision and cannot promise to stay current after publication.
+Model findings remain proposals even if they use confident language. The deterministic report states either that no proof was replayed here or that the existing collector observed native replay of the specific pinned Artin theorem. Meaning remains unverified in both cases. A model failure does not erase independently acquired native evidence; a stale head does. Untrusted model Markdown, raw HTML and mentions are escaped. Both comparison SHAs are recorded. Only first-party branches in the configured repository are accepted. Final publication rechecks the live PR head; changed revisions withhold model findings. GitHub has no atomic compare-and-comment operation, so every result retains its explicit revision and cannot promise to stay current after publication.
 
 The collected patches may omit surrounding definitions or be truncated. This limits analysis; a model comment cannot establish all mathematical dependencies or a global absence of defects. No findings is explicitly not proof of correctness. Missing source, model error, timeout or malformed output yields an unresolved result.
 
