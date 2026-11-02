@@ -14,3 +14,11 @@ class SpoofTests(unittest.TestCase):
   self.assertTrue(guard_outcome(1,'Probe.lean:3:0: error: unknown identifier «did not evaluate to `true`»')['other_errors'])
  def test_wrong_location_is_not_a_failed_trusted_guard(self):
   self.assertTrue(guard_outcome(1,'Probe.lean:3:0: error: Expression\n  mathgraphCandidateProbe\ndid not evaluate to `true`')['other_errors'])
+
+class PilotIdentityTests(unittest.TestCase):
+ def test_pr_profile_requires_actual_both_pinned_revisions(self):
+  from native import validate_snapshot
+  s={'repository':'metalogiclabs/L4YAML','head_sha':'a'*40,'base_sha':'b'*40,'module':'Scripts.Ledger','path':'Scripts/Ledger.lean','namespace':'Scripts.Ledger','cli_path':'Scripts/Main/CheckScriptsLedger.lean','cli_module':'Scripts.Main.CheckScriptsLedger','toolchain':'leanprover/lean4:v4.35.0','mode':'OWNED_FORK_PR_PILOT','command':'check','source':'head','base_source':'base','cli_source':'cli','base_cli_source':'cli'}
+  self.assertTrue(validate_snapshot(s))
+  for key,value in [('base_sha','main'),('module','Evil'),('repository','attacker/repo'),('base_cli_source','changed')]:
+   with self.assertRaises(AssertionError): validate_snapshot({**s,key:value})

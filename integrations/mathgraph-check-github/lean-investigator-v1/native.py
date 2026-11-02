@@ -14,6 +14,16 @@ def must(args,timeout=240):
  p=run(args,timeout)
  if p.returncode:raise RuntimeError('TRUSTED_SETUP_FAILED: '+(p.stdout+p.stderr)[-1500:])
  return p.stdout.strip()
+def validate_snapshot(s):
+ assert s['repository']=='metalogiclabs/L4YAML'
+ expected={'path':'Scripts/Ledger.lean','module':'Scripts.Ledger','namespace':'Scripts.Ledger','cli_path':'Scripts/Main/CheckScriptsLedger.lean','cli_module':'Scripts.Main.CheckScriptsLedger','toolchain':'leanprover/lean4:v4.35.0'}
+ assert all(s[k]==v for k,v in expected.items())
+ assert re.fullmatch(r'[a-f0-9]{40}',s['head_sha'])
+ if s.get('mode')=='OWNED_FORK_PR_PILOT':
+  assert re.fullmatch(r'[a-f0-9]{40}',s['base_sha']) and s['command'] in ['check','fix']
+  assert isinstance(s['base_source'],str) and s['base_cli_source']==s['cli_source']
+ return True
+
 def main():
  phase=sys.argv[1];root=Path(sys.argv[2] if len(sys.argv)>2 else 'lean-investigation').resolve()
  load=lambda name:json.loads((root/(name+'.json')).read_text())
@@ -23,17 +33,20 @@ def main():
  assert context==m['context']
  for name,h in m['hashes'].items():assert '/' not in name and digest((root/name).read_bytes())==h
  if phase=='repair' and load('repair-state')['state']!='PATCH_PROPOSED':return
- snapshot=load('snapshot');plan=load('plan');assert snapshot['repository']=='metalogiclabs/L4YAML'
- assert re.fullmatch(r'[a-f0-9]{40}',snapshot['head_sha']) and snapshot['module']=='Scripts.Ledger'
+ snapshot=load('snapshot');plan=load('plan');validate_snapshot(snapshot)
  work=Path('lean-native-'+phase).resolve();work.mkdir(exist_ok=True)
  logs=root/'native-logs';logs.mkdir(exist_ok=True)
- url='https://codeload.github.com/'+snapshot['repository']+'/tar.gz/'+snapshot['head_sha']
- with urllib.request.urlopen(url,timeout=45) as response:data=response.read(100_000_001)
- assert len(data)<100_000_001
- archive=work/'subject.tar.gz';archive.write_bytes(data);repo=work/'subject';repo.mkdir(exist_ok=True)
- with tarfile.open(archive) as t:t.extractall(repo,filter='data')
- folders=[p for p in repo.iterdir() if p.is_dir()];assert len(folders)==1;repo=folders[0]
- assert (repo/snapshot['path']).read_text()==snapshot['source'] and (repo/snapshot['cli_path']).read_text()==snapshot['cli_source']
+ def acquire(revision,label,source):
+  url='https://codeload.github.com/'+snapshot['repository']+'/tar.gz/'+revision
+  with urllib.request.urlopen(url,timeout=45) as response:data=response.read(100_000_001)
+  assert len(data)<100_000_001
+  archive=work/(label+'.tar.gz');archive.write_bytes(data);folder=work/label;folder.mkdir(exist_ok=True)
+  with tarfile.open(archive) as t:t.extractall(folder,filter='data')
+  folders=[p for p in folder.iterdir() if p.is_dir()];assert len(folders)==1;folder=folders[0]
+  assert (folder/snapshot['path']).read_text()==source and (folder/snapshot['cli_path']).read_text()==snapshot['cli_source']
+  return folder
+ repo=acquire(snapshot['head_sha'],'subject',snapshot['source'])
+ base_repo=acquire(snapshot['base_sha'],'base-subject',snapshot['base_source']) if snapshot.get('base_source') is not None else None
  lean=Path.home()/'.elan/toolchains/leanprover--lean4---v4.35.0';assert (lean/'bin/lean').exists()
  must(['docker','pull','ubuntu:24.04'],180);base=must(['docker','image','inspect','ubuntu:24.04','--format','{{index .RepoDigests 0}}'])
  build=work/'image';build.mkdir(exist_ok=True)
@@ -56,14 +69,14 @@ def main():
   return p
  def execute(p,label,command,timeout=240):
   name='mg-lean-'+phase+'-'+label.replace('_','-')
-  args=['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','PATH=/opt/lean/bin:/usr/bin:/bin','-e','HOME=/tmp','-v',str(lean)+':/opt/lean:ro','-v',str(p)+':/work:rw','-v',str(audit)+':/audit:ro','-v',str(repo)+':/subject:ro','-w','/work',image]+command
+  args=['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','PATH=/opt/lean/bin:/usr/bin:/bin','-e','HOME=/tmp','-v',str(lean)+':/opt/lean:ro','-v',str(p)+':/work:rw','-v',str(audit)+':/audit:ro','-v',str(subjects[p.name])+':/subject:ro','-w','/work',image]+command
   r=run(args,timeout);run(['docker','rm','-f',name],20);(logs/(phase+'-'+label+'.log')).write_text(r.stdout+r.stderr)
   assert (p/snapshot['path']).read_text()==sources[p.name],'SOURCE_CHANGED_DURING_EXECUTION'
   assert (p/snapshot['cli_path']).read_text()==snapshot['cli_source'],'CLI_CHANGED_DURING_EXECUTION'
   return r
- sources={}
- def arm(label,source):
-  p=project(label,source);sources[label]=source
+ sources={};subjects={}
+ def arm(label,source,subject=repo):
+  p=project(label,source);sources[label]=source;subjects[label]=subject
   b=execute(p,label+'-build',['lake','build','gate']);result={'build_exit':b.returncode,'source_sha256':digest(source.encode()),'probes':[]}
   if b.returncode:result['repository_gate_exit']=None;return result
   good=execute(p,label+'-control-pass',['lake','env','lean','/audit/control_pass.lean'])
@@ -76,7 +89,9 @@ def main():
   gate=execute(p,label+'-repository-gate',['.lake/build/bin/gate','-C','/subject']);result['repository_gate_exit']=gate.returncode
   return result
  common={'context':context,'source_sha':snapshot['head_sha'],'test_digest':state['test_digest'],'runtime':runtime}
- if phase=='initial':report={**common,'arm':arm('original',snapshot['source'])};name='native'
+ if phase=='initial':
+  report={**common,'arm':arm('original',snapshot['source'])};name='native'
+  if base_repo is not None:report.update({'base_sha':snapshot['base_sha'],'base_arm':arm('base',snapshot['base_source'],base_repo)})
  elif phase=='repair':
   patch=load('patch');assert digest(patch['content'].encode())==patch['patched_sha256']
   report={**common,'patched_sha256':patch['patched_sha256'],'original':arm('paired-original',snapshot['source']),'repaired':arm('repaired',patch['content']),'withdrawn':arm('withdrawn',snapshot['source'])};name='native-repair'

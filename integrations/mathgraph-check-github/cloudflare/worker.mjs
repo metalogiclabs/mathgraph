@@ -1,3 +1,6 @@
+import {pilotEvent} from '../pr-pilot-v1/transport.mjs';
+import {processPilotDelivery} from '../pr-pilot-v1/worker-handler.mjs';
+export {PilotBudget} from '../pr-pilot-v1/transport.mjs';
 // MathGraph Check: Cloudflare Worker HTTP ingress + Queues consumer.
 // GitHub's signed bytes are the sole trust source for queue production.
 // The native Check remains advisory and source/commit pinned.
@@ -132,7 +135,8 @@ export async function receiveWebhook(request, env) {
   try { payload=JSON.parse(bytes.toString("utf8")); }
   catch { return new Response("Invalid JSON", { status: 400 }); }
 
-  const item = parseSignedEvent(payload,
+  const pilot=env.PR_PILOT_ENABLED==="true"?pilotEvent(payload,request.headers.get("x-github-event"),request.headers.get("x-github-delivery")):null;
+  const item = pilot ?? parseSignedEvent(payload,
     request.headers.get("x-github-delivery"),
     request.headers.get("x-github-event"));
   if (!item) return new Response("Ignored", { status: 202 });
@@ -419,6 +423,10 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
 export async function consumePRQueue(batch,env,{fetcher=fetch}={}) {
   for(const message of batch.messages){
     try{
+      if(message.body?.schema==="mathgraph.pr-pilot.delivery.v1"){
+        const r=await processPilotDelivery(message.body,env,{jwt:appJWT(env.GITHUB_APP_PRIVATE_KEY),fetcher});
+        console.log("MATHGRAPH_PR_PILOT "+JSON.stringify(r));message.ack();continue;
+      }
       const r=await processQueuedPR(message.body,env,{fetcher});
       if(r.pendingCI && r.outcome!=="STALE"){
         const previousAttempt=message.body.action==="ci_recheck" ?
