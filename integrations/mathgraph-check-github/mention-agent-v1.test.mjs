@@ -96,3 +96,16 @@ test('native observation is separate from model assessment and survives model fa
  const {deps,published}=dependencies(dir);deps.observeProof=async()=>({status:'NATIVE_REPLAY_OBSERVED',theorem:'Artin_exercise_2_2_9',meaning:'UNVERIFIED',run_url:'https://github.com/metalogiclabs/demo/actions/runs/100'});deps.model=async()=>{throw Error('model unavailable');};
  const r=await mod.runMention(event,deps);assert.equal(r.state,'UNKNOWN');assert.equal(r.proof.status,'NATIVE_REPLAY_OBSERVED');assert.match(published.at(-1).body,/native replay observed/);assert.match(published.at(-1).body,/Meaning.*unverified/i);
 }));
+test('native observation is withdrawn on changed head, including saved-result recovery',()=>setup(async dir=>{
+ const {deps,published}=dependencies(dir);deps.observeProof=async()=>({status:'NATIVE_REPLAY_OBSERVED',theorem:'Artin_exercise_2_2_9',meaning:'UNVERIFIED'});const original=deps.github.publish;
+ deps.github.publish=async(body,id)=>{if(id)throw Error('publication failed');return original(body,id);};
+ await assert.rejects(mod.runMention(event,deps));deps.github.resumePublish=original;deps.github.head=async()=>other;
+ const r=await mod.runMention(event,{...deps,recover:true});assert.equal(r.state,'STALE');assert.equal(r.proof,undefined);assert.doesNotMatch(published.at(-1).body,/native replay observed/);
+}));
+test('reservation subprocess receives no API credential environment',()=>setup(async dir=>{
+ const fs=await import('node:fs/promises');const oldPath=process.env.PATH,oldKey=process.env.OPENAI_API_KEY;
+ await fs.writeFile(join(dir,'flock'),'#!/bin/sh\nif [ -n "$OPENAI_API_KEY" ]; then exit 99; fi\nexec /usr/bin/flock "$@"\n',{mode:0o700});
+ process.env.PATH=dir+':'+oldPath;process.env.OPENAI_API_KEY='fixture-key-must-not-reach-lock-child';
+ try{const {deps}=dependencies(dir);assert.equal((await mod.runMention(event,deps)).state,'COMPLETED');}
+ finally{process.env.PATH=oldPath;if(oldKey===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldKey;}
+}));
