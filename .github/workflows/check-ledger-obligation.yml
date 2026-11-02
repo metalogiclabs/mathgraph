@@ -1,0 +1,68 @@
+name: MathGraph Check ledger qualification
+on:
+  push:
+    branches: [research/check-ledger-obligation-20261103]
+    paths: ['.github/workflows/check-ledger-obligation.yml', 'integrations/mathgraph-check-github/ledger-obligation/**']
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Adapter regression tests
+        run: node --test integrations/mathgraph-check-github/ledger-obligation/*.test.mjs
+      - name: Install pinned upstream Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Original, repair and withdrawal against frozen native obligations
+        run: python3 integrations/mathgraph-check-github/ledger-obligation/replay.py
+      - name: MathGraph Check qualification
+        run: node integrations/mathgraph-check-github/ledger-obligation/qualify.mjs ledger-results
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: check-ledger-native
+          path: ledger-results/
+  publish:
+    needs: native
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: check-ledger-native
+          path: ledger-results
+      - name: Recheck archive and source binding before presentation
+        run: node integrations/mathgraph-check-github/ledger-obligation/qualify.mjs ledger-results
+      - name: Publish bounded advisory Check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile} from 'node:fs/promises';
+          const body=JSON.parse(await readFile('ledger-results/check.json','utf8'));
+          const url=`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/check-runs`;
+          const response=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+          if(!response.ok)throw Error(`CHECK_PUBLISH_HTTP_${response.status}`);
+          const check=await response.json();
+          if(check.head_sha!==process.env.GITHUB_SHA||check.conclusion!=='neutral')throw Error('CHECK_READBACK_MISMATCH');
+          console.log(JSON.stringify({id:check.id,url:check.html_url,app:check.app.slug,head_sha:check.head_sha}));
+          JS
