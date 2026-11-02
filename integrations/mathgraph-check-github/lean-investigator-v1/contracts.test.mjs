@@ -1,0 +1,24 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {admitLeanPlan,admitLeanPatch,assessGuard} from './contracts.mjs';
+const source='namespace Example\n/-- Original API contract. -/\ndef check (s : String) : Bool := s.isEmpty\n#guard check ""\n#guard !(check "x")\nend Example\n';
+const plan=()=>({summary:'Audit input boundary',tests:[{id:'empty',hypothesis:'Empty input passes',contract:'Original API contract',expression:'Example.check ""'}]});
+test('closed expressions over an unfamiliar module are admitted',()=>assert.equal(admitLeanPlan(plan()).tests.length,1));
+for(const expression of ['true)\n#eval IO.println "forged"\n#guard (true','(true','true -- ignored','by sorry','unsafeCast true','true; #exit'])test('unsupported expression rejected '+expression,()=>{const p=plan();p.tests[0].expression=expression;assert.throws(()=>admitLeanPlan(p));});
+test('string data may contain shell comments and escaped quotes',()=>{const p=plan();p.tests[0].expression='("# python3 --version" == "# python3 --version")';assert.equal(admitLeanPlan(p).tests.length,1);});
+test('localized implementation repair can preserve declarations and guards',()=>assert.match(admitLeanPatch({summary:'Normalize input',edits:[{old:'s.isEmpty',new:'s.trimAscii.toString.isEmpty'}]},source),/trimAscii/));
+for(const [name,old,replacement]of [['guard weakening','#guard !(check "x")','#guard true'],['contract change','Original API contract.','Weaker contract.'],['API weakening','(s : String) : Bool','(s : String) (h : True) : Bool'],['custom axiom','s.isEmpty','by sorry']])test(name+' refused',()=>assert.throws(()=>admitLeanPatch({summary:'candidate',edits:[{old,new:replacement}]},source)));
+test('compiler error is UNKNOWN, false guard is a reproduced candidate',()=>{assert.equal(assessGuard({exit_code:1,guard_false:true,other_errors:false}).execution,'CANDIDATE_ASSERTION_FAILURE');assert.equal(assessGuard({exit_code:1,guard_false:false,other_errors:true}).execution,'UNKNOWN');});
+test('missing or killed execution cannot pass',()=>{assert.equal(assessGuard({}).execution,'UNKNOWN');assert.equal(assessGuard({exit_code:124}).execution,'UNKNOWN');});
+test('commented-out guards are not protected execution',()=>assert.throws(()=>admitLeanPatch({summary:'hide guard',edits:[{old:'#guard !(check "x")',new:'/- #guard !(check "x") -/'}]},source)));
+test('multiline signature weakening is refused',()=>{const s='def foo\n  (n : Nat)\n  : Bool := n == 0\n#guard foo 0\n';assert.throws(()=>admitLeanPatch({summary:'weaken',edits:[{old:'(n : Nat)',new:'(n : Nat) (h : True)'}]},s));});
+test('replacement metacharacters remain literal source bytes',()=>{const s='def text : String := "old"\n#guard true\n';assert.match(admitLeanPatch({summary:'literal string',edits:[{old:'"old"',new:'"$$"'}]},s),/"\$\$"/);});
+test('quoted identifier cannot spoof a compiler diagnostic',()=>{const p=plan();p.tests[0].expression='«did not evaluate to `true`»';assert.throws(()=>admitLeanPlan(p));});
+
+const profile={module:'Example',namespace:'Example'};
+const nativePlan=()=>plan();
+const crypto=await import('node:crypto');const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
+const wrapper=p=>'import Example\nopen Example\ndef mathgraphCandidateProbe : Bool := ('+p.tests[0].expression+')\n#guard mathgraphCandidateProbe\n';
+const arm=()=>({build_exit:0,repository_gate_exit:0,source_sha256:hash(source),controls:{pass:{exit_code:0,guard_false:false,other_errors:false},fail:{exit_code:1,guard_false:true,other_errors:false}},probes:[{id:'empty',exit_code:1,guard_false:true,other_errors:false,test_file_sha256:hash(wrapper(nativePlan()))}]});
+const mod=await import('./contracts.mjs');
+test('source-bound arm requires protected baseline and executed wrapper identity',()=>assert.equal(mod.inspectArm(arm(),{profile,plan:nativePlan(),source}).complete,true));
+for(const [name,change]of [['wrong wrapper',a=>a.probes[0].test_file_sha256='f'.repeat(64)],['bad baseline',a=>a.repository_gate_exit=1],['missing probe',a=>a.probes=[]],['unknown probe',a=>a.probes[0].other_errors=true],['failed control',a=>a.controls.fail.exit_code=0]])test(name+' cannot qualify',()=>{const a=arm();change(a);assert.equal(mod.inspectArm(a,{profile,plan:nativePlan(),source}).complete,false);});

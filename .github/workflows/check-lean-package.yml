@@ -1,0 +1,74 @@
+name: Packaged generated Lean fix validation
+on:
+  push:
+    branches: [pilot/check-lean-package-20261103]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lean-investigator-assessment
+          path: prior-lean-investigation
+          run-id: 41520661597
+          github-token: ${{ github.token }}
+      - name: Authenticate packaged source and unchanged generated probes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/package.mjs prior-lean-investigation lean-investigation
+      - name: Install pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Native replay of the exact fork commit
+        run: python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial lean-investigation
+      - name: Source-bound assessment
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess lean-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: lean-packaged-native, path: lean-investigation/}
+  assess:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {contents: read, checks: write}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: lean-packaged-native, path: lean-investigation}
+      - name: Independent mechanical evidence admission
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess lean-investigation
+      - name: Detect existing App publisher
+        id: publisher
+        env: {APP_PRIVATE_KEY: '${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}'}
+        run: |
+          if [ -n "$APP_PRIVATE_KEY" ]; then echo 'enabled=true' >> "$GITHUB_OUTPUT"; fi
+      - name: Mint existing repository-scoped Check token
+        id: app
+        if: steps.publisher.outputs.enabled == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23lioiUs5KfHD7mkkw
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-checks: write
+      - name: Publish source-bound advisory result
+        env: {GH_TOKEN: '${{ steps.app.outputs.token }}'}
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/publish.mjs lean-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: lean-investigator-assessment, path: lean-investigation/}
