@@ -49,6 +49,7 @@ jobs:
           fi
       - name: Mint a repository-scoped MathGraph Check token
         id: mathgraph-app
+        continue-on-error: true
         if: steps.publisher.outputs.enabled == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         with:
@@ -59,6 +60,14 @@ jobs:
           permission-issues: write
           permission-contents: write
           permission-pull-requests: write
+      - name: Report the publishing identity
+        env:
+          APP_REQUESTED: ${{ steps.publisher.outputs.enabled }}
+          APP_SLUG: ${{ steps.mathgraph-app.outputs.app-slug }}
+        run: |
+          if [ "$APP_REQUESTED" = "true" ] && [ -z "$APP_SLUG" ]; then
+            echo "::warning::MathGraph Check App installation is unavailable. Publishing as github-actions[bot]."
+          fi
       - name: Acknowledge the command before Lean setup
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -135,6 +144,7 @@ jobs:
           fi
       - name: Mint a repository-scoped MathGraph Check token
         id: mathgraph-app
+        continue-on-error: true
         if: steps.publisher.outputs.enabled == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         with:
@@ -143,6 +153,14 @@ jobs:
           owner: metalogiclabs
           repositories: mathgraph
           permission-issues: write
+      - name: Report the publishing identity
+        env:
+          APP_REQUESTED: ${{ steps.publisher.outputs.enabled }}
+          APP_SLUG: ${{ steps.mathgraph-app.outputs.app-slug }}
+        run: |
+          if [ "$APP_REQUESTED" = "true" ] && [ -z "$APP_SLUG" ]; then
+            echo "::warning::MathGraph Check App installation is unavailable. Publishing as github-actions[bot]."
+          fi
       - name: Withdraw source-stale observations without model access
         env:
           GITHUB_TOKEN: ${{ github.token }}
