@@ -9,7 +9,8 @@ for(const stale of [true,false])test(stale?'foreign native run cannot qualify':'
  const objects={'snapshot.json':snapshot,'state.json':{context,state:'PROBES_PROPOSED',test_digest:native.test_digest},'plan.json':plan,'native.json':native,'repair-state.json':{state:'NO_REPRODUCED_FAILURE'}};const hashes={};
  for(const[name,data]of Object.entries(objects)){const raw=JSON.stringify(data);await writeFile(join(dir,name),raw);hashes[name]=hash(raw);}
  await writeFile(join(dir,'manifest.json'),JSON.stringify({context,hashes}));
- const p=spawnSync(process.execPath,[new URL('./driver.mjs',import.meta.url).pathname,'assess',dir],{encoding:'utf8',env:{...process.env,GITHUB_SHA:context.verifier_sha,GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'}});assert.equal(p.status,0,p.stderr);
+ const {MATHGRAPH_CONTROLLER_SHA:ambientController,...testEnv}=process.env;
+ const p=spawnSync(process.execPath,[new URL('./driver.mjs',import.meta.url).pathname,'assess',dir],{encoding:'utf8',env:{...testEnv,GITHUB_SHA:context.verifier_sha,GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'}});assert.equal(p.status,0,p.stderr);
  const r=JSON.parse(await readFile(join(dir,'assessment.json'),'utf8'));assert.equal(r.status,'UNKNOWN');assert.equal(r.subject.head_sha,snapshot.head_sha);if(stale)assert.equal(r.reason,'NATIVE_SOURCE_MISMATCH');
  }finally{await rm(dir,{recursive:true,force:true});}
 });
