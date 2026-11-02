@@ -1,0 +1,5 @@
+{
+  "unit": "Consumer",
+  "exit_code": 0,
+  "output": "'conjugate_power_2' depends on axioms: [propext]\n"
+}

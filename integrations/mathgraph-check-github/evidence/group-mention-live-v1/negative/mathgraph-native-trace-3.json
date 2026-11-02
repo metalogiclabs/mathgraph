@@ -1,0 +1,5 @@
+{
+  "unit": "Candidate",
+  "exit_code": 1,
+  "output": "/work/Candidate.lean:3:102: error: Tactic `rfl` failed: The left-hand side\n  (a * b * a⁻¹) ^ 2\nis not definitionally equal to the right-hand side\n  a * b ^ 2 * a⁻¹\n\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹\n"
+}

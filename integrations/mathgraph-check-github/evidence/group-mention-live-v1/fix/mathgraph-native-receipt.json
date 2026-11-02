@@ -1,0 +1,66 @@
+{
+  "schema": "mathgraph.native-group-demo.v1",
+  "case_id": "group-identity",
+  "command": "fix",
+  "repository": "metalogiclabs/mathgraph",
+  "pr": 242,
+  "source_head": "6dd3913529750de26a7ced7f7d9d17842bb36dad",
+  "run_id": 41412204856,
+  "publisher": {
+    "bot_login": "mathgraph-check[bot]",
+    "app_id": 5308912
+  },
+  "lean": "4.28.0",
+  "status": "ORIGINAL_TARGET_VERIFIED",
+  "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+  "axioms": [
+    "propext"
+  ],
+  "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+  "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+  "source_compiles": true,
+  "original_claim_satisfied": true,
+  "target_name": "conjugate_power_2",
+  "api_calls": 0,
+  "bounded_repair": {
+    "status": "ORIGINAL_TARGET_VERIFIED",
+    "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+    "axioms": [
+      "propext"
+    ],
+    "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+    "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+    "source_compiles": true,
+    "original_claim_satisfied": true,
+    "target_name": "conjugate_power_2",
+    "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+    "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+    "post_hoc": false,
+    "registered_proof_constructor_used": false,
+    "api_calls": 0,
+    "native_attempts": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+          "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+          "source_compiles": true,
+          "original_claim_satisfied": true,
+          "target_name": "conjugate_power_2"
+        }
+      }
+    ],
+    "method_prequalified": true
+  },
+  "repair_pr": "https://github.com/metalogiclabs/mathgraph/pull/245",
+  "repair_method": "FROZEN_NATIVE_TACTIC_PORTFOLIO",
+  "model_assessment": null
+}

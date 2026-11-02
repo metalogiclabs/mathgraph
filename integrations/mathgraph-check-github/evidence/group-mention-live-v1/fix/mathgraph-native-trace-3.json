@@ -1,0 +1,5 @@
+{
+  "unit": "Candidate",
+  "exit_code": 1,
+  "output": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 2 = a * b ^ 2 * a ^ (-1)\n"
+}

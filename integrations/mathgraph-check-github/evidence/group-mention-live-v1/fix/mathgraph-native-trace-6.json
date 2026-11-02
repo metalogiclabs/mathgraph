@@ -1,0 +1,5 @@
+{
+  "unit": "Candidate",
+  "exit_code": 0,
+  "output": "/work/Candidate.lean:3:133: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+}

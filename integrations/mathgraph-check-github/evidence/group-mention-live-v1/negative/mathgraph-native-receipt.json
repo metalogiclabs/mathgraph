@@ -1,0 +1,34 @@
+{
+  "schema": "mathgraph.native-group-demo.v1",
+  "case_id": "group-identity",
+  "command": "fix",
+  "repository": "metalogiclabs/mathgraph",
+  "pr": 243,
+  "source_head": "c71366fcbdf1d0047a2771b9ace7a499507da632",
+  "run_id": 41412279568,
+  "publisher": {
+    "bot_login": "mathgraph-check[bot]",
+    "app_id": 5308912
+  },
+  "lean": "4.28.0",
+  "status": "CLAIM_NOT_ESTABLISHED",
+  "diagnostic": "/work/Candidate.lean:3:102: error: Tactic `rfl` failed: The left-hand side\n  (a * b * a⁻¹) ^ 2\nis not definitionally equal to the right-hand side\n  a * b ^ 2 * a⁻¹\n\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹\n",
+  "axioms": null,
+  "source_compiles": false,
+  "original_claim_satisfied": false,
+  "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+  "target_name": "conjugate_power_2",
+  "api_calls": 0,
+  "bounded_repair": {
+    "status": "UNKNOWN",
+    "post_hoc": false,
+    "api_calls": 0,
+    "native_attempts": 0,
+    "attempts": [],
+    "method_prequalified": true,
+    "target_name": "conjugate_power_2"
+  },
+  "repair_pr": null,
+  "repair_method": null,
+  "model_assessment": null
+}

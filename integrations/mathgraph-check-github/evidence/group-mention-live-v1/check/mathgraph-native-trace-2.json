@@ -1,0 +1,5 @@
+{
+  "unit": "Negative",
+  "exit_code": 1,
+  "output": "/work/Negative.lean:2:22: error: Tactic `assumption` failed\n\n⊢ False\n"
+}
