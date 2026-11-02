@@ -5,10 +5,11 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {runGenericSemantEq} from './generic-semanteq-run-v1.mjs';
 import {runGenericLeanConsumer} from './generic-lean-consumer-run-v1.mjs';
+import {runGenericProofRelevance} from './generic-proof-relevance-run-v1.mjs';
 
 function argumentsMap(args){
  const accepted=new Set(['--reference','--candidate','--reference-sha','--project','--output','--timeout-ms',
-  '--consumer','--consumer-sha','--consumer-name']);
+  '--consumer','--consumer-sha','--consumer-name','--proof-fixture','--proof-fixture-sha']);
  const values={};
  if(args.length%2!==0)throw Error('EXPECTED_KEY_VALUE_ARGUMENTS');
  for(let i=0;i<args.length;i+=2){
@@ -30,6 +31,9 @@ async function main(){
  const consumerArgs=['--consumer','--consumer-sha','--consumer-name'];
  if(consumerArgs.some(key=>options[key])&&!consumerArgs.every(key=>options[key]))throw Error('INCOMPLETE_CONSUMER_TRUST_ANCHOR');
  if(options['--consumer']&&resolve(options['--consumer'])===reportPath)throw Error('OUTPUT_MAY_NOT_REPLACE_CONSUMER');
+ const proofArgs=['--proof-fixture','--proof-fixture-sha'];
+ if(proofArgs.some(key=>options[key])&&!proofArgs.every(key=>options[key]))throw Error('INCOMPLETE_PROOF_FIXTURE_TRUST_ANCHOR');
+ if(options['--proof-fixture']&&resolve(options['--proof-fixture'])===reportPath)throw Error('OUTPUT_MAY_NOT_REPLACE_PROOF_FIXTURE');
  const timeoutMs=options['--timeout-ms']?Number(options['--timeout-ms']):60000;
  const reference={path:referencePath,source:referenceSource};
  const candidate={path:candidatePath,source:candidateSource};
@@ -52,12 +56,28 @@ async function main(){
    original_target_status:sameRun?replay.original_target_status:'UNKNOWN',
    intent_fidelity:'UNKNOWN',evidence_warrant:'UNKNOWN'};
  }
+ if(options['--proof-fixture']){
+  const audit=await runGenericProofRelevance({source:options['--proof-fixture'],
+   expectedSha:options['--proof-fixture-sha'],projectDir:optionsForNative.projectDir,timeoutMs});
+  const matching=report.execution_status==='EXECUTED'&&audit.execution_status==='EXECUTED'&&
+   report.tool_git===audit.tool_git&&report.mathlib_git===audit.mathlib_git&&
+   report.semanteq_executable_sha256===audit.semanteq_executable_sha256&&
+   report.lake_manifest_sha256===audit.lake_manifest_sha256&&
+   report.lean_toolchain_sha256===audit.lean_toolchain_sha256&&
+   report.lean_version===audit.lean_version&&report.lake_version===audit.lake_version;
+  report={...report,proof_fixture_audit:audit,
+   proof_same_run_correlation:matching?'MATCHING_LOCAL_INVOCATION_AND_PINNED_ENVIRONMENT':'UNKNOWN',
+   // Even a native PASS says nothing about whether this *unbound* fixture
+   // corresponds to the current reference/candidate or its source intent.
+   intent_fidelity:'UNKNOWN',evidence_warrant:'UNKNOWN'};
+ }
  const raw=JSON.stringify(report,null,2)+'\n';
  await writeFile(reportPath,raw,{flag:'wx'});
  console.log(JSON.stringify({case_id:report.case_id,execution_status:report.execution_status,
   formal_statement_relation:report.formal_statement_relation,
   report_sha256:createHash('sha256').update(raw).digest('hex'),report_path:reportPath}));
  if(report.execution_status!=='EXECUTED'||
-  (options['--consumer']&&report.consumer_replay.execution_status!=='EXECUTED'))process.exitCode=2;
+  (options['--consumer']&&report.consumer_replay.execution_status!=='EXECUTED')||
+  (options['--proof-fixture']&&report.proof_fixture_audit.execution_status!=='EXECUTED'))process.exitCode=2;
 }
 main().catch(error=>{console.error(`GENERIC_SEMANTEQ_CLI_ERROR: ${error.message}`);process.exitCode=2;});

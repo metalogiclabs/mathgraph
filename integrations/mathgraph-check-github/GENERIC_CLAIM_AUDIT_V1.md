@@ -25,6 +25,8 @@ automatically produce arbitrary repaired proofs. The separate native consumer
 runner *does* execute an operator-authored, independently byte-anchored
 original-target consumer in the same pinned environment, and audits the
 consumer theorem's actual axioms through a separate compiler invocation.
+That Lean acceptance does not establish *essential use* of the candidate:
+the consumer might independently prove the target using a library theorem.
 
 Every report retains distinct fields: `formal_statement_relation`,
 `candidate_source_build`, `intent_fidelity`, `evidence_warrant`. The last two
@@ -93,6 +95,41 @@ Native replay uses a uniquely named temporary subdirectory of the ignored
 Lean source caused SemantEq to mark the source checkout dirty and fail closed.
 The explicit parallel-native test covers that regression.
 
+## Optional proof-use diagnostic (unbound)
+
+For an independent *operator-authored* proof-relevance fixture, add both
+`--proof-fixture /trusted/ProofUse.lean` and
+`--proof-fixture-sha <independently-obtained-SHA256>` to the command above.
+The fixture is expected to contain a hypothetical candidate theorem assumption
+and a reference-target proof using (or failing to use) it. No single-argument,
+unpinned option is accepted.
+
+The CLI byte-checks and privately stages this fixture, then invokes the pinned
+upstream proof checker as:
+
+```sh
+lake env .lake/build/bin/semanteq --raw --strict --proof /private/staged/ProofUse.lean
+```
+
+Its separate `proof_fixture_audit` records `PASS`, `FAIL` or `UNKNOWN`, the
+actual exit code, SHA-256, captured stdout/stderr, elapsed time, upstream
+verdict and environment pins. A parsed verdict of `FAIL` with native exit zero
+is **not** an environment failure. Multiple/malformed records and nonzero exit
+codes fail closed. `proof_same_run_correlation` checks the formal comparison
+and proof fixture against the same pinned local executable, Mathlib revision,
+toolchain, manifest and Lean/Lake versions within the CLI invocation.
+
+**Important:** `proof_binding: UNBOUND_ADVISORY` is permanent in this v1.
+The checker has not verified that the fixture's candidate assumption and goal
+are the actual elaborated declarations in the trusted reference and candidate
+files. Even `PASS` with matching environment is *not* candidate repair approval,
+proof-to-paper fidelity, independent review or mathematical warrant.
+`original_target_status` is not upgraded from this diagnostic;
+`intent_fidelity` and `evidence_warrant` remain `UNKNOWN`. Binding the fixture
+to exact elaborated theorem types is future work. The fixture is not executed
+from a GitHub webhook or arbitrary PR. Preserve raw output privately when its
+source is sensitive.
+
 `--output` must not exist. The CLI never overwrites an existing report and
 returns exit code 2 on environment or execution failure. Exit code 0 means the
 configured tools *ran*, not that the candidate is mathematically warranted.
@@ -106,6 +143,7 @@ private if the supplied sources are private.
 node integrations/mathgraph-check-github/generic-claim-audit-v1.test.mjs
 node integrations/mathgraph-check-github/generic-semanteq-cli-v1.test.mjs
 node integrations/mathgraph-check-github/generic-lean-consumer-run-v1.test.mjs
+node integrations/mathgraph-check-github/generic-proof-relevance-run-v1.test.mjs
 MATHGRAPH_SEMANTEQ_PROJECT=/trusted/semanteq_upstream \
   node integrations/mathgraph-check-github/generic-semanteq-run-v1.test.mjs
 ```
