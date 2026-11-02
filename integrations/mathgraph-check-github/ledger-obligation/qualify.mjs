@@ -9,7 +9,7 @@ const entries=manifest.trim().split('\n').map(line=>/^([a-f0-9]{64})  ([A-Za-z0-
 if(entries.some(x=>!x)||new Set(entries.map(x=>x[2])).size!==entries.length||!entries.some(x=>x[2]==='receipt.json'))throw Error('INVALID_ARCHIVE_MANIFEST');
 for(const [,digest,name] of entries){if(createHash('sha256').update(await readFile(`${root}/${name}`)).digest('hex')!==digest)throw Error('ARCHIVE_BYTES_CHANGED');}
 const receipt=JSON.parse(await readFile(`${root}/receipt.json`,'utf8'));
-const report=assessLedgerReceipt(receipt,{subjectRepository:'metalogiclabs/L4YAML',subjectHead:'de8156e305fb035452a89af74f843049d5d33e1e',verifierHead:process.env.GITHUB_SHA,runId:Number(process.env.GITHUB_RUN_ID),authenticated:true});
+const report=assessLedgerReceipt(receipt,{subjectRepository:'metalogiclabs/L4YAML',subjectHead:'821c715217f135c73abb643df2878557ca099380',verifierHead:process.env.GITHUB_SHA,runId:Number(process.env.GITHUB_RUN_ID),authenticated:true});
 const check=ledgerCheck(report,{carrierSha:process.env.GITHUB_SHA,runUrl:`https://github.com/metalogiclabs/mathgraph/actions/runs/${process.env.GITHUB_RUN_ID}`});
 await writeFile(`${root}/assessment.json`,JSON.stringify(report,null,2)+'\n');
 await writeFile(`${root}/check.json`,JSON.stringify(check,null,2)+'\n');

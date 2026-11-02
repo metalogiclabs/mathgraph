@@ -2,7 +2,7 @@
 from pathlib import Path
 import subprocess, json, hashlib, os, shutil
 BASE='219f133cc93172fea46b08d09edf9b3b6441c0a4'
-REPAIR='de8156e305fb035452a89af74f843049d5d33e1e'
+REPAIR='821c715217f135c73abb643df2878557ca099380'
 SUBJECT='metalogiclabs/L4YAML'
 TOOLCHAIN='leanprover/lean4:v4.35.0'
 ROOT=Path.cwd(); OUT=ROOT/'ledger-results'; OUT.mkdir(exist_ok=True)
@@ -27,7 +27,9 @@ must(['git','init','-q',str(repo)],ROOT)
 for sha in [BASE,REPAIR]:
     must(['git','fetch','--depth=1','--no-tags','https://github.com/'+SUBJECT+'.git',sha],repo)
 # Freeze regression text from the repaired commit and replay identically in all arms.
-guards=must(['git','show',REPAIR+':Tests/Guards/ScriptsLedgerOptions.lean'],repo)+'\n'
+guard_source=must(['git','show',REPAIR+':Scripts/Ledger.lean'],repo)
+guard_body=guard_source.split('-- BEGIN PYTHON OPTION REGRESSION GUARDS\n',1)[1].split('-- END PYTHON OPTION REGRESSION GUARDS',1)[0]
+guards='import Scripts.Ledger\nopen Scripts.Ledger\n'+guard_body
 (OUT/'frozen-regression-guards.lean').write_text(guards)
 identities=[]; arms=[]
 for arm,sha in [('original',BASE),('repaired',REPAIR),('withdrawn',BASE)]:
