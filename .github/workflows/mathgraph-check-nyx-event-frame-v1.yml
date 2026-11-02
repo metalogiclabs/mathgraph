@@ -51,6 +51,10 @@ jobs:
           test "$(git -C "$RUNNER_TEMP/nyx-head" hash-object nyx-core/tests/propagation/stopcond.rs)" = "$NYX_TEST_BLOB"
           cp "$RUNNER_TEMP/nyx-head/nyx-core/tests/propagation/stopcond.rs" "$RUNNER_TEMP/nyx-base/nyx-core/tests/propagation/stopcond.rs"
           test "$(git -C "$RUNNER_TEMP/nyx-base" hash-object nyx-core/tests/propagation/stopcond.rs)" = "$NYX_TEST_BLOB"
+          # Nyx does not check in Cargo.lock. Generate exactly one resolution and
+          # reuse it unchanged for both sources; preserve it in the run artifact.
+          cargo generate-lockfile --manifest-path "$RUNNER_TEMP/nyx-head/Cargo.toml"
+          cp "$RUNNER_TEMP/nyx-head/Cargo.lock" "$RUNNER_TEMP/nyx-base/Cargo.lock"
           cmp "$RUNNER_TEMP/nyx-base/Cargo.lock" "$RUNNER_TEMP/nyx-head/Cargo.lock"
           sha256sum "$RUNNER_TEMP/nyx-base/Cargo.lock" "$RUNNER_TEMP/nyx-head/Cargo.lock"
           rustc --version
@@ -60,7 +64,7 @@ jobs:
           set -euo pipefail
           for mode in base head; do
             set +e
-            (cd "$RUNNER_TEMP/nyx-$mode" && cargo test -p nyx-space --no-default-features --test lib longitude_event_in_rotating_frame -- --nocapture) \
+            (cd "$RUNNER_TEMP/nyx-$mode" && cargo test --locked -p nyx-space --no-default-features --test lib longitude_event_in_rotating_frame -- --nocapture) \
               > "$RUNNER_TEMP/nyx-$mode.stdout" 2> "$RUNNER_TEMP/nyx-$mode.stderr"
             code=$?
             set -e
@@ -87,5 +91,6 @@ jobs:
             ${{ runner.temp }}/nyx-*.stderr
             ${{ runner.temp }}/nyx-*.json
             ${{ runner.temp }}/nyx-retrospective-receipt.json
+            ${{ runner.temp }}/nyx-head/Cargo.lock
           if-no-files-found: warn
           retention-days: 14
