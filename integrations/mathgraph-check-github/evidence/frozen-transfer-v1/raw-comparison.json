@@ -1,0 +1,94 @@
+{
+  "protocol": {
+    "schema": "mathgraph.frozen-transfer-protocol.v1",
+    "method_frozen_commit": "0b110d83734c9bf4d84e3470926721fef17dd8e4",
+    "engine_sha256": "9bf7a144d0a85bbacd154fcd7cc5c49f072feb251dbe58e654f4fb86cd2d4b92",
+    "selection_rule": "Next unused published ordinal: 3. No replacement after outcome; no reference proof access.",
+    "source": {
+      "repository": "marcusm117/ProofNet-Verified",
+      "commit": "14879cb23e078d122adecd9578dd26a7304f753b",
+      "path": "data/archive/proofnet-verified-4.28/proofnet-3.lean"
+    },
+    "max_unique_requests": 3,
+    "reservation_cents_per_request": 25,
+    "total_cap_cents": 75,
+    "max_native_variants": 2,
+    "model": "gpt-6.1-sol",
+    "max_output_tokens": 4096,
+    "max_input_bytes": 24000,
+    "service_tier": "default",
+    "lean_version": "4.28.0",
+    "mathlib_revision": "8f9d9cff6bd728b17a24e163c9402775d9e6a365",
+    "comparison": "Reuse shared-first then one unassisted and one compiler-guided revision. If shared first passes, stop/tie. Apply at most two frozen native variants to the guided revision only. Preserve raw comparison and distinguish a model success from an accepted frozen native variant. Two model calls per arm counting shared first. Additional native compute explicit; no claim of equal compute.",
+    "scope": "One published formal target, no population superiority or English-formal equivalence; no reference proof supplied. Public source may occur in training.",
+    "reference_proof_access": "NOT_READ_OR_PROVIDED"
+  },
+  "frozen": {
+    "schema": "mathgraph.frozen-formal-target.v1",
+    "name": "Artin_exercise_2_11_3",
+    "source": "import Mathlib\n\nopen Function Fintype Subgroup Ideal Polynomial Submodule Zsqrtd\nopen scoped BigOperators\n\n\n\n/-Informal Statement\n\nProve that a group of even order contains an element of order $2 .$\n-/\n\ntheorem Artin_exercise_2_11_3 {G : Type*} [Group G] [Fintype G]\n  (hG : Even (card G)) : ∃ x : G, orderOf x = 2 := by\n  sorry\n",
+    "header": "theorem Artin_exercise_2_11_3 {G : Type*} [Group G] [Fintype G]\n  (hG : Even (card G)) : ∃ x : G, orderOf x = 2",
+    "prelude": "import Mathlib\nopen Function Fintype Subgroup Ideal Polynomial Submodule Zsqrtd\nopen scoped BigOperators\n\n",
+    "target_type": "∀ {G : Type*} [Group G] [Fintype G]\n  (hG : Even (card G)), ∃ x : G, orderOf x = 2",
+    "source_sha256": "e70e8a2f0cd8399da898825320d6ffbfedcbacb57606ce6656a069610ab12f86",
+    "target_sha256": "c408145e1ece1ab75e85010a9f7c6a12ad85d549a9bfa32de5199a9071d1ec02",
+    "provenance": {
+      "repository": "marcusm117/ProofNet-Verified",
+      "commit": "14879cb23e078d122adecd9578dd26a7304f753b",
+      "path": "data/archive/proofnet-verified-4.28/proofnet-3.lean",
+      "sha256": "e70e8a2f0cd8399da898825320d6ffbfedcbacb57606ce6656a069610ab12f86"
+    },
+    "registered_repair": false,
+    "informal_equivalence": "NOT_CERTIFIED"
+  },
+  "baseline": {
+    "ordinary_lean_compilation": "ACCEPTS_PLACEHOLDER_WITH_WARNING",
+    "strict_lean_ci": "REJECTS_PLACEHOLDER",
+    "axiom_audit": "REJECTS_SORRY_AXIOM"
+  },
+  "schema": "mathgraph.fresh-proof-comparison.v1",
+  "comparison": "SHARED_FIRST_CANDIDATE_PASSED_NO_ADVANTAGE_SHOWN",
+  "registered_repair_used": false,
+  "unique_api_calls": 1,
+  "llm_alone": {
+    "status": "ORIGINAL_TARGET_VERIFIED",
+    "diagnostic": "/work/Consumer.lean:8:3: warning: unused variable `hG`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n'Artin_exercise_2_11_3' depends on axioms: [propext, Classical.choice, Quot.sound]\n",
+    "axioms": [
+      "propext",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "source_sha256": "c784e4315b10fb291c94a8ca0cac324a7fa9a4cb15dadc0cd966df1203000346",
+    "target_sha256": "c408145e1ece1ab75e85010a9f7c6a12ad85d549a9bfa32de5199a9071d1ec02"
+  },
+  "mathgraph": {
+    "status": "ORIGINAL_TARGET_VERIFIED",
+    "diagnostic": "/work/Consumer.lean:8:3: warning: unused variable `hG`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n'Artin_exercise_2_11_3' depends on axioms: [propext, Classical.choice, Quot.sound]\n",
+    "axioms": [
+      "propext",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "source_sha256": "c784e4315b10fb291c94a8ca0cac324a7fa9a4cb15dadc0cd966df1203000346",
+    "target_sha256": "c408145e1ece1ab75e85010a9f7c6a12ad85d549a9bfa32de5199a9071d1ec02"
+  },
+  "proposals": [
+    {
+      "arm": "shared-first",
+      "proof_body": "by\n  have hf : 2 ∣ Fintype.card G := even_iff_two_dvd.mp hG\n  have hn : 2 ∣ Nat.card G := by\n    simpa only [Nat.card_eq_fintype_card] using hf\n  letI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩\n  first\n  | exact exists_prime_orderOf_dvd_card (G := G) (p := 2) hn\n  | exact exists_prime_orderOf_dvd_card (G := G) (p := 2) hf\n  | exact exists_prime_orderOf_dvd_card (G := G) Nat.prime_two hn\n  | exact exists_prime_orderOf_dvd_card (G := G) Nat.prime_two hf\n  | exact exists_prime_orderOf_dvd_card (G := G) 2 hn\n  | exact exists_prime_orderOf_dvd_card (G := G) 2 hf",
+      "usage": {
+        "input_tokens": 202,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 707,
+        "output_tokens_details": {
+          "reasoning_tokens": 480
+        },
+        "total_tokens": 909
+      },
+      "response_id": "resp_08accc5a440ed285016ae84168aa0c87d0bc7c1b422dc580a9"
+    }
+  ]
+}

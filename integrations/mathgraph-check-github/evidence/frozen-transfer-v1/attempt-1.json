@@ -1,0 +1,11 @@
+{
+  "status": "ORIGINAL_TARGET_VERIFIED",
+  "diagnostic": "/work/Consumer.lean:8:3: warning: unused variable `hG`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n'Artin_exercise_2_11_3' depends on axioms: [propext, Classical.choice, Quot.sound]\n",
+  "axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "source_sha256": "c784e4315b10fb291c94a8ca0cac324a7fa9a4cb15dadc0cd966df1203000346",
+  "target_sha256": "c408145e1ece1ab75e85010a9f7c6a12ad85d549a9bfa32de5199a9071d1ec02"
+}

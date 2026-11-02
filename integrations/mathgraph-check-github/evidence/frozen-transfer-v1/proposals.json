@@ -1,0 +1,19 @@
+[
+  {
+    "arm": "shared-first",
+    "proof_body": "by\n  have hf : 2 ∣ Fintype.card G := even_iff_two_dvd.mp hG\n  have hn : 2 ∣ Nat.card G := by\n    simpa only [Nat.card_eq_fintype_card] using hf\n  letI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩\n  first\n  | exact exists_prime_orderOf_dvd_card (G := G) (p := 2) hn\n  | exact exists_prime_orderOf_dvd_card (G := G) (p := 2) hf\n  | exact exists_prime_orderOf_dvd_card (G := G) Nat.prime_two hn\n  | exact exists_prime_orderOf_dvd_card (G := G) Nat.prime_two hf\n  | exact exists_prime_orderOf_dvd_card (G := G) 2 hn\n  | exact exists_prime_orderOf_dvd_card (G := G) 2 hf",
+    "usage": {
+      "input_tokens": 202,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 707,
+      "output_tokens_details": {
+        "reasoning_tokens": 480
+      },
+      "total_tokens": 909
+    },
+    "response_id": "resp_08accc5a440ed285016ae84168aa0c87d0bc7c1b422dc580a9"
+  }
+]

@@ -1,0 +1,51 @@
+[
+  {
+    "attempt": "controls",
+    "unit": "Sanity",
+    "strict": false,
+    "code": 0,
+    "output": ""
+  },
+  {
+    "attempt": "controls",
+    "unit": "Negative",
+    "strict": false,
+    "code": 1,
+    "output": "/work/Negative.lean:2:22: error: Tactic `assumption` failed\n\n⊢ False\n"
+  },
+  {
+    "attempt": "baseline",
+    "unit": "Candidate",
+    "strict": false,
+    "code": 0,
+    "output": "/work/Candidate.lean:13:8: warning: declaration uses `sorry`\n"
+  },
+  {
+    "attempt": "baseline",
+    "unit": "Candidate",
+    "strict": true,
+    "code": 1,
+    "output": "/work/Candidate.lean:13:8: error: declaration uses `sorry`\n"
+  },
+  {
+    "attempt": "baseline",
+    "unit": "Consumer",
+    "strict": false,
+    "code": 0,
+    "output": "/work/Consumer.lean:8:3: warning: unused variable `hG`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n'Artin_exercise_2_11_3' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]\n"
+  },
+  {
+    "attempt": "attempt-1",
+    "unit": "Candidate",
+    "strict": false,
+    "code": 0,
+    "output": "/work/Candidate.lean:14:4: warning: this tactic is never executed\n\nNote: This linter can be disabled with `set_option linter.unreachableTactic false`\n/work/Candidate.lean:15:4: warning: this tactic is never executed\n\nNote: This linter can be disabled with `set_option linter.unreachableTactic false`\n/work/Candidate.lean:16:4: warning: this tactic is never executed\n\nNote: This linter can be disabled with `set_option linter.unreachableTactic false`\n/work/Candidate.lean:17:4: warning: this tactic is never executed\n\nNote: This linter can be disabled with `set_option linter.unreachableTactic false`\n/work/Candidate.lean:14:4: warning: 'exact exists_prime_orderOf_dvd_card (G := G) Nat.prime_two hn' tactic does nothing\n\nNote: This linter can be disabled with `set_option linter.unusedTactic false`\n/work/Candidate.lean:15:4: warning: 'exact exists_prime_orderOf_dvd_card (G := G) Nat.prime_two hf' tactic does nothing\n\nNote: This linter can be disabled with `set_option linter.unusedTactic false`\n/work/Candidate.lean:16:4: warning: 'exact exists_prime_orderOf_dvd_card (G := G) 2 hn' tactic does nothing\n\nNote: This linter can be disabled with `set_option linter.unusedTactic false`\n/work/Candidate.lean:17:4: warning: 'exact exists_prime_orderOf_dvd_card (G := G) 2 hf' tactic does nothing\n\nNote: This linter can be disabled with `set_option linter.unusedTactic false`\n"
+  },
+  {
+    "attempt": "attempt-1",
+    "unit": "Consumer",
+    "strict": false,
+    "code": 0,
+    "output": "/work/Consumer.lean:8:3: warning: unused variable `hG`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n'Artin_exercise_2_11_3' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+  }
+]

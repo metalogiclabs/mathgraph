@@ -1,0 +1,5 @@
+{
+  "ordinary_lean_compilation": "ACCEPTS_PLACEHOLDER_WITH_WARNING",
+  "strict_lean_ci": "REJECTS_PLACEHOLDER",
+  "axiom_audit": "REJECTS_SORRY_AXIOM"
+}
