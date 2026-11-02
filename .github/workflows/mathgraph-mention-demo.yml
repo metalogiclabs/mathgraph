@@ -30,16 +30,40 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 24bf5980145b1e4f5cc0b3e5cd04c149388b7d7e
+          ref: ef96cdee353bd2ff5d710506e8574444a50e19d0
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
       - name: Verify trusted controller tests
         run: node --test integrations/mathgraph-check-github/mention-*.test.mjs
+      - name: Select the configured publisher
+        id: publisher
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$APP_PRIVATE_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Mint a repository-scoped MathGraph Check token
+        id: mathgraph-app
+        if: steps.publisher.outputs.enabled == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23lioiUs5KfHD7mkkw
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-issues: write
+          permission-contents: write
+          permission-pull-requests: write
       - name: Acknowledge the command before Lean setup
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_APP_TOKEN: ${{ steps.mathgraph-app.outputs.token }}
+          MATHGRAPH_APP_SLUG: ${{ steps.mathgraph-app.outputs.app-slug }}
           MATHGRAPH_DEMO_PHASE: prepare
         run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
       - name: Prepare isolated pinned Lean
@@ -57,11 +81,15 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_APP_TOKEN: ${{ steps.mathgraph-app.outputs.token }}
+          MATHGRAPH_APP_SLUG: ${{ steps.mathgraph-app.outputs.app-slug }}
         run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
       - name: Settle an interrupted progress card
         if: failure() || cancelled()
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_APP_TOKEN: ${{ steps.mathgraph-app.outputs.token }}
+          MATHGRAPH_APP_SLUG: ${{ steps.mathgraph-app.outputs.app-slug }}
           MATHGRAPH_DEMO_PHASE: finalize
         run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
       - name: Preserve native receipt and any verified repair
@@ -90,12 +118,34 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 24bf5980145b1e4f5cc0b3e5cd04c149388b7d7e
+          ref: ef96cdee353bd2ff5d710506e8574444a50e19d0
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+      - name: Select the configured publisher
+        id: publisher
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$APP_PRIVATE_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Mint a repository-scoped MathGraph Check token
+        id: mathgraph-app
+        if: steps.publisher.outputs.enabled == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: Iv23lioiUs5KfHD7mkkw
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-issues: write
       - name: Withdraw source-stale observations without model access
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_APP_TOKEN: ${{ steps.mathgraph-app.outputs.token }}
+          MATHGRAPH_APP_SLUG: ${{ steps.mathgraph-app.outputs.app-slug }}
         run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
