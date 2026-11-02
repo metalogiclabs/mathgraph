@@ -30,13 +30,18 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: afa5c627a35b5b31339bde19faef118e9e74d301
+          ref: 24bf5980145b1e4f5cc0b3e5cd04c149388b7d7e
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
       - name: Verify trusted controller tests
         run: node --test integrations/mathgraph-check-github/mention-*.test.mjs
+      - name: Acknowledge the command before Lean setup
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_DEMO_PHASE: prepare
+        run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
       - name: Prepare isolated pinned Lean
         run: |
           set -euo pipefail
@@ -52,6 +57,12 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
+      - name: Settle an interrupted progress card
+        if: failure() || cancelled()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_DEMO_PHASE: finalize
         run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
       - name: Preserve native receipt and any verified repair
         if: always()
@@ -79,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: afa5c627a35b5b31339bde19faef118e9e74d301
+          ref: 24bf5980145b1e4f5cc0b3e5cd04c149388b7d7e
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
