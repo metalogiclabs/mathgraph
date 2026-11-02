@@ -1,0 +1,47 @@
+{
+  "origin": {
+    "origin_run": 41401656441,
+    "artifact_id": 13122380415,
+    "artifact_sha256": "c7dcb349a595a452cbb6e83c907341d79a43bd43befd9186358091c08649fe5a",
+    "proposals_sha256": "b5147efc00020923080047af9ab51755f6383421d3318b3a4ede0bf2f4dcc86c",
+    "source_sha256": "71bb64393b60fca6b0ec1c0f5338414937a854286bce766554eec5cebfb75f1a",
+    "target_sha256": "e241d4c1753fd748054b544ce7969004c1f93e62ad58fd501c9b84cde2624f07",
+    "original_comparison": "NO_NATIVE_FEEDBACK_ADVANTAGE_SHOWN",
+    "diagnostic": "/work/Candidate.lean:16:47: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\nx : G\nhx : orderOf x = 2\nhx1 : ∀ (y : G), orderOf y = 2 → y = x\nhx2 : x ^ 2 = 1\nhxne : x ≠ 1\ny : G\n⊢ (y * x * y ^ (-1)) ^ 2 = y * x ^ 2 * y ^ (-1)\n",
+    "post_hoc": true,
+    "api_calls": 0
+  },
+  "frozen": {
+    "schema": "mathgraph.frozen-formal-target.v1",
+    "name": "Artin_exercise_2_4_19",
+    "source": "import Mathlib\n\nopen Function Fintype Subgroup Ideal Polynomial Submodule Zsqrtd\nopen scoped BigOperators\n\n\n\n/-Informal Statement\n\nProve that if a group contains exactly one element of order 2 , then that element is in the center of the group.\n-/\n\ntheorem Artin_exercise_2_4_19 {G : Type*} [Group G] {x : G}\n  (hx : orderOf x = 2) (hx1 : ∀ y, orderOf y = 2 → y = x) :\n  x ∈ center G := by\n  sorry\n",
+    "header": "theorem Artin_exercise_2_4_19 {G : Type*} [Group G] {x : G}\n  (hx : orderOf x = 2) (hx1 : ∀ y, orderOf y = 2 → y = x) :\n  x ∈ center G",
+    "prelude": "import Mathlib\nopen Function Fintype Subgroup Ideal Polynomial Submodule Zsqrtd\nopen scoped BigOperators\n\n",
+    "target_type": "∀ {G : Type*} [Group G] {x : G}\n  (hx : orderOf x = 2) (hx1 : ∀ y, orderOf y = 2 → y = x), x ∈ center G",
+    "source_sha256": "71bb64393b60fca6b0ec1c0f5338414937a854286bce766554eec5cebfb75f1a",
+    "target_sha256": "e241d4c1753fd748054b544ce7969004c1f93e62ad58fd501c9b84cde2624f07",
+    "provenance": {
+      "repository": "marcusm117/ProofNet-Verified",
+      "commit": "14879cb23e078d122adecd9578dd26a7304f753b",
+      "path": "data/archive/proofnet-verified-4.28/proofnet-2.lean",
+      "sha256": "71bb64393b60fca6b0ec1c0f5338414937a854286bce766554eec5cebfb75f1a"
+    },
+    "registered_repair": false,
+    "informal_equivalence": "NOT_CERTIFIED"
+  },
+  "status": "ORIGINAL_TARGET_VERIFIED",
+  "diagnostic": "/work/Consumer.lean:8:3: warning: unused variable `hx`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n/work/Consumer.lean:8:24: warning: unused variable `hx1`\n\nNote: This linter can be disabled with `set_option linter.unusedVariables false`\n'Artin_exercise_2_4_19' depends on axioms: [propext, Classical.choice, Quot.sound]\n",
+  "axioms": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "source_sha256": "6b99cb751a9d706737098be47546fdb67ff97be2afaf3189c14791119a64bb70",
+  "target_sha256": "e241d4c1753fd748054b544ce7969004c1f93e62ad58fd501c9b84cde2624f07",
+  "proof_body": "by\n  have hx2 : x ^ 2 = 1 := by\n    simpa only [hx] using pow_orderOf_eq_one x\n  have hxne : x ≠ 1 := by\n    intro h\n    simp [h] at hx\n  have hc (y : G) : y * x * y⁻¹ = x := by\n    have hp : (y * x * y⁻¹) ^ 2 = 1 := by\n      calc\n        (y * x * y⁻¹) ^ 2 = y * x ^ 2 * y⁻¹ := by simp only [pow_succ, pow_zero, mul_one]; group\n        _ = 1 := by simp [hx2]\n    have hd : orderOf (y * x * y⁻¹) ∣ 2 :=\n      orderOf_dvd_of_pow_eq_one hp\n    rcases (Nat.dvd_prime Nat.prime_two).mp hd with h | h\n    · have hz : y * x * y⁻¹ = 1 := by\n        simpa only [h, pow_one] using pow_orderOf_eq_one (y * x * y⁻¹)\n      have he : x = 1 := by\n        have hh := congrArg (fun z : G => y⁻¹ * z * y) hz\n        simpa [mul_assoc] using hh\n      exact (hxne he).elim\n    · exact hx1 _ h\n  rw [Subgroup.mem_center_iff]\n  intro y\n  have h := congrArg (fun z : G => z * y) (hc y)\n  simpa only [mul_assoc, inv_mul_cancel, mul_one] using h",
+  "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+  "post_hoc": true,
+  "registered_proof_constructor_used": false,
+  "api_calls": 0,
+  "native_attempts": 1
+}

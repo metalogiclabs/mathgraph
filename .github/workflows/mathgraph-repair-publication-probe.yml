@@ -1,0 +1,31 @@
+name: MathGraph verified repair publication probe
+on:
+  push:
+    branches: ['feat/mathgraph-mention-agent-v1-20261102']
+    paths: ['.github/workflows/mathgraph-repair-publication-probe.yml']
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  publish-verified-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Publish only the already verified source-bound repair
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import {createHash} from 'node:crypto';
+          const root='https://api.github.com/repos/metalogiclabs/mathgraph';
+          const headers={Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','Content-Type':'application/json','User-Agent':'MathGraph-Publication-Probe'};
+          const api=async path=>{const r=await fetch(root+path,{headers});if(!r.ok)throw Error('SOURCE_READ_FAILED');return r.json();};
+          const original=await api('/pulls/233');
+          if(original.head.sha!=='f8ac2d48983ad9a30658491cb39297738af6c869'||original.state!=='open')throw Error('SOURCE_MOVED');
+          const file=await api('/contents/mathgraph-demo/ReverseLength.lean?ref=f2f8cc6df7a228371012acaf9c257e348080d5f0');
+          const actual=createHash('sha256').update(Buffer.from(file.content,'base64')).digest('hex');
+          if(actual!=='2d0ac5bdca15ff2e54f235c2516d744e6df661e8cbb246b2eadf1042ea50c840')throw Error('VERIFIED_SOURCE_MISMATCH');
+          const r=await fetch(root+'/pulls',{method:'POST',headers,body:JSON.stringify({head:'mathgraph/repair-233-6a9c6e6724-6567069205',base:'demo/mathgraph-original-claim-v1-20261102',title:'Prove the original list-reversal claim without assuming its conclusion',body:'Controlled demonstration. Exact repaired source SHA256 2d0ac5bdca15ff2e54f235c2516d744e6df661e8cbb246b2eadf1042ea50c840 was accepted by native Lean 4.28.0 against the unchanged original consumer. Declared axiom: propext. No general semantic certification. Native evidence: https://github.com/metalogiclabs/mathgraph/actions/runs/41373882169',draft:true})});
+          const d=await r.json();
+          console.log(JSON.stringify({http_status:r.status,created:r.ok,repair_pr:r.ok?d.html_url:null,existing_repair_pr:r.status===422&&JSON.stringify(d.errors??[]).includes('already exists'),actions_pr_creation_disabled:r.status===403&&/GitHub Actions is not permitted to create or approve pull requests/i.test(d.message??'')}));
+          JS

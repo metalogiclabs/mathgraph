@@ -1,0 +1,7 @@
+FROM ubuntu:24.04
+RUN apt-get update && apt-get install -y --no-install-recommends libgmp10 && rm -rf /var/lib/apt/lists/*
+COPY lean /opt/lean
+ENV LEAN_PATH=/work:/opt/lean/lib/lean LEAN_NUM_THREADS=1 HOME=/tmp
+USER 65534:65534
+WORKDIR /work
+ENTRYPOINT ["/opt/lean/bin/lean"]

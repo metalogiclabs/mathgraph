@@ -1,0 +1,21 @@
+name: MathGraph mention agent v1
+on:
+  push:
+    branches: ['feat/mathgraph-mention-agent-v1-20261102']
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/mention-*.mjs'
+      - 'integrations/mathgraph-check-github/MENTION_AGENT_V1.md'
+      - '.github/workflows/mathgraph-mention-agent-v1.yml'
+permissions:
+  contents: read
+jobs:
+  bounded-mention-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs

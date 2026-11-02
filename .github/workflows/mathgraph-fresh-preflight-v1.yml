@@ -1,0 +1,60 @@
+name: MathGraph fresh theorem native preflight
+on:
+  push:
+    branches: ['feat/mathgraph-mention-agent-v1-20261102']
+    paths: ['.github/workflows/mathgraph-fresh-preflight-v1.yml']
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Check generic statement and feedback logic
+        run: node --test integrations/mathgraph-check-github/mention-fresh-proof-v1.test.mjs
+      - name: Freeze the prospective statement before any model access
+        run: node integrations/mathgraph-check-github/run-fresh-proof-v1.mjs --freeze-only
+      - name: Build SHA-pinned Lean sandbox
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/fresh-image/lean"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://github.com/leanprover/lean4/releases/download/v4.28.0/lean-4.28.0-linux.tar.zst -o "$RUNNER_TEMP/fresh-lean.tar.zst"
+          echo "ceb3a3f844f7aebf63245e2b51c28d5b0ed38942c19f93cf3febd520302160bd  $RUNNER_TEMP/fresh-lean.tar.zst" | sha256sum -c -
+          tar --zstd -xf "$RUNNER_TEMP/fresh-lean.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/fresh-image/lean"
+          docker build -t mathgraph-lean-demo:v1 -f integrations/mathgraph-check-github/Dockerfile.native-demo "$RUNNER_TEMP/fresh-image"
+          docker image inspect --format '{{.Id}}' mathgraph-lean-demo:v1
+          echo "$RUNNER_TEMP/fresh-image/lean/bin" >> "$GITHUB_PATH"
+      - name: Prepare exact Mathlib revision
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/fresh-mathlib"
+          cd "$RUNNER_TEMP/fresh-mathlib"
+          printf '%s\n' 'leanprover/lean4:v4.28.0' > lean-toolchain
+          cat > lakefile.lean <<'LEAN'
+          import Lake
+          open Lake DSL
+          package FreshProofExperiment where
+          require mathlib from git "https://github.com/leanprover-community/mathlib4.git" @ "8f9d9cff6bd728b17a24e163c9402775d9e6a365"
+          LEAN
+          lake update
+          node --input-type=module -e "import fs from 'node:fs';const d=JSON.parse(fs.readFileSync('lake-manifest.json'));if(d.packages.find(p=>p.name==='mathlib')?.rev!=='8f9d9cff6bd728b17a24e163c9402775d9e6a365')throw Error('MATHLIB_REVISION_MISMATCH')"
+          lake exe cache get
+          echo "MATHGRAPH_NATIVE_DEPS=$RUNNER_TEMP/fresh-mathlib/.lake/packages" >> "$GITHUB_ENV"
+      - name: Run native positive, negative, ordinary CI and strict CI controls without API credentials
+        run: node integrations/mathgraph-check-github/run-fresh-proof-v1.mjs --native-preflight-only
+      - name: Preserve frozen protocol and native controls
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mathgraph-fresh-native-preflight
+          path: |
+            ${{ runner.temp }}/mathgraph-fresh-proof/*.json
+            ${{ runner.temp }}/fresh-mathlib/lake-manifest.json
+          retention-days: 14
+          if-no-files-found: warn

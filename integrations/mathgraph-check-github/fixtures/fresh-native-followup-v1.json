@@ -1,0 +1,12 @@
+{
+  "origin_run": 41401656441,
+  "artifact_id": 13122380415,
+  "artifact_sha256": "c7dcb349a595a452cbb6e83c907341d79a43bd43befd9186358091c08649fe5a",
+  "proposals_sha256": "b5147efc00020923080047af9ab51755f6383421d3318b3a4ede0bf2f4dcc86c",
+  "source_sha256": "71bb64393b60fca6b0ec1c0f5338414937a854286bce766554eec5cebfb75f1a",
+  "target_sha256": "e241d4c1753fd748054b544ce7969004c1f93e62ad58fd501c9b84cde2624f07",
+  "original_comparison": "NO_NATIVE_FEEDBACK_ADVANTAGE_SHOWN",
+  "diagnostic": "/work/Candidate.lean:16:47: error: unsolved goals\nG : Type u_1\ninst\u271d : Group G\nx : G\nhx : orderOf x = 2\nhx1 : \u2200 (y : G), orderOf y = 2 \u2192 y = x\nhx2 : x ^ 2 = 1\nhxne : x \u2260 1\ny : G\n\u22a2 (y * x * y ^ (-1)) ^ 2 = y * x ^ 2 * y ^ (-1)\n",
+  "post_hoc": true,
+  "api_calls": 0
+}

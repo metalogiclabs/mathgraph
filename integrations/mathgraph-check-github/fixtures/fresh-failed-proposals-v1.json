@@ -1,0 +1,53 @@
+[
+  {
+    "arm": "shared-first",
+    "proof_body": "by\n  have hc (y : G) : y * x * y⁻¹ = x := by\n    apply hx1\n    calc\n      orderOf (y * x * y⁻¹) = orderOf (y⁻¹ * (y * x)) := orderOf_mul_comm _ _\n      _ = 2 := by simpa only [inv_mul_cancel_left] using hx\n  rw [Subgroup.mem_center_iff]\n  intro y\n  have h := congrArg (fun z : G => z * y) (hc y)\n  simpa only [mul_assoc, inv_mul_cancel, mul_one] using h",
+    "usage": {
+      "input_tokens": 217,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 674,
+      "output_tokens_details": {
+        "reasoning_tokens": 516
+      },
+      "total_tokens": 891
+    },
+    "response_id": "resp_00ebd4fa1538014a016ae8318e63f087d0bb8c62e42498e4ac"
+  },
+  {
+    "arm": "llm-alone-revision",
+    "proof_body": "by\n  have hc (y : G) : y * x * y⁻¹ = x := by\n    apply hx1\n    calc\n      orderOf (y * x * y⁻¹) = orderOf (y⁻¹ * (y * x)) := orderOf_mul_comm _ _\n      _ = 2 := by simpa only [inv_mul_cancel_left] using hx\n  rw [Subgroup.mem_center_iff]\n  intro y\n  have h := congrArg (fun z : G => z * y) (hc y)\n  simpa only [mul_assoc, inv_mul_cancel, mul_one] using h",
+    "usage": {
+      "input_tokens": 382,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 417,
+      "output_tokens_details": {
+        "reasoning_tokens": 259
+      },
+      "total_tokens": 799
+    },
+    "response_id": "resp_04da6c36f22c2e81016ae831a0d21087d0869f08e6354e9fe7"
+  },
+  {
+    "arm": "native-feedback-revision",
+    "proof_body": "by\n  have hx2 : x ^ 2 = 1 := by\n    simpa only [hx] using pow_orderOf_eq_one x\n  have hxne : x ≠ 1 := by\n    intro h\n    simp [h] at hx\n  have hc (y : G) : y * x * y⁻¹ = x := by\n    have hp : (y * x * y⁻¹) ^ 2 = 1 := by\n      calc\n        (y * x * y⁻¹) ^ 2 = y * x ^ 2 * y⁻¹ := by group\n        _ = 1 := by simp [hx2]\n    have hd : orderOf (y * x * y⁻¹) ∣ 2 :=\n      orderOf_dvd_of_pow_eq_one hp\n    rcases (Nat.dvd_prime Nat.prime_two).mp hd with h | h\n    · have hz : y * x * y⁻¹ = 1 := by\n        simpa only [h, pow_one] using pow_orderOf_eq_one (y * x * y⁻¹)\n      have he : x = 1 := by\n        have hh := congrArg (fun z : G => y⁻¹ * z * y) hz\n        simpa [mul_assoc] using hh\n      exact (hxne he).elim\n    · exact hx1 _ h\n  rw [Subgroup.mem_center_iff]\n  intro y\n  have h := congrArg (fun z : G => z * y) (hc y)\n  simpa only [mul_assoc, inv_mul_cancel, mul_one] using h",
+    "usage": {
+      "input_tokens": 412,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 896,
+      "output_tokens_details": {
+        "reasoning_tokens": 516
+      },
+      "total_tokens": 1308
+    },
+    "response_id": "resp_0368250db0a9a19b016ae831ad6d2087d0a9fa85bab15ff994"
+  }
+]
