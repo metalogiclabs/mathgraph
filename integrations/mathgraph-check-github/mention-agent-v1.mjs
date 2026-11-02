@@ -58,7 +58,8 @@ export function renderResult(r){
  if(r.state==='STALE')lines.push('Findings withheld. Run the command again on the current revision.');
  if(r.state==='REPAIR_NOT_CONFIGURED')lines.push('The isolated repair executor is not yet connected. No source was changed.');
  if(r.state==='UNKNOWN')lines.push('No conclusion was established. No automatic paid retry was made.');
- lines.push('**Proof:** not replayed here · **Meaning:** unverified · **Result:** advisory');
+ if(r.proof?.status==='NATIVE_REPLAY_OBSERVED')lines.push('**Proof:** native replay observed for `'+escape(r.proof.theorem)+'` · **Meaning:** unverified · **Result:** advisory');
+ else lines.push('**Proof:** not replayed here · **Meaning:** unverified · **Result:** advisory');
  if(r.sha)lines.push('<details><summary>Evidence and scope</summary>\n\nRevision: `'+r.sha+'`\n\n'+(r.baseSha?'Diff base: `'+r.baseSha+'`\n\n':'')+(r.ci?'CI observation: `'+r.ci+'`\n\n':'')+'The model inspected a bounded source snapshot. Proposed findings require independent checking; no merge approval.\n\n</details>');
  return lines.join('\n\n');
 }
@@ -77,7 +78,7 @@ export function openAIModel({apiKey,policy,fetcher=fetch}={}){
   return validateProposal(JSON.parse(texts[0]));
  };
 }
-export async function runMention(event,{policy,stateDir,github,model,recover=false}){
+export async function runMention(event,{policy,stateDir,github,model,observeProof,recover=false}){
  validatePolicy(policy);
  const command=parseCommand(event?.comment?.body,policy.handle);
  if(!command||event.action!=='created'||!event.issue?.pull_request||!policy.repositories.includes(event.repository?.full_name)||event.sender?.type!=='User'||!policy.userIds.includes(event.sender.id)||event.comment.user?.id!==event.sender.id||event.comment.user?.type!=='User'||!Number.isSafeInteger(event.comment.id)||event.comment.id<1||!Number.isSafeInteger(event.issue.number)||event.issue.number<1)return {state:'IGNORED'};
@@ -104,16 +105,19 @@ export async function runMention(event,{policy,stateDir,github,model,recover=fal
  if(reserved!=='RESERVED'){await github.publish(renderResult({state:'BUDGET_EXHAUSTED'}));return {state:'BUDGET_EXHAUSTED'};}
  const commentId=await github.publish(renderResult({state:'CHECKING'}));
  await writeFile(join(stateDir,'jobs',key,'progress.json'),JSON.stringify({commentId}),{mode:0o600});
- let result;
+ let result,proof,subject;
  try{
   const snapshot=await github.snapshot(repository,number);
   if(snapshot.repository!==repository||snapshot.number!==number||!shaPattern.test(snapshot.sha))fail('INVALID_SOURCE');
-  const analysis=analyze(snapshot);
+  subject=snapshot;
+  proof=typeof observeProof==='function'?await observeProof(snapshot):{status:'NOT_CONFIGURED_FOR_SOURCE',meaning:'UNVERIFIED'};
+  const analysis={...analyze(snapshot),native_proof_observation:proof};
   if(Buffer.byteLength(JSON.stringify({source:snapshot,observations:analysis}))>policy.maxInputBytes)fail('INPUT_LIMIT');
   const proposal=validateProposal(await model({snapshot,analysis}));
   const head=await github.head(repository,number);
-  result=head!==snapshot.sha?{state:'STALE',sha:snapshot.sha}:{state:'COMPLETED',sha:snapshot.sha,baseSha:snapshot.base_sha,proposal,ci:analysis.ci.state};
- }catch{result={state:'UNKNOWN'};}
+  result=head!==snapshot.sha?{state:'STALE',sha:snapshot.sha}:{state:'COMPLETED',sha:snapshot.sha,baseSha:snapshot.base_sha,proof,proposal,ci:analysis.ci.state};
+ }catch{result={state:'UNKNOWN',sha:subject?.sha,baseSha:subject?.base_sha,proof};}
+ if(result.sha){try{if(await github.head(repository,number)!==result.sha)result={state:'STALE',sha:result.sha};}catch{result={state:'UNKNOWN'};}}
  await writeFile(join(stateDir,'jobs',key,'result.json'),JSON.stringify(result),{mode:0o600});
  await github.publish(renderResult(result),commentId);
  return result;
