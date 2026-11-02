@@ -24,3 +24,15 @@ class ProbeShapeTests(unittest.TestCase):
     def test_unsafe_import_refused(self):
         import native
         with self.assertRaises(ValueError): native.validate_probe('import os\ndef test_x():\n    assert os.getenv("KEY") is None\n')
+
+class MetadataTests(unittest.TestCase):
+    def test_static_package_metadata_without_running_build_backend(self):
+        import tempfile
+        from pathlib import Path
+        import native
+        from importlib.metadata import PathDistribution
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);(root/'pyproject.toml').write_text('[tool.poetry]\nname="example-package"\nversion="1.2.3"\n')
+            output=native.initialize_metadata(root)
+            self.assertEqual(PathDistribution(output).version,'1.2.3')
+            self.assertFalse((root/'example_package').exists())

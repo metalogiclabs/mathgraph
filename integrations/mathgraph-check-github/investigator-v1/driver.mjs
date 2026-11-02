@@ -54,7 +54,10 @@ if(phase==='prepare'){
  const patch=admitPatch(response.proposal,snapshot);await save('patch',patch);await save('repair-state',{state:'PATCH_PROPOSED',model_calls:1,patch_digest:digest(patch)});await seal();
 }else if(phase==='assess'){
  await verify();const state=await load('state');let report;
- if(state.state!=='PROBES_PROPOSED')report={status:'UNKNOWN',reason:state.reason,context};
+ if(state.state!=='PROBES_PROPOSED'){
+ let snapshot;try{snapshot=await load('snapshot');}catch{}
+ report={status:'UNKNOWN',reason:state.reason,stage:state.stage,context,subject:snapshot?{repository:snapshot.repository,source_repository:snapshot.source_repository,pr:snapshot.pr,base_sha:snapshot.base_sha,head_sha:snapshot.head_sha}:undefined};
+ }
  else{
  const snapshot=await load('snapshot'),plan=admitPlan(await load('plan'),snapshot),native=await load('native');
  ensure(digest(plan.tests)===state.test_digest&&native.verifier_sha===context.verifier_sha&&native.head_sha===snapshot.head_sha&&native.test_digest===state.test_digest,'NATIVE_RECEIPT_MISMATCH');

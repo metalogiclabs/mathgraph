@@ -1,6 +1,6 @@
 """No-secret native adapter. Repository/model code runs only in Docker, offline."""
 from pathlib import Path
-import subprocess, json, hashlib, os, sys, tarfile, urllib.request, shutil, ast, xml.etree.ElementTree as ET
+import subprocess, json, hashlib, os, sys, tarfile, urllib.request, shutil, ast, re, tomllib, xml.etree.ElementTree as ET
 
 def junit_result(text):
     if not text:return dict(tests=0,failures=0,errors=0,skipped=0)
@@ -44,6 +44,7 @@ def main():
         archive.write_bytes(data);destination=workspace/label;destination.mkdir(exist_ok=True)
         with tarfile.open(archive) as t:t.extractall(destination,filter='data')
         children=[p for p in destination.iterdir() if p.is_dir()];assert len(children)==1
+        initialize_metadata(children[0])
         return children[0]
     head=checkout('head',snapshot['head_sha'])
     for f in snapshot['files']:assert (head/f['path']).read_text()==f['head'],'HEAD_SOURCE_BYTES_CHANGED'
@@ -130,6 +131,18 @@ def validate_probe(text):
             name=node.func.id if isinstance(node.func,ast.Name) else node.func.attr if isinstance(node.func,ast.Attribute) else ''
             if name in {'exec','eval','compile','__import__','open','exit','quit','skip','xfail','getattr','setattr','delattr','getenv','system','popen'}:raise ValueError('UNSUPPORTED_PROBE_CALL')
     return True
+
+def initialize_metadata(repo):
+    # Static distribution metadata enables importlib.metadata.version without
+    # installing the target package or executing its build backend.
+    config=tomllib.loads((repo/'pyproject.toml').read_text())
+    project=config.get('project') or config.get('tool',{}).get('poetry',{})
+    name=project.get('name');version=project.get('version')
+    if not isinstance(name,str) or not re.fullmatch(r'[A-Za-z0-9_.-]+',name) or not isinstance(version,str) or not re.fullmatch(r'[A-Za-z0-9_.+!-]+',version):raise ValueError('STATIC_PACKAGE_METADATA_REQUIRED')
+    normalized=re.sub(r'[-_.]+','_',name)
+    metadata=repo/(normalized+'-'+version+'.dist-info');metadata.mkdir(exist_ok=True)
+    (metadata/'METADATA').write_text('Metadata-Version: 2.1\nName: '+name+'\nVersion: '+version+'\n')
+    return metadata
 
 if __name__=='__main__':
     try:main()
