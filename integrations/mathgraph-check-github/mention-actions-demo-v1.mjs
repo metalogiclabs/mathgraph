@@ -13,15 +13,39 @@ export function demoCommand(e,{attempt}={}){
  if(attempt!==1||e?.action!=='created'||e.repository?.full_name!==repository||e.sender?.id!==userId||e.sender.type!=='User'||e.comment?.user?.id!==userId||e.comment.user.type!=='User'||!e.issue?.pull_request||!Number.isSafeInteger(e.issue.number)||e.issue.number<1||!Number.isSafeInteger(e.comment.id)||e.comment.id<1)return null;
  return parseCommand(e.comment.body,'MathGraph');
 }
-export function demoComment({command,sha,native,runURL,repairURL,proposal}={}){
- const lines=['### MathGraph Check'];
- if(command==='check'&&native?.status==='CLAIM_NOT_ESTABLISHED')lines.push('**Proof compiles. The original claim is not established.**','The submitted theorem requires the conclusion as an assumption. Lean accepts that theorem; a consumer asking for the original claim rejects it.','| Check | Result |\n|---|---|\n| Submitted proof | Compiles |\n| Original claim | Not established by this proof |\n| Extra assumption | The conclusion itself |','**Next:** `@MathGraph -fix`');
- else if(native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push(command==='fix'?'**Repair verified against the original claim.**':'**The original claim passes its native check.**','Lean accepted the theorem and its unchanged consumer, with its declared axiom audit.');
- else lines.push('**Verification is incomplete.**','No verified repair or mathematical conclusion is established.');
- if(repairURL)lines.push('**[Review the repair]('+repairURL+')**');
- else if(command==='fix'&&native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push('The verified patch is available in this run’s artifact. Opening a repair PR was not confirmed.');
- lines.push('<details><summary>Evidence and scope</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Axioms: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'unresolved')+'. Controlled demo: list reversal. The intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions.\n\n</details>');
+const brandHeader='### <img src="https://raw.githubusercontent.com/metalogiclabs/mathgraph/5a353b197dcc8b4bca66566b5c5b71a226073ce2/website/public/mathgraph-mark-black.png#gh-light-mode-only" width="28" height="28" alt="" /> MathGraph Check';
+export function demoProgress({command,sha,runId,stage='prepare',runURL}={}){
+ const labels={prepare:'Preparing the independent check',check:'Checking the original claim',repair:'Building a candidate repair',verify:'Verifying the repair with Lean',publish:'Opening the verified repair'};
+ return ['<!-- mathgraph-progress:'+runId+' -->',brandHeader,'**'+(labels[stage]??labels.check)+'…**','`'+(command==='fix'?'@MathGraph -fix':'@MathGraph -check')+'` · Revision: `'+sha+'`','The result will update here. '+(runURL?'[Follow the run]('+runURL+').':''),'Controlled demo · List reversal'].join('\n\n');
+}
+export function ownsDemoProgress(comment,{sha,runId}={}){
+ return comment?.user?.login==='github-actions[bot]'&&typeof comment.body==='string'&&comment.body.includes('<!-- mathgraph-progress:'+runId+' -->')&&comment.body.includes('Revision: `'+sha+'`')&&!comment.body.includes('<!-- mathgraph-withdrawn:');
+}
+export function demoComment({command,sha,native,runURL,repairURL,proposal,repairPerformed=false}={}){
+ const lines=[brandHeader];
+ if(command==='check'&&native?.status==='CLAIM_NOT_ESTABLISHED')lines.push('**Proof compiles. The original claim is not established.**','The proof assumes the very conclusion it promises to prove.','| Submitted proof | Original claim |\n|---|---|\n| Compiles in Lean | Not established by this proof |','**Repair it:** comment `@MathGraph -fix`');
+ else if(native?.status==='ORIGINAL_TARGET_VERIFIED'){
+  lines.push(command==='fix'&&repairPerformed?'**Repair verified against the original claim.**':'**The original claim passes its native check.**');
+  if(command==='fix'&&repairPerformed)lines.push('| Before | After |\n|---|---|\n| Conclusion assumed | Conclusion proved |\n| Extra hypothesis required | No extra hypothesis |');
+  lines.push('Lean accepted the theorem and the unchanged consumer that requires the original claim.');
+ }else lines.push('**Verification is incomplete.**','No verified repair or mathematical conclusion is established.');
+ if(repairURL)lines.push('**[Review the repair →]('+repairURL+')** · Draft PR · Your review decides the merge');
+ else if(command==='fix'&&repairPerformed&&native?.status==='ORIGINAL_TARGET_VERIFIED')lines.push('The verified patch is available in this run’s artifact. Opening a repair PR was not confirmed.');
+ lines.push('Controlled demo · List reversal');
+ lines.push('<details><summary>Verification receipt</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Lean 4.28.0 · Axioms: '+(Array.isArray(native?.axioms)?native.axioms.join(', ')||'none':'unresolved')+'.\n\nThe intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions as `github-actions[bot]`.\n\n</details>');
  return lines.join('\n\n');
+}
+export async function startDemoComment({api,root,number,marker,progressArgs,phase}){
+ ensure(['prepare','run','finalize'].includes(phase),'INVALID_PHASE');
+ const comments=await api(root+'/issues/'+number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');
+ const existing=comments.find(c=>c.user?.login==='github-actions[bot]'&&c.body?.startsWith(marker));
+ if(existing&&!ownsDemoProgress(existing,progressArgs))return null;
+ if(phase==='finalize'){
+  if(existing)await api(root+'/issues/comments/'+existing.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({...progressArgs,native:{status:'UNKNOWN'}})}});
+  return null;
+ }
+ const comment=existing??await api(root+'/issues/'+number+'/comments',{method:'POST',body:{body:marker+'\n'+demoProgress(progressArgs)}});ensure(Number.isSafeInteger(comment.id),'COMMENT_NOT_CREATED');
+ return phase==='prepare'?null:comment;
 }
 export async function createVerifiedRepair({api,root,pr,sha,sourceFile,repaired,event,runURL}){
  const fresh=async()=>{const live=await api(root+'/pulls/'+event.issue.number);ensure(live.state==='open'&&live.head?.sha===sha,'SOURCE_MOVED');};
@@ -71,18 +95,25 @@ async function main(){
  const pr=await api(root+'/pulls/'+event.issue.number);const sha=pr.head?.sha;ensure(pr.state==='open'&&/^[a-f0-9]{40}$/.test(sha??'')&&pr.head.repo?.full_name===repository&&pr.base.repo?.full_name===repository,'FIRST_PARTY_SOURCE_REQUIRED');
  const sourceFile=await api(root+'/contents/'+demoPath+'?ref='+sha);ensure(sourceFile.encoding==='base64'&&sourceFile.size<=4000,'UNSUPPORTED_DEMO_FILE');const source=Buffer.from(sourceFile.content,'base64').toString('utf8');
  ensure(source===brokenSource||['by simp','by simpa','by exact List.length_reverse'].some(p=>repairedSource(p)===source),'UNSUPPORTED_DEMO_SOURCE');
- const marker='<!-- mathgraph-actions-demo-v1:'+event.comment.id+' -->';const comments=await api(root+'/issues/'+event.issue.number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');if(comments.some(c=>c.user?.login==='github-actions[bot]'&&c.body?.startsWith(marker)))return;
- const comment=await api(root+'/issues/'+event.issue.number+'/comments',{method:'POST',body:{body:marker+'\n### MathGraph Check\nChecking the proof against the original claim…'}});ensure(Number.isSafeInteger(comment.id),'COMMENT_NOT_CREATED');
- const runURL='https://github.com/'+repository+'/actions/runs/'+runId;const work=await mkdtemp(join(tmpdir(),'mathgraph-native-'));let receipt,repairURL=null,repairNumber=null,proposal=null,modelCalls=0;
+ const phase=process.env.MATHGRAPH_DEMO_PHASE??'run';ensure(['prepare','run','finalize'].includes(phase),'INVALID_PHASE');
+ const runURL='https://github.com/'+repository+'/actions/runs/'+runId;
+ const marker='<!-- mathgraph-actions-demo-v1:'+event.comment.id+' -->';
+ const progressArgs={command,sha,runId,runURL};
+ const comment=await startDemoComment({api,root,number:event.issue.number,marker,progressArgs,phase});if(!comment)return;
+ const progress=async stage=>{const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoProgress({...progressArgs,stage})}});};
+ const work=await mkdtemp(join(tmpdir(),'mathgraph-native-'));let receipt,repairURL=null,repairNumber=null,proposal=null,modelCalls=0,repairPerformed=false;
  try{
   const nativeRun=await dockerRunner(work),trace=[];
   const run=async(unit,source)=>{const r=await nativeRun(unit,source);trace.push({unit,exit_code:r.code,output:r.output.slice(0,12000)});await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-native-trace.json'),JSON.stringify(trace,null,2),{mode:0o600});return r;};
   const sanity=await run('Sanity','import Std\nexample : 1 + 1 = 2 := by decide\n');const negative=await run('Negative','import Std\nexample : False := by trivial\n');ensure(sanity.code===0&&negative.code===1,'NATIVE_CONTROLS_FAILED');
+  await progress('check');
   receipt=await nativeDemo({source,run});
   if(command==='fix'&&receipt.status==='CLAIM_NOT_ESTABLISHED'){
-   modelCalls++;const repaired=await repairProof(process.env.OPENAI_API_KEY,source);receipt=await nativeDemo({source:repaired,run});ensure(receipt.status==='ORIGINAL_TARGET_VERIFIED','REPAIR_NOT_VERIFIED');
+   await progress('repair');
+   modelCalls++;const repaired=await repairProof(process.env.OPENAI_API_KEY,source);await progress('verify');receipt=await nativeDemo({source:repaired,run});ensure(receipt.status==='ORIGINAL_TARGET_VERIFIED','REPAIR_NOT_VERIFIED');repairPerformed=true;
    await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-verified-repair.lean'),repaired,{mode:0o600});
    try{
+    await progress('publish');
     const repair=await createVerifiedRepair({api,root,pr,sha,sourceFile,repaired,event,runURL});repairURL=repair.url;repairNumber=repair.number;
    }catch(e){if(e.message==='SOURCE_MOVED'||e.message==='STALE_REPAIR_WITHDRAWAL_UNCONFIRMED')throw e;repairURL=null;}
   }else if(command==='check'){
@@ -91,7 +122,7 @@ async function main(){
   }
   const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');
   await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-native-receipt.json'),JSON.stringify({schema:'mathgraph.native-list-demo.v1',command,repository,pr:event.issue.number,source_head:sha,run_id:runId,lean:'4.28.0',...receipt,repair_pr:repairURL,model_assessment:proposal},null,2),{mode:0o600});
-  await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({command,sha,native:receipt,runURL,repairURL,proposal})}});
+  await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({command,sha,native:receipt,runURL,repairURL,proposal,repairPerformed})}});
   console.log(JSON.stringify({status:receipt.status,command,source_head:sha,run_id:runId,repair_pr:repairURL,api_calls:modelCalls,scope:'FIXED_LIST_REVERSAL_DEMO_ONLY'}));
  }catch(e){if(repairNumber){const closed=await api(root+'/pulls/'+repairNumber,{method:'PATCH',body:{state:'closed'}});ensure(closed.state==='closed','STALE_REPAIR_WITHDRAWAL_UNCONFIRMED');}
  await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n### MathGraph Check\n**Verification is incomplete.**\n\nNo result is promoted. [Inspect this run]('+runURL+').'}});throw e;}
