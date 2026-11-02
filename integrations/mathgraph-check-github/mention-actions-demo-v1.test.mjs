@@ -13,7 +13,7 @@ test('demo rendering distinguishes accepted proof from rejected intended consume
 });
 test('repair is only labelled verified after native original-target check',()=>{
  assert.doesNotMatch(m.demoComment({command:'fix',sha:'a'.repeat(40),native:{status:'UNKNOWN'}}),/Repair verified/);
- assert.match(m.demoComment({command:'fix',sha:'a'.repeat(40),native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:[]},repairURL:'https://github.com/metalogiclabs/mathgraph/pull/2'}),/Repair verified/);
+ assert.match(m.demoComment({command:'fix',sha:'a'.repeat(40),repairPerformed:true,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:[]},repairURL:'https://github.com/metalogiclabs/mathgraph/pull/2'}),/Repair verified/);
 });
 test('repair publishing checks head after file write and withdraws a stale opened PR',async()=>{
  const pr={head:{ref:'demo'}},sha='a'.repeat(40),args={root:'/repos/metalogiclabs/mathgraph',pr,sha,sourceFile:{sha:'blob'},repaired:'proof',event:{issue:{number:1},comment:{id:2}},runURL:'https://github.com/metalogiclabs/mathgraph/actions/runs/3'};
@@ -39,4 +39,45 @@ test('source updates withdraw only this pilot bot results without model calls',a
   throw Error('unexpected');
  };
  const n=await m.withdrawDemoComments({api,root:'/repos/metalogiclabs/mathgraph',number:1});assert.equal(n,1);assert.match(patched[0],/Source changed/);assert.match(patched[0],/Old evidence/);
+});
+
+test('progress uses one branded source-bound card and only its owning run can resume',()=>{
+ const args={command:'fix',sha:'a'.repeat(40),runId:12,stage:'prepare',runURL:'https://github.com/metalogiclabs/mathgraph/actions/runs/12'};
+ const body=m.demoProgress(args);
+ assert.match(body,/mathgraph-progress:12/);assert.match(body,/Preparing/);assert.match(body,/mathgraph-mark-black.png/);
+ const c={user:{login:'github-actions[bot]'},body};
+ assert.equal(m.ownsDemoProgress(c,args),true);
+ assert.equal(m.ownsDemoProgress(c,{...args,runId:13}),false);
+ assert.equal(m.ownsDemoProgress(c,{...args,sha:'b'.repeat(40)}),false);
+ assert.equal(m.ownsDemoProgress({...c,user:{login:'someone'}},args),false);
+ assert.equal(m.ownsDemoProgress({...c,body:m.demoComment({command:'fix',sha:args.sha,native:{status:'UNKNOWN'}})},args),false);
+});
+test('repair result shows before and after without calling a missing PR ready',()=>{
+ const args={command:'fix',repairPerformed:true,sha:'a'.repeat(40),native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}};
+ const b=m.demoComment(args);assert.match(b,/Conclusion assumed/);assert.match(b,/Conclusion proved/);assert.match(b,/Opening a repair PR was not confirmed/);
+ const ready=m.demoComment({...args,repairURL:'https://github.com/metalogiclabs/mathgraph/pull/2'});
+ assert.match(ready,/Review the repair/);assert.match(ready,/Controlled demo/);assert.match(ready,/propext/);
+});
+
+test('early acknowledgement resumes once and failure cleanup never overwrites a result',async()=>{
+ const root='/repos/metalogiclabs/mathgraph',marker='<!-- mathgraph-actions-demo-v1:10 -->',args={command:'fix',sha:'a'.repeat(40),runId:12,runURL:'https://github.com/metalogiclabs/mathgraph/actions/runs/12'};
+ let comments=[],posts=0,patches=0;
+ const api=async(path,{method='GET',body}={})=>{
+  if(method==='GET')return comments;
+  if(method==='POST'){posts++;const c={id:15,user:{login:'github-actions[bot]'},body:body.body};comments.push(c);return c;}
+  patches++;comments[0].body=body.body;return comments[0];
+ };
+ const common={api,root,number:1,marker,progressArgs:args};
+ assert.equal(await m.startDemoComment({...common,phase:'prepare'}),null);assert.equal(posts,1);
+ assert.equal((await m.startDemoComment({...common,phase:'run'})).id,15);assert.equal(posts,1);
+ await m.startDemoComment({...common,phase:'finalize'});assert.equal(patches,1);assert.match(comments[0].body,/Verification is incomplete/);
+ assert.equal(await m.startDemoComment({...common,phase:'run'}),null);
+ await m.startDemoComment({...common,phase:'finalize'});assert.equal(patches,1);
+ comments[0].body=marker+'\n'+m.demoComment({...args,repairPerformed:true,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}});
+ await m.startDemoComment({...common,phase:'finalize'});assert.equal(patches,1);assert.match(comments[0].body,/Repair verified/);
+});
+
+test('an already valid source never invents a repair or a publication failure',()=>{
+ const b=m.demoComment({command:'fix',sha:'a'.repeat(40),native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}});
+ assert.match(b,/original claim passes/);assert.doesNotMatch(b,/Conclusion assumed|Repair verified|Opening a repair PR/);
 });
