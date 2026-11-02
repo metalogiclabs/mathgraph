@@ -24,7 +24,11 @@ export function parseBraheNativeV1({exitCode,stdout,stderr,mode}={}) {
   const empty={exitCode,testCount:0,regressionCount:0};
   if (!Number.isSafeInteger(exitCode)||!['base','head'].includes(mode))
     return {...empty,reason:'INVALID_INVOCATION'};
-  if (SETUP_FAILURE.test(text)) return {...empty,reason:'SETUP_FAILED'};
+  // Cargo's harness footer is not a compile error. Exclude only that known
+  // footer, while keeping all other compiler/setup diagnostics fail-closed.
+  const diagnosticText=text.replace(/^error: test failed(?:,.*)?$/gm,'');
+  if (SETUP_FAILURE.test(diagnosticText))
+    return {...empty,reason:'SETUP_FAILED'};
   if (/^running 0 tests?$/m.test(text)) return {...empty,reason:'ZERO_TESTS'};
   if (!/^running 17 tests$/m.test(text)) return {...empty,reason:'UNEXPECTED_FAILURE'};
 

@@ -30,6 +30,18 @@ test('specific four wrong-direction endpoint failures with 13 passes is a bounde
   assert.equal(x.regressionCount,4);
 });
 
+test('Rust harness footer "error: test failed" is not a compiler/setup error when 17 native tests ran',()=>{
+  const footer='error: test failed, to rerun pass `-p brahe --lib`\n';
+  const x=parseBraheNativeV1({exitCode:101,stdout:output(true),stderr:footer,mode:'base'});
+  assert.equal(x.reason,'EXPECTED_REGRESSION');
+  assert.equal(x.testCount,17);
+});
+
+test('a genuine compiler error cannot hide behind otherwise plausible 17-test output',()=>{
+  const x=parseBraheNativeV1({exitCode:101,stdout:output(true),stderr:'error[E0432]: unresolved import `bad`\n',mode:'base'});
+  assert.equal(x.reason,'SETUP_FAILED');
+});
+
 test('all 17 tests passing on fixed head is bounded PASS',()=>{
   const x=parseBraheNativeV1({exitCode:0,stdout:output(false),stderr:'',mode:'head'});
   assert.equal(x.reason,'PASSED');

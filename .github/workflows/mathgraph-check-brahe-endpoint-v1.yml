@@ -40,6 +40,8 @@ jobs:
           node integrations/mathgraph-check-github/brahe-endpoint-v1.test.mjs
           node integrations/mathgraph-check-github/run-brahe-endpoint-v1.test.mjs
           node integrations/mathgraph-check-github/brahe-cli-v1.test.mjs
+          node integrations/mathgraph-check-github/brahe-artifact-readback-v1.test.mjs
+          node integrations/mathgraph-check-github/brahe-evidence-presentation-v1.test.mjs
       - name: Fetch exact public Brahe sources and transplant only the head's unit tests into the base
         run: |
           set -euo pipefail
