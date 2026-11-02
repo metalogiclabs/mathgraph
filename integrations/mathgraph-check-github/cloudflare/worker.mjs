@@ -114,6 +114,7 @@ export async function receiveWebhook(request, env) {
       try { configured=createPrivateKey(env.GITHUB_APP_PRIVATE_KEY).asymmetricKeyType==="rsa"; }
       catch { configured=false; }
     }
+    if(env?.PR_PILOT_ENABLED==="true")configured=configured&&!!env.PR_PILOT_BUDGET&&!!env.PILOT_SUBSCRIPTIONS;
     return new Response(configured?"ready":"not configured",{
       status:configured?200:503
     });

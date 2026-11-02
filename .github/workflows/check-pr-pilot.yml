@@ -25,6 +25,7 @@ jobs:
         run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/pr-pilot-worker
   intake:
     needs: contracts
+    if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -42,6 +43,7 @@ jobs:
           APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
           MODE: ${{ github.event_name == 'push' && 'qualify-intake' || 'intake' }}
+          CONTRACTS_OK: ${{ needs.contracts.result == 'success' }}
         run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs "$MODE" pr-investigation
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

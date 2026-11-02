@@ -44,8 +44,8 @@ try{
    }finally{await scoped.api('/installation/token',{method:'DELETE'});}
   }
   await save('request',request);await save('publication',{...publication,context});
-  const ready=request.support.supported&&publication.state!=='DUPLICATE';await outputs({ready:String(ready),command:request.command,prior_run:publication.prior_run??'',source_head:request.head_sha});
-  if(!request.support.supported)await save('assessment',{context,subject:request,status:'UNKNOWN',reason:request.support.reason});await seal();
+  const ready=request.support.supported&&publication.state!=='DUPLICATE'&&process.env.CONTRACTS_OK!=='false';await outputs({ready:String(ready),command:request.command,prior_run:publication.prior_run??'',source_head:request.head_sha});
+  if(!request.support.supported||process.env.CONTRACTS_OK==='false')await save('assessment',{context,subject:request,status:'UNKNOWN',reason:process.env.CONTRACTS_OK==='false'?'CONTROLLER_CONTRACTS_FAILED':request.support.reason});await seal();
  }else if(phase==='reuse'){
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');
