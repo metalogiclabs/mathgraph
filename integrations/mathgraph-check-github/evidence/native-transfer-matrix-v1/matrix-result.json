@@ -1,0 +1,450 @@
+{
+  "run_id": "41410152881",
+  "source_sha": "504490990d84faa2808a337acae5c72d1778d1ab",
+  "matrix_sha256": "df3c0f61aa00f36d2ce945c49bedb346ab6da0c2f1a5b05bd4530d6bab09f625",
+  "schema": "mathgraph.native-transfer-matrix-result.v1",
+  "api_calls": 0,
+  "scope": "FINITE_CONSTRUCTED_NATIVE_CONTROLS_NOT_PROSPECTIVE_THEOREM_ADVANTAGE",
+  "results": [
+    {
+      "id": "conjugate_power_2",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "conjugate_power_2",
+        "source": "import Mathlib\ntheorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹ := by\n  sorry\n",
+        "header": "theorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹",
+        "source_sha256": "f0b383bfb46354572948889456073828edef4c50a9c573355cb4dc13d66bccf5",
+        "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "conjugate_power_2"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 2 = a * b ^ 2 * a ^ (-1)\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+        "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "post_hoc": false,
+        "registered_proof_constructor_used": false,
+        "api_calls": 0,
+        "native_attempts": 1,
+        "method_predeclared": true
+      },
+      "outcome": "REPAIRED",
+      "expected": "REPAIRED",
+      "expectation_met": true
+    },
+    {
+      "id": "conjugate_power_3",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "conjugate_power_3",
+        "source": "import Mathlib\ntheorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹ := by\n  sorry\n",
+        "header": "theorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹",
+        "source_sha256": "9acdccd4041a0a477a06a65ac75467492dc4ef2bb34d759601ddd0429f78c1c9",
+        "target_sha256": "133e4e913551ccc8aaf62f34e3703419281962a5e683e52539a5412fef7e3948",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "conjugate_power_3"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 3 = a * b ^ 3 * a ^ (-1)\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'conjugate_power_3' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "1b42c5c4350885273159fb465a1d796dcb95827109b15b35e8ca45ed9be2ac37",
+        "target_sha256": "133e4e913551ccc8aaf62f34e3703419281962a5e683e52539a5412fef7e3948",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "post_hoc": false,
+        "registered_proof_constructor_used": false,
+        "api_calls": 0,
+        "native_attempts": 1,
+        "method_predeclared": true
+      },
+      "outcome": "REPAIRED",
+      "expected": "REPAIRED",
+      "expectation_met": true
+    },
+    {
+      "id": "conjugate_power_4",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "conjugate_power_4",
+        "source": "import Mathlib\ntheorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹ := by\n  sorry\n",
+        "header": "theorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹",
+        "source_sha256": "bd173badd85efbeeb0817a2772adfba9cffc81fe0a24b2b50d85c2783379e715",
+        "target_sha256": "45ffe4e3563e600a5dfb1a3ae54cc6b467af567f1528b270cdbae9de5c5c1a3a",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "conjugate_power_4"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 4 = a * b ^ 4 * a ^ (-1)\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'conjugate_power_4' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "557f20cf00d145f5f86415a62c20fc84ab77465f593c0cf77ef0c253d0bd008d",
+        "target_sha256": "45ffe4e3563e600a5dfb1a3ae54cc6b467af567f1528b270cdbae9de5c5c1a3a",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "post_hoc": false,
+        "registered_proof_constructor_used": false,
+        "api_calls": 0,
+        "native_attempts": 1,
+        "method_predeclared": true
+      },
+      "outcome": "REPAIRED",
+      "expected": "REPAIRED",
+      "expectation_met": true
+    },
+    {
+      "id": "inverse_power_2",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "inverse_power_2",
+        "source": "import Mathlib\ntheorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹ := by\n  sorry\n",
+        "header": "theorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a : G), (a⁻¹) ^ 2 = (a ^ 2)⁻¹",
+        "source_sha256": "aef91fc904199d1ff5a7467e3fc322d42f404044f9a9b207f81c45ed52984291",
+        "target_sha256": "65f6ab34335672f7d29f8271eefb08784ca381bc2e0ddc406947fea09db1714e",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "inverse_power_2"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'inverse_power_2' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "44877eeea0b515a3a6b8834113e5e19b10c502383f1bbbd1704e3431c989f539",
+        "target_sha256": "65f6ab34335672f7d29f8271eefb08784ca381bc2e0ddc406947fea09db1714e"
+      },
+      "repair": null,
+      "outcome": "BASELINE_ACCEPTED",
+      "expected": "REPAIRED",
+      "expectation_met": false
+    },
+    {
+      "id": "inverse_power_3",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "inverse_power_3",
+        "source": "import Mathlib\ntheorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹ := by\n  sorry\n",
+        "header": "theorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a : G), (a⁻¹) ^ 3 = (a ^ 3)⁻¹",
+        "source_sha256": "96a754cbf5c14fec426612e0aa65a4f8bf7f1ac42a922387e5a3da30ae2784b5",
+        "target_sha256": "408474065cbf760734d1e6a531d9876d212037ecc1d933e04c0e3001696aac8b",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "inverse_power_3"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'inverse_power_3' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "c50001d4823719349e30c54af1c615cdb4ed302b9fc2e134d74dafabe3c4938e",
+        "target_sha256": "408474065cbf760734d1e6a531d9876d212037ecc1d933e04c0e3001696aac8b"
+      },
+      "repair": null,
+      "outcome": "BASELINE_ACCEPTED",
+      "expected": "REPAIRED",
+      "expectation_met": false
+    },
+    {
+      "id": "nested_conjugate_cube",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "nested_conjugate_cube",
+        "source": "import Mathlib\ntheorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹ := by\n  sorry\n",
+        "header": "theorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b c : G), (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹",
+        "source_sha256": "fb9893cdb5f53e3b1248f1a531740cdc6e743407f4c37fe58abaaf5fd367f9a2",
+        "target_sha256": "ca95a3cc276e04e085f939a5a71075bb785298f70442155b5df14c2e2f73b7c0",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "nested_conjugate_cube"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:125: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b c : G\n⊢ (a * b * c * b ^ (-1) * a ^ (-1)) ^ 3 = a * b * c ^ 3 * b ^ (-1) * a ^ (-1)\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'nested_conjugate_cube' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "879a29c7f1faac63dd216d7abcd6f4d420b9a680a94ad13d3a3b0397533a8255",
+        "target_sha256": "ca95a3cc276e04e085f939a5a71075bb785298f70442155b5df14c2e2f73b7c0",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "post_hoc": false,
+        "registered_proof_constructor_used": false,
+        "api_calls": 0,
+        "native_attempts": 1,
+        "method_predeclared": true
+      },
+      "outcome": "REPAIRED",
+      "expected": "REPAIRED",
+      "expectation_met": true
+    },
+    {
+      "id": "false_commuting_square",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "false_commuting_square",
+        "source": "import Mathlib\ntheorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2 := by\n  sorry\n",
+        "header": "theorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b) ^ 2 = a ^ 2 * b ^ 2",
+        "source_sha256": "e4ee83a81b22feb7859bc43318a2eb57ee01d49be293eb638895f56580c2a492",
+        "target_sha256": "fa30d6dd568b091822a91319ff7133af9428a1aaf86cbf6d30f6a8777f920bcb",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "false_commuting_square"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b) ^ 2 = a ^ 2 * b ^ 2\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "UNKNOWN",
+        "post_hoc": false,
+        "api_calls": 0,
+        "native_attempts": 2,
+        "method_predeclared": true
+      },
+      "outcome": "NOT_ACCEPTED_VARIANTS",
+      "expected": "NOT_ACCEPTED_VARIANTS",
+      "expectation_met": true
+    },
+    {
+      "id": "false_universal_involution",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "false_universal_involution",
+        "source": "import Mathlib\ntheorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1 := by\n  sorry\n",
+        "header": "theorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a : G), a ^ 2 = 1",
+        "source_sha256": "480795ef3b6bc687030b5929790d80caef1a9da4116181e0f137532a8c460380",
+        "target_sha256": "9e171940d2e19de589740acd8baebcd94b8093c7579b5d85db96a54278aaac11",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "false_universal_involution"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a ^ 2 = 1\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "UNKNOWN",
+        "post_hoc": false,
+        "api_calls": 0,
+        "native_attempts": 2,
+        "method_predeclared": true
+      },
+      "outcome": "NOT_ACCEPTED_VARIANTS",
+      "expected": "NOT_ACCEPTED_VARIANTS",
+      "expectation_met": true
+    },
+    {
+      "id": "already_valid_cancellation",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "already_valid_cancellation",
+        "source": "import Mathlib\ntheorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a := by\n  sorry\n",
+        "header": "theorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), a * b * b⁻¹ = a",
+        "source_sha256": "84193f4db2a453f9bd6184bb3bbe6dfd2331ec7e690a81aa425d93e37fd59c78",
+        "target_sha256": "7d491fd59ba4ae3116105efa2eb6c6786e8aeee6d964d1484acaa4f8f9ffc4e6",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "already_valid_cancellation"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'already_valid_cancellation' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "70260b91f52dd3993439e11df4886221d8a2067c34b637de06597c34e3e0ad3c",
+        "target_sha256": "7d491fd59ba4ae3116105efa2eb6c6786e8aeee6d964d1484acaa4f8f9ffc4e6"
+      },
+      "repair": null,
+      "outcome": "BASELINE_ACCEPTED",
+      "expected": "BASELINE_ACCEPTED",
+      "expectation_met": true
+    },
+    {
+      "id": "ineligible_false",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "ineligible_false",
+        "source": "import Mathlib\ntheorem ineligible_false  : False := by\n  sorry\n",
+        "header": "theorem ineligible_false  : False",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "False",
+        "source_sha256": "2561f88726cc631c9f93b18ac207c27493fa85a7798cd0a805b30fce51fcd255",
+        "target_sha256": "e718ad1c39a790365656f63f1a0c36a9e6a67df6e58459939a160d4b25d435ee",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "ineligible_false"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:37: error: unsolved goals\n⊢ False\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "UNKNOWN",
+        "post_hoc": false,
+        "api_calls": 0,
+        "native_attempts": 0,
+        "method_predeclared": true
+      },
+      "outcome": "NOT_ACCEPTED_NO_VARIANTS",
+      "expected": "NOT_ACCEPTED_NO_VARIANTS",
+      "expectation_met": true
+    },
+    {
+      "id": "no_group_tactic",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "no_group_tactic",
+        "source": "import Mathlib\ntheorem no_group_tactic (n : Nat) : n ^ 2 = n := by\n  sorry\n",
+        "header": "theorem no_group_tactic (n : Nat) : n ^ 2 = n",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ (n : Nat), n ^ 2 = n",
+        "source_sha256": "e5d892224b17137af59901061067ef046709887fc845027ad6d609ec0e348dd9",
+        "target_sha256": "8468d7c3edb7907ed08da9f8795b42e7fa932a3319ef6133dee8d354e14a0604",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "no_group_tactic"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:52: error: omega could not prove the goal:\na possible counterexample may satisfy the constraints\n  b ≥ 0\n  a ≥ 0\n  a - b ≥ 1\nwhere\n a := ↑n\n b := ↑(n ^ 2)\n",
+        "axioms": null
+      },
+      "repair": {
+        "status": "UNKNOWN",
+        "post_hoc": false,
+        "api_calls": 0,
+        "native_attempts": 0,
+        "method_predeclared": true
+      },
+      "outcome": "NOT_ACCEPTED_NO_VARIANTS",
+      "expected": "NOT_ACCEPTED_NO_VARIANTS",
+      "expectation_met": true
+    },
+    {
+      "id": "unsupported_placeholder",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "unsupported_placeholder",
+        "source": "import Mathlib\ntheorem unsupported_placeholder (n : Nat) : n = n := by\n  sorry\n",
+        "header": "theorem unsupported_placeholder (n : Nat) : n = n",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ (n : Nat), n = n",
+        "source_sha256": "3ca1405f483102ee24ea1198d5570ad658eee989b3c6db148f79e4930ee06c6e",
+        "target_sha256": "e1124e0b485e29f2e776c9ca4849be10022d2923008e8654909b09dbae262b25",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "unsupported_placeholder"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "UNSUPPORTED_PROOF_BODY",
+        "axioms": null
+      },
+      "repair": {
+        "status": "UNKNOWN",
+        "post_hoc": false,
+        "api_calls": 0,
+        "native_attempts": 0,
+        "method_predeclared": true
+      },
+      "outcome": "NOT_ACCEPTED_NO_VARIANTS",
+      "expected": "NOT_ACCEPTED_NO_VARIANTS",
+      "expectation_met": true
+    }
+  ],
+  "expectations_met": false,
+  "repaired": 4
+}

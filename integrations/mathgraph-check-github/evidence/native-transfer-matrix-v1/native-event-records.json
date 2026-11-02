@@ -1,0 +1,1336 @@
+[
+  {
+    "path": "evidence-1.json",
+    "sha256": "f416082077313c0adcd0d08ce2f3eedf84846020ca9d119f3bd6616af35aca24",
+    "record": {
+      "id": "conjugate_power_2",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "conjugate_power_2",
+        "source": "import Mathlib\ntheorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹ := by\n  sorry\n",
+        "header": "theorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹",
+        "source_sha256": "f0b383bfb46354572948889456073828edef4c50a9c573355cb4dc13d66bccf5",
+        "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "conjugate_power_2"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 2 = a * b ^ 2 * a ^ (-1)\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-10.json",
+    "sha256": "a6de70b7d1593c51f3682a04168059a24979c2a69c0dcd4f06a5748da5b25bda",
+    "record": {
+      "id": "inverse_power_2",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "inverse_power_2",
+        "source": "import Mathlib\ntheorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹ := by\n  sorry\n",
+        "header": "theorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a : G), (a⁻¹) ^ 2 = (a ^ 2)⁻¹",
+        "source_sha256": "aef91fc904199d1ff5a7467e3fc322d42f404044f9a9b207f81c45ed52984291",
+        "target_sha256": "65f6ab34335672f7d29f8271eefb08784ca381bc2e0ddc406947fea09db1714e",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "inverse_power_2"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'inverse_power_2' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "44877eeea0b515a3a6b8834113e5e19b10c502383f1bbbd1704e3431c989f539",
+        "target_sha256": "65f6ab34335672f7d29f8271eefb08784ca381bc2e0ddc406947fea09db1714e"
+      }
+    }
+  },
+  {
+    "path": "evidence-11.json",
+    "sha256": "d8fe498061d225fa6a87f214b483b275977f075292c2f430ae7e4f621ac42e48",
+    "record": {
+      "id": "inverse_power_2",
+      "stage": "RESULT",
+      "result": {
+        "id": "inverse_power_2",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "inverse_power_2",
+          "source": "import Mathlib\ntheorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹ := by\n  sorry\n",
+          "header": "theorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a : G), (a⁻¹) ^ 2 = (a ^ 2)⁻¹",
+          "source_sha256": "aef91fc904199d1ff5a7467e3fc322d42f404044f9a9b207f81c45ed52984291",
+          "target_sha256": "65f6ab34335672f7d29f8271eefb08784ca381bc2e0ddc406947fea09db1714e",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "inverse_power_2"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'inverse_power_2' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "44877eeea0b515a3a6b8834113e5e19b10c502383f1bbbd1704e3431c989f539",
+          "target_sha256": "65f6ab34335672f7d29f8271eefb08784ca381bc2e0ddc406947fea09db1714e"
+        },
+        "repair": null,
+        "outcome": "BASELINE_ACCEPTED",
+        "expected": "REPAIRED",
+        "expectation_met": false
+      }
+    }
+  },
+  {
+    "path": "evidence-12.json",
+    "sha256": "12cd7060b920d83a5d0b49425cbacb7320f1a6ed5d49ec3d90296e82186672fb",
+    "record": {
+      "id": "inverse_power_3",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "inverse_power_3",
+        "source": "import Mathlib\ntheorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹ := by\n  sorry\n",
+        "header": "theorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a : G), (a⁻¹) ^ 3 = (a ^ 3)⁻¹",
+        "source_sha256": "96a754cbf5c14fec426612e0aa65a4f8bf7f1ac42a922387e5a3da30ae2784b5",
+        "target_sha256": "408474065cbf760734d1e6a531d9876d212037ecc1d933e04c0e3001696aac8b",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "inverse_power_3"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'inverse_power_3' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "c50001d4823719349e30c54af1c615cdb4ed302b9fc2e134d74dafabe3c4938e",
+        "target_sha256": "408474065cbf760734d1e6a531d9876d212037ecc1d933e04c0e3001696aac8b"
+      }
+    }
+  },
+  {
+    "path": "evidence-13.json",
+    "sha256": "c3554ddb0906b1a363bd462dd6fa7cf89d3cbc0b80ff8143e9c515045d95c367",
+    "record": {
+      "id": "inverse_power_3",
+      "stage": "RESULT",
+      "result": {
+        "id": "inverse_power_3",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "inverse_power_3",
+          "source": "import Mathlib\ntheorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹ := by\n  sorry\n",
+          "header": "theorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a : G), (a⁻¹) ^ 3 = (a ^ 3)⁻¹",
+          "source_sha256": "96a754cbf5c14fec426612e0aa65a4f8bf7f1ac42a922387e5a3da30ae2784b5",
+          "target_sha256": "408474065cbf760734d1e6a531d9876d212037ecc1d933e04c0e3001696aac8b",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "inverse_power_3"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'inverse_power_3' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "c50001d4823719349e30c54af1c615cdb4ed302b9fc2e134d74dafabe3c4938e",
+          "target_sha256": "408474065cbf760734d1e6a531d9876d212037ecc1d933e04c0e3001696aac8b"
+        },
+        "repair": null,
+        "outcome": "BASELINE_ACCEPTED",
+        "expected": "REPAIRED",
+        "expectation_met": false
+      }
+    }
+  },
+  {
+    "path": "evidence-14.json",
+    "sha256": "bd4c8710d34a05da0194beb04c6505cda54cf3f126a8e2ad884209a281278d64",
+    "record": {
+      "id": "nested_conjugate_cube",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "nested_conjugate_cube",
+        "source": "import Mathlib\ntheorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹ := by\n  sorry\n",
+        "header": "theorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b c : G), (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹",
+        "source_sha256": "fb9893cdb5f53e3b1248f1a531740cdc6e743407f4c37fe58abaaf5fd367f9a2",
+        "target_sha256": "ca95a3cc276e04e085f939a5a71075bb785298f70442155b5df14c2e2f73b7c0",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "nested_conjugate_cube"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:125: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b c : G\n⊢ (a * b * c * b ^ (-1) * a ^ (-1)) ^ 3 = a * b * c ^ 3 * b ^ (-1) * a ^ (-1)\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-15.json",
+    "sha256": "d9fa2e1d67487c8b5d7c41cde8045db9f85092cb8ec70db05a6b546be1f47dee",
+    "record": {
+      "id": "nested_conjugate_cube",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'nested_conjugate_cube' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "879a29c7f1faac63dd216d7abcd6f4d420b9a680a94ad13d3a3b0397533a8255",
+          "target_sha256": "ca95a3cc276e04e085f939a5a71075bb785298f70442155b5df14c2e2f73b7c0"
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-16.json",
+    "sha256": "747cdc1690c5a10a4b1c17e6c9738ab2c7b53c6101e12881e1467a88720c7aa0",
+    "record": {
+      "id": "nested_conjugate_cube",
+      "stage": "RESULT",
+      "result": {
+        "id": "nested_conjugate_cube",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "nested_conjugate_cube",
+          "source": "import Mathlib\ntheorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹ := by\n  sorry\n",
+          "header": "theorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a b c : G), (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹",
+          "source_sha256": "fb9893cdb5f53e3b1248f1a531740cdc6e743407f4c37fe58abaaf5fd367f9a2",
+          "target_sha256": "ca95a3cc276e04e085f939a5a71075bb785298f70442155b5df14c2e2f73b7c0",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "nested_conjugate_cube"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:125: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b c : G\n⊢ (a * b * c * b ^ (-1) * a ^ (-1)) ^ 3 = a * b * c ^ 3 * b ^ (-1) * a ^ (-1)\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'nested_conjugate_cube' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "879a29c7f1faac63dd216d7abcd6f4d420b9a680a94ad13d3a3b0397533a8255",
+          "target_sha256": "ca95a3cc276e04e085f939a5a71075bb785298f70442155b5df14c2e2f73b7c0",
+          "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+          "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+          "post_hoc": false,
+          "registered_proof_constructor_used": false,
+          "api_calls": 0,
+          "native_attempts": 1,
+          "method_predeclared": true
+        },
+        "outcome": "REPAIRED",
+        "expected": "REPAIRED",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-17.json",
+    "sha256": "89b842d0c94119f67cd37bd153cec9e6146924adfa239bf745bdb12f574d8dd0",
+    "record": {
+      "id": "false_commuting_square",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "false_commuting_square",
+        "source": "import Mathlib\ntheorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2 := by\n  sorry\n",
+        "header": "theorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b) ^ 2 = a ^ 2 * b ^ 2",
+        "source_sha256": "e4ee83a81b22feb7859bc43318a2eb57ee01d49be293eb638895f56580c2a492",
+        "target_sha256": "fa30d6dd568b091822a91319ff7133af9428a1aaf86cbf6d30f6a8777f920bcb",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "false_commuting_square"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b) ^ 2 = a ^ 2 * b ^ 2\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-18.json",
+    "sha256": "d78ecc5fe78e769cf787483a2e49e25f8872094e545d7973dfaffce891117ec7",
+    "record": {
+      "id": "false_commuting_square",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ a * b * a * b = a * a * b * b\n/work/Candidate.lean:3:130: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n",
+          "axioms": null
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-19.json",
+    "sha256": "a0313182c5a36dd2412df4048ba89ce20a0aeb61a6857728f46ac71850fe9ae5",
+    "record": {
+      "id": "false_commuting_square",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 2,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp [pow_two, mul_assoc]",
+        "result": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ b * (a * b) = a * (b * b)\n",
+          "axioms": null
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-2.json",
+    "sha256": "794df5753aca852ed55262541231b6e9b10f9b4062e0f0b84440329ed5648d5c",
+    "record": {
+      "id": "conjugate_power_2",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+          "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62"
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-20.json",
+    "sha256": "060b4aeb7bb8a556b263e271b09f3d5649f4302535a270e60838cffacdd10f1a",
+    "record": {
+      "id": "false_commuting_square",
+      "stage": "RESULT",
+      "result": {
+        "id": "false_commuting_square",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "false_commuting_square",
+          "source": "import Mathlib\ntheorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2 := by\n  sorry\n",
+          "header": "theorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b) ^ 2 = a ^ 2 * b ^ 2",
+          "source_sha256": "e4ee83a81b22feb7859bc43318a2eb57ee01d49be293eb638895f56580c2a492",
+          "target_sha256": "fa30d6dd568b091822a91319ff7133af9428a1aaf86cbf6d30f6a8777f920bcb",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "false_commuting_square"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b) ^ 2 = a ^ 2 * b ^ 2\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "UNKNOWN",
+          "post_hoc": false,
+          "api_calls": 0,
+          "native_attempts": 2,
+          "method_predeclared": true
+        },
+        "outcome": "NOT_ACCEPTED_VARIANTS",
+        "expected": "NOT_ACCEPTED_VARIANTS",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-21.json",
+    "sha256": "3e00a28bc4fe795c190d6e518675ff0362a5748fa4775f8dafa9ba9d25533197",
+    "record": {
+      "id": "false_universal_involution",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "false_universal_involution",
+        "source": "import Mathlib\ntheorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1 := by\n  sorry\n",
+        "header": "theorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a : G), a ^ 2 = 1",
+        "source_sha256": "480795ef3b6bc687030b5929790d80caef1a9da4116181e0f137532a8c460380",
+        "target_sha256": "9e171940d2e19de589740acd8baebcd94b8093c7579b5d85db96a54278aaac11",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "false_universal_involution"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a ^ 2 = 1\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-22.json",
+    "sha256": "219402b7affa194893e11cb1b26953bbf1f6f765e3dee8c4a10c86d5af75e41d",
+    "record": {
+      "id": "false_universal_involution",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a * a = 1\n/work/Candidate.lean:3:114: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n",
+          "axioms": null
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-23.json",
+    "sha256": "24913ab65628a2f0f622a95c5d1f40ec0e1ddd023a81d157a429fa5181cac4ac",
+    "record": {
+      "id": "false_universal_involution",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 2,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp [pow_two, mul_assoc]",
+        "result": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a * a = 1\n/work/Candidate.lean:3:98: warning: This simp argument is unused:\n  mul_assoc\n\nHint: Omit it from the simp argument list.\n  simp [pow_two,̵ ̵m̵u̵l̵_̵a̵s̵s̵o̵c̵]\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n",
+          "axioms": null
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-24.json",
+    "sha256": "d908b6e384efc2413420a0eecb9e2318bfefbb317e2c1fb9ebcf22a6bac11bb1",
+    "record": {
+      "id": "false_universal_involution",
+      "stage": "RESULT",
+      "result": {
+        "id": "false_universal_involution",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "false_universal_involution",
+          "source": "import Mathlib\ntheorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1 := by\n  sorry\n",
+          "header": "theorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a : G), a ^ 2 = 1",
+          "source_sha256": "480795ef3b6bc687030b5929790d80caef1a9da4116181e0f137532a8c460380",
+          "target_sha256": "9e171940d2e19de589740acd8baebcd94b8093c7579b5d85db96a54278aaac11",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "false_universal_involution"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a ^ 2 = 1\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "UNKNOWN",
+          "post_hoc": false,
+          "api_calls": 0,
+          "native_attempts": 2,
+          "method_predeclared": true
+        },
+        "outcome": "NOT_ACCEPTED_VARIANTS",
+        "expected": "NOT_ACCEPTED_VARIANTS",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-25.json",
+    "sha256": "1424fb9c7cb049976ae23075dcf5539045384e346b0d25e7a5f6ec3c98f6b84c",
+    "record": {
+      "id": "already_valid_cancellation",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "already_valid_cancellation",
+        "source": "import Mathlib\ntheorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a := by\n  sorry\n",
+        "header": "theorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), a * b * b⁻¹ = a",
+        "source_sha256": "84193f4db2a453f9bd6184bb3bbe6dfd2331ec7e690a81aa425d93e37fd59c78",
+        "target_sha256": "7d491fd59ba4ae3116105efa2eb6c6786e8aeee6d964d1484acaa4f8f9ffc4e6",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "already_valid_cancellation"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "ORIGINAL_TARGET_VERIFIED",
+        "diagnostic": "'already_valid_cancellation' depends on axioms: [propext]\n",
+        "axioms": [
+          "propext"
+        ],
+        "source_sha256": "70260b91f52dd3993439e11df4886221d8a2067c34b637de06597c34e3e0ad3c",
+        "target_sha256": "7d491fd59ba4ae3116105efa2eb6c6786e8aeee6d964d1484acaa4f8f9ffc4e6"
+      }
+    }
+  },
+  {
+    "path": "evidence-26.json",
+    "sha256": "2beda5b632b63aa793c5293de34ee93318520d39af7aeee4827c342e5ad10fdb",
+    "record": {
+      "id": "already_valid_cancellation",
+      "stage": "RESULT",
+      "result": {
+        "id": "already_valid_cancellation",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "already_valid_cancellation",
+          "source": "import Mathlib\ntheorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a := by\n  sorry\n",
+          "header": "theorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a b : G), a * b * b⁻¹ = a",
+          "source_sha256": "84193f4db2a453f9bd6184bb3bbe6dfd2331ec7e690a81aa425d93e37fd59c78",
+          "target_sha256": "7d491fd59ba4ae3116105efa2eb6c6786e8aeee6d964d1484acaa4f8f9ffc4e6",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "already_valid_cancellation"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'already_valid_cancellation' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "70260b91f52dd3993439e11df4886221d8a2067c34b637de06597c34e3e0ad3c",
+          "target_sha256": "7d491fd59ba4ae3116105efa2eb6c6786e8aeee6d964d1484acaa4f8f9ffc4e6"
+        },
+        "repair": null,
+        "outcome": "BASELINE_ACCEPTED",
+        "expected": "BASELINE_ACCEPTED",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-27.json",
+    "sha256": "ef0b72bcf2900fa87594af00d43dbc27809726331167e36e5ca6997c775b5d9e",
+    "record": {
+      "id": "ineligible_false",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "ineligible_false",
+        "source": "import Mathlib\ntheorem ineligible_false  : False := by\n  sorry\n",
+        "header": "theorem ineligible_false  : False",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "False",
+        "source_sha256": "2561f88726cc631c9f93b18ac207c27493fa85a7798cd0a805b30fce51fcd255",
+        "target_sha256": "e718ad1c39a790365656f63f1a0c36a9e6a67df6e58459939a160d4b25d435ee",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "ineligible_false"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:37: error: unsolved goals\n⊢ False\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-28.json",
+    "sha256": "4317290302d6a70fbcdfc34308259af009aac83ee1d063fcaff39940dacfeced",
+    "record": {
+      "id": "ineligible_false",
+      "stage": "RESULT",
+      "result": {
+        "id": "ineligible_false",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "ineligible_false",
+          "source": "import Mathlib\ntheorem ineligible_false  : False := by\n  sorry\n",
+          "header": "theorem ineligible_false  : False",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "False",
+          "source_sha256": "2561f88726cc631c9f93b18ac207c27493fa85a7798cd0a805b30fce51fcd255",
+          "target_sha256": "e718ad1c39a790365656f63f1a0c36a9e6a67df6e58459939a160d4b25d435ee",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "ineligible_false"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:37: error: unsolved goals\n⊢ False\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "UNKNOWN",
+          "post_hoc": false,
+          "api_calls": 0,
+          "native_attempts": 0,
+          "method_predeclared": true
+        },
+        "outcome": "NOT_ACCEPTED_NO_VARIANTS",
+        "expected": "NOT_ACCEPTED_NO_VARIANTS",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-29.json",
+    "sha256": "249c34ac6d1d4a397e9e38c5938c629f1b1e06ec05b3742d8412e3a90b89b418",
+    "record": {
+      "id": "no_group_tactic",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "no_group_tactic",
+        "source": "import Mathlib\ntheorem no_group_tactic (n : Nat) : n ^ 2 = n := by\n  sorry\n",
+        "header": "theorem no_group_tactic (n : Nat) : n ^ 2 = n",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ (n : Nat), n ^ 2 = n",
+        "source_sha256": "e5d892224b17137af59901061067ef046709887fc845027ad6d609ec0e348dd9",
+        "target_sha256": "8468d7c3edb7907ed08da9f8795b42e7fa932a3319ef6133dee8d354e14a0604",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "no_group_tactic"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:52: error: omega could not prove the goal:\na possible counterexample may satisfy the constraints\n  b ≥ 0\n  a ≥ 0\n  a - b ≥ 1\nwhere\n a := ↑n\n b := ↑(n ^ 2)\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-3.json",
+    "sha256": "48cff085e35a0ca3a6ca2b8dca489fdf125ddaa8cc8c83bd4cdcd5d378bb08d4",
+    "record": {
+      "id": "conjugate_power_2",
+      "stage": "RESULT",
+      "result": {
+        "id": "conjugate_power_2",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "conjugate_power_2",
+          "source": "import Mathlib\ntheorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹ := by\n  sorry\n",
+          "header": "theorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹",
+          "source_sha256": "f0b383bfb46354572948889456073828edef4c50a9c573355cb4dc13d66bccf5",
+          "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "conjugate_power_2"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 2 = a * b ^ 2 * a ^ (-1)\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_2' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "99a93d7d4492ced211a0af3547120a3ecf799a4c7df9615d4a9ba557844f2831",
+          "target_sha256": "29dacf466782b7959c83a563fc13e70285691c245255d053890d1dc0698c6d62",
+          "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+          "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+          "post_hoc": false,
+          "registered_proof_constructor_used": false,
+          "api_calls": 0,
+          "native_attempts": 1,
+          "method_predeclared": true
+        },
+        "outcome": "REPAIRED",
+        "expected": "REPAIRED",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-30.json",
+    "sha256": "4002460eb28b793d5adfd64a2a689884ec7380f42ec531bbcf69086613ba1c76",
+    "record": {
+      "id": "no_group_tactic",
+      "stage": "RESULT",
+      "result": {
+        "id": "no_group_tactic",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "no_group_tactic",
+          "source": "import Mathlib\ntheorem no_group_tactic (n : Nat) : n ^ 2 = n := by\n  sorry\n",
+          "header": "theorem no_group_tactic (n : Nat) : n ^ 2 = n",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ (n : Nat), n ^ 2 = n",
+          "source_sha256": "e5d892224b17137af59901061067ef046709887fc845027ad6d609ec0e348dd9",
+          "target_sha256": "8468d7c3edb7907ed08da9f8795b42e7fa932a3319ef6133dee8d354e14a0604",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "no_group_tactic"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:52: error: omega could not prove the goal:\na possible counterexample may satisfy the constraints\n  b ≥ 0\n  a ≥ 0\n  a - b ≥ 1\nwhere\n a := ↑n\n b := ↑(n ^ 2)\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "UNKNOWN",
+          "post_hoc": false,
+          "api_calls": 0,
+          "native_attempts": 0,
+          "method_predeclared": true
+        },
+        "outcome": "NOT_ACCEPTED_NO_VARIANTS",
+        "expected": "NOT_ACCEPTED_NO_VARIANTS",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-31.json",
+    "sha256": "dca915f9a329c5cfad3ba3cb7bac7012930d1975bf1afcaf7f7c3ba64687fee1",
+    "record": {
+      "id": "unsupported_placeholder",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "unsupported_placeholder",
+        "source": "import Mathlib\ntheorem unsupported_placeholder (n : Nat) : n = n := by\n  sorry\n",
+        "header": "theorem unsupported_placeholder (n : Nat) : n = n",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ (n : Nat), n = n",
+        "source_sha256": "3ca1405f483102ee24ea1198d5570ad658eee989b3c6db148f79e4930ee06c6e",
+        "target_sha256": "e1124e0b485e29f2e776c9ca4849be10022d2923008e8654909b09dbae262b25",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "unsupported_placeholder"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "UNSUPPORTED_PROOF_BODY",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-32.json",
+    "sha256": "211bc8714144f11516647019844c9830d7ef7e21f04c4fb188763337d0ab46c2",
+    "record": {
+      "id": "unsupported_placeholder",
+      "stage": "RESULT",
+      "result": {
+        "id": "unsupported_placeholder",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "unsupported_placeholder",
+          "source": "import Mathlib\ntheorem unsupported_placeholder (n : Nat) : n = n := by\n  sorry\n",
+          "header": "theorem unsupported_placeholder (n : Nat) : n = n",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ (n : Nat), n = n",
+          "source_sha256": "3ca1405f483102ee24ea1198d5570ad658eee989b3c6db148f79e4930ee06c6e",
+          "target_sha256": "e1124e0b485e29f2e776c9ca4849be10022d2923008e8654909b09dbae262b25",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "unsupported_placeholder"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "UNSUPPORTED_PROOF_BODY",
+          "axioms": null
+        },
+        "repair": {
+          "status": "UNKNOWN",
+          "post_hoc": false,
+          "api_calls": 0,
+          "native_attempts": 0,
+          "method_predeclared": true
+        },
+        "outcome": "NOT_ACCEPTED_NO_VARIANTS",
+        "expected": "NOT_ACCEPTED_NO_VARIANTS",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-4.json",
+    "sha256": "fd7b3377054898cdfb780281d8bb87043c6002cc16adde52f68f41bc4b520caf",
+    "record": {
+      "id": "conjugate_power_3",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "conjugate_power_3",
+        "source": "import Mathlib\ntheorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹ := by\n  sorry\n",
+        "header": "theorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹",
+        "source_sha256": "9acdccd4041a0a477a06a65ac75467492dc4ef2bb34d759601ddd0429f78c1c9",
+        "target_sha256": "133e4e913551ccc8aaf62f34e3703419281962a5e683e52539a5412fef7e3948",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "conjugate_power_3"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 3 = a * b ^ 3 * a ^ (-1)\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-5.json",
+    "sha256": "a74f3e21c70ffc52de50230cb943fe85e1ed34466d31030a92eb29cc428d48ba",
+    "record": {
+      "id": "conjugate_power_3",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_3' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "1b42c5c4350885273159fb465a1d796dcb95827109b15b35e8ca45ed9be2ac37",
+          "target_sha256": "133e4e913551ccc8aaf62f34e3703419281962a5e683e52539a5412fef7e3948"
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-6.json",
+    "sha256": "cc132ef625c15165bf4d6067c6723672a3cd669f117f0f052e8b47130852f690",
+    "record": {
+      "id": "conjugate_power_3",
+      "stage": "RESULT",
+      "result": {
+        "id": "conjugate_power_3",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "conjugate_power_3",
+          "source": "import Mathlib\ntheorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹ := by\n  sorry\n",
+          "header": "theorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹",
+          "source_sha256": "9acdccd4041a0a477a06a65ac75467492dc4ef2bb34d759601ddd0429f78c1c9",
+          "target_sha256": "133e4e913551ccc8aaf62f34e3703419281962a5e683e52539a5412fef7e3948",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "conjugate_power_3"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 3 = a * b ^ 3 * a ^ (-1)\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_3' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "1b42c5c4350885273159fb465a1d796dcb95827109b15b35e8ca45ed9be2ac37",
+          "target_sha256": "133e4e913551ccc8aaf62f34e3703419281962a5e683e52539a5412fef7e3948",
+          "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+          "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+          "post_hoc": false,
+          "registered_proof_constructor_used": false,
+          "api_calls": 0,
+          "native_attempts": 1,
+          "method_predeclared": true
+        },
+        "outcome": "REPAIRED",
+        "expected": "REPAIRED",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "evidence-7.json",
+    "sha256": "a996614a9f7b77c55eda6a4ff37efc49af6ef19494e612cd956143a79d642cfc",
+    "record": {
+      "id": "conjugate_power_4",
+      "stage": "BASELINE",
+      "frozen": {
+        "schema": "mathgraph.frozen-formal-target.v1",
+        "name": "conjugate_power_4",
+        "source": "import Mathlib\ntheorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹ := by\n  sorry\n",
+        "header": "theorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹",
+        "prelude": "import Mathlib\n\n",
+        "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹",
+        "source_sha256": "bd173badd85efbeeb0817a2772adfba9cffc81fe0a24b2b50d85c2783379e715",
+        "target_sha256": "45ffe4e3563e600a5dfb1a3ae54cc6b467af567f1528b270cdbae9de5c5c1a3a",
+        "provenance": {
+          "kind": "CONSTRUCTED_NATIVE_CONTROL",
+          "id": "conjugate_power_4"
+        },
+        "registered_repair": false,
+        "informal_equivalence": "NOT_CERTIFIED"
+      },
+      "baseline": {
+        "status": "UNKNOWN",
+        "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 4 = a * b ^ 4 * a ^ (-1)\n",
+        "axioms": null
+      }
+    }
+  },
+  {
+    "path": "evidence-8.json",
+    "sha256": "c9f8bb4acd6e1ec3717f71301b8f12df0d440d1399f696985c6c6174359c3f37",
+    "record": {
+      "id": "conjugate_power_4",
+      "stage": "VARIANT",
+      "attempt": {
+        "attempt": 1,
+        "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+        "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+        "result": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_4' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "557f20cf00d145f5f86415a62c20fc84ab77465f593c0cf77ef0c253d0bd008d",
+          "target_sha256": "45ffe4e3563e600a5dfb1a3ae54cc6b467af567f1528b270cdbae9de5c5c1a3a"
+        }
+      }
+    }
+  },
+  {
+    "path": "evidence-9.json",
+    "sha256": "faaf01296aa525109827051a3ac771fc779c3444fd3560b257e8c3762076174f",
+    "record": {
+      "id": "conjugate_power_4",
+      "stage": "RESULT",
+      "result": {
+        "id": "conjugate_power_4",
+        "frozen": {
+          "schema": "mathgraph.frozen-formal-target.v1",
+          "name": "conjugate_power_4",
+          "source": "import Mathlib\ntheorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹ := by\n  sorry\n",
+          "header": "theorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹",
+          "prelude": "import Mathlib\n\n",
+          "target_type": "∀ {G : Type*} [Group G] (a b : G), (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹",
+          "source_sha256": "bd173badd85efbeeb0817a2772adfba9cffc81fe0a24b2b50d85c2783379e715",
+          "target_sha256": "45ffe4e3563e600a5dfb1a3ae54cc6b467af567f1528b270cdbae9de5c5c1a3a",
+          "provenance": {
+            "kind": "CONSTRUCTED_NATIVE_CONTROL",
+            "id": "conjugate_power_4"
+          },
+          "registered_repair": false,
+          "informal_equivalence": "NOT_CERTIFIED"
+        },
+        "baseline": {
+          "status": "UNKNOWN",
+          "diagnostic": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 4 = a * b ^ 4 * a ^ (-1)\n",
+          "axioms": null
+        },
+        "repair": {
+          "status": "ORIGINAL_TARGET_VERIFIED",
+          "diagnostic": "'conjugate_power_4' depends on axioms: [propext]\n",
+          "axioms": [
+            "propext"
+          ],
+          "source_sha256": "557f20cf00d145f5f86415a62c20fc84ab77465f593c0cf77ef0c253d0bd008d",
+          "target_sha256": "45ffe4e3563e600a5dfb1a3ae54cc6b467af567f1528b270cdbae9de5c5c1a3a",
+          "proof_body": "by simp only [pow_succ, pow_zero, mul_one]; group",
+          "method": "NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION",
+          "post_hoc": false,
+          "registered_proof_constructor_used": false,
+          "api_calls": 0,
+          "native_attempts": 1,
+          "method_predeclared": true
+        },
+        "outcome": "REPAIRED",
+        "expected": "REPAIRED",
+        "expectation_met": true
+      }
+    }
+  },
+  {
+    "path": "trace-1.json",
+    "sha256": "c23f661afaaff51979d72382df0422b1507c8ba436698b616517d161efc3e276",
+    "record": {
+      "label": "controls",
+      "unit": "Sanity",
+      "code": 0,
+      "output": ""
+    }
+  },
+  {
+    "path": "trace-10.json",
+    "sha256": "662d253adb22e4d61adf23fa981564520e5d573f347f1e7ac15a2bc66e8fe283",
+    "record": {
+      "label": "conjugate_power_4-variant-1",
+      "unit": "Candidate",
+      "code": 0,
+      "output": "/work/Candidate.lean:3:133: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-11.json",
+    "sha256": "f4acc21b7befe3e95d634291fb7133c662d22c80b9428cfb14e6b6f8c0857f60",
+    "record": {
+      "label": "conjugate_power_4-variant-1",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'conjugate_power_4' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-12.json",
+    "sha256": "e8cc4cdf7006ca8a193afb1abc6474c44375579f166d4cb834c3a8be0627a8d7",
+    "record": {
+      "label": "inverse_power_2-baseline",
+      "unit": "Candidate",
+      "code": 0,
+      "output": ""
+    }
+  },
+  {
+    "path": "trace-13.json",
+    "sha256": "7c5e07e86bb2b0f3948662e1877cc5e7d6d832bc4ac57fb66d4337942b4e658e",
+    "record": {
+      "label": "inverse_power_2-baseline",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'inverse_power_2' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-14.json",
+    "sha256": "4bd93dc3ed9ce6536302a0ec150f33fc4f0e9b4fd1e36d89170c0ba011d87d1a",
+    "record": {
+      "label": "inverse_power_3-baseline",
+      "unit": "Candidate",
+      "code": 0,
+      "output": ""
+    }
+  },
+  {
+    "path": "trace-15.json",
+    "sha256": "2a1c4c0d99ae397ad4982d29dfcb9e477245845d2e675a716d4b2d4afe4bd312",
+    "record": {
+      "label": "inverse_power_3-baseline",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'inverse_power_3' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-16.json",
+    "sha256": "a28015d9708c5b6acc6a8f5c4cbc8755f7372b2e28c67700a8617f5365516bf1",
+    "record": {
+      "label": "nested_conjugate_cube-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:125: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b c : G\n⊢ (a * b * c * b ^ (-1) * a ^ (-1)) ^ 3 = a * b * c ^ 3 * b ^ (-1) * a ^ (-1)\n"
+    }
+  },
+  {
+    "path": "trace-17.json",
+    "sha256": "54e00964bb989ee3fb6cfb569b2b9d861d525c7a9fb5acbb81eda5313ada8909",
+    "record": {
+      "label": "nested_conjugate_cube-variant-1",
+      "unit": "Candidate",
+      "code": 0,
+      "output": "/work/Candidate.lean:3:159: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-18.json",
+    "sha256": "5c728fb7ee8227e3c6ed99d1978b5a09511103e44cc0dfff445434fdd29c6196",
+    "record": {
+      "label": "nested_conjugate_cube-variant-1",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'nested_conjugate_cube' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-19.json",
+    "sha256": "5921d1498cd5439284e92048f80ae688d1e0bb52e47edb7328d6eed9ed305745",
+    "record": {
+      "label": "false_commuting_square-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b) ^ 2 = a ^ 2 * b ^ 2\n"
+    }
+  },
+  {
+    "path": "trace-2.json",
+    "sha256": "f4db39a94f88e2e76888a423a91ece684d709ce0f6a56ddb4b89dc5c3d9bdba2",
+    "record": {
+      "label": "controls",
+      "unit": "Negative",
+      "code": 1,
+      "output": "/work/Negative.lean:2:22: error: Tactic `assumption` failed\n\n⊢ False\n"
+    }
+  },
+  {
+    "path": "trace-20.json",
+    "sha256": "5a4580bcc169cf05e60c43f39feb95a5a7ab82afb3775be3dcdb26a2a7a624bf",
+    "record": {
+      "label": "false_commuting_square-variant-1",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ a * b * a * b = a * a * b * b\n/work/Candidate.lean:3:130: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-21.json",
+    "sha256": "4459994a087847b724148fb6aef77437de4d9033244169d8805bf5cae0df1bd8",
+    "record": {
+      "label": "false_commuting_square-variant-2",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:96: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ b * (a * b) = a * (b * b)\n"
+    }
+  },
+  {
+    "path": "trace-22.json",
+    "sha256": "bcc33adb978ca9a549455563c76f03ffa67c1d252aa120e862bb249549028635",
+    "record": {
+      "label": "false_universal_involution-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a ^ 2 = 1\n"
+    }
+  },
+  {
+    "path": "trace-23.json",
+    "sha256": "52252d920c6bb5ffa7cbebe4a85e763b4898741201fcdfd0365aa09818319aea",
+    "record": {
+      "label": "false_universal_involution-variant-1",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a * a = 1\n/work/Candidate.lean:3:114: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-24.json",
+    "sha256": "ad3e6ed4d54ab13698a98de6f2410be246423f00e89ce897984a1c5650e0b1be",
+    "record": {
+      "label": "false_universal_involution-variant-2",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:80: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na : G\n⊢ a * a = 1\n/work/Candidate.lean:3:98: warning: This simp argument is unused:\n  mul_assoc\n\nHint: Omit it from the simp argument list.\n  simp [pow_two,̵ ̵m̵u̵l̵_̵a̵s̵s̵o̵c̵]\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-25.json",
+    "sha256": "1febfbcb3bb158b8fd1d43c077ac1e0a3a757d2d768aff9e2909eecb42bc4eb3",
+    "record": {
+      "label": "already_valid_cancellation-baseline",
+      "unit": "Candidate",
+      "code": 0,
+      "output": ""
+    }
+  },
+  {
+    "path": "trace-26.json",
+    "sha256": "40d76452c0666bc9134d4455202e8233968e9933746c27edeb0a087791d8b322",
+    "record": {
+      "label": "already_valid_cancellation-baseline",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'already_valid_cancellation' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-27.json",
+    "sha256": "5d69e7055baa7c85e0e88c835f9b0323f6d3b20fa86063478fea3cb268508ce2",
+    "record": {
+      "label": "ineligible_false-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:37: error: unsolved goals\n⊢ False\n"
+    }
+  },
+  {
+    "path": "trace-28.json",
+    "sha256": "cf158c9e63559ab0c5f082f9600fd87edd9fcd5fb97b24d44e5f3f0e564f17f2",
+    "record": {
+      "label": "no_group_tactic-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:52: error: omega could not prove the goal:\na possible counterexample may satisfy the constraints\n  b ≥ 0\n  a ≥ 0\n  a - b ≥ 1\nwhere\n a := ↑n\n b := ↑(n ^ 2)\n"
+    }
+  },
+  {
+    "path": "trace-3.json",
+    "sha256": "14fbe36219038328f594331c9ef7c4e87ca671a16f56a953c93f180800fd2bae",
+    "record": {
+      "label": "conjugate_power_2-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 2 = a * b ^ 2 * a ^ (-1)\n"
+    }
+  },
+  {
+    "path": "trace-4.json",
+    "sha256": "ef1ca74ce07024ebb983ac94b4055a3dbfeed6dc133167fd6610e00be4c12f30",
+    "record": {
+      "label": "conjugate_power_2-variant-1",
+      "unit": "Candidate",
+      "code": 0,
+      "output": "/work/Candidate.lean:3:133: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-5.json",
+    "sha256": "881e71ebc4f3dea6b0a9219fa3caee1b851c364c9e4761cc1efe41235efc14c0",
+    "record": {
+      "label": "conjugate_power_2-variant-1",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'conjugate_power_2' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-6.json",
+    "sha256": "5227fd7b8b204393342866430cf0f1f629a683d6df54995b3c9a5541fe1c0eae",
+    "record": {
+      "label": "conjugate_power_3-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 3 = a * b ^ 3 * a ^ (-1)\n"
+    }
+  },
+  {
+    "path": "trace-7.json",
+    "sha256": "dd868c7fbb0ff06ce23bda0321be6c400b233a74c5485846500329637fb3de4e",
+    "record": {
+      "label": "conjugate_power_3-variant-1",
+      "unit": "Candidate",
+      "code": 0,
+      "output": "/work/Candidate.lean:3:133: warning: This simp argument is unused:\n  mul_one\n\nHint: Omit it from the simp argument list.\n  simp only [pow_succ,\n  ̲  ̲p̵o̵w̵_̵z̵e̵r̵o̵,̵ ̵m̵u̵l̵_̵o̵n̵e̵]̵p̲o̲w̲_̲z̲e̲r̲o̲]̲\n\nNote: This linter can be disabled with `set_option linter.unusedSimpArgs false`\n"
+    }
+  },
+  {
+    "path": "trace-8.json",
+    "sha256": "cc53db32d5f305b5518e1fb809a79120e7d41772edd575ac6085822648acfec4",
+    "record": {
+      "label": "conjugate_power_3-variant-1",
+      "unit": "Consumer",
+      "code": 0,
+      "output": "'conjugate_power_3' depends on axioms: [propext]\n"
+    }
+  },
+  {
+    "path": "trace-9.json",
+    "sha256": "7fb6d98b9ec7e7aba1896d0656ee264dadde437f8513fe92842259b778bbf3dc",
+    "record": {
+      "label": "conjugate_power_4-baseline",
+      "unit": "Candidate",
+      "code": 1,
+      "output": "/work/Candidate.lean:3:99: error: unsolved goals\nG : Type u_1\ninst✝ : Group G\na b : G\n⊢ (a * b * a ^ (-1)) ^ 4 = a * b ^ 4 * a ^ (-1)\n"
+    }
+  }
+]

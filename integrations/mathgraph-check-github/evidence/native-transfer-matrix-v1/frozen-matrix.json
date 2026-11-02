@@ -1,0 +1,86 @@
+{
+  "preregistration": "f664a92c84446a2ac2da46eecef569a282f37c72",
+  "matrix_sha256": "df3c0f61aa00f36d2ce945c49bedb346ab6da0c2f1a5b05bd4530d6bab09f625",
+  "matrix": {
+    "schema": "mathgraph.native-transfer-matrix.v1",
+    "method_frozen_commit": "0b110d83734c9bf4d84e3470926721fef17dd8e4",
+    "engine_sha256": "9bf7a144d0a85bbacd154fcd7cc5c49f072feb251dbe58e654f4fb86cd2d4b92",
+    "api_calls": 0,
+    "max_variants_per_case": 2,
+    "selection": "Six constructed power/group identities, two false group identities, one already valid control, two ineligible controls and one forbidden placeholder. All fixed before native execution; not a random theorem benchmark or model comparison.",
+    "cases": [
+      {
+        "id": "conjugate_power_2",
+        "source": "import Mathlib\ntheorem conjugate_power_2 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 2 = a * b ^ 2 * a⁻¹ := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "REPAIRED"
+      },
+      {
+        "id": "conjugate_power_3",
+        "source": "import Mathlib\ntheorem conjugate_power_3 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 3 = a * b ^ 3 * a⁻¹ := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "REPAIRED"
+      },
+      {
+        "id": "conjugate_power_4",
+        "source": "import Mathlib\ntheorem conjugate_power_4 {G : Type*} [Group G] (a b : G) : (a * b * a⁻¹) ^ 4 = a * b ^ 4 * a⁻¹ := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "REPAIRED"
+      },
+      {
+        "id": "inverse_power_2",
+        "source": "import Mathlib\ntheorem inverse_power_2 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 2 = (a ^ 2)⁻¹ := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "REPAIRED"
+      },
+      {
+        "id": "inverse_power_3",
+        "source": "import Mathlib\ntheorem inverse_power_3 {G : Type*} [Group G] (a : G) : (a⁻¹) ^ 3 = (a ^ 3)⁻¹ := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "REPAIRED"
+      },
+      {
+        "id": "nested_conjugate_cube",
+        "source": "import Mathlib\ntheorem nested_conjugate_cube {G : Type*} [Group G] (a b c : G) : (a * b * c * b⁻¹ * a⁻¹) ^ 3 = a * b * c ^ 3 * b⁻¹ * a⁻¹ := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "REPAIRED"
+      },
+      {
+        "id": "false_commuting_square",
+        "source": "import Mathlib\ntheorem false_commuting_square {G : Type*} [Group G] (a b : G) : (a * b) ^ 2 = a ^ 2 * b ^ 2 := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "NOT_ACCEPTED_VARIANTS"
+      },
+      {
+        "id": "false_universal_involution",
+        "source": "import Mathlib\ntheorem false_universal_involution {G : Type*} [Group G] (a : G) : a ^ 2 = 1 := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "NOT_ACCEPTED_VARIANTS"
+      },
+      {
+        "id": "already_valid_cancellation",
+        "source": "import Mathlib\ntheorem already_valid_cancellation {G : Type*} [Group G] (a b : G) : a * b * b⁻¹ = a := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "BASELINE_ACCEPTED"
+      },
+      {
+        "id": "ineligible_false",
+        "source": "import Mathlib\ntheorem ineligible_false  : False := by\n  sorry\n",
+        "proof_body": "by group",
+        "expected": "NOT_ACCEPTED_NO_VARIANTS"
+      },
+      {
+        "id": "no_group_tactic",
+        "source": "import Mathlib\ntheorem no_group_tactic (n : Nat) : n ^ 2 = n := by\n  sorry\n",
+        "proof_body": "by omega",
+        "expected": "NOT_ACCEPTED_NO_VARIANTS"
+      },
+      {
+        "id": "unsupported_placeholder",
+        "source": "import Mathlib\ntheorem unsupported_placeholder (n : Nat) : n = n := by\n  sorry\n",
+        "proof_body": "by sorry",
+        "expected": "NOT_ACCEPTED_NO_VARIANTS"
+      }
+    ]
+  }
+}
