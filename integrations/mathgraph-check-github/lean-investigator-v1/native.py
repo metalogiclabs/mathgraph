@@ -34,6 +34,7 @@ def main():
  for name,h in m['hashes'].items():assert '/' not in name and digest((root/name).read_bytes())==h
  if phase=='repair' and load('repair-state')['state']!='PATCH_PROPOSED':return
  snapshot=load('snapshot');plan=load('plan');validate_snapshot(snapshot)
+ if snapshot.get('mode')=='OWNED_FORK_PR_PILOT':must(['node',str(Path(__file__).resolve().parent.parent/'pr-pilot-v1/admit-source.mjs'),str(root)])
  work=Path('lean-native-'+phase).resolve();work.mkdir(exist_ok=True)
  logs=root/'native-logs';logs.mkdir(exist_ok=True)
  def acquire(revision,label,source):
@@ -69,7 +70,7 @@ def main():
   return p
  def execute(p,label,command,timeout=240):
   name='mg-lean-'+phase+'-'+label.replace('_','-')
-  args=['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','PATH=/opt/lean/bin:/usr/bin:/bin','-e','HOME=/tmp','-v',str(lean)+':/opt/lean:ro','-v',str(p)+':/work:rw','-v',str(audit)+':/audit:ro','-v',str(subjects[p.name])+':/subject:ro','-w','/work',image]+command
+  args=['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','PATH=/opt/lean/bin:/usr/bin:/bin','-e','HOME=/tmp','-e','LEAN_PATH=/work/.lake/build/lib/lean','-v',str(lean)+':/opt/lean:ro','-v',str(p)+':/work:'+('rw' if command[:2]==['lake','build'] else 'ro'),'-v',str(audit)+':/audit:ro','-v',str(subjects[p.name])+':/subject:ro','-w','/work',image]+command
   r=run(args,timeout);run(['docker','rm','-f',name],20);(logs/(phase+'-'+label+'.log')).write_text(r.stdout+r.stderr)
   assert (p/snapshot['path']).read_text()==sources[p.name],'SOURCE_CHANGED_DURING_EXECUTION'
   assert (p/snapshot['cli_path']).read_text()==snapshot['cli_source'],'CLI_CHANGED_DURING_EXECUTION'
@@ -79,13 +80,13 @@ def main():
   p=project(label,source);sources[label]=source;subjects[label]=subject
   b=execute(p,label+'-build',['lake','build','gate']);result={'build_exit':b.returncode,'source_sha256':digest(source.encode()),'probes':[]}
   if b.returncode:result['repository_gate_exit']=None;return result
-  good=execute(p,label+'-control-pass',['lake','env','lean','/audit/control_pass.lean'])
-  bad=execute(p,label+'-control-fail',['lake','env','lean','/audit/control_fail.lean'])
+  good=execute(p,label+'-control-pass',['lean','/audit/control_pass.lean'])
+  bad=execute(p,label+'-control-fail',['lean','/audit/control_fail.lean'])
   assert good.returncode==0 and guard_outcome(bad.returncode,bad.stdout+bad.stderr)['guard_false'],'NATIVE_CONTROLS_FAILED'
   result['controls']={'pass':guard_outcome(good.returncode,good.stdout+good.stderr),'fail':guard_outcome(bad.returncode,bad.stdout+bad.stderr)}
   assert result['controls']['fail']['exit_code']==1 and not result['controls']['fail']['other_errors']
   for t in plan['tests']:
-   r=execute(p,label+'-'+t['id'],['lake','env','lean','/audit/'+t['id']+'.lean']);row={'id':t['id'],**guard_outcome(r.returncode,r.stdout+r.stderr),'test_file_sha256':digest((audit/(t['id']+'.lean')).read_bytes())};result['probes'].append(row)
+   r=execute(p,label+'-'+t['id'],['lean','/audit/'+t['id']+'.lean']);row={'id':t['id'],**guard_outcome(r.returncode,r.stdout+r.stderr),'test_file_sha256':digest((audit/(t['id']+'.lean')).read_bytes())};result['probes'].append(row)
   gate=execute(p,label+'-repository-gate',['.lake/build/bin/gate','-C','/subject']);result['repository_gate_exit']=gate.returncode
   return result
  common={'context':context,'source_sha':snapshot['head_sha'],'test_digest':state['test_digest'],'runtime':runtime}

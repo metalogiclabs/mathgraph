@@ -18,6 +18,8 @@ jobs:
           APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
         run: |
           node --input-type=module <<'JS'
+          import {mintScopedToken} from './integrations/mathgraph-check-github/pr-pilot-v1/auth.mjs';
+          import {githubClient} from './integrations/mathgraph-check-github/pr-pilot-v1/github.mjs';
           import {appJWT} from './integrations/mathgraph-check-github/cloudflare/worker.mjs';
           const jwt=appJWT(process.env.APP_PRIVATE_KEY);
           const headers={Authorization:'Bearer '+jwt,Accept:'application/vnd.github+json'};
@@ -33,5 +35,7 @@ jobs:
             rows.push({installation:i.id,selection:i.repository_selection,repositories:repos.repositories?.map(x=>x.full_name),total:repos.total_count});
             await fetch('https://api.github.com/installation/token',{method:'DELETE',headers:{Authorization:'Bearer '+t.token}});
           }
-          console.log(JSON.stringify({app:{id:app.id,slug:app.slug,permissions:app.permissions,events:app.events},owned_installations:rows}));
+          const scoped=await mintScopedToken(githubClient(jwt,{repository:'metalogiclabs/mathgraph'}),own[0].id,'metalogiclabs/mathgraph',{contents:'read'});
+          await githubClient(scoped,{repository:'metalogiclabs/mathgraph'})('/installation/token',{method:'DELETE'});
+          console.log(JSON.stringify({scoped_token_readback:'EXACTLY_ONE_REPOSITORY',app:{id:app.id,slug:app.slug,permissions:app.permissions,events:app.events,owner:app.owner?.login},owned_installations:rows}));
           JS

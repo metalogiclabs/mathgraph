@@ -24,8 +24,8 @@ export function admitLeanPlan(p){
 }
 // Lex active source: nested comments are removed, literals become stable tokens.
 // This is a conservative admission filter, not a general Lean elaborator.
-function activeSource(source){
- let i=0,code='',docs=[];
+export function activeSource(source){
+ let i=0,code='',docs=[],interpolations=[];
  while(i<source.length){
   if(source.startsWith('--',i)){while(i<source.length&&source[i]!='\n')i++;continue;}
   if(source.startsWith('/-',i)){
@@ -37,13 +37,13 @@ function activeSource(source){
   if(source[i]==='"'){
    const start=i++;let escaped=false,closed=false;
    while(i<source.length){const c=source[i++];if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"'){closed=true;break;}}
-   requireFact(closed,'UNTERMINATED_LITERAL');code+='STRING_'+createHash('sha256').update(source.slice(start,i)).digest('hex');continue;
+   requireFact(closed,'UNTERMINATED_LITERAL');if(source.slice(start-2,start)==='s!')interpolations.push(source.slice(start,i));code+='STRING_'+createHash('sha256').update(source.slice(start,i)).digest('hex');continue;
   }
   const char=source.slice(i).match(/^'(?:\\.|[^'\\])'/);
   if(char){code+='CHAR_'+createHash('sha256').update(char[0]).digest('hex');i+=char[0].length;continue;}
   code+=source[i++];
  }
- return {code,docs};
+ return {code,docs,interpolations};
 }
 function catalog(source){
  const {code,docs}=activeSource(source),lines=code.split('\n'),guards=[],headers=[];

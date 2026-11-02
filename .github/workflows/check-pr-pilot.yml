@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: [mathgraph-pr-pilot-v1]
   push:
-    branches: [pilot/check-pr-qualify-v1]
+    branches: [pilot/check-pr-qualify-v1, pilot/check-pr-fix-qualify-v1]
 permissions:
   contents: read
   actions: read
@@ -21,6 +21,8 @@ jobs:
         with: {node-version: '24'}
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - name: Bundle trusted webhook integration without deploying
+        run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/pr-pilot-worker
   intake:
     needs: contracts
     runs-on: ubuntu-24.04
@@ -59,7 +61,7 @@ jobs:
           name: pr-pilot-intake
           path: pr-investigation
       - name: Download original Check evidence for explicit fix
-        if: needs.intake.outputs.command == 'fix'
+        if: needs.intake.outputs.prior_run != ''
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: pr-pilot-assessment
@@ -72,8 +74,9 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
           COMMAND: ${{ needs.intake.outputs.command }}
+          PRIOR_RUN: ${{ needs.intake.outputs.prior_run }}
         run: |
-          if [ "$COMMAND" = fix ]; then
+          if [ -n "$PRIOR_RUN" ]; then
             node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs reuse pr-investigation prior-investigation
           else
             node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare pr-investigation
@@ -217,7 +220,9 @@ jobs:
           name: ${{ needs.revise.outputs.revision == 'true' && 'pr-pilot-final-native' || 'pr-pilot-revision' }}
           path: pr-investigation
       - name: Mechanical admission; missing execution remains UNKNOWN
-        run: node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess pr-investigation
+        run: |
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs pr-investigation
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}

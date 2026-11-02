@@ -24,6 +24,8 @@ export function formatResult(report,request,runURL){
  if(report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE')lines.push('**Candidate repair passes the frozen probes and protected gate.** Withdrawal reproduces the failures.');
  else if(report.repair?.status==='UNKNOWN')lines.push('Repair remains UNKNOWN; see retained diagnostics.');
  if(report.reason)lines.push('Reason: '+esc(report.reason));
+ if(report.repair_pr&&new RegExp('^https://github.com/'+request.repository+'/pull/[1-9][0-9]*$').test(report.repair_pr))lines.push('[Review the draft repair]('+report.repair_pr+')');
+ if(report.comparison?.length)lines.push('Base/head comparison: '+report.comparison.map(p=>esc(p.id)+': '+esc(p.change)).join('; '));
  lines.push('Model-inferred requirements remain unverified. Results are advisory; no automatic merge.',`[Execution and evidence](${runURL})`);
  return lines.join('\n\n');
 }
