@@ -9,13 +9,21 @@
   "state": "REGISTERED_NOT_RUN",
   "requirements_authority": "UNKNOWN_PENDING_OWNER_APPROVAL",
   "devin_exposure": "UNKNOWN_NO_CONNECTED_DEVIN_EXECUTION",
-  "source_acquisition": "NOT_YET_ACQUIRED",
-  "native_profile": "PENDING_SCOPE_CHECK",
+  "source_acquisition": "CHANGED_FILE_METADATA_ONLY; no source content inspected by the evaluator",
+  "native_profile": "UNKNOWN_UNSUPPORTED_CHANGED_FILE_SCOPE",
   "arms": [
     "Devin Review + existing CI",
     "same review + CI + MathGraph Check"
   ],
   "controller_release": "8f192629a7cc74bab4801812b33ff2520683c561",
   "scheduler_release": "b281ba0a141cb7e7832b1ffd4b7f429cca60a6ac",
-  "release_role": "Previously qualified deployed baseline; future controller changes require prospective amendment before execution."
+  "release_role": "Previously qualified deployed baseline; future controller changes require prospective amendment before execution.",
+  "scope_observation": "Eight changed files include new generators, proof source, build configuration and ledger metadata; outside reviewed single-ledger capability.",
+  "comparative_result": "UNKNOWN_NOT_EXECUTED",
+  "public_review_observation": {
+    "reviews": 0,
+    "inline_comments": 0,
+    "meaning": "No visible review at acquisition; this is not a missed-finding measurement.",
+    "private_output": "UNKNOWN"
+  }
 }

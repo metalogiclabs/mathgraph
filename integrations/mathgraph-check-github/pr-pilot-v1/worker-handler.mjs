@@ -1,5 +1,5 @@
 import {mintScopedToken} from './auth.mjs';
-import {profileFor} from './policy.mjs';import {authenticate,withdrawChecks,queueCheck,finishCheck} from './lifecycle.mjs';import {signedDispatch,reservationKey} from './transport.mjs';import {githubClient} from './github.mjs';
+import {profileFor} from './policy.mjs';import {authenticate,withdrawChecks,queueCheck,finishCheck,listChecks} from './lifecycle.mjs';import {signedDispatch,reservationKey} from './transport.mjs';import {githubClient} from './github.mjs';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
  if(env.PR_PILOT_ENABLED!=='true')return {state:'DISABLED'};
@@ -18,8 +18,8 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
    const pr=await api(root+'/pulls/'+item.number);
    if(item.action==='synchronize'&&previous.head_sha===pr.head?.sha&&previous.base_sha===pr.base?.sha)return {state:'SOURCE_UNCHANGED'};
    for(const sha of new Set([previous.head_sha,item.previous_sha].filter(x=>/^[a-f0-9]{40}$/.test(x??'')))){
-    const response=await api(root+'/commits/'+sha+'/check-runs?per_page=100');ensure(response.total_count===response.check_runs?.length,'INCOMPLETE_CHECK_HISTORY');
-    await withdrawChecks({repository:item.repository,number:item.number,head_sha:item.action==='closed'?'':pr.head?.sha,base_sha:pr.base?.sha},response.check_runs,api);
+    const checks=await listChecks({repository:item.repository,head_sha:sha},api);
+    await withdrawChecks({repository:item.repository,number:item.number,head_sha:item.action==='closed'?'':pr.head?.sha,base_sha:pr.base?.sha},checks,api);
    }
    if(item.action==='closed'){await env.PILOT_SUBSCRIPTIONS.delete(subscriptionKey);return {state:'CLOSED_WITHDRAWN'};}
    item={...item,comment_id:previous.comment_id,command:'check'};

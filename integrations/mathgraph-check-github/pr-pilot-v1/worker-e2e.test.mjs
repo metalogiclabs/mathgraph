@@ -53,3 +53,17 @@ test('completed applicable check absorbs later commands without more reservation
  assert.equal((await processPilotDelivery({...item,comment_id:8},h.env,{jwt:'test',fetcher:h.fetcher})).state,'DUPLICATE');
  assert.equal(h.sent.length,1);assert.equal(h.reservations,1);
 });
+
+test('source withdrawal includes historical Checks when another PR shares the same commit',async()=>{
+ const h=harness();await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher});
+ h.checks.push({...h.checks[0],id:99,external_id:h.checks[0].external_id.replace('#2@','#99@')});
+ h.pr.head.sha='d'.repeat(40);
+ const realGitHubFiltering=async(url,opts)=>{
+  const u=new URL(url);
+  if(u.pathname===root+'/commits/'+sha+'/check-runs'&&u.searchParams.get('filter')!=='all')return Response.json({total_count:1,check_runs:[h.checks[1]]});
+  return h.fetcher(url,opts);
+ };
+ await processPilotDelivery({...item,action:'synchronize',previous_sha:sha},h.env,{jwt:'test',fetcher:realGitHubFiltering});
+ assert.equal(h.checks[0].output.title,'Source changed — recheck required');
+ assert.equal(h.checks[1].output.title,'Queued for investigation');
+});
