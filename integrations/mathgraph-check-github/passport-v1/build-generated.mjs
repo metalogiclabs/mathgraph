@@ -1,0 +1,11 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';import {createHash} from 'node:crypto';import {resolve,join} from 'node:path';
+import {passportShell} from './passport-shell.mjs';import {verifyGenerated} from './generated-contract.mjs';
+const read=n=>readFile(new URL('./'+n,import.meta.url),'utf8'),hash=s=>createHash('sha256').update(s).digest('hex');
+const files=JSON.parse(await read('generated-evidence.json')),report=await verifyGenerated({files,hash});
+const logic=[await read('generated-pins.mjs'),(await read('generated-contract.mjs')).replace("import {GENERATED_PINS} from './generated-pins.mjs';",''),await read('sha256.mjs')].join('\n').replaceAll('export ','');
+const encode=x=>JSON.stringify(x).replaceAll('<','\\u003c').replaceAll('\u2028','\\u2028').replaceAll('\u2029','\\u2029');
+const html=passportShell({css:await read('base.css')+'\n'+await read('extra.css'),logo:JSON.parse(await read('brand.json')).logo,heading:'Green gate. Three missed checks.',intro:'Generated checks exposed three source/documentation discrepancies. A model revision passes the frozen checks.',proofLabel:'Checks & repair',label:'RETROSPECTIVE AUDIT',footer:'Selected L4YAML module · Finite checks · Advisory only',script:logic+'\nconst INITIAL_FILES='+encode(files)+';\n'+await read('generated-browser.js')});
+const out=resolve(process.argv[2]??'dist');await mkdir(out,{recursive:true});for(const name of ['index.html','MathGraph_Check_L4YAML_Passport.html'])await writeFile(join(out,name),html);
+await writeFile(join(out,'generated-evidence-bundle.json'),JSON.stringify({files},null,2));
+await writeFile(join(out,'generated-build-receipt.json'),JSON.stringify({status:'BUILT',html_sha256:hash(html),html_bytes:Buffer.byteLength(html),files_checked:report.filesChecked,original_source:report.original,packaged_source:report.packaged,scope:'RETAINED_FINITE_NATIVE_RECEIPTS_NOT_NEW_EXECUTION',new_model_calls:0},null,2));
+console.log(JSON.stringify({out,bytes:Buffer.byteLength(html),files_checked:report.filesChecked}));

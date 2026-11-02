@@ -17,3 +17,11 @@ Four constructed group identities were repaired in a finite native matrix; predi
 ## Validation
 
 Six Node tests cover retained receipts, missing or tampered input, forged proof with regenerated manifest, wrong bindings/axioms/model-call assertions, stale or malformed source observations, and independent SHA256 vectors. Desktop browser checks exercised source refresh, proof details, pasted changed-proof rejection and restoration. Responsive layout was inspected in a 390×844 iframe (375 CSS-pixel content width), not on a physical phone. The optional refresh displayed matching observed heads for #242/#245 and a changed source for #243.
+
+## Generated L4YAML audit adapter
+
+Run `node build-generated.mjs` to produce `dist/MathGraph_Check_L4YAML_Passport.html`. This reuses the same `passport-shell.mjs`, CSS, owner logo, offline SHA256 implementation and paste-verification interaction. The original group report built by `node build.mjs` is unchanged.
+
+Thirteen small technical receipt fixtures are selected from the retained audit archive, whose 113 file digests were checked before extraction. `generated-pins.mjs` independently fixes their digests. The view preserves first-patch compiler rejection, three original FAIL / repaired PASS / withdrawn FAIL guards, 157 original guards and the later packaged 160-guard source. It keeps inferred requirement meaning UNVERIFIED and permission ADVISORY_ONLY. It is retained-record inspection, not a new Lean execution, full L4YAML CI or a blind discovery benchmark.
+
+The public PR-head refresh is independent of the recorded physical patch-withdrawal experiment. Automatic mention-triggered investigation, watched-source publication and stale-result withdrawal are not implemented by the passport; that integration is separate. No paid model calls are made by this build or browser UI.
