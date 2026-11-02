@@ -2,7 +2,7 @@
 
 This opt-in pilot supports one explicitly constructed list-reversal example. `@MathGraph -check` compares a submitted theorem with a frozen intended consumer. `@MathGraph -fix` lets a model select one of three permitted Lean proof constructors, then checks the unchanged original theorem and consumer before preparing a repair PR. It is not a generic mathematical repair system or an upstream OpenAI defect.
 
-The response is authored by `github-actions[bot]` and branded MathGraph Check in its body. No separate GitHub App installation or external webhook host is required for this repository-local pilot. Public rollout under an App identity is separate.
+The default response is authored by `github-actions[bot]` and branded MathGraph Check in its body. With the configured MathGraph Check App credential, comments and repair PRs are authored by `mathgraph-check[bot]`. The same GitHub Actions runner performs the independent verification. No external webhook host is required for this repository-local pilot.
 
 Only newly created standalone commands from GitHub user ID 32909488 in metalogiclabs/mathgraph qualify. The default-branch workflow checks out an immutable controller commit, never the PR's controller code. It serializes jobs globally, rejects workflow reruns, authenticates the comment again through GitHub, checks source freshness, and preserves receipts as Actions artifacts. The pilot permits at most 20 owner-triggered comment runs in this workflow history, conservatively reserving at most 25 US cents of model usage per run at configured rates. A failed request is not automatically retried. Native CI/build compute is additional.
 
@@ -17,3 +17,10 @@ The three proof constructors are intentionally restricted; any success is a smal
 The workflow acknowledges the command before downloading Lean, then updates that single comment through the source check, candidate construction, native verification and PR publication. The header reuses the repository's MathGraph mark, pinned to an immutable asset revision; the mark is light-theme-only so the text remains readable in dark mode. Verification receipts and the precise scope sit behind a disclosure. A failure finalizer settles an unfinished progress card without changing completed results or using a model key.
 
 A repair result shows the actual before/after change and a draft-PR review link. An already-correct source is reported as passing the original check, without inventing a repair or reporting a missing repair PR as a failure. Progress resumption requires the same bot author, command marker, run ID and source revision. The pilot still runs as github-actions[bot], and the caller must review any proposed merge.
+
+
+## MathGraph Check App identity
+
+The optional publisher is the existing organization-owned App 5308912, client ID Iv23lioiUs5KfHD7mkkw, slug mathgraph-check. Add its PEM private key to the repository Actions secret MATHGRAPH_CHECK_APP_PRIVATE_KEY. Install/authorize the App for metalogiclabs/mathgraph with Contents, Issues and Pull requests set to read and write. Existing Checks write and Actions read permissions can remain for the separate deployed integration. The mention workflow mints short-lived tokens scoped only to mathgraph, and revokes them at job completion. No private key is read back from Cloudflare or copied through logs.
+
+The built-in Actions token continues to read source, authenticate triggers and enforce the run budget. App tokens perform publishing. When both historic Actions and newer App comments exist, withdrawal selects the credential belonging to each author. A missing App credential cannot silently withdraw or rewrite an App-authored result. The old deployed go-ethereum worker remains unchanged.
