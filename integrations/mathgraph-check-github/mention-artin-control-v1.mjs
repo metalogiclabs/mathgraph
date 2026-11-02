@@ -59,5 +59,6 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
   try{const r=await exec('lake',args,{cwd:directory,timeout:120000,maxBuffer:262144,env:{PATH:process.env.PATH,HOME:process.env.HOME,LEAN_NUM_THREADS:'1'}});return {code:0,output:r.stdout+r.stderr};}
   catch(e){if(e.code===1)return {code:1,output:String(e.stdout??'')+String(e.stderr??'')};throw Error('ARTIN_NATIVE_EXECUTION_INCOMPLETE');}
  };
+ const publishedSource=await readFile(join(directory,'published-exercise.lean.txt'),'utf8');
  const result=await qualifyArtin({run,publishedSource});await writeFile(join(directory,'artin-mention-native-receipt.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));if(result.status!=='ARTIN_CONTROLS_VERIFIED')process.exitCode=1;
 }
