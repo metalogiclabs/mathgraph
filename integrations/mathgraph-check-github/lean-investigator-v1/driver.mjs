@@ -1,3 +1,4 @@
+import {executionContext} from '../pr-pilot-v1/context.mjs';
 // Source audit orchestration. Repository data never selects commands or credentials.
 import {readFile,writeFile,readdir,mkdir} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {modelSnapshot,validatePilotSnapshot,compareProbeRows} from '../pr-pilot-v1/engine.mjs';
@@ -5,7 +6,7 @@ import {requestJSON,reservationCents} from '../investigator-v1/model.mjs';
 import {admitLeanPlan,admitLeanPatch,assessGuard,guardBlocks,inspectArm} from './contracts.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'lean-investigation';
 let profile={repository:'metalogiclabs/L4YAML',head_sha:'219f133cc93172fea46b08d09edf9b3b6441c0a4',path:'Scripts/Ledger.lean',module:'Scripts.Ledger',namespace:'Scripts.Ledger',cli_path:'Scripts/Main/CheckScriptsLedger.lean',cli_module:'Scripts.Main.CheckScriptsLedger',toolchain:'leanprover/lean4:v4.35.0',mode:'OWNER_SELECTED_RETROSPECTIVE_SOURCE_AUDIT'};
-const context={verifier_sha:process.env.GITHUB_SHA,run_id:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT)};
+const context=executionContext();
 const hash=x=>createHash('sha256').update(typeof x==='string'?x:JSON.stringify(x)).digest('hex');
 const requireFact=(b,r)=>{if(!b)throw Error(r);};
 requireFact(/^[a-f0-9]{40}$/.test(context.verifier_sha??'')&&Number.isSafeInteger(context.run_id)&&context.attempt===1,'INVALID_CONTEXT');

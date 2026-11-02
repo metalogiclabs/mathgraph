@@ -1,3 +1,4 @@
+import {executionContext} from './context.mjs';
 import {createRepair} from './repair.mjs';
 // Trusted hosted orchestration. No repository source executes in this process.
 import {readFile,writeFile,readdir,mkdir,appendFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
@@ -5,7 +6,7 @@ import {mintScopedToken} from './auth.mjs';
 import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'pr-investigation';
-const context={verifier_sha:process.env.GITHUB_SHA,run_id:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT)};
+const context=executionContext();
 const hash=x=>createHash('sha256').update(x).digest('hex'),ensure=(b,c)=>{if(!b)throw Error(c);};
 ensure(/^[a-f0-9]{40}$/.test(context.verifier_sha??'')&&context.attempt===1&&Number.isSafeInteger(context.run_id),'INVALID_WORKFLOW_CONTEXT');
 await mkdir(dir,{recursive:true});
@@ -49,7 +50,7 @@ try{
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');
   const central=githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),run=await central(`/repos/metalogiclabs/mathgraph/actions/runs/${publication.prior_run}`);
-  ensure(run.path==='.github/workflows/check-pr-pilot.yml'&&(run.event==='repository_dispatch'||request.qualification_only&&run.event==='push'&&run.head_branch==='pilot/check-pr-qualify-v1')&&run.head_sha===prior.context.verifier_sha&&run.repository?.full_name==='metalogiclabs/mathgraph'&&run.run_attempt===1,'UNTRUSTED_PRIOR_WORKFLOW');
+  ensure(run.path==='.github/workflows/check-pr-pilot.yml'&&(run.event==='repository_dispatch'||request.qualification_only&&run.event==='push'&&run.head_branch==='pilot/check-pr-qualify-v1')&&run.head_sha===(prior.context.scheduler_sha??prior.context.verifier_sha)&&run.repository?.full_name==='metalogiclabs/mathgraph'&&run.run_attempt===1,'UNTRUSTED_PRIOR_WORKFLOW');
   const read=async n=>JSON.parse(await readFile(`${priorDir}/${n}.json`));
   const qualificationReplay=request.qualification_only&&prior.context.run_id===41527964407&&prior.context.verifier_sha==='d8f49afb356d95674e7f6ec92c1d764becdf196f';
   const data=rebindFrozenPlan({context:prior.context,snapshot:await read('snapshot'),plan:await read('plan'),state:await read('state'),assessment:await read('assessment')},{...request,command:'fix'},qualificationReplay?{...context,verifier_sha:prior.context.verifier_sha}:context);

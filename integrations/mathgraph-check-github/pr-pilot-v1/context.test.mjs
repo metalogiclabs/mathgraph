@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {executionContext} from './context.mjs';
+test('immutable controller identity remains distinct from scheduler/default-branch SHA',()=>assert.deepEqual(executionContext({GITHUB_SHA:'a'.repeat(40),MATHGRAPH_CONTROLLER_SHA:'b'.repeat(40),GITHUB_RUN_ID:'1',GITHUB_RUN_ATTEMPT:'1'}),{verifier_sha:'b'.repeat(40),run_id:1,attempt:1,scheduler_sha:'a'.repeat(40)}));
+test('ordinary qualification retains historical context shape',()=>assert.deepEqual(executionContext({GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'1',GITHUB_RUN_ATTEMPT:'1'}),{verifier_sha:'a'.repeat(40),run_id:1,attempt:1}));

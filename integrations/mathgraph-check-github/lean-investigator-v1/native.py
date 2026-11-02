@@ -24,12 +24,18 @@ def validate_snapshot(s):
   assert isinstance(s['base_source'],str) and s['base_cli_source']==s['cli_source']
  return True
 
+def runtime_context(env):
+ context={'verifier_sha':env.get('MATHGRAPH_CONTROLLER_SHA',env['GITHUB_SHA']),'run_id':int(env['GITHUB_RUN_ID']),'attempt':int(env['GITHUB_RUN_ATTEMPT'])}
+ if env.get('MATHGRAPH_CONTROLLER_SHA'):context['scheduler_sha']=env['GITHUB_SHA']
+ assert re.fullmatch(r'[a-f0-9]{40}',context['verifier_sha']) and context['attempt']==1
+ return context
+
 def main():
  phase=sys.argv[1];root=Path(sys.argv[2] if len(sys.argv)>2 else 'lean-investigation').resolve()
  load=lambda name:json.loads((root/(name+'.json')).read_text())
  state=load('state')
  if state['state']!='PROBES_PROPOSED':return
- m=load('manifest');context={'verifier_sha':os.environ['GITHUB_SHA'],'run_id':int(os.environ['GITHUB_RUN_ID']),'attempt':int(os.environ['GITHUB_RUN_ATTEMPT'])}
+ m=load('manifest');context=runtime_context(os.environ)
  assert context==m['context']
  for name,h in m['hashes'].items():assert '/' not in name and digest((root/name).read_bytes())==h
  if phase=='repair' and load('repair-state')['state']!='PATCH_PROPOSED':return
@@ -104,7 +110,7 @@ if __name__=='__main__':
  try:main()
  except Exception as e:
   root=Path(sys.argv[2] if len(sys.argv)>2 else 'lean-investigation').resolve();root.mkdir(exist_ok=True)
-  context={'verifier_sha':os.environ['GITHUB_SHA'],'run_id':int(os.environ['GITHUB_RUN_ID']),'attempt':int(os.environ['GITHUB_RUN_ATTEMPT'])}
+  context=runtime_context(os.environ)
   reason=type(e).__name__+': '+str(e)[-1200:];(root/'state.json').write_text(json.dumps({'context':context,'state':'UNKNOWN','stage':'native-'+sys.argv[1],'reason':reason})+'\n')
   (root/'native-error.json').write_text(json.dumps({'context':context,'reason':reason})+'\n')
   files=sorted(p for p in root.glob('*.json') if p.name!='manifest.json');(root/'manifest.json').write_text(json.dumps({'context':context,'hashes':{p.name:digest(p.read_bytes()) for p in files}})+'\n')
