@@ -47,3 +47,21 @@ export async function runFreshComparison({frozen,generate,verify,onProposal=asyn
 export function authorizeProspectiveRun(current,history){
  ensure(current?.event==='push'&&current.run_attempt===1&&current.actor?.id===32909488&&current.head_branch==='feat/mathgraph-mention-agent-v1-20261102'&&current.path==='.github/workflows/mathgraph-fresh-proof-v1.yml'&&Array.isArray(history?.workflow_runs)&&history.total_count===history.workflow_runs.length&&history.workflow_runs.some(r=>r.id===current.id)&&history.workflow_runs.filter(r=>r.id<=current.id).length===1,'PROSPECTIVE_EPOCH_REFUSED');return true;
 }
+
+export function nativeTacticVariants(proof,diagnostic){
+ if(typeof proof!=='string'||!/^by(?:\s|$)/.test(proof)||!/(?:unsolved goals|type mismatch)[\s\S]*\^\s*\d+/i.test(diagnostic))return [];
+ const tactics=['simp only [pow_succ, pow_zero, mul_one]; group','simp [pow_two, mul_assoc]'];
+ const variants=[];
+ for(const tactic of tactics){const changed=proof.replace(/\bby[ \t]+group\b/g,'by '+tactic).replace(/(^[ \t]*)group[ \t]*$/gm,'$1'+tactic);if(changed!==proof)variants.push({method:'NORMALIZE_NATURAL_POWERS_BEFORE_GROUP_SIMPLIFICATION',proof_body:changed});}
+ return variants;
+}
+export async function repairWithNativePortfolio({frozen,proposals,diagnostic,verify,maxAttempts=2,onAttempt=async()=>{}}){
+ ensure(Number.isSafeInteger(maxAttempts)&&maxAttempts>=0&&maxAttempts<=4,'NATIVE_PORTFOLIO_CAP');const seen=new Set();let attempts=0;
+ for(const p of proposals){for(const variant of nativeTacticVariants(p.proof_body,diagnostic)){
+  const digest=hash(variant.proof_body);if(seen.has(digest))continue;seen.add(digest);if(attempts>=maxAttempts)break;
+  try{renderCandidate(frozen,variant.proof_body);}catch{continue;}
+  attempts++;const result=await verify(variant.proof_body);await onAttempt({attempt:attempts,...variant,result});
+  if(result.status==='ORIGINAL_TARGET_VERIFIED')return {...result,proof_body:variant.proof_body,method:variant.method,post_hoc:true,registered_proof_constructor_used:false,api_calls:0,native_attempts:attempts};
+ }}
+ return {status:'UNKNOWN',post_hoc:true,api_calls:0,native_attempts:attempts};
+}

@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 
-import {freezeTheorem,renderCandidate,originalConsumer,verifyFresh,runFreshComparison,authorizeProspectiveRun} from './mention-fresh-proof-v1.mjs';
+import {freezeTheorem,renderCandidate,originalConsumer,verifyFresh,runFreshComparison,authorizeProspectiveRun,repairWithNativePortfolio} from './mention-fresh-proof-v1.mjs';
 import {freshNativeRunner} from './fresh-native-runner-v1.mjs';
 const ensure=(ok,code)=>{if(!ok)throw Error(code);};
 const protocol=JSON.parse(await readFile(new URL('./fixtures/fresh-proof-protocol-v1.json',import.meta.url),'utf8'));
@@ -26,6 +26,17 @@ ensure(plain.code===0&&strict.code===1&&consumer.code===0&&/sorryAx/.test(consum
 const baseline={ordinary_lean_compilation:'ACCEPTS_PLACEHOLDER_WITH_WARNING',strict_lean_ci:'REJECTS_PLACEHOLDER',axiom_audit:'REJECTS_SORRY_AXIOM'};
 await writeFile(join(output,'baseline.json'),JSON.stringify(baseline,null,2));
 if(process.argv.includes('--native-preflight-only')){console.log(JSON.stringify({status:'NATIVE_PREFLIGHT_PASSED',...baseline}));process.exit(0);}
+if(process.argv.includes('--native-portfolio-only')){
+ const origin=JSON.parse(await readFile(new URL('./fixtures/fresh-native-followup-v1.json',import.meta.url),'utf8'));
+ const bytes=await readFile(new URL('./fixtures/fresh-failed-proposals-v1.json',import.meta.url));
+ ensure(createHash('sha256').update(bytes).digest('hex')===origin.proposals_sha256&&origin.source_sha256===frozen.source_sha256&&origin.target_sha256===frozen.target_sha256,'FOLLOWUP_BINDING_MISMATCH');
+ const proposals=JSON.parse(bytes),attempts=[];let n=0;
+ const result=await repairWithNativePortfolio({frozen,proposals,diagnostic:origin.diagnostic,maxAttempts:2,verify:async proof=>verifyFresh({frozen,proof,run:await runnerFor('portfolio-'+(++n))}),onAttempt:async item=>{attempts.push(item);await writeFile(join(output,'portfolio-attempts.json'),JSON.stringify(attempts,null,2));}});
+ await writeFile(join(output,'native-followup.json'),JSON.stringify({origin,frozen,...result},null,2));
+ if(result.status==='ORIGINAL_TARGET_VERIFIED')await writeFile(join(output,'verified-native-portfolio.lean'),renderCandidate(frozen,result.proof_body));
+ console.log(JSON.stringify({status:result.status,post_hoc:true,api_calls:0,native_attempts:result.native_attempts,original_comparison:origin.original_comparison}));
+ if(result.status!=='ORIGINAL_TARGET_VERIFIED')process.exitCode=1;process.exit();
+}
 ensure(process.env.GITHUB_REPOSITORY==='metalogiclabs/mathgraph'&&process.env.GITHUB_EVENT_NAME==='push'&&process.env.GITHUB_RUN_ATTEMPT==='1','ACTION_CONTEXT_REFUSED');
 const runId=Number(process.env.GITHUB_RUN_ID);ensure(Number.isSafeInteger(runId)&&runId>0,'RUN_ID_REFUSED');
 const github=async path=>{const r=await fetch('https://api.github.com/repos/metalogiclabs/mathgraph'+path,{redirect:'error',headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json'},signal:AbortSignal.timeout(20000)});ensure(r.ok,'EPOCH_READ_FAILED');return r.json();};

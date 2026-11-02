@@ -45,3 +45,13 @@ test('unconfirmed native cleanup stops comparison before another paid call',asyn
  const frozen=m.freezeTheorem(source,{});let calls=0;
  await assert.rejects(m.runFreshComparison({frozen,generate:async()=>{calls++;return {proof_body:'by rfl',usage:{input_tokens:1,output_tokens:1}};},verify:proof=>m.verifyFresh({frozen,proof,run:async()=>{throw Error('NATIVE_CLEANUP_UNCONFIRMED');}})}),/NATIVE_CLEANUP_UNCONFIRMED/);assert.equal(calls,1);
 });
+
+test('generic native repair changes tactics only and labels the result post-hoc',async()=>{
+ const f=m.freezeTheorem(source,{}),proof='by\n  have h : n ^ 2 = n ^ 2 := by group\n  rfl';
+ const variants=m.nativeTacticVariants(proof,'unsolved goals: (a * b) ^ 2 = a ^ 2 * b ^ 2');assert.equal(variants.length,2);assert.match(variants[0].proof_body,/pow_succ/);assert.equal(m.nativeTacticVariants(proof,'Unknown identifier missing_lemma').length,0);
+ let n=0;const r=await m.repairWithNativePortfolio({frozen:f,proposals:[{proof_body:proof}],diagnostic:'unsolved goals: x ^ 2',verify:async()=>++n===1?{status:'ORIGINAL_TARGET_VERIFIED',axioms:[]}:{status:'UNKNOWN'}});assert.equal(r.status,'ORIGINAL_TARGET_VERIFIED');assert.equal(r.post_hoc,true);assert.equal(r.api_calls,0);assert.equal(r.native_attempts,1);assert.ok(m.renderCandidate(f,r.proof_body).includes(f.header));
+});
+test('native repair attempt cap cannot become an unbounded search',async()=>{
+ const f=m.freezeTheorem(source,{});let n=0;
+ const r=await m.repairWithNativePortfolio({frozen:f,proposals:[{proof_body:'by\n  group'},{proof_body:'by\n  group'}],diagnostic:'unsolved goals: x ^ 2',maxAttempts:1,verify:async()=>{n++;return {status:'UNKNOWN'};}});assert.equal(n,1);assert.equal(r.status,'UNKNOWN');
+});
