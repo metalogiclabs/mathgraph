@@ -30,7 +30,8 @@ try{
   if(!initial.complete){await save('repair-state',{state:'BASELINE_OR_PROBES_INCOMPLETE',model_calls:0});await seal();process.exit(0);}
   const failed=initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE');
   if(!failed){await save('repair-state',{state:'NO_REPRODUCED_FAILURE',model_calls:0});await seal();process.exit(0);}
-  const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-repair',packet:{snapshot:{...snapshot,cli_source:undefined},plan,native:{...native,arm:{...native.arm,probes:native.arm.probes.map(p=>({...p,output:p.output.slice(0,1800)}))}}}});await save('model-repair',response);
+  let previous;try{previous=await load('prior-feedback');}catch{}
+  const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-repair',packet:{snapshot:{...snapshot,cli_source:undefined},plan,previous_candidate_feedback:previous,native:{...native,arm:{...native.arm,probes:native.arm.probes.map(p=>({...p,output:p.output.slice(0,1800)}))}}}});await save('model-repair',response);
   if(!response.proposal.edits?.length){await save('repair-state',{state:'NO_CANDIDATE_PATCH',model_calls:1});await seal();process.exit(0);}
   const patched=admitLeanPatch(response.proposal,snapshot.source);await save('patch',{...response.proposal,path:snapshot.path,original_sha256:snapshot.source_sha256,patched_sha256:hash(patched),content:patched});
   await save('repair-state',{state:'PATCH_PROPOSED',model_calls:1,patched_sha256:hash(patched)});await seal();
