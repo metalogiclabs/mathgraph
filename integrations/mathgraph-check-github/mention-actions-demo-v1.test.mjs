@@ -81,3 +81,31 @@ test('an already valid source never invents a repair or a publication failure',(
  const b=m.demoComment({command:'fix',sha:'a'.repeat(40),native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}});
  assert.match(b,/original claim passes/);assert.doesNotMatch(b,/Conclusion assumed|Repair verified|Opening a repair PR/);
 });
+
+test('publisher uses the fixed MathGraph App identity and separates read and write tokens',()=>{
+ const a=m.publicationAuth({GITHUB_TOKEN:'actions-token-for-read'});
+ assert.equal(a.botLogin,'github-actions[bot]');assert.equal(m.publicationToken(a,'POST'),'actions-token-for-read');
+ const app=m.publicationAuth({GITHUB_TOKEN:'actions-token-for-read',MATHGRAPH_APP_TOKEN:'app-token-for-publish',MATHGRAPH_APP_SLUG:'mathgraph-check'});
+ assert.equal(app.botLogin,'mathgraph-check[bot]');assert.equal(m.publicationToken(app,'GET'),'actions-token-for-read');
+ assert.equal(m.publicationToken(app,'POST'),'app-token-for-publish');
+ assert.equal(m.publicationToken(app,'PATCH','github-actions[bot]'),'actions-token-for-read');
+ assert.equal(m.publicationToken(app,'PATCH','mathgraph-check[bot]'),'app-token-for-publish');
+ assert.throws(()=>m.publicationToken(a,'PATCH','mathgraph-check[bot]'),/APP_TOKEN_REQUIRED/);
+ assert.throws(()=>m.publicationAuth({GITHUB_TOKEN:'actions-token-for-read',MATHGRAPH_APP_TOKEN:'wrong-app-token',MATHGRAPH_APP_SLUG:'someone-else'}),/APP_IDENTITY/);
+ assert.throws(()=>m.publicationToken(app,'PATCH','someone'),/AUTHOR_REFUSED/);
+});
+test('App progress is resumed only by the selected bot and receipts name the publisher',()=>{
+ const args={command:'fix',sha:'a'.repeat(40),runId:12,botLogin:'mathgraph-check[bot]'};
+ const body=m.demoProgress(args),c={user:{login:'mathgraph-check[bot]'},body};
+ assert.equal(m.ownsDemoProgress(c,args),true);assert.equal(m.ownsDemoProgress(c,{...args,botLogin:'github-actions[bot]'}),false);
+ assert.match(m.demoComment({...args,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}}),/as `mathgraph-check\[bot\]`/);
+});
+test('withdrawal preserves authorship when old Actions and new App results coexist',async()=>{
+ const root='/repos/metalogiclabs/mathgraph',old='a'.repeat(40),head='b'.repeat(40),authors=[];
+ const api=async(path,options={})=>{
+  if(path.endsWith('/pulls/1'))return {head:{sha:head}};
+  if(path.includes('/comments?'))return ['github-actions[bot]','mathgraph-check[bot]','stranger'].map((login,i)=>({id:i+1,user:{login},body:'<!-- mathgraph-actions-demo-v1:1 -->\nRevision: `'+old+'`'}));
+  authors.push(options.author);return {};
+ };
+ assert.equal(await m.withdrawDemoComments({api,root,number:1}),2);assert.deepEqual(authors,['github-actions[bot]','mathgraph-check[bot]']);
+});
