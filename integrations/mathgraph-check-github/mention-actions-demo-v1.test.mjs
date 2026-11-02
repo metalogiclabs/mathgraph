@@ -130,3 +130,17 @@ test('paid-model gate closes on exhausted or incomplete history without disablin
  assert.equal(m.paidModelAllowed({total_count:21,workflow_runs:runs},20),false);
  assert.equal(m.paidModelAllowed({total_count:20,workflow_runs:runs},30),false);
 });
+
+test('published Artin presentation identifies the stronger assumption and registered repair',()=>{
+ const common={caseId:'artin-generators',sha:'a'.repeat(40),native:{status:'CLAIM_NOT_ESTABLISHED'}};
+ const c=m.demoComment({...common,command:'check'});assert.match(c,/whole group/);assert.doesNotMatch(c,/assumes the very conclusion|List reversal/);assert.match(c,/Published exercise/);
+ const repaired=m.demoComment({...common,command:'fix',repairPerformed:true,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}});assert.match(repaired,/Only the generators commute/);assert.match(repaired,/ProofNet-Verified/);
+});
+
+test('Artin repair publication changes only the selected theorem path and names its original assumption',async()=>{
+ const sha='a'.repeat(40),writes=[];
+ const api=async(path,options={})=>{if(path.endsWith('/pulls/1'))return {state:'open',head:{sha}};writes.push({path,...options});if(path.endsWith('/pulls'))return {number:9,html_url:'https://github.com/metalogiclabs/mathgraph/pull/9'};return {};};
+ const args={api,root:'/repos/metalogiclabs/mathgraph',pr:{head:{ref:'demo'}},sha,sourceFile:{sha:'blob'},repaired:'registered proof',event:{issue:{number:1},comment:{id:2}},runURL:'https://github.com/metalogiclabs/mathgraph/actions/runs/3',sourcePath:'mathgraph-demo/ArtinGenerators.lean',caseId:'artin-generators'};
+ const result=await m.createVerifiedRepair(args);assert.equal(result.number,9);assert.ok(writes.some(w=>w.path.endsWith('/contents/mathgraph-demo/ArtinGenerators.lean')));assert.ok(writes.some(w=>w.body?.title?.includes('abelian ambient group')));assert.equal(writes.filter(w=>w.method==='PUT').length,1);
+ await assert.rejects(m.createVerifiedRepair({...args,sourcePath:'.github/workflows/untrusted.yml'}),/UNSUPPORTED_REPAIR_PATH/);
+});
