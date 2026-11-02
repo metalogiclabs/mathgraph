@@ -13,7 +13,7 @@ test('scope verification uses Worker-compatible no-follow fetch and revokes on r
  let revoked=false;
  const app=async()=>({token:'dummy',permissions:{contents:'read',metadata:'read'}});
  await assert.rejects(()=>mintScopedToken(app,1,repo,{contents:'read'},{fetcher:async(url,o)=>{
-  assert.equal(o.redirect,'manual');if(o.method==='DELETE'){revoked=true;return new Response(null,{status:204});}
+  assert.equal(o.redirect,'manual');assert.equal(o.headers['User-Agent'],'MathGraph-Check-PR-Pilot');if(o.method==='DELETE'){revoked=true;return new Response(null,{status:204});}
   return new Response(null,{status:302,headers:{Location:'https://example.invalid'}});
  }}),/TOKEN_SCOPE_UNAVAILABLE/);
  assert.equal(revoked,true);
