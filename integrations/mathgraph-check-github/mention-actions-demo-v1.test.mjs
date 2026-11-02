@@ -144,3 +144,15 @@ test('Artin repair publication changes only the selected theorem path and names 
  const result=await m.createVerifiedRepair(args);assert.equal(result.number,9);assert.ok(writes.some(w=>w.path.endsWith('/contents/mathgraph-demo/ArtinGenerators.lean')));assert.ok(writes.some(w=>w.body?.title?.includes('abelian ambient group')));assert.equal(writes.filter(w=>w.method==='PUT').length,1);
  await assert.rejects(m.createVerifiedRepair({...args,sourcePath:'.github/workflows/untrusted.yml'}),/UNSUPPORTED_REPAIR_PATH/);
 });
+test('group result describes proof repair without claiming its failed proof compiled',()=>{
+ const args={caseId:'group-identity',command:'check',sha:'a'.repeat(40),native:{status:'CLAIM_NOT_ESTABLISHED'}};
+ const c=m.demoComment(args);assert.match(c,/proof needs repair/i);assert.doesNotMatch(c,/Proof compiles|Conclusion assumed|List reversal/);
+ const r=m.demoComment({...args,command:'fix',repairPerformed:true,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}});assert.match(r,/Natural powers normalized/);assert.match(r,/four frozen group-identity/);assert.doesNotMatch(r,/Conclusion assumed/);
+});
+test('group publication uses only the allowed path and rejects a source change',async()=>{
+ const sha='a'.repeat(40),writes=[];
+ const api=async(path,o={})=>{if(path.endsWith('/pulls/1'))return {state:'open',head:{sha}};writes.push({path,...o});return path.endsWith('/pulls')?{number:9,html_url:'https://github.com/metalogiclabs/mathgraph/pull/9'}:{};};
+ const args={api,root:'/repos/metalogiclabs/mathgraph',pr:{head:{ref:'demo'}},sha,sourceFile:{sha:'blob'},repaired:'proof',event:{issue:{number:1},comment:{id:2}},runURL:'https://github.com/metalogiclabs/mathgraph/actions/runs/3',sourcePath:'mathgraph-demo/GroupIdentity.lean',caseId:'group-identity'};
+ assert.equal((await m.createVerifiedRepair(args)).number,9);assert.equal(writes.filter(x=>x.method==='PUT').length,1);assert.match(writes.at(-1).body.title,/group identity/);
+ await assert.rejects(m.createVerifiedRepair({...args,api:async()=>({state:'open',head:{sha:'b'.repeat(40)}})}),/SOURCE_MOVED/);
+});
