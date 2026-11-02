@@ -98,7 +98,7 @@ test('App progress is resumed only by the selected bot and receipts name the pub
  const args={command:'fix',sha:'a'.repeat(40),runId:12,botLogin:'mathgraph-check[bot]'};
  const body=m.demoProgress(args),c={user:{login:'mathgraph-check[bot]'},body};
  assert.equal(m.ownsDemoProgress(c,args),true);assert.equal(m.ownsDemoProgress(c,{...args,botLogin:'github-actions[bot]'}),false);
- assert.match(m.demoComment({...args,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}}),/as `mathgraph-check\[bot\]`/);
+ assert.match(m.demoComment({...args,native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}}),/Publisher: `mathgraph-check\[bot\]`/);
 });
 test('withdrawal preserves authorship when old Actions and new App results coexist',async()=>{
  const root='/repos/metalogiclabs/mathgraph',old='a'.repeat(40),head='b'.repeat(40),authors=[];
@@ -108,4 +108,18 @@ test('withdrawal preserves authorship when old Actions and new App results coexi
   authors.push(options.author);return {};
  };
  assert.equal(await m.withdrawDemoComments({api,root,number:1}),2);assert.deepEqual(authors,['github-actions[bot]','mathgraph-check[bot]']);
+});
+
+test('compact receipt links the exact revision and retains a machine-readable binding',()=>{
+ const sha='a'.repeat(40),b=m.demoComment({sha,command:'fix',native:{status:'ORIGINAL_TARGET_VERIFIED',axioms:['propext']}});
+ assert.match(b,new RegExp('<!-- mathgraph-source:'+sha+' -->'));
+ assert.match(b,/\[aaaaaaaaaa\]\(https:\/\/github.com\/metalogiclabs\/mathgraph\/commit\/a{40}\)/);
+ assert.doesNotMatch(b,/Revision: `a{40}`|trusted adapter|Executed via GitHub Actions/);
+ assert.match(b,/Assumptions: propext/);assert.match(b,/frozen list-reversal claim/);
+});
+test('source withdrawal understands the compact receipt marker',async()=>{
+ const old='a'.repeat(40),head='b'.repeat(40),patched=[];
+ const c={id:8,user:{login:'mathgraph-check[bot]'},body:'<!-- mathgraph-actions-demo-v1:1 -->\n'+m.demoComment({sha:old,native:{status:'UNKNOWN'}})};
+ const api=async(path,options={})=>{if(path.endsWith('/pulls/1'))return {head:{sha:head}};if(path.includes('/comments?'))return [c];patched.push(options.body.body);return {};};
+ assert.equal(await m.withdrawDemoComments({api,root:'/repos/metalogiclabs/mathgraph',number:1}),1);assert.match(patched[0],/Source changed/);
 });
