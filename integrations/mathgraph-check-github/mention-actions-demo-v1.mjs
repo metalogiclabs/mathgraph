@@ -23,6 +23,18 @@ export function demoComment({command,sha,native,runURL,repairURL,proposal}={}){
  lines.push('<details><summary>Evidence and scope</summary>\n\nRevision: `'+String(sha??'unbound')+'`\n\n'+(runURL?'[Native verification run]('+runURL+')\n\n':'')+'Controlled demo: list reversal. The intended theorem is fixed by the trusted adapter. This is not an upstream defect or general paper-to-proof certification. Model findings are advisory.\n\nExecuted via GitHub Actions.\n\n</details>');
  return lines.join('\n\n');
 }
+export async function createVerifiedRepair({api,root,pr,sha,sourceFile,repaired,event,runURL}){
+ const fresh=async()=>{const live=await api(root+'/pulls/'+event.issue.number);ensure(live.state==='open'&&live.head?.sha===sha,'SOURCE_MOVED');};
+ await fresh();
+ const branch='mathgraph/repair-'+event.issue.number+'-'+sha.slice(0,10)+'-'+event.comment.id;
+ await api(root+'/git/refs',{method:'POST',body:{ref:'refs/heads/'+branch,sha}});
+ await api(root+'/contents/'+demoPath,{method:'PUT',body:{branch,sha:sourceFile.sha,message:'fix: prove list reversal length without assuming the conclusion',content:Buffer.from(repaired).toString('base64')}});
+ await fresh();
+ const opened=await api(root+'/pulls',{method:'POST',body:{head:branch,base:pr.head.ref,title:'Prove the original list-reversal claim without an extra assumption',body:'Removes the conclusion supplied as a hypothesis. Lean 4.28.0 checked the unchanged original target and its consumer with no axioms. Controlled demonstration; no general semantic assurance.\n\nNative verification: '+runURL,draft:true}});
+ ensure(Number.isSafeInteger(opened.number)&&typeof opened.html_url==='string','REPAIR_PR_NOT_CONFIRMED');
+ try{await fresh();}catch(e){const closed=await api(root+'/pulls/'+opened.number,{method:'PATCH',body:{state:'closed'}});ensure(closed.state==='closed','STALE_REPAIR_WITHDRAWAL_UNCONFIRMED');throw e;}
+ return {url:opened.html_url,number:opened.number};
+}
 async function repairProof(apiKey,source){
  ensure(typeof apiKey==='string'&&apiKey.trim(),'OPENAI_API_KEY_REQUIRED');
  const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},signal:AbortSignal.timeout(120000),body:JSON.stringify({model:policy.model,store:false,max_output_tokens:4096,instructions:'Return a proof body for the ORIGINAL theorem. Do not assume the conclusion or change the statement. Select a supported proof constructor. The native checker, not your answer, determines acceptance.',input:JSON.stringify({original_target:originalTarget,submitted_source:source,supported_proof_constructors:['by simp','by simpa','by exact List.length_reverse xs']}),text:{format:{type:'json_schema',name:'mathgraph_repair',strict:true,schema:{type:'object',properties:{proof_body:{type:'string',enum:['by simp','by simpa','by exact List.length_reverse xs']}},required:['proof_body'],additionalProperties:false}}}})});
@@ -47,30 +59,27 @@ async function main(){
  ensure(source===brokenSource||['by simp','by simpa','by exact List.length_reverse xs'].some(p=>repairedSource(p)===source),'UNSUPPORTED_DEMO_SOURCE');
  const marker='<!-- mathgraph-actions-demo-v1:'+event.comment.id+' -->';const comments=await api(root+'/issues/'+event.issue.number+'/comments?per_page=100');ensure(Array.isArray(comments)&&comments.length<100,'COMMENT_WINDOW_INCOMPLETE');if(comments.some(c=>c.user?.login==='github-actions[bot]'&&c.body?.startsWith(marker)))return;
  const comment=await api(root+'/issues/'+event.issue.number+'/comments',{method:'POST',body:{body:marker+'\n### MathGraph Check\nChecking the proof against the original claim…'}});ensure(Number.isSafeInteger(comment.id),'COMMENT_NOT_CREATED');
- const runURL='https://github.com/'+repository+'/actions/runs/'+runId;const work=await mkdtemp(join(tmpdir(),'mathgraph-native-'));let receipt,repairURL=null,proposal=null;
+ const runURL='https://github.com/'+repository+'/actions/runs/'+runId;const work=await mkdtemp(join(tmpdir(),'mathgraph-native-'));let receipt,repairURL=null,repairNumber=null,proposal=null,modelCalls=0;
  try{
   const run=await dockerRunner(work);
   const sanity=await run('Sanity','import Std\nexample : 1 + 1 = 2 := by decide\n');const negative=await run('Negative','import Std\nexample : False := by trivial\n');ensure(sanity.code===0&&negative.code===1,'NATIVE_CONTROLS_FAILED');
   receipt=await nativeDemo({source,run});
   if(command==='fix'&&receipt.status==='CLAIM_NOT_ESTABLISHED'){
-   const repaired=await repairProof(process.env.OPENAI_API_KEY,source);receipt=await nativeDemo({source:repaired,run});ensure(receipt.status==='ORIGINAL_TARGET_VERIFIED','REPAIR_NOT_VERIFIED');
+   modelCalls++;const repaired=await repairProof(process.env.OPENAI_API_KEY,source);receipt=await nativeDemo({source:repaired,run});ensure(receipt.status==='ORIGINAL_TARGET_VERIFIED','REPAIR_NOT_VERIFIED');
    await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-verified-repair.lean'),repaired,{mode:0o600});
    try{
-    const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');
-    const branch='mathgraph/repair-'+event.issue.number+'-'+sha.slice(0,10)+'-'+event.comment.id;
-    await api(root+'/git/refs',{method:'POST',body:{ref:'refs/heads/'+branch,sha}});
-    await api(root+'/contents/'+demoPath,{method:'PUT',body:{branch,sha:sourceFile.sha,message:'fix: prove list reversal length without assuming the conclusion',content:Buffer.from(repaired).toString('base64')}});
-    const opened=await api(root+'/pulls',{method:'POST',body:{head:branch,base:pr.head.ref,title:'Prove the original list-reversal claim without an extra assumption',body:'Removes the conclusion supplied as a hypothesis. Lean 4.28.0 checked the unchanged original target and its consumer with no axioms. Controlled demonstration; no general semantic assurance.\n\nNative verification: '+runURL,draft:true}});ensure(typeof opened.html_url==='string','REPAIR_PR_NOT_CONFIRMED');repairURL=opened.html_url;
-   }catch{repairURL=null;}
+    const repair=await createVerifiedRepair({api,root,pr,sha,sourceFile,repaired,event,runURL});repairURL=repair.url;repairNumber=repair.number;
+   }catch(e){if(e.message==='SOURCE_MOVED'||e.message==='STALE_REPAIR_WITHDRAWAL_UNCONFIRMED')throw e;repairURL=null;}
   }else if(command==='check'){
    const snapshot={repository,number:event.issue.number,sha,files:[{filename:demoPath,patch:source.split('\n').map(l=>'+'+l).join('\n')}],runs:[],files_visibility:'COMPLETE',ci_visibility:'COMPLETE'};
-   proposal=await openAIModel({apiKey:process.env.OPENAI_API_KEY,policy})({snapshot,analysis:{native_demo:receipt}});
+   modelCalls++;proposal=await openAIModel({apiKey:process.env.OPENAI_API_KEY,policy})({snapshot,analysis:{native_demo:receipt}});
   }
   const fresh=await api(root+'/pulls/'+event.issue.number);ensure(fresh.head.sha===sha&&fresh.state==='open','SOURCE_MOVED');
   await writeFile(join(process.env.RUNNER_TEMP,'mathgraph-native-receipt.json'),JSON.stringify({schema:'mathgraph.native-list-demo.v1',command,repository,pr:event.issue.number,source_head:sha,run_id:runId,lean:'4.28.0',...receipt,repair_pr:repairURL,model_assessment:proposal},null,2),{mode:0o600});
   await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n'+demoComment({command,sha,native:receipt,runURL,repairURL,proposal})}});
-  console.log(JSON.stringify({status:receipt.status,command,source_head:sha,run_id:runId,repair_pr:repairURL,api_calls:1,scope:'FIXED_LIST_REVERSAL_DEMO_ONLY'}));
- }catch(e){await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n### MathGraph Check\n**Verification is incomplete.**\n\nNo result is promoted. [Inspect this run]('+runURL+').'}});throw e;}
+  console.log(JSON.stringify({status:receipt.status,command,source_head:sha,run_id:runId,repair_pr:repairURL,api_calls:modelCalls,scope:'FIXED_LIST_REVERSAL_DEMO_ONLY'}));
+ }catch(e){if(repairNumber){const closed=await api(root+'/pulls/'+repairNumber,{method:'PATCH',body:{state:'closed'}});ensure(closed.state==='closed','STALE_REPAIR_WITHDRAWAL_UNCONFIRMED');}
+ await api(root+'/issues/comments/'+comment.id,{method:'PATCH',body:{body:marker+'\n### MathGraph Check\n**Verification is incomplete.**\n\nNo result is promoted. [Inspect this run]('+runURL+').'}});throw e;}
  finally{await rm(work,{recursive:true,force:true});}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){try{await main();}catch(e){console.error(/^[-A-Z0-9_]+$/.test(e.message)?e.message:'DEMO_CHECK_INCOMPLETE');process.exitCode=1;}}
