@@ -4,7 +4,7 @@ test('bounded native demo module exists',()=>assert.equal(typeof m.nativeDemo,'f
 test('frozen claim cannot be weakened by candidate proof',()=>{
  assert.match(m.originalTarget,/\(xs : List Nat\) : xs.reverse.length = xs.length/);
  assert.match(m.brokenSource,/\(h : xs.reverse.length = xs.length\)/);
- for(const p of ['by simp','by simpa','by exact List.length_reverse xs'])assert.match(m.repairedSource(p),/theorem mathgraph_reverse_length \(xs : List Nat\) : xs.reverse.length = xs.length :=/);
+ for(const p of ['by simp','by simpa','by exact List.length_reverse'])assert.match(m.repairedSource(p),/theorem mathgraph_reverse_length \(xs : List Nat\) : xs.reverse.length = xs.length :=/);
  for(const p of ['by sorry','by admit','by\n exact False.elim (by sorry)','by simp\naxiom x : False','by run_tac IO.println "x"'])assert.throws(()=>m.repairedSource(p),/UNSUPPORTED_PROOF/);
 });
 test('native compiler success does not conceal a rejected consumer',async()=>{
@@ -27,4 +27,7 @@ test('custom or sorry axioms never pass the native audit',async()=>{
  for(const axiom of ['sorryAx','unproved_claim','propext, sorryAx']){
  const result=await m.nativeDemo({source:m.repairedSource('by simp'),run:async name=>({code:0,output:name==='Consumer'?"'mathgraph_reverse_length' depends on axioms: ["+axiom+"]\n":''})});assert.notEqual(result.status,'ORIGINAL_TARGET_VERIFIED');
  }
+});
+test('the rejected explicit argument form is not an allowed repair constructor',()=>{
+ assert.throws(()=>m.repairedSource('by exact List.length_reverse xs'),/UNSUPPORTED_PROOF/);
 });
