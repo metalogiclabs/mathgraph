@@ -1,4 +1,5 @@
 // Separate opt-in mention service; the existing go-ethereum Worker is untouched.
+import {proofObserver} from './mention-proof-v1.mjs';
 import {createServer} from 'node:http';
 import {createHmac,timingSafeEqual,createHash,createPrivateKey,sign} from 'node:crypto';
 import {mkdir,writeFile,readFile,readdir,rename} from 'node:fs/promises';
@@ -84,7 +85,9 @@ export async function appDependencies(event,{env,policy,stateDir,fetcher=fetch})
  const minted=await request('/app/installations/'+installation.id+'/access_tokens',jwt,{method:'POST',body:{repositories:[repository.split('/')[1]],permissions:{contents:'read',pull_requests:'read',issues:'write',actions:'read'}}});
  ensure(typeof minted.token==='string'&&minted.token.length>10,'TOKEN_NOT_ISSUED');
  const close=()=>request('/installation/token',minted.token,{method:'DELETE'});
- try{return {policy,stateDir,github:githubClient({repository,number:event.issue.number,appId,botLogin:app.slug+'[bot]',api:(path,options)=>request(path,minted.token,options)}),model:openAIModel({apiKey:env.OPENAI_API_KEY,policy,fetcher}),close};}catch(e){await close();throw e;}
+ let manifests=[];
+ try{if(env.MATHGRAPH_PROOF_TRUST_FILE){const raw=await readFile(env.MATHGRAPH_PROOF_TRUST_FILE,'utf8');ensure(Buffer.byteLength(raw)<=65536,'PROOF_TRUST_TOO_LARGE');manifests=JSON.parse(raw);ensure(Array.isArray(manifests)&&manifests.length<=32,'PROOF_TRUST_INVALID');}}catch(e){await close();throw e;}
+ try{return {policy,stateDir,observeProof:proofObserver({manifests,token:minted.token,fetcher}),github:githubClient({repository,number:event.issue.number,appId,botLogin:app.slug+'[bot]',api:(path,options)=>request(path,minted.token,options)}),model:openAIModel({apiKey:env.OPENAI_API_KEY,policy,fetcher}),close};}catch(e){await close();throw e;}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  const config=process.argv[2];ensure(config,'POLICY_FILE_REQUIRED');const policy=JSON.parse(await readFile(config,'utf8'));
