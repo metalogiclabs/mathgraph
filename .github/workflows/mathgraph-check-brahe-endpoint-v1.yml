@@ -1,0 +1,105 @@
+name: MathGraph Check Brahe endpoint retrospective V1
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-brahe-v1-20261102
+    paths:
+      - '.github/workflows/mathgraph-check-brahe-endpoint-v1.yml'
+      - 'integrations/mathgraph-check-github/brahe-*.mjs'
+      - 'integrations/mathgraph-check-github/run-brahe-endpoint-v1*.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathgraph-brahe-endpoint-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BRAHE_BASE: 323c4542ad915aa1b6a1dbf65f1f6a8040609294
+      BRAHE_HEAD: f40f97da4094fddbd3745158f0123f9bcd0f3bd3
+      BRAHE_BASE_BLOB: e161f52140cbcff04d0d7cbf0500b1c7cbd7dccf
+      BRAHE_HEAD_BLOB: eb4172629778a63f874871629ddebc8fe0701858
+      CARGO_NET_RETRY: '2'
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Qualify test-only transplant and strict native receipt parser
+        run: |
+          node integrations/mathgraph-check-github/brahe-endpoint-v1.test.mjs
+          node integrations/mathgraph-check-github/run-brahe-endpoint-v1.test.mjs
+          node integrations/mathgraph-check-github/brahe-cli-v1.test.mjs
+      - name: Fetch exact public Brahe sources and transplant only the head's unit tests into the base
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/duncaneddy/brahe.git "$RUNNER_TEMP/brahe-origin"
+          git -C "$RUNNER_TEMP/brahe-origin" remote add owned-fork https://github.com/metalogiclabs/brahe.git
+          git -C "$RUNNER_TEMP/brahe-origin" fetch origin "$BRAHE_BASE"
+          git -C "$RUNNER_TEMP/brahe-origin" fetch owned-fork "$BRAHE_HEAD"
+          git -C "$RUNNER_TEMP/brahe-origin" worktree add --detach "$RUNNER_TEMP/brahe-base" "$BRAHE_BASE"
+          git -C "$RUNNER_TEMP/brahe-origin" worktree add --detach "$RUNNER_TEMP/brahe-head" "$BRAHE_HEAD"
+          test "$(git -C "$RUNNER_TEMP/brahe-base" rev-parse HEAD)" = "$BRAHE_BASE"
+          test "$(git -C "$RUNNER_TEMP/brahe-head" rev-parse HEAD)" = "$BRAHE_HEAD"
+          test "$(git -C "$RUNNER_TEMP/brahe-base" hash-object src/events/detection.rs)" = "$BRAHE_BASE_BLOB"
+          test "$(git -C "$RUNNER_TEMP/brahe-head" hash-object src/events/detection.rs)" = "$BRAHE_HEAD_BLOB"
+          node integrations/mathgraph-check-github/brahe-cli-v1.mjs \
+            --mode transplant \
+            --base "$RUNNER_TEMP/brahe-base/src/events/detection.rs" \
+            --head "$RUNNER_TEMP/brahe-head/src/events/detection.rs" \
+            --manifest "$RUNNER_TEMP/brahe-transplant-manifest.json"
+          git -C "$RUNNER_TEMP/brahe-base" diff -- src/events/detection.rs > "$RUNNER_TEMP/brahe-transplant.patch"
+          echo "Transplanted test-only file blob: $(git -C "$RUNNER_TEMP/brahe-base" hash-object src/events/detection.rs)"
+          cargo generate-lockfile --manifest-path "$RUNNER_TEMP/brahe-head/Cargo.toml"
+          cp "$RUNNER_TEMP/brahe-head/Cargo.lock" "$RUNNER_TEMP/brahe-base/Cargo.lock"
+          cmp "$RUNNER_TEMP/brahe-base/Cargo.lock" "$RUNNER_TEMP/brahe-head/Cargo.lock"
+          sha256sum "$RUNNER_TEMP/brahe-base/Cargo.lock" "$RUNNER_TEMP/brahe-head/Cargo.lock"
+          rustc --version
+          cargo --version
+      - name: Run the same 17 native Rust unit tests against buggy base and fixed head
+        run: |
+          set -euo pipefail
+          for mode in base head; do
+            set +e
+            (cd "$RUNNER_TEMP/brahe-$mode" && cargo test --locked -p brahe --lib events::detection::tests:: -- --nocapture) \
+              > "$RUNNER_TEMP/brahe-$mode.stdout" 2> "$RUNNER_TEMP/brahe-$mode.stderr"
+            code=$?
+            set -e
+            if [ "$mode" = base ]; then source_sha="$BRAHE_BASE"; else source_sha="$BRAHE_HEAD"; fi
+            node integrations/mathgraph-check-github/brahe-cli-v1.mjs \
+              --mode "$mode" --exit "$code" --source-sha "$source_sha" \
+              --stdout "$RUNNER_TEMP/brahe-$mode.stdout" --stderr "$RUNNER_TEMP/brahe-$mode.stderr" \
+              --out "$RUNNER_TEMP/brahe-$mode.json"
+          done
+          lock_sha="$(sha256sum "$RUNNER_TEMP/brahe-head/Cargo.lock" | cut -d ' ' -f 1)"
+          patched_blob="$(git -C "$RUNNER_TEMP/brahe-base" hash-object src/events/detection.rs)"
+          rustc_version="$(rustc --version)"
+          node integrations/mathgraph-check-github/brahe-cli-v1.mjs \
+            --mode finalize --base "$RUNNER_TEMP/brahe-base.json" --head "$RUNNER_TEMP/brahe-head.json" \
+            --rustc "$rustc_version" --cargo-lock-sha256 "$lock_sha" \
+            --base-patched-blob-sha "$patched_blob" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --out "$RUNNER_TEMP/brahe-retrospective-receipt.json"
+      - name: Preserve raw outputs, test-only diff, lockfile and verdict even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mathgraph-brahe-endpoint-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/brahe-*.stdout
+            ${{ runner.temp }}/brahe-*.stderr
+            ${{ runner.temp }}/brahe-*.json
+            ${{ runner.temp }}/brahe-transplant.patch
+            ${{ runner.temp }}/brahe-head/Cargo.lock
+          if-no-files-found: warn
+          retention-days: 14
