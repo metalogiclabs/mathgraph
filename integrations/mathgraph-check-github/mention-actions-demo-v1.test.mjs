@@ -29,3 +29,14 @@ test('repair publishing checks head after file write and withdraws a stale opene
   assert.equal(opened,moveAt===2?0:1);assert.equal(closed,moveAt===3?1:0);
  }
 });
+test('source updates withdraw only this pilot bot results without model calls',async()=>{
+ const old='a'.repeat(40),head='b'.repeat(40),patched=[];
+ const comment={id:5,user:{login:'github-actions[bot]'},body:'<!-- mathgraph-actions-demo-v1:1 -->\n### MathGraph Check\nRevision: `'+old+'`\nOld evidence'};
+ const api=async(path,options={})=>{
+  if(path.endsWith('/pulls/1'))return {head:{sha:head,repo:{full_name:'metalogiclabs/mathgraph'}}};
+  if(path.includes('/comments?'))return [comment,{...comment,id:6,user:{login:'someone'}},{...comment,id:7,body:'unrelated'}];
+  if(options.method==='PATCH'){patched.push(options.body.body);return {id:5};}
+  throw Error('unexpected');
+ };
+ const n=await m.withdrawDemoComments({api,root:'/repos/metalogiclabs/mathgraph',number:1});assert.equal(n,1);assert.match(patched[0],/Source changed/);assert.match(patched[0],/Old evidence/);
+});
