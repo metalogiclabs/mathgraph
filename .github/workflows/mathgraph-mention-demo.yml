@@ -1,0 +1,62 @@
+name: MathGraph mention demo
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  contents: read
+jobs:
+  check-or-fix:
+    if: >-
+      github.repository == 'metalogiclabs/mathgraph' &&
+      github.event.issue.pull_request &&
+      github.event.sender.id == 32909488 &&
+      github.event.comment.user.id == 32909488 &&
+      github.run_attempt == 1 &&
+      (github.event.comment.body == '@MathGraph -check' || github.event.comment.body == '@MathGraph -fix')
+    concurrency:
+      group: mathgraph-mention-demo-pilot
+      cancel-in-progress: false
+      queue: max
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: e9c2fc4120053804eaa211d07312e20885037adf
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify trusted controller tests
+        run: node --test integrations/mathgraph-check-github/mention-*.test.mjs
+      - name: Prepare isolated pinned Lean
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-lean-image/lean"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 \
+            https://github.com/leanprover/lean4/releases/download/v4.28.0/lean-4.28.0-linux.tar.zst \
+            -o "$RUNNER_TEMP/lean.tar.zst"
+          echo "ceb3a3f844f7aebf63245e2b51c28d5b0ed38942c19f93cf3febd520302160bd  $RUNNER_TEMP/lean.tar.zst" | sha256sum -c -
+          tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/mathgraph-lean-image/lean"
+          docker build -t mathgraph-lean-demo:v1 -f integrations/mathgraph-check-github/Dockerfile.native-demo "$RUNNER_TEMP/mathgraph-lean-image"
+          docker image inspect --format '{{.Id}}' mathgraph-lean-demo:v1
+      - name: Run one authorized bounded check or repair
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/mention-actions-demo-v1.mjs
+      - name: Preserve native receipt and any verified repair
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mathgraph-native-mention-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/mathgraph-native-receipt.json
+            ${{ runner.temp }}/mathgraph-verified-repair.lean
+          if-no-files-found: ignore
+          retention-days: 14
