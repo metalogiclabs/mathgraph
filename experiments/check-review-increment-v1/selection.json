@@ -1,0 +1,18 @@
+{
+  "repository": "nasa-jpl/L4YAML",
+  "number": 212,
+  "base_sha": "1f97fbf881da6d1b9e2a7b9c547d1d3306f518ff",
+  "head_sha": "1153d648425fb15f6fe49061544f7ffe4bdcb520",
+  "selection": "newest-created open PR; metadata-only acquisition before patch review",
+  "url": "https://github.com/nasa-jpl/L4YAML/pull/212",
+  "schema": "mathgraph.review-increment.selection.v1",
+  "state": "REGISTERED_NOT_RUN",
+  "requirements_authority": "UNKNOWN_PENDING_OWNER_APPROVAL",
+  "devin_exposure": "UNKNOWN_NO_CONNECTED_DEVIN_EXECUTION",
+  "source_acquisition": "NOT_YET_ACQUIRED",
+  "native_profile": "PENDING_SCOPE_CHECK",
+  "arms": [
+    "Devin Review + existing CI",
+    "same review + CI + MathGraph Check"
+  ]
+}

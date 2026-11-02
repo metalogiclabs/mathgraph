@@ -1,4 +1,4 @@
-import {admitRequest,profileFor,formatResult} from './policy.mjs';
+import {admitRequest,profileFor,formatResult,resultTitle} from './policy.mjs';
 export const APP_ID=5308912,CHECK_NAME='MathGraph Check / PR investigation';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export const logicalIdentity=r=>`mg-pr-v1:${r.repository}#${r.number}@${r.head_sha}~${r.base_sha}:${r.command}`;
@@ -32,7 +32,7 @@ export async function finishCheck(request,publication,report,api){
  const root='/repos/'+request.repository;await ownedCheck(request,publication,api);
  let current=await api(root+'/pulls/'+request.number),result=report??{status:'UNKNOWN',reason:'MISSING_ASSESSMENT'};
  if(!fresh(current,request))result={status:'STALE',reason:'SOURCE_CHANGED',historical_status:result.status};
- const title=request.command==='fix'&&result.status!=='STALE'&&result.repair?.status!=='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'?'Repair incomplete':result.status==='STALE'?'Source changed — recheck required':result.status==='UNKNOWN'?'Check incomplete':result.status==='CANDIDATE_ASSERTION_FAILURE'?'Generated probe failure reproduced':'No counterexample in generated probes';
+ const title=resultTitle(result,request);
  const body={status:'completed',conclusion:'neutral',output:{title,summary:formatResult(result,request,publication.run_url)}};
  const written=await api(root+'/check-runs/'+publication.check_id,{method:'PATCH',body});ensure(written.app?.id===APP_ID&&written.head_sha===request.head_sha&&written.external_id===identity(request)&&written.conclusion==='neutral','CHECK_PUBLISH_MISMATCH');
  // Close the publish race; preserve historical evidence, withdraw applicability.

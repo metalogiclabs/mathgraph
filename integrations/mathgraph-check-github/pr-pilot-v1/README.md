@@ -27,3 +27,13 @@ Removing the installation revokes repository access. The hosted service must ref
 The Metalogic Labs installation now includes all current and future organization repositories, with `pull_request` and `issue_comment` subscriptions. The central default-branch repository-dispatch bootstrap and the existing Cloudflare worker are deployed, with preserved secrets/queue, the budget coordinator binding/migration, and `PR_PILOT_ENABLED=true`. Repository access does not imply analysis support: the pilot capability remains restricted to the public L4YAML ledger profile above. Actual command-to-Check qualification and the remaining acceptance controls must pass before a public install-and-run claim. Do not move App private keys into source repositories or source execution jobs.
 
 Required acceptance: authentic command → installed repository/maintainer reauthorization → model/native admission → exact-source App Check; explicit frozen-probe fix; clean and unsupported controls; base/head changes and stale publication; duplicate/retry and spending limits; second-operator install/run without founder interventions. Until those pass, reports may claim adapter qualification only.
+
+## Current operator readiness
+
+The authentic supported-profile command/check/fix path has passed on the owned L4YAML fork: check run41539149018 and explicit fix41539663813, with draft repair PR3. The model generated three probes; all failed on qualified base/head, passed after the patch and failed again on withdrawal. The inferred requirements remain unverified. This is an owner-selected finite example, not a blind accuracy benchmark.
+
+For an enabled pilot repository, use the PR's Checks tab as the progress/result surface. Review each generated expectation and its base/head comparison before requesting `@MathGraph -fix`. A verified candidate is a draft for review; the Check remains advisory. Unsupported changes explain their scope and retain UNKNOWN rather than displaying approval.
+
+The App is currently private and the trusted profile enables only `metalogiclabs/L4YAML`. Organization-wide installation access does not turn on analysis for other repositories. An external administrator cannot yet complete a supported self-service installation. Before offering external operation, qualify a separately authorized repository/profile, installation and command flow with a different maintainer, including cost sponsorship, source handling and uninstall. Do not share App keys or ask maintainers to run central publisher credentials.
+
+Equal-information incremental-review evaluation is preregistered in `experiments/check-review-increment-v1/PROTOCOL.md`. Its actual Devin arm and owner-approved semantic requirements remain pending; no superiority result is claimed.
