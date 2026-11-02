@@ -20,3 +20,11 @@ test('missing axiom audit or compile failure cannot pass',async()=>{
 test('unrecognized source is never executed',async()=>{
  let calls=0;await assert.rejects(m.nativeDemo({source:'import Unsafe\n#eval IO.println "x"',run:async()=>{calls++;}}),/UNSUPPORTED_DEMO_SOURCE/);assert.equal(calls,0);
 });
+test('actual Lean propext dependency is reported without claiming zero axioms',async()=>{
+ const result=await m.nativeDemo({source:m.repairedSource('by simp'),run:async name=>({code:0,output:name==='Consumer'?"'mathgraph_reverse_length' depends on axioms: [propext]\n":''})});assert.equal(result.status,'ORIGINAL_TARGET_VERIFIED');assert.deepEqual(result.axioms,['propext']);
+});
+test('custom or sorry axioms never pass the native audit',async()=>{
+ for(const axiom of ['sorryAx','unproved_claim','propext, sorryAx']){
+ const result=await m.nativeDemo({source:m.repairedSource('by simp'),run:async name=>({code:0,output:name==='Consumer'?"'mathgraph_reverse_length' depends on axioms: ["+axiom+"]\n":''})});assert.notEqual(result.status,'ORIGINAL_TARGET_VERIFIED');
+ }
+});
