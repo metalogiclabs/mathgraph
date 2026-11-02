@@ -1,0 +1,21 @@
+// No-model validation of the exact generated implementation plus frozen guards.
+import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';import {createHash} from 'node:crypto';
+const prior=process.argv[2]??'prior-lean-investigation',dir=process.argv[3]??'lean-investigation';
+const load=async n=>JSON.parse(await readFile(`${prior}/${n}.json`,'utf8'));const hash=x=>createHash('sha256').update(x).digest('hex');
+const origin=41520661597,originHead='dd69fa8b6f25a9e5526896841f5f6b6154c9f59b',packaged='fba155bf31918f9b03394ae9bfb8cd17c91ecfb8';
+const m=await load('manifest');if(m.context.run_id!==origin||m.context.verifier_sha!==originHead||m.context.attempt!==1)throw Error('PACKAGE_ORIGIN_MISMATCH');
+for(const[n,h]of Object.entries(m.hashes))if(!/^[a-z][a-z0-9_-]*\.json$/.test(n)||hash(await readFile(`${prior}/${n}`))!==h)throw Error('PACKAGE_ARTIFACT_CHANGED');
+const response=await fetch(`https://api.github.com/repos/metalogiclabs/mathgraph/actions/runs/${origin}`,{headers:{Authorization:`Bearer ${process.env.GITHUB_TOKEN}`,Accept:'application/vnd.github+json'},signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('PACKAGE_RUN_UNAVAILABLE');const run=await response.json();if(run.head_sha!==originHead||run.run_attempt!==1||run.path!=='.github/workflows/check-lean-revision.yml'||run.conclusion!=='success')throw Error('PACKAGE_RUN_UNQUALIFIED');
+const assessment=await load('assessment');if(assessment.repair.status!=='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE')throw Error('MODEL_REPAIR_NOT_QUALIFIED');
+const old=await load('snapshot'),plan=await load('plan'),patch=await load('patch');
+const block='\nsection GeneratedAuditGuards\n-- Frozen probes generated against the original source; implementation unchanged.\n'+plan.tests.map(t=>'-- '+t.id+'\n#guard ('+t.expression+')\n').join('')+'end GeneratedAuditGuards\n';
+if(patch.content.split('\nend Scripts.Ledger').length!==2)throw Error('PACKAGE_BOUNDARY_AMBIGUOUS');
+const expected=patch.content.replace('\nend Scripts.Ledger',block+'\nend Scripts.Ledger');
+const sourceResponse=await fetch(`https://raw.githubusercontent.com/metalogiclabs/L4YAML/${packaged}/Scripts/Ledger.lean`,{signal:AbortSignal.timeout(20000)});if(!sourceResponse.ok)throw Error('PACKAGE_SOURCE_UNAVAILABLE');const source=await sourceResponse.text();if(source!==expected)throw Error('PACKAGED_IMPLEMENTATION_CHANGED');
+const context={verifier_sha:process.env.GITHUB_SHA,run_id:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT)};
+if(!/^[a-f0-9]{40}$/.test(context.verifier_sha??'')||context.attempt!==1)throw Error('INVALID_PACKAGE_CONTEXT');
+await mkdir(dir,{recursive:true});const save=async(n,x)=>writeFile(`${dir}/${n}.json`,JSON.stringify(x,null,2)+'\n');
+await save('snapshot',{...old,head_sha:packaged,source,source_sha256:hash(source),mode:'PACKAGED_GENERATED_FIX_NO_MODEL_REPLAY'});await save('plan',plan);
+await save('state',{context,state:'PROBES_PROPOSED',test_digest:hash(JSON.stringify(plan.tests)),model_calls:0});await save('repair-state',{state:'NO_MODEL_REQUESTED',model_calls:0});
+await save('origin-receipt',{context:m.context,source_artifact_id:13177067859,source_artifact_sha256:'ba6cafd1fd7df96a637a3c1c2da4100859d420733dc763cf32ca1338dd3e1a95',implementation_sha256:patch.patched_sha256,packaged_source_sha256:hash(source),implementation_changed:false,generated_guards_embedded:plan.tests.length});
+const hashes={};for(const n of(await readdir(dir)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort())hashes[n]=hash(await readFile(`${dir}/${n}`));await save('manifest',{context,hashes});

@@ -24,7 +24,7 @@ def main():
  for name,h in m['hashes'].items():assert '/' not in name and digest((root/name).read_bytes())==h
  if phase=='repair' and load('repair-state')['state']!='PATCH_PROPOSED':return
  snapshot=load('snapshot');plan=load('plan');assert snapshot['repository']=='metalogiclabs/L4YAML'
- assert snapshot['head_sha']=='219f133cc93172fea46b08d09edf9b3b6441c0a4' and snapshot['module']=='Scripts.Ledger'
+ assert re.fullmatch(r'[a-f0-9]{40}',snapshot['head_sha']) and snapshot['module']=='Scripts.Ledger'
  work=Path('lean-native-'+phase).resolve();work.mkdir(exist_ok=True)
  logs=root/'native-logs';logs.mkdir(exist_ok=True)
  url='https://codeload.github.com/'+snapshot['repository']+'/tar.gz/'+snapshot['head_sha']
