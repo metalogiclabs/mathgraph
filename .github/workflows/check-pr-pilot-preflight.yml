@@ -32,7 +32,7 @@ jobs:
             if(!r.ok){rows.push({installation:i.id,status:r.status});continue;}
             const t=await r.json();
             const repos=await fetch('https://api.github.com/installation/repositories?per_page=100',{headers:{Authorization:'Bearer '+t.token,Accept:'application/vnd.github+json'}}).then(r=>r.json());
-            rows.push({installation:i.id,selection:i.repository_selection,repositories:repos.repositories?.map(x=>x.full_name),total:repos.total_count});
+            rows.push({installation:i.id,selection:i.repository_selection,public_repositories:repos.repositories?.filter(x=>x.private===false).map(x=>x.full_name),repository_inventory:'PUBLIC_NAMES_ONLY'});
             await fetch('https://api.github.com/installation/token',{method:'DELETE',headers:{Authorization:'Bearer '+t.token}});
           }
           const scoped=await mintScopedToken(githubClient(jwt,{repository:'metalogiclabs/mathgraph'}),own[0].id,'metalogiclabs/mathgraph',{contents:'read'});
