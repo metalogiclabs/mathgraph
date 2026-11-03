@@ -1,0 +1,108 @@
+name: G2 post-hoc reflect-admission ablation on sealed masked proposals
+on:
+  push:
+    branches: [research/g2-masked-reflect-ablation-20261103]
+    paths:
+      - 'research/udm_g2_source_neutral_v3/validate.go'
+      - 'research/udm_g2_source_neutral_v3/test_source_neutral.py'
+      - '.github/workflows/udm-g2-masked-reflect-ablation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-candidate-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rank: 3
+            repo: joho/godotenv
+            pr: 262
+            base: a2be92d182fc04da33b365bf47c17fe0f4808aea
+            head: b724238db6209280ed96a4e04aa2af38063763d9
+            production: parser.go
+            pkg: godotenv
+            bridge_digest: 31ae745b74a5989d4a37db0ecc06b56158ff590cffe759c274e1b22a329cf046
+            direct_digest: f4bed2291fd7349ee654fbcc1d533f8c331872e097ca3481d93f8ed445b9e131
+          - rank: 4
+            repo: samber/lo
+            pr: 993
+            base: 92663432d4f44300b3daf77a2641cd0b00d0b5d2
+            head: 5b4c3c162309bd4544ea51997980d1e98a22682a
+            production: find.go
+            pkg: lo
+            bridge_digest: 5d5e172b5d8b1fb554876df00717f8fa0a9b206fad05effe0042b996defe8251
+            direct_digest: 673f1233fc1216fc0f8cc51fa3f25c4955508c2aee95d8983c8481cf0edbda53
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.base }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-proposals-rank-${{ matrix.rank }}
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: proposals
+      - name: Frozen-candidate identity checks and independent static controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(printenv OPENAI_API_KEY || true)"
+          test "$(git -C source rev-parse HEAD)" = '${{ matrix.base }}'
+          git -C source fetch --no-tags origin 'refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/g2-pr-${{ matrix.pr }}'
+          test "$(git -C source rev-parse refs/remotes/origin/g2-pr-${{ matrix.pr }})" = '${{ matrix.head }}'
+          python - <<'PY'
+          import hashlib,json
+          for name,want in [('bridge','${{ matrix.bridge_digest }}'),('direct','${{ matrix.direct_digest }}')]:
+              actual=hashlib.sha256(json.load(open('proposals/'+name+'.json'))['code'].encode()).hexdigest()
+              assert actual==want,(name,actual,want)
+          print('ORIGINAL_PROPOSAL_BYTES_UNCHANGED 2')
+          PY
+          python -m unittest discover -s code/research/udm_g2_source_neutral_v3 -p test_source_neutral.py -v 2>&1 | tee controls.log
+          grep -q 'Ran 8 tests' controls.log
+          grep -q '^OK$' controls.log
+      - name: Compare unchanged model proposals on exact original and head
+        shell: bash
+        run: |
+          set -euo pipefail
+          python code/research/udm_g2_source_neutral_v3/evaluate.py \
+            --source source --base '${{ matrix.base }}' --head '${{ matrix.head }}' \
+            --production-file '${{ matrix.production }}' --package-name '${{ matrix.pkg }}' \
+            --proposals proposals --output evaluation | tee evaluation.stdout
+          python - <<'PY'
+          import json
+          r=json.load(open('evaluation/evaluation.json'))
+          assert r['schema']=='mathgraph.g2.go-native-qualification.v1'
+          assert r['base_sha']=='${{ matrix.base }}' and r['head_sha']=='${{ matrix.head }}'
+          assert r['strict_g2']=='UNKNOWN' and r['strict_g3']=='UNKNOWN'
+          print('POST_HOC_SCIENCE ${{ matrix.rank }}',r['status'],r.get('fair_comparison'))
+          for p in r.get('results',[]):
+              print('PROPOSAL_RESULT',p['mode'],p['status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-masked-posthoc-reflect-rank-${{ matrix.rank }}
+          path: |
+            evaluation
+            evaluation.stdout
+            controls.log
+          retention-days: 60
