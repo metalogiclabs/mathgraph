@@ -1,0 +1,158 @@
+name: UDM G3 independent feedback-dose policy reconciliation
+on:
+  push:
+    branches: [research/udm-g3-feedback-selector-20261103]
+    paths: ['.github/workflows/udm-g3-feedback-selector.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  bounded-selector:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run unchanged nine proportionate-observer controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/udm_g3_proportional_inquiry
+          python -m unittest -v test_proportional_inquiry 2>&1 | tee /tmp/feedback-selector-tests.log
+          grep -q 'Ran 9 tests' /tmp/feedback-selector-tests.log
+          grep -q '^OK$' /tmp/feedback-selector-tests.log
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-native-rank-3
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: receipts/g3_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-posthoc-reflect-rank-3
+          repository: metalogiclabs/mathgraph
+          run-id: 41607810230
+          github-token: ${{ github.token }}
+          path: receipts/g3_masked_reflect
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-native-rank-3
+          repository: metalogiclabs/mathgraph
+          run-id: 41608373279
+          github-token: ${{ github.token }}
+          path: receipts/g3_informative
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-native-rank-4
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: receipts/g4_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-posthoc-reflect-rank-4
+          repository: metalogiclabs/mathgraph
+          run-id: 41607810230
+          github-token: ${{ github.token }}
+          path: receipts/g4_masked_reflect
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-native-rank-4
+          repository: metalogiclabs/mathgraph
+          run-id: 41608373279
+          github-token: ${{ github.token }}
+          path: receipts/g4_informative
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-proposals-rank-3
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: proposals/g3_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-proposals-rank-3
+          repository: metalogiclabs/mathgraph
+          run-id: 41608373279
+          github-token: ${{ github.token }}
+          path: proposals/g3_informative
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-proposals-rank-4
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: proposals/g4_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-proposals-rank-4
+          repository: metalogiclabs/mathgraph
+          run-id: 41608373279
+          github-token: ${{ github.token }}
+          path: proposals/g4_informative
+      - name: Apply source-bound smallest-sufficient-observer policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          sys.path.insert(0,'research/udm_g3_proportional_inquiry')
+          from proportional_inquiry import select_proportionate_observation,token_counts
+          observed={
+            'g3_masked':('a2be92d182fc04da33b365bf47c17fe0f4808aea','b724238db6209280ed96a4e04aa2af38063763d9','NONE','UNKNOWN_NO_VERIFIED_SOURCE_WITNESS'),
+            'g3_masked_reflect':('a2be92d182fc04da33b365bf47c17fe0f4808aea','b724238db6209280ed96a4e04aa2af38063763d9','NONE','UNKNOWN_NO_VERIFIED_SOURCE_WITNESS'),
+            'g3_informative':('a2be92d182fc04da33b365bf47c17fe0f4808aea','b724238db6209280ed96a4e04aa2af38063763d9','direct','WARRANTED_BOUNDED_DIRECT_SUFFICIENT_FOR_DECLARED_GOAL'),
+            'g4_masked':('92663432d4f44300b3daf77a2641cd0b00d0b5d2','5b4c3c162309bd4544ea51997980d1e98a22682a','NONE','UNKNOWN_NO_VERIFIED_SOURCE_WITNESS'),
+            'g4_masked_reflect':('92663432d4f44300b3daf77a2641cd0b00d0b5d2','5b4c3c162309bd4544ea51997980d1e98a22682a','NONE','UNKNOWN_NO_VERIFIED_SOURCE_WITNESS'),
+            'g4_informative':('92663432d4f44300b3daf77a2641cd0b00d0b5d2','5b4c3c162309bd4544ea51997980d1e98a22682a','bridge','CANDIDATE_EXTENSION_WITH_NATIVE_WITNESS'),
+          }
+          outcomes=[]
+          for key,(base,head,expect,expect_status) in observed.items():
+              files=list((Path('receipts')/key).rglob('evaluation.json'))
+              assert len(files)==1,('SOURCE_RECEIPT_COUNT',key,len(files))
+              raw=files[0].read_bytes();d=json.loads(raw)
+              assert d['base_sha']==base and d['head_sha']==head,('WRONG_SOURCE',key)
+              r=select_proportionate_observation(d)
+              assert r['selected_observer']==expect and r['status']==expect_status,(key,r)
+              assert r['strict_g2']=='UNKNOWN' and r['strict_g3']=='UNKNOWN'
+              assert r['effect_authority']=='NOT_GRANTED'
+              item={'case':key,'source_base':base,'source_head':head,
+                    'receipt_sha256':hashlib.sha256(raw).hexdigest(),
+                    'native_status':d['status'],'selected':r['selected_observer'],
+                    'policy':r['status'],'comparator':r['fair_comparison'],
+                    'new_grammar_necessary':r['new_grammar_necessary_for_goal']}
+              if (Path('proposals')/key).exists():
+                  p=list((Path('proposals')/key).rglob('model-receipt.json'))
+                  assert len(p)==1,('USAGE_RECEIPT_COUNT',key,len(p))
+                  item['usage']=token_counts(json.loads(p[0].read_text()))
+              outcomes.append(item)
+              print('BOUNDARY',key,'SCIENCE',d['status'],'POLICY',r['status'],'CHOICE',r['selected_observer'])
+          assert len(outcomes)==6
+          Path('qualification').mkdir(exist_ok=True)
+          report={'schema':'mathgraph.udm.g3.feedback-dose-policy.v1',
+                  'status':'WARRANTED_BOUNDED_SOURCE_BOUND_POLICY_REPLAY',
+                  'scope':'RETROSPECTIVE_AND_POSTHOC_CALIBRATION_ONLY',
+                  'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN',
+                  'external_permission':'NOT_GRANTED','positive_economics':'UNKNOWN',
+                  'source_cases':outcomes}
+          file=Path('qualification/feedback-dose-policy.json')
+          file.write_text(json.dumps(report,indent=2)+'\n')
+          back=json.loads(file.read_text())
+          assert back['status']==report['status'] and len(back['source_cases'])==6
+          print('SIX_INDEPENDENT_RECEIPTS_VERIFIED_AND_READ_BACK')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-feedback-dose-policy-reconciliation
+          path: |
+            qualification
+            /tmp/feedback-selector-tests.log
+          retention-days: 60
