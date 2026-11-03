@@ -1,0 +1,9 @@
+{
+  "number": 213,
+  "title": "feat(scripts): Rule 9 phase 3.2b (punt half) — `lake run punt-price -- all|<reason>|split|phantom|reaches` replaces punt_reason_price.py (Scripts/Punt); ledger 67 → 66",
+  "base_sha": "809014dd314dbcf0ccf1dd23ec9cbf84ee4830df",
+  "head_sha": "815695d634e50d4c336919aa9e60392dba81f1e9",
+  "base": "fix-a-grammar-completeness",
+  "head": "feat/rule9-phase-3-2b",
+  "created": "2026-11-03T01:40:21Z"
+}
