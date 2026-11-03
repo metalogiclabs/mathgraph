@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: [mathgraph-pr-pilot-v1]
 env:
-  MATHGRAPH_CONTROLLER_SHA: 3595329c1cce8c83171eb37c32c44042d05f2b35
+  MATHGRAPH_CONTROLLER_SHA: 02fb306e74871d141ed64021fa45cdacfa263de7
 permissions:
   contents: read
   actions: read
@@ -16,11 +16,12 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
       - name: Bundle trusted webhook integration without deploying
         run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/pr-pilot-worker
   intake:
@@ -31,10 +32,11 @@ jobs:
     outputs:
       ready: ${{ steps.intake.outputs.ready }}
       command: ${{ steps.intake.outputs.command }}
+      profile: ${{ steps.intake.outputs.profile }}
       prior_run: ${{ steps.intake.outputs.prior_run }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - name: Authorize actual request and acquire source identities
@@ -50,12 +52,12 @@ jobs:
         with: {name: pr-pilot-intake, path: pr-investigation/, retention-days: 30}
   prepare:
     needs: intake
-    if: needs.intake.outputs.ready == 'true'
+    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT'
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -92,7 +94,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -115,7 +117,7 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -135,7 +137,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -160,7 +162,7 @@ jobs:
       revision: ${{ steps.feedback.outputs.revision }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -185,7 +187,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -204,12 +206,12 @@ jobs:
         with: {name: pr-pilot-final-native, path: pr-investigation/, retention-days: 30}
   assess:
     needs: [intake, prepare, native, propose, verify, revise, verify-revision]
-    if: always() && needs.intake.outputs.ready == 'true'
+    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -228,14 +230,64 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}
+  repository-contract-native:
+    needs: intake
+    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-intake, path: pr-investigation}
+      - name: Install reviewed Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Fixed contract base/head execution without model or App credentials
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs contract-run pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: pr-pilot-contract-native
+          path: |
+            pr-investigation/*.json
+            pr-investigation/contract-native/*.json
+            pr-investigation/contract-native/logs/
+          retention-days: 30
+  repository-contract-assess:
+    needs: [intake, repository-contract-native]
+    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-intake, path: pr-investigation}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with: {name: pr-pilot-contract-native, path: pr-investigation}
+      - name: Admit exact-context finite evidence; missing execution stays UNKNOWN
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs contract-assess pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}
   settle:
-    needs: [intake, assess]
+    needs: [intake, assess, repository-contract-assess]
     if: always() && needs.intake.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 3595329c1cce8c83171eb37c32c44042d05f2b35}
+        with: {persist-credentials: false, ref: 02fb306e74871d141ed64021fa45cdacfa263de7}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
