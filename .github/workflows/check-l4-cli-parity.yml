@@ -1,0 +1,94 @@
+name: L4YAML CLI parity qualification
+on:
+  push:
+    branches: [research/check-l4-cli-parity-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Freeze authenticated source metadata before native execution
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          mkdir snapshots
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const repo='metalogiclabs/L4YAML',api=async path=>{const r=await fetch('https://api.github.com/repos/'+repo+path,{redirect:'error',headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','User-Agent':'MathGraph-CLI-Parity'}});if(!r.ok)throw Error('METADATA_HTTP_'+r.status);return r.json();};
+          for(const request of JSON.parse(fs.readFileSync('integrations/mathgraph-check-github/cli-parity-v1/calibration.json'))){
+            const pr=await api('/pulls/'+request.pr),comparison=await api('/compare/'+request.base+'...'+request.head);
+            fs.writeFileSync('snapshots/'+request.profile+'.json',JSON.stringify({schema:'mathgraph.repository-contract.snapshot.v1',repository:repo,pr,comparison}));
+          }
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: cli-snapshots, path: snapshots/}
+  native:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: traceof
+            pr: 6
+            base: 1f97fbf881da6d1b9e2a7b9c547d1d3306f518ff
+            head: 1153d648425fb15f6fe49061544f7ffe4bdcb520
+          - profile: ledger-diff
+            pr: 7
+            base: 2e09b057d783eb94f95dfe3b232ee99a94fdd6cb
+            head: 925ccf8680d1444ae8cdaca9c66f400fa0d75f71
+          - profile: residue-classes
+            pr: 9
+            base: a3cfddbea355cf64454a0e33cdce7da066e7999a
+            head: d8c4f78ff8e797493fe5f964af4da0d33a06ddbb
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: cli-snapshots, path: snapshots}
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Compare original command behavior with no credentials
+        run: python3 integrations/mathgraph-check-github/cli-parity-v1/run.py --profile '${{ matrix.profile }}' --pr '${{ matrix.pr }}' --base '${{ matrix.base }}' --head '${{ matrix.head }}' --snapshot 'snapshots/${{ matrix.profile }}.json' --output cli-results
+      - name: Require complete finite evidence, retaining actual differences
+        run: python3 -c "import json; r=json.load(open('cli-results/result.json')); assert r['state'] in ['CLI_PARITY_OBSERVED','CLI_BEHAVIOR_DIFFERENCE'],r"
+      - name: Independently admit CLI receipt and render qualification report
+        env:
+          PROFILE: ${{ matrix.profile }}
+          PR: ${{ matrix.pr }}
+          BASE: ${{ matrix.base }}
+          HEAD: ${{ matrix.head }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';
+          import {admitCliResult} from './integrations/mathgraph-check-github/pr-pilot-v1/cli-parity.mjs';
+          import {executionContext} from './integrations/mathgraph-check-github/pr-pilot-v1/context.mjs';
+          import {renderReport} from './integrations/mathgraph-check-github/pr-pilot-v1/report.mjs';
+          const e=process.env,context=executionContext(),request={repository:'metalogiclabs/L4YAML',number:Number(e.PR),base_sha:e.BASE,head_sha:e.HEAD,command:'check',profile:{mode:'OWNED_FORK_CLI_PARITY',cli_profile:e.PROFILE}};
+          const raw=JSON.parse(fs.readFileSync('cli-results/result.json')),assessment=admitCliResult(raw,request,context);assert.equal(assessment.status,raw.state);assert.notEqual(assessment.status,'UNKNOWN');
+          fs.writeFileSync('cli-results/assessment.json',JSON.stringify(assessment,null,2));
+          const dir='integrations/mathgraph-check-github/pr-pilot-v1/',css=fs.readFileSync(dir+'passport-base.css','utf8'),brand=JSON.parse(fs.readFileSync(dir+'passport-brand.json'));
+          fs.writeFileSync('cli-results/MathGraph-CLI.html',renderReport({request,assessment,manifest:{context,qualification:'NATIVE_ADAPTER_QUALIFICATION_NOT_ACTUAL_COMMAND'},css,logo:brand.logo}));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: cli-parity-${{ matrix.profile }}
+          path: |
+            cli-results/*.json
+            cli-results/*.html
+            cli-results/logs/
+            cli-results/build/lakefile.lean
+          retention-days: 30

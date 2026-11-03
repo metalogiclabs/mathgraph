@@ -28,7 +28,7 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
   publication=await queueCheck(request,api);if(publication.state==='DUPLICATE')return {state:'DUPLICATE',check_id:publication.check_id};
   request.queued_check_id=publication.check_id;
   let reserved={status:'NOT_NEEDED',reserved_cents:0};
-  if(request.support.supported){const stub=env.PR_PILOT_BUDGET.get(env.PR_PILOT_BUDGET.idFromName(String(item.installationID)));const response=await stub.fetch('https://internal/reserve',{method:'POST',body:JSON.stringify({key:reservationKey(request),cents:request.command==='check'?49:98,day:new Date().toISOString().slice(0,10)})});reserved=await response.json();}
+  if(request.support.supported&&!['OWNED_FORK_REPOSITORY_CONTRACT','OWNED_FORK_CLI_PARITY'].includes(request.profile.mode)){const stub=env.PR_PILOT_BUDGET.get(env.PR_PILOT_BUDGET.idFromName(String(item.installationID)));const response=await stub.fetch('https://internal/reserve',{method:'POST',body:JSON.stringify({key:reservationKey(request),cents:request.command==='check'?49:98,day:new Date().toISOString().slice(0,10)})});reserved=await response.json();}
   if(['BUDGET_EXHAUSTED','DUPLICATE'].includes(reserved.status)){await finishCheck(request,publication,{status:'UNKNOWN',reason:reserved.status},api);return {state:reserved.status};}
   ensure(['RESERVED','DUPLICATE','NOT_NEEDED'].includes(reserved.status),'BUDGET_RESERVATION_FAILED');
   if(request.command==='check')await env.PILOT_SUBSCRIPTIONS.put(subscriptionKey,JSON.stringify({comment_id:request.comment_id,head_sha:request.head_sha,base_sha:request.base_sha}));
