@@ -1,0 +1,38 @@
+name: Finite expectation admission qualification
+on:
+  push:
+    branches: [research/check-expectation-admission-v1]
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Test finite admission and existing App contracts
+        run: |
+          set -euo pipefail
+          mkdir expectation-evidence
+          git rev-parse HEAD > expectation-evidence/source.txt
+          python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py' 2>&1 | tee expectation-evidence/admission-tests.txt
+          node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs > expectation-evidence/app-tests.txt 2>&1
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py' 2>&1 | tee expectation-evidence/claim-tests.txt
+          python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py' 2>&1 | tee expectation-evidence/cli-tests.txt
+          python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py' 2>&1 | tee expectation-evidence/contract-tests.txt
+          python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py' 2>&1 | tee expectation-evidence/collector-tests.txt
+      - name: Replay frozen cohort
+        run: |
+          python3 experiments/check-expectation-admission-v1/run.py --output expectation-evidence/receipt.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('expectation-evidence/receipt.json'))
+          assert r['anticipated_labels_match'] is True
+          assert r['counts']=={'SUPPORTED':7,'REJECTED':1,'UNKNOWN':2}
+          assert all(x['Conclusion']['repair_authorized'] is False for x in r['records'])
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: expectation-admission-evidence, path: expectation-evidence/}
