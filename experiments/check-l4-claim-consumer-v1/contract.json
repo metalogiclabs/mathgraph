@@ -1,0 +1,67 @@
+{
+  "schema": "mathgraph.claim-consumer.contract.v1",
+  "repository": "metalogiclabs/L4YAML",
+  "fork_pr": 6,
+  "upstream_claim": "https://github.com/nasa-jpl/L4YAML/pull/212",
+  "base_sha": "1f97fbf881da6d1b9e2a7b9c547d1d3306f518ff",
+  "head_sha": "1153d648425fb15f6fe49061544f7ffe4bdcb520",
+  "toolchain": "leanprover/lean4:v4.35.0",
+  "claim": "Generated TraceOf/Node restores TCompactSeqTail.nil and TCompactMapTail.nil for empty compact tails omitted by the Python regex.",
+  "claim_authority": "UPSTREAM_PR_DECLARED; RETROSPECTIVE_NOT_NEW_DISCOVERY",
+  "obligation": "forall n s, TCompactSeqTail n s s [] AND TCompactMapTail n s s [] via the two declared constructor APIs",
+  "target": "L4YAML/Proofs/Serialization/TraceOf/Node.lean",
+  "source": "L4YAML/Surface/Node.lean",
+  "module": "L4YAML.Proofs.Serialization.TraceOf.Node",
+  "mutations": [
+    "remove exactly TCompactSeqTail.nil",
+    "remove exactly TCompactMapTail.nil"
+  ],
+  "arms": {
+    "base": {
+      "module": 0,
+      "source_witness": 0,
+      "strong_consumer": 1,
+      "weak_offer": 0,
+      "weak_consumer": 1
+    },
+    "head": {
+      "module": 0,
+      "source_witness": 0,
+      "strong_consumer": 0,
+      "weak_offer": 0,
+      "weak_consumer": 1
+    },
+    "head_deleted": {
+      "module": 0,
+      "source_witness": 0,
+      "strong_consumer": 1,
+      "weak_offer": 0,
+      "weak_consumer": 1
+    },
+    "head_restored": {
+      "module": 0,
+      "source_witness": 0,
+      "strong_consumer": 0,
+      "weak_offer": 0,
+      "weak_consumer": 1
+    }
+  },
+  "probes_sha256": {
+    "Consumer.lean": "85df5c1223417b51226b88beff8bd6d711973ce908c6f9bcc7c6d526571f2035",
+    "SourceWitness.lean": "08a770c50ebdb9cdcb2d662d89957c80b154ee0d1aa909215f17735dba47a94e",
+    "WeakConsumer.lean": "07d4a262d3863aac8309a45c7750c385c132e4928a08fe5f81fe420a868b730a",
+    "WeakOffer.lean": "784c0293b3ddb727a1b32781d41a1213b3dd40122c3ed21d7a456a56d48e3605",
+    "WeakeningLaw.lean": "5c009d2f9aa9ac7281f9d339b6ebbd3de49d49e6270382409240ccb2a2ac062c"
+  },
+  "boundary": [
+    "Lean4.35 trusted kernel; not Nucleus replay",
+    "named constructor API availability, not absence of all alternative proofs at base",
+    "two empty-tail cases universally quantified over n,s; not whole-generator semantic completeness",
+    "new audit consumer, not an existing downstream production failure",
+    "retrospective verification of an explicitly declared fix; not fresh discovery"
+  ],
+  "limits": {
+    "seconds": 90,
+    "output_bytes": 1000000
+  }
+}
