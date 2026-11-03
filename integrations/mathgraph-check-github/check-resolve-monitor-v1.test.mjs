@@ -21,9 +21,9 @@ test("MONITOR refuses unqualified restored evidence",()=>{
  const r=monitor(report(["UNKNOWN","OBSERVED"]),report(),{changedEvidenceIds:["e0"]});
  assert.equal(r.transitions[0].to,"UNKNOWN");assert.equal(r.transitions[1].to,"OBSERVED");
 });
-test("MONITOR admits explicit requalification without certifying it",()=>{
+test("MONITOR refuses caller-supplied requalification without authenticated evidence",()=>{
  const r=monitor(report(["UNKNOWN","OBSERVED"]),report(["OBSERVED","OBSERVED"],{independent_requalification:true}),{changedEvidenceIds:["e0"]});
- assert.equal(r.transitions[0].to,"OBSERVED");assert.equal(r.permission,"ADVISORY_ONLY");
+ assert.equal(r.transitions[0].to,"UNKNOWN");assert.equal(r.permission,"ADVISORY_ONLY");
 });
 test("MONITOR invalidates when exact head changes",()=>{
  const r=monitor(report(),report(["OBSERVED","OBSERVED"],{subject:{head_sha:sha("b")}}));
