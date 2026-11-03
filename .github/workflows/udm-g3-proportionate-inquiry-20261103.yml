@@ -1,0 +1,116 @@
+name: UDM G3 proportionate observer replay
+on:
+  push:
+    branches: [research/udm-g3-proportional-inquiry-20261103]
+    paths:
+      - 'research/udm_g3_proportional_inquiry/**'
+      - '.github/workflows/udm-g3-proportionate-inquiry-20261103.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  six-receipt-source-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run nine fail-closed selector controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/udm_g3_proportional_inquiry
+          python -m unittest -v test_proportional_inquiry 2>&1 | tee /tmp/selector-test.log
+          grep -q 'Ran 9 tests' /tmp/selector-test.log
+          grep -q '^OK$' /tmp/selector-test.log
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-posthoc-helper-admission-native-replay
+          repository: metalogiclabs/mathgraph
+          run-id: 41540463749
+          github-token: ${{ github.token }}
+          path: fixtures/zerolog
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-backoff-independent-native-qualification
+          repository: metalogiclabs/mathgraph
+          run-id: 41570553243
+          github-token: ${{ github.token }}
+          path: fixtures/backoff_unmasked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-ablated-independent-native-qualification
+          repository: metalogiclabs/mathgraph
+          run-id: 41571357839
+          github-token: ${{ github.token }}
+          path: fixtures/backoff_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-native-rank-3
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: fixtures/godotenv_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-native-rank-4
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: fixtures/lo_masked
+      - uses: actions/download-artifact@v4
+        with:
+          name: g3-backoff-independent-native-evaluation
+          repository: metalogiclabs/mathgraph
+          run-id: 41604201364
+          github-token: ${{ github.token }}
+          path: fixtures/backoff_fresh
+      - name: Independent six-source conclusion reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import sys, json
+          from pathlib import Path
+          sys.path.insert(0,'research/udm_g3_proportional_inquiry')
+          from proportional_inquiry import select_proportionate_observation
+          source_specs={
+           'zerolog':('5eb5f3a76c09eeadc1f2464baf4a4e3f1037c830','7256558c748b0cadd81deffdd80e1809cb12707a','direct','BOTH_WITNESSED_SAME_VERSION_BOUNDARY'),
+           'backoff_unmasked':('6f228bfdb51209aa375869feb27dcede4fa0db06','6ec253533f5445d618a94f4b4d1c45b6ff317518','direct','BOTH_WITNESSED_SAME_VERSION_BOUNDARY'),
+           'backoff_masked':('6f228bfdb51209aa375869feb27dcede4fa0db06','6ec253533f5445d618a94f4b4d1c45b6ff317518','bridge','NO_QUALIFIED_EQUAL_INFORMATION_DIRECT_WITNESS'),
+           'godotenv_masked':('a2be92d182fc04da33b365bf47c17fe0f4808aea','b724238db6209280ed96a4e04aa2af38063763d9','NONE','UNKNOWN'),
+           'lo_masked':('92663432d4f44300b3daf77a2641cd0b00d0b5d2','5b4c3c162309bd4544ea51997980d1e98a22682a','NONE','UNKNOWN'),
+           'backoff_fresh':('6f228bfdb51209aa375869feb27dcede4fa0db06','6ec253533f5445d618a94f4b4d1c45b6ff317518','direct','DIRECT_ONLY_WITNESS')}
+          rows=[]
+          for name,(base,head,winner,contrast) in source_specs.items():
+              candidates=list(Path('fixtures',name).rglob('evaluation.json'))
+              assert len(candidates)==1,('INVALID_SOURCE_RECEIPT_SET',name,len(candidates))
+              record=json.loads(candidates[0].read_text())
+              assert record['base_sha']==base and record['head_sha']==head,('SOURCE_IDENTITY_CHANGED',name)
+              answer=select_proportionate_observation(record)
+              assert answer['selected_observer']==winner,(name,answer)
+              assert answer['fair_comparison']==contrast,(name,answer)
+              assert answer['strict_g2']=='UNKNOWN' and answer['strict_g3']=='UNKNOWN'
+              rows.append({'cohort':name,'selected':winner,'native_verdict':record['status'],
+                           'selection':answer['status'],'comparison':contrast,'base_sha':base,'head_sha':head})
+              print('SOURCE_BOUNDARY',name,record['status'],answer['status'],answer['selected_observer'])
+          assert len(rows)==6
+          out=Path('qualification');out.mkdir(exist_ok=True)
+          (out/'selector-replay.json').write_text(json.dumps({'schema':'mathgraph.udm.proportional-six-receipt-replay.v1',
+             'status':'WARRANTED_BOUNDED_FROZEN_RECEIPT_CLASSIFICATION_ONLY',
+             'cases':rows,'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN',
+             'economics':'UNKNOWN','customer_permission':'NOT_GRANTED'},indent=2)+'\\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: udm-g3-proportional-inquiry-evidence
+          path: |
+            qualification
+            /tmp/selector-test.log
+          retention-days: 60
