@@ -14,13 +14,14 @@ try:spec.loader.exec_module(native)
 finally:sys.modules['rules']=original
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--snapshot',required=True);parser.add_argument('--output',required=True);a=parser.parse_args()
-    out=Path(a.output).resolve();out.mkdir();logs=out/'logs';logs.mkdir();c=json.loads((HERE/'contract.json').read_text());controller=os.environ['GITHUB_SHA']
-    r={'schema':'mathgraph.claim-consumer.receipt.v1','controller_sha':controller,**{k:c[k] for k in ['repository','base_sha','head_sha']},'contract_sha256':sha((HERE/'contract.json').read_bytes()),'probes_sha256':{p.name:sha(p.read_bytes()) for p in (HERE/'probes').glob('*.lean')},'arms':{}}
+    parser=argparse.ArgumentParser();parser.add_argument('--pr',type=int,default=6);parser.add_argument('--snapshot',required=True);parser.add_argument('--output',required=True);a=parser.parse_args()
+    out=Path(a.output).resolve();out.mkdir();logs=out/'logs';logs.mkdir();c=json.loads((HERE/'contract.json').read_text());controller=os.environ.get('MATHGRAPH_CONTROLLER_SHA') or os.environ['GITHUB_SHA'];context={'verifier_sha':controller,'run_id':int(os.environ['GITHUB_RUN_ID']),'attempt':int(os.environ['GITHUB_RUN_ATTEMPT'])}
+    if os.environ.get('MATHGRAPH_CONTROLLER_SHA'):context['scheduler_sha']=os.environ['GITHUB_SHA']
+    r={'schema':'mathgraph.claim-consumer.receipt.v1','controller_sha':controller,'context':context,'pr':a.pr,**{k:c[k] for k in ['repository','base_sha','head_sha']},'contract_sha256':sha((HERE/'contract.json').read_bytes()),'probes_sha256':{p.name:sha(p.read_bytes()) for p in (HERE/'probes').glob('*.lean')},'arms':{}}
     def save():
         (out/'receipt.json').write_text(json.dumps(r,indent=2)+'\n');(out/'assessment.json').write_text(json.dumps(admit(r,controller),indent=2)+'\n')
     save()
-    snapshot=json.loads(Path(a.snapshot).read_text());pr,diff=cr.shared.hosted_snapshot(snapshot,c['repository'],c['fork_pr'],c['base_sha'],c['head_sha']);cr.shared.pinned_files(diff,c['base_sha'],c['head_sha'])
+    snapshot=json.loads(Path(a.snapshot).read_text());pr,diff=cr.shared.hosted_snapshot(snapshot,c['repository'],a.pr,c['base_sha'],c['head_sha']);cr.shared.pinned_files(diff,c['base_sha'],c['head_sha'])
     attribution=json.loads((HERE/'claim-source.json').read_text())
     if sha(snapshot['upstream_claim']['body'].encode())!=attribution['body_sha256']:raise ValueError('DECLARED_CLAIM_CHANGED')
     base,bhash=native.acquire(c['repository'],c['base_sha'],out);head,hhash=native.acquire(c['repository'],c['head_sha'],out);r['archive_sha256']={'base':bhash,'head':hhash}

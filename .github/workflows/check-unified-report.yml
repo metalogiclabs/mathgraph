@@ -1,0 +1,112 @@
+name: MathGraph unified Check qualification
+on:
+  push:
+    branches: [research/check-unified-report-v1]
+permissions: {contents: read, actions: read}
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Seal authenticated source and claim metadata
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          mkdir unified
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import {createHash} from 'node:crypto';
+          import {admitRequest} from './integrations/mathgraph-check-github/pr-pilot-v1/policy.mjs';
+          import {executionContext} from './integrations/mathgraph-check-github/pr-pilot-v1/context.mjs';
+          const api=async path=>{const r=await fetch('https://api.github.com/repos/'+path,{redirect:'error',headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','User-Agent':'MathGraph-Unified-Qualification'}});if(!r.ok)throw Error('METADATA_HTTP_'+r.status);return r.json();};
+          const repository='metalogiclabs/L4YAML',pr=await api(repository+'/pulls/6'),comparison=await api(repository+'/compare/'+pr.base.sha+'...'+pr.head.sha),upstream_claim=await api('nasa-jpl/L4YAML/pulls/212');
+          const context=executionContext(),request=admitRequest({repository,pr,files:comparison.files,permission:'admin',filesComplete:comparison.files.length===pr.changed_files,comment:{id:context.run_id,body:'@MathGraph -check',user:{id:32909488,login:'heathsanchez',type:'User'}}});
+          request.qualification_only=true;
+          if(request.profile.claim_profile!=='empty-tail-v1')throw Error('CLAIM_ROUTE_NOT_SELECTED');
+          const data={'request.json':request,'contract-snapshot.json':{schema:'mathgraph.repository-contract.snapshot.v1',repository,pr,comparison,upstream_claim},'publication.json':{state:'QUALIFICATION_ONLY',context,run_url:'https://github.com/metalogiclabs/mathgraph/actions/runs/'+context.run_id}};
+          const hashes={};for(const n of Object.keys(data).sort()){const text=JSON.stringify(data[n],null,2)+'\n';fs.writeFileSync('unified/'+n,text);hashes[n]=createHash('sha256').update(text).digest('hex');}fs.writeFileSync('unified/manifest.json',JSON.stringify({context,hashes}));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: unified-intake, path: unified/}
+  native:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Existing App and new composition regressions
+        run: |
+          node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: unified-intake, path: unified}
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Execute the actual hosted native controller without credentials
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs contract-run unified
+      - name: Independently admit both capabilities and render the shared report
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs contract-assess unified
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs unified
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';import {formatResult} from './integrations/mathgraph-check-github/pr-pilot-v1/policy.mjs';
+          const a=JSON.parse(fs.readFileSync('unified/assessment.json')),r=JSON.parse(fs.readFileSync('unified/request.json'));assert.equal(a.claim.status,'SUPPORTED');assert.equal(a.status,'CLI_BEHAVIOR_DIFFERENCE');assert.deepEqual(a.counts,{PARITY:4,DIFFERENCE:3,UNKNOWN:0});fs.writeFileSync('unified/GITHUB_REPORT.md',formatResult(a,r,'https://github.com/metalogiclabs/mathgraph/actions/runs/'+process.env.GITHUB_RUN_ID));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: unified-native-report
+          path: |
+            unified/*.json
+            unified/*.html
+            unified/*.md
+            unified/cli-native/logs/
+            unified/claim-native/logs/
+          retention-days: 30
+  browser:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: unified-native-report, path: unified}
+      - name: Install pinned browser QA runtime
+        run: |
+          npm install --no-save --prefix /tmp/unified-browser playwright@1.62.1
+          /tmp/unified-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Exercise actual generated report on desktop and mobile
+        env: {NODE_PATH: /tmp/unified-browser/node_modules}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs unified/MathGraph-Check.html browser-qa
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: unified-browser-qa, path: browser-qa/}
+  worker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir "$RUNNER_TEMP/unified-worker"
+      - name: Require actual deployable module bytes
+        run: |
+          find "$RUNNER_TEMP/unified-worker" -maxdepth 3 -type f
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';const root=process.env.RUNNER_TEMP+'/unified-worker';const files=fs.readdirSync(root,{recursive:true}).filter(p=>/\.m?js$/.test(p));assert.ok(files.some(p=>fs.statSync(root+'/'+p).size>10000),'Deployable Worker bundle missing');
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: unified-worker-build, path: '${{ runner.temp }}/unified-worker/'}
