@@ -47,6 +47,7 @@
     }
   },
   "probes_sha256": {
+    "AxiomProvenance.lean": "9071762877dea3f2478dd42ee605a640d667e97365846f15fd6d068f230b36ce",
     "Consumer.lean": "85df5c1223417b51226b88beff8bd6d711973ce908c6f9bcc7c6d526571f2035",
     "SourceWitness.lean": "08a770c50ebdb9cdcb2d662d89957c80b154ee0d1aa909215f17735dba47a94e",
     "WeakConsumer.lean": "07d4a262d3863aac8309a45c7750c385c132e4928a08fe5f81fe420a868b730a",
@@ -58,10 +59,28 @@
     "named constructor API availability, not absence of all alternative proofs at base",
     "two empty-tail cases universally quantified over n,s; not whole-generator semantic completeness",
     "new audit consumer, not an existing downstream production failure",
-    "retrospective verification of an explicitly declared fix; not fresh discovery"
+    "retrospective verification of an explicitly declared fix; not fresh discovery",
+    "TraceOf consumer and weak offer depend on standard Lean axiom propext; axiom-free support is rejected. No sorryAx or additional axioms allowed."
   ],
   "limits": {
     "seconds": 90,
     "output_bytes": 1000000
+  },
+  "revision": "v1.1-explicit-standard-axiom-boundary",
+  "allowed_axioms": {
+    "source_witness": [],
+    "strong_consumer": [
+      "propext"
+    ],
+    "weak_offer": [
+      "propext"
+    ],
+    "law": []
+  },
+  "superseded_admission": {
+    "controller": "cd386824e0879c4144916364b48bc9542eb2f1cc",
+    "run": 41600070575,
+    "state": "UNKNOWN",
+    "reason": "Original axiom-free admission rejected real strong/weak consumers because their imported TraceOf types depend on propext. Do not relabel original run as an axiom-free success."
   }
 }

@@ -49,12 +49,16 @@ jobs:
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
       - name: Test frozen strong consumer and weakened-claim controls without credentials
         run: python3 experiments/check-l4-claim-consumer-v1/run.py --snapshot claim-snapshot/snapshot.json --output claim-results
+      - name: Render claim, consumer, assumptions and next action
+        if: always()
+        run: python3 experiments/check-l4-claim-consumer-v1/report.py claim-results "${{ github.sha }}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: claim-consumer-evidence
           path: |
             claim-results/*.json
+            claim-results/*.md
             claim-results/logs/
             claim-results/build/lakefile.lean
             experiments/check-l4-claim-consumer-v1/contract.json

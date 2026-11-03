@@ -21,11 +21,11 @@ C=json.loads((HERE/'contract.json').read_text());SHA='a'*40
 # Hand-declared matrix: modules compile in all arms; named constructor consumer
 # is available only at head/restoration; a weakened offer always fails P's consumer.
 def qualified():
-    def ok(name='consumer'):return {'exit':0,'complete':True,'stdout':f"'MathGraphClaim.{name}' does not depend on any axioms\n",'stderr':''}
+    def ok(name='consumer'):return {'exit':0,'complete':True,'stdout':(f"'MathGraphClaim.{name}' depends on axioms: [propext]\n" if name in ['consumer','offered'] else f"'MathGraphClaim.{name}' does not depend on any axioms\n"),'stderr':''}
     def fail(message):return {'exit':1,'complete':True,'stdout':message,'stderr':''}
     rows={}
     for arm,strong in [('base',False),('head',True),('head_deleted',False),('head_restored',True)]:
-        rows[arm]={'module':ok(),'source_witness':ok('sourceEmptyTails'),'strong_consumer':ok() if strong else fail('Unknown constant TCompactSeqTail.nil; Unknown constant TCompactMapTail.nil'),'weak_offer':ok('offered'),'weak_consumer':fail('Type mismatch: Or ... expected EmptyTailTrace')}
+        rows[arm]={'module':ok(),'source_witness':ok('sourceEmptyTails'),'strong_consumer':ok() if strong else fail('error(lean.unknownIdentifier): Unknown constant `L4YAML.Proofs.Serialization.TraceOf.TCompactSeqTail.nil`\nerror(lean.unknownIdentifier): Unknown constant `L4YAML.Proofs.Serialization.TraceOf.TCompactMapTail.nil`'),'weak_offer':ok('offered'),'weak_consumer':fail('error: Type mismatch: Or ... expected EmptyTailTrace')}
     return {'schema':'mathgraph.claim-consumer.receipt.v1','controller_sha':SHA,'repository':'metalogiclabs/L4YAML','base_sha':'1f97fbf881da6d1b9e2a7b9c547d1d3306f518ff','head_sha':'1153d648425fb15f6fe49061544f7ffe4bdcb520','contract_sha256':hashlib.sha256((HERE/'contract.json').read_bytes()).hexdigest(),'probes_sha256':C['probes_sha256'],'source_preserved':True,'shared_dependencies_identical':True,'surface_identical':True,'generator_outputs_match_checked_in':True,'restoration_identical':True,'arms':rows,'law':ok('weakeningDoesNotAuthorize')}
 class Admission(unittest.TestCase):
     def test_complete_chain_admits_bounded_proof_and_named_api_obstruction(self):
@@ -45,3 +45,22 @@ class Admission(unittest.TestCase):
             r=qualified();edit(r);self.assertEqual(admit(r,SHA)['state'],'UNKNOWN')
     def test_build_progress_timing_does_not_change_restored_semantic_observations(self):
         r=qualified();r['arms']['head_restored']['module']['stdout']='Built Node (different elapsed time)';self.assertEqual(admit(r,SHA)['state'],'WARRANTED_BOUNDED')
+    def test_unrelated_error_mentioning_constructor_names_remains_unknown(self):
+        r=qualified()
+        for arm in ['base','head_deleted']:r['arms'][arm]['strong_consumer']['stdout']='error: maximum recursion depth reached while elaborating ⟨TCompactSeqTail.nil n s, TCompactMapTail.nil n s⟩'
+        self.assertEqual(admit(r,SHA)['state'],'UNKNOWN')
+    def test_extra_compiler_error_alongside_expected_rejection_is_unknown(self):
+        r=qualified();r['arms']['base']['strong_consumer']['stdout']+='\nerror: maximum recursion depth reached';self.assertEqual(admit(r,SHA)['state'],'UNKNOWN')
+
+    def test_standard_axiom_is_explicit_and_additional_axiom_is_rejected(self):
+        r=qualified();a=admit(r,SHA);self.assertEqual(a['state'],'WARRANTED_BOUNDED');self.assertEqual(a['proof_assumptions']['strong_consumer'],['propext']);self.assertEqual(a['axiom_free_claim'],'REJECTED')
+        r['arms']['head']['strong_consumer']['stdout']="'MathGraphClaim.consumer' depends on axioms: [propext, Classical.choice]\n";self.assertEqual(admit(r,SHA)['state'],'UNKNOWN')
+class Report(unittest.TestCase):
+    def test_report_connects_claim_consumer_assumptions_and_limits(self):
+        from report import render
+        text=render(qualified(),SHA)
+        for required in ['WARRANTED_BOUNDED','propext','head_deleted','P ∨ True','not a new bug discovery','UNKNOWN']:
+            self.assertIn(required,text)
+    def test_incomplete_report_never_shows_a_supported_claim(self):
+        from report import render
+        text=render({},SHA);self.assertIn('UNKNOWN',text);self.assertNotIn('WARRANTED_BOUNDED',text)

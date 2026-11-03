@@ -45,8 +45,10 @@ def main():
         result=native.run(cmd+['mathgraph-claim-consumer']+command,timeout);native.run(['docker','rm','-f',name],20)
         (logs/(label+'.stdout')).write_text(result.stdout);(logs/(label+'.stderr')).write_text(result.stderr)
         return {'exit':result.returncode,'complete':result.returncode>=0 and result.returncode not in [124,125,126,127,137] and len((result.stdout+result.stderr).encode())<=c['limits']['output_bytes'],'stdout':result.stdout,'stderr':result.stderr}
+    print('Building pinned source closure',flush=True)
     initial=docker('initial-build',['lake','build','cli','L4YAML'],timeout=1200);r['initial_build']=initial;save()
     if initial['exit']!=0:raise ValueError('HEAD_DEPENDENCY_BUILD_FAILED')
+    r['axiom_provenance']=docker('axiom-provenance',['lean','/probes/AxiomProvenance.lean']);save()
     lib=build/'.lake/build/lib/lean';exe=build/'.lake/build/bin/cli'
     generation=out/'generation';generation.mkdir();(generation/'scripts').mkdir();(generation/'scripts/gen_traceof.py').touch();q=generation/c['source'];q.parent.mkdir(parents=True);shutil.copyfile(base/c['source'],q);(generation/'.lake/build/lib/lean').mkdir(parents=True)
     b=docker('python-generation',['python3','/work/scripts/gen_traceof.py'],generation,[(base/'scripts/gen_traceof.py','/work/scripts/gen_traceof.py'),(lib,'/work/.lake/build/lib/lean')]);h=docker('lean-generation',['/program'],generation,[(exe,'/program'),(lib,'/work/.lake/build/lib/lean')]);r['generation']={'base':b,'head':h};r['generator_outputs_match_checked_in']=b['exit']==h['exit']==0 and b['complete'] and h['complete'] and b['stdout']==(base/c['target']).read_text() and h['stdout']==(head/c['target']).read_text();save()
@@ -54,6 +56,7 @@ def main():
     target=selected/c['target'];original_target=target.read_text();deleted=remove_empty_ctors(h['stdout']);r['variant_sha256']={}
     weak=out/'WeakConsumer.lean';weak.write_text((HERE/'probes/WeakOffer.lean').read_text()+'\n'+(HERE/'probes/WeakConsumer.lean').read_text())
     for arm,content in [('base',b['stdout']),('head',h['stdout']),('head_deleted',deleted),('head_restored',h['stdout'])]:
+        print('Checking arm '+arm,flush=True)
         target.write_text(content);r['variant_sha256'][arm]=sha(content.encode());row={};r['arms'][arm]=row
         row['module']=docker(arm+'-module',['lake','build',c['module']],timeout=600);save()
         if row['module']['exit']!=0:raise ValueError('VARIANT_MODULE_BUILD_FAILED:'+arm)
