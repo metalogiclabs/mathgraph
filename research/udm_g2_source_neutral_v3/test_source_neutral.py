@@ -26,6 +26,16 @@ class SourceNeutralTests(unittest.TestCase):
     def test_side_effect_import_is_rejected(self):
         src='package g2_fixture\nimport (_ "fmt"; "testing")\nfunc TestMathGraphProposedWitness(t *testing.T) { t.Fatal("fail") }\n'
         self.assertEqual(check(src)["reason"],"side_effect_import")
+    def test_reflect_deep_equal_in_memory_is_allowed(self):
+        src=('package g2_fixture\nimport ("testing";"reflect")\n'
+             'func TestMathGraphProposedWitness(t *testing.T) { if !reflect.DeepEqual([]int{1},[]int{1}) { t.Fatal("different") } }\n')
+        self.assertEqual(check(src)["status"],"ADMITTED_TEST_ONLY_CANDIDATE")
+
+    def test_external_process_import_stays_refused(self):
+        src=('package g2_fixture\nimport ("testing";"os/exec")\n'
+             'func TestMathGraphProposedWitness(t *testing.T) { t.Fatal("candidate") }\n')
+        self.assertEqual(check(src)["reason"],"unsafe_import")
+
     def test_no_assertion_is_rejected(self):
         src='package g2_fixture\nimport "testing"\nfunc TestMathGraphProposedWitness(t *testing.T) { _ = t }\n'
         self.assertEqual(check(src)["reason"],"no_falsifiable_assertion")
