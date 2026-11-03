@@ -1,0 +1,141 @@
+name: MathGraph Boundary Warrant — Nyx Exact Native Replay
+
+on:
+  push:
+    branches:
+      - research/boundary-warrant-nyx-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  nyx-two-arm-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target-nyx
+      CARGO_BUILD_JOBS: '4'
+      CARGO_TERM_COLOR: never
+      PYTHONPATH: ${{ github.workspace }}/experiments/boundary-warrant-v0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/nyx
+          ref: d1c3598d5ccf4c984a1d3dd82c450e2af363e821
+          path: nyx-base
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/nyx
+          ref: ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b
+          path: nyx-head
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin source trees and import only the head's rotating-frame regression
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/nyx
+          test "$(git -C nyx-base rev-parse HEAD)" = d1c3598d5ccf4c984a1d3dd82c450e2af363e821
+          test "$(git -C nyx-head rev-parse HEAD)" = ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b
+          test "$(git -C nyx-base rev-parse HEAD^{tree})" = b04cb7d6a7a4afcf47bf1158d33c703960ff3b54
+          test "$(git -C nyx-head rev-parse HEAD^{tree})" = 4c85bf0374601d25e0263c7bacbad9027aa5287c
+          test "$(git -C nyx-base hash-object nyx-core/src/propagators/event.rs)" = 6d07cd717e120f188923d931943fb233f968afe5
+          test "$(git -C nyx-head hash-object nyx-core/src/propagators/event.rs)" = fb46c8eb2152124d9e814012e8748cb98ff0f6ae
+          test "$(git -C nyx-base hash-object nyx-core/tests/propagation/stopcond.rs)" = fa3ad8e8bd7dc4a24538061dbc035cdd6fdd0c7f
+          test "$(git -C nyx-head hash-object nyx-core/tests/propagation/stopcond.rs)" = 830919f246536ccc65be4041e9a4b775220f57bb
+          python -m unittest discover -s experiments/boundary-warrant-v0 -p test_nyx_replay.py -v \
+            2>&1 | tee evidence-out/nyx/harness-tests.log
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+          from nyx_replay import transplant_exact_regression
+          base = Path('nyx-base/nyx-core/tests/propagation/stopcond.rs')
+          head = Path('nyx-head/nyx-core/tests/propagation/stopcond.rs')
+          patched = transplant_exact_regression(base.read_text(), head.read_text()).encode()
+          assert sha256(patched).hexdigest() == 'a53dcec895f666139993ce839c102af7b59680b02bd5915501b85ff88dcb5872'
+          base.write_bytes(patched)
+          print('PINNED_TEST_ONLY_TRANSPLANT=' + sha256(patched).hexdigest())
+          PY
+          test "$(git -C nyx-base diff --name-only)" = nyx-core/tests/propagation/stopcond.rs
+          test "$(git -C nyx-base hash-object nyx-core/src/propagators/event.rs)" = 6d07cd717e120f188923d931943fb233f968afe5
+          git -C nyx-base diff -- nyx-core/tests/propagation/stopcond.rs \
+            > evidence-out/nyx/baseline-test-transplant.patch
+      - name: Freeze one dependency resolution and record native toolchain
+        run: |
+          set -euo pipefail
+          rustc --version | tee evidence-out/nyx/rustc.txt
+          cargo --version | tee evidence-out/nyx/cargo.txt
+          cargo generate-lockfile --manifest-path nyx-base/Cargo.toml
+          cp nyx-base/Cargo.lock nyx-head/Cargo.lock
+          cmp nyx-base/Cargo.lock nyx-head/Cargo.lock
+          sha256sum nyx-base/Cargo.lock nyx-head/Cargo.lock \
+            > evidence-out/nyx/cargo-lock-hashes.txt
+      - name: Native baseline run with transplanted test and unmodified production source
+        run: |
+          set -euo pipefail
+          set +e
+          cd nyx-base
+          timeout 1500s cargo test --locked --package nyx-space --test lib \
+            longitude_event_in_rotating_frame -- --nocapture \
+            > ../evidence-out/nyx/base.stdout 2> ../evidence-out/nyx/base.stderr
+          code=$?
+          set -e
+          echo "$code" > ../evidence-out/nyx/base.exit
+          echo "NATIVE_BASE_EXIT=$code"
+      - name: Native exact-head run, same test and dependency resolution
+        run: |
+          set -euo pipefail
+          set +e
+          cd nyx-head
+          timeout 1500s cargo test --locked --package nyx-space --test lib \
+            longitude_event_in_rotating_frame -- --nocapture \
+            > ../evidence-out/nyx/head.stdout 2> ../evidence-out/nyx/head.stderr
+          code=$?
+          set -e
+          echo "$code" > ../evidence-out/nyx/head.exit
+          echo "NATIVE_HEAD_EXIT=$code"
+      - name: Fail-closed native interpretation with explicit UNKNOWN on setup failure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nyx_replay import classify_native_test
+          output = Path('evidence-out/nyx')
+          receipt = {
+              'source_base': 'd1c3598d5ccf4c984a1d3dd82c450e2af363e821',
+              'source_head': 'ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b',
+              'test_only_transplant_sha256': 'a53dcec895f666139993ce839c102af7b59680b02bd5915501b85ff88dcb5872',
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'authority': 'PR_TEST_DECLARED_NOT_EXTERNAL',
+              'status': 'UNKNOWN',
+          }
+          for arm in ('base', 'head'):
+              try:
+                  receipt[arm] = classify_native_test(
+                      (output / f'{arm}.stdout').read_text(),
+                      (output / f'{arm}.stderr').read_text(),
+                      int((output / f'{arm}.exit').read_text().strip()), arm,
+                  )
+              except Exception as error:
+                  receipt[arm] = {'state': 'UNKNOWN', 'reason': str(error)}
+          if ('failed' in receipt.get('base', {}) and 'passed' in receipt.get('head', {})):
+              receipt['status'] = 'CANDIDATE_BOUNDED_NATIVE'
+          (output / 'native-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, sort_keys=True))
+          assert receipt['status'] == 'CANDIDATE_BOUNDED_NATIVE', 'NATIVE_REPLAY_NOT_QUALIFIED'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-boundary-nyx-native-v1
+          path: evidence-out/nyx/
+          if-no-files-found: warn
