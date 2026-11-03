@@ -50,3 +50,14 @@ def project_closure(root,roots):
             if dep.split('.')[0] in ['Scripts','L4YAML']:pending.append(dep)
             elif dep.split('.')[0] not in ['Lean','Std','Init','Lake']:raise ValueError('EXTERNAL_PROJECT_IMPORT:'+dep)
     return sorted(seen)
+
+def lake_config(profile,modules):
+    text='import Lake\nopen Lake DSL\npackage mathgraphCliParity where\n  leanOptions := #[⟨`autoImplicit, false⟩]\n'
+    for prefix in ['Scripts','L4YAML']:
+        roots=[m for m in modules if m.split('.')[0]==prefix]
+        if roots:
+            text+='lean_lib '+prefix+' where\n  srcDir := "/source"\n'
+            if prefix=='L4YAML':text+='  precompileModules := true\n'
+            text+='  roots := #['+', '.join('`'+m for m in roots)+']\n'
+    text+='lean_exe cli where\n  srcDir := "/source"\n  root := `'+profile['head_module']+'\n  supportInterpreter := true\n'
+    return text

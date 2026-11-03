@@ -38,3 +38,9 @@ class CliContract(unittest.TestCase):
    p=Path(d);(p/'Scripts').mkdir();(p/'Scripts/X.lean').write_text('import Mathlib\n')
    with self.assertRaises(ValueError):f(p,['Scripts.X'])
    with self.assertRaises(ValueError):f(p,['Scripts.Absent'])
+
+class LakeRegistration(unittest.TestCase):
+ def test_transitive_modules_are_registered_as_build_roots(self):
+  f=getattr(rules,'lake_config',lambda *_:'')
+  s=f({'head_module':'Scripts.Main.X'},['Scripts.Main.X','Scripts.Helper','L4YAML.Surface.X','L4YAML.Surface.Y'])
+  for m in ['Scripts.Main.X','Scripts.Helper','L4YAML.Surface.X','L4YAML.Surface.Y']:self.assertIn('`'+m,s)

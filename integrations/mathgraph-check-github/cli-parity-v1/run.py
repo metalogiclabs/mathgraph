@@ -1,7 +1,7 @@
 """One fixed CLI-contract runner; no model, source-defined commands or native credentials."""
 from pathlib import Path
 import argparse,hashlib,json,os,re,shutil,subprocess,tarfile,urllib.request
-from rules import compare_case,effects,safe_path,project_closure,shared
+from rules import compare_case,effects,safe_path,project_closure,shared,lake_config
 HERE=Path(__file__).resolve().parent
 
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
@@ -47,9 +47,7 @@ def main():
     must(['docker','pull','ubuntu:24.04']);imagebase=must(['docker','image','inspect','ubuntu:24.04','--format','{{index .RepoDigests 0}}']);image=out/'image';image.mkdir();(image/'Dockerfile').write_text('FROM '+imagebase+'\nRUN apt-get update && apt-get install -y --no-install-recommends python3 build-essential libgmp10 && rm -rf /var/lib/apt/lists/*\n');must(['docker','build','-t','mathgraph-cli-parity',str(image)],420)
     report['runtime']={'lean':must([str(lean/'bin/lean'),'--version']),'image_id':must(['docker','image','inspect','mathgraph-cli-parity','--format','{{.Id}}']),'base_image':imagebase}
     build=out/'build';build.mkdir();(build/'lean-toolchain').write_text(contract['toolchain']+'\n')
-    lake='import Lake\nopen Lake DSL\npackage mathgraphCliParity where\n  leanOptions := #[⟨`autoImplicit, false⟩]\nlean_lib Scripts where\n  srcDir := "/source"\n  roots := #[`'+profile['head_module']+']\n'
-    if profile['extra_roots']:lake+='lean_lib L4YAML where\n  srcDir := "/source"\n  precompileModules := true\n  roots := #['+', '.join('`'+m for m in profile['extra_roots'])+']\n'
-    lake+='lean_exe cli where\n  srcDir := "/source"\n  root := `'+profile['head_module']+'\n  supportInterpreter := true\n';(build/'lakefile.lean').write_text(lake)
+    (build/'lakefile.lean').write_text(lake_config(profile,modules))
     def permissions(folder):
         for q in [folder,*folder.rglob('*')]:
             if q.stat().st_uid==os.getuid():q.chmod(0o777 if q.is_dir() else 0o666)
