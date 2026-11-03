@@ -204,6 +204,51 @@ class WarmReceiptSession:
             "states": states,
         }
 
+    def remeasure_and_reuse(self, flash_checkout: Path, checker_binary: Path,
+                            request: dict, policy: dict, *,
+                            withdrawn: frozenset[str] = frozenset()) -> dict:
+        """Exact reuse only after measuring the actual candidate files anew.
+
+        The caller supplies paths, not an identity fabricated from the report.
+        The binary may be an immutable verified prior artifact, provided it is
+        the actual checker candidate under consideration. This does not prove
+        that a separately rebuilt binary is equivalent.
+        """
+        if self._observation is None:
+            return {**_unknown("PRIOR_RECEIPT_NOT_ADMITTED"),
+                    "current_applicability": "UNKNOWN"}
+        if policy != self._policy or request != self._policy["consumer"]:
+            return {**_unknown("CURRENT_REQUEST_OR_POLICY_DRIFT"),
+                    "current_applicability": "UNKNOWN"}
+        try:
+            if (not checker_binary.is_file()
+                    or not 0 < checker_binary.stat().st_size <= 128_000_000):
+                raise ValueError("CHECKER_BINARY_MISSING_OR_OVERSIZED")
+            validated_source = native.validate_checkout(flash_checkout, self._policy)
+            candidate = native.measured_candidate_identity(checker_binary, request,
+                                                            self._policy)
+        except (OSError, ValueError) as error:
+            return {**_unknown(str(error)), "current_applicability": "UNKNOWN"}
+        decision = bridge.reuse(self._observation, request, self._policy,
+                                candidate=candidate, prior_trusted_context=self._context,
+                                trusted_prior_receipt=True)
+        closure = bridge.resolve(self._observation, request, self._policy,
+                                 trusted_context=self._context, withdrawn=withdrawn)
+        states = closure["states"]
+        supported = (decision["status"] == "REUSABLE_BOUNDED"
+                     and states.get("consumer.exact_bar_type") == "WARRANTED_BOUNDED")
+        return {
+            "status": "REUSABLE_BOUNDED" if supported else "UNKNOWN",
+            "current_applicability": "EXACT_REMEASURED" if supported else "UNKNOWN",
+            "permission": "ADVISORY_ONLY",
+            "reason": "NONE" if supported else "MEASURED_CANDIDATE_DRIFT_OR_WITHDRAWAL",
+            "source": "STORED_GITHUB_ACTIONS_ARTIFACT_PLUS_FRESH_FILE_MEASUREMENT",
+            "fingerprint": decision["fingerprint"],
+            "states": states,
+            "measured_source": validated_source,
+            "native_checker_invocations_in_consumer": 0,
+        }
+
 
 def fetch_metadata(context: dict, token: str) -> dict:
     """Read-only GitHub REST evidence, using the runner's scoped job token."""
@@ -238,8 +283,12 @@ def fetch_metadata(context: dict, token: str) -> dict:
 
 
 def run_consumer(report_file: Path, external_digest: str, policy: dict,
-                 context: dict, *, metadata_provider) -> dict:
+                 context: dict, *, metadata_provider,
+                 flash_checkout: Path | None = None,
+                 checker_binary: Path | None = None) -> dict:
     """Read the stored file, then use externally obtained producer authority."""
+    if (flash_checkout is None) != (checker_binary is None):
+        raise ValueError("INCOMPLETE_MEASURED_CANDIDATE_PATHS")
     start = time.perf_counter_ns()
     metadata = metadata_provider()
     metadata_ns = time.perf_counter_ns() - start
@@ -253,12 +302,21 @@ def run_consumer(report_file: Path, external_digest: str, policy: dict,
     result = session.lookup(policy["consumer"], policy)
     appraisal_ns = time.perf_counter_ns() - start
     warm = native.timing_stats(lambda: session.lookup(policy["consumer"], policy))
+    measured_ns = None
+    if flash_checkout is not None and checker_binary is not None:
+        start = time.perf_counter_ns()
+        result = session.remeasure_and_reuse(
+            flash_checkout, checker_binary, policy["consumer"], policy)
+        measured_ns = time.perf_counter_ns() - start
+    timings = {"metadata_fetch": metadata_ns,
+               "stored_file_read": read_ns,
+               "appraisal_and_resolve": appraisal_ns,
+               "warm_lookup_median": warm["median_ns"],
+               "warm_lookup_p95": warm["p95_ns"]}
+    if measured_ns is not None:
+        timings["measured_candidate_and_reuse"] = measured_ns
     return {**result, "native_checker_invocations_in_consumer": 0,
-            "timing_ns": {"metadata_fetch": metadata_ns,
-                          "stored_file_read": read_ns,
-                          "appraisal_and_resolve": appraisal_ns,
-                          "warm_lookup_median": warm["median_ns"],
-                          "warm_lookup_p95": warm["p95_ns"]},
+            "timing_ns": timings,
             "warm_lookup_samples": warm["iterations"]}
 
 
@@ -266,6 +324,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--flash-repo", type=Path)
+    parser.add_argument("--candidate-binary", type=Path)
     args = parser.parse_args(argv)
     try:
         policy = json.loads((Path(__file__).parent / "policy.json").read_text())
@@ -275,13 +335,16 @@ def main(argv=None) -> int:
         expected_digest = os.environ.get("PRODUCER_REPORT_SHA256", "")
         result = run_consumer(args.artifact, expected_digest, policy, context,
                               metadata_provider=lambda: fetch_metadata(
-                                  context, os.environ.get("GITHUB_TOKEN", "")))
+                                  context, os.environ.get("GITHUB_TOKEN", "")),
+                              flash_checkout=args.flash_repo,
+                              checker_binary=args.candidate_binary)
     except (ValueError, OSError, ProtocolError) as error:
         result = _unknown(str(error))
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
     print(f"Persisted Flash read: {result['status']} ({result['reason']})")
-    return 0 if result["status"] == "HISTORICAL_WARRANT_RETRIEVED" else 1
+    return 0 if result["status"] in {"HISTORICAL_WARRANT_RETRIEVED",
+                                      "REUSABLE_BOUNDED"} else 1
 
 
 if __name__ == "__main__":

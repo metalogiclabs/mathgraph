@@ -64,6 +64,12 @@ jobs:
           name: kernel-bridge-native-evidence
           path: kernel-bridge-evidence/
           if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: success()
+        with:
+          name: kernel-bridge-checker-binary
+          path: flash/target/release/sokonanoda
+          if-no-files-found: error
   persisted-reuse:
     needs: [native-receipt]
     if: ${{ needs['native-receipt'].result == 'success' }}
@@ -93,4 +99,77 @@ jobs:
         with:
           name: kernel-bridge-persisted-read-evidence
           path: persisted-result/
+          if-no-files-found: warn
+  remeasured-exact:
+    needs: [native-receipt]
+    if: ${{ needs['native-receipt'].result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {contents: read, actions: read}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Retrieve prior receipt and exact runnable checker bytes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: kernel-bridge-native-evidence
+          path: persisted-evidence
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: kernel-bridge-checker-binary
+          path: persisted-checker
+      - name: Independently fetch current source and exact configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init flash
+          git -C flash remote add origin https://github.com/metalogiclabs/mathgraph-lean-kernel.git
+          git -C flash fetch --depth=1 origin 32eada63bf5d1815bc8d39dd4b4047dc98eff20d
+          git -C flash checkout --detach FETCH_HEAD
+          test "$(git -C flash rev-parse HEAD)" = '32eada63bf5d1815bc8d39dd4b4047dc98eff20d'
+      - name: Remeasure binary and source before exact warranted reuse
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRODUCER_REPORT_SHA256: ${{ needs['native-receipt'].outputs.report_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+            --artifact persisted-evidence/native-report.json \
+            --flash-repo flash \
+            --candidate-binary persisted-checker/sokonanoda \
+            --report remeasured-result/receipt.json
+      - name: Reject changed binary and changed current configuration
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRODUCER_REPORT_SHA256: ${{ needs['native-receipt'].outputs.report_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp persisted-checker/sokonanoda persisted-checker/mutated-sokonanoda
+          python3 -c 'from pathlib import Path; p=Path("persisted-checker/mutated-sokonanoda"); b=bytearray(p.read_bytes()); b[len(b)//2] ^= 1; p.write_bytes(b)'
+          if python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+              --artifact persisted-evidence/native-report.json \
+              --flash-repo flash \
+              --candidate-binary persisted-checker/mutated-sokonanoda \
+              --report remeasured-result/binary-mutant.json; then
+            echo 'mutated executable was incorrectly reusable' >&2
+            exit 1
+          fi
+          python3 -c 'import json; from pathlib import Path; r=json.loads(Path("remeasured-result/binary-mutant.json").read_text()); assert r["status"] == "UNKNOWN" and r["current_applicability"] == "UNKNOWN"'
+          python3 -c 'from pathlib import Path; p=Path("flash/test_resources/ProofIrrelUnderBVar/config.json"); p.write_bytes(p.read_bytes() + b" ")'
+          if python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+              --artifact persisted-evidence/native-report.json \
+              --flash-repo flash \
+              --candidate-binary persisted-checker/sokonanoda \
+              --report remeasured-result/config-mutant.json; then
+            echo 'changed configuration was incorrectly reusable' >&2
+            exit 1
+          fi
+          python3 -c 'import json; from pathlib import Path; r=json.loads(Path("remeasured-result/config-mutant.json").read_text()); assert r["status"] == "UNKNOWN" and r["reason"] == "CONFIG_SHA256_MISMATCH"'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: kernel-bridge-remeasured-exact-evidence
+          path: remeasured-result/
           if-no-files-found: warn

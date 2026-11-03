@@ -49,6 +49,14 @@ def stored():
     return (json.dumps(native_report(), sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
+def stored_for_measured_binary(binary: bytes):
+    report = native_report()
+    report["observation"]["native"]["binary_sha256"] = digest(binary)
+    report["qualification"] = bridge.qualify(
+        report["observation"], exact_request(), POLICY, trusted_context=gh_context())
+    return (json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
 def gh_metadata():
     context = gh_context()
     return {
@@ -151,6 +159,64 @@ class PersistedConsumerTests(unittest.TestCase):
             self.assertEqual(session.lookup(exact_request(), changed)["status"], "UNKNOWN")
         with self.assertRaisesRegex(ValueError, "UNKNOWN_WITHDRAWAL_TARGET"):
             session.lookup(exact_request(), POLICY, withdrawn=frozenset({"bogus"}))
+
+    def test_real_binary_bytes_plus_independently_validated_checkout_admit_exact_reuse(self):
+        binary_bytes = b"pinned actual checker executable bytes"
+        raw = stored_for_measured_binary(binary_bytes)
+        session = persisted.WarmReceiptSession(gh_metadata(), raw, digest(raw), POLICY,
+                                               gh_context())
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "sokonanoda"
+            binary.write_bytes(binary_bytes)
+            checkout = Path(tmp) / "flash"
+            with patch("persisted.native.validate_checkout", return_value={"checkout": "verified"}) as check:
+                with patch("persisted.bridge.reuse", wraps=bridge.reuse) as reuse:
+                    result = session.remeasure_and_reuse(checkout, binary, exact_request(), POLICY)
+            check.assert_called_once_with(checkout, POLICY)
+            self.assertEqual(reuse.call_count, 1)
+            self.assertEqual(result["status"], "REUSABLE_BOUNDED")
+            self.assertEqual(result["current_applicability"], "EXACT_REMEASURED")
+            self.assertEqual(result["native_checker_invocations_in_consumer"], 0)
+
+    def test_remeasured_binary_mutation_source_drift_or_revocation_fail_closed(self):
+        raw = stored_for_measured_binary(b"actual")
+        session = persisted.WarmReceiptSession(gh_metadata(), raw, digest(raw), POLICY,
+                                               gh_context())
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "sokonanoda"
+            binary.write_bytes(b"tampered")
+            checkout = Path(tmp) / "flash"
+            with patch("persisted.native.validate_checkout", return_value={}):
+                self.assertEqual(session.remeasure_and_reuse(
+                    checkout, binary, exact_request(), POLICY)["status"], "UNKNOWN")
+            binary.write_bytes(b"actual")
+            with patch("persisted.native.validate_checkout", side_effect=ValueError("EXPORT_SHA256_MISMATCH")):
+                changed = session.remeasure_and_reuse(checkout, binary, exact_request(), POLICY)
+                self.assertEqual(changed["status"], "UNKNOWN")
+                self.assertEqual(changed["reason"], "EXPORT_SHA256_MISMATCH")
+            with patch("persisted.native.validate_checkout", return_value={}):
+                changed = session.remeasure_and_reuse(
+                    checkout, binary, exact_request(), POLICY,
+                    withdrawn=frozenset({"native.accept"}))
+            self.assertEqual(changed["status"], "UNKNOWN")
+            self.assertEqual(changed["states"]["independent.control"], "WARRANTED_BOUNDED")
+
+    def test_remeasured_reader_never_invokes_kernel_and_records_identity_measurement(self):
+        raw = stored_for_measured_binary(b"actual")
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            artifact = tmp / "native-report.json"
+            artifact.write_bytes(raw)
+            binary = tmp / "sokonanoda"
+            binary.write_bytes(b"actual")
+            checkout = tmp / "flash"
+            with patch("persisted.native.validate_checkout", return_value={}):
+                result = persisted.run_consumer(
+                    artifact, digest(raw), POLICY, gh_context(),
+                    metadata_provider=gh_metadata, flash_checkout=checkout, checker_binary=binary)
+            self.assertEqual(result["status"], "REUSABLE_BOUNDED")
+            self.assertEqual(result["native_checker_invocations_in_consumer"], 0)
+            self.assertIn("measured_candidate_and_reuse", result["timing_ns"])
 
     def test_exact_stored_receipt_from_trusted_producer_retrieves_historical_warrant(self):
         raw = stored()
