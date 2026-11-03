@@ -9,8 +9,8 @@ const sizes={208:1134,211:108,212:25,204:100};
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 import {CONTRACT_MODE} from './repository-report.mjs';
 export function admitRepositoryResult(r,request,context,corpusBytes=null){
- let identityQualified=false;
- const unknown=reason=>({context,subject:request,status:'UNKNOWN',reason,whole_pr_correctness:'UNKNOWN',declared_scope:identityQualified?r?.scope:undefined,diagnostics:{setup:r?.reason,base:r?.arms?.base,head:r?.arms?.head}});
+ let identityQualified=false;const observations={};
+ const unknown=reason=>({context,subject:request,status:'UNKNOWN',reason,whole_pr_correctness:'UNKNOWN',declared_scope:identityQualified?r?.scope:undefined,observations:Object.keys(observations).length?observations:undefined,diagnostics:{setup:r?.reason,base:r?.arms?.base,head:r?.arms?.head}});
  try{
   ensure(request.profile.mode===CONTRACT_MODE&&request.command==='check','CONTRACT_CHECK_ONLY');
   ensure(r?.schema==='mathgraph.repository-contract.report.v1','CONTRACT_RECEIPT_MISSING');
@@ -22,13 +22,16 @@ export function admitRepositoryResult(r,request,context,corpusBytes=null){
   let corpus;if(corpusBytes!==null){ensure(createHash('sha256').update(corpusBytes).digest('hex')===corpusHash,'CONTRACT_CORPUS_CHANGED');corpus=JSON.parse(corpusBytes);}
   ensure(r.whole_pr_correctness==='UNKNOWN','INVALID_CONTRACT_AUTHORITY');
   if(r.state==='STALE')return {...unknown('SOURCE_CHANGED'),status:'STALE'};
-  for(const side of ['base','head']){
+  const armErrors=[];
+  for(const side of ['base','head']){try{
    const a=r.arms?.[side];
    ensure(a?.qualified===true&&a.source_sha===request[side+'_sha']&&a.build_exit===0&&a.cases===contract.regression.expected_cases&&Number.isSafeInteger(a.passed)&&Array.isArray(a.failed)&&Array.isArray(a.unknown)&&a.unknown.length===0,'CONTRACT_NATIVE_INCOMPLETE');
    ensure(new Set(a.failed).size===a.failed.length&&a.failed.every(id=>{const m=typeof id==='string'&&id.match(/^(208|211|212|204):([0-9]+)$/);return m&&String(Number(m[2]))===m[2]&&Number(m[2])<sizes[m[1]];}),'INVALID_FROZEN_WITNESSES');
    ensure(a.passed>=0&&a.passed+a.failed.length===a.cases,'CONTRACT_COUNTS_MISMATCH');
    ensure(Array.isArray(a.roots)&&a.roots.length>0&&Array.isArray(a.modules)&&a.modules.length>0,'CONTRACT_COVERAGE_MISSING');
-  }
+   observations[side]={cases:a.cases,passed:a.passed,failed:a.failed,compiled_modules:a.modules,compiled_roots:a.roots};
+  }catch(e){armErrors.push(e.message);}}
+  if(armErrors.length)return unknown(armErrors[0]);
   const b=r.arms.base,h=r.arms.head;
   const status=b.failed.length?(h.failed.length?'FAILURE_ON_BOTH_REVISIONS':'RESOLVED_FROZEN_PROBE_FAILURE'):(h.failed.length?'NEW_FROZEN_PROBE_FAILURE':'NO_FAILURE_IN_FROZEN_CORPUS');
   ensure(r.state===status,'CONTRACT_CLASSIFICATION_MISMATCH');

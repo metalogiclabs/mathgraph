@@ -28,3 +28,4 @@ test('actual controller phase admits current artifact and refuses a prior-run ma
   if(prior)assert.equal(JSON.parse(readFileSync(dir+'/controller-error.json')).reason,'STALE_CONTRACT_CONTEXT');else assert.equal(JSON.parse(readFileSync(dir+'/assessment.json')).status,'NO_FAILURE_IN_FROZEN_CORPUS');
  }finally{rmSync(dir,{recursive:true,force:true});}}
 });
+test('partial evidence retains only independently qualified and source-bound arm observations',()=>{const r=receipt();r.state='UNKNOWN';r.arms.base.qualified=false;r.arms.base.reason='EXPECTED_MODULE_ABSENT:Scripts.TraceOf.Gen';const a=admitRepositoryResult(r,request(),context);assert.equal(a.status,'UNKNOWN');assert.equal(a.coverage,undefined);assert.equal(a.observations.head.passed,1367);assert.equal(a.observations.base,undefined);r.arms.head.source_sha=base;assert.equal(admitRepositoryResult(r,request(),context).observations,undefined);});

@@ -14,6 +14,7 @@ export function diagnosticText(report){
   else if(reason.includes('SOURCE_BUILD_FAILED'))lines.push(`The selected ${side} source did not compile under the trusted build. See the native build log.`);
   else if(reason)lines.push(`The ${side} native evidence is incomplete; see retained diagnostics.`);
  }
+ for(const side of ['base','head'])if(report.observations?.[side])lines.push(`${side==='head'?'Head':'Base'} revision independently passed ${report.observations[side].passed}/${report.observations[side].cases} frozen probes; the PR comparison remains unavailable.`);
  if(report.status==='UNKNOWN')lines.push('This is not a confirmed PR regression. Whole-PR correctness remains UNKNOWN.');
  return lines;
 }
@@ -22,7 +23,7 @@ export function formatContractResult(report,request,runURL){
  const lines=['### MathGraph Check',`**${contractTitle(report)}**`,`[${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number}) · revision \`${request.head_sha.slice(0,12)}\``];
  if(c){
   lines.push(`${report.introduced?.length??0} new failing frozen expectations; ${report.resolved?.length??0} resolved; ${report.inherited?.length??0} failing on both revisions. Head: ${c.head.passed}/${c.head.cases} frozen probes passed.`);
-  for(const w of (report.witnesses??[]).slice(0,3)){
+  for(const w of highlightedWitnesses(report)){
    const recovered=report.resolved?.includes(w.id),revision=recovered?request.base_sha:request.head_sha;
    const link=`https://github.com/${request.repository}/blob/${revision}/${w.path}`;
    lines.push(`**${recovered?'Resolved expectation (failed at base)':'Failed expectation'} \`${esc(w.id)}\`** — [${esc(w.path)}](${link})\n\nInput: \`${esc(JSON.stringify(w.inputs))}\`\n\nExpectation: \`${esc(w.expression)} == ${esc(w.expected)}\`. Native assertion failure is retained; runtime value not recorded.`);
@@ -35,6 +36,7 @@ export function formatContractResult(report,request,runURL){
  if(c){
   details.push(['| Native evidence | Base | Head |','|---|---|---|',`| Frozen probes passed | ${c.base.passed}/${c.base.cases} | ${c.head.passed}/${c.head.cases} |`,`| Compiled modules | ${c.base.compiled_modules.length} | ${c.head.compiled_modules.length} |`].join('\n'));
   for(const side of ['base','head'])details.push(`Compiled roots (${side}): ${c[side].compiled_roots.map(p=>'`'+esc(p)+'`').join(', ')}`);
+  for(const [key,label]of [['introduced','All new failing witnesses'],['resolved','All resolved witnesses'],['inherited','All inherited failing witnesses']])if(report[key]?.length)details.push(label+': '+report[key].map(esc).join(', '));
   details.push('Uncovered changed paths: '+(c.uncovered.length?c.uncovered.map(p=>'`'+esc(p)+'`').join(', '):'none outside selected modules.'));
   if(c.deleted_modules?.length)details.push('Removed/moved base modules retained in base evidence: '+c.deleted_modules.map(esc).join(', '));
  }
@@ -46,5 +48,10 @@ export function formatContractResult(report,request,runURL){
 }
 
 export function nextAction(report){
- return report.status==='STALE'?'Next: consult the current revision’s Check; applicability of this historical result is withdrawn.':report.status==='UNKNOWN'?'Next: inspect the missing module or setup failure below. Retry only after that blocker is resolved; no source repair is justified by this result.':report.introduced?.length?'Next: review the failed expectation against intended behavior, then inspect the linked source. Repair generation is not enabled for this contract.':report.resolved?.length?'Next: review the recovered expectation and the remaining unchecked obligations.':'Next: review the unchecked proof and CLI obligations before deciding whether to merge.';
+ return report.status==='STALE'?'Next: consult the current revision’s Check; applicability of this historical result is withdrawn.':report.status==='UNKNOWN'?'Next: inspect the reported missing module or setup failure. Retry only after that blocker is resolved; no source repair is justified by this result.':report.introduced?.length?'Next: review the failed expectation against intended behavior, then inspect the linked source. Repair generation is not enabled for this contract.':report.resolved?.length?'Next: review the recovered expectation and the remaining unchecked obligations.':'Next: review the unchecked proof and CLI obligations before deciding whether to merge.';
+}
+
+export function highlightedWitnesses(report){
+ const rank=w=>report.introduced?.includes(w.id)?0:report.resolved?.includes(w.id)?1:2;
+ return [...(report.witnesses??[])].sort((a,b)=>rank(a)-rank(b)).slice(0,3);
 }
