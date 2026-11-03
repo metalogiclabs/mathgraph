@@ -1,0 +1,151 @@
+name: UDM G2 frozen feedback-dose ablation (post-hoc)
+on:
+  push:
+    branches: [research/udm-g2-oracle-dose-ablation-20261103]
+    paths: ['.github/workflows/udm-g2-oracle-dose-ablation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  masked-packet:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          run-id: '41570553243'
+          github-token: ${{ github.token }}
+          name: g2-v3-source-only-proposer-packet
+          path: packet
+      - name: Validate frozen original packet and remove only feedback labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          p=Path('packet/learner-residual.json')
+          original=p.read_bytes()
+          assert hashlib.sha256(original).hexdigest()=='cbb763a9b6585402d9a20f638cc14152beb4d08a0f20b02446de734b9a988031'
+          d=json.loads(original)
+          assert d['schema']=='mathgraph.g2.native-residual-to-observer.v1'
+          assert d['source_sha']=='6f228bfdb51209aa375869feb27dcede4fa0db06'
+          assert d['head_sha_hidden_from_learner'] is True
+          assert len(d['failing_tests'])==1
+          d['failing_tests']=['WITHHELD_ASSERTION_ID']
+          d['native_assertion_output']=''
+          d['native_contract']='A protected original-author native assertion differs between exact original and contributor revisions; assertion identity, expected values and diagnostic output withheld.'
+          p.write_text(json.dumps(d,sort_keys=True,indent=2)+'\n')
+          assert len(d['native_assertion_output'])==0
+          assert d['failing_tests']==['WITHHELD_ASSERTION_ID']
+          m=Path('packet/subject.json')
+          subj=json.loads(m.read_text())
+          assert subj['schema']=='mathgraph.g2.source-neutral-subject.v3'
+          assert subj['source_sha']==d['source_sha']
+          assert sorted(x.name for x in Path('packet/base_source').glob('*.go'))==['backoff.go','error.go','ticker.go']
+          print('MASKED_SOURCE_ONLY_PACKET_SHA256',hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-v3-ablated-source-only-packet
+          path: packet
+          retention-days: 60
+  propose:
+    needs: [masked-packet]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 1c58c10d0817a259af4ea22acbeba7cf0a4f3db8
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-ablated-source-only-packet
+          path: packet
+      - name: Identical two-call generator; no author assertion label or text
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          node code/research/udm_g2_source_neutral_v3/propose.mjs \
+            packet/learner-residual.json packet/base_source proposals packet/subject.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v3-ablated-equal-information-proposals
+          path: proposals
+          retention-days: 60
+  independent-native:
+    needs: [propose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 1c58c10d0817a259af4ea22acbeba7cf0a4f3db8
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: cenkalti/backoff
+          ref: 6f228bfdb51209aa375869feb27dcede4fa0db06
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-ablated-equal-information-proposals
+          path: proposals
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-ablated-source-only-packet
+          path: packet
+      - name: Validate independent verifier and original immutable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          test "$(git -C source rev-parse HEAD)" = '6f228bfdb51209aa375869feb27dcede4fa0db06'
+          git -C source fetch --no-tags origin 'refs/pull/197/head:refs/remotes/origin/pr197-head'
+          test "$(git -C source rev-parse refs/remotes/origin/pr197-head)" = '6ec253533f5445d618a94f4b4d1c45b6ff317518'
+          python -m unittest discover -s code/research/udm_g2_source_neutral_v3 -p 'test_source_neutral.py' -v 2>&1 | tee /tmp/source-neutral-regressions.log
+          grep -q 'Ran 6 tests' /tmp/source-neutral-regressions.log
+          grep -q '^OK$' /tmp/source-neutral-regressions.log
+      - name: Native base/head, withdrawal/restoration, same qualified method
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="$(python -c 'import json;print(json.load(open("packet/subject.json"))["package_name"])')"
+          python code/research/udm_g2_source_neutral_v3/evaluate.py \
+            --source source --base 6f228bfdb51209aa375869feb27dcede4fa0db06 \
+            --head 6ec253533f5445d618a94f4b4d1c45b6ff317518 \
+            --production-file ticker.go --package-name "$PACKAGE_NAME" \
+            --proposals proposals --output evaluation | tee evaluation.stdout
+          python - <<'PY'
+          import json
+          d=json.load(open('evaluation/evaluation.json'))
+          assert d['schema']=='mathgraph.g2.go-native-qualification.v1'
+          print('ABLATION_NATIVE_SCIENTIFIC',d['status'],'FAIR',d.get('fair_comparison'))
+          print('STRICT_G2',d['strict_g2'],'STRICT_G3',d['strict_g3'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v3-ablated-independent-native-qualification
+          path: |
+            evaluation
+            evaluation.stdout
+            /tmp/source-neutral-regressions.log
+          retention-days: 60
