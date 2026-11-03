@@ -133,13 +133,15 @@ def evaluate_model(mode:str,proposal_path:Path,base:Path,head:Path,identity:dict
 
 def main()->int:
     ap=argparse.ArgumentParser()
-    ap.add_argument('--package',default='zerolog',choices=['zerolog','backoff'])
+    ap.add_argument('--package',default='zerolog')
     ap.add_argument('--source',required=True)
     ap.add_argument('--base',required=True)
     ap.add_argument('--head',required=True)
     ap.add_argument('--proposals',required=True)
     ap.add_argument('--output',required=True)
     ns=ap.parse_args()
+    if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,59}',ns.package):
+        raise SystemExit('UNKNOWN_INVALID_PACKAGE_NAME')
     root=Path(ns.source).resolve()
     out=Path(ns.output).resolve()
     out.mkdir(parents=True,exist_ok=True)
