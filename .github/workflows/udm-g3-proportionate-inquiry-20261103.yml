@@ -104,7 +104,11 @@ jobs:
           (out/'selector-replay.json').write_text(json.dumps({'schema':'mathgraph.udm.proportional-six-receipt-replay.v1',
              'status':'WARRANTED_BOUNDED_FROZEN_RECEIPT_CLASSIFICATION_ONLY',
              'cases':rows,'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN',
-             'economics':'UNKNOWN','customer_permission':'NOT_GRANTED'},indent=2)+'\\n')
+             'economics':'UNKNOWN','customer_permission':'NOT_GRANTED'},indent=2)+'\n')
+          reread=json.loads((out/'selector-replay.json').read_text())
+          assert reread['schema']=='mathgraph.udm.proportional-six-receipt-replay.v1'
+          assert len(reread['cases'])==6
+          print('READBACK_JSON_VALID_WITH_SIX_CASES')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
