@@ -24,7 +24,7 @@ func main(){
  f,err:=parser.ParseFile(token.NewFileSet(),candidate,nil,parser.ParseComments|parser.AllErrors)
  if err!=nil {out.Reason="invalid_go_source";return}
  if f.Name.Name!=expectedPackage {out.Reason="wrong_package";return}
- safe:=map[string]bool{"testing":true,"bytes":true,"context":true,"strings":true,"encoding/json":true,"errors":true,"fmt":true,"io":true,"time":true,"sync":true,"math":true,"sort":true,"strconv":true}
+ safe:=map[string]bool{"testing":true,"bytes":true,"context":true,"strings":true,"encoding/json":true,"errors":true,"fmt":true,"io":true,"time":true,"sync":true,"math":true,"sort":true,"strconv":true,"reflect":true}
  for _,imp:=range f.Imports{
   q:=imp.Path.Value
   if len(q)<2 || q[0]!='"'||q[len(q)-1]!='"'||!safe[q[1:len(q)-1]] {out.Reason="unsafe_import";return}
