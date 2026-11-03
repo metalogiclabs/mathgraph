@@ -28,7 +28,7 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
 const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
 const REPAIR_VERIFIED='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE';
 export function resultTitle(report,request){
- if(report.claim?.status==='SUPPORTED'&&report.status!=='STALE')return reportView(report,request).title;
+ if(request.profile?.claim_profile||report.claim?.status==='SUPPORTED')return reportView(report,request).title;
  if(report.status==='STALE')return 'Source changed — recheck required';
  if(request.profile?.mode===CLI_MODE)return cliTitle(report);
  if(request.profile?.mode===CONTRACT_MODE)return contractTitle(report);
