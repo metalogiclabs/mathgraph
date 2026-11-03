@@ -1,0 +1,175 @@
+name: UDM G3 backoff observer post-hoc calibration
+on:
+  push:
+    branches: [research/udm-g3-backoff-calibration-20261103]
+    paths:
+      - 'research/udm_g2_observer_v1/**'
+      - '.github/workflows/udm-g3-backoff-calibration-20261103.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apparatus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - name: Go/JS/Python apparatus and package-bound guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check research/udm_g2_observer_v1/propose.mjs
+          python -m py_compile research/udm_g2_observer_v1/evaluate.py
+          cd research/udm_g2_observer_v1
+          python -m unittest -v test_validate.py test_evaluate.py test_backoff_profile.py 2>&1 | tee /tmp/g3-apparatus.log
+          grep -q 'Ran 15 tests' /tmp/g3-apparatus.log
+          grep -q '^OK$' /tmp/g3-apparatus.log
+  prepare:
+    needs: [apparatus]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: 442ae3b96f942822293eff428385b17318bda124
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: cenkalti/backoff
+          ref: 6f228bfdb51209aa375869feb27dcede4fa0db06
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Requalify one original-author native regression without exposing contributor source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C source fetch --no-tags origin 'refs/pull/197/head:refs/remotes/origin/pr197'
+          test "$(git -C source rev-parse HEAD)" = '6f228bfdb51209aa375869feb27dcede4fa0db06'
+          test "$(git -C source rev-parse refs/remotes/origin/pr197)" = '6ec253533f5445d618a94f4b4d1c45b6ff317518'
+          mkdir -p qualification packet/base_source
+          python tooling/research/g2_native_residual/qualify.py --repo source \
+            --base 6f228bfdb51209aa375869feb27dcede4fa0db06 \
+            --head 6ec253533f5445d618a94f4b4d1c45b6ff317518 \
+            --test-file ticker_test.go --output qualification
+          python - <<'PY'
+          import json,shutil
+          from pathlib import Path
+          x=json.load(open('qualification/qualification.json'))
+          assert x['status']=='WARRANTED_BOUNDED_AUTHENTIC_AUTHOR_NATIVE_RED_GREEN'
+          assert x['matched_failed_tests']==['TestTickerStop']
+          shutil.copyfile('qualification/learner-residual.json','packet/learner-residual.json')
+          for fn in ['ticker.go','timer.go']:
+              shutil.copyfile(Path('source')/fn,Path('packet/base_source')/fn)
+          print('ORIGINAL_AUTHOR_ASSERTION_REQUALIFIED',len(x['matched_failed_tests']))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-backoff-native-author-regression
+          path: qualification
+          retention-days: 60
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g3-backoff-source-only-proposal-packet
+          path: packet
+          retention-days: 60
+  propose:
+    needs: [prepare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: g3-backoff-source-only-proposal-packet
+          path: packet
+      - name: Two predeclared, equal-information model proposals (no native execution)
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          node code/research/udm_g2_observer_v1/propose.mjs packet/learner-residual.json packet/base_source proposals
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-backoff-two-model-proposals
+          path: proposals
+          retention-days: 60
+  independent-native:
+    needs: [propose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: cenkalti/backoff
+          ref: 6f228bfdb51209aa375869feb27dcede4fa0db06
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: g3-backoff-two-model-proposals
+          path: proposals
+      - name: Independent native Go verification with no model key
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          git -C source fetch --no-tags origin 'refs/pull/197/head:refs/remotes/origin/pr197'
+          test "$(git -C source rev-parse HEAD)" = '6f228bfdb51209aa375869feb27dcede4fa0db06'
+          test "$(git -C source rev-parse refs/remotes/origin/pr197)" = '6ec253533f5445d618a94f4b4d1c45b6ff317518'
+          python code/research/udm_g2_observer_v1/evaluate.py \
+            --source source --package backoff \
+            --base 6f228bfdb51209aa375869feb27dcede4fa0db06 \
+            --head 6ec253533f5445d618a94f4b4d1c45b6ff317518 \
+            --proposals proposals --output evaluation | tee science-summary.txt
+          python - <<'PY'
+          import json
+          x=json.load(open('evaluation/evaluation.json'))
+          assert x['schema']=='mathgraph.g2.go-native-qualification.v1'
+          print('QUALIFIED_SCIENTIFIC_OUTCOME',x['status'],x.get('fair_comparison'))
+          assert len(x['results'])==2
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g3-backoff-independent-native-evaluation
+          path: |
+            evaluation
+            science-summary.txt
+          retention-days: 60

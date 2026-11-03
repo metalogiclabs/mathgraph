@@ -64,7 +64,7 @@ def correct_source(root:Path,sha:str)->bool:
     return p["exit"]==0 and p["stdout"].strip()==sha
 
 
-def evaluate_model(mode:str,proposal_path:Path,base:Path,head:Path,identity:dict,out:Path)->dict[str,Any]:
+def evaluate_model(mode:str,proposal_path:Path,base:Path,head:Path,identity:dict,out:Path,package:str='zerolog')->dict[str,Any]:
     out.mkdir(parents=True,exist_ok=True)
     item:dict[str,Any]={"mode":mode,"status":"UNKNOWN_NOT_RUN","strict_g2":"UNKNOWN",
        "strict_g3":"UNKNOWN","permission":"ADVISORY_ONLY"}
@@ -79,7 +79,7 @@ def evaluate_model(mode:str,proposal_path:Path,base:Path,head:Path,identity:dict
     with tempfile.TemporaryDirectory(prefix="mg-g2-eval-") as td:
         c=Path(td)/"candidate.go"
         c.write_text(code)
-        validation=run(["go","run",str(ROOT/"validate.go"),"--",str(c)],ROOT,timeout=45)
+        validation=run(["go","run",str(ROOT/"validate.go"),"--","--package",package,str(c)],ROOT,timeout=45)
         (out/"static-validation.txt").write_text(validation["stdout"]+validation["stderr"])
         if validation["exit"]:
             item["status"]="UNKNOWN_STATIC_VERIFIER_EXECUTION";return item
@@ -134,6 +134,7 @@ def evaluate_model(mode:str,proposal_path:Path,base:Path,head:Path,identity:dict
 def main()->int:
     ap=argparse.ArgumentParser()
     ap.add_argument('--source',required=True)
+    ap.add_argument('--package',required=True,choices=['backoff','zerolog'])
     ap.add_argument('--base',required=True)
     ap.add_argument('--head',required=True)
     ap.add_argument('--proposals',required=True)
@@ -161,7 +162,7 @@ def main()->int:
             for mode in ('bridge','direct'):
                 try:
                     res=evaluate_model(mode,Path(ns.proposals)/(mode+'.json'),base,head,
-                                     {'base':ns.base,'head':ns.head},out/mode)
+                                     {'base':ns.base,'head':ns.head},out/mode,package=ns.package)
                 except Exception as exc:
                     res={'mode':mode,'status':'UNKNOWN_NATIVE_EVALUATOR_EXCEPTION','kind':type(exc).__name__}
                 summary['results'].append(res)

@@ -17,12 +17,14 @@ func main(){
  out:=Report{Status:"UNKNOWN_UNTRUSTED_GO_TEST"}
  defer func(){_ = json.NewEncoder(os.Stdout).Encode(out)}()
  candidate:=""
- if len(os.Args)==2 {candidate=os.Args[1]} else if len(os.Args)==3 && os.Args[1]=="--" {candidate=os.Args[2]} else {out.Reason="arguments";return}
+ expectedPkg:="zerolog"
+ if len(os.Args)==2 {candidate=os.Args[1]} else if len(os.Args)==3 && os.Args[1]=="--" {candidate=os.Args[2]} else if len(os.Args)==5 && os.Args[1]=="--" && os.Args[2]=="--package" {expectedPkg=os.Args[3];candidate=os.Args[4]} else {out.Reason="arguments";return}
+ if expectedPkg!="backoff" && expectedPkg!="zerolog" {out.Reason="unsupported_package";return}
  stat,err:=os.Stat(candidate);if err!=nil||stat.Size()>12000||stat.Size()==0{out.Reason="size";return}
  f,err:=parser.ParseFile(token.NewFileSet(),candidate,nil,parser.ParseComments|parser.AllErrors)
  if err!=nil {out.Reason="invalid_go_source";return}
- if f.Name.Name!="zerolog" {out.Reason="wrong_package";return}
- safe:=map[string]bool{"testing":true,"bytes":true,"context":true,"strings":true,"encoding/json":true,"errors":true,"fmt":true,"io":true}
+ if f.Name.Name!=expectedPkg {out.Reason="wrong_package";return}
+ safe:=map[string]bool{"testing":true,"bytes":true,"context":true,"strings":true,"encoding/json":true,"errors":true,"fmt":true,"io":true,"time":true,"sync":true}
  for _,imp:=range f.Imports{
   q:=imp.Path.Value
   if len(q)<2 || q[0]!='"'||q[len(q)-1]!='"'||!safe[q[1:len(q)-1]] {out.Reason="unsafe_import";return}
