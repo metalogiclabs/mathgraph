@@ -29,7 +29,7 @@ jobs:
   native:
     needs: contracts
     strategy:
-      matrix: {pr: [27, 28]}
+      matrix: {pr: [27, 28, 29]}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -51,7 +51,6 @@ jobs:
         run: |
           python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial hosted
           node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run hosted
-          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair hosted
           node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess hosted
       - name: Frozen paired candidate
         if: matrix.pr == 27

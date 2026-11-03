@@ -2,6 +2,10 @@ import {readFile,writeFile} from 'node:fs/promises';import {pathToFileURL} from 
 import {reportView} from './report-view.mjs';
 const esc=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const table=(headers,rows)=>`<div class="table-scroll"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+export function finalPublicationReport(report,result){
+ if(result.state!=='STALE')return report;
+ const {repair_pr,...historical}=report;return {...historical,status:'STALE',reason:'SOURCE_CHANGED',historical_status:report.status};
+}
 export function renderReport({request:r,assessment:a,manifest,css,logo}){
  const v=reportView(a,r),tabs=[['summary','Summary'],['findings','Findings'],['evidence','Evidence'],['scope','Scope']];
  const finding=f=>`<article class="finding"><span class="lozenge">${esc(f.display_status??f.status)}</span><h3>${esc(f.title)}</h3><p>${esc(f.consequence)}</p><p class="muted">${esc(f.evidence)}</p>${(f.values??[]).map(x=>`<details><summary>${esc(x.channel)} · before / after</summary><div class="comparison"><div><h4>Python base</h4><pre>${esc(x.base)}</pre></div><div><h4>Lean head</h4><pre>${esc(x.head)}</pre></div></div></details>`).join('')}</article>`;

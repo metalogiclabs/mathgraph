@@ -48,3 +48,15 @@ for(const failure of ['controls','gate','source'])test(`unqualified head ${failu
  const report=JSON.parse(await readFile(join(dir,'assessment.json'),'utf8'));assert.equal(report.status,'UNKNOWN');assert.equal(report.original[0].execution,'UNKNOWN');assert.equal(report.comparison[0].change,'HEAD_UNKNOWN');
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+for(const outcome of ['pass','fail','bad-control'])test(`native-only check assessment without repair state: ${outcome}`,async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mg-check-direct-'));try{
+ const context={verifier_sha:'a'.repeat(40),run_id:123,attempt:1},source='def x := true\n',snapshot={repository:'metalogiclabs/L4YAML',command:'check',head_sha:'b'.repeat(40),path:'Example.lean',module:'Example',namespace:'Example',source,source_sha256:hash(source)};
+ const plan={summary:'probe',tests:[{id:'case_a',hypothesis:'boundary',contract:'API contract',expression:'true'}]},pass={exit_code:0,guard_false:false,other_errors:false},fail={exit_code:1,guard_false:true,other_errors:false};
+ const native={context,source_sha:snapshot.head_sha,test_digest:hash(JSON.stringify(plan.tests)),arm:{build_exit:0,repository_gate_exit:0,source_sha256:hash(source),controls:{pass,fail:outcome==='bad-control'?pass:fail},probes:[{id:'case_a',...(outcome==='fail'?fail:pass),test_file_sha256:hash(renderProbe(snapshot,'true'))}]}};
+ const objects={'snapshot.json':snapshot,'state.json':{context,state:'PROBES_PROPOSED',test_digest:native.test_digest},'plan.json':plan,'native.json':native},hashes={};
+ for(const[n,v]of Object.entries(objects)){const raw=JSON.stringify(v);await writeFile(join(dir,n),raw);hashes[n]=hash(raw);}await writeFile(join(dir,'manifest.json'),JSON.stringify({context,hashes}));
+ const {MATHGRAPH_CONTROLLER_SHA:ambient,OPENAI_API_KEY:key,...env}=process.env;
+ const p=spawnSync(process.execPath,[new URL('./driver.mjs',import.meta.url).pathname,'assess',dir],{encoding:'utf8',env:{...env,GITHUB_SHA:context.verifier_sha,GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'}});assert.equal(p.status,0,p.stderr);
+ const a=JSON.parse(await readFile(join(dir,'assessment.json'),'utf8'));assert.equal(a.status,outcome==='pass'?'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS':outcome==='fail'?'CANDIDATE_ASSERTION_FAILURE':'UNKNOWN');assert.equal(a.head_complete,outcome!=='bad-control');assert.equal(a.repair.status,'NOT_PROPOSED');await assert.rejects(readFile(join(dir,'model-repair.json')),{code:'ENOENT'});
+ }finally{await rm(dir,{recursive:true,force:true});}
+});

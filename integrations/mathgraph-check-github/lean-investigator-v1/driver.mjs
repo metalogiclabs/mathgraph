@@ -57,7 +57,7 @@ try{
   const subject=snapshot?{repository:snapshot.repository,head_sha:snapshot.head_sha,path:snapshot.path,source_sha256:snapshot.source_sha256}:undefined;
   if(state.state!=='PROBES_PROPOSED')report={context,status:'UNKNOWN',stage:state.stage,reason:state.reason,subject};
   else{
-   const plan=admitLeanPlan(await load('plan')),native=await load('native'),rs=await load('repair-state');
+   const plan=admitLeanPlan(await load('plan')),native=await load('native'),rs=snapshot.command==='check'?{state:'CHECK_ONLY',model_calls:0}:await load('repair-state');
    nativeIdentity(native,state,snapshot,plan);
    const initial=inspectArm(native.arm,{profile:snapshot,plan,source:snapshot.source});
    const original=initial.rows.map(p=>({...p,execution:initial.complete?p.execution:'UNKNOWN',hypothesis:plan.tests.find(t=>t.id===p.id).hypothesis,contract:plan.tests.find(t=>t.id===p.id).contract}));

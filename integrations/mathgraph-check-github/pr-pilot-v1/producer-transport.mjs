@@ -51,3 +51,9 @@ export async function captureProducer(request,context,sourceAPI,centralAPI,token
   cli_source:await getText(sourceAPI,repo+'/contents/Scripts/Main/CheckScriptsLedger.lean?ref='+request.head_sha)};
  resolveProducer(envelope,request,context);return envelope;
 }
+
+export function producerIntakeDiagnostic(error){
+ const code=/^[A-Z][A-Z0-9_]{0,95}$/.test(error?.message??'')?error.message:'PRODUCER_EVIDENCE_UNAVAILABLE';
+ const message=code==='PRODUCER_LOCATOR_REQUIRED'?'Keep exactly one producer evidence link in the draft description, then retry the check.':code==='UNTRUSTED_PRODUCER_RELEASE'||code==='PRODUCER_WORKFLOW_PIN'?'The producer release is not qualified for this checker. Retain UNKNOWN until its workflow and verifier are qualified.':'Producer evidence could not be authenticated. Inspect the retained diagnostic and retry after restoring the exact source and evidence.';
+ return {code,message};
+}

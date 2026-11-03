@@ -15,8 +15,9 @@ export async function createRepair(request,patch,publication,api){
  ensure(isFresh(await api(root+'/pulls/'+request.number)),'STALE_REPAIR');
  // A qualified draft may already have been published through a research replay.
  // Reuse only the same one-parent tree on the exact source, never a similar diff.
- const drafts=await api(root+'/pulls?state=open&base='+encodeURIComponent(pr.head.ref)+'&per_page=100');
- ensure(Array.isArray(drafts),'INVALID_REPAIR_HISTORY');
+ const drafts=[];let complete=false;
+ for(let page=1;page<=3;page++){const batch=await api(root+'/pulls?state=open&base='+encodeURIComponent(pr.head.ref)+'&per_page=100&page='+page);ensure(Array.isArray(batch),'INVALID_REPAIR_HISTORY');drafts.push(...batch);if(batch.length<100){complete=true;break;}}
+ ensure(complete,'INCOMPLETE_REPAIR_HISTORY');
  for(const candidate of drafts){
   if(!candidate.draft||candidate.state!=='open'||candidate.base?.sha!==request.head_sha||candidate.head?.repo?.full_name!==request.repository)continue;
   const prior=await api(root+'/git/commits/'+candidate.head.sha);
@@ -35,7 +36,7 @@ export async function createRepair(request,patch,publication,api){
   if(candidates.length){ensure(candidates.length===1&&candidates[0].draft===true&&candidates[0].state==='open','REPAIR_PR_COLLISION');return candidates[0].html_url;}
   ensure(isFresh(await api(root+'/pulls/'+request.number)),'STALE_REPAIR');
   prAttempted=true;
-  const repair=await api(root+'/pulls',{method:'POST',body:{title:'Repair independently reproduced ledger probe failures',head:name,base:pr.head.ref,draft:true,body:`Candidate repair for #${request.number}, source ${request.head_sha}.\n\nThe model-generated patch passes the unchanged generated probes, protected original guards and repository gate in the recorded finite scope. Withdrawal reproduces the observed failures. Model-inferred requirements remain unverified; this is not full-library correctness or merge approval.\n\nEvidence: ${publication.run_url}`}});
+  const repair=await api(root+'/pulls',{method:'POST',body:{title:'Repair independently reproduced ledger probe failures',head:name,base:pr.head.ref,draft:true,body:`Candidate repair for #${request.number}, source ${request.head_sha}.\n\nThe model-generated patch passes the unchanged admitted finite expectations, protected original guards and repository gate in the recorded scope. Withdrawal reproduces the observed failures. Customer approval, general shell conformance and whole-PR correctness remain UNKNOWN. Review the draft diff and normal CI before deciding whether to merge.\n\nEvidence: ${publication.run_url}`}});
   ensure(repair.draft===true&&repair.base.sha===request.head_sha,'REPAIR_READBACK_MISMATCH');return repair.html_url;
  }catch(e){
   // Delete only a ref created by this attempt, still pointing to this exact commit,
