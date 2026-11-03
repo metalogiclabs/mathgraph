@@ -1,0 +1,102 @@
+{
+  "version": "finite-ledger-binding-v1",
+  "subject": {
+    "repository": "metalogiclabs/L4YAML",
+    "revision": "fba155bf31918f9b03394ae9bfb8cd17c91ecfb8",
+    "path": "Scripts/Ledger.lean",
+    "sha256": "2e682e47ad98d581f7b075dfb880934ff89a3e3e287ac654d877cf1dee53ced4"
+  },
+  "cli_path": "Scripts/Main/CheckScriptsLedger.lean",
+  "cli_sha256": "64bb20331484ef711b6a752af1770959164c82308fd9ae79fbf954678ebbdbcf",
+  "toolchain": "leanprover/lean4:v4.35.0",
+  "relation": "Restricted exact-expression translation of admitted finite shell invocation obligations to Scripts.Ledger.pyCallsOfLine; no arbitrary Lean semantic equivalence.",
+  "adopted_projection": {
+    "attached_redirect": "inline-prefix-unquoted-v1",
+    "argument_keyword": "no-interpreter-invocation-v1"
+  },
+  "proposals": [
+    {
+      "id": "attached_ok",
+      "reference_id": "attached_redirect",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "fba155bf31918f9b03394ae9bfb8cd17c91ecfb8",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "2e682e47ad98d581f7b075dfb880934ff89a3e3e287ac654d877cf1dee53ced4"
+      },
+      "expected": [
+        {
+          "kind": "inline",
+          "value": "python3 -c"
+        }
+      ],
+      "expression": "pyCallsOfLine \"python3 -c 1>out\" == [.inline \"python3 -c\"]",
+      "anticipated_binding": "ADMITTED"
+    },
+    {
+      "id": "keyword_ok",
+      "reference_id": "argument_keyword",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "fba155bf31918f9b03394ae9bfb8cd17c91ecfb8",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "2e682e47ad98d581f7b075dfb880934ff89a3e3e287ac654d877cf1dee53ced4"
+      },
+      "expected": [],
+      "expression": "pyCallsOfLine \"echo if python3 scripts/a.py > /dev/null\" == []",
+      "anticipated_binding": "ADMITTED"
+    },
+    {
+      "id": "wrong_value",
+      "reference_id": "attached_redirect",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "fba155bf31918f9b03394ae9bfb8cd17c91ecfb8",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "2e682e47ad98d581f7b075dfb880934ff89a3e3e287ac654d877cf1dee53ced4"
+      },
+      "expected": [
+        {
+          "kind": "inline",
+          "value": "python3 -c 1"
+        }
+      ],
+      "expression": "pyCallsOfLine \"python3 -c 1>out\" == [.inline \"python3 -c 1\"]",
+      "anticipated_binding": "REJECTED"
+    },
+    {
+      "id": "weak_expression",
+      "reference_id": "attached_redirect",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "fba155bf31918f9b03394ae9bfb8cd17c91ecfb8",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "2e682e47ad98d581f7b075dfb880934ff89a3e3e287ac654d877cf1dee53ced4"
+      },
+      "expected": [
+        {
+          "kind": "inline",
+          "value": "python3 -c"
+        }
+      ],
+      "expression": "true",
+      "anticipated_binding": "UNKNOWN"
+    }
+  ],
+  "patch": {
+    "summary": "Preserve command position when control keywords occur as arguments. Replay only against independently admitted finite expectations.",
+    "edits": [
+      {
+        "old": "        else go (if (assignment? t).isSome then cmdPos else opensCommand t) false rest",
+        "new": "        else\n          let control := t == \"|\" || t == \"||\" || t == \"&&\" || t == \";\" ||\n            t == \"&\" || t == \"(\" || t == \")\" || t == \"$(\"\n          let nextPos :=\n            if (assignment? t).isSome then cmdPos\n            else control || (cmdPos && opensCommand t)\n          go nextPos false rest"
+      }
+    ]
+  },
+  "lineage": {
+    "prior_check_run": 41609511468,
+    "prior_fix_run": 41610270598,
+    "prior_oracle_qualification": 41637611216,
+    "patch_origin": "Only command-position edit from prior model candidate. parseRow edit deliberately excluded; its requirement is outside this shell binding."
+  },
+  "scope": "Authored retrospective operator-adopted requirements; no generic oracle extraction, proof of whole scanner equivalence or hosted deployment."
+}
