@@ -88,6 +88,19 @@ jobs:
           /tmp/hosted-v2-browser/node_modules/.bin/playwright install --with-deps chromium
       - env: {NODE_PATH: /tmp/hosted-v2-browser/node_modules}
         run: node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs hosted/MathGraph-Check.html browser-qa 'Candidate repair verified on frozen probes'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: hosted-v2-pr-29, path: guide}
+      - name: Reproducible maintainer walkthrough and desktop/mobile QA
+        env: {NODE_PATH: /tmp/hosted-v2-browser/node_modules}
+        run: |
+          node experiments/check-hosted-expectations-v2/maintainer-guide.mjs guide guide/MathGraph-Check-Walkthrough.html 41724109428
+          node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs guide/MathGraph-Check-Walkthrough.html guide-qa 'A repair you can inspect'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
-        with: {name: hosted-v2-browser-qa, path: browser-qa/}
+        with:
+          name: hosted-v2-browser-qa
+          path: |
+            browser-qa/
+            guide-qa/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: hosted-maintainer-walkthrough, path: guide/MathGraph-Check-Walkthrough.html}
