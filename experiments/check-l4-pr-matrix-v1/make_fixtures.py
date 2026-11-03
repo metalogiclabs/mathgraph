@@ -12,6 +12,7 @@ CONSUMER = 'import Subject\nexample : ∀ n : Nat, Subject.bump n = n + 1 := Sub
 PROBE = 'import Subject\n#guard Subject.bump 4 == 5\n'
 GATE = 'import Consumer\ndef main : IO Unit := pure ()\n'
 UNGATED = 'import Subject\ndef main : IO Unit := pure ()\n'
+MASKED = 'import Subject\ndef main : IO Unit := do\n  let r ← IO.Process.output {cmd := "/bin/false"}\n  IO.println s!"tool exit (ignored): {r.exitCode}"\n'
 WEAK = GOOD[:GOOD.index('theorem claim')] + 'theorem claim : (∀ n : Nat, bump n = n + 1) ∨ True := Or.inr True.intro\nend Subject\n'
 BAD = GOOD.replace('n + 1', 'n + 2')
 AXIOM = GOOD[:GOOD.index('theorem claim')] + 'axiom oracle : ∀ n : Nat, bump n = n + 1\ntheorem claim : ∀ n : Nat, bump n = n + 1 := oracle\nend Subject\n'
@@ -23,7 +24,7 @@ def make(root):
         ('alternative_proof', GOOD, GOOD.replace(':= support', ':= fun n => rfl'), GATE, 'BOUNDED_PASS'),
         ('weakened_conclusion', GOOD, WEAK, UNGATED, 'INTRODUCED_OR_CHANGED_FAILURE'),
         ('omitted_consumer', GOOD, GOOD, UNGATED, 'INTRODUCED_OR_CHANGED_FAILURE'),
-        ('masked_gate', GOOD, BAD, UNGATED, 'INTRODUCED_OR_CHANGED_FAILURE'),
+        ('masked_gate', GOOD, GOOD, MASKED, 'INTRODUCED_OR_CHANGED_FAILURE'),
         ('introduced_behavior', GOOD, BAD, UNGATED, 'INTRODUCED_OR_CHANGED_FAILURE'),
         ('inherited_behavior', BAD, BAD, UNGATED, 'INHERITED_FAILURE'),
         ('valid_refactor', GOOD, GOOD.replace('n + 1', 'Nat.succ n'), GATE, 'BOUNDED_PASS'),
