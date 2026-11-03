@@ -9,7 +9,7 @@ import {createRepair} from './repair.mjs';
 // Trusted hosted orchestration. No repository source executes in this process.
 import {readFile,writeFile,readdir,mkdir,appendFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {mintScopedToken} from './auth.mjs';
-import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
+import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'pr-investigation';
 const context=executionContext();
@@ -47,11 +47,7 @@ try{
      if(request.profile.claim_profile){try{snapshot=await captureClaimSnapshot(request,snapshot,githubClient(process.env.GITHUB_TOKEN,{repository:'nasa-jpl/L4YAML'}));}catch{await save('claim-intake-error',{context,reason:'CLAIM_INTAKE_INCOMPLETE'});}}
      await save('contract-snapshot',snapshot);
     }
-    if(request.command==='fix'&&publication.state==='STARTED'){
-     const cs=await listChecks(request,scoped.api);
-     const original=cs.find(c=>c.app?.id===5308912&&c.external_id?.startsWith(logicalIdentity({...request,command:'check'})+':')&&c.status==='completed'&&c.conclusion==='neutral');
-     const match=original?.details_url?.match(/^https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/([1-9][0-9]*)$/);ensure(match,'RUN_CHECK_BEFORE_FIX');publication.prior_run=Number(match[1]);
-    }
+    if(publication.state==='STARTED'){const prior=await priorCheckRun(request,scoped.api);if(prior)publication.prior_run=prior;}
    }finally{await scoped.api('/installation/token',{method:'DELETE'});}
   }
   await save('request',request);await save('publication',{...publication,context});

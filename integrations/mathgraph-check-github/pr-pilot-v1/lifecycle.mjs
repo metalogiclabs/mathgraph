@@ -57,3 +57,8 @@ export async function queueCheck(request,api){
  const body={name:checkName(request),head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:'https://github.com/metalogiclabs/mathgraph/actions',output:{title:'Queued for investigation',summary:`Requested by a repository maintainer for ${request.repository}#${request.number}, head ${request.head_sha}, base ${request.base_sha}. Native evidence has not run yet.`}};
  const c=await api('/repos/'+request.repository+'/check-runs',{method:'POST',body});ensure(c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id===identity(request),'QUEUE_CHECK_IDENTITY_MISMATCH');return {state:'QUEUED',check_id:c.id,run_url:body.details_url};
 }
+export async function priorCheckRun(request,api){
+ if(request.command!=='fix'||!request.support.supported)return null;
+ const cs=await listChecks(request,api),original=cs.find(c=>c.app?.id===APP_ID&&c.external_id?.startsWith(logicalIdentity({...request,command:'check'})+':')&&c.status==='completed'&&c.conclusion==='neutral');
+ const match=original?.details_url?.match(/^https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/([1-9][0-9]*)$/);ensure(match,'RUN_CHECK_BEFORE_FIX');return Number(match[1]);
+}
