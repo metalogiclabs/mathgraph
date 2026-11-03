@@ -29,13 +29,13 @@ def _l4_adapter():
 
 
 def qualification_report(items, assessments) -> dict:
-    """Project two *already admitted* exact artifacts; simulate identity changes.
+    """Project *already admitted* exact artifacts; simulate identity changes.
 
-    Rechecking real bytes is the job of the two import adapters, which must be
+    Rechecking real bytes is the job of the method import adapters, which must be
     called before constructing this report. Inputs must never come from JSON.
     """
-    if len(items) != 2 or len(assessments) != 2:
-        raise ValueError("EXPECTED_TWO_INDEPENDENT_METHODS")
+    if len(items) not in (2, 3) or len(assessments) != len(items):
+        raise ValueError("EXPECTED_TWO_OR_THREE_BOUNDARIES")
     if {w.verification.method for w, _ in items} != {"formal", "native"}:
         raise ValueError("METHOD_DIVERSITY_NOT_QUALIFIED")
     current = {}
@@ -55,20 +55,22 @@ def qualification_report(items, assessments) -> dict:
             changed[dep.key] = "f" * 64 if dep.sha256 != "f" * 64 else "e" * 64
             after = resolve_boundaries(items, changed)
             delta = compare_snapshots(before.states, after.states)
-            if not (delta[ids[index]]["after"] == "STALE"
-                    and not delta[ids[1 - index]]["changed"]):
+            others_preserved = all(not delta[other]["changed"]
+                                   for other in ids if other != ids[index])
+            if not (delta[ids[index]]["after"] == "STALE" and others_preserved):
                 raise ValueError("SELECTIVE_WITHDRAWAL_FAILED")
             simulated.append({
                 "method": warrant.verification.method,
                 "dependency_role": dep.role,
                 "dependency_key": dep.key,
                 "affected": delta[ids[index]],
-                "unaffected_still_admitted": not delta[ids[1-index]]["changed"],
+                "unaffected_still_admitted": others_preserved,
                 "scenario": "SIMULATED_DEPENDENCY_CHANGE_NOT_OBSERVED_UPSTREAM",
             })
 
     return {
-        "format": "mathgraph.boundary-qualification.v0",
+        "format": ("mathgraph.boundary-qualification.v0" if len(items) == 2
+                   else "mathgraph.boundary-qualification.v1"),
         "basis": "RECHECKED_HISTORICAL_ACTIONS_ARTIFACTS_AND_PINNED_SOURCE",
         "current_upstream_applicability": "UNKNOWN",
         "independent_customer_obligation_authority": "UNKNOWN",
@@ -86,6 +88,7 @@ def qualification_report(items, assessments) -> dict:
                 "whole_generator_correctness": assessments[0]["whole_generator_correctness"],
             },
             "brahe": assessments[1],
+            **({"nyx": assessments[2]} if len(items) == 3 else {}),
         },
         "simulated_withdrawals": simulated,
     }
@@ -97,19 +100,38 @@ def main() -> None:
     parser.add_argument("--brahe-archive", required=True, type=Path)
     parser.add_argument("--brahe-base", required=True, type=Path)
     parser.add_argument("--brahe-head", required=True, type=Path)
+    parser.add_argument("--nyx-archive", type=Path)
+    parser.add_argument("--nyx-base-event", type=Path)
+    parser.add_argument("--nyx-head-event", type=Path)
+    parser.add_argument("--nyx-base-test", type=Path)
+    parser.add_argument("--nyx-head-test", type=Path)
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
     l4, l4_receipt, l4_assessment = _l4_adapter().export_l4_boundary(args.l4_archive)
     brahe, brahe_receipt, brahe_assessment = export_brahe_boundary(
         args.brahe_archive, args.brahe_base, args.brahe_head,
     )
-    report = qualification_report(
-        ((l4, l4_receipt), (brahe, brahe_receipt)),
-        (l4_assessment, brahe_assessment),
-    )
+    items = [(l4, l4_receipt), (brahe, brahe_receipt)]
+    assessments = [l4_assessment, brahe_assessment]
+    nyx_paths = (args.nyx_archive, args.nyx_base_event, args.nyx_head_event,
+                 args.nyx_base_test, args.nyx_head_test)
+    if any(nyx_paths):
+        if not all(nyx_paths):
+            parser.error("All Nyx archive and exact source paths are required together")
+        from nyx_export import export_nyx_boundary
+        nyx, nyx_receipt, nyx_assessment = export_nyx_boundary(
+            args.nyx_archive.read_bytes(),
+            base_event=args.nyx_base_event.read_bytes(),
+            head_event=args.nyx_head_event.read_bytes(),
+            base_test=args.nyx_base_test.read_bytes(),
+            head_test=args.nyx_head_test.read_bytes(),
+        )
+        items.append((nyx, nyx_receipt))
+        assessments.append(nyx_assessment)
+    report = qualification_report(items, assessments)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    print("TWO_METHOD_BOUNDARY_WARRANTS=" + json.dumps(report["pinned_states"], sort_keys=True))
+    print("BOUNDARY_WARRANTS=" + json.dumps(report["pinned_states"], sort_keys=True))
     print("SELECTIVE_WITHDRAWAL_CASES=" + str(len(report["simulated_withdrawals"])))
     print("CURRENT_UPSTREAM_APPLICABILITY=UNKNOWN")
 

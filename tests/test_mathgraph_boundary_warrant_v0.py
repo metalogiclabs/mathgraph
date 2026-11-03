@@ -106,6 +106,35 @@ def test_native_and_formal_admissions_use_same_graph_interface_without_conflatio
     }
 
 
+def test_third_native_boundary_reuses_same_resolver_with_local_withdrawal():
+    """A second native case must not create a parallel evidence graph or authority."""
+    from mathgraph_check.boundary_warrant import admitted_route, resolve_boundaries
+    warrants = (
+        fixture(),
+        fixture(kind="native", suffix="brahe"),
+        fixture(kind="native", suffix="nyx"),
+    )
+    items = [(w, qualified_receipt(w)) for w in warrants]
+    live = {d.key: d.sha256 for w in warrants for d in w.dependencies}
+    ids = [admitted_route(w, receipt)[0].id for w, receipt in items]
+    original = resolve_boundaries(items, live)
+    assert [original.states[i] for i in ids] == [
+        "WARRANTED_BOUNDED", "WARRANTED_BOUNDED_NATIVE", "WARRANTED_BOUNDED_NATIVE",
+    ]
+    for changed_index, changed_warrant in enumerate(warrants):
+        for role in ("source", "obligation", "relation", "verifier"):
+            modified = dict(live)
+            key = next(d.key for d in changed_warrant.dependencies if d.role == role)
+            modified[key] = "f" * 64
+            result = resolve_boundaries(items, modified)
+            delta = compare_snapshots(original.states, result.states)
+            for index, claim_id in enumerate(ids):
+                assert delta[claim_id]["after"] == (
+                    "STALE" if index == changed_index else original.states[claim_id]
+                )
+            assert resolve_boundaries(items, live).states == original.states
+
+
 def test_changed_source_or_obligation_withdraws_only_its_dependent_warrant():
     from mathgraph_check.boundary_warrant import admitted_route, resolve_boundaries
     formal, native = fixture(), fixture(kind="native", suffix="brahe")
