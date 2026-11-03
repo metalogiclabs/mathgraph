@@ -35,28 +35,20 @@ jobs:
                       counters[key]=int(line.split()[-1])
           import re
           allowlisted={
-            ('actual pinned upstream source and JSONL are checked if fixture is present','Pinned upstream fixture supplied in replay CI only'),
-            ('published GitHub artifact ZIP matches the independent digest, when supplied','Published ZIP is supplied out of band; it is not committed'),
-            ('real host+ZIP+upstream produce correlated advisory evidence without a reviewer','Pinned upstream checkout supplied by CI'),
-            ('allowlisted APPROVED declaration may attest review but never mathematically certify meaning','Pinned upstream checkout supplied by CI'),
-            ('the separately pinned V2 replay workflow is eligible for the same bounded primary ZIP check','Pinned upstream checkout supplied by CI'),
-            ('changed attempt, artifact digest or head on second readback withdraws result','Pinned upstream checkout supplied by CI'),
-            ('full V2 collector binds both authenticated artifacts and pinned resolved environment','Pinned upstream checkout supplied by CI'),
-            ('V2 collector rejects changing environment digest on final readback or wrong admin pin','Pinned upstream checkout supplied by CI'),
-            ('the exact third-party Artin gold artifact is identified, not misreported as replayed','External upstream fixture is optional for the normal JS suite')
+            ("actual pinned upstream source and JSONL are checked if fixture is present","Pinned upstream fixture supplied in replay CI only"),
+            ("published GitHub artifact ZIP matches the independent digest, when supplied","Published ZIP is supplied out of band; it is not committed"),
+            ("real host+ZIP+upstream produce correlated advisory evidence without a reviewer","Pinned upstream checkout supplied by CI"),
+            ("allowlisted APPROVED declaration may attest review but never mathematically certify meaning","Pinned upstream checkout supplied by CI"),
+            ("the separately pinned V2 replay workflow is eligible for the same bounded primary ZIP check","Pinned upstream checkout supplied by CI"),
+            ("changed attempt, artifact digest or head on second readback withdraws result","Pinned upstream checkout supplied by CI"),
+            ("full V2 collector binds both authenticated artifacts and pinned resolved environment","Pinned upstream checkout supplied by CI"),
+            ("V2 collector rejects changing environment digest on final readback or wrong admin pin","Pinned upstream checkout supplied by CI"),
+            ("the exact third-party Artin gold artifact is identified, not misreported as replayed","External upstream fixture is optional for the normal JS suite"),
           }
           skips=[]
           for line in text.splitlines():
               if ' # SKIP ' in line:
-                  m=re.match(r'^ok [0-9]+ - (.*?) # SKIP (.*?)
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: g1-full-check-test-evidence
-          path: /tmp/check-full-tests.tap
-          retention-days: 60
-,line)
+                  m=re.match(r'^ok [0-9]+ - (.*?) # SKIP (.*?)$',line)
                   assert m is not None, 'UNKNOWN_SKIPPED_CASE_SHAPE'
                   skips.append((m.group(1),m.group(2)))
           assert len(skips)==len(allowlisted)==9 and set(skips)==allowlisted, 'UNKNOWN_UNREVIEWED_SKIPS'
