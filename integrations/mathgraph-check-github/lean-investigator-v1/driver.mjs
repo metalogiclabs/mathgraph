@@ -1,5 +1,6 @@
 import {executionContext} from '../pr-pilot-v1/context.mjs';
 import {expectationSubject,reviewedPlan,admitExpectations} from '../pr-pilot-v1/expectations.mjs';
+import {resolveProducer} from '../pr-pilot-v1/producer-transport.mjs';
 // Source audit orchestration. Repository data never selects commands or credentials.
 import {readFile,writeFile,readdir,mkdir} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {modelSnapshot,validatePilotSnapshot,compareProbeRows} from '../pr-pilot-v1/engine.mjs';
@@ -14,6 +15,7 @@ requireFact(/^[a-f0-9]{40}$/.test(context.verifier_sha??'')&&Number.isSafeIntege
 await mkdir(dir,{recursive:true});
 const save=async(n,x)=>writeFile(`${dir}/${n}.json`,JSON.stringify(x,null,2)+'\n');
 const load=async n=>JSON.parse(await readFile(`${dir}/${n}.json`,'utf8'));
+async function producerToken(){let request;try{request=await load('request');}catch{}return request?.profile.expectation_candidate?resolveProducer(await load('producer-envelope'),request,context).token:undefined;}
 async function seal(){const files=(await readdir(dir)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort(),hashes={};for(const n of files)hashes[n]=hash(await readFile(`${dir}/${n}`,'utf8'));await save('manifest',{context,hashes});}
 async function verify(){const m=await load('manifest');requireFact(JSON.stringify(m.context)===JSON.stringify(context),'STALE_ARTIFACT');requireFact(JSON.stringify((await readdir(dir)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort())===JSON.stringify(Object.keys(m.hashes).sort()),'UNMANIFESTED_INPUT');for(const[n,h]of Object.entries(m.hashes))requireFact(/^[a-z][a-z0-9_-]*\.json$/.test(n)&&hash(await readFile(`${dir}/${n}`,'utf8'))===h,'ARTIFACT_CHANGED');}
 function nativeIdentity(native,state,snapshot,plan){requireFact(JSON.stringify(native?.context)===JSON.stringify(context)&&native.source_sha===snapshot.head_sha&&native.test_digest===state.test_digest&&state.test_digest===hash(plan.tests)&&snapshot.source_sha256===hash(snapshot.source),'NATIVE_SOURCE_MISMATCH');}
@@ -28,7 +30,7 @@ try{
   snapshot.source_sha256=hash(snapshot.source);snapshot.cli_sha256=hash(snapshot.cli_source);
   await save('snapshot',snapshot);
   let plan,modelCalls=0;
-  if(profile.expectation_profile){const fixed=reviewedPlan(expectationSubject(snapshot));requireFact(fixed,'EXPECTATION_SOURCE_NOT_QUALIFIED');plan=admitLeanPlan(fixed);}
+  if(profile.expectation_profile){const fixed=reviewedPlan(expectationSubject(snapshot),await producerToken());requireFact(fixed,'EXPECTATION_SOURCE_NOT_QUALIFIED');plan=admitLeanPlan(fixed);}
   else{const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-investigate',packet:{snapshot:modelSnapshot(snapshot)}});await save('model-investigate',response);plan=admitLeanPlan(response.proposal);modelCalls=1;}
   await save('plan',plan);await save('state',{context,state:'PROBES_PROPOSED',test_digest:hash(plan.tests),model_calls:modelCalls,expectation_origin:profile.expectation_profile??'MODEL_HYPOTHESIS'});await seal();
  }else if(phase==='repair'){
@@ -39,7 +41,7 @@ try{
   if(!initial.complete){await save('repair-state',{state:'BASELINE_OR_PROBES_INCOMPLETE',model_calls:0});await seal();process.exit(0);}
   if(snapshot.mode==='OWNED_FORK_PR_PILOT'){
    let reference;try{reference=await load('expectation-reference');}catch{}
-   const admission=admitExpectations(expectationSubject(snapshot),plan,reference,context);await save('expectation-admission',admission);
+   const admission=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken());await save('expectation-admission',admission);
    if(!admission.repair_eligible){await save('repair-state',{state:'EXPECTATION_NOT_ADMITTED',model_calls:0});await seal();process.exit(0);}
   }
   const failed=initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE');
@@ -60,7 +62,7 @@ try{
    const initial=inspectArm(native.arm,{profile:snapshot,plan,source:snapshot.source});
    const original=initial.rows.map(p=>({...p,execution:initial.complete?p.execution:'UNKNOWN',hypothesis:plan.tests.find(t=>t.id===p.id).hypothesis,contract:plan.tests.find(t=>t.id===p.id).contract}));
    let reference,expectations;try{reference=await load('expectation-reference');}catch{}
-   if(snapshot.mode==='OWNED_FORK_PR_PILOT')expectations=admitExpectations(expectationSubject(snapshot),plan,reference,context);
+   if(snapshot.mode==='OWNED_FORK_PR_PILOT')expectations=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken());
    let repair={status:'NOT_PROPOSED'};
    if(rs.state==='PATCH_PROPOSED'){
     const fixed=await load('native-repair'),patch=await load('patch');const patched=admitLeanPatch(patch,snapshot.source);nativeIdentity(fixed,state,snapshot,plan);

@@ -12,12 +12,14 @@ import {mintScopedToken} from './auth.mjs';
 import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
 import {expectationSubject,reviewedPlan,admitExpectations} from './expectations.mjs';
+import {captureProducer,resolveProducer} from './producer-transport.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'pr-investigation';
 const context=executionContext();
 const hash=x=>createHash('sha256').update(x).digest('hex'),ensure=(b,c)=>{if(!b)throw Error(c);};
 ensure(/^[a-f0-9]{40}$/.test(context.verifier_sha??'')&&context.attempt===1&&Number.isSafeInteger(context.run_id),'INVALID_WORKFLOW_CONTEXT');
 await mkdir(dir,{recursive:true});
 const get=async n=>JSON.parse(await readFile(`${dir}/${n}.json`,'utf8')),save=async(n,v)=>writeFile(`${dir}/${n}.json`,JSON.stringify(v,null,2)+'\n');
+async function producerToken(){const request=await get('request');return request.profile.expectation_candidate?resolveProducer(await get('producer-envelope'),request,context).token:undefined;}
 async function seal(){const hashes={};for(const n of(await readdir(dir)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort())hashes[n]=hash(await readFile(`${dir}/${n}`));await save('manifest',{context,hashes});}
 async function verifyManifest(folder=dir){const m=JSON.parse(await readFile(`${folder}/manifest.json`));for(const [n,h]of Object.entries(m.hashes)){ensure(/^[a-z][a-z0-9_-]*\.json$/.test(n)&&hash(await readFile(`${folder}/${n}`))===h,'ARTIFACT_CHANGED');}ensure(JSON.stringify((await readdir(folder)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort())===JSON.stringify(Object.keys(m.hashes).sort()),'UNMANIFESTED_ARTIFACT');return m;}
 async function outputs(values){if(process.env.GITHUB_OUTPUT)await appendFile(process.env.GITHUB_OUTPUT,Object.entries(values).map(([k,v])=>`${k}=${v}`).join('\n')+'\n');}
@@ -43,6 +45,10 @@ try{
    try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
     ensure(signed.reserved_cents>=(request.support.supported&&![CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
+    if(request.profile.expectation_candidate&&publication.state==='STARTED'){
+     try{const envelope=await captureProducer(request,context,scoped.api,githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),process.env.GITHUB_TOKEN);await save('producer-envelope',envelope);await save('producer-warrant',resolveProducer(envelope,request,context).graph);request.profile.expectation_profile='ledger-shell-producer-v1';}
+     catch{request.support={supported:false,reason:'REPAIR_EXPECTATION_REVIEW_REQUIRED'};}
+    }
     if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false'){
      let snapshot=await captureRepositorySnapshot(request,scoped.api);
      if(request.profile.claim_profile){try{snapshot=await captureClaimSnapshot(request,snapshot,githubClient(process.env.GITHUB_TOKEN,{repository:'nasa-jpl/L4YAML'}));}catch{await save('claim-intake-error',{context,reason:'CLAIM_INTAKE_INCOMPLETE'});}}
@@ -57,7 +63,7 @@ try{
  }else if(phase==='expectation-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_EXPECTATION_CONTEXT');
   const snapshot=await get('snapshot'),subject=expectationSubject(snapshot);let reference;
-  if(reviewedPlan(subject)){
+  if(reviewedPlan(subject,await producerToken())){
    const run=spawnSync('python3',['experiments/check-expectation-admission-v1/run.py','--output',dir+'/expectation-observations.json'],{stdio:'inherit',timeout:30000});
    if(!run.error&&run.status===0)try{reference=await get('expectation-observations');}catch{}
   }
@@ -119,7 +125,7 @@ try{
    if(request.command==='fix'&&report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'){
     const snapshot=await get('snapshot'),patch=await get('patch');
     ensure(snapshot.head_sha===request.head_sha&&snapshot.repository===request.repository,'REPAIR_SUBJECT_MISMATCH');
-    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context);ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
+    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken());ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
     ensure(hash(admitLeanPatch(patch,snapshot.source))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }
