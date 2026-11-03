@@ -1,0 +1,54 @@
+name: Pinned Flash to MathGraph warrant bridge V1
+on:
+  push:
+    branches: [research/check-kernel-warrant-bridge-20261104]
+permissions: {contents: read}
+jobs:
+  native-receipt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Test isolated graph receipt and native harness contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p kernel-bridge-evidence
+          git rev-parse HEAD > kernel-bridge-evidence/mathgraph-commit.txt
+          python3 -m unittest discover -s experiments/check-kernel-receipt-bridge-v1 -p 'test_*.py' 2>&1 | tee kernel-bridge-evidence/bridge-tests.txt
+          python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py' 2>&1 | tee kernel-bridge-evidence/admission-tests.txt
+      - name: Fetch exact soundness-qualified Flash candidate (not Nucleus)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init flash
+          git -C flash remote add origin https://github.com/metalogiclabs/mathgraph-lean-kernel.git
+          git -C flash fetch --depth=1 origin 32eada63bf5d1815bc8d39dd4b4047dc98eff20d
+          git -C flash checkout --detach FETCH_HEAD
+          git -C flash rev-parse HEAD | tee kernel-bridge-evidence/flash-commit.txt
+      - name: Compile pinned Flash under recorded toolchain
+        shell: bash
+        working-directory: flash
+        run: |
+          set -euo pipefail
+          rustup update stable --no-self-update
+          rustup default stable
+          rustc --version --verbose | tee ../kernel-bridge-evidence/rustc.txt
+          cargo --version | tee ../kernel-bridge-evidence/cargo.txt
+          cargo build --release --locked 2>&1 | tee ../kernel-bridge-evidence/cargo-build.txt
+          sha256sum target/release/sokonanoda | tee ../kernel-bridge-evidence/flash-binary.txt
+      - name: Run genuine acceptance, forged Lean export, bounded graph and timing
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/check-kernel-receipt-bridge-v1/native.py \
+            --flash-repo flash \
+            --report kernel-bridge-evidence/native-report.json \
+            2>&1 | tee kernel-bridge-evidence/native-output.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: kernel-bridge-native-evidence
+          path: kernel-bridge-evidence/
+          if-no-files-found: error

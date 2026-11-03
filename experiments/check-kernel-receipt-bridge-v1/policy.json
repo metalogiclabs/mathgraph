@@ -1,0 +1,45 @@
+{
+  "schema": "mathgraph.kernel-receipt-policy.v1",
+  "checker": {
+    "repository": "metalogiclabs/mathgraph-lean-kernel",
+    "commit": "32eada63bf5d1815bc8d39dd4b4047dc98eff20d",
+    "binary": "sokonanoda",
+    "lineage": "FLASH_SOKONANODA_DERIVED"
+  },
+  "source": {
+    "repository": "metalogiclabs/mathgraph-lean-kernel",
+    "export_path": "test_resources/ProofIrrelUnderBVar/export",
+    "export_sha256": "962cfb1378bc2f73e327fd88e526a0b9b7108f4ad1a1df55766d7d1156ad8d76",
+    "config_path": "test_resources/ProofIrrelUnderBVar/config.json",
+    "config_sha256": "452122fe36bffdcd3d2ede0203126b46f63fe424adb1179b4496d6813b8e7f90",
+    "exporter": {
+      "name": "lean4export",
+      "version": "3.1.0",
+      "format": "3.1.0",
+      "lean_githash": "f72c35b3f637c8c6571d353742168ab66cc22c00",
+      "lean_version": "4.29.1"
+    },
+    "permitted_axioms": ["A", "P", "Q", "a", "b", "foo"],
+    "unpermitted_axiom_hard_error": true
+  },
+  "theorem": {
+    "name": "bar",
+    "name_id": 12,
+    "type_expr_id": 15,
+    "value_expr_id": 16
+  },
+  "consumer": {
+    "id": "consumer.exact_bar_type",
+    "authority": "OPERATOR_ADOPTED_FIXTURE_POLICY",
+    "obligation": "EXACT_EXPORTED_TYPE_IDENTITY",
+    "theorem": "bar",
+    "type_expr_id": 15,
+    "source_sha256": "962cfb1378bc2f73e327fd88e526a0b9b7108f4ad1a1df55766d7d1156ad8d76",
+    "checker_commit": "32eada63bf5d1815bc8d39dd4b4047dc98eff20d",
+    "permitted_axioms": ["A", "P", "Q", "a", "b", "foo"]
+  },
+  "runner": {
+    "repository": "metalogiclabs/mathgraph",
+    "workflow": "check-kernel-receipt-bridge-v1.yml"
+  }
+}
