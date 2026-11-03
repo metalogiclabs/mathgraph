@@ -1,0 +1,72 @@
+name: L4YAML hosted contract qualification
+on:
+  push:
+    branches: [research/check-l4-hosted-contract-v1]
+permissions:
+  contents: read
+concurrency:
+  group: l4yaml-hosted-contract-qualification
+  cancel-in-progress: false
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pr: 19
+            base: 809014dd314dbcf0ccf1dd23ec9cbf84ee4830df
+            head: 815695d634e50d4c336919aa9e60392dba81f1e9
+            expected: NO_FAILURE_IN_FROZEN_CORPUS
+          - pr: 20
+            base: 815695d634e50d4c336919aa9e60392dba81f1e9
+            head: b30319711527a569f6bae4c42cccd41b63233820
+            expected: NEW_FROZEN_PROBE_FAILURE
+          - pr: 21
+            base: b30319711527a569f6bae4c42cccd41b63233820
+            head: 31d8470dde81bd5b68c8792ac80215ce47ab1e18
+            expected: RESOLVED_FROZEN_PROBE_FAILURE
+          - pr: 22
+            base: 815695d634e50d4c336919aa9e60392dba81f1e9
+            head: 7baeb1b74518c10a5f732b244924f28bce9c8a3e
+            expected: NO_FAILURE_IN_FROZEN_CORPUS
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Repository-contract regression tests
+        run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - name: Existing GitHub Check regression suite
+        run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Audit source using unchanged repository contract
+        run: python3 integrations/mathgraph-check-github/repository-contract-v1/run.py --pr '${{ matrix.pr }}' --base '${{ matrix.base }}' --head '${{ matrix.head }}' --output contract-results
+      - name: Admit native evidence through hosted bridge
+        env:
+          PR: ${{ matrix.pr }}
+          BASE: ${{ matrix.base }}
+          HEAD: ${{ matrix.head }}
+          EXPECTED: ${{ matrix.expected }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';
+          import {admitRepositoryResult} from './integrations/mathgraph-check-github/pr-pilot-v1/repository-contract.mjs';
+          import {admitRequest} from './integrations/mathgraph-check-github/pr-pilot-v1/policy.mjs';
+          import {executionContext} from './integrations/mathgraph-check-github/pr-pilot-v1/context.mjs';
+          const e=process.env,repository='metalogiclabs/L4YAML',snapshot=JSON.parse(fs.readFileSync('contract-results/snapshot.json'));
+          const request=admitRequest({repository,pr:{number:Number(e.PR),state:'open',head:{sha:e.HEAD,repo:{full_name:repository,private:false}},base:{sha:e.BASE,repo:{full_name:repository,private:false}}},files:snapshot.files,permission:'admin',comment:{id:1,body:'@MathGraph -check',user:{id:32909488,login:'heathsanchez',type:'User'}}});
+          const result=admitRepositoryResult(JSON.parse(fs.readFileSync('contract-results/result.json')),request,executionContext());
+          fs.writeFileSync('contract-results/hosted-assessment.json',JSON.stringify(result,null,2));
+          assert.equal(result.status,e.EXPECTED);
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: l4yaml-hosted-contract-pr-${{ matrix.pr }}
+          path: |
+            contract-results/*.json
+            contract-results/logs/
