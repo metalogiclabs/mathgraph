@@ -1,0 +1,38 @@
+name: Fresh leading-redirection obligation
+on:
+  push:
+    branches: [research/check-leading-redirection-v1]
+permissions: {contents: read}
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Admission and protected regression tests
+        run: |
+          python3 -m unittest discover -s experiments/check-leading-redirection-v1 -p 'test_*.py'
+          python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py'
+          node --test experiments/check-expectation-admission-v1/binding-native.test.mjs
+          node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs > /tmp/leading-app-tests.log
+      - name: Acquire exact source and independently admit frozen expectations
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          node experiments/check-leading-redirection-v1/driver.mjs prepare leading
+          python3 experiments/check-leading-redirection-v1/admission.py leading
+          python3 -c 'import json; assert json.load(open("leading/expectation-admission.json"))["status"]=="EXPECTATIONS_ADMITTED"'
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Fresh original-source native replay without credentials
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial leading
+          node experiments/check-leading-redirection-v1/driver.mjs initial leading
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: leading-redirection-native, path: leading/}
