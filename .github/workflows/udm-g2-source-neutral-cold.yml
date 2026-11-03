@@ -1,0 +1,192 @@
+name: UDM G2 source-neutral cold observer v3
+on:
+  push:
+    branches: [research/udm-g2-source-neutral-v3-20261103]
+    paths: ['.github/workflows/udm-g2-source-neutral-cold.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/test
+          ref: a39b021e93d6033971dd32432b216e27ac83b7c2
+          path: tooling
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: cenkalti/backoff
+          ref: 6f228bfdb51209aa375869feb27dcede4fa0db06
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Independently requalify previously frozen first eligible author assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C source fetch --no-tags origin 'refs/pull/197/head:refs/remotes/origin/pr197-head'
+          test "$(git -C source rev-parse HEAD)" = '6f228bfdb51209aa375869feb27dcede4fa0db06'
+          test "$(git -C source rev-parse refs/remotes/origin/pr197-head)" = '6ec253533f5445d618a94f4b4d1c45b6ff317518'
+          mkdir -p qualification packet/base_source
+          python tooling/research/g2_native_residual/qualify_v2.py \
+            --repo source \
+            --base 6f228bfdb51209aa375869feb27dcede4fa0db06 \
+            --head 6ec253533f5445d618a94f4b4d1c45b6ff317518 \
+            --test-file ticker_test.go --output qualification
+          python - <<'PY'
+          import json,shutil,hashlib,re
+          from pathlib import Path
+          q=json.load(open('qualification/qualification.json'))
+          assert q['status']=='WARRANTED_BOUNDED_AUTHENTIC_AUTHOR_NATIVE_RED_GREEN',q
+          assert q['matched_failed_tests']
+          root=Path('source')
+          prod=Path('ticker.go')
+          src=(root/prod).read_text()
+          m=re.search(r'^package\s+([A-Za-z_][A-Za-z_0-9]*)\b',src,re.M)
+          assert m,'UNKNOWN_GO_PACKAGE_NAME'
+          names=sorted(p for p in root.glob('*.go') if p.is_file() and not p.name.endswith('_test.go'))
+          selected=[prod]+[p.relative_to(root) for p in names if p.relative_to(root)!=prod][:2]
+          for rel in selected:
+              dst=Path('packet/base_source')/rel
+              dst.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(root/rel,dst)
+          shutil.copyfile('qualification/learner-residual.json','packet/learner-residual.json')
+          subject={'schema':'mathgraph.g2.source-neutral-subject.v3','repository':'cenkalti/backoff',
+                   'source_sha':'6f228bfdb51209aa375869feb27dcede4fa0db06',
+                   'production_file':str(prod),'package_name':m.group(1),
+                   'source_files':[{'path':str(p),'sha256':hashlib.sha256((root/p).read_bytes()).hexdigest()} for p in selected]}
+          Path('packet/subject.json').write_text(json.dumps(subject,sort_keys=True,indent=2)+'\n')
+          print('COLD_NATIVE_ADMISSION',q['status'],'WITNESSES',len(q['matched_failed_tests']))
+          print('SOURCE_ONLY_PREP',subject['package_name'],len(selected),'FILES')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v3-backoff-native-author-qualification
+          path: qualification
+          retention-days: 60
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-v3-source-only-proposer-packet
+          path: packet
+          retention-days: 60
+  propose:
+    needs: [prepare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-source-only-proposer-packet
+          path: packet
+      - name: Two frozen equal-information structured proposals, no source execution
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          node code/research/udm_g2_source_neutral_v3/propose.mjs \
+            packet/learner-residual.json packet/base_source proposals packet/subject.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v3-backoff-equal-information-model-proposals
+          path: proposals
+          retention-days: 60
+  independent-native:
+    needs: [propose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: cenkalti/backoff
+          ref: 6f228bfdb51209aa375869feb27dcede4fa0db06
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-backoff-equal-information-model-proposals
+          path: proposals
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-v3-source-only-proposer-packet
+          path: packet
+      - name: Source-neutral package and native test-count controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd code/research/udm_g2_source_neutral_v3
+          python -m unittest -v test_source_neutral.py 2>&1 | tee /tmp/source-neutral-regressions.log
+          grep -q 'Ran 6 tests' /tmp/source-neutral-regressions.log
+          grep -q '^OK$' /tmp/source-neutral-regressions.log
+      - name: Verify no model credential, source subject and head SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          test "$(git -C source rev-parse HEAD)" = '6f228bfdb51209aa375869feb27dcede4fa0db06'
+          git -C source fetch --no-tags origin 'refs/pull/197/head:refs/remotes/origin/pr197-head'
+          test "$(git -C source rev-parse refs/remotes/origin/pr197-head)" = '6ec253533f5445d618a94f4b4d1c45b6ff317518'
+          python - <<'PY'
+          import json,hashlib
+          d=json.load(open('packet/subject.json'))
+          assert d['schema']=='mathgraph.g2.source-neutral-subject.v3'
+          assert d['source_sha']=='6f228bfdb51209aa375869feb27dcede4fa0db06'
+          for item in d['source_files']:
+              with open('source/'+item['path'],'rb') as f:
+                  assert hashlib.sha256(f.read()).hexdigest()==item['sha256']
+          print('ORIGINAL_SOURCE_ONLY_PACKET_REPLAY_PASS')
+          PY
+      - name: Independent candidate native base/head and withdrawal/restoration, no model key
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="$(python -c 'import json;print(json.load(open("packet/subject.json"))["package_name"])')"
+          python code/research/udm_g2_source_neutral_v3/evaluate.py \
+            --source source \
+            --base 6f228bfdb51209aa375869feb27dcede4fa0db06 \
+            --head 6ec253533f5445d618a94f4b4d1c45b6ff317518 \
+            --production-file ticker.go --package-name "$PACKAGE_NAME" \
+            --proposals proposals --output evaluation | tee evaluation.stdout
+          python - <<'PY'
+          import json
+          d=json.load(open('evaluation/evaluation.json'))
+          assert d['schema']=='mathgraph.g2.go-native-qualification.v1'
+          assert d['base_sha']=='6f228bfdb51209aa375869feb27dcede4fa0db06'
+          assert d['head_sha']=='6ec253533f5445d618a94f4b4d1c45b6ff317518'
+          print('SCIENTIFIC_WITNESS_RESULT',d['status'],'FAIR',d.get('fair_comparison'))
+          print('STRICT_G2',d['strict_g2'],'STRICT_G3',d['strict_g3'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-v3-backoff-independent-native-qualification
+          path: |
+            evaluation
+            evaluation.stdout
+            /tmp/source-neutral-regressions.log
+          retention-days: 60
