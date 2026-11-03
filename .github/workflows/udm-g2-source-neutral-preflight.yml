@@ -1,0 +1,36 @@
+name: UDM G2 source-neutral preflight (no model)
+on:
+  push:
+    branches: [research/udm-g2-source-neutral-v3-20261103]
+    paths:
+      - 'research/udm_g2_source_neutral_v3/**'
+      - '.github/workflows/udm-g2-source-neutral-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - name: Syntactic sanity of generic client
+        run: node --check research/udm_g2_source_neutral_v3/propose.mjs
+      - name: Six genuinely executed admission and native-count controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/udm_g2_source_neutral_v3
+          python -m unittest -v test_source_neutral.py 2>&1 | tee /tmp/g2-v3-controls.log
+          grep -q 'Ran 6 tests' /tmp/g2-v3-controls.log
+          grep -q '^OK$' /tmp/g2-v3-controls.log
+          python -m py_compile evaluate.py
+      - name: Static Go helper vet
+        run: go vet research/udm_g2_source_neutral_v3/validate.go
