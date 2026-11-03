@@ -1,0 +1,38 @@
+name: G1 raw monitor trust-boundary qualification
+on:
+  push:
+    branches: [research/g1-failclosed-monitor-source-attestation-20261104]
+    paths:
+      - 'integrations/mathgraph-check-github/check-resolve-monitor-v1.mjs'
+      - 'integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs'
+      - 'integrations/mathgraph-check-github/check-resolve-monitor-trust-boundary-v1.test.mjs'
+      - '.github/workflows/g1-monitor-trust-boundary-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  monitor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run real node test assertions, reject zero tests
+        run: |
+          set -euo pipefail
+          node --test \
+            integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs \
+            integrations/mathgraph-check-github/check-resolve-monitor-trust-boundary-v1.test.mjs \
+            integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs | tee /tmp/g1-native-tests.log
+          grep -q '^# fail 0$' /tmp/g1-native-tests.log
+          grep -q '^# tests 26$' /tmp/g1-native-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g1-monitor-negative-control-evidence
+          path: /tmp/g1-native-tests.log
+          retention-days: 60
