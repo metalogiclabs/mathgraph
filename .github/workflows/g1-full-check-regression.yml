@@ -1,0 +1,46 @@
+name: G1 Check integration full regression
+on:
+  push:
+    branches: [research/g1-failclosed-monitor-source-attestation-20261104]
+    paths:
+      - '.github/workflows/g1-full-check-regression.yml'
+      - 'integrations/mathgraph-check-github/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-full:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Execute every discovered MathGraph Check JavaScript test and count actual tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' alltests < <(find integrations/mathgraph-check-github -name '*.test.mjs' -type f -print0)
+          test "${#alltests[@]}" -ge 13
+          printf 'DISCOVERED_TEST_FILES=%s\n' "${#alltests[@]}"
+          node --test --test-reporter=tap "${alltests[@]}" | tee /tmp/check-full-tests.tap
+          python3 - <<'PY'
+          from pathlib import Path
+          text=Path('/tmp/check-full-tests.tap').read_text()
+          counters={}
+          for line in text.splitlines():
+              for key in ('tests','pass','fail','skipped','cancelled'):
+                  if line.startswith('# '+key+' '):
+                      counters[key]=int(line.split()[-1])
+          assert counters.get('tests',0)>=100, 'UNKNOWN_INCOMPLETE_TEST_DISCOVERY'
+          assert counters.get('fail')==0 and counters.get('pass')==counters['tests']-counters.get('skipped',0)
+          assert counters.get('skipped')==0 and counters.get('cancelled')==0
+          print('SOURCE_NATIVE_PRODUCT_TEST_COUNT',counters['tests'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g1-full-check-test-evidence
+          path: /tmp/check-full-tests.tap
+          retention-days: 60
