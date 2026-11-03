@@ -126,6 +126,74 @@ jobs:
               'FAIL_NATIVE_ASSERTION','PASS_SOURCE_NATIVE','UNKNOWN_ZERO_OR_MULTIPLE_NAMED_TESTS','FAIL_NATIVE_ASSERTION']
           print('REAL_CANONICAL_TYPED_COLD_NATIVE_REPLAY_WARRANTED_BOUNDED')
           PY
+      - name: Source-bound tamper controls with ACTUAL canonical contract validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code:code/research/udm_go_witness_cold_v0 python - <<'PYCODE'
+          import json
+          from pathlib import Path
+          import bridge
+          root=json.load(open('qualification/export.json'))['root_sha256']
+          store=Path('qualification/store')
+          original=bridge.inspect(store,root)
+          object_root=store/'objects'/root
+          results={}
+          for name in ('candidate.go','prior-evaluation.json','sources.json'):
+              p=object_root/name
+              exact=p.read_bytes()
+              try:
+                  p.write_bytes(exact+b'\n// untrusted byte mutation' if name=='candidate.go' else exact+b' ')
+                  try:
+                      bridge.inspect(store,root)
+                      raise AssertionError('FALSE_GREEN_ACCEPTED_TAMPER:'+name)
+                  except ValueError as exc:
+                      assert str(exc)=='UNKNOWN_OBJECT_CONTENT_MISMATCH',repr(exc)
+                  results[name]='REJECTED_AS_EXPECTED'
+              finally:p.write_bytes(exact)
+          assert bridge.inspect(store,root)==original
+          (Path('qualification')/'tamper-controls.json').write_text(json.dumps(results,indent=2)+'\n')
+          print('THREE_ACTUAL_SOURCE_BYTE_MUTATIONS_REJECTED_AND_RESTORED')
+          PYCODE
+      - name: Equal-information direct execution control without typed object
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code:code/research/udm_go_witness_cold_v0 python - <<'PYCODE'
+          import json,tempfile
+          from pathlib import Path
+          import bridge
+          obj=json.load(open('qualification/export.json'))
+          root=obj['root_sha256']
+          pair,parts=bridge.inspect(Path('qualification/store'),root)
+          source=Path('source').resolve()
+          baseline={}
+          with tempfile.TemporaryDirectory(prefix='equal-info-go-') as d:
+              tmp=Path(d)
+              base=tmp/'original';head=tmp/'contributor'
+              for p,sha in ((base,pair['base']),(head,pair['head'])):
+                  y=bridge.run(['git','worktree','add','--detach',str(p),sha],source,45)
+                  assert y['exit']==0,y['stderr']
+              def invoke(p,include):
+                  path=p/bridge.TEST_FILE
+                  if include:path.write_bytes(parts['candidate.go'])
+                  try:
+                      y=bridge.run(['go','test','-json','-count=1','-run','^'+bridge.TEST_NAME+'$','.'],p,180)
+                      return bridge.test_summary(y['stdout'],y['exit'])
+                  finally:path.unlink(missing_ok=True)
+              for name,target,include in [('base',base,True),('head',head,True),
+                                          ('withdrawn',base,False),('restored',base,True)]:
+                  baseline[name]=invoke(target,include)
+          typed=json.load(open('qualification/native.json'))
+          assert baseline==typed['arms'],('DIRECT_NATIVE_DISAGREEMENT',baseline,typed['arms'])
+          result={'schema':'mathgraph.udm.go-native-direct-baseline.v0',
+                  'status':'SEMANTIC_TIE_SAME_EXECUTABLE_AND_ORACLE',
+                  'fully_charged_comparative_advantage':'UNKNOWN',
+                  'strict_g2':'UNKNOWN','strict_g3':'UNKNOWN',
+                  'source_sha':pair['base'],'head_sha':pair['head'],'arms':baseline}
+          (Path('qualification')/'direct-control.json').write_text(json.dumps(result,indent=2)+'\n')
+          print('EQUAL_INFORMATION_DIRECT_NATIVE_BASELINE_TIES_4_OF_4')
+          PYCODE
       - name: Canonical package unit tests; structural shim must not activate
         shell: bash
         run: |
