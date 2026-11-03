@@ -1,0 +1,142 @@
+name: UDM Go witness real canonical cold replay
+on:
+  push:
+    branches: [research/go-native-evidence-replay-v0-20261104]
+    paths: ['research/udm_go_witness_cold_v0/**', '.github/workflows/udm-go-witness-cold-v0.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {label: godotenv-direct, repository: joho/godotenv, pkg: godotenv, pr: 262, base: a2be92d182fc04da33b365bf47c17fe0f4808aea, head: b724238db6209280ed96a4e04aa2af38063763d9, rank: 3, mode: direct, code_sha: f4880edef9d1fe0f1e0ceba68ca8f0f417597a7ec1c4b96e5f9c3b79cbfbb0a3}
+          - {label: lo-bridge, repository: samber/lo, pkg: lo, pr: 993, base: 92663432d4f44300b3daf77a2641cd0b00d0b5d2, head: 5b4c3c162309bd4544ea51997980d1e98a22682a, rank: 4, mode: bridge, code_sha: b145474ddf72e5f060e574d89b17808830b18b76e02e20db3fefefa8933e7344}
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: code, persist-credentials: false}
+      - uses: actions/checkout@v4
+        with: {repository: '${{ matrix.repository }}', ref: '${{ matrix.base }}', path: source, fetch-depth: 0, persist-credentials: false}
+      - uses: actions/checkout@v4
+        with: {repository: metalogiclabs/mathgraph, ref: 1c58c10d0817a259af4ea22acbeba7cf0a4f3db8, path: verifier, persist-credentials: false}
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {repository: metalogiclabs/mathgraph, run-id: 41608373279, name: 'g2-informative-proposals-rank-${{ matrix.rank }}', github-token: '${{ github.token }}', path: input/proposals}
+      - uses: actions/download-artifact@v4
+        with: {repository: metalogiclabs/mathgraph, run-id: 41608373279, name: 'g2-informative-native-rank-${{ matrix.rank }}', github-token: '${{ github.token }}', path: input/native}
+      - name: Check exact source, original artifact identities and canonical validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(printenv OPENAI_API_KEY || true)"
+          test "$(git -C source rev-parse HEAD)" = '${{ matrix.base }}'
+          test -z "$(git -C source status --porcelain)"
+          git -C source fetch --no-tags origin 'refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/mg-witness-head'
+          test "$(git -C source rev-parse refs/remotes/origin/mg-witness-head)" = '${{ matrix.head }}'
+          mkdir -p qualification/input
+          PYTHONPATH=code python - <<'PY'
+          from pathlib import Path
+          import mathgraph_protocol.capability_v1 as m
+          assert Path(m.__file__).resolve().is_relative_to(Path('code/mathgraph_protocol').resolve())
+          assert m.CONTRACT_VERSION == 'mathgraph.capability-contract.v1'
+          print('CANONICAL_MATHGRAPH_CONTRACT',m.__file__)
+          PY
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path('qualification/input')
+          match=list(Path('input/native').rglob('evaluation.json'))
+          assert len(match)==1,('WRONG_EVIDENCE_CENSUS',len(match))
+          original=match[0].read_bytes()
+          p=Path('input/proposals')/'${{ matrix.mode }}.json'
+          assert p.is_file()
+          candidate=p.read_bytes(); code=json.loads(candidate)['code'].encode('utf8')
+          assert hashlib.sha256(code).hexdigest()=='${{ matrix.code_sha }}','WRONG_CANDIDATE_SHA'
+          old=json.loads(original)
+          assert old['base_sha']=='${{ matrix.base }}' and old['head_sha']=='${{ matrix.head }}'
+          assert old['strict_g2']=='UNKNOWN' and old['strict_g3']=='UNKNOWN'
+          pair=dict(repository='${{ matrix.repository }}', package='${{ matrix.pkg }}',base='${{ matrix.base }}',head='${{ matrix.head }}',mode='${{ matrix.mode }}',origin_run='41608373279')
+          (root/'pair.json').write_text(json.dumps(pair,sort_keys=True)+'\n')
+          (root/'proposal.json').write_bytes(candidate)
+          (root/'prior.json').write_bytes(original)
+          print('SOURCE_PAIR_AND_CANDIDATE_PINNED',hashlib.sha256(original).hexdigest())
+          PY
+      - name: Run original native Go suite with nonzero recognized-test gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd source && go test -json ./...) > qualification/upstream-go-tests.jsonl
+          python - <<'PY'
+          import json
+          events=[json.loads(line) for line in open('qualification/upstream-go-tests.jsonl') if line.strip()]
+          passed=sum(e.get('Action')=='pass' and bool(e.get('Test')) for e in events)
+          assert passed>0,'UNKNOWN_ZERO_UPSTREAM_TESTS'
+          print('UPSTREAM_NAMED_TESTS',passed)
+          PY
+      - name: Typed export using ACTUAL canonical protocol; never authorize effects
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code python code/research/udm_go_witness_cold_v0/bridge.py export \
+            --proposal qualification/input/proposal.json --evaluation qualification/input/prior.json \
+            --pair qualification/input/pair.json --store qualification/store > qualification/export.json
+          python - <<'PY'
+          import json
+          x=json.load(open('qualification/export.json'))
+          assert x['status']=='CANDIDATE_COLD_TRANSPORT',x
+          assert x['qualification']=='UNKNOWN_FRESH_REPLAY_REQUIRED' and x['action_authorization']=='NONE',x
+          print('CANDIDATE_OBJECT_ROOT',x['root_sha256'])
+          PY
+      - name: Fresh-process four-arm native recheck plus actual revocation and source negatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$(python -c 'import json;print(json.load(open("qualification/export.json"))["root_sha256"])')"
+          OPT=(--root "$ROOT" --store qualification/store --validator verifier/research/udm_g2_source_neutral_v3/validate.go)
+          PYTHONPATH=code python code/research/udm_go_witness_cold_v0/bridge.py replay "${OPT[@]}" --source source > qualification/native.json
+          printf '["%s"]\n' "$ROOT" > qualification/revoked.json
+          PYTHONPATH=code python code/research/udm_go_witness_cold_v0/bridge.py replay "${OPT[@]}" --source source --revoke-file qualification/revoked.json > qualification/revoked-receipt.json
+          PYTHONPATH=code python code/research/udm_go_witness_cold_v0/bridge.py replay "${OPT[@]}" --source code > qualification/wrong-source-receipt.json
+          mv "qualification/store/objects/$ROOT" "qualification/store/objects/$ROOT.absent"
+          PYTHONPATH=code python code/research/udm_go_witness_cold_v0/bridge.py replay "${OPT[@]}" --source source > qualification/withdrawn-receipt.json
+          mv "qualification/store/objects/$ROOT.absent" "qualification/store/objects/$ROOT"
+          PYTHONPATH=code python code/research/udm_go_witness_cold_v0/bridge.py replay "${OPT[@]}" --source source > qualification/restored-receipt.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          cases={'native':'WARRANTED_BOUNDED_COLD_NATIVE_REPLAY',
+            'revoked-receipt':'UNKNOWN_REVOKED_OBJECT','wrong-source-receipt':'UNKNOWN_SOURCE_BASE_IDENTITY',
+            'withdrawn-receipt':'UNKNOWN_CAPABILITY_WITHDRAWN','restored-receipt':'WARRANTED_BOUNDED_COLD_NATIVE_REPLAY'}
+          data={key:json.loads((Path('qualification')/(key+'.json')).read_text()) for key in cases}
+          for key,expected in cases.items():
+            print('COLD_OUTCOME',key,data[key]['status'])
+            assert data[key]['status']==expected,(key,expected,data[key])
+          for key in ('native','restored-receipt'):
+            row=data[key]
+            assert row['permission']=='NONE' and row['strict_g2']=='UNKNOWN' and row['strict_g3']=='UNKNOWN'
+            assert [row['arms'][k]['status'] for k in ('base','head','withdrawn','restored')]==[
+              'FAIL_NATIVE_ASSERTION','PASS_SOURCE_NATIVE','UNKNOWN_ZERO_OR_MULTIPLE_NAMED_TESTS','FAIL_NATIVE_ASSERTION']
+          print('REAL_CANONICAL_TYPED_COLD_NATIVE_REPLAY_WARRANTED_BOUNDED')
+          PY
+      - name: Canonical package unit tests; structural shim must not activate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=code:code/research/udm_go_witness_cold_v0 python -m unittest -v test_bridge > qualification/bridge-tests.log 2>&1
+          cat qualification/bridge-tests.log
+          grep -q 'Ran 8 tests' qualification/bridge-tests.log
+          grep -q '^OK$' qualification/bridge-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 'udm-go-canonical-cold-${{ matrix.label }}'
+          path: qualification
+          retention-days: 60
