@@ -88,3 +88,15 @@ def comparison(base,head):
     if h:return 'NEW_FROZEN_PROBE_FAILURE'
     if b:return 'RESOLVED_FROZEN_PROBE_FAILURE'
     return 'NO_FAILURE_IN_FROZEN_CORPUS'
+
+
+def hosted_snapshot(data,repo,number,base,head):
+    if data.get('schema')!='mathgraph.repository-contract.snapshot.v1' or data.get('repository')!=repo:raise ValueError('INVALID_HOSTED_SNAPSHOT')
+    pr=data.get('pr',{})
+    if pr.get('number')!=number or pr.get('state')!='open':raise ValueError('HOSTED_PR_MISMATCH')
+    for side,revision in [('base',base),('head',head)]:
+        row=pr.get(side,{})
+        if row.get('sha')!=revision or row.get('repo',{}).get('full_name')!=repo or row['repo'].get('private') is not False:raise ValueError('HOSTED_SOURCE_MISMATCH')
+    diff=data.get('comparison',{});files=pinned_files(diff,base,head)
+    if len(files)!=pr.get('changed_files'):raise ValueError('INCOMPLETE_HOSTED_COMPARISON')
+    return pr,diff

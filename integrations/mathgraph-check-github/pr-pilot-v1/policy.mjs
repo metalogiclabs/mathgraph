@@ -17,7 +17,7 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
  requireFact(filesComplete===true,'INCOMPLETE_CHANGED_FILES');
  const support=classifyDiff(files);
  if(!support.supported&&command==='check'&&Array.isArray(files)&&files.some(f=>/^(Scripts\/)([A-Za-z_][A-Za-z0-9_]*\/)*[A-Za-z_][A-Za-z0-9_]*\.lean$/.test(f.filename)&&['added','modified','removed','renamed','copied'].includes(f.status))){profile.mode=CONTRACT_MODE;support.supported=true;support.reason='SUPPORTED_REPOSITORY_CONTRACT';}
- return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support};
+ return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support,changed_paths:files.map(f=>f.filename)};
 }
 const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
 const REPAIR_VERIFIED='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE';
@@ -29,6 +29,7 @@ export function resultTitle(report,request){
 }
 export function formatResult(report,request,runURL){
  if(request.profile?.mode===CONTRACT_MODE)return formatContractResult(report,request,runURL);
+ if(report.status==='UNKNOWN'&&report.reason==='UNSUPPORTED_CHANGED_FILE_SCOPE')return ['### MathGraph Check','**No reviewed checking contract for this change**',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`, 'No native result is claimed. Whole-PR correctness: UNKNOWN.', 'Next: review these changes using the repository’s normal process, or define a reviewed contract for this source category. Do not split the PR merely to obtain a passing Check.', 'Available scope: selected Scripts modules with fixed regressions; generated check/fix is limited to `Scripts/Ledger.lean`. Proof intent, documentation correctness and arbitrary workflows remain unchecked.', 'Changed paths: '+(request.changed_paths??[]).map(esc).join(', '), `[Execution and evidence](${runURL})`].join('\n\n');
  const names={NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS:'No counterexample found in the generated probes',CANDIDATE_ASSERTION_FAILURE:'A generated probe fails on this revision',UNKNOWN:'Check incomplete',STALE:'Source changed — this result no longer applies'};
  const repaired=report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED;
  const lines=['### MathGraph Check',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`,`**${repaired?resultTitle(report,{...request,command:'fix'}):names[report.status]??'Evidence incomplete'}**`,`Revision: \`${request.head_sha}\` · Base: \`${request.base_sha}\``, 'Scope: selected ledger module, original guards and repository gate. This does not establish whole-PR correctness.'];

@@ -1,0 +1,36 @@
+name: L4YAML maintainer report qualification
+on:
+  push:
+    branches: [research/check-l4-maintainer-report-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/maintainer-worker
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-publication, run-id: 41574735150, github-token: '${{ github.token }}', path: samples/regression}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-publication, run-id: 41574725630, github-token: '${{ github.token }}', path: samples/pass}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-publication, run-id: 41574743780, github-token: '${{ github.token }}', path: samples/resolved}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-publication, run-id: 41579642607, github-token: '${{ github.token }}', path: samples/missing-module}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-publication, run-id: 41579633823, github-token: '${{ github.token }}', path: samples/rate-limit}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-publication, run-id: 41574762189, github-token: '${{ github.token }}', path: samples/stale}
+      - run: node integrations/mathgraph-check-github/pr-pilot-v1/report-samples.mjs samples report-examples
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: maintainer-report-examples, path: report-examples/, retention-days: 30}
