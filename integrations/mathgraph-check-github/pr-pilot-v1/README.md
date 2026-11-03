@@ -1,39 +1,49 @@
-# MathGraph Check owned-fork PR pilot
+# MathGraph Check — maintainer pilot
 
-This integration is under qualification. It is not yet a public install-and-run release.
+MathGraph Check is live on the owned public `metalogiclabs/L4YAML` fork. Use one PR comment to request an advisory Check, then inspect the requirement, source revision and native evidence. External install-and-run operation is not yet qualified. Installing the App alone does not enable a repository or checking method.
 
-## Supported initial capability
+## What the current App checks
 
-Public same-repository PRs on `metalogiclabs/L4YAML` changing only `Scripts/Ledger.lean`. The reviewed Lean 4.35.0 module/CLI adapter generates 1–3 independent Boolean probes, executes the same probes on actual base and head, preserves original guards, and reports finite observations. It does not review arbitrary theorems, validate model-inferred requirements, or run full L4YAML CI. Metaprogramming, unsafe execution, altered original guards, unreviewed CLI and unsupported file changes return UNKNOWN.
+| Change / method | Evidence it can support | Boundary |
+| --- | --- | --- |
+| `Scripts/Ledger.lean`, reviewed shell expectations | Three operator-adopted requirements across five inputs, replayed in Lean4.35 with independent Bash observations; protected original guards and repository gate | Finite behavior only; whole-PR and general shell correctness remain UNKNOWN |
+| Selected changed `Scripts/*.lean` modules | Compilation of selected roots/imports and a frozen regression corpus on base/head, with uncovered paths reported | Compilation and tested regressions do not establish intended semantics |
+| Reviewed Python→Lean CLI migrations | Fixed native differential fixtures for traceof, ledger-diff and the read-only residue-classes subcommand | Only the registered entry points, fixtures and comparison policies; proof rewriting is excluded |
+| Exact registered empty-tail constructor calibration | The same declared consumer accepts the required capability and rejects its deletion or a weakened offer | Exact retrospective source calibration, with `propext` explicit; not generic claim discovery or proof necessity |
 
-## Maintainer operation after activation
+An unsupported source, missing reference, unqualified producer, changed source or incomplete native run retains UNKNOWN. A behavior difference is not automatically a defect. Model-generated expectations remain hypotheses until admitted against an independent requirement/reference. Historical expectation sets keep their original scope; adding an obligation requires new admission and replay.
 
-1. Select the repository when installing MathGraph Check. A repository administrator controls installation; the hosted pilot additionally needs an enabled capability profile. Installing alone does not enable arbitrary repositories.
-2. A user with write/maintain/admin permission comments exactly `@MathGraph -check` on an open PR. The source-repository Check reports progress and links the execution/artifact evidence. A second identical request reuses completed applicable evidence.
-3. Review the probe's contract and outcome. A false guard is a reproduced candidate discrepancy, not proof that the model interpreted intent correctly. Base/head labels distinguish inherited failure from introduced regression only when both native arms qualify.
-4. If a repair is wanted, comment exactly `@MathGraph -fix`. It reuses the preceding Check's frozen probes, tries a bounded model patch and at most one compiler-feedback revision, and verifies the original/repair/withdrawal sequence. Only a qualified patch may become a draft PR. Nothing merges automatically.
-5. A new commit or changed base withdraws old applicability and schedules a new Check for an opted-in PR. Closing the PR withdraws and disables its subscription. A prior Check record remains historical evidence.
+## Check, fix, inspect
 
-## Hosting and source handling
+1. On an open public, same-repository PR (both head and base in `metalogiclabs/L4YAML`), a user with write/maintain/admin permission comments exactly `@MathGraph -check`. Progress and results appear in the PR's Checks tab. The report states the exact base/head, selected method, requirement and recommended action.
+2. Review the requirement and the evidence. Reviewed shell checks use fixed expectations and no model test generation. An unfamiliar ledger audit may propose hypotheses, but native failure alone does not authorize a repair. Base/head comparison attributes an introduced regression only when both arms qualify.
+3. For a qualified ledger failure, comment exactly `@MathGraph -fix`. It reuses the preceding Check's frozen probes, proposes a bounded model patch, and allows at most one compiler-feedback revision. Native jobs test the original, candidate and withdrawn candidate, preserving original guards and repository gates. Only a qualified candidate becomes an unmerged draft; an exact existing draft can be reused.
+4. Review the draft diff and normal CI. A finite pass is not merge approval. The raw downloadable repair report retains the authenticated draft link; the Check remains advisory.
+5. When a supported PR update webhook reports a changed head or base, the App withdraws old applicability and schedules a new Check for an opted-in PR. A target-base-branch push alone is not handled by this event adapter; request a new Check rather than assuming it was automatically rechecked. A closed PR withdraws and disables its subscription. Historical records remain inspectable. Duplicate completed requests reuse applicable evidence rather than creating another Check or dispatch.
 
-Trusted hosted GitHub Actions jobs use the existing OpenAI account; native jobs receive neither model nor App keys and run offline with read-only source/probes. Only public source within the configured capability is sent to the model; requests set `store:false`. This is not a promise about provider retention or support for private repositories. Do not send private/unreleased FGM, manuscripts, credentials or scientific data through this pilot.
+Repair is qualified only for the admitted ledger route. Other methods report their bounded evidence and uncovered obligations; they do not silently inherit repair permission.
 
-The pilot sponsor pays model usage and hosted compute. Model reservations are capped per installation and UTC day; reservations are conservative and are not refunded after uncertain failures. Compiler-feedback retries are explicitly bounded; paid HTTP retries are disabled. Token usage is retained with the evidence. Actions artifacts are retained for30days by the workflow; longer-lived research records require separate retention. Cancelling a run does not undo already incurred usage.
+## One inspectable example
 
-Removing the installation revokes repository access. The hosted service must refuse unsupported/uninstalled repositories; uninstalling does not delete historical public Check records or previously generated artifacts. No automatic merge or required branch-protection gate is configured.
+- [Fork PR27](https://github.com/metalogiclabs/L4YAML/pull/27) fails the leading-output requirement on both base and head: it is an existing discrepancy, not a regression introduced by this PR. Both `>out python3 scripts/a.py` and `> out python3 scripts/a.py` should preserve the script command. In `> python3 echo scripts/a.py`, `python3` is a redirect filename and must not become a command.
+- [App repair29](https://github.com/metalogiclabs/L4YAML/pull/29) passes the admitted five inputs. The authentic [model-repair run41724109428](https://github.com/metalogiclabs/mathgraph/actions/runs/41724109428) preserves160original guards and repository gates; withdrawal restores the failure.
+- [Final-release check27](https://github.com/metalogiclabs/mathgraph/actions/runs/41738771424) reproduces the failure; [check29](https://github.com/metalogiclabs/mathgraph/actions/runs/41738781363) passes the same finite boundary. Both make zero model calls and skip repair jobs. Source and native bytes are bound independently of PR prose.
+- [Unqualified producer example3](https://github.com/metalogiclabs/mathgraph/actions/runs/41738802484) returns UNKNOWN with an actionable diagnostic and no native/model work.
 
-## Activation requirements
+This is an owner-selected, operator-adopted demonstration, not blind defect discovery or customer approval. Consult the current PR Check for applicability after later changes.
 
-The Metalogic Labs installation now includes all current and future organization repositories, with `pull_request` and `issue_comment` subscriptions. The central default-branch repository-dispatch bootstrap and the existing Cloudflare worker are deployed, with preserved secrets/queue, the budget coordinator binding/migration, and `PR_PILOT_ENABLED=true`. Repository access does not imply analysis support: the pilot capability remains restricted to the public L4YAML ledger profile above. Actual command-to-Check qualification and the remaining acceptance controls must pass before a public install-and-run claim. Do not move App private keys into source repositories or source execution jobs.
+## Budget, source handling and retained evidence
 
-Required acceptance: authentic command → installed repository/maintainer reauthorization → model/native admission → exact-source App Check; explicit frozen-probe fix; clean and unsupported controls; base/head changes and stale publication; duplicate/retry and spending limits; second-operator install/run without founder interventions. Until those pass, reports may claim adapter qualification only.
+Reviewed fixed/candidate checks, registered CLI/repository checks and unsupported requests reserve no model spend. A producer candidate either receives authenticated fixed expectations or blocks; it cannot fall back to model generation. Generic model checks reserve49budget cents, fixes98, with a1000cent daily reservation cap per installation. The cap resets at UTC midnight. Reservations are conservative, are not actual billed usage, and are not refunded after uncertain failures. No-model reviewed checks remain available when model capacity is exhausted. Paid HTTP retries are disabled; compiler feedback is bounded.
 
-## Current operator readiness
+The sponsor pays model usage and hosted compute. Only public source within an enabled method may be sent to the model, with `store:false`; this is not a promise about provider retention or support for private source. Native jobs receive neither model nor App credentials and run against pinned source/probes. Do not submit private manuscripts, credentials or unreleased scientific data through this pilot.
 
-The authentic supported-profile command/check/fix path has passed on the owned L4YAML fork: check run41539149018 and explicit fix41539663813, with draft repair PR3. The model generated three probes; all failed on qualified base/head, passed after the patch and failed again on withdrawal. The inferred requirements remain unverified. This is an owner-selected finite example, not a blind accuracy benchmark.
+Reports retain source identity, requirement/admission, verifier context, native observations, assumptions and explicit UNKNOWNs. GitHub Actions artifacts are normally retained30days by the pilot workflow; separately retained research bundles preserve longer-lived evidence. A hash or prose result alone does not authenticate execution. Cancelling a run does not undo incurred usage.
 
-For an enabled pilot repository, use the PR's Checks tab as the progress/result surface. Review each generated expectation and its base/head comparison before requesting `@MathGraph -fix`. A verified candidate is a draft for review; the Check remains advisory. Unsupported changes explain their scope and retain UNKNOWN rather than displaying approval.
+Removing the installation revokes repository access; it does not delete historical public Checks or artifacts. The runtime reauthorizes installation, maintainer and source identities for each request. Source PRs cannot choose native commands, change the frozen corpus, grant their own checking method, or supply central publisher credentials. No automatic merge or branch-protection approval is configured.
 
-The App is currently private and the trusted profile enables only `metalogiclabs/L4YAML`. Organization-wide installation access does not turn on analysis for other repositories. An external administrator cannot yet complete a supported self-service installation. Before offering external operation, qualify a separately authorized repository/profile, installation and command flow with a different maintainer, including cost sponsorship, source handling and uninstall. Do not share App keys or ask maintainers to run central publisher credentials.
+## What remains outside this pilot
 
-Equal-information incremental-review evaluation is preregistered in `experiments/check-review-increment-v1/PROTOCOL.md`. Its actual Devin arm and owner-approved semantic requirements remain pending; no superiority result is claimed.
+Nicolas/customer approval, second-operator self-service, arbitrary repositories, full-PR correctness, general shell conformance, formal statement equivalence and generic proof necessity remain unqualified. Before external operation, qualify the target repository/method, a different maintainer's install/command/uninstall flow, cost sponsorship and source handling. Do not share App private keys.
+
+Equal-information review comparison is preregistered in `experiments/check-review-increment-v1/PROTOCOL.md`; its actual Devin arm remains pending. No superiority or10xperformance result is claimed. The current implementation and evidence are linked from [draft PR265](https://github.com/metalogiclabs/mathgraph/pull/265).
