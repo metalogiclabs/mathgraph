@@ -1,0 +1,13 @@
+{
+  "schema": "mathgraph.g3.go-proposer-profile.v1",
+  "source_repo": "cenkalti/backoff",
+  "source_sha": "6f228bfdb51209aa375869feb27dcede4fa0db06",
+  "package": "backoff",
+  "source_files": [
+    "ticker.go"
+  ],
+  "scientific_scope": "POST_HOC_CALIBRATION_ONLY",
+  "source_qualifier": "TestTickerStop",
+  "strict_g2": "UNKNOWN",
+  "strict_g3": "UNKNOWN"
+}
