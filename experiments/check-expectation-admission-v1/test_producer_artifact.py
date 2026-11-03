@@ -1,4 +1,4 @@
-import hashlib,io,json,zipfile,unittest,importlib.util
+import hashlib,io,json,zipfile,unittest,importlib.util,warnings
 from pathlib import Path
 path=Path(__file__).resolve().parents[2]/'integrations/mathgraph-check-github/pr-pilot-v1/producer-artifact.py'
 spec=importlib.util.spec_from_file_location('producer_artifact',path);reader=importlib.util.module_from_spec(spec);spec.loader.exec_module(reader)
@@ -11,7 +11,9 @@ class ArchiveTests(unittest.TestCase):
             z.writestr('state.json','{"state":"changed"}' if changed else raw)
             z.writestr('manifest.json',json.dumps(manifest))
             if extra:z.writestr('extra.json','{}')
-            if duplicate:z.writestr('state.json',raw)
+            if duplicate:
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore',UserWarning);z.writestr('state.json',raw)
         return b.getvalue()
     def test_actual_bytes_are_returned_not_a_favorable_label(self):
         self.assertEqual(reader.read_artifact(self.archive())['state.json'],'{"state":"original"}')
