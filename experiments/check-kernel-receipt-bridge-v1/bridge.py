@@ -24,6 +24,9 @@ from mathgraph_check.warrant_resolution import (  # noqa: E402
 
 _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 _HEX64 = re.compile(r"[0-9a-f]{64}\Z")
+# Bind the adapter once per process. Rehashing here on every graph resolution
+# would itself become the bottleneck and mislabel disk I/O as in-memory reuse.
+_ADAPTER_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
 def _native_admitted(observation: dict, policy: dict, trusted_context: dict | None) -> bool:
@@ -73,7 +76,7 @@ def candidate_identity(observation: dict, request: dict, policy: dict) -> dict:
         "checker": policy["checker"], "source": policy["source"],
         "theorem": policy["theorem"], "consumer": request,
         "binary_sha256": observation["native"]["binary_sha256"],
-        "adapter_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "adapter_sha256": _ADAPTER_SHA256,
     }
 
 
@@ -96,7 +99,7 @@ def reuse(prior_observation: dict, request: dict, policy: dict, *,
         "status": "REUSABLE_BOUNDED" if trusted_prior_receipt is True and exact else "UNKNOWN",
         "permission": "ADVISORY_ONLY",
         "fingerprint": admission["fingerprint"] if exact else None,
-        "trust_boundary": "EXTERNALLY_AUTHENTICATED_PRIOR_AND_REMEASURED_CURRENT_FILES",
+        "trust_boundary": "TRUSTED_NATIVE_OR_AUTHENTICATED_PRIOR_PLUS_REMEASURED_FILES",
     }
 
 

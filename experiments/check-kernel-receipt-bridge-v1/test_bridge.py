@@ -3,6 +3,7 @@ import copy
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import bridge
 
@@ -188,6 +189,21 @@ class KernelReceiptBridgeTests(unittest.TestCase):
     def test_cache_identity_binds_exact_bridge_code_not_only_input_bytes(self):
         identity = bridge.candidate_identity(observed_accept(), exact_request(), POLICY)
         self.assertRegex(identity["adapter_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_hot_resolve_and_reuse_do_not_read_adapter_file(self):
+        observation = observed_accept()
+        candidate = bridge.candidate_identity(observation, exact_request(), POLICY)
+        with patch.object(Path, "read_bytes", side_effect=AssertionError("hot path reread")):
+            self.assertEqual(
+                bridge.resolve(observation, exact_request(), POLICY,
+                               trusted_context=trusted_context())["decision"]["status"],
+                "ADMITTED_BOUNDED")
+            self.assertEqual(
+                bridge.reuse(observation, exact_request(), POLICY,
+                             candidate=candidate,
+                             prior_trusted_context=trusted_context(),
+                             trusted_prior_receipt=True)["status"],
+                "REUSABLE_BOUNDED")
 
     def test_identical_source_with_different_binary_has_different_cache_identity(self):
         first = observed_accept()

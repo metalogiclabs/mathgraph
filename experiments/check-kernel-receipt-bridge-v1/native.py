@@ -146,6 +146,29 @@ def measured_candidate_identity(binary: Path, request: dict, policy: dict) -> di
         {"native": {"binary_sha256": digest(binary.read_bytes())}}, request, policy)
 
 
+def paired_export_control(binary: Path, original_config: Path,
+                          original_export: Path, cwd: Path,
+                          theorem: dict) -> tuple[dict, dict, bytes]:
+    """Causal control: same temporary config, only proof bytes change.
+
+    The original fixture stays untouched. The pre-mutation temporary arm must
+    ACCEPT to rule out path/config compatibility as a cause of rejection.
+    """
+    with tempfile.TemporaryDirectory(prefix="kernel-receipt-forged-") as tmp:
+        copied_export = Path(tmp) / "export"
+        original_bytes = original_export.read_bytes()
+        copied_export.write_bytes(original_bytes)
+        temp_config = copy.deepcopy(json.loads(original_config.read_text()))
+        temp_config["export_file_path"] = str(copied_export.resolve())
+        config_path = Path(tmp) / "config.json"
+        config_path.write_text(json.dumps(temp_config))
+        control = run_binary(binary, config_path, cwd)
+        changed_bytes = mutated_export(original_bytes, theorem)
+        copied_export.write_bytes(changed_bytes)
+        negative = run_binary(binary, config_path, cwd)
+    return control, negative, changed_bytes
+
+
 def execute(flash: Path, report_path: Path, policy: dict) -> dict:
     context = ci_context(os.environ, policy)
     if git_head(HERE.parents[1]) != context["source_commit"]:
@@ -168,46 +191,52 @@ def execute(flash: Path, report_path: Path, policy: dict) -> dict:
                                    trusted_context=context)
     graph = bridge.resolve(observation, request, policy,
                            trusted_context=context)
-    with tempfile.TemporaryDirectory(prefix="kernel-receipt-forged-") as tmp:
-        changed_bytes = mutated_export((flash / policy["source"]["export_path"]).read_bytes(),
-                                       policy["theorem"])
-        changed_file = Path(tmp) / "forged_export"
-        changed_file.write_bytes(changed_bytes)
-        mutated_config = copy.deepcopy(json.loads(original_config.read_text()))
-        mutated_config["export_file_path"] = str(changed_file.resolve())
-        config_file = Path(tmp) / "forged_config.json"
-        config_file.write_text(json.dumps(mutated_config))
-        negative = run_binary(binary, config_file, flash)
+    control, negative, changed_bytes = paired_export_control(
+        binary, original_config, flash / policy["source"]["export_path"],
+        flash, policy["theorem"])
+    withdrawn_graph = bridge.resolve(
+        observation, request, policy, trusted_context=context,
+        withdrawn=frozenset({"native.accept"}))
     candidate = measured_candidate_identity(binary, request, policy)
     eligible = lambda: bridge.reuse(
         observation, request, policy, candidate=candidate,
         prior_trusted_context=context, trusted_prior_receipt=True)
     reuse_result = eligible()
-    # Operations are measured in process; neither includes flash startup,
-    # cargo build, JSON serialization, disk I/O or external artifact admission.
-    timings = {"graph_resolution": timing_stats(lambda: bridge.resolve(
+    # Operations are measured in process; neither includes Flash startup,
+    # cargo build, JSON serialization, file I/O or persisted-artifact admission.
+    timings = {"graph_resolution_in_process": timing_stats(lambda: bridge.resolve(
                    observation, request, policy, trusted_context=context)),
-               "exact_identity_comparison": timing_stats(eligible)}
-    valid = (positive["exit_code"] == 0 and negative["exit_code"] == 1
+               "reuse_eligibility_in_process": timing_stats(eligible)}
+    valid_withdrawal = (withdrawn_graph["states"]["kernel.bar"] == "UNKNOWN"
+                        and withdrawn_graph["states"]["consumer.exact_bar_type"] == "UNKNOWN"
+                        and withdrawn_graph["states"]["independent.control"] == "WARRANTED_BOUNDED")
+    valid = (positive["exit_code"] == 0 and control["exit_code"] == 0
+             and negative["exit_code"] == 1
              and qualification["status"] == "ADMITTED_BOUNDED"
              and graph["states"]["consumer.exact_bar_type"] == "WARRANTED_BOUNDED"
-             and reuse_result["status"] == "REUSABLE_BOUNDED")
+             and reuse_result["status"] == "REUSABLE_BOUNDED" and valid_withdrawal)
     report = {
         "schema": "mathgraph.kernel-receipt-bridge-report.v1",
         "status": "WARRANTED_BOUNDED" if valid else "UNKNOWN",
         "qualification_boundary": "FLASH_FIXTURE_NATIVE_CI_PLUS_OPERATOR_ADOPTED_IDENTITY",
         "limitations": ["no Nucleus acceptance", "no independent human intent validation",
                         "no cross-commit proof transport", "no cold-Mathlib speed claim",
-                        "cached reuse requires external artifact authentication"],
+                        "no persisted receipt retrieval or authentication measured",
+                        "persisted reuse would require external artifact authentication"],
         "source_validation": verified,
         "observation": observation,
         "qualification": qualification,
         "graph": graph,
+        "withdrawal": {"withdrawn": "native.accept",
+                       "after": withdrawn_graph["states"],
+                       "expected_dependent_unknown": valid_withdrawal},
         "mutation": {"change": "theorem proof ExprId 16 to Sort ExprId 0",
                      "mutated_export_sha256": digest(changed_bytes),
+                     "same_config_unmutated_control": control,
                      "native": negative, "expected_exit_code": 1},
         "reuse": reuse_result,
         "timing": {"positive_native_elapsed_ns": positive["elapsed_ns"],
+                   "same_config_control_elapsed_ns": control["elapsed_ns"],
                    "mutated_native_elapsed_ns": negative["elapsed_ns"],
                    **timings},
     }
@@ -232,6 +261,7 @@ def main() -> int:
         print(f"UNKNOWN: {error}")
         return 1
     print(f"{report['status']}: native ACCEPT={report['observation']['native']['exit_code']}; "
+          f"paired unchanged exit={report['mutation']['same_config_unmutated_control']['exit_code']}; "
           f"forged export exit={report['mutation']['native']['exit_code']}; "
           f"graph={report['graph']['states']}")
     return 0 if report["status"] == "WARRANTED_BOUNDED" else 1

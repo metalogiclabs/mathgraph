@@ -92,6 +92,34 @@ class NativeHarnessTests(unittest.TestCase):
         self.assertEqual(json.loads(mutated.splitlines()[-1])["thm"]["value"], 0)
         self.assertEqual(json.loads(mutated.splitlines()[-1])["thm"]["type"], 15)
 
+    def test_paired_control_and_forgery_have_same_config_and_only_proof_bytes_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = Path(tmp)
+            original = cwd / "original"
+            original.write_bytes(synthetic_export())
+            config = cwd / "config.json"
+            config.write_text(json.dumps({"export_file_path": "original",
+                                          "permitted_axioms": ["A"],
+                                          "unpermitted_axiom_hard_error": True}))
+            captured = []
+
+            def run(binary, config_path, cwd_arg):
+                data = json.loads(Path(config_path).read_text())
+                captured.append((str(config_path), data.copy(),
+                                 Path(data["export_file_path"]).read_bytes()))
+                return {"exit_code": 0 if len(captured) == 1 else 1}
+
+            with patch("native.run_binary", side_effect=run):
+                control, negative, changed = native.paired_export_control(
+                    cwd / "binary", config, original, cwd, POLICY["theorem"])
+            self.assertEqual(control["exit_code"], 0)
+            self.assertEqual(negative["exit_code"], 1)
+            self.assertEqual(captured[0][0], captured[1][0])
+            self.assertEqual(captured[0][1], captured[1][1])
+            self.assertEqual(captured[0][2], synthetic_export())
+            self.assertEqual(captured[1][2], changed)
+            self.assertEqual(original.read_bytes(), synthetic_export())
+
     def test_native_process_is_executed_without_shell_and_exit_is_retained(self):
         with tempfile.TemporaryDirectory() as tmp:
             binary = Path(tmp) / "checker"
