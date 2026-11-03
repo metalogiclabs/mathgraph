@@ -9,7 +9,7 @@ LEGACY=HERE.parents[2]/'experiments/check-l4-pr-matrix-v1'
 sys.path.insert(0,str(LEGACY))
 from native import run,must,sha
 from native_modules import chunk_result
-from contract import scope,closure,comparison
+from contract import scope,closure,comparison,pinned_files,required_roots
 
 def write(path,value):
     tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(value,indent=2)+'\n');tmp.replace(path)
@@ -31,10 +31,10 @@ def main():
         return pr['head']['sha']==args.head and pr['base']['sha']==args.base and all(pr[x]['repo']['full_name']==repo and not pr[x]['repo']['private'] for x in ['head','base'])
     pr=api('/pulls/'+str(args.pr))
     if not pinned(pr):raise ValueError('PR_IDENTITY_CHANGED')
-    files=[]
-    for page in range(1,11):
-        batch=api(f'/pulls/{args.pr}/files?per_page=100&page={page}');files+=batch
-        if len(batch)<100:break
+    # The live PR file endpoint is not an immutable snapshot (including ABA
+    # force-push races). Bind the diff to the exact base/head Git objects.
+    diff=api('/compare/'+args.base+'...'+args.head)
+    files=pinned_files(diff,args.base,args.head)
     if len(files)!=pr['changed_files']:raise ValueError('INCOMPLETE_CHANGED_FILES')
     selection=scope(files);report['scope']=selection;report['changed_files']=len(files);write(out/'snapshot.json',{'base_sha':args.base,'head_sha':args.head,'files':files});write(out/'result.json',report)
     def download(revision,path,digest):
@@ -83,7 +83,8 @@ def main():
         if len(children)!=1 or any(p.is_symlink() for p in folder.rglob('*')):raise ValueError('UNSAFE_SOURCE_TREE')
         return children[0],sha(archive)
     def arm(revision,label):
-        tree,archive_hash=acquire(revision,label);roots=protected+[m for m in selection['modules']+selection['deleted_modules'] if (tree/Path(m.replace('.','/')+'.lean')).is_file()]
+        tree,archive_hash=acquire(revision,label)
+        roots=required_roots(tree,protected+selection['base_modules' if label=='base' else 'modules'])
         dependencies=closure(tree,roots);source=out/(label+'-selected');source.mkdir()
         for module in dependencies:
             rel=Path(module.replace('.','/')+'.lean');dest=source/rel;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(tree/rel,dest)

@@ -8,7 +8,7 @@ class ContractBoundary(unittest.TestCase):
     def test_multifile_discovery_preserves_uncovered_paths(self):
         files=[{'filename':'Scripts/Punt/Price.lean','status':'added'},{'filename':'Scripts/Main/PuntPrice.lean','status':'added'},{'filename':'Tests/Guards/Proofs/X.lean','status':'modified'}]
         result=getattr(mod,'scope',lambda *_:None)(files)
-        self.assertEqual(result,{'modules':['Scripts.Main.PuntPrice','Scripts.Punt.Price'],'uncovered':['Tests/Guards/Proofs/X.lean'],'deleted_modules':[]})
+        self.assertEqual(result,{'modules':['Scripts.Main.PuntPrice','Scripts.Punt.Price'],'uncovered':['Tests/Guards/Proofs/X.lean'],'deleted_modules':[],'base_modules':[]})
     def test_path_traversal_is_rejected(self):
         with self.assertRaises(ValueError):getattr(mod,'scope',lambda *_:None)([{'filename':'Scripts/../Evil.lean','status':'modified'}])
     def test_transitive_imports_are_discovered_automatically(self):
@@ -34,5 +34,21 @@ class ContractBoundary(unittest.TestCase):
     def test_changed_failure_witness_is_never_inherited(self):
         compare=getattr(mod,'comparison',lambda *_:None)
         self.assertEqual(compare({'qualified':True,'failed':[1]},{'qualified':True,'failed':[2]}),'FAILURE_ON_BOTH_REVISIONS')
+    def test_live_file_list_cannot_substitute_for_sha_bound_comparison(self):
+        check=getattr(mod,'pinned_files',lambda *_:None)
+        with self.assertRaises(ValueError):check({'files':[]},'a'*40,'b'*40)
+    def test_pinned_comparison_rejects_truncation_and_wrong_head(self):
+        check=getattr(mod,'pinned_files',lambda *_:None)
+        for data in [dict(base_commit={'sha':'a'*40},commits=[{'sha':'c'*40}],total_commits=1,files=[]),dict(base_commit={'sha':'a'*40},commits=[{'sha':'b'*40}],total_commits=1,files=[{}]*300)]:
+            with self.assertRaises(ValueError):check(data,'a'*40,'b'*40)
+    def test_renames_compile_old_and_new_modules_on_the_right_arms(self):
+        row={'filename':'Scripts/B.lean','previous_filename':'Scripts/A.lean','status':'renamed'}
+        result=mod.scope([row]);self.assertEqual(result.get('base_modules'),['Scripts.A']);self.assertEqual(result['modules'],['Scripts.B'])
+    def test_move_outside_scripts_retains_the_base_module(self):
+        row={'filename':'Other/A.lean','previous_filename':'Scripts/A.lean','status':'renamed'}
+        self.assertEqual(mod.scope([row]).get('base_modules'),['Scripts.A'])
+    def test_required_module_cannot_silently_disappear(self):
+        with tempfile.TemporaryDirectory() as t:
+            with self.assertRaises(ValueError):getattr(mod,'required_roots',lambda *_:None)(Path(t),['Scripts.Missing'])
 
 if __name__=='__main__':unittest.main()

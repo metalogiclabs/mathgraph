@@ -5,16 +5,40 @@ import re
 MODULE=re.compile(r'[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*')
 
 def scope(files):
-    modules=[];uncovered=[];deleted=[]
-    for row in files:
-        path=row['filename'];parts=path.split('/')
+    modules=[];uncovered=[];deleted=[];base=[]
+    def as_module(path):
+        parts=path.split('/')
         if path.startswith('/') or '\\' in path or any(x in ['', '.', '..'] for x in parts):raise ValueError('UNSAFE_SOURCE_PATH')
-        if path.startswith('Scripts/') and path.endswith('.lean'):
-            name=path[:-5].replace('/','.')
-            if not MODULE.fullmatch(name):raise ValueError('UNSUPPORTED_MODULE_NAME')
+        if not path.startswith('Scripts/') or not path.endswith('.lean'):return None
+        name=path[:-5].replace('/','.')
+        if not MODULE.fullmatch(name):raise ValueError('UNSUPPORTED_MODULE_NAME')
+        return name
+    for row in files:
+        path=row['filename'];name=as_module(path);status=row['status']
+        if status not in ['added','modified','removed','renamed','copied']:raise ValueError('UNSUPPORTED_DIFF_STATUS')
+        if status=='renamed':
+            previous=as_module(row['previous_filename'])
+            if previous:
+                base.append(previous)
+                if previous!=name:deleted.append(previous)
+        if name:
             (deleted if row['status']=='removed' else modules).append(name)
+            if status in ['modified','removed']:base.append(name)
         else:uncovered.append(path)
-    return {'modules':sorted(set(modules)),'uncovered':sorted(set(uncovered)),'deleted_modules':sorted(set(deleted))}
+    return {'modules':sorted(set(modules)),'uncovered':sorted(set(uncovered)),'deleted_modules':sorted(set(deleted)),'base_modules':sorted(set(base))}
+
+def pinned_files(data,base,head):
+    commits=data.get('commits');files=data.get('files');count=data.get('total_commits')
+    if (data.get('base_commit',{}).get('sha')!=base or not isinstance(commits,list)
+        or type(count) is not int or count!=len(commits) or count>250
+        or not isinstance(files,list) or len(files)>=300):raise ValueError('INCOMPLETE_SHA_BOUND_COMPARISON')
+    if (commits and commits[-1].get('sha')!=head) or (not commits and (base!=head or files)):raise ValueError('COMPARISON_HEAD_MISMATCH')
+    return files
+
+def required_roots(root,modules):
+    for module in modules:
+        if not MODULE.fullmatch(module) or not (Path(root)/Path(module.replace('.','/')+'.lean')).is_file():raise ValueError('EXPECTED_MODULE_ABSENT:'+module)
+    return sorted(set(modules))
 
 def imports(text):
     # Comments are ignored only for dependency discovery; Lean remains the parser.
