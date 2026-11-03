@@ -1,0 +1,39 @@
+name: UDM G3 source-generic Go observer controls
+on:
+  push:
+    branches:
+      - research/udm-g3-generic-go-observer-20261103
+    paths:
+      - 'research/udm_g2_observer_v1/**'
+      - '.github/workflows/udm-g3-generic-controls-20261103.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute source-generic fail-closed controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd research/udm_g2_observer_v1
+          python -m unittest -v test_validate.py test_evaluate.py 2>&1 | tee /tmp/generic-go-controls.log
+          grep -q 'Ran 14 tests' /tmp/generic-go-controls.log
+          grep -q '^OK$' /tmp/generic-go-controls.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-generic-go-observer-controls
+          path: /tmp/generic-go-controls.log
+          retention-days: 60
