@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: [mathgraph-pr-pilot-v1]
 env:
-  MATHGRAPH_CONTROLLER_SHA: 70ef558214928f55e2980c5b4dbdf5f11906472f
+  MATHGRAPH_CONTROLLER_SHA: 0ffe73933f3ea6b505c4862e43e0280d0160eacc
 permissions:
   contents: read
   actions: read
@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
@@ -38,7 +38,7 @@ jobs:
       prior_run: ${{ steps.intake.outputs.prior_run }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - name: Authorize actual request and acquire source identities
@@ -59,7 +59,7 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -96,7 +96,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -109,7 +109,9 @@ jobs:
           curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
       - name: Replay frozen probes on actual base and head without secrets
-        run: python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial pr-investigation
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run pr-investigation
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: pr-pilot-native, path: pr-investigation/, retention-days: 30}
@@ -119,7 +121,7 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -139,7 +141,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -164,7 +166,7 @@ jobs:
       revision: ${{ steps.feedback.outputs.revision }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -189,7 +191,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -213,7 +215,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -239,7 +241,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -271,7 +273,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -293,7 +295,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 70ef558214928f55e2980c5b4dbdf5f11906472f}
+        with: {persist-credentials: false, ref: 0ffe73933f3ea6b505c4862e43e0280d0160eacc}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
