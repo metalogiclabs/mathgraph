@@ -11,6 +11,7 @@ import {readFile,writeFile,readdir,mkdir,appendFile} from 'node:fs/promises';imp
 import {mintScopedToken} from './auth.mjs';
 import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
+import {expectationSubject,reviewedPlan,admitExpectations} from './expectations.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'pr-investigation';
 const context=executionContext();
 const hash=x=>createHash('sha256').update(x).digest('hex'),ensure=(b,c)=>{if(!b)throw Error(c);};
@@ -53,6 +54,14 @@ try{
   await save('request',request);await save('publication',{...publication,context});
   const ready=request.support.supported&&publication.state!=='DUPLICATE'&&process.env.CONTRACTS_OK!=='false';await outputs({ready:String(ready),command:request.command,profile:request.profile.mode,prior_run:publication.prior_run??'',source_head:request.head_sha});
   if(!request.support.supported||process.env.CONTRACTS_OK==='false')await save('assessment',{context,subject:request,status:'UNKNOWN',reason:process.env.CONTRACTS_OK==='false'?'CONTROLLER_CONTRACTS_FAILED':request.support.reason});await seal();
+ }else if(phase==='expectation-run'){
+  ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_EXPECTATION_CONTEXT');
+  const snapshot=await get('snapshot'),subject=expectationSubject(snapshot);let reference;
+  if(reviewedPlan(subject)){
+   const run=spawnSync('python3',['experiments/check-expectation-admission-v1/run.py','--output',dir+'/expectation-observations.json'],{stdio:'inherit',timeout:30000});
+   if(!run.error&&run.status===0)try{reference=await get('expectation-observations');}catch{}
+  }
+  await save('expectation-reference',{schema:'mathgraph.expectations.reference.v1',context,subject,reference:reference??{records:[]}});await seal();
  }else if(phase==='contract-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');
   ensure(request.command==='check'&&[CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&request.support.supported,'CONTRACT_CHECK_ONLY');
@@ -108,7 +117,10 @@ try{
   try{
    ensure(scoped.installation_id===request.installation_id,'INSTALLATION_CHANGED');
    if(request.command==='fix'&&report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'){
-    const snapshot=await get('snapshot'),patch=await get('patch');ensure(hash(admitLeanPatch(patch,snapshot.source))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
+    const snapshot=await get('snapshot'),patch=await get('patch');
+    ensure(snapshot.head_sha===request.head_sha&&snapshot.repository===request.repository,'REPAIR_SUBJECT_MISMATCH');
+    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context);ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
+    ensure(hash(admitLeanPatch(patch,snapshot.source))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }
    await save('publication-result',await finishCheck(request,publication,report,scoped.api));

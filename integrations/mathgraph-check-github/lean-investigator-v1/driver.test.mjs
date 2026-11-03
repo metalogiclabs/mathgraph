@@ -16,6 +16,20 @@ for(const stale of [true,false])test(stale?'foreign native run cannot qualify':'
 });
 
 import {renderProbe} from './contracts.mjs';
+test('hosted unreviewed expectation cannot call the repair model',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'mg-expectation-gate-'));try{
+ const context={verifier_sha:'a'.repeat(40),run_id:123,attempt:1},source='def x := true\n';
+ const snapshot={repository:'metalogiclabs/L4YAML',head_sha:'b'.repeat(40),path:'Scripts/Ledger.lean',module:'Example',namespace:'Example',source,source_sha256:hash(source),cli_source:'cli',toolchain:'leanprover/lean4:v4.35.0',mode:'OWNED_FORK_PR_PILOT',command:'fix'};
+ const plan={summary:'hypothesis',tests:[{id:'hypothesis',hypothesis:'unverified',contract:'model claim',expression:'false'}]};
+ const pass={exit_code:0,guard_false:false,other_errors:false},fail={exit_code:1,guard_false:true,other_errors:false};
+ const native={context,source_sha:snapshot.head_sha,test_digest:hash(JSON.stringify(plan.tests)),arm:{build_exit:0,repository_gate_exit:0,source_sha256:hash(source),controls:{pass,fail},probes:[{id:'hypothesis',...fail,test_file_sha256:hash(renderProbe(snapshot,'false'))}]}};
+ const values={'snapshot.json':snapshot,'state.json':{context,state:'PROBES_PROPOSED',test_digest:native.test_digest},'plan.json':plan,'native.json':native},hashes={};
+ for(const[n,v]of Object.entries(values)){const raw=JSON.stringify(v);await writeFile(join(dir,n),raw);hashes[n]=hash(raw);}await writeFile(join(dir,'manifest.json'),JSON.stringify({context,hashes}));
+ const {MATHGRAPH_CONTROLLER_SHA:ambient,OPENAI_API_KEY:unused,...env}=process.env;
+ const r=spawnSync(process.execPath,[new URL('./driver.mjs',import.meta.url).pathname,'repair',dir],{encoding:'utf8',env:{...env,GITHUB_SHA:context.verifier_sha,GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1'}});
+ assert.equal(r.status,0,r.stderr);const rs=JSON.parse(await readFile(join(dir,'repair-state.json'),'utf8'));assert.equal(rs.state,'EXPECTATION_NOT_ADMITTED');assert.equal(rs.model_calls,0);await assert.rejects(readFile(join(dir,'model-repair.json')),{code:'ENOENT'});
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
 for(const failure of ['controls','gate','source'])test(`unqualified head ${failure} cannot authorize a new-regression label`,async()=>{
  const dir=await mkdtemp(join(tmpdir(),'mg-head-qualified-'));try{
  const context={verifier_sha:'a'.repeat(40),run_id:123,attempt:1},source='def x := true\n';

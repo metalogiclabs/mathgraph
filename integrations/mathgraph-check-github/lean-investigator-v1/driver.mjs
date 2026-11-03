@@ -1,4 +1,5 @@
 import {executionContext} from '../pr-pilot-v1/context.mjs';
+import {expectationSubject,reviewedPlan,admitExpectations} from '../pr-pilot-v1/expectations.mjs';
 // Source audit orchestration. Repository data never selects commands or credentials.
 import {readFile,writeFile,readdir,mkdir} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {modelSnapshot,validatePilotSnapshot,compareProbeRows} from '../pr-pilot-v1/engine.mjs';
@@ -26,14 +27,21 @@ try{
   if(request){snapshot.base_source=await source(profile.path,profile.base_sha);snapshot.base_cli_source=await source(profile.cli_path,profile.base_sha);validatePilotSnapshot(snapshot);requireFact(hash(snapshot.cli_source)==='64bb20331484ef711b6a752af1770959164c82308fd9ae79fbf954678ebbdbcf','CLI_NOT_REVIEWED');}
   snapshot.source_sha256=hash(snapshot.source);snapshot.cli_sha256=hash(snapshot.cli_source);
   await save('snapshot',snapshot);
-  const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-investigate',packet:{snapshot:modelSnapshot(snapshot)}});await save('model-investigate',response);
-  const plan=admitLeanPlan(response.proposal);await save('plan',plan);await save('state',{context,state:'PROBES_PROPOSED',test_digest:hash(plan.tests),model_calls:1});await seal();
+  let plan,modelCalls=0;
+  if(profile.expectation_profile){const fixed=reviewedPlan(expectationSubject(snapshot));requireFact(fixed,'EXPECTATION_SOURCE_NOT_QUALIFIED');plan=admitLeanPlan(fixed);}
+  else{const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-investigate',packet:{snapshot:modelSnapshot(snapshot)}});await save('model-investigate',response);plan=admitLeanPlan(response.proposal);modelCalls=1;}
+  await save('plan',plan);await save('state',{context,state:'PROBES_PROPOSED',test_digest:hash(plan.tests),model_calls:modelCalls,expectation_origin:profile.expectation_profile??'MODEL_HYPOTHESIS'});await seal();
  }else if(phase==='repair'){
   await verify();const state=await load('state');if(state.state!=='PROBES_PROPOSED'){await seal();process.exit(0);}
   const snapshot=await load('snapshot');if(snapshot.command==='check'){await save('repair-state',{state:'CHECK_ONLY',model_calls:0});await seal();process.exit(0);}
   const plan=admitLeanPlan(await load('plan')),native=await load('native');
   nativeIdentity(native,state,snapshot,plan);const initial=inspectArm(native.arm,{profile:snapshot,plan,source:snapshot.source});
   if(!initial.complete){await save('repair-state',{state:'BASELINE_OR_PROBES_INCOMPLETE',model_calls:0});await seal();process.exit(0);}
+  if(snapshot.mode==='OWNED_FORK_PR_PILOT'){
+   let reference;try{reference=await load('expectation-reference');}catch{}
+   const admission=admitExpectations(expectationSubject(snapshot),plan,reference,context);await save('expectation-admission',admission);
+   if(!admission.repair_eligible){await save('repair-state',{state:'EXPECTATION_NOT_ADMITTED',model_calls:0});await seal();process.exit(0);}
+  }
   const failed=initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE');
   if(!failed){await save('repair-state',{state:'NO_REPRODUCED_FAILURE',model_calls:0});await seal();process.exit(0);}
   let previous;try{previous=await load('prior-feedback');}catch{}
@@ -51,16 +59,18 @@ try{
    nativeIdentity(native,state,snapshot,plan);
    const initial=inspectArm(native.arm,{profile:snapshot,plan,source:snapshot.source});
    const original=initial.rows.map(p=>({...p,execution:initial.complete?p.execution:'UNKNOWN',hypothesis:plan.tests.find(t=>t.id===p.id).hypothesis,contract:plan.tests.find(t=>t.id===p.id).contract}));
+   let reference,expectations;try{reference=await load('expectation-reference');}catch{}
+   if(snapshot.mode==='OWNED_FORK_PR_PILOT')expectations=admitExpectations(expectationSubject(snapshot),plan,reference,context);
    let repair={status:'NOT_PROPOSED'};
    if(rs.state==='PATCH_PROPOSED'){
     const fixed=await load('native-repair'),patch=await load('patch');const patched=admitLeanPatch(patch,snapshot.source);nativeIdentity(fixed,state,snapshot,plan);
     requireFact(hash(patched)===patch.patched_sha256&&fixed.patched_sha256===patch.patched_sha256,'REPAIR_SOURCE_MISMATCH');
     const old=inspectArm(fixed.original,{profile:snapshot,plan,source:snapshot.source}),after=inspectArm(fixed.repaired,{profile:snapshot,plan,source:patched}),withdrawn=inspectArm(fixed.withdrawn,{profile:snapshot,plan,source:snapshot.source});
-    const qualified=initial.complete&&old.complete&&after.complete&&withdrawn.complete&&old.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')&&after.rows.every(p=>p.execution==='GUARD_PASSED')&&JSON.stringify(initial.rows)===JSON.stringify(old.rows)&&JSON.stringify(old.rows)===JSON.stringify(withdrawn.rows);
+    const qualified=(!expectations||expectations.repair_eligible)&&initial.complete&&old.complete&&after.complete&&withdrawn.complete&&old.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')&&after.rows.every(p=>p.execution==='GUARD_PASSED')&&JSON.stringify(initial.rows)===JSON.stringify(old.rows)&&JSON.stringify(old.rows)===JSON.stringify(withdrawn.rows);
     repair={status:qualified?'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE':'UNKNOWN',original:old.rows,repaired:after.rows,withdrawn:withdrawn.rows,protected_guards:guardBlocks(snapshot.source).length,repository_gate_exits:[fixed.original.repository_gate_exit,fixed.repaired.repository_gate_exit,fixed.withdrawn.repository_gate_exit],patched_sha256:patch.patched_sha256};
    }
    let base=[],baseComplete=false;if(snapshot.base_source){requireFact(native.base_sha===snapshot.base_sha,'BASE_SOURCE_MISMATCH');const bs={...snapshot,source:snapshot.base_source};const observation=inspectArm(native.base_arm,{profile:bs,plan,source:snapshot.base_source});baseComplete=observation.complete;base=baseComplete?observation.rows:observation.rows.map(p=>({...p,execution:'UNKNOWN'}));}
-   report={context,subject,base,base_complete:baseComplete,head_complete:initial.complete,comparison:compareProbeRows(base,original,{complete:baseComplete}),status:!initial.complete?'UNKNOWN':initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')?'CANDIDATE_ASSERTION_FAILURE':'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original,repair,baseline:initial,source_guard_count:guardBlocks(snapshot.source).length,original_repository_gate_exit:native.arm.repository_gate_exit,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',scope:'Selected module/CLI build, original native guards, model-generated Boolean probes and repository gate. Not full L4YAML CI or independent validation of inferred requirements.'};
+   report={context,subject,base,base_complete:baseComplete,head_complete:initial.complete,comparison:compareProbeRows(base,original,{complete:baseComplete}),status:!initial.complete?'UNKNOWN':initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')?'CANDIDATE_ASSERTION_FAILURE':'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original,repair,expectations,baseline:initial,source_guard_count:guardBlocks(snapshot.source).length,original_repository_gate_exit:native.arm.repository_gate_exit,meaning:expectations?.status==='ADMITTED'?'FINITE_OPERATOR_ADOPTED_OBLIGATION':'UNVERIFIED',permission:'ADVISORY_ONLY',scope:'Selected module/CLI build, original native guards, finite probes and repository gate. Expectation admission is separate from native execution. Not full L4YAML CI or automatic validation of inferred requirements.'};
   }
   await save('assessment',report);await seal();console.log(JSON.stringify(report));
  }else throw Error('UNKNOWN_PHASE');

@@ -1,5 +1,6 @@
 import {formatUnifiedResult,reportView} from './report-view.mjs';
 import {claimProfileFor} from './claim-profile.mjs';
+import {expectationProfileFor} from './expectations.mjs';
 import {CLI_MODE,cliProfileFor} from './cli-profiles.mjs';
 import {cliTitle,formatCliResult} from './cli-report.mjs';
 import {CONTRACT_MODE,contractTitle,formatContractResult} from './repository-report.mjs';
@@ -23,6 +24,7 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
  if(!support.supported&&command==='check'&&Array.isArray(files)&&files.some(f=>/^(Scripts\/)([A-Za-z_][A-Za-z0-9_]*\/)*[A-Za-z_][A-Za-z0-9_]*\.lean$/.test(f.filename)&&['added','modified','removed','renamed','copied'].includes(f.status))){profile.mode=CONTRACT_MODE;support.supported=true;support.reason='SUPPORTED_REPOSITORY_CONTRACT';}
  const cli=command==='check'?cliProfileFor(files):null;if(cli){profile.mode=CLI_MODE;profile.cli_profile=cli.id;support.supported=true;support.reason='SUPPORTED_CLI_PARITY';}
  profile.report_version='passport-v1';
+ if(profile.mode===LEDGER.mode){profile.report_version='expectations-v1';const expectations=expectationProfileFor({repository,head_sha:pr.head.sha,profile});if(expectations)profile.expectation_profile=expectations;else if(command==='fix'&&support.supported){support.supported=false;support.reason='REPAIR_EXPECTATION_REVIEW_REQUIRED';}}
  const claim=claimProfileFor({repository,command,base_sha:pr.base.sha,head_sha:pr.head.sha,profile});if(claim)profile.claim_profile=claim.id;
  return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support,changed_paths:files.map(f=>f.filename)};
 }
@@ -35,21 +37,22 @@ function formatLegacyResult(report,request,runURL){
  if(request.profile?.mode===CONTRACT_MODE)return formatContractResult(report,request,runURL);
  if(report.status==='UNKNOWN'&&report.reason==='UNSUPPORTED_CHANGED_FILE_SCOPE')return ['### MathGraph Check','**No reviewed checking contract for this change**',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`, 'No native result is claimed. Whole-PR correctness: UNKNOWN.', 'Next: review these changes using the repository’s normal process, or define a reviewed contract for this source category. Do not split the PR merely to obtain a passing Check.', 'Available scope: selected Scripts modules with fixed regressions; generated check/fix is limited to `Scripts/Ledger.lean`. Proof intent, documentation correctness and arbitrary workflows remain unchecked.', 'Changed paths: '+(request.changed_paths??[]).map(esc).join(', '), `[Execution and evidence](${runURL})`].join('\n\n');
  const names={NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS:'No counterexample found in the generated probes',CANDIDATE_ASSERTION_FAILURE:'A generated probe fails on this revision',UNKNOWN:'Check incomplete',STALE:'Source changed — this result no longer applies'};
- const repaired=report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED;
+ const repaired=report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.expectations?.status==='ADMITTED'&&report.expectations.repair_eligible===true&&report.repair?.status===REPAIR_VERIFIED;
  const lines=['### MathGraph Check',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`,`**${repaired?resultTitle(report,{...request,command:'fix'}):names[report.status]??'Evidence incomplete'}**`,`Revision: \`${request.head_sha}\` · Base: \`${request.base_sha}\``, 'Scope: selected ledger module, original guards and repository gate. This does not establish whole-PR correctness.'];
  const headQualified=['CANDIDATE_ASSERTION_FAILURE','NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'].includes(report.status)&&report.head_complete!==false&&report.baseline?.complete!==false;
  const execution={GUARD_PASSED:'Pass',CANDIDATE_ASSERTION_FAILURE:'Fail (reproduced)',UNKNOWN:'Unknown'};
  const changes={PRE_EXISTING_FAILURE:'Present before this PR',NEW_FAILURE:'Introduced by this PR',RESOLVED_FAILURE:'Resolved by this PR',BOTH_PASS:'Pass on both revisions',BASE_UNKNOWN:'Base not qualified',HEAD_UNKNOWN:'Head not qualified'};
- if(report.original?.length){const table=['| Probe | Head | Base | Comparison |','|---|---|---|---|'];for(const p of report.original){const base=report.base?.find(b=>b.id===p.id),comparison=report.comparison?.find(b=>b.id===p.id);table.push(`| ${esc(p.id)} | ${headQualified?(execution[p.execution]??'Unknown'):'Unknown'} | ${execution[base?.execution]??'Not observed'} | ${headQualified?(changes[comparison?.change]??'Not established'):'Head not qualified'} |`);}lines.push(table.join('\n'));}
+ if(report.original?.length){const table=['| Probe | Expectation | Head | Base | Comparison |','|---|---|---|---|---|'];for(const p of report.original){const base=report.base?.find(b=>b.id===p.id),comparison=report.comparison?.find(b=>b.id===p.id),admission=report.expectations?.probes?.find(b=>b.id===p.id)?.status??'UNKNOWN';table.push(`| ${esc(p.id)} | ${esc(admission)} | ${headQualified?(execution[p.execution]??'Unknown'):'Unknown'} | ${execution[base?.execution]??'Not observed'} | ${headQualified?(changes[comparison?.change]??'Not established'):'Head not qualified'} |`);}lines.push(table.join('\n'));}
  if(repaired)lines.push(`The candidate passes the frozen probes${Number.isSafeInteger(report.repair.protected_guards)?`, preserves ${report.repair.protected_guards} original guards`:''} and passes the repository gate. Withdrawal reproduces the original failures.`);
  else if(report.repair?.status==='UNKNOWN')lines.push('Repair remains UNKNOWN; see retained diagnostics.');
  if(report.reason)lines.push('Reason: '+esc(report.reason));
  if(report.repair_pr&&new RegExp('^https://github.com/'+request.repository+'/pull/[1-9][0-9]*$').test(report.repair_pr))lines.push('[Review the draft repair]('+report.repair_pr+')');
  if(report.status==='UNKNOWN'&&report.reason==='UNSUPPORTED_CHANGED_FILE_SCOPE')lines.push('Next: this pilot checks PRs modifying only `Scripts/Ledger.lean`. Split out that change or request a separately reviewed capability for the other files.');
+ else if(report.reason==='REPAIR_EXPECTATION_REVIEW_REQUIRED'||headQualified&&report.expectations?.status!=='ADMITTED')lines.push('Next: review expected behavior against an independent requirement and reference. An unadmitted expectation cannot authorize repair.');
  else if(report.status==='UNKNOWN')lines.push(`Next: inspect the retained diagnostics. A repository maintainer can retry with \`${request.command==='fix'&&report.reason!=='RUN_CHECK_BEFORE_FIX'?'@MathGraph -fix':'@MathGraph -check'}\` after the missing evidence or execution problem is resolved.`);
  else if(report.status==='STALE')lines.push('Next: use the Check for the current revision; historical evidence below does not authorize the changed source.');
  else if(repaired)lines.push('Next: review the expected behavior and draft diff before deciding whether to merge.');
  else if(report.status==='CANDIDATE_ASSERTION_FAILURE'&&request.command==='check')lines.push('Next: review each probe’s expected behavior. If it is intended, comment `@MathGraph -fix` to test a candidate repair against these same frozen probes.');
- lines.push('Model-inferred requirements remain unverified. Results are advisory; no automatic merge.',`[Execution and evidence](${runURL})`);
+ lines.push(report.expectations?.status==='ADMITTED'?'The two finite expectations are operator-adopted and independently replayed. Other model-inferred requirements remain unverified. Results are advisory; no automatic merge.':'Model-inferred requirements remain unverified. Results are advisory; no automatic merge.',`[Execution and evidence](${runURL})`);
  return lines.join('\n\n');
 }

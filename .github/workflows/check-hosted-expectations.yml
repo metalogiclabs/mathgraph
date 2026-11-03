@@ -1,0 +1,95 @@
+name: Hosted expectation admission qualification
+on:
+  push:
+    branches: [research/check-hosted-expectations-v1]
+permissions: {contents: read}
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - name: Bundle existing Worker without deploying
+        run: |
+          npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir "$RUNNER_TEMP/expectation-worker"
+          test "$(wc -c < "$RUNNER_TEMP/expectation-worker/worker.js")" -gt 10000
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: expectation-worker-build, path: '${{ runner.temp }}/expectation-worker/'}
+  native:
+    needs: contracts
+    strategy:
+      matrix: {pr: [2, 26]}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Select real immutable PR source
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          node experiments/check-expectation-admission-v1/hosted-qualify.mjs prepare hosted '${{ matrix.pr }}'
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare hosted
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Native and reference replay without credentials
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial hosted
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run hosted
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair hosted
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess hosted
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs hosted
+      - name: Paired frozen candidate qualification
+        if: matrix.pr == 2
+        run: |
+          node experiments/check-expectation-admission-v1/hosted-qualify.mjs stage-patch hosted
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair hosted
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess hosted
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs hosted
+      - name: Require admitted scope and native outcome
+        env: {PR: '${{ matrix.pr }}'}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';import {reportView} from './integrations/mathgraph-check-github/pr-pilot-v1/report-view.mjs';
+          const a=JSON.parse(fs.readFileSync('hosted/assessment.json')),r=JSON.parse(fs.readFileSync('hosted/request.json')),s=JSON.parse(fs.readFileSync('hosted/state.json'));
+          assert.equal(s.model_calls,0);assert.equal(a.expectations.status,'ADMITTED');assert.equal(a.head_complete,true);assert.equal(a.base_complete,true);
+          if(process.env.PR==='2'){assert.equal(a.repair.status,'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE');assert.equal(a.repair.protected_guards,160);assert.deepEqual(a.repair.repository_gate_exits,[0,0,0]);assert.equal(reportView(a,r).title,'Candidate repair verified on frozen probes');}
+          else {assert.equal(a.status,'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS');assert.equal(reportView(a,r).title,'Reviewed expectations pass');}
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'hosted-expectations-pr-${{ matrix.pr }}', path: hosted/}
+  browser:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: hosted-expectations-pr-2, path: hosted}
+      - name: Install pinned report QA runtime
+        run: |
+          npm install --no-save --prefix /tmp/expectation-browser playwright@1.62.1
+          /tmp/expectation-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Test actual repair report on desktop and mobile
+        env: {NODE_PATH: /tmp/expectation-browser/node_modules}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs hosted/MathGraph-Check.html browser-qa 'Candidate repair verified on frozen probes'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: hosted-expectation-browser-qa, path: browser-qa/}

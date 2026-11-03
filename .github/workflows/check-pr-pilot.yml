@@ -109,7 +109,9 @@ jobs:
           curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
       - name: Replay frozen probes on actual base and head without secrets
-        run: python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial pr-investigation
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run pr-investigation
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: pr-pilot-native, path: pr-investigation/, retention-days: 30}

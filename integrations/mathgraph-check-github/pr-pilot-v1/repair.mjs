@@ -13,6 +13,18 @@ export async function createRepair(request,patch,publication,api){
  const blob=createHash('sha1').update('blob '+Buffer.byteLength(patch.content)+'\0'+patch.content).digest('hex');
  ensure(comparison.files?.length===1&&comparison.files[0].filename===request.profile.path&&comparison.files[0].status==='modified'&&comparison.files[0].sha===blob,'REPAIR_DIFF_MISMATCH');
  ensure(isFresh(await api(root+'/pulls/'+request.number)),'STALE_REPAIR');
+ // A qualified draft may already have been published through a research replay.
+ // Reuse only the same one-parent tree on the exact source, never a similar diff.
+ const drafts=await api(root+'/pulls?state=open&base='+encodeURIComponent(pr.head.ref)+'&per_page=100');
+ ensure(Array.isArray(drafts),'INVALID_REPAIR_HISTORY');
+ for(const candidate of drafts){
+  if(!candidate.draft||candidate.state!=='open'||candidate.base?.sha!==request.head_sha||candidate.head?.repo?.full_name!==request.repository)continue;
+  const prior=await api(root+'/git/commits/'+candidate.head.sha);
+  if(prior.tree?.sha!==tree.sha||prior.parents?.length!==1||prior.parents[0].sha!==request.head_sha)continue;
+  const current=await api(root+'/pulls/'+candidate.number);
+  ensure(current.draft===true&&current.state==='open'&&current.head?.sha===candidate.head.sha&&current.base?.sha===request.head_sha,'REPAIR_CANDIDATE_CHANGED');
+  ensure(isFresh(await api(root+'/pulls/'+request.number)),'STALE_REPAIR');return current.html_url;
+ }
  const listPath=root+'/pulls?state=all&head='+encodeURIComponent(request.repository.split('/')[0]+':'+name)+'&base='+encodeURIComponent(pr.head.ref);
  let created=false,prAttempted=false;
  try{
