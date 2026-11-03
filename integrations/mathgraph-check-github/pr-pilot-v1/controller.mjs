@@ -1,3 +1,6 @@
+import {spawnSync} from 'node:child_process';
+import {admitRepositoryResult} from './repository-contract.mjs';
+import {CONTRACT_MODE} from './repository-report.mjs';
 import {executionContext} from './context.mjs';
 import {createRepair} from './repair.mjs';
 // Trusted hosted orchestration. No repository source executes in this process.
@@ -34,7 +37,7 @@ try{
    const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(event.action==='mathgraph-pr-pilot-v1','WRONG_DISPATCH_EVENT');
    const signed=verifyDispatch(event.client_payload,process.env.APP_PRIVATE_KEY),scoped=await sourceToken(signed.repository);
    try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
-    ensure(signed.reserved_cents>=(request.support.supported?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
+    ensure(signed.reserved_cents>=(request.support.supported&&request.profile.mode!==CONTRACT_MODE?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
     if(request.command==='fix'&&publication.state==='STARTED'){
      const cs=await listChecks(request,scoped.api);
@@ -44,8 +47,17 @@ try{
    }finally{await scoped.api('/installation/token',{method:'DELETE'});}
   }
   await save('request',request);await save('publication',{...publication,context});
-  const ready=request.support.supported&&publication.state!=='DUPLICATE'&&process.env.CONTRACTS_OK!=='false';await outputs({ready:String(ready),command:request.command,prior_run:publication.prior_run??'',source_head:request.head_sha});
+  const ready=request.support.supported&&publication.state!=='DUPLICATE'&&process.env.CONTRACTS_OK!=='false';await outputs({ready:String(ready),command:request.command,profile:request.profile.mode,prior_run:publication.prior_run??'',source_head:request.head_sha});
   if(!request.support.supported||process.env.CONTRACTS_OK==='false')await save('assessment',{context,subject:request,status:'UNKNOWN',reason:process.env.CONTRACTS_OK==='false'?'CONTROLLER_CONTRACTS_FAILED':request.support.reason});await seal();
+ }else if(phase==='contract-run'){
+  ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');
+  ensure(request.command==='check'&&request.profile.mode===CONTRACT_MODE&&request.support.supported,'CONTRACT_CHECK_ONLY');
+  const native=spawnSync('python3',['integrations/mathgraph-check-github/repository-contract-v1/run.py','--pr',String(request.number),'--base',request.base_sha,'--head',request.head_sha,'--output',dir+'/contract-native'],{stdio:'inherit',timeout:1300000});
+  ensure(!native.error&&native.status===0,'CONTRACT_NATIVE_INCOMPLETE');
+ }else if(phase==='contract-assess'){
+  ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');let receipt;
+  try{receipt=JSON.parse(await readFile(dir+'/contract-native/result.json','utf8'));}catch{}
+  await save('assessment',admitRepositoryResult(receipt,request,context));await seal();
  }else if(phase==='reuse'){
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');

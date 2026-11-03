@@ -1,3 +1,4 @@
+import {CONTRACT_MODE,contractTitle,formatContractResult} from './repository-report.mjs';
 // Hosted pilot policy is trusted release code; source PRs cannot edit it.
 const SHA=/^[a-f0-9]{40}$/;const requireFact=(b,c)=>{if(!b)throw Error(c);};
 const LEDGER=Object.freeze({path:'Scripts/Ledger.lean',module:'Scripts.Ledger',namespace:'Scripts.Ledger',cli_path:'Scripts/Main/CheckScriptsLedger.lean',cli_module:'Scripts.Main.CheckScriptsLedger',toolchain:'leanprover/lean4:v4.35.0',mode:'OWNED_FORK_PR_PILOT'});
@@ -14,16 +15,20 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
  requireFact(pr?.state==='open'&&Number.isSafeInteger(pr.number)&&pr.number>0&&SHA.test(pr.head?.sha??'')&&SHA.test(pr.base?.sha??''),'PR_INVALID');
  for(const side of ['head','base'])requireFact(pr[side].repo?.full_name===repository&&pr[side].repo?.private===false,'PUBLIC_SAME_REPOSITORY_REQUIRED');
  requireFact(filesComplete===true,'INCOMPLETE_CHANGED_FILES');
- return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support:classifyDiff(files)};
+ const support=classifyDiff(files);
+ if(!support.supported&&command==='check'&&Array.isArray(files)&&files.some(f=>/^(Scripts\/)([A-Za-z_][A-Za-z0-9_]*\/)*[A-Za-z_][A-Za-z0-9_]*\.lean$/.test(f.filename)&&['added','modified','removed','renamed','copied'].includes(f.status))){profile.mode=CONTRACT_MODE;support.supported=true;support.reason='SUPPORTED_REPOSITORY_CONTRACT';}
+ return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support};
 }
 const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
 const REPAIR_VERIFIED='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE';
 export function resultTitle(report,request){
  if(report.status==='STALE')return 'Source changed — recheck required';
+ if(request.profile?.mode===CONTRACT_MODE)return contractTitle(report);
  if(request.command==='fix')return report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED?'Candidate repair verified on frozen probes':'Repair incomplete';
  return report.status==='UNKNOWN'?'Check incomplete':report.status==='CANDIDATE_ASSERTION_FAILURE'?'Generated probe failure reproduced':report.status==='NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'?'No counterexample in generated probes':'Check incomplete';
 }
 export function formatResult(report,request,runURL){
+ if(request.profile?.mode===CONTRACT_MODE)return formatContractResult(report,request,runURL);
  const names={NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS:'No counterexample found in the generated probes',CANDIDATE_ASSERTION_FAILURE:'A generated probe fails on this revision',UNKNOWN:'Check incomplete',STALE:'Source changed — this result no longer applies'};
  const repaired=report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED;
  const lines=['### MathGraph Check',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`,`**${repaired?resultTitle(report,{...request,command:'fix'}):names[report.status]??'Evidence incomplete'}**`,`Revision: \`${request.head_sha}\` · Base: \`${request.base_sha}\``, 'Scope: selected ledger module, original guards and repository gate. This does not establish whole-PR correctness.'];

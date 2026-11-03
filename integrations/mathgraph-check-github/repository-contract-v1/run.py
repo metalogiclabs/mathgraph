@@ -22,7 +22,7 @@ def main():
     out=Path(args.output).resolve();out.mkdir();logs=out/'logs';logs.mkdir()
     contract_path=HERE/'contract.json';contract=json.loads(contract_path.read_text());repo=contract['repository']
     if repo!='metalogiclabs/L4YAML':raise ValueError('REPOSITORY_NOT_ENABLED')
-    controller=os.environ['GITHUB_SHA']
+    controller=os.environ.get('MATHGRAPH_CONTROLLER_SHA') or os.environ['GITHUB_SHA']
     report={'schema':'mathgraph.repository-contract.report.v1','repository':repo,'pr':args.pr,'base_sha':args.base,'head_sha':args.head,'controller_sha':controller,'contract_sha256':sha(contract_path),'state':'UNKNOWN','whole_pr_correctness':'UNKNOWN','semantic_authority':contract['authority'],'arms':{}}
     write(out/'result.json',report)
     def api(path):
