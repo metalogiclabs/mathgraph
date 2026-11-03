@@ -36,7 +36,9 @@ def generate(evidence, destination):
             ct=lambda c:'⟨'+quoted(c[0])+', '+quoted(c[1])+', '+lean_list(c[2],True)+', '+quoted(c[3])+'⟩'
             ind=lambda i:'⟨'+quoted(i[0])+', '+quoted(i[1])+', #['+', '.join(ct(c) for c in i[2])+']⟩'
             data='#['+', '.join(ind(i) for i in g.inds)+']'
-            add('render ('+data+' : Array Ind)',quoted(g.emit()),['ACTUAL_SURFACE_NODE_PARSED_BY_BASE_PYTHON'])
+            # Compare mutual-block bodies on both sides. render additionally
+            # wraps the body in the file header/footer, which g.emit omits.
+            add(quoted('\n')+'.intercalate ((emit ('+data+' : Array Ind)).toList)',quoted(g.emit()),['ACTUAL_SURFACE_NODE_PARSED_BY_BASE_PYTHON'])
             item['grammar_input_sha256']=digest(text)
         row={k:v for k,v in item.items() if k!='source'}
         row.update({'module':ns,'source_sha256':digest(item['source']),'oracle_sha256':digest((evidence/'oracles'/f'{n}.py').read_text()) if oracle else None,'oracle_authority':'BASE_PYTHON_PARITY_CANDIDATE' if oracle else 'PYTHON_RE_ASCII_SUBSET_CANDIDATE','probes':probes})
