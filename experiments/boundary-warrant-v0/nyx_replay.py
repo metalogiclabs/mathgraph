@@ -29,7 +29,8 @@ def transplant_exact_regression(base_source: str, head_source: str) -> str:
     return base_source.replace(LATITUDE_ANCHOR, block + LATITUDE_ANCHOR, 1)
 
 
-def classify_native_test(stdout: str, stderr: str, exit_code: int, arm: str) -> dict:
+def classify_native_test(stdout: str, stderr: str, exit_code: int, arm: str,
+                         expected_target: str | None = None) -> dict:
     """Recognize one actual native test, separating a regression from setup failure."""
     if arm not in ("base", "head"):
         raise ValueError("INVALID_ARM")
@@ -38,8 +39,14 @@ def classify_native_test(stdout: str, stderr: str, exit_code: int, arm: str) -> 
     if (exit_code in (124, 125, 126, 127, 137)
             or re.search(r"(?im)^error(?:\[[A-Z]\d+\])?:", no_cargo_footer)
             or re.search(r"could not compile|failed to download|linking with .*failed|timed out",
-                         combined, re.IGNORECASE)):
+                         combined, re.IGNORECASE)
+            or "file cannot be inspected or loaded directly in ANISE" in combined):
         raise ValueError("NATIVE_SETUP_FAILURE")
+    if expected_target is not None:
+        running = re.findall(r"(?m)^\s*Running tests/lib\.rs \(([^\n]*)\)$", stderr)
+        if (len(running) != 1 or
+                f"/{expected_target}/debug/deps/" not in running[0]):
+            raise ValueError("BUILD_IDENTITY_MISMATCH")
     matches = re.findall(
         r"(?m)^test (\S*" + TEST_NAME + r"\S*) \.\.\. (ok|FAILED)$", combined,
     )

@@ -56,6 +56,33 @@ class NyxReplaySafety(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'WRONG_BASELINE_FAILURE'):
             classify_native_test(observed, 'thread panicked: some other reason', 101, 'base')
 
+    def test_lfs_pointer_fixture_panic_is_setup_failure_even_with_test_footer(self):
+        observed = ('running 1 test\n'
+                    f'test {TEST_NAME} ... FAILED\n'
+                    'test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured;\n')
+        panic = ('thread panicked at nyx-core/tests/lib.rs:25:10:\n'
+                 'called `Result::unwrap()` on an `Err` value: GenericError { '
+                 'err: "with /workspace/nyx-base/data/01_planetary/pck08.pca: '
+                 'file cannot be inspected or loaded directly in ANISE" }\n'
+                 'error: test failed, to rerun pass `-p nyx-space --test lib`\n')
+        for arm in ('base', 'head'):
+            with self.subTest(arm=arm):
+                with self.assertRaisesRegex(ValueError, 'NATIVE_SETUP_FAILURE'):
+                    classify_native_test(observed, panic, 101, arm)
+
+    def test_head_must_not_reuse_baseline_compiled_binary(self):
+        passed = ('running 1 test\n'
+                  f'test {TEST_NAME} ... ok\n'
+                  'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured;\n')
+        wrong_binary = 'Running tests/lib.rs (/runner/target-nyx-base/debug/deps/lib-abc)\n'
+        with self.assertRaisesRegex(ValueError, 'BUILD_IDENTITY_MISMATCH'):
+            classify_native_test(passed, wrong_binary, 0, 'head',
+                                 expected_target='target-nyx-head')
+        correct_binary = 'Running tests/lib.rs (/runner/target-nyx-head/debug/deps/lib-def)\n'
+        self.assertEqual(
+            classify_native_test(passed, correct_binary, 0, 'head',
+                                 expected_target='target-nyx-head')['passed'], 1)
+
 
 if __name__ == '__main__':
     unittest.main()

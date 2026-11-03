@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 55
     env:
-      CARGO_TARGET_DIR: ${{ github.workspace }}/target-nyx
       CARGO_BUILD_JOBS: '4'
       CARGO_TERM_COLOR: never
       PYTHONPATH: ${{ github.workspace }}/experiments/boundary-warrant-v0
@@ -67,6 +66,29 @@ jobs:
           test "$(git -C nyx-base hash-object nyx-core/src/propagators/event.rs)" = 6d07cd717e120f188923d931943fb233f968afe5
           git -C nyx-base diff -- nyx-core/tests/propagation/stopcond.rs \
             > evidence-out/nyx/baseline-test-transplant.patch
+      - name: Materialize and authenticate only the event test's Git LFS fixtures
+        run: |
+          set -euo pipefail
+          planetary='data/01_planetary/pck08.pca,data/01_planetary/earth_longterm_000101_251211_250915.bpc,data/01_planetary/earth_latest_high_prec.bpc,data/01_planetary/de440s.bsp'
+          for arm in nyx-base nyx-head; do
+            git -C "$arm" lfs pull --include "$planetary" --exclude ''
+          done
+          python - <<'PY' | tee evidence-out/nyx/lfs-fixture-hashes.txt
+          from hashlib import sha256
+          from pathlib import Path
+          expected = {
+              'pck08.pca': 'ddd79e64419e7d3925ea85ab26853060e4f397477a1a6538b1d38190ca3d4468',
+              'earth_longterm_000101_251211_250915.bpc': '39d1f9907cbfdf989b8f8d39802fe355ad30fa93d00381f29fe847715fb83340',
+              'earth_latest_high_prec.bpc': 'f03347c0b3ccba47e6e8a53c77a0381d695973fa9af8f409c282d111fc1ceb22',
+              'de440s.bsp': 'c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2',
+          }
+          for arm in ('nyx-base', 'nyx-head'):
+              for name, wanted in expected.items():
+                  source = Path(arm) / 'data/01_planetary' / name
+                  actual = sha256(source.read_bytes()).hexdigest()
+                  assert actual == wanted, f'LFS_FIXTURE_IDENTITY_MISMATCH:{arm}:{name}'
+                  print(f'{arm} {name} {source.stat().st_size} sha256:{actual}')
+          PY
       - name: Freeze one dependency resolution and record native toolchain
         run: |
           set -euo pipefail
@@ -78,6 +100,8 @@ jobs:
           sha256sum nyx-base/Cargo.lock nyx-head/Cargo.lock \
             > evidence-out/nyx/cargo-lock-hashes.txt
       - name: Native baseline run with transplanted test and unmodified production source
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target-nyx-base
         run: |
           set -euo pipefail
           set +e
@@ -90,6 +114,8 @@ jobs:
           echo "$code" > ../evidence-out/nyx/base.exit
           echo "NATIVE_BASE_EXIT=$code"
       - name: Native exact-head run, same test and dependency resolution
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target-nyx-head
         run: |
           set -euo pipefail
           set +e
@@ -124,6 +150,7 @@ jobs:
                       (output / f'{arm}.stdout').read_text(),
                       (output / f'{arm}.stderr').read_text(),
                       int((output / f'{arm}.exit').read_text().strip()), arm,
+                      expected_target=f'target-nyx-{arm}',
                   )
               except Exception as error:
                   receipt[arm] = {'state': 'UNKNOWN', 'reason': str(error)}
