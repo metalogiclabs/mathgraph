@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: [mathgraph-pr-pilot-v1]
 env:
-  MATHGRAPH_CONTROLLER_SHA: 59264d31419359221d468b875b4f8c476427e47f
+  MATHGRAPH_CONTROLLER_SHA: 8e8acaf1864491c9514d93d9b75649571e5bb3eb
 permissions:
   contents: read
   actions: read
@@ -16,12 +16,13 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
       - name: Bundle trusted webhook integration without deploying
         run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/pr-pilot-worker
   intake:
@@ -36,7 +37,7 @@ jobs:
       prior_run: ${{ steps.intake.outputs.prior_run }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - name: Authorize actual request and acquire source identities
@@ -52,12 +53,12 @@ jobs:
         with: {name: pr-pilot-intake, path: pr-investigation/, retention-days: 30}
   prepare:
     needs: intake
-    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT' && needs.intake.outputs.profile != 'OWNED_FORK_CLI_PARITY'
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -94,7 +95,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -117,7 +118,7 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -137,7 +138,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -162,7 +163,7 @@ jobs:
       revision: ${{ steps.feedback.outputs.revision }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -187,7 +188,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -206,12 +207,12 @@ jobs:
         with: {name: pr-pilot-final-native, path: pr-investigation/, retention-days: 30}
   assess:
     needs: [intake, prepare, native, propose, verify, revise, verify-revision]
-    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT' && needs.intake.outputs.profile != 'OWNED_FORK_CLI_PARITY'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -232,12 +233,12 @@ jobs:
         with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}
   repository-contract-native:
     needs: intake
-    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: needs.intake.outputs.ready == 'true' && (needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT' || needs.intake.outputs.profile == 'OWNED_FORK_CLI_PARITY')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -257,15 +258,17 @@ jobs:
             pr-investigation/*.json
             pr-investigation/contract-native/*.json
             pr-investigation/contract-native/logs/
+            pr-investigation/cli-native/*.json
+            pr-investigation/cli-native/logs/
           retention-days: 30
   repository-contract-assess:
     needs: [intake, repository-contract-native]
-    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: always() && needs.intake.outputs.ready == 'true' && (needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT' || needs.intake.outputs.profile == 'OWNED_FORK_CLI_PARITY')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -287,7 +290,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: 59264d31419359221d468b875b4f8c476427e47f}
+        with: {persist-credentials: false, ref: 8e8acaf1864491c9514d93d9b75649571e5bb3eb}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
