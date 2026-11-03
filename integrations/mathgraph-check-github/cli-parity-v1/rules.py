@@ -61,3 +61,17 @@ def lake_config(profile,modules):
             text+='  roots := #['+', '.join('`'+m for m in roots)+']\n'
     text+='lean_exe cli where\n  srcDir := "/source"\n  root := `'+profile['head_module']+'\n  supportInterpreter := true\n'
     return text
+
+def workspace_hashes(root,limits,exclude_files=()):
+    import hashlib
+    root=Path(root);result={}
+    for p in root.rglob('*'):
+        rel=p.relative_to(root);name=rel.as_posix()
+        if name in exclude_files or rel.parts[:4]==('.lake','build','lib','lean'):continue
+        if p.is_symlink():raise ValueError('RUNTIME_SYMLINK')
+        if p.is_dir():continue
+        if not p.is_file():raise ValueError('RUNTIME_SPECIAL_FILE')
+        if p.stat().st_size>limits['file_bytes']:raise ValueError('RUNTIME_FILE_LIMIT:'+name+':'+str(p.stat().st_size))
+        result[name]=hashlib.sha256(p.read_bytes()).hexdigest()
+    if len(result)>limits['files']:raise ValueError('RUNTIME_FILE_COUNT')
+    return result

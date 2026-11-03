@@ -1,13 +1,16 @@
 """One fixed CLI-contract runner; no model, source-defined commands or native credentials."""
 from pathlib import Path
 import argparse,hashlib,json,os,re,shutil,subprocess,tarfile,urllib.request
-from rules import compare_case,effects,safe_path,project_closure,shared,lake_config
+from rules import compare_case,effects,safe_path,project_closure,shared,lake_config,workspace_hashes
 HERE=Path(__file__).resolve().parent
 
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def save(p,x):p.write_text(json.dumps(x,ensure_ascii=False,indent=2)+'\n')
 def run(cmd,timeout=180):
-    try:return subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)
+    try:
+        r=subprocess.run(cmd,capture_output=True,timeout=timeout)
+        try:return subprocess.CompletedProcess(cmd,r.returncode,r.stdout.decode('utf-8'),r.stderr.decode('utf-8'))
+        except UnicodeDecodeError:return subprocess.CompletedProcess(cmd,125,'','NON_UTF8_OUTPUT')
     except subprocess.TimeoutExpired:return subprocess.CompletedProcess(cmd,124,'','TIMEOUT')
 def must(cmd,timeout=240):
     r=run(cmd,timeout)
@@ -62,16 +65,6 @@ def main():
     built=docker(build,'build',['lake','build',*targets],[(selected,'/source'),(build/'lakefile.lean','/work/lakefile.lean')],600);report['build_exit']=built.returncode
     if built.returncode:report['reason']='CLI_BUILD_FAILED';save(out/'result.json',report);return
     lib=build/'.lake/build/lib/lean';exe=build/'.lake/build/bin/cli'
-    def treehash(work):
-        result={}
-        for q in work.rglob('*'):
-            if q.relative_to(work).parts[0] in ['.lake','scripts']:continue
-            if q.is_symlink():raise ValueError('RUNTIME_SYMLINK')
-            if q.is_file():
-                if q.stat().st_size>contract['limits']['file_bytes']:raise ValueError('RUNTIME_FILE_LIMIT')
-                result[str(q.relative_to(work))]=sha(q)
-        if len(result)>contract['limits']['files']:raise ValueError('RUNTIME_FILE_COUNT')
-        return result
     def observe(case,side,label,control=False):
         work=out/(case['id']+'-'+label);work.mkdir()
         for name,content in case['files'].items():
@@ -79,7 +72,8 @@ def main():
         for item in case['repository_inputs']:
             if item['side'] not in ['base','head']:raise ValueError('INVALID_FIXTURE_SOURCE')
             source=(base if item['side']=='base' else head)/safe_path(item['path']);dest=work/safe_path(item['target']);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,dest)
-        before=treehash(work);(work/'scripts').mkdir(exist_ok=True);(work/'.lake/build/lib/lean').mkdir(parents=True)
+        exclude={profile['base_entry']} if side=='base' and not control else set()
+        before=workspace_hashes(work,contract['limits'],exclude);(work/'scripts').mkdir(exist_ok=True);(work/'.lake/build/lib/lean').mkdir(parents=True)
         mounts=[(lib,'/work/.lake/build/lib/lean')]
         if control:
             marker=(contract['generator_provenance_lines'][1]+'\n' if case['comparison']['stdout']=='generator-provenance' else '')+'MATHGRAPH_NATIVE_OUTPUT_CONTROL\n'
@@ -87,8 +81,8 @@ def main():
         elif side=='base':
             path='/work/'+profile['base_entry'];target=work/profile['base_entry'];target.parent.mkdir(parents=True,exist_ok=True);target.touch();mounts.append((oracle,path));cmd=['python3',path,*case['base_args']]
         else:mounts.append((exe,'/program'));cmd=['/program',*case['head_args']]
-        r=docker(work,label,cmd,mounts,contract['limits']['case_seconds']);after=treehash(work)
-        complete=r.returncode>=0 and r.returncode not in [124,137] and len(r.stdout.encode())+len(r.stderr.encode())<=contract['limits']['output_bytes']
+        r=docker(work,label,cmd,mounts,contract['limits']['case_seconds']);after=workspace_hashes(work,contract['limits'],exclude)
+        complete=r.returncode>=0 and r.returncode not in [124,125,126,127,137] and len(r.stdout.encode())+len(r.stderr.encode())<=contract['limits']['output_bytes']
         return {'complete':complete,'exit':r.returncode,'stdout':r.stdout,'stderr':r.stderr,'effects':effects(before,after)}
     for i,case in enumerate(cases):
         b=observe(case,'base',f'{i}-base');again=observe(case,'base',f'{i}-repeat');h=observe(case,'head',f'{i}-head');result=compare_case(b,again,h,case,contract)

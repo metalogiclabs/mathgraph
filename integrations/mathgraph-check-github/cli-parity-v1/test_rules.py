@@ -44,3 +44,14 @@ class LakeRegistration(unittest.TestCase):
   f=getattr(rules,'lake_config',lambda *_:'')
   s=f({'head_module':'Scripts.Main.X'},['Scripts.Main.X','Scripts.Helper','L4YAML.Surface.X','L4YAML.Surface.Y'])
   for m in ['Scripts.Main.X','Scripts.Helper','L4YAML.Surface.X','L4YAML.Surface.Y']:self.assertIn('`'+m,s)
+
+class WorkspaceEffects(unittest.TestCase):
+ def test_script_and_lake_outputs_cannot_be_hidden_by_infrastructure_exclusions(self):
+  f=getattr(rules,'workspace_hashes',lambda *_:{})
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);before=f(p,{'file_bytes':10000,'files':100},{'scripts/oracle.py'})
+   for name in ['scripts/observable.txt','.lake/observable.txt','scripts/oracle.py','.lake/build/lib/lean/Trusted.olean']:
+    q=p/name;q.parent.mkdir(parents=True,exist_ok=True);q.write_text('created')
+   after=f(p,{'file_bytes':10000,'files':100},{'scripts/oracle.py'});delta=rules.effects(before,after)
+   self.assertEqual(set(delta),{'scripts/observable.txt','.lake/observable.txt'})
+   self.assertIn('scripts/oracle.py',f(p,{'file_bytes':10000,'files':100},set()))

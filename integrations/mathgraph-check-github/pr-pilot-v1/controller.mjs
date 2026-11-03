@@ -1,3 +1,5 @@
+import {CLI_MODE} from './cli-profiles.mjs';
+import {admitCliResult} from './cli-parity.mjs';
 import {spawnSync} from 'node:child_process';
 import {admitRepositoryResult,captureRepositorySnapshot} from './repository-contract.mjs';
 import {CONTRACT_MODE} from './repository-report.mjs';
@@ -37,9 +39,9 @@ try{
    const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(event.action==='mathgraph-pr-pilot-v1','WRONG_DISPATCH_EVENT');
    const signed=verifyDispatch(event.client_payload,process.env.APP_PRIVATE_KEY),scoped=await sourceToken(signed.repository);
    try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
-    ensure(signed.reserved_cents>=(request.support.supported&&request.profile.mode!==CONTRACT_MODE?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
+    ensure(signed.reserved_cents>=(request.support.supported&&![CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
-    if(request.profile.mode===CONTRACT_MODE&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false')await save('contract-snapshot',await captureRepositorySnapshot(request,scoped.api));
+    if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false')await save('contract-snapshot',await captureRepositorySnapshot(request,scoped.api));
     if(request.command==='fix'&&publication.state==='STARTED'){
      const cs=await listChecks(request,scoped.api);
      const original=cs.find(c=>c.app?.id===5308912&&c.external_id?.startsWith(logicalIdentity({...request,command:'check'})+':')&&c.status==='completed'&&c.conclusion==='neutral');
@@ -52,16 +54,20 @@ try{
   if(!request.support.supported||process.env.CONTRACTS_OK==='false')await save('assessment',{context,subject:request,status:'UNKNOWN',reason:process.env.CONTRACTS_OK==='false'?'CONTROLLER_CONTRACTS_FAILED':request.support.reason});await seal();
  }else if(phase==='contract-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');
-  ensure(request.command==='check'&&request.profile.mode===CONTRACT_MODE&&request.support.supported,'CONTRACT_CHECK_ONLY');
-  const native=spawnSync('python3',['integrations/mathgraph-check-github/repository-contract-v1/run.py','--pr',String(request.number),'--base',request.base_sha,'--head',request.head_sha,'--snapshot',dir+'/contract-snapshot.json','--output',dir+'/contract-native'],{stdio:'inherit',timeout:1300000});
-  try{await save('contract-receipt',JSON.parse(await readFile(dir+'/contract-native/result.json','utf8')));}catch{}
-  try{await writeFile(dir+'/contract-corpus.json',await readFile(dir+'/contract-native/corpus.json'));}catch{}
+  ensure(request.command==='check'&&[CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&request.support.supported,'CONTRACT_CHECK_ONLY');
+  const cli=request.profile.mode===CLI_MODE,folder=dir+(cli?'/cli-native':'/contract-native');
+  const command=['integrations/mathgraph-check-github/'+(cli?'cli-parity-v1':'repository-contract-v1')+'/run.py','--pr',String(request.number),'--base',request.base_sha,'--head',request.head_sha,'--snapshot',dir+'/contract-snapshot.json','--output',folder];
+  if(cli)command.push('--profile',request.profile.cli_profile);
+  const native=spawnSync('python3',command,{stdio:'inherit',timeout:1500000});
+  try{await save(cli?'cli-receipt':'contract-receipt',JSON.parse(await readFile(folder+'/result.json','utf8')));}catch{}
+  if(cli){for(const name of ['contract','cases'])await writeFile(dir+'/cli-'+name+'.json',await readFile('integrations/mathgraph-check-github/cli-parity-v1/'+name+'.json'));}
+  else try{await writeFile(dir+'/contract-corpus.json',await readFile(folder+'/corpus.json'));}catch{}
   await seal();ensure(!native.error&&native.status===0,'CONTRACT_NATIVE_INCOMPLETE');
  }else if(phase==='contract-assess'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');let receipt;
-  try{receipt=await get('contract-receipt');}catch{}
+  try{receipt=await get(request.profile.mode===CLI_MODE?'cli-receipt':'contract-receipt');}catch{}
   let corpus=null;try{corpus=await readFile(dir+'/contract-corpus.json');}catch{}
-  await save('assessment',admitRepositoryResult(receipt,request,context,corpus));await seal();
+  await save('assessment',request.profile.mode===CLI_MODE?admitCliResult(receipt,request,context):admitRepositoryResult(receipt,request,context,corpus));await seal();
  }else if(phase==='reuse'){
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');

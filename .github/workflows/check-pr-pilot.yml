@@ -22,6 +22,7 @@ jobs:
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
       - run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
       - name: Bundle trusted webhook integration without deploying
         run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/pr-pilot-worker
   intake:
@@ -52,7 +53,7 @@ jobs:
         with: {name: pr-pilot-intake, path: pr-investigation/, retention-days: 30}
   prepare:
     needs: intake
-    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT' && needs.intake.outputs.profile != 'OWNED_FORK_CLI_PARITY'
     runs-on: ubuntu-24.04
     timeout-minutes: 7
     steps:
@@ -206,7 +207,7 @@ jobs:
         with: {name: pr-pilot-final-native, path: pr-investigation/, retention-days: 30}
   assess:
     needs: [intake, prepare, native, propose, verify, revise, verify-revision]
-    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT' && needs.intake.outputs.profile != 'OWNED_FORK_CLI_PARITY'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -232,7 +233,7 @@ jobs:
         with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}
   repository-contract-native:
     needs: intake
-    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: needs.intake.outputs.ready == 'true' && (needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT' || needs.intake.outputs.profile == 'OWNED_FORK_CLI_PARITY')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -257,10 +258,12 @@ jobs:
             pr-investigation/*.json
             pr-investigation/contract-native/*.json
             pr-investigation/contract-native/logs/
+            pr-investigation/cli-native/*.json
+            pr-investigation/cli-native/logs/
           retention-days: 30
   repository-contract-assess:
     needs: [intake, repository-contract-native]
-    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT'
+    if: always() && needs.intake.outputs.ready == 'true' && (needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT' || needs.intake.outputs.profile == 'OWNED_FORK_CLI_PARITY')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

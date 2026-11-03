@@ -40,12 +40,13 @@
     "case_seconds": 40,
     "output_bytes": 1000000,
     "files": 2000,
-    "file_bytes": 2000000
+    "file_bytes": 33554432
   },
   "non_claims": [
     "No scientific intent or whole-PR correctness",
     "No automatic assertion that behavior differences are bugs",
     "No census flip/residue runtime qualification",
     "Usage/error diagnostic prose is not compared for explicit nonempty cases; raw text retained"
-  ]
+  ],
+  "revision": "v1.1-resource-ceiling"
 }
