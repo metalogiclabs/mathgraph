@@ -1,4 +1,4 @@
-"""A separate consumer may reuse only an externally admitted stored receipt."""
+"""A separate consumer may retrieve only an externally admitted historical receipt."""
 
 import copy
 import hashlib
@@ -114,17 +114,49 @@ class PersistedConsumerTests(unittest.TestCase):
             result = persisted.run_consumer(
                 archive, digest(raw), POLICY, gh_context(),
                 metadata_provider=lambda: gh_metadata())
-            self.assertEqual(result["status"], "REUSABLE_BOUNDED")
+            self.assertEqual(result["status"], "HISTORICAL_WARRANT_RETRIEVED")
+            self.assertEqual(result["current_applicability"], "UNKNOWN")
             self.assertEqual(result["native_checker_invocations_in_consumer"], 0)
             self.assertEqual(set(result["timing_ns"]),
-                             {"metadata_fetch", "stored_file_read", "appraisal_and_resolve"})
+                             {"metadata_fetch", "stored_file_read", "appraisal_and_resolve",
+                              "warm_lookup_median", "warm_lookup_p95"})
             self.assertTrue(all(type(value) is int and value >= 0
                                 for value in result["timing_ns"].values()))
 
-    def test_exact_stored_receipt_from_trusted_producer_reuses_without_kernel(self):
+    def test_session_authenticates_once_then_serves_1000_exact_local_requests(self):
+        raw = stored()
+        with patch("persisted.appraise", wraps=persisted.appraise) as admitted:
+            session = persisted.WarmReceiptSession(
+                gh_metadata(), raw, digest(raw), POLICY, gh_context())
+            for _ in range(1000):
+                result = session.lookup(exact_request(), POLICY)
+                self.assertEqual(result["status"], "HISTORICAL_WARRANT_RETRIEVED")
+                self.assertEqual(result["current_applicability"], "UNKNOWN")
+            self.assertEqual(admitted.call_count, 1)
+
+    def test_warm_session_dependency_withdrawal_and_source_drift_fail_closed(self):
+        raw = stored()
+        session = persisted.WarmReceiptSession(gh_metadata(), raw, digest(raw), POLICY,
+                                               gh_context())
+        dropped = session.lookup(exact_request(), POLICY,
+                                 withdrawn=frozenset({"native.accept"}))
+        self.assertEqual(dropped["status"], "UNKNOWN")
+        self.assertEqual(dropped["states"]["independent.control"], "WARRANTED_BOUNDED")
+        for section, field, value in (("source", "config_sha256", "1" * 64),
+                                      ("source", "permitted_axioms", ["A"]),
+                                      ("checker", "commit", "1" * 40),
+                                      ("consumer", "type_expr_id", 1)):
+            changed = copy.deepcopy(POLICY)
+            changed[section][field] = value
+            self.assertEqual(session.lookup(exact_request(), changed)["status"], "UNKNOWN")
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_WITHDRAWAL_TARGET"):
+            session.lookup(exact_request(), POLICY, withdrawn=frozenset({"bogus"}))
+
+    def test_exact_stored_receipt_from_trusted_producer_retrieves_historical_warrant(self):
         raw = stored()
         result = persisted.consume(gh_metadata(), raw, digest(raw), POLICY, gh_context())
-        self.assertEqual(result["status"], "REUSABLE_BOUNDED")
+        self.assertEqual(result["status"], "HISTORICAL_WARRANT_RETRIEVED")
+        self.assertEqual(result["current_applicability"], "UNKNOWN")
         self.assertEqual(result["permission"], "ADVISORY_ONLY")
         self.assertEqual(result["states"]["consumer.exact_bar_type"], "WARRANTED_BOUNDED")
         self.assertEqual(result["source"], "STORED_GITHUB_ACTIONS_ARTIFACT")
@@ -146,6 +178,9 @@ class PersistedConsumerTests(unittest.TestCase):
             ("run", "head_branch", "main"), ("run", "path", "attacker.yml"),
             ("run", "event", "pull_request"),
             ("run", "run_attempt", 2),
+            ("run", "repository", "not-an-object"),
+            ("run", "id", True),
+            ("job", "run_id", True),
             ("job", "conclusion", "failure"),
             ("job", "status", "in_progress"),
             ("artifact", "expired", True),

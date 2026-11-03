@@ -10,6 +10,7 @@ is scoped same-run Actions provenance, not a portable signature.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -42,12 +43,19 @@ def _run_metadata_admitted(metadata: dict, policy: dict, context: dict) -> bool:
                             metadata.get("artifacts"))
     if not isinstance(run, dict) or not isinstance(jobs, list) or not isinstance(artifacts, list):
         return False
+    repository = run.get("repository")
+    if (not isinstance(repository, dict)
+            or type(run.get("id")) is not int
+            or type(run.get("run_attempt")) is not int
+            or type(context.get("run_id")) is not int
+            or type(context.get("attempt")) is not int):
+        return False
     repo, workflow = policy["runner"]["repository"], policy["runner"]["workflow"]
     if workflow != WORKFLOW_PATH.rsplit("/", 1)[-1]:
         return False
     if (run.get("id") != context.get("run_id") or run.get("head_sha") != context.get("source_commit")
             or run.get("run_attempt") != context.get("attempt")
-            or run.get("repository", {}).get("full_name") != context.get("repository")
+            or repository.get("full_name") != context.get("repository")
             or run.get("path") != WORKFLOW_PATH
             or run.get("head_branch") != RESEARCH_BRANCH
             or run.get("event") != "push" or run.get("status") != "in_progress"
@@ -58,7 +66,8 @@ def _run_metadata_admitted(metadata: dict, policy: dict, context: dict) -> bool:
         return False
     job = producers[0]
     if (type(job.get("id")) is not int or job["id"] < 1
-            or job.get("run_id") != context.get("run_id")
+            or type(job.get("run_id")) is not int
+            or job["run_id"] != context.get("run_id")
             or job.get("status") != "completed" or job.get("conclusion") != "success"):
         return False
     stored = [artifact for artifact in artifacts
@@ -70,6 +79,7 @@ def _run_metadata_admitted(metadata: dict, policy: dict, context: dict) -> bool:
     if (type(artifact.get("id")) is not int or artifact["id"] < 1
             or artifact.get("expired") is not False
             or not isinstance(workflow_run, dict)
+            or type(workflow_run.get("id")) is not int
             or workflow_run.get("id") != context["run_id"]
             or workflow_run.get("head_sha") != context["source_commit"]
             or not isinstance(artifact.get("digest"), str)
@@ -139,22 +149,60 @@ def appraise(metadata: dict, source_bytes: bytes, expected_digest: str,
 def consume(metadata: dict, source_bytes: bytes, expected_digest: str,
             policy: dict, current_context: dict, *,
             withdrawn: frozenset[str] = frozenset()) -> dict:
-    appraisal = appraise(metadata, source_bytes, expected_digest, policy, current_context)
-    if appraisal["status"] != "ADMITTED_PERSISTED_BOUNDED":
-        return appraisal
-    observation = appraisal["report"]["observation"]
-    candidate = bridge.candidate_identity(observation, policy["consumer"], policy)
-    decision = bridge.reuse(observation, policy["consumer"], policy,
-                            candidate=candidate, prior_trusted_context=current_context,
-                            trusted_prior_receipt=True)
-    closure = bridge.resolve(observation, policy["consumer"], policy,
-                             trusted_context=current_context, withdrawn=withdrawn)
-    supported = (decision["status"] == "REUSABLE_BOUNDED"
-                 and closure["states"]["consumer.exact_bar_type"] == "WARRANTED_BOUNDED")
-    return {"status": "REUSABLE_BOUNDED" if supported else "UNKNOWN",
-            "permission": "ADVISORY_ONLY", "reason": "NONE" if supported else "WITHDRAWN_OR_UNSUPPORTED",
-            "source": "STORED_GITHUB_ACTIONS_ARTIFACT", "fingerprint": decision["fingerprint"],
-            "states": closure["states"]}
+    """Retrieve a historical warrant, never infer a freshly measured candidate."""
+    session = WarmReceiptSession(metadata, source_bytes, expected_digest, policy,
+                                 current_context)
+    return session.lookup(policy["consumer"], policy, withdrawn=withdrawn)
+
+
+class WarmReceiptSession:
+    """Authenticate once, serve exact historical warrant lookups locally.
+
+    A consumer of a saved report has NOT independently measured any current
+    checker binary. In particular, it must not invoke bridge.reuse with a
+    candidate constructed from the saved observation. Any applicability to a
+    fresh source checkout remains UNKNOWN until independently remeasured.
+    """
+
+    def __init__(self, metadata: dict, source_bytes: bytes, expected_digest: str,
+                 policy: dict, current_context: dict):
+        self._policy = copy.deepcopy(policy)
+        self._context = copy.deepcopy(current_context)
+        self._appraisal = appraise(metadata, source_bytes, expected_digest,
+                                   self._policy, self._context)
+        self._observation = None
+        self._base_states = None
+        self._fingerprint = None
+        if self._appraisal["status"] == "ADMITTED_PERSISTED_BOUNDED":
+            self._observation = self._appraisal["report"]["observation"]
+            closure = bridge.resolve(self._observation, self._policy["consumer"],
+                                     self._policy, trusted_context=self._context)
+            self._base_states = closure["states"]
+            self._fingerprint = closure["decision"]["fingerprint"]
+
+    def lookup(self, request: dict, policy: dict, *,
+               withdrawn: frozenset[str] = frozenset()) -> dict:
+        if self._observation is None:
+            return {**self._appraisal, "current_applicability": "UNKNOWN"}
+        if policy != self._policy or request != self._policy["consumer"]:
+            return {**_unknown("FRESH_CANDIDATE_IDENTITY_NOT_ESTABLISHED"),
+                    "current_applicability": "UNKNOWN"}
+        if withdrawn:
+            closure = bridge.resolve(self._observation, request, self._policy,
+                                     trusted_context=self._context, withdrawn=withdrawn)
+            states = closure["states"]
+        else:
+            states = self._base_states.copy()
+        supported = states.get("consumer.exact_bar_type") == "WARRANTED_BOUNDED"
+        return {
+            "status": "HISTORICAL_WARRANT_RETRIEVED" if supported else "UNKNOWN",
+            "current_applicability": "UNKNOWN",
+            "permission": "ADVISORY_ONLY",
+            "reason": "NONE" if supported else "WITHDRAWN_OR_UNSUPPORTED",
+            "source": "STORED_GITHUB_ACTIONS_ARTIFACT",
+            "fingerprint": self._fingerprint,
+            "states": states,
+        }
 
 
 def fetch_metadata(context: dict, token: str) -> dict:
@@ -201,12 +249,17 @@ def run_consumer(report_file: Path, external_digest: str, policy: dict,
     raw = report_file.read_bytes()
     read_ns = time.perf_counter_ns() - start
     start = time.perf_counter_ns()
-    result = consume(metadata, raw, external_digest, policy, context)
+    session = WarmReceiptSession(metadata, raw, external_digest, policy, context)
+    result = session.lookup(policy["consumer"], policy)
     appraisal_ns = time.perf_counter_ns() - start
+    warm = native.timing_stats(lambda: session.lookup(policy["consumer"], policy))
     return {**result, "native_checker_invocations_in_consumer": 0,
             "timing_ns": {"metadata_fetch": metadata_ns,
                           "stored_file_read": read_ns,
-                          "appraisal_and_resolve": appraisal_ns}}
+                          "appraisal_and_resolve": appraisal_ns,
+                          "warm_lookup_median": warm["median_ns"],
+                          "warm_lookup_p95": warm["p95_ns"]},
+            "warm_lookup_samples": warm["iterations"]}
 
 
 def main(argv=None) -> int:
@@ -228,7 +281,7 @@ def main(argv=None) -> int:
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
     print(f"Persisted Flash read: {result['status']} ({result['reason']})")
-    return 0 if result["status"] == "REUSABLE_BOUNDED" else 1
+    return 0 if result["status"] == "HISTORICAL_WARRANT_RETRIEVED" else 1
 
 
 if __name__ == "__main__":
