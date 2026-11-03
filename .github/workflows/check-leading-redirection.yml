@@ -33,6 +33,25 @@ jobs:
         run: |
           python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial leading
           node experiments/check-leading-redirection-v1/driver.mjs initial leading
+      - name: Stage bounded candidate only after admitted native discrepancy
+        run: node experiments/check-leading-redirection-v1/driver.mjs patch leading
+      - name: Paired candidate and withdrawal replay without credentials
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair leading
+          node experiments/check-leading-redirection-v1/driver.mjs assess leading
+          python3 experiments/check-leading-redirection-v1/admission.py leading --paired
+          python3 - <<'PY'
+          import json
+          a=json.load(open('leading/binding-assessment.json'))
+          assert a['status']=='QUALIFIED_FINITE_CANDIDATE'
+          assert a['repair_targets']==['leading_attached','leading_separated']
+          assert a['excluded_probes']==[]
+          assert all(b['status']=='ADMITTED'for b in a['bindings'].values())
+          n=json.load(open('leading/inspection.json'))
+          assert n['source_guard_count']==160 and n['repository_gate_exits']==[0,0,0,0]
+          assert n['initial']['rows']==n['original']['rows']==n['withdrawn']['rows']
+          assert all(r['execution']=='GUARD_PASSED'for r in n['repaired']['rows'])
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: leading-redirection-native, path: leading/}
