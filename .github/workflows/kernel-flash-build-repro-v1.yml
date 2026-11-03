@@ -60,6 +60,15 @@ jobs:
           cargo build --release --locked
           cp target/release/sokonanoda ../reproducibility-work/c.bin
           sha256sum ../reproducibility-work/c.bin > ../reproducibility-evidence/build-c.txt
+      - name: D original path, entire release dependency graph rebuilt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd flash
+          cargo clean --release
+          cargo build --release --locked
+          cp target/release/sokonanoda ../reproducibility-work/d.bin
+          sha256sum ../reproducibility-work/d.bin > ../reproducibility-evidence/build-d.txt
       - name: Record exact matching versus changed bytes without suppressing failures
         shell: bash
         run: |
@@ -73,6 +82,11 @@ jobs:
             echo 'A_C_DIFFERENT_PATH=IDENTICAL' | tee -a reproducibility-evidence/verdict.txt
           else
             echo 'A_C_DIFFERENT_PATH=DIFFERENT' | tee -a reproducibility-evidence/verdict.txt
+          fi
+          if cmp -s reproducibility-work/a.bin reproducibility-work/d.bin; then
+            echo 'A_D_SAME_PATH_FULL_CLEAN=IDENTICAL' | tee -a reproducibility-evidence/verdict.txt
+          else
+            echo 'A_D_SAME_PATH_FULL_CLEAN=DIFFERENT' | tee -a reproducibility-evidence/verdict.txt
           fi
           sha256sum flash/test_resources/ProofIrrelUnderBVar/export \
             flash/test_resources/ProofIrrelUnderBVar/config.json \
