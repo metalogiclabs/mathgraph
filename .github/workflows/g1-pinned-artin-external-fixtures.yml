@@ -28,6 +28,7 @@ jobs:
             14879cb23e078d122adecd9578dd26a7304f753b
           test "$(git -C "$RUNNER_TEMP/proofnet-upstream" rev-parse HEAD)" = \
             14879cb23e078d122adecd9578dd26a7304f753b
+          export PROOFNET_OBSERVED_COMMIT=14879cb23e078d122adecd9578dd26a7304f753b
           node integrations/mathgraph-check-github/proofnet-artin-replay-v1.mjs \
             "$RUNNER_TEMP/proofnet-upstream" > "$RUNNER_TEMP/artin-public-source-preflight.json" 
           python - <<'PY'
