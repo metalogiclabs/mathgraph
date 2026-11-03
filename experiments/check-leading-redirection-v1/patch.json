@@ -1,0 +1,9 @@
+{
+  "summary": "Preserve command position across a single output redirection, consuming its separated filename before scanning the command. Finite scope: frozen leading > fixtures; not general shell parsing.",
+  "edits": [
+    {
+      "old": "        else if cmdPos && isPythonWord vars t then",
+      "new": "        else if t == \">\" then\n          match rest with\n          | [] => []\n          | _ :: tail => go cmdPos false tail\n        else if t.startsWith \">\" && !t.startsWith \">>\" && !t.startsWith \">&\" && !t.startsWith \">|\" then\n          go cmdPos false rest\n        else if cmdPos && isPythonWord vars t then"
+    }
+  ]
+}

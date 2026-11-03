@@ -3,6 +3,7 @@ import json
 import hashlib
 import os
 import argparse
+import re
 from pathlib import Path
 import run as reference
 
@@ -27,6 +28,9 @@ def bind(proposal, source_sha256):
         expected = [{'kind':'inline','value':'python3 -c'}]
     elif projection == 'no-interpreter-invocation-v1' and calls == []:
         expected = []
+    elif (projection == 'script-argv-literal-v1' and len(calls) == 1
+          and len(calls[0]) == 1 and re.fullmatch(r'scripts/[A-Za-z0-9_/-]+\.py', calls[0][0])):
+        expected = [{'kind':'script','value':calls[0][0]}]
     else:
         return {**result, 'reason':'PROJECTION_NOT_QUALIFIED'}
     command = ref['Obligation']['command']

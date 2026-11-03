@@ -1,0 +1,103 @@
+{
+  "version": "leading-redirection-binding-v1",
+  "subject": {
+    "repository": "metalogiclabs/L4YAML",
+    "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+    "path": "Scripts/Ledger.lean",
+    "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+  },
+  "toolchain": "leanprover/lean4:v4.35.0",
+  "cli_path": "Scripts/Main/CheckScriptsLedger.lean",
+  "cli_sha256": "64bb20331484ef711b6a752af1770959164c82308fd9ae79fbf954678ebbdbcf",
+  "relation": "Finite Bash invocation/argv to exact typed scanner projection; not whole-shell equivalence.",
+  "adopted_projection": {
+    "leading_attached": "script-argv-literal-v1",
+    "leading_separated": "script-argv-literal-v1",
+    "redirect_filename": "no-interpreter-invocation-v1",
+    "attached_ok": "inline-prefix-unquoted-v1",
+    "keyword_ok": "no-interpreter-invocation-v1"
+  },
+  "proposals": [
+    {
+      "id": "leading_attached",
+      "reference_id": "leading_attached",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+      },
+      "expected": [
+        {
+          "kind": "script",
+          "value": "scripts/a.py"
+        }
+      ],
+      "expression": "pyCallsOfLine \">out python3 scripts/a.py\" == [.script \"scripts/a.py\"]",
+      "anticipated_binding": "ADMITTED"
+    },
+    {
+      "id": "leading_separated",
+      "reference_id": "leading_separated",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+      },
+      "expected": [
+        {
+          "kind": "script",
+          "value": "scripts/a.py"
+        }
+      ],
+      "expression": "pyCallsOfLine \"> out python3 scripts/a.py\" == [.script \"scripts/a.py\"]",
+      "anticipated_binding": "ADMITTED"
+    },
+    {
+      "id": "redirect_filename",
+      "reference_id": "redirect_filename",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+      },
+      "expected": [],
+      "expression": "pyCallsOfLine \"> python3 echo scripts/a.py\" == []",
+      "anticipated_binding": "ADMITTED"
+    },
+    {
+      "id": "attached_ok",
+      "reference_id": "attached_ok",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+      },
+      "expected": [
+        {
+          "kind": "inline",
+          "value": "python3 -c"
+        }
+      ],
+      "expression": "pyCallsOfLine \"python3 -c 1>out\" == [.inline \"python3 -c\"]",
+      "anticipated_binding": "ADMITTED"
+    },
+    {
+      "id": "keyword_ok",
+      "reference_id": "keyword_ok",
+      "subject": {
+        "repository": "metalogiclabs/L4YAML",
+        "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+        "path": "Scripts/Ledger.lean",
+        "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+      },
+      "expected": [],
+      "expression": "pyCallsOfLine \"echo if python3 scripts/a.py > /dev/null\" == []",
+      "anticipated_binding": "ADMITTED"
+    }
+  ],
+  "scope": "One independently justified finite leading-redirection requirement, three cases and two existing positive/negative regressions. Frozen before new execution; no patch or hosted promotion in this freeze."
+}

@@ -1,0 +1,43 @@
+name: Fresh exact-commit redirection recheck
+on:
+  push:
+    branches: [research/check-leading-redirection-v1]
+    paths: ['experiments/check-leading-redirection-v1/candidate.json']
+permissions: {contents: read}
+jobs:
+  recheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Admit the unchanged obligations on the exact published candidate
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          node experiments/check-leading-redirection-v1/driver.mjs prepare recheck candidate
+          python3 experiments/check-leading-redirection-v1/admission.py recheck --candidate
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Fresh native replay without credentials or model calls
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial recheck
+          node experiments/check-leading-redirection-v1/driver.mjs initial recheck candidate
+          python3 - <<'PY'
+          import json
+          a=json.load(open('recheck/expectation-admission.json'))
+          n=json.load(open('recheck/initial-inspection.json'))
+          s=json.load(open('recheck/state.json'))
+          target=json.load(open('experiments/check-leading-redirection-v1/candidate.json'))
+          assert a['status']=='EXPECTATIONS_ADMITTED'
+          assert n['subject']==target['subject'] and n['complete'] and n['failures']==[]
+          assert all(r['execution']=='GUARD_PASSED'for r in n['initial']['rows'])
+          assert s['model_calls']==0
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: leading-redirection-recheck, path: recheck/}

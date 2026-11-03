@@ -1,0 +1,140 @@
+{
+  "version": "leading-redirection-v1",
+  "calibration": "Prospectively frozen before fresh Bash/native execution and before patch construction. Source inspected; anticipated outcomes are hypotheses, not blind discovery labels.",
+  "subject": {
+    "repository": "metalogiclabs/L4YAML",
+    "revision": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+    "path": "Scripts/Ledger.lean",
+    "sha256": "5c1e5350f6802e4cc866772e1cf67c7b323c51b06d37fdc093b565eb95593673"
+  },
+  "relation": "Finite Bash invocation/argv to exact typed scanner projection; not whole-shell equivalence.",
+  "assumptions": [
+    "Bash reference semantics and native compiler are trusted within their declared boundary",
+    "Function interception records argv; no actual Python executes",
+    "Only the exact frozen literal commands may run",
+    "Operator-adopted experimental requirement; Nicolas/customer approval UNKNOWN"
+  ],
+  "controls": {
+    "positive": {
+      "command": "python3 guard.py",
+      "calls": [
+        [
+          "guard.py"
+        ]
+      ]
+    },
+    "negative": {
+      "command": "echo python3 guard.py > /dev/null",
+      "calls": []
+    }
+  },
+  "cases": [
+    {
+      "id": "leading_attached",
+      "command": ">out python3 scripts/a.py",
+      "expected_calls": [
+        [
+          "scripts/a.py"
+        ]
+      ],
+      "expected": [
+        {
+          "kind": "script",
+          "value": "scripts/a.py"
+        }
+      ],
+      "projection": "script-argv-literal-v1",
+      "authority": {
+        "state": "DECLARED",
+        "adopted_by": "Heath-authorized operator experiment",
+        "reference": "https://www.gnu.org/software/bash/manual/html_node/Redirections.html",
+        "rationale": "Redirections may precede a simple command. After redirection words are removed, the first remaining word identifies the command (Bash3.6/3.7.1).",
+        "project_requirement": "Scripts.Ledger shell-shaped scan: Python counts only in command position; published source documentation at74ac6223bd8c90fb62877a82d01ed2d1c6140a2f.",
+        "customer_approval": "UNKNOWN"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "leading_separated",
+      "command": "> out python3 scripts/a.py",
+      "expected_calls": [
+        [
+          "scripts/a.py"
+        ]
+      ],
+      "expected": [
+        {
+          "kind": "script",
+          "value": "scripts/a.py"
+        }
+      ],
+      "projection": "script-argv-literal-v1",
+      "authority": {
+        "state": "DECLARED",
+        "adopted_by": "Heath-authorized operator experiment",
+        "reference": "https://www.gnu.org/software/bash/manual/html_node/Redirections.html",
+        "rationale": "Redirections may precede a simple command. After redirection words are removed, the first remaining word identifies the command (Bash3.6/3.7.1).",
+        "project_requirement": "Scripts.Ledger shell-shaped scan: Python counts only in command position; published source documentation at74ac6223bd8c90fb62877a82d01ed2d1c6140a2f.",
+        "customer_approval": "UNKNOWN"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "redirect_filename",
+      "command": "> python3 echo scripts/a.py",
+      "expected_calls": [],
+      "expected": [],
+      "projection": "no-interpreter-invocation-v1",
+      "authority": {
+        "state": "DECLARED",
+        "adopted_by": "Heath-authorized operator experiment",
+        "reference": "https://www.gnu.org/software/bash/manual/html_node/Redirections.html",
+        "rationale": "Redirections may precede a simple command. After redirection words are removed, the first remaining word identifies the command (Bash3.6/3.7.1).",
+        "project_requirement": "Scripts.Ledger shell-shaped scan: Python counts only in command position; published source documentation at74ac6223bd8c90fb62877a82d01ed2d1c6140a2f.",
+        "customer_approval": "UNKNOWN"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "attached_ok",
+      "command": "python3 -c 1>out",
+      "expected_calls": [
+        [
+          "-c"
+        ]
+      ],
+      "expected": [
+        {
+          "kind": "inline",
+          "value": "python3 -c"
+        }
+      ],
+      "projection": "inline-prefix-unquoted-v1",
+      "authority": {
+        "state": "DECLARED",
+        "adopted_by": "Heath-authorized operator experiment",
+        "reference": "https://www.gnu.org/software/bash/manual/html_node/Redirections.html",
+        "rationale": "Redirections may precede a simple command. After redirection words are removed, the first remaining word identifies the command (Bash3.6/3.7.1).",
+        "project_requirement": "Scripts.Ledger shell-shaped scan: Python counts only in command position; published source documentation at74ac6223bd8c90fb62877a82d01ed2d1c6140a2f.",
+        "customer_approval": "UNKNOWN"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "keyword_ok",
+      "command": "echo if python3 scripts/a.py > /dev/null",
+      "expected_calls": [],
+      "expected": [],
+      "projection": "no-interpreter-invocation-v1",
+      "authority": {
+        "state": "DECLARED",
+        "adopted_by": "Heath-authorized operator experiment",
+        "reference": "https://www.gnu.org/software/bash/manual/html_node/Redirections.html",
+        "rationale": "Redirections may precede a simple command. After redirection words are removed, the first remaining word identifies the command (Bash3.6/3.7.1).",
+        "project_requirement": "Scripts.Ledger shell-shaped scan: Python counts only in command position; published source documentation at74ac6223bd8c90fb62877a82d01ed2d1c6140a2f.",
+        "customer_approval": "UNKNOWN"
+      },
+      "anticipated_admission": "SUPPORTED"
+    }
+  ]
+}
