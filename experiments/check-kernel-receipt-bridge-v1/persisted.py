@@ -36,7 +36,8 @@ def _unknown(reason: str) -> dict:
     return {"status": "UNKNOWN", "permission": "ADVISORY_ONLY", "reason": reason}
 
 
-def _run_metadata_admitted(metadata: dict, policy: dict, context: dict) -> bool:
+def _run_metadata_admitted(metadata: dict, policy: dict, context: dict, *,
+                           trusted_completed_producer: bool = False) -> bool:
     if not isinstance(metadata, dict) or not isinstance(context, dict):
         return False
     run, jobs, artifacts = (metadata.get("run"), metadata.get("jobs"),
@@ -58,8 +59,13 @@ def _run_metadata_admitted(metadata: dict, policy: dict, context: dict) -> bool:
             or repository.get("full_name") != context.get("repository")
             or run.get("path") != WORKFLOW_PATH
             or run.get("head_branch") != RESEARCH_BRANCH
-            or run.get("event") != "push" or run.get("status") != "in_progress"
+            or run.get("event") != "push"
             or context.get("repository") != repo or context.get("workflow") != workflow):
+        return False
+    if trusted_completed_producer is True:
+        if run.get("status") != "completed" or run.get("conclusion") != "success":
+            return False
+    elif run.get("status") != "in_progress":
         return False
     producers = [job for job in jobs if isinstance(job, dict) and job.get("name") == PRODUCER_JOB]
     if len(producers) != 1:
@@ -90,7 +96,8 @@ def _run_metadata_admitted(metadata: dict, policy: dict, context: dict) -> bool:
 
 
 def appraise(metadata: dict, source_bytes: bytes, expected_digest: str,
-            policy: dict, current_context: dict) -> dict:
+            policy: dict, current_context: dict, *,
+            trusted_completed_producer: bool = False) -> dict:
     """Appraise trusted external run facts plus exact report and adapter pins."""
     if (not isinstance(source_bytes, bytes)
             or not isinstance(expected_digest, str)
@@ -98,7 +105,8 @@ def appraise(metadata: dict, source_bytes: bytes, expected_digest: str,
         return _unknown("INVALID_EXPECTED_DIGEST")
     if hashlib.sha256(source_bytes).hexdigest() != expected_digest:
         return _unknown("ARTIFACT_BYTES_MISMATCH")
-    if not _run_metadata_admitted(metadata, policy, current_context):
+    if not _run_metadata_admitted(metadata, policy, current_context,
+                                 trusted_completed_producer=trusted_completed_producer):
         return _unknown("UNTRUSTED_PRODUCER_METADATA")
     try:
         report = parse_json(source_bytes, "native-report.json")
@@ -165,11 +173,16 @@ class WarmReceiptSession:
     """
 
     def __init__(self, metadata: dict, source_bytes: bytes, expected_digest: str,
-                 policy: dict, current_context: dict):
+                 policy: dict, current_context: dict, *,
+                 trusted_completed_producer: bool = False):
         self._policy = copy.deepcopy(policy)
         self._context = copy.deepcopy(current_context)
+        self._producer_trust_boundary = (
+            "PINNED_COMPLETED_GITHUB_RUN" if trusted_completed_producer is True
+            else "SAME_IN_PROGRESS_GITHUB_RUN")
         self._appraisal = appraise(metadata, source_bytes, expected_digest,
-                                   self._policy, self._context)
+                                   self._policy, self._context,
+                                   trusted_completed_producer=trusted_completed_producer)
         self._observation = None
         self._base_states = None
         self._fingerprint = None
@@ -200,6 +213,7 @@ class WarmReceiptSession:
             "permission": "ADVISORY_ONLY",
             "reason": "NONE" if supported else "WITHDRAWN_OR_UNSUPPORTED",
             "source": "STORED_GITHUB_ACTIONS_ARTIFACT",
+            "producer_trust_boundary": self._producer_trust_boundary,
             "fingerprint": self._fingerprint,
             "states": states,
         }
@@ -243,6 +257,7 @@ class WarmReceiptSession:
             "permission": "ADVISORY_ONLY",
             "reason": "NONE" if supported else "MEASURED_CANDIDATE_DRIFT_OR_WITHDRAWAL",
             "source": "STORED_GITHUB_ACTIONS_ARTIFACT_PLUS_FRESH_FILE_MEASUREMENT",
+            "producer_trust_boundary": self._producer_trust_boundary,
             "fingerprint": decision["fingerprint"],
             "states": states,
             "measured_source": validated_source,
@@ -285,7 +300,8 @@ def fetch_metadata(context: dict, token: str) -> dict:
 def run_consumer(report_file: Path, external_digest: str, policy: dict,
                  context: dict, *, metadata_provider,
                  flash_checkout: Path | None = None,
-                 checker_binary: Path | None = None) -> dict:
+                 checker_binary: Path | None = None,
+                 trusted_completed_producer: bool = False) -> dict:
     """Read the stored file, then use externally obtained producer authority."""
     if (flash_checkout is None) != (checker_binary is None):
         raise ValueError("INCOMPLETE_MEASURED_CANDIDATE_PATHS")
@@ -298,7 +314,8 @@ def run_consumer(report_file: Path, external_digest: str, policy: dict,
     raw = report_file.read_bytes()
     read_ns = time.perf_counter_ns() - start
     start = time.perf_counter_ns()
-    session = WarmReceiptSession(metadata, raw, external_digest, policy, context)
+    session = WarmReceiptSession(metadata, raw, external_digest, policy, context,
+                                 trusted_completed_producer=trusted_completed_producer)
     result = session.lookup(policy["consumer"], policy)
     appraisal_ns = time.perf_counter_ns() - start
     warm = native.timing_stats(lambda: session.lookup(policy["consumer"], policy))
@@ -326,18 +343,47 @@ def main(argv=None) -> int:
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--flash-repo", type=Path)
     parser.add_argument("--candidate-binary", type=Path)
+    parser.add_argument("--prior-run-id", type=int)
+    parser.add_argument("--prior-source-commit")
+    parser.add_argument("--prior-attempt", type=int)
+    parser.add_argument("--prior-report-sha256")
     args = parser.parse_args(argv)
     try:
         policy = json.loads((Path(__file__).parent / "policy.json").read_text())
-        context = native.ci_context(os.environ, policy)
+        prior_fields = (args.prior_run_id, args.prior_source_commit,
+                        args.prior_attempt, args.prior_report_sha256)
+        if any(value is not None for value in prior_fields) and not all(
+                value is not None for value in prior_fields):
+            raise ValueError("INCOMPLETE_PINNED_PRIOR_PRODUCER")
+        completed = all(value is not None for value in prior_fields)
+        context = native.ci_context(
+            os.environ, policy,
+            reader_workflow="kernel-flash-cross-run-reuse-v1.yml" if completed else None)
         if native.git_head(native.HERE.parents[1]) != context["source_commit"]:
             raise ValueError("READER_SOURCE_REVISION_MISMATCH")
-        expected_digest = os.environ.get("PRODUCER_REPORT_SHA256", "")
-        result = run_consumer(args.artifact, expected_digest, policy, context,
+        if completed:
+            if (args.prior_run_id < 1 or args.prior_run_id == context["run_id"]
+                    or args.prior_attempt < 1
+                    or not _SHA40.fullmatch(args.prior_source_commit)
+                    or not _SHA256.fullmatch(args.prior_report_sha256)):
+                raise ValueError("INVALID_PINNED_PRIOR_PRODUCER")
+            producer_context = {**context, "run_id": args.prior_run_id,
+                                "attempt": args.prior_attempt,
+                                "source_commit": args.prior_source_commit,
+                                "workflow": policy["runner"]["workflow"]}
+            expected_digest = args.prior_report_sha256
+        else:
+            producer_context = context
+            expected_digest = os.environ.get("PRODUCER_REPORT_SHA256", "")
+        result = run_consumer(args.artifact, expected_digest, policy, producer_context,
                               metadata_provider=lambda: fetch_metadata(
-                                  context, os.environ.get("GITHUB_TOKEN", "")),
+                                  producer_context, os.environ.get("GITHUB_TOKEN", "")),
                               flash_checkout=args.flash_repo,
-                              checker_binary=args.candidate_binary)
+                              checker_binary=args.candidate_binary,
+                              trusted_completed_producer=completed)
+        if completed:
+            result = {**result, "prior_run_id": producer_context["run_id"],
+                      "current_run_id": context["run_id"]}
     except (ValueError, OSError, ProtocolError) as error:
         result = _unknown(str(error))
     args.report.parent.mkdir(parents=True, exist_ok=True)

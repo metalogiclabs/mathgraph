@@ -1,0 +1,94 @@
+name: Flash to Check cross-run exact receipt replay V1
+on:
+  push:
+    branches: [research/check-kernel-persisted-reuse-20261104]
+    paths:
+      - .github/workflows/kernel-flash-cross-run-reuse-v1.yml
+permissions: {contents: read, actions: read}
+jobs:
+  pinned-prior-exact-reuse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Download immutable native receipt from separate completed run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: kernel-bridge-native-evidence
+          run-id: 41666036845
+          github-token: ${{ github.token }}
+          path: previous-evidence
+      - name: Download exact prior runnable binary, no compilation
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: kernel-bridge-checker-binary
+          run-id: 41666036845
+          github-token: ${{ github.token }}
+          path: previous-checker
+      - name: Independently fetch current exact input source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init flash
+          git -C flash remote add origin https://github.com/metalogiclabs/mathgraph-lean-kernel.git
+          git -C flash fetch --depth=1 origin 32eada63bf5d1815bc8d39dd4b4047dc98eff20d
+          git -C flash checkout --detach FETCH_HEAD
+          test "$(git -C flash rev-parse HEAD)" = '32eada63bf5d1815bc8d39dd4b4047dc98eff20d'
+      - name: Admit completed prior run with source-controlled external anchor
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s experiments/check-kernel-receipt-bridge-v1 -p 'test_*.py'
+          python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+            --artifact previous-evidence/native-report.json \
+            --flash-repo flash \
+            --candidate-binary previous-checker/sokonanoda \
+            --prior-run-id 41666036845 \
+            --prior-source-commit fdacc3cd4855a3c4fa49db3d8054bb86eb075b5b \
+            --prior-attempt 1 \
+            --prior-report-sha256 23c90b548050635daf28eac418c66313ea5dd8cac71c21a587d8ca7e6349450a \
+            --report cross-run-evidence/receipt.json
+      - name: Alter current executable and config; both must become UNKNOWN
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp previous-checker/sokonanoda previous-checker/altered
+          python3 -c 'from pathlib import Path; p=Path("previous-checker/altered"); b=bytearray(p.read_bytes()); b[len(b)//2] ^= 1; p.write_bytes(b)'
+          if python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+              --artifact previous-evidence/native-report.json \
+              --flash-repo flash \
+              --candidate-binary previous-checker/altered \
+              --prior-run-id 41666036845 \
+              --prior-source-commit fdacc3cd4855a3c4fa49db3d8054bb86eb075b5b \
+              --prior-attempt 1 \
+              --prior-report-sha256 23c90b548050635daf28eac418c66313ea5dd8cac71c21a587d8ca7e6349450a \
+              --report cross-run-evidence/binary-mutant.json; then
+            echo 'changed binary accepted across runs' >&2
+            exit 1
+          fi
+          python3 -c 'import json; from pathlib import Path; assert json.loads(Path("cross-run-evidence/binary-mutant.json").read_text())["status"] == "UNKNOWN"'
+          python3 -c 'from pathlib import Path; p=Path("flash/test_resources/ProofIrrelUnderBVar/config.json"); p.write_bytes(p.read_bytes() + b" ")'
+          if python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+              --artifact previous-evidence/native-report.json \
+              --flash-repo flash \
+              --candidate-binary previous-checker/sokonanoda \
+              --prior-run-id 41666036845 \
+              --prior-source-commit fdacc3cd4855a3c4fa49db3d8054bb86eb075b5b \
+              --prior-attempt 1 \
+              --prior-report-sha256 23c90b548050635daf28eac418c66313ea5dd8cac71c21a587d8ca7e6349450a \
+              --report cross-run-evidence/config-mutant.json; then
+            echo 'changed source accepted across runs' >&2
+            exit 1
+          fi
+          python3 -c 'import json; from pathlib import Path; assert json.loads(Path("cross-run-evidence/config-mutant.json").read_text())["reason"] == "CONFIG_SHA256_MISMATCH"'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: kernel-bridge-cross-run-reuse-evidence
+          path: cross-run-evidence/
+          if-no-files-found: warn

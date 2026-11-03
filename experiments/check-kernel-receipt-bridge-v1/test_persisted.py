@@ -80,6 +80,13 @@ def gh_metadata():
     }
 
 
+def completed_producer_metadata():
+    metadata = gh_metadata()
+    metadata["run"]["status"] = "completed"
+    metadata["run"]["conclusion"] = "success"
+    return metadata
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -217,6 +224,52 @@ class PersistedConsumerTests(unittest.TestCase):
             self.assertEqual(result["status"], "REUSABLE_BOUNDED")
             self.assertEqual(result["native_checker_invocations_in_consumer"], 0)
             self.assertIn("measured_candidate_and_reuse", result["timing_ns"])
+
+    def test_completed_prior_producer_requires_explicit_external_authority(self):
+        raw = stored()
+        metadata = completed_producer_metadata()
+        self.assertEqual(persisted.appraise(metadata, raw, digest(raw), POLICY, gh_context())[
+            "status"], "UNKNOWN")
+        session = persisted.WarmReceiptSession(
+            metadata, raw, digest(raw), POLICY, gh_context(),
+            trusted_completed_producer=True)
+        self.assertEqual(session.lookup(exact_request(), POLICY)["status"],
+                         "HISTORICAL_WARRANT_RETRIEVED")
+        for field, value in (("conclusion", "failure"), ("status", "in_progress"),
+                             ("head_sha", "f" * 40), ("run_attempt", 9)):
+            with self.subTest(field=field):
+                changed = completed_producer_metadata()
+                changed["run"][field] = value
+                self.assertEqual(persisted.appraise(
+                    changed, raw, digest(raw), POLICY, gh_context(),
+                    trusted_completed_producer=True)["status"], "UNKNOWN")
+
+    def test_pinned_completed_prior_run_exact_file_reuse_and_mutant(self):
+        binary_bytes = b"actual saved executable"
+        raw = stored_for_measured_binary(binary_bytes)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            artifact = tmp / "report.json"
+            artifact.write_bytes(raw)
+            binary = tmp / "checker"
+            binary.write_bytes(binary_bytes)
+            with patch("persisted.native.validate_checkout", return_value={}):
+                result = persisted.run_consumer(
+                    artifact, digest(raw), POLICY, gh_context(),
+                    metadata_provider=completed_producer_metadata,
+                    flash_checkout=tmp, checker_binary=binary,
+                    trusted_completed_producer=True)
+            self.assertEqual(result["status"], "REUSABLE_BOUNDED")
+            self.assertEqual(result["producer_trust_boundary"],
+                             "PINNED_COMPLETED_GITHUB_RUN")
+            binary.write_bytes(b"mutated")
+            with patch("persisted.native.validate_checkout", return_value={}):
+                changed = persisted.run_consumer(
+                    artifact, digest(raw), POLICY, gh_context(),
+                    metadata_provider=completed_producer_metadata,
+                    flash_checkout=tmp, checker_binary=binary,
+                    trusted_completed_producer=True)
+            self.assertEqual(changed["status"], "UNKNOWN")
 
     def test_exact_stored_receipt_from_trusted_producer_retrieves_historical_warrant(self):
         raw = stored()

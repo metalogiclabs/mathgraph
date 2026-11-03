@@ -166,6 +166,15 @@ class NativeHarnessTests(unittest.TestCase):
                      "GITHUB_REF": "refs/heads/" + next_branch,
                      "GITHUB_WORKFLOW_REF": "metalogiclabs/mathgraph/.github/workflows/check-kernel-receipt-bridge-v1.yml@refs/heads/" + next_branch}
         self.assertEqual(native.ci_context(permitted, POLICY)["run_id"], 123456)
+        cross_run = {**permitted,
+                     "GITHUB_WORKFLOW_REF": "metalogiclabs/mathgraph/.github/workflows/kernel-flash-cross-run-reuse-v1.yml@refs/heads/" + next_branch}
+        with self.assertRaisesRegex(ValueError, "UNTRUSTED_CI_CONTEXT"):
+            native.ci_context(cross_run, POLICY)
+        admitted_cross_run = native.ci_context(
+            cross_run, POLICY, reader_workflow="kernel-flash-cross-run-reuse-v1.yml")
+        self.assertEqual(admitted_cross_run["workflow"], "kernel-flash-cross-run-reuse-v1.yml")
+        with self.assertRaisesRegex(ValueError, "UNTRUSTED_CI_CONTEXT"):
+            native.ci_context(cross_run, POLICY, reader_workflow="attacker.yml")
         for key, value in (("GITHUB_WORKFLOW_REF", "attacker.yml"),
                            ("GITHUB_REF", "refs/heads/main"),
                            ("GITHUB_REPOSITORY", "other/repo"),

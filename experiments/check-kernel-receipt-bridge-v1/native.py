@@ -110,10 +110,12 @@ def run_binary(binary: Path, config: Path, cwd: Path) -> dict:
             "stderr_sha256": digest(proc.stderr)}
 
 
-def ci_context(env: dict, policy: dict) -> dict:
+def ci_context(env: dict, policy: dict, *, reader_workflow: str | None = None) -> dict:
     """CI-supplied provenance; NEVER derive from a receipt's runner field."""
     repo = policy["runner"]["repository"]
-    workflow = policy["runner"]["workflow"]
+    if reader_workflow is not None and reader_workflow != "kernel-flash-cross-run-reuse-v1.yml":
+        raise ValueError("UNTRUSTED_CI_CONTEXT")
+    workflow = reader_workflow or policy["runner"]["workflow"]
     research_ref = env.get("GITHUB_REF", "")
     expected_workflow_ref = f"{repo}/.github/workflows/{workflow}@{research_ref}"
     if (env.get("GITHUB_REPOSITORY") != repo
