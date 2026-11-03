@@ -3,7 +3,7 @@
   "edits": [
     {
       "old": "        else if cmdPos && isPythonWord vars t then",
-      "new": "        else if t == \">\" then go cmdPos false (rest.drop 1)\n        else if t.startsWith \">\" && !t.startsWith \">>\" && !t.startsWith \">&\" && !t.startsWith \">|\" then\n          go cmdPos false rest\n        else if cmdPos && isPythonWord vars t then"
+      "new": "        else if t == \">\" then\n          match rest with\n          | [] => []\n          | _ :: tail => go cmdPos false tail\n        else if t.startsWith \">\" && !t.startsWith \">>\" && !t.startsWith \">&\" && !t.startsWith \">|\" then\n          go cmdPos false rest\n        else if cmdPos && isPythonWord vars t then"
     }
   ]
 }
