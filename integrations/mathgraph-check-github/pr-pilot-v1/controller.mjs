@@ -46,7 +46,7 @@ try{
     ensure(signed.reserved_cents>=(request.support.supported&&![CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
     if(request.profile.expectation_candidate&&publication.state==='STARTED'){
-     try{const envelope=await captureProducer(request,context,scoped.api,githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),process.env.GITHUB_TOKEN);await save('producer-envelope',envelope);await save('producer-warrant',resolveProducer(envelope,request,context).graph);request.profile.expectation_profile='ledger-shell-producer-v1';}
+     try{const envelope=await captureProducer(request,context,scoped.api,githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),process.env.GITHUB_TOKEN);await save('producer-envelope',envelope);await save('producer-warrant',resolveProducer(envelope,request,context).graph);request.profile.expectation_profile='ledger-shell-v2';}
      catch{request.support={supported:false,reason:'REPAIR_EXPECTATION_REVIEW_REQUIRED'};}
     }
     if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false'){
@@ -63,11 +63,12 @@ try{
  }else if(phase==='expectation-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_EXPECTATION_CONTEXT');
   const snapshot=await get('snapshot'),subject=expectationSubject(snapshot);let reference;
-  if(reviewedPlan(subject,await producerToken())){
+  if(reviewedPlan(subject,await producerToken(),snapshot.expectation_profile)){
    const run=spawnSync('python3',['experiments/check-expectation-admission-v1/run.py','--output',dir+'/expectation-observations.json'],{stdio:'inherit',timeout:30000});
    if(!run.error&&run.status===0)try{reference=await get('expectation-observations');}catch{}
   }
-  await save('expectation-reference',{schema:'mathgraph.expectations.reference.v1',context,subject,reference:reference??{records:[]}});await seal();
+  let leading_reference;if(snapshot.expectation_profile==='ledger-shell-v2'){const run=spawnSync('python3',['experiments/check-leading-redirection-v1/reference.py','--output',dir+'/leading-observations.json'],{stdio:'inherit',timeout:30000});if(!run.error&&run.status===0)try{leading_reference=await get('leading-observations');}catch{}}
+  await save('expectation-reference',{schema:'mathgraph.expectations.reference.v1',context,subject,expectation_set:snapshot.expectation_profile,reference:reference??{records:[]},leading_reference});await seal();
  }else if(phase==='contract-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');
   ensure(request.command==='check'&&[CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&request.support.supported,'CONTRACT_CHECK_ONLY');
@@ -125,7 +126,7 @@ try{
    if(request.command==='fix'&&report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'){
     const snapshot=await get('snapshot'),patch=await get('patch');
     ensure(snapshot.head_sha===request.head_sha&&snapshot.repository===request.repository,'REPAIR_SUBJECT_MISMATCH');
-    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken());ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
+    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken(),snapshot.expectation_profile);ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
     ensure(hash(admitLeanPatch(patch,snapshot.source))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }

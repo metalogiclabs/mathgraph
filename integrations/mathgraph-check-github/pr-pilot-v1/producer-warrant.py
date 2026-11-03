@@ -33,8 +33,8 @@ def project(facts,current=None):
         deps=required_dependencies(subject,obligation,relation,verification)+(evidence,)
         if name=='selection':deps+=(Dependency('evidence','consumer-request',digest(facts['request'])),)
         warrant=BoundaryWarrant(subject,obligation,relation,verification,
-            Conclusion('SUPPORTED',('Only two operator-adopted finite obligations; not a formal theorem',
-                'Selection does not substitute for fresh target native replay')),deps)
+            Conclusion('SUPPORTED',tuple(facts.get('limits',('Only two operator-adopted finite obligations; not a formal theorem',
+                'Selection does not substitute for fresh target native replay')))),deps)
         receipt=Receipt(verification.receipt_id,'native',scope_identity(warrant));pairs.append((warrant,receipt))
     expected={}
     for w,_ in pairs:

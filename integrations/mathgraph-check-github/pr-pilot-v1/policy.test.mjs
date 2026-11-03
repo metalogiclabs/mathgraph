@@ -7,7 +7,7 @@ const files=[{filename:'Scripts/Ledger.lean',status:'modified'}];
 const make=(x={})=>admitRequest({repository:repo,pr,comment,permission:'write',files,...x});
 test('reviewed source uses versioned expectation scope; unknown-source fix stays unsupported',()=>{
  const approved={...pr,head:{...pr.head,sha:'fba155bf31918f9b03394ae9bfb8cd17c91ecfb8'}};
- const known=make({pr:approved});assert.equal(known.profile.expectation_profile,'ledger-shell-v1');assert.equal(known.profile.report_version,'expectations-v1');
+ const known=make({pr:approved});assert.equal(known.profile.expectation_profile,'ledger-shell-v2');assert.equal(known.profile.report_version,'expectations-v2');
  const blocked=make({comment:{...comment,body:'@MathGraph -fix'}});assert.equal(blocked.support.supported,false);assert.equal(blocked.support.reason,'REPAIR_EXPECTATION_REVIEW_REQUIRED');
  assert.equal(make({pr:approved,comment:{...comment,body:'@MathGraph -fix'}}).support.supported,true);
 });

@@ -30,7 +30,7 @@ try{
   snapshot.source_sha256=hash(snapshot.source);snapshot.cli_sha256=hash(snapshot.cli_source);
   await save('snapshot',snapshot);
   let plan,modelCalls=0;
-  if(profile.expectation_profile){const fixed=reviewedPlan(expectationSubject(snapshot),await producerToken());requireFact(fixed,'EXPECTATION_SOURCE_NOT_QUALIFIED');plan=admitLeanPlan(fixed);}
+  if(profile.expectation_profile){const fixed=reviewedPlan(expectationSubject(snapshot),await producerToken(),snapshot.expectation_profile);requireFact(fixed,'EXPECTATION_SOURCE_NOT_QUALIFIED');plan=admitLeanPlan(fixed);}
   else{const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-investigate',packet:{snapshot:modelSnapshot(snapshot)}});await save('model-investigate',response);plan=admitLeanPlan(response.proposal);modelCalls=1;}
   await save('plan',plan);await save('state',{context,state:'PROBES_PROPOSED',test_digest:hash(plan.tests),model_calls:modelCalls,expectation_origin:profile.expectation_profile??'MODEL_HYPOTHESIS'});await seal();
  }else if(phase==='repair'){
@@ -41,7 +41,7 @@ try{
   if(!initial.complete){await save('repair-state',{state:'BASELINE_OR_PROBES_INCOMPLETE',model_calls:0});await seal();process.exit(0);}
   if(snapshot.mode==='OWNED_FORK_PR_PILOT'){
    let reference;try{reference=await load('expectation-reference');}catch{}
-   const admission=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken());await save('expectation-admission',admission);
+   const admission=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken(),snapshot.expectation_profile);await save('expectation-admission',admission);
    if(!admission.repair_eligible){await save('repair-state',{state:'EXPECTATION_NOT_ADMITTED',model_calls:0});await seal();process.exit(0);}
   }
   const failed=initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE');
@@ -62,7 +62,7 @@ try{
    const initial=inspectArm(native.arm,{profile:snapshot,plan,source:snapshot.source});
    const original=initial.rows.map(p=>({...p,execution:initial.complete?p.execution:'UNKNOWN',hypothesis:plan.tests.find(t=>t.id===p.id).hypothesis,contract:plan.tests.find(t=>t.id===p.id).contract}));
    let reference,expectations;try{reference=await load('expectation-reference');}catch{}
-   if(snapshot.mode==='OWNED_FORK_PR_PILOT')expectations=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken());
+   if(snapshot.mode==='OWNED_FORK_PR_PILOT')expectations=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken(),snapshot.expectation_profile);
    let repair={status:'NOT_PROPOSED'};
    if(rs.state==='PATCH_PROPOSED'){
     const fixed=await load('native-repair'),patch=await load('patch');const patched=admitLeanPatch(patch,snapshot.source);nativeIdentity(fixed,state,snapshot,plan);
