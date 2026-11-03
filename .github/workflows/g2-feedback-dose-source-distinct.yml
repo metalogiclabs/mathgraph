@@ -1,0 +1,188 @@
+name: G2 full-vs-masked source feedback dose calibration
+on:
+  push:
+    branches: [research/g2-feedback-dose-source-distinct-20261103]
+    paths: ['.github/workflows/g2-feedback-dose-source-distinct.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prepare-dose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {rank: 3, repo: 'joho/godotenv', pr: 262, base: 'a2be92d182fc04da33b365bf47c17fe0f4808aea', head: 'b724238db6209280ed96a4e04aa2af38063763d9', prod: 'parser.go'}
+          - {rank: 4, repo: 'samber/lo', pr: 993, base: '92663432d4f44300b3daf77a2641cd0b00d0b5d2', head: '5b4c3c162309bd4544ea51997980d1e98a22682a', prod: 'find.go'}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-packet-rank-${{ matrix.rank }}
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: packet
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-masked-transfer-author-rank-${{ matrix.rank }}
+          repository: metalogiclabs/mathgraph
+          run-id: 41572005440
+          github-token: ${{ github.token }}
+          path: author
+      - name: Change only the previously masked author-native information channel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          report=json.load(open('author/qualification.json'))
+          full=json.load(open('author/learner-residual.json'))
+          masked_path=Path('packet/learner-residual.json')
+          masked=json.loads(masked_path.read_text())
+          subject=json.load(open('packet/subject.json'))
+          assert report['status']=='WARRANTED_BOUNDED_AUTHENTIC_AUTHOR_NATIVE_RED_GREEN'
+          assert full['schema']==masked['schema']=='mathgraph.g2.native-residual-to-observer.v1'
+          assert full['source_sha']==masked['source_sha']==subject['source_sha']=='${{ matrix.base }}'
+          assert report['head_sha']=='${{ matrix.head }}'
+          assert masked['native_assertion_output']=='' and masked['failing_tests']==['WITHHELD_ASSERTION_ID']
+          assert full['native_assertion_output'] and full['failing_tests'] and report['matched_failed_tests']
+          masked['native_assertion_output']=full['native_assertion_output']
+          masked['failing_tests']=full['failing_tests']
+          masked['native_contract']=full['native_contract']
+          masked_path.write_text(json.dumps(masked,indent=2,sort_keys=True)+'\n')
+          evidence={'schema':'mathgraph.g2.feedback-dose-calibration.v1','rank':${{ matrix.rank }},
+                    'source_sha':'${{ matrix.base }}','head_sha':'${{ matrix.head }}',
+                    'old_dose':'MASKED','new_dose':'AUTHOR_NATIVE_ASSERTION_OUTPUT_ONLY',
+                    'preserved_source_subject_sha256':hashlib.sha256(Path('packet/subject.json').read_bytes()).hexdigest(),
+                    'assertion_output_sha256':hashlib.sha256(full['native_assertion_output'].encode()).hexdigest(),
+                    'scientific_g2':'UNKNOWN','scientific_g3':'UNKNOWN','posthoc':True}
+          Path('packet/feedback-dose.json').write_text(json.dumps(evidence,indent=2)+'\n')
+          print('FEEDBACK_DOSE',evidence['old_dose'],'->',evidence['new_dose'],'RANK',evidence['rank'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g2-informative-packet-rank-${{ matrix.rank }}
+          path: packet
+          retention-days: 60
+  propose:
+    needs: [prepare-dose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {rank: 3}
+          - {rank: 4}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-packet-rank-${{ matrix.rank }}
+          path: packet
+      - name: Unchanged two-proposal source-neutral learner, direct comparator included
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          node code/research/udm_g2_source_neutral_v3/propose.mjs \
+            packet/learner-residual.json packet/base_source proposals packet/subject.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-informative-proposals-rank-${{ matrix.rank }}
+          path: proposals
+          retention-days: 60
+  independent-native:
+    needs: [propose]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {rank: 3, repo: 'joho/godotenv', pr: 262, base: 'a2be92d182fc04da33b365bf47c17fe0f4808aea', head: 'b724238db6209280ed96a4e04aa2af38063763d9', prod: 'parser.go', pkg: 'godotenv'}
+          - {rank: 4, repo: 'samber/lo', pr: 993, base: '92663432d4f44300b3daf77a2641cd0b00d0b5d2', head: '5b4c3c162309bd4544ea51997980d1e98a22682a', prod: 'find.go', pkg: 'lo'}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: code
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.base }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.0'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-proposals-rank-${{ matrix.rank }}
+          path: proposals
+      - uses: actions/download-artifact@v4
+        with:
+          name: g2-informative-packet-rank-${{ matrix.rank }}
+          path: packet
+      - name: Exact source pin, independent proposal execution and negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(printenv OPENAI_API_KEY || true)"
+          test "$(git -C source rev-parse HEAD)" = '${{ matrix.base }}'
+          git -C source fetch --no-tags origin 'refs/pull/${{ matrix.pr }}/head:refs/remotes/origin/g2-pr-${{ matrix.pr }}'
+          test "$(git -C source rev-parse refs/remotes/origin/g2-pr-${{ matrix.pr }})" = '${{ matrix.head }}'
+          python - <<'PY'
+          import json,hashlib,pathlib
+          p=json.load(open('packet/learner-residual.json'))
+          d=json.load(open('packet/subject.json'))
+          z=json.load(open('packet/feedback-dose.json'))
+          assert p['source_sha']==d['source_sha']==z['source_sha']=='${{ matrix.base }}'
+          assert z['posthoc'] and z['old_dose']=='MASKED'
+          assert p['native_assertion_output']!='' and p['failing_tests']
+          for item in d['source_files']:
+              path=pathlib.Path('source')/item['path']
+              assert hashlib.sha256(path.read_bytes()).hexdigest()==item['sha256']
+          PY
+          python -m unittest discover -s code/research/udm_g2_source_neutral_v3 -p test_source_neutral.py -v 2>&1 | tee /tmp/feedback-controls.log
+          grep -q 'Ran 8 tests' /tmp/feedback-controls.log
+          grep -q '^OK$' /tmp/feedback-controls.log
+          python code/research/udm_g2_source_neutral_v3/evaluate.py \
+            --source source --base '${{ matrix.base }}' --head '${{ matrix.head }}' \
+            --production-file '${{ matrix.prod }}' --package-name '${{ matrix.pkg }}' \
+            --proposals proposals --output evaluation | tee evaluation.stdout
+          python - <<'PY'
+          import json
+          d=json.load(open('evaluation/evaluation.json'))
+          assert d['schema']=='mathgraph.g2.go-native-qualification.v1'
+          assert d['base_sha']=='${{ matrix.base }}' and d['head_sha']=='${{ matrix.head }}'
+          assert d['strict_g2']=='UNKNOWN' and d['strict_g3']=='UNKNOWN'
+          print('POST_HOC_INFORMATION_DOSE_SCIENCE','${{ matrix.rank }}',d['status'],d.get('fair_comparison'))
+          for p in d.get('results',[]):print('PROPOSAL_RESULT',p['mode'],p['status'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g2-informative-native-rank-${{ matrix.rank }}
+          path: |
+            evaluation
+            evaluation.stdout
+            /tmp/feedback-controls.log
+          retention-days: 60
