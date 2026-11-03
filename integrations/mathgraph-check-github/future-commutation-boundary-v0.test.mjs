@@ -59,12 +59,12 @@ test('fresh independent receipt is OBSERVED at audit plane yet UNKNOWN at monito
   assert.equal(monitor(original, fresh).transitions[0].to, 'UNKNOWN');
 });
 
-test('caller-supplied unbound requalification bit promotes a claimed new result', () => {
+test('caller-supplied unbound requalification bit cannot promote a claimed new result', () => {
   const original = auditIntent(a.contract, [a.receipt], a.authority);
   const fresh = auditIntent(b.contract, [b.receipt], b.authority);
   assert.equal(Object.hasOwn(fresh, 'independent_requalification'), false);
   const externallyAsserted = monitor(original, {...fresh, independent_requalification: true});
-  assert.equal(externallyAsserted.transitions[0].to, 'OBSERVED');
+  assert.equal(externallyAsserted.transitions[0].to, 'UNKNOWN');
   assert.equal(externallyAsserted.permission, 'ADVISORY_ONLY');
 });
 
@@ -75,13 +75,14 @@ test('false in-band requalification bit cannot override an audit UNKNOWN', () =>
   assert.equal(outcome.transitions[0].to, 'UNKNOWN');
 });
 
-test('raw fabricated report can impersonate monitor transition without a trusted reporter boundary', () => {
+test('raw fabricated report cannot impersonate a verified monitor transition', () => {
   const original = auditIntent(a.contract, [a.receipt], a.authority);
   const fresh = auditIntent(b.contract, [b.receipt], b.authority);
   const counterfeit = {...fresh, results: [{...fresh.results[0], status: 'OBSERVED'}],
     independent_requalification: true, contract_sha256: digest('f')};
-  assert.equal(monitor(original, counterfeit).transitions[0].to, 'OBSERVED');
-  // A pure monitor cannot authenticate this untrusted packet. Do not expose it as a warrant.
+  assert.equal(monitor(original, counterfeit).transitions[0].to, 'UNKNOWN');
+  // Before the G1 repair, this same assertion exposed a raw-helper trust bypass.
+  // Historical negative remains in the pre-fix Git commit/RED CI evidence.
 });
 
 test('authenticated-cycle facade strips a purported requalification bit', () => {
