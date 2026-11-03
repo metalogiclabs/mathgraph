@@ -159,6 +159,13 @@ class NativeHarnessTests(unittest.TestCase):
             "GITHUB_RUN_ATTEMPT": "1",
         }
         self.assertEqual(native.ci_context(valid, POLICY)["run_id"], 123456)
+        # The new persisted-reuse branch must qualify its own trusted runner;
+        # arbitrary research branches remain disallowed.
+        next_branch = "research/check-kernel-persisted-reuse-20261104"
+        permitted = {**valid,
+                     "GITHUB_REF": "refs/heads/" + next_branch,
+                     "GITHUB_WORKFLOW_REF": "metalogiclabs/mathgraph/.github/workflows/check-kernel-receipt-bridge-v1.yml@refs/heads/" + next_branch}
+        self.assertEqual(native.ci_context(permitted, POLICY)["run_id"], 123456)
         for key, value in (("GITHUB_WORKFLOW_REF", "attacker.yml"),
                            ("GITHUB_REF", "refs/heads/main"),
                            ("GITHUB_REPOSITORY", "other/repo"),

@@ -1,12 +1,16 @@
 name: Pinned Flash to MathGraph warrant bridge V1
 on:
   push:
-    branches: [research/check-kernel-warrant-bridge-20261104]
+    branches:
+      - research/check-kernel-warrant-bridge-20261104
+      - research/check-kernel-persisted-reuse-20261104
 permissions: {contents: read}
 jobs:
   native-receipt:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    outputs:
+      report_sha256: ${{ steps.seal.outputs.report_sha256 }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with: {persist-credentials: false}
@@ -46,9 +50,47 @@ jobs:
             --flash-repo flash \
             --report kernel-bridge-evidence/native-report.json \
             2>&1 | tee kernel-bridge-evidence/native-output.txt
+      - name: Seal actual producer report as an independent workflow job output
+        id: seal
+        shell: bash
+        run: |
+          set -euo pipefail
+          report_sha256="$(sha256sum kernel-bridge-evidence/native-report.json | awk '{print $1}')"
+          test "${#report_sha256}" -eq 64
+          echo "report_sha256=$report_sha256" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: kernel-bridge-native-evidence
           path: kernel-bridge-evidence/
           if-no-files-found: error
+  persisted-reuse:
+    needs: [native-receipt]
+    if: ${{ needs['native-receipt'].result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions: {contents: read, actions: read}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Read persisted producer artifact from a separate Actions job
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: kernel-bridge-native-evidence
+          path: persisted-evidence
+      - name: Independently appraise GitHub provenance and exact source/claim
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PRODUCER_REPORT_SHA256: ${{ needs['native-receipt'].outputs.report_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/check-kernel-receipt-bridge-v1/persisted.py \
+            --artifact persisted-evidence/native-report.json \
+            --report persisted-result/receipt.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: kernel-bridge-persisted-read-evidence
+          path: persisted-result/
+          if-no-files-found: warn

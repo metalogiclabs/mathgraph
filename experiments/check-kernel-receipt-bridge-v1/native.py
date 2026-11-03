@@ -22,7 +22,10 @@ import bridge
 
 
 HERE = Path(__file__).resolve().parent
-RESEARCH_REF = "refs/heads/research/check-kernel-warrant-bridge-20261104"
+RESEARCH_REFS = frozenset({
+    "refs/heads/research/check-kernel-warrant-bridge-20261104",
+    "refs/heads/research/check-kernel-persisted-reuse-20261104",
+})
 
 
 def digest(data: bytes) -> str:
@@ -111,10 +114,11 @@ def ci_context(env: dict, policy: dict) -> dict:
     """CI-supplied provenance; NEVER derive from a receipt's runner field."""
     repo = policy["runner"]["repository"]
     workflow = policy["runner"]["workflow"]
-    expected_workflow_ref = f"{repo}/.github/workflows/{workflow}@{RESEARCH_REF}"
+    research_ref = env.get("GITHUB_REF", "")
+    expected_workflow_ref = f"{repo}/.github/workflows/{workflow}@{research_ref}"
     if (env.get("GITHUB_REPOSITORY") != repo
             or env.get("GITHUB_WORKFLOW_REF") != expected_workflow_ref
-            or env.get("GITHUB_REF") != RESEARCH_REF
+            or research_ref not in RESEARCH_REFS
             or env.get("GITHUB_EVENT_NAME") != "push"):
         raise ValueError("UNTRUSTED_CI_CONTEXT")
     sha = env.get("GITHUB_SHA", "")
