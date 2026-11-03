@@ -3,7 +3,7 @@ export function contractTitle(report){return ({NO_FAILURE_IN_FROZEN_CORPUS:'Froz
 export function formatContractResult(report,request,runURL){
  const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
  const lines=['### MathGraph Check',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`,`**${report.status==='STALE'?'Source changed — recheck required':contractTitle(report)}**`,`Revision: \`${request.head_sha}\` · Base: \`${request.base_sha}\``,
- 'Scope: selected Scripts modules and transitive imports compile under a trusted build; the unchanged 1,367-case regression corpus runs on both revisions. Whole-PR correctness: UNKNOWN.'];
+ 'Requested scope: compile selected Scripts modules and transitive imports under a trusted build, then replay the unchanged 1,367-case regression corpus on both revisions. Only admitted evidence below establishes completed coverage. Whole-PR correctness: UNKNOWN.'];
  if(report.coverage&&contractTitle(report)!=='Check incomplete'&&report.status!=='STALE'){
   const c=report.coverage;lines.push(['| Native evidence | Base | Head |','|---|---|---|',`| Frozen probes passed | ${c.base.passed}/${c.base.cases} | ${c.head.passed}/${c.head.cases} |`,`| Compiled modules | ${c.base.compiled_modules.length} | ${c.head.compiled_modules.length} |`].join('\n'));
   for(const side of ['base','head'])lines.push(`Compiled roots (${side}): ${c[side].compiled_roots.map(p=>'`'+esc(p)+'`').join(', ')}`);

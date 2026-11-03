@@ -53,10 +53,11 @@ try{
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');
   ensure(request.command==='check'&&request.profile.mode===CONTRACT_MODE&&request.support.supported,'CONTRACT_CHECK_ONLY');
   const native=spawnSync('python3',['integrations/mathgraph-check-github/repository-contract-v1/run.py','--pr',String(request.number),'--base',request.base_sha,'--head',request.head_sha,'--output',dir+'/contract-native'],{stdio:'inherit',timeout:1300000});
-  ensure(!native.error&&native.status===0,'CONTRACT_NATIVE_INCOMPLETE');
+  try{await save('contract-receipt',JSON.parse(await readFile(dir+'/contract-native/result.json','utf8')));}catch{}
+  await seal();ensure(!native.error&&native.status===0,'CONTRACT_NATIVE_INCOMPLETE');
  }else if(phase==='contract-assess'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');let receipt;
-  try{receipt=JSON.parse(await readFile(dir+'/contract-native/result.json','utf8'));}catch{}
+  try{receipt=await get('contract-receipt');}catch{}
   await save('assessment',admitRepositoryResult(receipt,request,context));await seal();
  }else if(phase==='reuse'){
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
