@@ -1,0 +1,88 @@
+name: G1 authentic CI readback and fail-closed requalification
+on:
+  push:
+    branches: [research/g1-authenticated-positive-recheck-20261104]
+    paths:
+      - 'integrations/mathgraph-check-github/fresh-ci-requalification-v1.*'
+      - '.github/workflows/g1-authenticated-positive-recheck.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
+jobs:
+  source-unit-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Verify live-source requalification and existing fail-closed controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test --test-reporter=tap \
+            integrations/mathgraph-check-github/fresh-ci-requalification-v1.test.mjs \
+            integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs \
+            integrations/mathgraph-check-github/check-resolve-monitor-trust-boundary-v1.test.mjs | tee /tmp/g1-fresh-ci-unit.tap
+          grep -q '^# tests 28$' /tmp/g1-fresh-ci-unit.tap
+          grep -q '^# pass 28$' /tmp/g1-fresh-ci-unit.tap
+          grep -q '^# fail 0$' /tmp/g1-fresh-ci-unit.tap
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g1-source-requalification-unit-evidence
+          path: /tmp/g1-fresh-ci-unit.tap
+  actual-github-api:
+    needs: [source-unit-controls]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Independently read actual GitHub PR and exact-head external check
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'JS' | tee /tmp/g1-actual-source-readback.json
+          import {requalifyFreshGitHubCI} from './integrations/mathgraph-check-github/fresh-ci-requalification-v1.mjs';
+          const expected='2e1b9e274adfb6474bcfd453ef0721403b25cb97';
+          const observed=await requalifyFreshGitHubCI({
+            repository:'metalogiclabs/mathgraph',
+            pr:266,
+            token:process.env.GITHUB_TOKEN,
+            requiredChecks:['check-full'],
+            previous:{result:{subject:{
+              repository:'metalogiclabs/mathgraph',pr:266,head_sha:'a'.repeat(40)},
+              independent_requalification:true}}
+          });
+          if(observed.status!=='OBSERVED'||observed.permission!=='ADVISORY_ONLY'||
+             observed.semantic_verification!=='NOT_ESTABLISHED'||
+             observed.subject?.head_sha!==expected||observed.changed_head!==true||
+             observed.checks?.length!==1||observed.checks[0].status!=='OBSERVED'||
+             !Number.isSafeInteger(observed.checks[0].check_run_id)){
+            console.error('UNKNOWN_EXACT_LIVE_CI_READBACK');
+            console.error(JSON.stringify(observed));
+            process.exit(1);
+          }
+          console.log(JSON.stringify(observed));
+          JS
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/g1-actual-source-readback.json'))
+          assert r['status']=='OBSERVED' and r['permission']=='ADVISORY_ONLY'
+          assert r['semantic_verification']=='NOT_ESTABLISHED'
+          assert r['reason']=='FRESH_CI_READBACK_NOT_A_WARRANT'
+          print('SOURCE_NATIVE_GITHUB_API_CI_ONLY_REQUALIFICATION')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g1-actual-github-ci-readback
+          path: /tmp/g1-actual-source-readback.json
