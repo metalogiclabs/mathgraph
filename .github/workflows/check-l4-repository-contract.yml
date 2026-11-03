@@ -1,0 +1,50 @@
+name: L4YAML fixed repository contract
+on:
+  push:
+    branches: [research/check-l4-repository-contract-v1]
+    paths:
+      - 'integrations/mathgraph-check-github/repository-contract-v1/**'
+      - '.github/workflows/check-l4-repository-contract.yml'
+permissions:
+  contents: read
+concurrency:
+  group: l4yaml-fixed-repository-contract
+  cancel-in-progress: false
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pr: 19
+            base: 809014dd314dbcf0ccf1dd23ec9cbf84ee4830df
+            head: 815695d634e50d4c336919aa9e60392dba81f1e9
+          - pr: 20
+            base: 815695d634e50d4c336919aa9e60392dba81f1e9
+            head: b30319711527a569f6bae4c42cccd41b63233820
+          - pr: 21
+            base: b30319711527a569f6bae4c42cccd41b63233820
+            head: 31d8470dde81bd5b68c8792ac80215ce47ab1e18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - name: Repository-contract regression tests
+        run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - name: Existing GitHub Check regression suite
+        run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Audit source using unchanged repository contract
+        run: python3 integrations/mathgraph-check-github/repository-contract-v1/run.py --pr '${{ matrix.pr }}' --base '${{ matrix.base }}' --head '${{ matrix.head }}' --output contract-results
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: l4yaml-repository-contract-pr-${{ matrix.pr }}
+          path: |
+            contract-results/*.json
+            contract-results/logs/
