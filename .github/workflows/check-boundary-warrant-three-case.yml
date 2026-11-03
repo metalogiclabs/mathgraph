@@ -1,0 +1,113 @@
+name: MathGraph — Three Pinned Boundary Warrants (Lean, Brahe, Nyx)
+
+on:
+  push:
+    branches:
+      - research/boundary-warrant-nyx-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recheck-three-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused graph test runner
+        run: python -m pip install 'pytest>=8,<10'
+      - name: Reacquire immutable artifacts and their exact source blobs
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/boundary-three" evidence-out/boundary-three
+          fetch_artifact() {
+            local id="$1" name="$2" expected="$3"
+            curl --fail --location --silent --show-error --retry 3 --max-time 120 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" \
+              -o "$RUNNER_TEMP/boundary-three/$name"
+            echo "$expected  $RUNNER_TEMP/boundary-three/$name" | sha256sum -c -
+          }
+          fetch_source() {
+            local url="$1" name="$2" expected="$3"
+            curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+              "$url" -o "$RUNNER_TEMP/boundary-three/$name"
+            echo "$expected  $RUNNER_TEMP/boundary-three/$name" | sha256sum -c -
+          }
+          fetch_artifact 13214576201 l4.zip 57d139153c4d61003d61a002fd715c9ac7bbdc3f0f88431b710e45f9c558e5e2
+          fetch_artifact 13128365041 brahe.zip 87c105ef5ab2c8880dbed6cbae78cfdb4c7bd680f23419cdb5776685b3cc914e
+          fetch_artifact 13237614768 nyx.zip 92d8a37b6ebf8f344ccd7cebacb56306704dd6d54c2e9bfb02af4e81a531912c
+          fetch_source 'https://raw.githubusercontent.com/duncaneddy/brahe/323c4542ad915aa1b6a1dbf65f1f6a8040609294/src/events/detection.rs' brahe-base.rs dcfadec09fcc48fd824d0cc154f622f594ac7abdbbf174eeccbf41c885af3708
+          fetch_source 'https://raw.githubusercontent.com/duncaneddy/brahe/f40f97da4094fddbd3745158f0123f9bcd0f3bd3/src/events/detection.rs' brahe-head.rs a4a5c2c17202202b7cfe09244c542ea4f352767d181c71d82b979b7f51905db5
+          fetch_source 'https://raw.githubusercontent.com/metalogiclabs/nyx/d1c3598d5ccf4c984a1d3dd82c450e2af363e821/nyx-core/src/propagators/event.rs' nyx-base-event.rs 92d9f32461bd8704cedc6440c8d550a88ec46164fce28b3a1a8bea3da90f3676
+          fetch_source 'https://raw.githubusercontent.com/metalogiclabs/nyx/ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b/nyx-core/src/propagators/event.rs' nyx-head-event.rs 1b8bb83166e8e398f5ee382fb907e02ae10af9270b2e9dde7ae30210bbb5f495
+          fetch_source 'https://raw.githubusercontent.com/metalogiclabs/nyx/d1c3598d5ccf4c984a1d3dd82c450e2af363e821/nyx-core/tests/propagation/stopcond.rs' nyx-base-test.rs a5e56d83ec0df73c9980b712009994766f33a317c749f70de77c43e3d8cc1cf4
+          fetch_source 'https://raw.githubusercontent.com/metalogiclabs/nyx/ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b/nyx-core/tests/propagation/stopcond.rs' nyx-head-test.rs 3b5948cc98681a75802437bf9224bb09485b825b912c86bf126ea64b0c497426
+          sha256sum "$RUNNER_TEMP/boundary-three"/* \
+            > evidence-out/boundary-three/input-sha256.txt
+          {
+            echo "PYTHONPATH=$GITHUB_WORKSPACE"
+            echo "MATHGRAPH_L4_CLAIM_ARTIFACT_ZIP=$RUNNER_TEMP/boundary-three/l4.zip"
+            echo "MATHGRAPH_BRAHE_ARTIFACT_ZIP=$RUNNER_TEMP/boundary-three/brahe.zip"
+            echo "MATHGRAPH_BRAHE_BASE_SOURCE=$RUNNER_TEMP/boundary-three/brahe-base.rs"
+            echo "MATHGRAPH_BRAHE_HEAD_SOURCE=$RUNNER_TEMP/boundary-three/brahe-head.rs"
+            echo "MATHGRAPH_NYX_ARTIFACT_ZIP=$RUNNER_TEMP/boundary-three/nyx.zip"
+            echo "MATHGRAPH_NYX_BASE_EVENT=$RUNNER_TEMP/boundary-three/nyx-base-event.rs"
+            echo "MATHGRAPH_NYX_HEAD_EVENT=$RUNNER_TEMP/boundary-three/nyx-head-event.rs"
+            echo "MATHGRAPH_NYX_BASE_TEST=$RUNNER_TEMP/boundary-three/nyx-base-test.rs"
+            echo "MATHGRAPH_NYX_HEAD_TEST=$RUNNER_TEMP/boundary-three/nyx-head-test.rs"
+          } >> "$GITHUB_ENV"
+      - name: Recheck original graph, formal admission and both native adapters
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            tests/test_mathgraph_warrant_resolution_core.py \
+            tests/test_mathgraph_boundary_warrant_v0.py \
+            2>&1 | tee evidence-out/boundary-three/graph-tests.log
+          python -m unittest discover -s experiments/check-l4-claim-consumer-v1 \
+            -p test_boundary_export.py -v \
+            2>&1 | tee evidence-out/boundary-three/lean-tests.log
+          python -m unittest discover -s experiments/boundary-warrant-v0 \
+            -p test_brahe_export.py -v \
+            2>&1 | tee evidence-out/boundary-three/brahe-tests.log
+          python -m unittest discover -s experiments/boundary-warrant-v0 \
+            -p test_joint_qualification.py -v \
+            2>&1 | tee evidence-out/boundary-three/two-method-tests.log
+          python -m unittest discover -s experiments/boundary-warrant-v0 \
+            -p test_nyx_replay.py -v \
+            2>&1 | tee evidence-out/boundary-three/nyx-parse-tests.log
+          python -m unittest discover -s experiments/boundary-warrant-v0 \
+            -p test_nyx_export.py -v \
+            2>&1 | tee evidence-out/boundary-three/three-case-tests.log
+      - name: Derive bounded three-case graph projection and selective withdrawal
+        run: |
+          set -euo pipefail
+          python experiments/boundary-warrant-v0/qualify.py \
+            --l4-archive "$MATHGRAPH_L4_CLAIM_ARTIFACT_ZIP" \
+            --brahe-archive "$MATHGRAPH_BRAHE_ARTIFACT_ZIP" \
+            --brahe-base "$MATHGRAPH_BRAHE_BASE_SOURCE" \
+            --brahe-head "$MATHGRAPH_BRAHE_HEAD_SOURCE" \
+            --nyx-archive "$MATHGRAPH_NYX_ARTIFACT_ZIP" \
+            --nyx-base-event "$MATHGRAPH_NYX_BASE_EVENT" \
+            --nyx-head-event "$MATHGRAPH_NYX_HEAD_EVENT" \
+            --nyx-base-test "$MATHGRAPH_NYX_BASE_TEST" \
+            --nyx-head-test "$MATHGRAPH_NYX_HEAD_TEST" \
+            --out evidence-out/boundary-three/qualification.json \
+            2>&1 | tee evidence-out/boundary-three/qualification.log
+          python -m json.tool evidence-out/boundary-three/qualification.json > /dev/null
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-boundary-warrant-three-case-v1
+          path: evidence-out/boundary-three/
+          if-no-files-found: warn
