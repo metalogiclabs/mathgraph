@@ -1,0 +1,18 @@
+{
+  "subject": {
+    "repository": "metalogiclabs/L4YAML",
+    "revision": "39241777bad98ab520c247c8edd60ce3b083ab53",
+    "path": "Scripts/Ledger.lean",
+    "sha256": "10bea23ba9b9847c5666154baa3e641129c19a23ad4995f6c5bf9a2deccc46f9"
+  },
+  "pull_request": 28,
+  "base": "74ac6223bd8c90fb62877a82d01ed2d1c6140a2f",
+  "producer": {
+    "repository": "metalogiclabs/mathgraph",
+    "run_id": 41713027413,
+    "verifier_sha": "a395bc3ec328c04de108eae8d07d552b9d210f42",
+    "artifact_id": 13269595342,
+    "artifact_sha256": "eae07f9caea141e0a5dc1ff92df917809f2f64c99ee7c4ee549f07fb396e4fb1"
+  },
+  "scope": "Fresh native recheck of unchanged frozen expectations at exact published candidate, not cached correctness."
+}

@@ -5,7 +5,12 @@ import {executionContext} from '../../integrations/mathgraph-check-github/pr-pil
 import {planFor,inspectNative} from '../check-expectation-admission-v1/binding-native.mjs';
 import {admitLeanPlan,admitLeanPatch,inspectArm} from '../../integrations/mathgraph-check-github/lean-investigator-v1/contracts.mjs';
 const [phase,root]=process.argv.slice(2),context=executionContext();
-const policy=JSON.parse(await readFile(new URL('./binding.json',import.meta.url)));
+let policy=JSON.parse(await readFile(new URL('./binding.json',import.meta.url)));
+if(process.argv[4]==='candidate'){
+ const target=JSON.parse(await readFile(new URL('./candidate.json',import.meta.url))).subject;
+ if(target.repository!==policy.subject.repository||target.path!==policy.subject.path||!/^[a-f0-9]{40}$/.test(target.revision)||!/^[a-f0-9]{64}$/.test(target.sha256))throw Error('RECHECK_SUBJECT_INVALID');
+ policy={...policy,subject:target,proposals:policy.proposals.map(p=>({...p,subject:target}))};
+}
 const hash=s=>createHash('sha256').update(s).digest('hex'),same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),need=(b,c)=>{if(!b)throw Error(c);};
 const load=async n=>JSON.parse(await readFile(root+'/'+n+'.json')),save=async(n,v)=>writeFile(root+'/'+n+'.json',JSON.stringify(v,null,2)+'\n');
 async function seal(){const hashes={};for(const n of(await readdir(root)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort())hashes[n]=hash(await readFile(root+'/'+n));await save('manifest',{context,hashes});}

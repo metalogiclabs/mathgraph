@@ -37,5 +37,14 @@ class AdmissionTests(unittest.TestCase):
         for calls in [[],[['guard.py']]]:
             with self.subTest(calls=calls),patch.object(admission.reference.base,'capture',return_value={'status':'OK','calls':calls,'exit':0}):
                 self.assertEqual(admission.bind(admission.POLICY['proposals'][0],admission.POLICY['subject']['sha256'])['status'],'UNKNOWN')
+    def test_fresh_subject_rebinding_preserves_obligations_and_rejects_stale_source(self):
+        self.assertTrue(hasattr(admission,'policy_for_subject'),'fresh-source recheck adapter missing')
+        subject={**admission.POLICY['subject'],'revision':'a'*40,'sha256':'b'*64}
+        policy=admission.policy_for_subject(subject)
+        self.assertEqual([p['expression']for p in policy['proposals']],[p['expression']for p in admission.POLICY['proposals']])
+        with patch.object(admission.base,'POLICY',policy):
+            self.assertEqual(admission.bind(policy['proposals'][0],subject['sha256'])['status'],'ADMITTED')
+            self.assertEqual(admission.bind(policy['proposals'][0],admission.POLICY['subject']['sha256'])['status'],'UNKNOWN')
+        with self.assertRaises(ValueError):admission.policy_for_subject({**subject,'repository':'other/repo'})
 
 if __name__=='__main__':unittest.main()
