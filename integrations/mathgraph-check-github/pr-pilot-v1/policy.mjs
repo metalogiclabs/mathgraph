@@ -1,3 +1,5 @@
+import {formatUnifiedResult,reportView} from './report-view.mjs';
+import {claimProfileFor} from './claim-profile.mjs';
 import {CLI_MODE,cliProfileFor} from './cli-profiles.mjs';
 import {cliTitle,formatCliResult} from './cli-report.mjs';
 import {CONTRACT_MODE,contractTitle,formatContractResult} from './repository-report.mjs';
@@ -20,18 +22,21 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
  const support=classifyDiff(files);
  if(!support.supported&&command==='check'&&Array.isArray(files)&&files.some(f=>/^(Scripts\/)([A-Za-z_][A-Za-z0-9_]*\/)*[A-Za-z_][A-Za-z0-9_]*\.lean$/.test(f.filename)&&['added','modified','removed','renamed','copied'].includes(f.status))){profile.mode=CONTRACT_MODE;support.supported=true;support.reason='SUPPORTED_REPOSITORY_CONTRACT';}
  const cli=command==='check'?cliProfileFor(files):null;if(cli){profile.mode=CLI_MODE;profile.cli_profile=cli.id;support.supported=true;support.reason='SUPPORTED_CLI_PARITY';}
+ const claim=claimProfileFor({repository,command,base_sha:pr.base.sha,head_sha:pr.head.sha,profile});if(claim)profile.claim_profile=claim.id;
  return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support,changed_paths:files.map(f=>f.filename)};
 }
 const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
 const REPAIR_VERIFIED='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE';
 export function resultTitle(report,request){
+ if(report.claim?.status==='SUPPORTED'&&report.status!=='STALE')return reportView(report,request).title;
  if(report.status==='STALE')return 'Source changed — recheck required';
  if(request.profile?.mode===CLI_MODE)return cliTitle(report);
  if(request.profile?.mode===CONTRACT_MODE)return contractTitle(report);
  if(request.command==='fix')return report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED?'Candidate repair verified on frozen probes':'Repair incomplete';
  return report.status==='UNKNOWN'?'Check incomplete':report.status==='CANDIDATE_ASSERTION_FAILURE'?'Generated probe failure reproduced':report.status==='NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'?'No counterexample in generated probes':'Check incomplete';
 }
-export function formatResult(report,request,runURL){
+export function formatResult(report,request,runURL){return formatUnifiedResult(report,request,runURL,formatLegacyResult(report,request,runURL));}
+function formatLegacyResult(report,request,runURL){
  if(request.profile?.mode===CLI_MODE)return formatCliResult(report,request,runURL);
  if(request.profile?.mode===CONTRACT_MODE)return formatContractResult(report,request,runURL);
  if(report.status==='UNKNOWN'&&report.reason==='UNSUPPORTED_CHANGED_FILE_SCOPE')return ['### MathGraph Check','**No reviewed checking contract for this change**',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`, 'No native result is claimed. Whole-PR correctness: UNKNOWN.', 'Next: review these changes using the repository’s normal process, or define a reviewed contract for this source category. Do not split the PR merely to obtain a passing Check.', 'Available scope: selected Scripts modules with fixed regressions; generated check/fix is limited to `Scripts/Ledger.lean`. Proof intent, documentation correctness and arbitrary workflows remain unchecked.', 'Changed paths: '+(request.changed_paths??[]).map(esc).join(', '), `[Execution and evidence](${runURL})`].join('\n\n');

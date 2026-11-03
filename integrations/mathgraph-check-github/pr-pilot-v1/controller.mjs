@@ -1,3 +1,4 @@
+import {admitClaimResult,captureClaimSnapshot} from './claim.mjs';
 import {CLI_MODE} from './cli-profiles.mjs';
 import {admitCliResult} from './cli-parity.mjs';
 import {spawnSync} from 'node:child_process';
@@ -41,7 +42,11 @@ try{
    try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
     ensure(signed.reserved_cents>=(request.support.supported&&![CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
-    if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false')await save('contract-snapshot',await captureRepositorySnapshot(request,scoped.api));
+    if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false'){
+     let snapshot=await captureRepositorySnapshot(request,scoped.api);
+     if(request.profile.claim_profile){try{snapshot=await captureClaimSnapshot(request,snapshot,githubClient(process.env.GITHUB_TOKEN,{repository:'nasa-jpl/L4YAML'}));}catch{await save('claim-intake-error',{context,reason:'CLAIM_INTAKE_INCOMPLETE'});}}
+     await save('contract-snapshot',snapshot);
+    }
     if(request.command==='fix'&&publication.state==='STARTED'){
      const cs=await listChecks(request,scoped.api);
      const original=cs.find(c=>c.app?.id===5308912&&c.external_id?.startsWith(logicalIdentity({...request,command:'check'})+':')&&c.status==='completed'&&c.conclusion==='neutral');
@@ -62,12 +67,21 @@ try{
   try{await save(cli?'cli-receipt':'contract-receipt',JSON.parse(await readFile(folder+'/result.json','utf8')));}catch{}
   if(cli){for(const name of ['contract','cases'])await writeFile(dir+'/cli-'+name+'.json',await readFile('integrations/mathgraph-check-github/cli-parity-v1/'+name+'.json'));}
   else try{await writeFile(dir+'/contract-corpus.json',await readFile(folder+'/corpus.json'));}catch{}
+  if(request.profile.claim_profile){
+   const snapshot=await get('contract-snapshot');
+   if(snapshot.upstream_claim){
+    spawnSync('python3',['experiments/check-l4-claim-consumer-v1/run.py','--pr',String(request.number),'--snapshot',dir+'/contract-snapshot.json','--output',dir+'/claim-native'],{stdio:'inherit',timeout:1500000});
+    try{await save('claim-receipt',JSON.parse(await readFile(dir+'/claim-native/receipt.json','utf8')));}catch{}
+   }
+  }
   await seal();ensure(!native.error&&native.status===0,'CONTRACT_NATIVE_INCOMPLETE');
  }else if(phase==='contract-assess'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');let receipt;
   try{receipt=await get(request.profile.mode===CLI_MODE?'cli-receipt':'contract-receipt');}catch{}
   let corpus=null;try{corpus=await readFile(dir+'/contract-corpus.json');}catch{}
-  await save('assessment',request.profile.mode===CLI_MODE?admitCliResult(receipt,request,context):admitRepositoryResult(receipt,request,context,corpus));await seal();
+  const assessment=request.profile.mode===CLI_MODE?admitCliResult(receipt,request,context):admitRepositoryResult(receipt,request,context,corpus);
+  if(request.profile.claim_profile){let claim;try{claim=await get('claim-receipt');}catch{}assessment.claim=admitClaimResult(claim,request,context);if(!claim){try{assessment.claim.reason=(await get('claim-intake-error')).reason;}catch{}}}
+  await save('assessment',assessment);await seal();
  }else if(phase==='reuse'){
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');
