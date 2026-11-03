@@ -1,0 +1,30 @@
+{
+  "schema": "mathgraph.l4yaml.repository-contract.v1",
+  "repository": "metalogiclabs/L4YAML",
+  "toolchain": "leanprover/lean4:v4.35.0",
+  "authority": "EXPERIMENT_OWNER_DECLARED_REGRESSION_CONTRACT",
+  "scope": {
+    "native_modules": "changed Scripts/**/*.lean plus frozen regression modules, transitive Scripts imports",
+    "other_paths": "CONTEXT_ONLY; not correctness-checked",
+    "lakefile": "source context only; trusted isolated build replaces head-controlled Lake configuration"
+  },
+  "regression": {
+    "controller": "528aa7d4d60651afab4efafb3a00425794ba56fe",
+    "config_path": "experiments/check-l4-pr-matrix-v1/module-config.json",
+    "generator_path": "experiments/check-l4-pr-matrix-v1/make_module_probes.py",
+    "expected_cases": 1367,
+    "oracle_authority": "FINITE_BASE_IMPLEMENTATION_PARITY_CANDIDATE"
+  },
+  "requirements": [
+    "compile all added/modified Scripts Lean modules and their Scripts import closures from a clean build",
+    "execute frozen regression corpus unchanged on both base and head",
+    "native true/false controls must qualify",
+    "head cannot change the trusted contract, corpus or build commands",
+    "retain source/context identities and UNKNOWNs; no correctness claim for paths outside native scope"
+  ],
+  "non_claims": [
+    "No autonomous inference or authorization of scientific intent",
+    "No whole-PR correctness or Devin superiority",
+    "No qualification of arbitrary source sandbox security"
+  ]
+}
