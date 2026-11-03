@@ -9,13 +9,13 @@ LEGACY=HERE.parents[2]/'experiments/check-l4-pr-matrix-v1'
 sys.path.insert(0,str(LEGACY))
 from native import run,must,sha
 from native_modules import chunk_result
-from contract import scope,closure,comparison,pinned_files,required_roots
+from contract import scope,closure,comparison,pinned_files,required_roots,hosted_snapshot
 
 def write(path,value):
     tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(value,indent=2)+'\n');tmp.replace(path)
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--pr',type=int,required=True);parser.add_argument('--base',required=True);parser.add_argument('--head',required=True);parser.add_argument('--output',required=True);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--pr',type=int,required=True);parser.add_argument('--base',required=True);parser.add_argument('--head',required=True);parser.add_argument('--output',required=True);parser.add_argument('--snapshot');args=parser.parse_args()
     for revision in [args.base,args.head]:
         if not re.fullmatch('[a-f0-9]{40}',revision):raise ValueError('INVALID_REVISION')
     if args.pr<1:raise ValueError('INVALID_PR')
@@ -29,11 +29,15 @@ def main():
         with urllib.request.urlopen(urllib.request.Request('https://api.github.com/repos/'+repo+path,headers={'User-Agent':'MathGraph-Repository-Contract','Accept':'application/vnd.github+json'}),timeout=40) as r:return json.load(r)
     def pinned(pr):
         return pr['head']['sha']==args.head and pr['base']['sha']==args.base and all(pr[x]['repo']['full_name']==repo and not pr[x]['repo']['private'] for x in ['head','base'])
-    pr=api('/pulls/'+str(args.pr))
+    if args.snapshot:
+        pr,diff=hosted_snapshot(json.loads(Path(args.snapshot).read_text()),repo,args.pr,args.base,args.head)
+        report['metadata_acquisition']='AUTHENTICATED_INTAKE_SNAPSHOT'
+    else:
+        pr=api('/pulls/'+str(args.pr));diff=api('/compare/'+args.base+'...'+args.head)
+        report['metadata_acquisition']='ANONYMOUS_RESEARCH_API'
     if not pinned(pr):raise ValueError('PR_IDENTITY_CHANGED')
     # The live PR file endpoint is not an immutable snapshot (including ABA
     # force-push races). Bind the diff to the exact base/head Git objects.
-    diff=api('/compare/'+args.base+'...'+args.head)
     files=pinned_files(diff,args.base,args.head)
     if len(files)!=pr['changed_files']:raise ValueError('INCOMPLETE_CHANGED_FILES')
     selection=scope(files);report['scope']=selection;report['changed_files']=len(files);write(out/'snapshot.json',{'base_sha':args.base,'head_sha':args.head,'files':files});write(out/'result.json',report)
@@ -118,7 +122,8 @@ def main():
         except Exception as error:report['arms'][side]={'qualified':False,'failed':[],'reason':type(error).__name__+': '+str(error)[-1000:]}
         write(out/'result.json',report)
     report['state']=comparison(report['arms']['base'],report['arms']['head'])
-    if not pinned(api('/pulls/'+str(args.pr))):report['state']='STALE'
+    if args.snapshot:report['freshness']='PUBLISHER_RECHECK_REQUIRED'
+    elif not pinned(api('/pulls/'+str(args.pr))):report['state']='STALE'
     report['production_deployment']='UNCHANGED';report['whole_pr_correctness']='UNKNOWN';write(out/'result.json',report)
     print(json.dumps({'pr':args.pr,'state':report['state'],'uncovered':selection['uncovered'],'contract':report['contract_sha256'],'corpus':digest}))
     if report['state'] in ['UNKNOWN','STALE']:sys.exit(1)

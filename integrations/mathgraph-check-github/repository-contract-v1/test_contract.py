@@ -51,4 +51,18 @@ class ContractBoundary(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             with self.assertRaises(ValueError):getattr(mod,'required_roots',lambda *_:None)(Path(t),['Scripts.Missing'])
 
+
+class HostedSnapshot(unittest.TestCase):
+    def test_snapshot_binds_request_and_immutable_comparison(self):
+        repo='metalogiclabs/L4YAML';base='a'*40;head='b'*40
+        pr={'number':19,'state':'open','changed_files':1,'base':{'sha':base,'repo':{'full_name':repo,'private':False}},'head':{'sha':head,'repo':{'full_name':repo,'private':False}}}
+        data={'schema':'mathgraph.repository-contract.snapshot.v1','repository':repo,'pr':pr,'comparison':{'base_commit':{'sha':base},'total_commits':1,'commits':[{'sha':head}],'files':[{'filename':'Scripts/New.lean','status':'added'}]}}
+        fn=getattr(mod,'hosted_snapshot',lambda *_:None)
+        self.assertEqual(fn(data,repo,19,base,head),(pr,data['comparison']))
+        for key,value in [('repository','attacker/repo'),('schema','unknown')]:
+            bad={**data,key:value}
+            with self.assertRaises(ValueError):fn(bad,repo,19,base,head)
+        with self.assertRaises(ValueError):fn(data,repo,20,base,head)
+        with self.assertRaises(ValueError):fn(data,repo,19,head,base)
+
 if __name__=='__main__':unittest.main()
