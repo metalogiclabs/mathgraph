@@ -27,14 +27,7 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
 }
 const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
 const REPAIR_VERIFIED='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE';
-export function resultTitle(report,request){
- if(request.profile?.claim_profile||report.claim?.status==='SUPPORTED')return reportView(report,request).title;
- if(report.status==='STALE')return 'Source changed — recheck required';
- if(request.profile?.mode===CLI_MODE)return cliTitle(report);
- if(request.profile?.mode===CONTRACT_MODE)return contractTitle(report);
- if(request.command==='fix')return report.status==='CANDIDATE_ASSERTION_FAILURE'&&report.repair?.status===REPAIR_VERIFIED?'Candidate repair verified on frozen probes':'Repair incomplete';
- return report.status==='UNKNOWN'?'Check incomplete':report.status==='CANDIDATE_ASSERTION_FAILURE'?'Generated probe failure reproduced':report.status==='NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'?'No counterexample in generated probes':'Check incomplete';
-}
+export function resultTitle(report,request){return reportView(report,request).title;}
 export function formatResult(report,request,runURL){return formatUnifiedResult(report,request,runURL,formatLegacyResult(report,request,runURL));}
 function formatLegacyResult(report,request,runURL){
  if(request.profile?.mode===CLI_MODE)return formatCliResult(report,request,runURL);
