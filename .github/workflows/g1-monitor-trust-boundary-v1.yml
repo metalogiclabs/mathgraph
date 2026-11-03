@@ -24,7 +24,7 @@ jobs:
       - name: Run real node test assertions, reject zero tests
         run: |
           set -euo pipefail
-          node --test \
+          node --test --test-reporter=tap \
             integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs \
             integrations/mathgraph-check-github/check-resolve-monitor-trust-boundary-v1.test.mjs \
             integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs | tee /tmp/g1-native-tests.log
