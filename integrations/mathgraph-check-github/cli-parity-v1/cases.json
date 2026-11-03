@@ -1,0 +1,570 @@
+{
+  "traceof": [
+    {
+      "id": "plain",
+      "files": {
+        "L4YAML/Surface/Node.lean": "module\nimport Lean\nmutual\n  inductive SPlain : Nat → Prop where\n    | leaf (n : Nat) :\n        SPlain n\nend\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "generator-provenance",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "bearing",
+      "files": {
+        "L4YAML/Surface/Node.lean": "module\nimport Lean\nmutual\n  inductive SNode : Nat → Prop where\n    | alias (n : Nat) :\n        SCNsAliasNode n →\n        SNode n\nend\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "generator-provenance",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "line-comment",
+      "files": {
+        "L4YAML/Surface/Node.lean": "module\nimport Lean\nmutual\n  inductive SNode : Nat → Prop where\n    | alias (n : Nat) :\n        SCNsAliasNode n → -- premise\n        SNode n\nend\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "generator-provenance",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "blank-lines",
+      "files": {
+        "L4YAML/Surface/Node.lean": "module\nimport Lean\nmutual\n\n  inductive SPlain : Nat → Prop where\n    | leaf (n : Nat) :\n        SPlain n\nend\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "generator-provenance",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "actual-surface",
+      "files": {},
+      "repository_inputs": [
+        {
+          "side": "base",
+          "path": "L4YAML/Surface/Node.lean",
+          "target": "L4YAML/Surface/Node.lean"
+        }
+      ],
+      "base_args": [],
+      "head_args": [],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "generator-provenance",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "actual-report",
+      "files": {},
+      "repository_inputs": [
+        {
+          "side": "base",
+          "path": "L4YAML/Surface/Node.lean",
+          "target": "L4YAML/Surface/Node.lean"
+        }
+      ],
+      "base_args": [
+        "--report"
+      ],
+      "head_args": [
+        "--report"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "malformed-no-mutual",
+      "files": {
+        "L4YAML/Surface/Node.lean": "module\nimport Lean\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [],
+      "expected_base_exit": 1,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "nonempty",
+        "effects": "exact"
+      }
+    }
+  ],
+  "ledger-diff": [
+    {
+      "id": "empty",
+      "files": {
+        "old.md": "",
+        "new.md": ""
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "changed",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n",
+        "new.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "reversed",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n",
+        "new.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "write-report",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n",
+        "new.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md",
+        "--out",
+        "result.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md",
+        "--out",
+        "result.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "spaces-unicode",
+      "files": {
+        "old λ.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n",
+        "new λ.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old λ.md",
+        "new λ.md"
+      ],
+      "head_args": [
+        "old λ.md",
+        "new λ.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "warning-cells",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n| a | one | extra |\n",
+        "new.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "escaped-pipe",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | x\\|y |\n",
+        "new.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "latest",
+      "files": {
+        "Blueprint/ledgers/parse_iff_grammar/2026-01-01.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n",
+        "Blueprint/ledgers/parse_iff_grammar/2026-01-02.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n",
+        "Blueprint/ledgers/parse_iff_grammar/README.md": "not a snapshot"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "--latest"
+      ],
+      "head_args": [
+        "--latest"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "missing-input",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "absent.md"
+      ],
+      "head_args": [
+        "old.md",
+        "absent.md"
+      ],
+      "expected_base_exit": 1,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "nonempty",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "usage",
+      "files": {},
+      "repository_inputs": [],
+      "base_args": [
+        "--unknown"
+      ],
+      "head_args": [
+        "--unknown"
+      ],
+      "expected_base_exit": 2,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "nonempty",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "unwritable-report",
+      "files": {
+        "old.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 10 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | old |\n",
+        "new.md": "## Instruments\n| instrument | value |\n| --- | --- |\n| n | 12 |\n\n## Rows\n| key | value |\n| --- | --- |\n| a | new |\n| b | added |\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "old.md",
+        "new.md",
+        "--out",
+        "absent/result.md"
+      ],
+      "head_args": [
+        "old.md",
+        "new.md",
+        "--out",
+        "absent/result.md"
+      ],
+      "expected_base_exit": 1,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "nonempty",
+        "effects": "exact"
+      }
+    }
+  ],
+  "residue-classes": [
+    {
+      "id": "empty",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  ]\n\ndef expectedSupply : List String := [\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "ns",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field top ∨ PackAlt\",\n  ]\n\ndef expectedSupply : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field DECLINE=2\",\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\nstructure Carrier where\n  field : (∃ ns : List Nat, True) ∨ PackAlt\n\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "ks",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field top ∨ PackAlt\",\n  ]\n\ndef expectedSupply : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field DECLINE=2\",\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\nstructure Carrier where\n  field : (∃ ks : List FrameLevel, True) ∨ PackAlt\n\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "pack",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field top ∨ PackAlt\",\n  ]\n\ndef expectedSupply : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field DECLINE=2\",\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\nstructure Carrier where\n  field : (∃ ks : List FrameLevel, ∃ ns : List Nat, True) ∨ PackAlt\n\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "scalar",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field top ∨ PackAlt\",\n  ]\n\ndef expectedSupply : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field DECLINE=2\",\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\nstructure Carrier where\n  field : (∃ n : Nat, True) ∨ PackAlt\n\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "none",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field top ∨ PackAlt\",\n  ]\n\ndef expectedSupply : List String := [\n  \"L4YAML.Proofs.StreamAccum.Carrier[0].field DECLINE=2\",\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\nstructure Carrier where\n  field : (True) ∨ PackAlt\n\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "optional-tsv",
+      "files": {
+        "Tests/Guards/Proofs/OrTrueAudit.lean": "def expectedPositions : List String := [\n  ]\n\ndef expectedSupply : List String := [\n  ]\n",
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\n",
+        "residue.tsv": "1\t20\t4\tDECLINE\tCarrier\tmessage\th_alt := trivial\n1\t21\t4\tDECLINE\tCarrier\tmessage\tother\n"
+      },
+      "repository_inputs": [],
+      "base_args": [
+        "--tsv",
+        "residue.tsv"
+      ],
+      "head_args": [
+        "classes",
+        "--tsv",
+        "residue.tsv"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "actual-readings",
+      "files": {},
+      "repository_inputs": [
+        {
+          "side": "base",
+          "path": "Tests/Guards/Proofs/OrTrueAudit.lean",
+          "target": "Tests/Guards/Proofs/OrTrueAudit.lean"
+        },
+        {
+          "side": "base",
+          "path": "L4YAML/Proofs/Production/StreamAccum.lean",
+          "target": "L4YAML/Proofs/Production/StreamAccum.lean"
+        }
+      ],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 0,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "exact",
+        "effects": "exact"
+      }
+    },
+    {
+      "id": "missing-audit",
+      "files": {
+        "L4YAML/Proofs/Production/StreamAccum.lean": "\n"
+      },
+      "repository_inputs": [],
+      "base_args": [],
+      "head_args": [
+        "classes"
+      ],
+      "expected_base_exit": 1,
+      "comparison": {
+        "exit": "exact",
+        "stdout": "exact",
+        "stderr": "nonempty",
+        "effects": "exact"
+      }
+    }
+  ]
+}
