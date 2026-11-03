@@ -1,0 +1,91 @@
+name: G1 complete Check with pinned external Artin fixtures
+on:
+  push:
+    branches: [fix/g1-monitor-deny-unbound-requalification-20261104]
+    paths:
+      - '.github/workflows/g1-pinned-artin-external-fixtures.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  all-fixtures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Fetch immutable public ProofNet source and verify Git identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout --filter=blob:none \
+            https://github.com/marcusm117/ProofNet-Verified.git \
+            "$RUNNER_TEMP/proofnet-upstream"
+          git -C "$RUNNER_TEMP/proofnet-upstream" checkout --detach \
+            14879cb23e078d122adecd9578dd26a7304f753b
+          test "$(git -C "$RUNNER_TEMP/proofnet-upstream" rev-parse HEAD)" = \
+            14879cb23e078d122adecd9578dd26a7304f753b
+          node integrations/mathgraph-check-github/proofnet-artin-replay-v1.mjs \
+            "$RUNNER_TEMP/proofnet-upstream" > "$RUNNER_TEMP/artin-public-source-preflight.json" 
+          python - <<'PY'
+          import json,os
+          x=json.load(open(os.environ['RUNNER_TEMP']+'/artin-public-source-preflight.json'))
+          assert x['upstream']['commit']=='14879cb23e078d122adecd9578dd26a7304f753b'
+          assert x['artifact_preflight']=='PINNED_GOLD_PROOF_IDENTIFIED'
+          assert x['native_lean_replay']=='NOT_RUN'
+          assert x['permission']=='ADVISORY_ONLY'
+          print('PINNED_SOURCE_PREFLIGHT_OK')
+          PY
+      - name: Retrieve original published GitHub Actions artifact ZIP without forwarding token
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          http="$(curl --proto '=https' --tlsv1.2 -sS -o /dev/null \
+            -D "$RUNNER_TEMP/artin-artifact.headers" -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/metalogiclabs/mathgraph/actions/artifacts/13098749856/zip')"
+          test "$http" = 302
+          signed="$(grep -i '^location:' "$RUNNER_TEMP/artin-artifact.headers" | head -1 | cut -d ' ' -f2- | tr -d '\r')"
+          test -n "$signed"
+          case "$signed" in https://*) ;; *) exit 1 ;; esac
+          curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL \
+            --max-time 120 "$signed" -o "$RUNNER_TEMP/mathgraph-artin-evidence-original.zip"
+          test "$(sha256sum "$RUNNER_TEMP/mathgraph-artin-evidence-original.zip" | cut -d ' ' -f1)" = \
+            74a7838a82728a8326c15b1115992ac1519bf117d608ab497c92df3c07e2bd09
+          printf 'ZIP_SHA256_VERIFIED\n'
+      - name: Full Check JavaScript suite with all pinned fixtures and no skipped tests
+        shell: bash
+        env:
+          MATHGRAPH_PROOFNET_FIXTURE_DIR: ${{ runner.temp }}/proofnet-upstream
+          MATHGRAPH_ARTIN_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-artin-evidence-original.zip
+        run: |
+          set -euo pipefail
+          mapfile -d '' tests < <(find integrations/mathgraph-check-github -type f -name '*.test.mjs' -print0)
+          test "${#tests[@]}" -eq 47
+          node --test --test-reporter=tap "${tests[@]}" | tee /tmp/g1-external-fixture-full.tap
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('/tmp/g1-external-fixture-full.tap').read_text()
+          x={}
+          for line in text.splitlines():
+              for k in ('tests','pass','fail','skipped','cancelled'):
+                  if line.startswith('# '+k+' '):x[k]=int(line.split()[-1])
+          assert x.get('tests')==358, 'UNKNOWN_INCOMPLETE_TEST_CENSUS'
+          assert x.get('pass')==358, 'UNKNOWN_INCOMPLETE_PASS_CENSUS'
+          assert x.get('fail')==0 and x.get('skipped')==0 and x.get('cancelled')==0
+          print('SOURCE_NATIVE_358_OF_358_WITH_EXTERNAL_FIXTURES')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g1-complete-external-fixture-test-census
+          path: |
+            /tmp/g1-external-fixture-full.tap
+            ${{ runner.temp }}/artin-public-source-preflight.json
+          retention-days: 60
