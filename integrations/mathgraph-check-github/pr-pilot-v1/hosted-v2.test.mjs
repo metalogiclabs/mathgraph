@@ -12,3 +12,7 @@ test('GitHub finding preserves the exact redirection symbol safely',()=>{
 test('passed reviewed checks recommend review rather than missing diagnostics',()=>{
  const a={status:'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',expectations:{status:'ADMITTED',repair_eligible:true,expectation_set:'ledger-shell-v2'}};assert.match(reportView(a,make(pr)).next,/Review the diff/);assert.doesNotMatch(reportView(a,make(pr)).next,/diagnostic/);
 });
+test('a resolved requirement leads a passing PR report ahead of preserved controls',()=>{
+ const a={status:'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original:[{id:'attached_ok',execution:'GUARD_PASSED'},{id:'leading_output_ok',execution:'GUARD_PASSED'}],comparison:[{id:'attached_ok',change:'BOTH_PASS'},{id:'leading_output_ok',change:'RESOLVED_FAILURE'}],expectations:{status:'ADMITTED',repair_eligible:true,expectation_set:'ledger-shell-v2',probes:[{id:'attached_ok',label:'Preserved control',status:'ADMITTED'},{id:'leading_output_ok',label:'Leading redirect resolved',status:'ADMITTED'}]}};
+ assert.equal(reportView(a,make(pr)).findings[0].title,'Leading redirect resolved');
+});
