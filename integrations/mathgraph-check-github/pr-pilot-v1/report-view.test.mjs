@@ -18,5 +18,5 @@ test('admitted expectation failure offers bounded repair and exposes admission c
 test('repair summary leads with the repaired failure and retains the paired observations',()=>{
  const r={...request,command:'fix',profile:{mode:'OWNED_FORK_PR_PILOT'}};
  const v=reportView({status:'CANDIDATE_ASSERTION_FAILURE',expectations:{status:'ADMITTED',repair_eligible:true,probes:[{id:'preserved',status:'ADMITTED'},{id:'repaired',status:'ADMITTED'}]},original:[{id:'preserved',execution:'GUARD_PASSED'},{id:'repaired',execution:'CANDIDATE_ASSERTION_FAILURE'}],repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE',repaired:[{id:'repaired',execution:'GUARD_PASSED'}],withdrawn:[{id:'repaired',execution:'CANDIDATE_ASSERTION_FAILURE'}]}},r);
- assert.equal(v.findings[0].title,'repaired');assert.match(v.findings[0].evidence,/Candidate: GUARD_PASSED/);assert.match(v.findings[0].evidence,/Withdrawn:/);
+ assert.equal(v.findings[0].title,'repaired');assert.match(v.findings[0].evidence,/Candidate: passes/);assert.match(v.findings[0].evidence,/Withdrawal:/);
 });

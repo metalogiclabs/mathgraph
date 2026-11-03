@@ -26,7 +26,7 @@ export function admitExpectations(subject,plan,receipt,context){
   const target=TARGETS.find(t=>t.id===p.id&&t.expression===p.expression);
   const found=target&&fresh?records.filter(r=>r.Obligation?.id===target.reference_id):[];
   const admitted=target&&found.length===1&&referenceOK(found[0],target);
-  return {id:p.id,status:admitted?'ADMITTED':'UNKNOWN',reason:admitted?'EXACT_FINITE_REFERENCE_BINDING':!target?'UNREVIEWED_EXPECTATION':'REFERENCE_INCOMPLETE',expression_sha256:hash(p.expression??''),reference_id:target?.reference_id,requirement:target?contract:undefined};
+  return {id:p.id,label:target?.id==='keyword_ok'?'Keywords used as arguments':target?.id==='attached_ok'?'Attached redirection':p.id,input:target?.command,expectation:target?.id==='keyword_ok'?'No Python invocation':target?'Inline prefix python3 -c':undefined,status:admitted?'ADMITTED':'UNKNOWN',reason:admitted?'EXACT_FINITE_REFERENCE_BINDING':!target?'UNREVIEWED_EXPECTATION':'REFERENCE_INCOMPLETE',expression_sha256:hash(p.expression??''),reference_id:target?.reference_id,requirement:target?contract:undefined};
  });
  const complete=same(plan,expected)&&result.probes.every(p=>p.status==='ADMITTED');
  return {...result,status:complete?'ADMITTED':'UNKNOWN',repair_eligible:complete,reason:complete?'EXACT_FINITE_REFERENCE_BINDING':!same(plan,expected)?'UNREVIEWED_EXPECTATION':'REFERENCE_INCOMPLETE'};
