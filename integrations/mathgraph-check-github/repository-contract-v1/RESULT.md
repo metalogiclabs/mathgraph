@@ -2,7 +2,7 @@
 
 **WARRANTED_BOUNDED:** one unchanged repository contract and frozen regression
 corpus ran successfully on a fresh PR snapshot, an intentional regression and
-its withdrawal. No per-PR adapter, prompt or expectation edits were used.
+its withdrawal, and a real module rename. No per-PR adapter, prompt or expectation edits were used.
 
 This establishes reuse of the configured native audit. Whole-PR correctness,
 new tool semantics, external-operator installation and comparative superiority
@@ -29,9 +29,9 @@ head identifiers are execution inputs; they do not select custom checker logic.
 | [19](https://github.com/metalogiclabs/L4YAML/pull/19), fresh upstream213 snapshot | `809014dd` → `815695d6` | Both succeed | 1367/1367 → 1367/1367 pass | No failure in frozen corpus |
 | [20](https://github.com/metalogiclabs/L4YAML/pull/20), labelled regression | `815695d6` → `b3031971` | Both succeed | 1367/1367 → 1366/1367 pass | New frozen-probe failure |
 | [21](https://github.com/metalogiclabs/L4YAML/pull/21), withdrawal | `b3031971` → `31d8470d` | Both succeed | 1366/1367 → 1367/1367 pass | Frozen-probe failure resolved |
+| [22](https://github.com/metalogiclabs/L4YAML/pull/22), actual module rename + importer | `815695d6` → `7baeb1b7` | Both succeed | 1367/1367 → 1367/1367 pass | No failure in frozen corpus |
 
-These are 1367 distinct expectations replayed on six source arms, not8202
-distinct tests. Expected outcomes did not enter the checker or its contract.
+The same1367-case corpus was replayed eight times, not10936 distinct cases. Expected outcomes did not enter the checker or its contract.
 
 The regression changes `labelNumbers "Reflection 999"` from `[999]` to `[]`
 without removing the module's original guards. The independently frozen probe
@@ -76,6 +76,17 @@ container mounts; execution has no network or credentials. Compiled outputs
 remain writable. This evidence is for the reviewed owned-fork source cohort,
 not an arbitrary hostile-source security qualification.
 
+## Additional native rename replay
+
+[Run41564258045](https://github.com/metalogiclabs/mathgraph/actions/runs/41564258045)
+qualifies the actual rename and importer change in PR22 at request-controller
+`27a4aebeaba797af6127f5e3b64201dac4649dff`. Compared with controller4eb622d,
+only execution-request data and documentation changed; the checker implementation,
+contract and corpus files are identical. Both revisions compile, including the
+old `Scripts.Punt.Price` at base and new `Scripts.Punt.PriceRenamed` at head.
+Both arms pass1367/1367 frozen probes. This supplements the rename unit tests
+with native dependency/import validation without a per-PR code change.
+
 ## Artifact receipts
 
 All final ZIP digests and ZIP integrity were independently checked. Reports
@@ -86,6 +97,7 @@ also bind the exact controller, contract, corpus and source revisions.
 |19|13197508335|`ca59de6e3dbd26ee34995c0b497b01bd691ff2831030c25745fbbc9bfe425d11`|
 |20|13197428397|`cb063465814bb6844032dbec7f7fc71a194f01aab90fea5abb3935b96afa9182`|
 |21|13197502822|`f7611f70689c81c9dd21e59cef033d8afea981a3058cb9893d59363ce127316e`|
+|22|13197874054|`b71b826bb07b36735688ac6fccbc1177c36f80cea634d23e957a068c5ce6e891`|
 
 ## Reuse and next residual
 

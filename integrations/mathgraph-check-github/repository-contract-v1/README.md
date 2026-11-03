@@ -52,5 +52,6 @@ audit execution workflow, not the source PR's approval gate.
 - The fresh snapshot is fork PR19. PR20 is a deliberate two-file regression
   that preserves existing source guards; PR21 withdraws it. These are labelled
   sensitivity controls, not discovered upstream defects or blind comparisons.
+  PR22 adds a native module-rename/importer replay with unchanged checker code.
 - The current hosted App's admission/deployment are unchanged. External
   installation and broader scientific proof audit remain unqualified.

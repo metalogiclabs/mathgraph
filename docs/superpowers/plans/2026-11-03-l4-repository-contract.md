@@ -12,8 +12,8 @@ Constraints: owned fork only; no upstream messages or production deployment; no 
 Approaches: Per-PR handwritten adapters reproduce the current gap. Arbitrary model-generated obligations do not solve authority. The chosen implementation is one fixed regression contract plus automatic source/import discovery. It broadens executable scope while stating missing semantics.
 
 Tasks:
-- [ ] Freeze contract and newest PR metadata before diff inspection.
-- [ ] Write failing admission/discovery tests (unsupported imports, source paths, incomplete evidence, passing and failing both-arm attribution), then implement generic discovery and isolated replay.
-- [ ] Mirror fresh PR213 in our fork; add a labelled multi-file regression and withdrawal. Request IDs are run inputs; contract and expectations must not change.
-- [ ] Native replay all snapshots with the same contract/corpus hashes. Keep passing, failing and UNKNOWN outcomes, plus uncovered paths.
-- [ ] Independent review, appropriate regression suite, pinned artifacts, result report and Research OS reconciliation.
+- [x] Freeze contract and newest PR metadata before diff inspection.
+- [x] Write failing admission/discovery tests (unsupported imports, source paths, incomplete evidence, passing and failing both-arm attribution), then implement generic discovery and isolated replay.
+- [x] Mirror fresh PR213 in our fork; add a labelled multi-file regression and withdrawal. Request IDs are run inputs; contract and expectations must not change.
+- [x] Native replay all snapshots with the same contract/corpus hashes. Keep passing, failing and UNKNOWN outcomes, plus uncovered paths.
+- [x] Independent review, appropriate regression suite, pinned artifacts, result report and Research OS reconciliation.
