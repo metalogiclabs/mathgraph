@@ -10,3 +10,14 @@ test('existing exact qualified draft is reused without another branch or PR',asy
  assert.equal(await createRepair(request,patch,{run_url:'https://github.com/metalogiclabs/mathgraph/actions/runs/1'},api),candidate.html_url);
  assert.equal(x.writes.filter(w=>w.p.endsWith('/git/refs')||w.p.endsWith('/pulls')).length,0);
 });
+test('exact draft beyond the first hundred is reused',async()=>{
+ const x=h(),candidate={number:126,draft:true,state:'open',base:{sha:head},head:{sha:'9'.repeat(40),repo:{full_name:repository}},html_url:'https://github.com/'+repository+'/pull/126'};
+ const api=async(p,o)=>p.includes('/pulls?state=open&base=')?(p.endsWith('&page=2')?[candidate]:Array.from({length:100},()=>({draft:false}))):p.endsWith('/git/commits/'+candidate.head.sha)?{tree:{sha:'e'.repeat(40)},parents:[{sha:head}]}:p.endsWith('/pulls/126')?candidate:x.api(p,o);
+ assert.equal(await createRepair(request,patch,{run_url:'https://github.com/metalogiclabs/mathgraph/actions/runs/1'},api),candidate.html_url);
+ assert.equal(x.writes.filter(w=>w.p.endsWith('/git/refs')||w.p.endsWith('/pulls')).length,0);
+});
+test('incomplete draft history refuses duplicate publication',async()=>{
+ const x=h(),api=async(p,o)=>p.includes('/pulls?state=open&base=')?Array.from({length:100},()=>({draft:false})):x.api(p,o);
+ await assert.rejects(()=>createRepair(request,patch,{run_url:'https://github.com/metalogiclabs/mathgraph/actions/runs/1'},api),/INCOMPLETE_REPAIR_HISTORY/);
+ assert.equal(x.writes.filter(w=>w.p.endsWith('/git/refs')||w.p.endsWith('/pulls')).length,0);
+});

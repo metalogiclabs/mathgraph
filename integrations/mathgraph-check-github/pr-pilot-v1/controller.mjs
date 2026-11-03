@@ -6,13 +6,14 @@ import {admitRepositoryResult,captureRepositorySnapshot} from './repository-cont
 import {CONTRACT_MODE} from './repository-report.mjs';
 import {executionContext} from './context.mjs';
 import {createRepair} from './repair.mjs';
+import {renderReport,finalPublicationReport} from './report.mjs';
 // Trusted hosted orchestration. No repository source executes in this process.
 import {readFile,writeFile,readdir,mkdir,appendFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {mintScopedToken} from './auth.mjs';
-import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
+import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest,modelReservationCents} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
 import {expectationSubject,reviewedPlan,admitExpectations} from './expectations.mjs';
-import {captureProducer,resolveProducer} from './producer-transport.mjs';
+import {captureProducer,resolveProducer,producerIntakeDiagnostic} from './producer-transport.mjs';
 const phase=process.argv[2],dir=process.argv[3]??'pr-investigation';
 const context=executionContext();
 const hash=x=>createHash('sha256').update(x).digest('hex'),ensure=(b,c)=>{if(!b)throw Error(c);};
@@ -43,11 +44,11 @@ try{
    const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(event.action==='mathgraph-pr-pilot-v1','WRONG_DISPATCH_EVENT');
    const signed=verifyDispatch(event.client_payload,process.env.APP_PRIVATE_KEY),scoped=await sourceToken(signed.repository);
    try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
-    ensure(signed.reserved_cents>=(request.support.supported&&![CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
+    ensure(signed.reserved_cents>=modelReservationCents(request),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
     if(request.profile.expectation_candidate&&publication.state==='STARTED'){
-     try{const envelope=await captureProducer(request,context,scoped.api,githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),process.env.GITHUB_TOKEN);await save('producer-envelope',envelope);await save('producer-warrant',resolveProducer(envelope,request,context).graph);request.profile.expectation_profile='ledger-shell-producer-v1';}
-     catch{request.support={supported:false,reason:'REPAIR_EXPECTATION_REVIEW_REQUIRED'};}
+     try{const envelope=await captureProducer(request,context,scoped.api,githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),process.env.GITHUB_TOKEN);await save('producer-envelope',envelope);await save('producer-warrant',resolveProducer(envelope,request,context).graph);request.profile.expectation_profile='ledger-shell-v2';}
+     catch(e){const diagnostic=producerIntakeDiagnostic(e);await save('producer-intake-error',{context,...diagnostic});request.support={supported:false,reason:'REPAIR_EXPECTATION_REVIEW_REQUIRED',diagnostic:diagnostic.message};}
     }
     if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false'){
      let snapshot=await captureRepositorySnapshot(request,scoped.api);
@@ -59,15 +60,16 @@ try{
   }
   await save('request',request);await save('publication',{...publication,context});
   const ready=request.support.supported&&publication.state!=='DUPLICATE'&&process.env.CONTRACTS_OK!=='false';await outputs({ready:String(ready),command:request.command,profile:request.profile.mode,prior_run:publication.prior_run??'',source_head:request.head_sha});
-  if(!request.support.supported||process.env.CONTRACTS_OK==='false')await save('assessment',{context,subject:request,status:'UNKNOWN',reason:process.env.CONTRACTS_OK==='false'?'CONTROLLER_CONTRACTS_FAILED':request.support.reason});await seal();
+  if(!request.support.supported||process.env.CONTRACTS_OK==='false')await save('assessment',{context,subject:request,status:'UNKNOWN',reason:process.env.CONTRACTS_OK==='false'?'CONTROLLER_CONTRACTS_FAILED':request.support.reason,expectation_review_reason:request.support.diagnostic});await seal();
  }else if(phase==='expectation-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_EXPECTATION_CONTEXT');
   const snapshot=await get('snapshot'),subject=expectationSubject(snapshot);let reference;
-  if(reviewedPlan(subject,await producerToken())){
+  if(reviewedPlan(subject,await producerToken(),snapshot.expectation_profile)){
    const run=spawnSync('python3',['experiments/check-expectation-admission-v1/run.py','--output',dir+'/expectation-observations.json'],{stdio:'inherit',timeout:30000});
    if(!run.error&&run.status===0)try{reference=await get('expectation-observations');}catch{}
   }
-  await save('expectation-reference',{schema:'mathgraph.expectations.reference.v1',context,subject,reference:reference??{records:[]}});await seal();
+  let leading_reference;if(snapshot.expectation_profile==='ledger-shell-v2'){const run=spawnSync('python3',['experiments/check-leading-redirection-v1/reference.py','--output',dir+'/leading-observations.json'],{stdio:'inherit',timeout:30000});if(!run.error&&run.status===0)try{leading_reference=await get('leading-observations');}catch{}}
+  await save('expectation-reference',{schema:'mathgraph.expectations.reference.v1',context,subject,expectation_set:snapshot.expectation_profile,reference:reference??{records:[]},leading_reference});await seal();
  }else if(phase==='contract-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_CONTRACT_CONTEXT');const request=await get('request');
   ensure(request.command==='check'&&[CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&request.support.supported,'CONTRACT_CHECK_ONLY');
@@ -125,11 +127,12 @@ try{
    if(request.command==='fix'&&report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'){
     const snapshot=await get('snapshot'),patch=await get('patch');
     ensure(snapshot.head_sha===request.head_sha&&snapshot.repository===request.repository,'REPAIR_SUBJECT_MISMATCH');
-    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken());ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
+    const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken(),snapshot.expectation_profile);ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
     ensure(hash(admitLeanPatch(patch,snapshot.source))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }
-   await save('publication-result',await finishCheck(request,publication,report,scoped.api));
+   const result=await finishCheck(request,publication,report,scoped.api);await save('publication-result',result);report=finalPublicationReport(report,result);await save('assessment',report);await seal();
+   const [css,brand]=await Promise.all([readFile(new URL('./passport-base.css',import.meta.url),'utf8'),readFile(new URL('./passport-brand.json',import.meta.url),'utf8')]);await writeFile(dir+'/MathGraph-Check.html',renderReport({request,assessment:report,manifest:await get('manifest'),css,logo:JSON.parse(brand).logo}));
   }finally{await scoped.api('/installation/token',{method:'DELETE'});}await seal();
  }else throw Error('UNKNOWN_CONTROLLER_PHASE');
 }catch(e){

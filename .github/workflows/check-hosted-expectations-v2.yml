@@ -1,0 +1,106 @@
+name: Hosted versioned expectation sets
+on:
+  push:
+    branches: [research/check-hosted-expectations-v2]
+permissions: {contents: read, actions: read}
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: |
+          python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py'
+          python3 -m unittest discover -s experiments/check-leading-redirection-v1 -p 'test_*.py'
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+          python3 -m pip install pytest==8.4.2
+          python3 -m pytest -q tests/test_mathgraph_warrant_resolution_core.py tests/test_mathgraph_boundary_warrant_v0.py
+      - name: Bundle existing Worker without deploying
+        run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/hosted-v2-worker
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: hosted-v2-worker, path: /tmp/hosted-v2-worker/}
+  native:
+    needs: contracts
+    strategy:
+      matrix: {pr: [27, 28, 29]}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Authenticate producer and prepare fixed versioned probes
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          node experiments/check-hosted-expectations-v2/qualify.mjs prepare hosted '${{ matrix.pr }}'
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare hosted
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Fresh native and both Bash references without credentials
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial hosted
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run hosted
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess hosted
+      - name: Frozen paired candidate
+        if: matrix.pr == 27
+        run: |
+          node experiments/check-hosted-expectations-v2/qualify.mjs patch hosted
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair hosted
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess hosted
+      - name: Require admitted version and actual native outcomes
+        env: {PR: '${{ matrix.pr }}'}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';import {reportView} from './integrations/mathgraph-check-github/pr-pilot-v1/report-view.mjs';
+          const get=n=>JSON.parse(fs.readFileSync('hosted/'+n+'.json')),a=get('assessment'),r=get('request');
+          assert.equal(get('state').model_calls,0);assert.equal(get('plan').tests.length,3);assert.equal(a.expectations.status,'ADMITTED');assert.equal(a.expectations.input_count,5);assert.equal(a.expectations.requirement_count,3);assert.equal(a.head_complete,true);assert.equal(a.base_complete,true);assert.match(reportView(a,r).scope,/5 finite shell inputs/);
+          if(process.env.PR==='27'){assert.equal(a.repair.status,'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE');assert.equal(a.repair.protected_guards,160);assert.deepEqual(a.repair.repository_gate_exits,[0,0,0]);assert.equal(reportView(a,r).title,'Candidate repair verified on frozen probes');}
+          else assert.equal(a.status,'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS');
+          JS
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs hosted
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'hosted-v2-pr-${{ matrix.pr }}', path: hosted/}
+  browser:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: hosted-v2-pr-27, path: hosted}
+      - run: |
+          npm install --no-save --prefix /tmp/hosted-v2-browser playwright@1.62.1
+          /tmp/hosted-v2-browser/node_modules/.bin/playwright install --with-deps chromium
+      - env: {NODE_PATH: /tmp/hosted-v2-browser/node_modules}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs hosted/MathGraph-Check.html browser-qa 'Candidate repair verified on frozen probes'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: hosted-v2-pr-29, path: guide}
+      - name: Reproducible maintainer walkthrough and desktop/mobile QA
+        env: {NODE_PATH: /tmp/hosted-v2-browser/node_modules}
+        run: |
+          node experiments/check-hosted-expectations-v2/maintainer-guide.mjs guide guide/MathGraph-Check-Walkthrough.html 41724109428
+          node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs guide/MathGraph-Check-Walkthrough.html guide-qa 'A repair you can inspect'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: hosted-v2-browser-qa
+          path: |
+            browser-qa/
+            guide-qa/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: hosted-maintainer-walkthrough, path: guide/MathGraph-Check-Walkthrough.html}

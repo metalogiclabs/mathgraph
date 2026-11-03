@@ -67,3 +67,11 @@ test('source withdrawal includes historical Checks when another PR shares the sa
  assert.equal(h.checks[0].output.title,'Source changed — recheck required');
  assert.equal(h.checks[1].output.title,'Queued for investigation');
 });
+test('reviewed fixed checks dispatch at zero model reservation even when model budget is exhausted',async()=>{
+ const h=harness({budget:'BUDGET_EXHAUSTED'});h.pr.head.sha='fba155bf31918f9b03394ae9bfb8cd17c91ecfb8';
+ assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'DISPATCHED');assert.equal(h.reservations,0);assert.equal(verifyDispatch(h.sent[0].client_payload,key).reserved_cents,0);
+});
+test('producer candidate checks cannot fall back to models and reserve no model spend',async()=>{
+ const h=harness({budget:'BUDGET_EXHAUSTED'});Object.assign(h.pr,{draft:true,user:{id:342263476,type:'Bot',login:'mathgraph-check[bot]'}});
+ assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'DISPATCHED');assert.equal(h.reservations,0);assert.equal(verifyDispatch(h.sent[0].client_payload,key).reserved_cents,0);
+});

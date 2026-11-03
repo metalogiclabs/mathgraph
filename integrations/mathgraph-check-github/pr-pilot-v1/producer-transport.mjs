@@ -2,6 +2,7 @@
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {admitProducer} from './producer-admission.mjs';
+import {admitNativeRecheck} from './native-recheck-producer.mjs';
 import {qualifyProducerSubject} from './expectations.mjs';
 const need=(b,c)=>{if(!b)throw Error(c);};
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -9,7 +10,7 @@ const root='integrations/mathgraph-check-github/pr-pilot-v1/';
 function python(name,input){const r=spawnSync('python3',[root+name+'.py'],{input,maxBuffer:45*1024*1024,timeout:15000});need(!r.error&&r.status===0,'PRODUCER_'+name.toUpperCase().replaceAll('-','_'));return JSON.parse(r.stdout);}
 export function resolveProducer(envelope,request,context){
  need(envelope.consumer_controller===context.verifier_sha,'CONSUMER_CONTROLLER_CHANGED');
- const admitted=admitProducer(envelope,request),graph=python('producer-warrant',JSON.stringify({facts:admitted.facts}));
+ const admitted=envelope.run?.path==='.github/workflows/check-leading-redirection-recheck.yml'?admitNativeRecheck(envelope,request):admitProducer(envelope,request,context),graph=python('producer-warrant',JSON.stringify({facts:admitted.facts}));
  need(graph.status==='WARRANTED_BOUNDED_NATIVE'&&graph.native_status==='WARRANTED_BOUNDED_NATIVE','PRODUCER_WARRANT_UNKNOWN');
  return {...admitted,graph,token:qualifyProducerSubject(admitted.subject)};
 }
@@ -35,17 +36,24 @@ export async function captureProducer(request,context,sourceAPI,centralAPI,token
  const central='/repos/metalogiclabs/mathgraph',run=await centralAPI(central+'/actions/runs/'+matches[0]);
  const listed=await centralAPI(central+'/actions/runs/'+run.id+'/artifacts?per_page=100');
  need(listed.total_count===listed.artifacts?.length,'PRODUCER_ARTIFACT_LIST_INCOMPLETE');
- const artifacts=listed.artifacts.filter(a=>a.name==='pr-pilot-publication');need(artifacts.length===1,'PRODUCER_ARTIFACT_AMBIGUOUS');
+ const native=run.path==='.github/workflows/check-leading-redirection-recheck.yml';
+ const artifacts=listed.artifacts.filter(a=>a.name===(native?'leading-redirection-recheck':'pr-pilot-publication'));need(artifacts.length===1,'PRODUCER_ARTIFACT_AMBIGUOUS');
  const artifact=artifacts[0],archive=await downloadProducerArtifact(artifact.id,token);
  need(artifact.digest==='sha256:'+hash(archive),'PRODUCER_DOWNLOAD_DIGEST');
- const raw=python('producer-artifact',archive),publication=JSON.parse(raw['publication.json']);
+ const raw=python('producer-artifact',archive),publication=native?null:JSON.parse(raw['publication.json']);
  const getText=async(api,path)=>{const f=await api(path);need(f.encoding==='base64'&&typeof f.content==='string','PRODUCER_CONTENT_ENCODING');return Buffer.from(f.content,'base64').toString('utf8');};
  const envelope={pr,run,artifact,raw,archive_sha256:hash(archive),consumer_controller:context.verifier_sha,
-  workflow:await getText(centralAPI,central+'/contents/.github/workflows/check-pr-pilot.yml?ref='+run.head_sha),
-  check:await sourceAPI(repo+'/check-runs/'+publication.check_id),
+  workflow:await getText(centralAPI,central+'/contents/'+(native?'.github/workflows/check-leading-redirection-recheck.yml':'.github/workflows/check-pr-pilot.yml')+'?ref='+run.head_sha),
+  check:native?null:await sourceAPI(repo+'/check-runs/'+publication.check_id),
   commit:await sourceAPI(repo+'/git/commits/'+request.head_sha),
   comparison:await sourceAPI(repo+'/compare/'+request.base_sha+'...'+request.head_sha),
   source:await getText(sourceAPI,repo+'/contents/Scripts/Ledger.lean?ref='+request.head_sha),
   cli_source:await getText(sourceAPI,repo+'/contents/Scripts/Main/CheckScriptsLedger.lean?ref='+request.head_sha)};
  resolveProducer(envelope,request,context);return envelope;
+}
+
+export function producerIntakeDiagnostic(error){
+ const code=/^[A-Z][A-Z0-9_]{0,95}$/.test(error?.message??'')?error.message:'PRODUCER_EVIDENCE_UNAVAILABLE';
+ const message=code==='PRODUCER_LOCATOR_REQUIRED'?'Keep exactly one producer evidence link in the draft description, then retry the check.':code==='UNTRUSTED_PRODUCER_RELEASE'||code==='PRODUCER_WORKFLOW_PIN'?'The producer release is not qualified for this checker. Retain UNKNOWN until its workflow and verifier are qualified.':'Producer evidence could not be authenticated. Inspect the retained diagnostic and retry after restoring the exact source and evidence.';
+ return {code,message};
 }
