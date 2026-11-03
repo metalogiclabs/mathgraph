@@ -18,3 +18,12 @@ test('check-only route skips repair and assesses the native artifact',()=>{
  const s=readFileSync(new URL('../../../.github/workflows/check-pr-pilot.yml',import.meta.url),'utf8'),job=s.split('\n  propose:')[1].split('\n  verify:')[0],assess=s.split('\n  assess:')[1].split('\n  repository-contract-native:')[0];
  assert.match(job,/needs: \[native, intake\]/);assert.match(job,/if: needs.intake.outputs.command == 'fix'/);assert.match(assess,/needs.intake.outputs.command == 'check' && 'pr-pilot-native'/);
 });
+test('budget exhaustion gives a concrete recovery action',async()=>{
+ const {reportView}=await import('./report-view.mjs');const v=reportView({status:'UNKNOWN',reason:'BUDGET_EXHAUSTED'},{command:'fix'});assert.match(v.next,/UTC|budget/i);assert.doesNotMatch(v.next,/diagnostic/i);
+});
+test('zero-cost checked profiles do not waive repair or hypothesis reservations',async()=>{
+ const {modelReservationCents}=await import('./policy.mjs');
+ const r={support:{supported:true},command:'check',profile:{mode:'OWNED_FORK_PR_PILOT'}};
+ assert.equal(modelReservationCents(r),49);assert.equal(modelReservationCents({...r,profile:{...r.profile,expectation_candidate:true}}),0);
+ assert.equal(modelReservationCents({...r,command:'fix',profile:{...r.profile,expectation_candidate:true}}),98);assert.equal(modelReservationCents({...r,command:'fix',profile:{...r.profile,expectation_profile:'ledger-shell-v2'}}),98);
+});

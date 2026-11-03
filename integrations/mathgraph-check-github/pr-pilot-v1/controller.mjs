@@ -10,7 +10,7 @@ import {renderReport,finalPublicationReport} from './report.mjs';
 // Trusted hosted orchestration. No repository source executes in this process.
 import {readFile,writeFile,readdir,mkdir,appendFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {mintScopedToken} from './auth.mjs';
-import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
+import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest,modelReservationCents} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
 import {expectationSubject,reviewedPlan,admitExpectations} from './expectations.mjs';
 import {captureProducer,resolveProducer,producerIntakeDiagnostic} from './producer-transport.mjs';
@@ -44,7 +44,7 @@ try{
    const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(event.action==='mathgraph-pr-pilot-v1','WRONG_DISPATCH_EVENT');
    const signed=verifyDispatch(event.client_payload,process.env.APP_PRIVATE_KEY),scoped=await sourceToken(signed.repository);
    try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
-    ensure(signed.reserved_cents>=(request.support.supported&&![CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)?(request.command==='check'?49:98):0),'MISSING_SPEND_RESERVATION');
+    ensure(signed.reserved_cents>=modelReservationCents(request),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
     if(request.profile.expectation_candidate&&publication.state==='STARTED'){
      try{const envelope=await captureProducer(request,context,scoped.api,githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),process.env.GITHUB_TOKEN);await save('producer-envelope',envelope);await save('producer-warrant',resolveProducer(envelope,request,context).graph);request.profile.expectation_profile='ledger-shell-v2';}

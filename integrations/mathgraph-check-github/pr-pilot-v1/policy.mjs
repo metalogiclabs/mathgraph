@@ -8,6 +8,11 @@ import {CONTRACT_MODE,contractTitle,formatContractResult} from './repository-rep
 const SHA=/^[a-f0-9]{40}$/;const requireFact=(b,c)=>{if(!b)throw Error(c);};
 const LEDGER=Object.freeze({path:'Scripts/Ledger.lean',module:'Scripts.Ledger',namespace:'Scripts.Ledger',cli_path:'Scripts/Main/CheckScriptsLedger.lean',cli_module:'Scripts.Main.CheckScriptsLedger',toolchain:'leanprover/lean4:v4.35.0',mode:'OWNED_FORK_PR_PILOT'});
 export function profileFor(repository){requireFact(repository==='metalogiclabs/L4YAML','REPOSITORY_NOT_ENABLED');return {...LEDGER,repository};}
+export function modelReservationCents(r){
+ if(!r.support?.supported||[CONTRACT_MODE,CLI_MODE].includes(r.profile?.mode))return 0;
+ if(r.command==='check'&&(r.profile?.expectation_profile||r.profile?.expectation_candidate))return 0;
+ return r.command==='check'?49:98;
+}
 export function commandOf(body){return typeof body==='string'?body.trim().match(/^@MathGraph -(check|fix)$/)?.[1]??null:null;}
 export function classifyDiff(files){
  const supported=Array.isArray(files)&&files.length===1&&files[0].filename===LEDGER.path&&files[0].status==='modified';
@@ -24,7 +29,7 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
  if(!support.supported&&command==='check'&&Array.isArray(files)&&files.some(f=>/^(Scripts\/)([A-Za-z_][A-Za-z0-9_]*\/)*[A-Za-z_][A-Za-z0-9_]*\.lean$/.test(f.filename)&&['added','modified','removed','renamed','copied'].includes(f.status))){profile.mode=CONTRACT_MODE;support.supported=true;support.reason='SUPPORTED_REPOSITORY_CONTRACT';}
  const cli=command==='check'?cliProfileFor(files):null;if(cli){profile.mode=CLI_MODE;profile.cli_profile=cli.id;support.supported=true;support.reason='SUPPORTED_CLI_PARITY';}
  profile.report_version='passport-v1';
- if(profile.mode===LEDGER.mode){profile.report_version='expectations-v2-finished';const expectations=expectationProfileFor({repository,head_sha:pr.head.sha,profile});const locator=pr.user?.id===32909488&&pr.user.type==='User'&&pr.draft===true&&/https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/[1-9][0-9]*/.test(pr.body??'');if(expectations)profile.expectation_profile='ledger-shell-v2';else if(support.supported&&(pr.user?.id===342263476&&pr.user.type==='Bot'&&pr.user.login==='mathgraph-check[bot]'||locator)){profile.expectation_candidate=true;}else if(command==='fix'&&support.supported){support.supported=false;support.reason='REPAIR_EXPECTATION_REVIEW_REQUIRED';}}
+ if(profile.mode===LEDGER.mode){profile.report_version='expectations-v2-complete';const expectations=expectationProfileFor({repository,head_sha:pr.head.sha,profile});const locator=pr.user?.id===32909488&&pr.user.type==='User'&&pr.draft===true&&/https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/[1-9][0-9]*/.test(pr.body??'');if(expectations)profile.expectation_profile='ledger-shell-v2';else if(support.supported&&(pr.user?.id===342263476&&pr.user.type==='Bot'&&pr.user.login==='mathgraph-check[bot]'||locator)){profile.expectation_candidate=true;}else if(command==='fix'&&support.supported){support.supported=false;support.reason='REPAIR_EXPECTATION_REVIEW_REQUIRED';}}
  const claim=claimProfileFor({repository,command,base_sha:pr.base.sha,head_sha:pr.head.sha,profile});if(claim)profile.claim_profile=claim.id;
  return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support,changed_paths:files.map(f=>f.filename)};
 }
