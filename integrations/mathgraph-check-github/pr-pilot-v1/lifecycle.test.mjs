@@ -25,11 +25,18 @@ test('withdrawal updates only this PR and this App, preserving historical summar
 test('base-only changes require distinct evidence identity',async()=>{const h=harness(),r=await authenticate(payload,h.api);const a=await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1'),b=await startCheck({...r,base_sha:'d'.repeat(40)},h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/2');assert.equal(a.state,'STARTED');assert.equal(b.state,'STARTED');});
 test('new authorized command may retry a terminal UNKNOWN without duplicating same attempt',async()=>{const h=harness(),r=await authenticate(payload,h.api);const a=await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1');await finishCheck(r,a,null,h.api);const same=await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/2');assert.equal(same.state,'DUPLICATE');const next=await startCheck({...r,comment_id:8},h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/3');assert.equal(next.state,'STARTED');});
 import {queueCheck} from './lifecycle.mjs';
+test('expectation release refreshes a legacy report once, then deduplicates new commands',async()=>{
+ const h=harness(),r=await authenticate(payload,h.api),old={...r,profile:{...r.profile,report_version:'passport-v1'}};
+ const first=await startCheck(old,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1');await finishCheck(old,first,{status:'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'},h.api);
+ const q=await queueCheck(r,h.api);assert.equal(q.state,'QUEUED');
+ const current=await startCheck({...r,queued_check_id:q.check_id},h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/2');await finishCheck(r,current,{status:'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',expectations:{status:'ADMITTED',repair_eligible:true}},h.api);
+ assert.equal((await queueCheck({...r,comment_id:99},h.api)).state,'DUPLICATE');assert.equal(h.checks.length,2);
+});
 test('queued registered Check is claimed once by its authenticated dispatch',async()=>{const h=harness(),r=await authenticate(payload,h.api),q=await queueCheck(r,h.api);assert.equal(q.state,'QUEUED');const request={...r,queued_check_id:q.check_id};const a=await startCheck(request,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1'),b=await startCheck(request,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/2');assert.equal(a.state,'STARTED');assert.equal(b.state,'DUPLICATE');assert.equal(h.checks.length,1);});
 
 test('completed fix Check title describes the qualified repair rather than the old failure',async()=>{
  const h=harness(),r={...await authenticate(payload,h.api),command:'fix'},p=await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
- await finishCheck(r,p,{status:'CANDIDATE_ASSERTION_FAILURE',repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'},repair_pr:'https://github.com/metalogiclabs/L4YAML/pull/3'},h.api);
+ await finishCheck(r,p,{status:'CANDIDATE_ASSERTION_FAILURE',expectations:{status:'ADMITTED',repair_eligible:true},repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'},repair_pr:'https://github.com/metalogiclabs/L4YAML/pull/3'},h.api);
  assert.match(h.checks[0].output.title,/Candidate repair verified/);
 });
 

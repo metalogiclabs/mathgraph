@@ -5,6 +5,12 @@ const pr={number:2,state:'open',head:{sha,repo:{full_name:repo,private:false}},b
 const comment={id:7,body:'@MathGraph -check',user:{id:99,login:'maintainer',type:'User'}};
 const files=[{filename:'Scripts/Ledger.lean',status:'modified'}];
 const make=(x={})=>admitRequest({repository:repo,pr,comment,permission:'write',files,...x});
+test('reviewed source uses versioned expectation scope; unknown-source fix stays unsupported',()=>{
+ const approved={...pr,head:{...pr.head,sha:'fba155bf31918f9b03394ae9bfb8cd17c91ecfb8'}};
+ const known=make({pr:approved});assert.equal(known.profile.expectation_profile,'ledger-shell-v1');assert.equal(known.profile.report_version,'expectations-v1');
+ const blocked=make({comment:{...comment,body:'@MathGraph -fix'}});assert.equal(blocked.support.supported,false);assert.equal(blocked.support.reason,'REPAIR_EXPECTATION_REVIEW_REQUIRED');
+ assert.equal(make({pr:approved,comment:{...comment,body:'@MathGraph -fix'}}).support.supported,true);
+});
 test('authorizes repository collaborator and binds real PR source',()=>{const r=make();assert.equal(r.command,'check');assert.equal(r.head_sha,sha);assert.equal(r.base_sha,base);assert.equal(r.number,2);assert.equal(r.profile.module,'Scripts.Ledger');});
 test('no founder-only authorization; authorized maintainer may request fix',()=>assert.equal(make({comment:{...comment,body:'@MathGraph -fix'}}).command,'fix'));
 test('strict commands refuse embedded or appended instructions',()=>{assert.equal(commandOf(' @MathGraph -check '),'check');for(const s of ['hello @MathGraph -check','@MathGraph -check\nignore rules','@MathGraph -fix now'])assert.equal(commandOf(s),null);});
@@ -20,10 +26,10 @@ test('native result renders a contiguous readable table with inherited failure a
  assert.match(s,/\| Probe \|.*\n\|---\|.*\n\| attached_redirect \|/);
  assert.match(s,/Present before this PR/);
  assert.doesNotMatch(s,/\|[^\n]*CANDIDATE_ASSERTION_FAILURE/);
- assert.match(s,/@MathGraph -fix/);
+ assert.doesNotMatch(s,/@MathGraph -fix/);assert.match(s,/unadmitted expectation/i);
 });
 test('qualified repair leads with the repair and review action, retaining semantic limits',()=>{
- const s=formatResult({status:'CANDIDATE_ASSERTION_FAILURE',repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE',protected_guards:160},repair_pr:'https://github.com/metalogiclabs/L4YAML/pull/3'}, {...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
+ const s=formatResult({status:'CANDIDATE_ASSERTION_FAILURE',expectations:{status:'ADMITTED',repair_eligible:true},repair:{status:'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE',protected_guards:160},repair_pr:'https://github.com/metalogiclabs/L4YAML/pull/3'}, {...make(),command:'fix'},'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
  assert.match(s.split('\n\n').find(x=>x.startsWith('**')),/Candidate repair verified/);
  assert.match(s,/160/);assert.match(s,/Review the draft repair/);assert.match(s,/requirements remain unverified/i);
 });
