@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping, Sequence
 
-KINDS = frozenset(("formal", "documentary"))
+KINDS = frozenset(("formal", "documentary", "native"))
 
 
 @dataclass(frozen=True)
@@ -169,9 +169,13 @@ def resolve_graph(
         if not added:
             break
         active.update(added)
+    admitted_states = {
+        "formal": "WARRANTED_BOUNDED",
+        "documentary": "SOURCE_DOCUMENTED",
+        "native": "WARRANTED_BOUNDED_NATIVE",
+    }
     states = {
-        key: ("WARRANTED_BOUNDED" if cl[key].kind == "formal"
-              else "SOURCE_DOCUMENTED") if key in active else "UNKNOWN"
+        key: admitted_states[cl[key].kind] if key in active else "UNKNOWN"
         for key in sorted(cl)
     }
     surviving = tuple(sorted(

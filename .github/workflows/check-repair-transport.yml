@@ -1,0 +1,66 @@
+name: Repair evidence transport qualification
+on:
+  push:
+    branches: [research/check-repair-transport-v1]
+permissions: {contents: read, actions: read}
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py'
+      - run: |
+          python3 -m pip install pytest==8.4.2
+          python3 -m pytest -q tests/test_mathgraph_warrant_resolution_core.py tests/test_mathgraph_boundary_warrant_v0.py
+      - name: Bundle Worker without deploying
+        run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/transport-worker
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: transport-worker-build, path: /tmp/transport-worker/}
+  native:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Authenticate real producer and exact new target
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: node experiments/check-expectation-admission-v1/transport-qualify.mjs transport
+      - name: Reject changed authentication and evidence dependencies
+        env: {PRODUCER_TEST_ENVELOPE: transport/producer-test-envelope.json}
+        run: node --test integrations/mathgraph-check-github/pr-pilot-v1/producer-admission.test.mjs
+      - name: Prepare fixed reviewed probes without model credentials
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare transport
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Fresh native and Bash replay without credentials
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial transport
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run transport
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair transport
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess transport
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs transport
+      - name: Require fresh reviewed result and no model calls
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';
+          const get=n=>JSON.parse(fs.readFileSync('transport/'+n+'.json'));
+          assert.equal(get('producer-warrant').status,'WARRANTED_BOUNDED_NATIVE');
+          assert.equal(get('state').model_calls,0);assert.equal(get('assessment').expectations.status,'ADMITTED');
+          assert.equal(get('assessment').head_complete,true);assert.equal(get('assessment').base_complete,true);
+          assert.equal(get('assessment').status,'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS');
+          assert.ok(!fs.existsSync('transport/model-investigate.json'));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: repair-transport-native, path: transport/}

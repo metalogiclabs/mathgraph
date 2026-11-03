@@ -156,3 +156,35 @@ def test_resolution_is_immutable_and_independent_of_input_order():
         result.states["target"] = "REFUTED"
     with pytest.raises(FrozenInstanceError):
         result.active_routes = ()
+
+
+def test_native_observation_is_bounded_and_not_a_formal_proof():
+    result = resolve_graph(
+        [Claim("brahe.direction_observed", "native", "brahe@fixed")],
+        [Route("brahe.direction_observed", ("native:17-tests",))],
+        [Receipt("native:17-tests", "native", "brahe@fixed")],
+    )
+    assert result.states["brahe.direction_observed"] == "WARRANTED_BOUNDED_NATIVE"
+
+
+def test_native_receipt_cannot_promote_formal_without_a_verified_bridge():
+    with pytest.raises(ValueError, match="CROSS_BOUNDARY_EVIDENCE_WITHOUT_BRIDGE"):
+        resolve_graph(
+            [Claim("formal:theorem", "formal", "lean@fixed")],
+            [Route("formal:theorem", ("native:test",))],
+            [Receipt("native:test", "native", "brahe@fixed")],
+        )
+
+
+def test_native_withdrawal_preserves_unrelated_formal_claim():
+    claims = [Claim("event", "native", "brahe@fixed"),
+              Claim("theorem", "formal", "lean@fixed")]
+    receipts = [Receipt("event-test", "native", "brahe@fixed"),
+                Receipt("lean-proof", "formal", "lean@fixed")]
+    routes = [Route("event", ("event-test",)), Route("theorem", ("lean-proof",))]
+    before = resolve_graph(claims, routes, receipts)
+    after = resolve_graph(claims, routes, receipts, withdrawn=frozenset({"event-test"}))
+    assert compare_snapshots(before.states, after.states) == {
+        "event": {"before": "WARRANTED_BOUNDED_NATIVE", "after": "STALE", "changed": True},
+        "theorem": {"before": "WARRANTED_BOUNDED", "after": "WARRANTED_BOUNDED", "changed": False},
+    }

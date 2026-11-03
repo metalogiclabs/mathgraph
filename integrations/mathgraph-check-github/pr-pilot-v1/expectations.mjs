@@ -8,16 +8,21 @@ const TARGETS=[
 ];
 const contract='Operator-adopted finite shell command-position/prefix obligation, independently replayed with Bash; PR259/run41643264976. Not general Bash conformance.';
 const hash=s=>createHash('sha256').update(s).digest('hex'),same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+// Trusted method adapter boundary, analogous to a caller-qualified Receipt.
+// This capability is process-local: artifact JSON/status labels cannot carry it.
+const transported=new WeakMap();
+export function qualifyProducerSubject(subject){const token=Object.freeze({});transported.set(token,JSON.stringify(subject));return token;}
+const transportedSubject=(subject,token)=>token&&transported.get(token)===JSON.stringify(subject)&&subject.repository==='metalogiclabs/L4YAML'&&subject.path==='Scripts/Ledger.lean'&&subject.cli_sha256===CLI&&subject.toolchain==='leanprover/lean4:v4.35.0';
 function qualified(s){return s?.repository==='metalogiclabs/L4YAML'&&s.path==='Scripts/Ledger.lean'&&s.toolchain==='leanprover/lean4:v4.35.0'&&SOURCES[s.head_sha]===s.sha256&&typeof s.sha256==='string'&&s.cli_sha256===CLI;}
 export function expectationProfileFor(r){return r.repository==='metalogiclabs/L4YAML'&&r.profile?.mode==='OWNED_FORK_PR_PILOT'&&Object.hasOwn(SOURCES,r.head_sha)?'ledger-shell-v1':null;}
 export function expectationSubject(s){return {repository:s.repository,head_sha:s.head_sha,path:s.path,sha256:hash(s.source),cli_sha256:hash(s.cli_source),toolchain:s.toolchain};}
-export function reviewedPlan(s){return qualified(s)?{summary:'Two reviewed finite shell obligations',tests:TARGETS.map(t=>({id:t.id,hypothesis:t.hypothesis,contract,expression:t.expression}))}:null;}
+export function reviewedPlan(s,token){return qualified(s)||transportedSubject(s,token)?{summary:'Two reviewed finite shell obligations',tests:TARGETS.map(t=>({id:t.id,hypothesis:t.hypothesis,contract,expression:t.expression}))}:null;}
 function referenceOK(record,target){
  const good=(o,calls)=>o?.status==='OK'&&o.exit===0&&same(o.calls,calls);
  return record?.Conclusion?.status==='SUPPORTED'&&record.Obligation?.id===target.reference_id&&record.Obligation.command===target.command&&same(record.Obligation.expected_calls,target.calls)&&record.Obligation.authority?.state==='DECLARED'&&Object.entries(REFERENCE_IDENTITY).every(([k,v])=>record.Dependencies?.[k]===v)&&/^[a-f0-9]{64}$/.test(record.Dependencies?.bash_sha256??'')&&good(record.Verification?.execution,target.calls)&&good(record.Verification?.repeat,target.calls)&&good(record.Verification?.controls?.positive,[['guard.py']])&&good(record.Verification?.controls?.negative,[]);
 }
-export function admitExpectations(subject,plan,receipt,context){
- const expected=reviewedPlan(subject),result={status:'UNKNOWN',repair_eligible:false,reason:'EXPECTATION_SOURCE_NOT_QUALIFIED',subject,plan_sha256:hash(JSON.stringify(plan)),authority:contract,probes:(plan?.tests??[]).map(p=>({id:p.id,status:'UNKNOWN',reason:'UNREVIEWED_EXPECTATION'}))};
+export function admitExpectations(subject,plan,receipt,context,token){
+ const expected=reviewedPlan(subject,token),result={status:'UNKNOWN',repair_eligible:false,reason:'EXPECTATION_SOURCE_NOT_QUALIFIED',subject,plan_sha256:hash(JSON.stringify(plan)),authority:contract,probes:(plan?.tests??[]).map(p=>({id:p.id,status:'UNKNOWN',reason:'UNREVIEWED_EXPECTATION'}))};
  if(!expected)return result;
  const records=receipt?.reference?.records;
  const fresh=receipt?.schema==='mathgraph.expectations.reference.v1'&&same(receipt.context,context)&&same(receipt.subject,subject)&&Array.isArray(records);
