@@ -101,6 +101,12 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
-      - run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir worker-build
+      - run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir "$RUNNER_TEMP/unified-worker"
+      - name: Require actual deployable module bytes
+        run: |
+          find "$RUNNER_TEMP/unified-worker" -maxdepth 3 -type f
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';import assert from 'node:assert/strict';const root=process.env.RUNNER_TEMP+'/unified-worker';const files=fs.readdirSync(root,{recursive:true}).filter(p=>/\.m?js$/.test(p));assert.ok(files.some(p=>fs.statSync(root+'/'+p).size>10000),'Deployable Worker bundle missing');
+          JS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with: {name: unified-worker-build, path: worker-build/}
+        with: {name: unified-worker-build, path: '${{ runner.temp }}/unified-worker/'}
