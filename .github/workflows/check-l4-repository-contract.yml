@@ -18,15 +18,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - pr: 19
-            base: 809014dd314dbcf0ccf1dd23ec9cbf84ee4830df
-            head: 815695d634e50d4c336919aa9e60392dba81f1e9
-          - pr: 20
+          - pr: 22
             base: 815695d634e50d4c336919aa9e60392dba81f1e9
-            head: b30319711527a569f6bae4c42cccd41b63233820
-          - pr: 21
-            base: b30319711527a569f6bae4c42cccd41b63233820
-            head: 31d8470dde81bd5b68c8792ac80215ce47ab1e18
+            head: 7baeb1b74518c10a5f732b244924f28bce9c8a3e
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with: {persist-credentials: false}
