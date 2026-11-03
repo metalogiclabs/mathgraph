@@ -1,0 +1,176 @@
+{
+  "version": "shell-argv-admission-v1",
+  "calibration": "Authored retrospective cohort; outcomes are anticipated, not blind labels. No source repair or Lean-expression admission.",
+  "subject": {
+    "repository": "metalogiclabs/L4YAML",
+    "revision": "fba155bf31918f9b03394ae9bfb8cd17c91ecfb8",
+    "path": "Scripts/Ledger.lean",
+    "sha256": "2e682e47ad98d581f7b075dfb880934ff89a3e3e287ac654d877cf1dee53ced4"
+  },
+  "relation": "Finite Bash parser invocation/argument observation, not interpreter execution or whole scanner equivalence.",
+  "assumptions": [
+    "Installed Bash reference semantics",
+    "Only literal trusted cohort commands",
+    "Function interception observes invocation argv; no real Python code executes",
+    "Requirement adoption is operator-declared for this calibration"
+  ],
+  "controls": {
+    "positive": {
+      "command": "python3 guard.py",
+      "calls": [
+        [
+          "guard.py"
+        ]
+      ]
+    },
+    "negative": {
+      "command": "echo python3 guard.py > /dev/null",
+      "calls": []
+    }
+  },
+  "cases": [
+    {
+      "id": "attached_redirect_wrong",
+      "command": "python3 -c 1>out",
+      "expected_calls": [
+        [
+          "-c",
+          "1"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "REJECTED"
+    },
+    {
+      "id": "attached_redirect",
+      "command": "python3 -c 1>out",
+      "expected_calls": [
+        [
+          "-c"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "spaced_redirect",
+      "command": "python3 -c 1 >out",
+      "expected_calls": [
+        [
+          "-c",
+          "1"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "quoted_redirect",
+      "command": "python3 -c \"1>out\"",
+      "expected_calls": [
+        [
+          "-c",
+          "1>out"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "escaped_redirect",
+      "command": "python3 -c 1\\>out",
+      "expected_calls": [
+        [
+          "-c",
+          "1>out"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "argument_keyword",
+      "command": "echo if python3 scripts/a.py > /dev/null",
+      "expected_calls": [],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "command_keyword",
+      "command": "if python3 scripts/a.py; then :; fi",
+      "expected_calls": [
+        [
+          "scripts/a.py"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    },
+    {
+      "id": "no_authority",
+      "command": "python3 -c 1",
+      "expected_calls": [
+        [
+          "-c",
+          "1"
+        ]
+      ],
+      "authority": {
+        "state": "HYPOTHESIS",
+        "reference": null
+      },
+      "anticipated_admission": "UNKNOWN"
+    },
+    {
+      "id": "disputed_requirement",
+      "command": "python3 -c 1",
+      "expected_calls": [
+        [
+          "-c",
+          "1"
+        ]
+      ],
+      "authority": {
+        "state": "DISPUTED",
+        "reference": null
+      },
+      "anticipated_admission": "UNKNOWN"
+    },
+    {
+      "id": "quoted_descriptor",
+      "command": "python3 -c \"1\">out",
+      "expected_calls": [
+        [
+          "-c",
+          "1"
+        ]
+      ],
+      "authority": {
+        "state": "DECLARED",
+        "reference": "Scripts.Ledger command-position and command-prefix documentation at fba155bf31918f9b03394ae9bfb8cd17c91ecfb8"
+      },
+      "anticipated_admission": "SUPPORTED"
+    }
+  ]
+}
