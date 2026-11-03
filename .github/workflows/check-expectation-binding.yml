@@ -1,0 +1,53 @@
+name: Exact expectation binding and paired Ledger repair
+on:
+  push:
+    branches: [research/check-expectation-binding-v1]
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Admission and existing App contract tests
+        run: |
+          set -euo pipefail
+          mkdir binding-evidence
+          git rev-parse HEAD > binding-evidence/source.txt
+          python3 -m unittest discover -s experiments/check-expectation-admission-v1 -p 'test_*.py' 2>&1 | tee binding-evidence/admission-tests.txt
+          node --test experiments/check-expectation-admission-v1/binding-native.test.mjs 2>&1 | tee binding-evidence/binding-native-tests.txt
+          node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs > binding-evidence/app-tests.txt 2>&1
+      - name: Acquire exact source and seal frozen native inputs
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: node experiments/check-expectation-admission-v1/binding-driver.mjs prepare binding-evidence/native
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Replay exact source and paired candidate without credentials
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial binding-evidence/native
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair binding-evidence/native
+      - name: Independently bind observations and assess candidate
+        run: |
+          node experiments/check-expectation-admission-v1/binding-driver.mjs assess binding-evidence/native
+          python3 experiments/check-expectation-admission-v1/binding.py binding-evidence/native
+          python3 - <<'PY'
+          import json
+          r=json.load(open('binding-evidence/native/binding-assessment.json'))
+          assert r['status']=='QUALIFIED_FINITE_CANDIDATE'
+          assert r['repair_targets']==['keyword_ok']
+          assert r['excluded_probes']==['wrong_value','weak_expression']
+          assert [b['status'] for b in r['bindings'].values()]==['ADMITTED','ADMITTED','REJECTED','UNKNOWN']
+          n=json.load(open('binding-evidence/native/inspection.json'))
+          original={x['id']:x['execution'] for x in n['initial']['rows']}
+          assert original=={'attached_ok':'GUARD_PASSED','keyword_ok':'CANDIDATE_ASSERTION_FAILURE','wrong_value':'CANDIDATE_ASSERTION_FAILURE','weak_expression':'GUARD_PASSED'}
+          assert n['initial']['rows']==n['original']['rows']==n['withdrawn']['rows']
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: exact-expectation-binding-evidence, path: binding-evidence/}
