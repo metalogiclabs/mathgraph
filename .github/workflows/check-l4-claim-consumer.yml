@@ -1,0 +1,63 @@
+name: L4YAML claim-to-consumer qualification
+on:
+  push:
+    branches: [research/check-l4-claim-consumer-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Acquire authenticated immutable subject and attributed claim before execution
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          mkdir claim-snapshot
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const c=JSON.parse(fs.readFileSync('experiments/check-l4-claim-consumer-v1/contract.json')),api=async path=>{const r=await fetch('https://api.github.com/repos/'+path,{redirect:'error',headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','User-Agent':'MathGraph-Claim-Consumer'}});if(!r.ok)throw Error('METADATA_HTTP_'+r.status);return r.json();};
+          const pr=await api(c.repository+'/pulls/'+c.fork_pr),comparison=await api(c.repository+'/compare/'+c.base_sha+'...'+c.head_sha),upstream_claim=await api('nasa-jpl/L4YAML/pulls/212');
+          fs.writeFileSync('claim-snapshot/snapshot.json',JSON.stringify({schema:'mathgraph.repository-contract.snapshot.v1',repository:c.repository,pr,comparison,upstream_claim}));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: claim-snapshot, path: claim-snapshot/}
+  native:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Test admission boundaries and current App regressions
+        run: |
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+          node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: claim-snapshot, path: claim-snapshot}
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Test frozen strong consumer and weakened-claim controls without credentials
+        run: python3 experiments/check-l4-claim-consumer-v1/run.py --snapshot claim-snapshot/snapshot.json --output claim-results
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: claim-consumer-evidence
+          path: |
+            claim-results/*.json
+            claim-results/logs/
+            claim-results/build/lakefile.lean
+            experiments/check-l4-claim-consumer-v1/contract.json
+            experiments/check-l4-claim-consumer-v1/claim-source.json
+            experiments/check-l4-claim-consumer-v1/probes/
+          retention-days: 30
