@@ -1,0 +1,89 @@
+name: MathGraph Check — Cross-Method Boundary Warrant V0
+
+on:
+  push:
+    branches:
+      - research/boundary-warrant-v0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  pinned-boundary-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test runner
+        run: python -m pip install 'pytest>=8,<10'
+      - name: Reacquire historical artifacts and exact Brahe source blobs
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/boundary" evidence-out/boundary
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/13214576201/zip" \
+            -o "$RUNNER_TEMP/boundary/l4.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/13128365041/zip" \
+            -o "$RUNNER_TEMP/boundary/brahe.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            'https://raw.githubusercontent.com/duncaneddy/brahe/323c4542ad915aa1b6a1dbf65f1f6a8040609294/src/events/detection.rs' \
+            -o "$RUNNER_TEMP/boundary/brahe-base.rs"
+          curl --fail --location --silent --show-error --retry 3 --max-time 60 \
+            'https://raw.githubusercontent.com/duncaneddy/brahe/f40f97da4094fddbd3745158f0123f9bcd0f3bd3/src/events/detection.rs' \
+            -o "$RUNNER_TEMP/boundary/brahe-head.rs"
+          echo "57d139153c4d61003d61a002fd715c9ac7bbdc3f0f88431b710e45f9c558e5e2  $RUNNER_TEMP/boundary/l4.zip" | sha256sum -c -
+          echo "87c105ef5ab2c8880dbed6cbae78cfdb4c7bd680f23419cdb5776685b3cc914e  $RUNNER_TEMP/boundary/brahe.zip" | sha256sum -c -
+          echo "dcfadec09fcc48fd824d0cc154f622f594ac7abdbbf174eeccbf41c885af3708  $RUNNER_TEMP/boundary/brahe-base.rs" | sha256sum -c -
+          echo "a4a5c2c17202202b7cfe09244c542ea4f352767d181c71d82b979b7f51905db5  $RUNNER_TEMP/boundary/brahe-head.rs" | sha256sum -c -
+          echo "MATHGRAPH_L4_CLAIM_ARTIFACT_ZIP=$RUNNER_TEMP/boundary/l4.zip" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_BRAHE_ARTIFACT_ZIP=$RUNNER_TEMP/boundary/brahe.zip" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_BRAHE_BASE_SOURCE=$RUNNER_TEMP/boundary/brahe-base.rs" >> "$GITHUB_ENV"
+          echo "MATHGRAPH_BRAHE_HEAD_SOURCE=$RUNNER_TEMP/boundary/brahe-head.rs" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Protected graph and evidence-admission regressions
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            tests/test_mathgraph_warrant_resolution_core.py \
+            tests/test_mathgraph_boundary_warrant_v0.py \
+            2>&1 | tee evidence-out/boundary/graph-tests.log
+          python -m unittest discover -s experiments/check-l4-claim-consumer-v1 \
+            -p test_boundary_export.py -v 2>&1 | tee evidence-out/boundary/lean-tests.log
+          python -m unittest discover -s experiments/boundary-warrant-v0 \
+            -p test_brahe_export.py -v 2>&1 | tee evidence-out/boundary/native-tests.log
+          python -m unittest discover -s experiments/boundary-warrant-v0 \
+            -p test_joint_qualification.py -v 2>&1 | tee evidence-out/boundary/joint-tests.log
+      - name: Publish bounded retrospective graph projection and withdrawal matrix
+        run: |
+          set -euo pipefail
+          python experiments/boundary-warrant-v0/qualify.py \
+            --l4-archive "$MATHGRAPH_L4_CLAIM_ARTIFACT_ZIP" \
+            --brahe-archive "$MATHGRAPH_BRAHE_ARTIFACT_ZIP" \
+            --brahe-base "$MATHGRAPH_BRAHE_BASE_SOURCE" \
+            --brahe-head "$MATHGRAPH_BRAHE_HEAD_SOURCE" \
+            --out evidence-out/boundary/qualification.json \
+            2>&1 | tee evidence-out/boundary/qualification.log
+          python -m json.tool evidence-out/boundary/qualification.json > /dev/null
+          git rev-parse HEAD > evidence-out/boundary/checker-commit.txt
+          sha256sum evidence-out/boundary/qualification.json \
+            > evidence-out/boundary/qualification.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-boundary-warrant-v0
+          path: evidence-out/boundary/
+          if-no-files-found: warn
