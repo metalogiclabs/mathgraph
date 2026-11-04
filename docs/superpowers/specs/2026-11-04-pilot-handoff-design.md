@@ -7,3 +7,5 @@ Approach: refine the existing static Worker page and owned PR overviews; preserv
 Lead with complementary roles for implementation and independent requirement/evidence checking. Present two bounded examples without asserting that all private review findings are known. Primary report path42→43→positive41813273444. Keep only one brief top-level scope line. Put access, result meanings, execution, data handling and licensing in details; retain explicit costs and truthful scheduled cleanup. Do not publish private collaboration names, emails, or unreleased material.
 
 Use a command-location table, short aliases, neutral preparation-button label and a clear next ask: one real PR plus the behavior that must hold. No installation needed; discuss selected-repository integration only if useful after the trial. Replace stale queued trial reply with a superseded notice preserving evidence.
+
+Final user correction: keep comparative tool positioning and collaboration asks in correspondence. The page itself is a neutral check/evidence/repair interface, with factual examples and technical source links. Remove named-tool comparisons and personal outreach language from the UI.
