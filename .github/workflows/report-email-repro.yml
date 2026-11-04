@@ -1,0 +1,35 @@
+name: Report CLI email reproduction
+on:
+  push:
+    branches: [research/report-email-repro-20261104]
+permissions: {contents: read}
+jobs:
+  repro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [1f5af2c7cb3c56acef7c581d1bb15986cdbebaa2, 8fdc991b6dfebe1114858f6649e15c5cea2e5eff]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, path: controller}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ matrix.revision }}
+          path: subject
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: recursive
+      - name: Install pinned Lean
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          cd subject
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Exact one-file reproduction and anonymous links
+        run: python3 controller/experiments/check-report-handoff-v1/email-repro.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'email-repro-${{ matrix.revision }}', path: email-repro, retention-days: 90}
