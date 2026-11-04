@@ -24,7 +24,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .shell { display: grid; grid-template-columns: 258px minmax(0, 1fr); min-height: 100vh; }
 .workspace-sidebar { position: sticky; top: 0; height: 100vh; padding: 18px 13px; border-right: 1px solid var(--line); background: var(--aside); display: flex; flex-direction: column; }
 .brand { display: flex; align-items: center; gap: 11px; padding: 3px 8px 22px; }
-.brand-logo { display: block; width: 34px; height: 34px; flex: none; object-fit: contain; }
+.brand-logo { display: block; width: 51px; height: 34px; background: #fff; border-radius: 5px; flex: none; object-fit: contain; }
 .brand strong { display: block; font-size: 13px; font-weight: 650; letter-spacing: -.15px; }
 .brand small { display: block; color: var(--muted); font-size: 11px; }
 .sidebar-label { color: #85818a; padding: 19px 9px 9px; font-size: 11px; font-weight: 600; }
