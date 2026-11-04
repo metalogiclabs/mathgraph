@@ -33,6 +33,7 @@ test('OMM Check shares neutral GitHub App formatting and never means a mathemati
  assert.match(payload.output.summary,/Human mathematical intent.*UNKNOWN/i);
  assert.match(payload.output.summary,/Independent evidence warrant.*UNKNOWN/i);
  assert.equal(payload.output.title.includes('success'),false);
+ assert.doesNotMatch(payload.output.summary,/PREVIEW ONLY|No live GitHub Check/i);
 });
 
 test('strengthened premise reports bounded failure without converting it to unsound proof rejection',()=>{

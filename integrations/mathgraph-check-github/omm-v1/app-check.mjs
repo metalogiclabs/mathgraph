@@ -27,5 +27,5 @@ export function buildOmmAppCheckPreview({request,expectedHeadSha,runUrl,...nativ
   external_id:`mathgraph-omm-claim-v1:${request.repository}:${request.number}:${expectedHeadSha}`,
   output:{title:'OMM: '+view.title+' (advisory)',
    summary:[base.output.summary,detail,
-     'App transport: PREVIEW ONLY. No live GitHub Check was created by this component.'].join('\n\n').slice(0,65000)}}};
+     'Publication and exact-head App identity require separate GitHub readback. This Check conveys bounded native observations, not an independent mathematical-intent warrant.'].join('\n\n').slice(0,65000)}}};
 }
