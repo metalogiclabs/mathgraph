@@ -24,6 +24,15 @@ class ProbeShapeTests(unittest.TestCase):
     def test_unsafe_import_refused(self):
         import native
         with self.assertRaises(ValueError): native.validate_probe('import os\ndef test_x():\n    assert os.getenv("KEY") is None\n')
+    def test_generated_probe_cannot_edit_its_imported_specimen(self):
+        import native
+        for code in (
+            'from target import MAPPING\ndef test_x():\n    MAPPING[197] = 6\n    assert MAPPING[197] == 6\n',
+            'from target import MAPPING\ndef test_x():\n    MAPPING.update({197: 6})\n    assert MAPPING[197] == 6\n',
+            'from target import MAPPING\ndef test_x():\n    observed = MAPPING\n    observed.clear()\n    assert MAPPING == {}\n',
+        ):
+            with self.subTest(code=code),self.assertRaises(ValueError): native.validate_probe(code)
+        self.assertTrue(native.validate_probe('from target import MAPPING\ndef test_x():\n    assert MAPPING[197] == 6\n'))
 
 class MetadataTests(unittest.TestCase):
     def test_static_package_metadata_without_running_build_backend(self):
@@ -53,13 +62,16 @@ class SubjectExecutionTests(unittest.TestCase):
             root=Path(d);repo=root/'repo';audit=root/'audit';repo.mkdir();audit.mkdir()
             (repo/'target.py').write_text('MAPPING = {197: 6}\ndef increment(x):\n    return x + 1\n')
             (audit/'test_reach.py').write_text(
-                'from target import increment, MAPPING\n'
+                'from target import increment, MAPPING, MAPPING as ALIAS\n'
                 'def test_first_imported_source_constant():\n    assert MAPPING[197] == 6\n'
                 'def test_calls_source():\n    assert increment(2) == 3\n'
                 'def test_imported_source_constant():\n    assert MAPPING[197] == 6\n'
+                'def test_aliased_source_constant():\n    assert ALIAS[197] == 6\n'
                 'def test_short_circuit_constant():\n    assert True or MAPPING[197] == 6\n'
                 'def test_asserts_true():\n    assert 1 + 1 == 2\n'
-                'def test_missing_key_in_assertion():\n    assert MAPPING[404] == 5\n')
+                'def test_shadowed_import_is_not_source_use():\n    MAPPING = {197: 6}\n    assert MAPPING[197] == 6\n'
+                'def test_missing_key_in_assertion():\n    assert MAPPING[404] == 5\n'
+                'def test_rebound_global_is_not_source_use():\n    global MAPPING\n    MAPPING = {197: 6}\n    assert MAPPING[197] == 6\n')
             receipt=root/'cases.json'
             env={**os.environ,'PYTHONPATH':str(Path(__file__).parent)+os.pathsep+str(repo),
                 'MG_CASES_FILE':str(receipt),'MG_AUDIT_DIR':str(audit),
@@ -74,8 +86,11 @@ class SubjectExecutionTests(unittest.TestCase):
             self.assertGreater(by_name['test_calls_source']['subject_lines_reached'],0)
             self.assertEqual(by_name['test_imported_source_constant']['subject_lines_reached'],0)
             self.assertGreater(by_name['test_imported_source_constant']['subject_import_assertions_reached'],0)
+            self.assertGreater(by_name['test_aliased_source_constant']['subject_import_assertions_reached'],0)
             self.assertEqual(by_name['test_short_circuit_constant']['subject_import_assertions_reached'],0)
             self.assertEqual(by_name['test_asserts_true']['subject_lines_reached'],0)
             self.assertEqual(by_name['test_asserts_true']['subject_import_assertions_reached'],0)
+            self.assertEqual(by_name['test_shadowed_import_is_not_source_use']['subject_import_assertions_reached'],0)
             self.assertEqual(by_name['test_missing_key_in_assertion']['exception'],'KeyError')
             self.assertTrue(by_name['test_missing_key_in_assertion']['exception_in_assertion'])
+            self.assertEqual(by_name['test_rebound_global_is_not_source_use']['subject_import_assertions_reached'],0)

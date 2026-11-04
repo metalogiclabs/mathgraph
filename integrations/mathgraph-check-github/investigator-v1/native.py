@@ -128,13 +128,41 @@ def validate_probe(text):
     tree=ast.parse(text)
     if not any(isinstance(x,ast.Assert) for x in ast.walk(tree)):raise ValueError('NO_ASSERTION_PROBE')
     bad={'os','sys','subprocess','socket','pathlib','ctypes','inspect','importlib','shutil','pickle','marshal','builtins'}
+    imported=set()
     for node in ast.walk(tree):
         if isinstance(node,(ast.Import,ast.ImportFrom)):
             names=[x.name.split('.')[0] for x in node.names] if isinstance(node,ast.Import) else [(node.module or '').split('.')[0]]
             if any(x in bad for x in names):raise ValueError('UNSUPPORTED_PROBE_IMPORT')
+            for alias in node.names:
+                imported.add(alias.asname or (alias.name.split('.')[0] if isinstance(node,ast.Import) else alias.name))
         if isinstance(node,ast.Call):
             name=node.func.id if isinstance(node.func,ast.Name) else node.func.attr if isinstance(node.func,ast.Attribute) else ''
             if name in {'exec','eval','compile','__import__','open','exit','quit','skip','xfail','getattr','setattr','delattr','getenv','system','popen'}:raise ValueError('UNSUPPORTED_PROBE_CALL')
+    # A model must not make a failing source contract pass by rewriting the
+    # imported specimen before the assertion. Follow simple local aliases;
+    # this syntactic screen is deliberately not claimed as general purity.
+    aliases=set(imported)
+    assignments=[n for n in ast.walk(tree) if isinstance(n,ast.Assign)]
+    while True:
+        old=len(aliases)
+        for n in assignments:
+            if isinstance(n.value,ast.Name) and n.value.id in aliases:
+                aliases.update(t.id for target in n.targets for t in ast.walk(target) if isinstance(t,ast.Name))
+        if len(aliases)==old:break
+    def root_name(expr):
+        while isinstance(expr,(ast.Subscript,ast.Attribute)):expr=expr.value
+        return expr.id if isinstance(expr,ast.Name) else None
+    mutators={'append','extend','insert','remove','pop','popitem','clear','update','setdefault','sort','reverse','add','discard','difference_update','intersection_update','symmetric_difference_update','__setitem__','__delitem__'}
+    for node in ast.walk(tree):
+        if isinstance(node,(ast.Assign,ast.AnnAssign,ast.AugAssign,ast.Delete)):
+            targets=node.targets if isinstance(node,(ast.Assign,ast.Delete)) else [node.target]
+            if any(isinstance(t,(ast.Subscript,ast.Attribute)) and root_name(t) in aliases for t in targets):
+                raise ValueError('IMPORTED_SPECIMEN_MUTATION_REFUSED')
+            if isinstance(node,ast.AugAssign) and root_name(node.target) in aliases:
+                raise ValueError('IMPORTED_SPECIMEN_MUTATION_REFUSED')
+        if isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute):
+            if node.func.attr in mutators and root_name(node.func.value) in aliases:
+                raise ValueError('IMPORTED_SPECIMEN_MUTATION_REFUSED')
     return True
 
 def initialize_metadata(repo):

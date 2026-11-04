@@ -26,21 +26,30 @@ def subject_import_assertions(tree):
     def reviewed(module):
         path=getattr(module,'__file__',None)
         return isinstance(path,str) and str(Path(path).resolve()) in _subject_paths
-    names=set()
+    bound={}
     for node in ast.walk(tree):
         if isinstance(node,ast.ImportFrom):
             module=sys.modules.get(node.module or '')
             for alias in node.names:
-                if alias.name!='*' and (reviewed(module) or reviewed(getattr(module,alias.name,None))):
-                    names.add(alias.asname or alias.name)
+                value=vars(module).get(alias.name) if module is not None else None
+                if alias.name!='*' and module is not None and alias.name in vars(module) and (reviewed(module) or reviewed(value)):
+                    bound[alias.asname or alias.name]=value
         elif isinstance(node,ast.Import):
             for alias in node.names:
-                if reviewed(sys.modules.get(alias.name)):
-                    names.add(alias.asname or alias.name.split('.')[0])
-    return {node.lineno: {x.id for x in ast.walk(node.test)
-            if isinstance(x,ast.Name) and x.id in names}
+                module=sys.modules.get(alias.name)
+                if reviewed(module):
+                    bound[alias.asname or alias.name.split('.')[0]]=module
+    return {node.lineno: {x.id:bound[x.id] for x in ast.walk(node.test)
+            if isinstance(x,ast.Name) and x.id in bound}
             for node in ast.walk(tree) if isinstance(node,ast.Assert)
-            and any(isinstance(x,ast.Name) and x.id in names for x in ast.walk(node.test))}
+            and any(isinstance(x,ast.Name) and x.id in bound for x in ast.walk(node.test))}
+def bound_value(frame,instr):
+    """Resolve the value *actually* read by an opcode, not a shadowed name."""
+    name=instr.argval
+    if instr.opname in {'LOAD_FAST','LOAD_DEREF'}:return frame.f_locals.get(name,_unbound)
+    if instr.opname=='LOAD_NAME':return frame.f_locals.get(name,frame.f_globals.get(name,_unbound))
+    return frame.f_globals.get(name,_unbound)
+_unbound=object()
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item):
     path=str(Path(item.path).resolve())
@@ -60,7 +69,8 @@ def pytest_runtest_call(item):
                 opcode_map[frame.f_code]=instrs
             instr=instrs.get(frame.f_lasti)
             if (instr and instr.opname in {'LOAD_GLOBAL','LOAD_NAME','LOAD_FAST','LOAD_DEREF'}
-                    and instr.argval in import_lines[frame.f_lineno]):
+                    and instr.argval in import_lines[frame.f_lineno]
+                    and bound_value(frame,instr) is import_lines[frame.f_lineno][instr.argval]):
                 import_seen.add(frame.f_lineno)
         if event=='line':
             if filename==path and frame.f_lineno in lines:
