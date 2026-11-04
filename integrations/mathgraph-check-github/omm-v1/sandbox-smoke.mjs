@@ -6,14 +6,14 @@ import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {pathToFileURL} from 'node:url';
-import {sandboxDockerArgs,runIsolatedLeanSource} from './sandbox-native.mjs';
+import {sandboxDockerArgs,runIsolatedLeanSource,reapIsolatedContainer} from './sandbox-native.mjs';
 
 const exec=promisify(execFile);
 const ensure=(okay,reason)=>{if(!okay)throw Error(reason);};
 const positive='import Init\nexample : 2 + 2 = 4 := by decide\n';
 const negative='import Init\nexample : False := by trivial\n';
 
-export async function probeSandboxBoundary(){
+export async function probeSandboxBoundary({run=exec}={}){
  const directory=await mkdtemp(join(tmpdir(),'omm-lean-'));
  const sourcePath=join(directory,'Submission.lean');
  try{
@@ -21,16 +21,19 @@ export async function probeSandboxBoundary(){
   const args=sandboxDockerArgs({sourcePath});
   const imageAt=args.indexOf('mathgraph-lean-sandbox:omm-v1');
   ensure(imageAt>0,'SANDBOX_IMAGE_MISSING');
+  const name=args[args.indexOf('--name')+1];
   const shell=[...args.slice(0,imageAt),'--entrypoint','/bin/sh',args[imageAt],'-c',
    'set -eu; test -r /work/Submission.lean; test "$(id -u)" -eq 65534; '+
    '! (echo denied > /work/Submission.lean); '+
    '! (echo denied > /etc/mathgraph-sandbox-violation); '+
    '! grep -q "00000000" /proc/net/route; '+
    'echo OMM_BOUNDARY_OBSERVED'];
-  const result=await exec('docker',shell,{timeout:20000,maxBuffer:262144,
-   env:{PATH:process.env.PATH??'/usr/bin:/bin'}});
-  ensure(result.stdout.includes('OMM_BOUNDARY_OBSERVED'),'SANDBOX_GUARD_FAILED');
-  return {read_only:true,no_default_route:true,uid:65534};
+  try{
+   const result=await run('docker',shell,{timeout:20000,maxBuffer:262144,
+    env:{PATH:process.env.PATH??'/usr/bin:/bin'}});
+   ensure(result.stdout.includes('OMM_BOUNDARY_OBSERVED'),'SANDBOX_GUARD_FAILED');
+   return {read_only:true,no_default_route:true,uid:65534};
+  }finally{await reapIsolatedContainer({name,run});}
  }finally{await rm(directory,{recursive:true,force:true});}
 }
 

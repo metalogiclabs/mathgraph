@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {qualifySandboxSmoke} from './sandbox-smoke.mjs';
+import {qualifySandboxSmoke,probeSandboxBoundary} from './sandbox-smoke.mjs';
 
 const ok={status:'LEAN_ACCEPTED',exit_code:0,source_sha256:'a'.repeat(64)};
 const bad={status:'LEAN_REJECTED_THIS_REPLAY',exit_code:1,source_sha256:'b'.repeat(64)};
@@ -30,4 +30,16 @@ test('missing runtime, wrong native outcomes and isolation guard failures refuse
   await assert.rejects(qualifySandboxSmoke({native:async()=>count++===0?positive:negative,
     probe:async()=>probe}),/SANDBOX_SMOKE_FAILED/);
  }
+});
+
+test('filesystem/network guard reaps its exact container after its shell probe',async()=>{
+ const calls=[];
+ const observed=await probeSandboxBoundary({run:async(cmd,args)=>{
+  calls.push({cmd,args});
+  if(args[0]==='run')return {stdout:'OMM_BOUNDARY_OBSERVED\n',stderr:''};
+  return {stdout:'',stderr:''};
+ }});
+ assert.deepEqual(observed,{read_only:true,no_default_route:true,uid:65534});
+ assert.equal(calls.length,2);
+ assert.deepEqual(calls[1].args,['rm','-f',calls[0].args[calls[0].args.indexOf('--name')+1]]);
 });

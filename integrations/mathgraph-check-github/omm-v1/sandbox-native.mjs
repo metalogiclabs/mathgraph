@@ -23,7 +23,8 @@ export function sandboxDockerArgs(options={}){
   sourcePath.slice(base.length).split(sep).length===2&&
   sourcePath.endsWith(sep+'Submission.lean')&&!sourcePath.includes(','),
   'UNSAFE_SANDBOX_SOURCE');
- return ['run','--rm','--pull','never',
+ const nonce=sourcePath.slice(base.length).split(sep)[0];
+ return ['run','--rm','--name','mathgraph-omm-'+nonce,'--pull','never',
   '--network','none','--ipc','none','--read-only',
   '--cap-drop','ALL','--security-opt','no-new-privileges',
   '--pids-limit','32','--memory','512m','--memory-swap','512m','--cpus','1',
@@ -33,6 +34,19 @@ export function sandboxDockerArgs(options={}){
   '--workdir','/work',
   '--env','HOME=/tmp','--env','LEAN_NUM_THREADS=1',
   IMAGE,'-o','/tmp/Submission.olean','/work/Submission.lean'];
+}
+
+/** An exec timeout kills the Docker CLI, not necessarily the daemon container. */
+export async function reapIsolatedContainer({name,run=exec}={}){
+ assert(typeof name==='string'&&/^mathgraph-omm-[-A-Za-z0-9_]+$/.test(name)&&
+  typeof run==='function','UNSAFE_SANDBOX_REAP_TARGET');
+ try{
+  await run('docker',['rm','-f',name],{timeout:5000,maxBuffer:131072,
+   env:{PATH:process.env.PATH??'/usr/bin:/bin'}});
+ }catch(e){
+  const message=String(e.stderr??'')+' '+String(e.message??'');
+  if(!/No such container:/i.test(message))throw Error('SANDBOX_CLEANUP_UNCONFIRMED');
+ }
 }
 
 export async function runIsolatedLeanSource({source,run=exec}={}){
@@ -46,16 +60,21 @@ export async function runIsolatedLeanSource({source,run=exec}={}){
   await writeFile(sourcePath,source,{mode:0o444,flag:'wx'});
   const args=sandboxDockerArgs({sourcePath});
   const opts={timeout:60000,maxBuffer:262144,env:{PATH:process.env.PATH??'/usr/bin:/bin'}};
+  const name=args[args.indexOf('--name')+1];
+  let outcome;
   try{
    const result=await run('docker',args,opts);
-   return {status:'LEAN_ACCEPTED',exit_code:0,source_sha256:sourceSha,
+   outcome={status:'LEAN_ACCEPTED',exit_code:0,source_sha256:sourceSha,
     output:String(result.stdout??'').slice(0,131072)+String(result.stderr??'').slice(0,131072)};
   }catch(e){
    const code=Number.isInteger(e.code)?e.code:null;
-   return {status:code===1?'LEAN_REJECTED_THIS_REPLAY':'EXECUTION_UNKNOWN',
+   outcome={status:code===1?'LEAN_REJECTED_THIS_REPLAY':'EXECUTION_UNKNOWN',
     exit_code:code,source_sha256:sourceSha,
     output:(String(e.stdout??'')+String(e.stderr??'')).slice(0,131072),
     reason:code===1?'LEAN_EXITED_NONZERO':'RUNTIME_INCOMPLETE_OR_RESOURCE_BOUND'};
   }
+  try{await reapIsolatedContainer({name,run});}
+  catch{return {...outcome,status:'EXECUTION_UNKNOWN',reason:'SANDBOX_CLEANUP_UNCONFIRMED'};}
+  return outcome;
  }finally{await rm(directory,{recursive:true,force:true});}
 }
