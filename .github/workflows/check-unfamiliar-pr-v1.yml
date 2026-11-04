@@ -1,0 +1,24 @@
+name: Prospective unfamiliar PR226 port comparison
+on:
+  push:
+    branches: [research/check-pilot-v2-20261104]
+    paths: ['experiments/check-unfamiliar-pr-v1/**', '.github/workflows/check-unfamiliar-pr-v1.yml']
+permissions: {contents: read}
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {path: controller, persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {repository: nasa-jpl/L4YAML, ref: d14e24e2de55fc2c5a4402db15b2d8cb5903d028, path: subject, persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {repository: nasa-jpl/L4YAML, ref: 8fdc991b6dfebe1114858f6649e15c5cea2e5eff, path: baseline, persist-credentials: false}
+      - run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - run: python3 controller/experiments/check-unfamiliar-pr-v1/run.py subject baseline
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: prospective-unfamiliar-pr226, path: unfamiliar-evidence, retention-days: 30}
