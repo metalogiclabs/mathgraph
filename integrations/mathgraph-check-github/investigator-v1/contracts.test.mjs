@@ -20,9 +20,12 @@ test('unexpected NameError is not a reproduced assertion failure',()=>{const r=r
 test('a passing test without a reached assertion is unknown',()=>{const r=receipt();r.cases=[{id:'test_x',status:'passed',exception:null,assertions_reached:0}];assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64)}).execution,'UNKNOWN');});
 test('generated probes cannot qualify on assertion reach without touching reviewed source',()=>{
  const r=receipt();r.cases[0].subject_lines_reached=0;
- assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64),requireSubjectExecution:true}).execution,'UNKNOWN');
+ assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64),requireReviewedSourceUse:true}).execution,'UNKNOWN');
  r.cases[0].subject_lines_reached=2;
- assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64),requireSubjectExecution:true}).execution,'PROBE_PASSED');
+ assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64),requireReviewedSourceUse:true}).execution,'PROBE_PASSED');
+ r.cases[0].subject_lines_reached=0;
+ r.cases[0].subject_import_assertions_reached=1;
+ assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64),requireReviewedSourceUse:true}).execution,'PROBE_PASSED');
 });
 test('protected suite may not shrink after repair',()=>{const before=receipt(),after=receipt();before.cases=[{id:'test_a',status:'passed',exception:null,assertions_reached:1}];after.cases=[{id:'test_b',status:'passed',exception:null,assertions_reached:1}];assert.equal(assessRepair({original:receipt(1),fixed:receipt(),protectedBefore:before,protectedAfter:after},{subjectSha:sha,testDigest:'c'.repeat(64)}).status,'UNKNOWN');});
 
@@ -59,7 +62,10 @@ test('source, frozen test bytes and distinct revision identities are required',(
 test('no head-only attribution without exercising the reviewed implementation on both revisions',()=>{
  const base=atBase(),head=receipt(1);
  base.cases[0].subject_lines_reached=0;head.cases[0].subject_lines_reached=0;
- assert.equal(delta(base,head,{requireSubjectExecution:true}).status,'UNKNOWN');
+ assert.equal(delta(base,head,{requireReviewedSourceUse:true}).status,'UNKNOWN');
  base.cases[0].subject_lines_reached=3;head.cases[0].subject_lines_reached=2;
- assert.equal(delta(base,head,{requireSubjectExecution:true}).status,'HEAD_ONLY_FAILURE');
+ assert.equal(delta(base,head,{requireReviewedSourceUse:true}).status,'HEAD_ONLY_FAILURE');
+ base.cases[0].subject_lines_reached=0;head.cases[0].subject_lines_reached=0;
+ base.cases[0].subject_import_assertions_reached=1;head.cases[0].subject_import_assertions_reached=1;
+ assert.equal(delta(base,head,{requireReviewedSourceUse:true}).status,'HEAD_ONLY_FAILURE');
 });

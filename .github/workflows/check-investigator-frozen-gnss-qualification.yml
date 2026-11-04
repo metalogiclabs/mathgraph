@@ -1,0 +1,48 @@
+name: MathGraph Check frozen GNSS source-native qualification
+
+on:
+  push:
+    branches: [experiment/contract-mutation-admission-20261104]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  frozen-probe-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Restore previously frozen source and model-proposed tests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: investigator-plan
+          path: investigation
+          run-id: 41511072108
+          github-token: ${{ github.token }}
+      - name: Authenticate source-artifact lineage and bind this runner
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/investigator-v1/rebind.mjs investigation
+      - name: Re-execute unchanged probes on authentic base/head in offline Docker
+        run: python3 integrations/mathgraph-check-github/investigator-v1/native.py initial investigation
+      - name: Independently assess with no model repair or publisher permissions
+        run: node integrations/mathgraph-check-github/investigator-v1/driver.mjs assess investigation
+      - name: Fail closed if native source qualification remains unknown
+        run: |
+          node -e 'const r=require("./investigation/assessment.json");
+            if(r.status==="UNKNOWN"||r.subject?.pr!==191||r.subject?.source_repository!=="Stanford-NavLab/gnss_lib_py"){
+              console.error(JSON.stringify({status:r.status,reason:r.reason,counts:r.counts,protected_suites:r.protected_suites}));
+              process.exit(1);
+            }
+            console.log(JSON.stringify({status:r.status,counts:r.counts,repair:r.repair}));'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: investigator-frozen-gnss-source-native-${{ github.run_id }}
+          path: investigation/
+          if-no-files-found: error

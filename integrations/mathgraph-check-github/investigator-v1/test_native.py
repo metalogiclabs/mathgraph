@@ -51,10 +51,12 @@ class SubjectExecutionTests(unittest.TestCase):
         from pathlib import Path
         with tempfile.TemporaryDirectory(prefix='mg-native-reach-') as d:
             root=Path(d);repo=root/'repo';audit=root/'audit';repo.mkdir();audit.mkdir()
-            (repo/'target.py').write_text('def increment(x):\n    return x + 1\n')
+            (repo/'target.py').write_text('MAPPING = {197: 6}\ndef increment(x):\n    return x + 1\n')
             (audit/'test_reach.py').write_text(
-                'from target import increment\n'
+                'from target import increment, MAPPING\n'
                 'def test_calls_source():\n    assert increment(2) == 3\n'
+                'def test_imported_source_constant():\n    assert MAPPING[197] == 6\n'
+                'def test_short_circuit_constant():\n    assert True or MAPPING[197] == 6\n'
                 'def test_asserts_true():\n    assert 1 + 1 == 2\n')
             receipt=root/'cases.json'
             env={**os.environ,'PYTHONPATH':str(Path(__file__).parent)+os.pathsep+str(repo),
@@ -67,4 +69,8 @@ class SubjectExecutionTests(unittest.TestCase):
             results=json.loads(receipt.read_text())
             by_name={x['id'].split('::')[-1]:x for x in results}
             self.assertGreater(by_name['test_calls_source']['subject_lines_reached'],0)
+            self.assertEqual(by_name['test_imported_source_constant']['subject_lines_reached'],0)
+            self.assertGreater(by_name['test_imported_source_constant']['subject_import_assertions_reached'],0)
+            self.assertEqual(by_name['test_short_circuit_constant']['subject_import_assertions_reached'],0)
             self.assertEqual(by_name['test_asserts_true']['subject_lines_reached'],0)
+            self.assertEqual(by_name['test_asserts_true']['subject_import_assertions_reached'],0)
