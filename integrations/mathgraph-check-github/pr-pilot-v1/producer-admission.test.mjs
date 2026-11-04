@@ -32,3 +32,4 @@ test('authenticate real producer, then reject independently changed dependencies
   ['expectation-reference',o=>o.reference.records.find(r=>r.Obligation.id==='attached_redirect').Verification.repeat.calls=[]],
  ]){const x=structuredClone(original),raw=x.envelope.raw,n=name+'.json',o=JSON.parse(raw[n]);mutate(o);raw[n]=JSON.stringify(o);const manifest=JSON.parse(raw['manifest.json']);manifest.hashes[n]=createHash('sha256').update(raw[n]).digest('hex');raw['manifest.json']=JSON.stringify(manifest);assert.throws(()=>admitProducer(x.envelope,x.request));}
 });
+test('final C39 scheduler authenticates its immutable producer independently of current release',async()=>{const {producerRelease}=await import('./producer-admission.mjs');assert.equal(producerRelease({head_sha:'c01dcfdb441cb9c49ba1833a65a2c30972553182'}),'c39d0ec486c90147b080af3ca8e669f933c4aafb');});

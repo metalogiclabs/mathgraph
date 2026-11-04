@@ -1,3 +1,4 @@
+import {capturePublicReview} from './public-review.mjs';
 import {admitClaimResult,captureClaimSnapshot} from './claim.mjs';
 import {CLI_MODE} from './cli-profiles.mjs';
 import {admitCliResult} from './cli-parity.mjs';
@@ -53,6 +54,7 @@ try{
     if([CONTRACT_MODE,CLI_MODE].includes(request.profile.mode)&&publication.state==='STARTED'&&process.env.CONTRACTS_OK!=='false'){
      let snapshot=await captureRepositorySnapshot(request,scoped.api);
      if(request.profile.claim_profile){try{snapshot=await captureClaimSnapshot(request,snapshot,githubClient(process.env.GITHUB_TOKEN,{repository:'nasa-jpl/L4YAML'}));}catch{await save('claim-intake-error',{context,reason:'CLAIM_INTAKE_INCOMPLETE'});}}
+     if(request.profile.public_review_pr){try{snapshot.public_review=await capturePublicReview({repository:request.repository,number:request.number,head_sha:request.head_sha,base_sha:request.base_sha},request.profile.public_review_pr,githubClient(process.env.GITHUB_TOKEN,{repository:'nasa-jpl/L4YAML'}));}catch{await save('public-review-intake-error',{context,reason:'PUBLIC_REVIEW_CAPTURE_INCOMPLETE'});}}
      await save('contract-snapshot',snapshot);
     }
     if(publication.state==='STARTED'){const prior=await priorCheckRun(request,scoped.api);if(prior)publication.prior_run=prior;}
@@ -94,6 +96,7 @@ try{
   let corpus=null;try{corpus=await readFile(dir+'/contract-corpus.json');}catch{}
   const assessment=request.profile.mode===CLI_MODE?admitCliResult(receipt,request,context):admitRepositoryResult(receipt,request,context,corpus);
   if(request.profile.claim_profile){let claim;try{claim=await get('claim-receipt');}catch{}assessment.claim=admitClaimResult(claim,request,context);if(!claim){try{assessment.claim.reason=(await get('claim-intake-error')).reason;}catch{}}}
+  try{const captured=await get('contract-snapshot');if(captured.public_review)assessment.public_review=captured.public_review;}catch{}
   await save('assessment',assessment);await seal();
  }else if(phase==='reuse'){
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';

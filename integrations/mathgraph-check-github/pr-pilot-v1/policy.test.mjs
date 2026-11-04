@@ -7,7 +7,7 @@ const files=[{filename:'Scripts/Ledger.lean',status:'modified'}];
 const make=(x={})=>admitRequest({repository:repo,pr,comment,permission:'write',files,...x});
 test('reviewed source uses versioned expectation scope; unknown-source fix stays unsupported',()=>{
  const approved={...pr,head:{...pr.head,sha:'fba155bf31918f9b03394ae9bfb8cd17c91ecfb8'}};
- const known=make({pr:approved});assert.equal(known.profile.expectation_profile,'ledger-shell-v2');assert.equal(known.profile.report_version,'expectations-v2-complete');
+ const known=make({pr:approved});assert.equal(known.profile.expectation_profile,'ledger-shell-v2');assert.equal(known.profile.report_version,'expectations-v2-review');
  const blocked=make({comment:{...comment,body:'@MathGraph -fix'}});assert.equal(blocked.support.supported,false);assert.equal(blocked.support.reason,'REPAIR_EXPECTATION_REVIEW_REQUIRED');
  assert.equal(make({pr:approved,comment:{...comment,body:'@MathGraph -fix'}}).support.supported,true);
 });
@@ -60,3 +60,5 @@ test('result links its exact PR when several PRs share a commit',()=>{
  const s=formatResult({status:'UNKNOWN',reason:'UNSUPPORTED_CHANGED_FILE_SCOPE'},make(),'https://github.com/metalogiclabs/mathgraph/actions/runs/1');
  assert.match(s,/\[metalogiclabs\/L4YAML#2\]\(https:\/\/github.com\/metalogiclabs\/L4YAML\/pull\/2\)/);
 });
+test('explicit comparison marker requests public context without granting repair authority',()=>{const r=make({pr:{...pr,body:'MathGraph comparison: nasa-jpl/L4YAML#212'},files:[{filename:'Scripts/Price.lean',status:'modified'}]});assert.equal(r.profile.public_review_pr,212);assert.equal(r.profile.report_version,'review-passport-v1');assert.equal(r.command,'check');});
+test('untrusted or ambiguous comparison markers cannot select peer context',()=>{for(const body of ['MathGraph comparison: other/L4YAML#212','MathGraph comparison: nasa-jpl/L4YAML#212\nMathGraph comparison: nasa-jpl/L4YAML#211'])assert.equal(make({pr:{...pr,body},files:[{filename:'Scripts/Price.lean',status:'modified'}]}).profile.public_review_pr,undefined);});

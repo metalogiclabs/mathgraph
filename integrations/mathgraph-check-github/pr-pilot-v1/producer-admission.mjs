@@ -9,6 +9,7 @@ const hash=x=>createHash('sha256').update(x).digest('hex');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const need=(b,c)=>{if(!b)throw Error(c);};
 export function producerRelease(run,context={}){
+ if(run?.head_sha==='c01dcfdb441cb9c49ba1833a65a2c30972553182')return 'c39d0ec486c90147b080af3ca8e669f933c4aafb';
  if(run?.head_sha==='a6651de78193d70bbb72e59e868670e675981bf4')return PRODUCER_CONTROLLER;
  if(run?.head_sha==='24bf74d5f2feaa398763b0e5a7aef77c05bf6966')return '5fb0effff54763acbedc422857ba0b6c708265af';
  if(run?.head_sha==='0b2fd84908f12ca404b4baa90fc1d1c7f780fb3c')return 'b4c2df50eb94447dcb72b48f88abe9f3d063a190';
