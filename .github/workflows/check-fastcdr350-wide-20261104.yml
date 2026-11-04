@@ -1,0 +1,32 @@
+name: Check Fast-CDR 350 Wide-Length Boundary
+
+on:
+  push:
+    branches:
+      - research/check-fastcdr350-wide-20261104
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout pinned owned research source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test immutable Fast-CDR base, head, and isolated candidate guard
+        run: bash experiments/check_fastcdr350_wide_length/run_native.sh
+
+      - name: Preserve native logs and source fingerprints, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastcdr350-wide-length-native-receipt
+          path: artifacts/check_fastcdr350_wide_length_v1/
+          if-no-files-found: warn
+          retention-days: 45

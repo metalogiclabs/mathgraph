@@ -1,0 +1,63 @@
+diff --git a/src/cpp/Cdr.cpp b/src/cpp/Cdr.cpp
+index 4f40d2b..b37cd71 100644
+--- a/src/cpp/Cdr.cpp
++++ b/src/cpp/Cdr.cpp
+@@ -1738,7 +1738,7 @@ Cdr& Cdr::deserialize(
+         string_t = nullptr;
+         return *this;
+     }
+-    else if ((end_ - offset_) >= (length * 2))
++    else if ((end_ - offset_) >= (static_cast<uint64_t>(length) * 2))
+     {
+         // Save last datasize.
+         last_data_size_ = sizeof(uint16_t);
+@@ -1752,7 +1752,7 @@ Cdr& Cdr::deserialize(
+         }
+         else
+         {
+-            offset_ += length * 2;
++            offset_ += static_cast<size_t>(length) * 2;
+         }
+ 
+         return *this;
+@@ -1844,7 +1844,7 @@ Cdr& Cdr::deserialize(
+         string_t = nullptr;
+         return *this;
+     }
+-    else if ((end_ - offset_) >= (length * 2))
++    else if ((end_ - offset_) >= (static_cast<uint64_t>(length) * 2))
+     {
+         uint32_t length_to_read {length};
+ 
+@@ -1877,11 +1877,11 @@ Cdr& Cdr::deserialize(
+ 
+             deserialize_array(string_t, length_to_read);
+ 
+-            offset_ += (length - length_to_read) * 2;
++            offset_ += static_cast<size_t>(length - length_to_read) * 2;
+         }
+         else
+         {
+-            offset_ += length * 2;
++            offset_ += static_cast<size_t>(length) * 2;
+         }
+ 
+         return *this;
+@@ -1981,7 +1981,7 @@ const std::wstring Cdr::read_wstring(
+     state state_(*this);
+ 
+     deserialize_framing(read_length);
+-    uint32_t bytes_length = read_length * 2;
++    uint64_t bytes_length = static_cast<uint64_t>(read_length) * 2;
+ 
+     if (bytes_length == 0)
+     {
+@@ -2027,7 +2027,7 @@ const std::wstring Cdr::read_wstring(
+                     ret_value.erase(length);
+                 }
+             }
+-            offset_ += (read_length - length_to_read) * 2;
++            offset_ += static_cast<size_t>(read_length - length_to_read) * 2;
+         }
+         else
+         {
