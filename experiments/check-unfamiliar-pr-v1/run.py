@@ -27,11 +27,13 @@ for script,py in commands:
    (root/'bin/lake').write_text('#!/usr/bin/python3\nfrom pathlib import Path\nimport sys\np=Path('+repr(target)+')\nPath("observed-probe.lean").write_bytes(p.read_bytes())\n'+('print('+repr(target+':1:1: error: controlled replay\n'+target+':100:2: error: controlled replay\n'+target+':100:3: error: controlled replay\n'+target+':500:1: error: controlled replay')+')\n' if kind=='diagnostics' else '')+'sys.exit(1)\n');(root/'bin/lake').chmod(0o755)
    (root/'scripts').mkdir(exist_ok=True);shutil.copy(base/'scripts'/py,root/'scripts'/py)
    for q in [root,*root.rglob('*')]:q.chmod(0o777 if q.is_dir() else 0o666)
+   (root/'bin/lake').chmod(0o755)
    pos=['payers'] if kind=='payers' else []
    args=['python3','scripts/'+py]+pos if arm=='python' else ['/compiled/.lake/build/bin/price',script]+pos
    dock=common[:];dock[dock.index('PATH=/opt/lean/bin:/usr/bin:/bin')]='PATH=/work/bin:/opt/lean/bin:/usr/bin:/bin';dock[dock.index('/compiled')+0]='/work' # value following -w
    dock[dock.index('mg-prospective'):dock.index('mg-prospective')]=['-v',str(root)+':/work:rw']
    p=run(dock+args,90)
+   if kind in ['ordinary','diagnostics'] and p.returncode==0:assert (root/'observed-probe.lean').exists(),'CONTROLLED_BACKEND_NOT_EXECUTED'
    outputs={str(f.relative_to(root)):hashlib.sha256(f.read_bytes()).hexdigest() for f in root.rglob('*') if f.is_file() and f.name not in [py,'lake'] and '__pycache__' not in str(f)}
    rows.append({'script':script,'kind':kind,'arm':arm,'exit':p.returncode,'stdout':p.stdout,'stderr':p.stderr,'files':outputs,'restored':not (root/target).exists() if kind=='missing' else (root/target).read_bytes()==(b'' if kind=='empty' else original)})
 comparisons=[]
