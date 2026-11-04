@@ -1,0 +1,24 @@
+name: MathGraph Check automatic copy and check v2
+on:
+  repository_dispatch:
+    types: [mathgraph-pr-import-v2]
+permissions: {contents: read}
+concurrency:
+  group: pr-import-${{ github.event.client_payload.request.upstream_number }}
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: d3b8617c46f73eaea43cf32c99b2d6c8b54b950a}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Metadata-only import contracts
+        run: node --test integrations/mathgraph-check-github/pr-pilot-v1/upstream-intake.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/transport.test.mjs
+      - name: Revalidate request and create or reuse owned snapshot
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/import-controller.mjs
