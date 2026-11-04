@@ -1,0 +1,30 @@
+name: Frozen TraceOf generator comment regression
+on:
+  push:
+    branches: [research/check-traceof-comments-20261104]
+    paths: ['experiments/check-traceof-comments-v1/**', '.github/workflows/check-traceof-comments.yml']
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, path: verifier}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: metalogiclabs/L4YAML
+          ref: 1153d648425fb15f6fe49061544f7ffe4bdcb520
+          persist-credentials: false
+          path: source
+      - name: Install frozen Lean toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Native frozen-source counterexample
+        run: python3 verifier/experiments/check-traceof-comments-v1/baseline.py source evidence
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: traceof-comment-baseline, path: evidence, retention-days: 30}
