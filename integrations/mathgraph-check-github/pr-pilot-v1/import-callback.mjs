@@ -1,3 +1,4 @@
+import {Buffer} from 'node:buffer';
 import {verifyDispatch} from './transport.mjs';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export async function acceptImportComplete(request,env){
@@ -12,5 +13,5 @@ export async function acceptImportComplete(request,env){
   ensure(['nasa-jpl/L4YAML','metalogiclabs/L4YAML'].includes(r.upstream_repository)&&['upstream_head','upstream_base'].every(k=>/^[a-f0-9]{40}$/.test(r[k])),'CALLBACK_SOURCE_INVALID');
   await env.PR_EVENTS.send({schema:'mathgraph.pr-pilot.delivery.v1',repository:r.repository,number:r.snapshot_number,comment_id:r.comment_id,actor_id:r.actor_id,installationID:r.installation_id,command:'import-check',action:'command',upstream_head:r.upstream_head,upstream_base:r.upstream_base,origin:{number:r.number,comment_id:r.comment_id,upstream_number:r.upstream_number,upstream_repository:r.upstream_repository,upstream_url:r.upstream_url,watch:r.watch===true},watch_generation:r.watch_generation??0});
   return new Response('Check queued',{status:202});
- }catch(e){return new Response('Import completion could not be verified',{status:e.message==='CALLBACK_TOO_LARGE'?413:403});}
+ }catch(e){console.warn('MATHGRAPH_CALLBACK_REJECTED '+(/^[A-Z_]+$/.test(e.message)?e.message:e.name));return new Response('Import completion could not be verified',{status:e.message==='CALLBACK_TOO_LARGE'?413:403});}
 }

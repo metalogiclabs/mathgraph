@@ -1,3 +1,4 @@
+import {Buffer} from 'node:buffer';
 import {createHash,sign,verify,createPublicKey} from 'node:crypto';
 import {upstreamRequestOf} from './upstream-intake.mjs';
 import {profileFor,commandOf} from './policy.mjs';
