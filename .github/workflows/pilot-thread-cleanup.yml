@@ -1,0 +1,50 @@
+name: Archive-backed pilot thread cleanup
+on:
+  push:
+    branches: [research/pilot-thread-cleanup-20261104]
+permissions: {contents: read}
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {ref: 34b92dbb1fa76c952f63c2c9e91ab165f5021743, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Preflight archived comment identities and remove exact trial allowlist
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          import {appJWT} from './integrations/mathgraph-check-github/cloudflare/worker.mjs';
+          import {githubClient} from './integrations/mathgraph-check-github/pr-pilot-v1/github.mjs';
+          import {mintScopedToken} from './integrations/mathgraph-check-github/pr-pilot-v1/auth.mjs';
+          import {createHash} from 'node:crypto';
+          import {writeFileSync} from 'node:fs';
+          const targets=[{"id": 6627795392, "number": 40, "actor_id": 32909488, "body_sha256": "ae4267a01f1269fbbf4824d26cf3bb22e8059a4797cc5bb46e43c40ff7ed090f"}, {"id": 6627795775, "number": 40, "actor_id": 32909488, "body_sha256": "0a409e02179e4fcc6aa86e6756ce248ab0dbc39b19875dff2cc6b06471f3c9bd"}, {"id": 6627979455, "number": 40, "actor_id": 32909488, "body_sha256": "ae4267a01f1269fbbf4824d26cf3bb22e8059a4797cc5bb46e43c40ff7ed090f"}, {"id": 6627980297, "number": 40, "actor_id": 32909488, "body_sha256": "0a409e02179e4fcc6aa86e6756ce248ab0dbc39b19875dff2cc6b06471f3c9bd"}, {"id": 6627981445, "number": 40, "actor_id": 342263476, "body_sha256": "f500e89ed1e1a67c44a786ba6ae679c184f996325d3b39f60033162f44ae6887"}, {"id": 6627985361, "number": 40, "actor_id": 342263476, "body_sha256": "a10713801cb375eedc9d19b2f28858bf51b5e8e7da5ab24f5d19af77df9c47c5"}, {"id": 6628110560, "number": 40, "actor_id": 32909488, "body_sha256": "0a409e02179e4fcc6aa86e6756ce248ab0dbc39b19875dff2cc6b06471f3c9bd"}, {"id": 6628112952, "number": 40, "actor_id": 342263476, "body_sha256": "88fc0ea0caa3fba9b619104d0a4c8f303f847d731d0548463354b5bb370cb972"}, {"id": 6628322864, "number": 40, "actor_id": 32909488, "body_sha256": "be6d45f4d092fc02a115517f274fe125a67263367c37c827d9182699d303fc22"}, {"id": 6628326267, "number": 40, "actor_id": 342263476, "body_sha256": "c4dc326e84493a126418cb3cf7d6e624229fe15999b6354d38706fa4a433dcca"}, {"id": 6626045523, "number": 35, "actor_id": 32909488, "body_sha256": "9c893629fba487e769a5eae3ccd31bb3d6e8054791d41b786d00bc8886e46b2a"}, {"id": 6626054464, "number": 35, "actor_id": 342263476, "body_sha256": "1868ac8a21c05bfa328b666ee8df8e53b4fac4a0a2ec9aaed6e0cf6322484a3e"}, {"id": 6628187582, "number": 42, "actor_id": 32909488, "body_sha256": "b284caa34186e3eefe220bf2f9a5777e03c52b025a7e2b4d8c343ded2b9c7984"}, {"id": 6628259558, "number": 42, "actor_id": 32909488, "body_sha256": "b284caa34186e3eefe220bf2f9a5777e03c52b025a7e2b4d8c343ded2b9c7984"}];
+          const repo='metalogiclabs/L4YAML';
+          const app=githubClient(appJWT(process.env.APP_PRIVATE_KEY),{repository:repo});
+          const installation=await app('/repos/'+repo+'/installation');
+          const token=await mintScopedToken(app,installation.id,repo,{issues:'write',pull_requests:'write'});
+          const gh=githubClient(token,{repository:repo});
+          const receipt={repository:repo,archive:'libfile_51fa949f8b548191a139f0c1fe58bcd5 version 6',results:[]};
+          try{
+           const present=[];
+           for(const t of targets){
+            const path='/repos/'+repo+'/issues/comments/'+t.id;
+            let c;try{c=await gh(path);}catch(e){if(e.message==='GITHUB_HTTP_404'){receipt.results.push({id:t.id,status:'already absent'});continue;}throw e;}
+            if(c.id!==t.id||c.user.id!==t.actor_id||![32909488,342263476].includes(c.user.id)||c.issue_url!=='https://api.github.com/repos/'+repo+'/issues/'+t.number||createHash('sha256').update(c.body).digest('hex')!==t.body_sha256)throw Error('COMMENT_PREFLIGHT_MISMATCH_'+t.id);
+            present.push({t,path});
+           }
+           for(const {t,path} of present){
+            await gh(path,{method:'DELETE'});
+            let absent=false;try{await gh(path);}catch(e){if(e.message==='GITHUB_HTTP_404')absent=true;else throw e;}
+            if(!absent)throw Error('COMMENT_STILL_PRESENT_'+t.id);
+            receipt.results.push({id:t.id,pr:t.number,status:'deleted and verified absent'});
+           }
+          }finally{await gh('/installation/token',{method:'DELETE'});writeFileSync('cleanup-receipt.json',JSON.stringify(receipt,null,2));}
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: cleanup-receipt, path: cleanup-receipt.json, retention-days: 30}
