@@ -79,7 +79,9 @@ def main():
   if snapshot.get('method')=='junit-report-integrity-v1':
    (p/'Tests/SuiteRunner/HtmlReport.lean').write_text('module\n')
   (p/'lean-toolchain').write_text(snapshot['toolchain']+'\n')
-  (p/'lakefile.lean').write_text('import Lake\nopen Lake DSL\npackage LeanProbe\nlean_lib Scripts where\n  roots := #[`'+snapshot['module']+']\nlean_exe gate where\n  root := `'+snapshot['cli_module']+'\n  supportInterpreter := true\n')
+  lib='Tests' if snapshot.get('method')=='junit-report-integrity-v1' else 'Scripts'
+  roots='`'+snapshot['module']+(', `Tests.SuiteRunner.HtmlReport' if lib=='Tests' else '')
+  (p/'lakefile.lean').write_text('import Lake\nopen Lake DSL\npackage LeanProbe\nlean_lib '+lib+' where\n  roots := #['+roots+']\nlean_exe gate where\n  root := `'+snapshot['cli_module']+'\n  supportInterpreter := true\n')
   for q in [p,*p.rglob('*')]:q.chmod(0o777 if q.is_dir() else 0o666)
   return p
  def execute(p,label,command,timeout=240):
