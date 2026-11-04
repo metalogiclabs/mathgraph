@@ -1,0 +1,31 @@
+name: MathGraph OMM claim bridge — additive qualification
+on:
+  push:
+    branches: [feature/check-omm-claim-bridge-v1-20261105]
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/omm-v1/**'
+      - '.github/workflows/check-omm-claim-bridge.yml'
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: OMM source/receipt/report RED-GREEN controls
+        run: node --test integrations/mathgraph-check-github/omm-v1/*.test.mjs
+      - name: Existing MathGraph Check contract regression
+        run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - name: Existing L4YAML runtime and page unchanged from selected pilot
+        run: |
+          git diff --exit-code b5bf21db259c595dfdd731bdec8837c4d165578a HEAD -- \
+            integrations/mathgraph-check-github/pr-pilot-v1 \
+            integrations/mathgraph-check-github/cloudflare
