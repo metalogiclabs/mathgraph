@@ -47,3 +47,9 @@ Run a separately labeled, owner-designed calibration cohort: (1) a valid alterna
 ## Publication
 
 The final comparison must include the same-source exposure table, adjudicated/UNKNOWN counts, native evidence links, inherited-versus-introduced classification, time/cost and remaining scope. Publish no private correspondence or unreleased material. A report may say a finding is absent from inspected public comments; a confirmed reviewer miss needs the stronger exposure evidence above.
+
+## Same-source public-record follow-up, 2026-11-04
+
+The original equal-information experiment remains REGISTERED_NOT_RUN. `FOLLOWUP-2026-11-04.json` freezes a retrospective incremental-assurance cohort: primary upstream #212, diagnostic #211 and #209, replayed on owned-fork drafts #31–33. The first execution used the previously qualified C39 controller and C01 scheduler; the placeholder future execution pin in the freeze did not authorize a new controller. These baseline runs are 41754461620, 41754479594 and 41754492408. No model calls or upstream writes. Subsequent controller qualification uses `qualify.mjs` and retains a separate run identity.
+
+Public review context is independent of native/specification/repair authority. Same-head review submissions and inline comment anchors are distinguished. #209 has two earlier-head findings and two later bot replies still anchored to the earlier source; an empty same-head review is not a clean verdict. Private output, settings, review-time base, equal-information exposure and confirmed misses remain UNKNOWN. Parity differences are not automatically defects. Previously authored exact-source consumer checks are retrospective calibrations, not blind discoveries.

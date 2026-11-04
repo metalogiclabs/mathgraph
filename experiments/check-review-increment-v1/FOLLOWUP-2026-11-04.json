@@ -1,0 +1,48 @@
+{
+  "schema": "mathgraph.review-increment.followup.v1",
+  "date": "2026-11-04",
+  "role": "RETROSPECTIVE_PUBLIC_RECORD_INCREMENTAL_ASSURANCE",
+  "original_selection_retained": 212,
+  "baseline_controller": "c39d0ec486c90147b080af3ca8e669f933c4aafb",
+  "baseline_scheduler": "c01dcfdb441cb9c49ba1833a65a2c30972553182",
+  "execution_controller": "PIN_PROSPECTIVELY_BEFORE_FRESH_APP_COMMANDS",
+  "primary": {
+    "upstream": "nasa-jpl/L4YAML",
+    "number": 212,
+    "base_sha": "1f97fbf881da6d1b9e2a7b9c547d1d3306f518ff",
+    "head_sha": "1153d648425fb15f6fe49061544f7ffe4bdcb520",
+    "public_devin_review": 5745174112,
+    "review_commit": "1153d648425fb15f6fe49061544f7ffe4bdcb520",
+    "observable_verdict": "NO_ISSUES_REPORTED",
+    "public_inline_comments": 0,
+    "source_claim_body_sha256": "d43b8abd2ef7a3a1917410b5f4875a366832ca798650a847c49123599d9e953a",
+    "method": "traceof CLI + exact empty-tail constructor consumer",
+    "role": "PRIMARY_ORIGINAL_SELECTION"
+  },
+  "secondary": [
+    {
+      "upstream_pr": 211,
+      "base_sha": "2e09b057d783eb94f95dfe3b232ee99a94fdd6cb",
+      "head_sha": "925ccf8680d1444ae8cdaca9c66f400fa0d75f71",
+      "method": "ledger-diff",
+      "role": "DIAGNOSTIC_NOT_PRIMARY_REPLACEMENT"
+    },
+    {
+      "upstream_pr": 209,
+      "base_sha": "a3cfddbea355cf64454a0e33cdce7da066e7999a",
+      "head_sha": "d8c4f78ff8e797493fe5f964af4da0d33a06ddbb",
+      "method": "residue-classes read-only",
+      "role": "DIAGNOSTIC_NOT_PRIMARY_REPLACEMENT"
+    }
+  ],
+  "boundaries": [
+    "Previously inspected/authored contracts; not blind discovery",
+    "Public same-head review record is observable; private output/settings/review-time base/full packet exposure UNKNOWN",
+    "Current upstream base/head must match fork pins; source mismatch leaves comparison UNKNOWN",
+    "CLI differences are parity counterexamples, not automatically defects",
+    "Empty-tail consumer is audit consumer, not proven existing production failure; propext explicit",
+    "No confirmed Deving miss, precision/recall, product superiority or customer approval claim",
+    "Original REGISTERED_NOT_RUN protocol is not retroactively relabeled as a completed equal-information experiment",
+    "No upstream messages, installation or auto-merge; own-fork draft replays only"
+  ]
+}
