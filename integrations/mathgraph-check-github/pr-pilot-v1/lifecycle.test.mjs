@@ -54,3 +54,4 @@ test('new command after reopening same source does not reuse withdrawn applicabi
  const same=await queueCheck(r,h.api);assert.equal(same.state,'DUPLICATE');
  const next=await queueCheck({...r,comment_id:8},h.api);assert.equal(next.state,'QUEUED');assert.equal(h.checks.length,2);
 });
+test('report incomplete retries a new authorized command but deduplicates the same comment',async()=>{const h=harness(),base=await authenticate(payload,h.api),r={...base,profile:{...base.profile,method:'junit-report-integrity-v1',report_version:'junit-report-integrity-v1'}};const first=await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/1');await finishCheck(r,first,{status:'UNKNOWN'},h.api);assert.equal(h.checks[0].output.title,'Report Check incomplete');assert.equal((await startCheck(r,h.api,'https://github.com/metalogiclabs/mathgraph/actions/runs/2')).state,'DUPLICATE');assert.equal((await queueCheck({...r,comment_id:8},h.api)).state,'QUEUED');});

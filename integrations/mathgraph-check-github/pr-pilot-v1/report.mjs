@@ -10,7 +10,7 @@ export function renderReport({request:r,assessment:a,manifest,css,logo}){
  const v=reportView(a,r),tabs=[['summary','Summary'],['findings','Findings'],['evidence','Evidence'],['scope','Scope']];
  const finding=f=>`<article class="finding"><span class="lozenge">${esc(f.display_status??f.status)}</span><h3>${esc(f.title)}</h3><p>${esc(f.consequence)}</p><p class="muted">${esc(f.evidence)}</p>${(f.values??[]).map(x=>`<details><summary>${esc(x.channel)} · before / after</summary><div class="comparison"><div><h4>${esc(x.base_label??'Python base')}</h4><pre>${esc(x.base)}</pre></div><div><h4>${esc(x.head_label??'Lean head')}</h4><pre>${esc(x.head)}</pre></div></div></details>`).join('')}</article>`;
  const rawRows=(a.cases??[]).map(c=>[c.id,c.state,Object.entries(c.policy??{}).map(([k,m])=>k+': '+m).join(', ')]);
- const coverage=a.coverage?['base','head'].map(side=>[side,`${a.coverage[side]?.passed}/${a.coverage[side]?.cases}`,(a.coverage[side]?.compiled_roots??[]).join(', ')]):[];
+ const coverage=a.coverage?.base&&a.coverage?.head?['base','head'].map(side=>[side,`${a.coverage[side]?.passed}/${a.coverage[side]?.cases}`,(a.coverage[side]?.compiled_roots??[]).join(', ')]):[];
  const url=`https://github.com/${r.repository}/pull/${r.number}`,run=manifest?.context?.run_id?`https://github.com/metalogiclabs/mathgraph/actions/runs/${manifest.context.run_id}`:null;
  const repair=typeof v.repair_pr==='string'&&v.repair_pr.startsWith(`https://github.com/${r.repository}/pull/`)?`<a href="${esc(v.repair_pr)}">Review draft repair</a>`:'';
  const diagnostic=a.reason??a.claim?.reason??'';

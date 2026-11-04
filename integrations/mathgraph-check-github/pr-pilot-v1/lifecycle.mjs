@@ -1,7 +1,7 @@
 import {admitRequest,profileFor,formatResult,resultTitle} from './policy.mjs';
 export const APP_ID=5308912,CHECK_NAME='MathGraph Check / PR investigation';
 const checkName=request=>CHECK_NAME+' #'+request.number;
-const RETRYABLE_TITLES=new Set(['Check incomplete','Repair incomplete','Source changed — recheck required']);
+const RETRYABLE_TITLES=new Set(['Report Check incomplete','Check incomplete','Repair incomplete','Source changed — recheck required']);
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export const logicalIdentity=r=>`mg-pr-v1:${r.repository}#${r.number}@${r.head_sha}~${r.base_sha}:${r.command}${r.profile?.method?':method:'+r.profile.method:''}${r.profile?.claim_profile==='empty-tail-v1'?':cap:empty-tail-v1':''}${['passport-v1','expectations-v1','transport-v1','expectations-v2','expectations-v2-inputs','expectations-v2-finished','expectations-v2-complete'].includes(r.profile?.report_version)?':report:'+r.profile.report_version:''}`;
 export const identity=r=>logicalIdentity(r)+':'+r.comment_id;

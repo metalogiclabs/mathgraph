@@ -13,5 +13,5 @@ try{
  ensure(['actor_id','actor_login','actor_authorization','upstream_number','upstream_url'].every(k=>request[k]===signed[k]),'IMPORT_AUTHORITY_CHANGED');
  const publicAPI=async path=>{ensure(/^\/repos\/nasa-jpl\/L4YAML\/(pulls\/[1-9][0-9]*|git\/commits\/[a-f0-9]{40})$/.test(path),'UPSTREAM_PATH_FORBIDDEN');const r=await fetch('https://api.github.com'+path,{redirect:'manual',headers:{Accept:'application/vnd.github+json','User-Agent':'MathGraph-Check'},signal:AbortSignal.timeout(20000)});ensure(r.ok,'UPSTREAM_HTTP_'+r.status);return r.json();};
  try{const result=await snapshotUpstream(request,api,publicAPI);await replyToImport(request,api,result);console.log(JSON.stringify(result));}
- catch(e){await replyToImport(request,api,{reason:['UPSTREAM_CHANGED_RETRY_REQUIRED','UPSTREAM_PUBLIC_SAME_REPO_OPEN_PR_REQUIRED','IMPORT_SNAPSHOT_CLOSED','IMPORT_BRANCH_COLLISION'].includes(e.message)?e.message:'IMPORT_INCOMPLETE'});throw e;}
+ catch(e){await replyToImport(request,api,{reason:['UPSTREAM_CHANGED_RETRY_REQUIRED','UPSTREAM_PUBLIC_SAME_REPO_PR_REQUIRED','IMPORT_SNAPSHOT_CLOSED','IMPORT_BRANCH_COLLISION'].includes(e.message)?e.message:'IMPORT_INCOMPLETE'});throw e;}
 }finally{await api('/installation/token',{method:'DELETE'});}

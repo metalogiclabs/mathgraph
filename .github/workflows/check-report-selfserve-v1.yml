@@ -59,6 +59,8 @@ jobs:
         if: always()
         with: {name: 'selfserve-native-${{ matrix.pr }}', path: qualified, retention-days: 30}
   browser:
+    strategy:
+      matrix: {pr: [6, 37]}
     needs: native
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -68,13 +70,18 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with: {name: selfserve-native-6, path: qualified}
+        with: {name: 'selfserve-native-${{ matrix.pr }}', path: qualified}
       - run: |
           npm install --no-save --prefix /tmp/selfserve-browser playwright@1.62.1
           /tmp/selfserve-browser/node_modules/.bin/playwright install --with-deps chromium
       - env: {NODE_PATH: /tmp/selfserve-browser/node_modules}
-        run: node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs qualified/MathGraph-Check.html browser-qa 'Candidate repair verified on frozen probes'
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs qualified/MathGraph-Check.html browser-qa "${{ matrix.pr == 37 && 'Report repair verified' || 'Candidate repair verified on frozen probes' }}"
+          node integrations/mathgraph-check-github/pr-pilot-v1/pilot-page-qa.cjs pilot-page-qa
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
-        with: {name: selfserve-browser, path: browser-qa, retention-days: 30}
+        with: {name: 'selfserve-browser-${{ matrix.pr }}', path: 'browser-qa', retention-days: 30}
 
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'pilot-page-${{ matrix.pr }}', path: pilot-page-qa, retention-days: 30}
