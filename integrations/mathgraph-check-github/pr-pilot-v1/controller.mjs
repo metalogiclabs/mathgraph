@@ -1,3 +1,4 @@
+import {GENERATOR_METHOD,generatorReference,admitProfilePatch} from './traceof-comments.mjs';
 import {admitClaimResult,captureClaimSnapshot} from './claim.mjs';
 import {CLI_MODE} from './cli-profiles.mjs';
 import {admitCliResult} from './cli-parity.mjs';
@@ -41,9 +42,9 @@ try{
    request=admitRequest({repository,pr,files,permission:'admin',comment:{id:context.run_id,body:'@MathGraph -check',user:{id:32909488,login:'heathsanchez',type:'User'}},filesComplete:pr.changed_files===files.length});request.qualification_only=true;request.command=process.env.GITHUB_REF.includes('fix-qualify')?'fix':'check';
    publication={state:'QUALIFICATION_ONLY',run_url:runURL,prior_run:41527964407};
   }else{
-   const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(event.action==='mathgraph-pr-pilot-v1','WRONG_DISPATCH_EVENT');
+   const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(['mathgraph-pr-pilot-v1','mathgraph-pr-selfserve-v1'].includes(event.action),'WRONG_DISPATCH_EVENT');
    const signed=verifyDispatch(event.client_payload,process.env.APP_PRIVATE_KEY),scoped=await sourceToken(signed.repository);
-   try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api);request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
+   try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api,{pilotOperators:signed.actor_authorization==='PILOT_OPERATOR'?[signed.actor_id]:[]});ensure(event.action===(request.profile.method===GENERATOR_METHOD?'mathgraph-pr-selfserve-v1':'mathgraph-pr-pilot-v1'),'METHOD_WORKFLOW_MISMATCH');request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
     ensure(signed.reserved_cents>=modelReservationCents(request),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
     if(request.profile.expectation_candidate&&publication.state==='STARTED'){
@@ -64,6 +65,7 @@ try{
  }else if(phase==='expectation-run'){
   ensure(JSON.stringify((await verifyManifest()).context)===JSON.stringify(context),'STALE_EXPECTATION_CONTEXT');
   const snapshot=await get('snapshot'),subject=expectationSubject(snapshot);let reference;
+  if(snapshot.expectation_profile===GENERATOR_METHOD){await save('expectation-reference',generatorReference(subject,context));await seal();process.exit(0);}
   if(reviewedPlan(subject,await producerToken(),snapshot.expectation_profile)){
    const run=spawnSync('python3',['experiments/check-expectation-admission-v1/run.py','--output',dir+'/expectation-observations.json'],{stdio:'inherit',timeout:30000});
    if(!run.error&&run.status===0)try{reference=await get('expectation-observations');}catch{}
@@ -99,7 +101,7 @@ try{
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');
   const central=githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),run=await central(`/repos/metalogiclabs/mathgraph/actions/runs/${publication.prior_run}`);
-  ensure(run.path==='.github/workflows/check-pr-pilot.yml'&&(run.event==='repository_dispatch'||request.qualification_only&&run.event==='push'&&run.head_branch==='pilot/check-pr-qualify-v1')&&run.head_sha===(prior.context.scheduler_sha??prior.context.verifier_sha)&&run.repository?.full_name==='metalogiclabs/mathgraph'&&run.run_attempt===1,'UNTRUSTED_PRIOR_WORKFLOW');
+  ensure(run.path===(request.profile.method===GENERATOR_METHOD?'.github/workflows/check-pr-selfserve.yml':'.github/workflows/check-pr-pilot.yml')&&(run.event==='repository_dispatch'||request.qualification_only&&run.event==='push'&&run.head_branch==='pilot/check-pr-qualify-v1')&&run.head_sha===(prior.context.scheduler_sha??prior.context.verifier_sha)&&run.repository?.full_name==='metalogiclabs/mathgraph'&&run.run_attempt===1,'UNTRUSTED_PRIOR_WORKFLOW');
   const read=async n=>JSON.parse(await readFile(`${priorDir}/${n}.json`));
   const qualificationReplay=request.qualification_only&&prior.context.run_id===41527964407&&prior.context.verifier_sha==='d8f49afb356d95674e7f6ec92c1d764becdf196f';
   const data=rebindFrozenPlan({context:prior.context,snapshot:await read('snapshot'),plan:await read('plan'),state:await read('state'),assessment:await read('assessment')},{...request,command:'fix'},qualificationReplay?{...context,verifier_sha:prior.context.verifier_sha}:context);
@@ -128,7 +130,7 @@ try{
     const snapshot=await get('snapshot'),patch=await get('patch');
     ensure(snapshot.head_sha===request.head_sha&&snapshot.repository===request.repository,'REPAIR_SUBJECT_MISMATCH');
     const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken(),snapshot.expectation_profile);ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
-    ensure(hash(admitLeanPatch(patch,snapshot.source))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
+    ensure(hash(admitProfilePatch(patch,snapshot.source,snapshot))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }
    const result=await finishCheck(request,publication,report,scoped.api);await save('publication-result',result);report=finalPublicationReport(report,result);await save('assessment',report);await seal();

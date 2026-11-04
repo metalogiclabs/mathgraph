@@ -1,3 +1,4 @@
+import {GENERATOR_METHOD,GENERATOR_GATE,admitProfilePatch,qualifiedGeneratorPatch} from '../pr-pilot-v1/traceof-comments.mjs';
 import {executionContext} from '../pr-pilot-v1/context.mjs';
 import {expectationSubject,reviewedPlan,admitExpectations} from '../pr-pilot-v1/expectations.mjs';
 import {resolveProducer} from '../pr-pilot-v1/producer-transport.mjs';
@@ -19,14 +20,14 @@ async function producerToken(){let request;try{request=await load('request');}ca
 async function seal(){const files=(await readdir(dir)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort(),hashes={};for(const n of files)hashes[n]=hash(await readFile(`${dir}/${n}`,'utf8'));await save('manifest',{context,hashes});}
 async function verify(){const m=await load('manifest');requireFact(JSON.stringify(m.context)===JSON.stringify(context),'STALE_ARTIFACT');requireFact(JSON.stringify((await readdir(dir)).filter(n=>n.endsWith('.json')&&n!=='manifest.json').sort())===JSON.stringify(Object.keys(m.hashes).sort()),'UNMANIFESTED_INPUT');for(const[n,h]of Object.entries(m.hashes))requireFact(/^[a-z][a-z0-9_-]*\.json$/.test(n)&&hash(await readFile(`${dir}/${n}`,'utf8'))===h,'ARTIFACT_CHANGED');}
 function nativeIdentity(native,state,snapshot,plan){requireFact(JSON.stringify(native?.context)===JSON.stringify(context)&&native.source_sha===snapshot.head_sha&&native.test_digest===state.test_digest&&state.test_digest===hash(plan.tests)&&snapshot.source_sha256===hash(snapshot.source),'NATIVE_SOURCE_MISMATCH');}
-async function source(path,revision=profile.head_sha){const r=await fetch(`https://raw.githubusercontent.com/${profile.repository}/${revision}/${path}`,{signal:AbortSignal.timeout(30000)});requireFact(r.ok,'SOURCE_HTTP_'+r.status);return r.text();}
+async function source(path,revision=profile.head_sha,missingOK=false){if(profile.method===GENERATOR_METHOD&&path===profile.cli_path)return GENERATOR_GATE;const r=await fetch(`https://raw.githubusercontent.com/${profile.repository}/${revision}/${path}`,{signal:AbortSignal.timeout(30000)});if(missingOK&&r.status===404)return null;requireFact(r.ok,'SOURCE_HTTP_'+r.status);return r.text();}
 try{
  if(phase==='prepare'){
   requireFact(reservationCents()*2<=100,'BUDGET_INVALID');
   let request;try{request=await load('request');}catch{}
   if(request){profile={...request.profile,number:request.number,head_sha:request.head_sha,base_sha:request.base_sha,command:request.command,comment_id:request.comment_id};requireFact(request.support?.supported===true,'UNSUPPORTED_CHANGED_FILE_SCOPE');}
   const snapshot={...profile,source:await source(profile.path),cli_source:await source(profile.cli_path),scope:'Audit this source against its own documented public behavior. No previous findings, fixes or counterexamples are supplied.'};
-  if(request){snapshot.base_source=await source(profile.path,profile.base_sha);snapshot.base_cli_source=await source(profile.cli_path,profile.base_sha);validatePilotSnapshot(snapshot);requireFact(hash(snapshot.cli_source)==='64bb20331484ef711b6a752af1770959164c82308fd9ae79fbf954678ebbdbcf','CLI_NOT_REVIEWED');}
+  if(request){snapshot.base_source=await source(profile.path,profile.base_sha,profile.method===GENERATOR_METHOD);snapshot.base_cli_source=await source(profile.cli_path,profile.base_sha);validatePilotSnapshot(snapshot);requireFact(hash(snapshot.cli_source)===(profile.method===GENERATOR_METHOD?hash(GENERATOR_GATE):'64bb20331484ef711b6a752af1770959164c82308fd9ae79fbf954678ebbdbcf'),'CLI_NOT_REVIEWED');}
   snapshot.source_sha256=hash(snapshot.source);snapshot.cli_sha256=hash(snapshot.cli_source);
   await save('snapshot',snapshot);
   let plan,modelCalls=0;
@@ -46,10 +47,11 @@ try{
   }
   const failed=initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE');
   if(!failed){await save('repair-state',{state:'NO_REPRODUCED_FAILURE',model_calls:0});await seal();process.exit(0);}
+  if(snapshot.method===GENERATOR_METHOD&&snapshot.repair_template==='traceof-nested-depth-v1'){const proposal=qualifiedGeneratorPatch(snapshot.source);requireFact(proposal,'QUALIFIED_CANDIDATE_SOURCE_MISMATCH');const patched=admitProfilePatch(proposal,snapshot.source,snapshot);await save('patch',{...proposal,path:snapshot.path,original_sha256:snapshot.source_sha256,patched_sha256:hash(patched),content:patched,producer:'QUALIFIED_CANDIDATE_REUSE'});await save('repair-state',{state:'PATCH_PROPOSED',model_calls:0,patched_sha256:hash(patched)});await seal();process.exit(0);}
   let previous;try{previous=await load('prior-feedback');}catch{}
   const response=await requestJSON({apiKey:process.env.OPENAI_API_KEY,stage:'lean-repair',packet:{snapshot:modelSnapshot(snapshot),plan,previous_candidate_feedback:previous,native:{...native,arm:{...native.arm,probes:native.arm.probes.map(p=>({...p,output:p.output.slice(0,1800)}))}}}});await save('model-repair',response);
   if(!response.proposal.edits?.length){await save('repair-state',{state:'NO_CANDIDATE_PATCH',model_calls:1});await seal();process.exit(0);}
-  const patched=admitLeanPatch(response.proposal,snapshot.source);await save('patch',{...response.proposal,path:snapshot.path,original_sha256:snapshot.source_sha256,patched_sha256:hash(patched),content:patched});
+  const patched=admitProfilePatch(response.proposal,snapshot.source,snapshot);await save('patch',{...response.proposal,path:snapshot.path,original_sha256:snapshot.source_sha256,patched_sha256:hash(patched),content:patched});
   await save('repair-state',{state:'PATCH_PROPOSED',model_calls:1,patched_sha256:hash(patched)});await seal();
  }else if(phase==='assess'){
   await verify();const state=await load('state');let report;
@@ -65,15 +67,16 @@ try{
    if(snapshot.mode==='OWNED_FORK_PR_PILOT')expectations=admitExpectations(expectationSubject(snapshot),plan,reference,context,await producerToken(),snapshot.expectation_profile);
    let repair={status:'NOT_PROPOSED'};
    if(rs.state==='PATCH_PROPOSED'){
-    const fixed=await load('native-repair'),patch=await load('patch');const patched=admitLeanPatch(patch,snapshot.source);nativeIdentity(fixed,state,snapshot,plan);
+    const fixed=await load('native-repair'),patch=await load('patch');const patched=admitProfilePatch(patch,snapshot.source,snapshot);nativeIdentity(fixed,state,snapshot,plan);
     requireFact(hash(patched)===patch.patched_sha256&&fixed.patched_sha256===patch.patched_sha256,'REPAIR_SOURCE_MISMATCH');
     const old=inspectArm(fixed.original,{profile:snapshot,plan,source:snapshot.source}),after=inspectArm(fixed.repaired,{profile:snapshot,plan,source:patched}),withdrawn=inspectArm(fixed.withdrawn,{profile:snapshot,plan,source:snapshot.source});
     const qualified=(!expectations||expectations.repair_eligible)&&initial.complete&&old.complete&&after.complete&&withdrawn.complete&&old.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')&&after.rows.every(p=>p.execution==='GUARD_PASSED')&&JSON.stringify(initial.rows)===JSON.stringify(old.rows)&&JSON.stringify(old.rows)===JSON.stringify(withdrawn.rows);
     repair={status:qualified?'PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE':'UNKNOWN',original:old.rows,repaired:after.rows,withdrawn:withdrawn.rows,protected_guards:guardBlocks(snapshot.source).length,repository_gate_exits:[fixed.original.repository_gate_exit,fixed.repaired.repository_gate_exit,fixed.withdrawn.repository_gate_exit],patched_sha256:patch.patched_sha256};
    }
    let base=[],baseComplete=false;if(snapshot.base_source){requireFact(native.base_sha===snapshot.base_sha,'BASE_SOURCE_MISMATCH');const bs={...snapshot,source:snapshot.base_source};const observation=inspectArm(native.base_arm,{profile:bs,plan,source:snapshot.base_source});baseComplete=observation.complete;base=baseComplete?observation.rows:observation.rows.map(p=>({...p,execution:'UNKNOWN'}));}
-   report={context,subject,base,base_complete:baseComplete,head_complete:initial.complete,comparison:compareProbeRows(base,original,{complete:baseComplete}),status:!initial.complete?'UNKNOWN':initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')?'CANDIDATE_ASSERTION_FAILURE':'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original,repair,expectations,baseline:initial,source_guard_count:guardBlocks(snapshot.source).length,original_repository_gate_exit:native.arm.repository_gate_exit,meaning:expectations?.status==='ADMITTED'?'FINITE_OPERATOR_ADOPTED_OBLIGATION':'UNVERIFIED',permission:'ADVISORY_ONLY',scope:'Selected module/CLI build, original native guards, finite probes and repository gate. Expectation admission is separate from native execution. Not full L4YAML CI or automatic validation of inferred requirements.'};
+   report={context,subject,base,base_complete:baseComplete,head_complete:initial.complete,comparison:compareProbeRows(base,original,{complete:baseComplete}),status:!initial.complete?'UNKNOWN':initial.rows.some(p=>p.execution==='CANDIDATE_ASSERTION_FAILURE')?'CANDIDATE_ASSERTION_FAILURE':'NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS',original,repair,expectations,baseline:initial,source_guard_count:guardBlocks(snapshot.source).length,original_repository_gate_exit:native.arm.repository_gate_exit,meaning:expectations?.status==='ADMITTED'?'FINITE_OPERATOR_ADOPTED_OBLIGATION':'UNVERIFIED',permission:'ADVISORY_ONLY',scope:snapshot.method===GENERATOR_METHOD?'Selected pure module build, original guards and 20 frozen comment-stripping inputs. The trusted module gate is not the repository test suite or full generator CLI. Whole-PR correctness remains UNKNOWN.':'Selected module/CLI build, original native guards, finite probes and repository gate. Expectation admission is separate from native execution. Not full L4YAML CI or automatic validation of inferred requirements.'};
   }
+  if(snapshot?.method===GENERATOR_METHOD)report.coverage={uncovered:(await load('request')).changed_paths.filter(p=>p!==snapshot.path)};
   await save('assessment',report);await seal();console.log(JSON.stringify(report));
  }else throw Error('UNKNOWN_PHASE');
 }catch(e){const reason=/^[A-Z0-9_]+$/.test(e.message)?e.message:'STAGE_INCOMPLETE';await save('stage-error',{context,stage:phase,reason});await save('state',{context,state:'UNKNOWN',stage:phase,reason});if(phase==='assess'){let snapshot;try{snapshot=await load('snapshot');}catch{}await save('assessment',{context,status:'UNKNOWN',stage:phase,reason,subject:snapshot?{repository:snapshot.repository,head_sha:snapshot.head_sha,path:snapshot.path}:undefined});}await seal();console.error(JSON.stringify({status:'UNKNOWN',stage:phase,reason}));}

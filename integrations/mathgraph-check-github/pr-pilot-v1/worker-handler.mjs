@@ -1,6 +1,7 @@
 import {mintScopedToken} from './auth.mjs';
 import {profileFor,modelReservationCents} from './policy.mjs';import {authenticate,withdrawChecks,queueCheck,finishCheck,listChecks} from './lifecycle.mjs';import {signedDispatch,reservationKey} from './transport.mjs';import {githubClient} from './github.mjs';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
+export function pilotOperatorIDs(value){if(typeof value!=='string'||!/^\d+(,\d+){0,15}$/.test(value))return [];const ids=value.split(',').map(Number);return ids.every(x=>Number.isSafeInteger(x)&&x>0)?[...new Set(ids)]:[];}
 export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
  if(env.PR_PILOT_ENABLED!=='true')return {state:'DISABLED'};
  profileFor(item.repository);ensure(item.schema==='mathgraph.pr-pilot.delivery.v1'&&Number.isSafeInteger(item.installationID)&&item.installationID>0&&Number.isSafeInteger(item.number)&&item.number>0&&['command','synchronize','closed'].includes(item.action),'INVALID_PILOT_DELIVERY');
@@ -24,7 +25,7 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
    if(item.action==='closed'){await env.PILOT_SUBSCRIPTIONS.delete(subscriptionKey);return {state:'CLOSED_WITHDRAWN'};}
    item={...item,comment_id:previous.comment_id,command:'check'};
   }
-  request=await authenticate(item,api);
+  request=await authenticate(item,api,{pilotOperators:pilotOperatorIDs(env.PR_PILOT_OPERATOR_IDS)});
   publication=await queueCheck(request,api);if(publication.state==='DUPLICATE')return {state:'DUPLICATE',check_id:publication.check_id};
   request.queued_check_id=publication.check_id;
   let reserved={status:'NOT_NEEDED',reserved_cents:0};
@@ -35,7 +36,7 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
   const central=await app('/repos/metalogiclabs/mathgraph/installation');
   const dispatchToken=await mintScopedToken(app,central.id,'metalogiclabs/mathgraph',{contents:'write'},{fetcher});
   const dispatch=githubClient(dispatchToken,{repository:item.repository,fetcher});
-  try{await dispatch('/repos/metalogiclabs/mathgraph/dispatches',{method:'POST',body:{event_type:'mathgraph-pr-pilot-v1',client_payload:signedDispatch({...request,installation_id:item.installationID,reserved_cents:reserved.reserved_cents},env.GITHUB_APP_PRIVATE_KEY)}});}finally{await dispatch('/installation/token',{method:'DELETE'});}
+  try{await dispatch('/repos/metalogiclabs/mathgraph/dispatches',{method:'POST',body:{event_type:request.profile.method==='traceof-comments-v1'?'mathgraph-pr-selfserve-v1':'mathgraph-pr-pilot-v1',client_payload:signedDispatch({...request,installation_id:item.installationID,reserved_cents:reserved.reserved_cents},env.GITHUB_APP_PRIVATE_KEY)}});}finally{await dispatch('/installation/token',{method:'DELETE'});}
   return {state:'DISPATCHED',repository:request.repository,number:request.number,head_sha:request.head_sha,command:request.command};
  }catch(e){if(publication?.state==='QUEUED'&&request){try{await finishCheck(request,publication,{status:'UNKNOWN',reason:'REQUEST_DISPATCH_INCOMPLETE'},api);}catch{}}throw e;}finally{await api('/installation/token',{method:'DELETE'});}
 }

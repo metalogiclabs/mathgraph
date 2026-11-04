@@ -1,3 +1,5 @@
+import {formatGeneratorResult} from './generator-report.mjs';
+import {GENERATOR_PROFILE,GENERATOR_METHOD} from './traceof-comments.mjs';
 import {formatUnifiedResult,reportView} from './report-view.mjs';
 import {claimProfileFor} from './claim-profile.mjs';
 import {expectationProfileFor} from './expectations.mjs';
@@ -7,10 +9,11 @@ import {CONTRACT_MODE,contractTitle,formatContractResult} from './repository-rep
 // Hosted pilot policy is trusted release code; source PRs cannot edit it.
 const SHA=/^[a-f0-9]{40}$/;const requireFact=(b,c)=>{if(!b)throw Error(c);};
 const LEDGER=Object.freeze({path:'Scripts/Ledger.lean',module:'Scripts.Ledger',namespace:'Scripts.Ledger',cli_path:'Scripts/Main/CheckScriptsLedger.lean',cli_module:'Scripts.Main.CheckScriptsLedger',toolchain:'leanprover/lean4:v4.35.0',mode:'OWNED_FORK_PR_PILOT'});
-export function profileFor(repository){requireFact(repository==='metalogiclabs/L4YAML','REPOSITORY_NOT_ENABLED');return {...LEDGER,repository};}
+export function profileFor(repository,method){requireFact(repository==='metalogiclabs/L4YAML','REPOSITORY_NOT_ENABLED');requireFact(method===undefined||method===GENERATOR_METHOD,'METHOD_NOT_ENABLED');return {...(method===GENERATOR_METHOD?GENERATOR_PROFILE:LEDGER),repository};}
 export function modelReservationCents(r){
  if(!r.support?.supported||[CONTRACT_MODE,CLI_MODE].includes(r.profile?.mode))return 0;
  if(r.command==='check'&&(r.profile?.expectation_profile||r.profile?.expectation_candidate))return 0;
+ if(r.profile?.method===GENERATOR_METHOD&&r.profile?.repair_template==='traceof-nested-depth-v1')return 0;
  return r.command==='check'?49:98;
 }
 export function commandOf(body){return typeof body==='string'?body.trim().match(/^@MathGraph -(check|fix)$/)?.[1]??null:null;}
@@ -18,26 +21,28 @@ export function classifyDiff(files){
  const supported=Array.isArray(files)&&files.length===1&&files[0].filename===LEDGER.path&&files[0].status==='modified';
  return {supported,reason:supported?'SUPPORTED_LEDGER_MODULE':'UNSUPPORTED_CHANGED_FILE_SCOPE'};
 }
-export function admitRequest({repository,pr,comment,permission,files,filesComplete=true}){
+export function admitRequest({repository,pr,comment,permission,files,filesComplete=true,pilotOperators=[]}){
  const profile=profileFor(repository),command=commandOf(comment?.body);
  requireFact(command&&Number.isSafeInteger(comment?.id)&&comment.id>0&&comment.user?.type==='User'&&Number.isSafeInteger(comment.user.id)&&comment.user.id>0&&/^[a-zA-Z0-9-]{1,39}$/.test(comment.user.login??''),'COMMAND_INVALID');
- requireFact(['write','maintain','admin'].includes(permission),'MAINTAINER_REQUIRED');
+ requireFact(['write','maintain','admin'].includes(permission)||Array.isArray(pilotOperators)&&pilotOperators.includes(comment.user.id)&&Array.isArray(files)&&files.some(f=>f.filename===GENERATOR_PROFILE.path&&['added','modified'].includes(f.status)),'MAINTAINER_REQUIRED');
  requireFact(pr?.state==='open'&&Number.isSafeInteger(pr.number)&&pr.number>0&&SHA.test(pr.head?.sha??'')&&SHA.test(pr.base?.sha??''),'PR_INVALID');
  for(const side of ['head','base'])requireFact(pr[side].repo?.full_name===repository&&pr[side].repo?.private===false,'PUBLIC_SAME_REPOSITORY_REQUIRED');
  requireFact(filesComplete===true,'INCOMPLETE_CHANGED_FILES');
  const support=classifyDiff(files);
  if(!support.supported&&command==='check'&&Array.isArray(files)&&files.some(f=>/^(Scripts\/)([A-Za-z_][A-Za-z0-9_]*\/)*[A-Za-z_][A-Za-z0-9_]*\.lean$/.test(f.filename)&&['added','modified','removed','renamed','copied'].includes(f.status))){profile.mode=CONTRACT_MODE;support.supported=true;support.reason='SUPPORTED_REPOSITORY_CONTRACT';}
  const cli=command==='check'?cliProfileFor(files):null;if(cli){profile.mode=CLI_MODE;profile.cli_profile=cli.id;support.supported=true;support.reason='SUPPORTED_CLI_PARITY';}
- profile.report_version='passport-v1';
- if(profile.mode===LEDGER.mode){profile.report_version='expectations-v2-complete';const expectations=expectationProfileFor({repository,head_sha:pr.head.sha,profile});const locator=pr.user?.id===32909488&&pr.user.type==='User'&&pr.draft===true&&/https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/[1-9][0-9]*/.test(pr.body??'');if(expectations)profile.expectation_profile='ledger-shell-v2';else if(support.supported&&(pr.user?.id===342263476&&pr.user.type==='Bot'&&pr.user.login==='mathgraph-check[bot]'||locator)){profile.expectation_candidate=true;}else if(command==='fix'&&support.supported){support.supported=false;support.reason='REPAIR_EXPECTATION_REVIEW_REQUIRED';}}
+ if(files.some(f=>f.filename===GENERATOR_PROFILE.path&&['added','modified'].includes(f.status))){Object.assign(profile,GENERATOR_PROFILE);support.supported=true;support.reason='SUPPORTED_FINITE_GENERATOR_COMMENTS';profile.expectation_profile=GENERATOR_METHOD;if(pr.head.sha==='1153d648425fb15f6fe49061544f7ffe4bdcb520')profile.repair_template='traceof-nested-depth-v1';}
+ profile.report_version=profile.method===GENERATOR_METHOD?GENERATOR_METHOD:'passport-v1';
+ if(profile.mode===LEDGER.mode&&profile.method!==GENERATOR_METHOD){profile.report_version='expectations-v2-complete';const expectations=expectationProfileFor({repository,head_sha:pr.head.sha,profile});const locator=pr.user?.id===32909488&&pr.user.type==='User'&&pr.draft===true&&/https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/[1-9][0-9]*/.test(pr.body??'');if(expectations)profile.expectation_profile='ledger-shell-v2';else if(support.supported&&(pr.user?.id===342263476&&pr.user.type==='Bot'&&pr.user.login==='mathgraph-check[bot]'||locator)){profile.expectation_candidate=true;}else if(command==='fix'&&support.supported){support.supported=false;support.reason='REPAIR_EXPECTATION_REVIEW_REQUIRED';}}
  const claim=claimProfileFor({repository,command,base_sha:pr.base.sha,head_sha:pr.head.sha,profile});if(claim)profile.claim_profile=claim.id;
- return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,profile,support,changed_paths:files.map(f=>f.filename)};
+ return {schema:'mathgraph.pr-pilot.request.v1',repository,number:pr.number,head_sha:pr.head.sha,base_sha:pr.base.sha,command,comment_id:comment.id,actor_id:comment.user.id,actor_login:comment.user.login,actor_authorization:['write','maintain','admin'].includes(permission)?'REPOSITORY_MAINTAINER':'PILOT_OPERATOR',profile,support,changed_paths:files.map(f=>f.filename)};
 }
 const esc=x=>String(x??'').replace(/@/g,'&#64;').replace(/[\r\n`|<>]/g,' ');
 const REPAIR_VERIFIED='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE';
 export function resultTitle(report,request){return reportView(report,request).title;}
 export function formatResult(report,request,runURL){return formatUnifiedResult(report,request,runURL,formatLegacyResult(report,request,runURL));}
 function formatLegacyResult(report,request,runURL){
+ if(request.profile?.method===GENERATOR_METHOD)return formatGeneratorResult(report,request,runURL);
  if(request.profile?.mode===CLI_MODE)return formatCliResult(report,request,runURL);
  if(request.profile?.mode===CONTRACT_MODE)return formatContractResult(report,request,runURL);
  if(report.status==='UNKNOWN'&&report.reason==='UNSUPPORTED_CHANGED_FILE_SCOPE')return ['### MathGraph Check','**No reviewed checking contract for this change**',`PR: [${request.repository}#${request.number}](https://github.com/${request.repository}/pull/${request.number})`, 'No native result is claimed. Whole-PR correctness: UNKNOWN.', 'Next: review these changes using the repository’s normal process, or define a reviewed contract for this source category. Do not split the PR merely to obtain a passing Check.', 'Available scope: selected Scripts modules with fixed regressions; generated check/fix is limited to `Scripts/Ledger.lean`. Proof intent, documentation correctness and arbitrary workflows remain unchecked.', 'Changed paths: '+(request.changed_paths??[]).map(esc).join(', '), `[Execution and evidence](${runURL})`].join('\n\n');

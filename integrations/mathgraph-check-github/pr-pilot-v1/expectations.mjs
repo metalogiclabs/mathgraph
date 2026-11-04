@@ -1,3 +1,4 @@
+import {GENERATOR_METHOD,generatorPlan,admitGeneratorExpectations} from './traceof-comments.mjs';
 import {createHash} from 'node:crypto';
 import {LEADING_TARGET,leadingReferenceOK} from './leading-obligation.mjs';
 export {LEADING_REFERENCE_IDENTITY} from './leading-obligation.mjs';
@@ -19,6 +20,7 @@ function qualified(s){return s?.repository==='metalogiclabs/L4YAML'&&s.path==='S
 export function expectationProfileFor(r){return r.repository==='metalogiclabs/L4YAML'&&r.profile?.mode==='OWNED_FORK_PR_PILOT'&&Object.hasOwn(SOURCES,r.head_sha)?'ledger-shell-v1':null;}
 export function expectationSubject(s){return {repository:s.repository,head_sha:s.head_sha,path:s.path,sha256:hash(s.source),cli_sha256:hash(s.cli_source),toolchain:s.toolchain};}
 export function reviewedPlan(s,token,profile='ledger-shell-v1'){
+ if(profile===GENERATOR_METHOD)return generatorPlan(s);
  if(!['ledger-shell-v1','ledger-shell-v2'].includes(profile)||!(qualified(s)||transportedSubject(s,token)))return null;
  const tests=TARGETS.map(t=>({id:t.id,hypothesis:t.hypothesis,contract,expression:t.expression}));
  if(profile==='ledger-shell-v2')tests.push({id:LEADING_TARGET.id,hypothesis:LEADING_TARGET.hypothesis,contract:LEADING_TARGET.contract,expression:LEADING_TARGET.expression});
@@ -29,6 +31,7 @@ function referenceOK(record,target){
  return record?.Conclusion?.status==='SUPPORTED'&&record.Obligation?.id===target.reference_id&&record.Obligation.command===target.command&&same(record.Obligation.expected_calls,target.calls)&&record.Obligation.authority?.state==='DECLARED'&&Object.entries(REFERENCE_IDENTITY).every(([k,v])=>record.Dependencies?.[k]===v)&&/^[a-f0-9]{64}$/.test(record.Dependencies?.bash_sha256??'')&&good(record.Verification?.execution,target.calls)&&good(record.Verification?.repeat,target.calls)&&good(record.Verification?.controls?.positive,[['guard.py']])&&good(record.Verification?.controls?.negative,[]);
 }
 export function admitExpectations(subject,plan,receipt,context,token,profile='ledger-shell-v1'){
+ if(profile===GENERATOR_METHOD)return admitGeneratorExpectations(subject,plan,receipt,context);
  const expected=reviewedPlan(subject,token,profile),result={status:'UNKNOWN',repair_eligible:false,reason:'EXPECTATION_SOURCE_NOT_QUALIFIED',subject,plan_sha256:hash(JSON.stringify(plan)),authority:contract,expectation_set:profile,requirement_count:profile==='ledger-shell-v2'?3:2,input_count:profile==='ledger-shell-v2'?5:2,probes:(plan?.tests??[]).map(p=>({id:p.id,status:'UNKNOWN',reason:'UNREVIEWED_EXPECTATION'}))};
  if(!expected)return result;
  const records=receipt?.reference?.records;
