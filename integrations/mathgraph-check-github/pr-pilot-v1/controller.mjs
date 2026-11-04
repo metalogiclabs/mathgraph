@@ -1,3 +1,6 @@
+import {authenticateImported,publicGitHub} from './imported-check.mjs';
+import {publishRequestStatus,checkURL} from './request-status.mjs';
+import {PILOT_RELEASE} from './pilot-config.mjs';
 import {isFiniteMethod,admitFinitePatch} from './finite-methods.mjs';
 import {REPORT_METHOD,reportReference} from './report-integrity.mjs';
 import {GENERATOR_METHOD,generatorReference,admitProfilePatch} from './traceof-comments.mjs';
@@ -13,7 +16,7 @@ import {renderReport,finalPublicationReport} from './report.mjs';
 // Trusted hosted orchestration. No repository source executes in this process.
 import {readFile,writeFile,readdir,mkdir,appendFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {mintScopedToken} from './auth.mjs';
-import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest,modelReservationCents} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
+import {appJWT} from '../cloudflare/worker.mjs';import {githubClient} from './github.mjs';import {verifyDispatch} from './transport.mjs';import {authenticate,startCheck,finishCheck,identity,logicalIdentity,listChecks,priorCheckRun} from './lifecycle.mjs';import {admitRequest,modelReservationCents,resultTitle} from './policy.mjs';import {rebindFrozenPlan} from './reuse.mjs';
 import {admitLeanPatch} from '../lean-investigator-v1/contracts.mjs';
 import {expectationSubject,reviewedPlan,admitExpectations} from './expectations.mjs';
 import {captureProducer,resolveProducer,producerIntakeDiagnostic} from './producer-transport.mjs';
@@ -29,7 +32,7 @@ async function verifyManifest(folder=dir){const m=JSON.parse(await readFile(`${f
 async function outputs(values){if(process.env.GITHUB_OUTPUT)await appendFile(process.env.GITHUB_OUTPUT,Object.entries(values).map(([k,v])=>`${k}=${v}`).join('\n')+'\n');}
 async function sourceToken(repository,write=false){
  const app=githubClient(appJWT(process.env.APP_PRIVATE_KEY),{repository});const i=await app('/repos/'+repository+'/installation');
- const token=await mintScopedToken(app,i.id,repository,{contents:write?'write':'read',pull_requests:write?'write':'read',checks:'write',issues:'read'});
+ const token=await mintScopedToken(app,i.id,repository,{contents:write?'write':'read',pull_requests:write?'write':'read',checks:'write',issues:'write'});
  return {api:githubClient(token,{repository}),installation_id:i.id};
 }
 try{
@@ -44,9 +47,9 @@ try{
    request=admitRequest({repository,pr,files,permission:'admin',comment:{id:context.run_id,body:'@MathGraph -check',user:{id:32909488,login:'heathsanchez',type:'User'}},filesComplete:pr.changed_files===files.length});request.qualification_only=true;request.command=process.env.GITHUB_REF.includes('fix-qualify')?'fix':'check';
    publication={state:'QUALIFICATION_ONLY',run_url:runURL,prior_run:41527964407};
   }else{
-   const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(['mathgraph-pr-pilot-v1','mathgraph-pr-selfserve-v1','mathgraph-pr-report-v1'].includes(event.action),'WRONG_DISPATCH_EVENT');
+   const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));ensure(['mathgraph-pr-pilot-v1','mathgraph-pr-selfserve-v1','mathgraph-pr-report-v1','mathgraph-pr-selfserve-v2'].includes(event.action),'WRONG_DISPATCH_EVENT');
    const signed=verifyDispatch(event.client_payload,process.env.APP_PRIVATE_KEY),scoped=await sourceToken(signed.repository);
-   try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=await authenticate(signed,scoped.api,{pilotOperators:signed.actor_authorization==='PILOT_OPERATOR'?[signed.actor_id]:[]});ensure(event.action===(request.profile.method===REPORT_METHOD?'mathgraph-pr-report-v1':isFiniteMethod(request.profile.method)?'mathgraph-pr-selfserve-v1':'mathgraph-pr-pilot-v1'),'METHOD_WORKFLOW_MISMATCH');request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
+   try{ensure(scoped.installation_id===signed.installation_id,'INSTALLATION_CHANGED');request=signed.origin?await authenticateImported(signed,scoped.api,{pilotOperators:signed.actor_authorization==='PILOT_OPERATOR'?[signed.actor_id]:[],publicAPI:publicGitHub({token:process.env.GITHUB_TOKEN})}):await authenticate(signed,scoped.api,{pilotOperators:signed.actor_authorization==='PILOT_OPERATOR'?[signed.actor_id]:[]});ensure(event.action==='mathgraph-pr-selfserve-v2'&&request.profile.release===PILOT_RELEASE,'METHOD_WORKFLOW_MISMATCH');request.watch_expires_at=signed.watch_expires_at;request.installation_id=scoped.installation_id;request.queued_check_id=signed.queued_check_id;ensure(request.head_sha===signed.head_sha&&request.base_sha===signed.base_sha,'SOURCE_CHANGED_BEFORE_START');
     ensure(signed.reserved_cents>=modelReservationCents(request),'MISSING_SPEND_RESERVATION');
     publication=await startCheck(request,scoped.api,runURL);await save('request',request);await save('publication',{...publication,context});
     if(request.profile.expectation_candidate&&publication.state==='STARTED'){
@@ -104,7 +107,7 @@ try{
   await verifyManifest();const request=await get('request'),publication=await get('publication'),priorDir=process.argv[4]??'prior-investigation';
   ensure(Number.isSafeInteger(publication.prior_run),'NO_PRIOR_CHECK');const prior=await verifyManifest(priorDir);ensure(prior.context.run_id===publication.prior_run,'PRIOR_RUN_MISMATCH');
   const central=githubClient(process.env.GITHUB_TOKEN,{repository:request.repository}),run=await central(`/repos/metalogiclabs/mathgraph/actions/runs/${publication.prior_run}`);
-  ensure(run.path===(request.profile.method===REPORT_METHOD?'.github/workflows/check-pr-report.yml':isFiniteMethod(request.profile.method)?'.github/workflows/check-pr-selfserve.yml':'.github/workflows/check-pr-pilot.yml')&&(run.event==='repository_dispatch'||request.qualification_only&&run.event==='push'&&run.head_branch==='pilot/check-pr-qualify-v1')&&run.head_sha===(prior.context.scheduler_sha??prior.context.verifier_sha)&&run.repository?.full_name==='metalogiclabs/mathgraph'&&run.run_attempt===1,'UNTRUSTED_PRIOR_WORKFLOW');
+  ensure(run.path===(request.profile.release===PILOT_RELEASE?'.github/workflows/check-pr-selfserve-v2.yml':request.profile.method===REPORT_METHOD?'.github/workflows/check-pr-report.yml':isFiniteMethod(request.profile.method)?'.github/workflows/check-pr-selfserve.yml':'.github/workflows/check-pr-pilot.yml')&&(run.event==='repository_dispatch'||request.qualification_only&&run.event==='push'&&run.head_branch==='pilot/check-pr-qualify-v1')&&run.head_sha===(prior.context.scheduler_sha??prior.context.verifier_sha)&&run.repository?.full_name==='metalogiclabs/mathgraph'&&run.run_attempt===1,'UNTRUSTED_PRIOR_WORKFLOW');
   const read=async n=>JSON.parse(await readFile(`${priorDir}/${n}.json`));
   const qualificationReplay=request.qualification_only&&prior.context.run_id===41527964407&&prior.context.verifier_sha==='d8f49afb356d95674e7f6ec92c1d764becdf196f';
   const data=rebindFrozenPlan({context:prior.context,snapshot:await read('snapshot'),plan:await read('plan'),state:await read('state'),assessment:await read('assessment')},{...request,command:'fix'},qualificationReplay?{...context,verifier_sha:prior.context.verifier_sha}:context);
@@ -129,14 +132,15 @@ try{
   const scoped=await sourceToken(request.repository,request.command==='fix');
   try{
    ensure(scoped.installation_id===request.installation_id,'INSTALLATION_CHANGED');
-   if(request.command==='fix'&&report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'){
+   if(request.origin){try{const current=await authenticateImported({...request,actor_id:request.actor_id},scoped.api,{pilotOperators:request.actor_authorization==='PILOT_OPERATOR'?[request.actor_id]:[],publicAPI:publicGitHub({token:process.env.GITHUB_TOKEN})});ensure(current.head_sha===request.head_sha&&current.base_sha===request.base_sha,'IMPORTED_SNAPSHOT_LINEAGE_INVALID');}catch(e){report={...report,status:e.message==='UPSTREAM_CHANGED_RETRY_REQUIRED'?'STALE':'UNKNOWN',reason:e.message==='UPSTREAM_CHANGED_RETRY_REQUIRED'?'UPSTREAM_SOURCE_CHANGED':'ORIGINAL_AUTHORITY_OR_SNAPSHOT_CHANGED',repair:{status:'UNKNOWN'}};}}
+   if(request.command==='fix'&&report.status!=='STALE'&&report.status!=='UNKNOWN'&&report.repair?.status==='PATCH_PASSES_FROZEN_GUARDS_AND_REPOSITORY_GATE'){
     const snapshot=await get('snapshot'),patch=await get('patch');
     ensure(snapshot.head_sha===request.head_sha&&snapshot.repository===request.repository,'REPAIR_SUBJECT_MISMATCH');
     const gate=admitExpectations(expectationSubject(snapshot),await get('plan'),await get('expectation-reference'),context,await producerToken(),snapshot.expectation_profile);ensure(gate.repair_eligible,'REPAIR_EXPECTATION_NOT_ADMITTED');
     ensure(hash(admitFinitePatch(patch,snapshot.source,snapshot))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }
-   const result=await finishCheck(request,publication,report,scoped.api);await save('publication-result',result);report=finalPublicationReport(report,result);await save('assessment',report);await seal();
+   const result=await finishCheck(request,publication,report,scoped.api);await publishRequestStatus(request,scoped.api,{state:['UNKNOWN','STALE'].includes(report.status)||result.state==='STALE'?'UNKNOWN':'PUBLISHED',title:resultTitle(report,request),repair_url:report.status==='STALE'?undefined:report.repair_pr,check_url:checkURL(request.repository,request.number,publication.check_id),snapshot_url:request.origin?`https://github.com/${request.repository}/pull/${request.number}`:undefined});await save('publication-result',result);report=finalPublicationReport(report,result);await save('assessment',report);await seal();
    const [css,brand]=await Promise.all([readFile(new URL('./passport-base.css',import.meta.url),'utf8'),readFile(new URL('./passport-brand.json',import.meta.url),'utf8')]);await writeFile(dir+'/MathGraph-Check.html',renderReport({request,assessment:report,manifest:await get('manifest'),css,logo:JSON.parse(brand).logo}));
   }finally{await scoped.api('/installation/token',{method:'DELETE'});}await seal();
  }else throw Error('UNKNOWN_CONTROLLER_PHASE');

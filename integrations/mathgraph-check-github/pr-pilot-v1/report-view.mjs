@@ -31,5 +31,5 @@ export function reportView(a,r){
 }
 const md=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/@/g,'&#64;').replace(/[\r\n`|]/g,' ').slice(0,1200);
 export function formatUnifiedResult(a,r,url,details){
- const v=reportView(a,r);return ['### MathGraph Check',`**${v.title}**`,v.summary,...v.findings.slice(0,1).map(f=>`**${md(f.title)}:** ${md(f.consequence)}\n\nEvidence: ${md(f.evidence)}`),v.reason?md(v.reason):'',`**Next:** ${md(v.next)}`,`Scope: ${v.scope}`,v.assumptions,`[Execution and full report](${url})`,'<details>\n<summary>Findings, comparisons and evidence</summary>\n\n'+details+'\n\n</details>'].filter(Boolean).join('\n\n');
+ const v=reportView(a,r);return ['### MathGraph Check',`**${v.title}**`,v.summary,...v.findings.slice(0,1).map(f=>`**${md(f.title)}:** ${md(f.consequence)}\n\nEvidence: ${md(f.evidence)}`),v.reason?md(v.reason):'',v.repair_pr&&new RegExp('^https://github.com/'+r.repository+'/pull/[1-9][0-9]*$').test(v.repair_pr)?'[Review draft repair]('+v.repair_pr+')':'',`**Next:** ${md(v.next)}`,`Scope: ${v.scope}`,v.assumptions,`[Execution and full report](${url})`,'<details>\n<summary>Findings, comparisons and evidence</summary>\n\n'+details+'\n\n</details>'].filter(Boolean).join('\n\n');
 }

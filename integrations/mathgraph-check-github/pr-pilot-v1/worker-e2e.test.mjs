@@ -3,7 +3,7 @@ const key=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({for
 const repo='metalogiclabs/L4YAML',root='/repos/'+repo,sha='a'.repeat(40),base='b'.repeat(40);
 const item={schema:'mathgraph.pr-pilot.delivery.v1',repository:repo,number:2,comment_id:7,command:'check',installationID:3,action:'command'};
 function harness({failDispatch=false,budget='RESERVED',permission='write'}={}){
- const checks=[],sent=[],revoked=[],storage=new Map();let reservations=0;
+ const checks=[],sent=[],revoked=[],comments=[],storage=new Map();let reservations=0;
  const pr={number:2,state:'open',changed_files:1,head:{sha,repo:{full_name:repo,private:false}},base:{sha:base,repo:{full_name:repo,private:false}}};
  const fetcher=async(url,o={})=>{const p=new URL(url).pathname,q=new URL(url).search,method=o.method??'GET',body=o.body?JSON.parse(o.body):null;
  if(p===root+'/installation')return Response.json({id:3});if(p==='/repos/metalogiclabs/mathgraph/installation')return Response.json({id:9});
@@ -12,6 +12,8 @@ function harness({failDispatch=false,budget='RESERVED',permission='write'}={}){
  if(p==='/installation/token'){revoked.push(o.headers.Authorization);return new Response(null,{status:204});}
  if(p===root+'/pulls/2')return Response.json(pr);
  if(p===root+'/issues/comments/7'||p===root+'/issues/comments/8')return Response.json({id:Number(p.split('/').at(-1)),body:'@MathGraph -check',issue_url:'https://api.github.com'+root+'/issues/2',user:{id:99,login:'maintainer',type:'User'}});
+ if(p===root+'/issues/2/comments'){if(method==='GET')return Response.json(comments);const c={id:700,user:{id:342263476,type:'Bot',login:'mathgraph-check[bot]'},body:body.body};comments.push(c);return Response.json(c);}
+ if(p===root+'/issues/comments/700'&&method==='PATCH'){comments[0].body=body.body;return Response.json(comments[0]);}
  if(p===root+'/collaborators/maintainer/permission')return Response.json({permission});
  if(p===root+'/pulls/2/files')return Response.json([{filename:'Scripts/Ledger.lean',status:'modified'}]);
  if(p.startsWith(root+'/commits/')&&p.endsWith('/check-runs')){const head=p.split('/').at(-2),matching=checks.filter(c=>c.head_sha===head);return Response.json({total_count:matching.length,check_runs:matching});}
@@ -26,7 +28,7 @@ function harness({failDispatch=false,budget='RESERVED',permission='write'}={}){
 test('authenticated command queues one Check and dispatches one signed source-bound request',async()=>{const h=harness();assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'DISPATCHED');assert.equal(h.checks.length,1);assert.equal(h.sent.length,1);const r=verifyDispatch(h.sent[0].client_payload,key);assert.equal(r.queued_check_id,10);assert.equal(r.base_sha,base);assert.equal(r.head_sha,sha);assert.equal(h.revoked.length,2);assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'DUPLICATE');assert.equal(h.sent.length,1);assert.equal(h.reservations,1);});
 test('failed dispatch settles UNKNOWN and does not redispatch the same attempt',async()=>{const h=harness({failDispatch:true});await assert.rejects(()=>processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher}));assert.equal(h.checks[0].status,'completed');assert.equal(h.checks[0].output.title,'Check incomplete');assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'DUPLICATE');assert.equal(h.sent.length,1);});
 test('exhausted budget has visible UNKNOWN and no model dispatch',async()=>{const h=harness({budget:'BUDGET_EXHAUSTED'});assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'BUDGET_EXHAUSTED');assert.equal(h.checks[0].status,'completed');assert.equal(h.sent.length,0);});
-test('read-only caller cannot create a Check, reserve spend or dispatch',async()=>{const h=harness({permission:'read'});await assert.rejects(()=>processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher}),/MAINTAINER_REQUIRED/);assert.equal(h.checks.length,0);assert.equal(h.sent.length,0);assert.equal(h.reservations,0);});
+test('read-only caller cannot create a Check, reserve spend or dispatch',async()=>{const h=harness({permission:'read'});assert.equal((await processPilotDelivery(item,h.env,{jwt:'test',fetcher:h.fetcher})).state,'INVITATION_REQUIRED');assert.equal(h.checks.length,0);assert.equal(h.sent.length,0);assert.equal(h.reservations,0);});
 import {receiveWebhook} from '../cloudflare/worker.mjs';
 test('pilot readiness refuses missing durable bindings',async()=>{const r=await receiveWebhook(new Request('https://worker/ready'),{GITHUB_WEBHOOK_SECRET:'present',GITHUB_APP_PRIVATE_KEY:key,PR_EVENTS:{},GITHUB_APP_CLIENT_ID:'Iv23lioiUs5KfHD7mkkw',GITHUB_APP_ID:'5308912',PR_PILOT_ENABLED:'true'});assert.equal(r.status,503);});
 

@@ -1,3 +1,4 @@
+import {PILOT_RELEASE} from './pilot-config.mjs';
 import {formatReportIntegrity} from './report-integrity-view.mjs';
 import {REPORT_METHOD,REPORT_PROFILE} from './report-integrity.mjs';
 import {isFiniteMethod,finiteProfile} from './finite-methods.mjs';
@@ -19,7 +20,7 @@ export function modelReservationCents(r){
  if(isFiniteMethod(r.profile?.method)&&r.profile?.repair_template)return 0;
  return r.command==='check'?49:98;
 }
-export function commandOf(body){return typeof body==='string'?body.trim().match(/^@MathGraph -(check|fix)$/)?.[1]??null:null;}
+export function commandOf(body){return typeof body==='string'?body.trim().match(/^(?:@MathGraph -?|\/)(check|fix)$/i)?.[1]?.toLowerCase()??null:null;}
 export function classifyDiff(files){
  const supported=Array.isArray(files)&&files.length===1&&files[0].filename===LEDGER.path&&files[0].status==='modified';
  return {supported,reason:supported?'SUPPORTED_LEDGER_MODULE':'UNSUPPORTED_CHANGED_FILE_SCOPE'};
@@ -36,6 +37,7 @@ export function admitRequest({repository,pr,comment,permission,files,filesComple
  const cli=command==='check'?cliProfileFor(files):null;if(cli){profile.mode=CLI_MODE;profile.cli_profile=cli.id;support.supported=true;support.reason='SUPPORTED_CLI_PARITY';}
  if(files.some(f=>f.filename===GENERATOR_PROFILE.path&&['added','modified'].includes(f.status))){Object.assign(profile,GENERATOR_PROFILE);support.supported=true;support.reason='SUPPORTED_FINITE_GENERATOR_COMMENTS';profile.expectation_profile=GENERATOR_METHOD;if(pr.head.sha==='1153d648425fb15f6fe49061544f7ffe4bdcb520'||files.some(f=>f.filename===GENERATOR_PROFILE.path&&f.sha==='9ed75df29bedd67dd14883be30409ca9b5959b95'))profile.repair_template='traceof-nested-depth-v1';}
  if(files.some(f=>f.filename===REPORT_PROFILE.path&&['added','modified'].includes(f.status))){Object.assign(profile,REPORT_PROFILE);support.supported=true;support.reason='SUPPORTED_FINITE_REPORT_INTEGRITY';profile.expectation_profile=REPORT_METHOD;profile.repair_template='junit-report-refusal-v1';}
+ profile.release=PILOT_RELEASE;
  profile.report_version=isFiniteMethod(profile.method)?profile.method:'passport-v1';
  if(profile.mode===LEDGER.mode&&!isFiniteMethod(profile.method)){profile.report_version='expectations-v2-complete';const expectations=expectationProfileFor({repository,head_sha:pr.head.sha,profile});const locator=pr.user?.id===32909488&&pr.user.type==='User'&&pr.draft===true&&/https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/[1-9][0-9]*/.test(pr.body??'');if(expectations)profile.expectation_profile='ledger-shell-v2';else if(support.supported&&(pr.user?.id===342263476&&pr.user.type==='Bot'&&pr.user.login==='mathgraph-check[bot]'||locator)){profile.expectation_candidate=true;}else if(command==='fix'&&support.supported){support.supported=false;support.reason='REPAIR_EXPECTATION_REVIEW_REQUIRED';}}
  if(!['write','maintain','admin'].includes(permission)&&!isFiniteMethod(profile.method)){support.supported=false;support.reason='UNSUPPORTED_CHANGED_FILE_SCOPE';}

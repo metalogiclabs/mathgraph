@@ -1,0 +1,17 @@
+{
+  "status": "NO_COUNTEREXAMPLE_IN_DECLARED_CASES",
+  "run": 41805354642,
+  "protocol_commit": "bd7de0314c48f4e95337bd8e3606718045688115",
+  "source_head": "d14e24e2de55fc2c5a4402db15b2d8cb5903d028",
+  "comparisons": 26,
+  "strict_report_pairs_equal": 14,
+  "positive_successful_pairs": 12,
+  "common_refusal_pairs_in_strict_set": 2,
+  "source_restoration_pairs": 26,
+  "controlled_patch_captures": 20,
+  "usage_exit_differences": 6,
+  "boundary": "Real unchanged commands; real selected native build/guards; identical actual source input; compiler-output replay only, not actual proof validity. Missing/empty failure outputs retained separately from strict report cases. No repair preloaded.",
+  "new_defect_established": false,
+  "repair_preloaded": false,
+  "repair_proposed": false
+}
