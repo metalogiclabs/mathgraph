@@ -16,7 +16,7 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
  ensure(env.PR_PILOT_BUDGET&&env.PILOT_SUBSCRIPTIONS,'PILOT_STORAGE_UNAVAILABLE');
  const app=githubClient(jwt,{repository:item.repository,fetcher}),installation=await app('/repos/'+item.repository+'/installation');
  ensure(installation.id===item.installationID,'INSTALLATION_MISMATCH');
- const token=await mintScopedToken(app,installation.id,item.repository,{contents:'read',pull_requests:'read',issues:'write',checks:'write'},{fetcher});
+ const token=await mintScopedToken(app,installation.id,item.repository,{contents:'read',pull_requests:'write',issues:'write',checks:'write'},{fetcher});
  const api=githubClient(token,{repository:item.repository,fetcher}),root='/repos/'+item.repository;
  let publication,request;
  const subscriptionKey=`pr-pilot/subscription/${item.repository}/${item.number}.json`;
@@ -74,13 +74,13 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
 // Scheduled work is serialized through the existing queue (max_concurrency=1).
 export async function processPilotWatchTick(env,{jwt,fetcher=fetch,now=Date.now()}={}){
  if(env.PR_PILOT_ENABLED!=='true')return {state:'DISABLED'};
- const repository='metalogiclabs/L4YAML',app=githubClient(jwt,{repository,fetcher}),installation=await app('/repos/'+repository+'/installation'),token=await mintScopedToken(app,installation.id,repository,{contents:'read',pull_requests:'read',issues:'write',checks:'write'},{fetcher}),api=githubClient(token,{repository,fetcher});
+ const repository='metalogiclabs/L4YAML',app=githubClient(jwt,{repository,fetcher}),installation=await app('/repos/'+repository+'/installation'),token=await mintScopedToken(app,installation.id,repository,{contents:'read',pull_requests:'write',issues:'write',checks:'write'},{fetcher}),api=githubClient(token,{repository,fetcher});
  try{const results=await pollWatches(env.PILOT_SUBSCRIPTIONS,{publicAPI:publicGitHub({fetcher,token}),authorize:r=>authorizeImport(r,api,pilotOperatorIDs(env.PR_PILOT_OPERATOR_IDS)),enqueue:async x=>env.PR_EVENTS.send({schema:'mathgraph.pr-pilot.delivery.v1',repository,number:x.origin.number,comment_id:x.origin.comment_id,installationID:installation.id,action:'command',command:'import',from_watch:true,watch_generation:x.watch_generation}),withdraw:async w=>{if(w.snapshot_head&&w.snapshot_number){const checks=await listChecks({repository,head_sha:w.snapshot_head},api);await withdrawChecks({repository,number:w.snapshot_number,head_sha:''},checks,api,{force:true});}},notify:(r,v)=>publishRequestStatus(r,api,v)},now);return {state:'WATCH_TICK',results};}finally{await api('/installation/token',{method:'DELETE'});}
 }
 
 export async function processPilotStatusDelivery(item,env,{jwt,fetcher=fetch}={}){
  if(env.PR_PILOT_ENABLED!=='true')return {state:'DISABLED'};
  if(!Number.isSafeInteger(item.issued_at)||Date.now()-item.issued_at>7200000)return {state:'STATUS_EXPIRED'};
- const request=item.subject;profileFor(request.repository);const app=githubClient(jwt,{repository:request.repository,fetcher}),installation=await app('/repos/'+request.repository+'/installation'),token=await mintScopedToken(app,installation.id,request.repository,{contents:'read',pull_requests:'read',issues:'write'},{fetcher}),api=githubClient(token,{repository:request.repository,fetcher});
+ const request=item.subject;profileFor(request.repository);const app=githubClient(jwt,{repository:request.repository,fetcher}),installation=await app('/repos/'+request.repository+'/installation'),token=await mintScopedToken(app,installation.id,request.repository,{contents:'read',pull_requests:'write',issues:'write'},{fetcher}),api=githubClient(token,{repository:request.repository,fetcher});
  try{let actor;try{actor=await readPilotActor({...request,...(request.origin??{}),repository:request.repository},api,pilotOperatorIDs(env.PR_PILOT_OPERATOR_IDS));}catch(e){if(['ACTOR_ORIGIN_INVALID','ACTOR_COMMENT_INVALID','GITHUB_HTTP_404'].includes(e.message))return {state:'STATUS_ORIGIN_GONE'};throw e;}ensure(actor.actor_id===request.actor_id,'STATUS_ACTOR_CHANGED');const result=actor.allowed?item.result:{state:'INVITE_REQUIRED'};return await publishRequestStatus(request,api,result);}finally{await api('/installation/token',{method:'DELETE'});}
 }
