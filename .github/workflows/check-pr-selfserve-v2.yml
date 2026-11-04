@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: [mathgraph-pr-selfserve-v2]
 env:
-  MATHGRAPH_CONTROLLER_SHA: b9e584c8e14e42563f0dae193e10fd37ab09a217
+  MATHGRAPH_CONTROLLER_SHA: f42d282963217f5fcb891b16d4780bf21346056a
 permissions:
   contents: read
   actions: read
@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
@@ -38,7 +38,7 @@ jobs:
       prior_run: ${{ steps.intake.outputs.prior_run }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - name: Authorize actual request and acquire source identities
@@ -59,7 +59,7 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -96,7 +96,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -122,7 +122,7 @@ jobs:
     timeout-minutes: 7
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -142,7 +142,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -167,7 +167,7 @@ jobs:
       revision: ${{ steps.feedback.outputs.revision }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -192,7 +192,7 @@ jobs:
     timeout-minutes: 22
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -216,7 +216,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -242,7 +242,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -274,7 +274,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -296,7 +296,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093

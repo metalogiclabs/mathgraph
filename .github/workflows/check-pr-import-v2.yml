@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, ref: b9e584c8e14e42563f0dae193e10fd37ab09a217}
+        with: {persist-credentials: false, ref: f42d282963217f5fcb891b16d4780bf21346056a}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
       - name: Metadata-only import contracts
