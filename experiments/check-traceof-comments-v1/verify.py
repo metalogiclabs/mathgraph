@@ -40,17 +40,18 @@ try:
     p=run("original-probes",["lake","env","lean",str(probe)],None)
     assert p.returncode!=0 and "did not evaluate to" in p.stdout
     run("original-golden-check",["lake","run","gen-traceof","--","--check"])
-    gold=run("original-generate",["lake","run","gen-traceof"]).stdout
+    gold=run("original-generate",[str(root/".lake/build/bin/scripts-gen-traceof")]).stdout
     (out/"golden.lean").write_text(gold)
     surface.write_text(mutated)
     run("valid-commented-source-build",["lake","build","L4YAML.Surface.Node"])
-    bad=run("original-commented-generate",["lake","run","gen-traceof"],None)
+    bad=run("original-commented-generate",[str(root/".lake/build/bin/scripts-gen-traceof")],None)
     assert bad.returncode!=0 or bad.stdout!=gold
     (out/"original-commented.lean").write_text(bad.stdout)
     gen.write_text(fixed)
     run("candidate-pure-build",["lake","build","Scripts.TraceOf.Gen"])
     run("candidate-probes",["lake","env","lean",str(probe)])
-    good=run("candidate-commented-generate",["lake","run","gen-traceof"])
+    run("candidate-exe-build",["lake","build","scripts-gen-traceof"])
+    good=run("candidate-commented-generate",[str(root/".lake/build/bin/scripts-gen-traceof")])
     (out/"candidate-commented.lean").write_text(good.stdout)
     assert good.stdout==gold,"Candidate did not restore exact generated module"
     surface.write_text(original_surface)
@@ -62,6 +63,7 @@ try:
     withdrawn=run("withdrawn-probes",["lake","env","lean",str(probe)],None)
     assert withdrawn.returncode!=0 and "did not evaluate to" in withdrawn.stdout
     surface.write_text(mutated)
+    run("withdrawn-exe-build",["lake","build","scripts-gen-traceof"])
     again=run("withdrawn-commented-generate",["lake","run","gen-traceof"],None)
     assert again.returncode==bad.returncode and again.stdout==bad.stdout
     result={"status":"WARRANTED_BOUNDED","head":"1153d648425fb15f6fe49061544f7ffe4bdcb520","probe_count":len(cases),"original":"FAIL","candidate":"PASS","withdrawn":"FAIL","native_source_with_comment_compiles":True,"candidate_generation_matches_original_golden":True,"candidate_sha256":hashlib.sha256(fixed.encode()).hexdigest(),"scope":"Nested block comments in grammar premise spans, depths 1 through 5; full frozen repository build/tests. Other lexical constructs and arbitrary PRs remain unqualified."}
