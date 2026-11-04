@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {admitPlan,admitPatch,assessProbe,assessProbeDelta,assessRepair} from './contracts.mjs';
+import {admitPlan,admitPatch,assessProbe,assessProbeDelta,assessRepair,compareProtectedSuites} from './contracts.mjs';
 const sha='a'.repeat(40),other='b'.repeat(40);
 const snapshot={repository:'metalogiclabs/gnss_lib_py',base_sha:other,head_sha:sha,files:[{path:'gnss_lib_py/utils/coordinates.py',head:'def f(x): return x\n',base:'def f(x): return x\n'}]};
 const plan=()=>({summary:'Check empty input',tests:[{id:'empty_input',hypothesis:'Empty inputs preserve the documented shape',contract:'Source documentation states empty input is supported',source_path:'gnss_lib_py/utils/coordinates.py',code:'def test_empty():\n    assert 1 == 1\n'}]});
@@ -74,4 +74,27 @@ test('no head-only attribution without exercising the reviewed implementation on
  base.cases[0].subject_lines_reached=0;head.cases[0].subject_lines_reached=0;
  base.cases[0].subject_import_assertions_reached=1;head.cases[0].subject_import_assertions_reached=1;
  assert.equal(delta(base,head,{requireReviewedSourceUse:true}).status,'HEAD_ONLY_FAILURE');
+});
+test('matched protected failures remain visible while a new passing upstream test is separately counted',()=>{
+ const base={...atBase(1),test_digest:'d'.repeat(64),cases:[{id:'shared_network',status:'failed',exception:'gaierror',assertions_reached:0}]};
+ const head={...receipt(1),test_digest:'e'.repeat(64),tests:2,cases:[
+  {id:'shared_network',status:'failed',exception:'gaierror',assertions_reached:0},
+  {id:'new_valid_test',status:'passed',exception:null,assertions_reached:0}]};
+ const result=compareProtectedSuites({base,head},{baseSha:other,headSha:sha});
+ assert.equal(result.status,'MATCHED_NO_NEW_FAILURES');
+ assert.equal(result.baseline_failures,1);
+ assert.equal(result.head_added_passes,1);
+ assert.equal(result.shared_cases,1);
+ assert.equal(result.meaning,'UNVERIFIED');
+ head.cases[1].status='failed';head.cases[1].exception='AssertionError';head.failures=2;
+ assert.equal(compareProtectedSuites({base,head},{baseSha:other,headSha:sha}).status,'HEAD_NEW_FAILURE');
+});
+test('missing protected cases, altered failure signatures or incomplete native receipts cannot qualify',()=>{
+ const base={...atBase(1),cases:[{id:'old',status:'failed',exception:'gaierror'}]};
+ const head={...receipt(1),cases:[{id:'old',status:'failed',exception:'gaierror'}]};
+ assert.equal(compareProtectedSuites({base,head},{baseSha:other,headSha:sha}).status,'MATCHED_NO_NEW_FAILURES');
+ head.cases=[];head.tests=0;head.failures=0;head.exit_code=0;
+ assert.equal(compareProtectedSuites({base,head},{baseSha:other,headSha:sha}).status,'UNKNOWN');
+ const altered={...receipt(1),cases:[{id:'old',status:'failed',exception:'ConnectionError'}]};
+ assert.equal(compareProtectedSuites({base,head:altered},{baseSha:other,headSha:sha}).status,'UNKNOWN');
 });

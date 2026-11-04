@@ -31,6 +31,7 @@ test('a failure already present on base cannot purchase a head-regression repair
   assert.equal(readOnly.status,0,readOnly.stderr);
   const initialReport=JSON.parse(await readFile(join(dir,'assessment.json'),'utf8'));
   assert.equal(initialReport.repair.status,'NOT_REQUESTED');
+  assert.equal(initialReport.protected_comparison.status,'MATCHED_NO_NEW_FAILURES');
   assert.equal(initialReport.counts.shared_failures,1);
   const p=spawnSync(process.execPath,[new URL('./driver.mjs',import.meta.url).pathname,'repair',dir],{encoding:'utf8',env:{...process.env,OPENAI_API_KEY:'',GITHUB_SHA:context.verifier_sha,GITHUB_RUN_ID:'124',GITHUB_RUN_ATTEMPT:'1'}});
   assert.equal(p.status,0,p.stderr);

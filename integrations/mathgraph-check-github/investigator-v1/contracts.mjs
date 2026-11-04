@@ -55,6 +55,35 @@ export function assessProbeDelta({base,head}={}, {baseSha,headSha,testDigest,tes
  if(b.execution===fail)return make('BASE_ONLY_FAILURE','BASE_FAILED_HEAD_PASSED');
  return make('BOTH_PASSED','NO_COUNTEREXAMPLE_IN_MATCHED_PROBES');
 }
+/** A descriptive before/after census of the repository's own protected tests.
+ * Baseline failures remain unqualified; equality cannot turn red CI green. */
+export function compareProtectedSuites({base,head}={}, {baseSha,headSha}={}){
+ const make=(status,reason,counts={})=>({status,reason,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',...counts});
+ const valid=(r,sha)=>SHA.test(sha??'')&&r?.subject_sha===sha&&DIGEST.test(r?.test_digest??'')
+  &&r.timeout===false&&[0,1].includes(r.exit_code)
+  &&['tests','failures','errors','skipped'].every(k=>Number.isSafeInteger(r[k])&&r[k]>=0)
+  &&r.tests>0&&r.errors===0&&r.skipped===0&&r.failures<=r.tests
+  &&(r.exit_code===1)===(r.failures>0)
+  &&Array.isArray(r.cases)&&r.cases.length===r.tests
+  &&new Set(r.cases.map(c=>c.id)).size===r.tests
+  &&r.cases.every(c=>typeof c.id==='string'&&c.id.length>0
+   &&(c.status==='passed'&&c.exception===null||c.status==='failed'&&typeof c.exception==='string'&&c.exception.length>0))
+  &&r.cases.filter(c=>c.status==='failed').length===r.failures;
+ if(!SHA.test(baseSha??'')||baseSha===headSha||!valid(base,baseSha)||!valid(head,headSha))
+  return make('UNKNOWN','UNQUALIFIED_PROTECTED_NATIVE_RECEIPT');
+ const before=new Map(base.cases.map(c=>[c.id,c])),after=new Map(head.cases.map(c=>[c.id,c]));
+ const removed=[...before.keys()].filter(id=>!after.has(id));
+ if(removed.length)return make('UNKNOWN','PROTECTED_CASES_REMOVED',{removed_cases:removed.length});
+ const changed=[...before].filter(([id,c])=>c.status==='failed'&&after.get(id).status==='failed'&&after.get(id).exception!==c.exception);
+ if(changed.length)return make('UNKNOWN','PROTECTED_FAILURE_SIGNATURE_CHANGED',{changed_signatures:changed.length});
+ const newlyFailed=[...after].filter(([id,c])=>c.status==='failed'&&before.get(id)?.status!=='failed');
+ const counts={baseline_failures:base.failures,head_failures:head.failures,
+  shared_cases:before.size,head_added_passes:[...after].filter(([id,c])=>!before.has(id)&&c.status==='passed').length,
+  recovered_cases:[...before].filter(([id,c])=>c.status==='failed'&&after.get(id).status==='passed').length,
+  new_failures:newlyFailed.length};
+ if(newlyFailed.length)return make('HEAD_NEW_FAILURE','NEW_FAILURE_IN_PROTECTED_NATIVE_CASES',counts);
+ return make('MATCHED_NO_NEW_FAILURES',base.failures?'BASELINE_FAILURES_REMAIN_UNQUALIFIED':'PAIRED_PROTECTED_CASES_PASS',counts);
+}
 export function assessRepair({original,fixed,protectedBefore,protectedAfter}={},context={}){
  const unknown=reason=>({status:'UNKNOWN',meaning:'UNVERIFIED',reason,permission:'ADVISORY_ONLY'});
  if(assessProbe(original,context).execution!=='CANDIDATE_FAILURE_REPRODUCED'||assessProbe(fixed,context).execution!=='PROBE_PASSED')return unknown('REPAIR_NOT_REPRODUCED');

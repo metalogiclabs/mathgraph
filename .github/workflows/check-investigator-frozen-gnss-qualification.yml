@@ -1,8 +1,11 @@
 name: MathGraph Check frozen GNSS source-native qualification
 
 on:
-  push:
-    branches: [experiment/contract-mutation-admission-20261104]
+  pull_request:
+    branches: [feature/check-investigator-v1]
+    paths:
+      - 'integrations/mathgraph-check-github/investigator-v1/**'
+      - '.github/workflows/check-investigator-frozen-gnss-qualification.yml'
 
 permissions:
   contents: read
@@ -10,6 +13,7 @@ permissions:
 
 jobs:
   frozen-probe-replay:
+    if: github.head_ref == 'experiment/contract-mutation-admission-20261104'
     runs-on: ubuntu-24.04
     timeout-minutes: 32
     steps:
