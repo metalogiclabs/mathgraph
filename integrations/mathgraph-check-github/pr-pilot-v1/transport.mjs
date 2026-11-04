@@ -1,4 +1,5 @@
 import {createHash,sign,verify,createPublicKey} from 'node:crypto';
+import {upstreamRequestOf} from './upstream-intake.mjs';
 import {profileFor,commandOf} from './policy.mjs';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export function canonical(value){if(value===null||typeof value!=='object')return JSON.stringify(value);if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';}
@@ -14,7 +15,7 @@ export function pilotEvent(e,event,delivery){
  try{profileFor(e?.repository?.full_name);}catch{return null;}
  if(!/^[a-f0-9-]{16,80}$/i.test(delivery??'')||!Number.isSafeInteger(e.installation?.id)||e.installation.id<1)return null;
  const common={schema:'mathgraph.pr-pilot.delivery.v1',repository:e.repository.full_name,installationID:e.installation.id,delivery};
- if(event==='issue_comment'&&e.action==='created'&&e.issue?.pull_request&&e.sender?.type==='User'&&e.comment?.user?.type==='User'&&e.sender.id===e.comment.user.id&&commandOf(e.comment.body)&&Number.isSafeInteger(e.comment.id)&&Number.isSafeInteger(e.issue.number))return {...common,number:e.issue.number,comment_id:e.comment.id,command:commandOf(e.comment.body),action:'command'};
+ if(event==='issue_comment'&&e.action==='created'&&e.issue?.pull_request&&e.sender?.type==='User'&&e.comment?.user?.type==='User'&&e.sender.id===e.comment.user.id&&(commandOf(e.comment.body)||upstreamRequestOf(e.comment.body))&&Number.isSafeInteger(e.comment.id)&&Number.isSafeInteger(e.issue.number))return {...common,number:e.issue.number,comment_id:e.comment.id,command:upstreamRequestOf(e.comment.body)?'import':commandOf(e.comment.body),action:'command'};
  const pr=e.pull_request;if(event==='pull_request'&&['synchronize','edited','closed'].includes(e.action)&&pr?.base?.repo?.full_name===common.repository&&pr.head?.repo?.full_name===common.repository&&Number.isSafeInteger(pr.number)&&/^[a-f0-9]{40}$/.test(pr.head.sha??''))return {...common,number:pr.number,head_sha:pr.head.sha,action:e.action==='edited'?'synchronize':e.action,previous_sha:e.before};
  return null;
 }

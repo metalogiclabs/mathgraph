@@ -1,10 +1,12 @@
+import {isFiniteMethod,finiteGate} from './finite-methods.mjs';
+import {REPORT_METHOD,admitReportSources} from './report-integrity.mjs';
 import {GENERATOR_GATE,GENERATOR_METHOD} from './traceof-comments.mjs';
 import {activeSource,guardBlocks} from '../lean-investigator-v1/contracts.mjs';
 import {profileFor} from './policy.mjs';
 export function modelSnapshot(s){const {base_source,base_cli_source,cli_source,...packet}=s;return packet;}
 export function validatePilotSnapshot(s){
  const p=profileFor(s.repository,s.method);for(const [k,v]of Object.entries(p))if(s[k]!==v)throw Error('UNTRUSTED_PILOT_PROFILE');
- if(!['check','fix'].includes(s.command)||!Number.isSafeInteger(s.number)||s.number<1||!/^[a-f0-9]{40}$/.test(s.head_sha??'')||!/^[a-f0-9]{40}$/.test(s.base_sha??'')||s.cli_source!==s.base_cli_source)throw Error('INVALID_PILOT_SOURCE');if(s.method===GENERATOR_METHOD&&s.cli_source!==GENERATOR_GATE)throw Error('UNTRUSTED_MODULE_GATE');admitPilotSources(s.base_source??s.source,s.source);return s;
+ if(!['check','fix'].includes(s.command)||!Number.isSafeInteger(s.number)||s.number<1||!/^[a-f0-9]{40}$/.test(s.head_sha??'')||!/^[a-f0-9]{40}$/.test(s.base_sha??'')||s.cli_source!==s.base_cli_source)throw Error('INVALID_PILOT_SOURCE');if(isFiniteMethod(s.method)&&s.cli_source!==finiteGate(s.method))throw Error('UNTRUSTED_MODULE_GATE');(s.method===REPORT_METHOD?admitReportSources:admitPilotSources)(s.base_source??s.source,s.source);return s;
 }
 export function compareProbeRows(base,head,{complete=true}={}){if(!complete)base=[];return head.map(h=>{const b=base.find(b=>b.id===h.id),ok='GUARD_PASSED',fail='CANDIDATE_ASSERTION_FAILURE';return {id:h.id,base:b?.execution??'UNKNOWN',head:h.execution,change:![ok,fail].includes(h.execution)?'HEAD_UNKNOWN':!b||![ok,fail].includes(b.execution)?'BASE_UNKNOWN':b.execution===ok&&h.execution===fail?'NEW_FAILURE':b.execution===fail&&h.execution===fail?'PRE_EXISTING_FAILURE':b.execution===fail&&h.execution===ok?'RESOLVED_FAILURE':h.execution===ok?'BOTH_PASS':'HEAD_UNKNOWN'};});}
 

@@ -81,7 +81,7 @@ export function inspectArm(arm,{profile,plan,source}={}){
  const hash=s=>createHash('sha256').update(s).digest('hex');
  const ids=plan.tests.map(t=>t.id).sort();
  const exact=Array.isArray(arm?.probes)&&JSON.stringify(arm.probes.map(p=>p.id).sort())===JSON.stringify(ids);
- const sourceOK=arm?.source_sha256===hash(source)&&(profile?.method!=='traceof-comments-v1'||arm.gate_kind==='SELECTED_MODULE_BUILD');
+ const sourceOK=arm?.source_sha256===hash(source)&&(!['traceof-comments-v1','junit-report-integrity-v1'].includes(profile?.method)||arm.gate_kind==='SELECTED_MODULE_BUILD');
  const controlsOK=assessGuard(arm?.controls?.pass).execution==='GUARD_PASSED'&&assessGuard(arm?.controls?.fail).execution==='CANDIDATE_ASSERTION_FAILURE';
  const baselineOK=arm?.build_exit===0&&arm?.repository_gate_exit===0;
  const rows=plan.tests.map(t=>{const p=arm?.probes?.find(p=>p.id===t.id);const byteOK=p?.test_file_sha256===hash(renderProbe(profile,t.expression));return {id:t.id,...(byteOK?assessGuard(p):{execution:'UNKNOWN',meaning:'UNVERIFIED'})};});

@@ -1,3 +1,4 @@
+import {REPORT_METHOD} from './report-integrity.mjs';import {isFiniteMethod} from './finite-methods.mjs';
 import {GENERATOR_METHOD} from './traceof-comments.mjs';
 import {createHash} from 'node:crypto';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
@@ -9,7 +10,7 @@ export async function createRepair(request,patch,publication,api){
  const head=await api(root+'/git/commits/'+request.head_sha);
  ensure(/^[a-f0-9]{40}$/.test(head.tree?.sha??''),'INVALID_BASE_TREE');
  const tree=await api(root+'/git/trees',{method:'POST',body:{base_tree:head.tree.sha,tree:[{path:request.profile.path,mode:'100644',type:'blob',content:patch.content}]}});
- const commit=await api(root+'/git/commits',{method:'POST',body:{message:request.profile.method===GENERATOR_METHOD?'fix: satisfy frozen nested-comment probes':'fix: satisfy frozen independent ledger probes',tree:tree.sha,parents:[request.head_sha]}});
+ const commit=await api(root+'/git/commits',{method:'POST',body:{message:request.profile.method===REPORT_METHOD?'fix: reject malformed JUnit evidence':request.profile.method===GENERATOR_METHOD?'fix: satisfy frozen nested-comment probes':'fix: satisfy frozen independent ledger probes',tree:tree.sha,parents:[request.head_sha]}});
  const comparison=await api(root+'/compare/'+request.head_sha+'...'+commit.sha);
  const blob=createHash('sha1').update('blob '+Buffer.byteLength(patch.content)+'\0'+patch.content).digest('hex');
  ensure(comparison.files?.length===1&&comparison.files[0].filename===request.profile.path&&comparison.files[0].status==='modified'&&comparison.files[0].sha===blob,'REPAIR_DIFF_MISMATCH');
@@ -37,7 +38,7 @@ export async function createRepair(request,patch,publication,api){
   if(candidates.length){ensure(candidates.length===1&&candidates[0].draft===true&&candidates[0].state==='open','REPAIR_PR_COLLISION');return candidates[0].html_url;}
   ensure(isFresh(await api(root+'/pulls/'+request.number)),'STALE_REPAIR');
   prAttempted=true;
-  const repair=await api(root+'/pulls',{method:'POST',body:{title:request.profile.method===GENERATOR_METHOD?'Repair independently reproduced nested-comment failures':'Repair independently reproduced ledger probe failures',head:name,base:pr.head.ref,draft:true,body:`Candidate repair for #${request.number}, source ${request.head_sha}.\n\nThe candidate patch passes the unchanged admitted finite expectations and protected original guards, with the declared gate in the recorded scope. ${request.profile.method===GENERATOR_METHOD?'The gate covers the selected module build, not the repository suite.':'The repository gate passes in its declared scope.'} Withdrawal reproduces the observed failures. Customer approval and whole-PR correctness remain UNKNOWN. Review the draft diff and normal CI before deciding whether to merge.\n\nEvidence: ${publication.run_url}`}});
+  const repair=await api(root+'/pulls',{method:'POST',body:{title:request.profile.method===REPORT_METHOD?'Repair independently reproduced report-integrity failures':request.profile.method===GENERATOR_METHOD?'Repair independently reproduced nested-comment failures':'Repair independently reproduced ledger probe failures',head:name,base:pr.head.ref,draft:true,body:`Candidate repair for #${request.number}, source ${request.head_sha}.\n\nThe candidate patch passes the unchanged admitted finite expectations and protected original guards, with the declared gate in the recorded scope. ${isFiniteMethod(request.profile.method)?'The gate covers the selected module build, not the repository suite.':'The repository gate passes in its declared scope.'} Withdrawal reproduces the observed failures. Customer approval and whole-PR correctness remain UNKNOWN. Review the draft diff and normal CI before deciding whether to merge.\n\nEvidence: ${publication.run_url}`}});
   ensure(repair.draft===true&&repair.base.sha===request.head_sha,'REPAIR_READBACK_MISMATCH');return repair.html_url;
  }catch(e){
   // Delete only a ref created by this attempt, still pointing to this exact commit,

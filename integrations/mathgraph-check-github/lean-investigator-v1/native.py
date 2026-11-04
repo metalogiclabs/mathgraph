@@ -16,16 +16,17 @@ def must(args,timeout=240):
  return p.stdout.strip()
 def validate_snapshot(s):
  assert s['repository']=='metalogiclabs/L4YAML'
- assert s.get('method') in [None,'traceof-comments-v1']
+ assert s.get('method') in [None,'traceof-comments-v1','junit-report-integrity-v1']
  expected={'path':'Scripts/Ledger.lean','module':'Scripts.Ledger','namespace':'Scripts.Ledger','cli_path':'Scripts/Main/CheckScriptsLedger.lean','cli_module':'Scripts.Main.CheckScriptsLedger','toolchain':'leanprover/lean4:v4.35.0'}
- if s.get('method')=='traceof-comments-v1':
+ if s.get('method') in ['traceof-comments-v1','junit-report-integrity-v1']:
   expected={'path':'Scripts/TraceOf/Gen.lean','module':'Scripts.TraceOf.Gen','namespace':'Scripts.TraceOf.Gen','cli_path':'MathGraphGate.lean','cli_module':'MathGraphGate','toolchain':'leanprover/lean4:v4.35.0','gate_kind':'SELECTED_MODULE_BUILD'}
-  assert s['cli_source']=='import Scripts.TraceOf.Gen\n\ndef main (_ : List String) : IO UInt32 := pure 0\n'
+  if s.get('method')=='junit-report-integrity-v1':expected.update(path='Tests/SuiteRunner/Reports.lean',module='Tests.SuiteRunner.Reports',namespace='Tests.SuiteRunner.Reports')
+  assert s['cli_source']=='import '+expected['module']+'\n\ndef main (_ : List String) : IO UInt32 := pure 0\n'
  assert all(s[k]==v for k,v in expected.items())
  assert re.fullmatch(r'[a-f0-9]{40}',s['head_sha'])
  if s.get('mode')=='OWNED_FORK_PR_PILOT':
   assert re.fullmatch(r'[a-f0-9]{40}',s['base_sha']) and s['command'] in ['check','fix']
-  assert (isinstance(s['base_source'],str) or s.get('method')=='traceof-comments-v1' and s['base_source'] is None) and s['base_cli_source']==s['cli_source']
+  assert (isinstance(s['base_source'],str) or s.get('method') in ['traceof-comments-v1','junit-report-integrity-v1'] and s['base_source'] is None) and s['base_cli_source']==s['cli_source']
  return True
 
 def runtime_context(env):
@@ -55,7 +56,7 @@ def main():
   with tarfile.open(archive) as t:t.extractall(folder,filter='data')
   folders=[p for p in folder.iterdir() if p.is_dir()];assert len(folders)==1;folder=folders[0]
   assert (folder/snapshot['path']).read_text()==source
-  if snapshot.get('method')!='traceof-comments-v1':assert (folder/snapshot['cli_path']).read_text()==snapshot['cli_source']
+  if snapshot.get('method') not in ['traceof-comments-v1','junit-report-integrity-v1']:assert (folder/snapshot['cli_path']).read_text()==snapshot['cli_source']
   return folder
  repo=acquire(snapshot['head_sha'],'subject',snapshot['source'])
  base_repo=acquire(snapshot['base_sha'],'base-subject',snapshot['base_source']) if snapshot.get('base_source') is not None else None
@@ -75,6 +76,8 @@ def main():
  def project(label,source):
   p=work/label;(p/Path(snapshot['path']).parent).mkdir(parents=True,exist_ok=True);(p/Path(snapshot['cli_path']).parent).mkdir(parents=True,exist_ok=True)
   (p/snapshot['path']).write_text(source);(p/snapshot['cli_path']).write_text(snapshot['cli_source'])
+  if snapshot.get('method')=='junit-report-integrity-v1':
+   (p/'Tests/SuiteRunner/HtmlReport.lean').write_text('module\n')
   (p/'lean-toolchain').write_text(snapshot['toolchain']+'\n')
   (p/'lakefile.lean').write_text('import Lake\nopen Lake DSL\npackage LeanProbe\nlean_lib Scripts where\n  roots := #[`'+snapshot['module']+']\nlean_exe gate where\n  root := `'+snapshot['cli_module']+'\n  supportInterpreter := true\n')
   for q in [p,*p.rglob('*')]:q.chmod(0o777 if q.is_dir() else 0o666)
@@ -90,7 +93,7 @@ def main():
  def arm(label,source,subject=repo):
   p=project(label,source);sources[label]=source;subjects[label]=subject
   b=execute(p,label+'-build',['lake','build','gate']);result={'build_exit':b.returncode,'source_sha256':digest(source.encode()),'probes':[]}
-  if snapshot.get('method')=='traceof-comments-v1':result['gate_kind']='SELECTED_MODULE_BUILD'
+  if snapshot.get('method') in ['traceof-comments-v1','junit-report-integrity-v1']:result['gate_kind']='SELECTED_MODULE_BUILD'
   if b.returncode:result['repository_gate_exit']=None;return result
   good=execute(p,label+'-control-pass',['lean','/audit/control_pass.lean'])
   bad=execute(p,label+'-control-fail',['lean','/audit/control_fail.lean'])

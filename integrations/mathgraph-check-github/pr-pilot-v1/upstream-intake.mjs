@@ -1,0 +1,31 @@
+const ensure=(b,c)=>{if(!b)throw Error(c);};
+export function upstreamRequestOf(body){const m=typeof body==='string'&&body.trim().match(/^@MathGraph -check (https:\/\/github\.com\/nasa-jpl\/L4YAML\/pull\/([1-9][0-9]{0,7}))$/);return m?{number:Number(m[2]),url:m[1]}:null;}
+export async function authorizeImport(item,api,pilotOperators=[]){
+ ensure(item.repository==='metalogiclabs/L4YAML'&&Number.isSafeInteger(item.number)&&item.number>0&&Number.isSafeInteger(item.comment_id)&&item.comment_id>0,'IMPORT_ORIGIN_INVALID');
+ const root='/repos/'+item.repository,pr=await api(root+'/pulls/'+item.number),comment=await api(root+'/issues/comments/'+item.comment_id),upstream=upstreamRequestOf(comment.body);
+ ensure(pr.state==='open'&&['head','base'].every(s=>pr[s]?.repo?.full_name===item.repository&&pr[s].repo.private===false),'IMPORT_ORIGIN_INVALID');
+ ensure(comment.id===item.comment_id&&comment.issue_url==='https://api.github.com'+root+'/issues/'+item.number&&upstream&&comment.user?.type==='User'&&Number.isSafeInteger(comment.user.id)&&comment.user.id>0&&/^[A-Za-z0-9-]{1,39}$/.test(comment.user.login??''),'IMPORT_COMMENT_INVALID');
+ const permission=(await api(root+'/collaborators/'+comment.user.login+'/permission')).permission,maintainer=['admin','maintain','write'].includes(permission);
+ ensure(maintainer||pilotOperators.includes(comment.user.id),'MAINTAINER_REQUIRED');
+ return {repository:item.repository,number:item.number,comment_id:item.comment_id,actor_id:comment.user.id,actor_login:comment.user.login,actor_authorization:maintainer?'REPOSITORY_MAINTAINER':'PILOT_OPERATOR',upstream_number:upstream.number,upstream_url:upstream.url,command:'import'};
+}
+const SHA=/^[a-f0-9]{40}$/;
+export function admitUpstream(pr,number){ensure(pr.number===number&&pr.state==='open'&&pr.html_url===`https://github.com/nasa-jpl/L4YAML/pull/${number}`&&['head','base'].every(s=>pr[s]?.repo?.full_name==='nasa-jpl/L4YAML'&&pr[s].repo.private===false&&SHA.test(pr[s].sha??'')),'UPSTREAM_PUBLIC_SAME_REPO_OPEN_PR_REQUIRED');return {head:pr.head.sha,base:pr.base.sha,title:pr.title};}
+export async function snapshotUpstream(request,api,publicAPI){
+ const root='/repos/'+request.repository,upstreamRoot='/repos/nasa-jpl/L4YAML',source=admitUpstream(await publicAPI(upstreamRoot+'/pulls/'+request.upstream_number),request.upstream_number);
+ const key=`${request.upstream_number}-${source.head.slice(0,12)}-${source.base.slice(0,12)}`,head='pilot/import-'+key,base='pilot/import-base-'+key;
+ const ensureRef=async(name,sha)=>{let found;try{found=await api(root+'/git/ref/heads/'+name);}catch(e){if(e.message!=='GITHUB_HTTP_404')throw e;}if(found){ensure(found.object?.sha===sha,'IMPORT_BRANCH_COLLISION');return;}await api(root+'/git/refs',{method:'POST',body:{ref:'refs/heads/'+name,sha}});};
+ await ensureRef(base,source.base);
+ const commit=await publicAPI(upstreamRoot+'/git/commits/'+source.head);ensure(commit.sha===source.head&&SHA.test(commit.tree?.sha??''),'UPSTREAM_TREE_INVALID');
+ let existing;try{existing=await api(root+'/git/ref/heads/'+head);}catch(e){if(e.message!=='GITHUB_HTTP_404')throw e;}
+ if(existing){const c=await api(root+'/git/commits/'+existing.object.sha);ensure(c.tree?.sha===commit.tree.sha&&c.parents?.length===1&&c.parents[0].sha===source.head,'IMPORT_BRANCH_COLLISION');}
+ else{const c=await api(root+'/git/commits',{method:'POST',body:{message:`Freeze public L4YAML PR #${request.upstream_number} for independent checking`,tree:commit.tree.sha,parents:[source.head]}});ensure(SHA.test(c.sha??''),'IMPORT_COMMIT_INVALID');await ensureRef(head,c.sha);}
+ const fresh=admitUpstream(await publicAPI(upstreamRoot+'/pulls/'+request.upstream_number),request.upstream_number);ensure(fresh.head===source.head&&fresh.base===source.base,'UPSTREAM_CHANGED_RETRY_REQUIRED');
+ const prs=await api(root+'/pulls?state=all&head=metalogiclabs:'+encodeURIComponent(head)+'&base='+encodeURIComponent(base)+'&per_page=100');ensure(Array.isArray(prs)&&prs.length<=1,'IMPORT_PR_AMBIGUOUS');
+ if(prs.length){ensure(prs[0].state==='open','IMPORT_SNAPSHOT_CLOSED');return {url:prs[0].html_url,reused:true,...source};}
+ const pr=await api(root+'/pulls',{method:'POST',body:{title:`MathGraph Check: public L4YAML #${request.upstream_number} snapshot`,head,base,draft:true,body:[`![MathGraph Check](https://raw.githubusercontent.com/metalogiclabs/mathgraph/eefec62d5f546b9d60e24c5f123b5be12bb3b185/integrations/mathgraph-check-github/pr-pilot-v1/assets/mathgraph-check-icon.jpg)`,`Frozen from ${request.upstream_url}. Public upstream remains untouched.`,`Head: \`${source.head}\` · Base: \`${source.base}\`. The snapshot has the same source tree as the pinned upstream head.`,`Comment \`@MathGraph -check\` here. Supported requirements receive native checks; unavailable capabilities report UNKNOWN. A passing scoped check does not establish whole-PR correctness.`,`After a reproduced supported failure, comment \`@MathGraph -fix\` to request a tested draft repair. Nothing merges automatically.`].join('\n\n')}});
+ ensure(new RegExp('^https://github.com/metalogiclabs/L4YAML/pull/[1-9][0-9]*$').test(pr.html_url),'IMPORT_PR_URL_INVALID');return {url:pr.html_url,reused:false,...source};
+}
+export async function replyToImport(request,api,result){const root='/repos/'+request.repository,marker=`<!-- mathgraph-import:${request.comment_id} -->`;let comments=[];for(let page=1;page<=3;page++){const rows=await api(root+'/issues/'+request.number+'/comments?per_page=100&page='+page);ensure(Array.isArray(rows),'IMPORT_COMMENTS_INVALID');comments.push(...rows);if(rows.length<100)break;ensure(page<3,'IMPORT_COMMENTS_INCOMPLETE');}const prior=comments.filter(c=>c.user?.login==='mathgraph-check[bot]'&&c.body?.includes(marker));ensure(prior.length<=1,'IMPORT_REPLY_AMBIGUOUS');if(prior.length)return;
+ await api(root+'/issues/'+request.number+'/comments',{method:'POST',body:{body:marker+'\n\n'+(result.url?`**Snapshot ready:** ${result.url}\n\nOpen it and comment \`@MathGraph -check\`. After a supported failure, use \`@MathGraph -fix\`. The original repository is untouched. Checks cover declared requirements; other changes remain UNKNOWN.`:`**Import incomplete: UNKNOWN.** ${result.reason??'IMPORT_INCOMPLETE'}. No upstream changes were made. Retry after resolving the missing evidence.`)}});
+}

@@ -1,3 +1,6 @@
+import {authorizeImport} from './upstream-intake.mjs';
+import {REPORT_METHOD} from './report-integrity.mjs';
+import {isFiniteMethod} from './finite-methods.mjs';
 import {mintScopedToken} from './auth.mjs';
 import {profileFor,modelReservationCents} from './policy.mjs';import {authenticate,withdrawChecks,queueCheck,finishCheck,listChecks} from './lifecycle.mjs';import {signedDispatch,reservationKey} from './transport.mjs';import {githubClient} from './github.mjs';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
@@ -13,6 +16,12 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
  let publication,request;
  const subscriptionKey=`pr-pilot/subscription/${item.repository}/${item.number}.json`;
  try{
+  if(item.action==='command'&&item.command==='import'){
+   const authorized=await authorizeImport(item,api,pilotOperatorIDs(env.PR_PILOT_OPERATOR_IDS));
+   const central=await app('/repos/metalogiclabs/mathgraph/installation'),dt=await mintScopedToken(app,central.id,'metalogiclabs/mathgraph',{contents:'write'},{fetcher}),dispatch=githubClient(dt,{repository:item.repository,fetcher});
+   try{await dispatch('/repos/metalogiclabs/mathgraph/dispatches',{method:'POST',body:{event_type:'mathgraph-pr-import-v1',client_payload:signedDispatch({...authorized,installation_id:item.installationID},env.GITHUB_APP_PRIVATE_KEY)}});}finally{await dispatch('/installation/token',{method:'DELETE'});}
+   return {state:'IMPORT_DISPATCHED',upstream_number:authorized.upstream_number};
+  }
   let previous;const stored=await env.PILOT_SUBSCRIPTIONS.get(subscriptionKey);if(stored)previous=await stored.json();
   if(item.action!=='command'){
    if(!previous)return {state:'NOT_OPTED_IN'};
@@ -36,7 +45,7 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
   const central=await app('/repos/metalogiclabs/mathgraph/installation');
   const dispatchToken=await mintScopedToken(app,central.id,'metalogiclabs/mathgraph',{contents:'write'},{fetcher});
   const dispatch=githubClient(dispatchToken,{repository:item.repository,fetcher});
-  try{await dispatch('/repos/metalogiclabs/mathgraph/dispatches',{method:'POST',body:{event_type:request.profile.method==='traceof-comments-v1'?'mathgraph-pr-selfserve-v1':'mathgraph-pr-pilot-v1',client_payload:signedDispatch({...request,installation_id:item.installationID,reserved_cents:reserved.reserved_cents},env.GITHUB_APP_PRIVATE_KEY)}});}finally{await dispatch('/installation/token',{method:'DELETE'});}
+  try{await dispatch('/repos/metalogiclabs/mathgraph/dispatches',{method:'POST',body:{event_type:request.profile.method===REPORT_METHOD?'mathgraph-pr-report-v1':isFiniteMethod(request.profile.method)?'mathgraph-pr-selfserve-v1':'mathgraph-pr-pilot-v1',client_payload:signedDispatch({...request,installation_id:item.installationID,reserved_cents:reserved.reserved_cents},env.GITHUB_APP_PRIVATE_KEY)}});}finally{await dispatch('/installation/token',{method:'DELETE'});}
   return {state:'DISPATCHED',repository:request.repository,number:request.number,head_sha:request.head_sha,command:request.command};
  }catch(e){if(publication?.state==='QUEUED'&&request){try{await finishCheck(request,publication,{status:'UNKNOWN',reason:'REQUEST_DISPATCH_INCOMPLETE'},api);}catch{}}throw e;}finally{await api('/installation/token',{method:'DELETE'});}
 }
