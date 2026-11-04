@@ -96,3 +96,49 @@ jobs:
             ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/output/*
           retention-days: 30
           if-no-files-found: warn
+
+  publish-first-party-app-check:
+    needs: native-original-target-replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: mathgraph-omm-owned-artin-app-publication-${{ matrix.pr }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: [239, 240]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Load no-secret qualified native receipt for this exact workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: omm-artin-native-${{ matrix.pr }}
+          path: ${{ runner.temp }}/omm-app-${{ matrix.pr }}
+      - name: Mint Check-only token from existing registered MathGraph App
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: 5308912
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-checks: write
+          permission-pull-requests: read
+      - name: Verify original Artin obligation then publish neutral, exact-head App Check
+        env:
+          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node integrations/mathgraph-check-github/omm-v1/app-owned-publish.mjs '${{ matrix.pr }}' "$RUNNER_TEMP/omm-app-${{ matrix.pr }}"
+      - name: Record registered-App readback if available
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-app-publication-${{ matrix.pr }}
+          path: ${{ runner.temp }}/omm-app-${{ matrix.pr }}/output/app-publish-receipt.json
+          if-no-files-found: warn
+          retention-days: 30
