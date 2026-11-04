@@ -37,6 +37,7 @@ export async function processPilotDelivery(item,env,{jwt,fetcher=fetch}={}){
   request=await authenticate(item,api,{pilotOperators:pilotOperatorIDs(env.PR_PILOT_OPERATOR_IDS)});
   publication=await queueCheck(request,api);if(publication.state==='DUPLICATE')return {state:'DUPLICATE',check_id:publication.check_id};
   request.queued_check_id=publication.check_id;
+  if(!request.support.supported){await finishCheck(request,publication,{status:'UNKNOWN',reason:request.support.reason},api);return {state:'UNKNOWN',reason:request.support.reason};}
   let reserved={status:'NOT_NEEDED',reserved_cents:0};
   const cents=modelReservationCents(request);if(cents>0){const stub=env.PR_PILOT_BUDGET.get(env.PR_PILOT_BUDGET.idFromName(String(item.installationID)));const response=await stub.fetch('https://internal/reserve',{method:'POST',body:JSON.stringify({key:reservationKey(request),cents,day:new Date().toISOString().slice(0,10)})});reserved=await response.json();}
   if(['BUDGET_EXHAUSTED','DUPLICATE'].includes(reserved.status)){await finishCheck(request,publication,{status:'UNKNOWN',reason:reserved.status},api);return {state:reserved.status};}
