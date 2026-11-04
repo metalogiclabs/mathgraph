@@ -17,15 +17,37 @@ export function admitPatch(p,s){
  const seen=new Set();for(const f of p.files){requireFact(implementation(f?.path)&&s.files.some(x=>x.path===f.path)&&!seen.has(f.path)&&text(f.content,40000),'PATCH_SCOPE_REFUSED');seen.add(f.path);}
  return structuredClone(p);
 }
-export function assessProbe(r,{subjectSha,testDigest,testFileDigest,requireAssertions=true}={}){
+export function assessProbe(r,{subjectSha,testDigest,testFileDigest,requireAssertions=true,requireSubjectExecution=false}={}){
  const unknown=reason=>({execution:'UNKNOWN',meaning:'UNVERIFIED',reason,permission:'ADVISORY_ONLY'});
  if(!SHA.test(subjectSha??'')||!DIGEST.test(testDigest??'')||r?.subject_sha!==subjectSha||r?.test_digest!==testDigest)return unknown('SOURCE_OR_TEST_MISMATCH');
  if(testFileDigest&&r?.test_file_sha256!==testFileDigest)return unknown('EXECUTED_TEST_BYTES_CHANGED');
  if(r.timeout!==false||![0,1].includes(r.exit_code)||!['tests','failures','errors','skipped'].every(k=>Number.isSafeInteger(r[k])&&r[k]>=0)||r.tests<1||r.errors>0||r.skipped>0||r.failures+r.errors+r.skipped>r.tests)return unknown('NATIVE_EXECUTION_INCOMPLETE');
  if(!Array.isArray(r.cases)||r.cases.length!==r.tests||new Set(r.cases.map(x=>x.id)).size!==r.tests||r.cases.some(x=>!x.id||!['passed','failed'].includes(x.status)||requireAssertions&&(!Number.isSafeInteger(x.assertions_reached)||x.assertions_reached<1)||x.status==='failed'&&x.exception!=='AssertionError'))return unknown('TEST_CASES_OR_ASSERTIONS_INCOMPLETE');
+ if(requireSubjectExecution&&r.cases.some(x=>!Number.isSafeInteger(x.subject_lines_reached)||x.subject_lines_reached<1))return unknown('REVIEWED_IMPLEMENTATION_NOT_EXECUTED');
  if(r.cases.filter(x=>x.status==='failed').length!==r.failures)return unknown('CASE_COUNTER_MISMATCH');
  if((r.failures>0)!==(r.exit_code===1))return unknown('INCONSISTENT_NATIVE_RESULT');
  return {execution:r.failures?'CANDIDATE_FAILURE_REPRODUCED':'PROBE_PASSED',meaning:'UNVERIFIED',permission:'ADVISORY_ONLY'};
+}
+/** Compare the exact same collected tests across base and head before attributing
+ * a reproduced assertion failure to the PR. A head-only difference is still a
+ * candidate observation, not a specification or semantic warrant. */
+export function assessProbeDelta({base,head}={}, {baseSha,headSha,testDigest,testFileDigest,requireSubjectExecution=false}={}){
+ const make=(status,reason)=>({status,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',reason});
+ if(!SHA.test(baseSha??'')||!SHA.test(headSha??'')||baseSha===headSha)
+  return make('UNKNOWN','REVISION_IDENTITY_UNQUALIFIED');
+ const b=assessProbe(base,{subjectSha:baseSha,testDigest,testFileDigest,requireSubjectExecution});
+ const h=assessProbe(head,{subjectSha:headSha,testDigest,testFileDigest,requireSubjectExecution});
+ if(b.execution==='UNKNOWN'||h.execution==='UNKNOWN')
+  return make('UNKNOWN','INCOMPLETE_BASE_OR_HEAD_PROBE');
+ const ids=r=>JSON.stringify(r.cases.map(x=>x.id).sort());
+ if(ids(base)!==ids(head))return make('UNKNOWN','COLLECTED_CASE_SET_CHANGED');
+ const fail='CANDIDATE_FAILURE_REPRODUCED';
+ if(h.execution===fail&&b.execution==='PROBE_PASSED')
+  return make('HEAD_ONLY_FAILURE','BASE_PASSED_HEAD_ASSERTION_FAILED');
+ if(h.execution===fail&&b.execution===fail)
+  return make('SHARED_FAILURE','FAILURE_REPRODUCED_ON_BOTH_REVISIONS');
+ if(b.execution===fail)return make('BASE_ONLY_FAILURE','BASE_FAILED_HEAD_PASSED');
+ return make('BOTH_PASSED','NO_COUNTEREXAMPLE_IN_MATCHED_PROBES');
 }
 export function assessRepair({original,fixed,protectedBefore,protectedAfter}={},context={}){
  const unknown=reason=>({status:'UNKNOWN',meaning:'UNVERIFIED',reason,permission:'ADVISORY_ONLY'});

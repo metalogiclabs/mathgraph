@@ -44,3 +44,27 @@ class FixtureMountTests(unittest.TestCase):
         self.assertIn('/tmp/data:/repo/data:rw',cmd)
         self.assertIn('/tmp/repo:/repo:ro',cmd)
         self.assertIn('/tmp/audit:/audit:ro',cmd)
+
+class SubjectExecutionTests(unittest.TestCase):
+    def test_native_receipt_distinguishes_subject_execution_from_trivial_assertions(self):
+        import json, os, subprocess, sys, tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory(prefix='mg-native-reach-') as d:
+            root=Path(d);repo=root/'repo';audit=root/'audit';repo.mkdir();audit.mkdir()
+            (repo/'target.py').write_text('def increment(x):\n    return x + 1\n')
+            (audit/'test_reach.py').write_text(
+                'from target import increment\n'
+                'def test_calls_source():\n    assert increment(2) == 3\n'
+                'def test_asserts_true():\n    assert 1 + 1 == 2\n')
+            receipt=root/'cases.json'
+            env={**os.environ,'PYTHONPATH':str(Path(__file__).parent)+os.pathsep+str(repo),
+                'MG_CASES_FILE':str(receipt),'MG_AUDIT_DIR':str(audit),
+                'MG_SUBJECT_FILES':json.dumps([str(repo/'target.py')])}
+            p=subprocess.run([sys.executable,'-m','pytest','-q','-p','mg_native_plugin',
+                              '-p','no:cacheprovider',str(audit/'test_reach.py')],
+                             capture_output=True,text=True,cwd=root,env=env,timeout=30)
+            self.assertEqual(p.returncode,0,p.stdout+p.stderr)
+            results=json.loads(receipt.read_text())
+            by_name={x['id'].split('::')[-1]:x for x in results}
+            self.assertGreater(by_name['test_calls_source']['subject_lines_reached'],0)
+            self.assertEqual(by_name['test_asserts_true']['subject_lines_reached'],0)

@@ -10,8 +10,8 @@ def junit_result(text):
     if any(any(k not in row.attrib for k in keys) for row in rows):raise ValueError('MISSING_JUNIT_COUNTERS')
     return {k:sum(int(row.attrib[k]) for row in rows) for k in keys}
 
-def sandbox_command(image,name,repo,audit,results,command,data=None):
-    return ['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','HOME=/tmp','-e','PYTHONPATH=/runner:/repo','-e','PYTHONDONTWRITEBYTECODE=1','-e','MPLCONFIGDIR=/tmp/matplotlib','-v',repo+':/repo:ro','-v',audit+':/audit:ro','-v',results+':/results','-v',str(Path(__file__).parent.resolve())+':/runner:ro','-w','/repo']+(['-v',data+':/repo/data:rw'] if data else [])+[image]+command
+def sandbox_command(image,name,repo,audit,results,command,data=None,subject_files=()):
+    return ['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','HOME=/tmp','-e','PYTHONPATH=/runner:/repo','-e','PYTHONDONTWRITEBYTECODE=1','-e','MPLCONFIGDIR=/tmp/matplotlib','-e','MG_SUBJECT_FILES='+json.dumps(list(subject_files)),'-v',repo+':/repo:ro','-v',audit+':/audit:ro','-v',results+':/results','-v',str(Path(__file__).parent.resolve())+':/runner:ro','-w','/repo']+(['-v',data+':/repo/data:rw'] if data else [])+[image]+command
 
 def sha(data):return hashlib.sha256(data).hexdigest()
 def canonical(x):return json.dumps(x,separators=(',',':'),ensure_ascii=False)
@@ -81,7 +81,7 @@ def main():
             data=str(data_path)
         command=['env','MG_CASES_FILE=/results/'+label+'-cases.json','python','-m','pytest','-q','-p','mg_native_plugin','-p','no:cacheprovider',path,'--junitxml=/results/'+xml.name]
         timed_out=False
-        try:p=execute(sandbox_command(image,name,str(repo),str(audit),str(results),command,data=data),timeout)
+        try:p=execute(sandbox_command(image,name,str(repo),str(audit),str(results),command,data=data,subject_files=['/repo/'+f['path'] for f in snapshot['files']]),timeout)
         except subprocess.TimeoutExpired as e:
             timed_out=True;p=subprocess.CompletedProcess([],124,(e.stdout or b'').decode() if isinstance(e.stdout,bytes) else (e.stdout or ''),(e.stderr or b'').decode() if isinstance(e.stderr,bytes) else (e.stderr or ''))
         finally:execute(['docker','rm','-f',name],20)
