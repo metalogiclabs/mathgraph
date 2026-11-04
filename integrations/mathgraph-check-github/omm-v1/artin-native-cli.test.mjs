@@ -53,6 +53,10 @@ test('bounded weakened Artin trial writes a report, contracts and immutable evid
   const manifest=JSON.parse(await readFile(join(directory,'output','manifest.json')));
   assert.equal(manifest.source_head,request(239,artinStrongSource).head_sha);
   assert.equal(manifest.native_receipt_sha256,sha(JSON.stringify(receipt)));
+  const preview=JSON.parse(await readFile(join(directory,'output','app-check-preview.json')));
+  assert.equal(preview.conclusion,'neutral');
+  assert.match(preview.output.summary,/NOT_ESTABLISHED_IN_THIS_REPLAY|not established in this replay/i);
+  assert.equal(manifest.artifact_sha256['app-check-preview.json'],sha(JSON.stringify(preview)));
  }finally{await rm(directory,{recursive:true,force:true});}
 });
 
@@ -65,6 +69,9 @@ test('frozen repaired Artin trial writes a positive consumer, not an intent warr
   assert.equal(result.intent_fidelity,'UNKNOWN');
   const report=await readFile(join(directory,'output','report.md'),'utf8');
   assert.match(report,/Human mathematical intent \| UNKNOWN/);
+  const preview=JSON.parse(await readFile(join(directory,'output','app-check-preview.json')));
+  assert.equal(preview.conclusion,'neutral');
+  assert.match(preview.output.summary,/Human mathematical intent \| UNKNOWN/);
  }finally{await rm(directory,{recursive:true,force:true});}
 });
 

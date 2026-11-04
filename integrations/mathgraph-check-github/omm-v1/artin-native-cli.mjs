@@ -9,6 +9,7 @@ import {pathToFileURL} from 'node:url';
 import {runControlledArtinCase} from './artin-native.mjs';
 import {assessOmmClaim} from './claim-admission.mjs';
 import {formatOmmClaimReport} from './report.mjs';
+import {buildOmmAppCheckPreview} from './app-check.mjs';
 
 const exec=promisify(execFile);
 const sha=s=>createHash('sha256').update(s).digest('hex');
@@ -37,12 +38,15 @@ export async function qualifyArtinDirectory({directory,mathlibGit,runUrl,run}={}
  const assessment=assessOmmClaim({request,contractBytes,expectedContractSha256:sha(contractBytes),
   receiptBytes,expectedReceiptSha256:sha(receiptBytes)});
  const report=formatOmmClaimReport(assessment,request,runUrl);
+ const preview=buildOmmAppCheckPreview({request,contractBytes,expectedContractSha256:sha(contractBytes),
+  receiptBytes,expectedReceiptSha256:sha(receiptBytes),expectedHeadSha:request.head_sha,runUrl});
+ if(JSON.stringify(preview.assessment)!==JSON.stringify(assessment))throw Error('APP_PREVIEW_ASSESSMENT_DIVERGED');
  const expected=request.number===239?'NOT_ESTABLISHED_IN_THIS_REPLAY':'CONSUMER_ACCEPTED';
  const dirOut=join(dir,'output');await mkdir(dirOut,{recursive:false});
  const files={
   'claim-contract.json':contractBytes,'native-receipt.json':receiptBytes,
   'assessment.json':JSON.stringify(assessment),'native-trace.json':JSON.stringify(raw),
-  'report.md':report
+  'report.md':report,'app-check-preview.json':JSON.stringify(preview.payload)
  };
  await Promise.all(Object.entries(files).map(([name,contents])=>writeFile(join(dirOut,name),contents,{flag:'wx'})));
  const manifest={schema:'mathgraph.omm.artin-qualification-manifest.v1',
