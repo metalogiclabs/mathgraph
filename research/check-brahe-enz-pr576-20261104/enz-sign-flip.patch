@@ -1,0 +1,11 @@
+diff --git a/src/relative_motion/ecef_enz.rs b/src/relative_motion/ecef_enz.rs
+--- a/src/relative_motion/ecef_enz.rs
++++ b/src/relative_motion/ecef_enz.rs
+@@ -23,6 +23,6 @@ fn enz_axes(x_ecef: SVector6) -> (SMatrix3, Vector3<f64>) {
+     let (sez_rotation, omega_sez) = sez_axes(x_ecef);
+     let rotation = SMatrix3::from_rows(&[
+         sez_rotation.row(1).into_owned(),
+-        (-sez_rotation.row(0)).into_owned(),
++        sez_rotation.row(0).into_owned(),
+         sez_rotation.row(2).into_owned(),
+     ]);

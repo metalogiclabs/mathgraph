@@ -94,3 +94,12 @@ test("exact same head can be independently checked without invented source chang
   assert.equal(r.status,"OBSERVED");assert.equal(r.changed_head,false);
  });
 });
+test("real GitHub matrix check names containing commas are valid exact names",async()=>{
+ const name="test-rust / test-rust (ubuntu-latest, stable)";
+ await withGitHubMock([run(name)],async()=>{
+  const r=await requalifyFreshGitHubCI({...args,requiredChecks:[name]});
+  assert.equal(r.status,"OBSERVED");
+  assert.equal(r.checks[0].name,name);
+  assert.equal(r.checks[0].check_run_id,13);
+ });
+});

@@ -1,0 +1,122 @@
+name: Check G1 and Brahe ENZ exact-source qualification
+on:
+  push:
+    branches:
+      - research/check-brahe-enz-readonly-20261104
+    paths:
+      - 'integrations/mathgraph-check-github/fresh-ci-requalification-v1.mjs'
+      - 'integrations/mathgraph-check-github/fresh-ci-requalification-v1.test.mjs'
+      - 'research/check-brahe-enz-pr576-20261104/**'
+      - '.github/workflows/check-brahe-enz-qualification-20261104.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+  pull-requests: read
+jobs:
+  authenticated-check-readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify the full Check native suite and experiment controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          find integrations/mathgraph-check-github -name '*.test.mjs' -type f -print0 |
+            xargs -0 node --test --test-reporter=tap | tee check-native-suite.log
+          grep -q '^# fail 0$' check-native-suite.log
+          node --test --test-reporter=tap \
+            research/check-brahe-enz-pr576-20261104/live-readback.test.mjs |
+            tee check-live-readback-tests.log
+          grep -q '^# fail 0$' check-live-readback-tests.log
+      - name: Read real GitHub check runs at both exact PR heads
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MATHGRAPH_READBACK_OUT: mathgraph-check-brahe-live.json
+        run: node research/check-brahe-enz-pr576-20261104/live-readback.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-g1-brahe-live-readback
+          path: |
+            check-native-suite.log
+            check-live-readback-tests.log
+            mathgraph-check-brahe-live.json
+          if-no-files-found: ignore
+          retention-days: 60
+
+  brahe-native-claim-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      BRAHE_NETWORK_MODE: offline
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mathgraph-src
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: duncaneddy/brahe
+          ref: ebe0997414f677de2c3b188439ad3e3107ec9985
+          path: brahe-src
+          persist-credentials: false
+      - name: Pin and inject a standalone external fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C brahe-src rev-parse HEAD)" = "ebe0997414f677de2c3b188439ad3e3107ec9985"
+          test -z "$(git -C brahe-src status --porcelain)"
+          cp mathgraph-src/research/check-brahe-enz-pr576-20261104/mathgraph_enz_pr576.rs \
+            brahe-src/tests/mathgraph_enz_pr576.rs
+          git -C brahe-src rev-parse HEAD | tee brahe-actual-sha.txt
+      - uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        with:
+          toolchain: '1.95.0'
+          cache: true
+          cache-workspaces: brahe-src
+      - uses: taiki-e/install-action@just
+      - name: Use Brahe's documented native test recipe
+        working-directory: brahe-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          just --list
+          just test-rust-fast --test mathgraph_enz_pr576 2>&1 |
+            tee ../brahe-native-positive.log
+          grep -q 'test result: ok. 3 passed; 0 failed' ../brahe-native-positive.log
+      - name: Controlled wrong-sign mutation must be rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C brahe-src apply --check \
+            ../mathgraph-src/research/check-brahe-enz-pr576-20261104/enz-sign-flip.patch
+          git -C brahe-src apply \
+            ../mathgraph-src/research/check-brahe-enz-pr576-20261104/enz-sign-flip.patch
+          if (cd brahe-src && just test-rust-fast --test mathgraph_enz_pr576) \
+            >brahe-native-mutant.log 2>&1; then
+            echo 'MUTATION_ESCAPED_FIXTURE' >&2
+            exit 1
+          fi
+          grep -q 'test test_enz_.*FAILED' brahe-native-mutant.log
+          git -C brahe-src apply -R \
+            ../mathgraph-src/research/check-brahe-enz-pr576-20261104/enz-sign-flip.patch
+          git -C brahe-src diff --exit-code -- src/relative_motion/ecef_enz.rs
+          echo 'MUTATION_REJECTED_AND_SOURCE_RESTORED'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brahe-576-native-oracle-and-mutant
+          path: |
+            brahe-actual-sha.txt
+            brahe-native-positive.log
+            brahe-native-mutant.log
+          if-no-files-found: ignore
+          retention-days: 60

@@ -2,7 +2,8 @@
 // MONITOR transition. No caller-supplied report/boolean is a trust anchor.
 // This result establishes CI observations only, never semantic truth or effects.
 import {githubSnapshot} from "./authenticated-cycle-v1.mjs";
-const CLAIM=/^[A-Za-z0-9][A-Za-z0-9 ._:/()-]{0,127}$/;
+// GitHub matrix check names can contain commas, e.g. "(ubuntu-latest, stable)".
+const CLAIM=/^[A-Za-z0-9][A-Za-z0-9 ._:/(),-]{0,127}$/;
 const OWNER=/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const SHA=/^[a-f0-9]{40}$/;
 const reply=(reason,subject=null,checks=[])=>({
