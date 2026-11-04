@@ -10,8 +10,8 @@ def junit_result(text):
     if any(any(k not in row.attrib for k in keys) for row in rows):raise ValueError('MISSING_JUNIT_COUNTERS')
     return {k:sum(int(row.attrib[k]) for row in rows) for k in keys}
 
-def sandbox_command(image,name,repo,audit,results,command,data=None):
-    return ['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','HOME=/tmp','-e','PYTHONPATH=/runner:/repo','-e','PYTHONDONTWRITEBYTECODE=1','-e','MPLCONFIGDIR=/tmp/matplotlib','-v',repo+':/repo:ro','-v',audit+':/audit:ro','-v',results+':/results','-v',str(Path(__file__).parent.resolve())+':/runner:ro','-w','/repo']+(['-v',data+':/repo/data:rw'] if data else [])+[image]+command
+def sandbox_command(image,name,repo,audit,results,command,data=None,subject_files=()):
+    return ['docker','run','--rm','--name',name,'--network','none','--read-only','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit','128','--memory','2g','--cpus','2','--user','1000:1000','--tmpfs','/tmp:rw,nosuid,size=512m','-e','HOME=/tmp','-e','PYTHONPATH=/runner:/repo','-e','PYTHONDONTWRITEBYTECODE=1','-e','MPLCONFIGDIR=/tmp/matplotlib','-e','MG_SUBJECT_FILES='+json.dumps(list(subject_files)),'-v',repo+':/repo:ro','-v',audit+':/audit:ro','-v',results+':/results','-v',str(Path(__file__).parent.resolve())+':/runner:ro','-w','/repo']+(['-v',data+':/repo/data:rw'] if data else [])+[image]+command
 
 def sha(data):return hashlib.sha256(data).hexdigest()
 def canonical(x):return json.dumps(x,separators=(',',':'),ensure_ascii=False)
@@ -81,7 +81,7 @@ def main():
             data=str(data_path)
         command=['env','MG_CASES_FILE=/results/'+label+'-cases.json','python','-m','pytest','-q','-p','mg_native_plugin','-p','no:cacheprovider',path,'--junitxml=/results/'+xml.name]
         timed_out=False
-        try:p=execute(sandbox_command(image,name,str(repo),str(audit),str(results),command,data=data),timeout)
+        try:p=execute(sandbox_command(image,name,str(repo),str(audit),str(results),command,data=data,subject_files=['/repo/'+f['path'] for f in snapshot['files']]),timeout)
         except subprocess.TimeoutExpired as e:
             timed_out=True;p=subprocess.CompletedProcess([],124,(e.stdout or b'').decode() if isinstance(e.stdout,bytes) else (e.stdout or ''),(e.stderr or b'').decode() if isinstance(e.stderr,bytes) else (e.stderr or ''))
         finally:execute(['docker','rm','-f',name],20)
@@ -128,13 +128,41 @@ def validate_probe(text):
     tree=ast.parse(text)
     if not any(isinstance(x,ast.Assert) for x in ast.walk(tree)):raise ValueError('NO_ASSERTION_PROBE')
     bad={'os','sys','subprocess','socket','pathlib','ctypes','inspect','importlib','shutil','pickle','marshal','builtins'}
+    imported=set()
     for node in ast.walk(tree):
         if isinstance(node,(ast.Import,ast.ImportFrom)):
             names=[x.name.split('.')[0] for x in node.names] if isinstance(node,ast.Import) else [(node.module or '').split('.')[0]]
             if any(x in bad for x in names):raise ValueError('UNSUPPORTED_PROBE_IMPORT')
+            for alias in node.names:
+                imported.add(alias.asname or (alias.name.split('.')[0] if isinstance(node,ast.Import) else alias.name))
         if isinstance(node,ast.Call):
             name=node.func.id if isinstance(node.func,ast.Name) else node.func.attr if isinstance(node.func,ast.Attribute) else ''
             if name in {'exec','eval','compile','__import__','open','exit','quit','skip','xfail','getattr','setattr','delattr','getenv','system','popen'}:raise ValueError('UNSUPPORTED_PROBE_CALL')
+    # A model must not make a failing source contract pass by rewriting the
+    # imported specimen before the assertion. Follow simple local aliases;
+    # this syntactic screen is deliberately not claimed as general purity.
+    aliases=set(imported)
+    assignments=[n for n in ast.walk(tree) if isinstance(n,ast.Assign)]
+    while True:
+        old=len(aliases)
+        for n in assignments:
+            if isinstance(n.value,ast.Name) and n.value.id in aliases:
+                aliases.update(t.id for target in n.targets for t in ast.walk(target) if isinstance(t,ast.Name))
+        if len(aliases)==old:break
+    def root_name(expr):
+        while isinstance(expr,(ast.Subscript,ast.Attribute)):expr=expr.value
+        return expr.id if isinstance(expr,ast.Name) else None
+    mutators={'append','extend','insert','remove','pop','popitem','clear','update','setdefault','sort','reverse','add','discard','difference_update','intersection_update','symmetric_difference_update','__setitem__','__delitem__'}
+    for node in ast.walk(tree):
+        if isinstance(node,(ast.Assign,ast.AnnAssign,ast.AugAssign,ast.Delete)):
+            targets=node.targets if isinstance(node,(ast.Assign,ast.Delete)) else [node.target]
+            if any(isinstance(t,(ast.Subscript,ast.Attribute)) and root_name(t) in aliases for t in targets):
+                raise ValueError('IMPORTED_SPECIMEN_MUTATION_REFUSED')
+            if isinstance(node,ast.AugAssign) and root_name(node.target) in aliases:
+                raise ValueError('IMPORTED_SPECIMEN_MUTATION_REFUSED')
+        if isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute):
+            if node.func.attr in mutators and root_name(node.func.value) in aliases:
+                raise ValueError('IMPORTED_SPECIMEN_MUTATION_REFUSED')
     return True
 
 def initialize_metadata(repo):

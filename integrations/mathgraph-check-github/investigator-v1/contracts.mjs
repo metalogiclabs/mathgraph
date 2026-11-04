@@ -17,15 +17,72 @@ export function admitPatch(p,s){
  const seen=new Set();for(const f of p.files){requireFact(implementation(f?.path)&&s.files.some(x=>x.path===f.path)&&!seen.has(f.path)&&text(f.content,40000),'PATCH_SCOPE_REFUSED');seen.add(f.path);}
  return structuredClone(p);
 }
-export function assessProbe(r,{subjectSha,testDigest,testFileDigest,requireAssertions=true}={}){
+export function assessProbe(r,{subjectSha,testDigest,testFileDigest,requireAssertions=true,requireReviewedSourceUse=false}={}){
  const unknown=reason=>({execution:'UNKNOWN',meaning:'UNVERIFIED',reason,permission:'ADVISORY_ONLY'});
  if(!SHA.test(subjectSha??'')||!DIGEST.test(testDigest??'')||r?.subject_sha!==subjectSha||r?.test_digest!==testDigest)return unknown('SOURCE_OR_TEST_MISMATCH');
  if(testFileDigest&&r?.test_file_sha256!==testFileDigest)return unknown('EXECUTED_TEST_BYTES_CHANGED');
  if(r.timeout!==false||![0,1].includes(r.exit_code)||!['tests','failures','errors','skipped'].every(k=>Number.isSafeInteger(r[k])&&r[k]>=0)||r.tests<1||r.errors>0||r.skipped>0||r.failures+r.errors+r.skipped>r.tests)return unknown('NATIVE_EXECUTION_INCOMPLETE');
- if(!Array.isArray(r.cases)||r.cases.length!==r.tests||new Set(r.cases.map(x=>x.id)).size!==r.tests||r.cases.some(x=>!x.id||!['passed','failed'].includes(x.status)||requireAssertions&&(!Number.isSafeInteger(x.assertions_reached)||x.assertions_reached<1)||x.status==='failed'&&x.exception!=='AssertionError'))return unknown('TEST_CASES_OR_ASSERTIONS_INCOMPLETE');
+ if(!Array.isArray(r.cases)||r.cases.length!==r.tests||new Set(r.cases.map(x=>x.id)).size!==r.tests||r.cases.some(x=>!x.id||!['passed','failed'].includes(x.status)||requireAssertions&&(!Number.isSafeInteger(x.assertions_reached)||x.assertions_reached<1)||x.status==='failed'&&x.exception!=='AssertionError'&&!(x.exception_in_assertion===true&&['KeyError','IndexError'].includes(x.exception))))return unknown('TEST_CASES_OR_ASSERTIONS_INCOMPLETE');
+ // A reviewed module may export constant data whose initialization occurred
+ // during pytest collection. That case requires a reached assertion directly
+ // using the independently bound import, not executable function coverage.
+ if(requireReviewedSourceUse&&r.cases.some(x=>
+    !(Number.isSafeInteger(x.subject_lines_reached)&&x.subject_lines_reached>=1)
+    && !(Number.isSafeInteger(x.subject_import_assertions_reached)&&x.subject_import_assertions_reached>=1)))
+  return unknown('REVIEWED_SOURCE_NOT_EXERCISED');
  if(r.cases.filter(x=>x.status==='failed').length!==r.failures)return unknown('CASE_COUNTER_MISMATCH');
  if((r.failures>0)!==(r.exit_code===1))return unknown('INCONSISTENT_NATIVE_RESULT');
  return {execution:r.failures?'CANDIDATE_FAILURE_REPRODUCED':'PROBE_PASSED',meaning:'UNVERIFIED',permission:'ADVISORY_ONLY'};
+}
+/** Compare the exact same collected tests across base and head before attributing
+ * a reproduced assertion failure to the PR. A head-only difference is still a
+ * candidate observation, not a specification or semantic warrant. */
+export function assessProbeDelta({base,head}={}, {baseSha,headSha,testDigest,testFileDigest,requireReviewedSourceUse=false}={}){
+ const make=(status,reason)=>({status,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',reason});
+ if(!SHA.test(baseSha??'')||!SHA.test(headSha??'')||baseSha===headSha)
+  return make('UNKNOWN','REVISION_IDENTITY_UNQUALIFIED');
+ const b=assessProbe(base,{subjectSha:baseSha,testDigest,testFileDigest,requireReviewedSourceUse});
+ const h=assessProbe(head,{subjectSha:headSha,testDigest,testFileDigest,requireReviewedSourceUse});
+ if(b.execution==='UNKNOWN'||h.execution==='UNKNOWN')
+  return make('UNKNOWN','INCOMPLETE_BASE_OR_HEAD_PROBE');
+ const ids=r=>JSON.stringify(r.cases.map(x=>x.id).sort());
+ if(ids(base)!==ids(head))return make('UNKNOWN','COLLECTED_CASE_SET_CHANGED');
+ const fail='CANDIDATE_FAILURE_REPRODUCED';
+ if(h.execution===fail&&b.execution==='PROBE_PASSED')
+  return make('HEAD_ONLY_FAILURE','BASE_PASSED_HEAD_ASSERTION_FAILED');
+ if(h.execution===fail&&b.execution===fail)
+  return make('SHARED_FAILURE','FAILURE_REPRODUCED_ON_BOTH_REVISIONS');
+ if(b.execution===fail)return make('BASE_ONLY_FAILURE','BASE_FAILED_HEAD_PASSED');
+ return make('BOTH_PASSED','NO_COUNTEREXAMPLE_IN_MATCHED_PROBES');
+}
+/** A descriptive before/after census of the repository's own protected tests.
+ * Baseline failures remain unqualified; equality cannot turn red CI green. */
+export function compareProtectedSuites({base,head}={}, {baseSha,headSha}={}){
+ const make=(status,reason,counts={})=>({status,reason,meaning:'UNVERIFIED',permission:'ADVISORY_ONLY',...counts});
+ const valid=(r,sha)=>SHA.test(sha??'')&&r?.subject_sha===sha&&DIGEST.test(r?.test_digest??'')
+  &&r.timeout===false&&[0,1].includes(r.exit_code)
+  &&['tests','failures','errors','skipped'].every(k=>Number.isSafeInteger(r[k])&&r[k]>=0)
+  &&r.tests>0&&r.errors===0&&r.skipped===0&&r.failures<=r.tests
+  &&(r.exit_code===1)===(r.failures>0)
+  &&Array.isArray(r.cases)&&r.cases.length===r.tests
+  &&new Set(r.cases.map(c=>c.id)).size===r.tests
+  &&r.cases.every(c=>typeof c.id==='string'&&c.id.length>0
+   &&(c.status==='passed'&&c.exception===null||c.status==='failed'&&typeof c.exception==='string'&&c.exception.length>0))
+  &&r.cases.filter(c=>c.status==='failed').length===r.failures;
+ if(!SHA.test(baseSha??'')||baseSha===headSha||!valid(base,baseSha)||!valid(head,headSha))
+  return make('UNKNOWN','UNQUALIFIED_PROTECTED_NATIVE_RECEIPT');
+ const before=new Map(base.cases.map(c=>[c.id,c])),after=new Map(head.cases.map(c=>[c.id,c]));
+ const removed=[...before.keys()].filter(id=>!after.has(id));
+ if(removed.length)return make('UNKNOWN','PROTECTED_CASES_REMOVED',{removed_cases:removed.length});
+ const changed=[...before].filter(([id,c])=>c.status==='failed'&&after.get(id).status==='failed'&&after.get(id).exception!==c.exception);
+ if(changed.length)return make('UNKNOWN','PROTECTED_FAILURE_SIGNATURE_CHANGED',{changed_signatures:changed.length});
+ const newlyFailed=[...after].filter(([id,c])=>c.status==='failed'&&before.get(id)?.status!=='failed');
+ const counts={baseline_failures:base.failures,head_failures:head.failures,
+  shared_cases:before.size,head_added_passes:[...after].filter(([id,c])=>!before.has(id)&&c.status==='passed').length,
+  recovered_cases:[...before].filter(([id,c])=>c.status==='failed'&&after.get(id).status==='passed').length,
+  new_failures:newlyFailed.length};
+ if(newlyFailed.length)return make('HEAD_NEW_FAILURE','NEW_FAILURE_IN_PROTECTED_NATIVE_CASES',counts);
+ return make('MATCHED_NO_NEW_FAILURES',base.failures?'BASELINE_FAILURES_REMAIN_UNQUALIFIED':'PAIRED_PROTECTED_CASES_PASS',counts);
 }
 export function assessRepair({original,fixed,protectedBefore,protectedAfter}={},context={}){
  const unknown=reason=>({status:'UNKNOWN',meaning:'UNVERIFIED',reason,permission:'ADVISORY_ONLY'});
