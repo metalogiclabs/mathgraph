@@ -59,6 +59,6 @@ export async function queueCheck(request,api){
 }
 export async function priorCheckRun(request,api){
  if(request.command!=='fix'||!request.support.supported)return null;
- const cs=await listChecks(request,api),original=cs.find(c=>c.app?.id===APP_ID&&c.external_id?.startsWith(logicalIdentity({...request,command:'check'})+':')&&c.status==='completed'&&c.conclusion==='neutral');
+ const cs=await listChecks(request,api),original=cs.filter(c=>c.app?.id===APP_ID&&c.external_id?.startsWith(logicalIdentity({...request,command:'check'})+':')&&c.status==='completed'&&c.conclusion==='neutral'&&!RETRYABLE_TITLES.has(c.output?.title)).sort((a,b)=>b.id-a.id)[0];
  const match=original?.details_url?.match(/^https:\/\/github.com\/metalogiclabs\/mathgraph\/actions\/runs\/([1-9][0-9]*)$/);ensure(match,'RUN_CHECK_BEFORE_FIX');return Number(match[1]);
 }
