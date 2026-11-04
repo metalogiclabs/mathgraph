@@ -29,6 +29,8 @@ For an *independent* stale-source control, `check-omm-intake-lifecycle.yml` oper
 
 Untrusted Lean source must not be invoked by the production Worker or a credentialed job: Lean elaboration executes macros. Before introducing community intake, qualify a separate offline, unprivileged native sandbox and an authenticated native receipt-publisher boundary, with no GitHub App/model credentials in the sandbox.
 
+The separate experimental `check-omm-native-sandbox-smoke.yml` exercises **two fixed, first-party Lean fixtures only** in a distinct Docker image built from the existing Lean 4.28.0 Dockerfile with verified Lean distribution bytes. The native process receives a single read-only source file, `--network none`, read-only root filesystem, a small no-execute tmpfs, non-root UID 65534, no Linux capabilities, no-new-privileges, and CPU/memory/PID/time/output limits. A separate container probe tests read-only mount/root, non-root UID and absent default network route. Positive compilation and negative rejection are kept distinct; failure or resource exhaustion remains UNKNOWN. The smoke receipt carries first-party source digests, runtime image identity in the Action artifact, observed constraints and explicit denial of community execution. Passing this smoke **does not** qualify arbitrary adversarial Lean source or a secure multi-tenant execution service; the base container image is not yet digest-pinned, and the trust boundary needs independent adversarial and deployment review.
+
 No existing L4YAML checking method, live runtime, `/pilot` page, examples, installation policy, price cap or model route is modified by this change. No automatic OMM repair is enabled. To test locally:
 
 ```sh
