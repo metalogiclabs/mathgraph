@@ -5,7 +5,7 @@ import {profileFor,commandOf} from './policy.mjs';
 const ensure=(b,c)=>{if(!b)throw Error(c);};
 export function canonical(value){if(value===null||typeof value!=='object')return JSON.stringify(value);if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';}
 export function signedDispatch(request,key,now=Date.now()){
- const value={...request,issued_at:now};return {request:value,signature:sign('RSA-SHA256',Buffer.from(canonical(value)),key).toString('base64')};
+ const value=JSON.parse(JSON.stringify({...request,issued_at:now}));return {request:value,signature:sign('RSA-SHA256',Buffer.from(canonical(value)),key).toString('base64')};
 }
 export function verifyDispatch(payload,key,now=Date.now()){
  ensure(payload&&typeof payload.signature==='string'&&payload.signature.length<1000,'DISPATCH_UNSIGNED');
