@@ -1,0 +1,317 @@
+name: MathGraph Check self-serve generator pilot
+on:
+  repository_dispatch:
+    types: [mathgraph-pr-selfserve-v1]
+env:
+  MATHGRAPH_CONTROLLER_SHA: 28658f4232f6a0f0e5d86244edf5bf97936570f4
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: pr-pilot-${{ github.event.client_payload.request.repository || 'qualification' }}-${{ github.event.client_payload.request.number || '2' }}
+  cancel-in-progress: false
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+      - run: python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+      - name: Bundle trusted webhook integration without deploying
+        run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/pr-pilot-worker
+  intake:
+    needs: contracts
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.intake.outputs.ready }}
+      command: ${{ steps.intake.outputs.command }}
+      profile: ${{ steps.intake.outputs.profile }}
+      prior_run: ${{ steps.intake.outputs.prior_run }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Authorize actual request and acquire source identities
+        id: intake
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MODE: ${{ github.event_name == 'push' && 'qualify-intake' || 'intake' }}
+          CONTRACTS_OK: ${{ needs.contracts.result == 'success' }}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs "$MODE" pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-intake, path: pr-investigation/, retention-days: 30}
+  prepare:
+    needs: intake
+    if: needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT' && needs.intake.outputs.profile != 'OWNED_FORK_CLI_PARITY'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-intake
+          path: pr-investigation
+      - name: Download original Check evidence for explicit fix
+        if: needs.intake.outputs.prior_run != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-assessment
+          path: prior-investigation
+          repository: metalogiclabs/mathgraph
+          run-id: ${{ needs.intake.outputs.prior_run }}
+          github-token: ${{ github.token }}
+      - name: Reuse frozen probes or generate a new check plan
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          COMMAND: ${{ needs.intake.outputs.command }}
+          PRIOR_RUN: ${{ needs.intake.outputs.prior_run }}
+        run: |
+          if [ -n "$PRIOR_RUN" ]; then
+            node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs reuse pr-investigation prior-investigation
+          else
+            node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare pr-investigation
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-plan, path: pr-investigation/, retention-days: 30}
+  native:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-plan
+          path: pr-investigation
+      - name: Install reviewed Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Replay frozen probes on actual base and head without secrets
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-native, path: pr-investigation/, retention-days: 30}
+  propose:
+    needs: [native, intake]
+    if: needs.intake.outputs.command == 'fix'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-native
+          path: pr-investigation
+      - name: Propose only when an explicit fix has a reproduced failure
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-patch, path: pr-investigation/, retention-days: 30}
+  verify:
+    needs: propose
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-patch
+          path: pr-investigation
+      - name: Install reviewed Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Verify candidate and withdrawal without credentials
+        run: python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-verified, path: pr-investigation/, retention-days: 30}
+  revise:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    outputs:
+      revision: ${{ steps.feedback.outputs.revision }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-verified
+          path: pr-investigation
+      - name: Admit at most one compiler-feedback revision
+        id: feedback
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs revision pr-investigation
+      - name: Revise against identical source and frozen probes
+        if: steps.feedback.outputs.revision == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-revision, path: pr-investigation/, retention-days: 30}
+  verify-revision:
+    needs: revise
+    if: needs.revise.outputs.revision == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-revision
+          path: pr-investigation
+      - name: Install reviewed Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Replay bounded compiler-feedback revision
+        run: python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-final-native, path: pr-investigation/, retention-days: 30}
+  assess:
+    needs: [intake, prepare, native, propose, verify, revise, verify-revision]
+    if: always() && needs.intake.outputs.ready == 'true' && needs.intake.outputs.profile != 'OWNED_FORK_REPOSITORY_CONTRACT' && needs.intake.outputs.profile != 'OWNED_FORK_CLI_PARITY'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-intake
+          path: pr-investigation
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          name: ${{ needs.intake.outputs.command == 'check' && 'pr-pilot-native' || needs.revise.outputs.revision == 'true' && 'pr-pilot-final-native' || 'pr-pilot-revision' }}
+          path: pr-investigation
+      - name: Mechanical admission; missing execution remains UNKNOWN
+        run: |
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}
+  repository-contract-native:
+    needs: intake
+    if: needs.intake.outputs.ready == 'true' && (needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT' || needs.intake.outputs.profile == 'OWNED_FORK_CLI_PARITY')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-intake, path: pr-investigation}
+      - name: Install reviewed Lean toolchain
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: Fixed contract base/head execution without model or App credentials
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs contract-run pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: pr-pilot-contract-native
+          path: |
+            pr-investigation/*.json
+            pr-investigation/contract-native/*.json
+            pr-investigation/contract-native/logs/
+            pr-investigation/cli-native/*.json
+            pr-investigation/cli-native/logs/
+            pr-investigation/claim-native/*.json
+            pr-investigation/claim-native/logs/
+          retention-days: 30
+  repository-contract-assess:
+    needs: [intake, repository-contract-native]
+    if: always() && needs.intake.outputs.ready == 'true' && (needs.intake.outputs.profile == 'OWNED_FORK_REPOSITORY_CONTRACT' || needs.intake.outputs.profile == 'OWNED_FORK_CLI_PARITY')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: pr-pilot-intake, path: pr-investigation}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with: {name: pr-pilot-contract-native, path: pr-investigation}
+      - name: Admit exact-context finite evidence; missing execution stays UNKNOWN
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs contract-assess pr-investigation
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-assessment, path: pr-investigation/, retention-days: 30}
+  settle:
+    needs: [intake, assess, repository-contract-assess]
+    if: always() && needs.intake.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, ref: 28658f4232f6a0f0e5d86244edf5bf97936570f4}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pr-pilot-intake
+          path: pr-investigation
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        continue-on-error: true
+        with:
+          name: pr-pilot-assessment
+          path: pr-investigation
+      - name: Publish exact-source advisory Check or withdraw stale applicability
+        env:
+          APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs settle pr-investigation
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: pr-pilot-publication, path: pr-investigation/, retention-days: 30}
