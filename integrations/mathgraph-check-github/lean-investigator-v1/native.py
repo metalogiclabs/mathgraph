@@ -16,12 +16,16 @@ def must(args,timeout=240):
  return p.stdout.strip()
 def validate_snapshot(s):
  assert s['repository']=='metalogiclabs/L4YAML'
+ assert s.get('method') in [None,'traceof-comments-v1']
  expected={'path':'Scripts/Ledger.lean','module':'Scripts.Ledger','namespace':'Scripts.Ledger','cli_path':'Scripts/Main/CheckScriptsLedger.lean','cli_module':'Scripts.Main.CheckScriptsLedger','toolchain':'leanprover/lean4:v4.35.0'}
+ if s.get('method')=='traceof-comments-v1':
+  expected={'path':'Scripts/TraceOf/Gen.lean','module':'Scripts.TraceOf.Gen','namespace':'Scripts.TraceOf.Gen','cli_path':'MathGraphGate.lean','cli_module':'MathGraphGate','toolchain':'leanprover/lean4:v4.35.0','gate_kind':'SELECTED_MODULE_BUILD'}
+  assert s['cli_source']=='import Scripts.TraceOf.Gen\n\ndef main (_ : List String) : IO UInt32 := pure 0\n'
  assert all(s[k]==v for k,v in expected.items())
  assert re.fullmatch(r'[a-f0-9]{40}',s['head_sha'])
  if s.get('mode')=='OWNED_FORK_PR_PILOT':
   assert re.fullmatch(r'[a-f0-9]{40}',s['base_sha']) and s['command'] in ['check','fix']
-  assert isinstance(s['base_source'],str) and s['base_cli_source']==s['cli_source']
+  assert (isinstance(s['base_source'],str) or s.get('method')=='traceof-comments-v1' and s['base_source'] is None) and s['base_cli_source']==s['cli_source']
  return True
 
 def runtime_context(env):
@@ -50,7 +54,8 @@ def main():
   archive=work/(label+'.tar.gz');archive.write_bytes(data);folder=work/label;folder.mkdir(exist_ok=True)
   with tarfile.open(archive) as t:t.extractall(folder,filter='data')
   folders=[p for p in folder.iterdir() if p.is_dir()];assert len(folders)==1;folder=folders[0]
-  assert (folder/snapshot['path']).read_text()==source and (folder/snapshot['cli_path']).read_text()==snapshot['cli_source']
+  assert (folder/snapshot['path']).read_text()==source
+  if snapshot.get('method')!='traceof-comments-v1':assert (folder/snapshot['cli_path']).read_text()==snapshot['cli_source']
   return folder
  repo=acquire(snapshot['head_sha'],'subject',snapshot['source'])
  base_repo=acquire(snapshot['base_sha'],'base-subject',snapshot['base_source']) if snapshot.get('base_source') is not None else None
@@ -85,6 +90,7 @@ def main():
  def arm(label,source,subject=repo):
   p=project(label,source);sources[label]=source;subjects[label]=subject
   b=execute(p,label+'-build',['lake','build','gate']);result={'build_exit':b.returncode,'source_sha256':digest(source.encode()),'probes':[]}
+  if snapshot.get('method')=='traceof-comments-v1':result['gate_kind']='SELECTED_MODULE_BUILD'
   if b.returncode:result['repository_gate_exit']=None;return result
   good=execute(p,label+'-control-pass',['lean','/audit/control_pass.lean'])
   bad=execute(p,label+'-control-fail',['lean','/audit/control_fail.lean'])

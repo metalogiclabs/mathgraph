@@ -3,17 +3,17 @@ export const APP_ID=5308912,CHECK_NAME='MathGraph Check / PR investigation';
 const checkName=request=>CHECK_NAME+' #'+request.number;
 const RETRYABLE_TITLES=new Set(['Check incomplete','Repair incomplete','Source changed — recheck required']);
 const ensure=(b,c)=>{if(!b)throw Error(c);};
-export const logicalIdentity=r=>`mg-pr-v1:${r.repository}#${r.number}@${r.head_sha}~${r.base_sha}:${r.command}${r.profile?.claim_profile==='empty-tail-v1'?':cap:empty-tail-v1':''}${['passport-v1','expectations-v1','transport-v1','expectations-v2','expectations-v2-inputs','expectations-v2-finished','expectations-v2-complete'].includes(r.profile?.report_version)?':report:'+r.profile.report_version:''}`;
+export const logicalIdentity=r=>`mg-pr-v1:${r.repository}#${r.number}@${r.head_sha}~${r.base_sha}:${r.command}${r.profile?.method?':method:'+r.profile.method:''}${r.profile?.claim_profile==='empty-tail-v1'?':cap:empty-tail-v1':''}${['passport-v1','expectations-v1','transport-v1','expectations-v2','expectations-v2-inputs','expectations-v2-finished','expectations-v2-complete'].includes(r.profile?.report_version)?':report:'+r.profile.report_version:''}`;
 export const identity=r=>logicalIdentity(r)+':'+r.comment_id;
 export async function listChecks(request,api){const checks=[];let total;for(let page=1;page<=3;page++){const r=await api('/repos/'+request.repository+'/commits/'+request.head_sha+'/check-runs?per_page=100&filter=all&page='+page);ensure(Array.isArray(r.check_runs)&&Number.isSafeInteger(r.total_count),'INVALID_CHECK_HISTORY');total=r.total_count;checks.push(...r.check_runs);if(checks.length===total)return checks;if(r.check_runs.length<100)break;}throw Error('INCOMPLETE_CHECK_HISTORY');}
-export async function authenticate(payload,api){
+export async function authenticate(payload,api,{pilotOperators=[]}={}){
  profileFor(payload.repository);ensure(Number.isSafeInteger(payload.number)&&payload.number>0&&Number.isSafeInteger(payload.comment_id)&&payload.comment_id>0,'INVALID_REQUEST');
  const root='/repos/'+payload.repository,pr=await api(root+'/pulls/'+payload.number),comment=await api(root+'/issues/comments/'+payload.comment_id);
  ensure(comment.issue_url===`https://api.github.com${root}/issues/${payload.number}`,'WRONG_COMMENT_ISSUE');
  ensure(/^[a-zA-Z0-9-]{1,39}$/.test(comment.user?.login??''),'INVALID_ACTOR');
  const {permission}=await api(root+'/collaborators/'+comment.user.login+'/permission');
  const files=[];for(let page=1;page<=3;page++){const batch=await api(root+'/pulls/'+payload.number+'/files?per_page=100&page='+page);ensure(Array.isArray(batch),'INVALID_FILE_LIST');files.push(...batch);if(batch.length<100)break;}
- const request=admitRequest({repository:payload.repository,pr,comment,permission,files,filesComplete:pr.changed_files===files.length});
+ const request=admitRequest({repository:payload.repository,pr,comment,permission,files,pilotOperators,filesComplete:pr.changed_files===files.length});
  ensure(request.command===payload.command,'COMMAND_CHANGED');return request;
 }
 export async function startCheck(request,api,runURL){
@@ -54,7 +54,7 @@ export async function queueCheck(request,api){
  const existing=(await listChecks(request,api)).filter(c=>c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id?.startsWith(logicalIdentity(request)+':'));
  const duplicate=existing.find(c=>c.external_id===identity(request)||c.status==='in_progress'||!RETRYABLE_TITLES.has(c.output?.title));
  if(duplicate)return {state:'DUPLICATE',check_id:duplicate.id};
- const body={name:checkName(request),head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:'https://github.com/metalogiclabs/mathgraph/actions',output:{title:'Queued for investigation',summary:`Requested by a repository maintainer for ${request.repository}#${request.number}, head ${request.head_sha}, base ${request.base_sha}. Native evidence has not run yet.`}};
+ const body={name:checkName(request),head_sha:request.head_sha,external_id:identity(request),status:'in_progress',details_url:'https://github.com/metalogiclabs/mathgraph/actions',output:{title:'Queued for investigation',summary:`Requested by an authorized pilot operator for ${request.repository}#${request.number}, head ${request.head_sha}, base ${request.base_sha}. Native evidence has not run yet.`}};
  const c=await api('/repos/'+request.repository+'/check-runs',{method:'POST',body});ensure(c.app?.id===APP_ID&&c.head_sha===request.head_sha&&c.external_id===identity(request),'QUEUE_CHECK_IDENTITY_MISMATCH');return {state:'QUEUED',check_id:c.id,run_url:body.details_url};
 }
 export async function priorCheckRun(request,api){

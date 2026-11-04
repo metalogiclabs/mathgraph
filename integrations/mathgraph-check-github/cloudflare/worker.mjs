@@ -1,3 +1,4 @@
+import {pilotPage} from '../pr-pilot-v1/pilot-page.mjs';
 import {pilotEvent} from '../pr-pilot-v1/transport.mjs';
 import {processPilotDelivery} from '../pr-pilot-v1/worker-handler.mjs';
 export {PilotBudget} from '../pr-pilot-v1/transport.mjs';
@@ -119,6 +120,7 @@ export async function receiveWebhook(request, env) {
       status:configured?200:503
     });
   }
+  if(request.method==="GET"&&url.pathname==="/pilot")return new Response(pilotPage(),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'; img-src https://raw.githubusercontent.com; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'"}});
   if (request.method !== "POST" || url.pathname !== "/github/webhook")
     return new Response("Not found", { status: 404 });
 

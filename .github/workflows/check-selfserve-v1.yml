@@ -1,0 +1,80 @@
+name: Self-serve generator pilot qualification
+on:
+  push:
+    branches: [research/check-selfserve-v1-20261104]
+permissions: {contents: read, actions: read}
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: |
+          python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+      - run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/selfserve-worker
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: selfserve-worker, path: /tmp/selfserve-worker, retention-days: 30}
+  native:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      matrix: {pr: [6, 34]}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Read-only source and operator-path qualification
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/qualify-selfserve.mjs prepare qualified '${{ matrix.pr }}'
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare qualified
+      - run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: No-secret isolated native checks and reference admission
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial qualified
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run qualified
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess qualified
+      - name: Reuse exact candidate and freshly verify repair and withdrawal
+        if: matrix.pr == 6
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/qualify-selfserve.mjs patch qualified
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair qualified
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair qualified
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess qualified
+      - run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/qualify-selfserve.mjs require qualified '${{ matrix.pr }}'
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs qualified
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'selfserve-native-${{ matrix.pr }}', path: qualified, retention-days: 30}
+  browser:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: selfserve-native-6, path: qualified}
+      - run: |
+          npm install --no-save --prefix /tmp/selfserve-browser playwright@1.62.1
+          /tmp/selfserve-browser/node_modules/.bin/playwright install --with-deps chromium
+      - env: {NODE_PATH: /tmp/selfserve-browser/node_modules}
+        run: node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs qualified/MathGraph-Check.html browser-qa 'Candidate repair verified on frozen probes'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: selfserve-browser, path: browser-qa, retention-days: 30}
+

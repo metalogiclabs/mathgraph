@@ -1,9 +1,11 @@
+import {GENERATOR_METHOD} from './traceof-comments.mjs';import {generatorView} from './generator-report.mjs';
 // One admitted-evidence view used by GitHub and the offline Passport.
 import {CLI_MODE} from './cli-profiles.mjs';import {cliView} from './cli-report.mjs';
 import {CONTRACT_MODE,contractTitle,nextAction,highlightedWitnesses,diagnosticText} from './repository-report.mjs';
 const observation=s=>({GUARD_PASSED:'passes',CANDIDATE_ASSERTION_FAILURE:'fails',UNKNOWN:'unknown'}[s]??'not observed');
 const changeLabel=s=>({PRE_EXISTING_FAILURE:'Present before this PR',NEW_FAILURE:'Introduced by this PR',RESOLVED_FAILURE:'Resolved by this PR',BOTH_PASS:'Pass on both revisions'}[s]??'');
 export function reportView(a,r){
+ if(r.profile?.method===GENERATOR_METHOD)return generatorView(a,r);
  const unsupported=a.status==='UNKNOWN'&&a.reason==='UNSUPPORTED_CHANGED_FILE_SCOPE',stale=a.status==='STALE',cli=r.profile?.mode===CLI_MODE,contract=r.profile?.mode===CONTRACT_MODE;
  const qualified=['CANDIDATE_ASSERTION_FAILURE','NO_COUNTEREXAMPLE_IN_GENERATED_GUARDS'].includes(a.status)&&a.head_complete!==false&&a.baseline?.complete!==false;
  const admitted=!stale&&a.expectations?.status==='ADMITTED'&&a.expectations.repair_eligible===true;
