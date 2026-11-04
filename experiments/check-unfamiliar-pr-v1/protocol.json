@@ -1,0 +1,14 @@
+{
+  "schema":"mathgraph.prospective-port-parity.v1",
+  "upstream":"nasa-jpl/L4YAML",
+  "pr":226,
+  "source_head":"d14e24e2de55fc2c5a4402db15b2d8cb5903d028",
+  "freeze_boundary":"PR title and metadata read; implementation and review findings not yet inspected for this experiment",
+  "obligation":"For declared supported command inputs, a Python-to-Lean port preserves observable results; differences require intent review before being called defects",
+  "observations":["exit_code","stdout data preserving integer identity","stderr presence on errors","created/changed/deleted file contents"],
+  "fixture_classes":["declared ordinary CLI invocation on repository data","minimum structurally valid synthetic input","empty input","missing required file","unknown option","independent boundary variations from public input schema"],
+  "excluded_normalizations":["discarding unexpected output","floating-point coercion of integers","rewriting expected behavior after seeing a failure"],
+  "repair":"No candidate patch or finding is preloaded; propose after reproducible difference plus independently justified intended behavior, then verify unchanged cases and withdrawal",
+  "outcomes":["WARRANTED_BOUNDED_FAILURE","NO_COUNTEREXAMPLE_IN_DECLARED_CASES","INTENDED_DIFFERENCE","UNKNOWN"],
+  "non_claims":["No automatic discovery or repair is claimed before execution","No proof of whole-PR correctness","No upstream mutations"]
+}
