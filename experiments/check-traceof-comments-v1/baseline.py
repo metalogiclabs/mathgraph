@@ -17,7 +17,7 @@ run("pure-build",["lake","build","Scripts.TraceOf.Gen"])
 probe=root/"NestedCommentProbe.lean"
 probe.write_text('import Scripts.TraceOf.Gen\nopen Scripts.TraceOf.Gen\n#eval stripComments "SCNsProperties n /- outer /- inner -/ outer -/ c"\n#guard stripComments "SCNsProperties n /- outer /- inner -/ outer -/ c" == "SCNsProperties n  c"\n')
 p=run("pure-nested-comment",["lake","env","lean",str(probe)],None)
-assert p.returncode != 0 and "guard" in p.stdout.lower(), "Expected a native guard failure"
+assert p.returncode != 0 and "did not evaluate to" in p.stdout, "Expected a native guard failure"
 run("golden-check",["lake","run","gen-traceof","--","--check"])
 gold=run("golden-generation",["lake","run","gen-traceof"]).stdout
 (out/"golden.lean").write_text(gold)
@@ -27,7 +27,7 @@ needle="SCNsProperties n c"
 assert needle in original
 mutated=original.replace(needle,"SCNsProperties n /- outer /- inner -/ outer -/ c",1)
 surface.write_text(mutated)
-(out/"comment-only-source.patch").write_text(__import__("difflib").unified_diff(original.splitlines(True),mutated.splitlines(True),fromfile="original",tofile="comment-only").__str__() if False else "".join(__import__("difflib").unified_diff(original.splitlines(True),mutated.splitlines(True),fromfile="original",tofile="comment-only")))
+(out/"comment-only-source.patch").write_text("".join(__import__("difflib").unified_diff(original.splitlines(True),mutated.splitlines(True),fromfile="original",tofile="comment-only")))
 try:
     run("commented-source-build",["lake","build","L4YAML.Surface.Node"])
     generated=run("commented-generation",["lake","run","gen-traceof"],None)
