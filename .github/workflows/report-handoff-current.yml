@@ -1,0 +1,33 @@
+name: Current upstream report repair handoff
+on:
+  push:
+    branches: [research/report-handoff-current-20261104]
+permissions: {contents: read}
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: {arm: [baseline, candidate]}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, path: controller}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: 8fdc991b6dfebe1114858f6649e15c5cea2e5eff
+          path: subject
+          persist-credentials: false
+          submodules: recursive
+      - name: Install pinned Lean
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Native battery and unchanged fixed-input corpus
+        run: python3 controller/experiments/check-report-handoff-v1/verify.py subject '${{ matrix.arm }}'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'report-handoff-${{ matrix.arm }}', path: 'handoff-${{ matrix.arm }}', retention-days: 90}

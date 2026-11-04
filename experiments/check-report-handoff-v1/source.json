@@ -1,0 +1,10 @@
+{
+  "repository": "nasa-jpl/L4YAML",
+  "branch": "fix-a-grammar-completeness",
+  "head": "8fdc991b6dfebe1114858f6649e15c5cea2e5eff",
+  "original_PR217_head": "1f5af2c7cb3c56acef7c581d1bb15986cdbebaa2",
+  "reports_identical": true,
+  "original_sha256": "670b65c829bffcc3dcafb2fbdfe8aee5a1ec8dede7ce4d0547d11bb600848fae",
+  "candidate_sha256": "16d7ddff01434a386cd08a27b2e7a025e857bc182e2558dbfab28d85e529fb26",
+  "patch_sha256": "77e25892ee75867469fef7c541dca68fdf7c95d03f241b0c12e3e1fb9218f5cd"
+}
