@@ -13,7 +13,8 @@ export async function authenticate(payload,api,{pilotOperators=[]}={}){
  ensure(/^[a-zA-Z0-9-]{1,39}$/.test(comment.user?.login??''),'INVALID_ACTOR');
  const {permission}=await api(root+'/collaborators/'+comment.user.login+'/permission');
  const files=[];for(let page=1;page<=3;page++){const batch=await api(root+'/pulls/'+payload.number+'/files?per_page=100&page='+page);ensure(Array.isArray(batch),'INVALID_FILE_LIST');files.push(...batch);if(batch.length<100)break;}
- const request=admitRequest({repository:payload.repository,pr,comment,permission,files,pilotOperators,filesComplete:pr.changed_files===files.length});
+ const request=admitRequest({repository:payload.repository,pr,comment,permission,files,pilotOperators,filesComplete:true});
+ if(pr.changed_files!==files.length)request.support={supported:false,reason:'INCOMPLETE_CHANGED_FILES'};
  ensure(request.command===payload.command,'COMMAND_CHANGED');return request;
 }
 export async function startCheck(request,api,runURL){
