@@ -113,6 +113,16 @@ jobs:
             ../mathgraph-src/research/check-brahe-enz-pr576-20261104/enz-sign-flip.patch
           git -C brahe-src diff --exit-code -- src/relative_motion/ecef_enz.rs
           echo 'MUTATION_REJECTED_AND_SOURCE_RESTORED'
+      - name: Capture exact toolchain and resolved dependencies
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd brahe-src && rustc --version && cargo --version && just --version) |
+            tee brahe-native-toolchain.txt
+          if test -f brahe-src/Cargo.lock; then
+            sha256sum brahe-src/Cargo.lock | tee brahe-cargo-lock.sha256
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -121,5 +131,8 @@ jobs:
             brahe-actual-sha.txt
             brahe-native-positive.log
             brahe-native-mutant.log
+            brahe-native-toolchain.txt
+            brahe-cargo-lock.sha256
+            brahe-src/Cargo.lock
           if-no-files-found: ignore
           retention-days: 60
