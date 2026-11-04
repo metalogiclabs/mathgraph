@@ -1,0 +1,31 @@
+name: Anonymous report handoff links
+on:
+  push:
+    branches: [research/report-public-links-20261104]
+permissions: {}
+jobs:
+  public-links:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Fetch public pages without Authorization or cookies
+        run: |
+          python3 - <<'PY'
+          import urllib.request,json,re
+          urls=['https://github.com/metalogiclabs/L4YAML/pull/46','https://github.com/metalogiclabs/L4YAML/pull/48','https://github.com/metalogiclabs/mathgraph/actions/runs/41822482029','https://github.com/metalogiclabs/mathgraph/actions/runs/41822499103','https://github.com/metalogiclabs/mathgraph/actions/runs/41822966328']
+          rows=[]
+          for url in urls:
+              request=urllib.request.Request(url,headers={'User-Agent':'MathGraph-Public-Link-Check'})
+              try:
+                  with urllib.request.urlopen(request,timeout=45) as response:
+                      body=response.read().decode('utf-8');title=re.search(r'<title>(.*?)</title>',body,re.S)
+                      row={'url':url,'status':response.status,'final_url':response.geturl(),'title':title.group(1).strip() if title else None,'authorization_sent':False,'cookies_sent':False}
+                  row['passed']=row['status']==200 and '/login' not in row['final_url'] and 'metalogiclabs' in body
+              except Exception as error:row={'url':url,'passed':False,'error':str(error)}
+              rows.append(row);print(json.dumps(row))
+          open('public-links.json','w').write(json.dumps(rows,indent=2))
+          assert all(row['passed'] for row in rows)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: public-links, path: public-links.json, retention-days: 90}
