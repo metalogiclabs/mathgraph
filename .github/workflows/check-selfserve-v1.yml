@@ -1,0 +1,14 @@
+name: Check self-serve source qualification
+on:
+  push:
+    branches: [research/check-selfserve-v1-20261104]
+permissions: {contents: read}
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {ref: c39d0ec486c90147b080af3ca8e669f933c4aafb, persist-credentials: false}
+      - run: tar -czf /tmp/check-source.tar.gz integrations/mathgraph-check-github experiments
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: check-source, path: /tmp/check-source.tar.gz, retention-days: 7}
