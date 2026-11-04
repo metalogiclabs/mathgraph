@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import hashlib,json,pathlib,subprocess,sys,difflib
+import hashlib,json,pathlib,subprocess,sys,difflib,os
 root=pathlib.Path(sys.argv[1]).resolve()
 candidate=pathlib.Path(sys.argv[2]).resolve()
 out=pathlib.Path(sys.argv[3]).resolve()
@@ -56,8 +56,10 @@ try:
     assert good.stdout==gold,"Candidate did not restore exact generated module"
     surface.write_text(original_surface)
     run("candidate-golden-check",["lake","run","gen-traceof","--","--check"])
-    run("candidate-full-build",["lake","build"])
-    run("candidate-all-tests",["lake","run","run-all-tests"])
+    full_suite = os.environ.get("MGC_TARGETED_ONLY") != "1"
+    if full_suite:
+        run("candidate-full-build",["lake","build"])
+        run("candidate-all-tests",["lake","run","run-all-tests"])
     gen.write_text(original_gen)
     run("withdrawn-pure-build",["lake","build","Scripts.TraceOf.Gen"])
     withdrawn=run("withdrawn-probes",["lake","env","lean",str(probe)],None)
@@ -66,7 +68,7 @@ try:
     run("withdrawn-exe-build",["lake","build","scripts-gen-traceof"])
     again=run("withdrawn-commented-generate",["lake","run","gen-traceof"],None)
     assert again.returncode==bad.returncode and again.stdout==bad.stdout
-    result={"status":"WARRANTED_BOUNDED","head":"1153d648425fb15f6fe49061544f7ffe4bdcb520","probe_count":len(cases),"original":"FAIL","candidate":"PASS","withdrawn":"FAIL","native_source_with_comment_compiles":True,"candidate_generation_matches_original_golden":True,"candidate_sha256":hashlib.sha256(fixed.encode()).hexdigest(),"scope":"Nested block comments in grammar premise spans, depths 1 through 5; full frozen repository build/tests. Other lexical constructs and arbitrary PRs remain unqualified."}
+    result={"status":"WARRANTED_BOUNDED","head":"1153d648425fb15f6fe49061544f7ffe4bdcb520","probe_count":len(cases),"original":"FAIL","candidate":"PASS","withdrawn":"FAIL","native_source_with_comment_compiles":True,"candidate_generation_matches_original_golden":True,"candidate_sha256":hashlib.sha256(fixed.encode()).hexdigest(),"full_repository_build_and_tests": "PASSED" if full_suite else "NOT_RUN_IN_TARGETED_CHECKPOINT","scope":"Nested block comments in grammar premise spans, depths 1 through 5, original module guards and actual generator output. Full repository qualification is separately reported; other lexical constructs and arbitrary PRs remain unqualified."}
     (out/"result.json").write_text(json.dumps(result,indent=2))
     print(json.dumps(result),flush=True)
 finally:

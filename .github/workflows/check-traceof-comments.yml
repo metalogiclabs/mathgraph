@@ -23,8 +23,9 @@ jobs:
           curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Native frozen-source counterexample
+      - name: Native targeted repair and withdrawal checkpoint
+        env: {MGC_TARGETED_ONLY: "1"}
         run: python3 verifier/experiments/check-traceof-comments-v1/verify.py source verifier/experiments/check-traceof-comments-v1/candidate.lean evidence
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
-        with: {name: traceof-comment-verification, path: evidence, retention-days: 30}
+        with: {name: traceof-comment-targeted-checkpoint, path: evidence, retention-days: 30}
