@@ -54,10 +54,12 @@ class SubjectExecutionTests(unittest.TestCase):
             (repo/'target.py').write_text('MAPPING = {197: 6}\ndef increment(x):\n    return x + 1\n')
             (audit/'test_reach.py').write_text(
                 'from target import increment, MAPPING\n'
+                'def test_first_imported_source_constant():\n    assert MAPPING[197] == 6\n'
                 'def test_calls_source():\n    assert increment(2) == 3\n'
                 'def test_imported_source_constant():\n    assert MAPPING[197] == 6\n'
                 'def test_short_circuit_constant():\n    assert True or MAPPING[197] == 6\n'
-                'def test_asserts_true():\n    assert 1 + 1 == 2\n')
+                'def test_asserts_true():\n    assert 1 + 1 == 2\n'
+                'def test_missing_key_in_assertion():\n    assert MAPPING[404] == 5\n')
             receipt=root/'cases.json'
             env={**os.environ,'PYTHONPATH':str(Path(__file__).parent)+os.pathsep+str(repo),
                 'MG_CASES_FILE':str(receipt),'MG_AUDIT_DIR':str(audit),
@@ -65,12 +67,15 @@ class SubjectExecutionTests(unittest.TestCase):
             p=subprocess.run([sys.executable,'-m','pytest','-q','-p','mg_native_plugin',
                               '-p','no:cacheprovider',str(audit/'test_reach.py')],
                              capture_output=True,text=True,cwd=root,env=env,timeout=30)
-            self.assertEqual(p.returncode,0,p.stdout+p.stderr)
+            self.assertEqual(p.returncode,1,p.stdout+p.stderr)
             results=json.loads(receipt.read_text())
             by_name={x['id'].split('::')[-1]:x for x in results}
+            self.assertGreater(by_name['test_first_imported_source_constant']['subject_import_assertions_reached'],0,str(results))
             self.assertGreater(by_name['test_calls_source']['subject_lines_reached'],0)
             self.assertEqual(by_name['test_imported_source_constant']['subject_lines_reached'],0)
             self.assertGreater(by_name['test_imported_source_constant']['subject_import_assertions_reached'],0)
             self.assertEqual(by_name['test_short_circuit_constant']['subject_import_assertions_reached'],0)
             self.assertEqual(by_name['test_asserts_true']['subject_lines_reached'],0)
             self.assertEqual(by_name['test_asserts_true']['subject_import_assertions_reached'],0)
+            self.assertEqual(by_name['test_missing_key_in_assertion']['exception'],'KeyError')
+            self.assertTrue(by_name['test_missing_key_in_assertion']['exception_in_assertion'])

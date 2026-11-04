@@ -6,6 +6,17 @@ _cases={};_hits={}
 _subject_hits={};_import_assertion_hits={}
 _audit_root=str(Path(os.environ.get('MG_AUDIT_DIR','/audit')).resolve())+os.sep
 _subject_paths=frozenset(str(Path(p).resolve()) for p in json.loads(os.environ.get('MG_SUBJECT_FILES','[]')))
+def pytest_sessionstart(session):
+    # On CPython 3.12 the first traced frame cannot yet emit opcode events.
+    # Prime bytecode instrumentation with trusted code before the first probe.
+    previous=sys.gettrace()
+    def warm_trace(frame,event,arg):
+        if event=='call':frame.f_trace_opcodes=True
+        return warm_trace
+    def warm():return 2+2
+    sys.settrace(warm_trace)
+    try:warm()
+    finally:sys.settrace(previous)
 def subject_import_assertions(tree):
     """Recognize direct assertions about exports of the exact reviewed file.
 
@@ -59,11 +70,24 @@ def pytest_runtest_call(item):
     sys.settrace(trace)
     try:yield
     finally:
-        sys.settrace(previous);_hits[item.nodeid]=len(seen);_subject_hits[item.nodeid]=len(subject_seen);_import_assertion_hits[item.nodeid]=len(import_seen)
+        sys.settrace(previous)
+        _hits[item.nodeid]=len(seen);_subject_hits[item.nodeid]=len(subject_seen);_import_assertion_hits[item.nodeid]=len(import_seen)
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item,call):
     outcome=yield;report=outcome.get_result()
     if report.when=='call' or report.failed or report.skipped:
-        _cases[item.nodeid]={'id':item.nodeid,'status':report.outcome,'exception':call.excinfo.type.__name__ if call.excinfo else None,'assertions_reached':_hits.get(item.nodeid,0),'subject_lines_reached':_subject_hits.get(item.nodeid,0),'subject_import_assertions_reached':_import_assertion_hits.get(item.nodeid,0)}
+        # Lookup failures inside a reached assertion are materially different
+        # from fixture/import crashes. Record exact traceback provenance so
+        # the trusted assessor can keep that boundary narrow.
+        in_assertion=False
+        if call.excinfo and call.excinfo.traceback and _hits.get(item.nodeid,0)>0:
+            last=call.excinfo.traceback[-1]
+            path=str(Path(item.path).resolve())
+            if str(Path(str(last.path)).resolve())==path:
+                try:
+                    lines={n.lineno for n in ast.walk(ast.parse(Path(path).read_text())) if isinstance(n,ast.Assert)}
+                    in_assertion=(last.lineno+1) in lines
+                except (OSError,SyntaxError):pass
+        _cases[item.nodeid]={'id':item.nodeid,'status':report.outcome,'exception':call.excinfo.type.__name__ if call.excinfo else None,'exception_in_assertion':in_assertion,'assertions_reached':_hits.get(item.nodeid,0),'subject_lines_reached':_subject_hits.get(item.nodeid,0),'subject_import_assertions_reached':_import_assertion_hits.get(item.nodeid,0)}
 def pytest_sessionfinish(session,exitstatus):
     Path(os.environ['MG_CASES_FILE']).write_text(json.dumps(list(_cases.values())))

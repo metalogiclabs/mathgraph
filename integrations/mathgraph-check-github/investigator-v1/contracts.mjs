@@ -22,7 +22,7 @@ export function assessProbe(r,{subjectSha,testDigest,testFileDigest,requireAsser
  if(!SHA.test(subjectSha??'')||!DIGEST.test(testDigest??'')||r?.subject_sha!==subjectSha||r?.test_digest!==testDigest)return unknown('SOURCE_OR_TEST_MISMATCH');
  if(testFileDigest&&r?.test_file_sha256!==testFileDigest)return unknown('EXECUTED_TEST_BYTES_CHANGED');
  if(r.timeout!==false||![0,1].includes(r.exit_code)||!['tests','failures','errors','skipped'].every(k=>Number.isSafeInteger(r[k])&&r[k]>=0)||r.tests<1||r.errors>0||r.skipped>0||r.failures+r.errors+r.skipped>r.tests)return unknown('NATIVE_EXECUTION_INCOMPLETE');
- if(!Array.isArray(r.cases)||r.cases.length!==r.tests||new Set(r.cases.map(x=>x.id)).size!==r.tests||r.cases.some(x=>!x.id||!['passed','failed'].includes(x.status)||requireAssertions&&(!Number.isSafeInteger(x.assertions_reached)||x.assertions_reached<1)||x.status==='failed'&&x.exception!=='AssertionError'))return unknown('TEST_CASES_OR_ASSERTIONS_INCOMPLETE');
+ if(!Array.isArray(r.cases)||r.cases.length!==r.tests||new Set(r.cases.map(x=>x.id)).size!==r.tests||r.cases.some(x=>!x.id||!['passed','failed'].includes(x.status)||requireAssertions&&(!Number.isSafeInteger(x.assertions_reached)||x.assertions_reached<1)||x.status==='failed'&&x.exception!=='AssertionError'&&!(x.exception_in_assertion===true&&['KeyError','IndexError'].includes(x.exception))))return unknown('TEST_CASES_OR_ASSERTIONS_INCOMPLETE');
  // A reviewed module may export constant data whose initialization occurred
  // during pytest collection. That case requires a reached assertion directly
  // using the independently bound import, not executable function coverage.

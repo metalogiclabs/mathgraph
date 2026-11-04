@@ -17,6 +17,12 @@ test('remaining protected failure cannot be silently called a verified repair',(
 test('trusted control IDs cannot be replaced by generated tests',()=>{const p=plan();p.tests[0].id='control_fail';assert.throws(()=>admitPlan(p,snapshot));});
 test('partial skips cannot qualify',()=>{const r={...receipt(),tests:2,skipped:1};assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64)}).execution,'UNKNOWN');});
 test('unexpected NameError is not a reproduced assertion failure',()=>{const r=receipt(1);r.cases=[{id:'test_x',status:'failed',exception:'NameError',assertions_reached:1}];assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64)}).execution,'UNKNOWN');});
+test('a pinned, reached lookup assertion with KeyError is a candidate failure, not a setup crash',()=>{
+ const r=receipt(1);r.cases[0].exception='KeyError';r.cases[0].exception_in_assertion=true;
+ assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64)}).execution,'CANDIDATE_FAILURE_REPRODUCED');
+ r.cases[0].exception_in_assertion=false;
+ assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64)}).execution,'UNKNOWN');
+});
 test('a passing test without a reached assertion is unknown',()=>{const r=receipt();r.cases=[{id:'test_x',status:'passed',exception:null,assertions_reached:0}];assert.equal(assessProbe(r,{subjectSha:sha,testDigest:'c'.repeat(64)}).execution,'UNKNOWN');});
 test('generated probes cannot qualify on assertion reach without touching reviewed source',()=>{
  const r=receipt();r.cases[0].subject_lines_reached=0;
