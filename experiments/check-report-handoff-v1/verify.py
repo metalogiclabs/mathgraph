@@ -38,8 +38,8 @@ try:
  commands.append(('suiterunner',['lake','exe','suiterunner']))
  for label,args in commands:run(label,args)
  ready=run('reports-build',['lake','build','suiterunner'])==0
- correct=observe(arm,arm=='baseline') if ready else False
  battery_ok=all(c['exit']==0 for c in checks)
+ correct=observe(arm,arm=='baseline') if ready else False
  if arm=='candidate' and ready:
   source.write_text(original)
   if run('withdrawn-build',['lake','build','suiterunner'])==0:correct=observe('withdrawn',True) and correct
