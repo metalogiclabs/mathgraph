@@ -218,7 +218,7 @@ where
 
 #guard xmlUnescape "a &lt;b&gt; &amp;&quot;&apos;&#65;&#x42; &bogus; &" == "a <b> &\"'AB &bogus; &"
 
-private partial def validXmlEntities : List Char → Bool
+partial def validXmlEntities : List Char → Bool
   | [] => true
   | '&' :: t =>
     let ent := t.takeWhile (· != ';')
