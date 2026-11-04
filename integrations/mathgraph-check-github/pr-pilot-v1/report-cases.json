@@ -1,0 +1,116 @@
+[
+  {
+    "id": "prefix",
+    "group": "new_refusals",
+    "input": "garbage<testsuite><testcase name=\"ok\"/></testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "suffix",
+    "group": "new_refusals",
+    "input": "<testsuite><testcase name=\"ok\"/></testsuite>garbage",
+    "accepted": false
+  },
+  {
+    "id": "duplicate",
+    "group": "new_refusals",
+    "input": "<testsuite><testcase name=\"a\" name=\"b\"/></testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "attribute_entity",
+    "group": "new_refusals",
+    "input": "<testsuite><testcase name=\"&unknown;\"/></testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "content_entity",
+    "group": "new_refusals",
+    "input": "<testsuite><testcase name=\"a\"/> &broken; </testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "closing_content",
+    "group": "new_refusals",
+    "input": "<testsuite><testcase name=\"a\"/></testsuite garbage>",
+    "accepted": false
+  },
+  {
+    "id": "empty",
+    "group": "valid_controls",
+    "input": "<testsuite/>",
+    "accepted": true
+  },
+  {
+    "id": "one",
+    "group": "valid_controls",
+    "input": "<testsuite><testcase name=\"ok\"/></testsuite>",
+    "accepted": true
+  },
+  {
+    "id": "failure",
+    "group": "valid_controls",
+    "input": "<testsuite><testcase name=\"bad\"><failure/></testcase></testsuite>",
+    "accepted": true
+  },
+  {
+    "id": "skip",
+    "group": "valid_controls",
+    "input": "<testsuite><testcase name=\"skip\"><skipped/></testcase></testsuite>",
+    "accepted": true
+  },
+  {
+    "id": "comment_cdata",
+    "group": "valid_controls",
+    "input": "<testsuite><!-- &unknown; --><![CDATA[<ignored> &unknown;]]><testcase name=\"ok\"/></testsuite>",
+    "accepted": true
+  },
+  {
+    "id": "entities",
+    "group": "valid_controls",
+    "input": "<?xml version=\"1.0\"?><testsuite><testcase name=\"&#65;&#x42;&amp;\"/></testsuite>",
+    "accepted": true
+  },
+  {
+    "id": "truncated",
+    "group": "legacy_refusals",
+    "input": "<testsuites><testsuite><testcase name=\"first\"/></testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "mismatch",
+    "group": "legacy_refusals",
+    "input": "<testsuite><testcase name=\"a\"></testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "two_roots",
+    "group": "legacy_refusals",
+    "input": "<testsuite/><testsuite/>",
+    "accepted": false
+  },
+  {
+    "id": "unquoted",
+    "group": "legacy_refusals",
+    "input": "<testsuite><testcase name=\"a\" time=1/></testsuite>",
+    "accepted": false
+  },
+  {
+    "id": "open_comment",
+    "group": "legacy_refusals",
+    "input": "<testsuite><!-- open",
+    "accepted": false
+  },
+  {
+    "id": "open_tag",
+    "group": "legacy_refusals",
+    "input": "<testsuite><testcase name=\"a\"",
+    "accepted": false
+  },
+  {
+    "id": "no_root",
+    "group": "legacy_refusals",
+    "input": "<?xml version=\"1.0\"?>",
+    "accepted": false
+  }
+]

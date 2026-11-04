@@ -1,0 +1,30 @@
+name: Report integrity full repository and CLI replay
+on:
+  push:
+    branches: [research/check-report-full-cli-v1-20261104]
+permissions: {contents: read}
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      SUBJECT_HEAD: 3e855548afa1c70bcc2aa77f7b86587de5658743
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, path: controller}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: metalogiclabs/L4YAML
+          ref: 3e855548afa1c70bcc2aa77f7b86587de5658743
+          path: subject
+          persist-credentials: false
+          submodules: recursive
+      - run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: python3 controller/experiments/check-report-integrity-v1/full-cli.py subject
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: report-integrity-full-cli, path: report-full-cli-evidence, retention-days: 30}
