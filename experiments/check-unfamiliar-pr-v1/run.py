@@ -25,10 +25,10 @@ for script,py in commands:
    (root/'bin').mkdir(exist_ok=True)
    # Only downstream compiler diagnostics are replayed; both commands execute unchanged.
    (root/'bin/lake').write_text('#!/usr/bin/python3\nfrom pathlib import Path\nimport sys\np=Path('+repr(target)+')\nPath("observed-probe.lean").write_bytes(p.read_bytes())\n'+('print('+repr(target+':1:1: error: controlled replay\n'+target+':100:2: error: controlled replay\n'+target+':100:3: error: controlled replay\n'+target+':500:1: error: controlled replay')+')\n' if kind=='diagnostics' else '')+'sys.exit(1)\n');(root/'bin/lake').chmod(0o755)
-   shutil.copy(base/'scripts'/py,root/py)
+   (root/'scripts').mkdir(exist_ok=True);shutil.copy(base/'scripts'/py,root/'scripts'/py)
    for q in [root,*root.rglob('*')]:q.chmod(0o777 if q.is_dir() else 0o666)
    pos=['payers'] if kind=='payers' else []
-   args=['python3',py]+pos if arm=='python' else ['/compiled/.lake/build/bin/price',script]+pos
+   args=['python3','scripts/'+py]+pos if arm=='python' else ['/compiled/.lake/build/bin/price',script]+pos
    dock=common[:];dock[dock.index('PATH=/opt/lean/bin:/usr/bin:/bin')]='PATH=/work/bin:/opt/lean/bin:/usr/bin:/bin';dock[dock.index('/compiled')+0]='/work' # value following -w
    dock[dock.index('mg-prospective'):dock.index('mg-prospective')]=['-v',str(root)+':/work:rw']
    p=run(dock+args,90)
