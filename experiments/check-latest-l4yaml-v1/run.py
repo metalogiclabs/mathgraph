@@ -56,6 +56,24 @@ for (a,b),got in zip(pairs,numbers):
 
 # Existing fail-closed hygiene controls must remain intact.
 native('hygiene',texts['hygiene'],[])
+bad_inputs=[r['input'] for r in results if r.get('agreement') is False]
+html_probes=[]
+for x in bad_inputs:
+ expr='match Tests.SuiteRunner.Reports.junitCases '+json.dumps(x)+' with | .error _ => false | .ok cs => let html := (Tests.SuiteRunner.Reports.pythonFfiHtml [\u27e8"probe", cs\u27e9]).1; (html.splitOn "Grand Total: 1").length > 1 && (html.splitOn "Passed: 1").length > 1'
+ html_probes.append('#eval IO.println ("OBS " ++ toString ('+expr+'))')
+green=native('malformed-green-html',report_source,html_probes)
+assert green==['true']*len(bad_inputs),green
+old=urllib.request.urlopen('https://raw.githubusercontent.com/nasa-jpl/L4YAML/5b8e558d81f86fbf927fda768fcfad3cc5d00f68/scripts/generate-test-reports.py').read()
+old_path=out/'old-python-report.py';old_path.write_bytes(old)
+old_results=[]
+for i,x in enumerate([xml_cases[0]]+bad_inputs):
+ d=out/('python-reference-'+str(i));d.mkdir(exist_ok=True);(d/'python-ffi-junit.xml').write_text(x)
+ r=subprocess.run(['python3',str(old_path),str(d)],text=True,capture_output=True,timeout=30)
+ (d/'stdout-stderr.log').write_text(r.stdout+r.stderr)
+ old_results.append(r.returncode)
+assert old_results[0]==0 and all(x!=0 for x in old_results[1:]),old_results
 record={'boundary':'Pinned pure functions and original guards; Reports only removes an unused HtmlReport import. Not full repository replay.','manifest':manifest,'observations':results,'xml_disagreements':sum(not r['agreement'] for r in results if 'agreement' in r),'hygiene_original_guards':'PASS','devin_credit':'Truncation, mismatched roots, unquoted attributes and deadline issues already reported/fixed by Devin; do not count these as new findings. PR219 also has nonpublic flags; absence from public comments is not evidence Devin never flagged a case.'}
+record['malformed_cases_render_green_html']=green
+record['original_python_cli_exit_codes_valid_then_six_invalid']=old_results
 (out/'result.json').write_text(json.dumps(record,indent=2))
 print(json.dumps(record,indent=2))
