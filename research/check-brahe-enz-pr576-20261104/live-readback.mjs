@@ -7,10 +7,12 @@ import {requalifyFreshGitHubCI} from "../../integrations/mathgraph-check-github/
 
 export const PINNED_TARGETS=Object.freeze([
  {name:"MathGraph Check G1",repository:"metalogiclabs/mathgraph",pr:266,
-  head_sha:"1d22b20e21987645886e3a1d59c5aa889c506706",
-  requiredChecks:["contract","test","check-full"]},
+  head_sha:"1a71cbb3c51c0991fb68dfcf4e2c5a558abce81f",
+  base_sha:"74b8fb21cf47c7c98efd0d04edd30af9120126cb",
+  requiredChecks:["contract","test","all-fixtures"]},
  {name:"Brahe ENZ PR 576",repository:"duncaneddy/brahe",pr:576,
   head_sha:"ebe0997414f677de2c3b188439ad3e3107ec9985",
+  base_sha:"a134dd1dfb7450f3ed93df00e1680c67f54fd3be",
   requiredChecks:[
    "ci-success",
    "test-rust / test-rust (ubuntu-latest, stable)",
@@ -27,7 +29,8 @@ const boundedUnknown=(target,reason,observed)=>({
 export function qualifyPinnedObservation(target,observed){
  if(observed?.subject?.repository!==target.repository||
     observed?.subject?.pr!==target.pr||
-    observed?.subject?.head_sha!==target.head_sha)
+    observed?.subject?.head_sha!==target.head_sha||
+    observed?.subject?.base_sha!==target.base_sha)
   return boundedUnknown(target,"EXACT_SOURCE_PIN_NOT_ESTABLISHED",observed);
  if(observed.permission!=="ADVISORY_ONLY"||
     observed.semantic_verification!=="NOT_ESTABLISHED")

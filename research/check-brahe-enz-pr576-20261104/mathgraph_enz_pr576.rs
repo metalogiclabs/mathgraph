@@ -1,5 +1,7 @@
-// External, source-pinned Brahe PR #576 research fixture. Injected into a
-// temporary checkout only; not a proposed change to the Brahe repository.
+//! External, source-pinned Brahe PR #576 research fixture.
+//!
+//! Injected into a temporary checkout only; this is not a proposed
+//! modification to the Brahe repository.
 use brahe::ccsds::CCSDSOrbitRelativeFrame;
 use brahe::constants::{AngleFormat, WGS84_A};
 use brahe::coordinates::position_geodetic_to_ecef;

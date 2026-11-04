@@ -4,7 +4,8 @@ import {PINNED_TARGETS,qualifyPinnedObservation,runLiveReadback} from "./live-re
 
 const observedFor=target=>({
  status:"OBSERVED",permission:"ADVISORY_ONLY",semantic_verification:"NOT_ESTABLISHED",
- subject:{repository:target.repository,pr:target.pr,head_sha:target.head_sha},
+ subject:{repository:target.repository,pr:target.pr,
+  head_sha:target.head_sha,base_sha:target.base_sha},
  checks:target.requiredChecks.map((name,i)=>({name,status:"OBSERVED",check_run_id:1000+i})),
 });
 
@@ -19,6 +20,7 @@ test("head drift or attempted semantic promotion fails closed",()=>{
  const target=PINNED_TARGETS[1];
  for(const mutated of [
   {...observedFor(target),subject:{...observedFor(target).subject,head_sha:"c".repeat(40)}},
+  {...observedFor(target),subject:{...observedFor(target).subject,base_sha:"b".repeat(40)}},
   {...observedFor(target),permission:"APPROVE"},
   {...observedFor(target),semantic_verification:"VERIFIED"},
   {...observedFor(target),checks:observedFor(target).checks.slice(1)},

@@ -52,6 +52,9 @@ jobs:
           retention-days: 60
 
   brahe-native-claim-oracle:
+    # Re-pinning an independently changing Check PR does not require
+    # recompiling an unchanged, exact-source Brahe native fixture.
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[readback-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
