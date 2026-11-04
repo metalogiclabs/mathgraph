@@ -1,5 +1,6 @@
 import {authenticateImported,publicGitHub} from './imported-check.mjs';
-import {publishRequestStatus,checkURL} from './request-status.mjs';
+import {checkURL} from './request-status.mjs';
+import {queuePilotStatus} from './status-queue.mjs';
 import {PILOT_RELEASE} from './pilot-config.mjs';
 import {isFiniteMethod,admitFinitePatch} from './finite-methods.mjs';
 import {REPORT_METHOD,reportReference} from './report-integrity.mjs';
@@ -140,7 +141,7 @@ try{
     ensure(hash(admitFinitePatch(patch,snapshot.source,snapshot))===report.repair.patched_sha256,'UNVERIFIED_PATCH');
     try{report.repair_pr=await createRepair(request,patch,publication,scoped.api);}catch(e){await save('repair-publication-error',{context,reason:/^[A-Z0-9_]+$/.test(e.message)?e.message:'REPAIR_PUBLICATION_INCOMPLETE'});report={...report,repair:{...report.repair,verification_status:report.repair.status,status:'UNKNOWN'},reason:'REPAIR_PUBLICATION_INCOMPLETE'};}
    }
-   const result=await finishCheck(request,publication,report,scoped.api);await publishRequestStatus(request,scoped.api,{state:['UNKNOWN','STALE'].includes(report.status)||result.state==='STALE'?'UNKNOWN':'PUBLISHED',title:resultTitle(report,request),repair_url:report.status==='STALE'?undefined:report.repair_pr,check_url:checkURL(request.repository,request.number,publication.check_id),snapshot_url:request.origin?`https://github.com/${request.repository}/pull/${request.number}`:undefined});await save('publication-result',result);report=finalPublicationReport(report,result);await save('assessment',report);await seal();
+   const result=await finishCheck(request,publication,report,scoped.api);await queuePilotStatus(request,{state:['UNKNOWN','STALE'].includes(report.status)||result.state==='STALE'?'UNKNOWN':'PUBLISHED',title:resultTitle(report,request),repair_url:report.status==='STALE'?undefined:report.repair_pr,check_url:checkURL(request.repository,request.number,publication.check_id),snapshot_url:request.origin?`https://github.com/${request.repository}/pull/${request.number}`:undefined},process.env.APP_PRIVATE_KEY);await save('publication-result',result);report=finalPublicationReport(report,result);await save('assessment',report);await seal();
    const [css,brand]=await Promise.all([readFile(new URL('./passport-base.css',import.meta.url),'utf8'),readFile(new URL('./passport-brand.json',import.meta.url),'utf8')]);await writeFile(dir+'/MathGraph-Check.html',renderReport({request,assessment:report,manifest:await get('manifest'),css,logo:JSON.parse(brand).logo}));
   }finally{await scoped.api('/installation/token',{method:'DELETE'});}await seal();
  }else throw Error('UNKNOWN_CONTROLLER_PHASE');

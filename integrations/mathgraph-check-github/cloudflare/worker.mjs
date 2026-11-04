@@ -1,6 +1,7 @@
 import {pilotPage} from '../pr-pilot-v1/pilot-page.mjs';
 import {pilotEvent} from '../pr-pilot-v1/transport.mjs';
 import {acceptImportComplete} from '../pr-pilot-v1/import-callback.mjs';
+import {processPilotStatusDelivery} from '../pr-pilot-v1/worker-handler.mjs';
 import {processPilotWatchTick} from '../pr-pilot-v1/worker-handler.mjs';
 import {processPilotDelivery} from '../pr-pilot-v1/worker-handler.mjs';
 export {PilotBudget} from '../pr-pilot-v1/transport.mjs';
@@ -429,6 +430,7 @@ export async function processQueuedPR(item,env,{fetcher=fetch}={}) {
 export async function consumePRQueue(batch,env,{fetcher=fetch}={}) {
   for(const message of batch.messages){
     try{
+      if(message.body?.schema==="mathgraph.pilot.status.v2"){const r=await processPilotStatusDelivery(message.body,env,{jwt:appJWT(env.GITHUB_APP_PRIVATE_KEY),fetcher});console.log("MATHGRAPH_PILOT_STATUS "+JSON.stringify(r));message.ack();continue;}
       if(message.body?.schema==="mathgraph.pilot.watch-tick.v2"){
         if(Number.isSafeInteger(message.body.issued_at)&&Date.now()-message.body.issued_at<30*60*1000){const r=await processPilotWatchTick(env,{jwt:appJWT(env.GITHUB_APP_PRIVATE_KEY),fetcher});console.log("MATHGRAPH_WATCH "+JSON.stringify(r));}message.ack();continue;
       }

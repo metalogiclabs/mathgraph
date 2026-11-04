@@ -4,13 +4,21 @@ const ensure=(b,c)=>{if(!b)throw Error(c);};
 export function watchKey(r){ensure(['nasa-jpl/L4YAML','metalogiclabs/L4YAML'].includes(r.upstream_repository)&&Number.isSafeInteger(r.upstream_number)&&r.upstream_number>0&&Number.isSafeInteger(r.actor_id)&&r.actor_id>0,'WATCH_ID_INVALID');return `pr-pilot/watch/${r.upstream_repository}/${r.upstream_number}/${r.actor_id}.json`;}
 async function all(storage){const list=await storage.list({prefix:'pr-pilot/watch/',limit:100});ensure(list&&Array.isArray(list.objects)&&list.truncated===false,'WATCH_LIST_INCOMPLETE');const records=[];for(const x of list.objects){const value=await storage.get(x.key);if(value)records.push({key:x.key,value:await value.json()});}return records;}
 export async function registerWatch(storage,request,result,now=Date.now()){
- const key=watchKey(request);if(!request.watch||result.state!=='open'){await storage.delete(key);return null;}
- const records=await all(storage);for(const r of records)if(r.value.expires_at<=now)await storage.delete(r.key);
- const existing=records.find(r=>r.key===key&&r.value.expires_at>now)?.value,active=records.filter(r=>r.value.expires_at>now&&!r.value.stopped);ensure(existing&&!existing.stopped||active.length<WATCH_MAX,'WATCH_CAPACITY_REACHED');
- const same=existing?.request.comment_id===request.comment_id;if(same&&existing.stopped)return null;const expires=same?existing.expires_at:(request.requested_at??now)+WATCH_MS;if(expires<=now){await storage.delete(key);return null;}const value={schema:'mathgraph.pilot.watch.v2',request:{...request},head:result.head,base:result.base,snapshot_number:result.number,snapshot_url:result.url,snapshot_head:result.snapshot_head,installationID:request.installation_id,expires_at:expires,last_checked_at:now,pending_at:null,generation:request.watch_generation??existing?.generation??0,pending_generation:null,pending_head:null,pending_base:null};
+ const key=watchKey(request),records=await all(storage);
+ for(const r of records)if(r.value.expires_at<=now)await storage.delete(r.key);
+ const existing=records.find(r=>r.key===key&&r.value.expires_at>now)?.value;
+ if(existing&&request.comment_id<existing.request.comment_id)return null;
+ const same=existing?.request.comment_id===request.comment_id;
+ if(same&&(existing.stopped||(request.watch_generation??0)<Math.max(existing.generation??0,existing.pending_generation??0)))return null;
+ if(!request.watch||result.state!=='open'){await storage.delete(key);return null;}
+ const expires=same?existing.expires_at:(request.requested_at??now)+WATCH_MS;
+ if(expires<=now){await storage.delete(key);return null;}
+ const active=records.filter(r=>r.value.expires_at>now&&!r.value.stopped);
+ ensure(existing&&!existing.stopped||active.length<WATCH_MAX,'WATCH_CAPACITY_REACHED');
+ const value={schema:'mathgraph.pilot.watch.v2',request:{...request},head:result.head,base:result.base,snapshot_number:result.number,snapshot_url:result.url,snapshot_head:result.snapshot_head,installationID:request.installation_id,expires_at:expires,last_checked_at:now,pending_at:null,generation:request.watch_generation??existing?.generation??0,pending_generation:null,pending_head:null,pending_base:null};
  await storage.put(key,JSON.stringify(value));return value;
 }
-export async function stopWatch(storage,request){const key=watchKey(request),old=await storage.get(key);if(old){const w=await old.json();await storage.put(key,JSON.stringify({...w,stopped:true}));}return !!old;}
+export async function stopWatch(storage,request,now=Date.now()){const key=watchKey(request),old=await storage.get(key),w=old?await old.json():null;if(w&&request.comment_id<w.request.comment_id)return false;await storage.put(key,JSON.stringify({...w,schema:'mathgraph.pilot.watch.v2',request:{...request},stopped:true,pending_at:null,pending_generation:null,expires_at:Math.max(w?.expires_at??0,(request.requested_at??now)+WATCH_MS)}));return !!old;}
 export async function pollWatches(storage,hooks,now=Date.now()){
  const results=[];
  for(const {key,value:w}of await all(storage)){
