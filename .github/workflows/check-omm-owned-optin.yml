@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/check-omm-owned-optin.yml'
       - 'integrations/mathgraph-check-github/omm-v1/owned-comment*.mjs'
+      - 'integrations/mathgraph-check-github/omm-v1/command.mjs'
 permissions:
   contents: read
 jobs:

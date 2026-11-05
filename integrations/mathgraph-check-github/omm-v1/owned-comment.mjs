@@ -2,6 +2,7 @@
 // This is not an issue_comment event handler; it never grants execution,
 // publication, semantic warrant or repair permission on its own.
 import {checkPublishedArtinInput} from './artin-preflight.mjs';
+import {isOmmClaimCheckCommand} from './command.mjs';
 
 const REPO='metalogiclabs/mathgraph',NUMBER=239,OWNER=32909488;
 const SHA40=/^[a-f0-9]{40}$/,SHA256=/^[a-f0-9]{64}$/;
@@ -12,7 +13,7 @@ const sourceValid=p=>p?.number===NUMBER&&p.state==='open'&&
  p.user?.id===OWNER&&p.user.type==='User'&&
  SHA40.test(p.head?.sha??'')&&SHA40.test(p.base?.sha??'')&&
  p.head?.repo?.full_name===REPO&&p.base?.repo?.full_name===REPO;
-const commentValid=(c,id)=>c?.id===id&&c.body==='@MathGraph -claim'&&
+const commentValid=(c,id)=>c?.id===id&&isOmmClaimCheckCommand(c.body)&&
  c.user?.id===OWNER&&c.user?.type==='User'&&
  c.issue_url===`https://api.github.com${root}/issues/${NUMBER}`&&
  /^20\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(c.created_at??'')&&

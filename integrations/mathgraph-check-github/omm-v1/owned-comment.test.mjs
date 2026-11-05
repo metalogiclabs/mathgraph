@@ -10,13 +10,13 @@ const qualified=()=>({request:{schema:'mathgraph.omm.request.v1',repository:repo
  command:'check',head_sha:head,base_sha:base,candidate_source_sha256:source}});
 
 function client({foreignComment=false,edited=false,wrongPr=false,headMoved=false,
- baseMoved=false,ownerChanged=false,deleted=false}={}){
+ baseMoved=false,ownerChanged=false,deleted=false,body='@MathGraph -claim'}={}){
  const calls=[];let c=0,p=0;
  const api=async path=>{
   calls.push(path);
   if(path===`/repos/${repo}/issues/comments/${commentId}`){
    c++;if(deleted&&c>1)throw Error('HTTP_404');
-   return {id:commentId,body:edited&&c>1?'@MathGraph -fix':'@MathGraph -claim',
+   return {id:commentId,body:edited&&c>1?'@MathGraph -fix':body,
     user:{id:foreignComment?9:owner,type:'User'},
     created_at:timestamp,updated_at:edited&&c>1?'2026-11-05T00:36:00Z':timestamp,
     issue_url:`https://api.github.com/repos/${repo}/issues/${wrongPr?240:number}`};
@@ -51,6 +51,18 @@ test('real owned comment gates only the registered frozen Artin source and never
  assert.deepEqual(calls,[`/repos/${repo}/issues/comments/${commentId}`,
   `/repos/${repo}/pulls/${number}`,`/repos/${repo}/issues/comments/${commentId}`,
   `/repos/${repo}/pulls/${number}`]);
+});
+
+test('a genuine slash /check comment passes identical owner/source gates',async()=>{
+ const {admitOwnedComment}=await subject();
+ const {api}=client({body:'@MathGraph /check'});
+ const admission=await admitOwnedComment({number,commentId,api,
+  qualifyRegistered:async()=>qualified()});
+ assert.equal(admission.status,'SOURCE_ADMITTED_ONLY');
+ assert.equal(admission.comment_id,commentId);
+ assert.equal(admission.source_sha256,source);
+ assert.equal(admission.evidence_warrant,'UNKNOWN');
+ assert.equal(admission.repair_permission,'DENIED');
 });
 
 test('cannot admit unsupported PR or arbitrary invalid IDs',async()=>{

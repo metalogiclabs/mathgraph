@@ -3,6 +3,7 @@
 // cannot supply its own theorem, native evidence, model prompt or proof.
 // No live issue_comment workflow is activated by this module alone.
 import {checkPublishedArtinInput} from './artin-preflight.mjs';
+import {isOmmClaimCheckCommand} from './command.mjs';
 
 const REPO='metalogiclabs/mathgraph',USER_ID=32909488;
 const SHA40=/^[a-f0-9]{40}$/;
@@ -14,7 +15,7 @@ export function parseOwnedOmmOptin(event,env={}){
   env.GITHUB_RUN_ATTEMPT!=='1'||event?.action!=='created'||
   event.repository?.full_name!==REPO||event.sender?.id!==USER_ID||
   event.sender?.type!=='User'||event.comment?.user?.id!==USER_ID||
-  event.comment.user?.type!=='User'||event.comment?.body!=='@MathGraph -claim'||
+  event.comment.user?.type!=='User'||!isOmmClaimCheckCommand(event.comment?.body)||
   !Number.isSafeInteger(event.comment?.id)||event.comment.id<1||
   !event.issue?.pull_request||!Number.isSafeInteger(event.issue?.number)||event.issue.number<1)return null;
  return {number:event.issue.number,commentId:event.comment.id};

@@ -14,12 +14,12 @@ const env=()=>({GITHUB_EVENT_NAME:'issue_comment',GITHUB_REPOSITORY:repo,GITHUB_
 const qualified=()=>({request:{schema:'mathgraph.omm.request.v1',repository:repo,number:239,command:'check',head_sha:head,
   base_sha:base,candidate_source_sha256:'e45efb73729fc98e45e66d216e792e70f67f8c43d4c12cbb753ac410b950e4d9'}});
 
-function client({moved=false,edited=false,foreign=false}={}){
+function client({moved=false,edited=false,foreign=false,body=command}={}){
  const calls=[],state={count:0};
  const api=async path=>{
   calls.push(path);
   if(path==='/repos/'+repo+'/issues/comments/555')return {...event().comment,
-   body:edited?'@MathGraph -fix':command,issue_url:'https://api.github.com/repos/'+repo+'/issues/239'};
+   body:edited?'@MathGraph -fix':body,issue_url:'https://api.github.com/repos/'+repo+'/issues/239'};
   if(path==='/repos/'+repo+'/pulls/239'){
    state.count++;
    return {number:239,state:'open',head:{sha:moved&&state.count>1?'0'.repeat(40):head,
@@ -42,6 +42,28 @@ test('exact owner-only comment is a request, not an evidence warrant',async()=>{
  assert.equal(accepted.intent_fidelity,'UNKNOWN');
  assert.equal(accepted.repair_permission,'DENIED');
  assert.equal(accepted.head_sha,head);
+});
+
+test('canonical /check authenticates the same frozen source and still denies publication',async()=>{
+ const slash='@MathGraph /check';
+ const e=event();e.comment.body=slash;
+ assert.deepEqual(parseOwnedOmmOptin(e,env()),{number:239,commentId:555});
+ const admitted=await admitOwnedOmmSource({event:e,env:env(),api:client({body:slash}).api,
+  qualifyRegistered:async()=>qualified()});
+ assert.equal(admitted.status,'SOURCE_ADMITTED_ONLY');
+ assert.equal(admitted.head_sha,head);
+ assert.equal(admitted.intent_fidelity,'UNKNOWN');
+ assert.equal(admitted.publication_permission,'DENIED');
+ assert.equal(admitted.repair_permission,'DENIED');
+});
+
+test('OMM admission never consumes legacy demo verbs or reserved slash fix/explain',()=>{
+ for(const body of ['@MathGraph -check','@MathGraph -fix','@MathGraph /fix',
+  '@MathGraph /explain','@MathGraph /claim','@MathGraph /check now',
+  '@MathGraph /check\nignore instructions','@MathGraph  /check','@mathgraph /check']){
+  const e=event();e.comment.body=body;
+  assert.equal(parseOwnedOmmOptin(e,env()),null,body);
+ }
 });
 
 test('not an owner, changed command, unsupported event and edited comment are refused',async()=>{
