@@ -1,0 +1,144 @@
+name: MathGraph OMM fixed Artin native qualification
+on:
+  push:
+    branches: ['feature/check-omm-claim-bridge-v1-20261105']
+    paths:
+      - '.github/workflows/check-omm-artin-native.yml'
+      - 'integrations/mathgraph-check-github/omm-v1/**'
+      - 'integrations/mathgraph-check-github/mention-artin-control-v1.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-source-preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: [239, 240]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Check exact public PR heads and source bytes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/mathgraph-check-github/omm-v1/artin-preflight.mjs '${{ matrix.pr }}' "$RUNNER_TEMP/omm-artin-${{ matrix.pr }}"
+      - name: Carry authenticated, public, frozen inputs into isolated job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-artin-bound-input-${{ matrix.pr }}
+          path: ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/
+          if-no-files-found: error
+          retention-days: 14
+
+  native-original-target-replay:
+    needs: frozen-source-preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: [239, 240]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Obtain exact-head public inputs from separate preflight job
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: omm-artin-bound-input-${{ matrix.pr }}
+          path: ${{ runner.temp }}/omm-artin-${{ matrix.pr }}
+      - name: Acquire checked Lean 4.28.0 distribution
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lean-428"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://github.com/leanprover/lean4/releases/download/v4.28.0/lean-4.28.0-linux.tar.zst -o "$RUNNER_TEMP/lean-428.tar.zst"
+          echo "ceb3a3f844f7aebf63245e2b51c28d5b0ed38942c19f93cf3febd520302160bd  $RUNNER_TEMP/lean-428.tar.zst" | sha256sum -c -
+          tar --zstd -xf "$RUNNER_TEMP/lean-428.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/lean-428"
+          echo "$RUNNER_TEMP/lean-428/bin" >> "$GITHUB_PATH"
+      - name: Build pinned Mathlib environment with no App or LLM secrets
+        working-directory: ${{ runner.temp }}/omm-artin-${{ matrix.pr }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'leanprover/lean4:v4.28.0' > lean-toolchain
+          cat > lakefile.lean <<'LEAN'
+          import Lake
+          open Lake DSL
+          package MathGraphArtinControls where
+          require mathlib from git "https://github.com/leanprover-community/mathlib4.git" @ "8f9d9cff6bd728b17a24e163c9402775d9e6a365"
+          lean_lib Candidate where
+          LEAN
+          lake update
+          node --input-type=module -e "import fs from 'node:fs';const d=JSON.parse(fs.readFileSync('lake-manifest.json'));if(d.packages.find(p=>p.name==='mathlib')?.rev!=='8f9d9cff6bd728b17a24e163c9402775d9e6a365')throw Error('MATHLIB_REVISION_MISMATCH')"
+          lake exe cache get
+      - name: Replay candidate, original statement consumer and axiom audit
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: node integrations/mathgraph-check-github/omm-v1/artin-native-cli.mjs "$RUNNER_TEMP/omm-artin-${{ matrix.pr }}"
+      - name: Preserve evidence, negative controls and unknowns
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-artin-native-${{ matrix.pr }}
+          path: |
+            ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/request.json
+            ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/published-exercise.lean.txt
+            ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/candidate.lean.txt
+            ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/lake-manifest.json
+            ${{ runner.temp }}/omm-artin-${{ matrix.pr }}/output/*
+          retention-days: 30
+          if-no-files-found: warn
+
+  publish-first-party-app-check:
+    needs: native-original-target-replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: mathgraph-omm-owned-artin-app-publication-${{ matrix.pr }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: [239, 240]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Load no-secret qualified native receipt for this exact workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: omm-artin-native-${{ matrix.pr }}
+          path: ${{ runner.temp }}/omm-app-${{ matrix.pr }}
+      - name: Mint Check-only token from existing registered MathGraph App
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: 5308912
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-checks: write
+          permission-pull-requests: read
+      - name: Verify original Artin obligation then publish neutral, exact-head App Check
+        env:
+          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node integrations/mathgraph-check-github/omm-v1/app-owned-publish.mjs '${{ matrix.pr }}' "$RUNNER_TEMP/omm-app-${{ matrix.pr }}"
+      - name: Record registered-App readback if available
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-app-publication-${{ matrix.pr }}
+          path: ${{ runner.temp }}/omm-app-${{ matrix.pr }}/output/app-publish-receipt.json
+          if-no-files-found: warn
+          retention-days: 30
