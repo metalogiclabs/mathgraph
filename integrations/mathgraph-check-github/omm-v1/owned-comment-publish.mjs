@@ -5,13 +5,18 @@ const HEAD='2f6aaba0d71f1c0b4c0db58618a8981ccd59dc17';
 const BASE='dfd87d1e921953badedcfae21ade76bb38f5c04a';
 const SOURCE='e45efb73729fc98e45e66d216e792e70f67f8c43d4c12cbb753ac410b950e4d9';
 const NAME='MathGraph Check / OMM owner opt-in (advisory)';
+const SLASH_NAME='MathGraph Check / OMM /check (advisory)';
 const SHA256=/^[a-f0-9]{64}$/;
 const root='/repos/'+REPO;
 const fail=(ok)=>{if(!ok)throw Error('OWNED_OPTIN_NOT_QUALIFIED');};
-const external=id=>`mathgraph-omm-owner-optin-v1:${REPO}:${NUMBER}:${HEAD}:${id}`;
+const channelValid=channel=>channel==='legacy'||channel==='slash-v1';
+const nameFor=channel=>channel==='legacy'?NAME:SLASH_NAME;
+const external=(id,channel)=>channel==='legacy'?
+ `mathgraph-omm-owner-optin-v1:${REPO}:${NUMBER}:${HEAD}:${id}`:
+ `mathgraph-omm-owned-slash-v1:${REPO}:${NUMBER}:${HEAD}`;
 
-export function buildOwnedCommentCheck({admission,assessment,runUrl}={}){
- fail(admission?.schema==='mathgraph.omm.owned-comment-admission.v1'&&
+export function buildOwnedCommentCheck({admission,assessment,runUrl,channel='legacy'}={}){
+ fail(channelValid(channel)&&admission?.schema==='mathgraph.omm.owned-comment-admission.v1'&&
   admission.status==='SOURCE_ADMITTED_ONLY'&&admission.repository===REPO&&
   admission.number===NUMBER&&Number.isSafeInteger(admission.comment_id)&&admission.comment_id>0&&
   admission.head_sha===HEAD&&admission.base_sha===BASE&&admission.source_sha256===SOURCE&&
@@ -29,7 +34,7 @@ export function buildOwnedCommentCheck({admission,assessment,runUrl}={}){
   assessment.evidence_warrant==='UNKNOWN'&&assessment.candidate_dependence==='UNKNOWN'&&
   SHA256.test(assessment.native_receipt_sha256??'')&&
   /^https:\/\/github\.com\/metalogiclabs\/mathgraph\/actions\/runs\/[1-9][0-9]*$/.test(runUrl??''));
- return {name:NAME,head_sha:HEAD,external_id:external(admission.comment_id),
+ return {name:nameFor(channel),head_sha:HEAD,external_id:external(admission.comment_id,channel),
   status:'completed',conclusion:'neutral',output:{
    title:'Owner opt-in: native original target not established (advisory)',
    summary:[`Authenticated first-party [owner request](https://github.com/${REPO}/pull/${NUMBER}#issuecomment-${admission.comment_id}) (`+
@@ -44,13 +49,16 @@ export function buildOwnedCommentCheck({admission,assessment,runUrl}={}){
     '| Mathematical intent | UNKNOWN |',
     '| Independent evidence warrant | UNKNOWN |',
     '| Repair permission | DENIED |',
-    '', 'This is a push-triggered, frozen first-party qualification, not an active issue_comment listener or a community verification service. A failing original-target consumer does not prove mathematical inequivalence. The evidence is source- and run-specific, not a proof of paper-to-Lean fidelity.'].join('\n')}
+    '', channel==='legacy'?
+    'This is a push-triggered, frozen first-party qualification, not an active issue_comment listener or a community verification service. A failing original-target consumer does not prove mathematical inequivalence. The evidence is source- and run-specific, not a proof of paper-to-Lean fidelity.':
+    'Triggered by a real, authenticated first-party issue_comment listener; limited to frozen PR239 and one owner. No community verification or mathematical repair capability is enabled. A failing original-target consumer does not prove mathematical inequivalence. The evidence is source- and run-specific, not a proof of paper-to-Lean fidelity.'].join('\n')}
  };
 }
 
 /** Only this registered App, one comment and exact owned PR head may publish. */
-export async function reconcileOwnedCommentCheck({admission,assessment,runUrl,api,verifyAdmission,write=false}={}){
- const payload=buildOwnedCommentCheck({admission,assessment,runUrl});
+export async function reconcileOwnedCommentCheck({admission,assessment,runUrl,api,verifyAdmission,write=false,
+ channel='legacy'}={}){
+ const payload=buildOwnedCommentCheck({admission,assessment,runUrl,channel});
  fail(typeof api==='function'&&typeof verifyAdmission==='function');
  const confirmAdmission=async()=>{
   const result=await verifyAdmission(admission);
@@ -64,16 +72,17 @@ export async function reconcileOwnedCommentCheck({admission,assessment,runUrl,ap
    throw Error('STALE_PR_HEAD');
  };
  await confirmAdmission();await confirmSource();
- const path=root+'/commits/'+HEAD+'/check-runs?check_name='+encodeURIComponent(NAME)+'&filter=all&per_page=100';
+ const name=nameFor(channel),externalId=external(admission.comment_id,channel);
+ const path=root+'/commits/'+HEAD+'/check-runs?check_name='+encodeURIComponent(name)+'&filter=all&per_page=100';
  const list=await api(path);
  if(!Array.isArray(list?.check_runs)||!Number.isSafeInteger(list.total_count)||
   list.total_count!==list.check_runs.length||list.total_count>100)
   throw Error('APP_CHECK_RECONCILIATION_INCOMPLETE');
- const matching=list.check_runs.filter(x=>x.name===NAME);
+ const matching=list.check_runs.filter(x=>x.name===name);
  if(matching.some(x=>x.app?.id!==APP_ID))throw Error('FOREIGN_APP_CHECK_NAME_COLLISION');
  if(matching.length>1)throw Error('DUPLICATE_OWNED_OMM_CHECK');
  if(matching.length===1&&(matching[0].head_sha!==HEAD||
-  matching[0].external_id!==external(admission.comment_id)||
+  matching[0].external_id!==externalId||
   !Number.isSafeInteger(matching[0].id)))throw Error('OWNED_CHECK_IDENTITY_CHANGED');
  await confirmAdmission();await confirmSource();
  if(!write)return {mode:'PREVIEW',existing:matching.length};
@@ -91,7 +100,7 @@ export async function reconcileOwnedCommentCheck({admission,assessment,runUrl,ap
  }else{result=await api(root+'/check-runs',{method:'POST',body:payload});mode='CREATED';}
  if(!Number.isSafeInteger(result?.id))throw Error('APP_CHECK_WRITE_UNCONFIRMED');
  const observed=await api(root+'/check-runs/'+result.id);
- if(observed?.id!==result.id||observed.app?.id!==APP_ID||observed.name!==NAME||
+ if(observed?.id!==result.id||observed.app?.id!==APP_ID||observed.name!==name||
   observed.head_sha!==HEAD||observed.external_id!==payload.external_id||
   observed.status!=='completed'||observed.conclusion!=='neutral'||
   observed.output?.title!==payload.output.title||observed.output?.summary!==payload.output.summary)

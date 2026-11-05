@@ -13,20 +13,23 @@ const sourceValid=p=>p?.number===NUMBER&&p.state==='open'&&
  p.user?.id===OWNER&&p.user.type==='User'&&
  SHA40.test(p.head?.sha??'')&&SHA40.test(p.base?.sha??'')&&
  p.head?.repo?.full_name===REPO&&p.base?.repo?.full_name===REPO;
-const commentValid=(c,id)=>c?.id===id&&isOmmClaimCheckCommand(c.body)&&
+const commentValid=(c,id,commandBody)=>c?.id===id&&isOmmClaimCheckCommand(c.body)&&
+ (commandBody===undefined||c.body===commandBody)&&
  c.user?.id===OWNER&&c.user?.type==='User'&&
  c.issue_url===`https://api.github.com${root}/issues/${NUMBER}`&&
  /^20\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(c.created_at??'')&&
  c.updated_at===c.created_at;
 
 /** Treat one exact owner-authored GitHub comment as a source request only. */
-export async function admitOwnedComment({number,commentId,api,
+export async function admitOwnedComment({number,commentId,api,commandBody,
  qualifyRegistered=checkPublishedArtinInput}={}){
  requireQualified(number===NUMBER&&Number.isSafeInteger(commentId)&&commentId>0&&
-  typeof api==='function'&&typeof qualifyRegistered==='function','UNREGISTERED_OWNED_REQUEST');
+  typeof api==='function'&&typeof qualifyRegistered==='function'&&
+  (commandBody===undefined||isOmmClaimCheckCommand(commandBody)),
+  'UNREGISTERED_OWNED_REQUEST');
  const path=root+'/issues/comments/'+commentId;
  const initialComment=await api(path);
- requireQualified(commentValid(initialComment,commentId),'OWNED_COMMENT_IDENTITY_UNQUALIFIED');
+ requireQualified(commentValid(initialComment,commentId,commandBody),'OWNED_COMMENT_IDENTITY_UNQUALIFIED');
  const initialPr=await api(root+'/pulls/'+NUMBER);
  requireQualified(sourceValid(initialPr),'FIRST_PARTY_PR_REQUIRED');
  const registration=await qualifyRegistered({number:NUMBER});
@@ -36,7 +39,7 @@ export async function admitOwnedComment({number,commentId,api,
   request.head_sha===initialPr.head.sha&&request.base_sha===initialPr.base.sha&&
   SHA256.test(request.candidate_source_sha256??''),'QUALIFIED_SOURCE_IDENTITY_MISMATCH');
  const lastComment=await api(path);
- requireQualified(commentValid(lastComment,commentId)&&
+ requireQualified(commentValid(lastComment,commentId,commandBody)&&
   lastComment.created_at===initialComment.created_at&&
   lastComment.updated_at===initialComment.updated_at,'COMMENT_CHANGED');
  const lastPr=await api(root+'/pulls/'+NUMBER);

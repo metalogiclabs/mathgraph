@@ -16,11 +16,12 @@ const sha=s=>createHash('sha256').update(s).digest('hex');
 const assert=(ok,reason)=>{if(!ok)throw Error(reason);};
 
 /** Explicit HTTP method + least-privilege path boundary for our App publisher. */
-export function makeOwnedGitHubApi({token,allowWrite=false,fetcher=globalThis.fetch}={}){
+export function makeOwnedGitHubApi({token,commentId=COMMENT_ID,allowWrite=false,fetcher=globalThis.fetch}={}){
  assert(typeof token==='string'&&token.length>10&&typeof fetcher==='function',
   'OWNED_AUTHENTICATED_READ_CONTEXT_REQUIRED');
+ assert(Number.isSafeInteger(commentId)&&commentId>0,'OWNED_AUTHENTICATED_READ_CONTEXT_REQUIRED');
  const root=`/repos/${REPO}`;
- const read=path=>path===root+'/issues/comments/'+COMMENT_ID||
+ const read=path=>path===root+'/issues/comments/'+commentId||
   path===root+'/pulls/'+NUMBER||
   path.startsWith(root+`/commits/2f6aaba0d71f1c0b4c0db58618a8981ccd59dc17/check-runs?check_name=`)||
   new RegExp('^'+root+'/check-runs/[1-9][0-9]*$').test(path);
@@ -42,12 +43,14 @@ export function makeOwnedGitHubApi({token,allowWrite=false,fetcher=globalThis.fe
 }
 
 export async function prepareOwnedCommentInputs({directory,number,commentId,api,
- qualifyRegistered}={}){
+ qualifyRegistered,commandBody}={}){
  assert(typeof directory==='string'&&directory.startsWith('/')&&
-  number===NUMBER&&commentId===COMMENT_ID&&typeof qualifyRegistered==='function',
+  number===NUMBER&&Number.isSafeInteger(commentId)&&commentId>0&&
+  typeof qualifyRegistered==='function'&&
+  (commandBody===undefined||commandBody==='@MathGraph /check'),
   'OWNED_SOURCE_ADMISSION_CONTEXT');
  const bundle=await qualifyRegistered({number});
- const admission=await admitOwnedComment({number,commentId,api,
+ const admission=await admitOwnedComment({number,commentId,api,commandBody,
   qualifyRegistered:async()=>bundle});
  assert(bundle.request.candidate_source_sha256===SOURCE_SHA&&
   typeof bundle.source==='string'&&sha(bundle.source)===SOURCE_SHA&&
@@ -65,10 +68,11 @@ export async function prepareOwnedCommentInputs({directory,number,commentId,api,
 }
 
 /** Bind a separately requalified native receipt to the authenticated request. */
-export function checkOwnedNativeBinding({admission,request,assessment}={}){
+export function checkOwnedNativeBinding({admission,request,assessment,
+ expectedCommentId=COMMENT_ID}={}){
  const valid=admission?.schema==='mathgraph.omm.owned-comment-admission.v1'&&
   admission.status==='SOURCE_ADMITTED_ONLY'&&admission.repository===REPO&&
-  admission.number===NUMBER&&admission.comment_id===COMMENT_ID&&
+  admission.number===NUMBER&&admission.comment_id===expectedCommentId&&
   admission.head_sha===request?.head_sha&&admission.base_sha===request?.base_sha&&
   admission.source_sha256===request?.candidate_source_sha256&&
   admission.native_receipt==='UNKNOWN'&&admission.original_target==='UNKNOWN'&&
