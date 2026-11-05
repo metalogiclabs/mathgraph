@@ -24,6 +24,37 @@ function api(path){
 }
 const subject=()=>import('./owned-comment-cli.mjs');
 
+test('App Check creation uses a real HTTP POST with JSON rather than GET on the checks collection',async()=>{
+ const {makeOwnedGitHubApi}=await subject();
+ const requests=[];
+ const api=makeOwnedGitHubApi({token:'test-token-with-no-real-access',allowWrite:true,
+  fetcher:async(url,opts)=>{requests.push({url,opts});return {ok:true,status:201,
+   json:async()=>({id:991})};}});
+ const p={name:'MathGraph Check / OMM owner opt-in (advisory)',conclusion:'neutral'};
+ assert.deepEqual(await api(`/repos/${repo}/check-runs`,{method:'POST',body:p}),{id:991});
+ assert.equal(requests.length,1);
+ assert.equal(requests[0].url,`https://api.github.com/repos/${repo}/check-runs`);
+ assert.equal(requests[0].opts.method,'POST');
+ assert.equal(requests[0].opts.body,JSON.stringify(p));
+ assert.equal(requests[0].opts.headers['Content-Type'],'application/json');
+ await api(`/repos/${repo}/check-runs/991`,{method:'PATCH',body:{conclusion:'neutral'}});
+ assert.equal(requests[1].opts.method,'PATCH');
+ await api(`/repos/${repo}/pulls/239`);
+ assert.equal(requests[2].opts.method,'GET');
+});
+
+test('preflight API cannot write and publisher cannot mutate any path except exact Check endpoints',async()=>{
+ const {makeOwnedGitHubApi}=await subject();
+ let calls=0;
+ const fetcher=async()=>{calls++;return {ok:true,json:async()=>({})};};
+ const read=makeOwnedGitHubApi({token:'test-token-with-no-real-access',fetcher});
+ await assert.rejects(read(`/repos/${repo}/check-runs`,{method:'POST',body:{}}),/OWNED_API_SURFACE_REFUSED/);
+ const write=makeOwnedGitHubApi({token:'test-token-with-no-real-access',fetcher,allowWrite:true});
+ await assert.rejects(write(`/repos/${repo}/issues/comments/1`,{method:'POST',body:{}}),/OWNED_API_SURFACE_REFUSED/);
+ await assert.rejects(write('/repos/foreign/repo/check-runs',{method:'POST',body:{}}),/OWNED_API_SURFACE_REFUSED/);
+ assert.equal(calls,0);
+});
+
 test('real source admission writes a run-local admission and actual fixed Lean source',async()=>{
  const {prepareOwnedCommentInputs}=await subject();
  const root=await mkdtemp(join(tmpdir(),'omm-owned-comment-'));

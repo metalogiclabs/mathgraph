@@ -15,6 +15,32 @@ const SOURCE_SHA='e45efb73729fc98e45e66d216e792e70f67f8c43d4c12cbb753ac410b950e4
 const sha=s=>createHash('sha256').update(s).digest('hex');
 const assert=(ok,reason)=>{if(!ok)throw Error(reason);};
 
+/** Explicit HTTP method + least-privilege path boundary for our App publisher. */
+export function makeOwnedGitHubApi({token,allowWrite=false,fetcher=globalThis.fetch}={}){
+ assert(typeof token==='string'&&token.length>10&&typeof fetcher==='function',
+  'OWNED_AUTHENTICATED_READ_CONTEXT_REQUIRED');
+ const root=`/repos/${REPO}`;
+ const read=path=>path===root+'/issues/comments/'+COMMENT_ID||
+  path===root+'/pulls/'+NUMBER||
+  path.startsWith(root+`/commits/2f6aaba0d71f1c0b4c0db58618a8981ccd59dc17/check-runs?check_name=`)||
+  new RegExp('^'+root+'/check-runs/[1-9][0-9]*$').test(path);
+ const writable=(method,path)=>allowWrite&&
+  (method==='POST'&&path===root+'/check-runs'||
+   method==='PATCH'&&new RegExp('^'+root+'/check-runs/[1-9][0-9]*$').test(path));
+ return async(path,{method='GET',body}={})=>{
+  assert(typeof path==='string'&&path.startsWith(root+'/')&&
+   (method==='GET'&&body===undefined&&read(path)||writable(method,path)),
+   'OWNED_API_SURFACE_REFUSED');
+  const response=await fetcher('https://api.github.com'+path,{method,redirect:'error',
+   headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
+    Authorization:'Bearer '+token,'User-Agent':'MathGraph-OMM-Owned-Claim',
+    'Content-Type':'application/json'},
+   body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+  assert(response.ok,'OWNED_GITHUB_'+method+'_'+response.status);
+  return response.json();
+ };
+}
+
 export async function prepareOwnedCommentInputs({directory,number,commentId,api,
  qualifyRegistered}={}){
  assert(typeof directory==='string'&&directory.startsWith('/')&&
@@ -90,15 +116,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).hr
   const token=mode==='preflight'?process.env.GITHUB_TOKEN:
    process.env.MATHGRAPH_APP_INSTALLATION_TOKEN;
   assert(typeof token==='string'&&token.length>10,'OWNED_AUTHENTICATED_READ_CONTEXT_REQUIRED');
-  const api=async path=>{
-   assert(path.startsWith(`/repos/${REPO}/`),'OWNED_API_SURFACE_REFUSED');
-   const response=await fetch('https://api.github.com'+path,{redirect:'error',
-    headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
-     Authorization:'Bearer '+token,'User-Agent':'MathGraph-OMM-Owned-Claim'},
-    signal:AbortSignal.timeout(20000)});
-   assert(response.ok,'OWNED_GITHUB_GET_'+response.status);
-   return response.json();
-  };
+  const api=makeOwnedGitHubApi({token,allowWrite:mode==='publish'});
   const authorizedFetch=(url,opts)=>fetch(url,{...opts,redirect:'error',
    headers:{...opts?.headers,
     ...(url.startsWith(`https://api.github.com/repos/${REPO}/`)?{Authorization:'Bearer '+token}:{})},
