@@ -30,6 +30,20 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('renders a bounded, inspectable assurance offer without public proprietary-code submission', async () => {
+    const html = await page('assurance').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('data-assurance-boundary');
+    expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
+    expect(html).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458');
+    expect(text).toMatch(/human-led/i);
+    expect(text).toContain('UNKNOWN');
+    expect(text).toMatch(/not a certification/i);
+    expect(html).not.toMatch(/<input[^>]+type="file"/);
+    expect(html).not.toMatch(/<a[^>]+href="https:\/\/github\.com\/metalogiclabs\/mathgraph\/issues"/);
+  });
+
   test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
     const html = await page('explore').catch(() => '');
     const text = visibleText(html);
