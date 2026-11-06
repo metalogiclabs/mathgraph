@@ -30,6 +30,38 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('renders source-matched final merged qualification without inflating its scope', async () => {
+    const html = await page('assurance');
+    const text = visibleText(html);
+    expect(text).toContain('fdcd6fdc4bc7491166c6c73505e1f62a203c50bf');
+    expect(text).toContain('14,945/14,945');
+    expect(text).toContain('24/24');
+    expect(text).toContain('UNKNOWN');
+  });
+
+  test('offers the assurance audit route from the homepage hero without replacing the evidence network', async () => {
+    const html = await page('');
+    const start = html.indexOf('<header class="shell home-hero">');
+    const hero = start < 0 ? '' : html.slice(start, html.indexOf('</header>', start));
+    expect(hero).toContain('href="/assurance/"');
+    expect(hero).toContain('href="/verify/"');
+    expect(hero).toContain('href="/protocol/"');
+  });
+
+  test('renders a bounded, inspectable assurance offer without public proprietary-code submission', async () => {
+    const html = await page('assurance').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('data-assurance-boundary');
+    expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
+    expect(html).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458');
+    expect(text).toMatch(/human-led/i);
+    expect(text).toContain('UNKNOWN');
+    expect(text).toMatch(/not a certification/i);
+    expect(html).not.toMatch(/<input[^>]+type="file"/);
+    expect(html).not.toMatch(/<a[^>]+href="https:\/\/github\.com\/metalogiclabs\/mathgraph\/issues"/);
+  });
+
   test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
     const html = await page('explore').catch(() => '');
     const text = visibleText(html);

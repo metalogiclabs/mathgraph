@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Independent Assurance for Serious Software — MathGraph"
+  description="Your tests passed. But did they test the right thing? A source-bound, human-led independent assurance audit for consequential software."
+  currentPath="/assurance/"
+>
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">MathGraph · Independent assurance for serious software</div>
+      <h1>Your tests passed. But did they test the right thing?</h1>
+      <p class="lede">AI helps you climb faster. MathGraph checks whether your ladder is against the right wall—and shows you the evidence.</p>
+      <p>Beyond finding bugs, we challenge the assumptions behind your code: what it is supposed to do, what has actually been tested, and what the evidence does or does not establish.</p>
+      <p><strong>Know what you don't know.</strong></p>
+      <div class="actions">
+        <a class="button" href="#audit-scope">What an audit delivers</a>
+        <a class="button button--secondary" href="#evidence">Inspect a real case</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="evidence" aria-labelledby="evidence-title">
+    <div class="shell grid">
+      <div class="span-5">
+        <div class="eyebrow">Independent technical decision · public evidence</div>
+        <h2 id="evidence-title">A test-reporting path that could show green when it should fail.</h2>
+      </div>
+      <div class="span-7">
+        <p>In NASA JPL's open-source L4YAML project, an inconsistent JUnit XML acceptance boundary allowed malformed report content to be accepted by the Lean report reader where a separate Python consumer rejected it. That mismatch could let a success report obscure a reporting failure.</p>
+        <p>We developed a reproducible source-level correction. The upstream maintainer independently reproduced the defect, reviewed the repair, approved it, and merged <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">PR #232</a>.</p>
+        <p>The final merged source <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code> independently passed <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">24/24 native XML controls (22 oracle agreements and two explicitly unsupported forms), plus 14,945/14,945 repository tests</a>. An <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458" rel="external">earlier candidate qualification</a> remains a separate historical result, not evidence silently transported to the final revision.</p>
+        <div class="callout callout--unknown">
+          <p><strong>Evidence boundary:</strong> This is a real, externally reviewed open-source contribution. It is not a claim of NASA/JPL organizational endorsement, a paid engagement, an autonomous discovery by the deployed MathGraph Check App, or a safety certification. Untested behavior remains <code>UNKNOWN</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--compact" id="audit-scope" aria-labelledby="audit-scope-title" data-assurance-boundary>
+    <div class="shell">
+      <div class="eyebrow">Human-led independent audit · fixed scope</div>
+      <h2 id="audit-scope-title">A small, consequential question. An inspectable answer.</h2>
+      <p class="lede">For aerospace, robotics, autonomous systems, scientific computing, and other serious software where an unexamined assumption matters.</p>
+      <div class="grid">
+        <article class="span-6 callout">
+          <h3>What we investigate</h3>
+          <ul>
+            <li>One important behavior, invariant, requirement, or proposed code change.</li>
+            <li>The gap between stated intent, implemented behavior, and existing tests.</li>
+            <li>Adversarial boundaries, alternative interpretations, and falsifying cases.</li>
+          </ul>
+        </article>
+        <article class="span-6 callout">
+          <h3>What you receive</h3>
+          <ul>
+            <li>Precisely identified source revisions and review assumptions.</li>
+            <li>Reproducible counterexamples or independently rerunnable controls where available.</li>
+            <li>Evidence-supported conclusions, unresolved questions, and a bounded recommendation.</li>
+          </ul>
+        </article>
+      </div>
+      <p class="fineprint">An audit can find a defect, validate a claim within a declared boundary, or return UNKNOWN. It is not a certification, a formal proof of the entire system, or automatic release approval. The scope and evidence sources are agreed before work starts.</p>
+    </div>
+  </section>
+
+  <section class="section section--compact" aria-labelledby="enquiry-title">
+    <div class="shell">
+      <div class="eyebrow">Request an independent audit</div>
+      <h2 id="enquiry-title">Start with the decision you need to make.</h2>
+      <p>Ask for a one-change or one-requirement scope discussion. No source upload or customer login is offered on this page. Do not send proprietary code or confidential system information through public GitHub issues.</p>
+      <div class="actions">
+        <a class="button" href="https://nz.linkedin.com/in/hesanchez" rel="external">Request a private scope discussion ↗</a>
+        <a class="button button--secondary" href="/check/">Inspect Check's published evidence boundaries</a>
+      </div>
+      <p class="fineprint">Initial enquiries only; source handling, confidentiality, scope, cost, and evidence access must be agreed separately. This is a human-led service at the present research stage.</p>
+    </div>
+  </section>
+</BaseLayout>
