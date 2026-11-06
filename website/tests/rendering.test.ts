@@ -41,7 +41,8 @@ describe('primary public evidence experience', () => {
 
   test('offers the assurance audit route from the homepage hero without replacing the evidence network', async () => {
     const html = await page('');
-    const hero = html.match(/<header class="shell home-hero">([\\s\\S]*?)<\\/header>/)?.[1] ?? '';
+    const start = html.indexOf('<header class="shell home-hero">');
+    const hero = start < 0 ? '' : html.slice(start, html.indexOf('</header>', start));
     expect(hero).toContain('href="/assurance/"');
     expect(hero).toContain('href="/verify/"');
     expect(hero).toContain('href="/protocol/"');
