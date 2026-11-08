@@ -8,6 +8,7 @@
 import {createPublicKey,verify} from 'node:crypto';
 import {checkProjectionClaim,digestProjectionClaim} from './projection-claim-v1.mjs';
 import {hashFiniteUniverse} from './finite-warrant-quotient-v1.mjs';
+import {corroborateLeanProofArtifact} from './proof-artifact-corroboration-v1.mjs';
 
 export const SIGNED_REVIEW_SCHEMA='mathgraph.projection.review.v1';
 const SHA256=/^[a-f0-9]{64}$/;
@@ -75,4 +76,29 @@ export function admitSignedProjectionReview(subject,envelope,trustedKeys={}){
  }catch{
   return unknown('REVIEW_ADMISSION_INCOMPLETE');
  }
+}
+
+/**
+ * Stronger, opt-in admission. A signed packet alone is insufficient here:
+ * the archived bytes and the review's exact evidence identity must also
+ * match a separate protected receipt policy. This corroborates historical
+ * CI logs, NOT a fresh Lean kernel proof replay or full requirement proof.
+ */
+export function admitCorroboratedSignedProjectionReview(subject,envelope,trustedKeys,{
+ archivePath,trustedReceipt}={}){
+ const reviewed=admitSignedProjectionReview(subject,envelope,trustedKeys);
+ if(reviewed.status!=='BLOCKED')return reviewed;
+ if(!object(trustedReceipt)||
+   !exact(envelope?.payload?.evidence,['receipt_ref','artifact_sha256'])||
+   !Number.isSafeInteger(trustedReceipt.run)||!Number.isSafeInteger(trustedReceipt.job)||
+   envelope.payload.evidence.receipt_ref!==
+     `${trustedReceipt.repository}@${trustedReceipt.commit}:run-${trustedReceipt.run}:job-${trustedReceipt.job}:${trustedReceipt.theorem}`||
+   envelope.payload.evidence.artifact_sha256!==trustedReceipt.artifact_sha256)
+  return unknown('REVIEWED_PROOF_RECEIPT_NOT_INDEPENDENTLY_PINNED');
+ const proof=corroborateLeanProofArtifact(archivePath,trustedReceipt);
+ if(proof.status!=='CORROBORATED')
+  return unknown('REVIEWED_PROOF_ARTIFACT_NOT_CORROBORATED:'+proof.reason);
+ return {...reviewed,review:{...reviewed.review,
+   artifact_corroboration:'CORROBORATED',
+   evidence_kind:proof.evidence_kind,proof_replay:'NOT_PERFORMED'}};
 }

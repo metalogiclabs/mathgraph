@@ -115,6 +115,33 @@ the protected runner supplying independent trust keys are still required for
 stronger assurance. The existing default first-party runner, GitHub workflow,
 and deployed hosted pilot do not pass a signed packet or new trust keys.
 
+## Historical Lean artifact-byte corroboration (opt-in research path)
+
+`proof-artifact-corroboration-v1.mjs` computes SHA-256 over the **downloaded
+ZIP bytes** and compares it with a separately pinned receipt. It then checks
+the exact historical Lean source commit and build, reported theorem type,
+reported allowed axioms, source witness, successful proof qualifications, and
+an intentionally failed negative control. Missing, duplicate or altered
+evidence returns `UNKNOWN`. It never executes ZIP member paths or declares a
+new Lean kernel check. A local replay command using the pinned 8 November
+L4YAML record is under
+`experiments/check-l4-observation-ceiling-v1/corroborate-artifact.mjs`.
+
+`admitCorroboratedSignedProjectionReview` adds a stricter signed-review mode:
+the review's receipt reference and artifact digest must match that separate
+trusted policy, and the artifact bytes must corroborate. `githubSnapshot`
+exposes this only when the host explicitly supplies `proofArtifactPath` and
+`trustedProofReceipt`. If the host requests this mode without both valid
+inputs, the projection is `UNKNOWN` even if the signature and ordinary CI are
+green. No automatic upgrade occurs from a self-selected in-PR policy.
+
+**Boundary:** `CORROBORATED` means the named historical archive and its logs
+match the policy, **not** that the Lean proof was freshly rerun, the reviewer
+is independent, YAML is fully formalized, or downstream callers exercise the
+intended contract. The default runner still supplies neither protected
+reviewer keys nor a signed review. A protected, independently administered
+production runner and actual outside reviewer approval remain `UNKNOWN`.
+
 Use this finite contract to audit proposed caches, provenance compression and
 monitoring state merges before using them to decide which evidence can carry
 forward. Do not infer that every possible run was checked.

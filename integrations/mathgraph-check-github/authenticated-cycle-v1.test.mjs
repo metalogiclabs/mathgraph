@@ -177,3 +177,13 @@ test('invalid signed review without native checks produces explicit UNKNOWN, not
  assert.equal(r.result.status,'UNKNOWN');
  assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
 });
+test('proof-artifact mode never upgrades a signed finding without protected receipt and bytes',async()=>{
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signedProjection(),trustedReviewerKeys:reviewKeys,
+  proofArtifactPath:'/not/a/qualified/artifact.zip'});
+ assert.equal(r.projection.status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
+ await assert.rejects(githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  proofArtifactPath:'/not/a/qualified/artifact.zip'}),/PROOF_ARTIFACT_REQUIRES_SIGNED_REVIEW/);
+});

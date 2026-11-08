@@ -27,6 +27,7 @@ jobs:
             integrations/mathgraph-check-github/finite-warrant-quotient-v1.test.mjs \
             integrations/mathgraph-check-github/projection-claim-v1.test.mjs \
             integrations/mathgraph-check-github/signed-projection-review-v1.test.mjs \
+            integrations/mathgraph-check-github/proof-artifact-corroboration-v1.test.mjs \
             integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs \
             experiments/check-l4-observation-ceiling-v1/case.test.mjs
       - name: Live first-party PR and Checks API readback

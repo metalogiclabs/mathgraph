@@ -38,6 +38,14 @@ necessary to close the intended normative iff.
   job `128547467405`, `directive-proofs=success`, artifact `13593491176`,
   SHA-256 `f60e48bc7a9df0e618c9ce6398644a9bbc5da4d4022010528f662f0566a536f3`.
   These metadata and the head SHA were checked against GitHub on 8 Nov 2026.
+  Later on 8 Nov the actual ZIP bytes were downloaded from GitHub; their
+  SHA-256 matched the published artifact digest. The byte-corroboration gate
+  checked the historical source head, Lean build identity, theorem type,
+  qualified axiom list, source witness and expected-failure control. It
+  returned `CORROBORATED` with `proof_replay=NOT_PERFORMED`. This can be
+  reproduced using `node corroborate-artifact.mjs path/to/artifact.zip` after
+  downloading the named Actions artifact; neither that CLI nor a CI badge
+  constitutes a fresh independent kernel replay.
   The job included source-identity guards, fixed controls, exact Lean proof
   qualification and the permitted-axiom gate. The full production job was
   **skipped**. Artifact metadata are not a replacement for opening each proof
