@@ -64,6 +64,44 @@ test("checker cannot self-certify",async()=>{
  const m=mock({runs:[{...run(1,"MathGraph Check / evidence scope"),app:{slug:"mathgraph-check"}}]});
  await assert.rejects(githubSnapshot({...args,fetcher:m.fetcher}),/NO_INDEPENDENT_CHECKS/);
 });
+test('the running first-party job is excluded by exact GitHub Actions run URL only',async()=>{
+ const selfRun=42463944389;
+ const own={...run(1,'contract','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/1`};
+ const foreign={...run(2,'contract'),
+  details_url:`https://github.com/${args.repository}/actions/runs/111/job/2`};
+ const m=mock({runs:[own,foreign,run(3,'native')]});
+ const r=await githubSnapshot({...args,fetcher:m.fetcher,selfWorkflowRunId:selfRun});
+ assert.equal(r.result.status,'OBSERVED');
+ assert.deepEqual(r.excluded_self_check_run_ids,[1]);
+ assert.equal(r.input.evidence.some(x=>x.check_run_id===1),false);
+ assert.equal(r.input.evidence.some(x=>x.check_run_id===2),true);
+ assert.equal(r.input.evidence.some(x=>x.check_run_id===3),true);
+});
+test('self-exclusion does not hide another app or mismatched job URL',async()=>{
+ const selfRun=42463944389;
+ const fake={...run(1,'contract','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/1`,
+  app:{slug:'not-github-actions'}};
+ const wrongPath={...run(2,'native','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/999`};
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[fake,wrongPath]}).fetcher,
+  selfWorkflowRunId:selfRun});
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.deepEqual(r.excluded_self_check_run_ids,[]);
+ assert.equal(r.input.evidence.length,2);
+});
+test('self-only check does not certify itself or erase the readback',async()=>{
+ const selfRun=42463944389;
+ const only={...run(1,'contract','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/1`};
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[only]}).fetcher,
+  selfWorkflowRunId:selfRun});
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.reason,'NO_EVIDENCE_CONTRACT');
+ assert.deepEqual(r.excluded_self_check_run_ids,[1]);
+ assert.equal(r.input.evidence.length,0);
+});
 test("failed run blocks only its exact obligation",async()=>{
  const m=mock({runs:[run(1,"native","failure"),run(2,"lint")]});
  const r=await githubSnapshot({...args,fetcher:m.fetcher});

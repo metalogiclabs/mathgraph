@@ -7,7 +7,7 @@ const SHA=/^[0-9a-f]{40}$/;
 const OWNER=/^[A-Za-z0-9_.-]+$/;
 export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={},
  projectionClaim,projectionAuthority,signedProjectionReview,trustedReviewerKeys,
- proofArtifactPath,trustedProofReceipt}={}){
+ proofArtifactPath,trustedProofReceipt,selfWorkflowRunId}={}){
  if(typeof repository!=="string"||!repository.split("/").every(x=>OWNER.test(x))||
     repository.split("/").length!==2||!Number.isSafeInteger(pr)||pr<1||
     typeof token!=="string"||token.length<8)throw Error("INVALID_INPUT");
@@ -17,6 +17,8 @@ export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={}
  if((proofArtifactPath!==undefined||trustedProofReceipt!==undefined)&&
    signedProjectionReview===undefined)
    throw Error('PROOF_ARTIFACT_REQUIRES_SIGNED_REVIEW');
+ if(selfWorkflowRunId!==undefined&&(!Number.isSafeInteger(selfWorkflowRunId)||
+   selfWorkflowRunId<1))throw Error('INVALID_SELF_WORKFLOW_RUN_ID');
  const api=async path=>{
   const url="https://api.github.com/repos/"+repository+path;
   const r=await fetcher(url,{headers:{Accept:"application/vnd.github+json",
@@ -40,8 +42,18 @@ export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={}
    if(page===10)throw Error("CHECKS_PAGINATION_LIMIT");
  }
  const latest=new Map();
+ const excludedSelf=[];
  for(const run of checks){
   if(run.head_sha!==sha||typeof run.name!=="string"||!Number.isSafeInteger(run.id))continue;
+  // GitHub Actions publishes the current job as a check-run while its own
+  // readback is still executing. It cannot certify itself. The identity comes
+  // from trusted GITHUB_RUN_ID plus the exact GitHub-owned job URL, never a
+  // guess based on the check's display name.
+  if(selfWorkflowRunId!==undefined&&run.app?.slug==='github-actions'&&
+    run.details_url===`https://github.com/${repository}/actions/runs/${selfWorkflowRunId}/job/${run.id}`){
+    excludedSelf.push(run.id);
+    continue;
+  }
   if(run.app?.slug==="mathgraph-check"||run.name.startsWith("MathGraph Check"))continue;
   const old=latest.get(run.name);
   if(!old||(Date.parse(run.started_at||"")||0)>(Date.parse(old.started_at||"")||0)||
@@ -57,7 +69,7 @@ export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={}
     trustedReviewerKeys,{archivePath:proofArtifactPath,trustedReceipt:trustedProofReceipt}):
    admitSignedProjectionReview(subject,signedProjectionReview,trustedReviewerKeys)):
   projectionClaim===undefined?null:checkProjectionClaim(subject,projectionClaim,projectionAuthority);
- if(latest.size===0&&projection?.status!=='BLOCKED'&&
+ if(latest.size===0&&excludedSelf.length===0&&projection?.status!=='BLOCKED'&&
     signedProjectionReview===undefined)throw Error("NO_INDEPENDENT_CHECKS");
  const evidence=[...latest.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>({
   id:"github-check:"+r.id,subject_sha:sha,verifier_sha:sha,
@@ -84,7 +96,8 @@ export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={}
   if(!evidence.length&&projection.status==='BLOCKED')
    result.reason='QUALIFIED_PROJECTION_ONLY_NO_NATIVE_CHECK_RUNS';
  }
- return {input,result,projection,plans:resolve(result,plans)};
+ return {input,result,projection,plans:resolve(result,plans),
+  excluded_self_check_run_ids:excludedSelf.sort((a,b)=>a-b)};
 }
 export function compareSnapshots(before,after,{changedEvidenceIds=[]}={}){
  if(!before?.result||!after?.result)throw Error("MISSING_AUTHENTICATED_SNAPSHOTS");

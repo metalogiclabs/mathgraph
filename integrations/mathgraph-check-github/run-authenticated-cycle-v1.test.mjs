@@ -20,6 +20,7 @@ test('green native CI is observed while intended behavior remains unverified',()
  assert.equal(r.requirement_assurance.terminal_form,null);
  assert.equal(r.requirement_assurance.next_action,'QUALIFY_REQUIREMENT_AND_SEPARATING_PROBES');
  assert.equal(r.evidence.length,1);
+ assert.deepEqual(r.excluded_self_check_run_ids,[]);
 });
 
 test('failed native CI is not automatically interpreted as a semantic requirement refutation',()=>{

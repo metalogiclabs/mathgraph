@@ -15,6 +15,7 @@ export function makeLiveReadbackReport(snapshot){
   evidence:snapshot.input.evidence.map(e=>({id:e.id,name:e.name,
    conclusion:e.conclusion,check_run_id:e.check_run_id})),
   results:snapshot.result.results,resolve:snapshot.plans,
+  excluded_self_check_run_ids:snapshot.excluded_self_check_run_ids??[],
   requirement_assurance:{status:'UNKNOWN',
    reason:'INTENDED_REQUIREMENT_NOT_ADMITTED_IN_THIS_RUN',
    source_to_claim:'NOT_ESTABLISHED',
@@ -26,7 +27,8 @@ export function makeLiveReadbackReport(snapshot){
 if(import.meta.url===pathToFileURL(process.argv[1]??'').href){
  try{
   const snapshot=await githubSnapshot({repository:process.env.GITHUB_REPOSITORY,
-   pr:Number(process.env.MATHGRAPH_PR_NUMBER),token:process.env.GITHUB_TOKEN});
+   pr:Number(process.env.MATHGRAPH_PR_NUMBER),token:process.env.GITHUB_TOKEN,
+   selfWorkflowRunId:process.env.GITHUB_RUN_ID?Number(process.env.GITHUB_RUN_ID):undefined});
   const report=makeLiveReadbackReport(snapshot);
   await writeFile(process.env.MATHGRAPH_REPORT_PATH||'mathgraph-check-live.json',
    JSON.stringify(report,null,2)+'\n');

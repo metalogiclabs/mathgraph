@@ -104,6 +104,15 @@ established, no proof was replayed, and the next useful step is to qualify an
 independent requirement and separating probes. Even a failing CI job does not
 by itself certify failure of the intended requirement. This disclosure does
 not accept signed packets, add a trust root or change native check verdicts.
+The readback also takes the GitHub-hosted `GITHUB_RUN_ID` and excludes only a
+check published by GitHub Actions whose exact `details_url` identifies that
+same running job. The omitted check-run IDs are retained in the JSON artifact
+as `excluded_self_check_run_ids`; unrelated checks with the same display name
+remain included. A job with no other independent check evidence remains
+`UNKNOWN / NO_EVIDENCE_CONTRACT`, not a self-approved success. Pending and
+skipped external checks also remain UNKNOWN. The job cannot retroactively
+observe its own final outcome; the workflow's completed status is a separate
+subsequent receipt.
 
 **Operational boundary:** This is a wired, tested optional argument to the
 authenticated readback used by the first-party workflow, not a new public
