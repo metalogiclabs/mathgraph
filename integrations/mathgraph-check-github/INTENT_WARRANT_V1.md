@@ -67,6 +67,35 @@ bit versus a necessary normative character requirement. It can form an
 advisory-only Check Run preview, but it neither reruns Lean nor publishes a
 Check Run. Complete YAML-language correctness remains UNKNOWN.
 
+## Authenticated Check → Resolve → Monitor projection adapter
+
+The read-only GitHub PR adapter `authenticated-cycle-v1.mjs` additionally
+accepts optional `projectionClaim` and **separately trusted**
+`projectionAuthority`. It reads the current PR head from GitHub first. The
+pure `projection-claim-v1.mjs` then binds that head, an exact reviewed claim
+digest and an independently qualified finite-universe SHA; a pair whose
+observed result is identical but whose **qualified opposite verdicts** are
+`OBSERVED` and `BLOCKED` becomes an advisory `NAMED_OBSTRUCTION` and a
+`BLOCKED` Check claim. An `UNKNOWN` verdict cannot impersonate the opposite
+truth value. Provenance-only changes, a finite no-collision, mismatched source
+or missing trust remain UNKNOWN.
+
+The existing `resolve()` only selects a non-executing suggestion from the
+host's explicitly permitted, source-authoritative plans; no generated fix is
+entitled to run. The existing `compareSnapshots()` and `monitor()` withdraw
+the claim when a changed head has no newly qualified witness. The native
+Check API still excludes MathGraph's own Check Runs as independent evidence.
+
+**Operational boundary:** This is a wired, tested optional argument to the
+authenticated readback used by the first-party workflow, not a new public
+webhook payload or a deployed generic witness-discovery engine. The current
+default first-party runner does not inject an independently qualified
+projection contract/policy, so ordinary runs behave exactly as before. The
+frozen L4YAML witness may be supplied only for an authenticated matching
+head, never copied onto a newer PR. Qualifying arbitrary user requirements,
+discovering genuine separating witnesses, protected policy distribution,
+and deployment remain distinct UNKNOWN work.
+
 Use this finite contract to audit proposed caches, provenance compression and
 monitoring state merges before using them to decide which evidence can carry
 forward. Do not infer that every possible run was checked.
