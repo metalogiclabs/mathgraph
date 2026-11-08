@@ -1,0 +1,148 @@
+name: MathGraph OMM real owner-comment → fixed native → registered App (qualification only)
+on:
+  push:
+    branches: ['feature/check-omm-claim-bridge-v1-20261105']
+    paths:
+      - '.github/workflows/check-omm-owned-optin.yml'
+      - 'integrations/mathgraph-check-github/omm-v1/owned-comment*.mjs'
+      - 'integrations/mathgraph-check-github/omm-v1/command.mjs'
+permissions:
+  contents: read
+jobs:
+  authenticate-owned-comment-and-frozen-source:
+    if: >-
+      github.repository == 'metalogiclabs/mathgraph' &&
+      github.ref == 'refs/heads/feature/check-omm-claim-bridge-v1-20261105' &&
+      github.actor_id == 32909488
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify owner comment and publication-gate contracts before native work
+        run: node --test integrations/mathgraph-check-github/omm-v1/owned-comment*.test.mjs
+      - name: Re-read actual first-party comment 6645637811 and frozen PR239 before any Lean
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_ACTOR_ID: ${{ github.actor_id }}
+        run: node integrations/mathgraph-check-github/omm-v1/owned-comment-cli.mjs preflight "$RUNNER_TEMP/omm-owned-artin-239"
+      - name: Preserve independently fetched owned request and exact frozen source
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-owned-comment-source-239
+          path: ${{ runner.temp }}/omm-owned-artin-239/
+          if-no-files-found: error
+          retention-days: 14
+
+  credentialless-fixed-artin-replay:
+    needs: authenticate-owned-comment-and-frozen-source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Obtain same-run admission and source (no App or model credentials)
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: omm-owned-comment-source-239
+          path: ${{ runner.temp }}/omm-owned-artin-239
+      - name: Acquire byte-pinned Lean 4.28.0 runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lean-428"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://github.com/leanprover/lean4/releases/download/v4.28.0/lean-4.28.0-linux.tar.zst -o "$RUNNER_TEMP/lean-428.tar.zst"
+          echo "ceb3a3f844f7aebf63245e2b51c28d5b0ed38942c19f93cf3febd520302160bd  $RUNNER_TEMP/lean-428.tar.zst" | sha256sum -c -
+          tar --zstd -xf "$RUNNER_TEMP/lean-428.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/lean-428"
+          echo "$RUNNER_TEMP/lean-428/bin" >> "$GITHUB_PATH"
+      - name: Materialize exactly pinned Mathlib environment without private credentials
+        working-directory: ${{ runner.temp }}/omm-owned-artin-239
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'leanprover/lean4:v4.28.0' > lean-toolchain
+          cat > lakefile.lean <<'LEAN'
+          import Lake
+          open Lake DSL
+          package MathGraphArtinControls where
+          require mathlib from git "https://github.com/leanprover-community/mathlib4.git" @ "8f9d9cff6bd728b17a24e163c9402775d9e6a365"
+          lean_lib Candidate where
+          LEAN
+          lake update
+          node --input-type=module -e "import fs from 'node:fs';const d=JSON.parse(fs.readFileSync('lake-manifest.json'));if(d.packages.find(p=>p.name==='mathlib')?.rev!=='8f9d9cff6bd728b17a24e163c9402775d9e6a365')throw Error('MATHLIB_REVISION_MISMATCH')"
+          lake exe cache get
+      - name: Execute registered Artin candidate, original-target consumer and axiom audit
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: node integrations/mathgraph-check-github/omm-v1/artin-native-cli.mjs "$RUNNER_TEMP/omm-owned-artin-239"
+      - name: Preserve source admission, native trace, receipts and bounded unknowns
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-owned-comment-native-239
+          path: |
+            ${{ runner.temp }}/omm-owned-artin-239/admission.json
+            ${{ runner.temp }}/omm-owned-artin-239/request.json
+            ${{ runner.temp }}/omm-owned-artin-239/published-exercise.lean.txt
+            ${{ runner.temp }}/omm-owned-artin-239/candidate.lean.txt
+            ${{ runner.temp }}/omm-owned-artin-239/lake-manifest.json
+            ${{ runner.temp }}/omm-owned-artin-239/output/*
+          if-no-files-found: warn
+          retention-days: 30
+
+  publish-one-neutral-owned-optin-check:
+    needs: credentialless-fixed-artin-replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    concurrency:
+      group: mathgraph-omm-owned-optin-pr239
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Download exact same-run native evidence into the credentialed verifier
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: omm-owned-comment-native-239
+          path: ${{ runner.temp }}/omm-owned-publish-239
+      - name: Mint restricted registered MathGraph App token (not exposed to native job)
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: 5308912
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-checks: write
+          permission-pull-requests: read
+      - name: Re-authenticate owner comment and independently requalify native bytes before neutral App write
+        env:
+          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_ACTOR_ID: ${{ github.actor_id }}
+        run: node integrations/mathgraph-check-github/omm-v1/owned-comment-cli.mjs publish "$RUNNER_TEMP/omm-owned-publish-239"
+      - name: Preserve genuine registered-App readback
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-owned-comment-app-readback-239
+          path: ${{ runner.temp }}/omm-owned-publish-239/output/owned-optin-app-receipt.json
+          if-no-files-found: warn
+          retention-days: 30

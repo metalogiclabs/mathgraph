@@ -1,0 +1,45 @@
+name: MathGraph OMM exact-head App lifecycle — first-party qualification
+on:
+  push:
+    branches: [feature/check-omm-claim-bridge-v1-20261105]
+    paths:
+      - '.github/workflows/check-omm-intake-lifecycle.yml'
+      - 'integrations/mathgraph-check-github/omm-v1/**'
+permissions:
+  contents: read
+jobs:
+  publish-owned-unknown-and-withdraw-previous:
+    if: >-
+      github.repository == 'metalogiclabs/mathgraph' &&
+      github.ref == 'refs/heads/feature/check-omm-claim-bridge-v1-20261105' &&
+      github.actor_id == 32909488
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: mathgraph-omm-intake-lifecycle-pr270
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify fail-closed transition contract before any App credentials
+        run: node --test integrations/mathgraph-check-github/omm-v1/lifecycle-check.test.mjs
+      - name: Mint Check-only token for installed MathGraph GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: 5308912
+          private-key: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+          owner: metalogiclabs
+          repositories: mathgraph
+          permission-checks: write
+          permission-pull-requests: read
+      - name: Independent PR270 SHA readback, predecessor withdrawal and UNKNOWN App Check
+        env:
+          MATHGRAPH_APP_INSTALLATION_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_ACTOR_ID: ${{ github.actor_id }}
+        run: node integrations/mathgraph-check-github/omm-v1/lifecycle-check.mjs
