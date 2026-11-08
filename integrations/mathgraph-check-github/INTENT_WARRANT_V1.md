@@ -52,6 +52,21 @@ returns FINITE_PRESERVED **only for the supplied authenticated finite universe**
 No table self-hash authorizes a universal claim; an independently admitted
 expectedUniverseSha256 and source allowlist are required.
 
+The consumer also reports whether the collision refutes decoding the
+**protected verdict** from the proposed observation (`target_decidability`),
+or only loses provenance (`source_traceability`). These are different failure
+modes. A later verdict collision takes precedence over an earlier provenance
+collision; both witnesses are preserved when present. A verdict collision
+refutes factorization on any domain containing the pair. A `FINITE_PRESERVED`
+result does **not** establish a universal factorization.
+
+The source-pinned L4YAML case in
+`experiments/check-l4-observation-ceiling-v1/` uses a previously qualified Lean
+raw-comment witness to demonstrate this no-go for the frozen parser-success
+bit versus a necessary normative character requirement. It can form an
+advisory-only Check Run preview, but it neither reruns Lean nor publishes a
+Check Run. Complete YAML-language correctness remains UNKNOWN.
+
 Use this finite contract to audit proposed caches, provenance compression and
 monitoring state merges before using them to decide which evidence can carry
 forward. Do not infer that every possible run was checked.
