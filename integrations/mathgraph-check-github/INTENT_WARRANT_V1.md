@@ -95,6 +95,16 @@ entitled to run. The existing `compareSnapshots()` and `monitor()` withdraw
 the claim when a changed head has no newly qualified witness. The native
 Check API still excludes MathGraph's own Check Runs as independent evidence.
 
+The ordinary read-only `run-authenticated-cycle-v1.mjs` artifact now separates
+`status` (the authenticated GitHub check-run observation) from
+`requirement_assurance.status` (always `UNKNOWN` in this unprivileged runner).
+Its reason is `INTENDED_REQUIREMENT_NOT_ADMITTED_IN_THIS_RUN`; it explicitly
+records that source-to-claim fidelity and observation sufficiency are not
+established, no proof was replayed, and the next useful step is to qualify an
+independent requirement and separating probes. Even a failing CI job does not
+by itself certify failure of the intended requirement. This disclosure does
+not accept signed packets, add a trust root or change native check verdicts.
+
 **Operational boundary:** This is a wired, tested optional argument to the
 authenticated readback used by the first-party workflow, not a new public
 webhook payload or a deployed generic witness-discovery engine. The current
