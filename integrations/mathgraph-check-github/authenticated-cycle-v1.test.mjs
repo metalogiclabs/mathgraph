@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {githubSnapshot,compareSnapshots} from "./authenticated-cycle-v1.mjs";
+import {digestProjectionClaim} from './projection-claim-v1.mjs';
+import {hashFiniteUniverse} from './finite-warrant-quotient-v1.mjs';
+import {projectionReviewBytes} from './signed-projection-review-v1.mjs';
+import {generateKeyPairSync,sign} from 'node:crypto';
 const a="a".repeat(40),b="b".repeat(40);
 function mock({runs,head=a,status=200}={}){
  const got=[];
@@ -18,6 +22,28 @@ function run(id,name,conclusion="success",status="completed",sha=a){
  return {id,name,head_sha:sha,status,conclusion,started_at:"2026-10-23T00:00:00Z",app:{slug:"github-actions"}};
 }
 const args={repository:"metalogiclabs/mathgraph",pr:195,token:"not-real-but-long"};
+function projection(){
+ const claim={id:'required-behavior',statement:'The required behavior holds',
+   observation:'green CI',universe:{schema:'mathgraph.finite-warrant-quotient.v1',
+     scope:'authenticated-pr-witness',rows:[
+       {id:'compliant',source_sha:a,alpha_key:'CI=green',protected_status:'OBSERVED'},
+       {id:'violation',source_sha:a,alpha_key:'CI=green',protected_status:'BLOCKED'},
+     ]}};
+ const subject={repository:args.repository,pr:args.pr,base_sha:b,head_sha:a};
+ const authority={allowedRepositories:[args.repository],expectedHeadSha:a,
+   expectedContractSha256:digestProjectionClaim(subject,claim),
+   expectedUniverseSha256:hashFiniteUniverse(claim.universe),allowedSourceShas:[a]};
+ return {claim,authority};
+}
+const reviewKey=generateKeyPairSync('ed25519');
+const reviewKeys={'independent-reviewer-v1':reviewKey.publicKey.export({type:'spki',format:'pem'})};
+function signedProjection(){
+ const p=projection(),subject={repository:args.repository,pr:args.pr,base_sha:b,head_sha:a};
+ const payload={schema:'mathgraph.projection.review.v1',subject,claim:p.claim,
+  evidence:{receipt_ref:'review:finite-pair-1',artifact_sha256:'c'.repeat(64)}};
+ const packet={key_id:'independent-reviewer-v1',payload};
+ return {...packet,signature_b64:sign(null,projectionReviewBytes(packet),reviewKey.privateKey).toString('base64')};
+}
 test("authenticated GitHub readback yields observation but not proof",async()=>{
  const m=mock({runs:[run(1,"native")]});
  const r=await githubSnapshot({...args,fetcher:m.fetcher});
@@ -37,6 +63,44 @@ test("pending latest rerun does not reuse old green result",async()=>{
 test("checker cannot self-certify",async()=>{
  const m=mock({runs:[{...run(1,"MathGraph Check / evidence scope"),app:{slug:"mathgraph-check"}}]});
  await assert.rejects(githubSnapshot({...args,fetcher:m.fetcher}),/NO_INDEPENDENT_CHECKS/);
+});
+test('the running first-party job is excluded by exact GitHub Actions run URL only',async()=>{
+ const selfRun=42463944389;
+ const own={...run(1,'contract','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/1`};
+ const foreign={...run(2,'contract'),
+  details_url:`https://github.com/${args.repository}/actions/runs/111/job/2`};
+ const m=mock({runs:[own,foreign,run(3,'native')]});
+ const r=await githubSnapshot({...args,fetcher:m.fetcher,selfWorkflowRunId:selfRun});
+ assert.equal(r.result.status,'OBSERVED');
+ assert.deepEqual(r.excluded_self_check_run_ids,[1]);
+ assert.equal(r.input.evidence.some(x=>x.check_run_id===1),false);
+ assert.equal(r.input.evidence.some(x=>x.check_run_id===2),true);
+ assert.equal(r.input.evidence.some(x=>x.check_run_id===3),true);
+});
+test('self-exclusion does not hide another app or mismatched job URL',async()=>{
+ const selfRun=42463944389;
+ const fake={...run(1,'contract','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/1`,
+  app:{slug:'not-github-actions'}};
+ const wrongPath={...run(2,'native','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/999`};
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[fake,wrongPath]}).fetcher,
+  selfWorkflowRunId:selfRun});
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.deepEqual(r.excluded_self_check_run_ids,[]);
+ assert.equal(r.input.evidence.length,2);
+});
+test('self-only check does not certify itself or erase the readback',async()=>{
+ const selfRun=42463944389;
+ const only={...run(1,'contract','success','in_progress'),
+  details_url:`https://github.com/${args.repository}/actions/runs/${selfRun}/job/1`};
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[only]}).fetcher,
+  selfWorkflowRunId:selfRun});
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.reason,'NO_EVIDENCE_CONTRACT');
+ assert.deepEqual(r.excluded_self_check_run_ids,[1]);
+ assert.equal(r.input.evidence.length,0);
 });
 test("failed run blocks only its exact obligation",async()=>{
  const m=mock({runs:[run(1,"native","failure"),run(2,"lint")]});
@@ -64,4 +128,100 @@ test("after failure, fresh green result needs requalification",async()=>{
  const after=await githubSnapshot({...args,fetcher:mock({runs:[run(1,"native")]}).fetcher});
  const result=compareSnapshots(before,after,{changedEvidenceIds:["github-check:1"]});
  assert.equal(result.transitions[0].to,"UNKNOWN");
+});
+test('qualified projection witness enters live Check and only permitted Resolve proposals',async()=>{
+ const p=projection(),m=mock({runs:[run(1,'native')]});
+ const r=await githubSnapshot({...args,fetcher:m.fetcher,projectionClaim:p.claim,
+  projectionAuthority:p.authority,plans:{'required-behavior':[
+    {id:'auto-fix',cost:0,allowed:false,source_authoritative:true},
+    {id:'refine-observation',cost:2,allowed:true,source_authoritative:true}]}});
+ assert.equal(r.result.status,'BLOCKED');
+ assert.equal(r.result.results.find(x=>x.id==='required-behavior').status,'BLOCKED');
+ assert.equal(r.projection.terminal_form,'NAMED_OBSTRUCTION');
+ assert.equal(r.plans.find(x=>x.claim==='required-behavior').next.experiment,'refine-observation');
+ assert.equal(r.plans.find(x=>x.claim==='required-behavior').next.kind,'PROPOSAL_NOT_EXECUTED');
+ assert.equal(r.result.permission,'ADVISORY_ONLY');
+});
+test('untrusted projection does not inherit a semantic verdict from green CI',async()=>{
+ const p=projection();
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+   projectionClaim:p.claim});
+ assert.equal(r.result.results.find(x=>x.id==='required-behavior').status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+});
+test('changing PR head withdraws projection and preserves monitor lineage',async()=>{
+ const p=projection(),before=await githubSnapshot({...args,
+  fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  projectionClaim:p.claim,projectionAuthority:p.authority});
+ const c='c'.repeat(40),after=await githubSnapshot({...args,
+  fetcher:mock({head:c,runs:[run(2,'native','success','completed',c)]}).fetcher,
+  projectionClaim:p.claim,projectionAuthority:p.authority});
+ assert.equal(after.projection.status,'UNKNOWN');
+ const transition=compareSnapshots(before,after);
+ assert.equal(transition.transitions.find(x=>x.claim==='required-behavior').from,'BLOCKED');
+ assert.equal(transition.transitions.find(x=>x.claim==='required-behavior').to,'UNKNOWN');
+});
+test('qualified witness may explain a PR even when it has no other check runs',async()=>{
+ const p=projection();
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[]}).fetcher,
+  projectionClaim:p.claim,projectionAuthority:p.authority});
+ assert.equal(r.result.status,'BLOCKED');
+ assert.equal(r.input.evidence.length,0);
+});
+test('an old or in-band projection cannot replace missing independent check runs',async()=>{
+ const p=projection();p.claim.universe.rows[1].source_sha=b;
+ await assert.rejects(githubSnapshot({...args,fetcher:mock({runs:[]}).fetcher,
+  projectionClaim:p.claim,projectionAuthority:p.authority}),/NO_INDEPENDENT_CHECKS/);
+});
+test('authenticated Check admits exact-head signed independent review',async()=>{
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signedProjection(),trustedReviewerKeys:reviewKeys});
+ assert.equal(r.result.status,'BLOCKED');
+ assert.equal(r.projection.terminal_form,'NAMED_OBSTRUCTION');
+ assert.equal(r.projection.review.proof_replay,'NOT_PERFORMED');
+ assert.equal(r.result.results.find(x=>x.id==='required-behavior').status,'BLOCKED');
+});
+test('forged signed review stays UNKNOWN even when native CI is green',async()=>{
+ const signed=signedProjection();signed.payload.claim.statement='unreviewed broader claim';
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ assert.equal(r.projection.status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
+});
+test('old signed review withdraws after current PR head changes',async()=>{
+ const signed=signedProjection();
+ const before=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ const c='c'.repeat(40);
+ const after=await githubSnapshot({...args,fetcher:mock({head:c,runs:[run(2,'native','success','completed',c)]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ assert.equal(after.projection.status,'UNKNOWN');
+ assert.equal(compareSnapshots(before,after).transitions.find(x=>x.claim==='required-behavior').to,'UNKNOWN');
+});
+test('signed and raw host policy cannot both authorise one finding',async()=>{
+ const p=projection();
+ await assert.rejects(githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  projectionClaim:p.claim,projectionAuthority:p.authority,
+  signedProjectionReview:signedProjection(),trustedReviewerKeys:reviewKeys}),
+  /AMBIGUOUS_PROJECTION_INPUT/);
+});
+test('invalid signed review without native checks produces explicit UNKNOWN, not a false result',async()=>{
+ const signed=signedProjection();signed.signature_b64='AAAA';
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ assert.equal(r.input.evidence.length,0);
+ assert.equal(r.projection.status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
+});
+test('proof-artifact mode never upgrades a signed finding without protected receipt and bytes',async()=>{
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signedProjection(),trustedReviewerKeys:reviewKeys,
+  proofArtifactPath:'/not/a/qualified/artifact.zip'});
+ assert.equal(r.projection.status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
+ await assert.rejects(githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  proofArtifactPath:'/not/a/qualified/artifact.zip'}),/PROOF_ARTIFACT_REQUIRES_SIGNED_REVIEW/);
 });

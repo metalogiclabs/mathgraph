@@ -4,6 +4,7 @@ on:
     paths:
       - 'integrations/mathgraph-check-github/*-v1.mjs'
       - 'integrations/mathgraph-check-github/*-v1.test.mjs'
+      - 'experiments/check-l4-observation-ceiling-v1/review-request*.mjs'
       - '.github/workflows/mathgraph-check-authenticated-cycle-v1.yml'
   workflow_dispatch:
 permissions:
@@ -19,7 +20,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs
+      - name: Contract and signed-review regression gates
+        run: |
+          node --test \
+            integrations/mathgraph-check-github/evidence-contract-v1.test.mjs \
+            integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs \
+            integrations/mathgraph-check-github/finite-warrant-quotient-v1.test.mjs \
+            integrations/mathgraph-check-github/projection-claim-v1.test.mjs \
+            integrations/mathgraph-check-github/signed-projection-review-v1.test.mjs \
+            integrations/mathgraph-check-github/proof-artifact-corroboration-v1.test.mjs \
+            integrations/mathgraph-check-github/run-protected-review-v1.test.mjs \
+            integrations/mathgraph-check-github/authenticated-cycle-v1.test.mjs \
+            integrations/mathgraph-check-github/run-authenticated-cycle-v1.test.mjs \
+            experiments/check-l4-observation-ceiling-v1/case.test.mjs \
+            experiments/check-l4-observation-ceiling-v1/review-request.test.mjs
       - name: Live first-party PR and Checks API readback
         if: github.event_name == 'pull_request'
         env:

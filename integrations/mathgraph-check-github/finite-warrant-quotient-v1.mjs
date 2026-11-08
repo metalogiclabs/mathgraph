@@ -40,16 +40,25 @@ export function checkFiniteWarrantQuotient(universe,authority={}){
  let compared=0;
  let targetWitness=null,sourceWitness=null;
  for(const row of sorted){
-   const prior=groups.get(row.alpha_key);
-   if(prior){
+   const group=groups.get(row.alpha_key);
+   if(group){
      compared++;
-     // Do not return at the first provenance collision. A later row can
-     // expose the stronger claim-verdict obstruction for the same alpha.
-     if(prior.source_sha!==row.source_sha&&!sourceWitness)
-       sourceWitness={alpha_key:row.alpha_key,left:prior,right:row};
-     if(prior.protected_status!==row.protected_status&&!targetWitness)
-       targetWitness={alpha_key:row.alpha_key,left:prior,right:row};
-   }else groups.set(row.alpha_key,row);
+     if(group.first.source_sha!==row.source_sha&&!sourceWitness)
+       sourceWitness={alpha_key:row.alpha_key,left:group.first,right:row};
+     group.count++;
+   }else groups.set(row.alpha_key,{first:row,count:1,observed:null,blocked:null,unknown:false});
+   const entry=groups.get(row.alpha_key);
+   if(row.protected_status==='OBSERVED'&&!entry.observed)entry.observed=row;
+   if(row.protected_status==='BLOCKED'&&!entry.blocked)entry.blocked=row;
+   if(row.protected_status==='UNKNOWN')entry.unknown=true;
+ }
+ // UNKNOWN is an evidence state, not the logical negation of OBSERVED or
+ // BLOCKED. Only an admitted opposite pair proves a target-information loss.
+ for(const [alpha_key,group] of groups){
+   if(group.observed&&group.blocked){
+     targetWitness={alpha_key,left:group.observed,right:group.blocked};
+     break;
+   }
  }
  if(targetWitness||sourceWitness){
    const statusDiffers=targetWitness!==null;
@@ -71,6 +80,10 @@ export function checkFiniteWarrantQuotient(universe,authority={}){
         universe_sha256:digest,checked_states:sorted.length,compared_merges:compared,
         witness:targetWitness??sourceWitness,source_witness:sourceWitness};
  }
+ if([...groups.values()].some(g=>g.count>1&&g.unknown))
+   return {...unknown('INCOMPLETE_PROTECTED_VERDICTS',universe.scope),
+     required_change:'QUALIFY_PROTECTED_VERDICTS',
+     universe_sha256:digest,checked_states:sorted.length,compared_merges:compared};
  return {schema:'mathgraph.finite-warrant-quotient.v1',scope:universe.scope,
    status:'FINITE_PRESERVED',reason:'NO_CONSEQUENTIAL_COLLISION_IN_ENUMERATED_UNIVERSE',
    permission:'ADVISORY_ONLY',universal_preservation:'NOT_ESTABLISHED',
