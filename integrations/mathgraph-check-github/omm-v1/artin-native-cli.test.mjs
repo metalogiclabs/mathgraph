@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
+import {mkdtemp,writeFile,readFile,rm,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {artinStrongSource,artinRepairSource} from '../mention-artin-control-v1.mjs';
-import {qualifyArtinDirectory} from './artin-native-cli.mjs';
+import {qualifyArtinDirectory,createArtinNativeRunner} from './artin-native-cli.mjs';
 
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const published=`import Mathlib
@@ -82,5 +82,74 @@ test('source edit before qualification is blocked before Lean is invoked',async(
   await assert.rejects(qualifyArtinDirectory({directory,mathlibGit:mathlib,runUrl:url,
     run:async()=>{calls++;return {code:0,output:''};}}));
   assert.equal(calls,0);
+ }finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('native runner binds each direct import to the newly compiled artifact',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'omm-artin-artifact-'));
+ try{
+  const build=join(directory,'.lake/build/lib/lean');
+  const candidate=join(build,'Candidate.olean');
+  const consumer=join(build,'Consumer.olean');
+  const calls=[];
+  const run=createArtinNativeRunner(directory,async args=>{
+   calls.push(args);
+   if(args.includes('--deps')){
+    return {stdout:(args.at(-1).endsWith('Consumer.lean')?candidate:consumer)+'\n',stderr:''};
+   }
+   if(args.includes('-o'))await writeFile(args[args.indexOf('-o')+1],args.at(-1).endsWith('Candidate.lean')?'candidate bytes':'consumer bytes');
+   return {stdout:'',stderr:''};
+  });
+  assert.equal((await run('Candidate','candidate')).produced_olean_sha256,sha('candidate bytes'));
+  assert.equal((await run('Consumer','consumer')).imported_olean_sha256,sha('candidate bytes'));
+  assert.equal((await run('Audit','audit')).imported_olean_sha256,sha('consumer bytes'));
+  assert.equal(calls.filter(args=>args.includes('--deps')).length,2);
+ }finally{await rm(directory,{recursive:true,force:true});}
+});
+
+test('native runner refuses stale outputs, missing outputs, and shadowed imports',async()=>{
+ for(const fault of ['stale','missing','shadow','replacement','extra-part']){
+  const directory=await mkdtemp(join(tmpdir(),'omm-artin-artifact-'));
+  try{
+   const build=join(directory,'.lake/build/lib/lean');
+   const candidate=join(build,'Candidate.olean');
+   const shadow=join(directory,'Candidate.olean');
+   await mkdir(build,{recursive:true});
+   if(fault==='stale')await writeFile(candidate,'stale');
+   await writeFile(shadow,'shadow');
+   let compilations=0;
+   const run=createArtinNativeRunner(directory,async args=>{
+    if(args.includes('--deps'))return {stdout:(fault==='shadow'?shadow:candidate)+'\n',stderr:''};
+    compilations++;
+    if(fault!=='missing')await writeFile(args[args.indexOf('-o')+1],'fresh artifact');
+    return {stdout:'',stderr:''};
+   });
+   if(fault==='stale'||fault==='missing'){
+    await assert.rejects(run('Candidate','candidate'),/NATIVE_OLEAN_(PREEXISTS|MISSING)/);
+    assert.equal(compilations,fault==='stale'?0:1);
+   }else{
+    await run('Candidate','candidate');
+    if(fault==='replacement')await writeFile(candidate,'replacement');
+    if(fault==='extra-part')await writeFile(candidate+'.server','unexpected part');
+    await assert.rejects(run('Consumer','consumer'),/NATIVE_OLEAN_(IMPORT_MISMATCH|CHANGED|UNEXPECTED_PART)/);
+    assert.equal(compilations,1);
+   }
+  }finally{await rm(directory,{recursive:true,force:true});}
+ }
+});
+
+test('artifact binding failure remains an execution failure in the qualification trace',async()=>{
+ const directory=await setup(239,artinStrongSource);
+ try{
+  const artifactSha=sha('candidate bytes');
+  await assert.rejects(qualifyArtinDirectory({directory,mathlibGit:mathlib,runUrl:url,
+   run:async unit=>{
+    if(unit==='Candidate')return {code:0,output:'',produced_olean_sha256:artifactSha};
+    throw Error('NATIVE_OLEAN_IMPORT_MISMATCH');
+   }}),/ARTIN_COHORT_NOT_QUALIFIED/);
+  const trace=JSON.parse(await readFile(join(directory,'output','native-trace.json')));
+  assert.equal(trace[0].produced_olean_sha256,artifactSha);
+  assert.equal(trace[1].exit_code,null);
+  assert.equal(trace[1].error,'NATIVE_OLEAN_IMPORT_MISMATCH');
  }finally{await rm(directory,{recursive:true,force:true});}
 });

@@ -9,6 +9,7 @@ import {assessOmmClaim} from './claim-admission.mjs';
 import {buildOmmAppCheckPreview} from './app-check.mjs';
 
 const SHA40=/^[a-f0-9]{40}$/;
+const SHA256=/^[a-f0-9]{64}$/;
 const digest=s=>createHash('sha256').update(s).digest('hex');
 const REPO='metalogiclabs/mathgraph',APP_ID=5308912;
 const NAME='MathGraph Check / OMM claim (advisory)';
@@ -65,7 +66,15 @@ export async function loadFrozenArtinPreview({directory,number,runId}={}){
  requirePin(Array.isArray(trace)&&trace.length===receipt.native.trace.length&&
   trace.every((e,i)=>e.unit===receipt.native.trace[i].unit&&
    e.exit_code===receipt.native.trace[i].exit_code)&&
-  trace[0].source_sha256===digest(source),'NATIVE_TRACE_DIVERGED');
+  trace[0].source_sha256===digest(source)&&
+  trace[1].source_sha256===assessment.consumer_sha256,'NATIVE_TRACE_DIVERGED');
+ // An intact trace file can still describe a different object handoff.
+ const [candidate,consumer,audit]=trace;
+ requirePin(SHA256.test(candidate.produced_olean_sha256??'')&&
+  consumer.imported_olean_sha256===candidate.produced_olean_sha256&&
+  (!audit||(SHA256.test(consumer.produced_olean_sha256??'')&&
+   audit.imported_olean_sha256===consumer.produced_olean_sha256)),
+  'NATIVE_OLEAN_HANDOFF_UNBOUND');
  const preview=buildOmmAppCheckPreview({...inputs,expectedHeadSha:p.head,runUrl});
  requirePin(JSON.stringify(preview.payload)===files['app-check-preview.json']&&
   preview.payload.conclusion==='neutral','APP_PREVIEW_REQUALIFICATION_FAILED');

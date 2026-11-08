@@ -4,7 +4,7 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
-import {artinStrongSource} from '../mention-artin-control-v1.mjs';
+import {artinStrongSource,artinRepairSource} from '../mention-artin-control-v1.mjs';
 import {qualifyArtinDirectory} from './artin-native-cli.mjs';
 import {loadFrozenArtinPreview,reconcileOwnedOmmCheck} from './app-owned-publish.mjs';
 
@@ -29,17 +29,28 @@ theorem Artin_exercise_2_2_9 {G : Type*} [Group G] {a b : G}
   ∀ x y : closure {x | x = a ∨ x = b}, x * y = y * x := by
   sorry
 `;
-async function setup(){
+const candidateOlean=sha('candidate object');
+const consumerOlean=sha('consumer object');
+async function setup(number=239){
+ const source=number===239?artinStrongSource:artinRepairSource;
  const directory=await mkdtemp(join(tmpdir(),'omm-app-publish-'));
- const request={schema:'mathgraph.omm.request.v1',repository:'metalogiclabs/mathgraph',number:239,
-   command:'check',head_sha:head,base_sha:base,candidate_source_sha256:sha(artinStrongSource)};
+ const request={schema:'mathgraph.omm.request.v1',repository:'metalogiclabs/mathgraph',number,
+   command:'check',head_sha:number===239?head:'06f09cd5aaa866365ceb6540cd06389bd37a727c',
+   base_sha:number===239?base:head,candidate_source_sha256:sha(source)};
  await writeFile(join(directory,'request.json'),JSON.stringify(request));
- await writeFile(join(directory,'candidate.lean.txt'),artinStrongSource);
+ await writeFile(join(directory,'candidate.lean.txt'),source);
  await writeFile(join(directory,'published-exercise.lean.txt'),published);
  await writeFile(join(directory,'lean-toolchain'),'leanprover/lean4:v4.28.0\n');
  await qualifyArtinDirectory({directory,mathlibGit:'8f9d9cff6bd728b17a24e163c9402775d9e6a365',
    runUrl:`https://github.com/metalogiclabs/mathgraph/actions/runs/${runId}`,
-   run:async unit=>unit==='Candidate'?{code:0,output:''}:{code:1,output:'type mismatch'}});
+   run:async unit=>{
+    if(unit==='Candidate')return {code:0,output:'',produced_olean_sha256:candidateOlean};
+    if(unit==='Consumer')return number===239
+     ?{code:1,output:'type mismatch',imported_olean_sha256:candidateOlean}
+     :{code:0,output:'',imported_olean_sha256:candidateOlean,produced_olean_sha256:consumerOlean};
+    return {code:0,output:"'Artin_exercise_2_2_9' depends on axioms: [propext]\n'MathGraphConsumer.original_target' depends on axioms: [propext]",
+     imported_olean_sha256:consumerOlean};
+   }});
  return directory;
 }
 test('release gate re-derives App payload and all hashes from frozen native artifacts',async()=>{
@@ -53,6 +64,30 @@ test('release gate re-derives App payload and all hashes from frozen native arti
   await writeFile(file,(await readFile(file,'utf8')).replace('neutral','success'));
   await assert.rejects(loadFrozenArtinPreview({directory,number:239,runId}),/ARTIFACT_PIN_MISMATCH/);
  }finally{await rm(directory,{recursive:true,force:true});}
+});
+test('release gate refuses broken object handoffs even with matching manifest hashes',async()=>{
+ for(const fault of ['missing','candidate mismatch','audit mismatch','consumer source mismatch']){
+  const number=fault==='audit mismatch'?240:239;
+  const directory=await setup(number);
+  try{
+   const artifact=join(directory,'output','native-trace.json');
+   const manifestPath=join(directory,'output','manifest.json');
+   const input={directory,number,runId};
+   await loadFrozenArtinPreview(input);
+   const trace=JSON.parse(await readFile(artifact,'utf8'));
+   if(fault==='missing')delete trace[0].produced_olean_sha256;
+   if(fault==='candidate mismatch')trace[1].imported_olean_sha256=consumerOlean;
+   if(fault==='audit mismatch')trace[2].imported_olean_sha256=candidateOlean;
+   if(fault==='consumer source mismatch')trace[1].source_sha256=sha('other consumer source');
+   const traceBytes=JSON.stringify(trace);
+   const manifest=JSON.parse(await readFile(manifestPath,'utf8'));
+   manifest.artifact_sha256['native-trace.json']=sha(traceBytes);
+   await writeFile(artifact,traceBytes);
+   await writeFile(manifestPath,JSON.stringify(manifest));
+   const error=fault==='consumer source mismatch'?/NATIVE_TRACE_DIVERGED/:/NATIVE_OLEAN_HANDOFF_UNBOUND/;
+   await assert.rejects(loadFrozenArtinPreview(input),error,fault);
+  }finally{await rm(directory,{recursive:true,force:true});}
+ }
 });
 function client({stale=false,existing=null,changeAfter=false}={}){
  const calls=[];
