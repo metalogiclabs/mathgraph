@@ -96,6 +96,25 @@ head, never copied onto a newer PR. Qualifying arbitrary user requirements,
 discovering genuine separating witnesses, protected policy distribution,
 and deployment remain distinct UNKNOWN work.
 
+## Signed independent reviewer admission (research path)
+
+`signed-projection-review-v1.mjs` adds an optional cryptographic reviewer
+boundary before the same finite projection checker. An Ed25519 signature covers
+the canonical claim, exact authenticated PR subject, reviewer's key identity,
+and a named evidence receipt with its artifact digest. Only an out-of-band
+trusted public-key allowlist can qualify the signature; a public key embedded
+in a PR or claim packet is rejected. The authenticated `githubSnapshot` accepts
+an optional `signedProjectionReview` with `trustedReviewerKeys`, mutually
+exclusive with the earlier raw trusted-host `projectionClaim` inputs. A forged,
+stale, unsigned, or incomplete review remains UNKNOWN even with green CI.
+
+**Not a proof replay:** The signature authenticates *who reviewed and approved
+these exact bytes*, not whether the reviewer was correct or whether the
+referenced Lean proof artifact itself is valid. Proof-byte verification and
+the protected runner supplying independent trust keys are still required for
+stronger assurance. The existing default first-party runner, GitHub workflow,
+and deployed hosted pilot do not pass a signed packet or new trust keys.
+
 Use this finite contract to audit proposed caches, provenance compression and
 monitoring state merges before using them to decide which evidence can carry
 forward. Do not infer that every possible run was checked.

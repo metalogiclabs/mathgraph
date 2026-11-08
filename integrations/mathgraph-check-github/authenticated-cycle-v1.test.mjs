@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {githubSnapshot,compareSnapshots} from "./authenticated-cycle-v1.mjs";
 import {digestProjectionClaim} from './projection-claim-v1.mjs';
 import {hashFiniteUniverse} from './finite-warrant-quotient-v1.mjs';
+import {projectionReviewBytes} from './signed-projection-review-v1.mjs';
+import {generateKeyPairSync,sign} from 'node:crypto';
 const a="a".repeat(40),b="b".repeat(40);
 function mock({runs,head=a,status=200}={}){
  const got=[];
@@ -32,6 +34,15 @@ function projection(){
    expectedContractSha256:digestProjectionClaim(subject,claim),
    expectedUniverseSha256:hashFiniteUniverse(claim.universe),allowedSourceShas:[a]};
  return {claim,authority};
+}
+const reviewKey=generateKeyPairSync('ed25519');
+const reviewKeys={'independent-reviewer-v1':reviewKey.publicKey.export({type:'spki',format:'pem'})};
+function signedProjection(){
+ const p=projection(),subject={repository:args.repository,pr:args.pr,base_sha:b,head_sha:a};
+ const payload={schema:'mathgraph.projection.review.v1',subject,claim:p.claim,
+  evidence:{receipt_ref:'review:finite-pair-1',artifact_sha256:'c'.repeat(64)}};
+ const packet={key_id:'independent-reviewer-v1',payload};
+ return {...packet,signature_b64:sign(null,projectionReviewBytes(packet),reviewKey.privateKey).toString('base64')};
 }
 test("authenticated GitHub readback yields observation but not proof",async()=>{
  const m=mock({runs:[run(1,"native")]});
@@ -123,4 +134,46 @@ test('an old or in-band projection cannot replace missing independent check runs
  const p=projection();p.claim.universe.rows[1].source_sha=b;
  await assert.rejects(githubSnapshot({...args,fetcher:mock({runs:[]}).fetcher,
   projectionClaim:p.claim,projectionAuthority:p.authority}),/NO_INDEPENDENT_CHECKS/);
+});
+test('authenticated Check admits exact-head signed independent review',async()=>{
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signedProjection(),trustedReviewerKeys:reviewKeys});
+ assert.equal(r.result.status,'BLOCKED');
+ assert.equal(r.projection.terminal_form,'NAMED_OBSTRUCTION');
+ assert.equal(r.projection.review.proof_replay,'NOT_PERFORMED');
+ assert.equal(r.result.results.find(x=>x.id==='required-behavior').status,'BLOCKED');
+});
+test('forged signed review stays UNKNOWN even when native CI is green',async()=>{
+ const signed=signedProjection();signed.payload.claim.statement='unreviewed broader claim';
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ assert.equal(r.projection.status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
+});
+test('old signed review withdraws after current PR head changes',async()=>{
+ const signed=signedProjection();
+ const before=await githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ const c='c'.repeat(40);
+ const after=await githubSnapshot({...args,fetcher:mock({head:c,runs:[run(2,'native','success','completed',c)]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ assert.equal(after.projection.status,'UNKNOWN');
+ assert.equal(compareSnapshots(before,after).transitions.find(x=>x.claim==='required-behavior').to,'UNKNOWN');
+});
+test('signed and raw host policy cannot both authorise one finding',async()=>{
+ const p=projection();
+ await assert.rejects(githubSnapshot({...args,fetcher:mock({runs:[run(1,'native')]}).fetcher,
+  projectionClaim:p.claim,projectionAuthority:p.authority,
+  signedProjectionReview:signedProjection(),trustedReviewerKeys:reviewKeys}),
+  /AMBIGUOUS_PROJECTION_INPUT/);
+});
+test('invalid signed review without native checks produces explicit UNKNOWN, not a false result',async()=>{
+ const signed=signedProjection();signed.signature_b64='AAAA';
+ const r=await githubSnapshot({...args,fetcher:mock({runs:[]}).fetcher,
+  signedProjectionReview:signed,trustedReviewerKeys:reviewKeys});
+ assert.equal(r.input.evidence.length,0);
+ assert.equal(r.projection.status,'UNKNOWN');
+ assert.equal(r.result.status,'UNKNOWN');
+ assert.equal(r.result.results.some(x=>x.status==='BLOCKED'),false);
 });

@@ -2,13 +2,17 @@
 // reads GitHub REST directly; no untrusted PR content is executed.
 import {check,resolve,monitor} from "./check-resolve-monitor-v1.mjs";
 import {checkProjectionClaim} from './projection-claim-v1.mjs';
+import {admitSignedProjectionReview} from './signed-projection-review-v1.mjs';
 const SHA=/^[0-9a-f]{40}$/;
 const OWNER=/^[A-Za-z0-9_.-]+$/;
 export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={},
- projectionClaim,projectionAuthority}={}){
+ projectionClaim,projectionAuthority,signedProjectionReview,trustedReviewerKeys}={}){
  if(typeof repository!=="string"||!repository.split("/").every(x=>OWNER.test(x))||
     repository.split("/").length!==2||!Number.isSafeInteger(pr)||pr<1||
     typeof token!=="string"||token.length<8)throw Error("INVALID_INPUT");
+ if(signedProjectionReview!==undefined&&
+   (projectionClaim!==undefined||projectionAuthority!==undefined))
+   throw Error('AMBIGUOUS_PROJECTION_INPUT');
  const api=async path=>{
   const url="https://api.github.com/repos/"+repository+path;
   const r=await fetcher(url,{headers:{Accept:"application/vnd.github+json",
@@ -43,9 +47,11 @@ export async function githubSnapshot({repository,pr,token,fetcher=fetch,plans={}
  // authenticate its projection policy outside PR content and model output.
  // The current head is taken from GitHub, never from either supplied field.
  const subject={repository,pr,base_sha:target.base.sha,head_sha:sha};
- const projection=projectionClaim===undefined?null:
-  checkProjectionClaim(subject,projectionClaim,projectionAuthority);
- if(latest.size===0&&projection?.status!=='BLOCKED')throw Error("NO_INDEPENDENT_CHECKS");
+ const projection=signedProjectionReview!==undefined?
+  admitSignedProjectionReview(subject,signedProjectionReview,trustedReviewerKeys):
+  projectionClaim===undefined?null:checkProjectionClaim(subject,projectionClaim,projectionAuthority);
+ if(latest.size===0&&projection?.status!=='BLOCKED'&&
+    signedProjectionReview===undefined)throw Error("NO_INDEPENDENT_CHECKS");
  const evidence=[...latest.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>({
   id:"github-check:"+r.id,subject_sha:sha,verifier_sha:sha,
   conclusion:r.status!=="completed"?"pending":r.conclusion==="success"?"success":
