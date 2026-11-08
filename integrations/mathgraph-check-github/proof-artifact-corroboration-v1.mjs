@@ -45,8 +45,11 @@ export function corroborateLeanProofArtifact(archivePath,trustedReceipt){
   const digest=createHash('sha256').update(readFileSync(archivePath)).digest('hex');
   if(digest!==trustedReceipt.artifact_sha256)
    return unknown('ARTIFACT_BYTES_DIGEST_MISMATCH');
-  const cmd=(args,limit=1024*1024)=>execFileSync('unzip',args,{
-   encoding:'utf8',maxBuffer:limit,timeout:5000,stdio:['ignore','pipe','ignore']});
+  // Never resolve an executable through PR-controllable PATH or inherit host
+  // API tokens and reviewer credentials into the ZIP decoder subprocess.
+  const cmd=(args,limit=1024*1024)=>execFileSync('/usr/bin/unzip',args,{
+   encoding:'utf8',maxBuffer:limit,timeout:5000,stdio:['ignore','pipe','ignore'],
+   env:{PATH:'/usr/bin:/bin',LANG:'C'}});
   const entries=cmd(['-Z1',archivePath],128*1024).trimEnd().split('\n');
   if(entries.length>1000||entries.length!==new Set(entries).size||
     entries.some(s=>s.includes('\\')||s.startsWith('/')||s.split('/').includes('..')))

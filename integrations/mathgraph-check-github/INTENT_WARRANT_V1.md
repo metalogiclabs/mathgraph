@@ -142,6 +142,38 @@ intended contract. The default runner still supplies neither protected
 reviewer keys nor a signed review. A protected, independently administered
 production runner and actual outside reviewer approval remain `UNKNOWN`.
 
+## Protected-host operator admission — executable, not activated
+
+`protected-review-runner-v1.mjs` composes the authenticated GitHub PR-head
+readback, exact signed-review and ZIP-byte gates, and separately authenticated
+GitHub artifact/job metadata. It requires a default-branch
+`workflow_dispatch` context, verifies the source-run SHA and successful
+`directive-proofs` job, and rereads the PR head before any advisory
+`NAMED_OBSTRUCTION` is admitted. A replacement artifact, changed PR head,
+missing reviewer key, failed job, incomplete API response or wrong context
+remains `UNKNOWN`. No check is published, no repair is run and no merge is
+authorized. The ZIP decoder uses fixed `/usr/bin/unzip` with a scrubbed child
+environment; an attacker-supplied `unzip` on `PATH` cannot execute.
+
+The companion read-only `run-protected-review-v1.mjs` entrypoint consumes
+environment-controlled values:
+
+- `GITHUB_REPOSITORY`, `GITHUB_EVENT_NAME`, `GITHUB_REF`,
+  `MATHGRAPH_DEFAULT_BRANCH`, `MATHGRAPH_PR_NUMBER`, `GITHUB_TOKEN`
+- `MATHGRAPH_EVIDENCE_TOKEN` (scoped cross-repository Actions read)
+- `MATHGRAPH_SIGNED_REVIEW_FILE`, `MATHGRAPH_TRUSTED_REVIEWER_KEYS_FILE`,
+  `MATHGRAPH_TRUSTED_PROOF_RECEIPT_FILE`, `MATHGRAPH_PROOF_ARTIFACT_PATH`,
+  `MATHGRAPH_PROOF_ARTIFACT_ID`
+
+It prints neutral JSON and uses exit 3 for UNKNOWN; it never prints secrets.
+The files and two tokens **must be provisioned out of band** by a trusted
+operator. Values provided by PR source, workflow inputs or an AI suggestion
+are not an independent policy. A supplied `GITHUB_REF` string cannot itself
+prove the code is protected. A suitably protected default-branch environment,
+an actual independent reviewer key/approval, and real credentialed end-to-end
+qualification are still required. This branch does not create/activate the
+environment, access admin secrets, or deploy a new workflow.
+
 Use this finite contract to audit proposed caches, provenance compression and
 monitoring state merges before using them to decide which evidence can carry
 forward. Do not infer that every possible run was checked.

@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash,generateKeyPairSync,sign} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync,mkdirSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
+import {chmodSync,existsSync,mkdtempSync,mkdirSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {corroborateLeanProofArtifact} from './proof-artifact-corroboration-v1.mjs';
 import {admitCorroboratedSignedProjectionReview,projectionReviewBytes} from './signed-projection-review-v1.mjs';
 import {githubSnapshot} from './authenticated-cycle-v1.mjs';
+import {qualifyProtectedReview} from './protected-review-runner-v1.mjs';
 
 const commit='b882e5b298b30b094f4154da7108a45e196cfcd3';
 const theorem='MathGraph.WholeSource.CapstoneCommentBoundary.no_normative_iff_on_frozen_runtime';
@@ -50,6 +51,19 @@ test('corroborates exact proof bytes and conservative historical boundary',()=>w
  assert.equal(r.receipt_ref,'metalogiclabs/L4YAML@'+commit+':run-42420433923:job-128547467405:'+theorem);
  assert.equal(r.proof_replay,'NOT_PERFORMED');
  assert.equal(r.complete_yaml_grammar,'UNKNOWN');
+}));
+test('artifact-byte inspection never executes an attacker-supplied unzip from PATH',()=>withFixture(({root,archive,policy})=>{
+ const bin=join(root,'fake-bin'),marker=join(root,'malicious-unzip-ran');
+ mkdirSync(bin);const executable=join(bin,'unzip');
+ writeFileSync(executable,`#!/bin/sh\nprintf 'injected' > '${marker}'\nexit 99\n`);
+ chmodSync(executable,0o755);
+ const previous=process.env.PATH;
+ try{
+  process.env.PATH=bin+':'+previous;
+  const result=corroborateLeanProofArtifact(archive,policy);
+  assert.equal(result.status,'CORROBORATED');
+  assert.equal(existsSync(marker),false);
+ }finally{process.env.PATH=previous;}
 }));
 test('missing or untrusted receipt and digest mismatch fail closed',()=>withFixture(({archive,policy})=>{
  for(const p of [null,{...policy,artifact_sha256:'a'.repeat(64)},
@@ -126,3 +140,62 @@ test('authenticated GitHub readback carries artifact corroboration but no univer
  assert.equal(result.result.status,'BLOCKED');
  assert.equal(result.result.permission,'ADVISORY_ONLY');
 }),);
+
+test('protected operator checks GitHub job and ZIP bytes, then rechecks current head',()=>withFixtureAsync(async({archive,policy})=>{
+ const subject={repository:'metalogiclabs/L4YAML',pr:9,base_sha:'a'.repeat(40),head_sha:'b'.repeat(40)};
+ const key=generateKeyPairSync('ed25519');
+ const reviewer={'approved-reviewer':key.publicKey.export({format:'pem',type:'spki'})};
+ const receipt_ref=`${policy.repository}@${policy.commit}:run-${policy.run}:job-${policy.job}:${policy.theorem}`;
+ const claim={id:'NoRawSOH',statement:'The parser success bit cannot decide NoRawSOH',
+  observation:'parseYaml success',universe:{schema:'mathgraph.finite-warrant-quotient.v1',
+   scope:'the-two-source-witnesses',rows:[
+    {id:'valid',source_sha:subject.head_sha,alpha_key:'ok',protected_status:'OBSERVED'},
+    {id:'invalid',source_sha:subject.head_sha,alpha_key:'ok',protected_status:'BLOCKED'}]}};
+ const packet={key_id:'approved-reviewer',payload:{schema:'mathgraph.projection.review.v1',
+  subject,claim,evidence:{receipt_ref,artifact_sha256:policy.artifact_sha256}}};
+ const signedReview={...packet,signature_b64:sign(null,projectionReviewBytes(packet),key.privateKey).toString('base64')};
+ const context={event_name:'workflow_dispatch',ref:'refs/heads/main',default_branch:'main',
+  repository:subject.repository,pr:subject.pr,token:'readback-token',evidence_token:'evidence-token'};
+ const base='https://api.github.com/repos/metalogiclabs/L4YAML';
+ const makeFetcher=({changeHead=false,badDigest=false,badJob=false}={})=>{
+  let pulls=0;const reads=[];
+  const fetcher=async(url,init)=>{
+   reads.push({url,auth:init?.headers?.Authorization});
+   if(url===base+'/pulls/9'){
+    const head=changeHead&&++pulls===2?'d'.repeat(40):subject.head_sha;
+    return {ok:true,json:async()=>({base:{sha:subject.base_sha,repo:{full_name:subject.repository}},
+     head:{sha:head,repo:{full_name:subject.repository}}})};
+   }
+   if(url.includes('/check-runs?'))return {ok:true,json:async()=>({total_count:0,check_runs:[]})};
+   if(url===base+'/actions/artifacts/100')return {ok:true,json:async()=>({
+    id:100,expired:false,digest:'sha256:'+(badDigest?'f'.repeat(64):policy.artifact_sha256),
+    workflow_run:{id:policy.run,head_sha:policy.commit,repository_id:55,head_repository_id:55}})};
+   if(url===base+'/actions/runs/'+policy.run+'/jobs?per_page=100')return {ok:true,json:async()=>({
+    total_count:1,jobs:[{id:policy.job,name:'directive-proofs',run_id:policy.run,
+     status:'completed',conclusion:badJob?'failure':'success',steps:[
+      {name:'Qualify persistent capstone boundary and retained positive repair',conclusion:badJob?'failure':'success'}]}]})};
+   throw Error('UNEXPECTED_API:'+url);
+  };return {fetcher,reads};
+ };
+ const input={context,signedProjectionReview:signedReview,trustedReviewerKeys:reviewer,
+  trustedProofReceipt:policy,artifactPath:archive,artifactId:100};
+ const good=makeFetcher();
+ const ok=await qualifyProtectedReview({...input,fetcher:good.fetcher});
+ assert.equal(ok.status,'BLOCKED');
+ assert.equal(ok.terminal_form,'NAMED_OBSTRUCTION');
+ assert.equal(ok.artifact_corroboration,'CORROBORATED');
+ assert.equal(ok.proof_replay,'NOT_PERFORMED');
+ assert.equal(good.reads.filter(x=>x.url===base+'/pulls/9').length,2);
+ assert.ok(good.reads.some(x=>x.url===base+'/actions/artifacts/100'&&x.auth==='Bearer evidence-token'));
+ for(const variant of [{changeHead:true},{badDigest:true},{badJob:true}]){
+  const x=makeFetcher(variant);
+  assert.equal((await qualifyProtectedReview({...input,fetcher:x.fetcher})).status,'UNKNOWN');
+ }
+ const unauthorized=makeFetcher();
+ assert.equal((await qualifyProtectedReview({...input,
+  context:{...context,ref:'refs/pull/9/merge'},fetcher:unauthorized.fetcher})).status,'UNKNOWN');
+ assert.equal(unauthorized.reads.length,0);
+ const unreviewed=makeFetcher();
+ assert.equal((await qualifyProtectedReview({...input,trustedReviewerKeys:{},
+  fetcher:unreviewed.fetcher})).status,'UNKNOWN');
+}));
