@@ -60,6 +60,15 @@ collision; both witnesses are preserved when present. A verdict collision
 refutes factorization on any domain containing the pair. A `FINITE_PRESERVED`
 result does **not** establish a universal factorization.
 
+The finite checker requires an independently admitted **OBSERVED/BLOCKED**
+pair to refute target decidability. `UNKNOWN` is missing warrant, not an
+opposite semantic verdict. If an equal-observation group contains `UNKNOWN`
+but no qualified opposite pair or independent source-identity collision, the
+checker returns `UNKNOWN / INCOMPLETE_PROTECTED_VERDICTS`, asking for verdict
+qualification. A provenance collision still proves only provenance loss,
+even when its target verdict is incomplete. This distinction is regression-
+tested by an independent exhaustive 1,728-case three-state oracle.
+
 The source-pinned L4YAML case in
 `experiments/check-l4-observation-ceiling-v1/` uses a previously qualified Lean
 raw-comment witness to demonstrate this no-go for the frozen parser-success
