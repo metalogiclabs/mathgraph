@@ -50,6 +50,8 @@ jobs:
           git -C nyx-source rev-parse HEAD | tee evidence-out/source-sha.txt
           rustc --version | tee evidence-out/rustc-version.txt
           cargo --version | tee evidence-out/cargo-version.txt
+          cargo generate-lockfile --manifest-path nyx-source/Cargo.toml
+          sha256sum nyx-source/Cargo.lock | tee evidence-out/generated-cargo-lock-hash.txt
       - name: Run homogeneous-frame positive control without premium feature
         run: |
           set -euo pipefail
