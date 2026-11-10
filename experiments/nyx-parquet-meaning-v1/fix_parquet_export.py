@@ -9,7 +9,7 @@ from pathlib import Path
 import sys
 
 
-OLD = "        let frame = self.states[0].frame();\n        let more_meta ="
+OLD = "        let frame = self.states[0].frame();"
 NEW = """        // Parquet has one Frame metadata value for the entire exported table.
         // It must describe the states actually selected for export, not an
         // excluded earlier state. Mixed-frame tables cannot be represented.
@@ -29,16 +29,21 @@ NEW = """        // Parquet has one Frame metadata value for the entire exported
                 ),
             }
             .into());
-        }\n        let more_meta ="""
+        }"""
 
 
 def main(root: Path) -> None:
     path = root / "nyx-core/src/md/trajectory/traj.rs"
     source = path.read_text()
-    count = source.count(OLD)
+    # A distinct RIC-difference export path uses the same frame assignment.
+    # Scope the correction to Traj::to_parquet, not every occurrence in the file.
+    start = source.index("    pub fn to_parquet<P: AsRef<Path>>(")
+    end = source.index("    pub fn resample(", start)
+    section = source[start:end]
+    count = section.count(OLD)
     if count != 1:
         raise RuntimeError(f"expected one Parquet export frame assignment, found {count}")
-    updated = source.replace(OLD, NEW, 1)
+    updated = source[:start] + section.replace(OLD, NEW, 1) + source[end:]
     path.write_text(updated)
     print("MG_FRAME_EXPORT_FIX_APPLIED: traj.rs only")
 
