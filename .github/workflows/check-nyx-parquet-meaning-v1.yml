@@ -46,6 +46,14 @@ jobs:
           cp experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs nyx-source/nyx-core/tests/mathgraph_parquet.rs
           test "$(git -C nyx-source diff --name-only)" = ''
           test "$(git -C nyx-source ls-files --others --exclude-standard)" = 'nyx-core/tests/mathgraph_parquet.rs'
+          sha256sum nyx-source/nyx-core/src/md/trajectory/traj.rs nyx-source/nyx-core/src/md/trajectory/sc_traj.rs \
+            > evidence-out/parquet-source-before.txt
+          python3 experiments/nyx-parquet-meaning-v1/nonpremium_compat.py nyx-source
+          test "$(git -C nyx-source diff --name-only)" = 'nyx-core/src/dynamics/sequence/config.rs'
+          git -C nyx-source diff -- nyx-core/src/dynamics/sequence/config.rs > evidence-out/nonpremium-build-shim.patch
+          sha256sum nyx-source/nyx-core/src/md/trajectory/traj.rs nyx-source/nyx-core/src/md/trajectory/sc_traj.rs \
+            > evidence-out/parquet-source-after.txt
+          cmp evidence-out/parquet-source-before.txt evidence-out/parquet-source-after.txt
           sha256sum experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs nyx-source/nyx-core/tests/mathgraph_parquet.rs | tee evidence-out/test-hashes.txt
           git -C nyx-source rev-parse HEAD | tee evidence-out/source-sha.txt
           rustc --version | tee evidence-out/rustc-version.txt
@@ -102,7 +110,8 @@ jobs:
               'source_sha': os.environ['SOURCE_SHA'],
               'workflow_sha': os.environ['GITHUB_SHA'],
               'run_id': os.environ['GITHUB_RUN_ID'],
-              'production_source_modified': False,
+              'audited_parquet_source_modified': False,
+              'nonpremium_sequence_config_shim': True,
               'no_default_features': True,
               'status': status,
               'controls': controls,
