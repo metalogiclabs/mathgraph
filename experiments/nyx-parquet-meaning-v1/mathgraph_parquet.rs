@@ -4,11 +4,15 @@
 
 use anise::constants::frames::{EARTH_J2000, IAU_EARTH_FRAME};
 use anise::prelude::{Frame, Orbit};
+use anise::prelude::Almanac;
+use nyx_space::dynamics::{OrbitalDynamics, SpacecraftDynamics};
 use nyx_space::io::ExportCfg;
 use nyx_space::md::prelude::Traj;
+use nyx_space::propagators::{IntegratorOptions, Propagator};
 use nyx_space::time::{Epoch, TimeUnits};
 use nyx_space::Spacecraft;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 fn spacecraft(epoch: Epoch, frame: Frame) -> Spacecraft {
     Spacecraft::from(Orbit::new(
@@ -97,4 +101,92 @@ fn mathgraph_parquet_distinct_frame_inputs_remain_distinct_or_reject() {
     );
     assert_eq!(mixed_frame, mixed.states[1].orbit.frame);
     println!("MG_MIXED_FRAME_DISTINCTION_PRESERVED");
+}
+
+fn real_almanac() -> Arc<Almanac> {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../data/01_planetary");
+    Arc::new(
+        Almanac::new(&dir.join("pck08.pca").to_string_lossy())
+            .unwrap()
+            .load(&dir.join("earth_longterm_000101_251211_250915.bpc").to_string_lossy())
+            .unwrap()
+            .load(&dir.join("earth_latest_high_prec.bpc").to_string_lossy())
+            .unwrap()
+            .load(&dir.join("de440s.bsp").to_string_lossy())
+            .unwrap(),
+    )
+}
+
+fn run_nyx_propagation(almanac: Arc<Almanac>, start_fixed: bool) -> Traj<Spacecraft> {
+    let epoch = Epoch::from_gregorian_utc_at_noon(2025, 1, 1);
+    let inertial = almanac.frame_info(EARTH_J2000).unwrap();
+    let inertial_start = Orbit::new(7000.0, 400.0, 100.0, 0.0, 7.6, 0.1, epoch, inertial);
+    let start_orbit = if start_fixed {
+        almanac.transform_to(inertial_start, IAU_EARTH_FRAME, None).unwrap()
+    } else {
+        inertial_start
+    };
+
+    let mut options = IntegratorOptions::with_fixed_step_s(15.0);
+    options.integration_frame = Some(inertial);
+    let setup = Propagator::rk89(
+        SpacecraftDynamics::new(OrbitalDynamics::two_body()),
+        options,
+    );
+    let (_end, traj) = setup
+        .with(Spacecraft::from(start_orbit), almanac)
+        .for_duration_with_traj(90.seconds())
+        .unwrap();
+    traj
+}
+
+#[test]
+fn mathgraph_parquet_real_inertial_propagation_control() {
+    let almanac = real_almanac();
+    let source = run_nyx_propagation(almanac.clone(), false);
+    assert!(source.states.len() >= 3);
+    assert!(source.states.iter().all(|state| state.orbit.frame.orientation_id == 1));
+    let recovered = round_trip(&source, "propagation-inertial")
+        .expect("homogeneous real propagation must export/import");
+    assert_eq!(source.states.len(), recovered.states.len());
+    let idx = 1;
+    let common = almanac.frame_info(EARTH_J2000).unwrap();
+    let src = almanac.transform_to(source.states[idx].orbit, common, None).unwrap();
+    let got = almanac.transform_to(recovered.states[idx].orbit, common, None).unwrap();
+    let distance_km = (src.radius_km - got.radius_km).norm();
+    let velocity_km_s = (src.velocity_km_s - got.velocity_km_s).norm();
+    println!("MG_REAL_UNIFORM_RESIDUAL_KM={distance_km:.12} MG_REAL_UNIFORM_RESIDUAL_KMS={velocity_km_s:.12}");
+    assert!(distance_km < 1.0e-6, "real homogeneous trajectory position changed");
+    assert!(velocity_km_s < 1.0e-9, "real homogeneous trajectory velocity changed");
+    println!("MG_REAL_PROPAGATION_CONTROL_PASSED");
+}
+
+#[test]
+fn mathgraph_parquet_real_mixed_propagation_preserves_physics_or_rejects() {
+    let almanac = real_almanac();
+    let source = run_nyx_propagation(almanac.clone(), true);
+    assert!(source.states.len() >= 3);
+    assert_eq!(source.states[0].orbit.frame.orientation_id, 399);
+    assert_eq!(source.states[1].orbit.frame.orientation_id, 1);
+
+    let recovered = match round_trip(&source, "propagation-mixed") {
+        Ok(traj) => traj,
+        Err(error) => {
+            println!("MG_PHYSICAL_EXPORT_REJECTED_SAFELY: {error}");
+            return;
+        }
+    };
+    let idx = 1;
+    assert_eq!(source.states.len(), recovered.states.len());
+    let common = almanac.frame_info(EARTH_J2000).unwrap();
+    let src = almanac.transform_to(source.states[idx].orbit, common, None).unwrap();
+    let got = almanac.transform_to(recovered.states[idx].orbit, common, None).unwrap();
+    let distance_km = (src.radius_km - got.radius_km).norm();
+    let velocity_km_s = (src.velocity_km_s - got.velocity_km_s).norm();
+    println!("MG_REAL_MIXED_RESIDUAL_KM={distance_km:.12} MG_REAL_MIXED_RESIDUAL_KMS={velocity_km_s:.12}");
+    assert!(
+        distance_km < 1.0e-6 && velocity_km_s < 1.0e-9,
+        "MG_PHYSICAL_WRONG_FRAME: Parquet reinterpreted a propagated state in the wrong orientation"
+    );
+    println!("MG_PHYSICAL_FRAME_FIDELITY_PRESERVED");
 }
