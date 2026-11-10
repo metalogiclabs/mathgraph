@@ -1,0 +1,115 @@
+name: MathGraph — Nyx Propagation-to-Parquet Physical Meaning
+
+on:
+  push:
+    branches:
+      - research/nyx-parquet-physical-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  physical-boundary-red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '4'
+      CARGO_TERM_COLOR: never
+      SOURCE_SHA: 09ab47dd4233ad3b80efc64479bf5339739b5570
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: nyx-space/nyx
+          ref: 09ab47dd4233ad3b80efc64479bf5339739b5570
+          path: nyx-source
+          persist-credentials: false
+          lfs: false
+      - name: Materialize pinned native boundary probe and nonpremium shim
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          test "$(git -C nyx-source rev-parse HEAD)" = "$SOURCE_SHA"
+          test ! -e nyx-source/nyx-core/tests/mathgraph_parquet.rs
+          cp experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs nyx-source/nyx-core/tests/mathgraph_parquet.rs
+          sha256sum nyx-source/nyx-core/src/md/trajectory/traj.rs nyx-source/nyx-core/src/md/trajectory/sc_traj.rs > evidence-out/audited-source-before.sha256
+          python3 experiments/nyx-parquet-meaning-v1/nonpremium_compat.py nyx-source
+          test "$(git -C nyx-source diff --name-only)" = 'nyx-core/src/dynamics/sequence/config.rs'
+          git -C nyx-source diff -- nyx-core/src/dynamics/sequence/config.rs > evidence-out/nonpremium-build-shim.patch
+          sha256sum nyx-source/nyx-core/src/md/trajectory/traj.rs nyx-source/nyx-core/src/md/trajectory/sc_traj.rs > evidence-out/audited-source-after.sha256
+          cmp evidence-out/audited-source-before.sha256 evidence-out/audited-source-after.sha256
+          sha256sum experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs | tee evidence-out/test-source.sha256
+          rustc --version | tee evidence-out/rustc.txt
+          cargo --version | tee evidence-out/cargo.txt
+      - name: Materialize and hash exact Earth orientation fixtures
+        run: |
+          set -euo pipefail
+          git -C nyx-source lfs pull --include='data/01_planetary/pck08.pca,data/01_planetary/earth_longterm_000101_251211_250915.bpc,data/01_planetary/earth_latest_high_prec.bpc,data/01_planetary/de440s.bsp' --exclude=''
+          python3 - <<'PY' | tee evidence-out/fixture-sha256.txt
+          from hashlib import sha256
+          from pathlib import Path
+          expected = {
+              'pck08.pca': 'ddd79e64419e7d3925ea85ab26853060e4f397477a1a6538b1d38190ca3d4468',
+              'earth_longterm_000101_251211_250915.bpc': '39d1f9907cbfdf989b8f8d39802fe355ad30fa93d00381f29fe847715fb83340',
+              'earth_latest_high_prec.bpc': 'f03347c0b3ccba47e6e8a53c77a0381d695973fa9af8f409c282d111fc1ceb22',
+              'de440s.bsp': 'c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2',
+          }
+          for name, wanted in expected.items():
+              path = Path('nyx-source/data/01_planetary') / name
+              actual = sha256(path.read_bytes()).hexdigest()
+              assert actual == wanted, f'FIXTURE_SHA_MISMATCH: {name}: {actual}'
+              print(f'{name} {path.stat().st_size} sha256:{actual}')
+          PY
+      - name: Resolve and record dependency versions
+        run: |
+          set -euo pipefail
+          cargo generate-lockfile --manifest-path nyx-source/Cargo.toml
+          sha256sum nyx-source/Cargo.lock | tee evidence-out/cargo-lock.sha256
+      - name: Native physically homogeneous propagation positive control
+        run: |
+          set +e
+          (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet mathgraph_parquet_real_inertial_propagation_control -- --nocapture) > evidence-out/control.stdout 2> evidence-out/control.stderr
+          echo "$?" > evidence-out/control.exit
+      - name: Native mixed-frame propagation to Parquet separating witness
+        run: |
+          set +e
+          (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet mathgraph_parquet_real_mixed_propagation_preserves_physics_or_rejects -- --nocapture) > evidence-out/mixed.stdout 2> evidence-out/mixed.stderr
+          echo "$?" > evidence-out/mixed.exit
+      - name: Strict native evidence classification
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path('evidence-out')
+          cases = {}
+          for name in ('control', 'mixed'):
+              try:
+                  cases[name] = {
+                      'exit': int((p / f'{name}.exit').read_text()),
+                      'stdout': (p / f'{name}.stdout').read_text()[-5000:],
+                      'stderr': (p / f'{name}.stderr').read_text()[-5000:]
+                  }
+              except (OSError, ValueError) as error:
+                  cases[name] = {'error': str(error)}
+          control, mixed = cases['control'], cases['mixed']
+          good = control.get('exit') == 0 and 'MG_REAL_PROPAGATION_CONTROL_PASSED' in control.get('stdout', '')
+          status = 'UNKNOWN'
+          if good and mixed.get('exit') != 0 and 'MG_PHYSICAL_WRONG_FRAME' in (mixed.get('stdout','') + mixed.get('stderr','')) and 'MG_REAL_MIXED_RESIDUAL_KM=' in mixed.get('stdout',''):
+              status = 'WARRANTED_BOUNDED_NATIVE_PHYSICAL_DIVERGENCE'
+          elif good and mixed.get('exit') == 0 and ('MG_PHYSICAL_EXPORT_REJECTED_SAFELY' in mixed.get('stdout','') or 'MG_PHYSICAL_FRAME_FIDELITY_PRESERVED' in mixed.get('stdout','')):
+              status = 'NO_MIXED_FRAME_DIVERGENCE_OBSERVED'
+          receipt = {'status':status, 'source_sha':os.environ['SOURCE_SHA'], 'workflow_sha':os.environ['GITHUB_SHA'], 'run_id':os.environ['GITHUB_RUN_ID'], 'audited_source_unchanged':True, 'nonpremium_build_shim':True, 'cases':cases}
+          (p / 'physical-native-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True)+'\n')
+          print(json.dumps({'status':status,'run_id':receipt['run_id'],'source_sha':receipt['source_sha']}, sort_keys=True))
+          assert status != 'UNKNOWN', 'PHYSICAL_NATIVE_EVIDENCE_UNKNOWN'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nyx-parquet-real-propagation-v2
+          path: evidence-out/
+          if-no-files-found: warn
