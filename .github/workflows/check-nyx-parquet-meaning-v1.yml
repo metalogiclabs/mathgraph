@@ -1,0 +1,118 @@
+name: MathGraph — Nyx Parquet Frame Meaning Native Audit
+
+on:
+  push:
+    branches:
+      - research/nyx-parquet-meaning-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nyx-parquet-distinction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '4'
+      CARGO_TERM_COLOR: never
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: prior-qualified-fork
+            repository: metalogiclabs/nyx
+            source_sha: ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b
+          - label: upstream-2026-11-11
+            repository: nyx-space/nyx
+            source_sha: 09ab47dd4233ad3b80efc64479bf5339739b5570
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.source_sha }}
+          path: nyx-source
+          persist-credentials: false
+          lfs: false
+      - name: Pin source and install only the independent test
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          test "$(git -C nyx-source rev-parse HEAD)" = '${{ matrix.source_sha }}'
+          test ! -e nyx-source/nyx-core/tests/mathgraph_parquet.rs
+          cp experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs nyx-source/nyx-core/tests/mathgraph_parquet.rs
+          test "$(git -C nyx-source diff --name-only)" = ''
+          test "$(git -C nyx-source ls-files --others --exclude-standard)" = 'nyx-core/tests/mathgraph_parquet.rs'
+          sha256sum experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs nyx-source/nyx-core/tests/mathgraph_parquet.rs | tee evidence-out/test-hashes.txt
+          git -C nyx-source rev-parse HEAD | tee evidence-out/source-sha.txt
+          rustc --version | tee evidence-out/rustc-version.txt
+          cargo --version | tee evidence-out/cargo-version.txt
+      - name: Run homogeneous-frame positive control without premium feature
+        run: |
+          set -euo pipefail
+          set +e
+          (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet mathgraph_parquet_uniform_frame_control -- --nocapture) > evidence-out/uniform.stdout 2> evidence-out/uniform.stderr
+          result=$?
+          set -e
+          echo "$result" | tee evidence-out/uniform.exit
+      - name: Run different-frame separating witness without premium feature
+        run: |
+          set -euo pipefail
+          set +e
+          (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet mathgraph_parquet_distinct_frame_inputs_remain_distinct_or_reject -- --nocapture) > evidence-out/mixed.stdout 2> evidence-out/mixed.stderr
+          result=$?
+          set -e
+          echo "$result" | tee evidence-out/mixed.exit
+      - name: Fail-closed evidence classification
+        if: always()
+        env:
+          SOURCE_REPO: ${{ matrix.repository }}
+          SOURCE_SHA: ${{ matrix.source_sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          p = Path('evidence-out')
+          status = 'UNKNOWN'
+          controls = {}
+          for arm in ('uniform', 'mixed'):
+              try:
+                  code = int((p / f'{arm}.exit').read_text().strip())
+                  stdout = (p / f'{arm}.stdout').read_text()
+                  stderr = (p / f'{arm}.stderr').read_text()
+                  controls[arm] = {'exit': code, 'stdout_tail': stdout[-3000:], 'stderr_tail': stderr[-3000:]}
+              except (OSError, ValueError) as error:
+                  controls[arm] = {'error': str(error)}
+          pos = controls.get('uniform', {})
+          neg = controls.get('mixed', {})
+          positive = pos.get('exit') == 0 and 'MG_UNIFORM_CONTROL_PASSED' in pos.get('stdout_tail', '')
+          if positive:
+              if neg.get('exit') != 0 and 'MG_DISTINCTION_COLLAPSE' in (neg.get('stdout_tail', '') + neg.get('stderr_tail', '')):
+                  status = 'WARRANTED_BOUNDED_NATIVE_COLLISION'
+              elif neg.get('exit') == 0 and ('MG_MIXED_FRAME_REJECTED_SAFELY' in neg.get('stdout_tail', '') or 'MG_MIXED_FRAME_DISTINCTION_PRESERVED' in neg.get('stdout_tail', '')):
+                  status = 'REJECTED_COLLISION_NOT_OBSERVED'
+          receipt = {
+              'source_repo': os.environ['SOURCE_REPO'],
+              'source_sha': os.environ['SOURCE_SHA'],
+              'workflow_sha': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'production_source_modified': False,
+              'no_default_features': True,
+              'status': status,
+              'controls': controls,
+          }
+          (p / 'native-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print('MG_EVIDENCE_STATE=' + status)
+          print(json.dumps({'source_repo': receipt['source_repo'], 'source_sha': receipt['source_sha'], 'run_id': receipt['run_id'], 'status': status}, sort_keys=True))
+          assert status != 'UNKNOWN', 'NATIVE_EVIDENCE_UNKNOWN'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nyx-parquet-meaning-${{ matrix.label }}
+          path: evidence-out/
+          if-no-files-found: warn
