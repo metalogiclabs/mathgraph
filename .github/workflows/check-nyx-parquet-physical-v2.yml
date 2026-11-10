@@ -114,6 +114,45 @@ jobs:
           print(json.dumps({'status':status,'run_id':receipt['run_id'],'source_sha':receipt['source_sha']}, sort_keys=True))
           assert status != 'UNKNOWN', 'PHYSICAL_NATIVE_EVIDENCE_UNKNOWN'
           PY
+      - name: Apply smallest production correction after witnessing RED
+        run: |
+          set -euo pipefail
+          python3 experiments/nyx-parquet-meaning-v1/fix_parquet_export.py nyx-source
+          actual="$(git -C nyx-source diff --name-only)"
+          expected="$(printf 'nyx-core/src/dynamics/sequence/config.rs\nnyx-core/src/md/trajectory/traj.rs')"
+          test "$actual" = "$expected"
+          git -C nyx-source diff -- nyx-core/src/md/trajectory/traj.rs > evidence-out/targeted-trajectory-fix.patch
+          sha256sum nyx-source/nyx-core/src/md/trajectory/sc_traj.rs > evidence-out/importer-still-unchanged.sha256
+      - name: Native GREEN - all five frame-fidelity tests
+        run: |
+          set +e
+          (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet -- --nocapture) > evidence-out/green.stdout 2> evidence-out/green.stderr
+          echo "$?" > evidence-out/green.exit
+      - name: Qualify native red-to-green boundary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('evidence-out')
+          red=json.loads((p/'physical-native-receipt.json').read_text())
+          status='UNKNOWN'
+          try:
+              code=int((p/'green.exit').read_text())
+              stdout=(p/'green.stdout').read_text()
+              stderr=(p/'green.stderr').read_text()
+              markers=('MG_UNIFORM_CONTROL_PASSED', 'MG_MIXED_FRAME_REJECTED_SAFELY', 'MG_REAL_PROPAGATION_CONTROL_PASSED', 'MG_PHYSICAL_EXPORT_REJECTED_SAFELY', 'MG_FILTERED_FRAME_CONTROL_PASSED')
+              if (red['status']=='WARRANTED_BOUNDED_NATIVE_PHYSICAL_AND_FILTERED_FRAME_LOSS'
+                  and code==0 and all(m in stdout for m in markers)
+                  and '5 passed; 0 failed' in stdout):
+                  status='WARRANTED_BOUNDED_NATIVE_RED_GREEN'
+          except (OSError, ValueError, KeyError) as e:
+              stderr=repr(e)
+          out={'status':status,'red_run_id':red['run_id'],'source_sha':red['source_sha'],'test_count':5,'green_exit':locals().get('code'), 'green_markers':list(locals().get('markers',()))}
+          (p/'red-green-receipt.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          assert status=='WARRANTED_BOUNDED_NATIVE_RED_GREEN', 'NATIVE_RED_GREEN_NOT_QUALIFIED'
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
