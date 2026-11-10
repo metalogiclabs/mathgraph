@@ -78,6 +78,11 @@ jobs:
           set +e
           (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet mathgraph_parquet_real_mixed_propagation_preserves_physics_or_rejects -- --nocapture) > evidence-out/mixed.stdout 2> evidence-out/mixed.stderr
           echo "$?" > evidence-out/mixed.exit
+      - name: Native filtered-output frame metadata witness
+        run: |
+          set +e
+          (cd nyx-source && timeout 1500s cargo test --locked --no-default-features --package nyx-space --test mathgraph_parquet mathgraph_parquet_filtered_rows_have_their_own_frame -- --nocapture) > evidence-out/filtered.stdout 2> evidence-out/filtered.stderr
+          echo "$?" > evidence-out/filtered.exit
       - name: Strict native evidence classification
         if: always()
         run: |
@@ -86,7 +91,7 @@ jobs:
           from pathlib import Path
           p = Path('evidence-out')
           cases = {}
-          for name in ('control', 'mixed'):
+          for name in ('control', 'mixed', 'filtered'):
               try:
                   cases[name] = {
                       'exit': int((p / f'{name}.exit').read_text()),
@@ -95,11 +100,13 @@ jobs:
                   }
               except (OSError, ValueError) as error:
                   cases[name] = {'error': str(error)}
-          control, mixed = cases['control'], cases['mixed']
+          control, mixed, filtered = cases['control'], cases['mixed'], cases['filtered']
           good = control.get('exit') == 0 and 'MG_REAL_PROPAGATION_CONTROL_PASSED' in control.get('stdout', '')
           status = 'UNKNOWN'
           if good and mixed.get('exit') != 0 and 'MG_PHYSICAL_WRONG_FRAME' in (mixed.get('stdout','') + mixed.get('stderr','')) and 'MG_REAL_MIXED_RESIDUAL_KM=' in mixed.get('stdout',''):
               status = 'WARRANTED_BOUNDED_NATIVE_PHYSICAL_DIVERGENCE'
+              if filtered.get('exit') != 0 and 'MG_FILTERED_FRAME_WRONG' in (filtered.get('stdout','') + filtered.get('stderr','')):
+                  status = 'WARRANTED_BOUNDED_NATIVE_PHYSICAL_AND_FILTERED_FRAME_LOSS'
           elif good and mixed.get('exit') == 0 and ('MG_PHYSICAL_EXPORT_REJECTED_SAFELY' in mixed.get('stdout','') or 'MG_PHYSICAL_FRAME_FIDELITY_PRESERVED' in mixed.get('stdout','')):
               status = 'NO_MIXED_FRAME_DIVERGENCE_OBSERVED'
           receipt = {'status':status, 'source_sha':os.environ['SOURCE_SHA'], 'workflow_sha':os.environ['GITHUB_SHA'], 'run_id':os.environ['GITHUB_RUN_ID'], 'audited_source_unchanged':True, 'nonpremium_build_shim':True, 'cases':cases}

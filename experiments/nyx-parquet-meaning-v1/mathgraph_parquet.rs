@@ -190,3 +190,27 @@ fn mathgraph_parquet_real_mixed_propagation_preserves_physics_or_rejects() {
     );
     println!("MG_PHYSICAL_FRAME_FIDELITY_PRESERVED");
 }
+
+#[test]
+fn mathgraph_parquet_filtered_rows_have_their_own_frame() {
+    // This is a homogeneous output selection from a heterogeneous input.
+    // The original first row must not dictate the exported rows' frame.
+    let source = trajectory(IAU_EARTH_FRAME);
+    let selected_epoch = source.states[1].orbit.epoch;
+    let cfg = ExportCfg::builder()
+        .start_epoch(selected_epoch)
+        .end_epoch(selected_epoch)
+        .step(30.seconds())
+        .build();
+    let path = temp_parquet("filtered-second-frame");
+    let exported = source.to_parquet(&path, cfg).unwrap();
+    let recovered = Traj::<Spacecraft>::from_parquet(&exported).unwrap();
+    let _ = std::fs::remove_file(&exported);
+    assert_eq!(recovered.states.len(), 1);
+    assert_eq!(
+        recovered.states[0].orbit.frame,
+        source.states[1].orbit.frame,
+        "MG_FILTERED_FRAME_WRONG: metadata describes a row not in the export"
+    );
+    println!("MG_FILTERED_FRAME_CONTROL_PASSED");
+}
