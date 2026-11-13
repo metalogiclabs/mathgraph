@@ -32,7 +32,7 @@ try {
       assert.equal(await menu.count(), 1, 'Menu button missing');
       assert.equal(await menu.isVisible(), javaScriptEnabled && width <= 900);
       assert.equal(await nav.isVisible(), !javaScriptEnabled || width > 900);
-      assert.equal(await page.locator('h1').innerText(), 'Knowledge you can verify. Capabilities you can build on.');
+      assert.equal(await page.locator('h1').innerText(), 'Find what your verification missed.');
       const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${width}px page overflow`);
       await noOverflow();
       if (javaScriptEnabled && width <= 900) {
@@ -42,7 +42,7 @@ try {
         assert.equal(await nav.isVisible(), true);
         await noOverflow();
         await page.keyboard.press('Tab');
-        assert.equal(await nav.getByRole('link', { name: 'Explore', exact: true }).evaluate(el => el === document.activeElement), true);
+        assert.equal(await nav.getByRole('link', { name: 'The Open Challenge', exact: true }).evaluate(el => el === document.activeElement), true);
         await page.keyboard.press('Escape');
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
         assert.equal(await menu.evaluate(el => el === document.activeElement), true);
@@ -50,11 +50,13 @@ try {
         await menu.click();
         assert.equal(await nav.isVisible(), false);
         await menu.click();
-        for (let index = 0; index < 6; index++) await page.keyboard.press('Tab');
+        for (let index = 0; index < 7; index++) await page.keyboard.press('Tab');
         assert.equal(await menu.getAttribute('aria-expanded'), 'false', 'Tab must leave the menu without a focus trap');
         await menu.click();
         await page.locator('h1').click();
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
+        await page.locator('details.home-research-entry summary').click();
+        assert.equal(await page.locator('details.home-research-entry').getAttribute('open'), '');
         await menu.click();
         await page.locator('[data-home-search] input[type=search]').focus();
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
@@ -73,7 +75,7 @@ try {
         assert.equal(await page.locator('#primary-navigation a[aria-current=page]').innerText(), 'Explore');
       }
       if (!javaScriptEnabled || width > 900) {
-        for (const label of ['Explore', 'Verify', 'Build', 'Developers', 'GitHub ↗']) {
+        for (const label of ['The Open Challenge', 'Explore', 'Verify', 'Build', 'Developers', 'GitHub ↗']) {
           assert.equal(await nav.getByRole('link', { name: label, exact: true }).isVisible(), true);
         }
       }
@@ -85,19 +87,22 @@ try {
       assert.equal((await page.goto(`${origin}/contact/`, { waitUntil: 'networkidle' })).status(), 200);
       const contactGrid = page.locator('main .grid');
       const contactCards = contactGrid.locator(':scope > article.callout');
-      assert.equal(await contactCards.count(), 2, 'Contact must expose both project channels');
-      const [contactGridBox, repositoryCard, issuesCard] = await Promise.all([
+      assert.equal(await contactCards.count(), 3, 'Contact must expose the open challenge and both public project channels');
+      const [contactGridBox, challengeCard, repositoryCard, issuesCard] = await Promise.all([
         contactGrid.boundingBox(),
         contactCards.nth(0).boundingBox(),
         contactCards.nth(1).boundingBox(),
+        contactCards.nth(2).boundingBox(),
       ]);
-      assert(contactGridBox && repositoryCard && issuesCard, `Contact geometry missing at ${width}px, JS=${javaScriptEnabled}`);
+      assert(contactGridBox && challengeCard && repositoryCard && issuesCard, `Contact geometry missing at ${width}px, JS=${javaScriptEnabled}`);
       if (width > 900) {
-        assert.ok(repositoryCard.width >= contactGridBox.width * 0.45 && issuesCard.width >= contactGridBox.width * 0.45, `Contact cards collapsed below half-grid width at ${width}px, JS=${javaScriptEnabled}`);
-        assert.ok(Math.abs(repositoryCard.y - issuesCard.y) <= 0.5, `Contact desktop cards must share a row at ${width}px, JS=${javaScriptEnabled}`);
+        assert.ok(challengeCard.width >= contactGridBox.width * 0.45 && repositoryCard.width >= contactGridBox.width * 0.45 && issuesCard.width >= contactGridBox.width * 0.45, `Contact cards collapsed below half-grid width at ${width}px, JS=${javaScriptEnabled}`);
+        assert.ok(Math.abs(challengeCard.y - repositoryCard.y) <= 0.5, `Contact first two desktop cards must share a row at ${width}px, JS=${javaScriptEnabled}`);
+         assert.ok(issuesCard.y >= challengeCard.y + challengeCard.height, `Contact third card must follow first row at ${width}px, JS=${javaScriptEnabled}`);
       } else {
-        assert.ok(repositoryCard.width >= contactGridBox.width * 0.99 && issuesCard.width >= contactGridBox.width * 0.99, `Contact cards must span the mobile/tablet grid at ${width}px, JS=${javaScriptEnabled}`);
-        assert.ok(issuesCard.y >= repositoryCard.y + repositoryCard.height, `Contact cards overlap instead of stacking at ${width}px, JS=${javaScriptEnabled}`);
+        assert.ok(challengeCard.width >= contactGridBox.width * 0.99 && repositoryCard.width >= contactGridBox.width * 0.99 && issuesCard.width >= contactGridBox.width * 0.99, `Contact cards must span the mobile/tablet grid at ${width}px, JS=${javaScriptEnabled}`);
+        assert.ok(repositoryCard.y >= challengeCard.y + challengeCard.height, `Contact first and second cards overlap instead of stacking at ${width}px, JS=${javaScriptEnabled}`);
+         assert.ok(issuesCard.y >= repositoryCard.y + repositoryCard.height, `Contact cards overlap instead of stacking at ${width}px, JS=${javaScriptEnabled}`);
       }
       if (process.env.BROWSER_EVIDENCE_DIR) await page.screenshot({ path: `${process.env.BROWSER_EVIDENCE_DIR}/contact-${width}-${javaScriptEnabled ? 'js' : 'nojs'}.png`, fullPage: true });
       assert.deepEqual(errors, []);
@@ -110,7 +115,7 @@ try {
   page.on('console', message => { if (message.type() === 'error') routeErrors.push(message.text()); });
   for (const width of [1440, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const route of ['explore', 'verify', 'build', 'developers']) {
+    for (const route of ['assurance', 'explore', 'verify', 'build', 'developers']) {
       const response = await page.goto(`${origin}/${route}/`, { waitUntil: 'networkidle' });
       assert.equal(response.status(), 200);
       assert.equal(await page.locator('#primary-navigation a[aria-current=page]').getAttribute('href'), `/${route}/`);

@@ -30,6 +30,82 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('renders source-matched final merged qualification without inflating its scope', async () => {
+    const html = await page('assurance');
+    const text = visibleText(html);
+    expect(text).toContain('fdcd6fdc4bc7491166c6c73505e1f62a203c50bf');
+    expect(text).toContain('14,945/14,945');
+    expect(text).toContain('24/24');
+    expect(text).toContain('UNKNOWN');
+  });
+
+  test('gives the open challenge a source-aware free-first-finding offer without guaranteeing a defect', async () => {
+    const home = await page('');
+    const offer = await page('assurance');
+    const text = visibleText(offer);
+    expect(home).toContain('href="/assurance/"');
+    expect(home).toContain('your first reproducible finding is free');
+    expect(text).toMatch(/no issue in the selected scope/i);
+    expect(text).toMatch(/separately scoped paid assurance work/i);
+    expect(offer).not.toMatch(/<input[^>]+type="file"/);
+    expect(offer).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860');
+  });
+
+  test('offers the assurance audit route from the homepage hero without replacing the evidence network', async () => {
+    const html = await page('');
+    const start = html.indexOf('<header class="shell home-hero">');
+    const hero = start < 0 ? '' : html.slice(start, html.indexOf('</header>', start));
+    expect(hero).toContain('href="/assurance/"');
+    expect(hero).toContain('href="/verify/"');
+    expect(hero).toContain('href="/protocol/"');
+  });
+
+  test('renders a bounded, inspectable assurance offer without public proprietary-code submission', async () => {
+    const html = await page('assurance').catch(() => '');
+    const text = visibleText(html);
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('data-assurance-boundary');
+    expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
+    expect(html).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458');
+    expect(text).toMatch(/human-led/i);
+    expect(text).toMatch(/first verified finding is free/i);
+    expect(text).toContain('Selected projects');
+    expect(text).toContain('What important decision are you making because you believe it is correct');
+    expect(html).toContain('What%20important%20decision');
+    expect(html).toContain('mailto:heath@mathgraph.org');
+    expect(html).toContain('https://github.com/nyx-space/nyx/pull/615');
+    expect(text).toContain('UNKNOWN');
+    expect(text).toMatch(/not a certification/i);
+    expect(html).not.toMatch(/<input[^>]+type="file"/);
+    expect(html).not.toMatch(/<a[^>]+href="https:\/\/github\.com\/metalogiclabs\/mathgraph\/issues"/);
+  });
+
+  test('renders a real consented hosted intake form without file uploads or implied automatic verification', async () => {
+    const html = await page('assurance');
+    expect(html).toContain('data-assurance-intake');
+    expect(html).toContain('method="POST"');
+    expect(html).toContain('https://mathgraph-assurance-intake.metalogiclabs-check.workers.dev/submit');
+    for (const name of ['repository', 'claim', 'decision', 'consequence', 'evidence', 'relationship', 'email', 'consent', 'website', 'utm_source', 'utm_medium', 'utm_campaign']) {
+      expect(html).toContain(`name="${name}"`);
+    }
+    expect(html).toContain('data-assurance-submit');
+    expect(html).toContain('data-turnstile-status');
+    expect(html).toContain('0x4AAAAAAF__wQkdXmPAGoge');
+    expect(html).toContain('/assurance/turnstile-loader.js');
+    expect(html).toContain('href="/assurance/privacy/"');
+    expect(html).not.toMatch(/<input[^>]+type="file"/);
+  });
+
+  test('makes the private intake receipt non-indexable and publishes a dedicated privacy notice', async () => {
+    const receipt = await page('assurance/received');
+    const notice = await page('assurance/privacy');
+    expect(receipt).toContain('name="robots" content="noindex,nofollow"');
+    expect(receipt).toContain('Your submission has been received.');
+    expect(notice).toContain('180-day');
+    expect(notice).toContain('Cloudflare D1');
+    expect(notice).toContain('heath@mathgraph.org');
+  });
+
   test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
     const html = await page('explore').catch(() => '');
     const text = visibleText(html);
@@ -96,10 +172,10 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<noscript>');
   });
 
-  test('makes the source-derived living network the homepage entry point without authority inflation', async () => {
+  test('preserves the source-derived network while leading with the Open Challenge', async () => {
     const html = await page('');
     const text = visibleText(html);
-    expect(text).toContain('Knowledge you can verify. Capabilities you can build on.');
+    expect(text).toContain('Find what your verification missed.');
     expect(html).toMatch(/<form[^>]+action="\/explore\/"[^>]+method="get"[^>]+data-home-search/);
     expect(html).toMatch(/<input[^>]+name="q"/);
     expect(html).toMatch(/Content-Security-Policy[^>]+form-action 'self'/);
@@ -200,7 +276,7 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
-    expect(html).toContain('Evidence you can inspect. Results you can reuse.');
+    expect(html).toContain("Know what holds. Know what doesn\'t. Know what remains unproven.");
   });
 
   test('builds Resolve as a complete public surface with the qualified historical default', async () => {
@@ -354,8 +430,8 @@ describe('primary public evidence experience', () => {
   test('publishes the requested homepage SEO title without changing the MathGraph identity', async () => {
     const html = await page('');
 
-    expect(html).toContain('<title>MathGraph — Verification Evidence Network</title>');
-    expect(html).toContain('<meta property="og:title" content="MathGraph — Verification Evidence Network">');
+    expect(html).toContain('<title>MathGraph — Find What Your Verification Missed</title>');
+    expect(html).toContain('<meta property="og:title" content="MathGraph — Find What Your Verification Missed">');
     expect(html).toContain('<meta property="og:site_name" content="MathGraph">');
     expect(html).toContain('<span class="brand__word">MathGraph');
   });
@@ -573,11 +649,11 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/Playground.*future.*receipt/i);
   });
 
-  test('exposes four outcome journeys and a progressively enhanced menu', async () => {
+  test('exposes the open challenge and four research journeys with accessible navigation', async () => {
     const html = await page('');
     const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
-    for (const label of ['Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
-    expect(nav.match(/<a /g)).toHaveLength(5);
+    for (const label of ['The Open Challenge', 'Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
+    expect(nav.match(/<a /g)).toHaveLength(6);
     expect(nav).toContain('GitHub');
     expect(html).toMatch(/<button[^>]+aria-expanded="false"[^>]+aria-controls="primary-navigation"[^>]*>Menu<\/button>/);
     expect(nav).not.toContain('hidden');
@@ -589,7 +665,7 @@ describe('primary public evidence experience', () => {
     [`records/${record.id}/v1`, 'explore', 'location'],
     ['verify', 'verify', 'page'], ['check', 'verify', 'location'], ['resolve', 'verify', 'location'],
     ['build', 'build', 'page'], ['develop', 'build', 'location'], ['capabilities', 'build', 'location'],
-    ['developers', 'developers', 'page'], ['agents', 'developers', 'location'], ['protocol', 'developers', 'location'],
+    ['assurance', 'assurance', 'page'], ['developers', 'developers', 'page'], ['agents', 'developers', 'location'], ['protocol', 'developers', 'location'],
     ['protocol/profiles/lean', 'developers', 'location'],
   ])('marks /%s in the %s outcome group with aria-current=%s', async (route, group, state) => {
     const html = await page(route).catch(() => '');
@@ -615,8 +691,8 @@ describe('primary public evidence experience', () => {
     const html = await page('');
     const text = visibleText(html);
 
-    expect(html).toContain('<h1>Knowledge you can verify. Capabilities you can build on.</h1>');
-    expect(text).toContain('Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved.');
+    expect(html).toContain('<h1>Find what your verification missed.</h1>');
+    expect(text).toContain('AI is accelerating code, tests, models and proofs.');
     expect(text).toContain('Open a declaration. Follow what its source actually says.');
     for (const route of ['explore', 'verify', 'build']) expect(html).toContain(`data-outcome="${route}"`);
     for (const section of ['source-to-result', 'map-preview', 'capability', 'independent-verification', 'quick-start', 'long-term']) expect(html).toContain(`id="${section}"`);
@@ -848,7 +924,7 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/']) {
+    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/', '/assurance/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
     for (const route of ['about', 'contact']) {
@@ -857,7 +933,7 @@ describe('primary public evidence experience', () => {
       expect(html).toContain('MathGraph');
     }
     const about = visibleText(await page('about'));
-    expect(about).toMatch(/research-stage project developed by Metalogic Labs/i);
+    expect(about).toMatch(/founder-led independent assurance practice developed by Metalogic Labs/i);
     expect(about).toContain('Source-indexed references support navigation; they are not proof dependencies');
     expect(about).not.toMatch(/IEANTN|Terence Tao|Math 2\.0/);
     const contact = await page('contact');

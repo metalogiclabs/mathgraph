@@ -88,14 +88,15 @@ for (const value of ['48/48', '31', '17', '52/52', 'UNKNOWN', 'NOT_CHECKED_AFTER
   assert(recordHtml.includes(value), `record page missing qualified observation ${value}`);
 }
 assert(homeHtml.includes(record.id), 'homepage must identify the featured record');
-assert(homeHtml.includes('<title>MathGraph — Verification Evidence Network</title>'));
-assert(homeHtml.includes('<h1>Knowledge you can verify. Capabilities you can build on.</h1>'));
+assert(homeHtml.includes('<title>MathGraph — Find What Your Verification Missed</title>'));
+assert(homeHtml.includes('<h1>Find what your verification missed.</h1>'));
+assert(homeHtml.includes('href="/assurance/"'), 'homepage must link to free-first-finding offer');
 assert(homeHtml.includes('data-home-search') && homeHtml.includes('action="/explore/"'), 'homepage must expose same-origin knowledge search');
 assert(!homeHtml.includes('data-import-workbench'), 'generic local import belongs on Verify, not the homepage');
 for (const value of ['2,345', 'Indexed declarations', '1,224', 'TYPE_REFERENCES', 'Real.rpow', 'SOURCE_INDEXED', 'Independent verification', 'NOT_CHECKED', 'data-source-neighborhood']) {
   assert(homeHtml.includes(value), `homepage living-network projection missing ${value}`);
 }
-for (const route of ['explore', 'verify', 'build', 'check', 'resolve', 'discover', 'develop', 'capabilities', 'records', 'objects', 'protocol', 'agents', 'developers', 'about', 'contact']) {
+for (const route of ['assurance', 'explore', 'verify', 'build', 'check', 'resolve', 'discover', 'develop', 'capabilities', 'records', 'objects', 'protocol', 'agents', 'developers', 'about', 'contact']) {
   const html = await readFile(join(dist, route, 'index.html'), 'utf8');
   assert(html.includes('aria-controls="primary-navigation"'), `${route}: navigation disclosure missing`);
 }

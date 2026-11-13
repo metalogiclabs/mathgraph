@@ -1,0 +1,191 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const subject = 'MathGraph Open Challenge — first finding free';
+const message = [
+  'Hello Heath,',
+  '',
+  'I would like to submit a repository for the MathGraph Open Challenge.',
+  '',
+  'Public repository URL:',
+  'One consequential claim or requirement:',
+  'What important decision are you making because you believe this claim is true?',
+  'What could happen if that claim were false?',
+  'What tests, specifications, proofs or other evidence support it?',
+  'My relationship to the project / authority to request review:',
+  '',
+  'I understand selection is discretionary, the investigation is bounded, and a finding is not guaranteed.',
+].join('\n');
+const enquiryUrl = `mailto:heath@mathgraph.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+const intakeEndpoint = 'https://mathgraph-assurance-intake.metalogiclabs-check.workers.dev/submit';
+const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
+---
+
+<BaseLayout
+  title="Are you game? First verified finding free — MathGraph"
+  description="Show MathGraph your repo and one consequential software claim. Selected projects receive their first independently reproducible finding free. Optional paid follow-on assurance."
+  currentPath="/assurance/"
+>
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">The MathGraph Open Challenge · Founder-led independent assurance</div>
+      <h1>Are you game? Show me your repo.</h1>
+      <p class="lede"><strong>Find what your verification missed. Your first verified finding is free—if one is established.</strong></p>
+      <p>Your code may pass its tests. Your proof may check. Your model may produce the expected result. But what, exactly, does that evidence establish—and is it enough for the decision you need to make?</p>
+      <p>Sometimes the gap lies in the code. Sometimes it is a missing requirement, an untested assumption, a lossy interface, a misleading report or a claim stronger than its supporting evidence. Led by <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, MathGraph independently investigates the weakest consequential boundary—even when our starting hypothesis is wrong.</p>
+      <div class="actions">
+        <a class="button" href="#challenge">Submit a repository for consideration</a>
+        <a class="button button--secondary" href="#evidence">See accepted upstream findings</a>
+      </div>
+      <p class="fineprint">Human-led review · Selected projects · Bounded investigation · No obligation to purchase work · A finding is not guaranteed.</p>
+    </div>
+  </header>
+
+  <section class="section section--compact" id="challenge" aria-labelledby="challenge-title" data-assurance-boundary>
+    <div class="shell grid">
+      <div class="span-7">
+        <div class="eyebrow">The free first-finding offer</div>
+        <h2 id="challenge-title">One repo. One consequential claim. One decision that depends on it.</h2>
+        <p>Tell us what your software must get right, which evidence gives you confidence, and <strong>what important decision you are making because you believe the claim is true.</strong> What would happen if it were false? We select repositories where that decision-to-evidence boundary can be investigated independently.</p>
+        <p><strong>If we establish a consequential discrepancy or unsupported claim, your first source-pinned, independently reproducible finding is free.</strong> You receive the examined claim, the decisive witness or bounded evidence, its limits and consequences, and recommended next steps—not a teaser withheld for a sale.</p>
+        <p>We may also find no issue in the selected scope, disconfirm a hypothesis or conclude <code>UNKNOWN</code>. No discovery is guaranteed, and no outcome should be mistaken for blanket approval of the software.</p>
+        <form class="assurance-intake" data-assurance-intake action={intakeEndpoint} method="POST" accept-charset="utf-8" aria-describedby="assurance-privacy-note">
+          <div class="assurance-field">
+            <label for="assurance-repository">Public repository URL <span aria-hidden="true">*</span></label>
+            <input id="assurance-repository" name="repository" type="url" inputmode="url" placeholder="https://github.com/owner/repository" minlength="12" maxlength="360" autocomplete="url" required />
+          </div>
+          <div class="assurance-field">
+            <label for="assurance-claim">What must this software get right? <span aria-hidden="true">*</span></label>
+            <textarea id="assurance-claim" name="claim" rows="3" minlength="20" maxlength="1500" placeholder="One consequential claim or requirement that matters…" required></textarea>
+          </div>
+          <div class="assurance-field">
+            <label for="assurance-decision">What important decision depends on that claim? <span aria-hidden="true">*</span></label>
+            <textarea id="assurance-decision" name="decision" rows="3" minlength="20" maxlength="1400" placeholder="What are you planning to ship, deploy, certify or rely on?" required></textarea>
+          </div>
+          <div class="assurance-field">
+            <label for="assurance-consequence">What could happen if the claim were false? <span aria-hidden="true">*</span></label>
+            <textarea id="assurance-consequence" name="consequence" rows="2" minlength="10" maxlength="1000" placeholder="The relevant engineering, operational or research consequence…" required></textarea>
+          </div>
+          <div class="assurance-field">
+            <label for="assurance-evidence">What evidence currently gives you confidence? <span class="fineprint">(optional)</span></label>
+            <textarea id="assurance-evidence" name="evidence" rows="2" maxlength="900" placeholder="Existing tests, specifications, proofs, reports or a public link"></textarea>
+          </div>
+          <div class="grid">
+            <div class="span-6 assurance-field">
+              <label for="assurance-relationship">Your relationship to the project <span aria-hidden="true">*</span></label>
+              <select id="assurance-relationship" name="relationship" required>
+                <option value="" disabled selected>Select your relationship</option>
+                <option value="owner">Owner</option>
+                <option value="maintainer">Maintainer</option>
+                <option value="authorized_engineer">Authorized engineering team member</option>
+                <option value="contributor">Contributor</option>
+                <option value="other">Other / interested researcher</option>
+              </select>
+            </div>
+            <div class="span-6 assurance-field">
+              <label for="assurance-email">Your contact email <span aria-hidden="true">*</span></label>
+              <input id="assurance-email" name="email" type="email" autocomplete="email" maxlength="254" required />
+            </div>
+          </div>
+          <div class="assurance-honeypot" aria-hidden="true"><label for="assurance-website">Leave this field blank</label><input id="assurance-website" name="website" type="text" tabindex="-1" autocomplete="off" /></div>
+          <input type="hidden" name="utm_source" value="" />
+          <input type="hidden" name="utm_medium" value="" />
+          <input type="hidden" name="utm_campaign" value="" />
+          <label class="assurance-consent">
+            <input type="checkbox" name="consent" value="yes" required />
+            <span>I agree to MathGraph using these details to evaluate and respond to my enquiry under the <a href="/assurance/privacy/">Open Challenge privacy notice</a>. I will not include credentials, confidential code, personal data belonging to others or undisclosed vulnerabilities.</span>
+          </label>
+          <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-action="mathgraph_assurance" data-callback="mathgraphTurnstileOk" data-expired-callback="mathgraphTurnstileExpired" data-error-callback="mathgraphTurnstileError"></div>
+          <p class="fineprint" role="status" aria-live="polite" data-turnstile-status>Human verification is required before submission.</p>
+          <div class="actions"><button class="button" type="submit" data-assurance-submit disabled>Submit for the free-finding challenge</button></div>
+          <noscript><p class="fineprint">JavaScript is required for the human-verification check. You can instead start an enquiry by email below.</p></noscript>
+        </form>
+        <script src="/assurance/turnstile-loader.js" is:inline defer></script>
+        <p class="fineprint" id="assurance-privacy-note">Submitting does not guarantee selection or a finding, and it does not authorize a private repository review. No source-code upload is provided. Only public links and high-level descriptions are accepted. For private projects, arrange authorization and secure handling separately. There is no automatic code scan.</p>
+        <div class="actions">
+          <a class="button button--secondary" href={enquiryUrl}>Prefer email? Start a private enquiry ↗</a>
+          <a class="button button--secondary" href="https://nz.linkedin.com/in/hesanchez" rel="external">Contact Heath on LinkedIn ↗</a>
+        </div>
+      </div>
+      <aside class="span-5 callout">
+        <h3>What to send</h3>
+        <ol>
+          <li>A public repository link (or a high-level description of a private project).</li>
+          <li>One important claim or requirement your team relies on.</li>
+          <li><strong>What important decision are you making because you believe it is correct—and what would happen if it were false?</strong></li>
+          <li>The existing test, specification, proof or evidence you consider relevant.</li>
+          <li>Your role or authority to request a review, and a reply address.</li>
+        </ol>
+        <p class="fineprint">Selection is discretionary; not every repository will be investigated or receive a finding.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section" id="evidence" aria-labelledby="evidence-title">
+    <div class="shell">
+      <div class="eyebrow">Evidence, not promises</div>
+      <h2 id="evidence-title">Uncomfortable findings. Accepted engineering corrections.</h2>
+      <div class="grid">
+        <article class="span-6 callout">
+          <h3>A test report that could show green when it should fail</h3>
+          <p><strong>L4YAML · Test-evidence integrity.</strong> Malformed JUnit XML could be accepted by the report reader and produce a misleading successful report. The upstream maintainer independently reproduced the discrepancy, reviewed the repair, and <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">merged PR #232</a>.</p>
+          <p>On final merged source <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code>, <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">independent native qualification</a> passed 24/24 declared XML controls and 14,945/14,945 project checks. The <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458" rel="external">earlier candidate run</a> is separate historical evidence, not automatically transferable.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>Orbital data whose reference frame could silently change</h3>
+          <p><strong>Nyx · Physical meaning across interfaces.</strong> Parquet trajectory exports could describe selected rows using the wrong reference-frame metadata, altering the physical interpretation of otherwise plausible numerical results. The <a href="https://github.com/nyx-space/nyx/pull/615" rel="external">source- and regression-backed correction was merged upstream on 13 November 2026</a>.</p>
+          <p>The repair validates the existing one-frame-per-table export contract. Separate import-side and frame-difference obligations remain outside this scoped change.</p>
+        </article>
+      </div>
+      <div class="callout callout--unknown">
+        <p><strong>Evidence boundary:</strong> These are public contributions to independently maintained open-source projects. They are not paid-client testimonials, institutional endorsements by NASA/JPL or other organizations, proof of universal correctness, or autonomous discoveries by a deployed MathGraph App. Anything not qualified by the stated tests remains <code>UNKNOWN</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--compact" id="audit-scope" aria-labelledby="audit-scope-title">
+    <div class="shell">
+      <div class="eyebrow">After the free finding · Optional paid work</div>
+      <h2 id="audit-scope-title">Found a gap? Let’s establish what now holds.</h2>
+      <p class="lede">A finding is only the beginning. If your team wants help closing the gap, MathGraph offers separately scoped paid assurance work to investigate the full implications, support a correction and independently establish what the evidence now warrants.</p>
+      <div class="grid">
+        <article class="span-6 callout">
+          <h3>Understand and resolve the gap</h3>
+          <p>Agree the intended requirement and source revision, investigate the affected decision, trace the failure mechanism or missing evidence, and work with your team toward a justified resolution.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>Reverify and document</h3>
+          <p>Run appropriate native, formal or adversarial checks against the proposed resolution, preserve remaining uncertainties, and deliver a source- and requirement-linked report describing exactly what now holds—and what does not.</p>
+        </article>
+      </div>
+      <p class="fineprint">Work is bounded by the agreed source, requirements, execution environment and scope. An audit is not a certification, a whole-codebase proof, a security guarantee or an automatic authorization to release.</p>
+    </div>
+  </section>
+
+  <section class="section section--compact" aria-labelledby="research-title">
+    <div class="shell">
+      <div class="eyebrow">Behind the service</div>
+      <h2 id="research-title">Independent verification matters. So does verifying the right thing.</h2>
+      <p>MathGraph's <a href="/explore/">research and source-pinned evidence network</a> makes some bounded verification records and unresolved questions inspectable. Indexed mathematical declarations are not themselves independent proof checks. The long-term research ambition is reusable, change-aware claim assurance—not a currently deployed universal code verifier.</p>
+      <p><strong>Know what holds. Know what doesn't. Know what remains unproven.</strong></p>
+    </div>
+  </section>
+
+<style>
+  .assurance-intake { display: grid; gap: 1rem; margin: 1.5rem 0; max-width: 100%; }
+  .assurance-field { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+  .assurance-field label { font-weight: 650; font-size: .94rem; }
+  .assurance-field input, .assurance-field textarea, .assurance-field select {
+    width: 100%; box-sizing: border-box; padding: .74rem .82rem; font: inherit;
+    color: inherit; background: #fff; border: 1px solid #82958c; border-radius: .45rem;
+  }
+  .assurance-field input:focus-visible, .assurance-field textarea:focus-visible, .assurance-field select:focus-visible {
+    outline: 3px solid #2d694d; outline-offset: 2px;
+  }
+  .assurance-field textarea { resize: vertical; min-height: 4.3rem; }
+  .assurance-honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .assurance-consent { display: flex; gap: .7rem; align-items: flex-start; font-size: .9rem; line-height: 1.55; }
+  .assurance-consent input { flex: none; width: 1.15rem; height: 1.15rem; margin-top: .17rem; }
+  .assurance-intake button:disabled { cursor: not-allowed; opacity: .6; }
+</style>
+</BaseLayout>

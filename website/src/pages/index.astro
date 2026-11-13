@@ -41,42 +41,58 @@ const finite = record.axes.finite_executable;
 const format = (value: number) => value.toLocaleString('en-US');
 ---
 
-<BaseLayout title="MathGraph — Verification Evidence Network" description="Explore a pinned Mathlib slice, inspect exactly scoped verification evidence, and identify what remains unknown or stale." currentPath="/">
+<BaseLayout title="MathGraph — Find What Your Verification Missed" description="Are you game? Submit your repo and one consequential claim for a selected free first-finding investigation. Independent assurance backed by reproducible evidence." currentPath="/">
   <header class="shell home-hero">
     <div class="home-hero__copy">
-      <div class="eyebrow">Source-pinned verification evidence</div>
-      <h1>Knowledge you can verify. Capabilities you can build on.</h1>
-      <p class="lede">Search real mathematical objects, follow exact source-backed connections, and inspect what independent evidence does—and does not—establish.</p>
-      <p>Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved. Start with the published Mathlib slice and reproducible verification cases; arbitrary repository or proof submission is not currently hosted.</p>
+      <div class="eyebrow">Independent assurance for consequential software and claims</div>
+      <h1>Find what your verification missed.</h1>
+      <p class="lede"><strong>Are you game? Show us your repo. If we establish a consequential gap, your first reproducible finding is free.</strong></p>
+      <p>AI is accelerating code, tests, models and proofs. MathGraph investigates whether that evidence actually justifies the decisions people rely on. Sometimes the gap is in the code. Sometimes it is in the specification, an assumption, an interface, a test or the claim itself. Show us one consequential claim and the evidence behind it. If we establish a genuine gap in a selected bounded investigation, your first reproducible finding is free.</p><p class="fineprint">Selected bounded investigations · No finding guaranteed · No obligation to buy follow-on work · Founder-led by <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>.</p>
+
+      <div class="actions">
+        <a class="button" href="/assurance/">Are you game? Show us your repo</a>
+        <a class="button button--secondary" href="/verify/">Inspect real evidence</a>
+        <a class="button button--secondary" href="/protocol/">Understand the protocol</a>
+      </div>
+      <details class="home-research-entry"><summary>Explore our source-pinned mathematics and verification research</summary>
       <form class="home-search" action="/explore/" method="get" data-home-search>
-        <label for="home-search-query">Search the living knowledge network</label>
+        <label for="home-search-query">Explore the source-pinned research catalogue</label>
         <div class="home-search__controls">
           <input id="home-search-query" name="q" type="search" placeholder="Try Real.rpow, topology, or a theorem statement" autocomplete="off" />
           <button class="button" type="submit">Explore</button>
         </div>
         <p class="fineprint">This is a 13-module slice of Mathlib, not all of Mathlib. Search includes source-indexed declarations, separately qualified records, and bounded capabilities; indexing is not independent proof checking.</p>
       </form>
-      <div class="actions">
-        <a class="button button--secondary" href="/verify/">Inspect real evidence</a>
-        <a class="button button--secondary" href="/protocol/">Understand the protocol</a>
-      </div>
+      </details>
     </div>
     <aside class="home-hero__signal" aria-label="Status boundaries represented in the network">
-      <div class="eyebrow">Three distinct signals</div>
+      <div class="eyebrow">How the open challenge works</div>
       <ol>
-        <li><span>Source occurrence</span><strong>SOURCE_INDEXED</strong><small>Independent verification NOT_CHECKED</small></li>
-        <li><span>Check result</span><strong>WARRANTED_BOUNDED</strong><small>Exact finite observation only</small></li>
-        <li><span>Reusable capability</span><strong>QUALIFIED_BOUNDED</strong><small>Declared inputs and assumptions</small></li>
+        <li><span>Show us your repo</span><strong>ONE DECISION</strong><small>Identify the claim, its evidence and what depends on it</small></li>
+        <li><span>Selected free investigation</span><strong>FIRST FINDING FREE</strong><small>Reproducible evidence if a consequential gap is established</small></li>
+        <li><span>Optional follow-on</span><strong>CLOSE + RECHECK</strong><small>Paid, separately scoped resolution and requalification</small></li>
       </ol>
-      <p class="fineprint">No combined truth score. No action authorization.</p>
+      <p class="fineprint">Honest outcomes include no finding or UNKNOWN. Not certification.</p>
     </aside>
   </header>
+
+  <section class="section section--compact" aria-labelledby="proof-cases-title">
+    <div class="shell">
+      <div class="eyebrow">Findings, not hype</div>
+      <h2 id="proof-cases-title">Two consequential findings. Two merged upstream corrections.</h2>
+      <div class="grid">
+        <article class="span-6 callout"><h3>False-green test reporting</h3><p>Malformed JUnit XML could produce a misleading green report in open-source L4YAML. The maintainer reproduced the defect and <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">merged the correction</a>.</p></article>
+        <article class="span-6 callout"><h3>Orbital reference-frame meaning</h3><p>Selected trajectory rows could be exported with incorrect frame metadata in Nyx, changing their physical interpretation. The <a href="https://github.com/nyx-space/nyx/pull/615" rel="external">correction merged upstream</a>.</p></article>
+      </div>
+      <p class="fineprint">These are technical contributions to independently maintained open-source projects, not paid-client endorsements or guarantees of general software correctness. <a href="/assurance/#evidence">Inspect source-pinned evidence and scope limits</a>.</p>
+    </div>
+  </section>
 
   <section class="section section--compact network-snapshot" aria-labelledby="network-snapshot-title">
     <div class="shell">
       <div class="network-snapshot__header">
         <div><div class="eyebrow">Published network snapshot</div><h2 id="network-snapshot-title">Substantial source coverage. Deliberately separate evidence.</h2></div>
-        <p>Every number below is derived at build time from validated, versioned contracts. They are not added into a single adoption or verification total.</p>
+        <div><p>Every number below is derived at build time from validated, versioned contracts. They are not added into a single adoption or verification total.</p><p class="fineprint">The independently admitted historical result is <code>WARRANTED_BOUNDED</code> only for its declared source and finite controls. Source indexing alone remains <code>NOT_CHECKED</code>; neither status authorizes broader software claims.</p></div>
       </div>
       <div class="metric-grid network-metrics">
         <Metric value={format(metrics.indexedObjects)} label="Indexed declarations" detail="Pinned Mathlib source occurrences" />

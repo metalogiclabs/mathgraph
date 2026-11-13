@@ -14,6 +14,8 @@ export const GET: APIRoute = async () => {
   const packages = await loadPublishedRecords();
   const routes = [
     '/',
+    '/assurance/',
+    '/assurance/privacy/',
     '/explore/',
     '/verify/',
     '/build/',

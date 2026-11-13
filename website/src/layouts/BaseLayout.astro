@@ -9,6 +9,7 @@ interface Props {
   canonicalPath?: string;
   socialImage?: string;
   ogType?: 'website' | 'article';
+  noindex?: boolean;
 }
 
 const {
@@ -19,11 +20,13 @@ const {
   canonicalPath,
   socialImage,
   ogType = 'website',
+  noindex = false,
 } = Astro.props;
 const canonical = new URL(canonicalPath ?? Astro.url.pathname, Astro.site);
 const absoluteSocialImage = socialImage ? new URL(socialImage, Astro.site) : undefined;
-const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'self'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'";
+const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self' https://challenges.cloudflare.com; font-src 'self'; form-action 'self' https://mathgraph-assurance-intake.metalogiclabs-check.workers.dev; frame-src https://challenges.cloudflare.com; img-src 'self' data:; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'";
 const nav = [
+  { href: '/assurance/', label: 'The Open Challenge', routes: ['/assurance/'] },
   { href: '/explore/', label: 'Explore', routes: ['/explore/', '/records/', '/objects/', '/discover/'] },
   { href: '/verify/', label: 'Verify', routes: ['/verify/', '/check/', '/resolve/'] },
   { href: '/build/', label: 'Build', routes: ['/build/', '/develop/', '/capabilities/'] },
@@ -41,6 +44,7 @@ const currentState = (item: typeof nav[number]) => normalizedPath === item.href
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
     <meta name="theme-color" content="#f8f7f3" />
     <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy} />
     <meta property="og:type" content={ogType} />
@@ -82,10 +86,11 @@ const currentState = (item: typeof nav[number]) => normalizedPath === item.href
     <footer class="site-footer">
       <div class="site-footer__inner shell">
         <div>
-          <p><strong>Evidence you can inspect. Results you can reuse.</strong></p>
-          <p class="fineprint">MathGraph is a research-stage verification and evidence project developed by Metalogic Labs. Evidence status is scoped; unknowns remain visible.</p>
+          <p><strong>Know what holds. Know what doesn't. Know what remains unproven.</strong></p>
+          <p class="fineprint">MathGraph offers founder-led independent assurance investigations backed by source-pinned research. Selected free first findings and optional paid follow-on work are bounded; no universal correctness or institutional endorsement is implied.</p>
         </div>
         <nav class="footer-links" aria-label="Footer">
+          <a href="/assurance/">The Open Challenge</a>
           <a href="/discover/">Discover</a>
           <a href="/develop/">Develop</a>
           <a href="/capabilities/">Capabilities</a>
