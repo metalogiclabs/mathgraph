@@ -81,7 +81,7 @@ const format = (value: number) => value.toLocaleString('en-US');
       <div class="eyebrow">Findings, not hype</div>
       <h2 id="proof-cases-title">Two consequential findings. Two merged upstream corrections.</h2>
       <div class="grid">
-        <article class="span-6 callout"><h3>False-green test reporting</h3><p>Malformed JUnit XML could produce a misleading green report in open-source L4YAML. The maintainer reproduced the defect and <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">merged the correction</a>.</p></article>
+        <article class="span-6 callout"><h3>False-green test reporting</h3><p>Malformed JUnit XML could produce a misleading green report in open-source L4YAML. Maintainer <a href="https://github.com/nasa-jpl/L4YAML/pull/232#issuecomment-6648592467" rel="external">Nicolas Rouquette independently reproduced and reviewed</a> the issue; the <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">correction merged upstream</a>.</p></article>
         <article class="span-6 callout"><h3>Orbital reference-frame meaning</h3><p>Selected trajectory rows could be exported with incorrect frame metadata in Nyx, changing their physical interpretation. The <a href="https://github.com/nyx-space/nyx/pull/615" rel="external">correction merged upstream</a>.</p></article>
       </div>
       <p class="fineprint">These are technical contributions to independently maintained open-source projects, not paid-client endorsements or guarantees of general software correctness. <a href="/assurance/#evidence">Inspect source-pinned evidence and scope limits</a>.</p>
@@ -90,10 +90,10 @@ const format = (value: number) => value.toLocaleString('en-US');
 
   <section class="section section--compact" aria-labelledby="buyer-next-title">
     <div class="shell">
-      <div class="eyebrow">See what you actually receive</div>
-      <h2 id="buyer-next-title">A confirmed finding, not another list of possible bugs.</h2>
+      <div class="eyebrow">See what a bounded finding can look like</div>
+      <h2 id="buyer-next-title">A real finding, presented as an illustrative report.</h2>
       <p class="lede">What did we challenge? What separated the claim from the evidence? What exact source and native checks establish the result? What remains unknown?</p>
-      <p><a href="/assurance/sample-finding/">Examine a one-page example assurance finding from merged L4YAML #232</a>—including the minimal malformed JUnit witness, independently qualified correction and explicit limitations.</p>
+      <p><a href="/assurance/sample-finding/">Examine an illustrative one-page report based on L4YAML #232</a>—including the minimal malformed JUnit witness, a correction developed through maintainer review, independent qualification and explicit limitations. This public contribution was not a commissioned MathGraph audit or an institutional endorsement.</p>
       <div class="actions">
         <a class="button" href="/assurance/#challenge">Show us your repo · First confirmed finding free</a>
         <a class="button button--secondary" href="/assurance/sample-finding/">View example finding</a>
