@@ -666,7 +666,7 @@ describe('primary public evidence experience', () => {
     const text = visibleText(html);
 
     expect(html).toContain('<h1>Find what your verification missed.</h1>');
-    expect(text).toContain('AI is making code, models, tests and proofs faster to produce.');
+    expect(text).toContain('AI is accelerating code, tests, models and proofs.');
     expect(text).toContain('Open a declaration. Follow what its source actually says.');
     for (const route of ['explore', 'verify', 'build']) expect(html).toContain(`data-outcome="${route}"`);
     for (const section of ['source-to-result', 'map-preview', 'capability', 'independent-verification', 'quick-start', 'long-term']) expect(html).toContain(`id="${section}"`);
