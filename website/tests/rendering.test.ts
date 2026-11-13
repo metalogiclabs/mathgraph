@@ -118,7 +118,10 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('14,945/14,945');
     expect(sample).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
     expect(sample).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860');
-    expect(text).toMatch(/not.*paid-client report/i);
+    expect(text).toMatch(/not a commissioned audit/i);
+    expect(text).toContain('Nicolas Rouquette');
+    expect(text).toContain('auxiliary JUnit report reader');
+    expect(text).toContain('not the soundness of L4YAML');
     expect(home).toContain('href="/assurance/sample-finding/"');
     expect(home.indexOf('buyer-next-title')).toBeLessThan(home.indexOf('network-snapshot-title'));
     expect(offer).toContain('href="/assurance/sample-finding/"');
