@@ -1,0 +1,24 @@
+{
+  "experiment": "MathGraph epistemic orthogonality V0",
+  "source_artifact": "artifacts/lawbook/finite_htilt_survivor_law_v1.json",
+  "source_artifact_git_blob": "5fb0374a44ce699f23287c2c045a6927b781c2a3",
+  "formal_verification": {
+    "status": "VERIFIED_PROOF",
+    "boundary": "Lean",
+    "authority": "INHERITED_ONLY"
+  },
+  "human_digest": {
+    "status": "UNDIGESTED",
+    "authority": "ADVISORY"
+  },
+  "statement_fidelity": {
+    "status": "UNKNOWN",
+    "authority": "NON_PROMOTING"
+  },
+  "reusable_generalization": {
+    "status": "UNKNOWN",
+    "authority": "ADVISORY"
+  },
+  "claim": "A verifier-warranted theorem may coexist with unknown human digestion, statement-fidelity, and generalization axes without losing or gaining truth authority.",
+  "boundary": "This state decomposition reuses an existing public VERIFIED_PROOF artifact. It does not reverify the Lean theorem, establish statement fidelity, or certify a generalization."
+}

@@ -40,6 +40,21 @@ Verifiers decide.
 
 The Lawbook remembers.
 
+## Epistemic Status
+
+MathGraph keeps four questions separate:
+
+- **Verification** — what has actually crossed a verifier/importer/finite-validator/chain-audit boundary. This is the only axis that can carry mathematical truth authority.
+- **Human digest** — whether the result has been explained and understood in human-facing form. This does not upgrade or downgrade truth.
+- **Statement fidelity** — whether the formal statement faithfully captures the intended informal claim. This is qualified independently.
+- **Generalization** — whether a reusable method, abstraction, or schema has been earned. This remains advisory until independently warranted.
+
+A valid MathGraph state can therefore be:
+
+`VERIFIED_PROOF · UNDIGESTED · statement fidelity UNKNOWN · generalization UNKNOWN`.
+
+Unknown means unknown, not false. No non-verification axis can promote truth.
+
 ## Trust Boundary
 
 Advisory routes can guide work, but only verifiers, finite checkers, trusted
