@@ -71,7 +71,7 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/first verified finding is free/i);
     expect(text).toContain('Selected projects');
     expect(text).toContain('What important decision are you making because you believe it is correct');
-    expect(offer).toContain('What%20important%20decision');
+    expect(html).toContain('What%20important%20decision');
     expect(html).toContain('mailto:heath@mathgraph.org');
     expect(html).toContain('https://github.com/nyx-space/nyx/pull/615');
     expect(text).toContain('UNKNOWN');
