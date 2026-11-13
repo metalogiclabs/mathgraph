@@ -1,0 +1,113 @@
+# MathGraph Autopilot — The agent that proves it's finished
+
+**Status: CANDIDATE / offline bounded demonstration verified locally. NOT a completed Nebius hackathon submission.**
+
+MathGraph Autopilot has a planner/repair-proposal interface (NVIDIA Nemotron on Nebius Token Factory in live mode) and a separate bounded local evidence-acquisition/qualification component. It proposes a repair, executes declared tests independently, invalidates old test evidence after code changes, and withholds completion until a fresh receipt is bound to the precise tested file bytes.
+
+## 2026-10-26: first authenticated Nemotron repair (bounded)
+
+**WARRANTED for the exact declared test scope:** [One-shot authenticated GitHub Actions #40255882641](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641) passed on isolated execution branch `exp/nebius-live-once-20261026`, checkout of MathGraph code at `56315d382a5b439ffee9dc5a73320e25b2d1757c` (independently qualified by [59/59 offline regression tests](https://github.com/metalogiclabs/mathgraph/actions/runs/40255832893)), against pristine upstream Pallets `itsdangerous@672971d66a2ef9f85151e53283113f33d642dabd`. **One authenticated `nvidia/nemotron-3-super-120b-a12b` proposal** was accepted by the restricted single-function AST policy and passed the source-native encoding tests plus both predeclared minimum-cost separating tests. Exact-byte source/test receipts were invalidated by a post-test edit and reacquired after reverting to checked bytes. The one-shot runner itself also passed 21/21 source-native preliminary tests.
+
+**Evidence:** [retained two-file artifact #12621789949](https://github.com/metalogiclabs/mathgraph/actions/runs/40255882641/artifacts/12621789949), ZIP SHA-256 `2d5fb2f3b77a4a9e5947b8d51812762a8eb9ff6fa592c00f1debf9957e4c8109`; provider request ID `474bcea32c45d24df22a5e657206685a`; exact response SHA-256 `8b43aaa9f1388ff98babbe1129dab553c08993e8598b44720157bb8df2a4b292`; candidate SHA-256 `c4da532733d3aaab18d3b98b53fc35f0e58eb4cf15957fb61f591d1384791f45`. No credentials or raw prompt/response are included in the public report; request authenticity is grounded in the trusted GitHub Actions execution log and private runtime environment, not in a cryptographic third-party attestation.
+
+**Lineage:** first run [#40253221809](https://github.com/metalogiclabs/mathgraph/actions/runs/40253221809) had no configured key; [#40254932826](https://github.com/metalogiclabs/mathgraph/actions/runs/40254932826) returned null completion content; [#40255193578](https://github.com/metalogiclabs/mathgraph/actions/runs/40255193578) returned malformed JSON; [#40255411025](https://github.com/metalogiclabs/mathgraph/actions/runs/40255411025) obtained two real but REJECTED code proposals. The newest guarded prompting, provider response contract and verifier feedback succeeded on the first attempt without relaxing exact source/test authority. These earlier negative outcomes remain part of the preserved lineage.
+
+**Still UNKNOWN:** an actual upstream bug (all defects were deliberately injected), unfamiliar-repository repair/generalization, advantage against competitive property-based testing, independent external model-response attestation, competition-compliant licensed distribution, publicly accessible functional live execution and a public video/Devpost submission. This is one bounded successful attempt, not a measured success rate.
+
+## Run locally (Python 3.11+; no pip dependencies)
+
+From this directory:
+
+```sh
+python -m unittest -v test_autopilot
+python autopilot.py --provider scripted --report /tmp/mathgraph-offline.json
+python cockpit.py /tmp/mathgraph-offline.json --output /tmp/mathgraph-cockpit.html
+```
+
+Open `/tmp/mathgraph-cockpit.html` in a browser. This is **an explicitly scripted coding-model fixture**; tests, retries, receipt binding and qualification are actually executed. The fixture fails once before producing a valid repair. The verifier detects a post-test edit and requires reacquisition.
+
+## Authentic NVIDIA Nemotron inference via Nebius Token Factory
+
+Obtain a Token Factory API key via the Nebius Builder Program. Configure it through a local environment variable or private runtime secret, **not in source, public logs or an issue**:
+
+```sh
+export NEBIUS_API_KEY='<redacted token from your secret manager>'
+python autopilot.py --provider nebius --model nvidia/nemotron-3-super-120b-a12b --report /tmp/mathgraph-live.json
+python cockpit.py /tmp/mathgraph-live.json --output /tmp/mathgraph-live-cockpit.html
+```
+
+The live adapter uses `https://api.tokenfactory.nebius.com/v1/chat/completions` with an NVIDIA Nemotron model. Confirm the model ID in the live Token Factory catalog before running. A real provider response is required to claim Nebius compliance: the scripted mode is not a substitute.
+
+Evidence captured in the JSON report includes model ID, response hash, request ID when supplied, candidate source-byte identity, exact test command, test output hash, return code, and post-test byte identity. It does not establish public third-party authenticity of a model response or reproduce full private API messages. No deployment is authorized, and passing this test suite makes only a **bounded test-scoped claim**, not a formal proof of all software correctness.
+
+## End-to-end experiment and trust boundary
+
+1. Verify that the starting buggy `clamp` implementation fails declared tests.
+2. Ask the provider for a proposed new implementation, constrained to exactly one `calculator.py` function.
+3. Revoke old evidence immediately whenever candidate bytes differ.
+4. Execute the approved unit-test command in a temporary workspace (15-second timeout; sanitized process environment).
+5. Compare before/after file-byte snapshots, outcome and return code. Only passing test evidence for exactly the current candidate bytes warrants the **declared tests**.
+6. Attack the obtained warrant with an extra post-test edit. This correctly rejects the old receipt. Re-run the tests, regenerate the receipt, and check qualification again.
+
+The bounded task validates the generated Python AST to allow only a single-return pure `clamp` function using `min` and `max`. **Do not broaden this to arbitrary repositories or execute unrestricted generated code without a real execution sandbox and stronger supply-chain controls.** The local test receipt is trusted only within the orchestrator that invokes the runner; it is not a cryptographically signed attestation. The included `evidence_gate.py` from the first research commit is a **SUPERSEDED** boolean-gate sketch, not the authority used in Autopilot.
+
+## Evidence-seeking differentiator — independently verified offline
+
+The finite `separating_experiments.py` module tests the precise weakness of the fixed-test baseline. Three explicitly predeclared defective clamp hypotheses (`cap10`, `cap11`, `floor0`) pass the four original tests. The independent order-comparison oracle spans a frozen **195-case** integer domain. The minimum-total-cost subset-DP selector, independently checked against brute-force alternatives, chooses **two** separating tests at declared synthetic cost **34**: `clamp(-1,-2,5) == -1` and `clamp(12,0,12) == 12`. The test file changes, so the earlier test receipt is invalidated; the new tests reject the deceptive implementation; a scripted repair is accepted only after fresh tests, with agreement on all 195 cases.
+
+Reproduce:
+
+```sh
+python -m unittest -v test_autopilot test_cockpit test_separating_experiments test_separating_cockpit
+python separating_experiments.py --report separating-report.json
+python separating_cockpit.py separating-report.json --output separating-cockpit.html
+```
+
+**CI evidence:** [GitHub Actions run #40151184773](https://github.com/metalogiclabs/mathgraph/actions/runs/40151184773), 33/33 tests, exact branch head `2b59eb48b5b63ed31ff9c9aa5a202bef610cc6e7`, [retained four-file artifact](https://github.com/metalogiclabs/mathgraph/actions/runs/40151184773/artifacts/12582549744), ZIP SHA-256 `b86d2e58cc7d1a8d41abe2c3e0a38ba7a2cb6f150322af39f7e3631cef2e0fa7`.
+
+**Limits:** Both the version space and the finite test domain are constructed fixtures. The oracle is independently implemented but its contract is human-specified. The minimum is exact only within those constraints and the declared synthetic cost, not an optimization claim about wall-clock time. The repair remains scripted and no real Nebius/NVIDIA inference or unfamiliar GitHub repair is qualified. The original `evidence_gate.py` remains SUPERSEDED by the source-bound runner; no claim of general correctness or formal Lean proof.
+
+## Pinned real-project transfer — independently tested
+
+The same mechanism now runs against actual [Pallets itsdangerous](https://github.com/pallets/itsdangerous/tree/672971d66a2ef9f85151e53283113f33d642dabd) source and its original `tests/test_itsdangerous/test_encoding.py` at immutable upstream commit `672971d66a2ef9f85151e53283113f33d642dabd`. Git blob hashes of `src/itsdangerous/encoding.py` and native tests are checked before executing. Upstream code is not altered; three **explicitly injected synthetic faults** are tested in isolated copies, and all three pass the unmodified original encoding suite. **This is not an upstream bug report.**
+
+An independently declared URL-safe unpadded Base64 oracle is compared with native upstream execution across **1,026 frozen byte inputs**. A finite exact-cover dynamic program selects **two minimum-cost separating tests**, with a source-distinct exhaustive one/two-test comparison agreeing on synthetic cost **6**. The selected inputs, in hex, are `00` and `f80000`. After the first new test is admitted, the old native-suite receipt is invalidated; the defective candidate fails, a scripted repair is tested on the exact source and test bytes, and qualification is restored. This demonstrates transfer of evidence-acquisition **to real source-native tests**, not discovery of an organic upstream defect.
+
+A **source-native Nebius coding-agent adapter** lives in `upstream_nebius_agent.py`, protected by an AST-constrained single-function patch policy. Its scripted two-attempt repair loop passes CI. The `--provider nebius` mode is implemented but **has not run against a real Nebius API key**. No hosted model or public deployment is claimed.
+
+From the experiment directory, after obtaining the independent upstream checkout at the exact commit and installing `pytest==8.4.2`:
+
+```sh
+python -m unittest -v test_upstream_encoding_transfer test_upstream_nebius_agent test_upstream_transfer_cockpit
+python upstream_encoding_transfer.py --upstream-checkout /path/to/itsdangerous --report upstream-transfer-report.json
+python upstream_transfer_cockpit.py upstream-transfer-report.json --output upstream-transfer-cockpit.html
+python upstream_nebius_agent.py --upstream-checkout /path/to/itsdangerous --provider scripted --report upstream-agent-report.json
+```
+
+The authentic model mode uses `NEBIUS_API_KEY` from a private environment or a properly configured GitHub Actions secret, **never a chat message or committed file**. If using workflow dispatch from GitHub, confirm that the workflow is registered/enabled on the repository's default branch first; a draft-PR-only workflow may not be dispatchable by the GitHub UI.
+
+**Evidence:** [successful independent Actions run #40252488576](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020), exact qualified commit `6bceb125e3effddc81c29b8b658d4825187c888c`, **55/55 tests**, and [retained audit artifact for earlier 55-test run #12620369151](https://github.com/metalogiclabs/mathgraph/actions/runs/40252245020/artifacts/12620369151) (ZIP SHA-256 `9e92d8822cafd46caad8ce2d8baddd2cd5a9dd61e64be2b0d993dc352488cfe3`). The redundant `upstream_guarded_agent.py` candidate and its test were removed in favor of the existing independently tested `upstream_nebius_agent.py`, preserving one repair implementation.
+
+**UNKNOWN:** Actual NVIDIA inference provenance, true model autonomy, general-repository repair, original real-world bug discovery, comparison against optimized property-based testing, hosted functional app, public YouTube video and Devpost submission.
+
+## Actual scope and research lineage
+
+| Component | Epistemic state | Authority |
+|---|---|---|
+| Earlier finite `evidence_gate.py` sketch | SUPERSEDED | No independent test runner |
+| Autopilot deterministic repair/test loop | REUSABLE, bounded | Local unittest + committed code; check CI |
+| Tamper, stale-receipt and UNKNOWN scenarios | REUSABLE, bounded | Adversarial regression tests |
+| Finite missing-experiment acquisition | REUSABLE, bounded | CI #40151184773; exact 195-case grammar and independent exact minimum |
+| Pinned real-project native-test transfer | REUSABLE, bounded | CI #40252245020; 1,026-input byte grammar, 55/55 tests, three injected faults |
+| Nebius/NVIDIA live API integration | CANDIDATE, untested with credentials | Source adapter only |
+| General-repository repair capability | UNKNOWN | Not implemented |
+| Real third-party externally hosted demo | UNKNOWN | Not deployed |
+| Tavily evidence-retrieval integration | UNKNOWN | Not implemented; never claim bonus eligibility |
+
+The objective is *an agent that determines which evidence its proposed action still requires and reacquires it*. It is intentionally narrower than the full MathGraph research program. Earlier independent warrant-resolution work can be found in `mathgraph_check/warrant_resolution.py` and `mathgraph_check/living_warrants.py` elsewhere in this repository; this experiment reuses its **epistemic separation**, not its proof or formal authority.
+
+## Hackathon submission readiness
+
+The event requires a genuine Nebius inference call or Nebius compute execution plus an NVIDIA open model, significant new work after 26 August 2026 for an existing project, public source and license, a working accessible test build, and a public YouTube demonstration shorter than three minutes. The **current candidate is not ready to submit** because authentic Token Factory inference, a publicly accessible functional test build and video evidence have not yet been completed. See [official rules](https://nebiusglobalaihackathon.devpost.com/rules) and [organizer judging guidance](https://nebiusglobalaihackathon.devpost.com/updates/46204-here-s-how-judging-works).
+
+**Demo video hook:** The agent confidently returns a repair. A green receipt appears. An innocent-looking post-test edit invalidates the receipt. MathGraph refuses completion, reruns precisely the missing check, and only then authorizes *test-qualified* completion.
