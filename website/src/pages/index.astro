@@ -53,14 +53,18 @@ const format = (value: number) => value.toLocaleString('en-US');
         <a class="button" href="/assurance/">Are you game? Submit your repo</a>
         <a class="button button--secondary" href="/verify/">Inspect real evidence</a>
         <a class="button button--secondary" href="/protocol/">Understand the protocol</a>
-      <details class="home-research-entry"><summary>Explore our source-pinned mathematics and verification research</summary>\n      <form class="home-search" action="/explore/" method="get" data-home-search>
+      </div>
+      <details class="home-research-entry"><summary>Explore our source-pinned mathematics and verification research</summary>
+      <form class="home-search" action="/explore/" method="get" data-home-search>
         <label for="home-search-query">Explore the source-pinned research catalogue</label>
         <div class="home-search__controls">
           <input id="home-search-query" name="q" type="search" placeholder="Try Real.rpow, topology, or a theorem statement" autocomplete="off" />
           <button class="button" type="submit">Explore</button>
         </div>
         <p class="fineprint">This is a 13-module slice of Mathlib, not all of Mathlib. Search includes source-indexed declarations, separately qualified records, and bounded capabilities; indexing is not independent proof checking.</p>
-      </form>\n      </details>\n      </div>\n    </div>\n    <aside class="home-hero__signal" aria-label="Status boundaries represented in the network">
+      </form>
+      </details>
+      </div>\n    </div>\n    <aside class="home-hero__signal" aria-label="Status boundaries represented in the network">
       <div class="eyebrow">How the open challenge works</div>
       <ol>
         <li><span>Show us your repo</span><strong>ONE CONSEQUENCE</strong><small>Identify the requirement and evidence that matter</small></li>
