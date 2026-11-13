@@ -248,7 +248,7 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
-    expect(html).toContain('Know what holds. Know what doesn't. Know what remains unproven.');
+    expect(html).toContain("Know what holds. Know what doesn\'t. Know what remains unproven.");
   });
 
   test('builds Resolve as a complete public surface with the qualified historical default', async () => {
