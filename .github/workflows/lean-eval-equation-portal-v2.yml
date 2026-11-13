@@ -1,0 +1,26 @@
+name: LeanEval equation portal V2
+
+on:
+  push:
+    branches:
+      - lean-eval-multitarget-sweep
+    paths:
+      - '.github/workflows/lean-eval-equation-portal-v2.yml'
+      - '.github/scripts/lean_eval_local_valuation.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  equation-factor-portal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run factor-local valuation experiment
+        run: bash .github/scripts/lean_eval_local_valuation.sh

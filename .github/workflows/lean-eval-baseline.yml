@@ -1,0 +1,13 @@
+name: LeanEval baseline (archived)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archived:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Archived exact workflow: competitions/lean_eval/archive/workflows/lean-eval-baseline.yml'

@@ -1,0 +1,166 @@
+name: LeanEval low-degree radical probe
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-low-degree-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  low-degree-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Clone frozen LeanEval
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+
+      - name: Probe degree-one bridge
+        working-directory: /tmp/abel_ruffini
+        continue-on-error: true
+        run: |
+          cat > DegreeOne.lean <<'EOF'
+          import Mathlib
+
+          open Polynomial
+
+          theorem degree_one_root_rational
+              (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
+              ∃ q : ℚ, x = algebraMap ℚ ℂ q := by
+            have hdeg : p.degree = (1 : WithBot ℕ) :=
+              (degree_eq_iff_natDegree_eq_of_pos Nat.zero_lt_one).2 hp
+            have hlead : p.coeff 1 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
+            let a : ℚ := p.coeff 1
+            let b : ℚ := p.coeff 0
+            have hpform : p = C a * X + C b := by
+              simpa [a, b] using eq_X_add_C_of_natDegree_le_one (p := p) hp.le
+            rw [hpform] at hx
+            simp [aeval_def] at hx
+            refine ⟨-b / a, ?_⟩
+            have haC : (algebraMap ℚ ℂ a) ≠ 0 := by
+              exact (map_ne_zero_iff (algebraMap ℚ ℂ) (algebraMap ℚ ℂ).injective).2 hlead
+            have hmap : algebraMap ℚ ℂ (-b / a) =
+                -(algebraMap ℚ ℂ b) / (algebraMap ℚ ℂ a) := by
+              simp
+            rw [hmap]
+            apply (eq_div_iff haC).2
+            have ha_cast : algebraMap ℚ ℂ a = (a : ℂ) := by
+              exact algebraMap.coe_ratCast ℚ ℂ a
+            have hb_cast : algebraMap ℚ ℂ b = (b : ℂ) := by
+              exact algebraMap.coe_ratCast ℚ ℂ b
+            rw [ha_cast, hb_cast]
+            linear_combination hx
+
+          theorem degree_one_solvable
+              (p : ℚ[X]) (hp : p.natDegree = 1) (x : ℂ) (hx : aeval x p = 0) :
+              x ∈ solvableByRad ℚ ℂ := by
+            obtain ⟨q, rfl⟩ := degree_one_root_rational p hp x hx
+            exact (solvableByRad ℚ ℂ).algebraMap_mem q
+          EOF
+          set -o pipefail
+          lake env lean DegreeOne.lean 2>&1 | tee /tmp/degree-one.log
+
+      - name: Construct degree-two radical capability
+        working-directory: /tmp/abel_ruffini
+        if: always()
+        run: |
+          cat > DegreeTwo.lean <<'EOF'
+          import Mathlib
+
+          open Polynomial
+
+          theorem degree_two_solvable
+              (p : ℚ[X]) (hp : p.natDegree = 2) (x : ℂ) (hx : aeval x p = 0) :
+              x ∈ solvableByRad ℚ ℂ := by
+            have hdeg : p.degree = (2 : WithBot ℕ) :=
+              (degree_eq_iff_natDegree_eq_of_pos (by norm_num : 0 < 2)).2 hp
+            have hlead : p.coeff 2 ≠ 0 := coeff_ne_zero_of_eq_degree hdeg
+            let a : ℚ := p.coeff 2
+            let b : ℚ := p.coeff 1
+            let c : ℚ := p.coeff 0
+            have hpform : p = C a * X ^ 2 + C b * X + C c := by
+              let q : ℚ[X] := C a * X ^ 2 + C b * X + C c
+              have hqdeg : q.degree ≤ (2 : WithBot ℕ) := by
+                dsimp [q]
+                exact degree_quadratic_le
+              ext n
+              by_cases hn : n ≤ 2
+              · interval_cases n <;> simp [q, a, b, c]
+              · have hp_lt : p.degree < n := by
+                  rw [hdeg]
+                  exact_mod_cast (Nat.lt_of_not_ge hn)
+                have hq_lt : q.degree < n :=
+                  lt_of_le_of_lt hqdeg (by exact_mod_cast (Nat.lt_of_not_ge hn))
+                rw [coeff_eq_zero_of_degree_lt hp_lt, coeff_eq_zero_of_degree_lt hq_lt]
+            rw [hpform] at hx
+            simp [aeval_def] at hx
+            let y : ℂ := 2 * (a : ℂ) * x + (b : ℂ)
+            let d : ℚ := b ^ 2 - 4 * a * c
+            have hy_sq : y ^ 2 = (d : ℂ) := by
+              dsimp [y, d]
+              push_cast
+              linear_combination 4 * (a : ℂ) * hx
+            have hd_mem : (d : ℂ) ∈ solvableByRad ℚ ℂ := by
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem d
+              simpa [algebraMap.coe_ratCast] using h
+            have hy_pow_mem : y ^ 2 ∈ solvableByRad ℚ ℂ := by
+              rw [hy_sq]
+              exact hd_mem
+            have hy_mem : y ∈ solvableByRad ℚ ℂ :=
+              solvableByRad.rad_mem (by norm_num : (2 : ℕ) ≠ 0) hy_pow_mem
+            have hb_mem : (b : ℂ) ∈ solvableByRad ℚ ℂ := by
+              have h := (solvableByRad ℚ ℂ).algebraMap_mem b
+              simpa [algebraMap.coe_ratCast] using h
+            have hden_mem : (2 * (a : ℂ)) ∈ solvableByRad ℚ ℂ := by
+              have htwo : (2 : ℂ) ∈ solvableByRad ℚ ℂ := by
+                have h := (solvableByRad ℚ ℂ).algebraMap_mem (2 : ℚ)
+                norm_num at h ⊢
+              have ha_mem : (a : ℂ) ∈ solvableByRad ℚ ℂ := by
+                have h := (solvableByRad ℚ ℂ).algebraMap_mem a
+                simpa [algebraMap.coe_ratCast] using h
+              exact (solvableByRad ℚ ℂ).mul_mem htwo ha_mem
+            have haC : (a : ℂ) ≠ 0 := by
+              exact_mod_cast hlead
+            have hxform : x = (y - (b : ℂ)) / (2 * (a : ℂ)) := by
+              dsimp [y]
+              field_simp [haC]
+              ring
+            rw [hxform]
+            exact (solvableByRad ℚ ℂ).div_mem
+              ((solvableByRad ℚ ℂ).sub_mem hy_mem hb_mem) hden_mem
+          EOF
+          set +e
+          lake env lean DegreeTwo.lean > /tmp/degree-two.log 2>&1
+          code=$?
+          echo "degree_two_exit=$code" | tee /tmp/low-degree-summary.txt
+          tail -n 60 /tmp/degree-two.log
+          exit 0
+
+      - name: Upload low-degree residual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-eval-low-degree-probe
+          path: |
+            /tmp/degree-one.log
+            /tmp/degree-two.log
+            /tmp/low-degree-summary.txt

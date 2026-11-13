@@ -1,0 +1,132 @@
+name: LeanEval multi-target behavioural sweep
+
+on:
+  push:
+    branches:
+      - lean-eval-multitarget-sweep
+    paths:
+      - '.github/workflows/lean-eval-multitarget-sweep.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cold-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - annals_absolute_profinite_rigidity
+          - annals_algebraic_integers
+          - annals_bose_gases
+          - annals_bounded_multiplicative_functions
+          - annals_chowla_and_twin_prime_over_fq_t
+          - annals_conjecture_of_marton
+          - annals_dirichlet_weyl_bound
+          - annals_duffin_schaeffer_conjecture
+          - annals_enumerating_number_fields
+          - annals_equiangular_lines_fixed_angle
+          - annals_erdos_faber_lovasz_conjecture
+          - annals_erdos_supersingular_primes
+          - annals_flat_littlewood_poly
+          - annals_fractional_expectation_thresholds
+          - annals_good_lt_codes
+          - annals_improved_bounds_sunflower_lemma
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Prepare frozen LeanEval target
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          test "$(git rev-parse HEAD)" = "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem "$TARGET" "/tmp/$TARGET"
+          cd "/tmp/$TARGET"
+          lake update
+
+      - name: Run matched generic proof portfolio
+        working-directory: /tmp/${{ matrix.target }}
+        run: |
+          set +e
+          cp Challenge.lean /tmp/original-Challenge.lean
+          : > /tmp/sweep.tsv
+
+          for tactic in aesop simp_all grind omega norm_num portfolio; do
+            cp /tmp/original-Challenge.lean Submission.lean
+            TACTIC="$tactic" python3 - <<'PY'
+          import os, re
+          p='Submission.lean'
+          s=open(p).read()
+          t=os.environ['TACTIC']
+          bodies={
+            'aesop':'aesop',
+            'simp_all':'simp_all',
+            'grind':'grind',
+            'omega':'omega',
+            'norm_num':'norm_num',
+            'portfolio':'first | aesop | grind | simp_all | omega | norm_num',
+          }
+          replacement='by\n  '+bodies[t]
+          s,n=re.subn(r'by\s*\n\s*sorry\b', replacement, s)
+          if n == 0:
+              s,n=re.subn(r':=\s*by\s*\n\s*sorry\b', ':= '+replacement, s)
+          open(p,'w').write(s)
+          print('replaced_holes='+str(n))
+          PY
+            lake build Submission > "/tmp/${TARGET}-${tactic}.log" 2>&1
+            build=$?
+            if [ "$build" -eq 0 ]; then
+              lake test > "/tmp/${TARGET}-${tactic}-test.log" 2>&1
+              testcode=$?
+            else
+              testcode=99
+            fi
+            printf '%s\t%s\t%s\n' "$tactic" "$build" "$testcode" >> /tmp/sweep.tsv
+            if [ "$build" -eq 0 ] && [ "$testcode" -eq 0 ]; then
+              cp Submission.lean "/tmp/${TARGET}-SOLVED.lean"
+              echo "SOLVED target=$TARGET tactic=$tactic"
+              echo "solved=1" >> "$GITHUB_OUTPUT"
+              echo "winner=$tactic" >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+
+          echo "=== $TARGET ==="
+          cat /tmp/sweep.tsv
+          echo "=== residual tails ==="
+          for f in /tmp/${TARGET}-*.log; do
+            echo "--- $f"
+            tail -n 35 "$f"
+          done
+          exit 0
+        id: sweep
+
+      - name: Mark exact cold solve
+        if: steps.sweep.outputs.solved == '1'
+        run: |
+          echo "GREEN_EXACT_COLD_SOLVE target=$TARGET winner=${{ steps.sweep.outputs.winner }}"
+
+      - name: Upload residual signature
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: residual-${{ matrix.target }}
+          path: |
+            /tmp/sweep.tsv
+            /tmp/${{ matrix.target }}-*.log
+            /tmp/${{ matrix.target }}-SOLVED.lean
+          if-no-files-found: ignore
