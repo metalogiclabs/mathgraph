@@ -55,6 +55,8 @@ try {
         await menu.click();
         await page.locator('h1').click();
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
+        await page.locator('details.home-research-entry summary').click();
+        assert.equal(await page.locator('details.home-research-entry').getAttribute('open'), '');
         await menu.click();
         await page.locator('[data-home-search] input[type=search]').focus();
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
