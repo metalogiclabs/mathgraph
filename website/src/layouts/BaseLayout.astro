@@ -9,6 +9,7 @@ interface Props {
   canonicalPath?: string;
   socialImage?: string;
   ogType?: 'website' | 'article';
+  noindex?: boolean;
 }
 
 const {
@@ -19,6 +20,7 @@ const {
   canonicalPath,
   socialImage,
   ogType = 'website',
+  noindex = false,
 } = Astro.props;
 const canonical = new URL(canonicalPath ?? Astro.url.pathname, Astro.site);
 const absoluteSocialImage = socialImage ? new URL(socialImage, Astro.site) : undefined;
@@ -42,6 +44,7 @@ const currentState = (item: typeof nav[number]) => normalizedPath === item.href
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
     <meta name="theme-color" content="#f8f7f3" />
     <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy} />
     <meta property="og:type" content={ogType} />
