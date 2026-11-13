@@ -8,8 +8,10 @@ const message = [
   'I would like to submit a repository for the MathGraph Open Challenge.',
   '',
   'Public repository URL:',
-  'The important behaviour or claim:',
-  'What tests, specifications or proofs do you rely on?',
+  'One consequential claim or requirement:',
+  'What important decision are you making because you believe this claim is true?',
+  'What could happen if that claim were false?',
+  'What tests, specifications, proofs or other evidence support it?',
   'My relationship to the project / authority to request review:',
   '',
   'I understand selection is discretionary, the investigation is bounded, and a finding is not guaranteed.',
@@ -26,14 +28,14 @@ const enquiryUrl = `mailto:heath@mathgraph.org?subject=${encodeURIComponent(subj
     <div class="shell">
       <div class="eyebrow">The MathGraph Open Challenge · Founder-led independent assurance</div>
       <h1>Are you game? Show me your repo.</h1>
-      <p class="lede"><strong>Find what your verification missed. Your first verified finding is free.</strong></p>
-      <p>Your code may pass its tests. Your proof may check. But does the evidence establish what you actually need to trust?</p>
-      <p>MathGraph investigates consequential gaps between intended requirements, specifications, implementations and reported results. Led by <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, we test the weakest boundary and follow the evidence—even if our original suspicion is wrong.</p>
+      <p class="lede"><strong>Find what your verification missed. Your first verified finding is free—if one is established.</strong></p>
+      <p>Your code may pass its tests. Your proof may check. Your model may produce the expected result. But what, exactly, does that evidence establish—and is it enough for the decision you need to make?</p>
+      <p>Sometimes the gap lies in the code. Sometimes it is a missing requirement, an untested assumption, a lossy interface, a misleading report or a claim stronger than its supporting evidence. Led by <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, MathGraph independently investigates the weakest consequential boundary—even when our starting hypothesis is wrong.</p>
       <div class="actions">
         <a class="button" href="#challenge">Submit a repository for consideration</a>
         <a class="button button--secondary" href="#evidence">See accepted upstream findings</a>
       </div>
-      <p class="fineprint">Selected projects · Bounded investigation · No obligation to purchase work · A defect is not guaranteed.</p>
+      <p class="fineprint">Selected projects · Bounded investigation · No obligation to purchase work · A finding is not guaranteed.</p>
     </div>
   </header>
 
@@ -41,10 +43,10 @@ const enquiryUrl = `mailto:heath@mathgraph.org?subject=${encodeURIComponent(subj
     <div class="shell grid">
       <div class="span-7">
         <div class="eyebrow">The free first-finding offer</div>
-        <h2 id="challenge-title">One repo. One consequential question.</h2>
-        <p>Tell us what your software is supposed to guarantee, and which tests, proofs or engineering checks give you confidence. We select projects where a concrete, consequential requirement can be investigated independently.</p>
-        <p><strong>If we establish a genuine issue, your first source-pinned, reproducible finding is free.</strong> We give you the actual witness and enough information to check it, not a teaser withheld for a sale.</p>
-        <p>We may also find no issue in the selected scope, disconfirm a hypothesis or conclude <code>UNKNOWN</code>. None of those outcomes is blanket approval of the software.</p>
+        <h2 id="challenge-title">One repo. One consequential claim. One decision that depends on it.</h2>
+        <p>Tell us what your software must get right, which evidence gives you confidence, and <strong>what important decision you are making because you believe the claim is true.</strong> What would happen if it were false? We select repositories where that decision-to-evidence boundary can be investigated independently.</p>
+        <p><strong>If we establish a consequential discrepancy or unsupported claim, your first source-pinned, independently reproducible finding is free.</strong> You receive the examined claim, the decisive witness or bounded evidence, its limits and consequences, and recommended next steps—not a teaser withheld for a sale.</p>
+        <p>We may also find no issue in the selected scope, disconfirm a hypothesis or conclude <code>UNKNOWN</code>. No discovery is guaranteed, and no outcome should be mistaken for blanket approval of the software.</p>
         <div class="actions">
           <a class="button" href={enquiryUrl}>Email your repository and claim ↗</a>
           <a class="button button--secondary" href="https://nz.linkedin.com/in/hesanchez" rel="external">Contact Heath on LinkedIn ↗</a>
@@ -55,7 +57,8 @@ const enquiryUrl = `mailto:heath@mathgraph.org?subject=${encodeURIComponent(subj
         <h3>What to send</h3>
         <ol>
           <li>A public repository link (or a high-level description of a private project).</li>
-          <li>One important behaviour or claim your team relies on.</li>
+          <li>One important claim or requirement your team relies on.</li>
+          <li><strong>What important decision are you making because you believe it is correct—and what would happen if it were false?</strong></li>
           <li>The existing test, specification, proof or evidence you consider relevant.</li>
           <li>Your role or authority to request a review, and a reply address.</li>
         </ol>
@@ -89,16 +92,16 @@ const enquiryUrl = `mailto:heath@mathgraph.org?subject=${encodeURIComponent(subj
   <section class="section section--compact" id="audit-scope" aria-labelledby="audit-scope-title">
     <div class="shell">
       <div class="eyebrow">After the free finding · Optional paid work</div>
-      <h2 id="audit-scope-title">From discovery to a defensible engineering decision.</h2>
-      <p class="lede">A first finding can expose a wider question. If you want help resolving it, MathGraph offers separately scoped human-led independent audits.</p>
+      <h2 id="audit-scope-title">Found a gap? Let’s establish what now holds.</h2>
+      <p class="lede">A finding is only the beginning. If your team wants help closing the gap, MathGraph offers separately scoped paid assurance work to investigate the full implications, support a correction and independently establish what the evidence now warrants.</p>
       <div class="grid">
         <article class="span-6 callout">
-          <h3>Investigate and repair</h3>
-          <p>Agree the requirement and source revision, trace the failure mechanism, assess the affected behaviour, and work with your team toward a correction.</p>
+          <h3>Understand and resolve the gap</h3>
+          <p>Agree the intended requirement and source revision, investigate the affected decision, trace the failure mechanism or missing evidence, and work with your team toward a justified resolution.</p>
         </article>
         <article class="span-6 callout">
           <h3>Reverify and document</h3>
-          <p>Run native regression and adversarial controls against the candidate repair, preserve remaining uncertainties, and deliver a source- and requirement-linked evidence report.</p>
+          <p>Run appropriate native, formal or adversarial checks against the proposed resolution, preserve remaining uncertainties, and deliver a source- and requirement-linked report describing exactly what now holds—and what does not.</p>
         </article>
       </div>
       <p class="fineprint">Work is bounded by the agreed source, requirements, execution environment and scope. An audit is not a certification, a whole-codebase proof, a security guarantee or an automatic authorization to release.</p>
