@@ -248,7 +248,7 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toMatch(/<nav[^>]+aria-label="Primary"/);
     expect(html).toContain('<main id="main-content"');
-    expect(html).toContain('Evidence you can inspect. Results you can reuse.');
+    expect(html).toContain('Know what holds. Know what doesn't. Know what remains unproven.');
   });
 
   test('builds Resolve as a complete public surface with the qualified historical default', async () => {
@@ -621,11 +621,11 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/Playground.*future.*receipt/i);
   });
 
-  test('exposes four outcome journeys and a progressively enhanced menu', async () => {
+  test('exposes the open challenge and four research journeys with accessible navigation', async () => {
     const html = await page('');
     const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
-    for (const label of ['Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
-    expect(nav.match(/<a /g)).toHaveLength(5);
+    for (const label of ['The Open Challenge', 'Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
+    expect(nav.match(/<a /g)).toHaveLength(6);
     expect(nav).toContain('GitHub');
     expect(html).toMatch(/<button[^>]+aria-expanded="false"[^>]+aria-controls="primary-navigation"[^>]*>Menu<\/button>/);
     expect(nav).not.toContain('hidden');
