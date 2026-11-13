@@ -15,6 +15,7 @@ export const GET: APIRoute = async () => {
   const routes = [
     '/',
     '/assurance/',
+    '/assurance/privacy/',
     '/explore/',
     '/verify/',
     '/build/',
