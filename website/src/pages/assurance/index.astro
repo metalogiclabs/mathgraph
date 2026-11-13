@@ -129,7 +129,7 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
       <div class="grid">
         <article class="span-6 callout">
           <h3>A test report that could show green when it should fail</h3>
-          <p><strong>L4YAML · Test-evidence integrity.</strong> Malformed JUnit XML could be accepted by the report reader and produce a misleading successful report. The upstream maintainer independently reproduced the discrepancy, reviewed the repair, and <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">merged PR #232</a>.</p>
+          <p><strong>L4YAML · Test-evidence integrity.</strong> The auxiliary JUnit report reader could accept malformed XML and produce a misleading successful report. L4YAML maintainer <a href="https://github.com/nasa-jpl/L4YAML/pull/232#issuecomment-6648592467" rel="external">Nicolas Rouquette independently reproduced the discrepancy</a>, reviewed the proposed repair and requested stronger controls and explicit limits. The resulting <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">PR #232 merged upstream</a>. This was a collaborative open-source correction, not a commissioned MathGraph audit.</p>
           <p>On final merged source <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code>, <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">independent native qualification</a> passed 24/24 declared XML controls and 14,945/14,945 project checks. The <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458" rel="external">earlier candidate run</a> is separate historical evidence, not automatically transferable.</p>
         </article>
         <article class="span-6 callout">
