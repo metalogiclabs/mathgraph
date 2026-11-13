@@ -92,7 +92,7 @@ const format = (value: number) => value.toLocaleString('en-US');
     <div class="shell">
       <div class="network-snapshot__header">
         <div><div class="eyebrow">Published network snapshot</div><h2 id="network-snapshot-title">Substantial source coverage. Deliberately separate evidence.</h2></div>
-        <p>Every number below is derived at build time from validated, versioned contracts. They are not added into a single adoption or verification total.</p>
+        <div><p>Every number below is derived at build time from validated, versioned contracts. They are not added into a single adoption or verification total.</p><p class="fineprint">The independently admitted historical result is <code>WARRANTED_BOUNDED</code> only for its declared source and finite controls. Source indexing alone remains <code>NOT_CHECKED</code>; neither status authorizes broader software claims.</p></div>
       </div>
       <div class="metric-grid network-metrics">
         <Metric value={format(metrics.indexedObjects)} label="Indexed declarations" detail="Pinned Mathlib source occurrences" />
