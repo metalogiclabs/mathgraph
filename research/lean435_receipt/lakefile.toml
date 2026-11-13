@@ -1,0 +1,17 @@
+name = "mathgraph_lean435_receipt"
+version = "0.1.0"
+defaultTargets = ["Solution"]
+
+[[lean_lib]]
+name = "Solution"
+
+# Comparator builds named challenge/control modules, but lake check is
+# deliberately restricted to the default Solution target.
+[[lean_lib]]
+name = "Challenge"
+
+[[lean_lib]]
+name = "ChallengeMutated"
+
+[[lean_lib]]
+name = "SolutionAxiom"
