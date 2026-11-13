@@ -1,0 +1,44 @@
+name: OpenAI math pinned evidence audit
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/openai_math_audit.py'
+      - 'scripts/openai_math_logspace_imports.py'
+      - 'scripts/openai_math_model_identity.py'
+      - 'tests/test_openai_math_audit.py'
+      - 'tests/test_openai_math_logspace_imports.py'
+      - 'tests/test_openai_math_model_identity.py'
+      - 'docs/openai-math-evidence-audit-v1.md'
+      - '.github/workflows/openai-math-evidence-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-evidence:
+    name: Pinned source replay (not Lean verification)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline falsifier controls
+        env:
+          PYTHONPATH: scripts
+        run: python3 -m unittest discover -s tests -p 'test_openai_math_*.py' -v
+      - name: Pinned upstream source audit
+        run: python3 scripts/openai_math_audit.py --output openai-math-audit.json
+      - name: Static Logspace import closure (not Lean verification)
+        run: python3 scripts/openai_math_logspace_imports.py --output openai-math-import-audit.json
+      - name: Exact challenge versus solution model text identity (not compiled identity)
+        run: python3 scripts/openai_math_model_identity.py --output openai-math-model-identity.json
+      - name: Archive bounded audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-math-pinned-source-audit
+          path: |
+            openai-math-audit.json
+            openai-math-import-audit.json
+            openai-math-model-identity.json
+          if-no-files-found: error

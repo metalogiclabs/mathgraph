@@ -1,0 +1,184 @@
+name: OpenAI Logspace operational model bridge
+
+on:
+  push:
+    paths:
+      - 'experiments/openai-logspace-model-bridge-v1/ModelSemantics.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/FiniteEnvelope.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/VisitedRadius.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/AlphabetBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolStepBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolStepSimulation.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolRunBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolOneStepBridge.lean'
+      - 'experiments/openai-logspace-model-bridge-v1/SymbolFullRunBridge.lean'
+      - '.github/workflows/openai-logspace-model-bridge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-bridge:
+    name: Check general coin-prefix, determinism and halt laws
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      LEAN_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/math
+          ref: fd4aeeb2ee4fc729c18d98444fed42fd0529eeeb
+          path: upstream
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            lean/OAI/Computability/Logspace/Deterministic.lean
+            lean/lean-toolchain
+      - name: Prepare a minimal source-pinned Lean package
+        run: |
+          set -euo pipefail
+          mkdir -p isolated/OAI/Computability/Logspace
+          cp upstream/lean/OAI/Computability/Logspace/Deterministic.lean isolated/OAI/Computability/Logspace/
+          cp experiments/openai-logspace-model-bridge-v1/ModelSemantics.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/FiniteEnvelope.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/VisitedRadius.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/AlphabetBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/ExplicitAlphabetBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolMachineBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolStepBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolStepSimulation.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolRunBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolOneStepBridge.lean isolated/
+          cp experiments/openai-logspace-model-bridge-v1/SymbolFullRunBridge.lean isolated/
+          cp upstream/lean/lean-toolchain isolated/lean-toolchain
+          test "$(cat isolated/lean-toolchain)" = "leanprover/lean4:v4.34.1"
+          cat > isolated/lakefile.lean <<'LAKE'
+          import Lake
+          open Lake DSL
+          package ModelBridge where
+            leanOptions := #[⟨`autoImplicit, false⟩]
+          require mathlib from git
+            "https://github.com/leanprover-community/mathlib4.git" @ "d13f23b723b8a846827a245b89c10fc7d3f11612"
+          @[default_target] lean_lib ModelSemantics
+          lean_lib FiniteEnvelope
+          lean_lib VisitedRadius
+          lean_lib AlphabetBridge
+          lean_lib ExplicitAlphabetBridge
+          lean_lib SymbolMachineBridge
+          lean_lib SymbolStepBridge
+          lean_lib SymbolStepSimulation
+          lean_lib SymbolRunBridge
+          lean_lib SymbolOneStepBridge
+          lean_lib SymbolFullRunBridge
+          lean_lib OAI
+          LAKE
+          printf '%s\n' '{"version":"1.2.0","packagesDir":".lake/packages","packages":[]}' > isolated/lake-manifest.json
+      - name: Install exact Lean version
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: isolated
+          auto-config: false
+          build: false
+          use-github-cache: false
+          use-mathlib-cache: false
+      - name: Verify Mathlib lock and load mathlib cache
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake update
+          python3 - <<'PY'
+          import json
+          a=[x['rev'] for x in json.load(open('lake-manifest.json'))['packages'] if x['name']=='mathlib']
+          assert a==['d13f23b723b8a846827a245b89c10fc7d3f11612'],a
+          PY
+          lake exe cache get
+      - name: Prove independently authored operational laws
+        working-directory: isolated
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
+          lake env leanchecker ModelSemantics FiniteEnvelope VisitedRadius AlphabetBridge ExplicitAlphabetBridge SymbolMachineBridge SymbolStepBridge SymbolStepSimulation SymbolRunBridge SymbolOneStepBridge SymbolFullRunBridge
+          cat > AxiomCheck.lean <<'LEAN'
+          import ModelSemantics
+          import FiniteEnvelope
+          import VisitedRadius
+          import AlphabetBridge
+          import ExplicitAlphabetBridge
+          import SymbolMachineBridge
+          import SymbolStepBridge
+          import SymbolStepSimulation
+          import SymbolRunBridge
+          import SymbolOneStepBridge
+          import SymbolFullRunBridge
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_step_coin_irrelevant
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_run_coin_irrelevant
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_step_is_fixed
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.run_depends_only_on_coin_prefix
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.halted_run_is_stable
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.deterministic_repeat_propagates
+          #print axioms Metalogic.OpenAIMath.ModelSemantics.no_configuration_repeat_before_first_halt
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.envelope_finite
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.envelope_card
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.configuration_ext_of_window
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.unvisited_work_cell_is_blank
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.first_halt_lt_card_of_faithful_encoding
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.direction_move_unit_bounds
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.machine_step_workhead_unit_bounds
+          #print axioms Metalogic.OpenAIMath.FiniteEnvelope.spaceThrough_monotone
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.integer_walk_covers_nonnegative_segment
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.integer_walk_covers_nonpositive_segment
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_head_visits_positive_intermediate
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_head_visits_negative_intermediate
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_head_natAbs_lt_visited_card
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_head_natAbs_lt_spaceThrough
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_workhead_inside_space_window
+          #print axioms Metalogic.OpenAIMath.VisitedRadius.oai_tape_blank_outside_space_window
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbol_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbol_true_iff
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapes_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.tape_cell_equal_of_bit_blocks_equal
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeBlank_is_zero
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeNonblank_true_at_index
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeSymbolWithBlank_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeBlankWorkTapes_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapesAsBoolean_injective
+          #print axioms Metalogic.OpenAIMath.AlphabetBridge.encodeWorkTapesAsBoolean_blank_outside
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.blank_is_all_zero
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.nonblank_has_set_bit
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeSymbol_injective
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeTracks_injective
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeTracks_blank_outside
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.encodeTracks_writeAll_commutes
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.lowerAction_write_bit
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.lowerAction_group_move
+          #print axioms Metalogic.OpenAIMath.ExplicitAlphabetBridge.copyHeadMovement_commutes
+          #print axioms Metalogic.OpenAIMath.SymbolMachineBridge.compileMachine_initialState
+          #print axioms Metalogic.OpenAIMath.SymbolMachineBridge.compileMachine_output
+          #print axioms Metalogic.OpenAIMath.SymbolMachineBridge.decodeTrackReads_encoded
+          #print axioms Metalogic.OpenAIMath.SymbolStepBridge.encoded_configuration_reads
+          #print axioms Metalogic.OpenAIMath.SymbolStepBridge.decode_encoded_configuration_reads
+          #print axioms Metalogic.OpenAIMath.SymbolStepBridge.compileMachine_transition_encoded
+          #print axioms Metalogic.OpenAIMath.SymbolStepSimulation.initial_commutes
+          #print axioms Metalogic.OpenAIMath.SymbolStepSimulation.write_commutes_with_OAI_update
+          #print axioms Metalogic.OpenAIMath.SymbolRunBridge.run_commutes_of_initial_and_step
+          #print axioms Metalogic.OpenAIMath.SymbolOneStepBridge.source_step_commutes
+          #print axioms Metalogic.OpenAIMath.SymbolFullRunBridge.compiled_run_commutes
+          LEAN
+          lake env lean AxiomCheck.lean | tee axioms.txt
+          ! grep -E '(sorryAx|unknownConstant|ofReduceBool)' axioms.txt
+      - name: Archive bounded model bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openai-logspace-model-bridge
+          path: isolated/axioms.txt
+          if-no-files-found: warn
