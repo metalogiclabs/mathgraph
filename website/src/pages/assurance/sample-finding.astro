@@ -9,10 +9,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 >
   <header class="section section--compact">
     <div class="shell">
-      <div class="eyebrow">Example deliverable · Real public open-source finding</div>
+      <div class="eyebrow">Illustrative assurance report · Public open-source contribution</div>
       <h1>What does a MathGraph finding look like?</h1>
       <p class="lede">A small, independently reproducible discrepancy can change what a team is justified in concluding from its evidence.</p>
-      <p>This example is adapted from an actual public contribution to the independently maintained <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">L4YAML repository (merged PR #232)</a>. It demonstrates the format of an assurance finding; it is <strong>not</strong> a paid-client report or an institutional endorsement.</p>
+      <p>This illustrative report draws on an independently identified discrepancy and the collaborative upstream repair in the <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">L4YAML open-source project (merged PR #232)</a>. Heath Sanchez identified and reported the test-evidence discrepancy; L4YAML maintainer <a href="https://github.com/nasa-jpl/L4YAML/pull/232#issuecomment-6648592467" rel="external">Nicolas Rouquette independently reproduced it</a>, reviewed the proposed repair, and requested stronger regression controls and an explicit unsupported-input boundary. This report was prepared later to illustrate a possible MathGraph deliverable. <strong>It was not a commissioned audit, paid-client engagement, or endorsement by Nicolas, JPL, NASA, or the project.</strong></p>
       <div class="actions">
         <a class="button" href="/assurance/#challenge">Challenge MathGraph with your repo</a>
         <a class="button button--secondary" href="#receipt">Examine the finding</a>
@@ -47,12 +47,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </article>
         <article class="span-6 callout">
           <h3>5. Independent evidence and resolution</h3>
-          <p>The upstream maintainer independently reproduced the finding, reviewed the correction and merged <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">PR #232</a> on 6 November 2026.</p>
+          <p>Maintainer <a href="https://github.com/nasa-jpl/L4YAML/pull/232#issuecomment-6648592467" rel="external">Nicolas Rouquette</a> reproduced the false-green path on the baseline and compared it with the repaired behavior. His review called for exact error-message guards and documentation of the bounded reader’s unsupported DOCTYPE cases. The corrected <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">PR #232 merged upstream</a> on 6 November 2026.</p>
           <p>The frozen final PR source was <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code>. An <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">independent exact-head replay</a> completed successfully, including 24/24 declared XML controls and 14,945/14,945 repository checks.</p>
         </article>
         <article class="span-6 callout">
           <h3>6. What remains unproven</h3>
-          <p>The result does not prove universal XML conformance, correctness of every possible report format, or the safety of the entire application. The reader deliberately does not support some DTD forms. Other inputs and future source revisions remain <code>UNKNOWN</code> without new qualification.</p>
+          <p>The result concerns the auxiliary JUnit report reader, <strong>not</strong> the soundness of L4YAML’s Lean proofs or correctness of its YAML parser. It does not prove universal XML conformance, correctness of every report format, or the safety of the entire application. The bounded reader deliberately does not support some DTD forms. Other inputs and future source revisions remain <code>UNKNOWN</code> without new qualification.</p>
         </article>
       </div>
       <div class="callout callout--unknown">
