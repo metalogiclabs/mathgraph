@@ -1,0 +1,111 @@
+import ChallengeDeps
+import TailComposition
+import SigmaLocal
+import Termination
+import Final
+import Mathlib.Topology.LocallyConstant.Basic
+
+open LeanEval.Algebra
+open Polynomial
+open Set Filter
+open scoped Classical Topology
+
+/-- The compensated Sturm quantity: sign variation plus the number of distinct
+real roots already crossed.  Its local jumps cancel exactly. -/
+noncomputable def sturmCompensated (p : ℝ[X]) (x : ℝ) : ℕ :=
+  sigma p x + sturmRootCountLE p x
+
+/-- For a nonzero squarefree polynomial, the compensated quantity is locally
+constant at every real point, including roots. -/
+theorem squarefree_sturmCompensated_isLocallyConstant
+    (p : ℝ[X]) (hp : Squarefree p) (hp0 : p ≠ 0) :
+    IsLocallyConstant (sturmCompensated p) := by
+  rw [IsLocallyConstant.iff_eventually_eq]
+  intro r
+  by_cases hr : p.eval r = 0
+  · rcases squarefree_sigma_local_root_profile p r hp hr with ⟨U, hU, hsig⟩
+    rcases sturmRootCountLE_local_root_profile p r hp0 hr with ⟨V, hV, hcnt⟩
+    filter_upwards [hU, hV] with x hxU hxV
+    unfold sturmCompensated
+    by_cases hxr : x < r
+    · have hs := (hsig x hxU).1 hxr
+      have hc := (hcnt x hxV).1 hxr
+      omega
+    · have hrx : r ≤ x := le_of_not_gt hxr
+      rw [(hsig x hxU).2 hrx, (hcnt x hxV).2 hrx]
+  · have hsig := squarefree_sigma_locally_constant_at_nonroot p r hp hr
+    have hcnt := sturmRootCountLE_locally_constant_at_nonroot p r hp0 hr
+    filter_upwards [hsig, hcnt] with x hs hc
+    simp [sturmCompensated, hs, hc]
+
+/-- Therefore the compensated quantity is globally constant on the real
+line, by connectedness. -/
+theorem squarefree_sturmCompensated_eq
+    (p : ℝ[X]) (hp : Squarefree p) (hp0 : p ≠ 0) (a b : ℝ) :
+    sturmCompensated p a = sturmCompensated p b := by
+  exact IsLocallyConstant.apply_eq_of_preconnectedSpace
+    (squarefree_sturmCompensated_isLocallyConstant p hp hp0) a b
+
+/-- Distinct roots strictly inside an interval, represented exactly as in the
+frozen LeanEval challenge. -/
+noncomputable def sturmRootFinsetIoo (p : ℝ[X]) (a b : ℝ) : Finset ℝ :=
+  (sturmRootFinset p).filter (fun r => a < r ∧ r < b)
+
+/-- Prefix root counts differ by exactly the number of roots in `(a,b)` when
+both endpoints are nonroots. -/
+theorem sturmRootCountLE_sub_eq_interval_card
+    (p : ℝ[X]) (a b : ℝ) (hp0 : p ≠ 0)
+    (ha : p.eval a ≠ 0) (hb : p.eval b ≠ 0) (hab : a < b) :
+    sturmRootCountLE p b - sturmRootCountLE p a =
+      (sturmRootFinsetIoo p a b).card := by
+  let S := sturmRootFinset p
+  let A := S.filter (fun r => r ≤ a)
+  let B := S.filter (fun r => r ≤ b)
+  have hsub : A ⊆ B := by
+    intro r hrA
+    have hra : r ≤ a := (Finset.mem_filter.mp hrA).2
+    have hrS : r ∈ S := (Finset.mem_filter.mp hrA).1
+    exact Finset.mem_filter.mpr ⟨hrS, hra.trans hab.le⟩
+  have hdiff : B \ A = sturmRootFinsetIoo p a b := by
+    ext r
+    simp only [Finset.mem_sdiff, Finset.mem_filter, A, B, S, sturmRootFinsetIoo]
+    constructor
+    · rintro ⟨⟨hrS, hrb⟩, hnotA⟩
+      have hna : ¬ r ≤ a := by
+        intro hra
+        exact hnotA ⟨hrS, hra⟩
+      have har : a < r := lt_of_not_ge hna
+      have hrb' : r < b := by
+        rcases hrb.eq_or_lt with rfl | hlt
+        · have hroot : IsRoot p r := (Polynomial.mem_roots hp0).1 (by
+            simpa [sturmRootFinset] using hrS)
+          exact (hb (by simpa [Polynomial.IsRoot.def] using hroot)).elim
+        · exact hlt
+      exact ⟨hrS, har, hrb'⟩
+    · rintro ⟨hrS, har, hrb⟩
+      refine ⟨⟨hrS, hrb.le⟩, ?_⟩
+      intro hA
+      exact (not_le_of_gt har) hA.2
+  have hcard : (B \ A).card = B.card - A.card :=
+    Finset.card_sdiff_of_subset hsub
+  rw [hdiff] at hcard
+  simpa [sturmRootCountLE, A, B, S] using hcard.symm
+
+/-- Exact frozen LeanEval target. -/
+theorem sturm (p : ℝ[X]) (hp : Squarefree p) {a b : ℝ} (hab : a < b)
+    (ha : p.eval a ≠ 0) (hb : p.eval b ≠ 0) :
+    ((p.roots.toFinset).filter (fun x => a < x ∧ x < b)).card =
+      sigma p a - sigma p b := by
+  have hp0 : p ≠ 0 := by
+    intro h
+    apply ha
+    simp [h]
+  have hglobal := squarefree_sturmCompensated_eq p hp hp0 a b
+  have hcount := sturmRootCountLE_sub_eq_interval_card p a b hp0 ha hb hab
+  unfold sturmCompensated at hglobal
+  have hinterval :
+      (sturmRootFinsetIoo p a b).card =
+        ((p.roots.toFinset).filter (fun x => a < x ∧ x < b)).card := by
+    rfl
+  rw [hinterval] at hcount
+  omega

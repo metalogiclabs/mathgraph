@@ -1,0 +1,44 @@
+name: LeanEval cubic universal
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/lean-eval-cubic-universal.yml'
+      - 'competitions/lean_eval/CubicUniversal.lean'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cubic-universal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_EVAL_SHA: de48559590eb8cff2125e8e933b3e13bb8a3ff98
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build frozen Abel-Ruffini workspace
+        run: |
+          git clone --filter=blob:none https://github.com/leanprover/lean-eval.git /tmp/lean-eval
+          cd /tmp/lean-eval
+          git checkout "$LEAN_EVAL_SHA"
+          lake exe cache get
+          lake build
+          lake exe lean-eval start-problem abel_ruffini /tmp/abel_ruffini
+          cd /tmp/abel_ruffini
+          lake update
+      - name: Compile universal cubic solver
+        working-directory: /tmp/abel_ruffini
+        run: |
+          cp "$GITHUB_WORKSPACE/competitions/lean_eval/CubicUniversal.lean" CubicUniversal.lean
+          set +e
+          lake env lean CubicUniversal.lean > /tmp/cubic-universal.log 2>&1
+          code=$?
+          echo "cubic_universal_exit=$code"
+          tail -n 180 /tmp/cubic-universal.log
+          exit 0
