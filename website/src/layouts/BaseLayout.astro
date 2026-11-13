@@ -24,7 +24,7 @@ const {
 } = Astro.props;
 const canonical = new URL(canonicalPath ?? Astro.url.pathname, Astro.site);
 const absoluteSocialImage = socialImage ? new URL(socialImage, Astro.site) : undefined;
-const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'self'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'";
+const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self' https://challenges.cloudflare.com; font-src 'self'; form-action 'self' https://mathgraph-assurance-intake.metalogiclabs-check.workers.dev; frame-src https://challenges.cloudflare.com; img-src 'self' data:; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'";
 const nav = [
   { href: '/assurance/', label: 'The Open Challenge', routes: ['/assurance/'] },
   { href: '/explore/', label: 'Explore', routes: ['/explore/', '/records/', '/objects/', '/discover/'] },
