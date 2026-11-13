@@ -1,80 +1,116 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const subject = 'MathGraph Open Challenge — first finding free';
+const message = [
+  'Hello Heath,',
+  '',
+  'I would like to submit a repository for the MathGraph Open Challenge.',
+  '',
+  'Public repository URL:',
+  'The important behaviour or claim:',
+  'What tests, specifications or proofs do you rely on?',
+  'My relationship to the project / authority to request review:',
+  '',
+  'I understand selection is discretionary, the investigation is bounded, and a finding is not guaranteed.',
+].join('\n');
+const enquiryUrl = `mailto:heath@mathgraph.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
 ---
 
 <BaseLayout
-  title="Independent Assurance for Serious Software — MathGraph"
-  description="Your tests passed. But did they test the right thing? A source-bound, human-led independent assurance audit for consequential software."
+  title="Are you game? First verified finding free — MathGraph"
+  description="Show MathGraph your repo and one consequential software claim. Selected projects receive their first independently reproducible finding free. Optional paid follow-on assurance."
   currentPath="/assurance/"
 >
   <header class="section section--compact">
     <div class="shell">
-      <div class="eyebrow">MathGraph · Independent assurance for serious software</div>
-      <h1>Your tests passed. But did they test the right thing?</h1>
-      <p class="lede">AI helps you climb faster. MathGraph checks whether your ladder is against the right wall—and shows you the evidence.</p>
-      <p>Beyond finding bugs, we challenge the assumptions behind your code: what it is supposed to do, what has actually been tested, and what the evidence does or does not establish.</p>
-      <p><strong>Know what you don't know.</strong></p>
+      <div class="eyebrow">The MathGraph Open Challenge · Founder-led independent assurance</div>
+      <h1>Are you game? Show me your repo.</h1>
+      <p class="lede"><strong>Find what your verification missed. Your first verified finding is free.</strong></p>
+      <p>Your code may pass its tests. Your proof may check. But does the evidence establish what you actually need to trust?</p>
+      <p>MathGraph investigates consequential gaps between intended requirements, specifications, implementations and reported results. Led by <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, we test the weakest boundary and follow the evidence—even if our original suspicion is wrong.</p>
       <div class="actions">
-        <a class="button" href="#audit-scope">What an audit delivers</a>
-        <a class="button button--secondary" href="#evidence">Inspect a real case</a>
+        <a class="button" href="#challenge">Submit a repository for consideration</a>
+        <a class="button button--secondary" href="#evidence">See accepted upstream findings</a>
       </div>
+      <p class="fineprint">Selected projects · Bounded investigation · No obligation to purchase work · A defect is not guaranteed.</p>
     </div>
   </header>
 
-  <section class="section" id="evidence" aria-labelledby="evidence-title">
+  <section class="section section--compact" id="challenge" aria-labelledby="challenge-title" data-assurance-boundary>
     <div class="shell grid">
-      <div class="span-5">
-        <div class="eyebrow">Independent technical decision · public evidence</div>
-        <h2 id="evidence-title">A test-reporting path that could show green when it should fail.</h2>
-      </div>
       <div class="span-7">
-        <p>In NASA JPL's open-source L4YAML project, an inconsistent JUnit XML acceptance boundary allowed malformed report content to be accepted by the Lean report reader where a separate Python consumer rejected it. That mismatch could let a success report obscure a reporting failure.</p>
-        <p>We developed a reproducible source-level correction. The upstream maintainer independently reproduced the defect, reviewed the repair, approved it, and merged <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">PR #232</a>.</p>
-        <p>The final merged source <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code> independently passed <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">24/24 native XML controls (22 oracle agreements and two explicitly unsupported forms), plus 14,945/14,945 repository tests</a>. An <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458" rel="external">earlier candidate qualification</a> remains a separate historical result, not evidence silently transported to the final revision.</p>
-        <div class="callout callout--unknown">
-          <p><strong>Evidence boundary:</strong> This is a real, externally reviewed open-source contribution. It is not a claim of NASA/JPL organizational endorsement, a paid engagement, an autonomous discovery by the deployed MathGraph Check App, or a safety certification. Untested behavior remains <code>UNKNOWN</code>.</p>
+        <div class="eyebrow">The free first-finding offer</div>
+        <h2 id="challenge-title">One repo. One consequential question.</h2>
+        <p>Tell us what your software is supposed to guarantee, and which tests, proofs or engineering checks give you confidence. We select projects where a concrete, consequential requirement can be investigated independently.</p>
+        <p><strong>If we establish a genuine issue, your first source-pinned, reproducible finding is free.</strong> We give you the actual witness and enough information to check it, not a teaser withheld for a sale.</p>
+        <p>We may also find no issue in the selected scope, disconfirm a hypothesis or conclude <code>UNKNOWN</code>. None of those outcomes is blanket approval of the software.</p>
+        <div class="actions">
+          <a class="button" href={enquiryUrl}>Email your repository and claim ↗</a>
+          <a class="button button--secondary" href="https://nz.linkedin.com/in/hesanchez" rel="external">Contact Heath on LinkedIn ↗</a>
         </div>
+        <p class="fineprint">The email link opens your mail app; there is no hosted upload or automatic scan. If email isn't configured, use LinkedIn to request a private conversation. Do not include credentials, undisclosed vulnerabilities, proprietary code or personal data in an initial message. Private projects require separate authorization and secure access arrangements.</p>
       </div>
+      <aside class="span-5 callout">
+        <h3>What to send</h3>
+        <ol>
+          <li>A public repository link (or a high-level description of a private project).</li>
+          <li>One important behaviour or claim your team relies on.</li>
+          <li>The existing test, specification, proof or evidence you consider relevant.</li>
+          <li>Your role or authority to request a review, and a reply address.</li>
+        </ol>
+        <p class="fineprint">Selection is discretionary; not every repository will be investigated or receive a finding.</p>
+      </aside>
     </div>
   </section>
 
-  <section class="section section--compact" id="audit-scope" aria-labelledby="audit-scope-title" data-assurance-boundary>
+  <section class="section" id="evidence" aria-labelledby="evidence-title">
     <div class="shell">
-      <div class="eyebrow">Human-led independent audit · fixed scope</div>
-      <h2 id="audit-scope-title">A small, consequential question. An inspectable answer.</h2>
-      <p class="lede">For aerospace, robotics, autonomous systems, scientific computing, and other serious software where an unexamined assumption matters.</p>
+      <div class="eyebrow">Evidence, not promises</div>
+      <h2 id="evidence-title">Uncomfortable findings. Accepted engineering corrections.</h2>
       <div class="grid">
         <article class="span-6 callout">
-          <h3>What we investigate</h3>
-          <ul>
-            <li>One important behavior, invariant, requirement, or proposed code change.</li>
-            <li>The gap between stated intent, implemented behavior, and existing tests.</li>
-            <li>Adversarial boundaries, alternative interpretations, and falsifying cases.</li>
-          </ul>
+          <h3>A test report that could show green when it should fail</h3>
+          <p><strong>L4YAML · Test-evidence integrity.</strong> Malformed JUnit XML could be accepted by the report reader and produce a misleading successful report. The upstream maintainer independently reproduced the discrepancy, reviewed the repair, and <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">merged PR #232</a>.</p>
+          <p>On final merged source <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code>, <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">independent native qualification</a> passed 24/24 declared XML controls and 14,945/14,945 project checks. The <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458" rel="external">earlier candidate run</a> is separate historical evidence, not automatically transferable.</p>
         </article>
         <article class="span-6 callout">
-          <h3>What you receive</h3>
-          <ul>
-            <li>Precisely identified source revisions and review assumptions.</li>
-            <li>Reproducible counterexamples or independently rerunnable controls where available.</li>
-            <li>Evidence-supported conclusions, unresolved questions, and a bounded recommendation.</li>
-          </ul>
+          <h3>Orbital data whose reference frame could silently change</h3>
+          <p><strong>Nyx · Physical meaning across interfaces.</strong> Parquet trajectory exports could describe selected rows using the wrong reference-frame metadata, altering the physical interpretation of otherwise plausible numerical results. The <a href="https://github.com/nyx-space/nyx/pull/615" rel="external">source- and regression-backed correction was merged upstream on 13 November 2026</a>.</p>
+          <p>The repair validates the existing one-frame-per-table export contract. Separate import-side and frame-difference obligations remain outside this scoped change.</p>
         </article>
       </div>
-      <p class="fineprint">An audit can find a defect, validate a claim within a declared boundary, or return UNKNOWN. It is not a certification, a formal proof of the entire system, or automatic release approval. The scope and evidence sources are agreed before work starts.</p>
+      <div class="callout callout--unknown">
+        <p><strong>Evidence boundary:</strong> These are public contributions to independently maintained open-source projects. They are not paid-client testimonials, institutional endorsements by NASA/JPL or other organizations, proof of universal correctness, or autonomous discoveries by a deployed MathGraph App. Anything not qualified by the stated tests remains <code>UNKNOWN</code>.</p>
+      </div>
     </div>
   </section>
 
-  <section class="section section--compact" aria-labelledby="enquiry-title">
+  <section class="section section--compact" id="audit-scope" aria-labelledby="audit-scope-title">
     <div class="shell">
-      <div class="eyebrow">Request an independent audit</div>
-      <h2 id="enquiry-title">Start with the decision you need to make.</h2>
-      <p>Ask for a one-change or one-requirement scope discussion. No source upload or customer login is offered on this page. Do not send proprietary code or confidential system information through public GitHub issues.</p>
-      <div class="actions">
-        <a class="button" href="https://nz.linkedin.com/in/hesanchez" rel="external">Request a private scope discussion ↗</a>
-        <a class="button button--secondary" href="/check/">Inspect Check's published evidence boundaries</a>
+      <div class="eyebrow">After the free finding · Optional paid work</div>
+      <h2 id="audit-scope-title">From discovery to a defensible engineering decision.</h2>
+      <p class="lede">A first finding can expose a wider question. If you want help resolving it, MathGraph offers separately scoped human-led independent audits.</p>
+      <div class="grid">
+        <article class="span-6 callout">
+          <h3>Investigate and repair</h3>
+          <p>Agree the requirement and source revision, trace the failure mechanism, assess the affected behaviour, and work with your team toward a correction.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>Reverify and document</h3>
+          <p>Run native regression and adversarial controls against the candidate repair, preserve remaining uncertainties, and deliver a source- and requirement-linked evidence report.</p>
+        </article>
       </div>
-      <p class="fineprint">Initial enquiries only; source handling, confidentiality, scope, cost, and evidence access must be agreed separately. This is a human-led service at the present research stage.</p>
+      <p class="fineprint">Work is bounded by the agreed source, requirements, execution environment and scope. An audit is not a certification, a whole-codebase proof, a security guarantee or an automatic authorization to release.</p>
+    </div>
+  </section>
+
+  <section class="section section--compact" aria-labelledby="research-title">
+    <div class="shell">
+      <div class="eyebrow">Behind the service</div>
+      <h2 id="research-title">Independent verification matters. So does verifying the right thing.</h2>
+      <p>MathGraph's <a href="/explore/">research and source-pinned evidence network</a> makes some bounded verification records and unresolved questions inspectable. Indexed mathematical declarations are not themselves independent proof checks. The long-term research ambition is reusable, change-aware claim assurance—not a currently deployed universal code verifier.</p>
+      <p><strong>Know what holds. Know what doesn't. Know what remains unproven.</strong></p>
     </div>
   </section>
 </BaseLayout>
