@@ -41,13 +41,13 @@ const finite = record.axes.finite_executable;
 const format = (value: number) => value.toLocaleString('en-US');
 ---
 
-<BaseLayout title="MathGraph — Verification Evidence Network" description="Explore a pinned Mathlib slice, inspect exactly scoped verification evidence, and identify what remains unknown or stale." currentPath="/">
+<BaseLayout title="MathGraph — Independent Assurance for Consequential Claims" description="Independent assurance for consequential software and mathematical claims. Explore source-pinned findings, verification boundaries and reproducible evidence." currentPath="/">
   <header class="shell home-hero">
     <div class="home-hero__copy">
-      <div class="eyebrow">Source-pinned verification evidence</div>
-      <h1>Knowledge you can verify. Capabilities you can build on.</h1>
-      <p class="lede">Search real mathematical objects, follow exact source-backed connections, and inspect what independent evidence does—and does not—establish.</p>
-      <p>Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved. Start with the published Mathlib slice and reproducible verification cases; arbitrary repository or proof submission is not currently hosted.</p>
+      <div class="eyebrow">Independent assurance for consequential claims</div>
+      <h1>Your tests passed. But did they test the right thing?</h1>
+      <p class="lede">MathGraph independently investigates the gap between what critical software and formal proofs claim—and what the evidence actually establishes.</p>
+      <p>We find consequential distinctions missed by existing checks, reproduce them against exact sources, and help teams validate corrections. Our public research network preserves bounded evidence and unresolved questions; it is not a hosted universal auditor.</p>
       <form class="home-search" action="/explore/" method="get" data-home-search>
         <label for="home-search-query">Search the living knowledge network</label>
         <div class="home-search__controls">
@@ -57,6 +57,7 @@ const format = (value: number) => value.toLocaleString('en-US');
         <p class="fineprint">This is a 13-module slice of Mathlib, not all of Mathlib. Search includes source-indexed declarations, separately qualified records, and bounded capabilities; indexing is not independent proof checking.</p>
       </form>
       <div class="actions">
+        <a class="button" href="/assurance/">Explore independent audits</a>
         <a class="button button--secondary" href="/verify/">Inspect real evidence</a>
         <a class="button button--secondary" href="/protocol/">Understand the protocol</a>
       </div>
