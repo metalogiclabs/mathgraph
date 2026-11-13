@@ -44,9 +44,9 @@ describe('primary public evidence experience', () => {
     const offer = await page('assurance');
     const text = visibleText(offer);
     expect(home).toContain('href="/assurance/"');
-    expect(home).toContain('Your first verified finding is free');
+    expect(home).toContain('your first reproducible finding is free');
     expect(text).toMatch(/no issue in the selected scope/i);
-    expect(text).toMatch(/paid.*separately scoped/i);
+    expect(text).toMatch(/separately scoped paid assurance work/i);
     expect(offer).not.toMatch(/<input[^>]+type="file"/);
     expect(offer).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860');
   });
@@ -70,6 +70,8 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/human-led/i);
     expect(text).toMatch(/first verified finding is free/i);
     expect(text).toContain('Selected projects');
+    expect(text).toContain('What important decision are you making because you believe it is correct');
+    expect(offer).toContain('What%20important%20decision');
     expect(html).toContain('mailto:heath@mathgraph.org');
     expect(html).toContain('https://github.com/nyx-space/nyx/pull/615');
     expect(text).toContain('UNKNOWN');
