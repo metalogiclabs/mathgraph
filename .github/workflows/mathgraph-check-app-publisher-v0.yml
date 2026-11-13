@@ -1,0 +1,30 @@
+name: MathGraph Check - registered App publisher V0
+on:
+  push:
+    branches:
+      - mathgraph-check-github-app-shadow-v0
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mathgraph-check-own-app-identity
+  cancel-in-progress: false
+jobs:
+  app-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Existing source-bound App publisher tests
+        run: node --test integrations/mathgraph-check-github/app-native-check.test.mjs
+      - name: App key parsing, scoped identity and token-revocation tests
+        run: node --test integrations/mathgraph-check-github/app-authentication.test.mjs
+      - name: Authenticate registered App, publish and independently read back check
+        env:
+          MATHGRAPH_CHECK_APP_PRIVATE_KEY: ${{ secrets.MATHGRAPH_CHECK_APP_PRIVATE_KEY }}
+        run: node integrations/mathgraph-check-github/app-authentication.mjs

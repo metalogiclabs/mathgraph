@@ -1,0 +1,54 @@
+{
+  "schema": "mathgraph.one-consequential-maintainer-decision.v1",
+  "subject": {
+    "repo": "goccy/go-yaml",
+    "pr": 958,
+    "base_sha": "edee2f91616c6d73112a13e7c0dbde72ce938877",
+    "head_sha": "a34b94ecb553bb5a693296c30232a89026db79ca",
+    "author_patch_unchanged": true
+  },
+  "decision": {
+    "main_pr": "NO_NEW_REGRESSION_IN_DECLARED_130_CASE_NATIVE_MATRIX",
+    "introduced_case_count": 0,
+    "fixed_by_author_case_count": 69,
+    "unresolved_inherited_count": 20,
+    "passed_unchanged_native_original_suites": true,
+    "independent_preexisting_issue": "https://github.com/goccy/go-yaml/issues/872",
+    "finding": "Keep-chomping YAML block scalars lose trailing blank line semantics through LiteralNode.String when embedded via custom byte-marshaler.",
+    "demonstrated_impact": "Decoded string differs from original YAML block value in 20 fixed native nesting cases.",
+    "merge_action": "Do not block PR #958 solely for this preexisting explicitly out-of-scope issue. Review issue #872 repair as separate change.",
+    "proposed_minimal_resolution": "One-file patch of ast/ast.go, limiting modified semantics to '+' keep-chomp rendering.",
+    "report_authority": "WARRANTED_BOUNDED_NATIVE_SEMANTICS_NOT_GLOBAL_MERGE_ASSURANCE"
+  },
+  "repair": {
+    "source_file": "ast/ast.go",
+    "original_blob_sha": "90a21fb64722f57c3610ac46ce525ba54113a9fd",
+    "patched_blob_sha": "03fd844ff712e2ae04204bde9f547b1ab7b3d3ec",
+    "patch_file": "research/mathgraph_pr958_one_finding_20261015/issue872_preserve_chomp.patch",
+    "original_nesting_failures": 20,
+    "patched_nesting_failures": 0,
+    "ablation_failures": 20,
+    "protected_original_suite": "PASS",
+    "unchanged_inherited_nan_inf_negative_controls": 5
+  },
+  "evidence": {
+    "pr_trial": {
+      "run": 38559572638,
+      "artifact": 11891727361
+    },
+    "repair_trial": {
+      "run": 38560167831,
+      "artifact": 11891373353
+    },
+    "source_freeze_commit": "04b3d8c098841c8833f8055329e56048ad4d3d7c",
+    "followup_freeze_commit": "82353a4340dad723a28c1157296c73ca587331f9"
+  },
+  "exclusions": [
+    "No upstream code writes",
+    "No GitHub App installed on third-party repo",
+    "No external outreach",
+    "Not self-invented fix",
+    "Not universally safe to merge",
+    "Not novel upstream defect"
+  ]
+}
