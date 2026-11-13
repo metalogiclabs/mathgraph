@@ -102,7 +102,7 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
 }
 
 export default {
-  fetch: handleRequest,
+  fetch(request, env) { return handleRequest(request, env); },
   scheduled(_event, env, ctx) {
     ctx.waitUntil(env.LEADS.prepare(`DELETE FROM submissions WHERE created_at < datetime('now', '-${RETENTION_DAYS} days')`).run());
   },
