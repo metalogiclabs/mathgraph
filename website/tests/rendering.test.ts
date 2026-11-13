@@ -39,6 +39,18 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('UNKNOWN');
   });
 
+  test('gives the open challenge a source-aware free-first-finding offer without guaranteeing a defect', async () => {
+    const home = await page('');
+    const offer = await page('assurance');
+    const text = visibleText(offer);
+    expect(home).toContain('href="/assurance/"');
+    expect(home).toContain('Your first verified finding is free');
+    expect(text).toMatch(/no issue in the selected scope/i);
+    expect(text).toMatch(/paid.*separately scoped/i);
+    expect(offer).not.toMatch(/<input[^>]+type="file"/);
+    expect(offer).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860');
+  });
+
   test('offers the assurance audit route from the homepage hero without replacing the evidence network', async () => {
     const html = await page('');
     const start = html.indexOf('<header class="shell home-hero">');
@@ -56,6 +68,10 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
     expect(html).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458');
     expect(text).toMatch(/human-led/i);
+    expect(text).toMatch(/first verified finding is free/i);
+    expect(text).toContain('Selected projects');
+    expect(html).toContain('mailto:heath@mathgraph.org');
+    expect(html).toContain('https://github.com/nyx-space/nyx/pull/615');
     expect(text).toContain('UNKNOWN');
     expect(text).toMatch(/not a certification/i);
     expect(html).not.toMatch(/<input[^>]+type="file"/);
@@ -128,10 +144,10 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<noscript>');
   });
 
-  test('makes the source-derived living network the homepage entry point without authority inflation', async () => {
+  test('preserves the source-derived network while leading with the Open Challenge', async () => {
     const html = await page('');
     const text = visibleText(html);
-    expect(text).toContain('Knowledge you can verify. Capabilities you can build on.');
+    expect(text).toContain('Find what your verification missed.');
     expect(html).toMatch(/<form[^>]+action="\/explore\/"[^>]+method="get"[^>]+data-home-search/);
     expect(html).toMatch(/<input[^>]+name="q"/);
     expect(html).toMatch(/Content-Security-Policy[^>]+form-action 'self'/);
@@ -386,8 +402,8 @@ describe('primary public evidence experience', () => {
   test('publishes the requested homepage SEO title without changing the MathGraph identity', async () => {
     const html = await page('');
 
-    expect(html).toContain('<title>MathGraph — Verification Evidence Network</title>');
-    expect(html).toContain('<meta property="og:title" content="MathGraph — Verification Evidence Network">');
+    expect(html).toContain('<title>MathGraph — Find What Your Verification Missed</title>');
+    expect(html).toContain('<meta property="og:title" content="MathGraph — Find What Your Verification Missed">');
     expect(html).toContain('<meta property="og:site_name" content="MathGraph">');
     expect(html).toContain('<span class="brand__word">MathGraph');
   });
@@ -621,7 +637,7 @@ describe('primary public evidence experience', () => {
     [`records/${record.id}/v1`, 'explore', 'location'],
     ['verify', 'verify', 'page'], ['check', 'verify', 'location'], ['resolve', 'verify', 'location'],
     ['build', 'build', 'page'], ['develop', 'build', 'location'], ['capabilities', 'build', 'location'],
-    ['developers', 'developers', 'page'], ['agents', 'developers', 'location'], ['protocol', 'developers', 'location'],
+    ['assurance', 'assurance', 'page'], ['developers', 'developers', 'page'], ['agents', 'developers', 'location'], ['protocol', 'developers', 'location'],
     ['protocol/profiles/lean', 'developers', 'location'],
   ])('marks /%s in the %s outcome group with aria-current=%s', async (route, group, state) => {
     const html = await page(route).catch(() => '');
@@ -647,8 +663,8 @@ describe('primary public evidence experience', () => {
     const html = await page('');
     const text = visibleText(html);
 
-    expect(html).toContain('<h1>Knowledge you can verify. Capabilities you can build on.</h1>');
-    expect(text).toContain('Explore source-pinned mathematics, inspect independently qualified evidence, and discover what remains unresolved.');
+    expect(html).toContain('<h1>Find what your verification missed.</h1>');
+    expect(text).toContain('AI is making code, models, tests and proofs faster to produce.');
     expect(text).toContain('Open a declaration. Follow what its source actually says.');
     for (const route of ['explore', 'verify', 'build']) expect(html).toContain(`data-outcome="${route}"`);
     for (const section of ['source-to-result', 'map-preview', 'capability', 'independent-verification', 'quick-start', 'long-term']) expect(html).toContain(`id="${section}"`);
@@ -880,7 +896,7 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/']) {
+    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/', '/assurance/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
     for (const route of ['about', 'contact']) {
@@ -889,7 +905,7 @@ describe('primary public evidence experience', () => {
       expect(html).toContain('MathGraph');
     }
     const about = visibleText(await page('about'));
-    expect(about).toMatch(/research-stage project developed by Metalogic Labs/i);
+    expect(about).toMatch(/founder-led independent assurance practice developed by Metalogic Labs/i);
     expect(about).toContain('Source-indexed references support navigation; they are not proof dependencies');
     expect(about).not.toMatch(/IEANTN|Terence Tao|Math 2\.0/);
     const contact = await page('contact');
