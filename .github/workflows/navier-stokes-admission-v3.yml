@@ -1,0 +1,159 @@
+name: Source-bound semantic admission V3
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/ScopedAdmission.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean'
+      - '.github/workflows/navier-stokes-admission-v3.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/ScopedAdmission.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean'
+      - '.github/workflows/navier-stokes-admission-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: source-admission-v3-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-bound-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Pin and record source contracts
+        run: |
+          set -euo pipefail
+          mkdir -p source-admission-v3-evidence .presupposition-env
+          git rev-parse HEAD | tee source-admission-v3-evidence/head-sha.txt
+          test "$(git hash-object experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean)" = "b26d0f209c228d995bee7053b1d35cf95da5a543"
+          cp experiments/navier_stokes_semantic_bridge_v1/Presupposition.lean .presupposition-env/Presupposition.lean
+          cp experiments/navier_stokes_semantic_bridge_v1/ScopedAdmission.lean .presupposition-env/ScopedAdmission.lean
+          cp .presupposition-env/ScopedAdmission.lean source-admission-v3-evidence/ScopedAdmission.lean
+          sha256sum .presupposition-env/{Presupposition,ScopedAdmission}.lean > source-admission-v3-evidence/sources.sha256
+          printf '%s\n' 'leanprover/lean4:v4.24.0' > .presupposition-env/lean-toolchain
+          cat > .presupposition-env/lakefile.toml <<'EOF'
+          name = "source_admission_v3"
+          version = "0.1.0"
+          [[require]]
+          name = "mathlib"
+          git = "https://github.com/leanprover-community/mathlib4.git"
+          rev = "f897ebcf72cd16f89ab4577d0c826cd14afaafc7"
+          [[lean_lib]]
+          name = "Presupposition"
+          [[lean_lib]]
+          name = "ScopedAdmission"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .presupposition-env/.lake
+            .presupposition-env/lake-manifest.json
+          key: presupposition-v2-lean424-mathlib-f897ebcf72cd16f89ab4577d0c826cd14afaafc7
+      - name: Install pinned Lean
+        run: |
+          curl --fail --silent --show-error --location --retry 3 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare and verify pinned mathlib
+        working-directory: .presupposition-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = 'f897ebcf72cd16f89ab4577d0c826cd14afaafc7'
+          lake exe cache get
+          cp lake-manifest.json ../source-admission-v3-evidence/lake-manifest.json
+          lake env lean --version | tee ../source-admission-v3-evidence/lean-version.txt
+      - name: Kernel-check source contract and dependent admission
+        working-directory: .presupposition-env
+        run: |
+          set -euo pipefail
+          lake build Presupposition
+          lake env lean -DwarningAsError=true -o ScopedAdmission.olean ScopedAdmission.lean 2>&1 | tee ../source-admission-v3-evidence/lean-proof.log
+          lake build ScopedAdmission
+          cp ScopedAdmission.olean ../source-admission-v3-evidence/ScopedAdmission.olean
+      - name: Reject fabricated value-only admission
+        working-directory: .presupposition-env
+        run: |
+          set -euo pipefail
+          cat > IllegalAdmission.lean <<'EOF'
+          import ScopedAdmission
+          theorem fake_value_only_admission :
+              MathGraph.SourceBoundAdmission.Admission
+                .paperPage15 PaperCode.r_e := by
+            exact PaperCode.example_3_1
+          EOF
+          if lake env lean -DwarningAsError=true IllegalAdmission.lean > ../source-admission-v3-evidence/illegal-admission.log 2>&1; then
+            echo 'ERROR: paper identity unexpectedly admitted without source witness'
+            exit 1
+          fi
+          cat ../source-admission-v3-evidence/illegal-admission.log
+          grep -qi 'type mismatch' ../source-admission-v3-evidence/illegal-admission.log
+          grep -q 'Admission' ../source-admission-v3-evidence/illegal-admission.log
+          cp IllegalAdmission.lean ../source-admission-v3-evidence/IllegalAdmission.lean
+          echo 'SOURCE_WITNESS_REQUIRED; VALUE_ONLY_CERTIFICATE_REJECTED'
+      - name: Audit exact theorem names, axioms and evidence
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          from pathlib import Path
+          root=Path("source-admission-v3-evidence")
+          names=(
+            "admission_iff_witness_and_value",
+            "admission_requires_witness",
+            "page15_rejected",
+            "singleton_zero_admitted",
+            "singleton_three_admitted",
+            "verified_identity_without_source_admission",
+            "page15_and_zero_same_value",
+            "no_value_only_case_admission",
+            "metadata_flag_cannot_admit_page15",
+          )
+          expected={"MathGraph.SourceBoundAdmission."+n for n in names}
+          log=(root/"lean-proof.log").read_text()
+          rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+          rows += [(n,"") for n in re.findall(r"'([^']+)' does not depend on any axioms", log)]
+          seen={}
+          allowed={"propext","Classical.choice","Quot.sound"}
+          for n,axioms in rows:
+              assert n not in seen,("duplicate",n)
+              used={x.strip() for x in axioms.split(",") if x.strip()}
+              assert used<=allowed,("unexpected_axiom",n,used-allowed)
+              seen[n]=sorted(used)
+          assert set(seen)==expected,("declaration_mismatch",sorted(set(seen)^expected))
+          assert (root/"head-sha.txt").read_text().strip()==os.environ["EXPECTED_SOURCE_SHA"]
+          digests={p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(root.iterdir()) if p.is_file()}
+          out={"schema":"mathgraph.semantic-source-bound-admission-v3",
+               "commit_sha":os.environ["EXPECTED_SOURCE_SHA"],
+               "run_id":int(os.environ["GITHUB_RUN_ID"]),
+               "lean_version":(root/"lean-version.txt").read_text().strip(),
+               "source_base_git_blob":"b26d0f209c228d995bee7053b1d35cf95da5a543",
+               "source_contract":"DEFINITIONS_IN_PRESUPPOSITION_LEAN",
+               "source_nl_approved":False,
+               "truth_promotion":False,
+               "bounded_case_admissions":{"paperPage15":"REJECTED_BY_PROOF",
+                                          "singletonZero":"ADMITTED_RELATIVE_TO_DECLARED_CONTRACT",
+                                          "singletonThree":"ADMITTED_RELATIVE_TO_DECLARED_CONTRACT"},
+               "value_only_admission":"KERNEL_REJECTED",
+               "axioms":seen,
+               "files_sha256":digests,
+               "production_code_untouched":True}
+          (root/"result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-admission-v3
+          path: source-admission-v3-evidence/
+          if-no-files-found: error

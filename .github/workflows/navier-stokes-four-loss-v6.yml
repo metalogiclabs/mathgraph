@@ -1,0 +1,141 @@
+name: Actual inverse four-loss unconditional V6
+on:
+  push:
+    branches: [navier-stokes-semantic-bridge-v1]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/FourLossBridge.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/ThirdLattice.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/FourLossUnconditional.lean'
+      - '.github/workflows/navier-stokes-four-loss-v6.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/navier_stokes_semantic_bridge_v1/FourLossBridge.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/ThirdLattice.lean'
+      - 'experiments/navier_stokes_semantic_bridge_v1/FourLossUnconditional.lean'
+      - '.github/workflows/navier-stokes-four-loss-v6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: actual-four-loss-v6-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exact-source-four-loss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Freeze source, toolchain and exact OpenAI dependency
+        run: |
+          set -euo pipefail
+          mkdir -p .four-loss-env four-loss-v6-evidence
+          git rev-parse HEAD | tee four-loss-v6-evidence/head-sha.txt
+          cp experiments/navier_stokes_semantic_bridge_v1/{FourLossBridge,ThirdLattice,FourLossUnconditional}.lean .four-loss-env/
+          sha256sum .four-loss-env/{FourLossBridge,ThirdLattice,FourLossUnconditional}.lean > four-loss-v6-evidence/lean-sources.sha256
+          printf '%s\n' 'leanprover/lean4:v4.34.0-rc2' > .four-loss-env/lean-toolchain
+          cat > .four-loss-env/lakefile.toml <<'EOF'
+          name = "mathgraph_actual_four_loss_v6"
+          version = "0.1.0"
+          [[require]]
+          name = "NavierStokesAndEuler"
+          git = "https://github.com/openai/NavierStokesAndEuler.git"
+          rev = "f9e8bc5b38b6e212696e8a30e3e91517af887bbd"
+          [[lean_lib]]
+          name = "FourLossBridge"
+          [[lean_lib]]
+          name = "ThirdLattice"
+          [[lean_lib]]
+          name = "FourLossUnconditional"
+          EOF
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .four-loss-env/.lake
+            .four-loss-env/lake-manifest.json
+          key: openai-four-loss-v6-lean434rc2-mathlib-pinned-f9e8bc5
+      - name: Install upstream toolchain
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh' \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.34.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve exact OpenAI and mathlib authority
+        working-directory: .four-loss-env
+        run: |
+          set -euo pipefail
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          test "$(git -C .lake/packages/NavierStokesAndEuler rev-parse HEAD)" = 'f9e8bc5b38b6e212696e8a30e3e91517af887bbd'
+          cp lake-manifest.json ../four-loss-v6-evidence/lake-manifest.json
+          lake env lean --version | tee ../four-loss-v6-evidence/lean-version.txt
+          lake exe cache get
+      - name: Kernel compile residual, conditional and unconditional compositions
+        working-directory: .four-loss-env
+        run: |
+          set -euo pipefail
+          lake build FourLossUnconditional 2>&1 | tee ../four-loss-v6-evidence/build.log
+          lake env lean -DwarningAsError=true ThirdLattice.lean 2>&1 | tee ../four-loss-v6-evidence/third-lattice.log
+          lake env lean -DwarningAsError=true FourLossBridge.lean 2>&1 | tee ../four-loss-v6-evidence/conditional.log
+          lake env lean -DwarningAsError=true FourLossUnconditional.lean 2>&1 | tee ../four-loss-v6-evidence/unconditional.log
+      - name: Audit axioms, exact source SHA and promotion boundary
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,re
+          from pathlib import Path
+          root=Path('four-loss-v6-evidence')
+          assert (root/'head-sha.txt').read_text().strip()==os.environ['EXPECTED_HEAD']
+          names={
+            'MathGraph.ThirdLattice.summable_integer_weight_inv_three_halves',
+            'MathGraph.ThirdLattice.weight_inv_three_le_product',
+            'MathGraph.ThirdLattice.summable_weight_inv_three',
+            'MathGraph.FourLossBridge.coefficient_seminorm_bound_three',
+            'MathGraph.FourLossBridge.inverse_four_loss_of_summable_third',
+            'MathGraph.FourLossComplete.actual_inverse_four_loss',
+          }
+          seen={}
+          for file in ('third-lattice.log','conditional.log','unconditional.log'):
+            log=(root/file).read_text()
+            rows=re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)
+            rows += [(n,'') for n in re.findall(r"'([^']+)' does not depend on any axioms",log)]
+            for n,axioms in rows:
+              assert n not in seen,('duplicate',n)
+              used={x.strip() for x in axioms.split(',') if x.strip()}
+              assert used <= {'propext','Classical.choice','Quot.sound'},(n,used)
+              seen[n]=sorted(used)
+          assert set(seen)==names,('unexpected_lean_axioms_or_missing_theorem',sorted(set(seen)^names))
+          checks={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          result={
+            'schema':'mathgraph.actual-inverse-four-loss-v6',
+            'head_sha':os.environ['EXPECTED_HEAD'],
+            'upstream_commit':'f9e8bc5b38b6e212696e8a30e3e91517af887bbd',
+            'scope':'ACTUAL_OPENAI_TWO_TORUS_INVERSE_POINTWISE_MIXED_DERIVATIVE_WORD',
+            'source_input_jet_order':'w.length+4',
+            'output_derivative_word_order':'w.length',
+            'lattice_summability':'LEAN_PROVED_UNCONDITIONAL',
+            'inverse_bound':'LEAN_PROVED_UNCONDITIONAL_AT_DECLARED_SCOPE',
+            'manuscript_full_Cm_claim_correspondence':'UNKNOWN',
+            'full_Navier_Stokes_result':'UNKNOWN',
+            'pressure_flux_bound':'UNKNOWN',
+            'independent_source_NL_signoff':False,
+            'production_admission_modified':False,
+            'can_promote_general_paper_truth':False,
+            'axiom_audit':seen,
+            'artifacts_sha256':checks,
+          }
+          (root/'result.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actual-inverse-four-loss-v6
+          path: four-loss-v6-evidence/
+          if-no-files-found: error
