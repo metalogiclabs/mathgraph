@@ -1,0 +1,21 @@
+name: VDN finite interface v45
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v45_separator_basis_theorem.py'
+      - '.github/workflows/vdn-finite-interface-v45.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  separator-basis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust separator bases
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v45_separator_basis_theorem.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-finite-interface-v45
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v45_separator_basis_theorem/result.json

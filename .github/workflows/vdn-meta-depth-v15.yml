@@ -1,0 +1,19 @@
+name: VDN meta-depth gate v15
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/case_studies/arc_agi2_live/run_v15_meta_depth_gate.py'
+      - '.github/workflows/vdn-meta-depth-v15.yml'
+  workflow_dispatch:
+jobs:
+  meta-depth:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run adaptive recursion-depth test
+        run: python3 verified-developmental-navigation/case_studies/arc_agi2_live/run_v15_meta_depth_gate.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-meta-depth-v15
+          path: verified-developmental-navigation/case_studies/arc_agi2_live/results_v15_meta_depth_gate/result.json

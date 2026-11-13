@@ -1,0 +1,20 @@
+name: VDN Relational Core V50
+on:
+  push:
+    branches: [vdn-recursive-meta-v14]
+    paths:
+      - 'verified-developmental-navigation/formal/RELATIONAL_CORE_V1.md'
+      - 'verified-developmental-navigation/case_studies/finite_inevitability/run_v50_relational_core_falsification.py'
+      - '.github/workflows/vdn-relational-core-v50.yml'
+  workflow_dispatch:
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaust relational core and falsifiers
+        run: python3 verified-developmental-navigation/case_studies/finite_inevitability/run_v50_relational_core_falsification.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vdn-relational-core-v50
+          path: verified-developmental-navigation/case_studies/finite_inevitability/results_v50_relational_core_falsification/result.json
