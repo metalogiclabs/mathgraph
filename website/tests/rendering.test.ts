@@ -80,6 +80,32 @@ describe('primary public evidence experience', () => {
     expect(html).not.toMatch(/<a[^>]+href="https:\/\/github\.com\/metalogiclabs\/mathgraph\/issues"/);
   });
 
+  test('renders a real consented hosted intake form without file uploads or implied automatic verification', async () => {
+    const html = await page('assurance');
+    expect(html).toContain('data-assurance-intake');
+    expect(html).toContain('method="POST"');
+    expect(html).toContain('https://mathgraph-assurance-intake.metalogiclabs-check.workers.dev/submit');
+    for (const name of ['repository', 'claim', 'decision', 'consequence', 'evidence', 'relationship', 'email', 'consent', 'website', 'utm_source', 'utm_medium', 'utm_campaign']) {
+      expect(html).toContain(`name="${name}"`);
+    }
+    expect(html).toContain('data-assurance-submit');
+    expect(html).toContain('data-turnstile-status');
+    expect(html).toContain('0x4AAAAAAF__wQkdXmPAGoge');
+    expect(html).toContain('/assurance/turnstile-loader.js');
+    expect(html).toContain('href="/assurance/privacy/"');
+    expect(html).not.toMatch(/<input[^>]+type="file"/);
+  });
+
+  test('makes the private intake receipt non-indexable and publishes a dedicated privacy notice', async () => {
+    const receipt = await page('assurance/received');
+    const notice = await page('assurance/privacy');
+    expect(receipt).toContain('name="robots" content="noindex,nofollow"');
+    expect(receipt).toContain('Your submission has been received.');
+    expect(notice).toContain('180-day');
+    expect(notice).toContain('Cloudflare D1');
+    expect(notice).toContain('heath@mathgraph.org');
+  });
+
   test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
     const html = await page('explore').catch(() => '');
     const text = visibleText(html);
