@@ -1,0 +1,386 @@
+{
+  "acyclic_cases": [
+    {
+      "actual": [
+        [
+          1
+        ],
+        1
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1
+        ],
+        1
+      ],
+      "input": "[&x [&x 1], *x]",
+      "mode": "safe",
+      "name": "same-name-seq",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          1,
+          1
+        ],
+        1
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1,
+          1
+        ],
+        1
+      ],
+      "input": "[&x [&x 1, *x], *x]",
+      "mode": "safe",
+      "name": "same-name-seq-both-aliases",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": {
+        "a": {
+          "b": 1
+        },
+        "c": 1
+      },
+      "agrees": true,
+      "expected": {
+        "a": {
+          "b": 1
+        },
+        "c": 1
+      },
+      "input": "a: &x {b: &x 1}\nc: *x\n",
+      "mode": "safe",
+      "name": "same-name-map",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": {
+        "a": {
+          "b": 1,
+          "c": 1
+        },
+        "d": 1
+      },
+      "agrees": true,
+      "expected": {
+        "a": {
+          "b": 1,
+          "c": 1
+        },
+        "d": 1
+      },
+      "input": "a: &x {b: &x 1, c: *x}\nd: *x\n",
+      "mode": "safe",
+      "name": "same-name-map-both-aliases",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "agrees": true,
+      "expected": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "input": "[&x 1, *x, &x 2, *x]",
+      "mode": "safe",
+      "name": "sibling-rebind",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          1
+        ],
+        1,
+        [
+          1
+        ]
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1
+        ],
+        1,
+        [
+          1
+        ]
+      ],
+      "input": "[&o [&x 1], *x, *o]",
+      "mode": "safe",
+      "name": "nested-distinct",
+      "warnings": []
+    },
+    {
+      "actual": [
+        [
+          1
+        ]
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "input": "[&x [&x 1]]",
+      "mode": "safe",
+      "name": "noalias-same-name",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          "inner"
+        ],
+        "inner"
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          "inner"
+        ],
+        "inner"
+      ],
+      "input": "[&x [&x inner], *x]",
+      "mode": "safe",
+      "name": "same-name-string",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          1
+        ],
+        1
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1
+        ],
+        1
+      ],
+      "input": "[&x [&x 1], *x]",
+      "mode": "rt",
+      "name": "same-name-seq",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          1,
+          1
+        ],
+        1
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1,
+          1
+        ],
+        1
+      ],
+      "input": "[&x [&x 1, *x], *x]",
+      "mode": "rt",
+      "name": "same-name-seq-both-aliases",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": {
+        "a": {
+          "b": 1
+        },
+        "c": 1
+      },
+      "agrees": true,
+      "expected": {
+        "a": {
+          "b": 1
+        },
+        "c": 1
+      },
+      "input": "a: &x {b: &x 1}\nc: *x\n",
+      "mode": "rt",
+      "name": "same-name-map",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": {
+        "a": {
+          "b": 1,
+          "c": 1
+        },
+        "d": 1
+      },
+      "agrees": true,
+      "expected": {
+        "a": {
+          "b": 1,
+          "c": 1
+        },
+        "d": 1
+      },
+      "input": "a: &x {b: &x 1, c: *x}\nd: *x\n",
+      "mode": "rt",
+      "name": "same-name-map-both-aliases",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "agrees": true,
+      "expected": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "input": "[&x 1, *x, &x 2, *x]",
+      "mode": "rt",
+      "name": "sibling-rebind",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          1
+        ],
+        1,
+        [
+          1
+        ]
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1
+        ],
+        1,
+        [
+          1
+        ]
+      ],
+      "input": "[&o [&x 1], *x, *o]",
+      "mode": "rt",
+      "name": "nested-distinct",
+      "warnings": []
+    },
+    {
+      "actual": [
+        [
+          1
+        ]
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "input": "[&x [&x 1]]",
+      "mode": "rt",
+      "name": "noalias-same-name",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    },
+    {
+      "actual": [
+        [
+          "inner"
+        ],
+        "inner"
+      ],
+      "agrees": true,
+      "expected": [
+        [
+          "inner"
+        ],
+        "inner"
+      ],
+      "input": "[&x [&x inner], *x]",
+      "mode": "rt",
+      "name": "same-name-string",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    }
+  ],
+  "acyclic_passed": 16,
+  "acyclic_total": 16,
+  "boundary": "Native ruamel.yaml oracle only; does not execute L4YAML",
+  "composer_matches_wheel": true,
+  "composer_sha256": "995207cbd7f356028312ac8e031814740e5f4e20cf477f0e1cd7e96f517a0096",
+  "graph_policy_controls": [
+    {
+      "boundary": "Graph identity observation, not an acyclic JSON expected value",
+      "identity": true,
+      "input": "&x [*x]",
+      "name": "selfcycle",
+      "warnings": []
+    },
+    {
+      "boundary": "Graph identity observation, not an acyclic JSON expected value",
+      "identity": true,
+      "input": "[&x 0, &x [*x]]",
+      "name": "rebound-selfcycle",
+      "warnings": [
+        "ReusedAnchorWarning"
+      ]
+    }
+  ],
+  "normative_sources": [
+    "https://yaml.org/spec/1.2.2/#3222-anchors-and-aliases",
+    "https://yaml.org/spec/1.2.2/#71-alias-nodes"
+  ],
+  "package": "ruamel.yaml",
+  "published_digest_url": "https://pypi.org/project/ruamel.yaml/0.18.17/#files",
+  "python": "3.12.14",
+  "script_sha256": "4bf62a9f97556ea4be4c047a808e180c519673d143db3eac954581e8c526eb8a",
+  "timestamp_utc": "2026-10-23T22:07:17.895451+00:00",
+  "version": "0.18.17",
+  "wheel_sha256": "9c8ba9eb3e793efdf924b60d521820869d5bf0cb9c6f1b82d82de8295e290b9d"
+}

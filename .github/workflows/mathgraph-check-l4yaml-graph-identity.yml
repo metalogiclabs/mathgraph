@@ -1,0 +1,178 @@
+name: MathGraph Check - L4YAML graph identity from raw source
+
+on:
+  push:
+    branches:
+      - research/mathgraph-check-l4yaml-warrant-continuity-20261024
+    paths:
+      - '.github/workflows/mathgraph-check-l4yaml-graph-identity.yml'
+      - 'research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean'
+      - 'research/l4yaml_semantic_diff_v2/graph_comparison.py'
+      - 'research/l4yaml_semantic_diff_v2/trace_provenance.py'
+      - 'research/l4yaml_semantic_diff_v2/allocation_receipt.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-graph-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      JPL_SHA: 'b50ae1ecd139800051d76655d8c006fbea1844f2'
+    steps:
+      - name: Checkout MathGraph graph experiment
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout immutable JPL L4YAML source without writes
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ env.JPL_SHA }}
+          path: l4yaml-frozen
+          persist-credentials: false
+          submodules: false
+      - name: Validate immutable source and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C l4yaml-frozen rev-parse HEAD)" = "$JPL_SHA"
+          test -z "$(git -C l4yaml-frozen status --porcelain --untracked-files=no)"
+          test "$(cat l4yaml-frozen/lean-toolchain)" = 'leanprover/lean4:v4.35.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Acquire independent parsers by exact wheel hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/graph
+          python -m pip download --no-deps --only-binary=:all: --dest evidence-out/graph 'ruamel.yaml==0.18.17'
+          echo '9c8ba9eb3e793efdf924b60d521820869d5bf0cb9c6f1b82d82de8295e290b9d  evidence-out/graph/ruamel_yaml-0.18.17-py3-none-any.whl' | sha256sum -c -
+          python -m pip install --no-deps --target evidence-out/graph/ruamel_install evidence-out/graph/ruamel_yaml-0.18.17-py3-none-any.whl
+          python -m pip download --no-deps --only-binary=:all: --dest evidence-out/graph 'PyYAML==6.0.3'
+          echo 'ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc  evidence-out/graph/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl' | sha256sum -c -
+          python -m pip install --no-deps --target evidence-out/graph/pyyaml_install evidence-out/graph/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - name: Generate exactly the prequalified 532 YAML inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.l4yaml_semantic_diff_v2.differential generate \
+            --root evidence-out/graph \
+            --wheel evidence-out/graph/ruamel_yaml-0.18.17-py3-none-any.whl \
+            --package-path evidence-out/graph/ruamel_install \
+            --pyyaml-wheel evidence-out/graph/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl \
+            --pyyaml-package-path evidence-out/graph/pyyaml_install
+      - name: Install Lean 4.35 and build untouched native parser modules
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT "$HOME/.elan/bin/lake" build \
+            L4YAML.Output.Json L4YAML.Parser.Composition L4YAML.Parser.IndexedComposition \
+            L4YAML.Proofs.Serialization.SerializationWellFormed) \
+            > evidence-out/graph/upstream-build.log 2>&1
+          echo SOURCE_PINNED_NATIVE_BUILD_PASSED
+      - name: Execute Lean graph compositor on unchanged native raw YAML trees
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for suite in anchor ordinary; do
+            (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
+              "$GITHUB_WORKSPACE/evidence-out/graph/${suite}_inputs.jsonl") \
+              > "evidence-out/graph/${suite}_graph.jsonl" \
+              2> "evidence-out/graph/${suite}_stderr.log"
+            test ! -s "evidence-out/graph/${suite}_stderr.log"
+          done
+          cat > evidence-out/graph/special_inputs.jsonl <<'EOF'
+          "&x [*x]"
+          "&x {a: *x}"
+          "[&x [&x 1], *x]"
+          "[&x 1, *x, &x 9, *x]"
+          "[*x]"
+          "&x [*x, *y]"
+          "---\n&x 1\n---\n*x\n"
+          EOF
+          (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+            "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
+            "$GITHUB_WORKSPACE/evidence-out/graph/special_inputs.jsonl") \
+            > evidence-out/graph/special_graph.jsonl \
+            2> evidence-out/graph/special_stderr.log
+          test ! -s evidence-out/graph/special_stderr.log
+      - name: Replay scanner-versus-raw-AST source anchor event provenance
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for suite in anchor ordinary special; do
+            (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
+              --trace "$GITHUB_WORKSPACE/evidence-out/graph/${suite}_inputs.jsonl") \
+              > "evidence-out/graph/${suite}_trace.jsonl" \
+              2> "evidence-out/graph/${suite}_trace_stderr.log"
+            test ! -s "evidence-out/graph/${suite}_trace_stderr.log"
+          done
+          python -m research.l4yaml_semantic_diff_v2.trace_provenance \
+            --oracle evidence-out/graph/independent_oracle.json \
+            --anchor evidence-out/graph/anchor_trace.jsonl \
+            --ordinary evidence-out/graph/ordinary_trace.jsonl \
+            --special evidence-out/graph/special_trace.jsonl \
+            --report evidence-out/graph/trace_report.json \
+            --source-sha "$JPL_SHA"
+      - name: Verify IDs emitted by the actual Lean graph allocation path
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for suite in anchor ordinary special; do
+            (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean" \
+              --witness "$GITHUB_WORKSPACE/evidence-out/graph/${suite}_inputs.jsonl") \
+              > "evidence-out/graph/${suite}_witness.jsonl" \
+              2> "evidence-out/graph/${suite}_witness_stderr.log"
+            test ! -s "evidence-out/graph/${suite}_witness_stderr.log"
+          done
+          python -m research.l4yaml_semantic_diff_v2.allocation_receipt \
+            --oracle evidence-out/graph/independent_oracle.json \
+            --anchor evidence-out/graph/anchor_witness.jsonl \
+            --ordinary evidence-out/graph/ordinary_witness.jsonl \
+            --special evidence-out/graph/special_witness.jsonl \
+            --report evidence-out/graph/allocation_receipt.json \
+            --source-sha "$JPL_SHA"
+      - name: Check graph topology, cycles, rebinding, native parity and value projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.l4yaml_semantic_diff_v2.graph_comparison \
+            --oracle evidence-out/graph/independent_oracle.json \
+            --anchor evidence-out/graph/anchor_graph.jsonl \
+            --ordinary evidence-out/graph/ordinary_graph.jsonl \
+            --special evidence-out/graph/special_graph.jsonl \
+            --report evidence-out/graph/graph_report.json \
+            --source-sha "$JPL_SHA" \
+            --ruamel-path evidence-out/graph/ruamel_install \
+            --pyyaml-path evidence-out/graph/pyyaml_install
+          test "$(git -C l4yaml-frozen rev-parse HEAD)" = "$JPL_SHA"
+          test -z "$(git -C l4yaml-frozen status --porcelain --untracked-files=no)"
+      - name: Retain complete source-native evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-l4yaml-graph-identity-evidence
+          path: |
+            evidence-out/graph/
+            research/l4yaml_semantic_diff_v2/GraphComposeProbe.lean
+            research/l4yaml_semantic_diff_v2/graph_comparison.py
+            research/l4yaml_semantic_diff_v2/trace_provenance.py
+            research/l4yaml_semantic_diff_v2/allocation_receipt.py
+          if-no-files-found: warn

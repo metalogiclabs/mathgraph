@@ -1,0 +1,127 @@
+name: MathGraph Check - source-native event-time anchor counterfactual
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - research/mathgraph-check-l4yaml-warrant-continuity-20261024
+    paths:
+      - '.github/workflows/mathgraph-check-l4yaml-event-time.yml'
+      - 'research/l4yaml_semantic_diff_v2/EventTimeComposeProbe.lean'
+      - 'research/l4yaml_semantic_diff_v2/event_time_compare.py'
+
+permissions:
+  contents: read
+
+jobs:
+  source-native-event-time:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      JPL_SHA: '264e050653cb6f39c1de0e752262819e84cbaf45'
+    steps:
+      - name: Checkout MathGraph-owned experiment
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout untouched immutable JPL source
+        uses: actions/checkout@v4
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ env.JPL_SHA }}
+          path: l4yaml-frozen
+          persist-credentials: false
+          submodules: false
+      - name: Confirm exact source pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C l4yaml-frozen rev-parse HEAD)" = "$JPL_SHA"
+          test -z "$(git -C l4yaml-frozen status --porcelain --untracked-files=no)"
+          test "$(cat l4yaml-frozen/lean-toolchain)" = 'leanprover/lean4:v4.35.0'
+          git -C l4yaml-frozen show "HEAD:L4YAML/Spec/Types.lean" | sha256sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Acquire independent oracle with wheel digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/event-time
+          python -m pip download --no-deps --only-binary=:all: --dest evidence-out/event-time 'ruamel.yaml==0.18.17'
+          echo '9c8ba9eb3e793efdf924b60d521820869d5bf0cb9c6f1b82d82de8295e290b9d  evidence-out/event-time/ruamel_yaml-0.18.17-py3-none-any.whl' | sha256sum -c -
+          python -m pip install --no-deps --target evidence-out/event-time/ruamel_install evidence-out/event-time/ruamel_yaml-0.18.17-py3-none-any.whl
+          python -m pip download --no-deps --only-binary=:all: --dest evidence-out/event-time 'PyYAML==6.0.3'
+          echo 'ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc  evidence-out/event-time/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl' | sha256sum -c -
+          python -m pip install --no-deps --target evidence-out/event-time/pyyaml_install evidence-out/event-time/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - name: Reconstruct identical independent 532-input oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.l4yaml_semantic_diff_v2.differential generate \
+            --root evidence-out/event-time \
+            --wheel evidence-out/event-time/ruamel_yaml-0.18.17-py3-none-any.whl \
+            --package-path evidence-out/event-time/ruamel_install \
+            --pyyaml-wheel evidence-out/event-time/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl \
+            --pyyaml-package-path evidence-out/event-time/pyyaml_install
+      - name: Install exact Lean compiler and build upstream source modules
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT "$HOME/.elan/bin/lake" build \
+            L4YAML.Output.Json L4YAML.Output.JsonIx L4YAML.Parser.IndexedComposition) \
+            > evidence-out/event-time/jpl-build.log 2>&1
+          echo 'UNTAMPERED_JPL_SOURCE_BUILT'
+      - name: Execute original versus event-time Compose in both source-native parsers
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          for suite in anchor ordinary; do
+            (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+              "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/EventTimeComposeProbe.lean" \
+              "$GITHUB_WORKSPACE/evidence-out/event-time/${suite}_inputs.jsonl") \
+              > "evidence-out/event-time/${suite}_event_native.jsonl" \
+              2> "evidence-out/event-time/${suite}_stderr.log"
+            test ! -s "evidence-out/event-time/${suite}_stderr.log"
+          done
+          cat > evidence-out/event-time/cycle_inputs.jsonl <<'EOF'
+          "&x [*x]"
+          "&x {a: *x}"
+          "[*x]"
+          "---\n&x 1\n---\n*x\n"
+          EOF
+          (cd l4yaml-frozen && env -u L4YAML_LEANCOPILOT lake env lean --run \
+            "$GITHUB_WORKSPACE/research/l4yaml_semantic_diff_v2/EventTimeComposeProbe.lean" \
+            "$GITHUB_WORKSPACE/evidence-out/event-time/cycle_inputs.jsonl") \
+            > evidence-out/event-time/cycle_event_native.jsonl \
+            2> evidence-out/event-time/cycle_stderr.log
+          test ! -s evidence-out/event-time/cycle_stderr.log
+      - name: Independently compare 532 cases with oracle and assess cycle limit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.l4yaml_semantic_diff_v2.event_time_compare \
+            --oracle evidence-out/event-time/independent_oracle.json \
+            --anchor evidence-out/event-time/anchor_event_native.jsonl \
+            --ordinary evidence-out/event-time/ordinary_event_native.jsonl \
+            --cycle evidence-out/event-time/cycle_event_native.jsonl \
+            --report evidence-out/event-time/experiment_report.json \
+            --candidate "$JPL_SHA"
+          test "$(git -C l4yaml-frozen rev-parse HEAD)" = "$JPL_SHA"
+          test -z "$(git -C l4yaml-frozen status --porcelain --untracked-files=no)"
+      - name: Preserve success or failure diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathgraph-l4yaml-event-time-compose-counterfactual
+          path: |
+            evidence-out/event-time/
+            research/l4yaml_semantic_diff_v2/EventTimeComposeProbe.lean
+            research/l4yaml_semantic_diff_v2/event_time_compare.py
+          if-no-files-found: warn
