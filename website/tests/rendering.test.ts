@@ -106,6 +106,24 @@ describe('primary public evidence experience', () => {
     expect(notice).toContain('heath@mathgraph.org');
   });
 
+  test('shows a concrete source-pinned example assurance finding before asking for trust', async () => {
+    const sample = await page('assurance/sample-finding');
+    const home = await page('');
+    const offer = await page('assurance');
+    const text = visibleText(sample);
+    expect(sample).toContain('garbage&lt;testsuite&gt;');
+    expect(text).toContain('WARRANTED_BOUNDED');
+    expect(text).toContain('UNKNOWN');
+    expect(text).toContain('24/24');
+    expect(text).toContain('14,945/14,945');
+    expect(sample).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
+    expect(sample).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860');
+    expect(text).toMatch(/not.*paid-client report/i);
+    expect(home).toContain('href="/assurance/sample-finding/"');
+    expect(home.indexOf('buyer-next-title')).toBeLessThan(home.indexOf('network-snapshot-title'));
+    expect(offer).toContain('href="/assurance/sample-finding/"');
+  });
+
   test('renders the complete living knowledge catalogue as progressively enhanced semantic HTML', async () => {
     const html = await page('explore').catch(() => '');
     const text = visibleText(html);
@@ -924,7 +942,7 @@ describe('primary public evidence experience', () => {
     const notFound = await readFile(join(dist, '404.html'), 'utf8');
     const sitemap = await readFile(join(dist, 'sitemap.xml'), 'utf8');
     expect(visibleText(notFound)).toContain('Evidence not found');
-    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/', '/assurance/']) {
+    for (const route of ['/', '/explore/', '/verify/', '/build/', '/check/', '/resolve/', '/records/', `/records/${record.id}/`, '/protocol/', '/developers/', '/about/', '/contact/', '/assurance/', '/assurance/sample-finding/']) {
       expect(sitemap).toContain(`https://mathgraph.org${route}`);
     }
     for (const route of ['about', 'contact']) {

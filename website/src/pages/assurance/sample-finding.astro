@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Example Assurance Finding — False-Green Test Evidence | MathGraph"
+  description="See the structure of a source-pinned MathGraph assurance finding: a consequential claim, separating witness, independent qualification, consequence and explicit limits."
+  currentPath="/assurance/sample-finding/"
+>
+  <header class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">Example deliverable · Real public open-source finding</div>
+      <h1>What does a MathGraph finding look like?</h1>
+      <p class="lede">A small, independently reproducible discrepancy can change what a team is justified in concluding from its evidence.</p>
+      <p>This example is adapted from an actual public contribution to the independently maintained <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">L4YAML repository (merged PR #232)</a>. It demonstrates the format of an assurance finding; it is <strong>not</strong> a paid-client report or an institutional endorsement.</p>
+      <div class="actions">
+        <a class="button" href="/assurance/#challenge">Challenge MathGraph with your repo</a>
+        <a class="button button--secondary" href="#receipt">Examine the finding</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section section--compact" id="receipt" aria-labelledby="receipt-title">
+    <div class="shell">
+      <div class="eyebrow">Assurance finding / L4YAML #232</div>
+      <h2 id="receipt-title">An invalid test report that could appear successful</h2>
+      <p><strong>Finding:</strong> CONFIRMED for the specified malformed JUnit inputs. <strong>Warrant:</strong> <code>WARRANTED_BOUNDED</code> to the identified source, controls and execution environment.</p>
+      <div class="grid">
+        <article class="span-6 callout">
+          <h3>1. The claim being relied on</h3>
+          <p>A successful test-reporting path should not treat malformed JUnit XML as valid evidence of successful tests.</p>
+          <p class="fineprint">This is the engineering claim examined by the audit example, not a claim of whole-project correctness.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>2. The consequential distinction</h3>
+          <p>The report-reader implementation could accept selected malformed XML inputs that Python's standard XML consumer rejected. The difference could turn invalid evidence into a misleading green report.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>3. A minimal separating input</h3>
+          <p>The merged regression guards include this malformed document: non-whitespace text appears before the root XML element.</p>
+          <pre style="overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:1rem;border:1px solid #bbb;border-radius:.5rem;background:rgba(130,145,145,.06)"><code>garbage&lt;testsuite&gt;&lt;testcase name="ok"/&gt;&lt;/testsuite&gt;</code></pre>
+          <p><strong>Expected:</strong> Reject as invalid XML, not as a passing test report. The actual <a href="https://github.com/nasa-jpl/L4YAML/pull/232/files" rel="external">regression patch</a> includes the precise source-native guard.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>4. Why it matters</h3>
+          <p>A green report may be used to decide whether a software change passed required checks. If the report reader accepts invalid evidence, that decision may rest on a false assurance signal—even where the underlying tests are sound.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>5. Independent evidence and resolution</h3>
+          <p>The upstream maintainer independently reproduced the finding, reviewed the correction and merged <a href="https://github.com/nasa-jpl/L4YAML/pull/232" rel="external">PR #232</a> on 6 November 2026.</p>
+          <p>The frozen final PR source was <code>fdcd6fdc4bc7491166c6c73505e1f62a203c50bf</code>. An <a href="https://github.com/metalogiclabs/L4YAML/actions/runs/42274503860" rel="external">independent exact-head replay</a> completed successfully, including 24/24 declared XML controls and 14,945/14,945 repository checks.</p>
+        </article>
+        <article class="span-6 callout">
+          <h3>6. What remains unproven</h3>
+          <p>The result does not prove universal XML conformance, correctness of every possible report format, or the safety of the entire application. The reader deliberately does not support some DTD forms. Other inputs and future source revisions remain <code>UNKNOWN</code> without new qualification.</p>
+        </article>
+      </div>
+      <div class="callout callout--unknown">
+        <p><strong>Decision supported by this finding:</strong> the specified malformed inputs should be rejected by the corrected source, with the above finite tests and documented limits. The receipt establishes a bounded repair outcome—not blanket release authorization, independent certification or NASA/JPL endorsement.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--compact">
+    <div class="shell">
+      <div class="eyebrow">What your first free finding would contain, if we establish one</div>
+      <h2>Clear claim. Reproducible difference. Actionable boundary.</h2>
+      <p>We identify the claim and why it matters, pin the relevant source, provide a minimal witness or independently runnable checks, document what follows and what does not, and explain the next engineering decision.</p>
+      <p>If the question requires wider root-cause investigation, remediation or requalification, those are separately scoped paid engagements. No investigation is guaranteed to produce a confirmed finding.</p>
+      <div class="actions"><a class="button" href="/assurance/#challenge">Are you game? Submit your repo</a><a class="button button--secondary" href="/assurance/">How the Open Challenge works</a></div>
+    </div>
+  </section>
+</BaseLayout>
