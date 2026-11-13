@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Independent Assurance Audits — MathGraph" description="Independent, source-pinned audits of consequential software, verification and claim boundaries." currentPath="/assurance/">
+  <header class="section section--compact"><div class="shell">
+    <div class="eyebrow">MathGraph Assurance</div>
+    <h1>What has actually been established?</h1>
+    <p class="lede">Tests, proofs and CI can pass while the conclusion people draw from them is still unsupported. We investigate that gap.</p>
+    <p><a class="button" href="/contact/">Discuss a scoped audit</a> <a class="button button--secondary" href="/verify/">Inspect published evidence</a></p>
+  </div></header>
+  <section class="section"><div class="shell">
+    <h2>Independent audits, with explicit boundaries</h2>
+    <div class="outcome-grid">
+      <article><h3>Discover</h3><p>Identify a consequential claim, its specification, implementation and evidence. Test the weakest boundary for a distinguishing counterexample.</p></article>
+      <article><h3>Verify</h3><p>Replay the finding against pinned source and native controls. Distinguish established defects from candidates and unknowns.</p></article>
+      <article><h3>Resolve</h3><p>Work with maintainers to assess a correction, rerun the decisive tests and preserve what remains unverified.</p></article>
+    </div>
+    <p>Engagements begin with a bounded discovery scope. No certification, general safety guarantee or universal verification is implied.</p>
+  </div></section>
+  <section class="section"><div class="shell">
+    <div class="eyebrow">Selected public evidence</div>
+    <h2>Failures at the boundary between evidence and meaning</h2>
+    <ul>
+      <li><strong>Test-report integrity:</strong> <a href="https://github.com/nasa-jpl/L4YAML/pull/232">L4YAML #232</a> — malformed JUnit input could produce a false-green report; the maintainer reproduced the issue and the repair was merged. This is a bounded open-source contribution, not an institutional endorsement.</li>
+      <li><strong>Specification fidelity:</strong> <a href="https://github.com/nasa-jpl/L4YAML/pull/302">L4YAML #302</a> — independent YAML Core Schema tag correspondence and adversarial witnesses. The theorem concerns tag selection, not universal numeric-value accuracy; upstream merge and final CI must be checked separately.</li>
+      <li><strong>Physical meaning in exported data:</strong> <a href="https://github.com/nyx-space/nyx/pull/615">Nyx #615</a> — selected trajectory rows and Parquet reference-frame metadata could disagree. Bounded native regression evidence; separate exporter/importer obligations remain.</li>
+    </ul>
+    <p>These are publicly documented technical contributions. They are not claims of paid customer engagements or project-owner endorsements.</p>
+  </div></section>
+  <section class="section"><div class="shell">
+    <h2>What we examine</h2>
+    <p><strong>Claim assurance:</strong> does the evidence justify the intended conclusion? <strong>Verification assurance:</strong> can the checks, assumptions and tools be trusted within their declared scope? <strong>Evidence assurance:</strong> can the supporting source, runs and observations be independently inspected and reproduced?</p>
+    <p>Our research tools and <a href="/explore/">source-indexed evidence network</a> support this work, but source indexing alone is not independent verification.</p>
+  </div></section>
+</BaseLayout>
