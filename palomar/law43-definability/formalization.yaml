@@ -1,0 +1,28 @@
+title: "Swapped-arguments laws term-define a commutative operation"
+project: "MathGraph"
+organization: "Metalogic Labs"
+status: "preparation"
+source_repository: "https://github.com/teorth/equational_theories"
+source_pull_request: 1461
+source_merge_commit: "54edcda2f320cef0a241f8109fa164f901a69b87"
+source_theorem: "Equation43_termDefinableFrom_swapped_args"
+proof_contributor: "heathsanchez"
+upstream_project: "Equational Theories Project"
+claim_summary: >-
+  For a two-variable magma law whose right-hand side is obtained by swapping
+  variables 0 and 1 in its left-hand side, every model of the law admits a
+  term-defined commutative derived binary operation.
+novelty_claim: "none asserted pending provenance review"
+credits:
+  - "Equational Theories Project for the surrounding formalization and definitions"
+  - "heathsanchez for the merged proof contribution in PR #1461"
+  - "Metalogic Labs / MathGraph for Palomar packaging and reproducibility work"
+ai_assistance_disclosure: >-
+  AI tools were used during parts of the broader MathGraph research and engineering
+  workflow. The final Palomar submission must disclose assistance to the level
+  required by Palomar policy and must rely only on machine-checkable Lean evidence.
+submission_blockers:
+  - "confirm Palomar provenance/maintainer requirements for an upstream-hosted substantive formalization"
+  - "obtain upstream maintainer approval if required"
+  - "build self-contained Challenge.lean and Solution.lean"
+  - "verify with Palomar-supported Lean and independent checker path"
