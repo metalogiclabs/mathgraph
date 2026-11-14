@@ -42,7 +42,7 @@ try {
         assert.equal(await nav.isVisible(), true);
         await noOverflow();
         await page.keyboard.press('Tab');
-        assert.equal(await nav.getByRole('link', { name: 'The Open Challenge', exact: true }).evaluate(el => el === document.activeElement), true);
+        assert.equal(await nav.getByRole('link', { name: 'Assurance', exact: true }).evaluate(el => el === document.activeElement), true);
         await page.keyboard.press('Escape');
         assert.equal(await menu.getAttribute('aria-expanded'), 'false');
         assert.equal(await menu.evaluate(el => el === document.activeElement), true);
@@ -75,7 +75,7 @@ try {
         assert.equal(await page.locator('#primary-navigation a[aria-current=page]').innerText(), 'Explore');
       }
       if (!javaScriptEnabled || width > 900) {
-        for (const label of ['The Open Challenge', 'Explore', 'Verify', 'Build', 'Developers', 'GitHub ↗']) {
+        for (const label of ['Assurance', 'Explore', 'Verify', 'Build', 'Developers', 'GitHub ↗']) {
           assert.equal(await nav.getByRole('link', { name: label, exact: true }).isVisible(), true);
         }
       }
@@ -87,7 +87,7 @@ try {
       assert.equal((await page.goto(`${origin}/contact/`, { waitUntil: 'networkidle' })).status(), 200);
       const contactGrid = page.locator('main .grid');
       const contactCards = contactGrid.locator(':scope > article.callout');
-      assert.equal(await contactCards.count(), 3, 'Contact must expose the open challenge and both public project channels');
+      assert.equal(await contactCards.count(), 3, 'Contact must expose assurance enquiries and both public project channels');
       const [contactGridBox, challengeCard, repositoryCard, issuesCard] = await Promise.all([
         contactGrid.boundingBox(),
         contactCards.nth(0).boundingBox(),

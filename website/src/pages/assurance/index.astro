@@ -1,11 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-const subject = 'MathGraph Open Challenge — first finding free';
+const subject = 'MathGraph independent assurance enquiry';
 const message = [
   'Hello Heath,',
   '',
-  'I would like to submit a repository for the MathGraph Open Challenge.',
+  'I would like to discuss an independent assurance investigation.',
   '',
   'Public repository URL:',
   'One consequential claim or requirement:',
@@ -23,18 +23,19 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
 
 <BaseLayout
   title="Your Tests Passed. What Can You Actually Rely On? — MathGraph"
-  description="Show MathGraph one consequential software claim and the evidence behind it. Selected projects may receive a first independently reproducible finding free, if established."
+  description="Founder-led independent assurance for consequential software. Examine one important claim, the evidence supporting it, and the limits of what that evidence establishes."
   currentPath="/assurance/"
 >
   <header class="section section--compact">
     <div class="shell">
-      <div class="eyebrow">The MathGraph Open Challenge · Founder-led independent assurance</div>
+      <div class="eyebrow">Founder-led independent assurance</div>
       <h1>Your tests passed. What can you actually rely on?</h1>
-      <p class="lede"><strong>Show me a repository and one consequential claim. If I establish a consequential discrepancy or unsupported claim, your first independently reproducible finding is free.</strong></p>
+      <p class="lede"><strong>Independent assurance for consequential software.</strong></p>
       <p>Your software may pass every test. Your proof may check. Your model may produce the expected result. But does that evidence establish what you need to know before you ship, deploy or depend on it?</p>
-      <p>I'm <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, founder of MathGraph. For selected projects, I investigate the boundary between intended behavior, actual behavior and the evidence used to trust it—even when my starting hypothesis proves wrong. Sometimes the gap is in code, a requirement, an interface or a report; sometimes no discrepancy is established.</p>
+      <p>I'm <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, founder of MathGraph. I investigate the gaps between what software is intended to do, what its implementation actually does, and what its tests and verification establish.</p>
+      <p>The outcome may be a reproducible discrepancy, bounded evidence supporting a claim, or an important question that remains unresolved. <strong>Show me your repository and the claim you need to trust.</strong></p>
       <div class="actions">
-        <a class="button" href="#challenge">Submit a repository for consideration</a>
+        <a class="button" href="#challenge">Discuss an investigation</a>
         <a class="button button--secondary" href="#evidence">See accepted upstream findings</a>
         <a class="button button--secondary" href="/assurance/sample-finding/">View an example finding</a>
       </div>
@@ -45,11 +46,11 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
   <section class="section section--compact" id="challenge" aria-labelledby="challenge-title" data-assurance-boundary>
     <div class="shell grid">
       <div class="span-7">
-        <div class="eyebrow">The free first-finding offer</div>
+        <div class="eyebrow">An open invitation</div>
         <h2 id="challenge-title">One repo. One consequential claim. One decision that depends on it.</h2>
-        <p>Tell us what your software must get right, which evidence gives you confidence, and <strong>what important decision you are making because you believe the claim is true.</strong> What would happen if it were false? We select repositories where that decision-to-evidence boundary can be investigated independently.</p>
-        <p><strong>If we establish a consequential discrepancy or unsupported claim, your first source-pinned, independently reproducible finding is free.</strong> You receive the examined claim, the decisive witness or bounded evidence, its limits and consequences, and recommended next steps—not a teaser withheld for a sale.</p>
-        <p>We may also find no issue in the selected scope, disconfirm a hypothesis or conclude <code>UNKNOWN</code>. No discovery is guaranteed, and no outcome should be mistaken for blanket approval of the software.</p>
+        <p>Tell me what your software must get right, which evidence gives you confidence, and <strong>what important decision you are making because you believe the claim is true.</strong> What would happen if it were false? I select repositories where that decision-to-evidence boundary can be investigated independently.</p>
+        <p>For selected projects, I offer one independently reproducible finding at no charge, where the evidence establishes one. A finding includes the examined claim, source-pinned evidence, its limits and consequences, and suggested next steps. There is no obligation to commission further work, and no assumption that a defect exists.</p>
+        <p>An investigation may find no issue in the selected scope, disconfirm a hypothesis or conclude <code>UNKNOWN</code>. No discovery is guaranteed, and no outcome should be mistaken for blanket approval of the software.</p>
         <form class="assurance-intake" data-assurance-intake action={intakeEndpoint} method="POST" accept-charset="utf-8" aria-describedby="assurance-privacy-note">
           <div class="assurance-field">
             <label for="assurance-repository">Public repository URL <span aria-hidden="true">*</span></label>
@@ -94,11 +95,11 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
           <input type="hidden" name="utm_campaign" value="" />
           <label class="assurance-consent">
             <input type="checkbox" name="consent" value="yes" required />
-            <span>I agree to MathGraph using these details to evaluate and respond to my enquiry under the <a href="/assurance/privacy/">Open Challenge privacy notice</a>. I will not include credentials, confidential code, personal data belonging to others or undisclosed vulnerabilities.</span>
+            <span>I agree to MathGraph using these details to evaluate and respond to my enquiry under the <a href="/assurance/privacy/">assurance privacy notice</a>. I will not include credentials, confidential code, personal data belonging to others or undisclosed vulnerabilities.</span>
           </label>
           <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-action="mathgraph_assurance" data-callback="mathgraphTurnstileOk" data-expired-callback="mathgraphTurnstileExpired" data-error-callback="mathgraphTurnstileError"></div>
           <p class="fineprint" role="status" aria-live="polite" data-turnstile-status>Human verification is required before submission.</p>
-          <div class="actions"><button class="button" type="submit" data-assurance-submit disabled>Submit for the free-finding challenge</button></div>
+          <div class="actions"><button class="button" type="submit" data-assurance-submit disabled>Submit an enquiry</button></div>
           <noscript><p class="fineprint">JavaScript is required for the human-verification check. You can instead start an enquiry by email below.</p></noscript>
         </form>
         <script src="/assurance/turnstile-loader.js" is:inline defer></script>
@@ -150,7 +151,7 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
 
   <section class="section section--compact" id="audit-scope" aria-labelledby="audit-scope-title">
     <div class="shell">
-      <div class="eyebrow">After the free finding · Optional paid work</div>
+      <div class="eyebrow">Optional paid follow-on work</div>
       <h2 id="audit-scope-title">Found a gap? Let’s establish what now holds.</h2>
       <p class="lede">A finding is only the beginning. If your team wants help closing the gap, MathGraph offers separately scoped paid assurance work to investigate the full implications, support a correction and independently establish what the evidence now warrants.</p>
       <div class="grid">
