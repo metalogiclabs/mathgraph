@@ -26,7 +26,7 @@ const canonical = new URL(canonicalPath ?? Astro.url.pathname, Astro.site);
 const absoluteSocialImage = socialImage ? new URL(socialImage, Astro.site) : undefined;
 const contentSecurityPolicy = "default-src 'self'; base-uri 'none'; connect-src 'self' https://challenges.cloudflare.com; font-src 'self'; form-action 'self' https://mathgraph-assurance-intake.metalogiclabs-check.workers.dev; frame-src https://challenges.cloudflare.com; img-src 'self' data:; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'";
 const nav = [
-  { href: '/assurance/', label: 'The Open Challenge', routes: ['/assurance/'] },
+  { href: '/assurance/', label: 'Assurance', routes: ['/assurance/'] },
   { href: '/explore/', label: 'Explore', routes: ['/explore/', '/records/', '/objects/', '/discover/'] },
   { href: '/verify/', label: 'Verify', routes: ['/verify/', '/check/', '/resolve/'] },
   { href: '/build/', label: 'Build', routes: ['/build/', '/develop/', '/capabilities/'] },
@@ -87,10 +87,10 @@ const currentState = (item: typeof nav[number]) => normalizedPath === item.href
       <div class="site-footer__inner shell">
         <div>
           <p><strong>Know what holds. Know what doesn't. Know what remains unproven.</strong></p>
-          <p class="fineprint">MathGraph offers founder-led independent assurance investigations backed by source-pinned research. Selected free first findings and optional paid follow-on work are bounded; no universal correctness or institutional endorsement is implied.</p>
+          <p class="fineprint">MathGraph offers founder-led independent assurance investigations backed by source-pinned research. Findings and optional paid follow-on work are bounded by their stated scope; no universal correctness or institutional endorsement is implied.</p>
         </div>
         <nav class="footer-links" aria-label="Footer">
-          <a href="/assurance/">The Open Challenge</a>
+          <a href="/assurance/">Assurance</a>
           <a href="/discover/">Discover</a>
           <a href="/develop/">Develop</a>
           <a href="/capabilities/">Capabilities</a>

@@ -30,6 +30,26 @@ function visibleText(html: string): string {
 }
 
 describe('primary public evidence experience', () => {
+  test('presents assurance as a professional enquiry with a quiet conditional offer', async () => {
+    const home = visibleText(await page(''));
+    const assuranceHtml = await page('assurance');
+    const assurance = visibleText(assuranceHtml);
+    const privacyHtml = await page('assurance/privacy');
+    const privacy = visibleText(privacyHtml);
+    const contact = visibleText(await page('contact'));
+    expect(assurance).toContain('Independent assurance for consequential software.');
+    expect(assurance).toContain('For selected projects, I offer one independently reproducible finding at no charge, where the evidence establishes one.');
+    expect(assuranceHtml).toMatch(/<button[^>]*data-assurance-submit[^>]*>Submit an enquiry<\/button>/);
+    expect(assuranceHtml).toMatch(/<a href="\/assurance\/privacy\/"[^>]*>assurance privacy notice<\/a>/);
+    expect(home).not.toMatch(/are you game|your first reproducible finding is free|first confirmed finding free/i);
+    expect(assurance).not.toMatch(/open challenge|free first-finding|free-finding challenge|your first independently reproducible finding is free/i);
+    expect(contact).not.toMatch(/free first-finding|open challenge|are you game/i);
+    expect(privacy).not.toMatch(/open challenge|free-first-finding/i);
+    expect(privacyHtml).toContain('subject=Assurance%20privacy%20request');
+    expect(privacyHtml).not.toContain('subject=Open%20Challenge');
+    expect((await page('')).match(/>Assurance<\/a>/g)?.length).toBeGreaterThan(0);
+  });
+
   test('renders source-matched final merged qualification without inflating its scope', async () => {
     const html = await page('assurance');
     const text = visibleText(html);
@@ -39,12 +59,13 @@ describe('primary public evidence experience', () => {
     expect(text).toContain('UNKNOWN');
   });
 
-  test('gives the open challenge a source-aware free-first-finding offer without guaranteeing a defect', async () => {
+  test('keeps the complimentary finding conditional and separate from the homepage headline', async () => {
     const home = await page('');
     const offer = await page('assurance');
     const text = visibleText(offer);
     expect(home).toContain('href="/assurance/"');
-    expect(home).toContain('your first reproducible finding is free');
+    expect(home).not.toMatch(/first reproducible finding is free|first confirmed finding free/i);
+    expect(text).toMatch(/one independently reproducible finding at no charge, where the evidence establishes one/i);
     expect(text).toMatch(/no issue in the selected scope/i);
     expect(text).toMatch(/separately scoped paid assurance work/i);
     expect(offer).not.toMatch(/<input[^>]+type="file"/);
@@ -68,7 +89,7 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
     expect(html).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458');
     expect(text).toMatch(/human-led/i);
-    expect(text).toMatch(/first independently reproducible finding is free/i);
+    expect(text).toMatch(/one independently reproducible finding at no charge, where the evidence establishes one/i);
     expect(text).toContain('Selected projects');
     expect(text).toContain('What important decision are you making because you believe it is correct');
     expect(html).toContain('What%20important%20decision');
@@ -80,12 +101,12 @@ describe('primary public evidence experience', () => {
     expect(html).not.toMatch(/<a[^>]+href="https:\/\/github\.com\/metalogiclabs\/mathgraph\/issues"/);
   });
 
-  test('frames the challenge around consequential decisions, grounded repairs and explicit project authority', async () => {
+  test('frames assurance around consequential decisions, grounded repairs and explicit project authority', async () => {
     const html = await page('assurance');
     const text = visibleText(html);
     expect(html).toMatch(/<h1[^>]*>Your tests passed\. What can you actually rely on\?<\/h1>/);
-    expect(text).toMatch(/if I establish a consequential discrepancy or unsupported claim/i);
-    expect(text).toMatch(/your first independently reproducible finding is free/i);
+    expect(text).toMatch(/the outcome may be a reproducible discrepancy, bounded evidence supporting a claim, or an important question that remains unresolved/i);
+    expect(text).toMatch(/one independently reproducible finding at no charge, where the evidence establishes one/i);
     expect(text).not.toContain('Are you game? Show me your repo.');
     expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/290');
     expect(text).toMatch(/merged into (?:the )?upstream grammar branch/i);
@@ -208,7 +229,7 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('<noscript>');
   });
 
-  test('preserves the source-derived network while leading with the Open Challenge', async () => {
+  test('preserves the source-derived network while leading with independent assurance', async () => {
     const html = await page('');
     const text = visibleText(html);
     expect(text).toContain('Find what your verification missed.');
@@ -685,10 +706,10 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/Playground.*future.*receipt/i);
   });
 
-  test('exposes the open challenge and four research journeys with accessible navigation', async () => {
+  test('exposes assurance and four research journeys with accessible navigation', async () => {
     const html = await page('');
     const nav = html.match(/<nav[^>]+aria-label="Primary"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? '';
-    for (const label of ['The Open Challenge', 'Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
+    for (const label of ['Assurance', 'Explore', 'Verify', 'Build', 'Developers']) expect(nav).toContain(`>${label}</a>`);
     expect(nav.match(/<a /g)).toHaveLength(6);
     expect(nav).toContain('GitHub');
     expect(html).toMatch(/<button[^>]+aria-expanded="false"[^>]+aria-controls="primary-navigation"[^>]*>Menu<\/button>/);
