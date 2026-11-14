@@ -68,7 +68,7 @@ describe('primary public evidence experience', () => {
     expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/232');
     expect(html).toContain('https://github.com/metalogiclabs/L4YAML/actions/runs/41979488458');
     expect(text).toMatch(/human-led/i);
-    expect(text).toMatch(/first verified finding is free/i);
+    expect(text).toMatch(/first independently reproducible finding is free/i);
     expect(text).toContain('Selected projects');
     expect(text).toContain('What important decision are you making because you believe it is correct');
     expect(html).toContain('What%20important%20decision');
@@ -78,6 +78,21 @@ describe('primary public evidence experience', () => {
     expect(text).toMatch(/not a certification/i);
     expect(html).not.toMatch(/<input[^>]+type="file"/);
     expect(html).not.toMatch(/<a[^>]+href="https:\/\/github\.com\/metalogiclabs\/mathgraph\/issues"/);
+  });
+
+  test('frames the challenge around consequential decisions, grounded repairs and explicit project authority', async () => {
+    const html = await page('assurance');
+    const text = visibleText(html);
+    expect(html).toMatch(/<h1[^>]*>Your tests passed\. What can you actually rely on\?<\/h1>/);
+    expect(text).toMatch(/if I establish a consequential discrepancy or unsupported claim/i);
+    expect(text).toMatch(/your first independently reproducible finding is free/i);
+    expect(text).not.toContain('Are you game? Show me your repo.');
+    expect(html).toContain('https://github.com/nasa-jpl/L4YAML/pull/290');
+    expect(text).toMatch(/merged into (?:the )?upstream grammar branch/i);
+    expect(text).toMatch(/public repository suggestion.*not project authorization/i);
+    expect(text).toMatch(/does not authorize.*sensitive findings/i);
+    expect((text.match(/Know what holds\./g) ?? [])).toHaveLength(1);
+    expect(html).toContain('data-assurance-intake');
   });
 
   test('renders a real consented hosted intake form without file uploads or implied automatic verification', async () => {
