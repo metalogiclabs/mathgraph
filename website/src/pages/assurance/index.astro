@@ -22,17 +22,17 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
 ---
 
 <BaseLayout
-  title="Are you game? First verified finding free — MathGraph"
-  description="Show MathGraph your repo and one consequential software claim. Selected projects receive their first independently reproducible finding free. Optional paid follow-on assurance."
+  title="Your Tests Passed. What Can You Actually Rely On? — MathGraph"
+  description="Show MathGraph one consequential software claim and the evidence behind it. Selected projects may receive a first independently reproducible finding free, if established."
   currentPath="/assurance/"
 >
   <header class="section section--compact">
     <div class="shell">
       <div class="eyebrow">The MathGraph Open Challenge · Founder-led independent assurance</div>
-      <h1>Are you game? Show me your repo.</h1>
-      <p class="lede"><strong>Find what your verification missed. Your first verified finding is free—if one is established.</strong></p>
-      <p>Your code may pass its tests. Your proof may check. Your model may produce the expected result. But what, exactly, does that evidence establish—and is it enough for the decision you need to make?</p>
-      <p>Sometimes the gap lies in the code. Sometimes it is a missing requirement, an untested assumption, a lossy interface, a misleading report or a claim stronger than its supporting evidence. Led by <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, MathGraph independently investigates the weakest consequential boundary—even when our starting hypothesis is wrong.</p>
+      <h1>Your tests passed. What can you actually rely on?</h1>
+      <p class="lede"><strong>Show me a repository and one consequential claim. If I establish a consequential discrepancy or unsupported claim, your first independently reproducible finding is free.</strong></p>
+      <p>Your software may pass every test. Your proof may check. Your model may produce the expected result. But does that evidence establish what you need to know before you ship, deploy or depend on it?</p>
+      <p>I'm <a href="https://heathsanchez.github.io/" rel="external">Heath Sanchez</a>, founder of MathGraph. For selected projects, I investigate the boundary between intended behavior, actual behavior and the evidence used to trust it—even when my starting hypothesis proves wrong. Sometimes the gap is in code, a requirement, an interface or a report; sometimes no discrepancy is established.</p>
       <div class="actions">
         <a class="button" href="#challenge">Submit a repository for consideration</a>
         <a class="button button--secondary" href="#evidence">See accepted upstream findings</a>
@@ -80,7 +80,7 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
                 <option value="maintainer">Maintainer</option>
                 <option value="authorized_engineer">Authorized engineering team member</option>
                 <option value="contributor">Contributor</option>
-                <option value="other">Other / interested researcher</option>
+                <option value="other">Other / public repository suggestion (not project authorization)</option>
               </select>
             </div>
             <div class="span-6 assurance-field">
@@ -102,7 +102,7 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
           <noscript><p class="fineprint">JavaScript is required for the human-verification check. You can instead start an enquiry by email below.</p></noscript>
         </form>
         <script src="/assurance/turnstile-loader.js" is:inline defer></script>
-        <p class="fineprint" id="assurance-privacy-note">Submitting does not guarantee selection or a finding, and it does not authorize a private repository review. No source-code upload is provided. Only public links and high-level descriptions are accepted. For private projects, arrange authorization and secure handling separately. There is no automatic code scan.</p>
+        <p class="fineprint" id="assurance-privacy-note">Submitting does not guarantee selection or a finding, and it does not authorize a private repository review. A public repository suggestion by someone without project authority does not authorize private access, a commissioned review or disclosure of sensitive findings. No source-code upload is provided. Only public links and high-level descriptions are accepted. For private projects, arrange authorization and secure handling separately. There is no automatic code scan.</p>
         <div class="actions">
           <a class="button button--secondary" href={enquiryUrl}>Prefer email? Start a private enquiry ↗</a>
           <a class="button button--secondary" href="https://nz.linkedin.com/in/hesanchez" rel="external">Contact Heath on LinkedIn ↗</a>
@@ -137,6 +137,10 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
           <p><strong>Nyx · Physical meaning across interfaces.</strong> Parquet trajectory exports could describe selected rows using the wrong reference-frame metadata, altering the physical interpretation of otherwise plausible numerical results. The <a href="https://github.com/nyx-space/nyx/pull/615" rel="external">source- and regression-backed correction was merged upstream on 13 November 2026</a>.</p>
           <p>The repair validates the existing one-frame-per-table export contract. Separate import-side and frame-difference obligations remain outside this scoped change.</p>
         </article>
+        <article class="span-12 callout">
+          <h3>Two distinct YAML keys that returned the wrong Python value</h3>
+          <p><strong>L4YAML · Meaning across a language boundary.</strong> The Lean parser preserved distinct valid keys <code>"a"</code> and <code>"a\0b"</code>, but a NUL-terminated C lookup could cause Python to retrieve the value for the wrong key. A length-aware <a href="https://github.com/nasa-jpl/L4YAML/pull/290" rel="external">repair merged into the upstream grammar branch</a>. The evidence concerns this C/Python interface; it does not establish universal YAML conformance or a green full-project CI result for the merged head.</p>
+        </article>
       </div>
       <div class="callout callout--unknown">
         <p><strong>Evidence boundary:</strong> These are public contributions to independently maintained open-source projects. They are not paid-client testimonials, institutional endorsements by NASA/JPL or other organizations, proof of universal correctness, or autonomous discoveries by a deployed MathGraph App. Anything not qualified by the stated tests remains <code>UNKNOWN</code>.</p>
@@ -168,7 +172,6 @@ const turnstileSiteKey = '0x4AAAAAAF__wQkdXmPAGoge';
       <div class="eyebrow">Behind the service</div>
       <h2 id="research-title">Independent verification matters. So does verifying the right thing.</h2>
       <p>MathGraph's <a href="/explore/">research and source-pinned evidence network</a> makes some bounded verification records and unresolved questions inspectable. Indexed mathematical declarations are not themselves independent proof checks. The long-term research ambition is reusable, change-aware claim assurance—not a currently deployed universal code verifier.</p>
-      <p><strong>Know what holds. Know what doesn't. Know what remains unproven.</strong></p>
     </div>
   </section>
 
