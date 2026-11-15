@@ -7,13 +7,13 @@ import {prepareP11Audit,assessP11Native} from './typed-p11.mjs';
 const originalRequirementBytes=readFileSync(new URL('./P11.original.md',import.meta.url),'utf8');
 const sourceBytes=readFileSync(new URL('./P11.source.lean',import.meta.url),'utf8');
 const type=`CollatzPositiveDensity.exists_positive_density :
-  ∃ c : ℝ, 0 < c ∧ ∃ X₀ : ℕ, ∀ X : ℕ, X₀ ≤ X → c * X ≤ (CollatzPositiveDensity.countBelow (523 / 50) X : ℝ)`;
-const nativeOutput=`P11.Audit.lean:28:8: warning: declaration uses \`sorry\`
+  ∃ c, 0 < c ∧ ∃ X₀, ∀ (X : ℕ), X₀ ≤ X → c * ↑X ≤ ↑(CollatzPositiveDensity.countBelow (523 / 50) X)`;
+const nativeOutput=`P11.Audit.lean:30:8: warning: declaration uses \`sorry\`
 MATHGRAPH_P11_TYPE_BEGIN
 ${type}
 MATHGRAPH_P11_TYPE_END
 MATHGRAPH_P11_AXIOMS_BEGIN
-'CollatzPositiveDensity.exists_positive_density' depends on axioms: [sorryAx]
+'CollatzPositiveDensity.exists_positive_density' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]
 MATHGRAPH_P11_AXIOMS_END
 `;
 const context={originalRequirementBytes,sourceBytes,nativeOutput,exitCode:0,
@@ -39,6 +39,7 @@ test('published P11 paper request is not fulfilled by an existential theorem typ
   assert.equal(result.narrowed_scope.declared_scope,'NO_DECLARED_GAP');
   assert.equal(result.proof_status,'NOT_ESTABLISHED_SORRY');
   assert.equal(result.type_sha256,createHash('sha256').update(type).digest('hex'));
+  assert.equal(result.type_sha256,'2c4e2b2a362f466c184d2214192ee4d76bc510fb2804012f8078293747682e58');
   assert.equal(result.intent_fidelity,'UNKNOWN');
   assert.equal(result.evidence_warrant,'UNKNOWN');
 });
@@ -76,7 +77,7 @@ test('proof body is not type-only evidence',()=>{
 
 test('changed theorem type and malformed marker sequences fail closed',()=>{
   for(const output of ['',nativeOutput+nativeOutput,
-    nativeOutput.replace('∃ c : ℝ','∀ c : ℝ'),
+    nativeOutput.replace('∃ c, 0 < c','∀ c, 0 < c'),
     nativeOutput.replace('MATHGRAPH_P11_TYPE_END','')]){
     assert.equal(assessP11Native({...context,nativeOutput:output}).status,'UNKNOWN');
   }
