@@ -1,0 +1,63 @@
+name: MathGraph OMM P127 native type — isolated research
+on:
+  push:
+    branches: [research/check-omm-typed-p127-v1-20261115]
+    paths:
+      - 'research/omm-typed-p127-v1/**'
+      - '.github/workflows/check-omm-typed-p127-research.yml'
+permissions:
+  contents: read
+jobs:
+  native-type:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Offline scope and stale-source controls
+        run: node --test research/omm-typed-p127-v1/typed-p127.test.mjs integrations/mathgraph-check-github/omm-v1/scope-contract-research.test.mjs
+      - name: Acquire SHA-256-pinned Lean 4.35.0 without App credentials
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/lean-435"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://github.com/leanprover/lean4/releases/download/v4.35.0/lean-4.35.0-linux.tar.zst -o "$RUNNER_TEMP/lean-435.tar.zst"
+          echo "7289597a44543246c9227b8cae501767e095ce17f6d448b95fc4a8dc97268f6d  $RUNNER_TEMP/lean-435.tar.zst" | sha256sum -c -
+          tar --zstd -xf "$RUNNER_TEMP/lean-435.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/lean-435"
+          echo "$RUNNER_TEMP/lean-435/bin" >> "$GITHUB_PATH"
+      - name: Freeze official public Mathathon source and Mathlib revision
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/omm-p127"
+          cp research/omm-typed-p127-v1/lean-toolchain "$RUNNER_TEMP/omm-p127/lean-toolchain"
+          cp research/omm-typed-p127-v1/lakefile.toml "$RUNNER_TEMP/omm-p127/lakefile.toml"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://raw.githubusercontent.com/SAIRcompetition/mathathon-judge/4d6098d263275ff1cb0308908a693e776c116f53/problems_ai/lean/MathathonProblems/P127_RogersRamanujan.lean -o "$RUNNER_TEMP/omm-p127/P127.source.lean"
+          echo "86ab2826d38ff5595c66405125c26a63a16e254d56a10f9b660d7633a1ef4e5f  $RUNNER_TEMP/omm-p127/P127.source.lean" | sha256sum -c -
+          cmp research/omm-typed-p127-v1/P127_RogersRamanujan.lean "$RUNNER_TEMP/omm-p127/P127.source.lean"
+          cd "$RUNNER_TEMP/omm-p127"
+          lake update
+          node -e "const d=require('./lake-manifest.json');if(d.packages.find(x=>x.name==='mathlib')?.rev!=='56a005855ea17e0b0958f73ec801ae140b0a1679')process.exit(1)"
+          lake exe cache get
+      - name: Produce native elaborated theorem-print and axiom receipt
+        run: |
+          set -euo pipefail
+          node research/omm-typed-p127-v1/typed-p127.mjs prepare "$RUNNER_TEMP/omm-p127"
+          node research/omm-typed-p127-v1/typed-p127.mjs replay "$RUNNER_TEMP/omm-p127"
+      - name: Preserve source, native text, reports, and negative results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-typed-p127-research
+          path: |
+            ${{ runner.temp }}/omm-p127/P127.source.lean
+            ${{ runner.temp }}/omm-p127/P127.Audit.lean
+            ${{ runner.temp }}/omm-p127/P127.native-output.txt
+            ${{ runner.temp }}/omm-p127/P127.assessment.json
+            ${{ runner.temp }}/omm-p127/lean-toolchain
+            ${{ runner.temp }}/omm-p127/lakefile.toml
+            ${{ runner.temp }}/omm-p127/lake-manifest.json
+          if-no-files-found: warn
+          retention-days: 30
