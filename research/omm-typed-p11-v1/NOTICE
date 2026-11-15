@@ -1,0 +1,17 @@
+P11.original.md and P11.source.lean are unmodified copies of the official
+Mathathon Round 1 original Problem 11 request and AI-prepared Lean statement,
+from SAIRcompetition/mathathon-judge commit:
+4d6098d263275ff1cb0308908a693e776c116f53
+
+Original request:
+https://github.com/SAIRcompetition/mathathon-judge/blob/4d6098d263275ff1cb0308908a693e776c116f53/problems_original/011-mazurs-collatz-paper.md
+Lean statement:
+https://github.com/SAIRcompetition/mathathon-judge/blob/4d6098d263275ff1cb0308908a693e776c116f53/problems_ai/lean/MathathonProblems/P11_CollatzPositiveDensity.lean
+
+Upstream repository license: Apache License, Version 2.0.
+https://github.com/SAIRcompetition/mathathon-judge/blob/4d6098d263275ff1cb0308908a693e776c116f53/LICENSE
+
+The AI-prepared Lean theorem is admitted by sorry, not a completed proof.
+The published problem requests a readable explanation; a conceptual
+reformulation is explicitly preferred, not mandatory. Labels in this
+research experiment are curator-supplied, not owner-authenticated.

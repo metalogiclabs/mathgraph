@@ -1,9 +1,10 @@
-name: MathGraph OMM P127 native type — isolated research
+name: MathGraph OMM P127 and P11 native types — isolated research
 on:
   push:
     branches: [research/check-omm-typed-p127-v1-20261115]
     paths:
       - 'research/omm-typed-p127-v1/**'
+      - 'research/omm-typed-p11-v1/**'
       - '.github/workflows/check-omm-typed-p127-research.yml'
 permissions:
   contents: read
@@ -19,7 +20,7 @@ jobs:
         with:
           node-version: '24'
       - name: Offline scope and stale-source controls
-        run: node --test research/omm-typed-p127-v1/typed-p127.test.mjs integrations/mathgraph-check-github/omm-v1/scope-contract-research.test.mjs
+        run: node --test research/omm-typed-p11-v1/typed-p11.test.mjs research/omm-typed-p127-v1/typed-p127.test.mjs integrations/mathgraph-check-github/omm-v1/scope-contract-research.test.mjs
       - name: Acquire SHA-256-pinned Lean 4.35.0 without App credentials
         run: |
           set -euo pipefail
@@ -40,6 +41,12 @@ jobs:
           curl --proto '=https' --tlsv1.2 -fL --retry 2 https://raw.githubusercontent.com/SAIRcompetition/mathathon-judge/4d6098d263275ff1cb0308908a693e776c116f53/problems_original/127-rogers-ramanujan-identity.md -o "$RUNNER_TEMP/omm-p127/P127.original.md"
           echo "6192343db29173760dbe71982f3bf248d951d4cecfee49743b42c370be1cc24b  $RUNNER_TEMP/omm-p127/P127.original.md" | sha256sum -c -
           cmp research/omm-typed-p127-v1/P127_original.md "$RUNNER_TEMP/omm-p127/P127.original.md"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://raw.githubusercontent.com/SAIRcompetition/mathathon-judge/4d6098d263275ff1cb0308908a693e776c116f53/problems_ai/lean/MathathonProblems/P11_CollatzPositiveDensity.lean -o "$RUNNER_TEMP/omm-p127/P11.source.lean"
+          echo "763247683fd75b69611e9e81ddf4edae73619e36e517544158bf1b2b316e5758  $RUNNER_TEMP/omm-p127/P11.source.lean" | sha256sum -c -
+          cmp research/omm-typed-p11-v1/P11.source.lean "$RUNNER_TEMP/omm-p127/P11.source.lean"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://raw.githubusercontent.com/SAIRcompetition/mathathon-judge/4d6098d263275ff1cb0308908a693e776c116f53/problems_original/011-mazurs-collatz-paper.md -o "$RUNNER_TEMP/omm-p127/P11.original.md"
+          echo "77f73762bd92303e43a2af8a28c216c3bc245a6d4178a815641bd374ac2193d6  $RUNNER_TEMP/omm-p127/P11.original.md" | sha256sum -c -
+          cmp research/omm-typed-p11-v1/P11.original.md "$RUNNER_TEMP/omm-p127/P11.original.md"
           cd "$RUNNER_TEMP/omm-p127"
           lake update
           node -e "const d=require('./lake-manifest.json');if(d.packages.find(x=>x.name==='mathlib')?.rev!=='56a005855ea17e0b0958f73ec801ae140b0a1679')process.exit(1)"
@@ -49,14 +56,21 @@ jobs:
           set -euo pipefail
           node research/omm-typed-p127-v1/typed-p127.mjs prepare "$RUNNER_TEMP/omm-p127"
           node research/omm-typed-p127-v1/typed-p127.mjs replay "$RUNNER_TEMP/omm-p127"
+          node research/omm-typed-p11-v1/typed-p11.mjs prepare "$RUNNER_TEMP/omm-p127"
+          node research/omm-typed-p11-v1/typed-p11.mjs replay "$RUNNER_TEMP/omm-p127"
       - name: Preserve source, native text, reports, and negative results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: omm-typed-p127-research
+          name: omm-typed-p11-p127-research
           path: |
             ${{ runner.temp }}/omm-p127/P127.source.lean
             ${{ runner.temp }}/omm-p127/P127.original.md
+            ${{ runner.temp }}/omm-p127/P11.original.md
+            ${{ runner.temp }}/omm-p127/P11.source.lean
+            ${{ runner.temp }}/omm-p127/P11.Audit.lean
+            ${{ runner.temp }}/omm-p127/P11.native-output.txt
+            ${{ runner.temp }}/omm-p127/P11.assessment.json
             ${{ runner.temp }}/omm-p127/P127.Audit.lean
             ${{ runner.temp }}/omm-p127/P127.native-output.txt
             ${{ runner.temp }}/omm-p127/P127.assessment.json
