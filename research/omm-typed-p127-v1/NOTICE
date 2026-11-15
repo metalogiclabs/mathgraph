@@ -3,6 +3,10 @@ Mathathon Round 1 statement from SAIRcompetition/mathathon-judge, commit
 4d6098d263275ff1cb0308908a693e776c116f53, at:
 https://github.com/SAIRcompetition/mathathon-judge/blob/4d6098d263275ff1cb0308908a693e776c116f53/problems_ai/lean/MathathonProblems/P127_RogersRamanujan.lean
 
+P127_original.md is the separately pinned, unmodified original human
+research request from the same official commit, at:
+https://github.com/SAIRcompetition/mathathon-judge/blob/4d6098d263275ff1cb0308908a693e776c116f53/problems_original/127-rogers-ramanujan-identity.md
+
 Upstream repository license: Apache License, Version 2.0.
 https://github.com/SAIRcompetition/mathathon-judge/blob/4d6098d263275ff1cb0308908a693e776c116f53/LICENSE
 

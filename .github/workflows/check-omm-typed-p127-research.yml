@@ -37,6 +37,9 @@ jobs:
           curl --proto '=https' --tlsv1.2 -fL --retry 2 https://raw.githubusercontent.com/SAIRcompetition/mathathon-judge/4d6098d263275ff1cb0308908a693e776c116f53/problems_ai/lean/MathathonProblems/P127_RogersRamanujan.lean -o "$RUNNER_TEMP/omm-p127/P127.source.lean"
           echo "86ab2826d38ff5595c66405125c26a63a16e254d56a10f9b660d7633a1ef4e5f  $RUNNER_TEMP/omm-p127/P127.source.lean" | sha256sum -c -
           cmp research/omm-typed-p127-v1/P127_RogersRamanujan.lean "$RUNNER_TEMP/omm-p127/P127.source.lean"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://raw.githubusercontent.com/SAIRcompetition/mathathon-judge/4d6098d263275ff1cb0308908a693e776c116f53/problems_original/127-rogers-ramanujan-identity.md -o "$RUNNER_TEMP/omm-p127/P127.original.md"
+          echo "6192343db29173760dbe71982f3bf248d951d4cecfee49743b42c370be1cc24b  $RUNNER_TEMP/omm-p127/P127.original.md" | sha256sum -c -
+          cmp research/omm-typed-p127-v1/P127_original.md "$RUNNER_TEMP/omm-p127/P127.original.md"
           cd "$RUNNER_TEMP/omm-p127"
           lake update
           node -e "const d=require('./lake-manifest.json');if(d.packages.find(x=>x.name==='mathlib')?.rev!=='56a005855ea17e0b0958f73ec801ae140b0a1679')process.exit(1)"
@@ -53,6 +56,7 @@ jobs:
           name: omm-typed-p127-research
           path: |
             ${{ runner.temp }}/omm-p127/P127.source.lean
+            ${{ runner.temp }}/omm-p127/P127.original.md
             ${{ runner.temp }}/omm-p127/P127.Audit.lean
             ${{ runner.temp }}/omm-p127/P127.native-output.txt
             ${{ runner.temp }}/omm-p127/P127.assessment.json

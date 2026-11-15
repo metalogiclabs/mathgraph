@@ -5,9 +5,10 @@ import {createHash} from 'node:crypto';
 import {prepareP127Audit,assessP127Native} from './typed-p127.mjs';
 
 const sourceBytes=readFileSync(new URL('./P127_RogersRamanujan.lean',import.meta.url),'utf8');
+const originalRequirementBytes=readFileSync(new URL('./P127_original.md',import.meta.url),'utf8');
 const type='Mathathon.P127.rogers_ramanujan (n : ℕ) :\n  (Nat.Partition.restricted n fun i => i % 5 = 1 ∨ i % 5 = 4).card = (Mathathon.P127.gapTwoPartitions n).card';
 const nativeOutput=`warning: declaration uses 'sorry'\nMATHGRAPH_P127_TYPE_BEGIN\n${type}\nMATHGRAPH_P127_TYPE_END\nMATHGRAPH_P127_AXIOMS_BEGIN\n'Mathathon.P127.rogers_ramanujan' depends on axioms: [sorryAx]\nMATHGRAPH_P127_AXIOMS_END\n`;
-const context={sourceBytes,nativeOutput,exitCode:0,
+const context={sourceBytes,originalRequirementBytes,nativeOutput,exitCode:0,
   mathlibGit:'56a005855ea17e0b0958f73ec801ae140b0a1679',
   toolchainDigest:'7289597a44543246c9227b8cae501767e095ce17f6d448b95fc4a8dc97268f6d'};
 
@@ -31,6 +32,26 @@ test('the original natural-bijection requirement remains uncovered by typed equa
   assert.equal(typeof result.type_sha256,'string');
   assert.equal(result.type_sha256.length,64);
   assert.equal(result.type_sha256,createHash('sha256').update(type).digest('hex'));
+  assert.equal(result.original_requirement_source.repository,'SAIRcompetition/mathathon-judge');
+  assert.equal(result.original_requirement_source.path,'problems_original/127-rogers-ramanujan-identity.md');
+  assert.equal(result.original_requirement_source.sha256,
+    createHash('sha256').update(originalRequirementBytes).digest('hex'));
+  assert.equal(result.original_requirement_source.sha256,
+    '6192343db29173760dbe71982f3bf248d951d4cecfee49743b42c370be1cc24b');
+  assert.equal(result.original_requested_outcome,
+    'Find a more natural bijection for the Rogers Ramanujan Identity.');
+});
+
+test('the original human research request must be separately pinned before any declared gap is reported',()=>{
+  for(const original of [undefined,'',sourceBytes,
+    originalRequirementBytes.replace('Desired outcome','Desired outcomes'),
+    originalRequirementBytes.replace('natural bijection','simple equality')]){
+    const result=assessP127Native({...context,originalRequirementBytes:original});
+    assert.equal(result.status,'UNKNOWN');
+    assert.equal(result.intent_fidelity,'UNKNOWN');
+    assert.equal(result.evidence_warrant,'UNKNOWN');
+    assert.equal(result.original_scope,undefined);
+  }
 });
 
 test('a #print declaration containing a proof body cannot masquerade as type-only evidence',()=>{

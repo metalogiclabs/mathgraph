@@ -13,6 +13,7 @@ import {assessDeclaredScope} from '../../integrations/mathgraph-check-github/omm
 const exec=promisify(execFile);
 const sha=s=>createHash('sha256').update(s).digest('hex');
 const SOURCE_SHA='86ab2826d38ff5595c66405125c26a63a16e254d56a10f9b660d7633a1ef4e5f';
+const ORIGINAL_SHA='6192343db29173760dbe71982f3bf248d951d4cecfee49743b42c370be1cc24b';
 const MATHLIB='56a005855ea17e0b0958f73ec801ae140b0a1679';
 const TOOLCHAIN='7289597a44543246c9227b8cae501767e095ce17f6d448b95fc4a8dc97268f6d';
 const DECL='Mathathon.P127.rogers_ramanujan';
@@ -20,6 +21,10 @@ const IDENTITY=Object.freeze({repository:'SAIRcompetition/mathathon-judge',
   head_sha:'4d6098d263275ff1cb0308908a693e776c116f53',
   source_path:'problems_ai/lean/MathathonProblems/P127_RogersRamanujan.lean',
   source_sha256:SOURCE_SHA});
+const ORIGINAL_IDENTITY=Object.freeze({repository:IDENTITY.repository,
+  head_sha:IDENTITY.head_sha,
+  path:'problems_original/127-rogers-ramanujan-identity.md',
+  sha256:ORIGINAL_SHA});
 const TAGS=['MATHGRAPH_P127_TYPE_BEGIN','MATHGRAPH_P127_TYPE_END',
   'MATHGRAPH_P127_AXIOMS_BEGIN','MATHGRAPH_P127_AXIOMS_END'];
 
@@ -64,10 +69,15 @@ function declaredScope(ids,typeHash){
  * on-disk Lean theorem ends in sorry, so even successful elaboration is not
  * proof acceptance or evidence of a mathematical discovery.
  */
-export function assessP127Native({sourceBytes,nativeOutput,exitCode,mathlibGit,
+export function assessP127Native({sourceBytes,originalRequirementBytes,nativeOutput,exitCode,mathlibGit,
   toolchainDigest}={}){
   if(typeof sourceBytes!=='string'||sha(sourceBytes)!==SOURCE_SHA)
     return unknown('OFFICIAL_SOURCE_NOT_PINNED');
+  if(typeof originalRequirementBytes!=='string'||sha(originalRequirementBytes)!==ORIGINAL_SHA)
+    return unknown('ORIGINAL_RESEARCH_REQUEST_NOT_PINNED');
+  const originalRequestedOutcome=originalRequirementBytes.split('## Desired outcome\n\n')[1]?.trim();
+  if(originalRequestedOutcome!=='Find a more natural bijection for the Rogers Ramanujan Identity.')
+    return unknown('ORIGINAL_REQUESTED_OUTCOME_UNREADABLE');
   if(exitCode!==0||mathlibGit!==MATHLIB||toolchainDigest!==TOOLCHAIN)
     return unknown('NATIVE_BUILD_OR_ENVIRONMENT_UNQUALIFIED');
   if(typeof nativeOutput!=='string'||nativeOutput.length>2_000_000)
@@ -88,6 +98,8 @@ export function assessP127Native({sourceBytes,nativeOutput,exitCode,mathlibGit,
   const hasSorry=/\bsorryAx\b/.test(axiomText);
   return {schema:'mathgraph.omm.p127-typed-scope-research.v1',
     status:'PINNED_NATIVE_TYPE_TEXT_OBSERVED',source_sha256:SOURCE_SHA,
+    original_requirement_source:ORIGINAL_IDENTITY,
+    original_requested_outcome:originalRequestedOutcome,
     type_sha256:typeHash,native_output_sha256:sha(nativeOutput),
     mathlib_git:MATHLIB,lean_toolchain_distribution_sha256:TOOLCHAIN,
     axiom_observation:hasSorry?'SORRY_AXIOM_PRESENT':'UNKNOWN',
@@ -105,6 +117,8 @@ async function main(){
   if(!['prepare','replay'].includes(action)||!directory?.startsWith('/')||
     process.argv.length!==4)throw Error('FIXED_RESEARCH_CLI_ARGUMENTS_REQUIRED');
   const root=resolve(directory),src=await readFile(join(root,'P127.source.lean'),'utf8');
+  const original=await readFile(join(root,'P127.original.md'),'utf8');
+  if(sha(original)!==ORIGINAL_SHA)throw Error('ORIGINAL_RESEARCH_REQUEST_NOT_PINNED');
   if(action==='prepare'){
     await writeFile(join(root,'P127.Audit.lean'),prepareP127Audit(src),{flag:'wx'});
     return;
@@ -123,7 +137,8 @@ async function main(){
     nativeOutput=String(e.stdout??'')+String(e.stderr??'')+'\n'+String(e.message);
   }
   await writeFile(join(root,'P127.native-output.txt'),nativeOutput,{flag:'wx'});
-  const result=assessP127Native({sourceBytes:src,nativeOutput,exitCode,mathlibGit,
+  const result=assessP127Native({sourceBytes:src,originalRequirementBytes:original,
+    nativeOutput,exitCode,mathlibGit,
     toolchainDigest:TOOLCHAIN});
   await writeFile(join(root,'P127.assessment.json'),JSON.stringify(result,null,2)+'\n',
     {flag:'wx'});
