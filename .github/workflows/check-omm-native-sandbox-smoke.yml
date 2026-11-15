@@ -1,0 +1,52 @@
+name: MathGraph OMM unprivileged Lean sandbox — owned controls only
+on:
+  push:
+    branches: [feature/check-omm-claim-bridge-v1-20261105]
+    paths:
+      - '.github/workflows/check-omm-native-sandbox-smoke.yml'
+      - 'integrations/mathgraph-check-github/omm-v1/sandbox-*.mjs'
+permissions:
+  contents: read
+jobs:
+  no-secrets-no-network-owned-fixtures:
+    if: >-
+      github.repository == 'metalogiclabs/mathgraph' &&
+      github.ref == 'refs/heads/feature/check-omm-claim-bridge-v1-20261105' &&
+      github.actor_id == 32909488
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify isolation policy and success/failure classification before container build
+        run: node --test integrations/mathgraph-check-github/omm-v1/sandbox-*.test.mjs
+      - name: Obtain SHA-256-verified Lean 4.28.0 runtime without private credentials
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/omm-lean-image/lean"
+          curl --proto '=https' --tlsv1.2 -fL --retry 2 https://github.com/leanprover/lean4/releases/download/v4.28.0/lean-4.28.0-linux.tar.zst -o "$RUNNER_TEMP/omm-lean-428.tar.zst"
+          echo "ceb3a3f844f7aebf63245e2b51c28d5b0ed38942c19f93cf3febd520302160bd  $RUNNER_TEMP/omm-lean-428.tar.zst" | sha256sum -c -
+          tar --zstd -xf "$RUNNER_TEMP/omm-lean-428.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/omm-lean-image/lean"
+      - name: Build distinct unprivileged image from existing read-only Lean Dockerfile
+        run: |
+          set -euo pipefail
+          docker build --pull -t mathgraph-lean-sandbox:omm-v1 -f integrations/mathgraph-check-github/Dockerfile.native-demo "$RUNNER_TEMP/omm-lean-image"
+          docker image inspect --format '{{.Id}}' mathgraph-lean-sandbox:omm-v1 > "$RUNNER_TEMP/omm-sandbox-image-id.txt"
+      - name: Execute owned positive/negative Lean fixtures and real filesystem/network isolation probe
+        env:
+          GITHUB_ACTOR_ID: ${{ github.actor_id }}
+        run: node integrations/mathgraph-check-github/omm-v1/sandbox-smoke.mjs
+      - name: Retain bounded smoke receipt, environment identity and negative controls
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: omm-native-sandbox-smoke-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/omm-sandbox-smoke.json
+            ${{ runner.temp }}/omm-sandbox-image-id.txt
+          if-no-files-found: warn
+          retention-days: 30
