@@ -40,7 +40,7 @@ export function prepareP127Audit(sourceBytes){
     throw Error('SOURCE_BYTES_CHANGED');
   return sourceBytes+'\n'+
     '#eval IO.println "'+TAGS[0]+'"\n'+
-    '#print '+DECL+'\n'+
+    '#check '+DECL+'\n'+
     '#eval IO.println "'+TAGS[1]+'"\n'+
     '#eval IO.println "'+TAGS[2]+'"\n'+
     '#print axioms '+DECL+'\n'+
@@ -75,8 +75,8 @@ export function assessP127Native({sourceBytes,nativeOutput,exitCode,mathlibGit,
   const typeText=cut(nativeOutput,TAGS[0],TAGS[1]);
   const axiomText=cut(nativeOutput,TAGS[2],TAGS[3]);
   if(!typeText||!axiomText||nativeOutput.indexOf(TAGS[2])<nativeOutput.indexOf(TAGS[1])||
-    !typeText.includes('theorem '+DECL)||!typeText.includes('.card')||
-    !typeText.includes('=')||!axiomText.includes(DECL))
+    !typeText.startsWith(DECL+' :')||typeText.includes(':=')||
+    !typeText.includes('.card')||!typeText.includes('=')||!axiomText.includes(DECL))
     return unknown('ELABORATED_TYPE_OR_AXIOM_PRINT_NOT_OBSERVED');
 
   const typeHash=sha(typeText);

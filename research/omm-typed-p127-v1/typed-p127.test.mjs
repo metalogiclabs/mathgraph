@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {prepareP127Audit,assessP127Native} from './typed-p127.mjs';
 
 const sourceBytes=readFileSync(new URL('./P127_RogersRamanujan.lean',import.meta.url),'utf8');
-const type='theorem Mathathon.P127.rogers_ramanujan (n : ℕ) :\n  (Nat.Partition.restricted n fun i => i % 5 = 1 ∨ i % 5 = 4).card = (Mathathon.P127.gapTwoPartitions n).card';
+const type='Mathathon.P127.rogers_ramanujan : ∀ (n : ℕ),\n  (Nat.Partition.restricted n fun i => i % 5 = 1 ∨ i % 5 = 4).card = (Mathathon.P127.gapTwoPartitions n).card';
 const nativeOutput=`warning: declaration uses 'sorry'\nMATHGRAPH_P127_TYPE_BEGIN\n${type}\nMATHGRAPH_P127_TYPE_END\nMATHGRAPH_P127_AXIOMS_BEGIN\n'Mathathon.P127.rogers_ramanujan' depends on axioms: [sorryAx]\nMATHGRAPH_P127_AXIOMS_END\n`;
 const context={sourceBytes,nativeOutput,exitCode:0,
   mathlibGit:'56a005855ea17e0b0958f73ec801ae140b0a1679',
@@ -13,7 +14,8 @@ const context={sourceBytes,nativeOutput,exitCode:0,
 test('native probe extends the exact official source and prints a declaration, not comments',()=>{
   const generated=prepareP127Audit(sourceBytes);
   assert.ok(generated.startsWith(sourceBytes));
-  assert.match(generated.slice(sourceBytes.length),/#print Mathathon\.P127\.rogers_ramanujan/);
+  assert.match(generated.slice(sourceBytes.length),/#check Mathathon\.P127\.rogers_ramanujan/);
+  assert.doesNotMatch(generated.slice(sourceBytes.length),/#print Mathathon\.P127\.rogers_ramanujan/);
   assert.match(generated.slice(sourceBytes.length),/#print axioms Mathathon\.P127\.rogers_ramanujan/);
 });
 
@@ -28,6 +30,12 @@ test('the original natural-bijection requirement remains uncovered by typed equa
   assert.equal(result.evidence_warrant,'UNKNOWN');
   assert.equal(typeof result.type_sha256,'string');
   assert.equal(result.type_sha256.length,64);
+  assert.equal(result.type_sha256,createHash('sha256').update(type).digest('hex'));
+});
+
+test('a #print declaration containing a proof body cannot masquerade as type-only evidence',()=>{
+  const withBody=nativeOutput.replace(type,type+' :=\nfun n => sorry');
+  assert.equal(assessP127Native({...context,nativeOutput:withBody}).status,'UNKNOWN');
 });
 
 test('altering only a source comment fails the frozen public-source digest',()=>{
@@ -62,5 +70,6 @@ test('an output without an observed sorry axiom cannot be called proved',()=>{
   const different=nativeOutput.replace('sorryAx','Classical.choice');
   const result=assessP127Native({...context,nativeOutput:different});
   assert.equal(result.proof_status,'UNKNOWN');
+  assert.equal(result.type_sha256,assessP127Native(context).type_sha256);
   assert.equal(result.intent_fidelity,'UNKNOWN');
 });
