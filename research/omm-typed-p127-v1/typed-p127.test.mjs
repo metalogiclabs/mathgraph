@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {prepareP127Audit,assessP127Native} from './typed-p127.mjs';
 
 const sourceBytes=readFileSync(new URL('./P127_RogersRamanujan.lean',import.meta.url),'utf8');
-const type='Mathathon.P127.rogers_ramanujan : ∀ (n : ℕ),\n  (Nat.Partition.restricted n fun i => i % 5 = 1 ∨ i % 5 = 4).card = (Mathathon.P127.gapTwoPartitions n).card';
+const type='Mathathon.P127.rogers_ramanujan (n : ℕ) :\n  (Nat.Partition.restricted n fun i => i % 5 = 1 ∨ i % 5 = 4).card = (Mathathon.P127.gapTwoPartitions n).card';
 const nativeOutput=`warning: declaration uses 'sorry'\nMATHGRAPH_P127_TYPE_BEGIN\n${type}\nMATHGRAPH_P127_TYPE_END\nMATHGRAPH_P127_AXIOMS_BEGIN\n'Mathathon.P127.rogers_ramanujan' depends on axioms: [sorryAx]\nMATHGRAPH_P127_AXIOMS_END\n`;
 const context={sourceBytes,nativeOutput,exitCode:0,
   mathlibGit:'56a005855ea17e0b0958f73ec801ae140b0a1679',
@@ -36,6 +36,11 @@ test('the original natural-bijection requirement remains uncovered by typed equa
 test('a #print declaration containing a proof body cannot masquerade as type-only evidence',()=>{
   const withBody=nativeOutput.replace(type,type+' :=\nfun n => sorry');
   assert.equal(assessP127Native({...context,nativeOutput:withBody}).status,'UNKNOWN');
+});
+
+test('a purported native output that changes the quantified domain is not admitted',()=>{
+  const changed=nativeOutput.replace('(n : ℕ) :','(n : ℤ) :');
+  assert.equal(assessP127Native({...context,nativeOutput:changed}).status,'UNKNOWN');
 });
 
 test('altering only a source comment fails the frozen public-source digest',()=>{
