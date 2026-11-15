@@ -5,6 +5,7 @@ on:
     paths:
       - 'research/omm-typed-p127-v1/**'
       - 'research/omm-typed-p11-v1/**'
+      - 'research/omm-scope-v2/**'
       - '.github/workflows/check-omm-typed-p127-research.yml'
 permissions:
   contents: read
@@ -20,7 +21,7 @@ jobs:
         with:
           node-version: '24'
       - name: Offline scope and stale-source controls
-        run: node --test research/omm-typed-p11-v1/typed-p11.test.mjs research/omm-typed-p127-v1/typed-p127.test.mjs integrations/mathgraph-check-github/omm-v1/scope-contract-research.test.mjs
+        run: node --test research/omm-scope-v2/required-preferred-scope.test.mjs research/omm-typed-p11-v1/typed-p11.test.mjs research/omm-typed-p127-v1/typed-p127.test.mjs integrations/mathgraph-check-github/omm-v1/scope-contract-research.test.mjs
       - name: Acquire SHA-256-pinned Lean 4.35.0 without App credentials
         run: |
           set -euo pipefail

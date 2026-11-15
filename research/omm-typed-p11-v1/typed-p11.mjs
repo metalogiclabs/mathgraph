@@ -6,7 +6,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {assessDeclaredScope} from '../../integrations/mathgraph-check-github/omm-v1/scope-contract-research.mjs';
+import {assessDeclaredScope} from '../omm-scope-v2/required-preferred-scope.mjs';
 
 const exec=promisify(execFile);
 const sha=s=>createHash('sha256').update(s).digest('hex');
@@ -48,10 +48,11 @@ function segment(output,startMarker,endMarker){
   return end<=start?null:output.slice(start,end).trim();
 }
 
-function declaredScope(requirementIds,attestedIds,typeHash){
-  const contract={schema:'mathgraph.omm.declared-scope-contract.research.v1',
-    ...SOURCE,requirement_ids:requirementIds};
-  const type={schema:'mathgraph.omm.type-scope-annotation.research.v1',
+function declaredScope(requirementIds,attestedIds,typeHash,preferredIds=[]){
+  const contract={schema:'mathgraph.omm.declared-scope-contract.research.v2',
+    ...SOURCE,requirement_ids:requirementIds,
+    ...(preferredIds.length?{preferred_requirement_ids:preferredIds}:{})};
+  const type={schema:'mathgraph.omm.type-scope-annotation.research.v2',
     ...SOURCE,declaration:DECL,type_sha256:typeHash,attested_scope_ids:attestedIds};
   const contractBytes=JSON.stringify(contract),typeAnnotationBytes=JSON.stringify(type);
   return assessDeclaredScope({currentSource:SOURCE,contractBytes,
@@ -80,7 +81,8 @@ export function assessP11Native({sourceBytes,originalRequirementBytes,nativeOutp
     !axioms.includes(DECL))
     return unknown('NATIVE_TYPE_OR_AXIOMS_NOT_OBSERVED');
   const typeHash=sha(typeText);
-  const original=declaredScope(['human-readable-exposition'],[],typeHash);
+  const original=declaredScope(['human-readable-exposition'],[],typeHash,
+    ['conceptual-rephrasing']);
   const narrower=declaredScope(['positive-density-existence'],['positive-density-existence'],typeHash);
   if(original.status!=='PINNED_SCOPE_ANNOTATIONS_COMPARED'||
     narrower.status!=='PINNED_SCOPE_ANNOTATIONS_COMPARED')
@@ -91,7 +93,7 @@ export function assessP11Native({sourceBytes,originalRequirementBytes,nativeOutp
     original_requirement_source:ORIGINAL,original_requested_outcome:OUTCOME,
     type_sha256:typeHash,native_output_sha256:sha(nativeOutput),
     original_scope:original,narrowed_scope:narrower,
-    preference_ids:['conceptual-rephrasing'],preference_warrant:'UNKNOWN',
+    preference_ids:['conceptual-rephrasing'],preference_warrant:original.preference_warrant,
     scope_annotation_authority:'CURATOR_LABELS_ONLY',
     axiom_observation:hasSorry?'SORRY_AXIOM_PRESENT':'UNKNOWN',
     proof_status:hasSorry?'NOT_ESTABLISHED_SORRY':'UNKNOWN',

@@ -31,6 +31,7 @@ test('frozen native P11 probe prints the theorem type and its axioms',()=>{
 test('published P11 paper request is not fulfilled by an existential theorem type',()=>{
   const result=assessP11Native(context);
   assert.equal(result.status,'PINNED_NATIVE_TYPE_TEXT_OBSERVED');
+  assert.equal(result.original_scope.schema,'mathgraph.omm.declared-scope-assessment.research.v2');
   assert.equal(result.original_requirement_source.path,'problems_original/011-mazurs-collatz-paper.md');
   assert.equal(result.original_requirement_source.sha256,
     '77f73762bd92303e43a2af8a28c216c3bc245a6d4178a815641bd374ac2193d6');
@@ -47,6 +48,7 @@ test('published P11 paper request is not fulfilled by an existential theorem typ
 test('preferred conceptual restatement is not misclassified as a mandatory unmet obligation',()=>{
   const result=assessP11Native(context);
   assert.deepEqual(result.original_scope.uncovered_requirement_ids,['human-readable-exposition']);
+  assert.deepEqual(result.original_scope.uncovered_preference_ids,['conceptual-rephrasing']);
   assert.deepEqual(result.preference_ids,['conceptual-rephrasing']);
   assert.equal(result.preference_warrant,'UNKNOWN');
   assert.equal(result.scope_annotation_authority,'CURATOR_LABELS_ONLY');
