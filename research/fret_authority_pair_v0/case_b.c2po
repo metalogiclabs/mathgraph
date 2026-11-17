@@ -1,0 +1,6 @@
+INPUT
+    BOOST,COAST: bool;
+
+FTSPEC
+    IMMEDIATE: (BOOST -> (F[0,7] COAST));
+    DELAYED: (BOOST -> (F[2,7] COAST));

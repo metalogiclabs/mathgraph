@@ -1,0 +1,50 @@
+name: FRET-R2U2 paired authority pilot v0
+
+on:
+  push:
+    branches:
+      - research/fret_authority_pair_v0_20261118
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-pinned-native-pair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: MathGraph pilot source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Exact original R2U2 source
+        uses: actions/checkout@v4
+        with:
+          repository: R2U2/r2u2
+          ref: 2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a
+          path: external/r2u2-original
+          persist-credentials: false
+      - name: Exact existing SIG1 fork source
+        uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/r2u2
+          ref: 9d58a88f30216d8ebbbfc70828974f11ecd1ebeb
+          path: external/r2u2-sig1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build original C monitor
+        run: make -C external/r2u2-original/monitors/c -j2
+      - name: Build existing SIG1 debug C monitor
+        run: make -C external/r2u2-sig1/monitors/c -j2 debug
+      - name: Qualify exact native source and all bounded oracle checks
+        env:
+          R2U2_SOURCE: ${{ github.workspace }}/external/r2u2-original
+          R2U2_SIG1_SOURCE: ${{ github.workspace }}/external/r2u2-sig1
+        run: |
+          python3 -m unittest -v \
+            research.fret_authority_pair_v0.test_authority \
+            research.fret_authority_pair_v0.test_witness \
+            research.fret_authority_pair_v0.test_native_pair

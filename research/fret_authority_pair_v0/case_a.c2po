@@ -1,0 +1,5 @@
+INPUT
+    BOOST,COAST: bool;
+
+FTSPEC
+    COAST;
