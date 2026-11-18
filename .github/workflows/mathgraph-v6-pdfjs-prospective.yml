@@ -50,7 +50,7 @@ jobs:
           const m=JSON.parse(fs.readFileSync('pdfjs_frozen.json','utf8'));
           const expected='74b5f3eed80e1449356758c6153f7de788bc5c47';
           if(m.repo!=='mozilla/pdf.js'||m.source_ref!==expected||m.selected.length!==12||m.no_source_read_before_freeze!==true)throw Error('MANIFEST_CHANGED');
-          const blob=s=>{const b=Buffer.from(s,'utf8');return crypto.createHash('sha1').update('blob '+b.length+'\\0').update(b).digest('hex')};
+          const blob=s=>{const b=Buffer.from(s,'utf8');return crypto.createHash('sha1').update('blob '+b.length).update(Buffer.from([0])).update(b).digest('hex')};
           async function request(url){const headers={'Accept':'application/vnd.github+json','User-Agent':'mathgraph-frozen-v6-pdfjs'};if(url.startsWith('https://api.github.com/'))headers.Authorization='Bearer '+process.env.GITHUB_TOKEN;
             const r=await fetch(url,{headers});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r;}
           (async()=>{
