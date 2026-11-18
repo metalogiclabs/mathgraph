@@ -34,6 +34,7 @@ jobs:
           test "$(git -C openlayers hash-object src/ol/source/TileImage.js)" = 635368dc621ea80a531adbef9acb2466e3dd22d8
           test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js
+          cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_churn_diagnostic.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js
           git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
           sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch > experiment-checksums.txt
           echo EXACT_SOURCE_AND_CANDIDATE_PATCH_VERIFIED
@@ -65,6 +66,13 @@ jobs:
             echo BASELINE_POSITIVE_CONTROLS_NOT_GREEN; exit 1
           fi
           echo EXPECTED_BASELINE_RATIO_MISMATCH_WITH_TWO_GREEN_CONTROLS
+      - name: Measure benign ratio-independent cache churn before patch
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-churn-before.log"
+          grep -Fq MATHGRAPH_RATIO_INDEPENDENT_CHURN "$GITHUB_WORKSPACE/openlayers-churn-before.log"
       - name: Apply candidate patch in temporary upstream checkout
         shell: bash
         run: |
@@ -84,6 +92,13 @@ jobs:
             test/browser/spec/ol/Map.test.js \
             --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-repair.log"
           echo NATIVE_BROWSER_REPAIR_AND_UPSTREAM_REGRESSION_GREEN
+      - name: Measure benign ratio-independent cache churn after patch
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-churn-after.log"
+          grep -Fq MATHGRAPH_RATIO_INDEPENDENT_CHURN "$GITHUB_WORKSPACE/openlayers-churn-after.log"
       - name: Full upstream Chromium browser suite with candidate applied
         working-directory: openlayers
         shell: bash
@@ -101,6 +116,8 @@ jobs:
             openlayers-baseline.log
             openlayers-repair.log
             openlayers-browser-full.log
+            openlayers-churn-before.log
+            openlayers-churn-after.log
             openlayers_candidate_applied.diff
             mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js
           if-no-files-found: warn
