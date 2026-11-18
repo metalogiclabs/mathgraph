@@ -121,3 +121,54 @@ jobs:
           },null,2));
           NODE
           echo "OPENLAYERS_CANVAS_PIXELRATIO_BOUNDED_REPLAY_COMPLETE"
+
+      - name: Experimental one-guard repair and normal-reuse controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ol"
+          test "$(git hash-object src/ol/renderer/canvas/TileLayer.js)" != ""
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/ol/renderer/canvas/TileLayer.js')
+          text=p.read_text()
+          needle='  prepareFrame(frameState) {\\n'
+          assert text.count(needle)==1, 'unexpected source context'
+          guard=('  prepareFrame(frameState) {\\n'
+                 '    if (this.renderedPixelRatio !== undefined &&\\n'
+                 '        this.renderedPixelRatio !== frameState.pixelRatio) {\\n'
+                 '      this.tileCache_.clear();\\n'
+                 '      this.sourceTileCache_?.clear();\\n'
+                 '    }\\n')
+          p.write_text(text.replace(needle,guard))
+          PY
+          git diff -- src/ol/renderer/canvas/TileLayer.js > "$RUNNER_TEMP/openlayers_pixel_ratio_candidate.diff"
+          test -s "$RUNNER_TEMP/openlayers_pixel_ratio_candidate.diff"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          globalThis.Image=class {
+            src=''; crossOrigin=null;
+            addEventListener(){} removeEventListener(){}
+          };
+          const [{default:TileImage},{default:CanvasTileLayerRenderer},{get:getProjection}]=await Promise.all([
+            import('./src/ol/source/TileImage.js'),
+            import('./src/ol/renderer/canvas/TileLayer.js'),
+            import('./src/ol/proj.js')
+          ]);
+          const p=getProjection('EPSG:3857');
+          const source=new TileImage({projection:p,tileUrlFunction:(c,r)=>'https://example.invalid/'+c.join('/')+'?ratio='+r});
+          const renderer=new CanvasTileLayerRenderer({getSource:()=>source});
+          const f1={pixelRatio:1,viewState:{projection:p}},f2={pixelRatio:2,viewState:{projection:p}};
+          renderer.prepareFrame(f1);const a=renderer.getOrCreateTile(0,0,0,f1);
+          const aAgain=renderer.getOrCreateTile(0,0,0,f1);
+          assert.strictEqual(a,aAgain,'normal identical-context reuse preserved');
+          renderer.renderedPixelRatio=1; // set by real renderFrame after drawing
+          renderer.prepareFrame(f2);const b=renderer.getOrCreateTile(0,0,0,f2);
+          const bAgain=renderer.getOrCreateTile(0,0,0,f2);
+          assert.notStrictEqual(a,b,'context change invalidates cache');
+          assert.strictEqual(b,bAgain,'normal reuse after repair retained');
+          assert.notEqual(a.src_,b.src_);
+          assert.ok(b.src_.includes('ratio=2'));
+          console.log(JSON.stringify({original_pin:'e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2',patched_only_in_runner:true,ratio_change_old:a.src_,ratio_change_new:b.src_,same_context_reuse_preserved:true,post_change_reuse_preserved:true,full_regression_qualification:false,independent_owner_confirmation:false},null,2));
+          NODE
+          echo "OPENLAYERS_CANDIDATE_REPAIR_BOUNDED_GREEN"
