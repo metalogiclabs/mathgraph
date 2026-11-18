@@ -1,0 +1,67 @@
+name: MathGraph AST v6 - pinned consumer-demand comparison
+on:
+  push:
+    branches:
+      - experiment/ast-obligation-consumer-demand-v6-20261118
+    paths:
+      - .github/workflows/mathgraph-ast-consumer-v6.yml
+      - experiments/source_obligation_selection/consumer_v6_source.tar.gz.b64
+permissions:
+  contents: read
+jobs:
+  exact-source-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            experiments/source_obligation_trial
+            experiments/source_obligation_selection
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore fixed v5 and v6 payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v6trial"
+          base64 -d experiments/source_obligation_trial/earthdata_v5_payload.tar.gz.b64 > "$RUNNER_TEMP/v6trial/v5.tar.gz"
+          echo "f71eef7593c714ad68b5cd852d0eeab208514c9b41da5fe4083ba3efc9b34db8  $RUNNER_TEMP/v6trial/v5.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/v6trial/v5.tar.gz" -C "$RUNNER_TEMP/v6trial"
+          cd "$RUNNER_TEMP/v6trial"
+          echo "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743  mathgraph_ast_obligations_v5.js" | sha256sum -c -
+          echo "39b2a6ca210b37b73e34c28f30f5a80a6e81fb7210fb9de582c6c67f663156b3  run_source_pinned_trial.js" | sha256sum -c -
+          base64 -d "$GITHUB_WORKSPACE/experiments/source_obligation_selection/consumer_v6_source.tar.gz.b64" > v6.tar.gz
+          echo "ad60723df4d004637fb6b10da2f4c23b10bfc16a5bfe9891a84bf1a173db7b25  v6.tar.gz" | sha256sum -c -
+          tar -xzf v6.tar.gz
+          echo "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807  mathgraph_ast_obligations_v6.js" | sha256sum -c -
+          echo "9493800b1e3005e1bb322641dca695dd43f89f2910160b9131b91e05ec0b5e86  mathgraph_ast_obligations_v6.test.js" | sha256sum -c -
+          echo "276e117c317b3dc012bbd8644bee645e5148d28317a0db89e42e2482e3f847bc  run_v6_exact_sources.js" | sha256sum -c -
+          echo "FROZEN_V5_V6_SOURCE_READY"
+      - name: Test v5 and v6
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/v6trial"
+          npm install --no-save --no-audit --no-fund typescript@5.8.3
+          node --test mathgraph_ast_obligations_v5.test.js mathgraph_ast_obligations_v5.adversarial.test.js run_source_pinned_trial.test.js mathgraph_ast_obligations_v6.test.js | tee tests.tap
+      - name: Compare pinned Open MCT and Cesium plus Earthdata negative
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/v6trial"
+          node run_v6_exact_sources.js earthdata_trial_outcome.json | tee comparison_summary.json
+          node -e 'const fs=require("fs"),x=JSON.parse(fs.readFileSync("consumer_v6_comparison.json","utf8"));if(x.all_source_integrity!=="PER_BLOB_CHECKED"||!Object.values(x.assertions).every(v=>v===true))process.exit(1);console.log("V6_COMPARISON_PASSED")'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-ast-v6-consumer-demand-bounded-results
+          path: |
+            ${{ runner.temp }}/v6trial/tests.tap
+            ${{ runner.temp }}/v6trial/consumer_v6_comparison.json
+            ${{ runner.temp }}/v6trial/comparison_summary.json
+          if-no-files-found: warn
