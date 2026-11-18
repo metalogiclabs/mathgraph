@@ -132,14 +132,14 @@ jobs:
           from pathlib import Path
           p=Path('src/ol/renderer/canvas/TileLayer.js')
           text=p.read_text()
-          needle='  prepareFrame(frameState) {\\n'
+          needle='  prepareFrame(frameState) {\n'
           assert text.count(needle)==1, 'unexpected source context'
-          guard=('  prepareFrame(frameState) {\\n'
-                 '    if (this.renderedPixelRatio !== undefined &&\\n'
-                 '        this.renderedPixelRatio !== frameState.pixelRatio) {\\n'
-                 '      this.tileCache_.clear();\\n'
-                 '      this.sourceTileCache_?.clear();\\n'
-                 '    }\\n')
+          guard=('  prepareFrame(frameState) {\n'
+                 '    if (this.renderedPixelRatio !== undefined &&\n'
+                 '        this.renderedPixelRatio !== frameState.pixelRatio) {\n'
+                 '      this.tileCache_.clear();\n'
+                 '      this.sourceTileCache_?.clear();\n'
+                 '    }\n')
           p.write_text(text.replace(needle,guard))
           PY
           git diff -- src/ol/renderer/canvas/TileLayer.js > "$RUNNER_TEMP/openlayers_pixel_ratio_candidate.diff"
