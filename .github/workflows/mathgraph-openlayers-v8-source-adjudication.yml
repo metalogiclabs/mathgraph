@@ -17,6 +17,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .github/workflows/mathgraph-openlayers-v8-source-adjudication.yml
+            experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
@@ -36,6 +37,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2"
           test "$(git hash-object src/ol/source/TileImage.js)" = "635368dc621ea80a531adbef9acb2466e3dd22d8"
           test "$(git hash-object src/ol/source/Tile.js)" != ""
+          git apply --check "$GITHUB_WORKSPACE/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          echo "OPENLAYERS_CANDIDATE_PATCH_APPLIES_TO_PIN"
           echo "OPENLAYERS_EXACT_SOURCE_SHA_GREEN"
       - name: Bounded source-class replays of pixel-ratio and cache scope
         shell: bash
