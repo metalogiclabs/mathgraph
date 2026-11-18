@@ -74,3 +74,50 @@ jobs:
           console.log(JSON.stringify(out,null,2));
           NODE
           echo "OPENLAYERS_SOURCE_BOUNDED_REPLAY_COMPLETE"
+
+      - name: Native canvas-renderer cache across two frame pixel ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ol"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          globalThis.Image=class {
+            src=''; crossOrigin=null;
+            addEventListener(){} removeEventListener(){}
+          };
+          const [{default:TileImage},{default:CanvasTileLayerRenderer},{get:getProjection}]=await Promise.all([
+            import('./src/ol/source/TileImage.js'),
+            import('./src/ol/renderer/canvas/TileLayer.js'),
+            import('./src/ol/proj.js')
+          ]);
+          const p=getProjection('EPSG:3857');
+          const source=new TileImage({
+            projection:p,
+            tileUrlFunction:(coord,ratio)=>'https://example.invalid/'+coord.join('/')+'?ratio='+ratio
+          });
+          const renderer=new CanvasTileLayerRenderer({getSource:()=>source});
+          const frame1={pixelRatio:1,viewState:{projection:p}};
+          const frame2={pixelRatio:2,viewState:{projection:p}};
+          assert.equal(renderer.prepareFrame(frame1),true);
+          const a=renderer.getOrCreateTile(0,0,0,frame1);
+          assert.equal(renderer.prepareFrame(frame2),true);
+          const b=renderer.getOrCreateTile(0,0,0,frame2);
+          const direct2=source.getTile(0,0,0,2,p);
+          const fresh2=new CanvasTileLayerRenderer({getSource:()=>source}).getOrCreateTile(0,0,0,frame2);
+          assert.strictEqual(a,b,'existing canvas renderer reuses same cached tile');
+          assert.notEqual(a.src_,direct2.src_,'uncached source result depends on frame pixel ratio');
+          assert.equal(direct2.src_,fresh2.src_,'fresh renderer makes ratio-2 tile');
+          console.log(JSON.stringify({
+            source_commit:'e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2',
+            frame_pixel_ratios:[1,2],
+            same_renderer_same_cached_tile:a===b,
+            first_url:a.src_,
+            second_frame_cached_url:b.src_,
+            uncached_second_url:direct2.src_,
+            fresh_renderer_second_url:fresh2.src_,
+            implementation_discrepancy_warranted_in_this_fixture:true,
+            production_incidence_warranted:false
+          },null,2));
+          NODE
+          echo "OPENLAYERS_CANVAS_PIXELRATIO_BOUNDED_REPLAY_COMPLETE"
