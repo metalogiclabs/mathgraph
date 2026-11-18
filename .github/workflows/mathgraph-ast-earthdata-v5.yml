@@ -18,6 +18,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             experiments/source_obligation_trial
+            experiments/source_obligation_selection
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -73,6 +74,17 @@ jobs:
           node -e 'const r=require("./openmct_9file_result.json");if(r.scanned_files!==9||r.errors.length||r.source_integrity!=="PER_BLOB_CHECKED")process.exit(1);console.log(JSON.stringify({scope:"Open MCT nine files, retrospective",checked:r.scanned_files,hits:r.hit_count,top3:r.top3.map(x=>({file:x.file,id:x.id,score:x.score,loss_class:x.loss_class,judgment:x.judgment})),size_baseline:r.baseline_size_top3},null,2))'
           node -e 'const fs=require("fs"),{scan}=require("./mathgraph_ast_obligations_v5");const src=fs.readFileSync("openmct_TelemetryAPI.js","utf8");const match="this.#hashOptions(options)",replacement="JSON.stringify(options, this.sanitizeForSerialization.bind(this))";if(src.split(match).length!==2)process.exit(2);const before=scan(src,"src/api/telemetry/TelemetryAPI.js"),after=scan(src.replace(match,replacement),"src/api/telemetry/TelemetryAPI.js");const result={source_ref:"e09bfaf47856b2b7ae2ea74334800b26fd27a41e",scope:"retrospective in-memory contrast only; not full repair",source_changed_in_repo:false,before:before.hotspots,after:after.hotspots};fs.writeFileSync("openmct_inmemory_repair_contrast.json",JSON.stringify(result,null,2));console.log(JSON.stringify({before_count:before.hotspots.length,after_count:after.hotspots.length,before:before.hotspots.map(h=>({id:h.id,score:h.score,loss_class:h.loss_class})),after:after.hotspots.map(h=>({id:h.id,score:h.score,loss_class:h.loss_class}))},null,2))'
           echo "RETROSPECTIVE_FULL_SLICE_AND_INMEMORY_CONTRAST_COMPLETE"
+      - name: Prospective exact-source Cesium v5 trial, no scanner changes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/asttrial"
+          cp "$GITHUB_WORKSPACE/experiments/source_obligation_selection/cesium_20261118_frozen.json" cesium_frozen_manifest.json
+          node -e 'const fs=require("fs"),{trial}=require("./run_source_pinned_trial.js");const m=require("./cesium_frozen_manifest.json");const f=(u,o={})=>fetch(u,{...o,headers:{...(o.headers||{}),...(u.startsWith("https://api.github.com/")?{Authorization:"Bearer "+process.env.GITHUB_TOKEN}:{})}});trial(m,f).then(r=>process.stdout.write(JSON.stringify(r,null,2))).catch(e=>{console.error(e.stack||e);process.exitCode=1})' > cesium_v5_prospective_result.json
+          node -e 'const r=require("./cesium_v5_prospective_result.json");if(r.source_integrity!=="PER_BLOB_CHECKED"||r.scanned_files!==12||r.selected_files!==12||r.errors.length!==0||r.qualified_verifier_runs!==0)process.exit(1);console.log(JSON.stringify({repo:r.repo,ref:r.ref,checked:r.scanned_files,candidates:r.hit_count,top3:r.top3.map(x=>({file:x.file,id:x.id,score:x.score,loss_class:x.loss_class,judgment:x.judgment})),size_baseline:r.baseline_size_top3},null,2))'
+          echo "CESIUM_FROZEN_V5_SOURCE_VERIFIED_ADVISORY_ONLY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -84,4 +96,6 @@ jobs:
             ${{ runner.temp }}/asttrial/openmct_source_positive_control.json
             ${{ runner.temp }}/asttrial/openmct_9file_result.json
             ${{ runner.temp }}/asttrial/openmct_inmemory_repair_contrast.json
+            ${{ runner.temp }}/asttrial/cesium_v5_prospective_result.json
+            ${{ runner.temp }}/asttrial/cesium_frozen_manifest.json
           if-no-files-found: warn
