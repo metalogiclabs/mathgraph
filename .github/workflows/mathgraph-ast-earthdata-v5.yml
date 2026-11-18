@@ -43,11 +43,13 @@ jobs:
           npm install --no-save --no-audit --no-fund typescript@5.8.3
           node --test mathgraph_ast_obligations_v5.test.js mathgraph_ast_obligations_v5.adversarial.test.js run_source_pinned_trial.test.js | tee tests.tap
       - name: Read exact Earthdata files and verify every blob before scanning
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/asttrial"
-          node run_source_pinned_trial.js earthdata_trial_outcome.json > earthdata_trial_result.json
+          node -e 'const fs=require("node:fs");const {trial}=require("./run_source_pinned_trial.js");const m=JSON.parse(fs.readFileSync("earthdata_trial_outcome.json","utf8"));const f=async(u,o={})=>{const headers={...(o.headers||{})};if(u.startsWith("https://api.github.com/"))headers.Authorization="Bearer "+process.env.GITHUB_TOKEN;const r=await fetch(u,{...o,headers});if(!r.ok)console.error("SOURCE_FETCH_FAILURE",r.status,u,(await r.clone().text()).slice(0,350));return r};trial(m,f).then(r=>process.stdout.write(JSON.stringify(r,null,2))).catch(e=>{console.error(e.stack||e);process.exitCode=1})' > earthdata_trial_result.json
           node -e "const r=require('./earthdata_trial_result.json');if(r.source_integrity!=='PER_BLOB_CHECKED'||r.scanned_files!==8||r.selected_files!==8||r.errors.length!==0||r.qualified_verifier_runs!==0) process.exit(1);console.log(JSON.stringify({ref:r.ref,files:r.scanned_files,hotspots:r.hit_count,top3:r.top3.map(h=>({file:h.file,id:h.id,score:h.score,judgment:h.judgment})),baseline:r.baseline_size_top3},null,2));"
           echo "SOURCE_BLOB_INTEGRITY_AND_ADVISORY_BOUNDARY_GREEN"
       - uses: actions/upload-artifact@v4
