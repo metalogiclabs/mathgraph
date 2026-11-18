@@ -1,0 +1,61 @@
+name: MathGraph AST v5 — frozen Earthdata source trial
+on:
+  push:
+    branches:
+      - experiment/ast-obligation-earthdata-v5-20261118
+    paths:
+      - .github/workflows/mathgraph-ast-earthdata-v5.yml
+      - experiments/source_obligation_trial/**
+permissions:
+  contents: read
+jobs:
+  frozen-source-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            experiments/source_obligation_trial
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore checksum-bound frozen payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/asttrial"
+          base64 -d experiments/source_obligation_trial/earthdata_v5_payload.tar.gz.b64 > "$RUNNER_TEMP/asttrial/payload.tar.gz"
+          echo "f71eef7593c714ad68b5cd852d0eeab208514c9b41da5fe4083ba3efc9b34db8  $RUNNER_TEMP/asttrial/payload.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/asttrial/payload.tar.gz" -C "$RUNNER_TEMP/asttrial"
+          cd "$RUNNER_TEMP/asttrial"
+          echo "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743  mathgraph_ast_obligations_v5.js" | sha256sum -c -
+          echo "39b2a6ca210b37b73e34c28f30f5a80a6e81fb7210fb9de582c6c67f663156b3  run_source_pinned_trial.js" | sha256sum -c -
+          node -e "const m=require('./earthdata_trial_outcome.json'); if(m.resolved_source_ref!=='12e6b220e96aa39187831f22f738a405eec75e7f'||m.realized_paths.length!==8) process.exit(1)"
+          sha256sum mathgraph_ast_obligations_v5.js run_source_pinned_trial.js earthdata_trial_outcome.json > source_checksums.txt
+          echo "FROZEN_PAYLOAD_AND_PINS_MATCH"
+      - name: Execute frozen scanner and negative-control tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/asttrial"
+          npm install --no-save --no-audit --no-fund typescript@5.8.3
+          node --test mathgraph_ast_obligations_v5.test.js mathgraph_ast_obligations_v5.adversarial.test.js run_source_pinned_trial.test.js | tee tests.tap
+      - name: Read exact Earthdata files and verify every blob before scanning
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/asttrial"
+          node run_source_pinned_trial.js earthdata_trial_outcome.json > earthdata_trial_result.json
+          node -e "const r=require('./earthdata_trial_result.json');if(r.source_integrity!=='PER_BLOB_CHECKED'||r.scanned_files!==8||r.selected_files!==8||r.errors.length!==0||r.qualified_verifier_runs!==0) process.exit(1);console.log(JSON.stringify({ref:r.ref,files:r.scanned_files,hotspots:r.hit_count,top3:r.top3.map(h=>({file:h.file,id:h.id,score:h.score,judgment:h.judgment})),baseline:r.baseline_size_top3},null,2));"
+          echo "SOURCE_BLOB_INTEGRITY_AND_ADVISORY_BOUNDARY_GREEN"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: earthdata-ast-v5-bounded-result
+          path: |
+            ${{ runner.temp }}/asttrial/earthdata_trial_result.json
+            ${{ runner.temp }}/asttrial/tests.tap
+            ${{ runner.temp }}/asttrial/source_checksums.txt
+          if-no-files-found: warn
