@@ -1,0 +1,82 @@
+name: MathGraph AST v7 - correct local-vs-shared provenance
+on:
+  push:
+    branches:
+      - experiment/ast-obligation-consumer-v7-20261118
+    paths:
+      - .github/workflows/mathgraph-ast-v7-provenance.yml
+permissions:
+  contents: read
+jobs:
+  source-qualified-contrast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            experiments/source_obligation_trial
+            experiments/source_obligation_selection
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore immutable v5/v6 and derive source-pinned v7
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v7"
+          base64 -d experiments/source_obligation_trial/earthdata_v5_payload.tar.gz.b64 > "$RUNNER_TEMP/v7/v5.tar.gz"
+          echo "f71eef7593c714ad68b5cd852d0eeab208514c9b41da5fe4083ba3efc9b34db8  $RUNNER_TEMP/v7/v5.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/v7/v5.tar.gz" -C "$RUNNER_TEMP/v7"
+          cd "$RUNNER_TEMP/v7"
+          echo "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743  mathgraph_ast_obligations_v5.js" | sha256sum -c -
+          base64 -d "$GITHUB_WORKSPACE/experiments/source_obligation_selection/consumer_v6_source.tar.gz.b64" > v6.tar.gz
+          echo "ad60723df4d004637fb6b10da2f4c23b10bfc16a5bfe9891a84bf1a173db7b25  v6.tar.gz" | sha256sum -c -
+          tar -xzf v6.tar.gz
+          echo "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807  mathgraph_ast_obligations_v6.js" | sha256sum -c -
+          python3 "$GITHUB_WORKSPACE/experiments/source_obligation_selection/ast_v7_alias_rebinding_patch.py"
+          cp "$GITHUB_WORKSPACE/experiments/source_obligation_selection/ast_v7_alias_rebinding.test.js" mathgraph_ast_obligations_v7.test.js
+          echo "dff93dd97a6c75b58e13fd176e2de18cd0c03a3ac5bd3104104e10c6a0805011  mathgraph_ast_obligations_v7.js" | sha256sum -c -
+      - name: Run old/new control tests without changing candidate extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/v7"
+          npm install --no-save --no-audit --no-fund typescript@5.8.3
+          node --test mathgraph_ast_obligations_v5.test.js mathgraph_ast_obligations_v5.adversarial.test.js run_source_pinned_trial.test.js mathgraph_ast_obligations_v6.test.js mathgraph_ast_obligations_v7.test.js | tee tests.tap
+      - name: Exact source retrospective contrasts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/v7"
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 "https://raw.githubusercontent.com/nasa/openmct/e09bfaf47856b2b7ae2ea74334800b26fd27a41e/src/api/telemetry/TelemetryAPI.js" -o openmct.js
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 "https://raw.githubusercontent.com/CesiumGS/cesium/4725bdf41ae454b538f2da3cffda88112334f6c1/packages/engine/Source/Core/ArcGISTiledElevationTerrainProvider.js" -o cesium.js
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 "https://raw.githubusercontent.com/mozilla/pdf.js/74b5f3eed80e1449356758c6153f7de788bc5c47/src/core/font_substitutions.js" -o font_substitutions.js
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 "https://raw.githubusercontent.com/mozilla/pdf.js/74b5f3eed80e1449356758c6153f7de788bc5c47/src/core/chunked_stream.js" -o chunked_stream.js
+          test "$(git hash-object openmct.js)" = "944e467fc38a3b27b3e4e77dc6c75be20e34054a"
+          test "$(git hash-object cesium.js)" = "d5504ce85a76e333d337b2aba3db3abc31d6d0a2"
+          test "$(git hash-object font_substitutions.js)" = "768ca1b1aff6d2defc67c47d328875d6faaa7e30"
+          test "$(git hash-object chunked_stream.js)" = "ad6c70b6ca49af1355707f4642b7996735a4289b"
+          node - <<'NODE'
+          const fs=require('fs'),{scan:v6}=require('./mathgraph_ast_obligations_v6'),{scan:v7}=require('./mathgraph_ast_obligations_v7');
+          const paths=['openmct.js','cesium.js','font_substitutions.js','chunked_stream.js'];
+          const x={schema:'mathgraph-v7-source-retrospective',candidate_status:'UNKNOWN',source_integrity:'4_EXACT_GIT_BLOBS',rows:[]};
+          for(const file of paths){const src=fs.readFileSync(file,'utf8'),a=v6(src,file),b=v7(src,file);
+            if(JSON.stringify(a.hotspots.map(q=>q.id).sort())!==JSON.stringify(b.hotspots.map(q=>q.id).sort()))throw Error('DETECTION_CHANGED '+file);
+            if(b.hotspots.some(q=>q.judgment!=='CANDIDATE_ONLY'||q.contract!=='UNKNOWN'))throw Error('UNAUTHORIZED_CLAIM');
+            x.rows.push({file,v6:a.hotspots.map(h=>({id:h.id,score:h.score,demand:h.consumer_demand.classification})),v7:b.hotspots.map(h=>({id:h.id,score:h.score,demand:h.consumer_demand.classification}))});}
+          const f=x.rows.find(z=>z.file==='font_substitutions.js'),o=x.rows.find(z=>z.file==='openmct.js'),c=x.rows.find(z=>z.file==='cesium.js');
+          if(f.v6[0].demand!=='SHARED_EFFECT_RELIANCE'||f.v7[0].demand!=='EXPOSED_VALUE_UNKNOWN')throw Error('PDFJS_NEGATIVE_NOT_REPAIRED');
+          if(o.v7[0].demand!=='SHARED_EFFECT_RELIANCE'||c.v7[0].demand!=='COMPLETION_OR_CONTROL_CANDIDATE')throw Error('REGRESSION');
+          fs.writeFileSync('v7_retrospective_result.json',JSON.stringify(x,null,2));
+          console.log(JSON.stringify({source_pins:4,comparisons:x.rows,qualification:'RETROSPECTIVE_NOT_DISCOVERY'}));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-v7-local-rebinding-retrospective
+          path: |
+            ${{ runner.temp }}/v7/tests.tap
+            ${{ runner.temp }}/v7/v7_retrospective_result.json
+          if-no-files-found: warn
