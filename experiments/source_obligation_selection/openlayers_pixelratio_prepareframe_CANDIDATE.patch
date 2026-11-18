@@ -1,0 +1,19 @@
+diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLayer.js
+--- a/src/ol/renderer/canvas/TileLayer.js
++++ b/src/ol/renderer/canvas/TileLayer.js
+@@ -509,8 +509,15 @@
+    * @return {boolean} Layer is ready to be rendered.
+    * @override
+    */
+   prepareFrame(frameState) {
++    if (
++      this.renderedPixelRatio !== undefined &&
++      this.renderedPixelRatio !== frameState.pixelRatio
++    ) {
++      this.tileCache_.clear();
++      this.sourceTileCache_?.clear();
++    }
+     if (!this.renderedProjection) {
+       this.renderedProjection = frameState.viewState.projection;
+     } else if (frameState.viewState.projection !== this.renderedProjection) {
+       this.tileCache_.clear();
