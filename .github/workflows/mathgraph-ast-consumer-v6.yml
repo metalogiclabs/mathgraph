@@ -39,6 +39,9 @@ jobs:
           echo "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807  mathgraph_ast_obligations_v6.js" | sha256sum -c -
           echo "9493800b1e3005e1bb322641dca695dd43f89f2910160b9131b91e05ec0b5e86  mathgraph_ast_obligations_v6.test.js" | sha256sum -c -
           echo "276e117c317b3dc012bbd8644bee645e5148d28317a0db89e42e2482e3f847bc  run_v6_exact_sources.js" | sha256sum -c -
+          # Runner-only one-token correction; historical failed run remains in Actions.
+          sed -i 's/for(const target of PINN){/for(const target of PINNED){/' run_v6_exact_sources.js
+          echo "cb4e7db8ff5bd0f463ad0751dc6dc59d22442764a8bf0278911ea732256caf9b  run_v6_exact_sources.js" | sha256sum -c -
           echo "FROZEN_V5_V6_SOURCE_READY"
       - name: Test v5 and v6
         shell: bash
