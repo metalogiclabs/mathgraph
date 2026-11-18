@@ -1,0 +1,90 @@
+name: MathGraph AST v7 - frozen unseen JupyterLab trial
+on:
+  push:
+    branches:
+      - experiment/ast-obligation-consumer-v7-20261118
+    paths:
+      - .github/workflows/mathgraph-ast-v7-jupyterlab.yml
+permissions:
+  contents: read
+jobs:
+  source-pinned-unseen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            experiments/source_obligation_trial
+            experiments/source_obligation_selection
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore pinned scanners without altering rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v7trial"
+          base64 -d experiments/source_obligation_trial/earthdata_v5_payload.tar.gz.b64 > "$RUNNER_TEMP/v7trial/v5.tar.gz"
+          echo "f71eef7593c714ad68b5cd852d0eeab208514c9b41da5fe4083ba3efc9b34db8  $RUNNER_TEMP/v7trial/v5.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/v7trial/v5.tar.gz" -C "$RUNNER_TEMP/v7trial"
+          cd "$RUNNER_TEMP/v7trial"
+          echo "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743  mathgraph_ast_obligations_v5.js" | sha256sum -c -
+          base64 -d "$GITHUB_WORKSPACE/experiments/source_obligation_selection/consumer_v6_source.tar.gz.b64" > v6.tar.gz
+          echo "ad60723df4d004637fb6b10da2f4c23b10bfc16a5bfe9891a84bf1a173db7b25  v6.tar.gz" | sha256sum -c -
+          tar -xzf v6.tar.gz
+          echo "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807  mathgraph_ast_obligations_v6.js" | sha256sum -c -
+          python3 "$GITHUB_WORKSPACE/experiments/source_obligation_selection/ast_v7_alias_rebinding_patch.py"
+          cp "$GITHUB_WORKSPACE/experiments/source_obligation_selection/ast_v7_alias_rebinding.test.js" mathgraph_ast_obligations_v7.test.js
+          echo "dff93dd97a6c75b58e13fd176e2de18cd0c03a3ac5bd3104104e10c6a0805011  mathgraph_ast_obligations_v7.js" | sha256sum -c -
+          cp "$GITHUB_WORKSPACE/experiments/source_obligation_selection/jupyterlab_20261118_v7_frozen.json" jupyterlab_frozen.json
+          npm install --no-save --no-audit --no-fund typescript@5.8.3
+          node --test mathgraph_ast_obligations_v5.test.js mathgraph_ast_obligations_v5.adversarial.test.js run_source_pinned_trial.test.js mathgraph_ast_obligations_v6.test.js mathgraph_ast_obligations_v7.test.js | tee tests.tap
+      - name: Scan source-exact JupyterLab metadata-only selected corpus
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/v7trial"
+          node - <<'NODE'
+          const fs=require('fs'),crypto=require('crypto');
+          const {scan:v5}=require('./mathgraph_ast_obligations_v5'),{scan:v7}=require('./mathgraph_ast_obligations_v7');
+          const m=JSON.parse(fs.readFileSync('jupyterlab_frozen.json','utf8'));
+          if(m.repo!=='jupyterlab/jupyterlab'||m.ref!=='8f3ff648c93852298bf202ae3d2d6b6ee18a59eb'||m.selected.length!==12||m.frozen_before_any_source_read!==true)throw Error('MANIFEST_MISMATCH');
+          const gitBlob=s=>{const b=Buffer.from(s,'utf8');return crypto.createHash('sha1').update('blob '+b.length).update(Buffer.from([0])).update(b).digest('hex');};
+          async function req(url){const headers={'Accept':'application/vnd.github+json','User-Agent':'MathGraph-v7-prospective'};if(url.startsWith('https://api.github.com/'))headers.Authorization='Bearer '+process.env.GITHUB_TOKEN;
+            const r=await fetch(url,{headers});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r;}
+          (async()=>{
+            const tree=await(await req('https://api.github.com/repos/'+m.repo+'/git/trees/'+m.ref+'?recursive=1')).json();
+            if(tree.truncated)throw Error('TREE_TRUNCATED');
+            const blobs=new Map(tree.tree.filter(x=>x.type==='blob').map(x=>[x.path,x.sha]));
+            const rows=[],fives=[],sevens=[];
+            for(const f of m.selected){
+              if(blobs.get(f.path)!==f.blob)throw Error('TREE_BLOB_CHANGED '+f.path);
+              const source=await(await req('https://raw.githubusercontent.com/'+m.repo+'/'+m.ref+'/'+f.path)).text();
+              if(gitBlob(source)!==f.blob||Buffer.byteLength(source)!==f.size)throw Error('RAW_SOURCE_CHANGED '+f.path);
+              const a=v5(source,f.path),b=v7(source,f.path);
+              if(JSON.stringify(a.hotspots.map(x=>x.id).sort())!==JSON.stringify(b.hotspots.map(x=>x.id).sort()))throw Error('BASELINE_HOTSPOTS_CHANGED');
+              if(b.hotspots.some(x=>x.contract!=='UNKNOWN'||x.judgment!=='CANDIDATE_ONLY'))throw Error('WARRANT_PROMOTED_FROM_STATIC');
+              rows.push({path:f.path,blob:f.blob,bytes:f.size,methods:a.method_count,original:v5.name,v5_candidates:a.hotspots.length,v7_candidates:b.hotspots.length});
+              fives.push(...a.hotspots.map(x=>({...x,file:f.path})));
+              sevens.push(...b.hotspots.map(x=>({...x,file:f.path})));
+            }
+            fives.sort((a,b)=>b.score-a.score||a.file.localeCompare(b.file));
+            sevens.sort((a,b)=>b.score-a.score||a.file.localeCompare(b.file));
+            const result={schema:'MathGraph-v7-JupyterLab-prospective-v1',repo:m.repo,pin:m.ref,selection:'METADATA_ONLY_PRE_FROZEN',verified_files:rows.length,source_integrity:'12_OF_12_EXACT_GIT_BLOBS',v5_sha256:m.v5,v7_sha256:m.v7,v5_candidates:fives.length,v7_candidates:sevens.length,rows,top3_v5:fives.slice(0,3),top3_v7:sevens.slice(0,3),largest_file_baseline:rows.slice(0,3).map(x=>x.path),verdict:'ADVISORY_UNKNOWN',qualified_verifier_runs:0};
+            fs.writeFileSync('jupyterlab_v7_prospective_result.json',JSON.stringify(result,null,2));
+            console.log(JSON.stringify({ref:m.ref,files:rows.length,v5_candidates:fives.length,v7_candidates:sevens.length,v5_top3:result.top3_v5.map(x=>({file:x.file,line:x.read_sites,score:x.score})),v7_top3:result.top3_v7.map(x=>({file:x.file,line:x.read_sites,score:x.score,demand:x.consumer_demand.classification})),baseline:result.largest_file_baseline}));
+          })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-v7-jupyterlab-frozen-prospective
+          path: |
+            ${{ runner.temp }}/v7trial/tests.tap
+            ${{ runner.temp }}/v7trial/jupyterlab_frozen.json
+            ${{ runner.temp }}/v7trial/jupyterlab_v7_prospective_result.json
+          if-no-files-found: warn
