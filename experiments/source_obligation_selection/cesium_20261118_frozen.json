@@ -1,0 +1,49 @@
+{
+  "schema": "MathGraph-v5-metadata-selected-next-prospective-v1",
+  "selection_frozen_before_source_read": true,
+  "selection_seed": "mathgraph-v5-next-prospective-20261118",
+  "repo_candidates": [
+    "openlayers/openlayers",
+    "CesiumGS/cesium",
+    "openseadragon/openseadragon",
+    "mozilla/pdf.js",
+    "jupyterlab/jupyterlab"
+  ],
+  "repo_choice": "minimum sha256(selection_seed+'|'+lowercase_repo_name)",
+  "repo": "CesiumGS/cesium",
+  "resolved_source_ref": "4725bdf41ae454b538f2da3cffda88112334f6c1",
+  "source_selection": "packages/engine/Source/**/*.js or .ts; path contains cache|tile|store|state|resolver|subscription; excludes test/spec/fixture/node_modules/dist/vendor/generated; size 2000..30000; sort size desc, path asc; choose 12",
+  "eligible_count": 79,
+  "realized_paths": [
+    "packages/engine/Source/Scene/Cesium3DTilesVoxelProvider.js",
+    "packages/engine/Source/Scene/WebMapTileServiceImageryProvider.js",
+    "packages/engine/Source/Scene/ResourceCache.js",
+    "packages/engine/Source/Scene/GaussianSplat3DTileContent.js",
+    "packages/engine/Source/Scene/Vector3DTileClampedPolylines.js",
+    "packages/engine/Source/Core/ArcGISTiledElevationTerrainProvider.js",
+    "packages/engine/Source/Scene/TileBoundingS2Cell.js",
+    "packages/engine/Source/Scene/Cesium3DTilePointFeature.js",
+    "packages/engine/Source/Scene/Vector3DTileContent.js",
+    "packages/engine/Source/Scene/Multiple3DTileContent.js",
+    "packages/engine/Source/Scene/ImplicitTileCoordinates.js",
+    "packages/engine/Source/Scene/Model/createVectorTileBuffersFromModelComponents.js"
+  ],
+  "expected_blob_sha1": {
+    "packages/engine/Source/Scene/Cesium3DTilesVoxelProvider.js": "6165d7cc0a6fcfb80d6bcd231e4b9a62c6567990",
+    "packages/engine/Source/Scene/WebMapTileServiceImageryProvider.js": "d36fd9e36c8cd1ca9b3a285c532b990a821cc5a6",
+    "packages/engine/Source/Scene/ResourceCache.js": "76806485035b7cda0bd33f51586a119b842325b1",
+    "packages/engine/Source/Scene/GaussianSplat3DTileContent.js": "f816dd9ff4be5e46e5ce2c1b56489a54211b05b8",
+    "packages/engine/Source/Scene/Vector3DTileClampedPolylines.js": "1b172a63338eb473220d869af5c78d9c4b4d1835",
+    "packages/engine/Source/Core/ArcGISTiledElevationTerrainProvider.js": "d5504ce85a76e333d337b2aba3db3abc31d6d0a2",
+    "packages/engine/Source/Scene/TileBoundingS2Cell.js": "2104a9e6234b2c582365468db1b8e43856f6e13b",
+    "packages/engine/Source/Scene/Cesium3DTilePointFeature.js": "384004c2d7190fc45963e034f9d4d15513c2fe2d",
+    "packages/engine/Source/Scene/Vector3DTileContent.js": "bbe4e9802029659069f45536481d6d354d2c4024",
+    "packages/engine/Source/Scene/Multiple3DTileContent.js": "be2a8ba413c25c87b038355bac5130a27eb7714e",
+    "packages/engine/Source/Scene/ImplicitTileCoordinates.js": "a603763415ddf44fc9b76c00e29bc07b57032a16",
+    "packages/engine/Source/Scene/Model/createVectorTileBuffersFromModelComponents.js": "97126de3905f705d99034225e187061bc3f8bbe2"
+  },
+  "outcomes": "UNKNOWN until exact source replay",
+  "scanner_sha256": "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743",
+  "ranking_control": "top-3 by file bytes within exactly selected files",
+  "can_promote_truth": false
+}
