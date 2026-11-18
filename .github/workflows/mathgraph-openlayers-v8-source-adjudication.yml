@@ -1,0 +1,76 @@
+name: MathGraph v8 — OpenLayers source-exact consumer adjudication
+on:
+  push:
+    branches:
+      - experiment/ast-obligation-dependency-v8-20261118
+    paths:
+      - .github/workflows/mathgraph-openlayers-v8-source-adjudication.yml
+permissions:
+  contents: read
+jobs:
+  source-class-witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/workflows/mathgraph-openlayers-v8-source-adjudication.yml
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch pinned OpenLayers source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ol"
+          cd "$RUNNER_TEMP/ol"
+          git init -q
+          git remote add origin https://github.com/openlayers/openlayers.git
+          git sparse-checkout init --cone
+          git sparse-checkout set src/ol
+          git fetch -q --depth 1 origin e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2"
+          test "$(git hash-object src/ol/source/TileImage.js)" = "635368dc621ea80a531adbef9acb2466e3dd22d8"
+          test "$(git hash-object src/ol/source/Tile.js)" != ""
+          echo "OPENLAYERS_EXACT_SOURCE_SHA_GREEN"
+      - name: Bounded source-class replays of pixel-ratio and cache scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/ol"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          globalThis.Image=class {
+            src=''; crossOrigin=null;
+            addEventListener(){} removeEventListener(){}
+          };
+          const [{default:TileImage},{default:LRUCache},{get:getProjection}]=await Promise.all([
+            import('./src/ol/source/TileImage.js'),
+            import('./src/ol/structs/LRUCache.js'),
+            import('./src/ol/proj.js')
+          ]);
+          const p=getProjection('EPSG:3857');
+          const src=new TileImage({
+            projection:p,
+            tileUrlFunction:(coord,ratio,projection)=>'https://example.invalid/'+coord.join('/')+'?ratio='+ratio+'&proj='+projection.getCode()
+          });
+          const cache=new LRUCache(16);
+          const a=src.getTileInternal(0,0,0,1,p,cache);
+          const aAgain=src.getTileInternal(0,0,0,1,p,cache);
+          const bSameCache=src.getTileInternal(0,0,0,2,p,cache);
+          const bNewCache=src.getTileInternal(0,0,0,2,p,new LRUCache(16));
+          const directA=src.getTile(0,0,0,1,p);
+          const directB=src.getTile(0,0,0,2,p);
+          assert.equal(a,aAgain,'same ratio cache should reuse');
+          assert.equal(a,bSameCache,'forced internal cache does not distinguish ratio');
+          assert.notEqual(a.src_,bNewCache.src_,'uncached different pixelRatio affects URL');
+          assert.notEqual(directA.src_,directB.src_,'direct public path constructs separate URLs');
+          assert.equal(src.getTilePixelRatio(1),src.getTilePixelRatio(2),'source ratio constant in reprojection path');
+          const out={pin:'e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2',scope:'source classes with stub Image; artificial protected-method calls plus normal direct-path controls',same_ratio_reused:a===aAgain,forced_internal_different_ratios_shared:a===bSameCache,uncached_ratio_urls:[a.src_,bNewCache.src_],direct_public_ratio_urls:[directA.src_,directB.src_],configured_reprojection_pixel_ratio:[src.getTilePixelRatio(1),src.getTilePixelRatio(2)],production_defect_warranted:false};
+          console.log(JSON.stringify(out,null,2));
+          NODE
+          echo "OPENLAYERS_SOURCE_BOUNDED_REPLAY_COMPLETE"
