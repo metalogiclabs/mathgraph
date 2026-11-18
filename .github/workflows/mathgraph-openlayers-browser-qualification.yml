@@ -1,0 +1,96 @@
+name: MathGraph OpenLayers exact-browser pixel-ratio qualification
+
+on:
+  push:
+    branches:
+      - experiment/openlayers-pixelratio-browser-20261118
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-patch-off-on:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout experimental test and candidate repair
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: mathgraph
+      - name: Checkout exact upstream OpenLayers commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: openlayers/openlayers
+          ref: e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          persist-credentials: false
+          path: openlayers
+      - name: Verify source pins and stage independent browser regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C openlayers rev-parse HEAD)" = e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          test "$(git -C openlayers hash-object src/ol/source/TileImage.js)" = 635368dc621ea80a531adbef9acb2466e3dd22d8
+          test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
+          cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch > experiment-checksums.txt
+          echo EXACT_SOURCE_AND_CANDIDATE_PATCH_VERIFIED
+      - name: Prepare upstream browser runner
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: openlayers/.nvmrc
+      - name: Install native dependencies and Chromium
+        working-directory: openlayers
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Baseline must fail only at expected ratio-transition assertion
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -uo pipefail
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-baseline.log"
+          status=${PIPESTATUS[0]}
+          if [ "$status" -eq 0 ]; then
+            echo UNEXPECTED_BASELINE_PASS; exit 1
+          fi
+          if ! grep -Fq MATHGRAPH_RATIO_STALE_CACHE_EVIDENCE "$GITHUB_WORKSPACE/openlayers-baseline.log"; then
+            echo BASELINE_FAILED_FOR_WRONG_REASON; exit 1
+          fi
+          if ! grep -Eq '(2 passed|2 tests passed)' "$GITHUB_WORKSPACE/openlayers-baseline.log"; then
+            echo BASELINE_POSITIVE_CONTROLS_NOT_GREEN; exit 1
+          fi
+          echo EXPECTED_BASELINE_RATIO_MISMATCH_WITH_TWO_GREEN_CONTROLS
+      - name: Apply candidate patch in temporary upstream checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          git -C openlayers diff --check
+          git -C openlayers diff -- src/ol/renderer/canvas/TileLayer.js > openlayers_candidate_applied.diff
+      - name: Run browser repair and existing upstream specs
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vitest run --config test/browser/vitest.config.mjs \
+            test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js \
+            test/browser/spec/ol/renderer/canvas/TileLayer.test.js \
+            test/browser/spec/ol/source/TileImage.test.js \
+            test/browser/spec/ol/Map.test.js \
+            --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-repair.log"
+          echo NATIVE_BROWSER_REPAIR_AND_UPSTREAM_REGRESSION_GREEN
+      - name: Store exact evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openlayers-browser-pixelratio-qualification
+          path: |
+            experiment-checksums.txt
+            openlayers-baseline.log
+            openlayers-repair.log
+            openlayers_candidate_applied.diff
+            mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js
+          if-no-files-found: warn
