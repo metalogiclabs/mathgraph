@@ -1,0 +1,88 @@
+name: MathGraph v6 - prospective PDF.js source selection
+on:
+  push:
+    branches:
+      - experiment/ast-obligation-consumer-demand-v6-20261118
+    paths:
+      - .github/workflows/mathgraph-v6-pdfjs-prospective.yml
+permissions:
+  contents: read
+jobs:
+  prospectively-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            experiments/source_obligation_trial
+            experiments/source_obligation_selection
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore source-hash-qualified v5 and v6
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pdfjs"
+          base64 -d experiments/source_obligation_trial/earthdata_v5_payload.tar.gz.b64 > "$RUNNER_TEMP/pdfjs/v5.tar.gz"
+          echo "f71eef7593c714ad68b5cd852d0eeab208514c9b41da5fe4083ba3efc9b34db8  $RUNNER_TEMP/pdfjs/v5.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/pdfjs/v5.tar.gz" -C "$RUNNER_TEMP/pdfjs"
+          cd "$RUNNER_TEMP/pdfjs"
+          echo "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743  mathgraph_ast_obligations_v5.js" | sha256sum -c -
+          base64 -d "$GITHUB_WORKSPACE/experiments/source_obligation_selection/consumer_v6_source.tar.gz.b64" > v6.tar.gz
+          echo "ad60723df4d004637fb6b10da2f4c23b10bfc16a5bfe9891a84bf1a173db7b25  v6.tar.gz" | sha256sum -c -
+          tar -xzf v6.tar.gz
+          echo "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807  mathgraph_ast_obligations_v6.js" | sha256sum -c -
+          cp "$GITHUB_WORKSPACE/experiments/source_obligation_selection/pdfjs_20261118_frozen_v6.json" pdfjs_frozen.json
+          npm install --no-save --no-audit --no-fund typescript@5.8.3
+      - name: Run frozen v6 against 12 source-integrity-checked files
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/pdfjs"
+          node - <<'NODE'
+          const fs=require('node:fs'),crypto=require('node:crypto');
+          const {scan:v5}=require('./mathgraph_ast_obligations_v5'),{scan:v6}=require('./mathgraph_ast_obligations_v6');
+          const m=JSON.parse(fs.readFileSync('pdfjs_frozen.json','utf8'));
+          const expected='74b5f3eed80e1449356758c6153f7de788bc5c47';
+          if(m.repo!=='mozilla/pdf.js'||m.source_ref!==expected||m.selected.length!==12||m.no_source_read_before_freeze!==true)throw Error('MANIFEST_CHANGED');
+          const blob=s=>{const b=Buffer.from(s,'utf8');return crypto.createHash('sha1').update('blob '+b.length+'\\0').update(b).digest('hex')};
+          async function request(url){const headers={'Accept':'application/vnd.github+json','User-Agent':'mathgraph-frozen-v6-pdfjs'};if(url.startsWith('https://api.github.com/'))headers.Authorization='Bearer '+process.env.GITHUB_TOKEN;
+            const r=await fetch(url,{headers});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r;}
+          (async()=>{
+            const tr=await(await request('https://api.github.com/repos/'+m.repo+'/git/trees/'+m.source_ref+'?recursive=1')).json();
+            if(tr.truncated)throw Error('TREE_TRUNCATED');
+            const t=new Map(tr.tree.filter(x=>x.type==='blob').map(x=>[x.path,x.sha]));
+            const rows=[],five=[],six=[];
+            for(const f of m.selected){if(t.get(f.path)!==f.blob)throw Error('TREE_BLOB_MISMATCH '+f.path);
+              const src=await(await request('https://raw.githubusercontent.com/'+m.repo+'/'+m.source_ref+'/'+f.path)).text();
+              if(blob(src)!==f.blob||Buffer.byteLength(src)!==f.size)throw Error('SOURCE_BLOB_MISMATCH '+f.path);
+              const x=v5(src,f.path),y=v6(src,f.path);
+              if(JSON.stringify(x.hotspots.map(h=>h.id).sort())!==JSON.stringify(y.hotspots.map(h=>h.id).sort()))throw Error('BASELINE_CANDIDATE_CHANGED '+f.path);
+              for(const h of y.hotspots)if(h.contract!=='UNKNOWN'||h.judgment!=='CANDIDATE_ONLY')throw Error('UNAUTHORIZED_PROMOTION');
+              rows.push({path:f.path,blob:f.blob,bytes:f.size,methods:x.method_count,v5_hits:x.hotspots.length,v6_hits:y.hotspots.length});
+              five.push(...x.hotspots.map(h=>({...h,file:f.path})));
+              six.push(...y.hotspots.map(h=>({...h,file:f.path})));
+            }
+            five.sort((a,b)=>b.score-a.score||a.file.localeCompare(b.file));six.sort((a,b)=>b.score-a.score||a.file.localeCompare(b.file));
+            const result={schema:'MathGraph-v6-PDFjs-prospective',source_pin:m.source_ref,manifest_selection:'PREREGISTERED_METADATA_ONLY',source_integrity:'12_OF_12_EXACT_BLOBS',v5_scanner:m.scanner_v5_sha256,v6_scanner:m.scanner_v6_sha256,rows,
+              v5_candidates:five.length,v6_candidates:six.length,
+              top3_v5:five.slice(0,3),top3_v6:six.slice(0,3),
+              top3_largest_files:[...rows].sort((a,b)=>b.bytes-a.bytes).slice(0,3).map(x=>x.path),
+              qualified_verifier_runs:0,judgment:'ADVISORY_UNKNOWN'};
+            fs.writeFileSync('pdfjs_v6_prospective_result.json',JSON.stringify(result,null,2));
+            console.log(JSON.stringify({source_pin:result.source_pin,files:rows.length,v5_hits:five.length,v6_hits:six.length,v5_top3:result.top3_v5.map(x=>({file:x.file,line:x.read_sites,score:x.score})),v6_top3:result.top3_v6.map(x=>({file:x.file,line:x.read_sites,score:x.score,demand:x.consumer_demand.classification})),baseline:result.top3_largest_files}));
+          })().catch(e=>{console.error(e.stack||e);process.exitCode=1});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-pdfjs-v6-prospective-20261118
+          path: |
+            ${{ runner.temp }}/pdfjs/pdfjs_frozen.json
+            ${{ runner.temp }}/pdfjs/pdfjs_v6_prospective_result.json
+          if-no-files-found: warn
