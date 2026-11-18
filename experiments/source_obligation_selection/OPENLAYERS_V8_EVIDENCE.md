@@ -60,3 +60,6 @@ Code evidence:
 ## Smallest useful next experiment
 
 Run the exact-version upstream targeted browser suite with a regression for `Map.setPixelRatio(1→2)` using a pixel-ratio-sensitive URL tile source, compare patch OFF vs ON, and ask a maintainer whether dynamic ratio changes should invalidate renderer tile caches. Only then decide whether to propose an upstream repair. Separately preregister a second new-source comparison against v8 and strong conventional reviewer/size baselines.
+## Later patch artifact and exact application check
+
+The candidate patch is [openlayers_pixelratio_prepareframe_CANDIDATE.patch](https://github.com/metalogiclabs/mathgraph/blob/experiment/ast-obligation-dependency-v8-20261118/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch). [Exact-pinned Actions run #44266475409](https://github.com/metalogiclabs/mathgraph/actions/runs/44266475409) passed `git apply --check` against the pinned OpenLayers source, reran the native ratio-transition reproduction, and passed the bounded candidate-repair and same-context reuse controls. This validates only patch applicability and the exercised fixture; full OpenLayers browser/regression qualification and maintainer authorization remain UNKNOWN.
