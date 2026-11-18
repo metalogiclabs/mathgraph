@@ -61,6 +61,18 @@ jobs:
           test "$(git hash-object openmct_TelemetryAPI.js)" = "944e467fc38a3b27b3e4e77dc6c75be20e34054a"
           node -e 'const fs=require("node:fs"),{scan}=require("./mathgraph_ast_obligations_v5");const src=fs.readFileSync("openmct_TelemetryAPI.js","utf8");const x=scan(src,"src/api/telemetry/TelemetryAPI.js");fs.writeFileSync("openmct_source_positive_control.json",JSON.stringify({repo:"nasa/openmct",commit:"e09bfaf47856b2b7ae2ea74334800b26fd27a41e",blob_sha1:"944e467fc38a3b27b3e4e77dc6c75be20e34054a",retrospective:true,analyzer:x},null,2));console.log(JSON.stringify({methods:x.method_count,loss_return_methods:x.loss_return_methods.length,hotspots:x.hotspots.length,top3:x.hotspots.slice(0,3).map(z=>({id:z.id,score:z.score,judgment:z.judgment}))},null,2));'
           echo "OPENMCT_SOURCE_REPRO_VERIFIED_NOT_AUTO_WARRANTED"
+      - name: Retrospective full nine-file Open MCT slice and causal source contrast
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/asttrial"
+          node -e 'const fs=require("fs");const names=["BatchingWebSocket.js","DefaultMetadataProvider.js","TelemetryAPI.js","TelemetryCollection.js","TelemetryMetadataManager.js","TelemetryRequestInterceptor.js","TelemetryValueFormatter.js","WebSocketWorker.js","constants.js"];fs.writeFileSync("openmct_9file_manifest.json",JSON.stringify({repo:"nasa/openmct",resolved_source_ref:"e09bfaf47856b2b7ae2ea74334800b26fd27a41e",realized_paths:names.map(x=>"src/api/telemetry/"+x)}));'
+          node -e 'const fs=require("fs"),{trial}=require("./run_source_pinned_trial.js");const m=JSON.parse(fs.readFileSync("openmct_9file_manifest.json"));const f=(u,o={})=>fetch(u,{...o,headers:{...(o.headers||{}),...(u.startsWith("https://api.github.com/")?{Authorization:"Bearer "+process.env.GITHUB_TOKEN}:{})}});trial(m,f).then(r=>process.stdout.write(JSON.stringify(r,null,2))).catch(e=>{console.error(e.stack||e);process.exitCode=1})' > openmct_9file_result.json
+          node -e 'const r=require("./openmct_9file_result.json");if(r.scanned_files!==9||r.errors.length||r.source_integrity!=="PER_BLOB_CHECKED")process.exit(1);console.log(JSON.stringify({scope:"Open MCT nine files, retrospective",checked:r.scanned_files,hits:r.hit_count,top3:r.top3.map(x=>({file:x.file,id:x.id,score:x.score,loss_class:x.loss_class,judgment:x.judgment})),size_baseline:r.baseline_size_top3},null,2))'
+          node -e 'const fs=require("fs"),{scan}=require("./mathgraph_ast_obligations_v5");const src=fs.readFileSync("openmct_TelemetryAPI.js","utf8");const match="this.#hashOptions(options)",replacement="JSON.stringify(options, this.sanitizeForSerialization.bind(this))";if(src.split(match).length!==2)process.exit(2);const before=scan(src,"src/api/telemetry/TelemetryAPI.js"),after=scan(src.replace(match,replacement),"src/api/telemetry/TelemetryAPI.js");const result={source_ref:"e09bfaf47856b2b7ae2ea74334800b26fd27a41e",scope:"retrospective in-memory contrast only; not full repair",source_changed_in_repo:false,before:before.hotspots,after:after.hotspots};fs.writeFileSync("openmct_inmemory_repair_contrast.json",JSON.stringify(result,null,2));console.log(JSON.stringify({before_count:before.hotspots.length,after_count:after.hotspots.length,before:before.hotspots.map(h=>({id:h.id,score:h.score,loss_class:h.loss_class})),after:after.hotspots.map(h=>({id:h.id,score:h.score,loss_class:h.loss_class}))},null,2))'
+          echo "RETROSPECTIVE_FULL_SLICE_AND_INMEMORY_CONTRAST_COMPLETE"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -70,4 +82,6 @@ jobs:
             ${{ runner.temp }}/asttrial/tests.tap
             ${{ runner.temp }}/asttrial/source_checksums.txt
             ${{ runner.temp }}/asttrial/openmct_source_positive_control.json
+            ${{ runner.temp }}/asttrial/openmct_9file_result.json
+            ${{ runner.temp }}/asttrial/openmct_inmemory_repair_contrast.json
           if-no-files-found: warn
