@@ -84,6 +84,13 @@ jobs:
             test/browser/spec/ol/Map.test.js \
             --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-repair.log"
           echo NATIVE_BROWSER_REPAIR_AND_UPSTREAM_REGRESSION_GREEN
+      - name: Full upstream Chromium browser suite with candidate applied
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test-browser 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-browser-full.log"
+          echo FULL_UPSTREAM_BROWSER_SUITE_GREEN
       - name: Store exact evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,6 +100,7 @@ jobs:
             experiment-checksums.txt
             openlayers-baseline.log
             openlayers-repair.log
+            openlayers-browser-full.log
             openlayers_candidate_applied.diff
             mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js
           if-no-files-found: warn
