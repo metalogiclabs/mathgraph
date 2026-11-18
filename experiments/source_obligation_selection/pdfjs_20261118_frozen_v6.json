@@ -1,0 +1,76 @@
+{
+  "schema": "MathGraph-exact-source-prospective-v6",
+  "purpose": "prospective evaluation of frozen v6 vs unchanged v5",
+  "repo": "mozilla/pdf.js",
+  "source_ref": "74b5f3eed80e1449356758c6153f7de788bc5c47",
+  "source_metadata_only": true,
+  "selection_rule": "src JS/MJS path; filename contains cache|fetch|transport|document|xref|font|object|stream|network|api; exclude test|spec|vendor|third_party|generated|build|test_utils; 3000<=byte_size<=24000; choose largest 12, tie lexicographic",
+  "eligible_count": 34,
+  "selected": [
+    {
+      "path": "src/core/standard_fonts.js",
+      "size": 23995,
+      "blob": "62617e7ed16a4eaf5e87950686b749ea0f8e3b53"
+    },
+    {
+      "path": "src/scripting_api/field.js",
+      "size": 21988,
+      "blob": "df1027bd80ac5815edd5c99b76d763ff58c16d87"
+    },
+    {
+      "path": "src/display/font_loader.js",
+      "size": 18521,
+      "blob": "cdfda4c82902cafb5d5de6c630cd6c227ab32626"
+    },
+    {
+      "path": "src/core/font_substitutions.js",
+      "size": 18209,
+      "blob": "768ca1b1aff6d2defc67c47d328875d6faaa7e30"
+    },
+    {
+      "path": "src/scripting_api/util.js",
+      "size": 16923,
+      "blob": "1b6b72db9ce8dee99bbaa863aff2ca0513171ca4"
+    },
+    {
+      "path": "src/core/flate_stream.js",
+      "size": 16870,
+      "blob": "14682265a1730e859f30a618656e3e525227298c"
+    },
+    {
+      "path": "src/core/chunked_stream.js",
+      "size": 15177,
+      "blob": "ad6c70b6ca49af1355707f4642b7996735a4289b"
+    },
+    {
+      "path": "src/scripting_api/aform.js",
+      "size": 14588,
+      "blob": "41130a5064ec5f9985d72375bda6d01a06bb4a3b"
+    },
+    {
+      "path": "src/scripting_api/app.js",
+      "size": 14138,
+      "blob": "ce07ed60e0c43c52df4313be15b09e600ad76257"
+    },
+    {
+      "path": "src/core/fonts_utils.js",
+      "size": 14095,
+      "blob": "64ca756015aba0f009df95a6aaed57510d119cdc"
+    },
+    {
+      "path": "src/core/type1_font.js",
+      "size": 13883,
+      "blob": "70bc9a95cd100bf022c0bcd1a4a731a73f145ac1"
+    },
+    {
+      "path": "src/display/network.js",
+      "size": 10640,
+      "blob": "c08c92f4b31845dc29857474212400eaa242c1b4"
+    }
+  ],
+  "no_source_read_before_freeze": true,
+  "scanner_v5_sha256": "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743",
+  "scanner_v6_sha256": "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807",
+  "evidence_boundary": "advisory candidates; false positives, unknowns, and zeros retained; no source-specific changes",
+  "baseline": "rank by raw file size; compare top 3"
+}
