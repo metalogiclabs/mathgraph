@@ -52,6 +52,15 @@ jobs:
           node -e 'const fs=require("node:fs");const {trial}=require("./run_source_pinned_trial.js");const m=JSON.parse(fs.readFileSync("earthdata_trial_outcome.json","utf8"));const f=async(u,o={})=>{const headers={...(o.headers||{})};if(u.startsWith("https://api.github.com/"))headers.Authorization="Bearer "+process.env.GITHUB_TOKEN;const r=await fetch(u,{...o,headers});if(!r.ok)console.error("SOURCE_FETCH_FAILURE",r.status,u,(await r.clone().text()).slice(0,350));return r};trial(m,f).then(r=>process.stdout.write(JSON.stringify(r,null,2))).catch(e=>{console.error(e.stack||e);process.exitCode=1})' > earthdata_trial_result.json
           node -e "const r=require('./earthdata_trial_result.json');if(r.source_integrity!=='PER_BLOB_CHECKED'||r.scanned_files!==8||r.selected_files!==8||r.errors.length!==0||r.qualified_verifier_runs!==0) process.exit(1);console.log(JSON.stringify({ref:r.ref,files:r.scanned_files,hotspots:r.hit_count,top3:r.top3.map(h=>({file:h.file,id:h.id,score:h.score,judgment:h.judgment})),baseline:r.baseline_size_top3},null,2));"
           echo "SOURCE_BLOB_INTEGRITY_AND_ADVISORY_BOUNDARY_GREEN"
+      - name: Retrospective exact-source Open MCT sensitivity control
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/asttrial"
+          curl --fail --silent --show-error --location --retry 3 --max-time 60 "https://raw.githubusercontent.com/nasa/openmct/e09bfaf47856b2b7ae2ea74334800b26fd27a41e/src/api/telemetry/TelemetryAPI.js" -o openmct_TelemetryAPI.js
+          test "$(git hash-object openmct_TelemetryAPI.js)" = "944e467fc38a3b27b3e4e77dc6c75be20e34054a"
+          node -e 'const fs=require("node:fs"),{scan}=require("./mathgraph_ast_obligations_v5");const src=fs.readFileSync("openmct_TelemetryAPI.js","utf8");const x=scan(src,"src/api/telemetry/TelemetryAPI.js");fs.writeFileSync("openmct_source_positive_control.json",JSON.stringify({repo:"nasa/openmct",commit:"e09bfaf47856b2b7ae2ea74334800b26fd27a41e",blob_sha1:"944e467fc38a3b27b3e4e77dc6c75be20e34054a",retrospective:true,analyzer:x},null,2));console.log(JSON.stringify({methods:x.method_count,loss_return_methods:x.loss_return_methods.length,hotspots:x.hotspots.length,top3:x.hotspots.slice(0,3).map(z=>({id:z.id,score:z.score,judgment:z.judgment}))},null,2));'
+          echo "OPENMCT_SOURCE_REPRO_VERIFIED_NOT_AUTO_WARRANTED"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -60,4 +69,5 @@ jobs:
             ${{ runner.temp }}/asttrial/earthdata_trial_result.json
             ${{ runner.temp }}/asttrial/tests.tap
             ${{ runner.temp }}/asttrial/source_checksums.txt
+            ${{ runner.temp }}/asttrial/openmct_source_positive_control.json
           if-no-files-found: warn
