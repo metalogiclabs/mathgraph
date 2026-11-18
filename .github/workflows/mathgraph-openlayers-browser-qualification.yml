@@ -51,8 +51,10 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
+          set +e  # intentional failing regression must not abort workflow
           npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-baseline.log"
           status=${PIPESTATUS[0]}
+          set -e
           if [ "$status" -eq 0 ]; then
             echo UNEXPECTED_BASELINE_PASS; exit 1
           fi
