@@ -1,0 +1,81 @@
+{
+  "schema": "MathGraph-v7-unseen-JupyterLab-prospective",
+  "seed": "mathgraph-v7-unseen-prospective-20261118|",
+  "pool": [
+    "openlayers/openlayers",
+    "openseadragon/openseadragon",
+    "jupyterlab/jupyterlab"
+  ],
+  "chooser": "minimum SHA256(seed + lowercase repo) = jupyterlab/jupyterlab",
+  "repo": "jupyterlab/jupyterlab",
+  "ref": "8f3ff648c93852298bf202ae3d2d6b6ee18a59eb",
+  "selection": "packages JS/TS/JSX/TSX, path contains cache|model|session|service|request|connection|query|registry|widget|document|share|kernel, excludes test|spec|generated|dist|node_modules|.min.|vendor|third_party, 2500<=size<=18000; 12 largest; tie path",
+  "eligible_count": 78,
+  "selected": [
+    {
+      "path": "packages/docregistry/src/default.ts",
+      "size": 17148,
+      "blob": "f6066e628db18825829527778f95ab181dc4a80e"
+    },
+    {
+      "path": "packages/outputarea/src/model.ts",
+      "size": 16766,
+      "blob": "cbbf2b8fd7040313fccb749f3833f8c7f5bef2a1"
+    },
+    {
+      "path": "packages/documentsearch-extension/src/index.ts",
+      "size": 16013,
+      "blob": "19955c7978e35bdc4d225d7cea2a60ce5b7f493c"
+    },
+    {
+      "path": "packages/running-extension/src/kernels.tsx",
+      "size": 15791,
+      "blob": "31ca9f0384f850140457a90c4823597eaab3c470"
+    },
+    {
+      "path": "packages/rendermime/src/widgets.ts",
+      "size": 15046,
+      "blob": "6fee6f5870ba4bb76560beb3f32cc5d764d9cace"
+    },
+    {
+      "path": "packages/observables/src/modeldb.ts",
+      "size": 14394,
+      "blob": "f4a0f29aae1253f902f30acb8dccb6aad5d7f4e9"
+    },
+    {
+      "path": "packages/logconsole/src/widget.ts",
+      "size": 14197,
+      "blob": "500da891dda161ba7babad81c312851aa777faca"
+    },
+    {
+      "path": "packages/services/src/kernel/future.ts",
+      "size": 14038,
+      "blob": "6334388c2c25818036d00359c1ef3e3f4a49d14b"
+    },
+    {
+      "path": "packages/pluginmanager/src/model.ts",
+      "size": 13600,
+      "blob": "bd533c25250840b9de7059ae7e5426e8b9d79381"
+    },
+    {
+      "path": "packages/services/src/kernel/manager.ts",
+      "size": 13342,
+      "blob": "2d8e2435a8b8fe7f0176e5d79e1928ac4d1f4f63"
+    },
+    {
+      "path": "packages/notebook/src/model.ts",
+      "size": 13185,
+      "blob": "3e358317f9ad1cb21ae0888f2a742ad9c0e1b2b8"
+    },
+    {
+      "path": "packages/notebook-extension/src/tool-widgets/activeCellToolWidget.tsx",
+      "size": 12887,
+      "blob": "cbe288ee396eafa7ffb60bce2671c8fbb906681c"
+    }
+  ],
+  "frozen_before_any_source_read": true,
+  "v5": "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743",
+  "v7": "dff93dd97a6c75b58e13fd176e2de18cd0c03a3ac5bd3104104e10c6a0805011",
+  "baseline": "top 3 by largest file, source region nominated by examiner",
+  "status": "PROSPECTIVE_ADVISORY_ONLY"
+}
