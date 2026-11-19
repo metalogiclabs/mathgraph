@@ -3,7 +3,7 @@ name: MathGraph OpenLayers exact-browser pixel-ratio qualification
 on:
   push:
     branches:
-      - experiment/openlayers-pixelratio-browser-20261118
+      - experiment/openlayers-selective-ratio-20261119
   workflow_dispatch:
 
 permissions:
@@ -35,8 +35,11 @@ jobs:
           test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_churn_diagnostic.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js
-          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
-          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch > experiment-checksums.txt
+          cp mathgraph/experiments/source_obligation_selection/openlayers_selective_ratio_browser.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphSelectiveRatio.test.js
+          test "$(git -C openlayers hash-object src/ol/source/UrlTile.js)" = "$(git -C openlayers rev-parse HEAD:src/ol/source/UrlTile.js)"
+          test "$(git -C openlayers hash-object src/ol/source/Tile.js)" = "$(git -C openlayers rev-parse HEAD:src/ol/source/Tile.js)"
+          echo SOURCE_PROVENANCE_ORIGINAL_BLOBS_VERIFIED
+          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_selective_ratio_browser.test.js mathgraph/experiments/source_obligation_selection/apply_openlayers_selective_ratio.py > experiment-checksums.txt
           echo EXACT_SOURCE_AND_CANDIDATE_PATCH_VERIFIED
       - name: Prepare upstream browser runner
         uses: actions/setup-node@v4
@@ -73,13 +76,14 @@ jobs:
           set -euo pipefail
           npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-churn-before.log"
           grep -Fq MATHGRAPH_RATIO_INDEPENDENT_CHURN "$GITHUB_WORKSPACE/openlayers-churn-before.log"
-      - name: Apply candidate patch in temporary upstream checkout
+      - name: Apply selective source-provenance candidate in temporary upstream checkout
         shell: bash
         run: |
           set -euo pipefail
-          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          python3 "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/apply_openlayers_selective_ratio.py" "$GITHUB_WORKSPACE/openlayers"
           git -C openlayers diff --check
-          git -C openlayers diff -- src/ol/renderer/canvas/TileLayer.js > openlayers_candidate_applied.diff
+          git -C openlayers diff -- src/ol/source/UrlTile.js src/ol/source/Tile.js src/ol/source/TileImage.js src/ol/renderer/canvas/TileLayer.js > openlayers_candidate_applied.diff
+          test -s openlayers_candidate_applied.diff
       - name: Run browser repair and existing upstream specs
         working-directory: openlayers
         shell: bash
@@ -87,6 +91,7 @@ jobs:
           set -euo pipefail
           npx vitest run --config test/browser/vitest.config.mjs \
             test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js \
+            test/browser/spec/ol/renderer/canvas/MathGraphSelectiveRatio.test.js \
             test/browser/spec/ol/renderer/canvas/TileLayer.test.js \
             test/browser/spec/ol/source/TileImage.test.js \
             test/browser/spec/ol/Map.test.js \
@@ -106,6 +111,13 @@ jobs:
           set -euo pipefail
           npm run test-browser 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-browser-full.log"
           echo FULL_UPSTREAM_BROWSER_SUITE_GREEN
+      - name: Full upstream pretest lint and types with selective candidate
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run pretest 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-selective-pretest.log"
+          echo UPSTREAM_PRETEST_WITH_SELECTIVE_CANDIDATE_GREEN
       - name: Store exact evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -118,6 +130,9 @@ jobs:
             openlayers-browser-full.log
             openlayers-churn-before.log
             openlayers-churn-after.log
+            openlayers-selective-pretest.log
+            mathgraph/experiments/source_obligation_selection/openlayers_selective_ratio_browser.test.js
+            mathgraph/experiments/source_obligation_selection/apply_openlayers_selective_ratio.py
             openlayers_candidate_applied.diff
             mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js
           if-no-files-found: warn
