@@ -1,0 +1,68 @@
+name: Isolated JUG UUIDv7 native semantic audit
+
+on:
+  push:
+    branches: [research/jug-uuidv7-native-oracle-20261120]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout frozen MathGraph experiment
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact original Java UUID Generator source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: cowtowncoder/java-uuid-generator
+          ref: 12d0258f20b951299be94d589b4935bd791757db
+          path: external/jug
+          persist-credentials: false
+
+      - name: Install original source test runtime
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: external/jug/pom.xml
+
+      - name: Verify original publisher source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C external/jug rev-parse HEAD)" = '12d0258f20b951299be94d589b4935bd791757db'
+          test "$(git hash-object external/jug/README.md)" = '882188d7ef24f7852d1282c144620d4290f89c2a'
+          test "$(git hash-object external/jug/src/main/java/com/fasterxml/uuid/impl/TimeBasedEpochGenerator.java)" = 'fce27744eaf62fc4a46a23294548bffce08fddcd'
+          test "$(git hash-object external/jug/src/main/java/com/fasterxml/uuid/impl/TimeBasedEpochRandomGenerator.java)" = '53b9cbc952089c97b831492b51bbff6e0213bede'
+          test "$(git hash-object external/jug/src/main/java/com/fasterxml/uuid/UUIDComparator.java)" = '7995ac9c3c613c900dbf6857016eae26de2b39a5'
+          printf 'JUG_COMMIT=12d0258f20b951299be94d589b4935bd791757db\n' | tee jug-source-pins.txt
+          printf 'MATHGRAPH_PROBE_COMMIT=%s\n' "$GITHUB_SHA" | tee -a jug-source-pins.txt
+
+      - name: Run original library source with independent field-level tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -D -m 0644 research/assurance/jug-uuidv7-native-20261120/UuidV7SemanticAuditTest.java              external/jug/src/test/java/com/fasterxml/uuid/impl/UuidV7SemanticAuditTest.java
+          cd external/jug
+          mvn -B -ntp -Dtest=UuidV7SemanticAuditTest test 2>&1 | tee ../jug-native-test.log
+
+      - name: Save exact-scope test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: jug-rfc9562-v7-native-bounded
+          path: |
+            jug-source-pins.txt
+            jug-native-test.log
+            external/jug/target/surefire-reports/TEST-com.fasterxml.uuid.impl.UuidV7SemanticAuditTest.xml
+            research/assurance/jug-uuidv7-native-20261120/PROTOCOL.md
+            research/assurance/jug-uuidv7-native-20261120/UuidV7SemanticAuditTest.java
+          if-no-files-found: warn
