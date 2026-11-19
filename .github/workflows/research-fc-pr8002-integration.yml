@@ -1,0 +1,58 @@
+name: DeepMind Erdős 349 source-bridge / PR 8002 compatibility
+
+on:
+  push:
+    branches:
+      - experiment/erdos349-source-bridge-20261120
+    paths:
+      - .github/workflows/research-fc-pr8002-integration.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  merge-compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Freeze upstream source and fetch PR 8002
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/google-deepmind/formal-conjectures.git /tmp/fc-check
+          cd /tmp/fc-check
+          git checkout --detach d8d031d4998c78575159ccab9a7a9e95ce043883
+          test "$(git rev-parse HEAD)" = d8d031d4998c78575159ccab9a7a9e95ce043883
+          test "$(git hash-object FormalConjectures/ErdosProblems/349.lean)" = 899d97aada88f74429bd81f8b4b46f2aef116d9f
+          git fetch origin refs/pull/8002/head:refs/remotes/origin/pr8002
+          test "$(git rev-parse refs/remotes/origin/pr8002)" = 35a302a6ea26ee3c11ed56a17cb03edac211a4e1
+          echo UPSTREAM_PR_HEAD_FROZEN=PASS
+      - name: Nonpublishing merge and source-patch composition
+        shell: bash
+        run: |
+          set -uo pipefail
+          cd /tmp/fc-check
+          git -c user.name=MathGraph-Research -c user.email=research@example.invalid merge --no-commit --no-ff origin/pr8002
+          merge_code=$?
+          echo "PR8002_MERGE_EXIT=$merge_code"
+          if [[ "$merge_code" -ne 0 ]]; then
+            git status --short
+            echo "COMPOSITION_STATUS=UNKNOWN_PR_MERGE_CONFLICT"
+            exit 0
+          fi
+          git apply --check "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-bridge.patch"
+          apply_code=$?
+          echo "SOURCE_BRIDGE_APPLY_EXIT=$apply_code"
+          if [[ "$apply_code" -ne 0 ]]; then
+            echo "COMPOSITION_STATUS=SOURCE_PATCH_CONTEXT_CONFLICT"
+            git diff -- FormalConjectures/ErdosProblems/349.lean
+            exit 0
+          fi
+          git apply "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-bridge.patch"
+          git diff --check
+          echo "COMPOSITION_STATUS=APPLIES_CLEANLY"
+          git diff -- FormalConjectures/ErdosProblems/349.lean
