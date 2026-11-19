@@ -116,6 +116,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # The three experiment-only browser specs have already run unchanged.
+          # Remove only those temporary additions before checking the original
+          # upstream test tree and all patched source files with upstream rules.
+          rm test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js
+          rm test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js
+          rm test/browser/spec/ol/renderer/canvas/MathGraphSelectiveRatio.test.js
           npm run pretest 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-selective-pretest.log"
           echo UPSTREAM_PRETEST_WITH_SELECTIVE_CANDIDATE_GREEN
       - name: Store exact evidence
