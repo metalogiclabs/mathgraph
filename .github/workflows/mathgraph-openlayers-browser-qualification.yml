@@ -3,7 +3,7 @@ name: MathGraph OpenLayers exact-browser pixel-ratio qualification
 on:
   push:
     branches:
-      - experiment/openlayers-selective-ratio-20261119
+      - experiment/openlayers-selective-ratio-v2-20261119
   workflow_dispatch:
 
 permissions:
