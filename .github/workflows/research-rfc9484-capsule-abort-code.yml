@@ -1,0 +1,90 @@
+name: Research RFC9484 capsule-abort HTTP3 error-code handoff
+
+on:
+  push:
+    branches: [research/rfc9484-capsule-abort-code-20261120]
+    paths:
+      - 'research/assurance/rfc9484-abort-code/**'
+      - '.github/workflows/research-rfc9484-capsule-abort-code.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, fetch-depth: 0}
+      - name: Verify research-only source scope
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='014ca58f4eb37cb765f60a3506426235170fe529'
+          subprocess.run(['git','merge-base','--is-ancestor',base,'HEAD'],check=True)
+          changed=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
+          allowed={
+            'research/assurance/rfc9484-abort-code/PROTOCOL.md',
+            'research/assurance/rfc9484-abort-code/abort_code_external_test.go',
+            'research/assurance/rfc9484-abort-code/RESULT.md',
+            '.github/workflows/research-rfc9484-capsule-abort-code.yml'
+          }
+          assert changed<=allowed, f'UNEXPECTED_SOURCE_CHANGE:{sorted(changed-allowed)}'
+          print('RESEARCH_SOURCE_ONLY',len(changed))
+          PY
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: quic-go/connect-ip-go
+          ref: 9ee608a68fbbc6c377d13da4df2a269580b78909
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with: {go-version: '1.26.0'}
+      - name: Verify original public source and exact dependency manifest
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = '9ee608a68fbbc6c377d13da4df2a269580b78909'
+          test "$(git -C upstream hash-object capsule.go)" = '45ca29b4eff3b59deb44e1dbcd1757a7948568fd'
+          test "$(git -C upstream hash-object conn.go)" = 'e988c047bcdba848c3a23114645380a4d4ddf6fb'
+          grep -q 'github.com/quic-go/quic-go v0.65.0' upstream/go.mod
+          go version
+          echo 'PINNED_ORIGINAL_SOURCE_AUTHENTICATED'
+      - name: Run untouched original upstream tests first
+        working-directory: upstream
+        run: |
+          set -euo pipefail
+          go test ./... -count=1 -timeout=180s
+          echo 'ORIGINAL_GO_TEST_SUITE_PASS'
+      - name: Add exactly one untracked diagnostic test, then replay actual Conn cancellation path
+        run: |
+          set -euo pipefail
+          cp research/assurance/rfc9484-abort-code/abort_code_external_test.go upstream/mathgraph_abort_code_test.go
+          test "$(git -C upstream status --porcelain)" = '?? mathgraph_abort_code_test.go'
+          test "$(git -C upstream hash-object conn.go)" = 'e988c047bcdba848c3a23114645380a4d4ddf6fb'
+          test "$(git -C upstream hash-object capsule.go)" = '45ca29b4eff3b59deb44e1dbcd1757a7948568fd'
+          mkdir -p research/assurance/rfc9484-abort-code/artifact
+          (
+            cd upstream
+            go test -count=1 -v -timeout=150s -run '^TestMathGraphRFC9484NativeAbortHandoff$' . \
+              | tee ../research/assurance/rfc9484-abort-code/artifact/native.log
+          )
+          grep 'MATHGRAPH_ABORT_OBSERVED case=malformed_ip_version read=0x107 write=0x107' \
+            research/assurance/rfc9484-abort-code/artifact/native.log
+          grep 'MATHGRAPH_VALID_OBSERVED case=different_specific_protocols_same_range' \
+            research/assurance/rfc9484-abort-code/artifact/native.log
+          printf '%s\n' '9ee608a68fbbc6c377d13da4df2a269580b78909' \
+             > research/assurance/rfc9484-abort-code/artifact/upstream-source-commit.txt
+          printf '%s\n' "$GITHUB_SHA" \
+             > research/assurance/rfc9484-abort-code/artifact/research-head.txt
+          sha256sum research/assurance/rfc9484-abort-code/artifact/native.log \
+            > research/assurance/rfc9484-abort-code/artifact/native-log-sha256.txt
+          echo 'EXACT_ORIGINAL_ERROR_CODE_HANDOFF_REPLAY_PASS_CANDIDATE_SPEC_DISCREPANCY'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: rfc9484-capsule-abort-handoff
+          path: research/assurance/rfc9484-abort-code/artifact
+          retention-days: 30
