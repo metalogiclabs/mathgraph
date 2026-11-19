@@ -1,0 +1,105 @@
+name: Research RFC 9484 connect-ip oracle/source-native qualification
+on:
+  push:
+    branches:
+      - research/connect-ip-rfc9484-independent-oracle-20261120
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rfc9484-selected-upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - name: Checkout isolated MathGraph research harness (read-only)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Generate frozen finite RFC 9484 reference and conventional control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/assurance/connect-ip-rfc9484/oracle.py
+          echo 'f348a61ed431b7edf168024f2cf6c53762bd18fdf3b069eade6ff28ace1d0224  research/assurance/connect-ip-rfc9484/oracle_cases.json' | sha256sum --check -
+          python3 - <<'PY'
+          import json
+          x=json.load(open('research/assurance/connect-ip-rfc9484/ORACLE_RESULT.json'))
+          assert x['count']==10337
+          assert x['verdicts']=={'MUST_ABORT':8664,'NO_MANDATORY_ABORT':1387,'OPTIONAL_ABORT':286}
+          assert x['conventional_script_tie']==10337
+          print('INDEPENDENT_REFERENCE_AND_CONVENTIONAL_SCRIPT_TIE',x['count'])
+          PY
+
+      - name: Checkout original selected upstream at exact source revision
+        uses: actions/checkout@v4
+        with:
+          repository: quic-go/connect-ip-go
+          ref: 9ee608a68fbbc6c377d13da4df2a269580b78909
+          path: upstream
+          persist-credentials: false
+
+      - name: Setup Go toolchain declared by original source
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: upstream/go.mod
+          cache: false
+
+      - name: Bind native source identity to original repository bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = 9ee608a68fbbc6c377d13da4df2a269580b78909
+          test "$(git -C upstream hash-object capsule.go)" = 45ca29b4eff3b59deb44e1dbcd1757a7948568fd
+          echo 'ORIGINAL_UPSTREAM_SOURCE_AND_CAPSULE_BLOB_PIN_MATCH'
+
+      - name: Original upstream native test suite baseline
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          go version
+          go test ./... -count=1 -timeout=180s
+          echo 'ORIGINAL_GO_TESTS_PASSED_NO_RFC_CONFORMANCE_CLAIM'
+
+      - name: Install temporary external test helper without changing tracked upstream source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/assurance/connect-ip-rfc9484/rfc9484_external_test.go upstream/rfc9484_external_test.go
+          test "$(git -C upstream hash-object capsule.go)" = 45ca29b4eff3b59deb44e1dbcd1757a7948568fd
+          test "$(git -C upstream status --porcelain)" = '?? rfc9484_external_test.go'
+          echo 'ONLY_UNTRACKED_TEST_HELPER_ADDED_TO_EPHEMERAL_CHECKOUT'
+
+      - name: Original native route validator and wire parser against external finite oracle
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          export RFC9484_ORACLE_CORPUS='../research/assurance/connect-ip-rfc9484/oracle_cases.json'
+          go test -run '^TestExternalRFC9484RouteOrder$' -count=1 -timeout=180s -v . | tee ../rfc9484-native-log.txt
+          echo 'BOUNDED_NATIVE_RFC9484_ORACLE_REPLAY_COMPLETED'
+
+      - name: Negative provenance controls and unchanged original source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp research/assurance/connect-ip-rfc9484/oracle_cases.json /tmp/tampered-oracle.json
+          printf '%s' 'in-band tamper' >> /tmp/tampered-oracle.json
+          if echo 'f348a61ed431b7edf168024f2cf6c53762bd18fdf3b069eade6ff28ace1d0224  /tmp/tampered-oracle.json' | sha256sum --check -; then
+            echo 'TAMPERED_ORACLE_UNEXPECTEDLY_ACCEPTED'; exit 1
+          fi
+          test "$(git -C upstream hash-object capsule.go)" = 45ca29b4eff3b59deb44e1dbcd1757a7948568fd
+          echo 'MUTATED_ORACLE_REJECTED_AND_ORIGINAL_GO_SOURCE_UNCHANGED'
+
+      - name: Save scoped study logs (not owner approval)
+        uses: actions/upload-artifact@v4
+        with:
+          name: connect-ip-rfc9484-finite-source-native-v01
+          path: |
+            research/assurance/connect-ip-rfc9484/ORACLE_RESULT.json
+            research/assurance/connect-ip-rfc9484/oracle_cases.json
+            rfc9484-native-log.txt
+          retention-days: 30
