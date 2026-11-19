@@ -1,7 +1,7 @@
+import L4YAML.Schema.Schema
 /-! Read-only source-native diagnostic of the actual L4YAML Core Schema resolver.
 The external YAML tag expectations live in the frozen research protocol, not here.
 This emits actual constructor tags from L4YAML.Schema.resolveImplicit. -/
-import L4YAML.Schema.Schema
 
 open L4YAML.Schema
 
