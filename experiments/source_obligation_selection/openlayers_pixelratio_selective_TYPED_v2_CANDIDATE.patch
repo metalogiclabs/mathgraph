@@ -68,7 +68,7 @@ diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLa
  import LRUCache from '../../structs/LRUCache.js';
  import {
    createOrUpdate as createTileCoord,
-@@ -520,7 +521,36 @@
+@@ -520,7 +521,42 @@
      const source = this.getLayer().getSource();
      if (!source) {
        return false;
@@ -92,7 +92,13 @@ diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLa
 +        const projection = sourceProjection || viewProjection;
 +        for (const cacheKey of this.tileCache_.getKeys()) {
 +          const tile = this.tileCache_.peek(cacheKey);
-+          if (!source.canReuseTileAtRatio(tile, frameState.pixelRatio, projection)) {
++          if (
++            !source.canReuseTileAtRatio(
++              tile,
++              frameState.pixelRatio,
++              projection,
++            )
++          ) {
 +            this.tileCache_.remove(cacheKey).dispose();
 +          }
 +        }
