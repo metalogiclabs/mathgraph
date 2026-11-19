@@ -43,6 +43,7 @@ jobs:
           else
             echo COMBINED_RESULT=MERGE_CONFLICT
             git status --short
+            awk '/^<<<<<<< HEAD/{p=1; print "CONFLICT_CONTEXT_BEGIN"} p{print} /^>>>>>>>/{p=0; print "CONFLICT_CONTEXT_END"}' FormalConjectures/ErdosProblems/349.lean
             grep '^<<<<<<<\|^=======\|^>>>>>>>' FormalConjectures/ErdosProblems/349.lean || true
           fi
           echo MERGE_PROBE_COMPLETED=YES
