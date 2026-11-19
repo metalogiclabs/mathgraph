@@ -51,6 +51,7 @@ describe('MathGraph ratio-independent cache churn diagnostic', function () {
         retained_same_tile_objects: retained,
       };
       console.log('MATHGRAPH_RATIO_INDEPENDENT_CHURN ' + JSON.stringify(result));
+      assert.isTrue(retained, 'MATHGRAPH_RATIO_INDEPENDENT_TILES_RECREATED');
       assert.strictEqual(map.getPixelRatio(), 2);
       assert.isAbove(keysAfter.length, 0, 'CHURN_DIAGNOSTIC_NO_FINAL_TILES');
     } finally {
