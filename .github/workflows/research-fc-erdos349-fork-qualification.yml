@@ -1,0 +1,83 @@
+name: DeepMind Erdős 349 fork PR candidate qualification
+
+on:
+  push:
+    branches:
+      - experiment/erdos349-source-bridge-20261120
+    paths:
+      - .github/workflows/research-fc-erdos349-fork-qualification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fork-qualified:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout evidence harness (not the upstream repo)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Reproduce exact fork candidate and one-file change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/metalogiclabs/formal-conjectures.git /tmp/fc-fork
+          cd /tmp/fc-fork
+          git fetch --depth=3 origin ae9925af195bf2acbbcb15c4077acd7bf0eda4af
+          git checkout --detach ae9925af195bf2acbbcb15c4077acd7bf0eda4af
+          test "$(git rev-parse HEAD)" = ae9925af195bf2acbbcb15c4077acd7bf0eda4af
+          test "$(git hash-object FormalConjectures/ErdosProblems/349.lean)" = 6fc93b5cd97016ebcbea8648c8fb373c3da7cd6f
+          test "$(cat lean-toolchain)" = leanprover/lean4:v4.33.1
+          git diff --check d8d031d4998c78575159ccab9a7a9e95ce043883 HEAD
+          changes="$(git diff --name-only d8d031d4998c78575159ccab9a7a9e95ce043883 HEAD)"
+          test "$changes" = FormalConjectures/ErdosProblems/349.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          x=Path('FormalConjectures/ErdosProblems/349.lean').read_text()
+          assert 'theorem erdos_349 :' in x and 'IsGoodPairIndexed t α} = erdos_349.answer' in x
+          assert 'def IsGoodPair (t α : ℝ) : Prop :=' in x
+          assert 'theorem integer_isGoodPair_iff' in x and 'IsGoodPair (t : ℝ) (α : ℝ) ↔ t = 1 ∧ α = 2' in x
+          assert 'theorem isGoodPairIndexed_one_one : IsGoodPairIndexed 1 1' in x
+          assert '[Gr64e]' in x and '[ErGr80]' in x
+          print('SOURCE_DOC_AND_SEMANTIC_PINS=PASS')
+          PY
+          echo "EXACT_FORK_COMMIT_AND_SCOPE=PASS"
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail -L -sS https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build fork module with warnings as errors
+        shell: bash
+        working-directory: /tmp/fc-fork
+        run: |
+          set -euo pipefail
+          lean --version
+          lake exe cache get
+          lake --wfail build 'FormalConjectures.ErdosProblems.«349»'
+          echo "FORK_LEAN_MODULE_BUILD=PASS"
+      - name: Check in-repository test and independent witnesses
+        shell: bash
+        working-directory: /tmp/fc-fork
+        run: |
+          set -euo pipefail
+          cat >/tmp/fork349-scope.lean <<'LEAN'
+          import FormalConjectures.ErdosProblems.«349»
+          /-! Inspect the types and exact axiom closure of the new in-repo guard. -/
+          #check Erdos349.erdos_349
+          #check Erdos349.IsGoodPair
+          #check Erdos349.IsGoodPairIndexed
+          #print axioms Erdos349.isGoodPairIndexed_one_one
+          LEAN
+          lake env lean /tmp/fork349-scope.lean | tee /tmp/fork349-axioms.log
+          grep -F "Erdos349.isGoodPairIndexed_one_one" /tmp/fork349-axioms.log
+          if grep -F 'sorryAx' /tmp/fork349-axioms.log; then exit 1; fi
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/semantic-separation.lean" | tee /tmp/semantic-separation.log
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-auxiliary.lean" | tee /tmp/source-auxiliary.log
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-integer-classification.lean" | tee /tmp/integer-classification.log
+          if grep -F 'sorryAx' /tmp/semantic-separation.log /tmp/source-auxiliary.log /tmp/integer-classification.log; then exit 1; fi
+          echo "FORK_LEAN_AXIOM_AND_WITNESS_CHECKS=PASS"
