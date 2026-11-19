@@ -1,0 +1,65 @@
+name: MathGraph OpenLayers selective repair static qualification
+
+on:
+  push:
+    branches:
+      - experiment/openlayers-pixelratio-selective-20261119
+    paths:
+      - .github/workflows/mathgraph-openlayers-selective-static.yml
+      - experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-upstream-pretest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout experimental candidate (no upstream write)
+        uses: actions/checkout@v4
+        with:
+          path: mathgraph
+          persist-credentials: false
+      - name: Checkout exact upstream OpenLayers version
+        uses: actions/checkout@v4
+        with:
+          repository: openlayers/openlayers
+          ref: e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          persist-credentials: false
+          path: openlayers
+      - name: Verify pinned blobs and exact patch applicability
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C openlayers rev-parse HEAD)" = e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
+          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
+          git -C openlayers diff --check
+          git -C openlayers diff -- src/ol/renderer/canvas/TileLayer.js > candidate-applied.diff
+          echo PINNED_SOURCE_AND_SELECTIVE_PATCH_APPLIED
+      - name: Use upstream Node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: openlayers/.nvmrc
+      - name: Install exact upstream dependencies
+        working-directory: openlayers
+        run: npm ci --no-audit --no-fund
+      - name: Run upstream pretest — lint and TypeScript checks
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run pretest 2>&1 | tee "$GITHUB_WORKSPACE/upstream-selective-pretest.log"
+          echo OPENLAYERS_SELECTIVE_PRETEST_GREEN
+      - name: Preserve evidence regardless of result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openlayers-selective-static-qualification
+          path: |
+            candidate-applied.diff
+            upstream-selective-pretest.log
+          if-no-files-found: warn
