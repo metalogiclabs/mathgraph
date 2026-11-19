@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/research-fc-erdos349-20261120.yml
       - research/deepmind/erdos349/source-auxiliary.lean
+      - research/deepmind/erdos349/source-integer-classification.lean
   workflow_dispatch:
 
 permissions:
@@ -190,3 +191,11 @@ jobs:
           set -euo pipefail
           lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-auxiliary.lean"
           echo "LEAN_SOURCE_AUXILIARY=PASS"
+
+      - name: Lean integer-pair classification (no sorry)
+        working-directory: /tmp/fc
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-integer-classification.lean"
+          echo "LEAN_INTEGER_CLASSIFICATION=PASS"
