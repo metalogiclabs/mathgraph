@@ -74,6 +74,8 @@ edit("src/ol/source/Tile.js", [
   /**
    * Whether the source warrants reusing cached tiles after a map pixel-ratio change.
    * The conservative default applies to unknown source implementations.
+   * @param {number} beforePixelRatio Earlier map pixel ratio.
+   * @param {number} afterPixelRatio New map pixel ratio.
    * @return {boolean} Reuse is justified for the source.
    */
   canReuseCachedTilesAcrossPixelRatios(beforePixelRatio, afterPixelRatio) {
