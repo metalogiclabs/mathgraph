@@ -61,7 +61,7 @@ jobs:
           name: jug-rfc9562-v7-native-bounded
           path: |
             jug-source-pins.txt
-            jug-native-test.log
+            external/jug-native-test.log
             external/jug/target/surefire-reports/TEST-com.fasterxml.uuid.impl.UuidV7SemanticAuditTest.xml
             research/assurance/jug-uuidv7-native-20261120/PROTOCOL.md
             research/assurance/jug-uuidv7-native-20261120/UuidV7SemanticAuditTest.java
