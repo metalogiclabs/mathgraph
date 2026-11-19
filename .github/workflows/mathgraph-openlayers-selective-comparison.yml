@@ -1,0 +1,108 @@
+name: MathGraph OpenLayers competing selective repair falsifier
+
+on:
+  push:
+    branches:
+      - experiment/openlayers-selective-comparison-20261119
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-full-observation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: mathgraph
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: openlayers/openlayers
+          ref: e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          path: openlayers
+          persist-credentials: false
+      - name: Pin actual source and comparison patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C openlayers rev-parse HEAD)" = e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
+          test "$(git -C mathgraph hash-object experiments/source_obligation_selection/openlayers_url_revalidation_competitor.patch)" = be2b260ba153581fee76432c03d89d5e543e0a88
+          cp mathgraph/experiments/source_obligation_selection/openlayers_loader_observation_adversary.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphLoaderObservation.test.js
+          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_loader_observation_adversary.test.js mathgraph/experiments/source_obligation_selection/apply_openlayers_selective_ratio.py mathgraph/experiments/source_obligation_selection/openlayers_url_revalidation_competitor.patch > comparison-checksums.txt
+          echo ORIGINAL_AND_COMPETITOR_SOURCE_PINS_GREEN
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: openlayers/.nvmrc
+      - name: Install exact upstream browser dependencies
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Source-original browser control must be red for loaded observation
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphLoaderObservation.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/observation-original.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -ne 0
+          grep -Fq CUSTOM_LOADER_STALE_AFTER_RATIO "$GITHUB_WORKSPACE/observation-original.log"
+          grep -Eq '(2 passed|2 tests passed)' "$GITHUB_WORKSPACE/observation-original.log"
+          echo SOURCE_ORIGINAL_RED_ONLY_AS_EXPECTED
+      - name: Apply unchanged competing URL-revalidation patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_url_revalidation_competitor.patch"
+          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_url_revalidation_competitor.patch"
+          git -C openlayers diff --check
+      - name: Competing URL-equality candidate must fail loaded-image observation
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphLoaderObservation.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/observation-url-equality.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          test "$status" -ne 0
+          grep -Fq CUSTOM_LOADER_STALE_AFTER_RATIO "$GITHUB_WORKSPACE/observation-url-equality.log"
+          grep -Eq '(2 passed|2 tests passed)' "$GITHUB_WORKSPACE/observation-url-equality.log"
+          echo COMPETING_URL_ONLY_OBSERVATION_REJECTED_BOUNDED
+      - name: Restore exact upstream source and apply strengthened provenance candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C openlayers checkout -- src/ol/renderer/canvas/TileLayer.js
+          test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
+          python3 "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/apply_openlayers_selective_ratio.py" "$GITHUB_WORKSPACE/openlayers"
+          git -C openlayers diff --check
+          git -C openlayers diff -- src/ol/source/Tile.js src/ol/source/UrlTile.js src/ol/source/TileImage.js src/ol/renderer/canvas/TileLayer.js > source_provenance_candidate.diff
+      - name: V2 provenance candidate must satisfy complete observed image
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphLoaderObservation.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/observation-provenance-v2.log"
+          grep -Eq '(3 passed|3 tests passed)' "$GITHUB_WORKSPACE/observation-provenance-v2.log"
+          echo PROVENANCE_V2_FULL_OBSERVATION_GREEN
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openlayers-selective-candidate-head-to-head
+          path: |
+            comparison-checksums.txt
+            observation-original.log
+            observation-url-equality.log
+            observation-provenance-v2.log
+            source_provenance_candidate.diff
+            mathgraph/experiments/source_obligation_selection/openlayers_loader_observation_adversary.test.js
+          if-no-files-found: warn
