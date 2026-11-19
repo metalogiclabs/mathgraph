@@ -1,0 +1,145 @@
+{
+  "protocol_commit": "d1d71be07cf6fb45686ffe270014ffe603fb8962",
+  "registry_commit": "cdd107021c20428647db0699c33d6cb1f717474a",
+  "tree_sha": "f4005bbe6406d83b414112624b2a3d6cf461aa44",
+  "registry_entries": 1408,
+  "ascii": true,
+  "seed_prefix": "MathGraph-OSSFuzz-eligibility-2026-11-20-v0.5\\0",
+  "disjoint_exclusion": [
+    "aspectj",
+    "cpp-httplib",
+    "flex",
+    "grpc-swift",
+    "jaxb",
+    "libexif",
+    "mariadb-connector-j",
+    "openapi-schema-validator",
+    "protoc-gen-validate",
+    "rust-regex",
+    "teleport",
+    "wolfboot"
+  ],
+  "selection": [
+    {
+      "id": "croniter",
+      "hash": "00659064ef3649276ae07232dfa63b7db00e122f79d588159162e1aa083183b4",
+      "rank": 1
+    },
+    {
+      "id": "javassist",
+      "hash": "007c045ed438c2195e81b4584af207daed93fa3ca9beb861cb5f95a040f8a146",
+      "rank": 2
+    },
+    {
+      "id": "apache-commons-io",
+      "hash": "00cb374fb5828958254bcebf72ea6a3b23c1d45f1fb717a6ff89a0f387bb46d5",
+      "rank": 3
+    },
+    {
+      "id": "crosvm",
+      "hash": "01056128dd9df447f1358ad36869304f8a6497c842413944bd66d919fcfdf350",
+      "rank": 4
+    },
+    {
+      "id": "sqlite-jdbc",
+      "hash": "012139c48e78fac5c0b71b6ec74c196e713909a88e38ec4bc862c4862827632d",
+      "rank": 5
+    },
+    {
+      "id": "inih",
+      "hash": "0150fb310885b661c74bdbac86f321d88f8e2dd2109b810eba176898cbda19cb",
+      "rank": 6
+    },
+    {
+      "id": "lcms",
+      "hash": "016b7a79e87b5bc774d43ea2b25a31118675b1cab1eada21ba782023152b9fca",
+      "rank": 7
+    },
+    {
+      "id": "jedis",
+      "hash": "017b394974a266f5f58bcdae5cc76d9c08c9a224992c10507388325b7d63c11a",
+      "rank": 8
+    },
+    {
+      "id": "gcloud-error-py",
+      "hash": "02516516a05500892efc7c6dd9480e5067220080af7d3d8789f215ade5749d76",
+      "rank": 9
+    },
+    {
+      "id": "spring-data-redis",
+      "hash": "026b8c504ea19cad4ccdeb81a8f94a909557d9bc856fefa56cd21a963fed7961",
+      "rank": 10
+    },
+    {
+      "id": "tornado",
+      "hash": "0270b42e0e094e33a2aed33491d6ad32ec753daa6b02b92b6cda67e91d628d25",
+      "rank": 11
+    },
+    {
+      "id": "pydantic",
+      "hash": "02793051c622099c116562dff7c79fa0f95bd94ba5e618f9807313f14624ca0c",
+      "rank": 12
+    },
+    {
+      "id": "kimageformats",
+      "hash": "0293652c1f32900426b34f836c09c4658fe1ca68f03335f2872cde89fb378e6a",
+      "rank": 13
+    },
+    {
+      "id": "g-api-auth-library-python",
+      "hash": "0297d52728a46646b10687553e5ecf11e0d3fb2258442e9bb93072a87f7e98b7",
+      "rank": 14
+    },
+    {
+      "id": "apache-commons-collections",
+      "hash": "039f65e3b30b734ef3294e7d5246b6dd3fb8c424b2ba1b58899813fe587b5fcb",
+      "rank": 15
+    },
+    {
+      "id": "wireshark",
+      "hash": "03ebdb738c64a3dd6a35e61e29df9555fce007e7aad93354e61e554a8d1281cf",
+      "rank": 16
+    },
+    {
+      "id": "nghttp2",
+      "hash": "0420663e1ae21f04a79e75c881433e43eeeea1089dc84f7660583a2908db3a3f",
+      "rank": 17
+    },
+    {
+      "id": "iniparser",
+      "hash": "044b36349313d952d13d20caed2126d7980826a269bce6344287851a1d4b5848",
+      "rank": 18
+    },
+    {
+      "id": "istio-ztunnel",
+      "hash": "04edf5c314c65fa72b8500fe7c63cdebcb336334defb76e39d4dec4e79028c67",
+      "rank": 19
+    },
+    {
+      "id": "janino",
+      "hash": "05012c3575771513eb7e04e4581d2d26163115dda2c6412bc382700830b989ef",
+      "rank": 20
+    },
+    {
+      "id": "libstdcpp",
+      "hash": "0504a0e2e222f8b3e5e3540e1f6f7dd229227959bd2187ea8da70184fb729775",
+      "rank": 21
+    },
+    {
+      "id": "symphonia",
+      "hash": "0516e0d096a4f53f68861baccdfd9d3e6436e52086a7218e70ee0e19b78c83ac",
+      "rank": 22
+    },
+    {
+      "id": "nccl",
+      "hash": "0614979138539c200cee4ffa8f4153e665184b7ee52c8611ed19442e81b04a87",
+      "rank": 23
+    },
+    {
+      "id": "uriparser",
+      "hash": "062142bbefe0cf93acefa3a8543de9bbd12745ae678c8ab3950f28d8f4269e0b",
+      "rank": 24
+    }
+  ],
+  "qualifications": "NOT_YET_SCREENED"
+}
