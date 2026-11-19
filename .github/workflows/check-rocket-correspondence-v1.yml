@@ -2,7 +2,7 @@ name: Check rocket correspondence — source-only qualification
 
 on:
   push:
-    branches: [research/check-rocket-correspondence-v1-20261120]
+    branches: [research/check-rocket-correspondence-v1-20261120, research/check-rocket-commonmode-v1-20261120]
   pull_request:
     paths:
       - 'experiments/check-rocket-correspondence-v1/**'
@@ -31,6 +31,7 @@ jobs:
           allowed={
             "experiments/check-rocket-correspondence-v1/rocket_profile.py",
             "experiments/check-rocket-correspondence-v1/test_rocket_profile.py",
+            "experiments/check-rocket-correspondence-v1/test_cross_boundary_warrant.py",
             "experiments/check-rocket-correspondence-v1/README.md",
             ".github/workflows/check-rocket-correspondence-v1.yml",
           }
@@ -46,13 +47,14 @@ jobs:
           python3 -m compileall -q experiments/check-rocket-correspondence-v1/
           python3 -m unittest discover -v \
             -s experiments/check-rocket-correspondence-v1 \
-            -p 'test_rocket_profile.py'
+            -p 'test_*.py'
       - name: Source-only artifact identity for review
         run: |
           mkdir -p /tmp/rocket-profile
           git rev-parse HEAD > /tmp/rocket-profile/source-commit.txt
           sha256sum experiments/check-rocket-correspondence-v1/rocket_profile.py \
             experiments/check-rocket-correspondence-v1/test_rocket_profile.py \
+            experiments/check-rocket-correspondence-v1/test_cross_boundary_warrant.py \
             > /tmp/rocket-profile/source-digests.txt
           printf '%s\n' 'OVERALL=UNKNOWN' \
             'SEMANTIC=FINITE_ORACLE_ONLY' \
