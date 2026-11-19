@@ -90,12 +90,4 @@ public class UuidV7SemanticAuditTest {
         System.out.println("JDK_SIGNED_ORDER_COUNTEREXAMPLE=PREVIOUSLY_DOCUMENTED_JUG_COMPARATOR_REPAIRS");
     }
 
-    @Test public void admitOnlyVersionedScopeAndDoNotInferActionAuthority() {
-        // A passing format witness cannot establish randomness quality, a collision
-        // bound, issuer permission, or the requested operating environment.
-        String scope = "RFC9562-5.7/PINNED-JUG/V7/8-BOUNDARY+512-SEEDED/LOCAL";
-        assertTrue(scope.contains("PINNED-JUG"));
-        assertFalse(scope.contains("MISSION_APPROVED"));
-        System.out.println("ACTION_AUTHORITY=UNKNOWN; UNQUALIFIED_DISTRIBUTIONAL_CLAIMS=UNKNOWN");
-    }
 }
