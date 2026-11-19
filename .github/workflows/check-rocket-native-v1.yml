@@ -1,0 +1,149 @@
+name: Check rocket FRET to C2PO to native R2U2 — isolated
+
+on:
+  push:
+    branches: [research/check-rocket-native-v1-20261120]
+  pull_request:
+    paths:
+      - 'experiments/check-rocket-native-v1/**'
+      - '.github/workflows/check-rocket-native-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, fetch-depth: 0}
+      - name: Freeze source and prevent changes to the qualified Check pilot
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='4a766d7fb74b76f6c0c3a92fa3ab5db25afdfa40'
+          subprocess.run(['git','merge-base','--is-ancestor',base,'HEAD'],check=True)
+          changes=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
+          allowed={'.github/workflows/check-rocket-native-v1.yml',
+                   'experiments/check-rocket-native-v1/export_rocket_native.mjs',
+                   'experiments/check-rocket-native-v1/native_replay.py',
+                   'experiments/check-rocket-native-v1/qualify_native.py',
+                   'experiments/check-rocket-native-v1/test_native_contract.py',
+                   'experiments/check-rocket-native-v1/README.md'}
+          assert changes<=allowed, f'UNAPPROVED_SOURCE_SCOPE: {sorted(changes-allowed)}'
+          print('ROCKET_NATIVE_SOURCE_ALLOWLIST',sorted(changes))
+          PY
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: NASA-SW-VnV/fret
+          ref: cf0f913cc15c41705e803593297e89cd6056b839
+          path: external/fret
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: R2U2/r2u2
+          ref: 2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a
+          path: external/r2u2
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.13'}
+      - name: Check native assurance contract without external code
+        run: python3 -m unittest discover -s experiments/check-rocket-native-v1 -p 'test_*.py' -v
+      - name: Install minimal FRET parser dependencies outside source tree
+        run: |
+          npm install --prefix /tmp/rocket-node --ignore-scripts --no-fund --no-audit --no-save antlr4@4.8.0 product-iterable@3.0.1
+      - name: Parse actual FRETish and produce source/map/trace with authentic FRET exporter
+        env:
+          NODE_PATH: /tmp/rocket-node/node_modules
+          ROCKET_FRET_ROOT: ${{ github.workspace }}/external/fret
+          ROCKET_OUTPUT: ${{ github.workspace }}/native-rocket-out
+        run: node experiments/check-rocket-native-v1/export_rocket_native.mjs
+      - name: Compile original native R2U2 C monitor
+        run: make -C external/r2u2/monitors/c -j2 all
+      - name: Compile both actual C2PO specs and check all 64 native verdicts
+        run: |
+          python3 experiments/check-rocket-native-v1/native_replay.py \
+            --out native-rocket-out --fret external/fret --r2u2 external/r2u2
+          printf '%s\n' '${{ github.sha }}' > native-rocket-out/check-source-commit.txt
+          printf '%s\n' 'NATIVE_BOUNDED_ONLY, OWNER_UNKNOWN, REPAIR_DENIED' > native-rocket-out/qualification-scope.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: rocket-native-evidence
+          path: native-rocket-out
+          retention-days: 30
+
+  independent-qualification:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: R2U2/r2u2
+          ref: 2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a
+          path: external/r2u2
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.13'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: rocket-native-evidence, path: native-rocket-out}
+      - name: Build monitor independently without access to original runner state
+        run: make -C external/r2u2/monitors/c -j2 all
+      - name: Fresh artifact readback, exact-binary hash check and independent native oracle
+        run: |
+          test "$(cat native-rocket-out/check-source-commit.txt)" = '${{ github.sha }}'
+          python3 experiments/check-rocket-native-v1/qualify_native.py \
+            --out native-rocket-out --monitor external/r2u2/monitors/c/build/r2u2
+          printf '%s\n' '${{ github.sha }}' > native-rocket-out/qualification-source-commit.txt
+      - name: Challenge real native artifact with five source/authority mutations
+        run: |
+          python3 - <<'PY'
+          import json
+          import shutil
+          import sys
+          import tempfile
+          from pathlib import Path
+          sys.path.insert(0, 'experiments/check-rocket-native-v1')
+          from qualify_native import validate_report
+          original=Path('native-rocket-out')
+          monitor=Path('external/r2u2/monitors/c/build/r2u2').resolve()
+          cases=(('challenger.bin', 'BINARY_CHANGED'),
+                 ('challenger.c2po','SPEC_CHANGED'),
+                 ('challenger.map','MAP_CHANGED'),
+                 ('simultaneous.csv','TRACE_DATA_CHANGED'),
+                 ('native-result.json','EVIDENCE_ATTEMPTS_AUTHORITY_PROMOTION'))
+          for name,expected in cases:
+              with tempfile.TemporaryDirectory() as temp:
+                  working=Path(temp)/'artifact'
+                  shutil.copytree(original,working)
+                  target=working/name
+                  if name=='native-result.json':
+                      result=json.loads(target.read_text())
+                      result['owner_approved']=True
+                      target.write_text(json.dumps(result))
+                  elif name=='simultaneous.csv':
+                      target.write_text(target.read_text().replace('1,1\n','1,0\n',1))
+                  else:
+                      target.write_bytes(target.read_bytes()+b'changed')
+                  try:
+                      validate_report(working,monitor)
+                  except ValueError as exc:
+                      assert str(exc)==expected, (name,str(exc),expected)
+                  else:
+                      raise AssertionError('TAMPERED_EVIDENCE_WAS_ADMITTED: '+name)
+          print('REAL_ARTIFACT_TAMPERING_REFUSED 5/5')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: rocket-native-independent-qualification
+          path: native-rocket-out/independent-qualification.json
+          retention-days: 30
