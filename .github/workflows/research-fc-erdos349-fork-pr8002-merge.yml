@@ -32,6 +32,7 @@ jobs:
         working-directory: /tmp/fc-merge
         run: |
           set -uo pipefail
+          set +e
           git -c user.name=research -c user.email=research@example.invalid merge --no-commit --no-ff refs/remotes/upstream/pr8002 > /tmp/merge.log 2>&1
           code=$?
           cat /tmp/merge.log
