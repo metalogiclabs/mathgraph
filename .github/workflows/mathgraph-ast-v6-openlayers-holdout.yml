@@ -70,7 +70,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --test tests/ast_v6_blind_trial.test.js | tee "$RUNNER_TEMP/orchestration_tests.tap"
+          AST_V6_FROZEN_DIR="$RUNNER_TEMP/v6trial" \
+            node --test tests/ast_v6_blind_trial.test.js | tee "$RUNNER_TEMP/orchestration_tests.tap"
           OPENLAYERS_SOURCE_ROOT="$RUNNER_TEMP/openlayers" \
             node --test tests/openlayers_priority_queue_oracle.test.mjs | tee "$RUNNER_TEMP/native_oracle.tap"
       - uses: actions/upload-artifact@v4
