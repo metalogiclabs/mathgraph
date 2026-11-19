@@ -1,9 +1,9 @@
-name: MathGraph OpenLayers selective browser pixel-ratio qualification
+name: MathGraph OpenLayers typed v2 browser qualification
 
 on:
   push:
     branches:
-      - experiment/openlayers-pixelratio-selective-20261119
+      - experiment/openlayers-pixelratio-typed-v2-20261119
   workflow_dispatch:
 
 permissions:
@@ -36,8 +36,8 @@ jobs:
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_churn_diagnostic.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_mixed_selectivity.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphMixed.test.js
-          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
-          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch > experiment-checksums.txt
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_TYPED_v2_CANDIDATE.patch"
+          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_TYPED_v2_CANDIDATE.patch > experiment-checksums.txt
           echo EXACT_SOURCE_AND_CANDIDATE_PATCH_VERIFIED
       - name: Prepare upstream browser runner
         uses: actions/setup-node@v4
@@ -90,7 +90,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
+          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_TYPED_v2_CANDIDATE.patch"
           git -C openlayers diff --check
           git -C openlayers diff -- src/ol/renderer/canvas/TileLayer.js > openlayers_candidate_applied.diff
       - name: Run browser repair and existing upstream specs
