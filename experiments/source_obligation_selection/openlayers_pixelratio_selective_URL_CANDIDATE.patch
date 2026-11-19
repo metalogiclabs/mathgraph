@@ -1,13 +1,13 @@
 diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLayer.js
 --- a/src/ol/renderer/canvas/TileLayer.js
 +++ b/src/ol/renderer/canvas/TileLayer.js
-@@ -17,6 +17,7 @@
+@@ -17,4 +17,5 @@
  import {equivalent, fromUserExtent} from '../../proj.js';
  import ReprojTile from '../../reproj/Tile.js';
 +import LegacyTileImage from '../../source/TileImage.js';
  import {toSize} from '../../size.js';
  import LRUCache from '../../structs/LRUCache.js';
-@@ -512,6 +513,50 @@
+@@ -512,5 +513,54 @@
     * @override
     */
    prepareFrame(frameState) {
