@@ -1,0 +1,64 @@
+diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLayer.js
+--- a/src/ol/renderer/canvas/TileLayer.js
++++ b/src/ol/renderer/canvas/TileLayer.js
+@@ -17,6 +17,7 @@
+ import {equivalent, fromUserExtent} from '../../proj.js';
+ import ReprojTile from '../../reproj/Tile.js';
++import LegacyTileImage from '../../source/TileImage.js';
+ import {toSize} from '../../size.js';
+ import LRUCache from '../../structs/LRUCache.js';
+@@ -512,6 +513,50 @@
+    * @override
+    */
+   prepareFrame(frameState) {
++    if (
++      this.renderedPixelRatio !== undefined &&
++      this.renderedPixelRatio !== frameState.pixelRatio
++    ) {
++      const tileSource = this.getLayer().getSource();
++      // Advisory selective-reuse experiment: a matching URL alone is not
++      // a universal behavior-equivalence proof for custom tile classes.
++      let canReuse = false;
++      if (
++        tileSource instanceof LegacyTileImage &&
++        tileSource.getTile === LegacyTileImage.prototype.getTile &&
++        tileSource.getTileInternal === LegacyTileImage.prototype.getTileInternal &&
++        tileSource.createTile_ === LegacyTileImage.prototype.createTile_ &&
++        tileSource.tileClass === ImageTile &&
++        this.renderedProjection === frameState.viewState.projection &&
++        tileSource.getTilePixelRatio(this.renderedPixelRatio) ===
++          tileSource.getTilePixelRatio(frameState.pixelRatio) &&
++        !this.sourceTileCache_?.getCount()
++      ) {
++        canReuse = true;
++        this.tileCache_.forEach((tile) => {
++          if (!canReuse) {
++            return;
++          }
++          if (!(tile instanceof ImageTile) || tile.key !== tileSource.getKey()) {
++            canReuse = false;
++            return;
++          }
++          const coord = tileSource.getTileCoordForTileUrlFunction(
++            tile.tileCoord,
++            frameState.viewState.projection,
++          );
++          const updatedUrl = coord
++            ? tileSource.tileUrlFunction(
++                coord,
++                frameState.pixelRatio,
++                frameState.viewState.projection,
++              )
++            : undefined;
++          if (tile.src_ !== (updatedUrl !== undefined ? updatedUrl : '')) {
++            canReuse = false;
++          }
++        });
++      }
++      if (!canReuse) {
++        this.tileCache_.clear();
++        this.sourceTileCache_?.clear();
++      }
++    }
+     if (!this.renderedProjection) {
+       this.renderedProjection = frameState.viewState.projection;
