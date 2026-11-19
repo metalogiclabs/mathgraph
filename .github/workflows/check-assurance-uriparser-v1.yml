@@ -92,7 +92,7 @@ jobs:
           root=pathlib.Path('native-uri-out')
           prior=json.loads((root/'native-result.json').read_text())
           assert hashlib.sha256((root/'uri_resolution').read_bytes()).hexdigest()==prior['native_binary_sha256']
-          assert prior['native_reference_matches']==12 and prior['owner_permission']=='UNKNOWN_NO_ACTION'
+          assert prior['native_reference_matches']==41 and prior['owner_permission']=='UNKNOWN_NO_ACTION'
           print('DOWNLOADED_BINARY_AND_SCOPE_REHASH_PASS')
           PY
       - name: Independently rebuild pinned source and replay finite oracle
@@ -112,7 +112,8 @@ jobs:
               ('STALE_SOURCE',{'source_commit':'0'*40}),
               ('WRONG_NATIVE_RESULT',{'native_results':dict(report['native_results'],g='wrong')}),
               ('FORGED_OWNER',{'owner_approved':True}),
-              ('FORGED_DIAGNOSIS',{'seeded_wrong_decoder_inputs':[]})):
+              ('FORGED_DIAGNOSIS',{'seeded_wrong_decoder_inputs':[]}),
+              ('FORGED_ALLOWED_SET',{'allowed_alternative_result':{'http:g':'http://not-allowed'}})):
               candidate=dict(report);candidate.update(changed)
               path=pathlib.Path(root)/(label+'.json');path.write_text(json.dumps(candidate))
               p=subprocess.run(['python3','experiments/assurance-third-domain/check_uri_native.py',
@@ -121,7 +122,7 @@ jobs:
                  capture_output=True,text=True)
               assert p.returncode!=0,label
               print('REFUSED',label)
-          print('FORGED_EVIDENCE_REFUSED 4/4')
+          print('FORGED_EVIDENCE_REFUSED 5/5')
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

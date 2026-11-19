@@ -13,15 +13,36 @@ import subprocess
 
 PIN="abb9f328ae836ff5bf8f211e0ba82f7b6de01ebe"
 BASE="http://a/b/c/d;p?q"
-# Selected documented normal examples in RFC 3986 §5.4.1 (retrospective, not hidden).
+# All 41 unambiguous printed examples from RFC 3986 §5.4.1–§5.4.2.
+# Deliberately exclude http:g from the deterministic table: RFC allows TWO outcomes.
+# This is source-exposed retrospective expansion, not a hidden holdout.
 CASES=[
- ("g","http://a/b/c/g"),("./g","http://a/b/c/g"),
- ("g/","http://a/b/c/g/"),("/g","http://a/g"),
+ ("g:h","g:h"),("g","http://a/b/c/g"),("./g","http://a/b/c/g"),
+ ("g/","http://a/b/c/g/"),("/g","http://a/g"),("//g","http://g"),
  ("?y","http://a/b/c/d;p?y"),("g?y","http://a/b/c/g?y"),
- ("#s","http://a/b/c/d;p?q#s"),("g?y#s","http://a/b/c/g?y#s"),
- ("..","http://a/b/"),("../g","http://a/b/g"),
- ("../../g","http://a/g"),(".g","http://a/b/c/.g"),
+ ("#s","http://a/b/c/d;p?q#s"),("g#s","http://a/b/c/g#s"),
+ ("g?y#s","http://a/b/c/g?y#s"),(";x","http://a/b/c/;x"),
+ ("g;x","http://a/b/c/g;x"),("g;x?y#s","http://a/b/c/g;x?y#s"),
+ ("","http://a/b/c/d;p?q"),(".","http://a/b/c/"),
+ ("./","http://a/b/c/"),("..","http://a/b/"),
+ ("../","http://a/b/"),("../g","http://a/b/g"),
+ ("../..","http://a/"),("../../","http://a/"),
+ ("../../g","http://a/g"),
+ ("../../../g","http://a/g"),("../../../../g","http://a/g"),
+ ("/./g","http://a/g"),("/../g","http://a/g"),
+ ("g.","http://a/b/c/g."),(".g","http://a/b/c/.g"),
+ ("g..","http://a/b/c/g.."),("..g","http://a/b/c/..g"),
+ ("./../g","http://a/b/g"),("./g/.","http://a/b/c/g/"),
+ ("g/./h","http://a/b/c/g/h"),("g/../h","http://a/b/c/h"),
+ ("g;x=1/./y","http://a/b/c/g;x=1/y"),
+ ("g;x=1/../y","http://a/b/c/y"),
+ ("g?y/./x","http://a/b/c/g?y/./x"),
+ ("g?y/../x","http://a/b/c/g?y/../x"),
+ ("g#s/./x","http://a/b/c/g#s/./x"),
+ ("g#s/../x","http://a/b/c/g#s/../x"),
 ]
+ALLOWED_AMBIGUOUS={"http:g":frozenset(("http:g","http://a/b/c/g"))}
+
 EXPECTED=dict(CASES)
 def digest(data): return hashlib.sha256(data).hexdigest()
 def read_sha(file): return digest(Path(file).read_bytes())
@@ -43,10 +64,33 @@ def classify(obs,actual):
     if suff and fid: return "BOTH_PASS_TESTED_X"
     if not suff: return "REPRESENTATION_INSUFFICIENT"
     return "DECODER_FIDELITY_FAILURE"
+def check_allowed_ambiguity(binary):
+    """RFC 3986 §5.4.2 explicitly permits strict or backwards-compatible output."""
+    out={}
+    for ref,allowed in ALLOWED_AMBIGUOUS.items():
+        proc=subprocess.run([str(Path(binary).resolve()),BASE,ref],text=True,capture_output=True,timeout=20)
+        if proc.returncode: raise ValueError("AMBIGUOUS_NATIVE_NONZERO")
+        value=proc.stdout.rstrip("\\r\\n")
+        if value not in allowed: raise AssertionError("RFC_ALLOWED_SET_VIOLATION:"+repr(value))
+        out[ref]=value
+    return out
+def finite_relational_factorization_controls():
+    """A common allowed output suffices; equality of allowed sets is TOO STRONG."""
+    q={"first":"same","second":"same"}
+    possible={"first":{"a","b"},"second":{"b","c"}}
+    intersection=set.intersection(*(possible[x] for x in q))
+    if intersection!={"b"}: raise AssertionError("SHARED_ALLOWED_OUTPUT_MISSED")
+    if possible["first"]==possible["second"]: raise AssertionError("NOT_A_REAL_SET_DIFFERENCE")
+    disjoint={"first":{"a"},"second":{"c"}}
+    if set.intersection(*(disjoint[x] for x in q)): raise AssertionError("FALSE_FEASIBLE_DECODER")
+    return {"nonidentical_allowed_sets_common_outcome":True,"disjoint_allowed_sets_rejected":True}
+
 def calculate(binary,source):
     revision=subprocess.check_output(["git","-C",str(source),"rev-parse","HEAD"],text=True).strip()
     if revision!=PIN: raise ValueError("SOURCE_COMMIT_NOT_PINNED")
     original=observe(binary)
+    ambiguity=check_allowed_ambiguity(binary)
+    allowed_set_controls=finite_relational_factorization_controls()
     # These deliberately invented mappings are NOT part of upstream uriparser.
     lossy={k:v.split("?",1)[0].split("#",1)[0] for k,v in original.items()}
     bad={k:("http://a/b/c/g" if k=="g?y" else v) for k,v in original.items()}
@@ -60,12 +104,14 @@ def calculate(binary,source):
     assert classify(lossy,lossy)=="REPRESENTATION_INSUFFICIENT"
     assert classify(original,bad)=="DECODER_FIDELITY_FAILURE"
     return {
-      "schema":"mathgraph.uriparser.calibration.native.v1",
+      "schema":"mathgraph.uriparser.calibration.native.v2",
       "source_commit":PIN,
-      "reference":"RFC 3986 §5.4.1 selected normal examples",
-      "source_grounded_normative_coverage":"12 explicit RFC examples only",
+      "reference":"RFC 3986 §§5.4.1–5.4.2 printed cases including permitted alternatives",
+      "source_grounded_normative_coverage":"41 deterministic RFC examples plus 1 explicitly permitted alternative-output case",
       "native_binary_sha256":read_sha(binary),
       "native_results":original,
+      "allowed_alternative_result":ambiguity,
+      "allowed_set_controls":allowed_set_controls,
       "native_reference_matches":len(CASES),
       "no_original_consequential_collisions":True,
       "seeded_loss_pairs":true_loss,
@@ -90,6 +136,8 @@ def main():
       prior=json.loads(Path(a.previous).read_text())
       if prior.get("source_commit")!=PIN: raise ValueError("STALE_EVIDENCE_SOURCE")
       if prior.get("native_results")!=res["native_results"]: raise ValueError("CHANGED_NATIVE_OUTCOMES")
+      if prior.get("allowed_alternative_result")!=res["allowed_alternative_result"]: raise ValueError("CHANGED_ALLOWED_OUTCOME")
+      if prior.get("allowed_set_controls")!=res["allowed_set_controls"]: raise ValueError("CHANGED_RELATIONAL_ORACLE")
       if prior.get("seeded_loss_pairs")!=res["seeded_loss_pairs"]: raise ValueError("CHANGED_COLLISION_SET")
       if prior.get("seeded_wrong_decoder_inputs")!=res["seeded_wrong_decoder_inputs"]:
         raise ValueError("CHANGED_DECODER_FAILURE_SET")
