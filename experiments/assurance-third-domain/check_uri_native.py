@@ -70,7 +70,7 @@ def check_allowed_ambiguity(binary):
     for ref,allowed in ALLOWED_AMBIGUOUS.items():
         proc=subprocess.run([str(Path(binary).resolve()),BASE,ref],text=True,capture_output=True,timeout=20)
         if proc.returncode: raise ValueError("AMBIGUOUS_NATIVE_NONZERO")
-        value=proc.stdout.rstrip("\\r\\n")
+        value=proc.stdout.rstrip("\r\n")
         if value not in allowed: raise AssertionError("RFC_ALLOWED_SET_VIOLATION:"+repr(value))
         out[ref]=value
     return out
