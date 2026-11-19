@@ -87,6 +87,7 @@ theorem source_integer_pairs_iff (t α : ℤ) (ht : 1 ≤ t) (hα : 1 ≤ α) :
       exact (source_int_coeff_ge_two_not t α hge hα) h
     exact ⟨hcoeff, hbase⟩
   · rintro ⟨rfl, rfl⟩
+    simp only [Int.cast_one]
     change ∀ᶠ k : ℤ in Filter.atTop,
       ∃ B : Finset ℕ, k = ∑ i ∈ B, (⌊(1 : ℝ) * 1 ^ (i + 1)⌋ : ℤ)
     refine Filter.eventually_atTop.2 ⟨0, ?_⟩
