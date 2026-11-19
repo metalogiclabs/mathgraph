@@ -1,12 +1,12 @@
-name: MathGraph OpenLayers selective repair static qualification
+name: MathGraph OpenLayers typed v2 static qualification
 
 on:
   push:
     branches:
-      - experiment/openlayers-pixelratio-selective-20261119
+      - experiment/openlayers-pixelratio-typed-v2-20261119
     paths:
       - .github/workflows/mathgraph-openlayers-selective-static.yml
-      - experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch
+      - experiments/source_obligation_selection/openlayers_pixelratio_selective_TYPED_v2_CANDIDATE.patch
   workflow_dispatch:
 
 permissions:
@@ -35,8 +35,8 @@ jobs:
           set -euo pipefail
           test "$(git -C openlayers rev-parse HEAD)" = e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
           test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
-          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
-          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_TYPED_v2_CANDIDATE.patch"
+          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_TYPED_v2_CANDIDATE.patch"
           git -C openlayers diff --check
           git -C openlayers diff -- src/ol/renderer/canvas/TileLayer.js > candidate-applied.diff
           echo PINNED_SOURCE_AND_SELECTIVE_PATCH_APPLIED
