@@ -33,6 +33,22 @@ jobs:
           print('INDEPENDENT_REFERENCE_AND_CONVENTIONAL_SCRIPT_TIE',x['count'])
           PY
 
+      - name: Synthetic repair-class controls and unique-domain census (NOT a natural finding)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/assurance/connect-ip-rfc9484/diagnostic_controls.py
+          python3 - <<'PY'
+          import json
+          c=json.load(open('research/assurance/connect-ip-rfc9484/oracle_cases.json'))['cases']
+          key=lambda row:tuple((r['version'],r['start'],r['end'],r['protocol']) for r in row['routes'])
+          unique=len({key(x) for x in c})
+          assert len(c)==10337 and unique==9924, (len(c),unique)
+          d=json.load(open('research/assurance/connect-ip-rfc9484/DIAGNOSTIC_RESULT.json'))
+          assert d['scripted_conventional_baseline']=='TIE_4_OF_4'
+          print('FINITE_ORACLE_UNIQUE_INPUTS',unique,'OF',len(c))
+          PY
+
       - name: Checkout original selected upstream at exact source revision
         uses: actions/checkout@v4
         with:
@@ -100,6 +116,7 @@ jobs:
           name: connect-ip-rfc9484-finite-source-native-v01
           path: |
             research/assurance/connect-ip-rfc9484/ORACLE_RESULT.json
+            research/assurance/connect-ip-rfc9484/DIAGNOSTIC_RESULT.json
             research/assurance/connect-ip-rfc9484/oracle_cases.json
             rfc9484-native-log.txt
           retention-days: 30
