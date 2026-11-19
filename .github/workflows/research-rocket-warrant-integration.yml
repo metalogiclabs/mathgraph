@@ -1,0 +1,50 @@
+name: Research evidence-boundary integration (source pinned)
+on:
+  push:
+    branches:
+      - research/assurance-eligibility-calibration-20261120
+    paths:
+      - research/assurance/check_rocket_warrant_integration.py
+      - .github/workflows/research-rocket-warrant-integration.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact-source-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Fetch exact original BoundaryWarrant and rocket sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualified/mathgraph_check
+          touch qualified/mathgraph_check/__init__.py
+          git fetch --no-tags --depth=1 origin 1b06e7fb4a11a352a9c10916d68a6218dd508b38
+          git show FETCH_HEAD:mathgraph_check/boundary_warrant.py > qualified/mathgraph_check/boundary_warrant.py
+          git show FETCH_HEAD:mathgraph_check/warrant_resolution.py > qualified/mathgraph_check/warrant_resolution.py
+          test "$(git hash-object qualified/mathgraph_check/boundary_warrant.py)" = ebf49c59a886f82eeca4fbc9c0300e5881fab229
+          test "$(git hash-object qualified/mathgraph_check/warrant_resolution.py)" = ba8a4828fd85e67ed199862480102857c52ea923
+          git fetch --no-tags --depth=1 origin 2b0e21e94e64ca54ff35c1d4572c60b3b6049720
+          git show FETCH_HEAD:experiments/check-rocket-native-v1/export_rocket_native.mjs > pinned-rocket-source.mjs
+      - name: Download authentic source-to-native receipts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          run-id: 44611662927
+          name: rocket-native-evidence
+          path: rocket-evidence
+          github-token: ${{ github.token }}
+      - name: Download separately replayed qualification
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          run-id: 44611662927
+          name: rocket-native-independent-qualification
+          path: rocket-qualification
+          github-token: ${{ github.token }}
+      - name: Exact receipt qualification and selective withdrawal
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$PWD/qualified" python3 research/assurance/check_rocket_warrant_integration.py
