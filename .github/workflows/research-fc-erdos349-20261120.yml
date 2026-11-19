@@ -161,7 +161,7 @@ jobs:
                 have hpow : (2 : ℝ) ^ (i + 1) = ((2 : ℤ) ^ (i + 1) : ℝ) := by
                   norm_cast
                 rw [one_mul, hpow]
-                exact (Int.floor_intCast (R := ℝ) ((2 : ℤ) ^ (i + 1)))
+                simpa only [Int.cast_pow] using (Int.floor_intCast (R := ℝ) ((2 : ℤ) ^ (i + 1)))
               rw [hi, pow_succ]
               refine ⟨(2 : ℤ) ^ i, ?_⟩
               simp [mul_comm]
