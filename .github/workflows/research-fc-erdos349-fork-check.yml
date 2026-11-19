@@ -1,0 +1,64 @@
+name: Verify DeepMind Erdős 349 fork branch exact tree
+
+on:
+  push:
+    branches: [experiment/erdos349-source-bridge-20261120]
+    paths:
+      - '.github/workflows/research-fc-erdos349-fork-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-fork:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Acquire and pin exact fork tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/metalogiclabs/formal-conjectures.git /tmp/fc-fork
+          cd /tmp/fc-fork
+          git fetch origin 200e5fa4c34581502bcf0a2ea8a973db096df740 --depth=1
+          git checkout --detach 200e5fa4c34581502bcf0a2ea8a973db096df740
+          test "$(git rev-parse HEAD)" = 200e5fa4c34581502bcf0a2ea8a973db096df740
+          test "$(git hash-object FormalConjectures/ErdosProblems/349.lean)" = e53f5ac431af99df87b0b683acd6769d6219bb43
+          test "$(cat lean-toolchain)" = leanprover/lean4:v4.33.1
+          git diff --check
+          echo "FORK_EXACT_SOURCE_PIN=PASS"
+      - name: Install declared Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail -L -sS https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build fork's actual changed module with warnings as errors
+        shell: bash
+        working-directory: /tmp/fc-fork
+        run: |
+          set -euo pipefail
+          lean --version
+          lake exe cache get
+          lake --wfail build 'FormalConjectures.ErdosProblems.«349»'
+          echo "FORK_MODULE_BUILD=PASS"
+      - name: Independently check the new in-module theorem and axioms
+        shell: bash
+        working-directory: /tmp/fc-fork
+        run: |
+          set -euo pipefail
+          cat > /tmp/Check349Fork.lean <<'LEAN'
+          import FormalConjectures.ErdosProblems.«349»
+          /-! Exact theorem and axiom closure for the fork's source-fidelity boundary test. -/
+          #check Erdos349.IsGoodPairIndexed
+          #check Erdos349.erdos_349
+          #print axioms Erdos349.isGoodPairIndexed_one_one
+          LEAN
+          lake env lean /tmp/Check349Fork.lean | tee /tmp/fork-proof-axioms.log
+          grep -F "Erdos349.isGoodPairIndexed_one_one' depends on axioms: [propext, Classical.choice, Quot.sound]" /tmp/fork-proof-axioms.log
+          if grep -F "sorryAx" /tmp/fork-proof-axioms.log; then
+            echo "FORK_AXIOMS=FAIL"
+            exit 1
+          fi
+          echo "FORK_AXIOMS=PASS"
