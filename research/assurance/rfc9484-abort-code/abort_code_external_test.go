@@ -117,3 +117,31 @@ func TestMathGraphRFC9484NativeAbortHandoff(t *testing.T) {
  t.Log(fmt.Sprintf("MATHGRAPH_BOUNDARY_RESULT original_HTTP3_code=%#x normative_candidate=%#x",
    uint64(http3.ErrCodeExcessiveLoad),uint64(http3.ErrCodeMessageError)))
 }
+
+
+// Follow-on control, added only after the original malformed-capsule result.
+// Resource saturation is a different reason to cancel: do not globally swap
+// H3_EXCESSIVE_LOAD to H3_MESSAGE_ERROR without preserving this distinction.
+func TestMathGraphRFC9484QueueLoadControl(t *testing.T) {
+ var bytes []byte
+ for i:=0;i<maxQueuedCapsules+1;i++ {
+  bytes=(&addressAssignCapsule{}).append(bytes)
+ }
+ stream:=mathgraphNewStream(bytes)
+ conn:=newProxiedConn(stream,nil)
+ select {
+ case <-conn.ctx.Done():
+ case <-time.After(4*time.Second): t.Fatal("queue overload never caused connection closure")
+ }
+ cause:=context.Cause(conn.ctx)
+ if cause==nil || !strings.Contains(cause.Error(),"address assignment queue full") {
+  t.Fatalf("wrong resource-exhaustion error: %v",cause)
+ }
+ readCode:=mathgraphWaitCode(t,stream.readCodes,"overload read")
+ writeCode:=mathgraphWaitCode(t,stream.writeCodes,"overload write")
+ if readCode!=quic.StreamErrorCode(http3.ErrCodeExcessiveLoad) ||
+    writeCode!=quic.StreamErrorCode(http3.ErrCodeExcessiveLoad) {
+   t.Fatalf("unexpected resource-exhaustion cancellation read=%#x write=%#x",readCode,writeCode)
+ }
+ t.Logf("MATHGRAPH_OVERLOAD_OBSERVED read=%#x write=%#x cause=%q",readCode,writeCode,cause.Error())
+}
