@@ -1,0 +1,84 @@
+name: MathGraph AST v6 - prospective OpenLayers holdout
+on:
+  push:
+    branches:
+      - experiment/ast-v6-openlayers-prospective-20261118
+    paths:
+      - .github/workflows/mathgraph-ast-v6-openlayers-holdout.yml
+      - experiments/source_obligation_selection/openlayers_v6_preregistered.json
+      - experiments/source_obligation_selection/run_v6_blind_trial.js
+      - tests/ast_v6_blind_trial.test.js
+      - tests/openlayers_priority_queue_oracle.test.mjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bounded-source-to-sink-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            experiments/source_obligation_trial
+            experiments/source_obligation_selection
+            tests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore unchanged source-pinned scanner payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v6trial"
+          base64 -d experiments/source_obligation_trial/earthdata_v5_payload.tar.gz.b64 > "$RUNNER_TEMP/v6trial/v5.tar.gz"
+          echo "f71eef7593c714ad68b5cd852d0eeab208514c9b41da5fe4083ba3efc9b34db8  $RUNNER_TEMP/v6trial/v5.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/v6trial/v5.tar.gz" -C "$RUNNER_TEMP/v6trial"
+          base64 -d experiments/source_obligation_selection/consumer_v6_source.tar.gz.b64 > "$RUNNER_TEMP/v6trial/v6.tar.gz"
+          echo "ad60723df4d004637fb6b10da2f4c23b10bfc16a5bfe9891a84bf1a173db7b25  $RUNNER_TEMP/v6trial/v6.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/v6trial/v6.tar.gz" -C "$RUNNER_TEMP/v6trial"
+          echo "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743  $RUNNER_TEMP/v6trial/mathgraph_ast_obligations_v5.js" | sha256sum -c -
+          echo "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807  $RUNNER_TEMP/v6trial/mathgraph_ast_obligations_v6.js" | sha256sum -c -
+          npm install --prefix "$RUNNER_TEMP/v6trial" --no-save --no-audit --no-fund typescript@5.8.3
+      - name: Fetch exact OpenLayers commit and sparse roster
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/openlayers"
+          git -C "$RUNNER_TEMP/openlayers" init -q
+          git -C "$RUNNER_TEMP/openlayers" remote add origin https://github.com/openlayers/openlayers.git
+          git -C "$RUNNER_TEMP/openlayers" -c protocol.version=2 fetch --depth=1 --filter=blob:none origin e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          git -C "$RUNNER_TEMP/openlayers" sparse-checkout init --no-cone
+          git -C "$RUNNER_TEMP/openlayers" sparse-checkout set --no-cone \
+            '/src/ol/source/' '/src/ol/renderer/' '/src/ol/tilegrid/' '/src/ol/structs/' \
+            '/src/ol/source.js' '/src/ol/tilegrid.js' '/src/ol/asserts.js' '/src/ol/obj.js' '/package.json'
+          git -C "$RUNNER_TEMP/openlayers" checkout --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/openlayers" rev-parse HEAD)" = e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+      - name: Verify all 71 pinned blobs and score frozen ranking arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "94909242606f950c4cdbabe8920ec100be67c64fa7f3f1eaa1fa3f0f7e074c32  experiments/source_obligation_selection/openlayers_v6_preregistered.json" | sha256sum -c -
+          node experiments/source_obligation_selection/run_v6_blind_trial.js \
+            experiments/source_obligation_selection/openlayers_v6_preregistered.json \
+            "$RUNNER_TEMP/openlayers" "$RUNNER_TEMP/v6trial" \
+            "$RUNNER_TEMP/openlayers_v6_raw_result.json"
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/openlayers_v6_raw_result.json");if(r.coverage.scanned_count!==71||r.coverage.scanner_failures.length||r.source_integrity!=="PER_BLOB_CHECKED"||r.change_permission!==false)process.exit(1);console.log("BOUNDED_TRIAL_INTEGRITY_PASSED")'
+          sha256sum "$RUNNER_TEMP/openlayers_v6_raw_result.json"
+      - name: Run orchestration tests and independent native queue oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/ast_v6_blind_trial.test.js | tee "$RUNNER_TEMP/orchestration_tests.tap"
+          OPENLAYERS_SOURCE_ROOT="$RUNNER_TEMP/openlayers" \
+            node --test tests/openlayers_priority_queue_oracle.test.mjs | tee "$RUNNER_TEMP/native_oracle.tap"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mathgraph-ast-v6-openlayers-holdout-bounded-evidence
+          path: |
+            ${{ runner.temp }}/openlayers_v6_raw_result.json
+            ${{ runner.temp }}/orchestration_tests.tap
+            ${{ runner.temp }}/native_oracle.tap
+          if-no-files-found: warn

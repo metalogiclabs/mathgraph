@@ -1,0 +1,403 @@
+{
+  "schema": "mathgraph/ast-v6-openlayers-blind-manifest-v1",
+  "freeze_status": "PRE_SOURCE_BLOBS",
+  "candidate_pool": [
+    {
+      "repo": "maplibre/maplibre-gl-js",
+      "reported_repository_size_kb": 1086524
+    },
+    {
+      "repo": "openlayers/openlayers",
+      "reported_repository_size_kb": 147648
+    }
+  ],
+  "selection_rule": "Choose smaller public repository size from the predeclared map-renderer pair, then take all .js blobs under the four named src/ol subtrees with 800 <= Git blob bytes <= 130000; metadata only, no source viewed.",
+  "target_repo": "openlayers/openlayers",
+  "target_ref": "e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2",
+  "source_subtrees": [
+    "src/ol/source/",
+    "src/ol/renderer/",
+    "src/ol/tilegrid/",
+    "src/ol/structs/"
+  ],
+  "size_min_inclusive": 800,
+  "size_max_inclusive": 130000,
+  "expected_path_count": 71,
+  "scanner_v5_sha256": "7e38038012ce147372d30b435b9e8e5fb6833b5bc92d892bb6373523dfba1743",
+  "scanner_v6_sha256": "a21b1309c144d774c107bc60625ca48742fe5a7706e5a7d0cb21a43efcea9807",
+  "source_history": "No MapLibre or OpenLayers strings found in Canonical Research State page when frozen; this is prospective for this fixed scanner and selected slice, not proof nobody ever opened the repo.",
+  "source_integrity_rule": "Verify exact pinned Git commit and each original Git blob SHA before scanner input; stop on any absent/mismatched blob.",
+  "ranking_protocol": {
+    "arms": [
+      "AST_v6_consumer_score",
+      "AST_v5_unchanged_score",
+      "FILE_SIZE",
+      "LEXICAL_CACHE"
+    ],
+    "unit": "unique file among top 3 for each arm",
+    "tie_break": "path lexicographic, then hotspot id",
+    "lexical_rule": "case-insensitive count of whole-token cache|Map|Set|hash|floor|round|lookup|reuse across raw source; sum occurrences, not trained on target",
+    "review_budget": "union of top 3 distinct files per arm, maximum 12; same source/contract access to every arm",
+    "metric": "Independent contract-backed consequential behavior in each arm's top 3, plus false leads, UNKNOWN, baseline ties and parser coverage",
+    "manual_review_rule": "Inspect exact source/consumer, public API docs or tests for admitted domain, native behavioral witness and negative control; lacking evidence yields UNKNOWN, not bug."
+  },
+  "no_repair": true,
+  "no_upstream_contact": true,
+  "selected_files": [
+    {
+      "path": "src/ol/renderer/canvas/ImageLayer.js",
+      "bytes": 10228,
+      "git_blob_sha": "bfc7954b95efd8b6bdb02009fa7ce760dabbc11c"
+    },
+    {
+      "path": "src/ol/renderer/canvas/Layer.js",
+      "bytes": 15781,
+      "git_blob_sha": "c06122919c34c2a5bc1c25f5e53dab6426ab279c"
+    },
+    {
+      "path": "src/ol/renderer/canvas/TileLayer.js",
+      "bytes": 36853,
+      "git_blob_sha": "d33f91592944d322c743f1bf0f950e1bee467938"
+    },
+    {
+      "path": "src/ol/renderer/canvas/VectorImageLayer.js",
+      "bytes": 8503,
+      "git_blob_sha": "008de795c6fc5738676aa884fe7f74c83eba2d92"
+    },
+    {
+      "path": "src/ol/renderer/canvas/VectorLayer.js",
+      "bytes": 28557,
+      "git_blob_sha": "dcae0d96f25f03e5647ad1a614e5ffe9694cbe7f"
+    },
+    {
+      "path": "src/ol/renderer/canvas/VectorTileLayer.js",
+      "bytes": 36417,
+      "git_blob_sha": "578c0bce34632d8ebeafae7d4674b0ece9e4114d"
+    },
+    {
+      "path": "src/ol/renderer/Composite.js",
+      "bytes": 6938,
+      "git_blob_sha": "8c7cc726582deaaca00906d4ca2dd5d17010b4a7"
+    },
+    {
+      "path": "src/ol/renderer/Layer.js",
+      "bytes": 5338,
+      "git_blob_sha": "f3c78332b36bdb4f26c5d72fd2e5926b1a22502a"
+    },
+    {
+      "path": "src/ol/renderer/Map.js",
+      "bytes": 7699,
+      "git_blob_sha": "17b0c4436e9cc551a1b1f14457a2468a4f0cf335"
+    },
+    {
+      "path": "src/ol/renderer/vector.js",
+      "bytes": 16801,
+      "git_blob_sha": "5ef9e172eb61130462886ecdfb0f16aa1fd1734f"
+    },
+    {
+      "path": "src/ol/renderer/webgl/FlowLayer.js",
+      "bytes": 13549,
+      "git_blob_sha": "66e1510947d4102b37cea012abde0a38505829d5"
+    },
+    {
+      "path": "src/ol/renderer/webgl/Layer.js",
+      "bytes": 8009,
+      "git_blob_sha": "4b18124d066126a6af272ad39802c526652645e7"
+    },
+    {
+      "path": "src/ol/renderer/webgl/PointsLayer.js",
+      "bytes": 24668,
+      "git_blob_sha": "3d4113bf1abc3f597a405ffad0dfd3a2ecf1d1c2"
+    },
+    {
+      "path": "src/ol/renderer/webgl/TileLayer.js",
+      "bytes": 12221,
+      "git_blob_sha": "d1b4a73823fc17bcce5cec0cd472c5507cf205c8"
+    },
+    {
+      "path": "src/ol/renderer/webgl/TileLayerBase.js",
+      "bytes": 30715,
+      "git_blob_sha": "35fcfbc893d3c73cf79ab6942975bd319c7872a9"
+    },
+    {
+      "path": "src/ol/renderer/webgl/VectorLayer.js",
+      "bytes": 19600,
+      "git_blob_sha": "c3d0e8c7bc2059813874f0b8c6075efea04bd43a"
+    },
+    {
+      "path": "src/ol/renderer/webgl/VectorTileLayer.js",
+      "bytes": 15347,
+      "git_blob_sha": "107a5a7d8b67e35806ae8494bd95bb0d99618e7f"
+    },
+    {
+      "path": "src/ol/renderer/webgl/vectorUtil.js",
+      "bytes": 3765,
+      "git_blob_sha": "69a3e3428eebfb68ee34916567439f1551de17ae"
+    },
+    {
+      "path": "src/ol/renderer/webgl/worldUtil.js",
+      "bytes": 951,
+      "git_blob_sha": "396a4ff5a7f8c837bf64e40e74f667b8340d2e2d"
+    },
+    {
+      "path": "src/ol/source.js",
+      "bytes": 3973,
+      "git_blob_sha": "851cc1daca81e8227f8d8aaa534a7126822fa75e"
+    },
+    {
+      "path": "src/ol/source/arcgisRest.js",
+      "bytes": 5129,
+      "git_blob_sha": "85359faeda774e3de3123edd8459bd597d0948f9"
+    },
+    {
+      "path": "src/ol/source/BingMaps.js",
+      "bytes": 11551,
+      "git_blob_sha": "c4b98cbd6c4805b2f2beefb73022faf21ad24088"
+    },
+    {
+      "path": "src/ol/source/CartoDB.js",
+      "bytes": 5843,
+      "git_blob_sha": "bcf7b0ddd25bfb8fc33719290491576a38d0e44f"
+    },
+    {
+      "path": "src/ol/source/Cluster.js",
+      "bytes": 9960,
+      "git_blob_sha": "8d5747c28d61683499ab6f0c43c3e0a2642715b0"
+    },
+    {
+      "path": "src/ol/source/DataTile.js",
+      "bytes": 16991,
+      "git_blob_sha": "faabbd2bf304d8653795580d588ccd0f4b7ab345"
+    },
+    {
+      "path": "src/ol/source/GeoTIFF.js",
+      "bytes": 43428,
+      "git_blob_sha": "bffbfa5c1b5820549c289b7c360e0aea6b4a9778"
+    },
+    {
+      "path": "src/ol/source/GeoZarr.js",
+      "bytes": 83168,
+      "git_blob_sha": "40c29f42f1ffcf8327f9472e7b697fc761a3d513"
+    },
+    {
+      "path": "src/ol/source/Google.js",
+      "bytes": 12625,
+      "git_blob_sha": "bb289fa353da327b87990152dcad9a66cbb2faa0"
+    },
+    {
+      "path": "src/ol/source/IIIF.js",
+      "bytes": 13308,
+      "git_blob_sha": "aea894bad11edfd4ebbdd0df90ac187e29ef3584"
+    },
+    {
+      "path": "src/ol/source/Image.js",
+      "bytes": 11132,
+      "git_blob_sha": "869f6fde6fb8ace6f1dbfeae14de484e0718afb9"
+    },
+    {
+      "path": "src/ol/source/ImageArcGISRest.js",
+      "bytes": 7291,
+      "git_blob_sha": "8e170c08fa9e7183d99d92a7a144582e990b3837"
+    },
+    {
+      "path": "src/ol/source/ImageCanvas.js",
+      "bytes": 4837,
+      "git_blob_sha": "fe8de2d98fcf2f1d4f2258bd89718df62a1f93d7"
+    },
+    {
+      "path": "src/ol/source/ImageMapGuide.js",
+      "bytes": 6520,
+      "git_blob_sha": "aafdc02f021424a8a18d2c6db2f3a0635537fea7"
+    },
+    {
+      "path": "src/ol/source/ImageStatic.js",
+      "bytes": 4019,
+      "git_blob_sha": "f9fa2e1f1b55f8e64943d139a5bac404e921cb01"
+    },
+    {
+      "path": "src/ol/source/ImageTile.js",
+      "bytes": 7381,
+      "git_blob_sha": "7c1f369a514bc7491c388ac96b8e4dacd0d72542"
+    },
+    {
+      "path": "src/ol/source/ImageWMS.js",
+      "bytes": 9505,
+      "git_blob_sha": "c4475782bd17e172324a0aca6508c9a93a8dd675"
+    },
+    {
+      "path": "src/ol/source/mapguide.js",
+      "bytes": 4752,
+      "git_blob_sha": "5d5829a0b0b3b3eaf0a81c8ede042937258a963c"
+    },
+    {
+      "path": "src/ol/source/mapserver.js",
+      "bytes": 3340,
+      "git_blob_sha": "00aff85ab65739df6b6c6cc5a52f49713b9e0d79"
+    },
+    {
+      "path": "src/ol/source/OGCMap.js",
+      "bytes": 6410,
+      "git_blob_sha": "c50a53a443174de09bf136e2125c25e0796bbc6c"
+    },
+    {
+      "path": "src/ol/source/OGCMapTile.js",
+      "bytes": 4627,
+      "git_blob_sha": "b12b4692dfcaef085e8019f9420cd36c6ecc977b"
+    },
+    {
+      "path": "src/ol/source/ogcMapUtil.js",
+      "bytes": 4521,
+      "git_blob_sha": "5b6c79ecf49df9e0afdf22545c4308909f9c3944"
+    },
+    {
+      "path": "src/ol/source/ogcTileUtil.js",
+      "bytes": 15088,
+      "git_blob_sha": "b42209a5e402ec79215600a4dc2c129f5b97d004"
+    },
+    {
+      "path": "src/ol/source/OGCVectorTile.js",
+      "bytes": 5176,
+      "git_blob_sha": "1ab2822dc393374b88f060c55db8956f2d383965"
+    },
+    {
+      "path": "src/ol/source/OSM.js",
+      "bytes": 3471,
+      "git_blob_sha": "f42c3eac41b3fdac90b615d96e162edb46769f27"
+    },
+    {
+      "path": "src/ol/source/Raster.js",
+      "bytes": 41602,
+      "git_blob_sha": "0d14760881860c1caec7a818b4fe8157946dd8f2"
+    },
+    {
+      "path": "src/ol/source/SentinelHub.js",
+      "bytes": 22042,
+      "git_blob_sha": "cbff0f5e2c5da3f10355da0d1281f2543ad0e9a8"
+    },
+    {
+      "path": "src/ol/source/Source.js",
+      "bytes": 7104,
+      "git_blob_sha": "26ce2bdffe2b95ebeb564e778fc6696467e8927f"
+    },
+    {
+      "path": "src/ol/source/StadiaMaps.js",
+      "bytes": 5838,
+      "git_blob_sha": "c467e6176310dc2e82755b5d734a56eeea932bc1"
+    },
+    {
+      "path": "src/ol/source/static.js",
+      "bytes": 2096,
+      "git_blob_sha": "84faba75f11480979b23809f15c88682ae171e22"
+    },
+    {
+      "path": "src/ol/source/Tile.js",
+      "bytes": 9353,
+      "git_blob_sha": "c0efa0bd572cc5cb8a7ce6f1664f461f6c4500e8"
+    },
+    {
+      "path": "src/ol/source/TileArcGISRest.js",
+      "bytes": 8449,
+      "git_blob_sha": "3cda51fa1a1e2333078889d5327041027a60880c"
+    },
+    {
+      "path": "src/ol/source/TileDebug.js",
+      "bytes": 4601,
+      "git_blob_sha": "de6316b2c8fd60499441c998f6737130a2e41b81"
+    },
+    {
+      "path": "src/ol/source/TileEventType.js",
+      "bytes": 906,
+      "git_blob_sha": "a649a3202c48b3131ce1d063eafb6c94cf0fb022"
+    },
+    {
+      "path": "src/ol/source/TileImage.js",
+      "bytes": 13562,
+      "git_blob_sha": "635368dc621ea80a531adbef9acb2466e3dd22d8"
+    },
+    {
+      "path": "src/ol/source/TileJSON.js",
+      "bytes": 7456,
+      "git_blob_sha": "6d4e19cdc69f4087f07318f1dcc83109408a0670"
+    },
+    {
+      "path": "src/ol/source/TileWMS.js",
+      "bytes": 14405,
+      "git_blob_sha": "55173f6069859989144d5be57b143096d56785df"
+    },
+    {
+      "path": "src/ol/source/UrlTile.js",
+      "bytes": 6585,
+      "git_blob_sha": "eac04e0315b0786de3eee1c003328ffcf19e9193"
+    },
+    {
+      "path": "src/ol/source/UTFGrid.js",
+      "bytes": 15018,
+      "git_blob_sha": "2ca90b5663f5a94f8f4a4e1fb10dba45d8ee83b0"
+    },
+    {
+      "path": "src/ol/source/Vector.js",
+      "bytes": 42859,
+      "git_blob_sha": "1526b1e0b1d1ea82977c420510c5e5ddced428ed"
+    },
+    {
+      "path": "src/ol/source/VectorEventType.js",
+      "bytes": 1574,
+      "git_blob_sha": "665b0a217ecf049397c40542186ee67fb21076a4"
+    },
+    {
+      "path": "src/ol/source/VectorTile.js",
+      "bytes": 21125,
+      "git_blob_sha": "0f38c8dbf0b3070021c73048e05006d73006dd02"
+    },
+    {
+      "path": "src/ol/source/wms.js",
+      "bytes": 10084,
+      "git_blob_sha": "dd509500ddae15c4a584187ef79bfbf22fb44217"
+    },
+    {
+      "path": "src/ol/source/WMTS.js",
+      "bytes": 19410,
+      "git_blob_sha": "07003f4ff5daf27ebd9d8f3791101d41f44d4084"
+    },
+    {
+      "path": "src/ol/source/XYZ.js",
+      "bytes": 5911,
+      "git_blob_sha": "99e96722a03c54f4d791459991d7c7692f0e29fe"
+    },
+    {
+      "path": "src/ol/source/Zoomify.js",
+      "bytes": 11002,
+      "git_blob_sha": "099a471db6a60876cc0df512519752b0e79bcdf0"
+    },
+    {
+      "path": "src/ol/structs/LRUCache.js",
+      "bytes": 6695,
+      "git_blob_sha": "02d6572183de1f0071a640954012be1d3999282c"
+    },
+    {
+      "path": "src/ol/structs/PriorityQueue.js",
+      "bytes": 6405,
+      "git_blob_sha": "0434ab5d65e37153d5185d051a9e0b6c80f6941d"
+    },
+    {
+      "path": "src/ol/structs/RBush.js",
+      "bytes": 5179,
+      "git_blob_sha": "07523120f8c3f71f565a5cc59e5c4d16ab8b9e95"
+    },
+    {
+      "path": "src/ol/tilegrid.js",
+      "bytes": 6435,
+      "git_blob_sha": "d2f34892e079b586849087ea43ec1fc3aaa6ca03"
+    },
+    {
+      "path": "src/ol/tilegrid/TileGrid.js",
+      "bytes": 23238,
+      "git_blob_sha": "60868ccce0232ce86b20bcfd3b19a197d9458631"
+    },
+    {
+      "path": "src/ol/tilegrid/WMTS.js",
+      "bytes": 8304,
+      "git_blob_sha": "127d0a620787cbfcd09436b34330183346ee5dfa"
+    }
+  ]
+}
