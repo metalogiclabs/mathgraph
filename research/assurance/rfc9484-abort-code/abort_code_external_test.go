@@ -94,7 +94,7 @@ func TestMathGraphRFC9484NativeAbortHandoff(t *testing.T) {
       t.Fatalf("unexpected native error codes read=%#x write=%#x",readCode,writeCode)
     }
     t.Logf("MATHGRAPH_ABORT_OBSERVED case=%s read=%#x write=%#x cause=%q expected_for_malformed_capsule=%#x",
-       test.name,readCode,writeCode,cause.Error(),http3.ErrCodeMessageError)
+       test.name,readCode,writeCode,cause.Error(),uint64(http3.ErrCodeMessageError))
    } else {
     select {
     case code:=<-s.readCodes: t.Fatalf("unexpected read-cancel on valid capsule: %#x",code)
@@ -115,5 +115,5 @@ func TestMathGraphRFC9484NativeAbortHandoff(t *testing.T) {
   })
  }
  t.Log(fmt.Sprintf("MATHGRAPH_BOUNDARY_RESULT original_HTTP3_code=%#x normative_candidate=%#x",
-   http3.ErrCodeExcessiveLoad,http3.ErrCodeMessageError))
+   uint64(http3.ErrCodeExcessiveLoad),uint64(http3.ErrCodeMessageError)))
 }
