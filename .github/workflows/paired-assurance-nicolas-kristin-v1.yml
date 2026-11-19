@@ -1,0 +1,133 @@
+name: Paired L4YAML–FRET semantic assurance (research only)
+on:
+  push:
+    branches: [research/paired-nicolas-kristin-boundaries-v1-20261120]
+    paths: ['research/paired-assurance-20261120/**', '.github/workflows/paired-assurance-nicolas-kristin-v1.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  l4:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: original
+            revision: 4f31fef1f18e48b2204322b9a257b905340768c6
+            schema_blob: 5fb5bccfd3b6cccd164f68a678ef2ea812803fe0
+          - label: repaired
+            revision: d8f9865f222f75a15ffbd766837d340ba627d12a
+            schema_blob: bda62ed5cad86edcf2a1a40abe297053e80af226
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: nasa-jpl/L4YAML
+          ref: ${{ matrix.revision }}
+          path: external/l4
+          persist-credentials: false
+      - name: Verify original source and install pinned Lean
+        env:
+          REV: ${{ matrix.revision }}
+          SCHEMA_BLOB: ${{ matrix.schema_blob }}
+        run: |
+          set -euo pipefail
+          test "$(git -C external/l4 rev-parse HEAD)" = "$REV"
+          test "$(git -C external/l4 rev-parse HEAD:L4YAML/Schema/Schema.lean)" = "$SCHEMA_BLOB"
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile and execute real Lean Core resolver
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          t0=$(date +%s)
+          cd external/l4
+          lake update
+          lake build L4YAML.Schema.Schema
+          lake env lean --run "$GITHUB_WORKSPACE/research/paired-assurance-20261120/ReadActualCore.lean" > "$GITHUB_WORKSPACE/out/observations.tsv"
+          cp L4YAML/Schema/Schema.lean "$GITHUB_WORKSPACE/out/L4YAML.Schema.Schema.lean"
+          git rev-parse HEAD > "$GITHUB_WORKSPACE/out/revision.txt"
+          echo "$(( $(date +%s) - t0 ))" > "$GITHUB_WORKSPACE/out/wall-seconds.txt"
+          cat "$GITHUB_WORKSPACE/out/observations.tsv"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: paired-l4-${{ matrix.label }}
+          path: out
+          retention-days: 30
+
+  fret:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {repository: metalogiclabs/mathgraph, ref: 2b0e21e94e64ca54ff35c1d4572c60b3b6049720, path: external/runner, persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {repository: NASA-SW-VnV/fret, ref: cf0f913cc15c41705e803593297e89cd6056b839, path: external/fret, persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {repository: R2U2/r2u2, ref: 2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a, path: external/r2u2, persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.13'}
+      - name: Re-run actual original FRET/C2PO/R2U2
+        run: |
+          set -euo pipefail
+          test "$(git -C external/runner rev-parse HEAD)" = "2b0e21e94e64ca54ff35c1d4572c60b3b6049720"
+          test "$(git -C external/fret rev-parse HEAD)" = "cf0f913cc15c41705e803593297e89cd6056b839"
+          test "$(git -C external/r2u2 rev-parse HEAD)" = "2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a"
+          python3 -m unittest discover -s external/runner/experiments/check-rocket-native-v1 -p 'test_*.py' -v
+          mkdir -p native-out
+          t0=$(date +%s)
+          npm install --prefix /tmp/rocket-node --ignore-scripts --no-fund --no-audit --no-save antlr4@4.8.0 product-iterable@3.0.1
+          NODE_PATH=/tmp/rocket-node/node_modules ROCKET_FRET_ROOT="$GITHUB_WORKSPACE/external/fret" ROCKET_OUTPUT="$GITHUB_WORKSPACE/native-out" node external/runner/experiments/check-rocket-native-v1/export_rocket_native.mjs
+          make -C external/r2u2/monitors/c -j2 all
+          python3 external/runner/experiments/check-rocket-native-v1/native_replay.py --out native-out --fret external/fret --r2u2 external/r2u2
+          echo "$(( $(date +%s) - t0 ))" > native-out/wall-seconds.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: paired-fret, path: native-out, retention-days: 30}
+
+  assess:
+    needs: [l4, fret]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {repository: metalogiclabs/mathgraph, ref: 1b06e7fb4a11a352a9c10916d68a6218dd508b38, path: external/boundary, persist-credentials: false}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.13'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: paired-l4-original, path: collected/yaml-original}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: paired-l4-repaired, path: collected/yaml-repaired}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: paired-fret, path: collected/fret}
+      - name: Same diagnostics, strong scripted comparator, original typed Boundary Warrant
+        run: |
+          set -euo pipefail
+          python3 research/paired-assurance-20261120/assess_pair.py \
+            --yaml-original collected/yaml-original \
+            --yaml-repaired collected/yaml-repaired \
+            --fret collected/fret --boundary external/boundary \
+            --out collected/paired-report.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('collected/paired-report.json'))
+          assert x['external_human_conventional_reviewer']=='NOT_RUN'
+          assert x['owner_action_permission']=='NOT_AUTHORIZED'
+          assert x['commercial_or_discovery_superiority']=='UNKNOWN'
+          assert len(x['admission']['controls'])==4
+          print('SAME_TWO_DOMAIN_ASSURANCE_AND_AUTHORITY_GATES_PASS')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: paired-assurance-qualified-report, path: collected/paired-report.json, retention-days: 30}
