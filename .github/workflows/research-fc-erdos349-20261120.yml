@@ -158,7 +158,10 @@ jobs:
             obtain ⟨B, hB⟩ := hm k hmk
             have hterm (i : ℕ) : (2 : ℤ) ∣ (⌊(1 : ℝ) * 2 ^ (i + 1)⌋ : ℤ) := by
               have hi : (⌊(1 : ℝ) * 2 ^ (i + 1)⌋ : ℤ) = (2 : ℤ) ^ (i + 1) := by
-                simp [← Int.cast_pow]
+                have hpow : (2 : ℝ) ^ (i + 1) = ((2 : ℤ) ^ (i + 1) : ℝ) := by
+        norm_cast
+      rw [one_mul, hpow]
+      exact Int.floor_intCast _
               rw [hi, pow_succ]
               refine ⟨(2 : ℤ) ^ i, ?_⟩
               simp [mul_comm]
