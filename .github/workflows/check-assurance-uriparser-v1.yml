@@ -32,6 +32,8 @@ jobs:
             'research/assurance/eligibility-first-pass-results-v0.5.json',
             'experiments/assurance-third-domain/uri_resolution.c',
             'experiments/assurance-third-domain/check_uri_native.py',
+            '.github/workflows/research-rocket-warrant-integration.yml',
+            'research/assurance/check_rocket_warrant_integration.py',
             '.github/workflows/check-assurance-uriparser-v1.yml'
           }
           actual=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
