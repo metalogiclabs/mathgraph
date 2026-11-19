@@ -14,7 +14,7 @@ permissions:
 jobs:
   merge-compatibility:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +42,7 @@ jobs:
           if [[ "$merge_code" -ne 0 ]]; then
             git status --short
             echo "COMPOSITION_STATUS=UNKNOWN_PR_MERGE_CONFLICT"
-            exit 0
+            exit 1
           fi
           git apply --check "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-bridge.patch"
           apply_code=$?
@@ -50,9 +50,37 @@ jobs:
           if [[ "$apply_code" -ne 0 ]]; then
             echo "COMPOSITION_STATUS=SOURCE_PATCH_CONTEXT_CONFLICT"
             git diff -- FormalConjectures/ErdosProblems/349.lean
-            exit 0
+            exit 1
           fi
           git apply "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-bridge.patch"
           git diff --check
           echo "COMPOSITION_STATUS=APPLIES_CLEANLY"
           git diff -- FormalConjectures/ErdosProblems/349.lean
+
+      - name: Install Lean exact frozen toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail -L -sS https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Combined-tree Lean 4.33.1 build and five source witnesses
+        shell: bash
+        working-directory: /tmp/fc-check
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = leanprover/lean4:v4.33.1
+          lean --version
+          lake exe cache get
+          lake --wfail build 'FormalConjectures.ErdosProblems.«349»'
+          echo "COMBINED_LEAN_BUILD=PASS"
+          cat > /tmp/combined349.lean <<'LEAN'
+          import FormalConjectures.ErdosProblems.«349»
+          /-! Source alignment verification after composing PR #8002. -/
+          #check Erdos349.IsGoodPairIndexed
+          #check Erdos349.erdos_349
+          #check Erdos349.complete_for_alpha_in_Ioo_one_to_goldenRatio
+          LEAN
+          lake env lean /tmp/combined349.lean
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/semantic-separation.lean"
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-auxiliary.lean"
+          echo "COMBINED_LEAN_WITNESSES=PASS"
