@@ -1,0 +1,129 @@
+name: Isolated exact-source uriparser RFC calibration
+
+on:
+  push:
+    branches: [research/assurance-eligibility-calibration-20261120]
+    paths:
+      - 'experiments/assurance-third-domain/**'
+      - '.github/workflows/check-assurance-uriparser-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, fetch-depth: 0}
+      - name: Block changes to qualified Check or production source
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='1d317d909d1e72cfb780e53b302df8103d250e31'
+          subprocess.run(['git','merge-base','--is-ancestor',base,'HEAD'],check=True)
+          allowed={
+            'research/assurance/eligibility-calibration-v0.5.md',
+            'research/assurance/eligibility-selected-v0.5.json',
+            'research/assurance/eligibility-first-pass-results-v0.5.json',
+            'experiments/assurance-third-domain/uri_resolution.c',
+            'experiments/assurance-third-domain/check_uri_native.py',
+            '.github/workflows/check-assurance-uriparser-v1.yml'
+          }
+          actual=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
+          assert actual<=allowed, f'OUT_OF_SCOPE_SOURCE_EDIT: {sorted(actual-allowed)}'
+          print('SOURCE_ALLOWLIST_PASS',len(actual))
+          PY
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: uriparser/uriparser
+          ref: abb9f328ae836ff5bf8f211e0ba82f7b6de01ebe
+          path: external/uriparser
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.13'}
+      - name: Compile genuine pinned library and check RFC 3986 examples
+        run: |
+          set -euo pipefail
+          test "$(git -C external/uriparser rev-parse HEAD)" = 'abb9f328ae836ff5bf8f211e0ba82f7b6de01ebe'
+          cmake -S external/uriparser -B /tmp/mathgraph-uriparser-build -DCMAKE_BUILD_TYPE=Release -DURIPARSER_SHARED_LIBS=OFF -DURIPARSER_BUILD_DOCS=OFF -DURIPARSER_BUILD_TESTS=OFF -DURIPARSER_BUILD_TOOLS=OFF -DURIPARSER_ENABLE_INSTALL=OFF
+          cmake --build /tmp/mathgraph-uriparser-build --parallel 2
+          test -s /tmp/mathgraph-uriparser-build/liburiparser.a
+          mkdir -p native-uri-out
+          gcc -std=c99 -O2 -Wall -Wextra -Werror -DURI_STATIC_BUILD -Iexternal/uriparser/include experiments/assurance-third-domain/uri_resolution.c /tmp/mathgraph-uriparser-build/liburiparser.a -o native-uri-out/uri_resolution
+          python3 experiments/assurance-third-domain/check_uri_native.py --binary native-uri-out/uri_resolution --source external/uriparser --output native-uri-out/native-result.json
+          printf '%s\n' "$GITHUB_SHA" > native-uri-out/research-head.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: uriparser-native-calibration
+          path: native-uri-out
+          retention-days: 30
+
+  independent:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: uriparser/uriparser
+          ref: abb9f328ae836ff5bf8f211e0ba82f7b6de01ebe
+          path: external/uriparser
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: {python-version: '3.13'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: uriparser-native-calibration, path: native-uri-out}
+      - name: Rehash downloaded actual binary, receipt and commit
+        run: |
+          set -euo pipefail
+          test "$(cat native-uri-out/research-head.txt)" = "$GITHUB_SHA"
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('native-uri-out')
+          prior=json.loads((root/'native-result.json').read_text())
+          assert hashlib.sha256((root/'uri_resolution').read_bytes()).hexdigest()==prior['native_binary_sha256']
+          assert prior['native_reference_matches']==12 and prior['owner_permission']=='UNKNOWN_NO_ACTION'
+          print('DOWNLOADED_BINARY_AND_SCOPE_REHASH_PASS')
+          PY
+      - name: Independently rebuild pinned source and replay finite oracle
+        run: |
+          set -euo pipefail
+          cmake -S external/uriparser -B /tmp/mathgraph-uriparser-build -DCMAKE_BUILD_TYPE=Release -DURIPARSER_SHARED_LIBS=OFF -DURIPARSER_BUILD_DOCS=OFF -DURIPARSER_BUILD_TESTS=OFF -DURIPARSER_BUILD_TOOLS=OFF -DURIPARSER_ENABLE_INSTALL=OFF
+          cmake --build /tmp/mathgraph-uriparser-build --parallel 2
+          gcc -std=c99 -O2 -Wall -Wextra -Werror -DURI_STATIC_BUILD -Iexternal/uriparser/include experiments/assurance-third-domain/uri_resolution.c /tmp/mathgraph-uriparser-build/liburiparser.a -o native-uri-out/uri_resolution_fresh
+          python3 experiments/assurance-third-domain/check_uri_native.py --binary native-uri-out/uri_resolution_fresh --source external/uriparser --previous native-uri-out/native-result.json --output native-uri-out/independent-replay.json
+      - name: Source, result, owner, diagnosis tamper controls
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,subprocess,tempfile
+          report=json.loads(pathlib.Path('native-uri-out/native-result.json').read_text())
+          with tempfile.TemporaryDirectory() as root:
+            for label,changed in (
+              ('STALE_SOURCE',{'source_commit':'0'*40}),
+              ('WRONG_NATIVE_RESULT',{'native_results':dict(report['native_results'],g='wrong')}),
+              ('FORGED_OWNER',{'owner_approved':True}),
+              ('FORGED_DIAGNOSIS',{'seeded_wrong_decoder_inputs':[]})):
+              candidate=dict(report);candidate.update(changed)
+              path=pathlib.Path(root)/(label+'.json');path.write_text(json.dumps(candidate))
+              p=subprocess.run(['python3','experiments/assurance-third-domain/check_uri_native.py',
+                 '--binary','native-uri-out/uri_resolution_fresh','--source','external/uriparser',
+                 '--previous',str(path),'--output',str(pathlib.Path(root)/'not-admitted.json')],
+                 capture_output=True,text=True)
+              assert p.returncode!=0,label
+              print('REFUSED',label)
+          print('FORGED_EVIDENCE_REFUSED 4/4')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: uriparser-independent-requalification
+          path: native-uri-out/independent-replay.json
+          retention-days: 30
