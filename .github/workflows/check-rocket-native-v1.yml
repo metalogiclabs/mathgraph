@@ -103,6 +103,42 @@ jobs:
           python3 experiments/check-rocket-native-v1/qualify_native.py \
             --out native-rocket-out --monitor external/r2u2/monitors/c/build/r2u2
           printf '%s\n' '${{ github.sha }}' > native-rocket-out/qualification-source-commit.txt
+      - name: Challenge real native artifact with five source/authority mutations
+        run: |
+          python3 - <<'PY'
+          import json
+          import shutil
+          import sys
+          import tempfile
+          from pathlib import Path
+          sys.path.insert(0, 'experiments/check-rocket-native-v1')
+          from qualify_native import validate_report
+          original=Path('native-rocket-out')
+          monitor=Path('external/r2u2/monitors/c/build/r2u2').resolve()
+          cases=(('challenger.bin', 'BINARY_CHANGED'),
+                 ('challenger.c2po','SPEC_CHANGED'),
+                 ('challenger.map','MAP_CHANGED'),
+                 ('simultaneous.csv','TRACE_DATA_CHANGED'),
+                 ('native-result.json','EVIDENCE_ATTEMPTS_AUTHORITY_PROMOTION'))
+          for name,expected in cases:
+              with tempfile.TemporaryDirectory() as temp:
+                  working=Path(temp)/'artifact'
+                  shutil.copytree(original,working)
+                  target=working/name
+                  if name=='native-result.json':
+                      result=json.loads(target.read_text())
+                      result['owner_approved']=True
+                      target.write_text(json.dumps(result))
+                  else:
+                      target.write_bytes(target.read_bytes()+b'changed')
+                  try:
+                      validate_report(working,monitor)
+                  except ValueError as exc:
+                      assert str(exc)==expected, (name,str(exc),expected)
+                  else:
+                      raise AssertionError('TAMPERED_EVIDENCE_WAS_ADMITTED: '+name)
+          print('REAL_ARTIFACT_TAMPERING_REFUSED 5/5')
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
