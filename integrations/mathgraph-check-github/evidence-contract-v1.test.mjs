@@ -1,0 +1,16 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {inspectEvidence} from "./evidence-contract-v1.mjs";
+const a="a".repeat(40),b="b".repeat(40),c="c".repeat(40);
+const fixture=()=>({subject:{repository:"metalogiclabs/example",pr:3,base_sha:b,head_sha:a},carrier:{repository:"metalogiclabs/mathgraph",head_sha:c},evidence:[{id:"ci",subject_sha:a,verifier_sha:c,conclusion:"success"},{id:"other",subject_sha:a,verifier_sha:c,conclusion:"success"}],claims:[{id:"build",requires:["ci"]},{id:"other",requires:["other"]}]});
+const check=(f,ids=["ci","other"])=>inspectEvidence(f,{allowedRepositories:["metalogiclabs/example"],authenticatedEvidenceIds:ids});
+test("cannot elevate green CI to theorem",()=>{const r=check(fixture());assert.equal(r.status,"OBSERVED");assert.equal(r.results[0].status,"OBSERVED");assert.equal(r.permission,"ADVISORY_ONLY")});
+test("foreign repository is unknown",()=>{const f=fixture();f.subject.repository="nasa-jpl/L4YAML";assert.equal(check(f).status,"UNKNOWN")});
+test("changed subject SHA invalidates receipt",()=>{const f=fixture();f.evidence[0].subject_sha=b;assert.equal(check(f).status,"UNKNOWN")});
+test("caller must independently authenticate evidence",()=>assert.equal(check(fixture(),[]).status,"UNKNOWN"));
+test("duplicate receipt IDs refused",()=>{const f=fixture();f.evidence[1].id="ci";assert.equal(check(f).status,"UNKNOWN")});
+test("one missing claim dependency does not erase independent claim",()=>{const f=fixture();f.claims[0].requires=["absent"];const r=check(f);assert.equal(r.results[0].status,"UNKNOWN");assert.equal(r.results[1].status,"OBSERVED")});
+test("failure blocks only dependent claim",()=>{const f=fixture();f.evidence[0].conclusion="failure";const r=check(f);assert.equal(r.results[0].status,"BLOCKED");assert.equal(r.results[1].status,"OBSERVED")});
+test("pending verification is unknown",()=>{const f=fixture();f.evidence[0].conclusion="pending";assert.equal(check(f).results[0].status,"UNKNOWN")});
+test("mangled subject is unknown",()=>{const f=fixture();f.subject.head_sha="bad";assert.equal(check(f).status,"UNKNOWN")});
+test("carrier identity remains distinct",()=>{const r=check(fixture());assert.notEqual(r.carrier.repository,r.subject.repository)});

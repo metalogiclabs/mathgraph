@@ -1,0 +1,19 @@
+name: MathGraph Check evidence contract V1
+on:
+  pull_request:
+    paths:
+      - 'integrations/mathgraph-check-github/evidence-contract-v1.mjs'
+      - 'integrations/mathgraph-check-github/evidence-contract-v1.test.mjs'
+      - '.github/workflows/mathgraph-check-evidence-contract-v1.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test integrations/mathgraph-check-github/evidence-contract-v1.test.mjs
