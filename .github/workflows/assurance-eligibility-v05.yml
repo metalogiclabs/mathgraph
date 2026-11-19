@@ -1,0 +1,49 @@
+name: Assurance eligibility v0.5 (research only)
+on:
+  push:
+    branches:
+      - research/assurance-eligibility-calibration-v05-20261120
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-selection-and-native-warrant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Freeze/selection integrity
+        run: |
+          set -euo pipefail
+          python3 research/assurance/eligibility-v05/select_calibration.py > /tmp/calibration-selected.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('/tmp/calibration-selected.json'))
+          b=json.load(open('research/assurance/eligibility-v05/selection.json'))
+          assert a['selection'] == b['selection'], (a['selection'],b['selection'])
+          assert len(a['selection']) == 24
+          print('FROZEN_SELECTION_MATCH 24/24')
+          PY
+      - name: Download original exact public rocket artifacts (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api /repos/metalogiclabs/mathgraph/actions/artifacts/14572976739/zip > /tmp/rocket-native.zip
+          gh api /repos/metalogiclabs/mathgraph/actions/artifacts/14571893096/zip > /tmp/rocket-qualification.zip
+          unzip -t /tmp/rocket-native.zip
+          unzip -t /tmp/rocket-qualification.zip
+          sha256sum /tmp/rocket-native.zip /tmp/rocket-qualification.zip
+      - name: Real-byte native receipt admission and selective withdrawal
+        env:
+          ROCKET_NATIVE_ZIP: /tmp/rocket-native.zip
+          ROCKET_QUAL_ZIP: /tmp/rocket-qualification.zip
+        run: |
+          set -euo pipefail
+          python3 -u research/assurance/eligibility-v05/test_native_warrant_link.py -v
+          printf '%s\n' 'NATIVE_WARRANT_INTEGRATION_BOUNDED_ONLY_NO_OWNER_GRANT'
