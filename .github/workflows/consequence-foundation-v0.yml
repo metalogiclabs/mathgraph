@@ -1,0 +1,140 @@
+name: Consequence Foundation V0 Stateful Qualification
+on:
+  pull_request:
+    paths:
+      - 'conformance/consequence_v0/**'
+      - 'conformance/capability_v1/**'
+      - 'protocol/schemas/consequence-envelope-v0.schema.json'
+      - 'website/src/data/record-index.json'
+      - '.github/workflows/consequence-foundation-v0.yml'
+  workflow_dispatch:
+jobs:
+  stateful-campaign:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run structural, transport and real finite replay controls
+        run: python -m unittest discover -s conformance/consequence_v0 -p 'test_*.py' -v
+      - name: Kill deliberately broken premise-audit implementations
+        run: python conformance/consequence_v0/mutation_gate.py
+      - name: Produce machine-readable exact-head evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/mathgraph-consequence"
+          python conformance/consequence_v0/test_stateful_campaign.py --report > "$RUNNER_TEMP/mathgraph-consequence/report.json"
+          python -m json.tool "$RUNNER_TEMP/mathgraph-consequence/report.json" > /dev/null
+          sha256sum "$RUNNER_TEMP/mathgraph-consequence/report.json" | tee "$RUNNER_TEMP/mathgraph-consequence/report.sha256"
+          git rev-parse HEAD > "$RUNNER_TEMP/mathgraph-consequence/checkout-commit.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequence-foundation-v0-stateful-evidence
+          path: ${{ runner.temp }}/mathgraph-consequence/
+          if-no-files-found: error
+  real-two-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Acquire exact independent JPL source and Lean evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/mathgraph-cross-domain"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657687808/zip" -o "$RUNNER_TEMP/mathgraph-cross-domain/l4yaml-v1.zip"
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/11657314389/zip" -o "$RUNNER_TEMP/mathgraph-cross-domain/l4yaml-v2.zip"
+          echo "b75581017d6620481c77e52b350e8bb8631d11747a92789f7887cde527807086  $RUNNER_TEMP/mathgraph-cross-domain/l4yaml-v1.zip" | sha256sum -c -
+          echo "61fc93815e3329c0490324f52897a94d3417044a5cf16a8e1e0f0109aa0e515e  $RUNNER_TEMP/mathgraph-cross-domain/l4yaml-v2.zip" | sha256sum -c -
+      - name: Run independently interpreted two-domain semantic transport and invalidation
+        env:
+          MATHGRAPH_V1_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-cross-domain/l4yaml-v1.zip
+          MATHGRAPH_V2_EVIDENCE_ZIP: ${{ runner.temp }}/mathgraph-cross-domain/l4yaml-v2.zip
+        run: |
+          PYTHONPATH=. python conformance/consequence_v0/cross_domain_real.py -v
+          echo "BOUNDED_TWO_DOMAIN_TRANSPORT_CHECKS_PASSED"
+  original-crystal-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch immutable original Crystal implementation
+        run: |
+          set -euo pipefail
+          git init "$RUNNER_TEMP/original-crystal"
+          git -C "$RUNNER_TEMP/original-crystal" remote add origin "https://github.com/metalogiclabs/mathgraph.git"
+          git -C "$RUNNER_TEMP/original-crystal" fetch --depth=1 origin 82fb6815b61d35f70d0d74531f077fc6e28f330e
+          test "$(git -C "$RUNNER_TEMP/original-crystal" rev-parse FETCH_HEAD)" = "82fb6815b61d35f70d0d74531f077fc6e28f330e"
+          git -C "$RUNNER_TEMP/original-crystal" show FETCH_HEAD:mathgraph/crystal.py > "$RUNNER_TEMP/original-crystal.py"
+          echo "CRYSTAL_ORIGINAL_PATH=$RUNNER_TEMP/original-crystal.py" >> "$GITHUB_ENV"
+          echo "CRYSTAL_SOURCE_SHA256=$(sha256sum "$RUNNER_TEMP/original-crystal.py" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Compare original runtime against candidate codec
+        run: PYTHONPATH=conformance/consequence_v0 python conformance/consequence_v0/original_crystal_compatibility.py -v
+  lean-compositional-warrant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean 4 compiler
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          test "$(git hash-object "$RUNNER_TEMP/elan-init.sh")" = "ab8c346be2d665b2c77a6eba0dc2338c43413a9c"
+          sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain leanprover/lean4:v4.35.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Kernel-check compositional warrant theorems
+        run: |
+          set -euo pipefail
+          lean --version
+          # A successful Lean process alone permits 'sorry'. Reject it explicitly.
+          python - <<'PY'
+          import pathlib, re
+          root=pathlib.Path("conformance/consequence_v0")
+          for p in sorted(root.glob("*.lean")):
+              text=p.read_text()
+              if re.search(r"\bsorry\b|\b(admit|axiom)\b", re.sub(r"/-![\s\S]*?-/", "", text)):
+                  raise SystemExit(f"Forbidden proof placeholder or axiom: {p}")
+          PY
+          lean conformance/consequence_v0/CompositionalWarrant.lean
+          lean conformance/consequence_v0/GeneralWarrantCalculus.lean
+          lean conformance/consequence_v0/ProtectedFutureRefinement.lean
+          lean conformance/consequence_v0/EconomicCompoundingBoundary.lean
+          # Print every theorem's dependencies for the evidence log.
+          python - <<'PY'
+          import pathlib,re
+          root=pathlib.Path("conformance/consequence_v0")
+          for path in sorted(root.glob("*.lean")):
+              names=re.findall(r"(?m)^theorem\s+([A-Za-z_][A-Za-z_0-9]*)",path.read_text())
+              source=path.read_text()
+              ns=re.search(r"(?m)^namespace\s+(\w+)",source).group(1)
+              marker=chr(10)+"end "+ns+chr(10)
+              statements=chr(10).join(f"#print axioms {name}" for name in names)
+              source=source.replace(marker,chr(10)+statements+chr(10)+marker)
+              probe=path.with_name(path.stem+"AxiomAudit.lean")
+              probe.write_text(source)
+              print(f"AXIOM_AUDIT {path.name}: {len(names)} theorems")
+          PY
+          for f in conformance/consequence_v0/*AxiomAudit.lean; do
+            lean "$f" 2>&1 | tee "$RUNNER_TEMP/$(basename "$f").log"
+          done
+          if grep -E 'sorryAx|declaration uses \\[sorry\\]|error:' "$RUNNER_TEMP/"*AxiomAudit.lean.log; then
+            echo "Forbidden axiom or failed theorem audit"
+            exit 1
+          fi
+          sha256sum conformance/consequence_v0/CompositionalWarrant.lean conformance/consequence_v0/GeneralWarrantCalculus.lean conformance/consequence_v0/ProtectedFutureRefinement.lean conformance/consequence_v0/EconomicCompoundingBoundary.lean
