@@ -61,7 +61,7 @@ theorem source_half_two_complete : IsGoodPairIndexed (1 / 2) 2 := by
         _ = (2 : ℝ) ^ i := by ring
         _ = ((2 : ℤ) ^ i : ℝ) := by norm_cast
     rw [heq]
-    exact (Int.floor_intCast (R := ℝ) ((2 : ℤ) ^ i))
+    simpa only [Int.cast_pow] using (Int.floor_intCast (R := ℝ) ((2 : ℤ) ^ i))
   simp_rw [hterm]
   have hcast : (∑ i ∈ E, (2 : ℤ) ^ i) = ((∑ i ∈ E, 2 ^ i : ℕ) : ℤ) := by
     push_cast
