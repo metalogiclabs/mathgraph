@@ -1,9 +1,9 @@
-name: MathGraph OpenLayers exact-browser pixel-ratio qualification
+name: MathGraph OpenLayers selective browser pixel-ratio qualification
 
 on:
   push:
     branches:
-      - experiment/openlayers-pixelratio-browser-20261118
+      - experiment/openlayers-pixelratio-selective-20261119
   workflow_dispatch:
 
 permissions:
@@ -35,8 +35,8 @@ jobs:
           test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = d33f91592944d322c743f1bf0f950e1bee467938
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphPixelRatio.test.js
           cp mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_churn_diagnostic.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphChurn.test.js
-          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
-          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch > experiment-checksums.txt
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
+          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_browser_regression.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch > experiment-checksums.txt
           echo EXACT_SOURCE_AND_CANDIDATE_PATCH_VERIFIED
       - name: Prepare upstream browser runner
         uses: actions/setup-node@v4
@@ -77,7 +77,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          git -C openlayers apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_CANDIDATE.patch"
           git -C openlayers diff --check
           git -C openlayers diff -- src/ol/renderer/canvas/TileLayer.js > openlayers_candidate_applied.diff
       - name: Run browser repair and existing upstream specs
@@ -110,7 +110,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: openlayers-browser-pixelratio-qualification
+          name: openlayers-selective-pixelratio-qualification
           path: |
             experiment-checksums.txt
             openlayers-baseline.log
