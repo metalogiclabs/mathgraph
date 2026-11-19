@@ -37,8 +37,9 @@ export function monitor(previous,next,{changedEvidenceIds=[],changedSources=[]}=
    const missingScope=!req;
    const impacted=missingScope||shaChanged||sources.has(next.subject.repository)||
       [...(req??[])].some(x=>changed.has(x));
-   // No dependency closure proof means no silent carried-over authority.
-   const status=impacted&&n==="OBSERVED"&&!next.independent_requalification?
+   // Caller-owned flags cannot authenticate a fresh independent requalification.
+   // Recheck is a separate authenticated-source operation; pure monitor fails closed.
+   const status=impacted&&n==="OBSERVED"?
       "UNKNOWN":n;
    return {claim:id,from:b,to:status,changed:b!==status,
      reason:status!==n?"REQUALIFICATION_REQUIRED":missingScope?

@@ -1,0 +1,134 @@
+name: MathGraph Check aerospace RC1 — isolated no-deploy qualification
+on:
+  push:
+    branches: [release/mathgraph-check-aerospace-rc1-20261120]
+permissions: {contents: read, actions: read}
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false, fetch-depth: 0}
+      - name: Exact ancestry, protected-source allowlist and RED/GREEN trust control
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base="b3ff95df9bed186bdd173ded5e9a563a5322c9ed"
+          subprocess.run(["git","merge-base","--is-ancestor",base,"HEAD"],check=True)
+          changed=set(subprocess.check_output(["git","diff","--name-only",base,"HEAD"],text=True).splitlines())
+          allowed={
+            "integrations/mathgraph-check-github/check-resolve-monitor-v1.mjs",
+            "integrations/mathgraph-check-github/check-resolve-monitor-v1.test.mjs",
+            "integrations/mathgraph-check-github/check-resolve-monitor-trust-boundary-v1.test.mjs",
+            "integrations/mathgraph-check-github/fresh-ci-requalification-v1.mjs",
+            "integrations/mathgraph-check-github/fresh-ci-requalification-v1.test.mjs",
+            "docs/releases/mathgraph-check-aerospace-rc1-20261120.md",
+            ".github/workflows/check-aerospace-rc1.yml",
+          }
+          assert changed <= allowed, f"UNREVIEWED_RELEASE_CHANGE: {sorted(changed-allowed)}"
+          assert {"integrations/mathgraph-check-github/check-resolve-monitor-v1.mjs",
+                  "integrations/mathgraph-check-github/check-resolve-monitor-trust-boundary-v1.test.mjs"} <= changed
+          print("RC1_SOURCE_BOUNDARY_QUALIFIED",sorted(changed))
+          PY
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync,unlinkSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {monitor as patched} from './integrations/mathgraph-check-github/check-resolve-monitor-v1.mjs';
+          const base='b3ff95df9bed186bdd173ded5e9a563a5322c9ed';
+          const path='integrations/mathgraph-check-github/';
+          const source=execFileSync('git',['show',base+':'+path+'check-resolve-monitor-v1.mjs'],{encoding:'utf8'});
+          assert.match(source,/!next\.independent_requalification/);
+          const temp=path+'check-resolve-monitor-baseline-ci.mjs';
+          writeFileSync(temp,source);
+          try {
+            const {monitor:original}=await import('./'+temp);
+            const s={repository:'metalogiclabs/mathgraph',pr:194,head_sha:'a'.repeat(40)};
+            const mk=(status,extra={})=>({subject:s,claim_dependencies:[{id:'claim',requires:['e0']}],results:[{id:'claim',status}],...extra});
+            const before=mk('UNKNOWN'),after=mk('OBSERVED',{independent_requalification:true});
+            assert.equal(original(before,after,{changedEvidenceIds:['e0']}).transitions[0].to,'OBSERVED');
+            assert.equal(patched(before,after,{changedEvidenceIds:['e0']}).transitions[0].to,'UNKNOWN');
+            console.log('RC1_INTENTIONAL_BASELINE_BYPASS_RED_PATCH_GREEN');
+          } finally {unlinkSync(temp);}
+          JS
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: |
+          python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/cli-parity-v1 -p 'test_*.py'
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 -p 'test_*.py'
+      - run: npx --yes wrangler@4.129.1 deploy --dry-run --config integrations/mathgraph-check-github/cloudflare/wrangler.toml --outdir /tmp/selfserve-worker
+      - name: Preserve exact release source and binary input identities
+        run: |
+          git rev-parse HEAD > /tmp/selfserve-worker/rc1-head.txt
+          sha256sum integrations/mathgraph-check-github/cloudflare/worker.mjs integrations/mathgraph-check-github/cloudflare/wrangler.toml integrations/mathgraph-check-github/check-resolve-monitor-v1.mjs > /tmp/selfserve-worker/rc1-source-digests.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with: {name: selfserve-worker, path: /tmp/selfserve-worker, retention-days: 30}
+  native:
+    needs: contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      matrix: {pr: [6, 34, 37]}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - name: Read-only source and operator-path qualification
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/qualify-selfserve.mjs prepare qualified '${{ matrix.pr }}'
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs prepare qualified
+      - run: |
+          curl --proto '=https' --tlsv1.2 -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.35.0
+      - name: No-secret isolated native checks and reference admission
+        run: |
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py initial qualified
+          node integrations/mathgraph-check-github/pr-pilot-v1/controller.mjs expectation-run qualified
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess qualified
+      - name: Reuse exact candidate and freshly verify repair and withdrawal
+        if: matrix.pr == 6 || matrix.pr == 37
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/qualify-selfserve.mjs patch qualified
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs repair qualified
+          python3 integrations/mathgraph-check-github/lean-investigator-v1/native.py repair qualified
+          node integrations/mathgraph-check-github/lean-investigator-v1/driver.mjs assess qualified
+      - run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/qualify-selfserve.mjs require qualified '${{ matrix.pr }}'
+          node integrations/mathgraph-check-github/pr-pilot-v1/report.mjs qualified
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'selfserve-native-${{ matrix.pr }}', path: qualified, retention-days: 30}
+  browser:
+    strategy:
+      matrix: {pr: [6, 37]}
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with: {node-version: '24'}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with: {name: 'selfserve-native-${{ matrix.pr }}', path: qualified}
+      - run: |
+          npm install --no-save --prefix /tmp/selfserve-browser playwright@1.62.1
+          /tmp/selfserve-browser/node_modules/.bin/playwright install --with-deps chromium
+      - env: {NODE_PATH: /tmp/selfserve-browser/node_modules}
+        run: |
+          node integrations/mathgraph-check-github/pr-pilot-v1/browser-qa.cjs qualified/MathGraph-Check.html browser-qa "${{ matrix.pr == 37 && 'Report repair verified' || 'Candidate repair verified on frozen probes' }}"
+          node integrations/mathgraph-check-github/pr-pilot-v1/pilot-page-qa.cjs pilot-page-qa
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'selfserve-browser-${{ matrix.pr }}', path: 'browser-qa', retention-days: 30}
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: 'pilot-page-${{ matrix.pr }}', path: pilot-page-qa, retention-days: 30}
