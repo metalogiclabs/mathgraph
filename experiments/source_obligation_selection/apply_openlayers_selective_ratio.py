@@ -76,7 +76,7 @@ edit("src/ol/source/Tile.js", [
    * The conservative default applies to unknown source implementations.
    * @return {boolean} Reuse is justified for the source.
    */
-  canReuseCachedTilesAcrossPixelRatios() {
+  canReuseCachedTilesAcrossPixelRatios(beforePixelRatio, afterPixelRatio) {
     return false;
   }
 """)
@@ -118,6 +118,13 @@ edit("src/ol/source/TileImage.js", [
       this.createTile_ === TileImage.prototype.createTile_ &&
       this.getTileInternal === TileImage.prototype.getTileInternal &&
       this.getTile === TileImage.prototype.getTile &&
+      this.tileClass === ImageTile &&
+      this.tileLoadFunction === defaultTileLoadFunction &&
+      this.getTileCoordForTileUrlFunction ===
+        TileImage.prototype.getTileCoordForTileUrlFunction &&
+      this.getTileGridForProjection ===
+        TileImage.prototype.getTileGridForProjection &&
+      this.getTilePixelRatio === TileImage.prototype.getTilePixelRatio &&
       this.getTilePixelRatio(beforePixelRatio) ===
         this.getTilePixelRatio(afterPixelRatio)
     );
