@@ -68,12 +68,14 @@ jobs:
           mkdir -p research/assurance/rfc9484-abort-code/artifact
           (
             cd upstream
-            go test -count=1 -v -timeout=150s -run '^TestMathGraphRFC9484NativeAbortHandoff$' . \
+            go test -count=1 -v -timeout=150s -run '^TestMathGraphRFC9484' . \
               | tee ../research/assurance/rfc9484-abort-code/artifact/native.log
           )
           grep 'MATHGRAPH_ABORT_OBSERVED case=malformed_ip_version read=0x107 write=0x107' \
             research/assurance/rfc9484-abort-code/artifact/native.log
           grep 'MATHGRAPH_VALID_OBSERVED case=different_specific_protocols_same_range' \
+            research/assurance/rfc9484-abort-code/artifact/native.log
+          grep 'MATHGRAPH_OVERLOAD_OBSERVED read=0x107 write=0x107' \
             research/assurance/rfc9484-abort-code/artifact/native.log
           printf '%s\n' '9ee608a68fbbc6c377d13da4df2a269580b78909' \
              > research/assurance/rfc9484-abort-code/artifact/upstream-source-commit.txt
