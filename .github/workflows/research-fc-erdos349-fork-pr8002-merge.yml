@@ -1,0 +1,47 @@
+name: DeepMind Erdős 349 fork vs PR 8002 merge check
+
+on:
+  push:
+    branches:
+      - experiment/erdos349-source-bridge-20261120
+    paths:
+      - .github/workflows/research-fc-erdos349-fork-pr8002-merge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Pin fork correction and third-party PR
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/metalogiclabs/formal-conjectures.git /tmp/fc-merge
+          cd /tmp/fc-merge
+          git checkout --detach ae9925af195bf2acbbcb15c4077acd7bf0eda4af
+          test "$(git rev-parse HEAD)" = ae9925af195bf2acbbcb15c4077acd7bf0eda4af
+          test "$(git hash-object FormalConjectures/ErdosProblems/349.lean)" = 6fc93b5cd97016ebcbea8648c8fb373c3da7cd6f
+          git remote add upstream https://github.com/google-deepmind/formal-conjectures.git
+          git fetch --no-tags upstream refs/pull/8002/head:refs/remotes/upstream/pr8002
+          test "$(git rev-parse refs/remotes/upstream/pr8002)" = 35a302a6ea26ee3c11ed56a17cb03edac211a4e1
+          echo FROZEN_INPUTS=PASS
+      - name: Nonpublishing merge simulation
+        working-directory: /tmp/fc-merge
+        run: |
+          set -uo pipefail
+          git -c user.name=research -c user.email=research@example.invalid merge --no-commit --no-ff refs/remotes/upstream/pr8002 > /tmp/merge.log 2>&1
+          code=$?
+          cat /tmp/merge.log
+          echo MERGE_EXIT_CODE=$code
+          if test "$code" -eq 0; then
+            echo COMBINED_RESULT=MERGE_CLEAN
+            git diff --check
+          else
+            echo COMBINED_RESULT=MERGE_CONFLICT
+            git status --short
+            grep '^<<<<<<<\|^=======\|^>>>>>>>' FormalConjectures/ErdosProblems/349.lean || true
+          fi
+          echo MERGE_PROBE_COMPLETED=YES
