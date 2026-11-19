@@ -6,6 +6,7 @@ on:
       - experiment/erdos349-source-bridge-20261120
     paths:
       - .github/workflows/research-fc-erdos349-20261120.yml
+      - research/deepmind/erdos349/source-auxiliary.lean
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Fetch exact upstream Formal Conjectures tree
         shell: bash
         run: |
@@ -178,3 +182,11 @@ jobs:
           LEAN
           lake env lean /tmp/Erdos349Separation.lean
           echo "LEAN_UNIVERSAL_SEPARATION=PASS"
+
+      - name: Lean source reindex and positive dyadic controls (no sorry)
+        working-directory: /tmp/fc
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean "$GITHUB_WORKSPACE/research/deepmind/erdos349/source-auxiliary.lean"
+          echo "LEAN_SOURCE_AUXILIARY=PASS"
