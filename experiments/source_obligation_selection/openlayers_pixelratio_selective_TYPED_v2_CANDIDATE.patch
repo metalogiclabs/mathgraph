@@ -1,0 +1,107 @@
+diff --git a/src/ol/ImageTile.js b/src/ol/ImageTile.js
+--- a/src/ol/ImageTile.js
++++ b/src/ol/ImageTile.js
+@@ -77,7 +77,15 @@
+      * @type {import("./Tile.js").LoadFunction}
+      */
+     this.tileLoadFunction_ = tileLoadFunction;
+   }
++
++  /**
++   * Return the source URL given to the tile at construction.
++   * @return {string} Original tile source URL.
++   */
++  getSourceUrl() {
++    return this.src_;
++  }
+ 
+   /**
+    * Get the HTML image element for this tile (may be a Canvas, OffscreenCanvas, Image, or Video).
+diff --git a/src/ol/source/TileImage.js b/src/ol/source/TileImage.js
+--- a/src/ol/source/TileImage.js
++++ b/src/ol/source/TileImage.js
+@@ -294,7 +294,35 @@
+     const tile = this.createTile_(z, x, y, pixelRatio, projection, key);
+     tileCache?.set(cacheKey, tile);
+     return tile;
+   }
++
++  /**
++   * Whether a previously constructed image tile can be reused at a new pixel ratio.
++   * Conservatively rejects sources with overridden tile construction methods.
++   * @param {import('../Tile.js').default|undefined} tile Cached tile.
++   * @param {number} pixelRatio Updated pixel ratio.
++   * @param {import('../proj/Projection.js').default} projection Tile projection.
++   * @return {boolean} Whether the URL and inherited constructor agree.
++   */
++  canReuseTileAtRatio(tile, pixelRatio, projection) {
++    if (
++      this.createTile_ !== TileImage.prototype.createTile_ ||
++      this.getTileInternal !== TileImage.prototype.getTileInternal ||
++      this.getTile !== TileImage.prototype.getTile ||
++      this.tileClass !== ImageTile ||
++      !(tile instanceof ImageTile)
++    ) {
++      return false;
++    }
++    const tileCoord = this.getTileCoordForTileUrlFunction(
++      tile.tileCoord,
++      projection,
++    );
++    const tileUrl = tileCoord
++      ? this.tileUrlFunction(tileCoord, pixelRatio, projection)
++      : undefined;
++    return tile.getSourceUrl() === (tileUrl !== undefined ? tileUrl : '');
++  }
+ 
+   /**
+    * Sets whether to render reprojection edges or not (usually for debugging).
+diff --git a/src/ol/renderer/canvas/TileLayer.js b/src/ol/renderer/canvas/TileLayer.js
+--- a/src/ol/renderer/canvas/TileLayer.js
++++ b/src/ol/renderer/canvas/TileLayer.js
+@@ -20,7 +20,8 @@
+ } from '../../extent.js';
+ import {equivalent, fromUserExtent} from '../../proj.js';
+ import ReprojTile from '../../reproj/Tile.js';
+ import {toSize} from '../../size.js';
++import LegacyTileImage from '../../source/TileImage.js';
+ import LRUCache from '../../structs/LRUCache.js';
+ import {
+   createOrUpdate as createTileCoord,
+@@ -520,7 +521,36 @@
+     const source = this.getLayer().getSource();
+     if (!source) {
+       return false;
+     }
++
++    // Recheck URLs when pixel ratio changes rather than rebuilding all tiles.
++    // Unknown source implementations still take the conservative clear path.
++    if (
++      this.renderedPixelRatio !== undefined &&
++      this.renderedPixelRatio !== frameState.pixelRatio
++    ) {
++      const sourceProjection = source.getProjection();
++      const viewProjection = frameState.viewState.projection;
++      const canCompareUrls =
++        source instanceof LegacyTileImage &&
++        source.canReuseTileAtRatio ===
++          LegacyTileImage.prototype.canReuseTileAtRatio &&
++        (!sourceProjection || equivalent(sourceProjection, viewProjection)) &&
++        (!this.sourceTileCache_ || this.sourceTileCache_.getCount() === 0);
++      if (canCompareUrls) {
++        const projection = sourceProjection || viewProjection;
++        for (const cacheKey of this.tileCache_.getKeys()) {
++          const tile = this.tileCache_.peek(cacheKey);
++          if (!source.canReuseTileAtRatio(tile, frameState.pixelRatio, projection)) {
++            this.tileCache_.remove(cacheKey).dispose();
++          }
++        }
++      } else {
++        this.tileCache_.clear();
++        this.sourceTileCache_?.clear();
++      }
++    }
++
+     const sourceRevision = source.getRevision();
+     if (!this.renderedSourceRevision_) {
+       this.renderedSourceRevision_ = sourceRevision;
