@@ -28,9 +28,9 @@ const inertLoader = (tile) => {
 describe('MathGraph source-provenanced ratio cache experiment', function () {
   it('template-owned URL identity retains tile objects across 1 to 2', function () {
     const source = new XYZ({
-      url: 'mathgraph-template/{z}/{x}/{y}',
+      // A real, source-owned generated URL template and default image loader.
+      url: 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=',
       transition: 0,
-      tileLoadFunction: inertLoader,
     });
     const {map, layer} = makeMap(source);
     try {
@@ -87,6 +87,34 @@ describe('MathGraph source-provenanced ratio cache experiment', function () {
     source.setUrl('mathgraph-other/{z}/{x}/{y}');
     assert.isTrue(source.canReuseCachedTilesAcrossPixelRatios(1, 2));
     source.tileUrlFunction = (coord, ratio) => 'direct-custom/' + ratio + '/' + coord.join('/');
+    assert.isFalse(source.canReuseCachedTilesAcrossPixelRatios(1, 2));
+  });
+
+  it('a template URL does not certify an arbitrary image loader', function () {
+    const source = new XYZ({
+      url: 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=',
+      tileLoadFunction: inertLoader,
+    });
+    assert.isFalse(
+      source.canReuseCachedTilesAcrossPixelRatios(1, 2),
+      'CUSTOM_LOADER_REQUIRES_UNKNOWN_RATHER_THAN_PROVEN_INVARIANCE',
+    );
+  });
+
+  it('custom tile-coordinate selection invalidates template provenance', function () {
+    const source = new XYZ({url: 'mathgraph-template/{z}/{x}/{y}'});
+    assert.isTrue(source.canReuseCachedTilesAcrossPixelRatios(1, 2));
+    source.getTileCoordForTileUrlFunction = function (coord) {
+      return coord;
+    };
+    assert.isFalse(source.canReuseCachedTilesAcrossPixelRatios(1, 2));
+  });
+
+  it('custom tile class invalidates template provenance', function () {
+    const source = new XYZ({url: 'mathgraph-template/{z}/{x}/{y}'});
+    assert.isTrue(source.canReuseCachedTilesAcrossPixelRatios(1, 2));
+    const existing = source.tileClass;
+    source.tileClass = class CustomTile extends existing {};
     assert.isFalse(source.canReuseCachedTilesAcrossPixelRatios(1, 2));
   });
 
