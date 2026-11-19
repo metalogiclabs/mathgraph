@@ -129,6 +129,8 @@ jobs:
                       result=json.loads(target.read_text())
                       result['owner_approved']=True
                       target.write_text(json.dumps(result))
+                  elif name=='simultaneous.csv':
+                      target.write_text(target.read_text().replace('1,1\n','1,0\n',1))
                   else:
                       target.write_bytes(target.read_bytes()+b'changed')
                   try:
