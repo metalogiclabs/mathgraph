@@ -1,0 +1,128 @@
+name: Erdős 349 source-fidelity bridge (isolated)
+
+on:
+  push:
+    branches:
+      - experiment/erdos349-source-bridge-20261120
+    paths:
+      - .github/workflows/research-fc-erdos349-20261120.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Fetch exact upstream Formal Conjectures tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/google-deepmind/formal-conjectures.git /tmp/fc
+          cd /tmp/fc
+          git fetch --depth=1 origin d8d031d4998c78575159ccab9a7a9e95ce043883
+          git checkout --detach d8d031d4998c78575159ccab9a7a9e95ce043883
+          test "$(git rev-parse HEAD)" = d8d031d4998c78575159ccab9a7a9e95ce043883
+          test "$(git hash-object FormalConjectures/ErdosProblems/349.lean)" = 899d97aada88f74429bd81f8b4b46f2aef116d9f
+          test "$(cat lean-toolchain)" = leanprover/lean4:v4.33.1
+          echo "UPSTREAM_EXACT_TREE=PASS"
+      - name: Apply deliberately narrow semantic bridge
+        shell: bash
+        working-directory: /tmp/fc
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("FormalConjectures/ErdosProblems/349.lean")
+          s = p.read_text()
+          old = r""" /--
+          This defines the core property of the problem: For what values of $t,\alpha \in (0,\infty)$
+          is the sequence $\lfloor t\alpha^n\rfloor$ complete?
+          -/
+          def IsGoodPair (t α : ℝ) : Prop :=
+            IsAddComplete (range (fun n ↦ ⌊t * α ^ n⌋))""".strip()
+          new = r""" /-- Historical zero-based, value-set predicate. It discards repeated values and is NOT
+          the indexed-sequence meaning of Erdős 349. Existing auxiliary theorem statements
+          and external proof links below retain this original meaning pending requalification. -/
+          def IsGoodPair (t α : ℝ) : Prop :=
+            IsAddComplete (range (fun n ↦ ⌊t * α ^ n⌋))
+
+          /-- Source-faithful meaning of Erdős 349 (ErGr80, §6, p. 57): sequence indices
+          are 1, 2, ... and each index may be used at most once in a finite sum. Equal
+          values at two different indices may both be used. -/
+          def IsGoodPairIndexed (t α : ℝ) : Prop :=
+            IsAddCompleteNatSeq' (fun n : ℕ ↦ (⌊t * α ^ (n + 1)⌋ : ℤ))""".strip()
+          assert s.count(old) == 1, "source definition changed; refuse stale patch"
+          s = s.replace(old, new)
+          header_old = r"""For what values of $t,\alpha \in (0,\infty)$ is the sequence $\lfloor t\alpha^n\rfloor$ complete
+          (that is, all sufficiently large integers are the sum of distinct integers of the form $\lfloor t\alpha^n\rfloor$)?""".replace("\n          ","\n")
+          header_new = r"""For what values of $t,\alpha \in (0,\infty)$ is the sequence $\lfloor t\alpha^n\rfloor$ complete?
+          Here distinct refers to indices $n \ge 1$, not distinct numerical term values.""".replace("\n          ","\n")
+          assert s.count(header_old) == 1, "question documentation changed"
+          s = s.replace(header_old, header_new)
+          old_clause = "    {(t, α) | 0 < t ∧ 0 < α ∧ IsGoodPair t α} = erdos_349.answer := by"
+          new_clause = "    {(t, α) | 0 < t ∧ 0 < α ∧ IsGoodPairIndexed t α} = erdos_349.answer := by"
+          assert s.count(old_clause) == 1
+          s = s.replace(old_clause, new_clause)
+          p.write_text(s)
+          print("SOURCE_INDEXED_BRIDGE=PASS")
+          PY
+          git diff --check
+          git diff -- FormalConjectures/ErdosProblems/349.lean
+      - name: Exact finite negative/positive controls (not a Lean proof)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from fractions import Fraction
+          def terms(t, a, start, n):
+              return [int((t*a**i).__floor__()) for i in range(start,start+n)]
+          def sums(xs):
+              s={0}
+              for x in xs:s|={a+x for a in s}
+              return s
+          assert sums(terms(Fraction(1),Fraction(1),1,8))==set(range(9))
+          assert sums(sorted(set(terms(Fraction(1),Fraction(1),0,8))))=={0,1}
+          assert all(v%2==0 for v in sums(terms(Fraction(1),Fraction(2),1,8)))
+          assert sums(terms(Fraction(1),Fraction(2),0,8))==set(range(256))
+          for t in (Fraction(1,2),Fraction(1),Fraction(3,2)):
+              for a in (Fraction(1),Fraction(2),Fraction(3,2)):
+                  assert terms(t,a,1,9)==terms(t*a,a,0,9)
+          print("FINITE_CONTROLS=PASS (5 families; not an unbounded proof)")
+          PY
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail -L -sS https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build pinned upstream target with warning gate
+        working-directory: /tmp/fc
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean --version
+          lake exe cache get
+          lake --wfail build 'FormalConjectures.ErdosProblems.«349»'
+          echo "LEAN_MODULE_BUILD=PASS"
+      - name: Lean source-definition smoke tests
+        working-directory: /tmp/fc
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/Erdos349SourceSmoke.lean <<'LEAN'
+          import FormalConjectures.ErdosProblems.«349»
+          open Erdos349
+          #check Erdos349.IsGoodPairIndexed
+          #check Erdos349.IsGoodPair
+          #check Erdos349.erdos_349
+          example : (2 : ℤ) ∈ subseqSums' (fun n : ℕ ↦ (⌊(1 : ℝ) ^ (n + 1)⌋ : ℤ)) := by
+            refine ⟨{0, 1}, ?_⟩
+            norm_num
+          example : (1 : ℤ) ∈ subseqSums' (fun n : ℕ ↦ (⌊(1 / 2 : ℝ) * 2 ^ (n + 1)⌋ : ℤ)) := by
+            refine ⟨{0}, ?_⟩
+            norm_num
+          LEAN
+          lake env lean /tmp/Erdos349SourceSmoke.lean
+          echo "LEAN_SMOKE=PASS"
