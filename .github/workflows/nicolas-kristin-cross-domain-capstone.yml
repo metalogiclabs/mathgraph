@@ -1,0 +1,103 @@
+name: Cross-domain L4YAML and R2U2 warrant capstone (isolated)
+
+on:
+  push:
+    branches: [research/nicolas-kristin-cross-domain-capstone-20261120]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  archived-exact-warrant-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout original MathGraph Boundary Warrant and new capstone
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Configure source-tested Python interpreter
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+
+      - name: Check immutable adapter source and preserve its original semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object mathgraph_check/boundary_warrant.py)" = ebf49c59a886f82eeca4fbc9c0300e5881fab229
+          test "$(git hash-object mathgraph_check/warrant_resolution.py)" = ba8a4828fd85e67ed199862480102857c52ea923
+          test "$(git hash-object experiments/check-l4-claim-consumer-v1/boundary_export.py)" = e246e5472b896d37d6534ca82d4271a686378bce
+          test "$(git hash-object research/assurance/eligibility-v05/test_native_warrant_link.py)" = 7123936caeca74be161b19429a104e9ea1d318dd
+          printf 'CAPSTONE_SOURCE_COMMIT=%s\n' "$GITHUB_SHA" > source-identities.txt
+          printf '%s\n' 'ORIGINAL_CARRIER_AND_TWO_ADAPTERS_MATCH_FROZEN_GIT_BLOBS' >> source-identities.txt
+
+      - name: Download original historical Lean and FRET-native CI artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/capstone" evidence-out/cross-capstone
+          for item in "13214576201 l4.zip" "14572976739 rocket.zip" "14571893096 qualification.zip"; do
+            read -r artifact file <<< "$item"
+            curl --fail --location --silent --show-error --retry 3 --max-time 120 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact/zip" \
+              -o "$RUNNER_TEMP/capstone/$file"
+            test -s "$RUNNER_TEMP/capstone/$file"
+          done
+          printf '%s\n' \
+            "57d139153c4d61003d61a002fd715c9ac7bbdc3f0f88431b710e45f9c558e5e2  $RUNNER_TEMP/capstone/l4.zip" \
+            "a273ad97e46f3a6501eec4eb8837ae0fc3293d46e28089819740619e5cb0c8d6  $RUNNER_TEMP/capstone/rocket.zip" \
+            "b767a44b8f1d4790e3a25cc4d21134d8c8bf260d55381b84306aba6505f9685a  $RUNNER_TEMP/capstone/qualification.zip" \
+            | sha256sum -c - | tee evidence-out/cross-capstone/archive-identity.log
+          echo "MATHGRAPH_L4_CLAIM_ARTIFACT_ZIP=$RUNNER_TEMP/capstone/l4.zip" >> "$GITHUB_ENV"
+          echo "ROCKET_NATIVE_ZIP=$RUNNER_TEMP/capstone/rocket.zip" >> "$GITHUB_ENV"
+          echo "ROCKET_QUAL_ZIP=$RUNNER_TEMP/capstone/qualification.zip" >> "$GITHUB_ENV"
+
+      - name: Existing original carrier and method admission test regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'pytest>=8,<10'
+          python3 -m pytest -q tests/test_mathgraph_warrant_resolution_core.py \
+            tests/test_mathgraph_boundary_warrant_v0.py \
+            2>&1 | tee evidence-out/cross-capstone/original-resolver-regressions.log
+          python3 -m unittest discover -s experiments/check-l4-claim-consumer-v1 \
+            -p test_boundary_export.py -v \
+            2>&1 | tee evidence-out/cross-capstone/original-l4-adapter-tests.log
+          python3 -m unittest discover -s research/assurance/eligibility-v05 \
+            -p test_native_warrant_link.py -v \
+            2>&1 | tee evidence-out/cross-capstone/original-rocket-adapter-tests.log
+
+      - name: Execute two-ecosystem capstone with conventional equal-information control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/assurance/nicolas-kristin-capstone/capstone.py \
+            --l4 "$MATHGRAPH_L4_CLAIM_ARTIFACT_ZIP" \
+            --native "$ROCKET_NATIVE_ZIP" \
+            --qual "$ROCKET_QUAL_ZIP" \
+            --output evidence-out/cross-capstone/RESULT.json \
+            2>&1 | tee evidence-out/cross-capstone/capstone.log
+          python3 -m json.tool evidence-out/cross-capstone/RESULT.json > /dev/null
+          printf '%s\n' "$GITHUB_SHA" > evidence-out/cross-capstone/research-source-commit.txt
+          cp source-identities.txt evidence-out/cross-capstone/
+          sha256sum evidence-out/cross-capstone/RESULT.json \
+            > evidence-out/cross-capstone/RESULT.sha256
+
+      - name: Preserve executable evidence, errors and negative controls
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nicolas-kristin-cross-method-capstone
+          if-no-files-found: warn
+          path: |
+            evidence-out/cross-capstone/
+            research/assurance/nicolas-kristin-capstone/PROTOCOL.md
+            research/assurance/nicolas-kristin-capstone/capstone.py
