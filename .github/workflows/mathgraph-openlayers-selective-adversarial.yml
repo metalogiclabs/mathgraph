@@ -1,0 +1,72 @@
+name: MathGraph OpenLayers selective URL-equality adversarial control
+on:
+  push:
+    branches:
+      - experiment/openlayers-selective-adversarial-20261119
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  selective-versus-broad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: mathgraph
+      - uses: actions/checkout@v4
+        with:
+          repository: openlayers/openlayers
+          ref: e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2
+          persist-credentials: false
+          path: openlayers
+      - name: Verify upstream exact version and stage adversarial test
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C openlayers rev-parse HEAD)" = "e80993fdb36a791a3a705d9c6d9ec1dc9d45b5a2"
+          test "$(git -C openlayers hash-object src/ol/renderer/canvas/TileLayer.js)" = "d33f91592944d322c743f1bf0f950e1bee467938"
+          cp mathgraph/experiments/source_obligation_selection/openlayers_same_URL_loader_adversarial.test.js openlayers/test/browser/spec/ol/renderer/canvas/MathGraphSameUrlLoader.test.js
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_URL_CANDIDATE.patch"
+          git -C openlayers apply --check "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          sha256sum mathgraph/experiments/source_obligation_selection/openlayers_same_URL_loader_adversarial.test.js mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_URL_CANDIDATE.patch mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch > selective-adversarial-checksums.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: openlayers/.nvmrc
+      - name: Install upstream browser test dependencies
+        working-directory: openlayers
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Selective URL-only candidate must fail for changing loader effect
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_URL_CANDIDATE.patch"
+          set +e
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphSameUrlLoader.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-selective-adversarial.log"
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" = 0 ]; then echo UNEXPECTED_SELECTIVE_PASS; exit 1; fi
+          grep -Fq "MATHGRAPH_SAME_URL_LOADER_STATE_STALE" "$GITHUB_WORKSPACE/openlayers-selective-adversarial.log" || { echo SELECTIVE_FAILED_FOR_UNEXPECTED_REASON; exit 1; }
+          echo EXPECTED_UNSOUND_SELECTIVE_URL_EQUIVALENCE
+      - name: Broad invalidation must fix same changed-loader-effect test
+        working-directory: openlayers
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply -R "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_selective_URL_CANDIDATE.patch"
+          git apply "$GITHUB_WORKSPACE/mathgraph/experiments/source_obligation_selection/openlayers_pixelratio_prepareframe_CANDIDATE.patch"
+          npx vitest run --config test/browser/vitest.config.mjs test/browser/spec/ol/renderer/canvas/MathGraphSameUrlLoader.test.js --reporter verbose 2>&1 | tee "$GITHUB_WORKSPACE/openlayers-broad-adversarial.log"
+          echo BROAD_GUARD_LOADER_EFFECT_GREEN
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openlayers-selective-adversarial
+          path: |
+            selective-adversarial-checksums.txt
+            openlayers-selective-adversarial.log
+            openlayers-broad-adversarial.log
+          if-no-files-found: warn
