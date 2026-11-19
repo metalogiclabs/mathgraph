@@ -1,0 +1,33 @@
+name: Assurance eligibility native smoke v0.5 (exploratory calibration)
+on:
+  push:
+    branches:
+      - research/assurance-eligibility-calibration-v05-20261120
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  connect-ip-native-original:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout pinned original upstream, no modifications
+        uses: actions/checkout@v4
+        with:
+          repository: quic-go/connect-ip-go
+          ref: 9ee608a68fbbc6c377d13da4df2a269580b78909
+          persist-credentials: false
+      - name: Set up original Go toolchain from pinned go.mod
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Original native test suite (not a proof of RFC conformity)
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'G3_SOURCE_PIN=9ee608a68fbbc6c377d13da4df2a269580b78909'
+          git rev-parse HEAD
+          go test ./... -count=1 -timeout=180s
+          printf '%s\n' 'NATIVE_ORIGINAL_GO_TESTS_PASSED_SCOPE_NOT_INDEPENDENT_RFC_ORACLE'
