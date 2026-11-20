@@ -8,6 +8,7 @@ on:
       - 'research/rh-definition-bridge/DirectAssignGood.lean'
       - 'research/rh-definition-bridge/DirectAssignBad.lean'
       - 'research/rh-definition-bridge/DirectAddBad.lean'
+      - 'research/rh-definition-bridge/DirectKCopyBad.lean'
       - '.github/workflows/rh-unsafe-metaprogramming-kernel-controls.yml'
   workflow_dispatch:
 
@@ -38,7 +39,7 @@ jobs:
       - name: Negative controls — invalid type assignments must fail kernel
         run: |
           set -euo pipefail
-          for n in DirectAssignBad DirectAddBad; do
+          for n in DirectAssignBad DirectAddBad DirectKCopyBad; do
             set +e
             "$HOME/.elan/bin/elan" run "leanprover/lean4:${{ matrix.lean }}" lean -o "$RUNNER_TEMP/$n.olean" "research/rh-definition-bridge/$n.lean" > "$RUNNER_TEMP/$n.log" 2>&1
             rc=$?
@@ -64,4 +65,5 @@ jobs:
             ${{ runner.temp }}/good.log
             ${{ runner.temp }}/DirectAssignBad.log
             ${{ runner.temp }}/DirectAddBad.log
+            ${{ runner.temp }}/DirectKCopyBad.log
           if-no-files-found: warn
