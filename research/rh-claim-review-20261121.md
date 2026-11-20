@@ -192,3 +192,27 @@ At the rational prime 19:
 
 **Convergence with the independent finite IndexTwoPatch control:** Both controlled failures arise from deleting an obstruction-killing hypothesis. IndexTwoPatch needs a sufficiently rich family of distinct quadratic characters to eliminate finite twisting ambiguity; quadratic CM descent needs local decomposition/Frobenius exclusion to ensure primes dividing the Kummer radicand split in Q/Q+. This is a CANDIDATE reusable audit principle: test indispensability of premises via constrained countermodels and then verify those premises are actually proved at consumer calls. It is NOT a universal mathematical theorem.
 
+
+
+## 2026-11-21 — Rank-two patch stress test and positive prime-choice control
+
+**Current objective:** falsify the actual pinned index-two patching / quadratic Chebotarev interfaces, not mistake a weakened variant for a fatal flaw. Claim source `CocoSgt/riemann-hypothesis-lean@7cbf7a0c32fca1badf05931879a37c3f8a2b03b4` unchanged. All finite tests concern independent mathematical models, NOT complete Lean proof-term verification.
+
+**WARRANTED, exhaustive finite model with independent GitHub CI:** [source model](https://github.com/metalogiclabs/mathgraph/blob/0e53be5c36a628ea9ea2dd1c14b539eee234805c/research/rh-definition-bridge/index_two_patch_rank_two_model.py) and [Actions run #44812864118 PASS](https://github.com/metalogiclabs/mathgraph/actions/runs/44812864118) at workflow commit `614d747c8f77332e3d063a1f1948900c541b2791`. For `Γ=(Z/2)^3`, each local `r_η` is a rank-2 semisimple `C`-representation of the index-two kernel `ker η`, recorded as an unordered pair of characters. All pairwise trace-intersection comparisons are exact over each intersection, and globalization tests *all* 36 semisimple 2D `Γ` representations. Results:
+
+| # distinct η | Pairwise-compatible assignments | No global rank-2 representation |
+|---:|---:|---:|
+| 3 | 1,946 | 686 |
+| 4 | 1,596 | 336 |
+| 5 | 924 | 168 |
+| 6 | 280 | 28 |
+| 7 | 36 | 0 |
+
+A concrete six-character nongluable assignment was additionally inflated to `(Z/2)^4` and tested against all nine unused `η` (the missing seventh character and eight characters involving the new coordinate): none admitted a pairwise-compatible rank-2 local representation. These finite tests show the need for an *unbounded distinct-character supply* even in semisimple rank two. The assertion that *six distinct, pairwise compatible index-two patches suffice* is **REJECTED**, not a refutation of the source's theorem, whose statement assumes an INFINITE injective family and whose proof excludes finitely many self-twist obstructions.
+
+**Additional positive arithmetic control, candidate until its own fresh run:** In the explicit biquadratic `E=Q(i)`, `Y=Q(i,sqrt(5))` example, `p1=23`, `p2=73`, `c=6`, `q=5` give both primes, `p1*p2=1679`, and `(1679+1)/48=35`. Legendre signatures are `(-1|23)=(5|23)=-1`, `(-1|73)=1`, `(5|73)=-1`, matching the two prescribed Frobenius automorphisms `s.trans c` (moves `i` and `sqrt(5)`) and `s.symm` (fixes `i`, moves `sqrt(5)`) of `TwoPrimes` for this small example. Also `-1679≡1 mod8` and `mod3`, giving expected 2-adic and 3-adic square control. The source [numerical test](https://github.com/metalogiclabs/mathgraph/blob/74703124725a74bfe716e3de65b7e536a30f97d1/research/rh-definition-bridge/quadratic_frobenius_negative_control.py) runs as part of existing CI. This is NOT `PrimeWith`, universal `hTP`, independent local-field formalization, or exact Lean checking.
+
+**NEW source-level negative-control resolution:** Source theorem `UpperTheory.V.Af.Cr.SSRes` at `.../AutomorphicForms/RealTransport/RealTransport.lean` says restriction of finite-dimensional semisimple `Γ`-representations along a normal-subgroup homomorphism stays semisimple, without an explicit finite-index assumption. This is a plausible-looking overstrength, but the property is mathematically true for finite-dimensional reps: any nonzero finite-dimensional `N`-module has an irreducible submodule, and the `N`-socle is stable under `Γ` when `N` is normal; for an irreducible `Γ`-module the socle is all of `V`; extend to semisimple sums. The [exact source proof](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/AutomorphicVarieties/BuildingsResidueChars/SemisimpleRestrictionToNormalSubgroup.lean) uses finite-dimensional maximal/minimal submodules and normality, consistent with Clifford's theorem. **REJECTED** as a substantive mathematical counterexample. Still not independently kernel-replayed.
+
+**No fatal flaw established.** Strongest unresolved actual verification: independent exported proof-term check of high-rank `IndexTwoPatch.main` and the Chebotarev-driven `exists_quadratic_CM_ext_split_at`, then full root theorem; published [Deicyde verifier notes](https://github.com/Deicyde/riemann-hypothesis/blob/main/verification/NOTES.md) still say its real build/verdict is in progress. All third-party checker declines on mutual reflexive inductives must remain distinct from evidence of falsehood.
+
