@@ -1,0 +1,34 @@
+name: RH index-two finite patching countermodel
+
+on:
+  push:
+    branches:
+      - research/rh-definition-bridge-20261121
+    paths:
+      - 'research/rh-definition-bridge/index_two_patch_rank_one_model.py'
+      - '.github/workflows/rh-index-two-model.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaustive finite rank-one control
+        run: |
+          set -euo pipefail
+          python3 research/rh-definition-bridge/index_two_patch_rank_one_model.py | tee "$RUNNER_TEMP/patch-model.log"
+          grep -Fx 'PASS: finite-family countermodel and positive controls' "$RUNNER_TEMP/patch-model.log"
+          grep -Fx 'rank=2 sign_characters=3 pairwise_compatible=8 no_global_character=4' "$RUNNER_TEMP/patch-model.log"
+          grep -Fx 'rank=3 sign_characters=4 pairwise_compatible=280 no_global_character=0' "$RUNNER_TEMP/patch-model.log"
+      - name: Retain evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rh-index-two-finite-model
+          path: ${{ runner.temp }}/patch-model.log
+          if-no-files-found: warn
