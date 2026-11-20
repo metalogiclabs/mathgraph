@@ -26,6 +26,7 @@ jobs:
       - name: Resolve and cache Mathlib
         run: |
           "$HOME/.elan/bin/lake" update
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = "0df444a360eaa60ab8c11dca51a86af692955474"
           "$HOME/.elan/bin/lake" exe cache get
       - name: Compile module to .olean
         run: |
@@ -44,6 +45,9 @@ jobs:
           test -s "$RUNNER_TEMP/rh-bridge.ndjson"
           wc -lc "$RUNNER_TEMP/rh-bridge.ndjson"
           sha256sum "$RUNNER_TEMP/rh-bridge.ndjson"
+      - name: Fail-closed exporter axiom census
+        run: |
+          python3 audit_axioms.py "$RUNNER_TEMP/rh-bridge.ndjson" | tee "$RUNNER_TEMP/rh-axiom-report.json"
       - name: Build independently implemented verified-mode con-ron checker
         run: |
           git clone --quiet https://github.com/leanprover/con-ron.git "$RUNNER_TEMP/con-ron"
@@ -53,3 +57,11 @@ jobs:
         run: |
           "$RUNNER_TEMP/con-ron/target/release/con-ron" --verified --jobs=4 "$RUNNER_TEMP/rh-bridge.ndjson"
           echo 'PASS: con-ron independent verified-mode checker accepted exact proof closure'
+
+      - name: Preserve exported axiom report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rh-definition-axiom-census
+          path: ${{ runner.temp }}/rh-axiom-report.json
+          if-no-files-found: ignore
