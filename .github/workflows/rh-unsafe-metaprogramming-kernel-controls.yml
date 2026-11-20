@@ -1,0 +1,67 @@
+name: RH direct-meta-assignment kernel controls
+
+on:
+  push:
+    branches:
+      - research/rh-definition-bridge-20261121
+    paths:
+      - 'research/rh-definition-bridge/DirectAssignGood.lean'
+      - 'research/rh-definition-bridge/DirectAssignBad.lean'
+      - 'research/rh-definition-bridge/DirectAddBad.lean'
+      - '.github/workflows/rh-unsafe-metaprogramming-kernel-controls.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kernel-boundary:
+    strategy:
+      fail-fast: false
+      matrix:
+        lean: ['v4.33.1', 'v4.36.0']
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned elan and Lean
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          "$HOME/.elan/bin/elan" toolchain install "leanprover/lean4:${{ matrix.lean }}"
+          "$HOME/.elan/bin/elan" run "leanprover/lean4:${{ matrix.lean }}" lean --version
+      - name: Positive control — valid unchecked assignment must compile
+        run: |
+          set -euo pipefail
+          "$HOME/.elan/bin/elan" run "leanprover/lean4:${{ matrix.lean }}" lean -o "$RUNNER_TEMP/DirectAssignGood.olean" research/rh-definition-bridge/DirectAssignGood.lean 2>&1 | tee "$RUNNER_TEMP/good.log"
+          test -s "$RUNNER_TEMP/DirectAssignGood.olean"
+      - name: Negative controls — invalid type assignments must fail kernel
+        run: |
+          set -euo pipefail
+          for n in DirectAssignBad DirectAddBad; do
+            set +e
+            "$HOME/.elan/bin/elan" run "leanprover/lean4:${{ matrix.lean }}" lean -o "$RUNNER_TEMP/$n.olean" "research/rh-definition-bridge/$n.lean" > "$RUNNER_TEMP/$n.log" 2>&1
+            rc=$?
+            set -e
+            echo "========== $n rc=$rc =========="
+            cat "$RUNNER_TEMP/$n.log"
+            if [ "$rc" -eq 0 ]; then
+              echo 'FAIL: malformed theorem was accepted, kernel escape possible'
+              exit 1
+            fi
+            if ! grep -Eiq 'kernel|type mismatch|declaration type|type checking' "$RUNNER_TEMP/$n.log"; then
+              echo 'FAIL: negative control did not demonstrate a kernel/type checker rejection'
+              exit 1
+            fi
+            echo "PASS: $n rejected by Lean ${{ matrix.lean }}"
+          done
+      - name: Preserve raw diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rh-direct-meta-assign-${{ matrix.lean }}
+          path: |
+            ${{ runner.temp }}/good.log
+            ${{ runner.temp }}/DirectAssignBad.log
+            ${{ runner.temp }}/DirectAddBad.log
+          if-no-files-found: warn
