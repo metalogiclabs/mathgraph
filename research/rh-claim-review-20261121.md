@@ -55,6 +55,14 @@ This is an actual **obligation weakening**, but its significance depends on the 
 
 **Residual:** audit other mathematical interfaces for **externally expected** conditions removed as `True`, `False`-guarded historical lemmas actually used in the theorem proof term, and novel estimate edge cases. Obtain independently accepted exact term closure for `UpperTheory.FinalTheorems.everyCharacter` before elevating any statement about RH itself. Classify the pole replacement as a **documented conditional simplification** for the two inspected consumers, with whole-theorem consequence still **UNKNOWN**.
 
+## 2026-11-21 — falsification of zero-lift and imaginary-quadratic coverage hypotheses
+
+**REJECTED — trivial output lift:** `UpperTheory.TP.IsLift`, defined in `Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/ThetaParseval/SchurStep.lean`, contains `aut : GlobalTheory.UnitaryBC.IsAutRepU U'`, an actual output automorphic-representation condition, and imposes archimedean weights plus local compatibility. The proof `tLift_of_k` explicitly obtains a nonzero lifted vector `hne`, transports it via `Θ`, and selects `U'` through `ProjEx`. Choosing `U' = ⊥` does not bypass this construction.
+
+**REJECTED — hidden unrestricted CM-field assumption in immediate consumer:** `UpperTheory.TP.W.GoodK` includes `HasK E := ∃ x d, 0 < d ∧ x² = -d`, a genuine restriction: arbitrary CM fields need not contain an imaginary quadratic subfield. However, `UpperTheory.Gal.TP.TwoUpOK` expressly assumes that same property as `hK`, and its `twoUpOK_of_steps` passes `hK` to `TLiftK` explicitly. It is not silently assumed at this handoff. Whether later global reductions are mathematically adequate requires separate examination.
+
+**UNKNOWN — deeper claim meaning:** source facts support an authentic strengthened theorem with restrictive premises; the source audit has not produced a concrete contradiction, loophole, or counterexample to the final RH claim. An independent theorem-term closure and separate kernel acceptance remain necessary.
+
 ## Cheapest decisive next experiment
 
 Obtain the immutable full solution export from the ongoing independent build, verify its exact source and statement hashes against the Mathlib-only challenge, require acceptance by independent kernels and an axiom census, then compute the **actual term-level dependency closure** of UpperTheory.FinalTheorems.everyCharacter. Focus the mathematical review of its **used** slots and guards on the two candidate meaning boundaries above. Do not substitute an import scan for this experiment or claim RH solved before it passes.
