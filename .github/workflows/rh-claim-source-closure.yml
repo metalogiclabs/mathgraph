@@ -1,0 +1,40 @@
+name: RH claimed theorem source import closure
+
+on:
+  push:
+    branches:
+      - research/rh-definition-bridge-20261121
+    paths:
+      - 'research/rh-definition-bridge/claim_source_audit.py'
+      - '.github/workflows/rh-claim-source-closure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin claimant source and confirm exact SHA
+        run: |
+          set -euo pipefail
+          git clone -q --depth=1 https://github.com/CocoSgt/riemann-hypothesis-lean.git "$RUNNER_TEMP/rh-claim"
+          test "$(git -C "$RUNNER_TEMP/rh-claim" rev-parse HEAD)" = "7cbf7a0c32fca1badf05931879a37c3f8a2b03b4"
+          echo "Claim source commit: $(git -C "$RUNNER_TEMP/rh-claim" rev-parse HEAD)"
+      - name: Map import closure and hidden trust surfaces
+        run: |
+          set -euo pipefail
+          python3 research/rh-definition-bridge/claim_source_audit.py \
+            --source "$RUNNER_TEMP/rh-claim" \
+            --output research/rh-definition-bridge/claim-source-report.json
+          python3 -m json.tool research/rh-definition-bridge/claim-source-report.json >/dev/null
+      - name: Preserve bounded evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rh-claim-source-graph
+          path: research/rh-definition-bridge/claim-source-report.json
+          if-no-files-found: warn
