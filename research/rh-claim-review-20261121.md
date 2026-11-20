@@ -142,3 +142,29 @@ For the specific number field `E = Q(i, √7, √5)` with maximal totally real s
 
 **Decision: REJECTED (source-level) as a purported defect:** claim that `Row0b` merely asserts existence of an unrelated representation, or that the local correspondence premise is never furnished. **Still UNKNOWN:** whether any imported lemma's *actual compiled proof term* is sound, axiom-free within declared boundary, or mathematically specification-faithful. The next decisive work is a pinned independent check of `ExistsQuadraticCMExtSplitAt` and `IndexTwoPatch.main`, plus full `Main` proof-term dependency and axiom closure; the external verification notes have reported a solution export hash but not a successful final independent verdict.
 
+
+## 2026-11-21 — Index-two patching finite-family countermodel
+
+**Objective:** falsify the claim that pairwise trace compatibility of index-two kernel representations *alone* ensures global semisimple gluing; determine whether the actual theorem retains the needed extra hypotheses.
+
+**WARRANTED countermodel of the deliberately weakened FINITE variant (NOT the claimant's theorem):** Let G=(Z/2Z)^2 and take its three distinct nontrivial sign characters eta1, eta2, eta3. Their index-two kernels H1, H2, H3 intersect pairwise in the identity subgroup, so any one-dimensional local character assignments agree on intersections. Assign the trivial representation to H1 and H2 and the nontrivial one to H3. Any global one-dimensional representation trivial on H1 and H2 would be trivial on G, contrary to its required restriction at H3. Thus pairwise compatibility and semisimplicity are insufficient for three patches.
+
+**Executable exhaustive test, with green CI:** [model script](https://github.com/metalogiclabs/mathgraph/blob/e243ac996a9eeba592c7d6b18db69741112c07a2/research/rh-definition-bridge/index_two_patch_rank_one_model.py), [Actions run 44810760237 — SUCCESS](https://github.com/metalogiclabs/mathgraph/actions/runs/44810760237), job 136546396398, script commit e243ac996a9eeba592c7d6b18db69741112c07a2 and workflow commit 71945b5a4db1e79ea79f62d1a8887d757a72e81e. Combinatorial model only, not a Lean proof or proof of RH. Exact job counts:
+
+| Group | Distinct sign characters | Pairwise-compatible assignments | Not globally gluable |
+|---|---:|---:|---:|
+| C2^2 | 2 | 12 | 0 |
+| C2^2 | 3 | 8 | 4 |
+| C2^3 | 2 | 168 | 0 |
+| C2^3 | 3 | 336 | 56 |
+| C2^3 | 4 | 280 | 0 |
+| C2^3 | 5 | 168 | 0 |
+
+Additional model test: the incompatible three-character seed on C2^3 admits no compatible fourth local character for any of the four unused sign characters. This illustrates how an infinite family may exclude finite gluing obstructions.
+
+**Why this DOES NOT refute the actual theorem:** Source [GlobalTheory.IndexTwoPatch.main](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/PositivityTheory/AutomorphicForms/PublishedInputs/RealGaloisRepresentations/IwahoriSphericalTransfer/EqOneOrEqOfKer.lean) explicitly requires an INFINITE index set, INJECTIVE quadratic characters with open kernels, and continuous semisimple local representations with conjugation-invariant and pairwise-compatible traces. It chooses an auxiliary character outside a finite self-twist obstruction set. [PatchOne](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/IntegralStructures/CrystallineDescent/PatchOne.lean) constructs the infinite subtype from distinct quadratic subfields using SignChar.main, and separately passes IsoOne, OneTower and OneConj.
+
+**Degree-one prime nonvacuity:** AttOne is an eventual-cofinite implication restricted to primes w whose absolute norm is a rational prime. This is not vacuous because the source [IsoOne](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/IntegralStructures/CrystallineDescent/IsoOne.lean) explicitly consumes ChebotarevDegreeOne.dense to derive a dense set of such Frobenius elements. [OneTower](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/IntegralStructures/CrystallineDescent/OneTower.lean) proves degree-one norms survive base extension and finite exception sets pull back.
+
+**Decision:** REJECTED applying finite-family gluing counterexample to the actual INFINITE theorem. WARRANTED the finite-model result and negative controls in its declared computational boundary. UNKNOWN still: independent proof-term/kernel closure of the full higher-rank index-two theorem, quadratic CM existence and root RH/GRH claim.
+
