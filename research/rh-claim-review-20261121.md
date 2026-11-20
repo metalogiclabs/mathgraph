@@ -251,3 +251,12 @@ A concrete six-character nongluable assignment was additionally inflated to `(Z/
 
 **Residual / cheapest decisive experiment:** independent `leanchecker-paranoid` + `nanoda` acceptance of the *exact full solution export* pinned by SHA-256 `5ea74b912147c5c93cc2b6d70cc727cf908df2f62ac6a20480a3fa02f6be244e` (reported by Andrew Sutherland, not independently rehashed here), root theorem-term + axiom closure, and mathematical statement bridge. Deicyde's [notes](https://github.com/Deicyde/riemann-hypothesis/blob/main/verification/NOTES.md) still say its full build is in progress as of this check. No fatal mathematical defect from the current scope; RH/GRH claim UNKNOWN.
 
+
+
+### Follow-up 2026-11-21: rejected theorem must not serialize
+
+**Additional fail-closed boundary (WARRANTED):** [GitHub Actions #44815151732 — SUCCESS](https://github.com/metalogiclabs/mathgraph/actions/runs/44815151732), pinned workflow commit `75d3c21760c227b84c77d471766c9f2f27259a2b`, directly examined job logs `136561439371` (Lean 4.33.1) and `136561439677` (Lean 4.36.0). All three bad declarations—`kexactB`, `kcopy`, `addDecl`—not only failed explicitly at the kernel but **emitted no `.olean` file** in either version; valid control compiled and did emit its `.olean`. In the `addDecl` negative log `#check direct_add_false_attack : False` is printed after a kernel error, so seeing a declaration name or apparent goal closure in an interactive session is *not evidence that the module can be imported or that it is a valid proof*. A clean successful kernel checked/exported module remains the promotion boundary.
+
+**One concrete direct-assignment false positive dismissed (source-level):** The apparent reflexive-isometry proof `eCure` in `.../Definitions/AutomorphicMembership/ECure.lean`, using `kexactB LinearIsometryEquiv.refl` between `ColT (h.shInj u)` and `ColT (h'.shInj (wd Z u))`, is *not automatically a type mismatch*: source `.../FlagStabilizerTensors/ParametersTermRelations.lean` defines `ColT (_hinj) : Type := Cu X u hK`, explicitly erasing its injectivity proof index from the underlying carrier. `reX` and `reCS` transport record fields with `{ X with }` and `{ c with }` (pinned sources), so a reflexive carrier equivalence can be intentional. The carried **inner-product structures** still merit an exact elaborated-instance / proof-term comparison; do not accuse this line as a fatal error from surface type labels alone.
+
+**Residual:** Full independent root proof-term acceptance and mathematical fidelity remain UNKNOWN.
