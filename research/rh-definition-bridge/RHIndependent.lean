@@ -1,3 +1,5 @@
+import Mathlib
+
 /-!
 # RH definition bridge: independent Dirichlet-series specification
 
@@ -12,7 +14,6 @@ prove RH; it proves equivalence of the independently stated RH and
 Mathlib's RH.
 -/
 
-import Mathlib
 
 open Complex Filter Set
 
