@@ -36,6 +36,25 @@ The static scan counted two direct Prop := True aliases and two addDecl sites. I
 - **WARRANTED:** all source files are in the Main import graph, and the three review targets above exist at the pinned source identity.
 - **UNKNOWN:** whether Alpöge's full RH/GRH proof compiles and passes the clean challenge Comparator with independent kernels, whether any vacuous branch is a *term-level* dependency of the headline result, and whether every named published-theorem slot preserves the externally intended mathematical obligation.
 
+## Pre-build semantic falsification: Eisenstein pole erasure (2026-11-21)
+
+**WARRANTED — exact source comparison, NOT a theorem proof:** The classical `GlobalTheory.Published.DoublingMethod` proposition in `Development/AbelianVarietyTheory/PublishedTheorems/TwistedTraceFormula/EisRegularAtOfEisPoleLE.lean` and the newer `ResidueKilled.DM` proposition in `Development/WeilBound/RepresentationTheoryGL/EisensteinResidues/AnisotropicGlobalForms/DmOfHyp.lean` match after renaming `DM`, normalizing equivalent notation and replacing precisely one clause:
+
+```lean
+-- Earlier DoublingMethod conjunct
+(V.rank < b → EisPoleLE V (flat V a φ s₁) (((b : ℂ) - V.rank) / 2) 1)
+-- Later ResidueKilled.DM conjunct
+True
+```
+
+This is an actual **obligation weakening**, but its significance depends on the **consumer's required property**. The newer `dm_of_two` constructs the surviving statement from cusp-form rapid decay and Eisenstein continuation, with `trivial` for the removed conjunct. The later `UnitaryGroupThirdPlaceHypotheses.siegelEisensteinSimplePole` slot remains named after the pole result, but has type `UnusedSlot72 := True`.
+
+**REJECTED within TWO INSPECTED CONSUMER ROUTES — hypothesis that the omitted pole condition is required by their proof bodies:** The old `normSq_theta_modGrowth` and new `normSq_theta_modGrowth_nc` tactic bodies are identical after whitespace normalization. The old `globalFormAt_frameLat` and new `globalFormAt_frameLat_nc` tactic bodies are identical after renaming the call to the previous supporting lemma. Their proofs actually discard the old pole conjunct when unpacking `DoublingMethod`, and use continuation/regularity and doubling identities. The dropped pole bound is **not consumed by these two source-verified routes**. This does not prove the bound unnecessary in every other theorem or external mathematical interpretation.
+
+**NEGATIVE CONTROL — target character domain:** `Formalism.HC.PChar` at `.../PrimePairSizeCondition.lean` stores a primitive Dirichlet character and is inhabited (explicit `PChar.one`). `PChar.of` constructs a primitive representative of arbitrary Dirichlet characters, and `UpperTheory.Top.imprimitive` extends the nonvanishing conclusion using the Mathlib factorization and nonvanishing of Euler factors for Re(s)>1/2. No obvious vacuity arises from an empty character type or omission of imprimitive characters. This is a source check, not the independent complete proof replay.
+
+**Residual:** audit other mathematical interfaces for **externally expected** conditions removed as `True`, `False`-guarded historical lemmas actually used in the theorem proof term, and novel estimate edge cases. Obtain independently accepted exact term closure for `UpperTheory.FinalTheorems.everyCharacter` before elevating any statement about RH itself. Classify the pole replacement as a **documented conditional simplification** for the two inspected consumers, with whole-theorem consequence still **UNKNOWN**.
+
 ## Cheapest decisive next experiment
 
 Obtain the immutable full solution export from the ongoing independent build, verify its exact source and statement hashes against the Mathlib-only challenge, require acceptance by independent kernels and an axiom census, then compute the **actual term-level dependency closure** of UpperTheory.FinalTheorems.everyCharacter. Focus the mathematical review of its **used** slots and guards on the two candidate meaning boundaries above. Do not substitute an import scan for this experiment or claim RH solved before it passes.
