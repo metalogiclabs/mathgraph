@@ -6,6 +6,7 @@ on:
       - research/rh-definition-bridge-20261121
     paths:
       - 'research/rh-definition-bridge/index_two_patch_rank_one_model.py'
+      - 'research/rh-definition-bridge/index_two_patch_rank_two_model.py'
       - 'research/rh-definition-bridge/quadratic_frobenius_negative_control.py'
       - '.github/workflows/rh-index-two-model.yml'
   workflow_dispatch:
@@ -26,6 +27,14 @@ jobs:
           grep -Fx 'PASS: finite-family countermodel and positive controls' "$RUNNER_TEMP/patch-model.log"
           grep -Fx 'rank=2 sign_characters=3 pairwise_compatible=8 no_global_character=4' "$RUNNER_TEMP/patch-model.log"
           grep -Fx 'rank=3 sign_characters=4 pairwise_compatible=280 no_global_character=0' "$RUNNER_TEMP/patch-model.log"
+      - name: Exhaustive finite rank-two control
+        run: |
+          set -euo pipefail
+          python3 research/rh-definition-bridge/index_two_patch_rank_two_model.py | tee "$RUNNER_TEMP/patch-rank-two.log"
+          grep -Fx 'rank=3 rep_dim=2 sign_characters=6 compatible=280 nongluable=28' "$RUNNER_TEMP/patch-rank-two.log"
+          grep -Fx 'rank=3 rep_dim=2 sign_characters=7 compatible=36 nongluable=0' "$RUNNER_TEMP/patch-rank-two.log"
+          grep -Fx 'no_compatible_seventh_character_even_after_rank4_extension=9/9' "$RUNNER_TEMP/patch-rank-two.log"
+          grep -Fx 'PASS: rank-two finite patching obstruction and seventh-character controls' "$RUNNER_TEMP/patch-rank-two.log"
       - name: Quadratic local Frobenius necessity control
         run: |
           set -euo pipefail
@@ -39,5 +48,6 @@ jobs:
           name: rh-prebuild-necessity-controls
           path: |
             ${{ runner.temp }}/patch-model.log
+            ${{ runner.temp }}/patch-rank-two.log
             ${{ runner.temp }}/quadratic-model.log
           if-no-files-found: warn
