@@ -54,7 +54,11 @@ jobs:
               echo 'FAIL: negative control did not demonstrate a kernel/type checker rejection'
               exit 1
             fi
-            echo "PASS: $n rejected by Lean ${{ matrix.lean }}"
+            if [ -e "$RUNNER_TEMP/$n.olean" ]; then
+              echo "FAIL: invalid .olean emitted despite kernel error"
+              exit 1
+            fi
+            echo "PASS: $n rejected by Lean ${{ matrix.lean }}; no .olean emitted"
           done
       - name: Preserve raw diagnostic evidence
         if: always()
