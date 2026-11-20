@@ -1,4 +1,4 @@
-name: RH index-two finite patching countermodel
+name: RH prebuild bounded countermodel controls
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - research/rh-definition-bridge-20261121
     paths:
       - 'research/rh-definition-bridge/index_two_patch_rank_one_model.py'
+      - 'research/rh-definition-bridge/quadratic_frobenius_negative_control.py'
       - '.github/workflows/rh-index-two-model.yml'
   workflow_dispatch:
 
@@ -25,10 +26,18 @@ jobs:
           grep -Fx 'PASS: finite-family countermodel and positive controls' "$RUNNER_TEMP/patch-model.log"
           grep -Fx 'rank=2 sign_characters=3 pairwise_compatible=8 no_global_character=4' "$RUNNER_TEMP/patch-model.log"
           grep -Fx 'rank=3 sign_characters=4 pairwise_compatible=280 no_global_character=0' "$RUNNER_TEMP/patch-model.log"
+      - name: Quadratic local Frobenius necessity control
+        run: |
+          set -euo pipefail
+          python3 research/rh-definition-bridge/quadratic_frobenius_negative_control.py | tee "$RUNNER_TEMP/quadratic-model.log"
+          grep -Fx 'PASS: congruence and local residue prerequisites for necessity of hTP' "$RUNNER_TEMP/quadratic-model.log"
+          grep -Fx 'legendre_5_mod19=1 legendre_minus1_mod19=-1' "$RUNNER_TEMP/quadratic-model.log"
       - name: Retain evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rh-index-two-finite-model
-          path: ${{ runner.temp }}/patch-model.log
+          name: rh-prebuild-necessity-controls
+          path: |
+            ${{ runner.temp }}/patch-model.log
+            ${{ runner.temp }}/quadratic-model.log
           if-no-files-found: warn
