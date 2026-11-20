@@ -35,6 +35,24 @@ def main() -> None:
     print(f"legendre_5_mod19={legendre(q,p1)} legendre_minus1_mod19={legendre(-1,p1)}")
     print("PASS: congruence and local residue prerequisites for necessity of hTP")
 
+    # POSITIVE (source-aligned) control for E=Q(i), Y=Q(i,sqrt(5)).
+    # In the biquadratic splitting field, the selected Frobenius characters
+    # for twoPrimes(s.trans c) and twoPrimes(s.symm) have signatures
+    #   p1 : (-1 | p1)=-1, (5 | p1)=-1   [moves i and sqrt(5)]
+    #   p2 : (-1 | p2)=+1, (5 | p2)=-1   [fixes i, moves sqrt(5)]
+    # It is therefore possible to satisfy both local Frobenius types AND the
+    # p1*p2 ≡ -1 (mod 8*c) condition. This is NOT a proof of PrimeWith,
+    # the arbitrary-field Chebotarev theorem, or the universal hTP predicate.
+    a, b = 23, 73
+    m = a * b
+    assert prime(a) and prime(b) and a < b
+    assert (m + 1) % (8 * c) == 0
+    assert legendre(-1, a) == -1 and legendre(q, a) == -1
+    assert legendre(-1, b) == 1 and legendre(q, b) == -1
+    assert (-m) % 8 == 1 and (-m) % 3 == 1
+    print(f"frobenius_positive_p1={a} p2={b} product={m} quotient={(m + 1) // (8 * c)}")
+    print("PASS: source-aligned positive Frobenius prime-pair residue control")
+
 
 if __name__ == "__main__":
     main()
