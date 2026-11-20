@@ -168,3 +168,27 @@ Additional model test: the incompatible three-character seed on C2^3 admits no c
 
 **Decision:** REJECTED applying finite-family gluing counterexample to the actual INFINITE theorem. WARRANTED the finite-model result and negative controls in its declared computational boundary. UNKNOWN still: independent proof-term/kernel closure of the full higher-rank index-two theorem, quadratic CM existence and root RH/GRH claim.
 
+
+## 2026-11-21 — Quadratic Frobenius necessity countermodel
+
+**Aim:** test the exact predicate used by the pinned source lemma [nonsplit_of_sqrt_conductor](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/InertiaQuadraticRamification/NonsplitOfSqrtConductor.lean) for what happens when its local Frobenius gate, hTP, is deleted. The original theorem explicitly REQUIRES hTP and remains unrefuted.
+
+**Mathematical witness for the weakened proposition:** Set E=Q(i), Y=Q(i, sqrt(5)), delta=sqrt(5), Q=Y(sqrt(-1007))=Q(i,sqrt(5),sqrt(1007)), and p=1007=19*53, c=6, q=5. Since i is in Y, the maximal totally real subfield of Q is Q+=Q(sqrt(5),sqrt(1007)). All other abstract global prerequisites of the lemma can be interpreted as standard quadratic-CM field and sqrt/real-span facts, but no exact-source Lean instantiation has been compiled.
+
+At the rational prime 19:
+1. 9^2=81=5 (mod 19), hence sqrt(5) is in Q_19 by Hensel.
+2. -1 is a quadratic nonresidue modulo 19 (19=3 mod 4); Q_19(i)/Q_19 is UNRAMIFIED quadratic.
+3. v_19(1007)=1, so Q_19(sqrt(1007))/Q_19 is RAMIFIED quadratic by Eisenstein.
+4. The local fields are linearly disjoint: the completion of Q at a place above 19 contains both quadratic extensions and is their biquadratic composite; the corresponding Q+ completion is the ramified quadratic. Thus Q/Q+ is nontrivial UNRAMIFIED quadratic at that place, so NOT SPLIT: there is one prime of Q over the corresponding prime of Q+.
+5. Yet v_19(2*(-1007))>0, so for an associated valuation subring A, A.valuation(2*(-p)) < 1, contradicting the asserted conclusion A.valuation(2*(-p))=1 if hTP were omitted.
+6. The numerical source congruence is satisfied: (-p)-1=-1008 is divisible by 8c=48; c is nonzero and divisible by 2. Both 19 and 53 are prime, with 19<53.
+7. The **missing hTP** indeed fails: the local Frobenius at 19 fixes sqrt(5) but sends i to -i, so it preserves the valuation, fixes delta and does NOT fix all of Y. This is exactly what the source's hTP forbids.
+
+**CI-qualified finite arithmetic; local-field steps are separately reasoned, NOT Lean-certified:** [quadratic test](https://github.com/metalogiclabs/mathgraph/blob/45c2b522c12279aba08d04c6ca4f7853a807eeba/research/rh-definition-bridge/quadratic_frobenius_negative_control.py), [Actions #44811254323 — SUCCESS](https://github.com/metalogiclabs/mathgraph/actions/runs/44811254323), job 136548061779, at workflow commit e7430d5f5ae23dc48082a2523d6b86a7a1c7645f. Logs confirm p=1007, p+1=1008, modulus 48, Legendre(5|19)=1, Legendre(-1|19)=-1. The extension field and local decomposition deductions are mathematical arguments not yet reconstructed as exact Lean proof terms or independently kernel-checked.
+
+**Actual source gate is present, not bypassed:** [ExistsQuadraticCMExtSplitAt.lean](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/IntegralStructures/CrystallineDescent/ExistsQuadraticCMExtSplitAt.lean) obtains hTP from twoPrimes (primeWith decGen), retains it as hTw and passes it to nonsplit_of_sqrt_conductor after rewriting p=p1*p2. The [PrimeWith](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/InertiaQuadraticRamification/PrimeWith.lean) source constructs the finite normal closure and selects Frobenius via Chebotarev; [TwoPrimes](https://github.com/CocoSgt/riemann-hypothesis-lean/blob/7cbf7a0c32fca1badf05931879a37c3f8a2b03b4/src/Development/AutomorphicArithmetic/Foundations/GaloisRepresentations/InertiaQuadraticRamification/TwoPrimes.lean) combines the two selected primes.
+
+**Decision:** WARRANTED (finite arithmetic + mathematically reasoned local field) that dropping hTP would make the local conclusion false. REJECTED as a defect *in the existing source*, which keeps and supplies the necessary hypothesis. UNKNOWN remains exact proof-term/kernel acceptance of the source's Chebotarev, local fields and full RH conclusions.
+
+**Convergence with the independent finite IndexTwoPatch control:** Both controlled failures arise from deleting an obstruction-killing hypothesis. IndexTwoPatch needs a sufficiently rich family of distinct quadratic characters to eliminate finite twisting ambiguity; quadratic CM descent needs local decomposition/Frobenius exclusion to ensure primes dividing the Kummer radicand split in Q/Q+. This is a CANDIDATE reusable audit principle: test indispensability of premises via constrained countermodels and then verify those premises are actually proved at consumer calls. It is NOT a universal mathematical theorem.
+
