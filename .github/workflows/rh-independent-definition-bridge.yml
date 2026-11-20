@@ -39,8 +39,8 @@ jobs:
           expected = ['RHBridge.mathlibZetaFits', 'RHBridge.zetaUnique', 'RHBridge.independentRHIffMathlib']
           permitted = {'propext', 'Quot.sound', 'Classical.choice'}
           for theorem in expected:
-              match = re.search(r'(?m)^' + re.escape(theorem) + r' depends on axioms: \[([^\]]*)\]', log)
-              no_axioms = re.search(r'(?m)^' + re.escape(theorem) + r' does not depend on any axioms', log)
+              match = re.search(r"(?m)^'?" + re.escape(theorem) + r"'? depends on axioms: \[([^\]]*)\]', log)
+              no_axioms = re.search(r"(?m)^'?" + re.escape(theorem) + r"'? does not depend on any axioms", log)
               if match:
                   observed = {name.strip() for name in match.group(1).split(',') if name.strip()}
               elif no_axioms:
