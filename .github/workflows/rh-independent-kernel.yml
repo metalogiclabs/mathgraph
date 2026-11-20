@@ -1,0 +1,55 @@
+name: RH independent bridge external kernel
+
+on:
+  push:
+    paths:
+      - 'research/rh-definition-bridge/**'
+      - '.github/workflows/rh-independent-kernel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  con-ron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: research/rh-definition-bridge
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Resolve and cache Mathlib
+        run: |
+          "$HOME/.elan/bin/lake" update
+          "$HOME/.elan/bin/lake" exe cache get
+      - name: Compile module to .olean
+        run: |
+          mkdir -p .lake/build/lib/lean
+          "$HOME/.elan/bin/lake" env lean -o .lake/build/lib/lean/RHIndependent.olean RHIndependent.lean
+      - name: Build version-pinned Lean exporter
+        run: |
+          git clone --quiet https://github.com/leanprover/lean4export.git "$RUNNER_TEMP/lean4export"
+          git -C "$RUNNER_TEMP/lean4export" checkout --quiet 15f6055e299ad5b89345e533cc2192f4cc00f659
+          cp lean-toolchain "$RUNNER_TEMP/lean4export/lean-toolchain"
+          (cd "$RUNNER_TEMP/lean4export" && "$HOME/.elan/bin/lake" build lean4export)
+      - name: Export exact bridge theorem with dependencies
+        run: |
+          set -o pipefail
+          "$HOME/.elan/bin/lake" env "$RUNNER_TEMP/lean4export/.lake/build/bin/lean4export" RHIndependent -- RHBridge.independentRHIffMathlib > "$RUNNER_TEMP/rh-bridge.ndjson"
+          test -s "$RUNNER_TEMP/rh-bridge.ndjson"
+          wc -lc "$RUNNER_TEMP/rh-bridge.ndjson"
+          sha256sum "$RUNNER_TEMP/rh-bridge.ndjson"
+      - name: Build independently implemented verified-mode con-ron checker
+        run: |
+          git clone --quiet https://github.com/leanprover/con-ron.git "$RUNNER_TEMP/con-ron"
+          git -C "$RUNNER_TEMP/con-ron" checkout --quiet de06320fcdce1ee999bb7a751725e5840d54c3fe
+          cargo build --release --locked --manifest-path "$RUNNER_TEMP/con-ron/Cargo.toml"
+      - name: External verified kernel acceptance (0 accept; 2 decline)
+        run: |
+          "$RUNNER_TEMP/con-ron/target/release/con-ron" --verified --jobs=4 "$RUNNER_TEMP/rh-bridge.ndjson"
+          echo 'PASS: con-ron independent verified-mode checker accepted exact proof closure'
