@@ -38,7 +38,8 @@ jobs:
           set -euo pipefail
           gp -q < research/rh-counti-aux/cyclic_quartic_5class_scan.gp | tee "$RUNNER_TEMP/quartic-scan.log"
           grep -Fx 'PASS: verified live CountI quartic class-group sample' "$RUNNER_TEMP/quartic-scan.log"
-          grep -E '^SEARCH_TOTAL=[1-9][0-9]*
+          grep -E '^SEARCH_TOTAL=[1-9][0-9]*$' "$RUNNER_TEMP/quartic-scan.log"
+      - name: Preserve exact arithmetic evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -46,12 +47,4 @@ jobs:
           path: |
             ${{ runner.temp }}/classgroup.log
             ${{ runner.temp }}/quartic-scan.log
-          if-no-files-found: warn
- "$RUNNER_TEMP/quartic-scan.log"
-      - name: Preserve exact arithmetic evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rh-counti-classgroup-gp
-          path: ${{ runner.temp }}/classgroup.log
           if-no-files-found: warn
