@@ -8,6 +8,7 @@ on:
       - 'research/rh-definition-bridge/index_two_patch_rank_one_model.py'
       - 'research/rh-definition-bridge/index_two_patch_rank_two_model.py'
       - 'research/rh-definition-bridge/quadratic_frobenius_negative_control.py'
+      - 'research/rh-definition-bridge/countv_actual_host_character_contract.py'
       - '.github/workflows/rh-index-two-model.yml'
   workflow_dispatch:
 
@@ -41,6 +42,13 @@ jobs:
           python3 research/rh-definition-bridge/quadratic_frobenius_negative_control.py | tee "$RUNNER_TEMP/quadratic-model.log"
           grep -Fx 'PASS: congruence and local residue prerequisites for necessity of hTP' "$RUNNER_TEMP/quadratic-model.log"
           grep -Fx 'legendre_5_mod19=1 legendre_minus1_mod19=-1' "$RUNNER_TEMP/quadratic-model.log"
+      - name: CountV actual Host/Dirichlet-character antecedent witness
+        run: |
+          set -euo pipefail
+          python3 research/rh-definition-bridge/countv_actual_host_character_contract.py | tee "$RUNNER_TEMP/countv-actual-contract.log"
+          grep -Fx 'PASS: exact arithmetic Host/character case split, k=12..18' "$RUNNER_TEMP/countv-actual-contract.log"
+          grep -F 'k=13 ' "$RUNNER_TEMP/countv-actual-contract.log" | grep -F 'case=CountVs'
+          grep -F 'k=14 ' "$RUNNER_TEMP/countv-actual-contract.log" | grep -F 'case=CountV'
       - name: Retain evidence
         uses: actions/upload-artifact@v4
         if: always()
@@ -50,4 +58,5 @@ jobs:
             ${{ runner.temp }}/patch-model.log
             ${{ runner.temp }}/patch-rank-two.log
             ${{ runner.temp }}/quadratic-model.log
+            ${{ runner.temp }}/countv-actual-contract.log
           if-no-files-found: warn
