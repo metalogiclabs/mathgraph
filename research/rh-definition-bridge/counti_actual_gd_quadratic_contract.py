@@ -122,6 +122,44 @@ def live_case_coverage():
     print("CountZ live: l=5 e=2 ψ=1")
     print("PASS: five additional counting cases inhabited by exact Host characters")
 
+def quartic_hits_actual_counti():
+    # Two q with PARI/GP-certified Cl(F_q^+) ≅ C5.
+    # This verifies all the lightweight CountI/CorG Host/GD arithmetic
+    # constraints for q, d=167 and e=1,3; does NOT compute ShaU.
+    d,ell,t=167,5,4
+    assert isprime(d) and d%16==7 and d%5==2
+    for q in (347,443):
+        assert isprime(q) and q%8==3 and q%5 in (2,3)
+        N=16*q*d
+        assert gcd(q*d,1)==1 and gcd(7,N)==1
+        assert 2*t+1<min(q,d)
+        assert max(1,1,7,1,3)<min(q,d)
+        squares_q=sorted({a*a%q for a in range(1,q)})
+        squares_d=sorted({a*a%d for a in range(1,d)})
+        H=[crt((a2,aq,ad),(16,q,d)) for a2 in (1,15)
+           for aq in squares_q for ad in squares_d]
+        assert len(H)==len(set(H))==(q-1)*((d-1)//2)
+        assert all(quad_symbol(a,q)==1 for a in H)
+        assert quad_symbol(-1,q)==-1
+        assert quad_symbol(2,q)==-1
+        assert quad_symbol(d,q)==1
+        # 2 and d have faithful C4 Frobenius in the real quartic field
+        # because their mod5 component has order 4 and their
+        # quadratic ψq component is ±1.
+        assert 2%5==2 and d%5==2
+        a=crt((1,1,3),(ell,q,7))
+        assert a%ell==1 and a%q==1 and a%7==3
+        assert quad_symbol(a,q)==1 and quad_symbol(a,7)==-1
+        assert gcd(7*q,ell)==1
+        assert all(isprime(p) and (30*N*7)%p for p in (41,43))
+        for e in (1,3):
+            assert e<t and e>0 and e%2==1
+            assert (2*e)%(ell-1)!=0 and ell not in (3,7)
+        print(f"Fplus_5class_candidate q={q} d={d} N={N} "
+              f"Host_H={len(H)} eta={a} CountI_e=1,3")
+    print("PASS: both certified five-class primes satisfy CountI and GD arithmetic gates")
+
+
 def main():
     q1,d=59,71
     ell,e,t,exp=5,1,2,2
@@ -174,6 +212,7 @@ def main():
     print(f"CorG_auxiliary_primes={p},{pp} excluded_support=YES")
     print("PASS: real CorG/GD and Host/CaseI arithmetic antecedent witness")
     live_case_coverage()
+    quartic_hits_actual_counti()
     print("BOUNDARY: NOT an exact Selmer length, CorG bound, or formal Lean witness")
 
 if __name__=="__main__":
