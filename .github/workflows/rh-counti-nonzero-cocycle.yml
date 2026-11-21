@@ -1,0 +1,35 @@
+name: RH CountI nonzero residual Selmer finite Galois model
+
+on:
+  push:
+    branches:
+      - research/rh-definition-bridge-20261121
+    paths:
+      - 'research/rh-counti-aux/nonzero_mod5_selmer_group_model.py'
+      - '.github/workflows/rh-counti-nonzero-cocycle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-class-cohomology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exhaustively check semidirect cocycle and every quartic complement
+        run: |
+          set -euo pipefail
+          python3 research/rh-counti-aux/nonzero_mod5_selmer_group_model.py | tee "$RUNNER_TEMP/finite-cohomology.log"
+          grep -Fx 'GROUP_ORDER=20' "$RUNNER_TEMP/finite-cohomology.log"
+          grep -Fx 'COCYCLES=25 COBoundaries=5 H1_ORDER=5' "$RUNNER_TEMP/finite-cohomology.log"
+          grep -Fx 'NONZERO_CLASS_RESTRICTS_TRIVIALLY_TO_EVERY_C4_COMPLEMENT=5/5' "$RUNNER_TEMP/finite-cohomology.log"
+          grep -Fx 'PASS: exact finite semidirect cocycle and restriction model' "$RUNNER_TEMP/finite-cohomology.log"
+      - name: Preserve bounded cohomological model evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rh-counti-finite-h1-model
+          path: ${{ runner.temp }}/finite-cohomology.log
+          if-no-files-found: error
