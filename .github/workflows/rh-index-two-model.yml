@@ -9,6 +9,7 @@ on:
       - 'research/rh-definition-bridge/index_two_patch_rank_two_model.py'
       - 'research/rh-definition-bridge/quadratic_frobenius_negative_control.py'
       - 'research/rh-definition-bridge/countv_actual_host_character_contract.py'
+      - 'research/rh-definition-bridge/counti_actual_gd_quadratic_contract.py'
       - '.github/workflows/rh-index-two-model.yml'
   workflow_dispatch:
 
@@ -49,6 +50,12 @@ jobs:
           grep -Fx 'PASS: exact arithmetic Host/character case split, k=12..18' "$RUNNER_TEMP/countv-actual-contract.log"
           grep -F 'k=13 ' "$RUNNER_TEMP/countv-actual-contract.log" | grep -F 'case=CountVs'
           grep -F 'k=14 ' "$RUNNER_TEMP/countv-actual-contract.log" | grep -F 'case=CountV'
+      - name: CountI live GD quadratic-field and Galois-noncontainment witness
+        run: |
+          set -euo pipefail
+          python3 research/rh-definition-bridge/counti_actual_gd_quadratic_contract.py | tee "$RUNNER_TEMP/counti-gd-contract.log"
+          grep -Fx 'PASS: real CorG/GD and Host/CaseI arithmetic antecedent witness' "$RUNNER_TEMP/counti-gd-contract.log"
+          grep -Fx 'GD_eta_exponent=591 mod5=1 mod59=1 mod7=3' "$RUNNER_TEMP/counti-gd-contract.log"
       - name: Retain evidence
         uses: actions/upload-artifact@v4
         if: always()
@@ -59,4 +66,5 @@ jobs:
             ${{ runner.temp }}/patch-rank-two.log
             ${{ runner.temp }}/quadratic-model.log
             ${{ runner.temp }}/countv-actual-contract.log
+            ${{ runner.temp }}/counti-gd-contract.log
           if-no-files-found: warn
