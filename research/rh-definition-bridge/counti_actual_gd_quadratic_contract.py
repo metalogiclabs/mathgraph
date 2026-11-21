@@ -38,10 +38,9 @@ def quad_symbol(a,p):
     assert x in (1,p-1)
     return 1 if x==1 else -1
 
-def class_number_minus7():
-    # Standard reduced positive definite primitive binary quadratic
-    # forms of fundamental discriminant -7, including boundary choices.
-    D=-7
+def class_number_reduced(D):
+    # Standard reduced primitive positive definite binary quadratic
+    # forms, for fundamental discriminants -7 and -11.
     forms=[]
     for a in range(1,isqrt((-D)//3)+2):
         for b in range(-a,a+1):
@@ -50,14 +49,84 @@ def class_number_minus7():
             if a>c or gcd(a,gcd(abs(b),c)) != 1:continue
             if (abs(b)==a or a==c) and b<0:continue
             forms.append((a,b,c))
-    assert forms==[(1,1,2)],forms
+    assert forms=={-7:[(1,1,2)], -11:[(1,1,3)]}[D],forms
     return len(forms)
+
+
+def live_case_coverage():
+    """Source-defined counting CASE labels (except case V/Vs: companion script).
+
+    Constructs actual Host.H subgroups for χ=1 and χ=primitive cubic mod7.
+    Each case also needs a suitable coefficient DVR: ±1 already lies in Z_l;
+    ζ3 is obtained in a finite extension of Z_5 or Z_7.
+    Source-level arithmetic and finite-character test only, NOT Vlen.
+    """
+    q,d,exp=59,71,2
+    n1=(1<<(exp+2))*q*d
+    n3=(1<<(exp+2))*7*q*d
+    # χ cubic mod7: primitive order-3 char, χ(3)=ζ3; χ(-1)=1.
+    pow3={pow(3,j,7):j%3 for j in range(6)}
+    assert len(pow3)==6
+    def cubic7(x):
+        return pow3[x%7]
+    assert cubic7(3)==1 and cubic7(-1)==0
+    assert class_number_reduced(-11)==1
+    # For χ modulo7: ordC=3; pK=11; hStar=1; pOne=13.
+    assert all(v<min(q,d) for v in (7,3,11,1,13))
+    Bchi_one={3,7}
+    Bchi_cubic={3,7,11,13}
+    assert isprime(11) and 11%4==3 and 11>=7 and gcd(11,7)==1
+    assert isprime(13) and 13%3==1 and gcd(13,2*7*11)==1
+    assert n3==469168 and gcd(q*d,7)==1
+    assert 2*3+1 < min(q,d) # Big(t=3), for BOTH hosts
+    squares_q=sorted({x*x%q for x in range(1,q)})
+    squares_d=sorted({x*x%d for x in range(1,d)})
+    # χ=1 host: H imposes ±1 mod16; squares at both auxiliaries.
+    h1=[crt((a2,aq,ad),(16,q,d)) for a2 in (1,15)
+        for aq in squares_q for ad in squares_d]
+    assert len(h1)==len(set(h1))==2030
+    def legq(x):return quad_symbol(x,q)
+    def legd(x):return quad_symbol(x,d)
+    assert all(legq(a)==1 and legd(a)==1 for a in h1)
+    # χ=cubic7 host also imposes χ7(a)=1.
+    ker_cubic=[a for a in range(1,7) if cubic7(a)==0]
+    assert ker_cubic==[1,6]
+    h3=[crt((a2,a7,aq,ad),(16,7,q,d)) for a2 in (1,15)
+        for a7 in ker_cubic for aq in squares_q for ad in squares_d]
+    assert len(h3)==len(set(h3))==4060
+    assert all(cubic7(a)==0 and legq(a)==1 and legd(a)==1 for a in h3)
+    # Index 1: CountI l=5 e=1, ψ=Legendre59, odd.
+    assert 5 not in Bchi_one and (2*1)%(5-1)!=0
+    assert legq(-1)==-1 and 1<2
+    # Index 2: CountII l=3 e=2, ψ=Legendre59 * Legendre71.
+    # Order(ψ)=2; comp3ψ=1 (3 does not divide the conductor n1).
+    assert 3 in Bchi_one and gcd(3,n1)==1
+    assert legq(-1)*legd(-1)==1 and 2<3
+    # Index 3: CountIII l=5 e=2, ψ=χ7, order3, even.
+    assert 5 not in Bchi_cubic and (2*2)%(5-1)==0
+    assert cubic7(-1)==0 and gcd(5,n3)==1 and 2<3
+    # Index 4: CountIV l=7 e=2, ψ=χ7, comp7ψ=ψ,
+    # hence chiP7ψ=ψ/(comp7ψ)=1, whose order (1) is odd.
+    assert 7 in Bchi_cubic and n3%7==0
+    assert cubic7(-1)==0 and 2<3
+    # Index 5: CountZ l=5 e=2, ψ=1.
+    assert 5 not in Bchi_one and (2*2)%(5-1)==0
+    # CaseV/CountVs require large 2-power conductor and are separately
+    # witnessed k=12..18 in countv_actual_host_character_contract.py.
+    print(f"Counting leaves: trivial Host N={n1}, H_size={len(h1)}")
+    print(f"Counting leaves: cubic7 Host N={n3}, H_size={len(h3)}")
+    print("CountI live: l=5 e=1 ψ=Legendre59, odd")
+    print("CountII live: l=3 e=2 ψ=Legendre59*Legendre71, even order2")
+    print("CountIII live: l=5 e=2 ψ=cubic7, even order3")
+    print("CountIV live: l=7 e=2 ψ=cubic7, chiP7 order1")
+    print("CountZ live: l=5 e=2 ψ=1")
+    print("PASS: five additional counting cases inhabited by exact Host characters")
 
 def main():
     q1,d=59,71
     ell,e,t,exp=5,1,2,2
     chi_conductor,ordC,pK,pOne=1,1,7,3
-    hstar=class_number_minus7()
+    hstar=class_number_reduced(-7)
     Bchi={3,7}  # prime factors of 1*1*7*1*3 plus 3
     assert hstar == 1
     assert pK==7 and pOne==3
@@ -104,6 +173,7 @@ def main():
     print(f"GD_eta_exponent={g} mod5={g%5} mod59={g%59} mod7={g%7}")
     print(f"CorG_auxiliary_primes={p},{pp} excluded_support=YES")
     print("PASS: real CorG/GD and Host/CaseI arithmetic antecedent witness")
+    live_case_coverage()
     print("BOUNDARY: NOT an exact Selmer length, CorG bound, or formal Lean witness")
 
 if __name__=="__main__":
