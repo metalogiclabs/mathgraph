@@ -16,22 +16,22 @@
     if(B.no!=5,error("unexpected quartic class number"));
     cf=bnfcertify(B);
     if(cf!=1,error("class group lacks unconditional certificate"));
-    sigma=x^3/q-3*x;
+    sigmapoly=x^3/q-3*x;
     R=bnrinit(B,1);
-    A=bnrgaloismatrix(R,sigma);
+    A=bnrgaloismatrix(R,sigmapoly);
     action=lift(Mod(A[1,1],5));
     if(action!=2 && action!=3,error("unexpected order-four class group action"));
     e=if(action==3,1,3);
     print("QUARTIC_q=",q," class_group=",B.cyc,
           " certified=",cf," aut_action=",action," matching_e=",e);
     for (ip=1,4,
-      prime=if(ip==1,2,if(ip==2,5,if(ip==3,q,167)));
-      dec=idealprimedec(B,prime);
-      print("PRIME_q=",q," p=",prime," number_of_primes=",#dec);
+      pp=if(ip==1,2,if(ip==2,5,if(ip==3,q,167)));
+      dec=idealprimedec(B,pp);
+      print("PRIME_q=",q," p=",pp," number_of_primes=",#dec);
       for (i=1,#dec,
-        class=bnfisprincipal(B,dec[i])[1];
-        print("CLASS_q=",q," p=",prime," i=",i," exponent=",class);
-        if(class!=[0]~,error("local prime has nonzero five-class"));
+        clsvec=bnfisprincipal(B,dec[i])[1];
+        print("CLASS_q=",q," p=",pp," i=",i," exponent=",clsvec);
+        if(clsvec!=[0]~,error("local prime has nonzero five-class"));
       );
     );
     print("PASS: quartic class eigenspace and local prime classes, q=",q);
