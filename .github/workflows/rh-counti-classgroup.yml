@@ -7,6 +7,7 @@ on:
     paths:
       - 'research/rh-counti-aux/degree8_class_group.gp'
       - 'research/rh-counti-aux/cyclic_quartic_5class_scan.gp'
+      - 'research/rh-counti-aux/cyclic_quartic_5class_eigenspaces.gp'
       - '.github/workflows/rh-counti-classgroup.yml'
   workflow_dispatch:
 
@@ -39,6 +40,12 @@ jobs:
           gp -q < research/rh-counti-aux/cyclic_quartic_5class_scan.gp | tee "$RUNNER_TEMP/quartic-scan.log"
           grep -Fx 'PASS: verified live CountI quartic class-group sample' "$RUNNER_TEMP/quartic-scan.log"
           grep -E '^SEARCH_TOTAL=[1-9][0-9]*$' "$RUNNER_TEMP/quartic-scan.log"
+      - name: Check 5-class Galois eigenspaces and local Frobenius
+        run: |
+          set -euo pipefail
+          gp -q < research/rh-counti-aux/cyclic_quartic_5class_eigenspaces.gp | tee "$RUNNER_TEMP/eigenspaces.log"
+          grep -F 'PASS: quartic class eigenspace and local prime classes, q=347' "$RUNNER_TEMP/eigenspaces.log"
+          grep -F 'PASS: quartic class eigenspace and local prime classes, q=443' "$RUNNER_TEMP/eigenspaces.log"
       - name: Preserve exact arithmetic evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -47,4 +54,5 @@ jobs:
           path: |
             ${{ runner.temp }}/classgroup.log
             ${{ runner.temp }}/quartic-scan.log
+            ${{ runner.temp }}/eigenspaces.log
           if-no-files-found: warn
