@@ -31,6 +31,18 @@ class MetamorphicTests(unittest.TestCase):
             }]}, root, 10)
             self.assertEqual(rows[0]["status"], "RELATION_SATISFIED")
 
+    def test_both_accept_rejects_equal_failures(self):
+        with tempfile.TemporaryDirectory() as root:
+            rows = metamorphic.run({"pairs": [{
+                "id": "both-refuse", "relation": "both_accept",
+                "requirement": "controlled acceptance relation",
+                "left": [sys.executable, "-c", "raise SystemExit(1)"],
+                "right": [sys.executable, "-c", "raise SystemExit(1)"]
+            }]}, root, 10)
+            self.assertEqual(rows[0]["status"], "RELATION_VIOLATED")
+            self.assertEqual(rows[0]["left"]["exit"], 1)
+            self.assertEqual(rows[0]["right"]["exit"], 1)
+
     def test_missing_executable_is_unknown(self):
         with tempfile.TemporaryDirectory() as root:
             rows = metamorphic.run({"pairs": [{
