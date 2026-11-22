@@ -8,6 +8,7 @@ Lean's own reporting is trusted; independent kernel replay is NOT claimed.
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -20,19 +21,21 @@ CASES = {
     "repaired": ("theorem target : True := True.intro\n", set()),
     "withdrawn": ("private axiom hidden : False\ntheorem target : False := hidden\n", None),
 }
-AXIOM_LINE = re.compile(r"^target\s+depends on axioms:\s*\[(.*)\]\s*$")
-NO_AXIOMS = re.compile(r"^target\s+does not depend on any axioms\s*$")
+AXIOM_LINE = re.compile(r"^(?:'target'|target)\s+depends on axioms:\s*\[(.*)\]\s*$")
+NO_AXIOMS = re.compile(r"^(?:'target'|target)\s+does not depend on any axioms\s*$")
 
 
 def inspect(stdout):
     lines = [line.strip() for line in stdout.splitlines()]
-    if any(NO_AXIOMS.fullmatch(line) for line in lines):
-        return set()
-    matches = [AXIOM_LINE.fullmatch(line) for line in lines]
-    matches = [m for m in matches if m]
-    if len(matches) != 1:
+    reports = [line for line in lines if line.startswith(("'target' ", "target "))]
+    if len(reports) != 1:
         raise ValueError("AXIOM_OUTPUT_UNRECOGNIZED")
-    raw = matches[0].group(1).strip()
+    if NO_AXIOMS.fullmatch(reports[0]):
+        return set()
+    match = AXIOM_LINE.fullmatch(reports[0])
+    if match is None:
+        raise ValueError("AXIOM_OUTPUT_UNRECOGNIZED")
+    raw = match.group(1).strip()
     names = [x.strip() for x in raw.split(",")] if raw else []
     if not names or any(not re.fullmatch(r"[\w.']+", n) for n in names):
         raise ValueError("AXIOM_OUTPUT_MALFORMED")
@@ -53,7 +56,8 @@ def run_case(lean, name, timeout):
                     "source_sha256": hashlib.sha256(text.encode()).hexdigest()}
     result = {"case": name, "source_sha256": hashlib.sha256(text.encode()).hexdigest(),
               "exit_code": p.returncode, "stdout_sha256": hashlib.sha256(p.stdout.encode()).hexdigest(),
-              "stderr_sha256": hashlib.sha256(p.stderr.encode()).hexdigest()}
+              "stderr_sha256": hashlib.sha256(p.stderr.encode()).hexdigest(),
+              "stdout": p.stdout, "stderr": p.stderr}
     if p.returncode != 0:
         return {**result, "status": "UNKNOWN", "reason": "LEAN_EXECUTION_FAILED"}
     try:
@@ -61,8 +65,6 @@ def run_case(lean, name, timeout):
     except ValueError as e:
         return {**result, "status": "UNKNOWN", "reason": str(e)}
     result["observed_axioms"] = sorted(actual)
-    result["stdout"] = p.stdout
-    result["stderr"] = p.stderr
     # Private Lean declarations receive mangled internal names. No substring
     # or guessed name is accepted as a proof of absence.
     if allowed is None:
@@ -96,10 +98,11 @@ def main():
     expected = {"benign": "OBSERVED_AGREEMENT", "declared": "OBSERVED_AGREEMENT",
                 "private": "OBSERVED_MISMATCH", "repaired": "OBSERVED_AGREEMENT",
                 "withdrawn": "OBSERVED_MISMATCH"}
-    complete = toolchain.get("exit_code") == 0 and "4.35.0" in toolchain.get("stdout", "") and all(r["status"] == expected[r["case"]] for r in rows)
+    complete = toolchain.get("exit_code") == 0 and toolchain.get("stdout", "").startswith("Lean (version 4.35.0, ") and all(r["status"] == expected[r["case"]] for r in rows)
     result = {"schema": "mathgraph.axiom-admission-experiment.v0",
               "status": "CANDIDATE_CONTROL_PASS" if complete else "UNKNOWN_OR_CONTROL_FAILURE",
               "boundary": "Lean #print axioms on five fixed standalone fixtures; not independent kernel checking",
+              "source_commit": os.environ.get("GITHUB_SHA"),
               "toolchain": toolchain, "cases": rows}
     (out / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({"status": result["status"], "out": str(out)}))
