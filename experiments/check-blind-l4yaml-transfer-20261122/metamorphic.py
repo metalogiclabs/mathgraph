@@ -9,7 +9,9 @@ from probe import execute
 def relation(left, right, rule):
     if left["kind"] != "EXECUTED" or right["kind"] != "EXECUTED":
         return "UNKNOWN"
-    if rule == "same_exit":
+    if rule == "both_accept":
+        equal = left["exit"] == 0 and right["exit"] == 0
+    elif rule == "same_exit":
         equal = left["exit"] == right["exit"]
     elif rule == "same_stdout":
         equal = left["exit"] == right["exit"] and left["stdout_sha256"] == right["stdout_sha256"]
@@ -50,7 +52,7 @@ def main():
     for pair in spec["pairs"]:
         ids.append(pair["id"])
         if (not isinstance(pair.get("requirement"), str) or not pair["requirement"].strip()
-            or pair.get("relation") not in ("same_exit", "same_stdout", "same_stderr")
+            or pair.get("relation") not in ("both_accept", "same_exit", "same_stdout", "same_stderr")
             or any(not isinstance(pair.get(side), list) or not pair[side]
                    or not all(isinstance(x, str) and x for x in pair[side])
                    for side in ("left", "right"))):
