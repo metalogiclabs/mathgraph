@@ -1,0 +1,90 @@
+[
+  {
+    "id": "plain_pass",
+    "group": "ordinary_outcomes",
+    "input": "<testsuite><testcase name=\"ok\"/></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".ok", "PASS", "pass", "0"]],
+      "count": 1,
+      "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0, "css": "pass"}
+    }
+  },
+  {
+    "id": "assertion_failure",
+    "group": "ordinary_outcomes",
+    "input": "<testsuite><testcase name=\"bad\"><failure/></testcase></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".bad", "FAIL", "fail", "0"]],
+      "count": 1,
+      "summary": {"total": 1, "passed": 0, "failed": 1, "skipped": 0, "css": "fail"}
+    }
+  },
+  {
+    "id": "skipped_case",
+    "group": "ordinary_outcomes",
+    "input": "<testsuite><testcase name=\"later\"><skipped/></testcase></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".later", "SKIP", "skip", "0"]],
+      "count": 1,
+      "summary": {"total": 1, "passed": 0, "failed": 0, "skipped": 1, "css": "pass"}
+    }
+  },
+  {
+    "id": "error_empty",
+    "group": "error_preservation",
+    "input": "<testsuite><testcase name=\"bad\"><error message=\"setup\"/></testcase></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".bad", "FAIL", "fail", "0"]],
+      "count": 1,
+      "summary": {"total": 1, "passed": 0, "failed": 1, "skipped": 0, "css": "fail"}
+    }
+  },
+  {
+    "id": "error_text",
+    "group": "error_preservation",
+    "input": "<testsuite><testcase name=\"bad\"><error type=\"RuntimeError\">setup failed</error></testcase></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".bad", "FAIL", "fail", "0"]],
+      "count": 1,
+      "summary": {"total": 1, "passed": 0, "failed": 1, "skipped": 0, "css": "fail"}
+    }
+  },
+  {
+    "id": "error_then_pass",
+    "group": "composition",
+    "input": "<testsuite><testcase name=\"bad\"><error/></testcase><testcase name=\"ok\"/></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".bad", "FAIL", "fail", "0"], [".ok", "PASS", "pass", "0"]],
+      "count": 2,
+      "summary": {"total": 2, "passed": 1, "failed": 1, "skipped": 0, "css": "fail"}
+    }
+  },
+  {
+    "id": "mixed_outcomes",
+    "group": "composition",
+    "input": "<testsuite><testcase name=\"error\"><error/></testcase><testcase name=\"ok\"/><testcase name=\"bad\"><failure/></testcase><testcase name=\"later\"><skipped/></testcase></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".error", "FAIL", "fail", "0"], [".ok", "PASS", "pass", "0"], [".bad", "FAIL", "fail", "0"], [".later", "SKIP", "skip", "0"]],
+      "count": 4,
+      "summary": {"total": 4, "passed": 1, "failed": 2, "skipped": 1, "css": "fail"}
+    }
+  },
+  {
+    "id": "error_text_control",
+    "group": "composition",
+    "input": "<testsuite><testcase name=\"ok\"><system-out>&lt;error/&gt;<![CDATA[<error/>]]><!-- <error/> --></system-out></testcase></testsuite>",
+    "expected": {
+      "accepted": true,
+      "rows": [[".ok", "PASS", "pass", "0"]],
+      "count": 1,
+      "summary": {"total": 1, "passed": 1, "failed": 0, "skipped": 0, "css": "pass"}
+    }
+  }
+]
