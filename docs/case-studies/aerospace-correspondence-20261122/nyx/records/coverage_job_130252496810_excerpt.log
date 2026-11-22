@@ -1,0 +1,10 @@
+L173: 2026-11-11T01:18:13.0219880Z HEAD is now at 78ab554 Merge 7d3253506471a7b9ff58e87fbee50e4a025e0b3f into 09ab47dd4233ad3b80efc64479bf5339739b5570
+L176: 2026-11-11T01:18:13.0359718Z 78ab554425ee06caa844260f27076f4da8a66d73
+L1038: 2026-11-11T01:23:44.2274787Z [1m[92m     Running[0m tests/parquet_frame_fidelity.rs (/home/runner/_work/nyx/nyx/target/llvm-cov-target/release/deps/parquet_frame_fidelity-b2ec45d4c82d38d0)
+L1039: 2026-11-11T01:23:44.2283239Z 
+L1040: 2026-11-11T01:23:44.2283382Z running 3 tests
+L1041: 2026-11-11T01:23:44.2309589Z test filtered_export_uses_the_frame_of_the_selected_rows ... ok
+L1042: 2026-11-11T01:23:44.2309872Z test mixed_frames_must_be_preserved_or_explicitly_rejected ... ok
+L1043: 2026-11-11T01:23:44.2319223Z test uniform_frame_round_trip_preserves_frames_and_coordinates ... ok
+L1044: 2026-11-11T01:23:44.2319388Z 
+L1045: 2026-11-11T01:23:44.2319521Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

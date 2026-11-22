@@ -1,0 +1,26 @@
+[
+  {
+    "path": "experiments/check-rocket-native-v1/export_rocket_native.mjs",
+    "git_blob": "20d0cd5d889a5e2ee72e52df919f23c4217f7628",
+    "sha256": "65160bbc7a9c4341ccd1c22171e2107beffe6ad24780077bd4c75dafa0cebdbf",
+    "package_path": "method/export_rocket_native.mjs"
+  },
+  {
+    "path": "experiments/check-rocket-native-v1/native_replay.py",
+    "git_blob": "dc8ce388946838d32980cc98dfee3b9f07d829c8",
+    "sha256": "d795243d1882557e23b105a2ec59316063e35884ee66b4a95bf1bc8c318aab1a",
+    "package_path": "method/native_replay.py"
+  },
+  {
+    "path": "experiments/check-rocket-native-v1/qualify_native.py",
+    "git_blob": "86bda6a89dc0cbd313ebd075e7e07af3eadaec92",
+    "sha256": "d098cc77d9e63587467c90d47a97d5ea4417c4b8f15cd3390bfea9ef31c1b988",
+    "package_path": "method/qualify_native.py"
+  },
+  {
+    "path": "experiments/check-rocket-native-v1/test_native_contract.py",
+    "git_blob": "920d9c56fcc998e59424204a43af458f78a1dc1c",
+    "sha256": "ccdea8728abe43dbd2934c1d4b2962cb78bbbbc29eb9f0412baec1042ebe893c",
+    "package_path": "method/test_native_contract.py"
+  }
+]

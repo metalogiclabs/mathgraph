@@ -1,0 +1,39 @@
+name: Aerospace correspondence replay
+
+on:
+  push:
+    paths:
+      - 'docs/case-studies/aerospace-correspondence-20261122/**'
+      - '.github/workflows/aerospace-correspondence-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Recheck original Nyx sources and historical receipts
+        run: python3 docs/case-studies/aerospace-correspondence-20261122/nyx/verify_evidence.py
+      - name: Replay original FRET, C2PO and native R2U2
+        run: python3 docs/case-studies/aerospace-correspondence-20261122/rocket/reproduce.py --work-dir "${{ github.workspace }}/aerospace-replay"
+      - name: Retain full generated replay evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aerospace-correspondence-evidence
+          path: |
+            aerospace-replay/run-receipt.json
+            aerospace-replay/reproduction.log
+            aerospace-replay/native-rocket-out/
+          if-no-files-found: warn
+          retention-days: 30

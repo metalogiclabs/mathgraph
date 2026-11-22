@@ -1,0 +1,13 @@
+{
+  "url": "https://github.com/nyx-space/nyx/pull/615",
+  "number": 615,
+  "title": "fix: preserve trajectory frame identity in Parquet exports",
+  "state": "closed",
+  "merged": true,
+  "merged_at": "2026-11-13T04:45:02Z",
+  "base_sha": "09ab47dd4233ad3b80efc64479bf5339739b5570",
+  "head_sha": "7d3253506471a7b9ff58e87fbee50e4a025e0b3f",
+  "merge_commit_sha": "71e31c137bfe2fea641a21455febb84c936fc409",
+  "review_url": "https://github.com/nyx-space/nyx/pull/615#pullrequestreview-5851942876",
+  "review_state": "APPROVED"
+}

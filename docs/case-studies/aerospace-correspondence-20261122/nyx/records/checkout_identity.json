@@ -1,0 +1,70 @@
+{
+  "requested_pr_head": "7d3253506471a7b9ff58e87fbee50e4a025e0b3f",
+  "executed_coverage_checkout": "78ab554425ee06caa844260f27076f4da8a66d73",
+  "source_base": "09ab47dd4233ad3b80efc64479bf5339739b5570",
+  "upstream_merge": "71e31c137bfe2fea641a21455febb84c936fc409",
+  "commits": [
+    {
+      "sha": "7d3253506471a7b9ff58e87fbee50e4a025e0b3f",
+      "tree": "b403a52f322efd04e7c865a6394ef4cc645b306e",
+      "parents": [
+        "baf3d7cefdf091fe747952fb80383f340dc745c4"
+      ],
+      "url": "https://github.com/nyx-space/nyx/commit/7d3253506471a7b9ff58e87fbee50e4a025e0b3f"
+    },
+    {
+      "sha": "78ab554425ee06caa844260f27076f4da8a66d73",
+      "tree": "6d8f077d27a158c52171ce7a6f8c10aae75a8c60",
+      "parents": [
+        "09ab47dd4233ad3b80efc64479bf5339739b5570",
+        "7d3253506471a7b9ff58e87fbee50e4a025e0b3f"
+      ],
+      "url": "https://github.com/nyx-space/nyx/commit/78ab554425ee06caa844260f27076f4da8a66d73"
+    },
+    {
+      "sha": "09ab47dd4233ad3b80efc64479bf5339739b5570",
+      "tree": "4c85bf0374601d25e0263c7bacbad9027aa5287c",
+      "parents": [
+        "d1c3598d5ccf4c984a1d3dd82c450e2af363e821",
+        "ac819f7ab351eccb0b1ae9b5fd361a3a1a9e4a9b"
+      ],
+      "url": "https://github.com/nyx-space/nyx/commit/09ab47dd4233ad3b80efc64479bf5339739b5570"
+    },
+    {
+      "sha": "71e31c137bfe2fea641a21455febb84c936fc409",
+      "tree": "6d8f077d27a158c52171ce7a6f8c10aae75a8c60",
+      "parents": [
+        "09ab47dd4233ad3b80efc64479bf5339739b5570",
+        "7d3253506471a7b9ff58e87fbee50e4a025e0b3f"
+      ],
+      "url": "https://github.com/nyx-space/nyx/commit/71e31c137bfe2fea641a21455febb84c936fc409"
+    }
+  ],
+  "head_to_executed_changes": [
+    {
+      "path": "nyx-core/src/propagators/event.rs",
+      "sha": "fb46c8eb2152124d9e814012e8748cb98ff0f6ae"
+    },
+    {
+      "path": "nyx-core/tests/propagation/stopcond.rs",
+      "sha": "830919f246536ccc65be4041e9a4b775220f57bb"
+    }
+  ],
+  "selected_blobs_verified_equal": [
+    {
+      "path": "nyx-core/src/md/trajectory/traj.rs",
+      "sha": "e80a17db6babf8691343786fe7aa3353b7446302",
+      "checked_url": "https://github.com/nyx-space/nyx/blob/78ab554425ee06caa844260f27076f4da8a66d73/nyx-core/src/md/trajectory/traj.rs"
+    },
+    {
+      "path": "nyx-core/tests/parquet_frame_fidelity.rs",
+      "sha": "639a814c4d75365ee9ec0a118f7a8f092cd40e57",
+      "checked_url": "https://github.com/nyx-space/nyx/blob/78ab554425ee06caa844260f27076f4da8a66d73/nyx-core/tests/parquet_frame_fidelity.rs"
+    },
+    {
+      "path": "nyx-core/src/md/trajectory/sc_traj.rs",
+      "sha": "4345451f4488cd608fca56ed71869fa8a593b20b",
+      "checked_url": "https://github.com/nyx-space/nyx/blob/78ab554425ee06caa844260f27076f4da8a66d73/nyx-core/src/md/trajectory/sc_traj.rs"
+    }
+  ]
+}
