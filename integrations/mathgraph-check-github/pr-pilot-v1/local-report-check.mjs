@@ -10,6 +10,8 @@ import {REPORT_CASES,REPORT_PROFILE,REPORT_GATE,REPORT_METHOD,REPORT_CORPUS_SHA,
         REPORT_REFERENCE_RUNNER_SHA,reportProbePlan} from './report-integrity.mjs';
 import {renderProbe,inspectArm} from '../lean-investigator-v1/contracts.mjs';
 import {compareProbeRows} from './engine.mjs';
+import {STATUS_METHOD,STATUS_CASES,STATUS_CORPUS_SHA,STATUS_REFERENCE_SHA,STATUS_SCOPE,
+        statusPlan,statusObserver,assessStatusRevision,renderStatusReport} from './report-status.mjs';
 
 const HERE=dirname(fileURLToPath(import.meta.url));
 const hash=x=>createHash('sha256').update(x).digest('hex');
@@ -18,7 +20,7 @@ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const PASS='GUARD_PASSED',FAIL='CANDIDATE_ASSERTION_FAILURE';
 const METHOD_FILES=['local-report-check.mjs','local-report-native.py','report-integrity.mjs',
  'report-cases.json','report-reference.py','engine.mjs','../lean-investigator-v1/contracts.mjs',
- '../lean-investigator-v1/native.py'];
+ '../lean-investigator-v1/native.py','report-status.mjs','report-status-cases.json','report-status-reference.py'];
 const SCOPE='Finite profile for exact committed Reports.lean bytes in an isolated module with the declared empty HtmlReport dependency, original module guards and 19 fixed XML acceptance cases. Full dependency-environment correspondence, full reports CLI, XML conformance and whole-repository correctness remain UNKNOWN.';
 
 function casePlan(){return {tests:REPORT_CASES.map(c=>({id:c.id,
@@ -44,7 +46,7 @@ export function assessRevision(arm,source){
 
 function parseArgs(argv){
  if(argv.includes('--help'))return {help:true};
- const allowed=new Set(['repo','base','head','out','lean','python','timeout-seconds']);const options={};
+ const allowed=new Set(['repo','base','head','out','lean','python','timeout-seconds','profile']);const options={};
  for(let i=0;i<argv.length;i+=2){const key=argv[i]?.replace(/^--/,'');
   if(!argv[i]?.startsWith('--')||!allowed.has(key)||argv[i+1]===undefined||Object.hasOwn(options,key))throw Error('INVALID_ARGUMENT: '+argv[i]);
   options[key]=argv[i+1];
@@ -53,6 +55,8 @@ function parseArgs(argv){
  options.timeout=Number(options['timeout-seconds']??120);
  if(!Number.isFinite(options.timeout)||options.timeout<1||options.timeout>600)throw Error('INVALID_TIMEOUT: use 1..600 seconds');
  options.lean=options.lean??process.env.MATHGRAPH_LEAN_BIN??'lean';options.python=options.python??'python3';
+ options.profile=options.profile??REPORT_METHOD;
+ if(![REPORT_METHOD,STATUS_METHOD].includes(options.profile))throw Error('UNSUPPORTED_PROFILE: '+options.profile);
  return options;
 }
 
@@ -80,16 +84,18 @@ async function sourceAt(repo,ref){
   source_sha256:hash(bytes),source,provenance:'LOCALLY_OBSERVED_GIT_OBJECT'};
 }
 
-async function methodIdentity(){
+async function methodIdentity(profile=REPORT_METHOD){
  const files={};for(const name of METHOD_FILES)files[name]=hash(await readFile(join(HERE,name)));
- if(files['report-cases.json']!==REPORT_CORPUS_SHA||files['report-reference.py']!==REPORT_REFERENCE_RUNNER_SHA)throw Error('FROZEN_REFERENCE_CHANGED');
- return {id:REPORT_METHOD,plan_sha256:hash(JSON.stringify(reportProbePlan())),
-  corpus_sha256:files['report-cases.json'],reference_sha256:files['report-reference.py'],
+ const status=profile===STATUS_METHOD,corpus=status?'report-status-cases.json':'report-cases.json',reference=status?'report-status-reference.py':'report-reference.py';
+ if(files[corpus]!== (status?STATUS_CORPUS_SHA:REPORT_CORPUS_SHA)||files[reference]!== (status?STATUS_REFERENCE_SHA:REPORT_REFERENCE_RUNNER_SHA))throw Error('FROZEN_REFERENCE_CHANGED');
+ return {id:profile,plan_sha256:hash(JSON.stringify(status?statusPlan():reportProbePlan())),
+  corpus_sha256:files[corpus],reference_sha256:files[reference],
   files,selection:'RETAINED_FIXED_PROFILE',hosted_admission:'NOT_REQUESTED'};
 }
 
 function display(execution){return {[PASS]:'Pass',[FAIL]:'Discrepancy',UNKNOWN:'Unknown'}[execution]??'Unknown';}
 export function renderLocalReport(r){
+ if(r.profile===STATUS_METHOD)return renderStatusReport(r);
  const title=r.status==='UNKNOWN'?'Comparison incomplete':r.status==='OBSERVED_MISMATCH'?
   'The head revision disagrees with the retained report checks':'The head revision satisfies the retained report checks';
  const lines=['# MathGraph Check — report integrity','',`**${title}.**`,'',
@@ -138,29 +144,32 @@ async function inventory(root,folder=root){
 }
 
 export async function runLocal(options){
+ const profile=options.profile??REPORT_METHOD,status=profile===STATUS_METHOD;
+ if(![REPORT_METHOD,STATUS_METHOD].includes(profile))throw Error('UNSUPPORTED_PROFILE: '+profile);
  const started=performance.now(),out=resolve(options.out);
  try{await mkdir(out,{recursive:false});}catch(e){if(e.code==='EEXIST')throw Error('OUTPUT_ALREADY_EXISTS: '+out);throw e;}
- const result={schema:'mathgraph.local-report-check.v1',status:'UNKNOWN',permission:'ADVISORY_ONLY',
-  human_trial:'NOT_RUN',comparative_advantage:'NOT_RUN',scope:SCOPE,subjects:{},
+ const result={schema:status?'mathgraph.local-report-status-check.v1':'mathgraph.local-report-check.v1',profile,status:'UNKNOWN',permission:'ADVISORY_ONLY',
+  human_trial:'NOT_RUN',comparative_advantage:'NOT_RUN',scope:status?STATUS_SCOPE:SCOPE,subjects:{},
   cost:{model_calls:0,native_processes:null,wall_seconds:0,human_seconds:null}};
  try{
-  const repo=await realpath(options.repo);result.method=await methodIdentity();
+  const repo=await realpath(options.repo);result.method=await methodIdentity(profile);
   const sources={};
   for(const label of ['base','head']){
    sources[label]=await sourceAt(repo,options[label]);
    const {source,...identity}=sources[label];result.subjects[label]=identity;
   }
-  const groups=reportProbePlan().tests.map(t=>probe(t.id,t.expression));
-  const cases=casePlan().tests.map(t=>probe(t.id,t.expression));
-  const payload={sources,groups,cases,gate:REPORT_GATE,
+  const groups=status?[]:reportProbePlan().tests.map(t=>probe(t.id,t.expression));
+  const cases=status?STATUS_CASES.map(c=>{const code=statusObserver(c);return {id:c.id,code,sha256:hash(code)};}):casePlan().tests.map(t=>probe(t.id,t.expression));
+  const payload={sources,groups,cases,case_mode:status?'json':'guard',gate:REPORT_GATE,
    controls:{pass:probe('control_pass','true'),fail:probe('control_fail','false')}};
   await writeFile(join(out,'request.json'),json(payload));
   const requestHash=hash(await readFile(join(out,'request.json')));
   const referencePath=join(out,'reference.json');
-  command(options.python,[join(HERE,'report-reference.py'),referencePath]);
+  command(options.python,[join(HERE,status?'report-status-reference.py':'report-reference.py'),referencePath]);
   const reference=JSON.parse(await readFile(referencePath,'utf8'));
-  if(reference.runner_sha256!==REPORT_REFERENCE_RUNNER_SHA||reference.corpus_sha256!==REPORT_CORPUS_SHA||
-   !same(reference.records,REPORT_CASES.map(c=>({...c,observed_acceptance:c.accepted}))))throw Error('REFERENCE_INCOMPLETE_OR_DISAGREES');
+  const expected=status?STATUS_CASES.map(c=>({id:c.id,observed:c.expected})):REPORT_CASES.map(c=>({...c,observed_acceptance:c.accepted}));
+  if(reference.runner_sha256!==result.method.reference_sha256||reference.corpus_sha256!==result.method.corpus_sha256||
+   !same(reference.records,expected))throw Error('REFERENCE_INCOMPLETE_OR_DISAGREES');
   result.reference={status:'OBSERVED_AGREEMENT',input_count:reference.records.length,artifact_sha256:hash(await readFile(referencePath))};
   const p=spawnSync(options.python,[join(HERE,'local-report-native.py'),join(out,'request.json'),out,options.lean,String(options.timeout)],
    {encoding:'utf8',timeout:(options.timeout+15)*1000,maxBuffer:4*1024*1024});
@@ -168,9 +177,9 @@ export async function runLocal(options){
   if(p.error||p.status!==0)throw Error('NATIVE_EXECUTION_INCOMPLETE: '+(p.error?.message??p.stderr??'').slice(-1600));
   const native=JSON.parse(await readFile(join(out,'native.json'),'utf8'));
   result.runtime=native.runtime;result.cost.native_processes=native.processes.filter(p=>p.executed).length;
-  if(hash(await readFile(join(out,'request.json')))!==requestHash||!same(result.method,await methodIdentity())||
+  if(hash(await readFile(join(out,'request.json')))!==requestHash||!same(result.method,await methodIdentity(profile))||
    hash(await readFile(referencePath))!==result.reference.artifact_sha256)throw Error('METHOD_OR_INPUT_CHANGED_DURING_EXECUTION');
-  for(const label of ['base','head'])result[label]=assessRevision(native[label],sources[label].source);
+  for(const label of ['base','head'])result[label]=(status?assessStatusRevision:assessRevision)(native[label],sources[label].source);
   result.comparison=compareProbeRows(result.base.groups,result.head.groups,{complete:result.base.complete});
   if(!result.base.complete||!result.head.complete)result.reason=[['base',result.base],['head',result.head]].filter(([,v])=>!v.complete).map(([n,v])=>n+': '+v.reason).join('; ');
   else result.status=result.head.mismatches.length?'OBSERVED_MISMATCH':'OBSERVED_AGREEMENT';
@@ -185,7 +194,7 @@ export async function runLocal(options){
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
   const options=parseArgs(process.argv.slice(2));
-  if(options.help)console.log('MathGraph local report check\n\nnode local-report-check.mjs --repo LOCAL_GIT --base REV --head REV --out NEW_DIRECTORY [--lean LEAN_4_35_BINARY] [--python python3] [--timeout-seconds 120]\n\nChecks the retained 19-case profile on committed Tests/SuiteRunner/Reports.lean. Local reviewed source only. Exit: 0 finite head agreement, 1 finite discrepancy, 2 UNKNOWN.');
+  if(options.help)console.log('MathGraph local report check\n\nnode local-report-check.mjs --repo LOCAL_GIT --base REV --head REV --out NEW_DIRECTORY [--profile junit-report-integrity-v1|junit-status-preservation-v1] [--lean LEAN_4_35_BINARY] [--python python3] [--timeout-seconds 120]\n\nDefault: retained 19-case XML acceptance profile. Optional status profile: 8 cases through actual JUnit rows and HTML. Source: committed Tests/SuiteRunner/Reports.lean. Local reviewed source only. Exit: 0 finite head agreement, 1 finite discrepancy, 2 UNKNOWN.');
   else{const {result,exit_code}=await runLocal(options);console.log(json({status:result.status,reason:result.reason,report:join(resolve(options.out),'report.md'),cost:result.cost}));process.exitCode=exit_code;}
  }catch(error){console.error(error.message);process.exitCode=2;}
 }

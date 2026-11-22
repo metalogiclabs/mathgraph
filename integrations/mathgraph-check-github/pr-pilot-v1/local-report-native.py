@@ -30,6 +30,9 @@ def main():
     request_path, output_path, lean_arg, timeout_arg = sys.argv[1:]
     output = Path(output_path).resolve()
     request = json.loads(Path(request_path).read_text())
+    case_mode = request.get("case_mode", "guard")
+    if case_mode not in ("guard", "json"):
+        raise RuntimeError("UNSUPPORTED_OBSERVATION_MODE")
     started = time.monotonic()
     deadline = started + float(timeout_arg)
     logs = output / "native-logs"
@@ -126,22 +129,31 @@ def main():
             return observed
         observed["module_olean_sha256"] = sha((module_dir / "Reports.olean").read_bytes())
 
-        def probe(item):
+        def probe(item, json_output=False):
             path = project / (item["id"] + ".lean")
             data = item["code"].encode()
             if sha(data) != item["sha256"]:
                 raise RuntimeError("PROBE_DIGEST_MISMATCH")
             path.write_bytes(data)
-            code, text = execute(label + "-" + item["id"], [lean, path.name], project, local_env)
+            args = [lean, "--run", path.name] if json_output else [lean, path.name]
+            code, text = execute(label + "-" + item["id"], args, project, local_env)
             if path.read_bytes() != data:
                 raise RuntimeError("PROBE_CHANGED_DURING_EXECUTION")
+            if json_output:
+                row = {"id": item["id"], "exit_code": code, "test_file_sha256": sha(data)}
+                try:
+                    row["observation"] = json.loads(text) if code == 0 else None
+                except json.JSONDecodeError as error:
+                    row["observation"] = None
+                    row["observation_error"] = str(error)[:500]
+                return row
             return {"id": item["id"], **GUARDS.guard_outcome(code, text),
                     "test_file_sha256": sha(data)}
 
         observed["controls"] = {name: probe(request["controls"][name]) for name in ("pass", "fail")}
         # Always attempt the complete frozen corpus; never stop on a discrepancy.
         observed["probes"] = [probe(item) for item in request["groups"]]
-        observed["cases"] = [probe(item) for item in request["cases"]]
+        observed["cases"] = [probe(item, case_mode == "json") for item in request["cases"]]
         code, _ = execute(label + "-selected-gate", [lean, "--run", "MathGraphGate.lean"], project, local_env)
         observed["repository_gate_exit"] = code
         if source_path.read_bytes() != source or (module_dir / "HtmlReport.lean").read_text() != stub:
