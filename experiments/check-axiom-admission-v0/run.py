@@ -61,6 +61,8 @@ def run_case(lean, name, timeout):
     except ValueError as e:
         return {**result, "status": "UNKNOWN", "reason": str(e)}
     result["observed_axioms"] = sorted(actual)
+    result["stdout"] = p.stdout
+    result["stderr"] = p.stderr
     # Private Lean declarations receive mangled internal names. No substring
     # or guessed name is accepted as a proof of absence.
     if allowed is None:
@@ -84,15 +86,21 @@ def main():
     if out.exists():
         parser.error("output path must not exist")
     out.mkdir(parents=True)
+    try:
+        tool = subprocess.run([args.lean, "--version"], capture_output=True, text=True,
+                              timeout=args.timeout, check=False)
+        toolchain = {"exit_code": tool.returncode, "stdout": tool.stdout, "stderr": tool.stderr}
+    except (OSError, subprocess.TimeoutExpired) as e:
+        toolchain = {"error": type(e).__name__}
     rows = [run_case(args.lean, name, args.timeout) for name in CASES]
     expected = {"benign": "OBSERVED_AGREEMENT", "declared": "OBSERVED_AGREEMENT",
                 "private": "OBSERVED_MISMATCH", "repaired": "OBSERVED_AGREEMENT",
                 "withdrawn": "OBSERVED_MISMATCH"}
-    complete = all(r["status"] == expected[r["case"]] for r in rows)
+    complete = toolchain.get("exit_code") == 0 and "4.35.0" in toolchain.get("stdout", "") and all(r["status"] == expected[r["case"]] for r in rows)
     result = {"schema": "mathgraph.axiom-admission-experiment.v0",
               "status": "CANDIDATE_CONTROL_PASS" if complete else "UNKNOWN_OR_CONTROL_FAILURE",
               "boundary": "Lean #print axioms on five fixed standalone fixtures; not independent kernel checking",
-              "cases": rows}
+              "toolchain": toolchain, "cases": rows}
     (out / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({"status": result["status"], "out": str(out)}))
     return 0 if complete else 2
