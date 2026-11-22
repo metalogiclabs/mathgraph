@@ -72,4 +72,4 @@ jobs:
         with: {name: retained-report-status-qualification, path: status-qualification, retention-days: 30}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
-        with: {name: retained-catalogue-qualification, path: catalogue-qualification, retention-days: 30}
+        with: {name: retained-catalogue-qualification, path: catalogue-qualification, retention-days: 30, include-hidden-files: true}

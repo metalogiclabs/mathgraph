@@ -65,9 +65,45 @@ retuned based on qualification outcomes.
 
 ## Result status
 
-Implementation and native controls are being qualified. No completed campaign
-is claimed in this prequalification record. Exact implementation/run/artifact
-identities and outcomes will be appended after their evidence is inspected.
+**WARRANTED within the finite execution boundary:** all five declared campaigns
+completed on frozen executable implementation
+`e032401ff6099492f4c0f252af8d3123f330512f`, tree
+`423718962be52449022059512b418a3245366943`, with exactly the expected discrepancy
+vectors above. The local campaign took 208.533 seconds; its combined comparison
+took 54.570 seconds. Independent review verified 2,012 inventory hashes, 20
+profile receipts, 400 individual observations and 144 raw process records.
+Profile methods were unchanged across all five campaigns; runtime identities
+were unchanged within each profile across the four executed comparisons.
+
+The actual combined candidate is `845873be23f6603530bd434d1b91a7409eb92239`, tree
+`ff47e3a4244a7b7b103b233114baef41ff28522d`. The missing-source child is
+`f3854aa8d6ccdc66a2d04c8661e0078d90a2bcd7`.
+
+[Hosted run 44990119580](https://github.com/metalogiclabs/mathgraph/actions/runs/44990119580)
+independently reproduced the five outcomes in 162.548 seconds (combined
+comparison 40.732 seconds). It also passed 664 Node tests with 16 explicit skips,
+74 Python tests and the separate 9/9 and 4/4 native control suites. Those native
+suites repeat some tests skipped in the broad job; these are not disjoint totals.
+
+**Artifact-transport correction:** that first hosted catalogue archive
+`14741209279` has SHA-256
+`4382752949a4f38c4dcab454ae6446b48099c0253c882517bd21968f79392518`, but omitted
+136 controlled backend files below `.lake`. All 1,876 present inventory entries
+matched; the archive is incomplete and must not be described as fully retained.
+The workflow now explicitly includes hidden fixture files. This changes artifact
+retention, not the four executable methods, cases, expectations or budgets.
+The [PR #285 checks and artifacts](https://github.com/metalogiclabs/mathgraph/pull/285/checks)
+identify fresh hosted replays of the corrected workflow, each with its own
+source-qualified verifier receipt and complete-inventory requirement.
+
+Every run accounts for 104 prompts, with 16 mapped finite facets and 88
+unsupported by this command; no family is promoted to complete coverage. The
+partial repair leaves four status discrepancies, withdrawal restores the
+original 0/4/2/13 vector, and unavailable source makes all four profiles UNKNOWN.
+The original refusal vector consists of 12 false PASS results and one ordinary
+FAIL that should instead be an apparatus ERROR, not 13 false-green results.
+Model calls were zero. External human utility and comparative value remain
+unmeasured and do not block execution.
 
 ### Retained prequalification lineage
 
