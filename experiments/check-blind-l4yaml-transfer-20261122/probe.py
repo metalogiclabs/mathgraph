@@ -47,6 +47,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--spec", required=True)
     parser.add_argument("--repo", required=True)
+    parser.add_argument("--revision", required=True, help="Expected full 40-hex commit SHA")
     parser.add_argument("--out", required=True)
     parser.add_argument("--timeout", type=int, default=30)
     args = parser.parse_args()
@@ -74,16 +75,25 @@ def main():
     revision = execute(["git", "rev-parse", "HEAD"], str(cwd), args.timeout)
     if revision["kind"] != "EXECUTED" or revision["exit"] != 0:
         parser.error("source revision unavailable")
+    if len(args.revision) != 40 or any(ch not in "0123456789abcdef" for ch in args.revision) or revision["stdout"].strip() != args.revision:
+        parser.error("source revision does not match frozen target")
     dirty = execute(["git", "status", "--porcelain"], str(cwd), args.timeout)
     if dirty["kind"] != "EXECUTED" or dirty["exit"] != 0 or dirty["stdout"].strip():
         parser.error("repository must be clean")
     results = evaluate(spec, str(cwd), args.timeout)
-    status = ("UNKNOWN" if any(r["status"] == "UNKNOWN" for r in results)
+    after = execute(["git", "rev-parse", "HEAD"], str(cwd), args.timeout)
+    after_dirty = execute(["git", "status", "--porcelain"], str(cwd), args.timeout)
+    source_stable = (after["kind"] == "EXECUTED" and after["exit"] == 0 and
+                     after["stdout"].strip() == args.revision and
+                     after_dirty["kind"] == "EXECUTED" and after_dirty["exit"] == 0 and
+                     not after_dirty["stdout"].strip())
+    status = ("UNKNOWN" if not source_stable or any(r["status"] == "UNKNOWN" for r in results)
               else "DISCREPANCIES" if any(r["status"] == "DISCREPANCY" for r in results)
               else "BOUNDED_AGREEMENT")
     out.mkdir(parents=True)
     receipt = {"schema": "mathgraph.prospective-receipt.v0", "status": status,
-               "source_revision": revision["stdout"].strip(), "spec_sha256": sha(spec_bytes),
+               "source_revision": revision["stdout"].strip(), "source_stable": source_stable,
+               "spec_sha256": sha(spec_bytes),
                "cases": results, "blindness": "NOT_ESTABLISHED",
                "novelty": "UNKNOWN", "model_calls": 0,
                "boundary": "Operator-supplied commands and expected observations only; no hypothesis generation"}
