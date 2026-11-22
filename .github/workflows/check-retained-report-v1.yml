@@ -1,13 +1,16 @@
 name: Retained report check - native source reuse
 on:
   push:
-    branches: [feat/check-retained-report-20261122, feat/check-junit-status-20261122]
+    branches: [feat/check-retained-report-20261122, feat/check-junit-status-20261122, feat/check-catalogue-104-20261122]
   pull_request:
     paths:
       - integrations/mathgraph-check-github/pr-pilot-v1/**
       - integrations/mathgraph-check-github/lean-investigator-v1/**
       - experiments/check-retained-report-v1/**
       - experiments/check-report-status-v1/**
+      - integrations/mathgraph-check-github/catalogue-check-v1/**
+      - integrations/mathgraph-check-github/retained-suite-v1/**
+      - experiments/check-catalogue-v1/**
       - .github/workflows/check-retained-report-v1.yml
 permissions: {contents: read}
 jobs:
@@ -19,7 +22,7 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with: {node-version: '24'}
-      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs
+      - run: node --test integrations/mathgraph-check-github/*.test.mjs integrations/mathgraph-check-github/investigator-v1/*.test.mjs integrations/mathgraph-check-github/lean-investigator-v1/*.test.mjs integrations/mathgraph-check-github/pr-pilot-v1/*.test.mjs integrations/mathgraph-check-github/cloudflare/*.test.mjs integrations/mathgraph-check-github/catalogue-check-v1/*.test.mjs integrations/mathgraph-check-github/retained-suite-v1/*.test.mjs
       - run: |
           python3 -m unittest discover -s integrations/mathgraph-check-github/lean-investigator-v1 -p 'test_*.py'
           python3 -m unittest discover -s integrations/mathgraph-check-github/repository-contract-v1 -p 'test_*.py'
@@ -28,10 +31,12 @@ jobs:
           python3 -m unittest discover -s experiments/check-retained-report-v1 -p 'test_*.py'
           python3 -m unittest discover -s integrations/mathgraph-check-github/pr-pilot-v1 -p 'test_report_status_reference.py'
           python3 -m unittest discover -s experiments/check-report-status-v1 -p 'test_*.py'
+          python3 -m unittest discover -s experiments/check-catalogue-v1 -p 'test_*.py'
+          python3 -m unittest discover -s integrations/mathgraph-check-github/retained-suite-v1 -p 'test_*.py'
   native:
     needs: contracts
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with: {persist-credentials: false}
@@ -51,13 +56,20 @@ jobs:
           git init subject
           git -C subject remote add origin https://github.com/nasa-jpl/L4YAML.git
           git -C subject fetch --depth 1 origin 3e855548afa1c70bcc2aa77f7b86587de5658743 14eb6dbab845d2ac61f171a9ed61906d3f9ffb2f 122064d0c853be8d6c2f4cd255c6fcd67acc4ae8
+          git -C subject remote add repair https://github.com/metalogiclabs/L4YAML.git
+          git -C subject fetch --depth 2 repair c06ec22e49c139a47a1ef08c96eb6726bb2b32ee
       - name: Frozen method on later source, reverse, unchanged and unsupported controls
         run: python3 experiments/check-retained-report-v1/qualify.py --repo subject --out qualification --lean "$MATHGRAPH_LEAN_BIN"
       - name: Frozen status method on original, local candidate, withdrawal and retained envelope controls
         run: python3 experiments/check-report-status-v1/qualify.py --repo subject --out status-qualification --lean "$MATHGRAPH_LEAN_BIN"
+      - name: All retained profiles with partial repair, combined repair, withdrawal and 104-prompt accounting
+        run: python3 experiments/check-catalogue-v1/qualify.py --repo subject --out catalogue-qualification --lean "$MATHGRAPH_LEAN_BIN"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: retained-report-qualification, path: qualification, retention-days: 30}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with: {name: retained-report-status-qualification, path: status-qualification, retention-days: 30}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with: {name: retained-catalogue-qualification, path: catalogue-qualification, retention-days: 30, include-hidden-files: true}

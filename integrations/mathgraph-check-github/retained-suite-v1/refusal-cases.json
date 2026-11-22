@@ -1,0 +1,24 @@
+{
+  "profile": "suite-refusal-integrity-v1",
+  "contract": "For the selected Lean backend, deliberate acceptance is exact stdout L4YAML_SUITE_ACCEPT\\n with exit 0; deliberate rejection is exact stdout L4YAML_SUITE_REJECT\\n with exit 1. Exit 124 is a timeout outcome. Other combinations and launch failures are apparatus errors. Controlled producers are trusted to emit honestly; this is not full parser qualification.",
+  "cases": [
+    {"id":"deliberate_rejection","expect_fail":true,"stdout":"L4YAML_SUITE_REJECT\n","stderr":"controlled deliberate parser rejection\n","exit_code":1,"behavior":"exit","expected":"PASS"},
+    {"id":"ordinary_acceptance","expect_fail":false,"stdout":"L4YAML_SUITE_ACCEPT\n","stderr":"","exit_code":0,"behavior":"exit","expected":"PASS"},
+    {"id":"unexpected_acceptance","expect_fail":true,"stdout":"L4YAML_SUITE_ACCEPT\n","stderr":"","exit_code":0,"behavior":"exit","expected":"FAIL"},
+    {"id":"unmarked_rejection","expect_fail":true,"stdout":"","stderr":"controlled runtime error\n","exit_code":1,"behavior":"exit","expected":"ERROR"},
+    {"id":"exit_2","expect_fail":true,"stdout":"","stderr":"controlled usage error\n","exit_code":2,"behavior":"exit","expected":"ERROR"},
+    {"id":"exit_127","expect_fail":true,"stdout":"","stderr":"controlled exit 127\n","exit_code":127,"behavior":"exit","expected":"ERROR"},
+    {"id":"exit_139","expect_fail":true,"stdout":"","stderr":"controlled exit 139 (not a signal)\n","exit_code":139,"behavior":"exit","expected":"ERROR"},
+    {"id":"missing_executable","expect_fail":true,"stdout":"","stderr":"","exit_code":127,"behavior":"missing","expected":"ERROR"},
+    {"id":"timeout_exit","expect_fail":true,"stdout":"","stderr":"controlled exit 124 (not an elapsed deadline)\n","exit_code":124,"behavior":"exit","expected":"TIMEOUT"},
+    {"id":"actual_timeout","expect_fail":true,"stdout":"","stderr":"","exit_code":124,"behavior":"sleep","expected":"TIMEOUT"},
+    {"id":"actual_crash","expect_fail":true,"stdout":"","stderr":"","exit_code":139,"behavior":"signal","expected":"ERROR"},
+    {"id":"contradictory_rejection","expect_fail":true,"stdout":"L4YAML_SUITE_REJECT\n","stderr":"","exit_code":0,"behavior":"exit","expected":"ERROR"},
+    {"id":"contradictory_acceptance","expect_fail":true,"stdout":"L4YAML_SUITE_ACCEPT\n","stderr":"","exit_code":1,"behavior":"exit","expected":"ERROR"},
+    {"id":"extra_stdout","expect_fail":true,"stdout":"L4YAML_SUITE_REJECT\nextra\n","stderr":"","exit_code":1,"behavior":"exit","expected":"ERROR"},
+    {"id":"stderr_only_marker","expect_fail":true,"stdout":"","stderr":"L4YAML_SUITE_REJECT\n","exit_code":1,"behavior":"exit","expected":"ERROR"},
+    {"id":"unmarked_acceptance","expect_fail":false,"stdout":"","stderr":"","exit_code":0,"behavior":"exit","expected":"ERROR"},
+    {"id":"missing_newline","expect_fail":true,"stdout":"L4YAML_SUITE_REJECT","stderr":"","exit_code":1,"behavior":"exit","expected":"ERROR"},
+    {"id":"marked_abnormal_exit","expect_fail":true,"stdout":"L4YAML_SUITE_REJECT\n","stderr":"","exit_code":139,"behavior":"exit","expected":"ERROR"}
+  ]
+}

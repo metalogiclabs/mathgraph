@@ -6,6 +6,11 @@ groups. An explicit status profile checks eight separate test-outcome cases thro
 the parser and HTML renderer. Both revisions run afresh for the selected profile.
 This local command does not require the private GitHub App.
 
+For both profiles plus per-case agreement and refusal/apparatus checks in one
+invocation, use the [retained failure-check command](../catalogue-check-v1/README.md).
+It also records all 104 catalogue prompts, with unsupported and omitted checks
+explicitly separated from bounded observations.
+
 ## Run
 
 Requirements: Node 24, Git, Python 3, a reviewed Lean 4.35.0 installation, and a local
