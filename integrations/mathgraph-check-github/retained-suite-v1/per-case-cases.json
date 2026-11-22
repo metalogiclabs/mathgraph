@@ -1,0 +1,367 @@
+[
+{
+  "id": "identical_outcomes",
+  "description": "Identical keyed observations agree.",
+  "expected": {
+    "agreement": true,
+    "preset_agreement": [
+      {
+        "preset": "unlimited",
+        "agreement": true
+      },
+      {
+        "preset": "default",
+        "agreement": true
+      },
+      {
+        "preset": "strict",
+        "agreement": true
+      },
+      {
+        "preset": "permissive",
+        "agreement": true
+      },
+      {
+        "preset": "safe_tags",
+        "agreement": true
+      }
+    ]
+  },
+  "evidence": {"schemaVersion": 2, "comparison": "per-case-acceptance", "runs": [
+    {"backend": "lean", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]}
+  ]},
+  "legacy_transcripts": [
+    {"backend": "lean", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"}
+  ]
+},
+{
+  "id": "reordered_same_cases",
+  "description": "Reordering only the C backend preserves keyed agreement.",
+  "expected": {
+    "agreement": true,
+    "preset_agreement": [
+      {
+        "preset": "unlimited",
+        "agreement": true
+      },
+      {
+        "preset": "default",
+        "agreement": true
+      },
+      {
+        "preset": "strict",
+        "agreement": true
+      },
+      {
+        "preset": "permissive",
+        "agreement": true
+      },
+      {
+        "preset": "safe_tags",
+        "agreement": true
+      }
+    ]
+  },
+  "evidence": {"schemaVersion": 2, "comparison": "per-case-acceptance", "runs": [
+    {"backend": "lean", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "unlimited", "cases": [{"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "default", "cases": [{"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "strict", "cases": [{"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "permissive", "cases": [{"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "safe_tags", "cases": [{"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]}
+  ]},
+  "legacy_transcripts": [
+    {"backend": "lean", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "unlimited", "stdout": "  [1/2] B ✗ controlled rejection\n  [2/2] A ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "default", "stdout": "  [1/2] B ✗ controlled rejection\n  [2/2] A ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "strict", "stdout": "  [1/2] B ✗ controlled rejection\n  [2/2] A ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "permissive", "stdout": "  [1/2] B ✗ controlled rejection\n  [2/2] A ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "safe_tags", "stdout": "  [1/2] B ✗ controlled rejection\n  [2/2] A ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"}
+  ]
+},
+{
+  "id": "different_totals",
+  "description": "Different aggregate counts remain a rejecting control.",
+  "expected": {
+    "agreement": false,
+    "preset_agreement": [
+      {
+        "preset": "unlimited",
+        "agreement": false
+      },
+      {
+        "preset": "default",
+        "agreement": false
+      },
+      {
+        "preset": "strict",
+        "agreement": false
+      },
+      {
+        "preset": "permissive",
+        "agreement": false
+      },
+      {
+        "preset": "safe_tags",
+        "agreement": false
+      }
+    ]
+  },
+  "evidence": {"schemaVersion": 2, "comparison": "per-case-acceptance", "runs": [
+    {"backend": "lean", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]}
+  ]},
+  "legacy_transcripts": [
+    {"backend": "lean", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✓\n  TOTAL: 2 passed, 0 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"}
+  ]
+},
+{
+  "id": "equal_totals_swapped_outcomes",
+  "description": "Equal totals do not conceal opposite outcomes for A and B.",
+  "expected": {
+    "agreement": false,
+    "preset_agreement": [
+      {
+        "preset": "unlimited",
+        "agreement": false
+      },
+      {
+        "preset": "default",
+        "agreement": false
+      },
+      {
+        "preset": "strict",
+        "agreement": false
+      },
+      {
+        "preset": "permissive",
+        "agreement": false
+      },
+      {
+        "preset": "safe_tags",
+        "agreement": false
+      }
+    ]
+  },
+  "evidence": {"schemaVersion": 2, "comparison": "per-case-acceptance", "runs": [
+    {"backend": "lean", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]}
+  ]},
+  "legacy_transcripts": [
+    {"backend": "lean", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "unlimited", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "unlimited", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "default", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "default", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "strict", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "strict", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "permissive", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "permissive", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "safe_tags", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "safe_tags", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"}
+  ]
+},
+{
+  "id": "single_preset_swapped_outcomes",
+  "description": "A strict-preset mismatch is not hidden by agreement in the other presets.",
+  "expected": {
+    "agreement": false,
+    "preset_agreement": [
+      {
+        "preset": "unlimited",
+        "agreement": true
+      },
+      {
+        "preset": "default",
+        "agreement": true
+      },
+      {
+        "preset": "strict",
+        "agreement": false
+      },
+      {
+        "preset": "permissive",
+        "agreement": true
+      },
+      {
+        "preset": "safe_tags",
+        "agreement": true
+      }
+    ]
+  },
+  "evidence": {"schemaVersion": 2, "comparison": "per-case-acceptance", "runs": [
+    {"backend": "lean", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "unlimited", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "default", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "python", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "accepted", "detail": ""}]},
+    {"backend": "rust", "preset": "strict", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "permissive", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "lean", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "c", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "python", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]},
+    {"backend": "rust", "preset": "safe_tags", "cases": [{"id": "A", "variant": 0, "yaml": "fixture A\n", "expectFail": false, "outcome": "accepted", "detail": ""}, {"id": "B", "variant": 0, "yaml": "fixture B\n", "expectFail": false, "outcome": "rejected", "detail": "controlled rejection"}]}
+  ]},
+  "legacy_transcripts": [
+    {"backend": "lean", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "unlimited", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "default", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "strict", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "strict", "stdout": "  [1/2] A ✗ controlled rejection\n  [2/2] B ✓\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "strict", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "permissive", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "lean", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "c", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "python", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"},
+    {"backend": "rust", "preset": "safe_tags", "stdout": "  [1/2] A ✓\n  [2/2] B ✗ controlled rejection\n  TOTAL: 1 passed, 1 failed, 0 skipped (2 total)\n"}
+  ]
+}
+]

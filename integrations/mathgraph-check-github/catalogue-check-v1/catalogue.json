@@ -1,0 +1,1172 @@
+{
+  "schema": "mathgraph.failure-catalogue.v1",
+  "revision": "2026-11-22-r2",
+  "source": {
+    "url": "https://chatgpt.com/library?file_id=libfile_fde3_f-d8e002a479d88191a73ad3fd557ec93c_14752ef8670c819190e14bcb5a7d703e&account_id=personal",
+    "filename": "MathGraph_Failure_Catalogue_104_2026-11-22.md",
+    "version": "0",
+    "sha256": "af5cab917636b7cf5ad7bb336ca18b2d4ef411b408ae64b79c92f5b5317cf8fe"
+  },
+  "boundary": "104 candidate search prompts. Numbering and mappings do not establish independent mechanisms, witnessed defects, executable coverage or exhaustiveness.",
+  "items": [
+    {
+      "id": 1,
+      "title": "Reality",
+      "prompt": "The represented world omits an actual condition capable of changing the required outcome.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 2,
+      "title": "Causality",
+      "prompt": "An observed association or prediction is treated as evidence of the effect of an intervention.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q3",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 3,
+      "title": "Possibility",
+      "prompt": "A proposed witness is inadmissible, or the model excludes a genuinely possible situation.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 4,
+      "title": "Values",
+      "prompt": "The chosen success measure does not represent the values governing the intended use.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 5,
+      "title": "Ethics",
+      "prompt": "Technical compliance leaves a consequential ethical obligation outside the evaluated claim.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q4",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 6,
+      "title": "Consequences",
+      "prompt": "A correct final result fails to prevent consequential effects during or after execution.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 7,
+      "title": "Stakeholders",
+      "prompt": "A relevant stakeholder or affected group is omitted from requirement formation.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q4",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 8,
+      "title": "Purpose",
+      "prompt": "The system solves a well-defined problem different from the intended problem.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q2",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 9,
+      "title": "Mission",
+      "prompt": "Local component success is insufficient for the integrated mission outcome.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 10,
+      "title": "Authority",
+      "prompt": "A rule is treated as governing without establishing its issuer, adoption, scope and operative version.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q5",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 11,
+      "title": "Intent",
+      "prompt": "The implemented interpretation differs from the independently established intended meaning.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q2",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 12,
+      "title": "Communication",
+      "prompt": "Meaning changes between an intended message, its expression, its reception and its use.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 13,
+      "title": "Needs",
+      "prompt": "The stated request is fulfilled while the underlying need remains unmet.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 14,
+      "title": "Objectives",
+      "prompt": "A proxy objective improves while the consequential outcome deteriorates.",
+      "group": "I — Reality, meaning and purpose",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 15,
+      "title": "Context",
+      "prompt": "A result is transferred into a setting where its contextual premises no longer hold.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q2",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 16,
+      "title": "Boundaries",
+      "prompt": "A guarantee is applied outside its declared system, input, user or operating boundary.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 17,
+      "title": "Environment",
+      "prompt": "An external dependency or operating condition differs from the admitted environment.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q4",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 18,
+      "title": "Operating concepts",
+      "prompt": "Actual operational workflows differ from the workflows whose behavior was evaluated.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 19,
+      "title": "Assumptions",
+      "prompt": "A required premise is neither established by the producer nor justified for the application.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 20,
+      "title": "Elicitation",
+      "prompt": "A necessary requirement is never collected from the relevant sources.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q4",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 21,
+      "title": "Interpretation",
+      "prompt": "Ambiguous source wording is resolved without authority even though alternatives change the required answer.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q2",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 22,
+      "title": "Requirements",
+      "prompt": "The adopted requirement specifies an inadequate, incorrect or irrelevant outcome.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 23,
+      "title": "Requirement derivation",
+      "prompt": "A derived requirement fails to follow from or preserve its governing requirement.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 24,
+      "title": "Requirement allocation",
+      "prompt": "An obligation is assigned to no component or to one lacking the required information or control.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 25,
+      "title": "Requirement validity",
+      "prompt": "An internally precise requirement is unsuitable for the actual intended use.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q2",
+        "Q5",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 26,
+      "title": "Requirement completeness",
+      "prompt": "All declared requirements hold while an essential undeclared requirement is omitted.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 27,
+      "title": "Requirement consistency",
+      "prompt": "Requirements conflict or their combined interpretation creates an unintended gap.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 28,
+      "title": "Acceptance criteria",
+      "prompt": "The acceptance criterion is weaker than the required consequential behavior.",
+      "group": "II — Context and requirements",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 29,
+      "title": "Language",
+      "prompt": "Syntax or normalization merges expressions that the source language must distinguish.",
+      "group": "III — Representation",
+      "questions": [
+        "Q1",
+        "Q2"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 30,
+      "title": "Vocabulary and ontology",
+      "prompt": "The same term denotes different kinds of objects across representations.",
+      "group": "III — Representation",
+      "questions": [
+        "Q1",
+        "Q2"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 31,
+      "title": "Definitions",
+      "prompt": "A familiar name hides a different definition, convention, exception or totalization.",
+      "group": "III — Representation",
+      "questions": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 32,
+      "title": "Typing and identity",
+      "prompt": "Type agreement is used to equate different objects, states, origins or versions.",
+      "group": "III — Representation",
+      "questions": [
+        "Q1",
+        "Q2"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 33,
+      "title": "Units and reference frames",
+      "prompt": "Numerical values cross a boundary with changed units, epoch, coordinates or physical frame.",
+      "group": "III — Representation",
+      "questions": [
+        "Q1",
+        "Q2"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 34,
+      "title": "Encoding",
+      "prompt": "Conversion between encodings loses or changes a distinction required by the consumer.",
+      "group": "III — Representation",
+      "questions": [
+        "Q1",
+        "Q2"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 35,
+      "title": "Abstraction",
+      "prompt": "An abstraction preserves some properties while discarding one required by its actual consumer.",
+      "group": "III — Representation",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 36,
+      "title": "Models",
+      "prompt": "Model objects, relationships or admitted states fail to represent the relevant system.",
+      "group": "III — Representation",
+      "questions": [
+        "Q2",
+        "Q4",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 37,
+      "title": "Specifications",
+      "prompt": "The formal specification captures a different or weaker property than the governing specification.",
+      "group": "III — Representation",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 38,
+      "title": "Contracts",
+      "prompt": "A consumer assumes more than its producer establishes or its interface promises.",
+      "group": "III — Representation",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 39,
+      "title": "Semantics",
+      "prompt": "The same expression receives different consequential interpretations across components.",
+      "group": "III — Representation",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 40,
+      "title": "Translation and refinement",
+      "prompt": "A source-to-target transformation lacks the preservation relation required by the claimed refinement.",
+      "group": "III — Representation",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 41,
+      "title": "Formalization",
+      "prompt": "Formalization changes a relevant quantifier, domain, exception, dependency or object.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 42,
+      "title": "Logical foundations",
+      "prompt": "A result is interpreted outside the logical and foundational assumptions supporting it.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 43,
+      "title": "Axioms",
+      "prompt": "The advertised conclusion conceals a consequential axiom, placeholder or additional assumption.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 44,
+      "title": "Formal statements",
+      "prompt": "The theorem's actual type differs from its name or advertised mathematical conclusion.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 45,
+      "title": "Proof obligations",
+      "prompt": "A necessary producer-to-consumer bridge is omitted, assumed or left without a discharged supplier.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 46,
+      "title": "Proof construction",
+      "prompt": "The proof establishes an intermediate result without completing the required implication to the target.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 47,
+      "title": "Proof checking",
+      "prompt": "Elaborator completion, a displayed declaration or a partial check is mistaken for accepted exact-target proof.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q1",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 48,
+      "title": "Trusted computing base",
+      "prompt": "An unexamined or faulty trusted dependency compromises the stated verification boundary.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q1",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 49,
+      "title": "Proof adequacy",
+      "prompt": "A valid proof establishes a proposition too weak to imply the external requirement.",
+      "group": "IV — Formal reasoning",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 50,
+      "title": "Architecture",
+      "prompt": "The architecture leaves an obligation unenforced or the needed information unavailable.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 51,
+      "title": "Design",
+      "prompt": "A local design choice creates an integrated inconsistency or uncovered case.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 52,
+      "title": "Algorithms",
+      "prompt": "The algorithm violates its contract on exceptional inputs, boundary cases or resource conditions.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 53,
+      "title": "Interfaces",
+      "prompt": "Adjacent components disagree about identity, lengths, ownership, nullability, ordering or errors.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 54,
+      "title": "Implementation",
+      "prompt": "The executed implementation differs from the algorithm or model whose properties were established.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 55,
+      "title": "Build and dependency resolution",
+      "prompt": "The build selects the wrong source, dependency, generated artifact, cache or baseline binary.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q1",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 56,
+      "title": "Configuration and deployment",
+      "prompt": "Deployment changes a configuration or environmental premise on which qualification depended.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q1",
+        "Q3",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 57,
+      "title": "Runtime behavior",
+      "prompt": "Scheduling, callbacks, cancellation, timing or resource effects alter the required executed behavior.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 58,
+      "title": "Physical effects",
+      "prompt": "A computed or simulated result is applied to physical behavior without a sufficient empirical bridge.",
+      "group": "V — Construction and execution",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 59,
+      "title": "Test oracle",
+      "prompt": "The criterion for the expected answer is incorrect, incomplete or improperly grounded.",
+      "group": "VI — Observation and evidence",
+      "questions": [
+        "Q2",
+        "Q3",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 60,
+      "title": "Test execution",
+      "prompt": "Tests skip the intended behavior, execute the wrong artifact or pass for the wrong reason.",
+      "group": "VI — Observation and evidence",
+      "questions": [
+        "Q1",
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 61,
+      "title": "Observation and measurement",
+      "prompt": "Measurement uses the wrong channel, interval, resolution or proxy for the protected property.",
+      "group": "VI — Observation and evidence",
+      "questions": [
+        "Q1",
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 62,
+      "title": "Evidence and provenance",
+      "prompt": "A result lacks a reliable connection to its exact source, input, execution, tool and claim.",
+      "group": "VI — Observation and evidence",
+      "questions": [
+        "Q1",
+        "Q6",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 63,
+      "title": "Claims and warrants",
+      "prompt": "A conclusion exceeds its evidence's strength, domain, authority or applicability.",
+      "group": "VII — Claims and decisions",
+      "questions": [
+        "Q3",
+        "Q5",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 64,
+      "title": "Authorization, decisions and learning",
+      "prompt": "Evidence is converted into an unauthorized decision or retained after its governing basis changes.",
+      "group": "VII — Claims and decisions",
+      "questions": [
+        "Q5",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 65,
+      "title": "Identity",
+      "prompt": "A matching name, type, label or signature is mistaken for exact subject identity.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q1"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 66,
+      "title": "Distinction",
+      "prompt": "The representation fails to separate admitted cases requiring incompatible decisions.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 67,
+      "title": "Equivalence",
+      "prompt": "A claimed equivalence fails to preserve the protected property or permitted-answer compatibility.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 68,
+      "title": "Scope",
+      "prompt": "Evidence is extended beyond the cases, premises, users or consequences it covers.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 69,
+      "title": "Completeness of representation",
+      "prompt": "Relevant state or structure cannot be expressed in the representation used for checking.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 70,
+      "title": "Information loss",
+      "prompt": "A transformation erases a difference that changes the protected requirement.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 71,
+      "title": "Ambiguity",
+      "prompt": "Several readings or derivations are admitted while a guarantee silently relies on only one.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 72,
+      "title": "Vacuity",
+      "prompt": "An empty domain, impossible premise, unreachable branch or trivial conclusion makes a check uninformative.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 73,
+      "title": "Observability",
+      "prompt": "Available observations cannot distinguish admissible situations requiring incompatible decisions.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 74,
+      "title": "Oracle independence",
+      "prompt": "The reference oracle shares the source, assumptions or interpretation it is intended to challenge.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 75,
+      "title": "Common-mode failure",
+      "prompt": "A shared cause makes multiple checks or components agree on the same wrong result.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 76,
+      "title": "Counterfactual behavior",
+      "prompt": "The evidence never examines the outcome when a consequential condition changes or fails.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 77,
+      "title": "Sensitivity",
+      "prompt": "The detector stays positive under a relevant mutation that should defeat its claimed guarantee.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 78,
+      "title": "Uncertainty",
+      "prompt": "Unsupported, unknown, inconclusive, false and verified outcomes are conflated.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 79,
+      "title": "Temporal validity",
+      "prompt": "Evidence is treated as applicable after its qualifying conditions cease to hold.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 80,
+      "title": "Change propagation",
+      "prompt": "A changed dependency fails to trigger withdrawal or requalification of affected claims.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q1",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 81,
+      "title": "Supersession",
+      "prompt": "A prior result remains controlling after an applicable correction or replacement.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 82,
+      "title": "Reproducibility",
+      "prompt": "The declared materials and procedure do not reconstruct the reported result.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q1",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 83,
+      "title": "Independence of evidence",
+      "prompt": "Evidence items with a shared origin or failure cause are counted as independent corroboration.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 84,
+      "title": "Adversarial robustness",
+      "prompt": "A guarantee fails for malformed, adversarial or strategically selected admissible inputs.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 85,
+      "title": "Security and trust boundaries",
+      "prompt": "Untrusted metadata, callbacks or receipts are accepted as self-authenticating evidence or authority.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q1",
+        "Q5",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 86,
+      "title": "Permission and legitimacy",
+      "prompt": "Technical capability or evidential confidence is mistaken for permission to act.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 87,
+      "title": "Incentives",
+      "prompt": "The reward structure favors proxy success or selected evidence over the consequential objective.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 88,
+      "title": "Accountability",
+      "prompt": "Responsibility for a requirement, interpretation, decision or correction is not established.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q5",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 89,
+      "title": "Risk and reversibility",
+      "prompt": "Evidence adequate for a reversible trial is used to authorize a higher-consequence irreversible action.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 90,
+      "title": "Evidence transport",
+      "prompt": "A result is transferred to another representation or system without the needed applicability bridge.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 91,
+      "title": "Composition",
+      "prompt": "Individually valid component guarantees fail to supply one another's required premises.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 92,
+      "title": "Emergence",
+      "prompt": "Interactions produce relevant behavior absent from the isolated component models.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 93,
+      "title": "Human interpretation",
+      "prompt": "A human reading strengthens or changes a checked claim by losing an exception, quantifier or operation.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 94,
+      "title": "Institutional interpretation",
+      "prompt": "Review, merge, publication or institutional approval is interpreted beyond its actual remit.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q3",
+        "Q5"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 95,
+      "title": "Environmental drift",
+      "prompt": "External operating conditions change while the assurance basis remains fixed.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q4",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 96,
+      "title": "Unknown unknowns",
+      "prompt": "A finite checklist or model is treated as proof that all consequential failure possibilities are represented.",
+      "group": "VIII — Cross-cutting candidates",
+      "questions": [
+        "Q4",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 97,
+      "title": "Numerics",
+      "prompt": "Precision, rounding, overflow, exceptional values or tolerances change the mathematical claim being relied upon.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q2",
+        "Q3"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 98,
+      "title": "Statistical inference",
+      "prompt": "Selection, base rates, multiplicity, optional stopping, survivorship or miscalibrated uncertainty overstate an empirical conclusion.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q3",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 99,
+      "title": "Liveness and termination",
+      "prompt": "Required progress or termination is unproved or fails; safety checks do not establish it, and fairness premises may be unjustified.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 100,
+      "title": "Fault handling and recovery",
+      "prompt": "Error propagation, partial failure, degraded operation, retry, recovery or rollback violates the applicable behavioral contract.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q3",
+        "Q4"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 101,
+      "title": "Input coverage",
+      "prompt": "The selected inputs omit a relevant region while results are generalized to the full claimed domain.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q3",
+        "Q4",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 102,
+      "title": "Legal, regulatory and privacy obligations",
+      "prompt": "Applicable legal, regulatory, privacy, consent or licensing duties are omitted or assigned the wrong scope.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q4",
+        "Q5",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 103,
+      "title": "Maintenance and evolution",
+      "prompt": "Accumulated internal changes, deprecation or knowledge loss undermine applicability or the ability to reestablish a supported claim.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q1",
+        "Q4",
+        "Q6"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    },
+    {
+      "id": 104,
+      "title": "Value",
+      "prompt": "Additional assurance work fails to improve the independently specified decision outcome or its fully measured cost.",
+      "group": "IX — Added explicit candidates",
+      "questions": [
+        "Q3",
+        "Q5",
+        "Q7"
+      ],
+      "lifecycle": "CANDIDATE_PROMPT"
+    }
+  ]
+}
