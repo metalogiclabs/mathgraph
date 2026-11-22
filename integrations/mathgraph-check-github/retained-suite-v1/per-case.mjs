@@ -27,6 +27,28 @@ const STYLES={
   'aggregate-counts-v1':'14895d92d287f3a241bbfb739ce2ad97a2b4cc3a8b37e5cc69c52263174cbe02',
   'per-case-acceptance-v2':'1939705a74531b0524578cd4b8657e139ab01d675914b5d880cc75f5a68d904e'
 };
+const VERDICTS={
+  'aggregate-counts-v1':[
+    '✗ Backend mismatch detected!',
+    '✓ All backends produce identical results for every preset'
+  ],
+  'per-case-acceptance-v2':[
+    '✗ Per-case acceptance comparison failed or has incomplete evidence',
+    '✓ Per-case acceptance agrees for all four backends and five presets (values/output not compared)'
+  ]
+};
+
+function presetClaimMatches(row,family){
+  const {preset,agreement,line}=row;
+  if(family==='aggregate-counts-v1'){
+    if(agreement)return new RegExp('^'+preset.padEnd(12,' ')+': [0-9]+ passed, [0-9]+ failed, [0-9]+ skipped \\([0-9]+ total\\) — all 4 backends identical$').test(line);
+    const tuple='\\([0-9]+, [0-9]+, [0-9]+, [0-9]+\\)';
+    const body=['lean','c','python','rust'].map(b=>"'"+b+"': "+tuple).join(', ');
+    return new RegExp("^MISMATCH for preset '"+preset+"': \\{"+body+'\\}$').test(line);
+  }
+  if(agreement)return new RegExp('^'+preset+': [0-9]+ accepted, [0-9]+ rejected, [0-9]+ skipped — per-case acceptance agrees across all 4 backends$').test(line);
+  return /^INCOMPLETE OR MISMATCH: \S[^\r\n]*$/.test(line);
+}
 
 export function renderedAgreement(html,family){
   const fail=()=>{throw Error('HTML_TERMINAL_STATUS_UNRECOGNIZED');};
@@ -37,7 +59,8 @@ export function renderedAgreement(html,family){
     return '<style></style>';
   });
   const allowed=new Set(['html','head','meta','title','style','body','h1','h2','table','tr','th','td','p']);
-  const stack=[],classes=[];
+  const stack=[],paragraphs=[];
+  let activeParagraph=null;
   let end=0;
   for(const token of markup.matchAll(/<[^<>]*>/g)){
     if(markup.slice(end,token.index).includes('<'))fail();end=token.index+token[0].length;
@@ -45,14 +68,24 @@ export function renderedAgreement(html,family){
     const parsed=token[0].match(/^<(\/)?([a-z][a-z0-9]*)([^<>]*)>$/);
     if(!parsed||!allowed.has(parsed[2]))fail();
     const [,closing,tag,raw]=parsed,attrs=raw.trim();
-    if(closing){if(attrs||stack.pop()!==tag)fail();continue;}
+    if(closing){
+      if(attrs||stack.at(-1)!==tag)fail();
+      if(tag==='p'&&activeParagraph&&activeParagraph.depth===stack.length){
+        const content=markup.slice(activeParagraph.start,token.index);
+        if(content.includes('<')||/&(?!amp;|lt;|gt;|quot;|#x27;)/.test(content))fail();
+        const entities={'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#x27;':"'"};
+        const text=content.replace(/&(?:amp|lt|gt|quot|#x27);/g,x=>entities[x]).trim();
+        paragraphs.push({css:activeParagraph.css,text});activeParagraph=null;
+      }
+      stack.pop();continue;
+    }
     if(tag==='html'){if(attrs&&!/^lang=(['"])en\1$/.test(attrs))fail();}
     else if(tag==='meta'){if(!/^charset=(['"])utf-8\1$/.test(attrs)||stack.at(-1)!=='head')fail();}
     else if(tag==='p'||tag==='td'){
       if(attrs&&!/^class=(['"])(?:summary )?(?:match|mismatch)\1$/.test(attrs))fail();
       if(tag==='p'&&attrs){
-        if(stack.some(t=>['head','title','style'].includes(t)))fail();
-        classes.push(attrs.match(/^class=(['"])(.*?)\1$/)[2]);
+        if(activeParagraph||stack.some(t=>['head','title','style'].includes(t)))fail();
+        activeParagraph={css:attrs.match(/^class=(['"])(.*?)\1$/)[2],start:end,depth:stack.length+1};
       }
     }else if(attrs)fail();
     if(tag==='style'&&(stack.at(-1)!=='head'||styleCount!==1))fail();
@@ -61,9 +94,13 @@ export function renderedAgreement(html,family){
   if(stack.length||markup.slice(end).includes('<'))fail();
   const accepted=family==='aggregate-counts-v1'?'summary match':'match';
   const rejected=family==='aggregate-counts-v1'?'summary mismatch':'mismatch';
-  const terminal=classes.filter(c=>c===accepted||c===rejected);
+  const terminal=paragraphs.filter(p=>p.css===accepted||p.css===rejected);
   if(terminal.length!==1)throw Error('HTML_TERMINAL_STATUS_UNRECOGNIZED');
-  return terminal[0]===accepted;
+  const agreement=terminal[0].css===accepted,text=terminal[0].text;
+  if(agreement||family==='aggregate-counts-v1'){
+    if(text!==VERDICTS[family][Number(agreement)])fail();
+  }else if(!/^Insufficient or inconsistent evidence: \S[^\r\n]*$/.test(text))fail();
+  return agreement;
 }
 
 export function assessPerCaseArm(raw,source){
@@ -91,6 +128,8 @@ export function assessPerCaseArm(raw,source){
         !same(row.preset_agreement.map(r=>r?.preset).toSorted(),PRESETS.toSorted())||
         !row.preset_agreement.every(r=>typeof r.agreement==='boolean'&&typeof r.line==='string'))
         return unknown('OBSERVER_OUTPUT_INVALID');
+      if(row.verdict!==VERDICTS[raw.schema_family][Number(row.agreement)])return unknown('OBSERVER_VERDICT_TEXT_MISMATCH');
+      if(!row.preset_agreement.every(r=>presetClaimMatches(r,raw.schema_family)))return unknown('OBSERVER_PRESET_TEXT_MISMATCH');
       const rendered_agreement=renderedAgreement(row.html,raw.schema_family);
       const observed={agreement:row.agreement,readback_agreement:row.readback_agreement,rendered_agreement,
         preset_agreement:PRESETS.map(p=>({preset:p,agreement:row.preset_agreement.find(r=>r.preset===p).agreement}))};

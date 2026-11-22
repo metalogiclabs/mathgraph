@@ -68,3 +68,27 @@ retuned based on qualification outcomes.
 Implementation and native controls are being qualified. No completed campaign
 is claimed in this prequalification record. Exact implementation/run/artifact
 identities and outcomes will be appended after their evidence is inspected.
+
+### Retained prequalification lineage
+
+Review found and closed same-count/wrong-case admission, wrong-revision summaries
+inside UNKNOWN results, inaccurate green coverage ledgers, unpropagated native
+apparatus errors and a deadline fixture that could naturally return the timeout
+code. Their negative controls are retained in the tests. The actual timeout
+fixture now naturally exits 0, so only the enforced deadline yields 124.
+
+The first frozen local campaign used local commit
+`932a5d025ee4960eafaabac4900c2a7742b15fea`, tree
+`73570d0e18e66fc31322e7dfbf9844130c3eaa73` (the same tree is preserved in published
+predecessor `f5c4a2903ed86bb8a08aa128e3dd8b68b518111e`). It was deliberately
+interrupted with exit 130 during the first comparison after review found that an
+empty or contradictory displayed agreement could be accepted from its HTML
+class alone. Its progress record remains INCOMPLETE; it supplies no campaign
+qualification. The repaired method binds visible terminal, verdict and preset
+claims to the supported language and retains the reproducing tests. Later
+qualification uses a fresh output directory and an unchanged frozen method.
+
+The initial EA03 observer-development run also returned UNKNOWN on an observer
+syntax error. It was corrected before the frozen campaign; no target behavior
+was inferred from that setup failure. No expectations or execution budgets were
+retuned to erase these failures.
