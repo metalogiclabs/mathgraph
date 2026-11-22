@@ -188,7 +188,8 @@ progress and failure diagnostics and records `PASSED` only after every required
 control and provenance check succeeds. The workflow retains `status-qualification`
 as a separate artifact for 30 days, including partial evidence after a failure.
 
-These are planned acceptance gates for known-case reuse and a local candidate.
-They do not by themselves establish a completed run, a new discovery, an upstream
-repair, an external operator trial, human time savings or a 10x advantage. The
-human trial and comparative advantage remain `NOT_RUN`.
+The [completed status qualification](../../../experiments/check-report-status-v1/README.md)
+records exact source/method identities, original/repair/withdrawal observations,
+Actions evidence and preserved unsuccessful local attempts. This is known-case
+reuse and a local candidate, not a new discovery or an upstream repair. The human
+trial and comparative advantage remain `NOT_RUN`.
