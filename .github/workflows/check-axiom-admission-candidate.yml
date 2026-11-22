@@ -1,0 +1,27 @@
+name: Check axiom admission candidate
+on:
+  push:
+    branches:
+      - experiment/check-axiom-admission-v1
+  workflow_dispatch:
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit controls (mocked Lean output)
+        run: python3 -m unittest discover -s experiments/check-axiom-admission-v0 -p 'test_*.py' -v
+      - name: Install Lean 4.35.0
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run real Lean admission controls
+        run: |
+          python3 experiments/check-axiom-admission-v0/run.py --lean "$HOME/.elan/bin/lean" --out "$RUNNER_TEMP/axiom-admission"
+      - name: Preserve exact experiment receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiom-admission-candidate
+          path: ${{ runner.temp }}/axiom-admission/result.json
+          if-no-files-found: warn
