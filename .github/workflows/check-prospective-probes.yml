@@ -1,0 +1,17 @@
+name: Prospective probe runner controls
+on:
+  push:
+    branches:
+      - experiment/check-blind-l4yaml-transfer-20261122
+  pull_request:
+    paths:
+      - 'experiments/check-blind-l4yaml-transfer-20261122/**'
+      - '.github/workflows/check-prospective-probes.yml'
+  workflow_dispatch:
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python unit controls
+        run: python3 -m unittest discover -s experiments/check-blind-l4yaml-transfer-20261122 -p 'test_*.py' -v
