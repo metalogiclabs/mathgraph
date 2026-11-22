@@ -53,11 +53,11 @@
 
 **Files:** add `pr-pilot-v1/LOCAL_REPORT_CHECK.md`, isolated Actions workflow and a small qualification driver.
 
-- [ ] Freeze the implemented method commit before opening selected later source content.
-- [ ] Execute the same method against the selected upstream integration and retain the default-main missing-module result.
-- [ ] Document real commands, outcomes, scope and human trial NOT_RUN; retain bulky logs in Actions artifacts.
+- [x] Freeze the implemented method commit before opening selected later source content.
+- [x] Execute the same method against the selected upstream integration and retain the default-main missing-module result.
+- [x] Document real commands, outcomes, scope and human trial NOT_RUN; retain bulky logs in Actions artifacts.
 - [x] Run the Check regression suite and relevant Python tests; independent whole-change review and required fixes.
-- [ ] Persist a draft PR and exact qualification run; append concise result to the existing ROS checkpoint.
+- [x] Persist a draft PR and exact qualification run; append concise result to the existing ROS checkpoint.
 
 ## Verification before later-source execution
 
@@ -67,3 +67,16 @@
 - Independent review required masking incomplete group outcomes, truthful early-UNKNOWN evidence wording, launcher invocation preservation, and committed method provenance; corrected and covered by tests.
 - Bare whole-project `python3 -m pytest -q` could not start because this runtime has no pytest installation. No whole-project Python qualification is claimed.
 - Later-source file contents remain unopened at this checkpoint.
+
+## Completed source-reuse qualification
+
+Implemented method commit `2aace4f4b144e912ee7dc08df5fb31b3738b718d` was frozen
+before opening the selected later Reports source. The unchanged profile completed
+all four declared comparisons locally and in Actions run `44982949534` (SUCCESS):
+19 cases on each supported source, six historical discrepancies, zero later-source
+discrepancies, six restored by reverse comparison, and module-absent main UNKNOWN.
+
+Draft PR #283 and the existing research synthesis record preserve code/run lineage,
+boundaries, negative controls, measured costs and the unperformed human trial.
+Independent review findings are closed. See the small experiment README for exact
+source pins, results and artifact identity. This closeout changes documentation only.

@@ -70,6 +70,13 @@ No models or hosted credentials are needed. Execution time and subprocess counts
 are measured. External engineer use, human reviewer savings and 10x advantage remain
 NOT_RUN until an actual person performs that separate trial.
 
+For that trial, choose a consequential change within this profile before running.
+Record setup time, failed attempts, review/correction time and whether the result
+changed or supported the engineer's decision. Repeat on a subsequent revision with
+the same retained requirement. Compare total human effort with ordinary review
+given equal inputs and coverage; a correct UNKNOWN is a legitimate result. Do not
+fill in human effort from machine execution time.
+
 ## Reproduce the engineering qualification
 
 The frozen later-source selection is the owner integration
@@ -93,3 +100,7 @@ python3 experiments/check-retained-report-v1/qualify.py \
 The qualification preserves forward, reverse, unchanged and module-absent results.
 It is source-reuse engineering evidence, not an unseen-project discovery tournament
 or an external operator trial. Actions artifacts retain the full execution evidence.
+
+[Qualified observations and exact run](../../../experiments/check-retained-report-v1/README.md)
+record the first completed replay. No cases or expectations were retuned for the
+selected later source.
