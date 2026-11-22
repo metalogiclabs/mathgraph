@@ -1,0 +1,72 @@
+{
+  "actual_fret_output": "(BOOST -> (F[0,7] COAST))",
+  "additional_native_control": {
+    "comparison_at_zero": true,
+    "conclusion": "Requiring a later COAST observation does not enforce phase non-overlap.",
+    "phase_overlap_present_at_zero": true,
+    "positions": 16,
+    "source_at_zero": true,
+    "trace_name": "overlap_and_later"
+  },
+  "constructed_comparison": "(BOOST -> (F[1,7] COAST))",
+  "declared_source": "whenever BOOST, the sounding_rocket shall within 7 seconds satisfy COAST",
+  "exact_open_question": "Is the intended obligation bounded response timing, mutual exclusion of BOOST and COAST phases, or both?",
+  "fresh_run": {
+    "actual_artifact_mutations_refused": 5,
+    "additional_overlap_positions": 16,
+    "completed_utc": "2026-11-22T05:35:17.993358+00:00",
+    "external_publication_or_contact": "NONE",
+    "method_commit": "2b0e21e94e64ca54ff35c1d4572c60b3b6049720",
+    "operational_intent": "UNKNOWN",
+    "original_contract_tests": 11,
+    "original_native_positions": 64,
+    "repair_authority": "UNKNOWN",
+    "source_pins": {
+      "fret": "cf0f913cc15c41705e803593297e89cd6056b839",
+      "r2u2": "2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a"
+    },
+    "started_utc": "2026-11-22T05:34:52.694662+00:00",
+    "tracked_sources_unchanged": true,
+    "versions": {
+      "gcc": "gcc (Debian 14.2.0-19) 14.2.0",
+      "git": "git version 2.56.1",
+      "make": "GNU Make 4.4.1",
+      "node": "v24.22.3",
+      "npm": "11.19.1",
+      "python": "Python 3.12.14"
+    }
+  },
+  "historical_ci": {
+    "artifact_archive_digests": "Provider metadata only; historical ZIP bytes not rehashed in this run",
+    "conclusion": "success",
+    "head_sha": "2b0e21e94e64ca54ff35c1d4572c60b3b6049720",
+    "run_id": 44611662927,
+    "successful_jobs": 2
+  },
+  "limitations": [
+    "Eight-tick finite Boolean traces",
+    "Public paper-inspired source; no operational owner approval",
+    "[1,7] is constructed, not an alternative FRET output or approved repair",
+    "Physical sampling/time interpretation not established",
+    "Historical strong comparator tied; not rerun here",
+    "Separate local assessor, same agent and machine; no independent institutional validation",
+    "No general MLTL correctness, upstream defect, automatic repair or deployment claim"
+  ],
+  "method_commit": "2b0e21e94e64ca54ff35c1d4572c60b3b6049720",
+  "original_cases": 4,
+  "original_formula_variants": 2,
+  "original_native_positions": 64,
+  "original_trace_indices": 8,
+  "public_sources": [
+    "https://github.com/metalogiclabs/mathgraph/pull/282",
+    "https://github.com/metalogiclabs/mathgraph/actions/runs/44611662927",
+    "https://github.com/NASA-SW-VnV/fret/tree/cf0f913cc15c41705e803593297e89cd6056b839",
+    "https://github.com/R2U2/r2u2/tree/2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a"
+  ],
+  "schema": "mathgraph.aerospace.case-study.rocket-evidence.v1",
+  "source_pins": {
+    "fret": "cf0f913cc15c41705e803593297e89cd6056b839",
+    "r2u2": "2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a"
+  },
+  "status": "WARRANTED_BOUNDED_FRESH_NATIVE_REPLAY"
+}

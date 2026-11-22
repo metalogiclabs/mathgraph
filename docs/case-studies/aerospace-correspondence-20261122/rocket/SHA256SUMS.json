@@ -1,0 +1,14 @@
+{
+  "README.md": "49feaa9fc5dcb296dde8918d63cc1e94a4e1caaf17947e3bd7e2a47339d81417",
+  "assess_local.py": "41a03c04aadd6a3f0bb39386a2ffbd165a0592da884d0824329788b553d62649",
+  "evidence.json": "67d1af07beec66647962423fb78d000842300df8c9383acdd862be58d31f9759",
+  "method-source-manifest.json": "4eaac8f0be10fd6332f4e1af50229ed0e47cef587b868c2a763abf53f7c52468",
+  "method/export_rocket_native.mjs": "65160bbc7a9c4341ccd1c22171e2107beffe6ad24780077bd4c75dafa0cebdbf",
+  "method/native_replay.py": "d795243d1882557e23b105a2ec59316063e35884ee66b4a95bf1bc8c318aab1a",
+  "method/qualify_native.py": "d098cc77d9e63587467c90d47a97d5ea4417c4b8f15cd3390bfea9ef31c1b988",
+  "method/test_native_contract.py": "ccdea8728abe43dbd2934c1d4b2962cb78bbbbc29eb9f0412baec1042ebe893c",
+  "node-deps/package-lock.json": "235242650898434b669b0be3ec99df3ee5726f87083a7acb4168c7a20794ac16",
+  "node-deps/package.json": "4b9ff5c5988dbb67f95fe896daffaafb88b3bb26be49652998d0154a2274780f",
+  "reproduce.py": "8b64ffe1188a20a3e5bdf52c10687c6213ee3d4f0b87fff61a9807000e8bc89d",
+  "results.json": "f625b3dcb9285dcee7a4478b6995b3aa39a95f404ca3a54e0e0e2b8689ca905e"
+}

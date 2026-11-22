@@ -1,0 +1,401 @@
+{
+  "classification": "FRESH_NATIVE_REPLAY_AND_SAME_MACHINE_REQUALIFICATION",
+  "compressed_outputs": {
+    "next_tick.challenger.stdout": "0:0,T\n0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n",
+    "next_tick.source.stdout": "0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n",
+    "no_boost.challenger.stdout": "0:0,T\n0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n",
+    "no_boost.source.stdout": "0:0,T\n0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n",
+    "no_coast.challenger.stdout": "0:0,F\n0:7,T\n",
+    "no_coast.source.stdout": "0:0,F\n0:7,T\n",
+    "overlap_and_later.challenger.stdout": "0:0,T\n0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n",
+    "overlap_and_later.source.stdout": "0:0,T\n0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n",
+    "simultaneous.challenger.stdout": "0:0,F\n0:7,T\n",
+    "simultaneous.source.stdout": "0:0,T\n0:1,T\n0:2,T\n0:3,T\n0:4,T\n0:5,T\n0:6,T\n0:7,T\n"
+  },
+  "local_requalification": {
+    "actual_artifact_mutations": [
+      {
+        "expected_refusal": "BINARY_CHANGED",
+        "observed_refusal": "BINARY_CHANGED",
+        "target": "challenger.bin"
+      },
+      {
+        "expected_refusal": "SPEC_CHANGED",
+        "observed_refusal": "SPEC_CHANGED",
+        "target": "challenger.c2po"
+      },
+      {
+        "expected_refusal": "MAP_CHANGED",
+        "observed_refusal": "MAP_CHANGED",
+        "target": "challenger.map"
+      },
+      {
+        "expected_refusal": "TRACE_DATA_CHANGED",
+        "observed_refusal": "TRACE_DATA_CHANGED",
+        "target": "simultaneous.csv"
+      },
+      {
+        "expected_refusal": "EVIDENCE_ATTEMPTS_AUTHORITY_PROMOTION",
+        "observed_refusal": "EVIDENCE_ATTEMPTS_AUTHORITY_PROMOTION",
+        "target": "native-result.json"
+      }
+    ],
+    "additional_overlap_control": {
+      "conclusion": "The constructed [1,7] response requires later COAST but does not prohibit simultaneous BOOST and COAST.",
+      "historical_64_positions": "Separate; do not count this as a historical fifth scenario.",
+      "observations": [
+        {
+          "expected": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "native": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "variant": "source"
+        },
+        {
+          "expected": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "native": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "variant": "challenger"
+        }
+      ],
+      "positions": 16,
+      "status": "WARRANTED_BOUNDED_FRESH_NATIVE",
+      "trace": [
+        {
+          "BOOST": 1,
+          "COAST": 1
+        },
+        {
+          "BOOST": 0,
+          "COAST": 1
+        },
+        {
+          "BOOST": 0,
+          "COAST": 0
+        },
+        {
+          "BOOST": 0,
+          "COAST": 0
+        },
+        {
+          "BOOST": 0,
+          "COAST": 0
+        },
+        {
+          "BOOST": 0,
+          "COAST": 0
+        },
+        {
+          "BOOST": 0,
+          "COAST": 0
+        },
+        {
+          "BOOST": 0,
+          "COAST": 0
+        }
+      ]
+    },
+    "artifact_sha256": {
+      "challenger": "83d798870ffd4c0cec46213fa8ab14883309fd4a56423c12a002d634c4c8ecc5",
+      "source": "d7187cc0a594ceb7a390c2589a9e985c9a03b95fa369d462676116eeeb39b885"
+    },
+    "execution_boundary": "Same agent and machine; separate process and direct oracle, not an independent institution",
+    "independent_replay": "LOCAL_SEPARATE_PROCESS_AFTER_NATIVE_REBUILD",
+    "intent_status": "UNKNOWN",
+    "limitations": [
+      "4 complete Boolean 8-tick traces only",
+      "Owner purpose not authenticated",
+      "Native R2U2 executable and exact source pinned",
+      "No general MLTL correctness or external release permission"
+    ],
+    "monitor_sha256": "57de2a1171f9f1a839153e64556f3647ca55cc5dc692379540f570d0697a402a",
+    "native_scope": "WARRANTED_BOUNDED_EXACT_CASES",
+    "overall": "UNKNOWN",
+    "permission": "ADVISORY_ONLY",
+    "positions": 64,
+    "repair": "DENIED",
+    "schema": "mathgraph.check.rocket-native-qualification.v1"
+  },
+  "native_result": {
+    "auto_repair": "DENIED",
+    "binary_sha256": {
+      "challenger": "83d798870ffd4c0cec46213fa8ab14883309fd4a56423c12a002d634c4c8ecc5",
+      "source": "d7187cc0a594ceb7a390c2589a9e985c9a03b95fa369d462676116eeeb39b885"
+    },
+    "comparison_formula": "(BOOST -> (F[1,7] COAST))",
+    "comparison_role": "CONSTRUCTED_NOT_FRETISH_OUTPUT_NOT_OWNER_APPROVED",
+    "coverage": "4 eight-tick Boolean cases x 2 formulas x 8 decoded verdicts",
+    "map_sha256": "dc8649dfeefbccd35f1df8afbf25f8e14b10cc0ff97551b8b6aa79724f79ea2f",
+    "monitor_executable_sha256": "57de2a1171f9f1a839153e64556f3647ca55cc5dc692379540f570d0697a402a",
+    "native_match": "WARRANTED_BOUNDED_EXACT_TESTED_DOMAIN",
+    "native_oracle_positions": 64,
+    "observations": [
+      {
+        "native": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "simultaneous",
+        "variant": "source"
+      },
+      {
+        "native": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "simultaneous",
+        "variant": "challenger"
+      },
+      {
+        "native": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "next_tick",
+        "variant": "source"
+      },
+      {
+        "native": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "next_tick",
+        "variant": "challenger"
+      },
+      {
+        "native": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "no_coast",
+        "variant": "source"
+      },
+      {
+        "native": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "no_coast",
+        "variant": "challenger"
+      },
+      {
+        "native": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "no_boost",
+        "variant": "source"
+      },
+      {
+        "native": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "oracle": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "scenario": "no_boost",
+        "variant": "challenger"
+      }
+    ],
+    "operational_intent": "UNKNOWN",
+    "original_fretish": "whenever BOOST, the sounding_rocket shall within 7 seconds satisfy COAST",
+    "overall": "UNKNOWN",
+    "permission": "ADVISORY_ONLY",
+    "repair_authority": "UNKNOWN",
+    "schema": "mathgraph.check.rocket-native-replay.v1",
+    "source_formula": "(BOOST -> (F[0,7] COAST))",
+    "source_pins": {
+      "fret": "cf0f913cc15c41705e803593297e89cd6056b839",
+      "r2u2": "2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a"
+    },
+    "source_sha256": {
+      "challenger": "cc16408a46782573397b8d6f06857fb011651adac90d1c8a9379213c9aef7100",
+      "source": "61cdfdb56da7463f3fb220381649c011efb6d0a5177a841255540186f2b3ea15"
+    },
+    "verification_receipt": "UNSIGNED_RUN_OBSERVATION_NOT_OWNER_AUTHORITY"
+  },
+  "run_receipt": {
+    "actual_artifact_mutations_refused": 5,
+    "additional_overlap_positions": 16,
+    "completed_utc": "2026-11-22T05:35:17.993358+00:00",
+    "external_publication_or_contact": "NONE",
+    "method_commit": "2b0e21e94e64ca54ff35c1d4572c60b3b6049720",
+    "operational_intent": "UNKNOWN",
+    "original_contract_tests": 11,
+    "original_native_positions": 64,
+    "repair_authority": "UNKNOWN",
+    "source_pins": {
+      "fret": "cf0f913cc15c41705e803593297e89cd6056b839",
+      "r2u2": "2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a"
+    },
+    "started_utc": "2026-11-22T05:34:52.694662+00:00",
+    "tracked_sources_unchanged": true,
+    "versions": {
+      "gcc": "gcc (Debian 14.2.0-19) 14.2.0",
+      "git": "git version 2.56.1",
+      "make": "GNU Make 4.4.1",
+      "node": "v24.22.3",
+      "npm": "11.19.1",
+      "python": "Python 3.12.14"
+    }
+  }
+}

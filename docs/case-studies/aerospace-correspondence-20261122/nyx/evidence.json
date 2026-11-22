@@ -1,0 +1,74 @@
+{
+  "title": "Nyx trajectory export: preserving reference-frame meaning",
+  "checked_on": "2026-11-22",
+  "state": "WARRANTED_BOUNDED_HISTORICAL_NATIVE_WITH_FRESH_SOURCE_AND_LOG_RECHECK",
+  "source": {
+    "repository": "nyx-space/nyx",
+    "before": "09ab47dd4233ad3b80efc64479bf5339739b5570",
+    "accepted_pr_head": "7d3253506471a7b9ff58e87fbee50e4a025e0b3f",
+    "merge": "71e31c137bfe2fea641a21455febb84c936fc409"
+  },
+  "claim": "Accepted trajectory exports must preserve the reference-frame identity of every selected row, or explicitly reject selections not representable by the one-frame-per-table format.",
+  "mechanism": "The old exporter chose the frame of the source trajectory's first state. This could disagree with a selected row, while the importer reused one parsed frame for recovered states. The accepted patch derives the frame from selected rows and rejects a mixed-frame selection.",
+  "historical_native": {
+    "run": "https://github.com/metalogiclabs/mathgraph/actions/runs/42925288557",
+    "job": "https://github.com/metalogiclabs/mathgraph/actions/runs/42925288557/job/130210107679",
+    "workflow_commit": "20a1c9f1a70669ca02664a1e8c6e87cc1ce32df3",
+    "status": "success",
+    "original_recorded_classification": "WARRANTED_BOUNDED_NATIVE_PHYSICAL_AND_FILTERED_FRAME_LOSS",
+    "candidate_recorded_classification": "WARRANTED_BOUNDED_NATIVE_RED_GREEN",
+    "repaired_test_count": 5,
+    "nonpremium_compatibility_shim": true,
+    "shim_path": "nyx-core/src/dynamics/sequence/config.rs",
+    "qualification_scope": "Finite test suite; selected export/import files unchanged before targeted repair; neither whole-project nor flight-system assurance."
+  },
+  "accepted_head_qualification": {
+    "run": "https://github.com/nyx-space/nyx/actions/runs/42937928116",
+    "overall_workflow": "failure",
+    "coverage_job": "success",
+    "check_job": "success",
+    "tests_job": "success",
+    "lint_job": "failure",
+    "selected_regressions": {
+      "passed": 3,
+      "failed": 0
+    },
+    "associated_pr_head": "7d3253506471a7b9ff58e87fbee50e4a025e0b3f",
+    "executed_checkout": "78ab554425ee06caa844260f27076f4da8a66d73",
+    "executed_tree": "6d8f077d27a158c52171ce7a6f8c10aae75a8c60",
+    "accepted_merge_tree": "6d8f077d27a158c52171ce7a6f8c10aae75a8c60",
+    "whole_tree_matches_accepted_merge": true
+  },
+  "fresh_check": {
+    "native_execution": "NOT_RUN",
+    "reason": "Rust/cargo are absent in this workspace",
+    "source_blobs": 9,
+    "patch_identity": "Historical repair script output matches accepted exporter bytes exactly",
+    "recorded_evidence": "Timestamped native outcome receipts, executed checkout identity, accepted merge tree identity and three-test output rechecked",
+    "command": "python3 verify_evidence.py",
+    "result_file": "fresh_verification.json",
+    "negative_controls": "negative_controls.json"
+  },
+  "accepted_by_maintainer": {
+    "pr": "https://github.com/nyx-space/nyx/pull/615",
+    "merged": true,
+    "merged_at": "2026-11-13T04:45:02Z",
+    "review": "https://github.com/nyx-space/nyx/pull/615#pullrequestreview-5851942876"
+  },
+  "limits": [
+    "This is a real software correction, not a flight incident or mission outcome.",
+    "No claim that all baseline tests passed, that all Nyx exports preserve physical meaning, or that the entire final PR CI was green.",
+    "No fresh Rust/native replay in this package-generation session.",
+    "Raw physical residual magnitudes are omitted from the publication summary because the raw historical artifact was not downloaded and inspected here.",
+    "The research shim is outside the accepted production patch.",
+    "The separate RIC-difference exporter and importer-side metadata validation remain outside the scoped repair.",
+    "These findings do not establish independent automated discovery or comparative superiority for MathGraph."
+  ],
+  "artifact_pointer": {
+    "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/42925288557/artifacts/13812684242",
+    "sha256": "a68b835d817c5dcb41c381d2447e52aea1e5b43c6435f18b6879eb215c56ca22",
+    "bytes": 17779,
+    "expires_at": "2027-02-08T23:40:27Z",
+    "download_and_hash_checked_here": false
+  }
+}

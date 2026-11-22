@@ -1,0 +1,81 @@
+[
+  {
+    "path": "sources/parquet_frame_fidelity.rs",
+    "tool_blob_sha": "639a814c4d75365ee9ec0a118f7a8f092cd40e57",
+    "url": "https://github.com/nyx-space/nyx/blob/7d3253506471a7b9ff58e87fbee50e4a025e0b3f/nyx-core/tests/parquet_frame_fidelity.rs",
+    "sha256": "917801069ef6dded1c72d4a4192ec679aff3db2f34427895f7962fa0ccb6f6e6",
+    "size_bytes": 4173
+  },
+  {
+    "path": "sources/traj_after.rs",
+    "tool_blob_sha": "e80a17db6babf8691343786fe7aa3353b7446302",
+    "url": "https://github.com/nyx-space/nyx/blob/7d3253506471a7b9ff58e87fbee50e4a025e0b3f/nyx-core/src/md/trajectory/traj.rs",
+    "sha256": "d4800508cba77531708a4c54a727acf1f92270fe9649fe43ddbaa74eb43f94f4",
+    "size_bytes": 26978
+  },
+  {
+    "path": "sources/traj_before.rs",
+    "tool_blob_sha": "2bf034cbf41e83b50974b5aadf291a5dff63af65",
+    "url": "https://github.com/nyx-space/nyx/blob/09ab47dd4233ad3b80efc64479bf5339739b5570/nyx-core/src/md/trajectory/traj.rs",
+    "sha256": "2b575d54da0067285ae2cddfd0ab432948a4c50bfcacbb109d9f2cf3cc2e2553",
+    "size_bytes": 26150
+  },
+  {
+    "path": "sources/sc_traj_before.rs",
+    "tool_blob_sha": "4345451f4488cd608fca56ed71869fa8a593b20b",
+    "url": "https://github.com/nyx-space/nyx/blob/09ab47dd4233ad3b80efc64479bf5339739b5570/nyx-core/src/md/trajectory/sc_traj.rs",
+    "sha256": "bf68852b8deae335796930c1822cfe3d6a4c19e5c9079bb12eab679ce7fcc2a1",
+    "size_bytes": 27941
+  },
+  {
+    "path": "sources/NYX_LICENSE",
+    "tool_blob_sha": "f4aa842edff22c02066876c5a06bf1d52d5776f1",
+    "url": "https://github.com/nyx-space/nyx/blob/7d3253506471a7b9ff58e87fbee50e4a025e0b3f/LICENSE",
+    "sha256": "d11d906d7e29af95d28b051cd89a064bb25ae27a5c407c9994626c47e13bdc8f",
+    "size_bytes": 32386
+  },
+  {
+    "path": "sources/check-nyx-parquet-physical-v2.yml",
+    "tool_blob_sha": "fca27aa041e49b6ded086bb8c27c848a701b596b",
+    "url": "https://github.com/metalogiclabs/mathgraph/blob/20a1c9f1a70669ca02664a1e8c6e87cc1ce32df3/.github/workflows/check-nyx-parquet-physical-v2.yml",
+    "sha256": "921396ce4c3c8a1a77c52229b964cadee5fc61a30ab69c53a29d80bbdef52647",
+    "size_bytes": 9654
+  },
+  {
+    "path": "sources/mathgraph_parquet.rs",
+    "tool_blob_sha": "3586a9d5b123b630638f18d5a1493c1950d59001",
+    "url": "https://github.com/metalogiclabs/mathgraph/blob/20a1c9f1a70669ca02664a1e8c6e87cc1ce32df3/experiments/nyx-parquet-meaning-v1/mathgraph_parquet.rs",
+    "sha256": "4a86dbe4f8df98b05633815acc2d9c28767b17042dc44dd76a0c34a731cb6229",
+    "size_bytes": 8909
+  },
+  {
+    "path": "sources/fix_parquet_export.py",
+    "tool_blob_sha": "edda77a34ff6d92268a8d86677f377f2790e8403",
+    "url": "https://github.com/metalogiclabs/mathgraph/blob/20a1c9f1a70669ca02664a1e8c6e87cc1ce32df3/experiments/nyx-parquet-meaning-v1/fix_parquet_export.py",
+    "sha256": "c063ce3119db385d003418cefa84b3fde233cec9b61d9b776c41ef197be5d409",
+    "size_bytes": 2073
+  },
+  {
+    "path": "sources/nonpremium_compat.py",
+    "tool_blob_sha": "7e3171078a5d622c13901164bb18b4a0a4ef581e",
+    "url": "https://github.com/metalogiclabs/mathgraph/blob/20a1c9f1a70669ca02664a1e8c6e87cc1ce32df3/experiments/nyx-parquet-meaning-v1/nonpremium_compat.py",
+    "sha256": "a92fd7110a95c34af9a98eedd5bd9a02e764bb33ca26b3add92b386d1f8cd069",
+    "size_bytes": 1778
+  },
+  {
+    "path": "records/native_job_130210107679_excerpt.log",
+    "sha256": "b32584906a1877c03df96f28d10de3b7ce143551293144f2392f1d298482c841",
+    "size_bytes": 886,
+    "raw_log_sha256": "1ce1a441982a56792849678c8d0b6f1091da51bb952822dc8cbd5c7d909a6dec",
+    "url": "https://github.com/metalogiclabs/mathgraph/actions/runs/42925288557/job/130210107679",
+    "representation": "timestamped excerpts with original 1-based line numbers; full log not bundled"
+  },
+  {
+    "path": "records/coverage_job_130252496810_excerpt.log",
+    "sha256": "499912636f208b09c52a2dd1bfc668a8ab7dde973a2579ba4d76aa90a05c8c90",
+    "size_bytes": 990,
+    "raw_log_sha256": "471f7e78383ee693445f79b1c740496737680d9e440dd8265cdb45e251448b28",
+    "url": "https://github.com/nyx-space/nyx/actions/runs/42937928116/job/130252496810",
+    "representation": "timestamped excerpts with original 1-based line numbers; full log not bundled"
+  }
+]

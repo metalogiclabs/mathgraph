@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "name": "mathgraph-aerospace-replay-dependencies",
+  "version": "1.0.0",
+  "dependencies": {
+    "antlr4": "4.8.0",
+    "product-iterable": "3.0.1"
+  }
+}

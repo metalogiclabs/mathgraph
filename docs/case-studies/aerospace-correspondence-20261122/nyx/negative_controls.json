@@ -1,0 +1,29 @@
+{
+  "scope": "Evidence checker controls; no native Nyx execution",
+  "cases": [
+    {
+      "case": "source_tamper",
+      "exit": 1,
+      "result": {
+        "status": "FAIL_EVIDENCE_RECHECK",
+        "error": "SHA256 mismatch: sources/traj_before.rs"
+      }
+    },
+    {
+      "case": "remove_executed_receipt",
+      "exit": 1,
+      "result": {
+        "status": "FAIL_EVIDENCE_RECHECK",
+        "error": "Expected exactly two executed classification receipts"
+      }
+    },
+    {
+      "case": "remove_pass_result",
+      "exit": 1,
+      "result": {
+        "status": "FAIL_EVIDENCE_RECHECK",
+        "error": "Regression result missing: mixed_frames_must_be_preserved_or_explicitly_rejected"
+      }
+    }
+  ]
+}

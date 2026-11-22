@@ -1,0 +1,14 @@
+{
+  "executed_coverage_checkout": "78ab554425ee06caa844260f27076f4da8a66d73",
+  "executed_tree_equals_accepted_merge_tree": true,
+  "historical_accepted_merge_tree_regressions": 3,
+  "historical_associated_pr_workflow_ci": "failure",
+  "historical_native_repair_tests": 5,
+  "native_execution_this_run": "NOT_RUN",
+  "patch_output_matches_accepted_source": true,
+  "scope": "Pinned source identity, historical recorded outcomes, exact patch identity only",
+  "source_after": "7d3253506471a7b9ff58e87fbee50e4a025e0b3f",
+  "source_before": "09ab47dd4233ad3b80efc64479bf5339739b5570",
+  "source_git_blobs_verified": 9,
+  "status": "PASS_SOURCE_AND_RECORDED_CI_RECHECK"
+}
