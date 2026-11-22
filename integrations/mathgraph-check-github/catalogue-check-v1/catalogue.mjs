@@ -6,6 +6,8 @@ import statusCases from '../pr-pilot-v1/report-status-cases.json' with {type:'js
 import perCaseCases from '../retained-suite-v1/per-case-cases.json' with {type:'json'};
 import refusalCases from '../retained-suite-v1/refusal-cases.json' with {type:'json'};
 
+import {AXIOM_CASES} from './axiom-admission.mjs';
+
 export const CATALOGUE_SHA256='13f1bee06b12fcafbaada31c7e4ed0818e40c3885355bd538d71bb0f5de29886';
 const digest=x=>createHash('sha256').update(x).digest('hex');
 export function validateCatalogue(value){
@@ -39,9 +41,14 @@ export const PROFILES=Object.freeze([
   failure_ids:[28,55,59,60,77,78,100],
   obligation:'A negative test passes only on a deliberate parser refusal under the declared exact marker and exit-status protocol.',
   boundary:'Actual byte-preserved runTest declaration and required dependencies with controlled child processes; no full parser or recovery qualification.',
-  mapping_basis:'EA03 abnormal-exit and missing-executable witness, mapped to catalogue r2 prompts.'}
+  mapping_basis:'EA03 abnormal-exit and missing-executable witness, mapped to catalogue r2 prompts.'},
+ {id:'capstone-axiom-admission-v1',title:'Capstone axiom admission',case_count:4,
+  failure_ids:[43],
+  obligation:'The L4YAML capstone gate admits kernel, permitted-foundation and validated native controls and refuses an unauthorized private axiom.',
+  boundary:'Four fixed controls through isolated pinned CapstoneAttr.lean bytes with Lean 4.35.0 and its native evaluator.',
+  mapping_basis:'Exact production gate replay for the private-assumption classification defect.'}
 ].map((p,i)=>{
- const case_ids=[xmlCases,statusCases,perCaseCases,refusalCases.cases][i].map(c=>c.id);
+ const case_ids=[xmlCases,statusCases,perCaseCases,refusalCases.cases,AXIOM_CASES.map(id=>({id}))][i].map(c=>c.id);
  if(case_ids.length!==p.case_count||new Set(case_ids).size!==p.case_count)throw Error('FIXED_CASE_ROSTER_CHANGED: '+p.id);
  return Object.freeze({...p,case_ids:Object.freeze(case_ids),failure_ids:Object.freeze(p.failure_ids)});
 }));

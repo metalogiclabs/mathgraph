@@ -60,6 +60,7 @@ export function inspectProfileResult(profile,r,revisions){
 }
 
 async function runnerFor(id){
+ if(id==='capstone-axiom-admission-v1')return (await import('./axiom-admission.mjs')).runAxiomAdmission;
  if(id==='suite-per-case-agreement-v1')return (await import('../retained-suite-v1/per-case.mjs')).runPerCase;
  if(id==='suite-refusal-integrity-v1')return (await import('../retained-suite-v1/refusal.mjs')).runRefusal;
  const {runLocal}=await import('../pr-pilot-v1/local-report-check.mjs');
@@ -72,7 +73,7 @@ function resolveCommit(repo,ref){
  return p.stdout.trim();
 }
 async function methodIdentity(){
- const files={};for(const name of ['catalogue.json','catalogue.mjs','run.mjs',
+ const files={};for(const name of ['catalogue.json','catalogue.mjs','run.mjs','axiom-admission.mjs',
   '../pr-pilot-v1/report-cases.json','../pr-pilot-v1/report-status-cases.json',
   '../retained-suite-v1/per-case-cases.json','../retained-suite-v1/refusal-cases.json'])files[name]=hash(await readFile(new URL(name,import.meta.url)));
  return {id:'failure-catalogue-dispatch-v1',files};
@@ -150,7 +151,7 @@ export async function runCatalogue(options,{runners={}}={}){
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
   const options=parseArgs(process.argv.slice(2));
-  if(options.help)console.log('MathGraph retained failure checks\n\nnode run.mjs --repo LOCAL_GIT --base REV --head REV --out NEW_DIRECTORY [--lean LEAN_4_35_BINARY] [--python python3] [--timeout-seconds 120] [--profiles COMMA_SEPARATED_IDS]\n\nDefault: all four retained profiles, every one of the 104 candidate prompts accounted for. Explicit profile omissions remain NOT_RUN. Missing or unsupported source is UNKNOWN. The 104 ledger rows do not establish 104 detectors. Reviewed local source only. Exit 0: all selected finite obligations agree and no profile omitted; 1: completed discrepancies; 2: UNKNOWN or NOT_RUN. No exit establishes complete catalogue coverage.\n\nProfiles:\n'+PROFILES.map(p=>p.id).join('\n'));
+  if(options.help)console.log('MathGraph retained failure checks\n\nnode run.mjs --repo LOCAL_GIT --base REV --head REV --out NEW_DIRECTORY [--lean LEAN_4_35_BINARY] [--python python3] [--timeout-seconds 120] [--profiles COMMA_SEPARATED_IDS]\n\nDefault: all five retained profiles, every one of the 104 candidate prompts accounted for. Explicit profile omissions remain NOT_RUN. Missing or unsupported source is UNKNOWN. The 104 ledger rows do not establish 104 detectors. Reviewed local source only. Exit 0: all selected finite obligations agree and no profile omitted; 1: completed discrepancies; 2: UNKNOWN or NOT_RUN. No exit establishes complete catalogue coverage.\n\nProfiles:\n'+PROFILES.map(p=>p.id).join('\n'));
   else{const {result,exit_code}=await runCatalogue(options);console.log(json({status:result.status,profiles:result.profile_counts,coverage:result.coverage.counts,report:join(resolve(options.out),'report.md')}));process.exitCode=exit_code;}
  }catch(e){console.error(e.message);process.exitCode=2;}
 }
