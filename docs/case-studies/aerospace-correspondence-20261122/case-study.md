@@ -81,6 +81,8 @@ The fresh main campaign checked four eight-sample scenarios, two formulas and ei
 
 Changing `[0,7]` to `[1,7]` requires a later COAST observation; it does **not** prohibit BOOST and COAST from overlapping. An additional native control sets BOOST at sample 0 and COAST at both samples 0 and 1. Both formulas hold. All 16 verdict positions of this fifth scenario agreed with the oracle; these are separate from the original 64-position campaign. A non-overlap requirement needs its own explicit formula and domain assumptions. [8]
 
+A subsequent hosted execution reproduced the native campaign and its controls on a separate GitHub runner. The successful run is bound to publication commit `42d429409a0ca63ad01d5dcf993f4efc2ae6cd09` and retains its generated outputs as a workflow artifact. This adds an execution receipt, not an external review of the operational requirement. [9]
+
 The result isolates a question for the requirement owner:
 
 **Does a COAST observation at the same sample as BOOST count toward the required response, or must satisfaction include a later observation?**
@@ -137,7 +139,8 @@ The immediate deliverable should be one end-to-end correspondence check against 
 6. R2U2, pinned source `2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a`; runtime-monitoring documentation. https://github.com/R2U2/r2u2/tree/2875a1dfc0b8cb27c4c4f14bece6b95c3afff91a ; https://r2u2.github.io/r2u2/Preliminaries/runtime_monitoring.html
 7. L4YAML, accepted PR #290, *Preserve embedded NUL in Python scalars and mapping keys*. https://github.com/nasa-jpl/L4YAML/pull/290
 8. This case study's fresh results and source reconciliation: [monitor evidence](rocket/evidence.json), [native receipt, assessor and extra control](rocket/results.json), and [Nyx checkout identity](nyx/records/checkout_identity.json). The original method is frozen at `2b0e21e94e64ca54ff35c1d4572c60b3b6049720`; the accompanying repository commit identifies this working draft and its new reproduction wrapper.
+9. MathGraph hosted aerospace reproduction, successful run #44990487041 at publication commit `42d429409a0ca63ad01d5dcf993f4efc2ae6cd09`. https://github.com/metalogiclabs/mathgraph/actions/runs/44990487041
 
 ## Reproduction
 
-See the accompanying README for the exact commands, prerequisites, source pins and result boundaries. The source manifest and results distinguish a native monitor rerun from an audit of historical Nyx receipts. No result in this note depends on private correspondence or an unpublished manuscript.
+See the accompanying README for the exact commands, prerequisites, source pins and result boundaries. The source manifest and results distinguish a native monitor rerun from an audit of historical Nyx receipts. All technical claims in this note are supported by the cited public sources and supplied reproduction materials.

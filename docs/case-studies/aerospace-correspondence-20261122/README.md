@@ -62,8 +62,10 @@ Read [the Nyx evidence boundary](nyx/evidence.md).
 
 The repository workflow `Aerospace correspondence replay` executes the
 native monitor reproduction and Nyx receipt check and retains complete
-generated replay outputs as an Actions artifact. Workflow completion must
-be checked independently; the existence of this file is not a CI result.
+generated replay outputs as an Actions artifact. [Hosted run #44990487041](https://github.com/metalogiclabs/mathgraph/actions/runs/44990487041)
+succeeded at publication commit `42d429409a0ca63ad01d5dcf993f4efc2ae6cd09`.
+The run records the native replay and the source/receipt recheck with their
+distinct verification boundaries.
 
 ## Evidence interpretation
 
@@ -73,9 +75,9 @@ be checked independently; the existence of this file is not a CI result.
 | Runtime response | Fresh original-toolchain finite experiment | Constructed alternative, unresolved operational intent; no superiority claim |
 | L4YAML NUL | Accepted historical interface repair | Supporting public case; no fresh Lean/FFI replay here |
 
-The case study uses public sources. It contains no private manuscript or
-collaborator correspondence and names no unagreed coauthors. A joint
-publication or operational adoption remains a separate future outcome.
+This sole-author working draft uses public sources and supplied reproduction
+materials. A joint publication or operational adoption remains a separate
+future outcome.
 
 ## Files and source notices
 
