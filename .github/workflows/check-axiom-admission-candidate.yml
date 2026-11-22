@@ -4,6 +4,10 @@ on:
     branches:
       - experiment/check-axiom-admission-v1
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'experiments/check-axiom-admission-v0/**'
+      - '.github/workflows/check-axiom-admission-candidate.yml'
 jobs:
   candidate:
     runs-on: ubuntu-latest
