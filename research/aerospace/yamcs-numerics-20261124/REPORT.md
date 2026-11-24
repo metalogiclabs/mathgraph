@@ -48,6 +48,8 @@ The first native artifact contains 40 files. Downloaded ZIP SHA-256 equals GitHu
 
 The final consumer artifact contains 44 files. Independently downloaded SHA-256: `8f61a67b8aab53df34572790c30f29a0edd6b353e5eb7e7912daaa6789ff597d`, matching GitHub. ZIP integrity and 43/43 manifest entries pass. It includes SHA-256 identities for 52 resolved dependency jars. Artifact: https://github.com/metalogiclabs/mathgraph/actions/runs/45337311923/artifacts/14895180056 . The upstream master was rechecked after execution and remains the tested commit.
 
+A separate Python verifier independently recomputes integer ranges, admissibility, floating expectations and every match/mismatch classification from the downloaded native observations, rather than trusting the Java probe's match flags. All four matrices agree before, after and upon withdrawal; the original nine-test baseline and four strict failure/pass/failure JUnit outcomes are independently checked. The verifier and its receipt are retained with the evidence package.
+
 Local attempts are retained as environmental/harness lineage: unavailable Maven network configuration; compatibility data (`ct.sym`) missing from the local Java installation; a local build using a disclosed build-only compatibility adjustment was terminated with signal 9 before test execution. Cause of that termination is unestablished. None of those attempts is evidence of a Yamcs defect. The hosted warrant uses full Temurin JDK 17 and the original POM without that adjustment.
 
 ## Campaign reconciliation

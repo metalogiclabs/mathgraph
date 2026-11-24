@@ -1,0 +1,71 @@
+{
+  "archive_hashes": {
+    "yamcs-numerics-receipts.zip": "d531eb6d0c57bf173c34003ef7926329249e0f84b1b26385ccd879c0bb0f5883",
+    "yamcs-numerics-consumer-receipts.zip": "8f61a67b8aab53df34572790c30f29a0edd6b353e5eb7e7912daaa6789ff597d",
+    "antaris-namespace-evidence.zip": "ea0eecf1f808d73b209e72e5e5c693c46411428fff02d6e50d3ee10860ac4851",
+    "cosmos-evidence.zip": "f9791f568c835895ba85446453fa224d50c4f5f84eb601f8ba39e9fb5917fe57",
+    "sedaro-evidence.zip": "15c255e78d02a3b1f1f16b55a83e189205f030b25fef80cdc02e749f330d699d"
+  },
+  "manifest_entries_verified": 43,
+  "oracle": "Python arbitrary-precision integer ranges and IEEE float conversion, separate from Java probe",
+  "matrices": {
+    "integers.tsv": {
+      "before": {
+        "cases": 1512,
+        "mismatches": 74
+      },
+      "after": {
+        "cases": 1512,
+        "mismatches": 0
+      },
+      "withdraw": {
+        "cases": 1512,
+        "mismatches": 74
+      }
+    },
+    "floats.tsv": {
+      "before": {
+        "cases": 168,
+        "mismatches": 6
+      },
+      "after": {
+        "cases": 168,
+        "mismatches": 0
+      },
+      "withdraw": {
+        "cases": 168,
+        "mismatches": 6
+      }
+    },
+    "to-long.tsv": {
+      "before": {
+        "cases": 21,
+        "mismatches": 21
+      },
+      "after": {
+        "cases": 21,
+        "mismatches": 0
+      },
+      "withdraw": {
+        "cases": 21,
+        "mismatches": 21
+      }
+    },
+    "consumer.tsv": {
+      "before": {
+        "cases": 50,
+        "mismatches": 13
+      },
+      "after": {
+        "cases": 50,
+        "mismatches": 0
+      },
+      "withdraw": {
+        "cases": 50,
+        "mismatches": 13
+      }
+    }
+  },
+  "author_tests": 9,
+  "dependency_jar_hashes_recorded": 52
+}
