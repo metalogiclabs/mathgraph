@@ -49,7 +49,7 @@ def run(label, extra, expected, suites=None):
         assert p.returncode == 0 and all(int(s["failures"]) == 0 for s in summaries), (label, p.returncode, summaries)
     else:
         assert p.returncode == 1, (label, p.returncode)
-        assert set(failed) == {"integerConversionMatrix", "floatingConversionMatrix", "unsignedLongDocumentedContract"}, (label, failed)
+        assert set(failed) == {"integerConversionMatrix", "floatingConversionMatrix", "unsignedLongDocumentedContract", "softwareParameterConsumer"}, (label, failed)
     print(label, json.dumps({"exit": p.returncode, "suites": summaries}), flush=True)
     return stage
 
@@ -80,17 +80,29 @@ replace(LONG, "if (v < 0) {\n            return v;", "if (v >= 0) {\n           
 after = run("after", ["-Dtest=" + ORIGINAL + ",MathGraphNumericalProbeTest", "-Dmathgraph.strict=true", "-Dmathgraph.out=" + str(OUT / "after")], "pass", ORIGINAL.split(",") + ["MathGraphNumericalProbeTest"])
 subprocess.run(["git", "apply", "-R", str(OUT / "candidate.patch")], cwd=UPSTREAM, check=True)
 withdraw = run("withdraw", ["-Dtest=MathGraphNumericalProbeTest", "-Dmathgraph.strict=true", "-Dmathgraph.out=" + str(OUT / "withdraw")], "fail", ["MathGraphNumericalProbeTest"])
-for name in ["integers.tsv", "floats.tsv", "to-long.tsv"]:
+for name in ["integers.tsv", "floats.tsv", "to-long.tsv", "consumer.tsv"]:
     assert (before / name).read_bytes() == (withdraw / name).read_bytes(), name
 assert git("diff", "--exit-code") == ""
 result = {"status": "WARRANTED_BOUNDED_NATIVE_CONTRACT_DISCREPANCIES",
           "source": PIN, "boundary": "direct public Java conversion APIs; finite synthetic unit tests; no running server, operational link or safety consequence", "matrices": {}}
-for name in ["integers.tsv", "floats.tsv", "to-long.tsv"]:
+for name in ["integers.tsv", "floats.tsv", "to-long.tsv", "consumer.tsv"]:
     result["matrices"][name] = {}
     for label in ["before", "after", "withdraw"]:
         with (OUT / label / name).open() as f:
             rows = list(csv.DictReader(f, delimiter="\t"))
         result["matrices"][name][label] = {"cases": len(rows), "mismatches": sum(r["match"] == "false" for r in rows)}
+dependency_hashes = {}
+for report in after.glob("TEST-*.xml"):
+    e = ET.parse(report).getroot()
+    for prop in e.findall("properties/property"):
+        if prop.get("name") == "java.class.path":
+            for item in prop.get("value", "").split(":"):
+                p = Path(item)
+                if p.is_file() and p.suffix == ".jar":
+                    key = str(p).split("/.m2/repository/")[-1]
+                    dependency_hashes[key] = hashlib.sha256(p.read_bytes()).hexdigest()
+assert dependency_hashes, "No resolved dependency bytes captured"
+(OUT / "dependency-sha256.json").write_text(json.dumps(dependency_hashes, indent=2) + "\n")
 (OUT / "result.json").write_text(json.dumps(result, indent=2) + "\n")
 (OUT / "upstream-production-restored.txt").write_text(git("diff", "--exit-code") + git("rev-parse", "HEAD"))
 hashes = {str(p.relative_to(OUT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(OUT.rglob("*")) if p.is_file()}

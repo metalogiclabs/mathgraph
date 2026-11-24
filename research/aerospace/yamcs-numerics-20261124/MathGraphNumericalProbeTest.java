@@ -11,9 +11,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.yamcs.parameter.Value;
+import org.yamcs.parameter.ParameterValue;
+import org.yamcs.parameter.SoftwareParameterManager;
 import org.yamcs.utils.ValueUtility;
 import org.yamcs.xtce.FloatParameterType;
 import org.yamcs.xtce.IntegerParameterType;
+import org.yamcs.xtce.Parameter;
+import org.yamcs.xtce.ParameterType;
 
 /** Offline, exact-source experiment. No server, links, packets or external systems. */
 public class MathGraphNumericalProbeTest {
@@ -153,6 +157,53 @@ public class MathGraphNumericalProbeTest {
         save("to-long.tsv", rows);
         System.out.printf("TO_LONG_MATRIX tested=%d mismatches=%d%n", tested, mismatches);
         assertTrue(tested > 0);
+        if (Boolean.getBoolean("mathgraph.strict")) assertEquals(0, mismatches);
+    }
+
+    @Test
+    public void softwareParameterConsumer() throws Exception {
+        List<String> rows = new ArrayList<>();
+        rows.add("input\ttarget\toracleFits\tactual\tmatch");
+        int tested = 0, mismatches = 0;
+        for (long n : new long[] {0, 1, 127, 128, 255, 256, 0x7fffffffL, 0x80000000L, 0x80000001L, 0xffffffffL}) {
+            for (ParameterType target : new ParameterType[] {
+                    integerType(8, false), integerType(8, true), integerType(32, false), integerType(64, true),
+                    new FloatParameterType.Builder().setName("probe").setSizeInBits(64).build()}) {
+                Parameter p = new Parameter("synthetic_parameter");
+                p.setParameterType(target);
+                ParameterValue pv = new ParameterValue(p);
+                pv.setEngValue(ValueUtility.getUint32Value((int) n));
+                BigInteger expected = BigInteger.valueOf(n);
+                boolean fits = true;
+                String label = "float64";
+                if (target instanceof IntegerParameterType it) {
+                    BigInteger max = BigInteger.ONE.shiftLeft(it.getSizeInBits() - (it.isSigned() ? 1 : 0)).subtract(BigInteger.ONE);
+                    fits = expected.compareTo(max) <= 0;
+                    label = (it.isSigned() ? "signed" : "unsigned") + it.getSizeInBits();
+                }
+                String actual;
+                boolean match;
+                try {
+                    // The ordinary whole-value branch does not consult the cache. No manager, server or link is started.
+                    Value converted = SoftwareParameterManager.transformValue(null, pv).getEngValue();
+                    if (target instanceof FloatParameterType) {
+                        actual = Double.toString(converted.toDouble());
+                        match = Double.doubleToLongBits(converted.toDouble()) == Double.doubleToLongBits(expected.doubleValue());
+                    } else {
+                        actual = number(converted).toString();
+                        match = fits && expected.equals(number(converted));
+                    }
+                } catch (IllegalArgumentException e) {
+                    actual = "REJECT:" + e.getClass().getSimpleName();
+                    match = !fits;
+                }
+                tested++;
+                if (!match) mismatches++;
+                rows.add(n + "\t" + label + "\t" + fits + "\t" + actual + "\t" + match);
+            }
+        }
+        save("consumer.tsv", rows);
+        System.out.printf("CONSUMER_MATRIX tested=%d mismatches=%d%n", tested, mismatches);
         if (Boolean.getBoolean("mathgraph.strict")) assertEquals(0, mismatches);
     }
 }
