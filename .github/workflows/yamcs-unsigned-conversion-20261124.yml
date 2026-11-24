@@ -1,0 +1,166 @@
+name: Yamcs unsigned integer identity - isolated
+on:
+  push:
+    branches: [experiment/yamcs-unsigned-conversion-20261124]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: yamcs/yamcs
+          ref: 4af5abd2b5d8535f77e902de717c77d657f0093e
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Verify upstream and create test-only harness
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../receipts
+          git rev-parse HEAD | tee ../receipts/source.txt
+          test "$(git rev-parse HEAD)" = 4af5abd2b5d8535f77e902de717c77d657f0093e
+          git rev-parse HEAD^{tree} | tee ../receipts/tree.txt
+          test "$(cat ../receipts/tree.txt)" = a34b552ac19a4b3e0924767c23ca5897d5001009
+          test "$(git hash-object yamcs-core/src/main/java/org/yamcs/mdb/DataTypeProcessor.java)" = 1ec80def671ed6a11f8a5f0b5ff920ddd01ae83c
+          test "$(git hash-object yamcs-core/src/main/java/org/yamcs/utils/ValueUtility.java)" = 55c70ff802d501e08a2bffe1c9a5d6bef1bac1da
+          test "$(git hash-object yamcs-core/src/main/java/org/yamcs/parameter/UInt32Value.java)" = dd7e945354cbb7983926c4df683eecdfa567f583
+          test "$(git hash-object yamcs-core/src/main/java/org/yamcs/parameter/UInt64Value.java)" = 5f8c66340c78b55ca5814e2872ac1ccc14871bd3
+          test "$(git hash-object yamcs-xtce/src/main/java/org/yamcs/xtce/IntegerDataType.java)" = d02f093270608e6dd9dfed8c0821f5db17248d8a
+          test "$(git hash-object yamcs-core/src/test/java/org/yamcs/mdb/DataTypeProcessorTest.java)" = a7168dc5a01f07a9a1ce26c8bb42bfbee6676511
+          test "$(git hash-object yamcs-xtce/src/test/java/org/yamcs/xtce/IntegerDataTypeTest.java)" = b74a0d1cc837fffb33f99c1a5e166db27d213dfb
+          java -version 2>&1 | tee ../receipts/java.txt
+          mvn -version | tee ../receipts/maven.txt
+          cat > ../receipts/IntegerIdentityProbeTest.java <<'JAVA'
+          package org.yamcs.mdb;
+
+          import static org.junit.jupiter.api.Assertions.*;
+          import java.math.BigInteger;
+          import java.nio.file.Files;
+          import java.nio.file.Path;
+          import java.util.ArrayList;
+          import java.util.List;
+          import org.junit.jupiter.api.Test;
+          import org.yamcs.parameter.Value;
+          import org.yamcs.utils.ValueUtility;
+          import org.yamcs.xtce.IntegerParameterType;
+
+          public class IntegerIdentityProbeTest {
+              private static IntegerParameterType target(int width, boolean signed) {
+                  return new IntegerParameterType.Builder().setName("synthetic")
+                          .setSizeInBits(width).setSigned(signed).build();
+              }
+              private static BigInteger valueOf(Value v) {
+                  return switch (v.getType()) {
+                      case UINT32 -> BigInteger.valueOf(Integer.toUnsignedLong(v.getUint32Value()));
+                      case UINT64 -> new BigInteger(Long.toUnsignedString(v.getUint64Value()));
+                      case SINT32 -> BigInteger.valueOf(v.getSint32Value());
+                      case SINT64 -> BigInteger.valueOf(v.getSint64Value());
+                      default -> throw new AssertionError(v.getType());
+                  };
+              }
+              @Test
+              public void unsignedConversionMatrix() throws Exception {
+                  String[] a = {"0","1","127","128","255","256","65535","65536",
+                          "2147483647","2147483648","4294967294","4294967295"};
+                  String[] b = {"0","1","127","128","255","256","65535","65536",
+                          "2147483647","2147483648","4294967295","4294967296",
+                          "9007199254740992","9007199254740993","9223372036854775807",
+                          "9223372036854775808","18446744073709551615"};
+                  int[] widths = {8,16,31,32,33,63,64};
+                  List<String> rows = new ArrayList<>();
+                  rows.add("source,input,target_bits,target_signed,expected,actual,classification");
+                  int good=0, wrong=0, falseReject=0, falseAccept=0, total=0;
+                  for (int source : new int[]{32,64}) {
+                      for (String text : source == 32 ? a : b) {
+                          BigInteger n = new BigInteger(text);
+                          Value input = source == 32 ? ValueUtility.getUint32Value(n.intValue())
+                                  : ValueUtility.getUint64Value(n.longValue());
+                          assertEquals(n, valueOf(input));
+                          for (int w : widths) {
+                              for (boolean signed : new boolean[]{false,true}) {
+                                  BigInteger max = BigInteger.ONE.shiftLeft(w-(signed ? 1:0)).subtract(BigInteger.ONE);
+                                  boolean fits = n.compareTo(max) <= 0;
+                                  String expected = fits ? text : "REJECT";
+                                  IntegerParameterType type = target(w,signed);
+                                  // Independently check the target's own decimal parser against BigInteger.
+                                  if (fits) {
+                                      Long parsed = type.convertType(text);
+                                      BigInteger parsedN = !signed && w==64
+                                              ? new BigInteger(Long.toUnsignedString(parsed))
+                                              : BigInteger.valueOf(parsed);
+                                      assertEquals(n,parsedN);
+                                  } else {
+                                      assertThrows(NumberFormatException.class, () -> type.convertType(text));
+                                  }
+                                  String actual;
+                                  try {
+                                      actual = valueOf(DataTypeProcessor.convertEngValueForType(type,input)).toString();
+                                  } catch (IllegalArgumentException e) {
+                                      actual = "REJECT";
+                                  }
+                                  String status;
+                                  if (expected.equals(actual)) { good++; status="MATCH"; }
+                                  else if (fits && actual.equals("REJECT")) { falseReject++; status="FALSE_REJECT"; }
+                                  else if (!fits) { falseAccept++; status="FALSE_ACCEPT"; }
+                                  else { wrong++; status="VALUE_CHANGED"; }
+                                  total++;
+                                  rows.add(String.join(",", Integer.toString(source),text,Integer.toString(w),
+                                          Boolean.toString(signed),expected,actual,status));
+                              }
+                          }
+                      }
+                  }
+                  Files.write(Path.of(System.getenv("RECEIPTS"),"unsigned-matrix.csv"), rows);
+                  System.out.println("UNSIGNED_MATRIX total="+total+" matches="+good+" value_changed="+wrong
+                          +" false_reject="+falseReject+" false_accept="+falseAccept);
+                  // Concrete fixed hypotheses, not an assertion of whole-system correctness.
+                  assertTrue(rows.contains("32,4294967295,64,false,4294967295,18446744073709551615,VALUE_CHANGED"));
+                  assertTrue(rows.contains("32,4294967295,32,false,4294967295,REJECT,FALSE_REJECT"));
+                  assertTrue(rows.contains("64,128,8,true,REJECT,128,FALSE_ACCEPT"));
+                  assertTrue(rows.contains("64,9007199254740993,64,false,9007199254740993,9007199254740993,MATCH"));
+                  assertTrue(good > 0);
+              }
+              @Test
+              public void signedPositiveControl() {
+                  int count=0;
+                  for (long n : new long[]{0,1,127,128,255,256,2147483647L,2147483648L,
+                          4294967295L,9007199254740993L,Long.MAX_VALUE}) {
+                      Value src=ValueUtility.getSint64Value(n);
+                      for (boolean signed : new boolean[]{true,false}) {
+                          assertEquals(BigInteger.valueOf(n),valueOf(DataTypeProcessor.convertEngValueForType(target(64,signed),src)));
+                          count++;
+                      }
+                  }
+                  System.out.println("SIGNED_POSITIVE_CONTROLS="+count);
+              }
+          }
+          JAVA
+          cp ../receipts/IntegerIdentityProbeTest.java yamcs-core/src/test/java/org/yamcs/mdb/
+          git diff --exit-code
+          git diff --cached --exit-code
+      - name: Run actual author tests and independent integer matrix
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          export RECEIPTS="$(realpath ../receipts)"
+          mvn -B --no-transfer-progress -pl yamcs-core -am -Dtest=DataTypeProcessorTest,IntegerDataTypeTest,IntegerIdentityProbeTest,TestReferenceFinder -Dsurefire.failIfNoSpecifiedTests=false -Dsurefire.useFile=false test 2>&1 | tee ../receipts/maven.log
+          find yamcs-core/target/surefire-reports yamcs-xtce/target/surefire-reports -name 'TEST-*.xml' -exec cp {} ../receipts/ \;
+          git diff --exit-code
+          git diff --cached --exit-code
+          git rev-parse HEAD | tee ../receipts/final-source.txt
+          sha256sum ../receipts/unsigned-matrix.csv | tee ../receipts/matrix-sha256.txt
+          git status --porcelain --untracked-files=normal | tee ../receipts/status.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: yamcs-unsigned-identity-receipts
+          path: receipts/
