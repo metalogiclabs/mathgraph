@@ -1,0 +1,66 @@
+name: Yamcs paired core regression - isolated
+on:
+  push:
+    branches: [experiment/yamcs-broad-regression-20261124]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  paired:
+    name: Paired core JDK ${{ matrix.java }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21', '25']
+    env:
+      MAVEN_OPTS: -Xmx2g
+      QUALIFY_JAVA: ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Recover exact qualified parent repair and verify its manifest
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: yamcs-numerics-receipts
+          path: parent-receipts
+          run-id: 45337311923
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: yamcs/yamcs
+          ref: 4af5abd2b5d8535f77e902de717c77d657f0093e
+          path: upstream
+      - name: Full original core reactor then same repair with strict numerical regressions
+        run: python3 research/aerospace/yamcs-numerics-20261124/broad.py upstream receipts parent-receipts
+      - name: Preserve raw XML logs and failed experiments
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: yamcs-broad-jdk-${{ matrix.java }}
+          path: receipts/
+          if-no-files-found: error
+  replay:
+    name: Independent arithmetic and JUnit replay
+    runs-on: ubuntu-24.04
+    needs: paired
+    if: always()
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: yamcs-broad-jdk-*
+          path: evidence
+      - name: Independently inspect all manifests raw JUnit inventories and numerical tables
+        run: python3 research/aerospace/yamcs-numerics-20261124/verify_broad.py evidence replay
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: yamcs-broad-independent-replay
+          path: replay/
+          if-no-files-found: warn
