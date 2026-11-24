@@ -1,5 +1,80 @@
 # Orekit CCSDS attitude correspondence audit
 
+## Release and mechanism follow-up — 2026-11-24
+
+**WARRANTED / FINITE_COUNTERMODEL:** the discrepancy is present in release 13.1.10,
+not only in development. Native source and published-binary checks are separate
+boundaries. No source/binary byte-equivalence or operational effect is claimed.
+
+- Source run: https://github.com/metalogiclabs/mathgraph/actions/runs/45348010765
+- Experiment commit: `f2b48c90062b4796684ae89d4ad7b25229729ea1`.
+- Release: `cf611eab6b30a1fc2ccc7e6f2d1991e029b30568`, Hipparchus 4.0.3.
+- Develop: `48d3dad9619f7c5627f89c80878b3c1b2e1bd257`, Hipparchus timestamp
+  `5.0-20261122.181226-3`.
+- Artifact `14899023082`: 296 files, SHA-256
+  `1472b14a72212c4b475accd6eb73f75d6a57edf29e26496cf56b972a8cbc1eee`.
+  Actual ZIP downloaded; uploaded digest, ZIP CRCs, all 295 manifest entries,
+  native XML totals and per-case CSV checked independently. The source restores
+  exactly after withdrawal in each branch.
+
+| Check | Release 13.1.10 | Develop |
+| --- | --- | --- |
+| All original CCSDS tests, before/after repair | 523/523 pass | 506/506 pass |
+| Independent orientation/derivative controls | 1,536/1,536 pass | 1,536/1,536 pass |
+| Parsed rate discrepancies, before/repair/withdrawal | 192/384 → 0 → 192 | 192/384 → 0 → 192 |
+| Direct read discrepancies, before/repair/withdrawal | 384/768 → 0 → 384 | 384/768 → 0 → 384 |
+| Direct write discrepancies, before/repair/withdrawal | 384/768 → 0 → 384 | 384/768 → 0 → 384 |
+| Unmodified author's body-rate example | Pass | Fail |
+
+The rate-frame defaults differ: release fails all 192 external-frame rate cases;
+develop fails all 192 body-frame rate cases. Reverting the single Optional
+predicate on develop fixes the author example but merely exchanges which 192
+parsed cases fail. The one-line repair is insufficient.
+
+Release ablations isolate two mechanisms. Metadata-only repair makes all 192
+forward-direction parsed cases correct, but all 192 reversed-direction cases
+still fail. Direction-only repair removes all direct read/write discrepancies,
+but 192 parsed cases still fail. The combined rate repair passes the selected
+matrices and all original CCSDS tests. Endpoint compatibility was excluded from
+this follow-up and its separate diagnostic patch is not part of the rate repair.
+These arms share cases and oracles; their counts are not independent discoveries.
+
+## Minimal published-binary witness
+
+`minimal/MinimalAemRate.java` uses two synthetic AEM messages differing only in
+ANGVEL_FRAME. With a passive 90-degree Z rotation and wire rates (1,0,0) deg/s:
+
+| ANGVEL_FRAME | Expected body rates | Orekit 13.1.10 actual |
+| --- | --- | --- |
+| SC_BODY_1 | (1,0,0) deg/s | (1,0,0) deg/s |
+| EME2000 | (0,-1,0) deg/s | (1,0,0) deg/s |
+
+This binary witness was executed locally using the published Maven Central
+Orekit 13.1.10 JAR (SHA-256
+`fa1bce7ce87ee53764597b139cd7f4cef0e6be851fd0e81878b4432853832f53`)
+and Hipparchus 4.0.3. Nine downloaded artifacts match their published SHA-1 checks;
+the small receipt records SHA-256 identities, source hash, environment and actual
+stdout. This does not assert equivalence with the separately source-built JAR.
+The external-frame vector discrepancy is approximately 1.414213562373 deg/s.
+
+Replay with Java 21:
+
+```bash
+python3 research/orekit-attitude-20261124/minimal/replay.py /path/to/Orekit/src/test/resources/regular-data
+```
+
+The replay script was itself executed successfully with fresh downloads. The
+initial ECJ wildcard-classpath compile failed; explicit JAR paths resolved it.
+That failed route is recorded in the receipt.
+
+The updated ISSUE_DRAFT.md leads with this small released-binary reproducer.
+Nothing has been submitted upstream. Full-project qualification, arbitrary third
+rate frames and a legitimate complete GitLab duplicate check remain unresolved.
+The diagnostic patch is not represented as a production-qualified contribution.
+
+## Initial development audit and lineage
+
+
 Status: WARRANTED / FINITE_COUNTERMODEL within the boundary below. Native run and
 the actual downloaded artifact have been independently inspected.
 
@@ -39,7 +114,7 @@ ANGVEL helpers additionally assume the message destination frame is the physical
 body when the transformation is reversed. The diagnostic patch changes these
 two mechanisms, plus the separate null-default endpoint compatibility API.
 The patch is a causal diagnostic for this matrix, not a production-qualified fix.
-The relative contribution of each patch hunk has not been isolated by ablation.
+The primary run did not isolate individual patch hunks; the follow-up below resolves that residual.
 
 The endpoint exception is secondary: there is no internal isCompatibleWith caller
 at this source. No AEM parser exception or operational failure is inferred from it.

@@ -1,0 +1,67 @@
+{
+  "boundary": "Published Maven Central Orekit 13.1.10 binary with Hipparchus 4.0.3, unmodified dependencies. Independent local synthetic two-message replay; not a claim that binary bytes equal the separately pinned source build.",
+  "java": "openjdk version \"21.0.13\" 2026-10-20\nOpenJDK Runtime Environment (build 21.0.13+9-1-deb13u2-Debian)\nOpenJDK 64-Bit Server VM (build 21.0.13+9-1-deb13u2-Debian, mixed mode, sharing)",
+  "compiler": "Eclipse JDT ECJ 3.42.0, source/target 8",
+  "source_sha256": "e340f4c6b40b3bb6f7e377f730d387dbc8ac863bc1ed176ab0382af07eb2f77b",
+  "data_source": "CS-SI/Orekit 48d3dad9619f7c5627f89c80878b3c1b2e1bd257 src/test/resources/regular-data for Orekit initialization; the AEM attitude/rate fixture is entirely synthetic.",
+  "artifacts": [
+    {
+      "name": "ecj.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/eclipse/jdt/ecj/3.42.0/ecj-3.42.0.jar",
+      "sha256": "29f6d3918ee02db4400c103bc25dd90a22491c3a395867d9393070cb96a7dd29",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "orekit-13.1.10.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/orekit/orekit/13.1.10/orekit-13.1.10.jar",
+      "sha256": "fa1bce7ce87ee53764597b139cd7f4cef0e6be851fd0e81878b4432853832f53",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-core-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-core/4.0.3/hipparchus-core-4.0.3.jar",
+      "sha256": "5af54dc3c21b8d85e1264157ee91d93fa67e68c825cfb38834dc2bbb9b0f6583",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-geometry-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-geometry/4.0.3/hipparchus-geometry-4.0.3.jar",
+      "sha256": "19594d5106ec6a46951e859e2924bfcade02a834c06c56bd3d2130a74f0fbb7e",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-ode-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-ode/4.0.3/hipparchus-ode-4.0.3.jar",
+      "sha256": "75f0f0b3fdcd99d13e9c394b7ae809cce5a9c22f1c14b1b90a5109ed951467fe",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-fitting-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-fitting/4.0.3/hipparchus-fitting-4.0.3.jar",
+      "sha256": "3712c3b4f43d9c12bf7b7aad187764f4b3c09cc962504899d8951eb310b1e4be",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-optim-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-optim/4.0.3/hipparchus-optim-4.0.3.jar",
+      "sha256": "4bc0dbb5c6d5fefda5db9d92141c6cbb807174a1d491a85df46bcc57a67b8992",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-filtering-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-filtering/4.0.3/hipparchus-filtering-4.0.3.jar",
+      "sha256": "279eece43411f372bd8340355cb89101def0bf9b1b6824231b76181d1ec63a81",
+      "published_sha1_verified": true
+    },
+    {
+      "name": "hipparchus-stat-4.0.3.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hipparchus/hipparchus-stat/4.0.3/hipparchus-stat-4.0.3.jar",
+      "sha256": "8b066e3060dc119efcce241fb0720a3b9e59c026d0f5fe9e70abfd5e22d3817b",
+      "published_sha1_verified": true
+    }
+  ],
+  "stdout": "SC_BODY_1 expected=(1.000000000000,0.000000000000,0.000000000000) actual=(1.000000000000,0.000000000000,0.000000000000) deg/s error=0.000000000000 deg/s\nEME2000 expected=(0.000000000000,-1.000000000000,0.000000000000) actual=(1.000000000000,0.000000000000,0.000000000000) deg/s error=1.414213562373 deg/s\n",
+  "interpretation": "Body-rate control correct; changing only ANGVEL_FRAME to EME2000 leaves output unchanged, but the independent passive quarter-turn matrix requires (0,-1,0) deg/s.",
+  "failed_route": "ECJ does not expand a wildcard classpath. Initial compile failed; replay succeeded with explicit dependency JAR paths. Failed command logs retained in scratch.",
+  "replay_script_tested": true
+}
