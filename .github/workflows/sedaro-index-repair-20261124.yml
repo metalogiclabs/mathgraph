@@ -1,0 +1,207 @@
+name: Sedaro index diff repair - causal qualification
+on:
+  push:
+    branches: [experiment/sedaro-index-repair-20261124]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: sedaro/model-exchange
+          ref: 7c03c2044d24ab091ee6e510dba4b84a7f055506
+          path: modex
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: modex-index-propagation-receipts
+          path: parent-receipts
+          repository: metalogiclabs/mathgraph
+          run-id: 45322966644
+          github-token: ${{ github.token }}
+      - name: Verify parent evidence and reconstruct locked regression
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../receipts tests
+          test "$(git rev-parse HEAD)" = 7c03c2044d24ab091ee6e510dba4b84a7f055506
+          test "$(git rev-parse HEAD^{tree})" = 3381088b88a15c0fb27bb726cb192d8453d0191c
+          test "$(git hash-object src/model/sedaroml.rs)" = 9ed6cfd6606605a0db2b19be69d177a956bd512e
+          test "$(git hash-object src/exchange.rs)" = db6f8613c39506c224363f538a753191aac2d1a3
+          test "$(git hash-object src/nodes/sedaroml.rs)" = f125b5cda87759b0fcbe3137b1262e7bcbcab0c0
+          printf '%s\n' 'e34665b95f7ef910bbe40265303ef6f2e6af4aef3c3ea8e654d450c2c0e769d7  ../parent-receipts/Cargo.lock' 'cdb4706d77bb9ef8aae01269158a146adf85333a425da45814a89fe10996a1ee  ../parent-receipts/mathgraph_index_probe.rs' | sha256sum -c -
+          test "$(cat ../parent-receipts/source.txt)" = "$(git rev-parse HEAD)"
+          cp ../parent-receipts/Cargo.lock Cargo.lock
+          cp Cargo.lock ../receipts/Cargo.lock
+          git rev-parse HEAD > ../receipts/source.txt
+          git rev-parse HEAD^{tree} > ../receipts/tree.txt
+          rustc --version | tee ../receipts/rustc.txt
+          cargo --version | tee ../receipts/cargo.txt
+          python3 --version | tee ../receipts/python.txt
+          cmp ../receipts/rustc.txt ../parent-receipts/rustc.txt
+          cmp ../receipts/cargo.txt ../parent-receipts/cargo.txt
+          cmp ../receipts/python.txt ../parent-receipts/python.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('../parent-receipts/mathgraph_index_probe.rs').read_text()
+          def replace(old,new):
+              global src
+              assert src.count(old)==1,old
+              src=src.replace(old,new,1)
+          replace('assert!(before.diff(&after).is_empty(), "expected historical index omission");',
+                  'println!("MODEL_OBS query=b1->s1 diff_empty={}", before.diff(&after).is_empty());\n    assert!(!before.diff(&after).is_empty(), "INDEX_DIFF_REQUIRED");')
+          replace('assert!(after.diff(&before).is_empty());','assert!(!after.diff(&before).is_empty());')
+          replace('assert!(before.diff(&unrelated).is_empty());','assert!(!before.diff(&unrelated).is_empty()); // conservative preservation of all index entries')
+          replace('NATIVE_MODEL_WITNESS query=b1->s1 diff_empty=true reverse_empty=true controls=4/4',
+                  'INDEX_DIFF_REGRESSION_PASS')
+          replace('fn run_chain(force_write: bool) {','fn run_chain(force_write: bool, selection: &str) {')
+          replace('a.root.insert("selection".into(), json!("Sensor"));','a.root.insert("selection".into(), json!(selection));')
+          replace('let expected = if force_write { "s1" } else { "b1" };\n    assert_eq!(b_memory, "s1");\n    assert_eq!(b_disk, expected);\n    assert_eq!(c_disk, expected);\n    println!("NATIVE_CHAIN_WITNESS force_write={} round_complete=true B_memory={} B_disk={} C_disk={}",\n        force_write,b_memory,b_disk,c_disk);',
+                  'let expected = if selection == "Sensor" { "s1" } else { "b1" };\n    println!("CHAIN_OBS force_write={} selection={} round_complete=true B_memory={} B_disk={} C_disk={}", force_write,selection,b_memory,b_disk,c_disk);\n    assert_eq!(b_memory, expected);\n    assert_eq!(b_disk, expected, "INDEX_PERSISTENCE_REQUIRED");\n    assert_eq!(c_disk, expected, "INDEX_PROPAGATION_REQUIRED");')
+          replace('run_chain(false);','run_chain(false, "Sensor");')
+          replace('run_chain(true);','run_chain(true, "Sensor");')
+          src+='\n#[test]\nfn unchanged_chain_control() { run_chain(false, "Battery"); }\n'
+          Path('tests/mathgraph_index_regression.rs').write_text(src)
+          PY
+          cp tests/mathgraph_index_regression.rs ../receipts/
+      - name: Original source - precise regression failures and positive controls
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYO3_PYTHON="$(command -v python3)"
+          run_bad() {
+            local name="$1" marker="$2" observation="$3" log="../receipts/base-$1.log" status=0
+            cargo test --locked --test mathgraph_index_regression "$name" -- --exact --nocapture > "$log" 2>&1 || status=$?
+            tail -35 "$log"
+            test "$status" -eq 101
+            grep -F "$marker" "$log"
+            grep -F "$observation" "$log"
+            grep -F 'test result: FAILED. 0 passed; 1 failed;' "$log"
+          }
+          run_bad model_query_and_diff INDEX_DIFF_REQUIRED 'MODEL_OBS query=b1->s1 diff_empty=true'
+          run_bad index_only_chain INDEX_PERSISTENCE_REQUIRED 'CHAIN_OBS force_write=false selection=Sensor round_complete=true B_memory=s1 B_disk=b1 C_disk=b1'
+          for name in root_change_control unchanged_chain_control; do
+            cargo test --locked --test mathgraph_index_regression "$name" -- --exact --nocapture 2>&1 | tee "../receipts/base-$name.log"
+          done
+          cargo test --locked --lib model::sedaroml::tests::test_model_diff -- --exact 2>&1 | tee ../receipts/base-author-model.log
+          cargo test --locked --lib test_exchange_validation -- --test-threads=1 2>&1 | tee ../receipts/base-author-validation.log
+          git diff --exit-code
+          sha256sum Cargo.lock
+      - name: Apply explicit typed index delta, no changes to Exchange or adapters
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/model/sedaroml.rs')
+          s=p.read_text()
+          def replace(old,new):
+              global s
+              assert s.count(old)==1,old
+              s=s.replace(old,new,1)
+          replace('ModelDiff { added_blocks, removed_blocks, updated_blocks, root: BlockDiff { added_fields, removed_fields, updated_fields } }',
+                  'ModelDiff { added_blocks, removed_blocks, updated_blocks, root: BlockDiff { added_fields, removed_fields, updated_fields },\n      index: if self.index == new.index { None } else { Some(IndexDiff { old_index: self.index.clone(), new_index: new.index.clone() }) } }')
+          replace('/// A concise representation of the differences between two models.',
+                  '#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]\npub struct IndexDiff {\n  pub old_index: IndexMap<String, Vec<String>>,\n  pub new_index: IndexMap<String, Vec<String>>,\n}\n\n/// A concise representation of the differences between two models.')
+          replace('  pub root: BlockDiff,\n}', '  pub root: BlockDiff,\n  #[serde(default, skip_serializing_if = "Option::is_none")]\n  pub index: Option<IndexDiff>,\n}')
+          replace('      self.root == other.root','      self.root == other.root &&\n      self.index == other.index')
+          replace('    self.root.updated_fields.is_empty()','    self.root.updated_fields.is_empty() &&\n    self.index.is_none()')
+          s,n=re.subn(r'(?m)^( +)root: BlockDiff \{',r'\1index: None,\n\1root: BlockDiff {',s)
+          assert n==5,n
+          p.write_text(s)
+          PY
+          test "$(git diff --name-only)" = src/model/sedaroml.rs
+          git diff --check
+          git diff > ../receipts/candidate.patch
+          git hash-object src/model/sedaroml.rs | tee ../receipts/candidate-blob.txt
+          cat > tests/mathgraph_index_payload.rs <<'RS'
+          use modex::model::sedaroml::{Model,ModelDiff};
+          use serde_json::{json,to_value,from_value};
+          #[test]
+          fn index_payload_controls() {
+              let mut before = Model::new();
+              before.index.insert("T".into(),vec!["a".into(),"b".into()]);
+              let unchanged = before.diff(&before);
+              assert!(unchanged.is_empty());
+              let legacy = to_value(&unchanged).unwrap();
+              assert!(legacy.get("index").is_none());
+              assert_eq!(from_value::<ModelDiff>(legacy).unwrap(),unchanged);
+              let mut variants=Vec::new();
+              let mut reorder=before.clone();
+              reorder.index.get_mut("T").unwrap().reverse();
+              variants.push(reorder);
+              let mut added=before.clone();
+              added.index.insert("U".into(),vec!["c".into()]);
+              variants.push(added);
+              let mut removed=before.clone();
+              removed.index.clear();
+              variants.push(removed);
+              for after in variants {
+                  let f=before.diff(&after);
+                  let r=after.diff(&before);
+                  assert!(!f.is_empty());
+                  assert!(!r.is_empty());
+                  assert_ne!(f,r);
+                  let v=to_value(&f).unwrap();
+                  assert_eq!(v["index"]["old_index"],json!(before.index));
+                  assert_eq!(v["index"]["new_index"],json!(after.index));
+                  assert_eq!(from_value::<ModelDiff>(v).unwrap(),f);
+              }
+              println!("INDEX_PAYLOAD_CONTROLS_PASS reorder/add/remove; legacy JSON; bidirectional delta");
+          }
+          RS
+          cp tests/mathgraph_index_payload.rs ../receipts/
+      - name: Candidate repair - regression, original tests and payload controls
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYO3_PYTHON="$(command -v python3)"
+          for name in model_query_and_diff index_only_chain root_change_control unchanged_chain_control; do
+            cargo test --locked --test mathgraph_index_regression "$name" -- --exact --nocapture 2>&1 | tee "../receipts/repair-$name.log"
+          done
+          grep -F 'CHAIN_OBS force_write=false selection=Sensor round_complete=true B_memory=s1 B_disk=s1 C_disk=s1' ../receipts/repair-index_only_chain.log
+          grep -F 'CHAIN_OBS force_write=false selection=Battery round_complete=true B_memory=b1 B_disk=b1 C_disk=b1' ../receipts/repair-unchanged_chain_control.log
+          cargo test --locked --test mathgraph_index_payload -- --nocapture 2>&1 | tee ../receipts/repair-payload.log
+          grep -F INDEX_PAYLOAD_CONTROLS_PASS ../receipts/repair-payload.log
+          cargo test --locked --lib model::sedaroml::tests::test_model_diff -- --exact 2>&1 | tee ../receipts/repair-author-model.log
+          cargo test --locked --lib test_exchange_validation -- --test-threads=1 2>&1 | tee ../receipts/repair-author-validation.log
+          cmp Cargo.lock ../receipts/Cargo.lock
+          test "$(git diff --name-only)" = src/model/sedaroml.rs
+          git diff --exit-code -- src/exchange.rs src/nodes Cargo.toml
+      - name: Withdraw repair and demand same original failures
+        working-directory: modex
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYO3_PYTHON="$(command -v python3)"
+          git apply -R ../receipts/candidate.patch
+          git diff --exit-code
+          test "$(git hash-object src/model/sedaroml.rs)" = 9ed6cfd6606605a0db2b19be69d177a956bd512e
+          for name in model_query_and_diff index_only_chain; do
+            status=0
+            cargo test --locked --test mathgraph_index_regression "$name" -- --exact --nocapture > "../receipts/withdraw-$name.log" 2>&1 || status=$?
+            tail -30 "../receipts/withdraw-$name.log"
+            test "$status" -eq 101
+            grep -F 'test result: FAILED. 0 passed; 1 failed;' "../receipts/withdraw-$name.log"
+          done
+          grep -F INDEX_DIFF_REQUIRED ../receipts/withdraw-model_query_and_diff.log
+          grep -F 'CHAIN_OBS force_write=false selection=Sensor round_complete=true B_memory=s1 B_disk=b1 C_disk=b1' ../receipts/withdraw-index_only_chain.log
+          grep -F INDEX_PERSISTENCE_REQUIRED ../receipts/withdraw-index_only_chain.log
+          cmp Cargo.lock ../receipts/Cargo.lock
+          git diff --exit-code
+          git rev-parse HEAD > ../receipts/final-source.txt
+          printf '%s\n' 'CAUSAL_REPAIR_QUALIFIED_FILE_BACKED_ONLY; owner contract and external adapter support UNKNOWN; no deployment or API compatibility guarantee' | tee ../receipts/result.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: modex-index-repair-receipts
+          path: receipts/
