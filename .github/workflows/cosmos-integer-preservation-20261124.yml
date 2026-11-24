@@ -1,0 +1,159 @@
+name: COSMOS integer preservation - isolated
+on:
+  push:
+    branches: [experiment/cosmos-integer-preservation-20261124]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      AWS_CONFIG_FILE: /dev/null
+      AWS_SHARED_CREDENTIALS_FILE: /dev/null
+      AWS_ACCESS_KEY_ID: testing
+      AWS_SECRET_ACCESS_KEY: testing
+      AWS_EC2_METADATA_DISABLED: "true"
+      OPENC3_BUCKET_USERNAME: testing
+      OPENC3_BUCKET_PASSWORD: testing
+      OPENC3_NO_EXT: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: OpenC3/cosmos
+          ref: 208e960798cabf18a4a6a703805c173ffdc4f4e4
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify exact source and install
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../receipts
+          git rev-parse HEAD | tee ../receipts/source.txt
+          test "$(git rev-parse HEAD)" = 208e960798cabf18a4a6a703805c173ffdc4f4e4
+          git rev-parse HEAD^{tree} | tee ../receipts/tree.txt
+          test "$(git hash-object openc3/python/openc3/accessors/accessor.py)" = 97c3f9bd2401532bd2bc11db5af54e0dd8a560b4
+          test "$(git hash-object openc3/python/openc3/accessors/json_accessor.py)" = b77296957db04020eca38f83cda1247f683cb8af
+          test "$(git hash-object openc3/python/openc3/accessors/binary_accessor.py)" = dbc8868b097752383f790ff4c37ffb193f1aab7f
+          test "$(git hash-object openc3/lib/openc3/accessors/accessor.rb)" = adf91c705a94c0e3ad2516149b12280173f4a702
+          test "$(git hash-object openc3/python/test/accessors/test_accessor.py)" = 28fb86781f043b198eca3bb87452ffbb8a2d1fe8
+          test "$(git hash-object openc3/python/test/accessors/test_json_accessor.py)" = a1b8965ad134ad705162298eadb8d13b4e350f0e
+          python --version | tee ../receipts/python.txt
+          ruby --version | tee ../receipts/ruby.txt
+          python -m pip install -e openc3/python pytest 2>&1 | tee ../receipts/install.log
+          python -m pip freeze --all > ../receipts/dependencies.txt
+      - name: Original author tests
+        working-directory: upstream/openc3/python
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -v -s test/accessors -p test_accessor.py 2>&1 | tee ../../../receipts/author-accessor.log
+          python -m unittest discover -v -s test/accessors -p test_json_accessor.py 2>&1 | tee ../../../receipts/author-json.log
+      - name: Independent integer oracle and cross-language replay
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > ../receipts/probe.py <<'PY'
+          import json
+          from collections import namedtuple
+          from pathlib import Path
+          from openc3.accessors.accessor import Accessor
+          from openc3.accessors.json_accessor import JsonAccessor
+          from openc3.accessors.binary_accessor import BinaryAccessor
+          from openc3.packets.packet_item import PacketItem
+          from openc3.packets.packet import Packet
+
+          out = Path("../receipts")
+          Item = namedtuple("Json", ("name", "key", "data_type", "array_size"))
+          values = {
+              "UINT": [0, 1, 2**53-1, 2**53, 2**53+1, 2**53+2, 2**53+3, 2**63-1, 2**64-2048, 2**64-1],
+              "INT": [0, 1, -1, -(2**53-1), -(2**53), -(2**53+1), -(2**53+2), -(2**53+3), -2**63, -2**63+1, 2**63-1],
+          }
+          records = []
+          for kind, numbers in values.items():
+              signed = kind == "INT"
+              item = Item("N", "$.n", kind, None)
+              array_item = Item("N", "$.n", kind, 64)
+              for n in numbers:
+                  packet = bytearray(json.dumps({"n": n}), "utf-8")
+                  assert json.loads(packet)["n"] == n
+                  actual = Accessor.convert_to_type(n, item)
+                  text_actual = Accessor.convert_to_type(str(n), item)
+                  array_actual = Accessor.convert_to_type([n], array_item)
+                  read = JsonAccessor.class_read_item(item, packet)
+                  array_read = JsonAccessor.class_read_item(array_item, bytearray(json.dumps({"n": [n]}), "utf-8"))
+                  binary = BinaryAccessor.read(0, 64, kind, bytearray(n.to_bytes(8, "big", signed=signed)), "BIG_ENDIAN")
+                  assert binary == n, (kind, n, binary)
+                  dest = bytearray(b'{"n":0}')
+                  write_error = None
+                  written = roundtrip = None
+                  try:
+                      JsonAccessor.class_write_item(item, n, dest)
+                      written = json.loads(dest)["n"]
+                      roundtrip = JsonAccessor.class_read_item(item, dest)
+                  except Exception as exc:
+                      write_error = type(exc).__name__ + ": " + str(exc)
+                  p = Packet("tgt", "pkt")
+                  pi = PacketItem("n", 0, 64, kind, "BIG_ENDIAN")
+                  pi.key = "$.n"
+                  p.define(pi)
+                  p.accessor = JsonAccessor()
+                  p.template = packet
+                  p.restore_defaults()
+                  packet_actual = p.read("n")
+                  records.append(dict(kind=kind, input=str(n), expected=str(n),
+                                      convert=str(actual), convert_text=str(text_actual),
+                                      convert_array=[str(x) for x in array_actual],
+                                      json_read=str(read), json_array_read=[str(x) for x in array_read],
+                                      json_written=None if written is None else str(written),
+                                      json_roundtrip=None if roundtrip is None else str(roundtrip),
+                                      json_write_error=write_error, packet_read=str(packet_actual),
+                                      binary_control=str(binary)))
+                  assert actual == text_actual == read == array_actual[0] == array_read[0], records[-1]
+                  if actual == n:
+                      assert written == roundtrip == n and write_error is None, records[-1]
+              # Actual array input across all original values.
+              array = JsonAccessor.class_read_item(array_item, bytearray(json.dumps({"n": numbers}), "utf-8"))
+              assert len(array) == len(numbers)
+          (out/"observations.json").write_text(json.dumps(records, indent=2))
+          bad = [r for r in records if r["json_read"] != r["expected"]]
+          controls = [r for r in records if r["json_read"] == r["expected"]]
+          print("SCALAR_JSON_MISMATCHES", len(bad), "/", len(records))
+          print("EXACT_SCALAR_CONTROLS", len(controls))
+          print("BINARY_CONTROLS", len(records))
+          for r in bad:
+              print(r)
+          assert len(controls) > 0
+          assert len(bad) > 0, "hypothesis refuted for selected cases"
+          assert any(r["input"] == str(2**53+1) and r["json_read"] == str(2**53) for r in bad)
+          assert any(r["input"] == str(2**64-1) and r["json_read"] == str(2**64) for r in bad)
+          PY
+          cat > ../receipts/ruby_probe.rb <<'RB'
+          require 'json'
+          require 'openc3/accessors/accessor'
+          item = Struct.new(:data_type, :array_size)
+          records = JSON.parse(File.read("../receipts/observations.json"))
+          records.each do |r|
+            n = Integer(r["input"])
+            type = r["kind"].to_sym
+            raise "scalar mismatch" unless OpenC3::Accessor.convert_to_type(n, item.new(type, nil)) == n
+            raise "text mismatch" unless OpenC3::Accessor.convert_to_type(n.to_s, item.new(type, nil)) == n
+            raise "array mismatch" unless OpenC3::Accessor.convert_to_type([n], item.new(type, 64)) == [n]
+          end
+          puts "RUBY_EXACT_CONTROLS #{records.length}"
+          RB
+          PYTHONPATH="$PWD/openc3/python" python ../receipts/probe.py 2>&1 | tee ../receipts/probe.log
+          ruby -I openc3/lib ../receipts/ruby_probe.rb 2>&1 | tee ../receipts/ruby-probe.log
+          git diff --exit-code
+          git diff --cached --exit-code
+          git rev-parse HEAD | tee ../receipts/final-source.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: cosmos-integer-preservation-receipts
+          path: receipts/
